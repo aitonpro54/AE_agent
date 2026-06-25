@@ -8,6 +8,7 @@ const {
 } = require("../mcp-server/semantic-verification");
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
+  agentEffectEnabledScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentLayerBlendingModeScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
@@ -39,6 +40,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "create_shapes_from_text",
   "export_path_points",
   "set_puppet_pin_type",
+  "set_effect_enabled",
   "add_property_to_essential_graphics",
   "set_comp_current_time",
   "add_comp_marker"
@@ -317,6 +319,22 @@ function fakeMutationResult(step, state) {
       effect: { name: args.effectName || "Onion Skin", matchName: "CC Wide Time" },
       properties: [{ name: "Blend", matchName: "CC Wide Time-0001", value: aePropertyPreview(50) }]
     }, compName, layer);
+  }
+  if (step.tool === "add_effect") {
+    const effect = {
+      propertyIndex: state.effects.length + 1,
+      name: args.name || args.effect || "Effect",
+      matchName: args.effect || "ADBE Effect",
+      enabled: true,
+      layerIndex: args.layerIndex || 1
+    };
+    state.effects.push(effect);
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex || 1}`, { index: args.layerIndex || 1 }),
+      effect,
+      properties: []
+    }, compName);
   }
   if (step.tool === "create_layer_mask") {
     const layer = layerInfo("Mask Fixture Solid", { index: args.layerIndex || 1 });
@@ -716,6 +734,40 @@ function fakeMutationResult(step, state) {
       allowedPinTypes: [1, 4],
       propertyPath
     }, compName, layer);
+  }
+  if (step.tool === "set_effect_enabled") {
+    let effect = state.effects.find((candidate) => (
+      (!args.effectName || candidate.name === args.effectName) &&
+      (!args.effectMatchName || candidate.matchName === args.effectMatchName) &&
+      (!args.effectIndex || Number(candidate.propertyIndex) === Number(args.effectIndex))
+    ));
+    if (!effect) {
+      effect = {
+        propertyIndex: args.effectIndex || state.effects.length + 1,
+        name: args.effectName || "Effect",
+        matchName: args.effectMatchName || "ADBE Effect",
+        enabled: args.expectedCurrentEnabled === undefined ? true : Boolean(args.expectedCurrentEnabled),
+        layerIndex: args.layerIndex || 1
+      };
+      state.effects.push(effect);
+    }
+    const before = { ...effect };
+    effect.enabled = Boolean(args.enabled);
+    const after = { ...effect };
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex || 1}`, { index: args.layerIndex || 1 }),
+      effect: after,
+      before: { effect: before },
+      after: { effect: after },
+      requestedEnabled: Boolean(args.enabled),
+      expectedCurrentEnabled: args.expectedCurrentEnabled === undefined ? null : Boolean(args.expectedCurrentEnabled),
+      postVerification: {
+        ok: true,
+        enabledMatches: true,
+        expectedCurrentMatched: true
+      }
+    }, compName);
   }
   if (step.tool === "add_property_to_essential_graphics") {
     const propertyPath = args.propertyPath || [
@@ -1468,6 +1520,7 @@ function fakeReadBackResult(step, state) {
         truncated: false,
         items: state.layerMarkers.slice()
       },
+      effects: state.effects.filter((effect) => Number(effect.layerIndex || 1) === Number(layerIndex)),
       propertyTree: state.propertyValues.slice()
     };
   }
@@ -1482,15 +1535,23 @@ function fakeReadBackResult(step, state) {
     };
   }
   if (step.tool === "get_effect_details") {
+    const effect = state.effects.find((candidate) => (
+      (!step.args || !step.args.effectName || candidate.name === step.args.effectName) &&
+      (!step.args || !step.args.effectMatchName || candidate.matchName === step.args.effectMatchName) &&
+      (!step.args || !step.args.effectIndex || Number(candidate.propertyIndex) === Number(step.args.effectIndex))
+    )) || {
+      propertyIndex: step.args && step.args.effectIndex || 1,
+      name: step.args && step.args.effectName || "Puppet",
+      matchName: step.args && step.args.effectMatchName || "ADBE FreePin3",
+      enabled: true,
+      layerIndex: step.args && step.args.layerIndex || 1
+    };
     return {
       comp: {
         name: step.args && step.args.compName || state.lastCompName || "Fixture Comp"
       },
       layer: layerInfo("Effect Fixture Layer", { index: step.args && step.args.layerIndex || 1 }),
-      effect: {
-        name: step.args && step.args.effectName || "Puppet",
-        matchName: step.args && step.args.effectMatchName || "ADBE FreePin3"
-      },
+      effect,
       propertiesReturned: state.propertyValues.length,
       propertiesTruncated: false,
       properties: state.propertyValues.slice()
@@ -1569,6 +1630,7 @@ function fakeRunForPlan(plan) {
     layers: [],
     selectedLayers: [],
     propertyValues: [],
+    effects: [],
     renderQueueItems: [],
     layerMarkers: [],
     compMarkers: [],
@@ -3467,6 +3529,15 @@ function assertSetPuppetPinTypeMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_puppet_pin_type:pin-type") >= 0 && check.status === "failed"), "set_puppet_pin_type missing read-back should fail.");
 }
 
+function assertSetEffectEnabledScenarioPasses() {
+  const [scenario] = agentEffectEnabledScenarioPlans("Codex Semantic Effect Enabled Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `set_effect_enabled semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_effect_enabled:effect-enabled") >= 0 && check.status === "passed"), "set_effect_enabled read-back check should pass.");
+}
+
 function assertSourceTextKeyframesPass() {
   const [scenario] = agentTextToKeysScenarioPlans("Codex Semantic TTK Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -3576,6 +3647,7 @@ function main() {
   assertAddPropertyToEssentialGraphicsMissingReadBackNeedsReview();
   assertSetPuppetPinTypePasses();
   assertSetPuppetPinTypeMissingReadBackNeedsReview();
+  assertSetEffectEnabledScenarioPasses();
   assertSourceTextKeyframesPass();
   assertSourceTextKeyframeMismatchNeedsReview();
   assertParentOpacityExpressionScenarioPasses();

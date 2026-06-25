@@ -301,6 +301,7 @@ function assertReadOnlyTools(tools) {
     "add_effect",
     "add_comp_to_render_queue",
     "set_property_value",
+    "set_effect_enabled",
     "set_puppet_pin_type",
     "add_property_to_essential_graphics",
     "set_layer_metadata",

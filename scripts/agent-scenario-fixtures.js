@@ -36,6 +36,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
   "set_effect_property",
+  "set_effect_enabled",
   "set_puppet_pin_type",
   "add_property_to_essential_graphics",
   "apply_keyframe_ease",
@@ -1643,6 +1644,56 @@ function agentEffectPropertyScenarioPlans(runPrefix) {
           { title: "Inspect generated Fill effect before property set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20 } },
           { title: "Set generated Fill color property", tool: "set_effect_property", args: { compName, layerIndex: 1, effectName, propertyIndex: 3, value: [0.95, 0.18, 0.22, 1] } },
           { title: "Inspect generated Fill effect after property set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentEffectEnabledScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Effect Enabled`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const effectName = `${base} Turbulent Displace`;
+
+  return [
+    {
+      id: "generated-effect-enabled-toggle",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_effect_enabled",
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedEffectEnabled: true,
+        compName,
+        layerName,
+        effectName,
+        effectMatchName: "ADBE Turbulent Displace",
+        enabled: false
+      },
+      plan: {
+        summary: "Generated-only live QA for explicit effect enabled-state typed tool.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated effect-enabled comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "generated-only effect enabled validation" } },
+          { title: "Create generated effect-enabled shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [320, 180], position: [320, 180], fillColor: [0.2, 0.45, 0.7], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Turbulent Displace effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Turbulent Displace", name: effectName } },
+          { title: "Inspect generated effect before disabling", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: false } },
+          { title: "Disable generated effect", tool: "set_effect_enabled", args: { compName, layerIndex: 1, effectName, effectMatchName: "ADBE Turbulent Displace", expectedCurrentEnabled: true, enabled: false } },
+          { title: "Read generated disabled effect", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, effectMatchName: "ADBE Turbulent Displace", includeProperties: false } },
+          { title: "Read generated effect layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } }
         ]
       }
     }
@@ -4348,6 +4399,7 @@ module.exports = {
   agentDuplicateLayersScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentEffectPropertyScenarioPlans,
+  agentEffectEnabledScenarioPlans,
   agentEssentialGraphicsScenarioPlans,
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,

@@ -26,6 +26,7 @@ const MUTATING_TOOLS = new Set([
   "set_path_geometry",
   "export_path_points",
   "set_puppet_pin_type",
+  "set_effect_enabled",
   "add_property_to_essential_graphics",
   "fit_layer_to_comp",
   "set_property_value",
@@ -383,8 +384,10 @@ function addPropertyEvidence(target, value, source) {
   target.properties.push({
     name: value.name || null,
     matchName: value.matchName || null,
+    propertyIndex: numberValue(value.propertyIndex),
     propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
     value: hasOwn(value, "value") ? value.value : undefined,
+    enabled: hasOwn(value, "enabled") ? boolValue(value.enabled) : null,
     geometry: shapeGeometryFromValue(value.geometry || value.value),
     numKeys: numberValue(value.numKeys),
     keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
@@ -1387,6 +1390,50 @@ function checkSetPuppetPinType(checks, step, payload, evidence) {
   });
 }
 
+function effectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effectIndex") && !nearlyEqual(effect.propertyIndex, args.effectIndex)) return false;
+  if (hasOwn(args, "effectMatchName") && args.effectMatchName && effect.matchName !== args.effectMatchName) return false;
+  if (hasOwn(args, "effectName") && args.effectName && effect.name !== args.effectName) return false;
+  return hasOwn(args, "effectIndex") || hasOwn(args, "effectMatchName") || hasOwn(args, "effectName");
+}
+
+function observedEffectEnabledEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = boolValue(args.enabled);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (!effectMatchesArgs(property, args)) continue;
+    if (property.enabled === expected) {
+      return property.source || `Read effect enabled:${expected} after set_effect_enabled.`;
+    }
+  }
+  return null;
+}
+
+function checkSetEffectEnabled(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = boolValue(args.enabled);
+  const effect = payload.effect || payload.after && payload.after.effect || {};
+  const postVerification = payload.postVerification || {};
+  const identityMatches = effectMatchesArgs(effect, args);
+  const resultMatches = expected !== null &&
+    (effect.enabled === expected || postVerification.enabledMatches === true);
+  const readBackEvidence = observedEffectEnabledEvidence(evidence.readBack, args) ||
+    observedEffectEnabledEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect-enabled`,
+    title: "Effect enabled state matches explicit request",
+    expected: `enabled:${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${effect.name || effect.matchName || "effect"} enabled:${effect.enabled}`
+      : "missing matching effect identity",
+    passed: identityMatches && resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched set_effect_enabled."
+  });
+}
+
 function observedEssentialGraphicsControllerEvidence(evidence, controllerName) {
   if (!evidence || !Array.isArray(evidence.essentialGraphicsControllers) || !controllerName) return null;
   const match = evidence.essentialGraphicsControllers.find((controller) => sameString(controller.name, controllerName));
@@ -2335,6 +2382,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_puppet_pin_type") {
     checkSetPuppetPinType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_effect_enabled") {
+    checkSetEffectEnabled(checks, step, payload, evidence);
     return;
   }
 

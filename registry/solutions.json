@@ -387,6 +387,117 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-specific-effects-typed-plan",
+      "title": "Toggle Specific Effects Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "effects",
+        "effect-enabled",
+        "toggle",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Enable or disable one explicit applied effect instance using set_effect_enabled and typed read-back.",
+        "appliesWhen": [
+          "The user asks to toggle, enable or disable a specific applied effect.",
+          "Current typed evidence identifies the target comp, exact layer index/name, effect identity and current effect.enabled state.",
+          "The desired final enabled state is reviewed before mutation."
+        ],
+        "whenNotToUse": [
+          "The request needs source-exact project-wide traversal, Alt-key behavior, broad selected-layer scans, fuzzy effect matching, unreviewed user effects, third-party semantics, effect addition/removal/reordering, property edits, raw JSX, file I/O or render queue work."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetEffect",
+          "type": "object",
+          "required": true,
+          "description": "Concrete comp, layerIndex, effectIndex/effectName/effectMatchName, and current effect.enabled evidence."
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "required": true,
+          "description": "Reviewed final enabled state for the target effect instance."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated effect is on a generated or explicitly reviewed layer.",
+        "Effect identity is matched by exact effectIndex, effectName, and/or effectMatchName evidence from list_effects or get_effect_details.",
+        "The workflow mutates only effect.enabled on the explicit effect target.",
+        "Source-exact all-project traversal, broad selected-layer matching, Alt-key branching, unreviewed user effects, third-party effect semantics, property edits, effect removal/reordering, non-generated user assets, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-specific-effects-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "list_effects",
+          "get_effect_details",
+          "set_effect_enabled",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind one explicit effect target, set effect.enabled to the reviewed final state, then read the same effect and layer back.",
+        "steps": [
+          "Run get_active_comp or use an explicit comp target before mutation.",
+          "Run get_selected_layers, list_layers or get_comp_details to bind concrete layer indices and names.",
+          "Run list_effects or get_effect_details to bind exact effect identity and current effect.enabled state.",
+          "Run set_effect_enabled with the explicit effect target, reviewed enabled value, and expectedCurrentEnabled when available.",
+          "Run get_effect_details after mutation and confirm the same effect identity plus final enabled state.",
+          "Run get_layer_details after mutation and confirm the target layer still owns the intended effect."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies comp, layer index/name, effect index/name/matchName, current enabled state, and reviewed final state.",
+          "set_effect_enabled reports postVerification.enabledMatches:true for the same effect identity.",
+          "Post-run get_effect_details shows the same effect with the requested enabled value.",
+          "Post-run get_layer_details shows the target layer still owns the intended effect."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Built as a generated-only adaptation after scoped Full Intaker review of Layers/Toggle_Specific_Effects.jsx."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "full-intake-kyletmartinez-tool-layers-toggle-specific-effects",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the specific-effect enabled-state intent into set_effect_enabled with exact generated layer/effect identity, before/after get_effect_details, get_layer_details read-back and semantic verification; no source JSX copied. Project-wide traversal, Alt-key branching, broad selected-layer scans, unreviewed user effects, third-party effect semantics, effect addition/removal/reordering, property edits and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Prefer explicit enable or disable final state over ambiguous toggle wording.",
+        "Use set_effect_enabled only after list_effects or get_effect_details has identified one exact effect instance.",
+        "Do not mutate effect properties, add/remove/reorder effects, scan the full project, rely on source selection side effects, or target unreviewed user effects."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "selected-layers-animation-typed-plan",
       "title": "Selected Layers Animation Typed Plan",
       "status": "recipe",

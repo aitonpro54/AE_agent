@@ -1300,6 +1300,75 @@
       "scope": "generated-only stateless Fill color-cycle proof using explicit generated layer/effect targets, ADBE Fill Color property evidence, one reviewed palette color, exact before/after value read-back, semantic verification, and cleanup; source-exact app.settings/app.preferences persistence, automatic cross-run next-color state, broad selected-layer traversal, non-generated user assets, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "effect-enabled-toggle-generated-only",
+      "requiredTools": [
+        "add_effect",
+        "get_effect_details",
+        "set_effect_enabled"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_layers",
+        "list_effects",
+        "set_effect_enabled"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-toggle-specific-effects"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-enabled-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "effect-enabled",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/toggle-specific-effects-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-toggle-specific-effects.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only effect enabled-state proof using an explicit generated ADBE Turbulent Displace effect, exact effectIndex/name/matchName identity, before/after effect.enabled values, set_effect_enabled with expectedCurrentEnabled guard, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, broad selected-layer scans, unreviewed user effects, third-party effect semantics, effect addition/removal/reordering, effect property edits, non-generated user assets, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "puppet-pin-type-generated-only",
       "requiredTools": [
         "get_effect_details",

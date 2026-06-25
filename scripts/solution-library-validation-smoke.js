@@ -108,6 +108,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
   "find-specific-effect-typed-plan",
+  "toggle-specific-effects-typed-plan",
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
   "merge-imported-selected-items-typed-plan",
@@ -167,7 +168,9 @@ const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
   "puppet-on-transparent-effect-property-generated-only",
   "toggle-puppet-on-transparent-typed-plan",
   "layer-fill-color-cycle-generated-only",
-  "add-fill-with-color-cycle-typed-plan"
+  "add-fill-with-color-cycle-typed-plan",
+  "effect-enabled-toggle-generated-only",
+  "toggle-specific-effects-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -201,6 +204,7 @@ const AVAILABLE_TOOLS = [
   "add_effect",
   "get_effect_details",
   "set_effect_property",
+  "set_effect_enabled",
   "set_puppet_pin_type",
   "get_layer_essential_properties",
   "get_essential_graphics_controllers",
@@ -2725,6 +2729,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for source-exact semantics.`);
       assert(solution.promotionHistory.some((entry) => /Find_Specific_Effect/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-specific-effects-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "list_effects", "get_effect_details", "set_effect_enabled", "get_layer_details"],
+        `${id}: imported specific-effect toggle workflow should stay on the narrow effect enabled-state typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: effect enabled-state workflow must be mutating.`);
+      assert(text.includes("list_effects"), `${id}: recipe should allow applied-effect enumeration.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect detail read-back.`);
+      assert(text.includes("effect.enabled"), `${id}: recipe should require enabled-state evidence.`);
+      assert(text.includes("set_effect_enabled"), `${id}: recipe should use the narrow effect enabled typed tool.`);
+      assert(text.includes("expectedCurrentEnabled"), `${id}: recipe should support guarded current-state checks.`);
+      assert(text.includes("source-exact project-wide traversal"), `${id}: recipe should fail closed for source project-wide traversal.`);
+      assert(text.includes("Alt-key behavior"), `${id}: recipe should fail closed for Alt-key branching.`);
+      assert(text.includes("broad selected-layer scans"), `${id}: recipe should fail closed for broad selected-layer scans.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_effects|get_effect_details/.test(step)), `${id}: verification must bind exact effect evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_enabled/.test(step)), `${id}: verification must include set_effect_enabled.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled state/.test(item)), `${id}: verification must require enabled state evidence.`);
+      assert(solution.notes.some((note) => /set_effect_enabled/.test(note)), `${id}: notes must require set_effect_enabled.`);
+      assert(solution.notes.some((note) => /unreviewed user effects/.test(note)), `${id}: notes must keep user-effect scope closed.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Specific_Effects/.test(entry.evidence) || /tool-layers-toggle-specific-effects/.test(entry.from)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "fill-in-keyframes-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -5068,6 +5095,25 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "raw JSX"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "effect-enabled-toggle-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_enabled"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-layers-toggle-specific-effects"],
+    scopeIncludes: [
+      "effect enabled-state",
+      "ADBE Turbulent Displace",
+      "effect.enabled",
+      "set_effect_enabled",
+      "expectedCurrentEnabled",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "broad selected-layer scans",
+      "unreviewed user effects",
+      "raw JSX"
+    ]
+  });
 
   assertFirstFourSwitchSolution(registry, "hard-solo-layers-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"], [
     /generated layers/,
@@ -5154,6 +5200,16 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /app\.preferences/,
     /automatic cross-run color advancement/,
     /broad selected-layer traversal/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-specific-effects-typed-plan", ["list_effects", "get_effect_details", "set_effect_enabled", "get_layer_details"], [
+    /effect\.enabled/,
+    /expectedCurrentEnabled/,
+    /enabled:true|enabled:false/,
+    /source-exact project-wide traversal/,
+    /Alt-key behavior/,
+    /broad selected-layer scans/,
+    /unreviewed user effects/,
     /raw JSX/
   ]);
 

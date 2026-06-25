@@ -18,6 +18,7 @@ const {
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
   agentDuplicateLayersScenarioPlans,
+  agentEffectEnabledScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
@@ -395,6 +396,24 @@ function openAiCliEffectPropertyScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_EFFECT_PROPERTY_PREFIX || "Codex QA AUX050",
     scenarioFactory: agentEffectPropertyScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliEffectEnabledScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-effect-enabled",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_EFFECT_ENABLED_PREFIX || "Codex QA EFFECT-ENABLED",
+    scenarioFactory: agentEffectEnabledScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5181,6 +5200,57 @@ async function verifyGeneratedEffectPropertyReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedEffectEnabledReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const details = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    effectName: expected.effectName,
+    effectMatchName: expected.effectMatchName,
+    includeProperties: false
+  });
+  if (!details || !details.effect) {
+    throw new Error(`${scenario.id}: generated effect ${expected.effectName} was not found by read-back.`);
+  }
+  if (expected.effectMatchName && details.effect.matchName !== expected.effectMatchName) {
+    throw new Error(`${scenario.id}: generated effect matchName mismatch; expected ${expected.effectMatchName}, got ${details.effect.matchName}.`);
+  }
+  if (details.effect.enabled !== expected.enabled) {
+    throw new Error(`${scenario.id}: generated effect enabled mismatch; expected ${expected.enabled}, got ${details.effect.enabled}.`);
+  }
+
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: false
+  });
+  const effects = Array.isArray(layerDetails.effects) ? layerDetails.effects : [];
+  const layerEffect = effects.find((effect) => (
+    effect.name === expected.effectName &&
+    (!expected.effectMatchName || effect.matchName === expected.effectMatchName)
+  ));
+  if (!layerEffect) {
+    throw new Error(`${scenario.id}: generated effect ${expected.effectName} was not present in layer read-back.`);
+  }
+  if (layerEffect.enabled !== expected.enabled) {
+    throw new Error(`${scenario.id}: layer read-back effect enabled mismatch; expected ${expected.enabled}, got ${layerEffect.enabled}.`);
+  }
+
+  return {
+    ok: true,
+    effect: {
+      name: details.effect.name,
+      matchName: details.effect.matchName,
+      enabled: details.effect.enabled
+    },
+    layerEffect: {
+      name: layerEffect.name,
+      matchName: layerEffect.matchName,
+      enabled: layerEffect.enabled
+    }
+  };
+}
+
 function propertyPathMatches(actualPath, expectedPath) {
   if (!Array.isArray(actualPath) || !Array.isArray(expectedPath)) return false;
   if (actualPath.length < expectedPath.length) return false;
@@ -7269,6 +7339,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedRenderQueueReadBack(scenario, expected);
   }
 
+  if (expected.generatedEffectEnabled) {
+    return verifyGeneratedEffectEnabledReadBack(scenario, expected);
+  }
+
   if (expected.generatedEffectProperty) {
     return verifyGeneratedEffectPropertyReadBack(scenario, expected);
   }
@@ -8055,6 +8129,10 @@ async function main() {
   }
   if (command === "agent-effect-property-openai-cli-smoke" || command === "full-ui-agent-effect-property-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliEffectPropertyScenarioConfig());
+    return;
+  }
+  if (command === "agent-effect-enabled-openai-cli-smoke" || command === "full-ui-agent-effect-enabled-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliEffectEnabledScenarioConfig());
     return;
   }
   if (command === "agent-expression-openai-cli-smoke" || command === "full-ui-agent-expression-openai-cli-smoke") {

@@ -887,6 +887,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_effect_enabled",
   "set_puppet_pin_type",
   "add_property_to_essential_graphics",
   "set_property_value",
@@ -4346,6 +4347,7 @@ const PLANNING_TOOL_NAMES = [
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_effect_enabled",
   "set_puppet_pin_type",
   "add_property_to_essential_graphics",
   "set_property_value",
@@ -6295,6 +6297,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
+    "For explicit effect enabled-state changes, use set_effect_enabled only after list_effects or get_effect_details identifies one effect instance by effectIndex, effectName, or effectMatchName and current enabled state. Prefer explicit enabled:true/false over ambiguous toggle wording, and read back with get_effect_details/get_layer_details. Do not scan all project comps, mutate unreviewed user effects, edit effect properties, or use raw ExtendScript.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
     "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
@@ -9097,6 +9100,48 @@ const tools = [
     }
   },
   {
+    name: "set_effect_enabled",
+    description: "Enable or disable one explicit layer effect instance after current get_effect_details or list_effects evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName, such as ADBE Turbulent Displace."
+        },
+        enabled: {
+          type: "boolean",
+          description: "Requested final enabled state for the resolved effect instance."
+        },
+        expectedCurrentEnabled: {
+          type: "boolean",
+          description: "Optional guard from current read-back. The tool fails closed if the resolved effect has a different enabled state."
+        }
+      },
+      required: ["layerIndex", "enabled"]
+    }
+  },
+  {
     name: "set_puppet_pin_type",
     description: "Set one explicit ADBE FreePin3 puppet pin type property to Position or Advanced after get_effect_details evidence.",
     inputSchema: {
@@ -11019,6 +11064,9 @@ async function callTool(name, args) {
         try { info.numKeys = prop.numKeys || 0; } catch (__numKeysError) {}
         try { info.expressionEnabled = !!prop.expressionEnabled; } catch (__expressionEnabledError) {}
         try { info.expressionError = prop.expressionError || ""; } catch (__expressionErrorError) {}
+        try {
+          if (prop.enabled !== undefined) info.enabled = !!prop.enabled;
+        } catch (__enabledError) {}
         try {
           if (includeExpression && prop.canSetExpression) info.expression = prop.expression || "";
         } catch (__expressionError) {}
@@ -14596,6 +14644,76 @@ async function callTool(name, args) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_effect_enabled") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const enabled = optionalBoolean(args, "enabled", null);
+    const expectedCurrentEnabled = hasArg(args, "expectedCurrentEnabled")
+      ? optionalBoolean(args, "expectedCurrentEnabled", null)
+      : null;
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+    if (!hasArg(args, "enabled")) return toolResult("enabled is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
+      var requestedEnabled = ${enabled ? "true" : "false"};
+      var expectedCurrentEnabled = ${expectedCurrentEnabled === null ? "null" : expectedCurrentEnabled ? "true" : "false"};
+      var beforeEffect = __codexPropertyInfo(effect, layer, false, true);
+      if (beforeEffect.enabled === undefined) {
+        try { beforeEffect.enabled = !!effect.enabled; } catch (__effectEnabledReadError) {}
+      }
+      if (expectedCurrentEnabled !== null && beforeEffect.enabled !== expectedCurrentEnabled) {
+        throw new Error("Effect enabled guard mismatch. Expected " + expectedCurrentEnabled + " but found " + beforeEffect.enabled + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Effect Enabled");
+      try {
+        effect.enabled = requestedEnabled;
+        var afterEffect = __codexPropertyInfo(effect, layer, false, true);
+        if (afterEffect.enabled === undefined) {
+          try { afterEffect.enabled = !!effect.enabled; } catch (__effectEnabledAfterReadError) {}
+        }
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name
+          },
+          layer: __codexLayerInfo(layer),
+          effect: afterEffect,
+          before: {
+            effect: beforeEffect
+          },
+          after: {
+            effect: afterEffect
+          },
+          requestedEnabled: requestedEnabled,
+          expectedCurrentEnabled: expectedCurrentEnabled,
+          postVerification: {
+            ok: afterEffect.enabled === requestedEnabled,
+            enabledMatches: afterEffect.enabled === requestedEnabled,
+            expectedCurrentMatched: expectedCurrentEnabled === null || beforeEffect.enabled === expectedCurrentEnabled
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
     `);
     return toolResult(result.result);
   }

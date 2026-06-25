@@ -21,6 +21,7 @@ const {
   agentCompCurrentTimeScenarioPlans,
   agentCompositionGuideScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
+  agentEffectEnabledScenarioPlans,
   agentEffectPropertyScenarioPlans,
   agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
@@ -516,6 +517,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "get_effect_details"
   ]);
   assert.strictEqual(effectProperty.plan.steps[4].args.propertyIndex, 3);
+
+  const [effectEnabled] = agentEffectEnabledScenarioPlans("Codex QA AUX-EFFECT-ENABLED Fixture");
+  assert.strictEqual(effectEnabled.id, "generated-effect-enabled-toggle");
+  assert.strictEqual(effectEnabled.expectedReadBack.generatedEffectEnabled, true);
+  assert.deepStrictEqual(effectEnabled.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_effect_enabled",
+    "get_effect_details",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(effectEnabled.plan.steps[4].args.effectMatchName, "ADBE Turbulent Displace");
+  assert.strictEqual(effectEnabled.plan.steps[4].args.expectedCurrentEnabled, true);
+  assert.strictEqual(effectEnabled.plan.steps[4].args.enabled, false);
 
   const [expression] = agentExpressionScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(expression.id, "generated-expression-set-clear");
@@ -1092,7 +1109,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }
