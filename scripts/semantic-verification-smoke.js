@@ -13,6 +13,7 @@ const {
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
+  agentLayerParentClosestScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
@@ -3507,6 +3508,16 @@ function assertLayerParentBelowScenarioPasses() {
   assert(parentChecks.length >= 2, "layer-below parenting scenario should verify both set_layer_parent read-backs.");
 }
 
+function assertLayerParentClosestScenarioPasses() {
+  const [scenario] = agentLayerParentClosestScenarioPlans("Codex Semantic Parent Closest Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `closest-layer parenting semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const parentChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed");
+  assert(parentChecks.length >= 2, "closest-layer parenting scenario should verify both set_layer_parent read-backs.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -3569,6 +3580,7 @@ function main() {
   assertSourceTextKeyframeMismatchNeedsReview();
   assertParentOpacityExpressionScenarioPasses();
   assertLayerParentBelowScenarioPasses();
+  assertLayerParentClosestScenarioPasses();
 
   console.log(JSON.stringify({
     ok: true,

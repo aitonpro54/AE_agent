@@ -146,6 +146,8 @@ const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
   "selected-layer-parent-opacity-expression-generated-only",
   "selected-layer-parent-below-generated-only",
   "parent-selected-layers-to-layers-below-typed-plan",
+  "selected-layer-parent-closest-generated-only",
+  "parent-closest-layers-typed-plan",
   "layer-track-matte-generated-only",
   "set-all-track-matte-labels-typed-plan",
   "set-track-matte-to-above-typed-plan",
@@ -4797,6 +4799,39 @@ function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistr
   assert(parentBelowText.includes("cycles"), "parent-selected-layers-to-layers-below-typed-plan: must reject cycles.");
   assert(parentBelowText.includes("post-mutation read-back"), "parent-selected-layers-to-layers-below-typed-plan: must require read-back.");
   assertNoRawExecutionGuidance("parent-selected-layers-to-layers-below-typed-plan", parentBelowRecipe, recipeText(parentBelowRecipe));
+
+  const parentClosestLaneId = "selected-layer-parent-closest-generated-only";
+  const parentClosestLane = liveLaneFamilyById(liveLaneRegistry, parentClosestLaneId);
+  assert(parentClosestLane, `Missing closest-layer parenting lane: ${parentClosestLaneId}`);
+  assert(parentClosestLane.requiredTools.includes("set_layer_parent"), `${parentClosestLaneId}: lane must require set_layer_parent.`);
+  assert(parentClosestLane.allowedTools.includes("set_layer_selection"), `${parentClosestLaneId}: lane must allow generated selection setup.`);
+  assert(parentClosestLane.allowedTools.includes("get_layer_details"), `${parentClosestLaneId}: lane must require typed position/read-back inspection.`);
+  assert(parentClosestLane.readBackTools.includes("get_layer_details"), `${parentClosestLaneId}: lane must read parent links back through get_layer_details.`);
+  assert.strictEqual(parentClosestLane.semanticVerification, true, `${parentClosestLaneId}: lane must require semantic verification.`);
+  assert(parentClosestLane.candidateIds.includes("tool-layers-parent-closest-layers"), `${parentClosestLaneId}: lane must stay scoped to closest-layer candidate.`);
+  assert(parentClosestLane.scope.includes("explicit generated selected child layers"), `${parentClosestLaneId}: lane must bind explicit generated selected children.`);
+  assert(parentClosestLane.scope.includes("2D position evidence"), `${parentClosestLaneId}: lane must require 2D position evidence.`);
+  assert(parentClosestLane.scope.includes("deterministic no-tie nearest"), `${parentClosestLaneId}: lane must reject ambiguous ties.`);
+  assert(parentClosestLane.scope.includes("expected child/parent names"), `${parentClosestLaneId}: lane must require expected-name guards.`);
+  assert(parentClosestLane.scope.includes("cycles"), `${parentClosestLaneId}: lane must reject cycles.`);
+  assert(parentClosestLane.scope.includes("layer stack reordering"), `${parentClosestLaneId}: lane must reject layer stack reordering.`);
+  assert(parentClosestLane.scope.includes("track matte edits"), `${parentClosestLaneId}: lane must reject track matte edits.`);
+  assert(parentClosestLane.scope.includes("non-generated user assets"), `${parentClosestLaneId}: lane must reject non-generated user assets.`);
+  assert(parentClosestLane.scope.includes("raw JSX/source semantics"), `${parentClosestLaneId}: lane must reject raw source semantics.`);
+
+  const parentClosestRecipe = solutionById(registry, "parent-closest-layers-typed-plan");
+  assert(parentClosestRecipe, "Missing closest-layer parenting recipe: parent-closest-layers-typed-plan");
+  const parentClosestText = solutionContractText(parentClosestRecipe, recipeText(parentClosestRecipe));
+  assert.strictEqual(parentClosestRecipe.execution.mutating, true, "parent-closest-layers-typed-plan: must be mutating through set_layer_parent.");
+  assert(parentClosestRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-closest-layers-typed-plan: must prefer set_layer_parent.");
+  assert(parentClosestRecipe.execution.preferredTools.includes("get_layer_details"), "parent-closest-layers-typed-plan: must require typed position/read-back inspection.");
+  assert(parentClosestText.includes("selectedChildLayerIndices"), "parent-closest-layers-typed-plan: must bind explicit selected child indices.");
+  assert(parentClosestText.includes("nearestParentPairs"), "parent-closest-layers-typed-plan: must disclose nearest child-parent pairs.");
+  assert(parentClosestText.includes("2D Transform Position") || parentClosestText.includes("2D position"), "parent-closest-layers-typed-plan: must require 2D position evidence.");
+  assert(parentClosestText.includes("equal-distance ties"), "parent-closest-layers-typed-plan: must reject equal-distance ties.");
+  assert(parentClosestText.includes("cycles"), "parent-closest-layers-typed-plan: must reject cycles.");
+  assert(parentClosestText.includes("post-mutation read-back"), "parent-closest-layers-typed-plan: must require read-back.");
+  assertNoRawExecutionGuidance("parent-closest-layers-typed-plan", parentClosestRecipe, recipeText(parentClosestRecipe));
 
   const trackMatteLaneId = "layer-track-matte-generated-only";
   const trackMatteLane = liveLaneFamilyById(liveLaneRegistry, trackMatteLaneId);

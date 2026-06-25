@@ -26,6 +26,34 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake closest-layer parenting generated-only lane (2026-06-25):
+  parent-owned milestone for `tool-layers-parent-closest-layers` added a
+  candidate-scoped generated-only closest-layer parenting lane using existing
+  `set_layer_parent`. The safe adaptation reduces selected-layer wording to
+  explicit generated child layer indices, derives deterministic no-tie nearest
+  child -> parent pairs from same-comp layer-order and 2D position evidence,
+  rejects missing transform evidence, equal-distance ties, self-parenting,
+  cycles, truncated inventory, arbitrary user-layer parenting, raw JSX, and
+  non-generated user assets, applies `set_layer_parent` with expected
+  child/parent name guards, and reads each parent link back through
+  `get_layer_details`. Added the `parent-closest-layers-typed-plan` recipe,
+  generic intake note, solution registry entry, solution-library assertions,
+  generated scenario/report smoke coverage, semantic smoke coverage, CEP
+  command `full-ui-agent-layer-parent-closest-openai-cli-smoke`, live-lane
+  family `selected-layer-parent-closest-generated-only`, and runner mapping.
+  Scoped retry with explicit id, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit` mapped the
+  candidate to that family and ran non-live lane validation. The candidate
+  remains freshly terminal/live-blocked, not completed: generated-only proof
+  failed with `CEP panel is not connected to the bridge`. Clean compact proof
+  status is `completed_no_candidates`, `changedPathCount=0`,
+  `unplannedPathCount=0`; proof envelope SHA-256:
+  `7f85e379fee19ec2c305e5c561900d8bc86352e0e9444f9d0e218f64809692a2`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake layer-below parenting generated-only lane (2026-06-25):
   parent-owned milestone for
   `tool-layers-parent-selected-layers-to-layers-below` added a candidate-scoped
@@ -3483,6 +3511,17 @@ check.
 ## Decision Log
 
 - 2026-06-25: Accept
+  `selected-layer-parent-closest-generated-only` as the bounded adaptation for
+  `tool-layers-parent-closest-layers`. The contract uses only explicit
+  generated selected child layer indices, same-comp layer-order evidence, typed
+  2D Transform Position evidence, deterministic no-tie nearest child -> parent
+  pairs, `set_layer_parent`, and immediate `get_layer_details` parent
+  read-back. Equal-distance ties, missing position evidence, self-parenting,
+  parent cycles, source-exact broad selected-layer traversal, implicit active
+  comp selection, layer stack reordering, track matte edits, raw JSX, and
+  non-generated user assets remain fail-closed.
+
+- 2026-06-25: Accept
   `selected-layer-parent-below-generated-only` as the bounded adaptation for
   `tool-layers-parent-selected-layers-to-layers-below`. The contract uses only
   explicit generated child layer indices, same-comp order/read-back evidence,
@@ -4892,6 +4931,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake closest-layer parenting generated-only lane | Required to give `tool-layers-parent-closest-layers` a current generated-only typed lane and fresh scoped retry evidence without broad selected-layer traversal, raw JSX copy, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout evidence: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-parent-closest-layers`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `selected-layer-parent-closest-generated-only`, ran non-live lane validation successfully, produced proof envelope SHA-256 `7f85e379fee19ec2c305e5c561900d8bc86352e0e9444f9d0e218f64809692a2`, and kept `changedPathCount=0` / `unplannedPathCount=0`. The live-lane report status was `blocked_live_proof_failed` with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake layer-below parenting generated-only lane | Required to give `tool-layers-parent-selected-layers-to-layers-below` a current generated-only typed lane and fresh scoped retry evidence without broad selected-layer traversal, raw JSX copy, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout evidence: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-retrieval-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-parent-selected-layers-to-layers-below`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The retry mapped the candidate to `selected-layer-parent-below-generated-only`, ran non-live lane validation successfully, and produced proof envelope SHA-256 `98ecfa275eccec68f74185eb38ec40a969b1281e02dec08ca162746fc9860a9c`. Top-level compact status was `blocked_target_dirty` because parent-authored tracked lane files were intentionally uncommitted during the retry; the live-lane report status was `blocked_live_proof_failed` with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 

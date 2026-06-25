@@ -38,6 +38,7 @@ const {
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
+  agentLayerParentClosestScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
@@ -595,6 +596,35 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerParentBelow.plan.steps[9].args.layerIndex, 2);
   assert.strictEqual(layerParentBelow.plan.steps[9].args.parentLayerIndex, 3);
   assert.strictEqual(layerParentBelow.plan.steps[7].resultBindings, undefined);
+
+  const [layerParentClosest] = agentLayerParentClosestScenarioPlans("Codex QA AUX-LPC Fixture");
+  assert.strictEqual(layerParentClosest.id, "generated-layer-parent-closest");
+  assert.strictEqual(layerParentClosest.expectedReadBack.generatedLayerParentClosest, true);
+  assert.deepStrictEqual(layerParentClosest.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "get_comp_details",
+    "get_layer_details",
+    "get_layer_details",
+    "get_layer_details",
+    "get_layer_details",
+    "set_layer_selection",
+    "get_selected_layers",
+    "set_layer_parent",
+    "get_layer_details",
+    "set_layer_parent",
+    "get_layer_details"
+  ]);
+  assert.deepStrictEqual(layerParentClosest.plan.steps[10].args.layerIndices, [1, 2]);
+  assert.strictEqual(layerParentClosest.plan.steps[12].args.layerIndex, 1);
+  assert.strictEqual(layerParentClosest.plan.steps[12].args.parentLayerIndex, 3);
+  assert.strictEqual(layerParentClosest.plan.steps[14].args.layerIndex, 2);
+  assert.strictEqual(layerParentClosest.plan.steps[14].args.parentLayerIndex, 4);
+  assert.deepStrictEqual(layerParentClosest.expectedReadBack.parentPairs.map((pair) => pair.distancePx), [40, 35]);
+  assert.strictEqual(layerParentClosest.plan.steps[12].resultBindings, undefined);
 
   const [layerTrackMatte] = agentLayerTrackMatteScenarioPlans("Codex QA AUX107 Fixture");
   assert.strictEqual(layerTrackMatte.id, "generated-layer-track-matte");

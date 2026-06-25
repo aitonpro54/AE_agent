@@ -2019,6 +2019,88 @@ function agentLayerParentBelowScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerParentClosestScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Parent Closest`;
+  const compName = `${base} Comp`;
+  const parentLeftName = `${base} Left Parent Shape`;
+  const parentRightName = `${base} Right Parent Shape`;
+  const childLeftName = `${base} Left Child Shape`;
+  const childRightName = `${base} Right Child Shape`;
+  const selectedLayerIndices = [1, 2];
+  const selectedLayerNames = [childRightName, childLeftName];
+  const layerPositions = [
+    { layerIndex: 1, layerName: childRightName, position: [430, 180] },
+    { layerIndex: 2, layerName: childLeftName, position: [205, 180] },
+    { layerIndex: 3, layerName: parentRightName, position: [470, 180] },
+    { layerIndex: 4, layerName: parentLeftName, position: [170, 180] }
+  ];
+  const parentPairs = [
+    { childLayerIndex: 1, childName: childRightName, parentLayerIndex: 3, parentName: parentRightName, distancePx: 40 },
+    { childLayerIndex: 2, childName: childLeftName, parentLayerIndex: 4, parentName: parentLeftName, distancePx: 35 }
+  ];
+
+  return [
+    {
+      id: "generated-layer-parent-closest",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_comp_details",
+        "get_layer_details",
+        "get_layer_details",
+        "get_layer_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "get_selected_layers",
+        "set_layer_parent",
+        "get_layer_details",
+        "set_layer_parent",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerParentClosest: true,
+        compName,
+        selectedLayerIndices,
+        selectedLayerNames,
+        layerPositions,
+        parentPairs
+      },
+      plan: {
+        summary: "Generated-only live QA for parenting selected layers to their nearest same-comp layers with explicit read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated closest-parent comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only closest-layer parenting validation" } },
+          { title: "Create generated left parent shape", tool: "create_shape_layer", args: { compName, name: parentLeftName, shape: "rectangle", size: [130, 90], position: [170, 180], fillColor: [0.2, 0.42, 0.72], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated right parent shape", tool: "create_shape_layer", args: { compName, name: parentRightName, shape: "rectangle", size: [130, 90], position: [470, 180], fillColor: [0.72, 0.42, 0.2], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated left child shape", tool: "create_shape_layer", args: { compName, name: childLeftName, shape: "ellipse", size: [90, 90], position: [205, 180], fillColor: [0.32, 0.68, 0.46], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated right child shape", tool: "create_shape_layer", args: { compName, name: childRightName, shape: "ellipse", size: [90, 90], position: [430, 180], fillColor: [0.46, 0.62, 0.84], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated closest-parent stack", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Read generated right child position evidence", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } },
+          { title: "Read generated left child position evidence", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } },
+          { title: "Read generated right parent position evidence", tool: "get_layer_details", args: { compName, layerIndex: 3, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } },
+          { title: "Read generated left parent position evidence", tool: "get_layer_details", args: { compName, layerIndex: 4, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true } },
+          { title: "Select generated closest-parent child layers explicitly", tool: "set_layer_selection", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, makeActive: true } },
+          { title: "Read generated closest-parent selected child layers", tool: "get_selected_layers", args: {} },
+          { title: "Parent generated right child to nearest right parent", tool: "set_layer_parent", args: { compName, layerIndex: 1, parentLayerIndex: 3, expectedLayerName: childRightName, expectedParentName: parentRightName } },
+          { title: "Read generated right child nearest parent", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Parent generated left child to nearest left parent", tool: "set_layer_parent", args: { compName, layerIndex: 2, parentLayerIndex: 4, expectedLayerName: childLeftName, expectedParentName: parentLeftName } },
+          { title: "Read generated left child nearest parent", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentLayerTrackMatteScenarioPlans(runPrefix) {
   const base = `${runPrefix} Track Matte`;
   const compName = `${base} Comp`;
@@ -4279,6 +4361,7 @@ module.exports = {
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
   agentLayerParentBelowScenarioPlans,
+  agentLayerParentClosestScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
