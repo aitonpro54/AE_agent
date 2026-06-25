@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake final terminal completion audit (2026-06-25):
+  selected the only remaining bounded family as
+  `final-terminal-completion-audit`, not a new import lane. Compact preflight
+  and ledger audit show the `full-intake-kyletmartinez` queue is exhausted
+  under current permissions: `entries=75`, `completed=36`,
+  `blocked_or_skipped=39`, `queued=0`, `failed=0`, `terminal=75`, and
+  `nextCandidate=null`. All 39 blocked/skipped entries have a `shortReason`
+  plus implementation evidence from parent reducer, scoped retry, or the new
+  policy-resolution tickets. No scoped retry, broad queue processing,
+  generated-only mutating live CEP/AE proof, broad/default CEP smoke,
+  Local/Ollama, fallback provider, dependency change, raw JSX copy, source
+  checkout execution, non-generated user-asset mutation, push, PR, or launcher
+  edit was run. Remaining future work is approval/contract-gated only:
+  restore CEP/panel bridge readiness for already-built live lanes, add reviewed
+  generated/mock fixtures for Puppet pin atoms or third-party semantics, or
+  approve a narrow production safety contract for file/render/proxy/cleanup
+  families.
+
 - [x] Full Intake Puppet policy-resolution slice (2026-06-25):
   parent-owned milestone for `tool-properties-toggle-puppet-pin-types`,
   `tool-properties-increase-all-pin-sizes`,
@@ -3296,6 +3314,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Treat `full-intake-kyletmartinez` as exhausted under the current
+  launcher guard and permissions. The next bounded family is
+  `final-terminal-completion-audit`; it is a closeout audit, not a queue runner
+  retry. Do not select another blocked/skipped terminal family for work unless
+  a future prompt changes the safety boundary by restoring CEP/panel readiness
+  for an existing generated-only live lane, approving a new typed contract, or
+  explicitly allowing one of the file/render/proxy/cleanup/third-party risk
+  classes with checkpoint, generated fixture, read-back, and cleanup policy.
+
 - 2026-06-25: Keep Puppet pin type completion blocked until typed evidence can
   create or bind a generated `ADBE FreePin3 PosPin Atom`. The existing
   `set_puppet_pin_type` contract remains valid for explicit
@@ -4632,6 +4659,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake final terminal completion audit | Required to close the longrun continuation after the Puppet policy slice by auditing remaining terminal families and selecting only one bounded next family from active docs and ledger evidence. | Passed compact preflight and audit: `git status --short --branch` was clean aside from the branch being ahead; compact status returned `completed_no_candidates`; compact proof returned `completed_no_candidates`, proof envelope SHA-256 `14d5d0e3b6af1cf7f7601cd149fcd0785220b5d6047ce45043924a9cebf88626`, `changedPathCount=0`, and `unplannedPathCount=0`; ledger summary returned `entries=75`, `completed=36`, `blocked_or_skipped=39`, `queued=0`, `failed=0`, `terminal=75`; targeted ledger audit found `nextCandidate=null`, no blocked entry missing `shortReason`, and no blocked entry missing implementation evidence. No scoped retry, broad queue processing, live CEP/AE mutation, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, or PR was run. |
 
 | Full Intake Puppet policy-resolution slice | Required to close the approved Puppet pin atom / Puppet-related layer-property family without unsafe live mutation or broad queue processing. | Passed focused validation: `node --check orchestrator/run-generic-repo-full-intake.mjs`, `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, `node scripts/sdk-generic-repo-full-intake-smoke.js`, and initial `git diff --check` with only the usual LF/CRLF warnings. First scoped retry correctly stopped as `blocked_target_dirty` after creating policy tickets while tracked edits were uncommitted. Clean scoped retry after the temporary commit passed as `completed_no_candidates` with `terminalTickets=2`, `requeued=0`, `commits=0`, and proof envelope SHA-256 `14d5d0e3b6af1cf7f7601cd149fcd0785220b5d6047ce45043924a9cebf88626`. No generated-only live CEP proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout execution, non-generated user-asset mutation, push, PR, or launcher edit was run. |
 
