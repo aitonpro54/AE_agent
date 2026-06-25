@@ -52,6 +52,7 @@ const {
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
   agentStickEffectExpressionScenarioPlans,
+  agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -621,6 +622,21 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerConnectionLine.plan.steps[5].args.lockLayer, true);
   assert.strictEqual(layerConnectionLine.plan.steps[5].resultBindings, undefined);
 
+  const [textShapes] = agentTextShapesScenarioPlans("Codex QA AUX-TTS Fixture");
+  assert.strictEqual(textShapes.id, "generated-text-shapes-from-text");
+  assert.strictEqual(textShapes.expectedReadBack.generatedTextShapesFromText, true);
+  assert.deepStrictEqual(textShapes.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_text_layer",
+    "get_layer_details",
+    "create_shapes_from_text",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(textShapes.plan.steps[3].args.expectedLayerName, textShapes.expectedReadBack.sourceName);
+  assert.strictEqual(textShapes.plan.steps[3].args.expectedSourceText, textShapes.expectedReadBack.sourceText);
+  assert.strictEqual(textShapes.plan.steps[3].args.shapeLayerName, textShapes.expectedReadBack.shapeName);
+  assert.strictEqual(textShapes.plan.steps[3].resultBindings, undefined);
+
   const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
   assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");
   assert.strictEqual(stickEffect.expectedReadBack.generatedStickEffectExpression, true);
@@ -1022,7 +1038,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(remainingTails[4].plan.steps.some((step) => step.tool === "set_spatial_in_tangent"));
   assert(remainingTails[5].plan.steps.some((step) => step.tool === "separate_shape_size_dimensions"));
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

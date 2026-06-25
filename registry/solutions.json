@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-06",
+  "updatedAt": "2026-06-25",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -15124,6 +15124,114 @@
         "Use this policy to report typed-tool gaps for project/file/render/proxy/user-file requests that cannot fit an existing narrow generated-only recipe.",
         "Require a separate narrow typed-tool contract before render start, render queue cleanup, proxy mutation, project-file reveal, project save/saveAs, user file input/output, folder cleanup, or arbitrary path output.",
         "Do not widen generated-only render queue setup, generated path export, or project item label recipes to cover user assets, broad cleanup, render execution, proxies, OS actions, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "create-shapes-from-text-typed-plan",
+      "title": "Create Shapes From Text Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "text",
+        "shape",
+        "generated-only",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Convert one explicit generated text layer into AE native shape outlines with guarded Source Text evidence and shape-layer read-back.",
+        "appliesWhen": [
+          "The request is scoped to creating shapes from one known generated text layer.",
+          "Current get_layer_details or get_comp_details evidence identifies the text layer and Source Text.",
+          "The plan can provide compName or compItemIndex, layerIndex, expectedLayerName, expectedSourceText, and generated shapeLayerName."
+        ],
+        "whenNotToUse": [
+          "The request needs source-exact broad selected-layer traversal or arbitrary selected text layer conversion.",
+          "The AE host does not expose the native Create Shapes from Text menu command.",
+          "The target is a non-generated user asset without an explicit checkpoint/rollback and approval scope.",
+          "The request requires raw JSX, file I/O, render queue work, or font-outline fidelity beyond AE native output."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "textLayerEvidence",
+          "type": "object",
+          "required": true,
+          "description": "Current get_layer_details or get_comp_details evidence for one generated text layer, including layer index/name and Source Text."
+        },
+        {
+          "name": "shapeLayerName",
+          "type": "string",
+          "required": true,
+          "description": "Generated name to apply to the AE shape outline layer."
+        }
+      ],
+      "targetAssumptions": [
+        "The source layer is generated and explicitly identified before mutation.",
+        "The create_shapes_from_text call uses expectedLayerName and expectedSourceText guards.",
+        "The generated outline layer is verified with get_layer_details as shapeLayer:true, layerKind:\"shape\", or matchName:\"ADBE Vector Layer\".",
+        "Source-exact selected-layer traversal, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/create-shapes-from-text-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_layer_details",
+          "create_shapes_from_text",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one explicit generated text layer, run create_shapes_from_text with expectedLayerName/expectedSourceText guards and generated shapeLayerName, then read back the generated shape outline layer.",
+        "steps": [
+          "Run get_layer_details for the generated text layer and verify Source Text evidence before mutation.",
+          "Run create_shapes_from_text with compName or compItemIndex, layerIndex, expectedLayerName, expectedSourceText, and shapeLayerName.",
+          "Run get_layer_details for the generated outline layer and verify shapeLayer:true or matchName:\"ADBE Vector Layer\" plus outline group evidence.",
+          "Fail closed if the localized menu command Create Shapes from Text is unavailable or if the generated shape layer cannot be read back."
+        ],
+        "expectedEvidence": [
+          "create_shapes_from_text reports postVerification.ok:true, sourceTextMatched:true, sourceNameMatched:true, and outlineGroupCount > 0.",
+          "Final get_layer_details read-back identifies the generated outline layer by shapeLayerName.",
+          "The source text/name guards match before conversion.",
+          "No raw JSX, non-generated user-asset mutation, file I/O, or render queue work is used."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-create-shapes-from-text as generated-only typed-plan coverage after adding create_shapes_from_text.",
+          "Generated-only proof uses full-ui-agent-text-shapes-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-25",
+          "from": "generic-repo-importer-tool-layers-create-shapes-from-text",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the Create Shapes from Text intent into create_shapes_from_text plus get_layer_details read-back; no source JSX copied. Broad selected-layer traversal, arbitrary text-layer conversion, localized menu command failure, selection persistence, non-generated user assets, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use create_shapes_from_text only with explicit layerIndex and guards.",
+        "The typed tool wraps AE's native Create Shapes from Text command and fails closed when that localized menu command is unavailable.",
+        "Require get_layer_details read-back for the generated shape outline layer."
       ]
     }
   ]

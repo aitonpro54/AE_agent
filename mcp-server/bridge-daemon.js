@@ -864,6 +864,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_project_folder",
   "move_project_items_to_folder",
   "create_text_layer",
+  "create_shapes_from_text",
   "import_footage",
   "create_solid_layer",
   "create_null_layer",
@@ -2338,15 +2339,26 @@ async function verifyMutationResult(toolName, args, payload) {
         var transform = layer.property("ADBE Transform Group");
         var textGroup = null;
         var sourceText = null;
+        var isTextLayer = false;
+        var isShapeLayer = false;
         try { textGroup = layer.property("ADBE Text Properties"); } catch (__textGroupError) {}
         if (textGroup) {
           try { sourceText = textGroup.property("ADBE Text Document").value; } catch (__sourceTextError) {}
+        }
+        try { isTextLayer = layer instanceof TextLayer; } catch (__textLayerClassError) {}
+        if (!isTextLayer && textGroup) isTextLayer = true;
+        try { isShapeLayer = layer instanceof ShapeLayer; } catch (__shapeLayerClassError) {}
+        if (!isShapeLayer) {
+          try { isShapeLayer = layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerFallbackError) {}
         }
         return {
           index: layer.index,
           id: layer.id || null,
           name: layer.name || "",
           matchName: layer.matchName || null,
+          textLayer: isTextLayer,
+          shapeLayer: isShapeLayer,
+          layerKind: isTextLayer ? "text" : (isShapeLayer ? "shape" : null),
           enabled: !!layer.enabled,
           locked: !!layer.locked,
           startTime: layer.startTime,
@@ -4311,6 +4323,7 @@ const PLANNING_TOOL_NAMES = [
   "move_project_items_to_folder",
   "set_project_item_metadata",
   "create_text_layer",
+  "create_shapes_from_text",
   "import_footage",
   "create_solid_layer",
   "create_null_layer",
@@ -6283,7 +6296,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
     "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
@@ -8465,6 +8478,48 @@ const tools = [
     }
   },
   {
+    name: "create_shapes_from_text",
+    description: "Convert one explicit text layer into an AE-generated shape outline layer through the native Create Shapes from Text command, with name/text guards and shape-layer read-back. Fails closed if the AE menu command is unavailable.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is not provided. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition."
+        },
+        layerIndex: {
+          type: "number",
+          description: "Required 1-based source text layer index."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact name guard for layerIndex."
+        },
+        expectedSourceText: {
+          type: "string",
+          description: "Optional exact Source Text guard for the source text layer."
+        },
+        shapeLayerName: {
+          type: "string",
+          description: "Optional name to apply to the generated shape layer after conversion."
+        },
+        lockCreatedShapeLayer: {
+          type: "boolean",
+          description: "Whether to lock the generated shape layer after conversion. Defaults to false."
+        },
+        makeActive: {
+          type: "boolean",
+          description: "Whether to open the target comp in the viewer before running the native command. Defaults to true."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
     name: "import_footage",
     description: "Import a local file as footage into the current After Effects project.",
     inputSchema: {
@@ -10456,11 +10511,24 @@ async function callTool(name, args) {
       }
 
       function __codexLayerInfo(layer) {
+        var isTextLayer = false;
+        var isShapeLayer = false;
+        try { isTextLayer = layer instanceof TextLayer; } catch (__textLayerClassError) {}
+        if (!isTextLayer) {
+          try { isTextLayer = !!layer.property("ADBE Text Properties"); } catch (__textLayerFallbackError) {}
+        }
+        try { isShapeLayer = layer instanceof ShapeLayer; } catch (__shapeLayerClassError) {}
+        if (!isShapeLayer) {
+          try { isShapeLayer = layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerFallbackError) {}
+        }
         var info = {
           index: layer.index,
           id: layer.id,
           name: layer.name,
           matchName: layer.matchName,
+          textLayer: isTextLayer,
+          shapeLayer: isShapeLayer,
+          layerKind: isTextLayer ? "text" : (isShapeLayer ? "shape" : null),
           enabled: layer.enabled,
           locked: layer.locked,
           shy: layer.shy,
@@ -12852,6 +12920,196 @@ async function callTool(name, args) {
         text: textValue
       };
       app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_shapes_from_text") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedSourceText = hasArg(args, "expectedSourceText") ? String(args.expectedSourceText) : null;
+    const shapeLayerName = optionalString(args, "shapeLayerName", "");
+    const lockCreatedShapeLayer = optionalBoolean(args, "lockCreatedShapeLayer", false);
+    const makeActive = optionalBoolean(args, "makeActive", true);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for create_shapes_from_text.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var sourceLayerIndex = ${layerIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedSourceText = ${expectedSourceText === null ? "null" : aeLiteral(expectedSourceText)};
+      var requestedShapeLayerName = ${aeLiteral(shapeLayerName)};
+      var lockCreatedShapeLayer = ${lockCreatedShapeLayer ? "true" : "false"};
+      var makeActive = ${makeActive ? "true" : "false"};
+      var menuCommandName = "Create Shapes from Text";
+
+      function __codexLayerIdKey(layer) {
+        try {
+          if (layer && layer.id !== undefined && layer.id !== null) return String(layer.id);
+        } catch (__layerIdError) {}
+        return null;
+      }
+
+      function __codexSelectedLayerRefs(targetComp) {
+        var selected = [];
+        for (var __s = 0; __s < targetComp.selectedLayers.length; __s++) {
+          var item = targetComp.selectedLayers[__s];
+          selected.push({ index: item.index, id: __codexLayerIdKey(item), name: item.name });
+        }
+        return selected;
+      }
+
+      function __codexIsTextLayer(layer) {
+        if (!layer) return false;
+        try { if (layer instanceof TextLayer) return true; } catch (__textLayerClassError) {}
+        try { return !!layer.property("ADBE Text Properties").property("ADBE Text Document"); } catch (__textLayerPropError) {}
+        return false;
+      }
+
+      function __codexIsShapeLayer(layer) {
+        if (!layer) return false;
+        try { if (layer instanceof ShapeLayer) return true; } catch (__shapeLayerClassError) {}
+        try { return layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerPropError) {}
+        return false;
+      }
+
+      function __codexSourceTextString(layer) {
+        try {
+          var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+          var doc = textProp.value;
+          return doc && doc.text !== undefined && doc.text !== null ? String(doc.text) : "";
+        } catch (__sourceTextError) {
+          return "";
+        }
+      }
+
+      function __codexVectorGroupCount(layer) {
+        try {
+          var root = layer.property("ADBE Root Vectors Group");
+          return root ? root.numProperties : 0;
+        } catch (__vectorGroupError) {
+          return 0;
+        }
+      }
+
+      function __codexFindLayerById(targetComp, idKey) {
+        if (!idKey) return null;
+        for (var __l = 1; __l <= targetComp.numLayers; __l++) {
+          var candidate = targetComp.layer(__l);
+          if (__codexLayerIdKey(candidate) === idKey) return candidate;
+        }
+        return null;
+      }
+
+      var sourceLayer = comp.layer(sourceLayerIndex);
+      if (!sourceLayer) throw new Error("Layer not found at index " + sourceLayerIndex + ".");
+      if (sourceLayer.locked) throw new Error("Source text layer is locked.");
+      if (!__codexIsTextLayer(sourceLayer)) throw new Error("Layer at index " + sourceLayerIndex + " is not a text layer.");
+      if (expectedLayerName && sourceLayer.name !== expectedLayerName) {
+        throw new Error("Source layer name mismatch. Expected '" + expectedLayerName + "' but found '" + sourceLayer.name + "'.");
+      }
+      var sourceTextBefore = __codexSourceTextString(sourceLayer);
+      if (expectedSourceText !== null && sourceTextBefore !== expectedSourceText) {
+        throw new Error("Source Text mismatch. Expected '" + expectedSourceText + "' but found '" + sourceTextBefore + "'.");
+      }
+
+      var commandId = app.findMenuCommandId(menuCommandName);
+      if (!commandId) {
+        throw new Error("AE menu command not available: " + menuCommandName + ".");
+      }
+
+      var beforeLayerCount = comp.numLayers;
+      var beforeIds = {};
+      for (var __before = 1; __before <= comp.numLayers; __before++) {
+        var beforeLayer = comp.layer(__before);
+        var beforeId = __codexLayerIdKey(beforeLayer);
+        if (beforeId) beforeIds[beforeId] = true;
+      }
+      var sourceLayerId = __codexLayerIdKey(sourceLayer);
+      var selectedBefore = __codexSelectedLayerRefs(comp);
+      var response = null;
+
+      app.beginUndoGroup("Codex Create Shapes From Text");
+      try {
+        if (makeActive && comp.openInViewer) comp.openInViewer();
+        for (var __clear = 1; __clear <= comp.numLayers; __clear++) {
+          comp.layer(__clear).selected = false;
+        }
+        sourceLayer.selected = true;
+        app.executeCommand(commandId);
+
+        var createdLayers = [];
+        for (var __after = 1; __after <= comp.numLayers; __after++) {
+          var afterLayer = comp.layer(__after);
+          var afterId = __codexLayerIdKey(afterLayer);
+          if (afterId && !beforeIds[afterId]) createdLayers.push(afterLayer);
+        }
+        if (!createdLayers.length && comp.numLayers > beforeLayerCount) {
+          for (var __delta = 1; __delta <= comp.numLayers - beforeLayerCount; __delta++) {
+            createdLayers.push(comp.layer(__delta));
+          }
+        }
+
+        var createdShapeLayer = null;
+        for (var __created = 0; __created < createdLayers.length; __created++) {
+          if (__codexIsShapeLayer(createdLayers[__created])) {
+            createdShapeLayer = createdLayers[__created];
+            break;
+          }
+        }
+        if (!createdShapeLayer) {
+          throw new Error("Create Shapes from Text did not produce a detectable shape layer.");
+        }
+        if (requestedShapeLayerName) createdShapeLayer.name = requestedShapeLayerName;
+        if (lockCreatedShapeLayer) createdShapeLayer.locked = true;
+
+        var sourceAfter = __codexFindLayerById(comp, sourceLayerId);
+        if (!sourceAfter && expectedLayerName) {
+          for (var __sourceSearch = 1; __sourceSearch <= comp.numLayers; __sourceSearch++) {
+            var sourceCandidate = comp.layer(__sourceSearch);
+            if (sourceCandidate.name === expectedLayerName && __codexIsTextLayer(sourceCandidate)) {
+              sourceAfter = sourceCandidate;
+              break;
+            }
+          }
+        }
+        var selectedAfter = __codexSelectedLayerRefs(comp);
+        var outlineGroupCount = __codexVectorGroupCount(createdShapeLayer);
+
+        response = {
+          comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, numLayers: comp.numLayers },
+          menuCommand: { name: menuCommandName, id: commandId },
+          sourceLayerBefore: {
+            index: sourceLayerIndex,
+            id: sourceLayerId,
+            name: expectedLayerName || sourceLayer.name,
+            text: sourceTextBefore
+          },
+          sourceLayerAfter: sourceAfter ? __codexLayerInfo(sourceAfter) : null,
+          shapeLayer: __codexLayerInfo(createdShapeLayer),
+          outline: { vectorGroupCount: outlineGroupCount },
+          selectedBefore: selectedBefore,
+          selectedAfter: selectedAfter,
+          layerCountBefore: beforeLayerCount,
+          layerCountAfter: comp.numLayers,
+          createdLayerCount: createdLayers.length,
+          postVerification: {
+            ok: __codexIsShapeLayer(createdShapeLayer) && outlineGroupCount > 0 && comp.numLayers > beforeLayerCount,
+            createdShapeLayer: __codexIsShapeLayer(createdShapeLayer),
+            outlineGroupCount: outlineGroupCount,
+            layerCountDelta: comp.numLayers - beforeLayerCount,
+            sourceTextMatched: expectedSourceText === null || sourceTextBefore === expectedSourceText,
+            sourceNameMatched: !expectedLayerName || (sourceAfter && sourceAfter.name === expectedLayerName) || sourceLayer.name === expectedLayerName
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
       return response;
     `);
     return toolResult(result.result);

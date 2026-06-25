@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake text shapes-from-text generated-only lane (2026-06-25):
+  parent-owned milestone for `tool-layers-create-shapes-from-text` added a
+  narrow generated-only text-to-shape contract. The bridge now exposes
+  `create_shapes_from_text`, which targets one explicit text layer, verifies
+  `expectedLayerName` and `expectedSourceText`, invokes only AE's native
+  `Create Shapes from Text` command when available, and returns generated
+  shape-layer/read-back evidence. `get_comp_details`/`get_layer_details` layer
+  metadata now exposes `textLayer`, `shapeLayer`, and `layerKind`. Added
+  semantic verification for `shapeLayer:true`/outline group evidence, generated
+  scenario/report smoke coverage, CEP command
+  `full-ui-agent-text-shapes-openai-cli-smoke`, the
+  `create-shapes-from-text-typed-plan` recipe, generic intake note, solution
+  registry entry, live-lane family `text-shapes-from-text-generated-only`, and
+  runner mapping. Scoped retry with explicit id, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit` mapped the
+  candidate to that lane. Non-live lane validation and read-only CEP preflight
+  passed, but generated-only proof failed with
+  `CEP panel is not connected to the bridge`. The candidate remains freshly
+  terminal/live-blocked under current rules, not completed. Clean compact proof
+  envelope SHA-256:
+  `74f2acd9b5202c134e8a9b8c4e763c511799e69a24a0240c39c4067fc3ce8b45`.
+  No broad queue processing, unscoped candidate selection, dependency change,
+  Local/Ollama, fallback provider, broad/default CEP smoke, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake layer connection-line generated-only lane (2026-06-25):
   parent-owned milestone for `tool-layers-connect-two-layers-with-a-line`
   added a narrow generated-only dynamic connector contract. The bridge now

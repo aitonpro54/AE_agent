@@ -18,6 +18,7 @@ const {
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
+  agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
@@ -33,6 +34,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "create_layer_connection_line",
+  "create_shapes_from_text",
   "export_path_points",
   "set_puppet_pin_type",
   "add_property_to_essential_graphics",
@@ -93,6 +95,9 @@ function layerInfo(name, overrides = {}) {
     id: overrides.id || null,
     name: name || "Layer",
     matchName: overrides.matchName || "ADBE AV Layer",
+    textLayer: overrides.textLayer === undefined ? Boolean(overrides.text) : overrides.textLayer,
+    shapeLayer: overrides.shapeLayer === undefined ? overrides.matchName === "ADBE Vector Layer" : overrides.shapeLayer,
+    layerKind: overrides.layerKind || (overrides.text ? "text" : (overrides.shapeLayer || overrides.matchName === "ADBE Vector Layer" ? "shape" : null)),
     startTime,
     inPoint,
     outPoint,
@@ -193,6 +198,9 @@ function fakeMutationResult(step, state) {
   if (step.tool === "create_text_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, {
       index: 1,
+      matchName: "ADBE Text Layer",
+      textLayer: true,
+      layerKind: "text",
       startTime: args.startTime || 0,
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1),
@@ -200,6 +208,48 @@ function fakeMutationResult(step, state) {
       fontSize: args.fontSize
     }));
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
+  }
+  if (step.tool === "create_shapes_from_text") {
+    const sourceLayer = state.layers.find((layer) => Number(layer.index) === Number(args.layerIndex || 1)) ||
+      layerInfo(args.expectedLayerName || "Text Source", {
+        index: args.layerIndex || 1,
+        matchName: "ADBE Text Layer",
+        textLayer: true,
+        layerKind: "text",
+        text: args.expectedSourceText || "AE"
+      });
+    const beforeCount = state.layers.length;
+    const shapeLayer = insertLayerAtTop(state, layerInfo(args.shapeLayerName || `${sourceLayer.name} Outlines`, {
+      index: 1,
+      matchName: "ADBE Vector Layer",
+      shapeLayer: true,
+      layerKind: "shape",
+      locked: args.lockCreatedShapeLayer === true
+    }));
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      menuCommand: { name: "Create Shapes from Text", id: 3781 },
+      sourceLayerBefore: {
+        index: args.layerIndex || sourceLayer.index,
+        id: sourceLayer.id || null,
+        name: args.expectedLayerName || sourceLayer.name,
+        text: args.expectedSourceText || sourceLayer.text && sourceLayer.text.text || ""
+      },
+      sourceLayerAfter: { ...sourceLayer, index: sourceLayer.index + 1 },
+      shapeLayer,
+      outline: { vectorGroupCount: 2 },
+      layerCountBefore: beforeCount,
+      layerCountAfter: state.layers.length,
+      createdLayerCount: 1,
+      postVerification: {
+        ok: true,
+        createdShapeLayer: true,
+        outlineGroupCount: 2,
+        layerCountDelta: 1,
+        sourceTextMatched: true,
+        sourceNameMatched: true
+      }
+    }, compName, shapeLayer);
   }
   if (step.tool === "create_camera_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, {
@@ -2070,6 +2120,16 @@ function assertLayerConnectionLinePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:locked") >= 0 && check.status === "passed"), "connection line lock check should pass.");
 }
 
+function assertTextShapesPasses() {
+  const [scenario] = agentTextShapesScenarioPlans("Codex Semantic TTS Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_shapes_from_text semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shapes_from_text:shape-layer") >= 0 && check.status === "passed"), "text-to-shape layer check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shapes_from_text:outline-groups") >= 0 && check.status === "passed"), "text-to-shape outline group check should pass.");
+}
+
 function assertProjectItemMetadataPasses() {
   const [scenario] = agentProjectItemMetadataScenarioPlans("Codex Semantic Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -3462,6 +3522,7 @@ function main() {
   assertLayerTrackMatteMissingReadBackNeedsReview();
   assertAdjustmentLayerPlacementPasses();
   assertLayerConnectionLinePasses();
+  assertTextShapesPasses();
   assertProjectItemMetadataPasses();
   assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();

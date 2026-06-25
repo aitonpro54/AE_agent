@@ -11,6 +11,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_adjustment_layer",
   "create_null_layer",
   "create_text_layer",
+  "create_shapes_from_text",
   "create_camera_layer",
   "create_camera_with_controller",
   "toggle_onion_skinning",
@@ -2119,6 +2120,54 @@ function agentLayerConnectionLineScenarioPlans(runPrefix) {
   }));
 }
 
+function agentTextShapesScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Text Shapes`;
+  const compName = `${base} Comp`;
+  const sourceName = `${base} Text`;
+  const shapeName = `${base} Outlines`;
+  const sourceText = "AE";
+
+  return [
+    {
+      id: "generated-text-shapes-from-text",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_text_layer",
+        "get_layer_details",
+        "create_shapes_from_text",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedTextShapesFromText: true,
+        compName,
+        sourceName,
+        shapeName,
+        sourceText,
+        shapeLayerIndex: 1,
+        sourceLayerIndexAfter: 2
+      },
+      plan: {
+        summary: "Generated-only live QA for converting one explicit generated text layer to AE shape outlines.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated text-shapes comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only text to shape outline validation" } },
+          { title: "Create generated source text layer", tool: "create_text_layer", args: { compName, name: sourceName, text: sourceText, position: [320, 190], fontSize: 96, fillColor: [0.94, 0.9, 0.74], duration: 3 } },
+          { title: "Read generated source text before conversion", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } },
+          { title: "Create generated shape outlines from guarded text", tool: "create_shapes_from_text", args: { compName, layerIndex: 1, expectedLayerName: sourceName, expectedSourceText: sourceText, shapeLayerName: shapeName, lockCreatedShapeLayer: false } },
+          { title: "Read generated shape outlines", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 5, propertyLimit: 160, includeValues: false, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentStickEffectExpressionScenarioPlans(runPrefix) {
   const base = `${runPrefix} Stick Effect`;
   const compName = `${base} Comp`;
@@ -4187,6 +4236,7 @@ module.exports = {
   agentSelectedPropertyValueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
   agentStickEffectExpressionScenarioPlans,
+  agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans,
   agentScenarioPlans,
   buildAgentPlannerRegressionCorpus,

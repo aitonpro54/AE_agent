@@ -187,6 +187,7 @@ const AVAILABLE_TOOLS = [
   "create_solid_layer",
   "create_shape_layer",
   "create_layer_connection_line",
+  "create_shapes_from_text",
   "create_adjustment_layer",
   "create_camera_layer",
   "create_camera_with_controller",
@@ -4953,6 +4954,22 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "raw JSX"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "text-shapes-from-text-generated-only", {
+    requiredTools: ["create_shapes_from_text"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-create-shapes-from-text"],
+    scopeIncludes: [
+      "explicit generated text layer",
+      "expectedSourceText",
+      "Create Shapes from Text",
+      "shapeLayer:true",
+      "semantic verification",
+      "cleanup",
+      "localized menu command",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
   assertFirstFourSwitchLane(liveLaneRegistry, "puppet-on-transparent-effect-property-generated-only", {
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     readBackTools: ["get_effect_details", "get_layer_details"],
@@ -5039,6 +5056,17 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /locked/,
     /open two-point shape path/,
     /thin rectangle/,
+    /non-generated user assets/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "create-shapes-from-text-typed-plan", ["get_layer_details", "create_shapes_from_text"], [
+    /generated text layer/,
+    /expectedLayerName/,
+    /expectedSourceText/,
+    /shapeLayerName/,
+    /shapeLayer:true/,
+    /Create Shapes from Text/,
+    /localized menu command/,
     /non-generated user assets/,
     /raw JSX/
   ]);

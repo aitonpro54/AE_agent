@@ -53,6 +53,7 @@ const {
   agentSelectedKeyframeMarkerScenarioPlans,
   agentSelectedPropertyValueScenarioPlans,
   agentStickEffectExpressionScenarioPlans,
+  agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans,
   agentScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -824,6 +825,24 @@ function openAiCliKeyframeScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_KEYFRAMES_PREFIX || "Codex QA AUX083",
     scenarioFactory: agentKeyframeScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliTextShapesScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-text-shapes",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_TEXT_SHAPES_PREFIX || "Codex QA AUX-TTS",
+    scenarioFactory: agentTextShapesScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6955,6 +6974,76 @@ async function verifyGeneratedLayerConnectionLineReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedTextShapesFromTextReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const shapeLayer = layers.find((item) => item.name === expected.shapeName);
+  const sourceLayer = layers.find((item) => item.name === expected.sourceName);
+  if (!shapeLayer || !sourceLayer) {
+    throw new Error(`${scenario.id}: expected text-shape source and generated outline layers were not both found by read-back.`);
+  }
+  if (typeof expected.shapeLayerIndex === "number" && shapeLayer.index !== expected.shapeLayerIndex) {
+    throw new Error(`${scenario.id}: generated outline layer index mismatch; expected ${expected.shapeLayerIndex}, got ${shapeLayer.index}.`);
+  }
+  if (!(shapeLayer.shapeLayer === true || shapeLayer.matchName === "ADBE Vector Layer" || shapeLayer.layerKind === "shape")) {
+    throw new Error(`${scenario.id}: generated outline layer did not read back as a shape layer.`);
+  }
+  if (!(sourceLayer.textLayer === true || sourceLayer.matchName === "ADBE Text Layer" || sourceLayer.layerKind === "text")) {
+    throw new Error(`${scenario.id}: source layer did not read back as a text layer.`);
+  }
+
+  const sourceDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: sourceLayer.index,
+    includeProperties: false
+  });
+  const observedSourceText = sourceTextValue(sourceDetails.text && sourceDetails.text.value !== undefined
+    ? sourceDetails.text.value
+    : sourceDetails.text);
+  if (expected.sourceText && observedSourceText !== expected.sourceText) {
+    throw new Error(`${scenario.id}: source text mismatch; expected ${expected.sourceText}, got ${observedSourceText}.`);
+  }
+
+  const shapeDetails = await callBridgeTool("get_layer_details", {
+    compName: expected.compName,
+    layerIndex: shapeLayer.index,
+    includeProperties: true,
+    propertyDepth: 5,
+    propertyLimit: 160,
+    includeValues: false,
+    includeExpressions: true
+  });
+  const propertyTree = Array.isArray(shapeDetails.propertyTree) ? shapeDetails.propertyTree : [];
+  if (!propertyTree.length) {
+    throw new Error(`${scenario.id}: generated outline shape layer has no property tree read-back.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      numLayers: comp.numLayers
+    },
+    shapeLayer: {
+      index: shapeLayer.index,
+      name: shapeLayer.name,
+      matchName: shapeLayer.matchName,
+      propertyTreeCount: propertyTree.length
+    },
+    sourceLayer: {
+      index: sourceLayer.index,
+      name: sourceLayer.name,
+      text: observedSourceText
+    }
+  };
+}
+
 async function verifyAgentScenarioReadBack(scenario) {
   const expected = scenario.expectedReadBack;
   if (!expected) return null;
@@ -7089,6 +7178,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerConnectionLine) {
     return verifyGeneratedLayerConnectionLineReadBack(scenario, expected);
+  }
+
+  if (expected.generatedTextShapesFromText) {
+    return verifyGeneratedTextShapesFromTextReadBack(scenario, expected);
   }
 
   if (expected.generatedLayerSelection) {
@@ -7909,6 +8002,10 @@ async function main() {
   }
   if (command === "agent-layer-connection-line-openai-cli-smoke" || command === "full-ui-agent-layer-connection-line-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliLayerConnectionLineScenarioConfig());
+    return;
+  }
+  if (command === "agent-text-shapes-openai-cli-smoke" || command === "full-ui-agent-text-shapes-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliTextShapesScenarioConfig());
     return;
   }
   if (command === "agent-layer-selection-openai-cli-smoke" || command === "full-ui-agent-layer-selection-openai-cli-smoke") {

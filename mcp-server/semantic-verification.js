@@ -8,6 +8,7 @@ const MUTATING_TOOLS = new Set([
   "create_solid_layer",
   "create_adjustment_layer",
   "create_text_layer",
+  "create_shapes_from_text",
   "create_camera_layer",
   "create_camera_with_controller",
   "toggle_onion_skinning",
@@ -1986,6 +1987,63 @@ function checkCreateLayerConnectionLine(checks, step, payload, evidence) {
   }
 }
 
+function checkCreateShapesFromText(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const shapeLayer = payload.shapeLayer || payload.layer || {};
+  const sourceLayer = payload.sourceLayerAfter || payload.sourceLayerBefore || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const outline = isPlainObject(payload.outline) ? payload.outline : {};
+  const expectedShapeName = args.shapeLayerName || shapeLayer.name;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, expectedShapeName) ||
+    observedNameEvidence(evidence.all, expectedShapeName);
+
+  checkName(checks, step, args.shapeLayerName, shapeLayer.name, evidence, "Created shape-outline layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:shape-layer`,
+    title: "Text conversion produced a shape layer",
+    expected: "shapeLayer:true with AE vector layer matchName",
+    observed: `shapeLayer:${shapeLayer.shapeLayer === true}; matchName:${shapeLayer.matchName || ""}`,
+    passed: postVerification.ok === true &&
+      postVerification.createdShapeLayer === true &&
+      (shapeLayer.shapeLayer === true || shapeLayer.matchName === "ADBE Vector Layer") &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched the generated shape layer."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:outline-groups`,
+    title: "Generated shape layer contains outline vector groups",
+    expected: "outline vectorGroupCount > 0",
+    observed: `outline vectorGroupCount:${outline.vectorGroupCount ?? postVerification.outlineGroupCount ?? 0}`,
+    passed: postVerification.ok === true &&
+      Number(postVerification.outlineGroupCount || outline.vectorGroupCount || 0) > 0 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No generated shape-outline layer read-back proved vector groups."
+  });
+  if (hasOwn(args, "expectedSourceText")) {
+    const observedText = payload.sourceLayerBefore && hasOwn(payload.sourceLayerBefore, "text")
+      ? payload.sourceLayerBefore.text
+      : sourceLayer.text && sourceLayer.text.text;
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-text-guard`,
+      title: "Source Text guard matched before conversion",
+      expected: args.expectedSourceText,
+      observed: observedText,
+      passed: sameString(observedText, args.expectedSourceText) && postVerification.sourceTextMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+  if (args.expectedLayerName) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-name-guard`,
+      title: "Source text layer name guard matched",
+      expected: args.expectedLayerName,
+      observed: sourceLayer.name || payload.sourceLayerBefore && payload.sourceLayerBefore.name,
+      passed: postVerification.sourceNameMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+}
+
 function exportPathPointsVertices(args) {
   if (Array.isArray(args.vertices)) return args.vertices;
   if (isPlainObject(args.geometry) && Array.isArray(args.geometry.vertices)) return args.geometry.vertices;
@@ -2099,6 +2157,11 @@ function verifyStep(checks, step, evidence) {
         evidence: stepLabel(step)
       });
     }
+    return;
+  }
+
+  if (step.tool === "create_shapes_from_text") {
+    checkCreateShapesFromText(checks, step, payload, evidence);
     return;
   }
 

@@ -782,6 +782,68 @@
       "scope": "generated-only dynamic connector line proof using two explicit inspected layer indices/names, create_layer_connection_line with fromLayerIndex/toLayerIndex and expected-name guards, one locked connector layer generated for the proof, open two-point shape path expression read-back, stroke read-back, semantic verification, and cleanup; source-exact selected-layer traversal, shape contents beyond the connector path, thin rectangle substitution, generic open-path editing, arbitrary expressions, layer stack reordering, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
     },
     {
+      "id": "text-shapes-from-text-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_layer_details",
+        "create_shapes_from_text"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_text_layer",
+        "create_shapes_from_text",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-create-shapes-from-text"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-text-shapes-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "text-shapes-from-text",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/create-shapes-from-text-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-create-shapes-from-text.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only text-to-shape proof using one explicit generated text layer, create_shapes_from_text with expectedLayerName and expectedSourceText guards, AE native Create Shapes from Text command availability check, get_layer_details/get_comp_details read-back proving shapeLayer:true/vector outline groups, semantic verification, and cleanup; localized menu command absence, source-exact broad selected-layer traversal, arbitrary text-layer conversion, font-outline fidelity beyond AE native output, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
+    },
+    {
       "id": "selected-layer-parent-opacity-expression-generated-only",
       "requiredTools": [
         "get_active_comp",
