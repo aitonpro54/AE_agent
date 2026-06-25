@@ -144,6 +144,8 @@ const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
 ];
 const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
   "selected-layer-parent-opacity-expression-generated-only",
+  "selected-layer-parent-below-generated-only",
+  "parent-selected-layers-to-layers-below-typed-plan",
   "layer-track-matte-generated-only",
   "set-all-track-matte-labels-typed-plan",
   "set-track-matte-to-above-typed-plan",
@@ -4766,6 +4768,35 @@ function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistr
   assert(parentLane.scope.includes("layer stack reordering"), `${parentLaneId}: lane must fail closed on broad reorder semantics.`);
   assert(parentLane.scope.includes("non-generated user assets"), `${parentLaneId}: lane must reject non-generated user assets.`);
   assert(parentLane.scope.includes("raw JSX/source semantics"), `${parentLaneId}: lane must reject raw source semantics.`);
+
+  const parentBelowLaneId = "selected-layer-parent-below-generated-only";
+  const parentBelowLane = liveLaneFamilyById(liveLaneRegistry, parentBelowLaneId);
+  assert(parentBelowLane, `Missing first-four layer-below parenting lane: ${parentBelowLaneId}`);
+  assert(parentBelowLane.requiredTools.includes("set_layer_parent"), `${parentBelowLaneId}: lane must require set_layer_parent.`);
+  assert(parentBelowLane.allowedTools.includes("set_layer_selection"), `${parentBelowLaneId}: lane must allow generated selection setup.`);
+  assert(parentBelowLane.readBackTools.includes("get_layer_details"), `${parentBelowLaneId}: lane must read parent links back through get_layer_details.`);
+  assert.strictEqual(parentBelowLane.semanticVerification, true, `${parentBelowLaneId}: lane must require semantic verification.`);
+  assert(parentBelowLane.candidateIds.includes("tool-layers-parent-selected-layers-to-layers-below"), `${parentBelowLaneId}: lane must stay scoped to layer-below candidate.`);
+  assert(parentBelowLane.scope.includes("explicit generated selected child layers"), `${parentBelowLaneId}: lane must bind explicit generated selected children.`);
+  assert(parentBelowLane.scope.includes("child -> below-parent index pairs"), `${parentBelowLaneId}: lane must derive concrete below-parent pairs.`);
+  assert(parentBelowLane.scope.includes("bottom-layer/out-of-range"), `${parentBelowLaneId}: lane must reject bottom-layer/out-of-range targets.`);
+  assert(parentBelowLane.scope.includes("cycles"), `${parentBelowLaneId}: lane must reject cycles.`);
+  assert(parentBelowLane.scope.includes("layer stack reordering"), `${parentBelowLaneId}: lane must reject layer stack reordering.`);
+  assert(parentBelowLane.scope.includes("track matte edits"), `${parentBelowLaneId}: lane must reject track matte edits.`);
+  assert(parentBelowLane.scope.includes("non-generated user assets"), `${parentBelowLaneId}: lane must reject non-generated user assets.`);
+  assert(parentBelowLane.scope.includes("raw JSX/source semantics"), `${parentBelowLaneId}: lane must reject raw source semantics.`);
+
+  const parentBelowRecipe = solutionById(registry, "parent-selected-layers-to-layers-below-typed-plan");
+  assert(parentBelowRecipe, "Missing layer-below parenting recipe: parent-selected-layers-to-layers-below-typed-plan");
+  const parentBelowText = solutionContractText(parentBelowRecipe, recipeText(parentBelowRecipe));
+  assert.strictEqual(parentBelowRecipe.execution.mutating, true, "parent-selected-layers-to-layers-below-typed-plan: must be mutating through set_layer_parent.");
+  assert(parentBelowRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-selected-layers-to-layers-below-typed-plan: must prefer set_layer_parent.");
+  assert(parentBelowText.includes("selectedChildLayerIndices"), "parent-selected-layers-to-layers-below-typed-plan: must bind explicit selected child indices.");
+  assert(parentBelowText.includes("parentPairs") || parentBelowText.includes("parent pairs"), "parent-selected-layers-to-layers-below-typed-plan: must disclose child-parent pairs.");
+  assert(parentBelowText.includes("bottommost") || parentBelowText.includes("bottom-layer"), "parent-selected-layers-to-layers-below-typed-plan: must reject bottom-layer targets.");
+  assert(parentBelowText.includes("cycles"), "parent-selected-layers-to-layers-below-typed-plan: must reject cycles.");
+  assert(parentBelowText.includes("post-mutation read-back"), "parent-selected-layers-to-layers-below-typed-plan: must require read-back.");
+  assertNoRawExecutionGuidance("parent-selected-layers-to-layers-below-typed-plan", parentBelowRecipe, recipeText(parentBelowRecipe));
 
   const trackMatteLaneId = "layer-track-matte-generated-only";
   const trackMatteLane = liveLaneFamilyById(liveLaneRegistry, trackMatteLaneId);

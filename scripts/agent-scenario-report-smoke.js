@@ -37,6 +37,7 @@ const {
   agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
+  agentLayerParentBelowScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
@@ -571,6 +572,29 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(parentOpacity.plan.steps[5].args.layerIndex, 1);
   assert.strictEqual(parentOpacity.plan.steps[5].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(parentOpacity.plan.steps[5].resultBindings, undefined);
+
+  const [layerParentBelow] = agentLayerParentBelowScenarioPlans("Codex QA AUX-LPB Fixture");
+  assert.strictEqual(layerParentBelow.id, "generated-layer-parent-below");
+  assert.strictEqual(layerParentBelow.expectedReadBack.generatedLayerParentBelow, true);
+  assert.deepStrictEqual(layerParentBelow.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "create_shape_layer",
+    "create_shape_layer",
+    "get_comp_details",
+    "set_layer_selection",
+    "get_selected_layers",
+    "set_layer_parent",
+    "get_layer_details",
+    "set_layer_parent",
+    "get_layer_details"
+  ]);
+  assert.deepStrictEqual(layerParentBelow.plan.steps[5].args.layerIndices, [1, 2]);
+  assert.strictEqual(layerParentBelow.plan.steps[7].args.layerIndex, 1);
+  assert.strictEqual(layerParentBelow.plan.steps[7].args.parentLayerIndex, 2);
+  assert.strictEqual(layerParentBelow.plan.steps[9].args.layerIndex, 2);
+  assert.strictEqual(layerParentBelow.plan.steps[9].args.parentLayerIndex, 3);
+  assert.strictEqual(layerParentBelow.plan.steps[7].resultBindings, undefined);
 
   const [layerTrackMatte] = agentLayerTrackMatteScenarioPlans("Codex QA AUX107 Fixture");
   assert.strictEqual(layerTrackMatte.id, "generated-layer-track-matte");

@@ -34,6 +34,7 @@ const {
   agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
+  agentLayerParentBelowScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
@@ -465,6 +466,24 @@ function openAiCliParentOpacityExpressionScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PARENT_OPACITY_PREFIX || "Codex QA AUX105",
     scenarioFactory: agentParentOpacityExpressionScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliLayerParentBelowScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-layer-parent-below",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_LAYER_PARENT_BELOW_PREFIX || "Codex QA AUX-LPB",
+    scenarioFactory: agentLayerParentBelowScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5791,6 +5810,51 @@ async function verifyGeneratedParentOpacityExpressionReadBack(scenario, expected
   };
 }
 
+async function verifyGeneratedLayerParentBelowReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const pairs = Array.isArray(expected.parentPairs) ? expected.parentPairs : [];
+  if (!pairs.length) {
+    throw new Error(`${scenario.id}: no expected layer-below parent pairs were provided.`);
+  }
+
+  const readBackPairs = [];
+  for (const pair of pairs) {
+    const child = layers.find((layer) => layer.name === pair.childName);
+    const parentLayer = layers.find((layer) => layer.name === pair.parentName);
+    if (!child || !parentLayer) {
+      throw new Error(`${scenario.id}: generated child/parent pair was not found for ${pair.childName} -> ${pair.parentName}.`);
+    }
+    const details = await callBridgeTool("get_layer_details", {
+      compItemIndex: compMatch.itemIndex,
+      layerIndex: child.index,
+      includeProperties: false
+    });
+    const parent = details.layer && details.layer.parent ? details.layer.parent : {};
+    if (parent.name !== pair.parentName) {
+      throw new Error(`${scenario.id}: layer-below parent mismatch for ${pair.childName}; expected ${pair.parentName}, got ${parent.name || "none"}.`);
+    }
+    if (Number(parent.index) !== Number(parentLayer.index)) {
+      throw new Error(`${scenario.id}: layer-below parent index mismatch for ${pair.childName}; expected ${parentLayer.index}, got ${parent.index || "none"}.`);
+    }
+    readBackPairs.push({
+      child: { index: child.index, name: child.name },
+      parent: { index: parent.index, name: parent.name }
+    });
+  }
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    pairs: readBackPairs
+  };
+}
+
 async function verifyGeneratedStickEffectExpressionReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const effectDetails = await callBridgeTool("get_effect_details", {
@@ -7208,6 +7272,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedParentOpacityExpressionReadBack(scenario, expected);
   }
 
+  if (expected.generatedLayerParentBelow) {
+    return verifyGeneratedLayerParentBelowReadBack(scenario, expected);
+  }
+
   if (expected.generatedStickEffectExpression) {
     return verifyGeneratedStickEffectExpressionReadBack(scenario, expected);
   }
@@ -7930,6 +7998,10 @@ async function main() {
   }
   if (command === "agent-parent-opacity-expression-openai-cli-smoke" || command === "full-ui-agent-parent-opacity-expression-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliParentOpacityExpressionScenarioConfig());
+    return;
+  }
+  if (command === "agent-layer-parent-below-openai-cli-smoke" || command === "full-ui-agent-layer-parent-below-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliLayerParentBelowScenarioConfig());
     return;
   }
   if (command === "agent-stick-effect-expression-openai-cli-smoke" || command === "full-ui-agent-stick-effect-expression-openai-cli-smoke") {

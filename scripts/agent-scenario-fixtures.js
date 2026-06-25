@@ -1955,6 +1955,70 @@ function agentParentOpacityExpressionScenarioPlans(runPrefix) {
   }));
 }
 
+function agentLayerParentBelowScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Parent Below`;
+  const compName = `${base} Comp`;
+  const bottomName = `${base} Bottom Parent Shape`;
+  const middleName = `${base} Middle Child Shape`;
+  const topName = `${base} Top Child Shape`;
+  const selectedLayerIndices = [1, 2];
+  const selectedLayerNames = [topName, middleName];
+  const parentPairs = [
+    { childLayerIndex: 1, childName: topName, parentLayerIndex: 2, parentName: middleName },
+    { childLayerIndex: 2, childName: middleName, parentLayerIndex: 3, parentName: bottomName }
+  ];
+
+  return [
+    {
+      id: "generated-layer-parent-below",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "create_shape_layer",
+        "create_shape_layer",
+        "get_comp_details",
+        "set_layer_selection",
+        "get_selected_layers",
+        "set_layer_parent",
+        "get_layer_details",
+        "set_layer_parent",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedLayerParentBelow: true,
+        compName,
+        selectedLayerIndices,
+        selectedLayerNames,
+        parentPairs
+      },
+      plan: {
+        summary: "Generated-only live QA for parenting selected layers to the layers directly below them with explicit read-back.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated layer-below parenting comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "Generated-only layer-below parenting validation" } },
+          { title: "Create generated bottom parent shape", tool: "create_shape_layer", args: { compName, name: bottomName, shape: "rectangle", size: [220, 120], position: [320, 245], fillColor: [0.2, 0.42, 0.72], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated middle child shape", tool: "create_shape_layer", args: { compName, name: middleName, shape: "ellipse", size: [170, 110], position: [320, 180], fillColor: [0.72, 0.48, 0.22], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Create generated top child shape", tool: "create_shape_layer", args: { compName, name: topName, shape: "rectangle", size: [150, 90], position: [320, 115], fillColor: [0.34, 0.7, 0.46], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Read generated layer-below stack", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Select generated child layers explicitly", tool: "set_layer_selection", args: { compName, layerIndices: selectedLayerIndices, expectedLayerNames: selectedLayerNames, makeActive: true } },
+          { title: "Read generated selected child layers", tool: "get_selected_layers", args: {} },
+          { title: "Parent generated top child to layer below", tool: "set_layer_parent", args: { compName, layerIndex: 1, parentLayerIndex: 2, expectedLayerName: topName, expectedParentName: middleName } },
+          { title: "Read generated top child parent", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Parent generated middle child to layer below", tool: "set_layer_parent", args: { compName, layerIndex: 2, parentLayerIndex: 3, expectedLayerName: middleName, expectedParentName: bottomName } },
+          { title: "Read generated middle child parent", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentLayerTrackMatteScenarioPlans(runPrefix) {
   const base = `${runPrefix} Track Matte`;
   const compName = `${base} Comp`;
@@ -4214,6 +4278,7 @@ module.exports = {
   agentLayerConnectionLineScenarioPlans,
   agentLayerEnabledHardSoloScenarioPlans,
   agentLayerMetadataScenarioPlans,
+  agentLayerParentBelowScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerSwitchScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
