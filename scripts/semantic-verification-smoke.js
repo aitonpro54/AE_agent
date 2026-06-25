@@ -40,6 +40,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "create_layer_connection_line",
   "create_shapes_from_text",
   "export_path_points",
+  "save_comp_frame_png",
   "set_puppet_pin_type",
   "set_effect_enabled",
   "add_property_to_essential_graphics",
@@ -2850,6 +2851,94 @@ function assertExportPathPointsMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points per-step file check should pass.");
 }
 
+function assertSaveCompFramePngPasses() {
+  const plan = {
+    summary: "Save one generated composition frame to a sandboxed PNG.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Read generated comp before frame save",
+        tool: "get_comp_details",
+        args: { compName: "Frame Fixture", includeLayers: true }
+      },
+      {
+        title: "Save generated comp frame as PNG",
+        tool: "save_comp_frame_png",
+        args: {
+          compName: "Frame Fixture",
+          expectedCompName: "Frame Fixture",
+          time: 0.5,
+          outputFileName: "semantic-frame.png",
+          resolutionFactor: [1, 1]
+        }
+      },
+      {
+        title: "Read generated comp after frame save",
+        tool: "get_comp_details",
+        args: { compName: "Frame Fixture", includeLayers: true }
+      }
+    ]
+  };
+  const compResult = {
+    itemIndex: 8,
+    name: "Frame Fixture",
+    width: 640,
+    height: 360,
+    duration: 3,
+    frameRate: 24,
+    numLayers: 1,
+    layers: [layerInfo("Frame Shape")]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "get_comp_details",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: compResult
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "save_comp_frame_png",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          comp: { itemIndex: 8, name: "Frame Fixture", width: 640, height: 360, duration: 3, frameRate: 24, time: 0, numLayers: 1 },
+          frame: { time: 0.5, frameNumber: 12 },
+          resolutionFactor: { before: [1, 1], applied: [1, 1], after: [1, 1], restored: true },
+          file: {
+            outputFileName: "semantic-frame.png",
+            outputPath: "logs/generated-exports/semantic-frame.png",
+            byteLength: 256,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true,
+            mimeType: "image/png"
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 3,
+        title: plan.steps[2].title,
+        tool: "get_comp_details",
+        status: "completed",
+        args: plan.steps[2].args,
+        result: compResult
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `save_comp_frame_png semantic verification should pass with post-export comp read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("save_comp_frame_png:file") >= 0 && check.status === "passed"), "save_comp_frame_png file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("save_comp_frame_png:resolution-factor") >= 0 && check.status === "passed"), "save_comp_frame_png resolution restoration check should pass.");
+}
+
 function assertDakkshinFixtureMutationScopedReadBackPasses() {
   const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -3683,6 +3772,7 @@ function main() {
   assertSetPathGeometryMissingReadBackNeedsReview();
   assertExportPathPointsPasses();
   assertExportPathPointsMissingReadBackNeedsReview();
+  assertSaveCompFramePngPasses();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();

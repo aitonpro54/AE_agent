@@ -38,6 +38,7 @@ const IMPORTED_ADVISORY_IDS = [
   "estimate-path-length-typed-plan",
   "flip-path-typed-plan",
   "export-path-points-typed-plan",
+  "save-frame-as-png-typed-plan",
   "add-properties-to-essential-graphics-typed-plan",
   "expose-essential-properties-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
@@ -140,6 +141,7 @@ const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
 const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
   "project-file-render-proxy-safety-policy",
   "export-path-points-typed-plan",
+  "save-frame-as-png-typed-plan",
   "add-folder-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan"
@@ -214,6 +216,7 @@ const AVAILABLE_TOOLS = [
   "get_path_geometry",
   "set_path_geometry",
   "export_path_points",
+  "save_comp_frame_png",
   "align_layers_to_time",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -1008,6 +1011,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /export_path_points/.test(note)), `${id}: notes must require generated file export.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Export_Path_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "save-frame-as-png-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "save_comp_frame_png"],
+        `${id}: save-frame workflow should stay on explicit comp read plus generated PNG export typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: save-frame workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require composition read-back.`);
+      assert(text.includes("save_comp_frame_png"), `${id}: recipe should use the generated frame PNG typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("resolutionFactor"), `${id}: recipe should require resolutionFactor restoration evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /save_comp_frame_png/.test(step)), `${id}: verification must include save_comp_frame_png.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /resolutionFactor/.test(item)), `${id}: verification must require resolutionFactor evidence.`);
+      assert(solution.notes.some((note) => /save_comp_frame_png/.test(note)), `${id}: notes must require generated PNG file export.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Save_Frame_As_PNG/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-properties-to-essential-graphics-typed-plan") {
       assert.deepStrictEqual(
@@ -3306,6 +3330,23 @@ function assertActualRetrieval(registry) {
   assert(exportPathPointsPromptSection.includes("sha256"), "prompt section should require hash evidence.");
   assert(!/run_extendscript/i.test(exportPathPointsPromptSection), "export-path-points guidance should not recommend raw ExtendScript.");
 
+  const saveFramePngRetrieval = retrieveSolutionHints("Save the current frame from a generated composition to a PNG file under the generated export folder after get_comp_details read-back, using save_comp_frame_png, sha256 evidence, and resolutionFactor restoration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(saveFramePngRetrieval.ok, true);
+  assert(ids(saveFramePngRetrieval).includes("save-frame-as-png-typed-plan"), "save-frame PNG advisory recipe should surface for generated frame PNG export prompts.");
+  const saveFramePngPromptSection = formatSolutionHintsForPrompt(saveFramePngRetrieval);
+  assert(saveFramePngPromptSection.includes("Save Frame As PNG Typed Plan"), "prompt section should include save-frame PNG advisory title.");
+  assert(saveFramePngPromptSection.includes("get_comp_details"), "prompt section should require comp read-back.");
+  assert(saveFramePngPromptSection.includes("save_comp_frame_png"), "prompt section should prefer save_comp_frame_png for generated PNG output.");
+  assert(saveFramePngPromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(saveFramePngPromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(saveFramePngPromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(saveFramePngPromptSection.includes("resolutionFactor"), "prompt section should require resolution restoration evidence.");
+  assert(!/run_extendscript/i.test(saveFramePngPromptSection), "save-frame PNG guidance should not recommend raw ExtendScript.");
+
   const essentialGraphicsRetrieval = retrieveSolutionHints("Add a generated layer opacity property to Essential Graphics after reading motion graphics template controllers, using add_property_to_essential_graphics with an explicit propertyPath and reading controllers back.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -4800,6 +4841,15 @@ function assertFirstFourFileRenderProxyContracts(registry) {
       assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
       assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
       assert(contractText.includes("Post-export get_path_geometry"), `${id}: export must require post-export geometry read-back.`);
+    } else if (id === "save-frame-as-png-typed-plan") {
+      assert(solution.execution.preferredTools.includes("save_comp_frame_png"), `${id}: generated PNG export must use save_comp_frame_png.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".png"), `${id}: export must require a simple generated PNG filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(/post-export.*get_comp_details/i.test(contractText), `${id}: export must require post-export comp read-back.`);
+      assert(contractText.includes("resolutionFactor"), `${id}: export must require resolutionFactor restoration proof.`);
     } else {
       assert(solution.tags.includes("render-queue"), `${id}: render setup contract must stay tagged as render-queue.`);
       assert(solution.execution.preferredTools.includes("add_comp_to_render_queue"), `${id}: render setup must add explicit comps to the queue.`);
@@ -5192,6 +5242,23 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "unsaved project",
       "arbitrary filesystem reads/writes",
       "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-save-frame-png-generated-only", {
+    requiredTools: ["save_comp_frame_png"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-compositions-save-frame-as-png"],
+    scopeIncludes: [
+      "saveFrameToPng",
+      "generated composition",
+      "logs/generated-exports",
+      "sha256",
+      "resolutionFactor",
+      "semantic verification",
+      "cleanup",
+      "Desktop",
+      "arbitrary user paths",
       "raw JSX"
     ]
   });

@@ -876,6 +876,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
@@ -2286,12 +2287,18 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
-  if (toolName === "export_path_points") {
+  if (toolName === "export_path_points" || toolName === "save_comp_frame_png") {
     const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
     const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
     const byteLength = Number(file.byteLength || 0);
+    const restoration = payload && typeof payload === "object" && !Array.isArray(payload)
+      ? payload.resolutionFactor || {}
+      : {};
+    const restored = toolName === "save_comp_frame_png"
+      ? restoration.restored === true
+      : true;
     return {
-      ok: hashOk && byteLength > 0,
+      ok: hashOk && byteLength > 0 && restored,
       checkedAt: new Date().toISOString(),
       target: {
         tool: toolName,
@@ -2304,7 +2311,8 @@ async function verifyMutationResult(toolName, args, payload) {
         existsAfter: file.existsAfter === true,
         deletedAfterReadBack: file.deletedAfterReadBack === true
       },
-      warnings: hashOk && byteLength > 0 ? [] : ["Generated export file read-back did not include a valid sha256 and byteLength."]
+      resolutionFactor: toolName === "save_comp_frame_png" ? restoration : null,
+      warnings: hashOk && byteLength > 0 && restored ? [] : ["Generated export file read-back did not include a valid sha256/byteLength or resolutionFactor restoration evidence."]
     };
   }
 
@@ -2556,6 +2564,34 @@ function resolveGeneratedExportFile(outputFileName) {
     throw new Error("outputFileName must resolve inside the generated export folder.");
   }
   return { outputFileName: requestedName, resolvedPath };
+}
+
+function resolveGeneratedPngExportFile(outputFileName) {
+  const requestedName = optionalString({ outputFileName }, "outputFileName", "frame.png") || "frame.png";
+  if (path.isAbsolute(requestedName) || requestedName.includes("/") || requestedName.includes("\\")) {
+    throw new Error("outputFileName must be a simple generated .png filename, not a path.");
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}\.png$/i.test(requestedName)) {
+    throw new Error("outputFileName must be 1-96 safe characters ending in .png.");
+  }
+
+  const resolvedPath = path.resolve(GENERATED_EXPORT_DIR, requestedName);
+  if (!isPathInside(GENERATED_EXPORT_DIR, resolvedPath)) {
+    throw new Error("outputFileName must resolve inside the generated export folder.");
+  }
+  return { outputFileName: requestedName, resolvedPath };
+}
+
+function optionalResolutionFactor(args, name) {
+  const values = optionalNumberArray(args || {}, name, null, 2, 2);
+  if (!values) return null;
+  return values.map((value) => {
+    const normalized = Math.floor(value);
+    if (!Number.isInteger(normalized) || normalized < 1 || normalized > 99) {
+      throw new Error(`${name} values must be integers from 1 through 99.`);
+    }
+    return normalized;
+  });
 }
 
 function pathPointsGeometryFromArgs(args) {
@@ -4337,6 +4373,7 @@ const PLANNING_TOOL_NAMES = [
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
@@ -6302,7 +6339,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For explicit effect enabled-state changes, use set_effect_enabled only after list_effects or get_effect_details identifies one effect instance by effectIndex, effectName, or effectMatchName and current enabled state. Prefer explicit enabled:true/false over ambiguous toggle wording, and read back with get_effect_details/get_layer_details. Do not scan all project comps, mutate unreviewed user effects, edit effect properties, or use raw ExtendScript.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For camera, text, shape, mask, comp-frame export, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, save_comp_frame_png, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Use save_comp_frame_png only for explicit generated compositions, reviewed frame time, and simple .png output names under the generated export root; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
     "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
@@ -8236,6 +8273,50 @@ const tools = [
         deleteAfterReadBack: {
           type: "boolean",
           description: "When true, write and read/hash the generated file, then delete it for generated proof cleanup. Defaults to false."
+        }
+      }
+    }
+  },
+  {
+    name: "save_comp_frame_png",
+    description: "Save one frame from an explicit generated composition to a generated PNG under logs/generated-exports, then return byte/hash read-back and resolutionFactor restoration evidence. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp when compName is not provided."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        expectedCompName: {
+          type: "string",
+          description: "Optional guard; fails if the resolved composition name differs."
+        },
+        time: {
+          type: "number",
+          description: "Composition time in seconds to save. Defaults to the current comp time."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Simple generated .png filename only, not a path. The file is written under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR."
+        },
+        resolutionFactor: {
+          type: "array",
+          description: "Optional [x, y] resolution factor to apply only for the save, then restore. Defaults to [1, 1].",
+          items: { type: "number" },
+          minItems: 2,
+          maxItems: 2
+        },
+        allowOverwrite: {
+          type: "boolean",
+          description: "When true, allows replacing an existing generated .png with the same simple filename. Defaults to false."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, save, read/hash, then delete the generated PNG for proof cleanup. Defaults to false."
         }
       }
     }
@@ -12499,6 +12580,125 @@ async function callTool(name, args) {
   if (name === "export_path_points") {
     try {
       return toolResult(exportPathPointsFile(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "save_comp_frame_png") {
+    try {
+      const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+      const compName = optionalString(args, "compName", "");
+      const expectedCompName = optionalString(args, "expectedCompName", "");
+      const requestedTime = hasArg(args, "time") ? optionalNumber(args, "time", 0) : null;
+      const resolutionFactor = optionalResolutionFactor(args, "resolutionFactor") || [1, 1];
+      const deleteAfterReadBack = optionalBoolean(args, "deleteAfterReadBack", false);
+      const allowOverwrite = optionalBoolean(args, "allowOverwrite", false);
+      const output = resolveGeneratedPngExportFile(optionalString(args, "outputFileName", "frame.png"));
+
+      if (requestedTime !== null && requestedTime < 0) {
+        return toolResult("time must be greater than or equal to 0 seconds.", true);
+      }
+      if (fs.existsSync(output.resolvedPath)) {
+        if (!allowOverwrite) {
+          return toolResult("Generated PNG output already exists. Use a unique outputFileName or allowOverwrite:true.", true);
+        }
+        fs.unlinkSync(output.resolvedPath);
+      }
+      fs.mkdirSync(path.dirname(output.resolvedPath), { recursive: true });
+
+      const result = await runExtendScriptBody(`
+        ${resolveCompScript}
+        var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+        var expectedCompName = ${aeLiteral(expectedCompName)};
+        if (expectedCompName && comp.name !== expectedCompName) {
+          throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
+        }
+        if (typeof comp.saveFrameToPng !== "function") {
+          throw new Error("CompItem.saveFrameToPng is not available in this After Effects host.");
+        }
+
+        var requestedTime = ${requestedTime === null ? "null" : JSON.stringify(requestedTime)};
+        var saveTime = requestedTime === null ? comp.time : requestedTime;
+        if (saveTime < 0 || saveTime > comp.duration) {
+          throw new Error("time must be inside the composition duration.");
+        }
+
+        var outputFile = new File(${aeLiteral(output.resolvedPath)});
+        var originalResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
+        var targetResolutionFactor = ${aeLiteral(resolutionFactor)};
+        var restoredResolutionFactor = null;
+        var saved = false;
+        try {
+          comp.resolutionFactor = targetResolutionFactor;
+          comp.saveFrameToPng(saveTime, outputFile);
+          saved = outputFile.exists === true;
+        } finally {
+          comp.resolutionFactor = originalResolutionFactor;
+          restoredResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
+        }
+        if (!saved) {
+          throw new Error("saveFrameToPng did not create the generated PNG file.");
+        }
+
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name,
+            width: comp.width,
+            height: comp.height,
+            duration: comp.duration,
+            frameRate: comp.frameRate,
+            time: comp.time,
+            numLayers: comp.numLayers
+          },
+          frame: {
+            time: saveTime,
+            frameNumber: Math.round(saveTime * comp.frameRate)
+          },
+          resolutionFactor: {
+            before: originalResolutionFactor,
+            applied: targetResolutionFactor,
+            after: restoredResolutionFactor,
+            restored: restoredResolutionFactor[0] === originalResolutionFactor[0] && restoredResolutionFactor[1] === originalResolutionFactor[1]
+          },
+          postVerification: {
+            outputFileExists: outputFile.exists === true,
+            resolutionFactorRestored: restoredResolutionFactor[0] === originalResolutionFactor[0] && restoredResolutionFactor[1] === originalResolutionFactor[1]
+          }
+        };
+      `);
+
+      if (result && result.ok === false) {
+        return toolResult(result.error || "save_comp_frame_png failed.", true);
+      }
+      if (!fs.existsSync(output.resolvedPath)) {
+        return toolResult("Generated PNG output was not found after saveFrameToPng.", true);
+      }
+
+      const bytes = fs.readFileSync(output.resolvedPath);
+      const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
+      const existsBeforeCleanup = fs.existsSync(output.resolvedPath);
+      let existsAfter = existsBeforeCleanup;
+      if (deleteAfterReadBack) {
+        fs.unlinkSync(output.resolvedPath);
+        existsAfter = fs.existsSync(output.resolvedPath);
+      }
+
+      const payload = result.result || {};
+      payload.outputFileName = output.outputFileName;
+      payload.outputPath = output.resolvedPath;
+      payload.generatedExportDir = GENERATED_EXPORT_DIR;
+      payload.file = {
+        outputFileName: output.outputFileName,
+        outputPath: output.resolvedPath,
+        byteLength: bytes.length,
+        sha256,
+        existsAfter,
+        deletedAfterReadBack: deleteAfterReadBack,
+        mimeType: "image/png"
+      };
+      return toolResult(payload);
     } catch (error) {
       return toolResult(error.message || String(error), true);
     }

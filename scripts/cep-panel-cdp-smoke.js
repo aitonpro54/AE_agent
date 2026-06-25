@@ -9,6 +9,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionRenameFileNameScenarioPlans,
+  agentCompositionSaveFramePngScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
@@ -381,6 +382,24 @@ function openAiCliCompositionRenameFileNameScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_RENAME_FILE_NAME_PREFIX || "Codex QA AUX-CRFN",
     scenarioFactory: agentCompositionRenameFileNameScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliCompositionSaveFramePngScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-composition-save-frame-png",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_COMPOSITION_SAVE_FRAME_PNG_PREFIX || "Codex QA AUX-CSFP",
+    scenarioFactory: agentCompositionSaveFramePngScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7040,6 +7059,50 @@ async function verifyGeneratedPathPointsExportReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedCompFramePngExportReadBack(scenario, expected) {
+  const generatedExportDir = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+    ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+    : path.join(__dirname, "..", "logs", "generated-exports");
+  const outputPath = path.join(generatedExportDir, expected.outputFileName);
+  if (!fs.existsSync(outputPath)) {
+    throw new Error(`${scenario.id}: generated comp-frame PNG export file was not found: ${outputPath}`);
+  }
+  const stat = fs.statSync(outputPath);
+  if (!stat.isFile() || stat.size <= 0) {
+    throw new Error(`${scenario.id}: generated comp-frame PNG export file was empty or not a file.`);
+  }
+
+  const header = fs.readFileSync(outputPath).slice(0, 8);
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (!header.equals(pngSignature)) {
+    throw new Error(`${scenario.id}: generated comp-frame export did not have a PNG signature.`);
+  }
+
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layer = (Array.isArray(comp.layers) ? comp.layers : []).find((item) => item.name === expected.layerName);
+  if (!layer || !layer.index) {
+    throw new Error(`${scenario.id}: generated frame content layer ${expected.layerName} was not found by read-back.`);
+  }
+
+  try {
+    fs.unlinkSync(outputPath);
+  } catch (_error) {}
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name },
+    outputFileName: expected.outputFileName,
+    bytes: stat.size,
+    removedGeneratedExport: !fs.existsSync(outputPath)
+  };
+}
+
 async function verifyCameraReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -7319,6 +7382,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedPathPointsExport) {
     return verifyGeneratedPathPointsExportReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCompFramePngExport) {
+    return verifyGeneratedCompFramePngExportReadBack(scenario, expected);
   }
 
   if (expected.cameraReadBack) {
@@ -8163,6 +8230,10 @@ async function main() {
   }
   if (command === "agent-comp-rename-file-name-openai-cli-smoke" || command === "full-ui-agent-comp-rename-file-name-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliCompositionRenameFileNameScenarioConfig());
+    return;
+  }
+  if (command === "agent-comp-save-frame-png-openai-cli-smoke" || command === "full-ui-agent-comp-save-frame-png-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliCompositionSaveFramePngScenarioConfig());
     return;
   }
   if (command === "agent-render-queue-openai-cli-smoke" || command === "full-ui-agent-render-queue-openai-cli-smoke") {

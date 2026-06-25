@@ -4727,6 +4727,120 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "save-frame-as-png-typed-plan",
+      "title": "Save Frame As PNG Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "generated-composition",
+        "file-output",
+        "png",
+        "save-frame",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Save one generated comp frame PNG to logs/generated-exports; reject Desktop paths; require sha256 and resolutionFactor restore.",
+        "appliesWhen": [
+          "The user asks to save a composition frame as PNG and accepts generated-output scoping.",
+          "One generated composition target and frame time are bound by current typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComp",
+          "type": "comp",
+          "required": true,
+          "description": "Exactly one generated composition from current get_active_comp or get_comp_details evidence."
+        },
+        {
+          "name": "frameTime",
+          "type": "number",
+          "required": true,
+          "description": "Finite composition time in seconds to save, reviewed against the composition duration."
+        },
+        {
+          "name": "outputFileName",
+          "type": "string",
+          "required": true,
+          "description": "Simple generated .png filename, not a path."
+        }
+      ],
+      "targetAssumptions": [
+        "The target composition is generated or explicitly reviewed before export.",
+        "The workflow writes only to the bridge generated export root.",
+        "The workflow records byte length, sha256, PNG mime evidence and resolutionFactor restoration.",
+        "Current typed tools do not expose Folder.selectDialog, Shift-key state, or source-exact settings persistence.",
+        "Existing comp identity, dimensions, duration, frame rate, layer count, render queue items, project save state and non-generated user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/save-frame-as-png-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "save_comp_frame_png"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read one generated composition, save one reviewed frame to logs/generated-exports PNG with sha256 and resolutionFactor restore, then read the composition back.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to bind one explicit generated composition target.",
+          "Review the frame time, simple .png outputFileName, generated export root and resolutionFactor.",
+          "Run save_comp_frame_png with compName or compItemIndex, expectedCompName, time, outputFileName and reviewed resolutionFactor.",
+          "Run get_comp_details after export; fail closed if user-selected folders, Desktop writes, settings persistence, render start, project save/saveAs, non-generated user assets, or exact source JSX behavior are required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies exactly one generated composition target and reviewed frame time.",
+          "save_comp_frame_png reports outputFileName, generated outputPath, byteLength, sha256 and mimeType image/png.",
+          "save_comp_frame_png reports resolutionFactor.restored:true after the frame output.",
+          "Post-run get_comp_details shows unchanged comp identity, dimensions, duration, frame rate and layer count.",
+          "Post-run evidence shows no Desktop/user path output, render queue start, project save/saveAs, source relink, broad traversal, raw JSX or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-compositions-save-frame-as-png generic repository importer as advisory typed-plan coverage for generated composition frame PNG output.",
+          "The generated-only lane is candidate-id-gated and uses get_active_comp, get_comp_details and save_comp_frame_png; parent importer owns validation plus live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-compositions-save-frame-as-png",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the safe frame-output idea behind kyletmartinez/after-effects-scripts Compositions/Save_Frame_As_PNG.jsx into a generated-only typed tool, save_comp_frame_png, with simple .png output under logs/generated-exports, byte length and sha256 read-back, PNG mime evidence, resolutionFactor restoration proof and post-export get_comp_details read-back; no source JSX copied. Folder.selectDialog, source-exact app.settings/app.preferences persistence, Shift-key branching, Desktop/user-selected paths, render queue start, project save/saveAs, non-generated user assets and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use save_comp_frame_png only with an explicit generated composition and reviewed frame time.",
+        "File output stays under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR; Desktop/user paths and arbitrary overwrite are rejected.",
+        "Require current get_comp_details evidence before file output and after file output; do not infer targets from Project panel selection or prior chat context.",
+        "Require a separate typed-tool contract for user-selected output folders, source-exact settings persistence, Shift-key semantics, render start, project save/saveAs or exact source JSX behavior.",
+        "Do not use this recipe for render queue rendering, proxy changes, project-item cleanup, source relinking, non-generated user-asset mutation, arbitrary filesystem writes or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-composition-guide-typed-plan",
       "title": "Add Composition Guide Typed Plan",
       "status": "recipe",

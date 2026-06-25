@@ -26,6 +26,43 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake composition save-frame PNG generated-output lane
+  (2026-06-26): parent-owned milestone for
+  `tool-compositions-save-frame-as-png` replaced the old approval-gated
+  `usesFileIo,usesSettings` terminal state with a narrow generated-output
+  contract. Added typed bridge tool `save_comp_frame_png`, which targets one
+  explicit generated composition, writes only a simple `.png` under
+  `logs/generated-exports` / `AE_AGENT_GENERATED_EXPORT_DIR`, returns
+  byte-length, `sha256`, PNG mime evidence, frame-time evidence and
+  `resolutionFactor` restoration, then requires post-export `get_comp_details`
+  read-back. Added `save-frame-as-png-typed-plan`, generic intake note,
+  solution registry entry, solution-library/retrieval coverage, semantic
+  verification coverage, scenario/report smoke coverage, CEP command
+  `full-ui-agent-comp-save-frame-png-openai-cli-smoke`, live-lane family
+  `composition-save-frame-png-generated-only`, runner mapping and bridge catalog
+  coverage. Source-exact `Folder.selectDialog`,
+  `app.settings/app.preferences`, Shift-key branching, Desktop/user paths,
+  render queue start, project save/saveAs, arbitrary filesystem writes,
+  non-generated user assets and raw JSX remain fail-closed. Scoped retry with
+  explicit id, `--max-items 1`, `--allow-self-improvement-lane-synthesis` and
+  `--no-commit` synthesized the new lane, ran non-live lane validation, ran
+  read-only CEP preflight, and failed the generated-only live proof with
+  `CEP panel is not connected to the bridge`. Candidate remains freshly
+  terminal/live-blocked, not completed. Compact proof envelope SHA-256:
+  `d73162f9c3f92ca3d946109e4f48f56e8deb82a5c69fbe05e45472e35c60f814`.
+  Closeout validation passed: touched-file `node --check`,
+  JSON parse for solution/live-lane registries,
+  `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped candidate selection,
+  dependency change, Local/Ollama, fallback provider, broad/default CEP smoke,
+  raw JSX copy, source-checkout execution, user path write, render execution,
+  non-generated user-asset mutation, launcher edit, push, or PR was run.
+
 - [x] Full Intake composition rename-to-file-name generated-only lane
   (2026-06-26): parent-owned milestone for
   `tool-compositions-rename-composition-to-file-name` added candidate-specific

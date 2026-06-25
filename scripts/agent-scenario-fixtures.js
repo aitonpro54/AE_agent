@@ -56,6 +56,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "save_comp_frame_png",
   "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
@@ -1642,6 +1643,54 @@ function agentCompositionRenameFileNameScenarioPlans(runPrefix) {
           { title: "Rename generated comp to reviewed file basename", tool: "rename_project_items", args: { itemIndices: "{{steps.3.result}}", type: "comp", mode: "exact", name: projectFileBasename, limit: 1 } },
           { title: "Find generated comp after basename rename", tool: "find_project_items", args: { query: projectFileBasename, type: "comp", exactName: true, limit: 1, caseSensitive: true } },
           { title: "Read generated comp after basename rename", tool: "get_comp_details", args: { compName: projectFileBasename, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentCompositionSaveFramePngScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Composition Save Frame PNG`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const outputFileName = `${safeOutputName(base)}-frame.png`;
+  const frameTime = 0.5;
+
+  return [
+    {
+      id: "generated-composition-save-frame-png",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "get_comp_details",
+        "save_comp_frame_png",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedCompFramePngExport: true,
+        base,
+        compName,
+        layerName,
+        outputFileName,
+        frameTime,
+        resolutionFactor: [1, 1]
+      },
+      plan: {
+        summary: "Generated-only live QA for saving one explicit composition frame to a sandboxed PNG output.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated comp for frame PNG export", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.05, 0.06], allowDuplicateName: false, openInViewer: true, comment: "generated-only composition save-frame PNG validation" } },
+          { title: "Create visible generated frame content", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [300, 160], position: [320, 180], fillColor: [0.2, 0.6, 0.85], strokeColor: [1, 1, 1], strokeWidth: 4, duration: 3 } },
+          { title: "Read generated comp before frame export", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Save generated comp frame to sandboxed PNG", tool: "save_comp_frame_png", args: { compName, expectedCompName: compName, time: frameTime, outputFileName, resolutionFactor: [1, 1], allowOverwrite: true } },
+          { title: "Read generated comp after frame export", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } }
         ]
       }
     }
@@ -4474,6 +4523,7 @@ module.exports = {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionRenameFileNameScenarioPlans,
+  agentCompositionSaveFramePngScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,

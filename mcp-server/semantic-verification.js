@@ -26,6 +26,7 @@ const MUTATING_TOOLS = new Set([
   "create_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "save_comp_frame_png",
   "set_puppet_pin_type",
   "set_effect_enabled",
   "add_property_to_essential_graphics",
@@ -2199,6 +2200,46 @@ function checkExportPathPoints(checks, step, payload) {
   });
 }
 
+function checkSaveCompFramePng(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const comp = isPlainObject(payload.comp) ? payload.comp : {};
+  const frame = isPlainObject(payload.frame) ? payload.frame : {};
+  const resolutionFactor = isPlainObject(payload.resolutionFactor) ? payload.resolutionFactor : {};
+  const expectedFileName = args.outputFileName || "frame.png";
+  const expectedCompName = args.expectedCompName || args.compName || "";
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const byteLength = Number(file.byteLength || 0);
+  const requestedTime = hasOwn(args, "time") ? Number(args.time) : null;
+  const observedTime = Number(frame.time);
+  const timeMatches = requestedTime === null || (Number.isFinite(observedTime) && nearlyEqual(observedTime, requestedTime, 0.0001));
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated composition frame PNG was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${byteLength}; sha256=${hashOk}`,
+    passed: file.outputFileName === expectedFileName && byteLength > 0 && hashOk && String(file.mimeType || "") === "image/png",
+    evidence: file.outputPath || "No generated PNG file evidence."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:resolution-factor`,
+    title: "Composition resolutionFactor was restored after frame export",
+    expected: stableStringify(resolutionFactor.before || []),
+    observed: stableStringify(resolutionFactor.after || []),
+    passed: resolutionFactor.restored === true,
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:target`,
+    title: "Saved frame target matches explicit composition and time",
+    expected: `${expectedCompName || "explicit comp"} at ${requestedTime === null ? "current time" : requestedTime}`,
+    observed: `${comp.name || "missing comp"} at ${Number.isFinite(observedTime) ? observedTime : "missing time"}`,
+    passed: (!expectedCompName || comp.name === expectedCompName) && timeMatches,
+    evidence: stepLabel(step)
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
@@ -2587,6 +2628,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "export_path_points") {
     checkExportPathPoints(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "save_comp_frame_png") {
+    checkSaveCompFramePng(checks, step, payload);
     return;
   }
 

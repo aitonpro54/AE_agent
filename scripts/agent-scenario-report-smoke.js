@@ -13,6 +13,7 @@ const {
   agentAssortedCompositionGuidesScenarioPlans,
   agentBackgroundLayerScenarioPlans,
   agentCompositionRenameFileNameScenarioPlans,
+  agentCompositionSaveFramePngScenarioPlans,
   agentCompositionVersionScenarioPlans,
   agentCompositionMarkerAddScenarioPlans,
   agentCompositionLayerMarkerCopyScenarioPlans,
@@ -509,6 +510,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionRenameFileName.plan.steps[4].args.mode, "exact");
   assert.strictEqual(compositionRenameFileName.plan.steps[4].args.name, compositionRenameFileName.expectedReadBack.projectFileBasename);
   assert(!compositionRenameFileName.plan.steps.some((step) => step.tool === "run_extendscript"));
+
+  const [compositionSaveFramePng] = agentCompositionSaveFramePngScenarioPlans("Codex QA AUX-CSFP Fixture");
+  assert.strictEqual(compositionSaveFramePng.id, "generated-composition-save-frame-png");
+  assert.strictEqual(compositionSaveFramePng.expectedReadBack.generatedCompFramePngExport, true);
+  assert.deepStrictEqual(compositionSaveFramePng.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "get_comp_details",
+    "save_comp_frame_png",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(compositionSaveFramePng.plan.steps[3].args.compName, compositionSaveFramePng.expectedReadBack.compName);
+  assert.strictEqual(compositionSaveFramePng.plan.steps[3].args.expectedCompName, compositionSaveFramePng.expectedReadBack.compName);
+  assert.strictEqual(compositionSaveFramePng.plan.steps[3].args.outputFileName.endsWith(".png"), true);
+  assert.deepStrictEqual(compositionSaveFramePng.plan.steps[3].args.resolutionFactor, [1, 1]);
+  assert(!compositionSaveFramePng.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [renderQueue] = agentRenderQueueScenarioPlans("Codex QA AUX098 Fixture", 2);
   assert.strictEqual(renderQueue.id, "generated-render-queue-setup");
