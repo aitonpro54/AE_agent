@@ -2705,6 +2705,74 @@ function assertUnsafeSkipExactGeneratedOnlyFamilyRejectsDisallowedSafetySignal()
   }
 }
 
+function assertScopedUnsafeSkipPolicyResolutionStaysTerminal() {
+  const fixture = createFixture("uss-policy");
+  try {
+    const puppetPin = unsafeSkipStaleToolsEntry({
+      id: "tool-properties-toggle-puppet-pin-types",
+      sourcePath: "Properties/Toggle_Puppet_Pin_Types.jsx",
+      suggestedTools: ["get_active_comp", "get_selected_properties"],
+      safetySignals: { usesSelection: true, propertyTraversal: true },
+      implementation: {
+        sliceId: "puppet-pin-policy",
+        plannedPaths: ["recipes/toggle-puppet-pin-types-typed-plan.md"]
+      }
+    });
+    const duikPinSize = unsafeSkipStaleToolsEntry({
+      id: "tool-properties-increase-all-pin-sizes",
+      sourcePath: "Properties/Increase_All_Pin_Sizes.jsx",
+      suggestedTools: ["get_comp_details", "get_effect_details", "list_effects"],
+      safetySignals: { propertyTraversal: true, thirdPartyAssumption: true },
+      implementation: {
+        sliceId: "third-party-semantics-policy",
+        plannedPaths: ["recipes/third-party-semantics-safety-policy.md"]
+      }
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [puppetPin, duikPinSize]));
+    const registryPath = writeRegistry(fixture);
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "f-uss-policy",
+        1,
+        {},
+        [
+          "--allow-self-improvement-lane-synthesis",
+          "--resolution-candidate-ids",
+          [puppetPin.id, duikPinSize.id].join(",")
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed_no_candidates");
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, []);
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 2);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    for (const candidateId of [puppetPin.id, duikPinSize.id]) {
+      const terminal = ledger.entries.find((item) => item.id === candidateId);
+      assert.strictEqual(terminal.status, "blocked_or_skipped");
+      assert.strictEqual(terminal.resolution.status, "terminal_unresolved");
+      assert.strictEqual(terminal.resolution.type, "policy-resolution");
+      assert(terminal.implementation.policyResolution, `${candidateId}: expected policyResolution evidence`);
+      const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, terminal.resolution.latestTicket), "utf8"));
+      assert.strictEqual(ticket.type, "policy-resolution");
+      assert.strictEqual(ticket.status, "terminal_unresolved");
+      assert.strictEqual(ticket.evidence.liveProofRun, false);
+      assert.strictEqual(ticket.evidence.requeueAllowed, false);
+      assert(ticket.evidence.policyPath, `${candidateId}: expected policy path`);
+      assert(ticket.evidence.unblockCondition, `${candidateId}: expected unblock condition`);
+    }
+    const duik = ledger.entries.find((item) => item.id === duikPinSize.id);
+    assert.strictEqual(duik.implementation.policyResolution.solutionId, "third-party-semantics-safety-policy");
+    const pin = ledger.entries.find((item) => item.id === puppetPin.id);
+    assert.strictEqual(pin.implementation.policyResolution.solutionId, "toggle-puppet-pin-types-typed-plan");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertScopedResolutionCandidateIdsOnlyProcessRequestedLane() {
   const fixture = createFixture("scoped-resolution");
   try {
@@ -3352,6 +3420,7 @@ function main() {
   assertBoundedSelfImprovementAllowsDeclaredRenderQueueSignal();
   assertUnsafeSkipExactGeneratedOnlyFamilyAllowsStaleToolHints();
   assertUnsafeSkipExactGeneratedOnlyFamilyRejectsDisallowedSafetySignal();
+  assertScopedUnsafeSkipPolicyResolutionStaysTerminal();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();

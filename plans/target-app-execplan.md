@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake Puppet policy-resolution slice (2026-06-25):
+  parent-owned milestone for `tool-properties-toggle-puppet-pin-types`,
+  `tool-properties-increase-all-pin-sizes`,
+  `tool-layers-toggle-puppet-pins-as-guide-layers`, and
+  `tool-layers-rename-puppet-pins-for-duik` added a narrow policy-only
+  resolution path in the Full Intaker runner. The new
+  `policy-resolution` ticket type records terminal evidence without requeue,
+  generated-only CEP proof, broad queue processing, dependency changes,
+  fallback providers, Local/Ollama, raw JSX copy, source checkout execution,
+  user-asset mutation, push, PR, or launcher edits. Scoped retry with explicit
+  ids and `--max-items 1` produced two terminal policy tickets:
+  `policy-resolution-puppet-pin-atom-generated-only-readiness-policy` for
+  `tool-properties-toggle-puppet-pin-types`, and
+  `policy-resolution-third-party-semantics-safety-policy` for the three
+  Puppet/DuIK-related third-party semantics ids. No candidates were completed
+  or requeued. Proof envelope SHA-256 after clean retry:
+  `14d5d0e3b6af1cf7f7601cd149fcd0785220b5d6047ce45043924a9cebf88626`.
+
 - [x] Full Intake reopened layer track-matte contract slice (2026-06-25):
   parent-owned milestone for `tool-layers-set-all-track-matte-labels` and
   `tool-layers-set-track-matte-to-above` added a narrow generated-only
@@ -3278,6 +3296,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-25: Keep Puppet pin type completion blocked until typed evidence can
+  create or bind a generated `ADBE FreePin3 PosPin Atom`. The existing
+  `set_puppet_pin_type` contract remains valid for explicit
+  `ADBE FreePin3 PosPin Type` evidence, but `add_effect ADBE FreePin3` alone
+  is not treated as proof that a Puppet pin atom exists.
+
+- 2026-06-25: Treat DuIK-related Puppet pin size, guide-layer, and rename
+  candidates as third-party semantics policy blockers. Do not widen generic
+  `set_effect_property`, layer metadata, selection, or Puppet pin type recipes
+  to cover `Pseudo/Duik pin02`, project-wide third-party scans, property
+  rename, guide behavior, or plugin-specific pin-size semantics without a
+  generated/mock third-party fixture, explicit approval, checkpoint/rollback,
+  cleanup policy, and typed read-back.
+
 - 2026-06-25: Treat `ab2506c` from the launcher prompt as a stale baseline
   because it is an ancestor of the actual checkout `90d0829`. The reopened
   screen-task final audit is closed against current HEAD and compact runtime
@@ -4600,6 +4632,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake Puppet policy-resolution slice | Required to close the approved Puppet pin atom / Puppet-related layer-property family without unsafe live mutation or broad queue processing. | Passed focused validation: `node --check orchestrator/run-generic-repo-full-intake.mjs`, `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, `node scripts/sdk-generic-repo-full-intake-smoke.js`, and initial `git diff --check` with only the usual LF/CRLF warnings. First scoped retry correctly stopped as `blocked_target_dirty` after creating policy tickets while tracked edits were uncommitted. Clean scoped retry after the temporary commit passed as `completed_no_candidates` with `terminalTickets=2`, `requeued=0`, `commits=0`, and proof envelope SHA-256 `14d5d0e3b6af1cf7f7601cd149fcd0785220b5d6047ce45043924a9cebf88626`. No generated-only live CEP proof, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout execution, non-generated user-asset mutation, push, PR, or launcher edit was run. |
 
 | Reopened screen-task launcher final completion audit | Required to close one compact audit of the reopened screen-task families without broad queue processing or live mutation. | Passed closeout validation: JSON parse for `.codex/active-thread.json`, direct `node scripts/clean-current-check.js`, retry `npm.cmd run check:rules`, and `git diff --check` with the usual LF/CRLF warning only. The first npm wrapper attempt exited 1 before script output, then the direct rule script and retry passed. No JavaScript files were touched, so touched-file `node --check` was not applicable. |
 

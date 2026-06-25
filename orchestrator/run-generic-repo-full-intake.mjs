@@ -975,6 +975,47 @@ const AUTO_LANE_FAMILIES = Object.freeze([
   },
 ]);
 
+const POLICY_RESOLUTION_FAMILIES = Object.freeze([
+  {
+    id: "puppet-pin-atom-generated-only-readiness-policy",
+    reason: "missing_generated_puppet_pin_atom_evidence",
+    candidateIds: ["tool-properties-toggle-puppet-pin-types"],
+    policyPath: "recipes/toggle-puppet-pin-types-typed-plan.md",
+    solutionId: "toggle-puppet-pin-types-typed-plan",
+    blockers: [
+      "typed-tool-gap:generated_puppet_pin_atom_creation_or_fixture_missing",
+      "live-proof-gap:ADBE_FreePin3_PosPin_Atom_readback_missing",
+      "raw-jsx-copy-forbidden",
+    ],
+    unblockCondition:
+      "Keep set_puppet_pin_type limited to explicit ADBE FreePin3 PosPin Type evidence. To complete this candidate, add a generated-only or explicitly reviewed Puppet pin atom fixture/creation contract, prove ADBE FreePin3 PosPin Atom and ADBE FreePin3 PosPin Type read-back through get_effect_details, then rerun the generated-only live lane with CEP/panel bridge connectivity.",
+    scope:
+      "policy-only terminal mapping for the existing Puppet pin type typed contract when generated Puppet pin atom evidence is unavailable; no live CEP proof, raw JSX, selected-property traversal, or user Puppet effect mutation is authorized",
+  },
+  {
+    id: "third-party-semantics-safety-policy",
+    reason: "third_party_semantics_policy_required",
+    candidateIds: [
+      "tool-properties-increase-all-pin-sizes",
+      "tool-layers-toggle-puppet-pins-as-guide-layers",
+      "tool-layers-rename-puppet-pins-for-duik",
+    ],
+    policyPath: "recipes/third-party-semantics-safety-policy.md",
+    solutionId: "third-party-semantics-safety-policy",
+    blockers: [
+      "unsafe-safety-signal:thirdPartyAssumption",
+      "scope-risk:project_wide_comp_layer_effect_traversal",
+      "typed-tool-gap:generated_or_mock_duik_fixture_missing",
+      "semantic-verification-gap:third_party_effect_property_readback_missing",
+      "raw-jsx-copy-forbidden",
+    ],
+    unblockCondition:
+      "Add a parent-approved generated-only or mock third-party contract that proves the exact DuIK pseudo-effect/property identity, scopes mutation to explicit generated targets, records checkpoint/rollback and cleanup policy, and verifies typed read-back before any DuIK pin-size, guide-layer, or puppet-pin rename mutation.",
+    scope:
+      "policy-only terminal mapping for Puppet-related DuIK/third-party semantics; it records the existing safety policy and does not authorize mutation, project-wide scans, raw JSX, or live CEP proof",
+  },
+]);
+
 const HELP = `
 Generic repository full-intake orchestrator
 
@@ -2500,6 +2541,51 @@ function isScopedUnsafeSkipToolGapEntry(entry) {
     entry.classification === "unsafe_skip_tool_gap";
 }
 
+function policyResolutionFamilyFor(entry) {
+  if (!isScopedUnsafeSkipToolGapEntry(entry)) return null;
+  return POLICY_RESOLUTION_FAMILIES.find((family) => (
+    Array.isArray(family.candidateIds) && family.candidateIds.includes(entry.id)
+  )) || null;
+}
+
+function policyResolutionEvidence(family, entries) {
+  return {
+    familyId: family.id,
+    policyPath: family.policyPath,
+    solutionId: family.solutionId,
+    blockerCodes: Array.isArray(family.blockers) ? family.blockers.slice() : [],
+    unblockCondition: family.unblockCondition,
+    scope: family.scope,
+    candidateIds: entries.map((entry) => entry.id).sort(),
+    candidateEvidence: entries.map((entry) => ({
+      id: entry.id,
+      sourcePath: entry.sourcePath,
+      classification: entry.classification,
+      suggestedTools: candidateTools(entry),
+      safetySignals: normalizedSafetySignalSummary(entry),
+    })),
+    liveProofRun: false,
+    requeueAllowed: false,
+  };
+}
+
+function attachPolicyResolutionReference(entry, ticket, family) {
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    policyResolution: {
+      familyId: family.id,
+      policyPath: family.policyPath,
+      solutionId: family.solutionId,
+      ticketPath: ticket.isolation.ticketPath,
+      reason: family.reason,
+      unblockCondition: family.unblockCondition,
+      updatedAt: new Date().toISOString(),
+    },
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+}
+
 function childTimeoutRecoveryExhausted(entry) {
   if (entry.implementation?.childTimeoutRecoveryExhausted === true) return true;
   if (/child-timeout-recovery-exhausted|child-timeout-recovery-failed/i.test(entry.failClosed?.reason || "")) return true;
@@ -2727,6 +2813,20 @@ function processLiveLaneResolutionTickets({
   const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
   for (const entry of recoverable) {
+    const policyFamily = policyResolutionFamilyFor(entry);
+    if (policyFamily) {
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: policyFamily.id,
+        reason: policyFamily.reason,
+        type: "policy-resolution",
+      });
+      if (!buckets.has(groupId)) {
+        buckets.set(groupId, { entries: [], familyId: policyFamily.id, policyFamily });
+      }
+      buckets.get(groupId).entries.push(entry);
+      continue;
+    }
     const synthesis = synthesizeLiveLaneTemplate(entry, runId);
     const familyId = synthesis.ok ? synthesis.familyId : synthesis.familyId || synthesis.extra?.familyId || null;
     const groupId = resolutionGroupId({
@@ -2745,6 +2845,24 @@ function processLiveLaneResolutionTickets({
   const requeuedCandidateIds = [];
   for (const [groupId, bucket] of buckets) {
     const representative = bucket.entries[0];
+    if (bucket.policyFamily) {
+      const ticket = recordResolutionTicket({
+        affected: bucket.entries,
+        evidence: policyResolutionEvidence(bucket.policyFamily, bucket.entries),
+        groupId,
+        reason: bucket.policyFamily.reason,
+        runId,
+        runRoot,
+        status: "terminal_unresolved",
+        targetRepo,
+        type: "policy-resolution",
+      });
+      for (const entry of bucket.entries) {
+        attachPolicyResolutionReference(entry, ticket, bucket.policyFamily);
+      }
+      tickets.push(ticket);
+      continue;
+    }
     if (!bucket.synthesis.ok) {
       if (!allowSelfImprovementLaneSynthesis) {
         const ticket = recordResolutionTicket({
