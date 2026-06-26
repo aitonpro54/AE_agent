@@ -26,6 +26,50 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake project timecode/start frames generated-only lane/retry
+  (2026-06-26): parent-owned scoped milestone for
+  `tool-project-toggle-timecode-and-start-frames` added a candidate-specific
+  generated-only typed adaptation for explicit project frame numbering and
+  native composition start-frame updates. Added
+  `project-timecode-start-frames-typed-plan`, generic intake note, bridge tool
+  `set_project_frames_count_type`, native `displayStartFrame` support in
+  `get_project_snapshot`/`get_comp_details`/`set_comp_properties`, project
+  frame-count semantic verification, solution registry/retrieval coverage,
+  scenario/report/semantic smoke coverage, CEP command
+  `full-ui-agent-project-timecode-start-frames-openai-cli-smoke`, and
+  self-improvement family `project-timecode-start-frame-generated-only`. The
+  safe lane uses explicit generated/reviewed composition targets,
+  `get_project_info` and `get_comp_details` pre/post read-back,
+  `set_project_frames_count_type(FC_START_0|FC_START_1)`,
+  `set_comp_properties(displayStartFrame:<integer>)`, semantic verification,
+  and generated-prefix cleanup. Source-exact all-project `CompItem` traversal,
+  ScriptUI ALT-key branching, Project panel selection, non-generated user comp
+  batch mutation, `displayStartTime` fallback semantics, render queue changes,
+  footage interpretation, broad project mutation, raw JSX, and source JSX copy
+  remain fail-closed. The first scoped retry stopped at `blocked_target_dirty`
+  while parent-authored tracked files were uncommitted; after local commit
+  `23588f9`, the clean scoped retry with explicit id, `--context-percent 45`,
+  `--max-items 1`, `--allow-self-improvement-lane-synthesis`, `--no-commit`,
+  and `--compact-json` returned `completed_no_candidates` with terminal ticket
+  `live-lane-family-38ae83698cf1183b`, no open tickets, no requeue,
+  `changedPathCount=0`, and `unplannedPathCount=0`. Self-improvement marked
+  the lane ready for serial acceptance; scoped live acceptance command
+  `node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-timecode-start-frames-openai-cli-smoke`
+  failed closed with `CEP panel is not connected to the bridge`. Compact proof
+  envelope SHA-256:
+  `0797166de8734e2b0c698373f2f0681b2abd9c6553f18bfe3628b6dc9762ea4d`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  registry/live-lane registry/active-thread, focused agent scenario,
+  semantic verification, solution-library validation, solution-promotion and
+  ChatGPT connector smokes, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:provider-contract`, `npm.cmd run smoke:provider-api`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
+  `npm.cmd run smoke:bridge`, `npm.cmd run smoke:full-intake`, read-only CEP
+  `inspect`/`connector-status-smoke`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake preserve nested frame rate generated-only lane/retry
   (2026-06-26): parent-owned scoped milestone for
   `tool-project-toggle-preserve-nested-frame-rate` added a candidate-specific
