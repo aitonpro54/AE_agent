@@ -54,6 +54,7 @@ const {
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
+  agentPreserveNestedFrameRateScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
@@ -562,6 +563,23 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(resetImportedItemNames.plan.steps[6].args.type, "footage");
   assert.strictEqual(resetImportedItemNames.plan.steps[6].args.name, resetImportedItemNames.expectedReadBack.outputFileName);
   assert(!resetImportedItemNames.plan.steps.some((step) => step.tool === "run_extendscript"));
+
+  const [preserveNestedFrameRate] = agentPreserveNestedFrameRateScenarioPlans("Codex QA AUX-PNFR Fixture");
+  assert.strictEqual(preserveNestedFrameRate.id, "generated-preserve-nested-frame-rate");
+  assert.strictEqual(preserveNestedFrameRate.expectedReadBack.generatedPreserveNestedFrameRate, true);
+  assert.deepStrictEqual(preserveNestedFrameRate.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "get_comp_details",
+    "get_comp_details",
+    "set_comp_properties",
+    "get_comp_details",
+    "set_comp_properties",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(preserveNestedFrameRate.plan.steps[4].args.preserveNestedFrameRate, true);
+  assert.strictEqual(preserveNestedFrameRate.plan.steps[6].args.preserveNestedFrameRate, true);
+  assert(!preserveNestedFrameRate.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
   assert.strictEqual(compositionVersion.id, "generated-composition-version-token");
@@ -1285,7 +1303,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
 
   const [layerNameReset] = agentLayerNameResetScenarioPlans("Codex QA Reset Names Fixture");
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, puppetGuideLayer, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, preserveNestedFrameRate, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, puppetGuideLayer, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

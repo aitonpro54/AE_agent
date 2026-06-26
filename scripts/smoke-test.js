@@ -2333,7 +2333,7 @@ async function main() {
     throw new Error("set_layer_mask schema does not document explicit comp targeting");
   }
   const setCompPropertiesTool = lines[1].result.tools.find((tool) => tool.name === "set_comp_properties");
-  if (!setCompPropertiesTool || !setCompPropertiesTool.inputSchema.properties.autoCheckpoint || !setCompPropertiesTool.inputSchema.properties.checkpointLabel || !setCompPropertiesTool.inputSchema.properties.idempotencyKey || !setCompPropertiesTool.inputSchema.properties.verifyAfter || !setCompPropertiesTool.inputSchema.properties.compItemIndex || !setCompPropertiesTool.inputSchema.properties.width || !setCompPropertiesTool.inputSchema.properties.bgColor || setCompPropertiesTool.inputSchema.properties.opacity) {
+  if (!setCompPropertiesTool || !setCompPropertiesTool.inputSchema.properties.autoCheckpoint || !setCompPropertiesTool.inputSchema.properties.checkpointLabel || !setCompPropertiesTool.inputSchema.properties.idempotencyKey || !setCompPropertiesTool.inputSchema.properties.verifyAfter || !setCompPropertiesTool.inputSchema.properties.compItemIndex || !setCompPropertiesTool.inputSchema.properties.width || !setCompPropertiesTool.inputSchema.properties.bgColor || !setCompPropertiesTool.inputSchema.properties.preserveNestedFrameRate || setCompPropertiesTool.inputSchema.properties.opacity) {
     throw new Error("set_comp_properties is missing bounded safety schema fields");
   }
   const duplicateLayerTool = lines[1].result.tools.find((tool) => tool.name === "duplicate_layer");

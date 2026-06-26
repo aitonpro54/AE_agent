@@ -26,6 +26,46 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake preserve nested frame rate generated-only lane/retry
+  (2026-06-26): parent-owned scoped milestone for
+  `tool-project-toggle-preserve-nested-frame-rate` added a candidate-specific
+  generated-only typed adaptation for explicit composition
+  `preserveNestedFrameRate` updates. Added
+  `preserve-nested-frame-rate-typed-plan`, generic intake note, solution
+  registry/retrieval coverage, scenario/report/semantic smoke coverage, CEP
+  command `full-ui-agent-preserve-nested-frame-rate-openai-cli-smoke`, and
+  self-improvement family `project-preserve-nested-frame-rate-generated-only`.
+  The safe lane uses explicit generated/reviewed composition targets,
+  `get_comp_details` pre/post read-back, `set_comp_properties` with only
+  `preserveNestedFrameRate:<boolean>`, semantic verification, and
+  generated-prefix cleanup. Source-exact all-project `CompItem` traversal,
+  ALT-key toggle/disable semantics, Project panel selection, non-generated
+  user comp batch mutation, render queue changes, footage interpretation,
+  broad project mutation, raw JSX, and source JSX copy remain fail-closed.
+  The first scoped retry stopped at `blocked_target_dirty` while parent-authored
+  tracked files were uncommitted; after local commit `2d528fd`, the clean
+  scoped retry with explicit id, `--context-percent 45`, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` returned `completed_no_candidates` with terminal ticket
+  `live-lane-family-38ae83698cf1183b`, no open tickets, no requeue,
+  `changedPathCount=0`, and `unplannedPathCount=0`. Self-improvement marked
+  the lane ready for serial acceptance; lane non-live validation passed;
+  generated-only live proof failed closed with
+  `CEP panel is not connected to the bridge`. Compact proof envelope SHA-256:
+  `c2780c332d053c6c52ad97b294ba49c043382fda7b3eddbb9081855bc905e0e5`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  registry/live-lane registry, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:provider-contract`,
+  `npm.cmd run smoke:provider-api`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, read-only CEP preflight
+  `inspect`/`connector-status-smoke`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake reset imported item names generated-only lane/retry
   (2026-06-26): parent-owned scoped milestone for
   `tool-project-reset-imported-item-names` added a candidate-specific safe
@@ -4004,6 +4044,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: For `tool-project-toggle-preserve-nested-frame-rate`, accept only
+  the explicit generated/reviewed composition property adaptation. Extend the
+  existing `get_comp_details` / `set_comp_properties` contract with
+  `preserveNestedFrameRate` and boolean semantic verification. Keep
+  source-exact all-project `CompItem` traversal, ALT-key branching, Project
+  panel selection, non-generated user comp batch mutation, render queue work,
+  footage interpretation, broad project mutation, raw JSX, and source JSX copy
+  fail-closed.
+
 - 2026-06-26: For `tool-project-reset-imported-item-names`, keep source-exact
   Project panel selection traversal fail-closed. The accepted adaptation is
   generated-only and explicit-footage-index based: sandboxed generated PNG,
@@ -5554,6 +5603,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake preserve nested frame rate generated-only lane/retry | Required to give `tool-project-toggle-preserve-nested-frame-rate` a candidate-specific explicit generated/reviewed comp-property recipe/lane, extend the bounded comp typed-tool contract, rerun the scoped candidate from a clean tree, and preserve all-project traversal, ALT-key, Project panel selection, render queue, footage interpretation, raw JSX, and non-generated user comp mutation risks as fail-closed. | Passed: touched JS `node --check` for `mcp-server/bridge-daemon.js`, `mcp-server/plan-repair.js`, `mcp-server/semantic-verification.js`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, `scripts/manual-typed-tool-regression-smoke.js`, `scripts/semantic-verification-smoke.js`, `scripts/smoke-test.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and `.codex/active-thread.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with exact `tool-project-toggle-preserve-nested-frame-rate`, `--context-percent 45`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; and `git diff --check` with LF/CRLF warning only. The clean scoped retry returned `completed_no_candidates`, terminal/live-blocked ticket `live-lane-family-38ae83698cf1183b`, proof SHA-256 `c2780c332d053c6c52ad97b294ba49c043382fda7b3eddbb9081855bc905e0e5`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; lane non-live validation passed, and generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
 
 | Full Intake reset imported item names generated-only lane/retry | Required to give `tool-project-reset-imported-item-names` a candidate-specific explicit generated imported-footage reset recipe/lane, rerun the scoped candidate from a clean tree, and preserve Project panel selection/relink/user-file/user-asset risks as fail-closed. | Passed: touched JS `node --check` for `mcp-server/semantic-verification.js`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/semantic-verification-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-library-validation-smoke.js`; scoped retry with exact `tool-project-reset-imported-item-names`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warning only. Scoped retry returned terminal/live-blocked ticket `live-lane-family-04dc73d685a992ff`, proof SHA-256 `bc6c021f851efaecac9387a4630f61c83d1585be330896d29015ed419cc7d085`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
 

@@ -8046,6 +8046,110 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "preserve-nested-frame-rate-typed-plan",
+      "title": "Preserve Nested Frame Rate Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "composition",
+        "comp-properties",
+        "preserveNestedFrameRate",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set preserveNestedFrameRate on explicit generated or reviewed compositions with typed read-back.",
+        "appliesWhen": [
+          "The user asks to enable or disable Preserve frame rate when nested or in the render queue on one or more explicit compositions.",
+          "No all-project traversal; a safe adaptation over concrete generated/reviewed composition targets is acceptable."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComps",
+          "type": "array",
+          "required": true,
+          "description": "Concrete composition itemIndex/name values proven by current create_comp, find_project_items, or get_comp_details evidence."
+        },
+        {
+          "name": "preserveNestedFrameRate",
+          "type": "boolean",
+          "required": true,
+          "description": "Explicit final boolean value for the Preserve frame rate when nested or in render queue setting."
+        }
+      ],
+      "targetAssumptions": [
+        "Every target is a generated or explicitly reviewed composition bound by current typed evidence before mutation.",
+        "The workflow changes only preserveNestedFrameRate through set_comp_properties.",
+        "All-project CompItem traversal, ALT-key branching, Project panel selection, non-generated user comp batch mutation, render queue changes, footage interpretation, raw ExtendScript and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/preserve-nested-frame-rate-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "create_comp",
+          "get_comp_details",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read explicit composition targets, set only preserveNestedFrameRate, then read the same comps back.",
+        "steps": [
+          "Run create_comp or get_comp_details to bind every explicit generated/reviewed composition before mutation.",
+          "Record pre-run itemIndex/name, preserveNestedFrameRate, frameRate, duration, dimensions, layer count and work area.",
+          "Normalize the requested final state to an explicit boolean.",
+          "Run set_comp_properties once per concrete comp with only preserveNestedFrameRate, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after mutation and compare preserveNestedFrameRate plus unchanged structural fields."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_comp_details shows every target composition identity and current preserveNestedFrameRate value.",
+          "set_comp_properties reports updatedFields:[\"preserveNestedFrameRate\"] and postVerification.ok:true.",
+          "Post-run get_comp_details shows the requested boolean value on the same composition item.",
+          "Post-run read-back shows unchanged width, height, duration, frameRate, layer count, work area and comp item identity.",
+          "The plan reports all-project traversal, ALT-key branching, non-generated user comp mutation, render queue changes, footage interpretation, raw ExtendScript and exact source JSX behavior as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-project-toggle-preserve-nested-frame-rate as generated-only typed-plan coverage for explicit comp preserveNestedFrameRate updates.",
+          "Generated-only proof uses full-ui-agent-preserve-nested-frame-rate-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-project-toggle-preserve-nested-frame-rate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the CompItem preserveNestedFrameRate setting from Toggle_Preserve_Nested_Frame_Rate.jsx into existing composition typed tools; no source JSX copied. The source script's all-project traversal and ALT-key branching remain fail-closed. The safe adaptation requires explicit generated/reviewed comp targets, set_comp_properties(preserveNestedFrameRate:<boolean>), get_comp_details read-back, semantic verification and cleanup.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency and read-back verification.",
+        "Use explicit final-state enable/disable requests; do not infer keyboard-state toggle behavior.",
+        "Do not use this recipe for broad all-project comp traversal, non-generated user comp batch mutation, Project panel selection, render queue edits, footage interpretation changes, raw ExtendScript or exact source JSX semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "reset-imported-item-names-typed-plan",
       "title": "Reset Imported Item Names Typed Plan",
       "status": "recipe",

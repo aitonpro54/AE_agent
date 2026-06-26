@@ -2573,6 +2573,62 @@
       "scope": "generated-only Project item label proof using generated composition project items, find_project_items/get_project_snapshot evidence for concrete itemIndices, set_project_item_metadata label:0 with expectedItemNames guards, post-mutation project-item label read-back, semantic verification, and cleanup; source-exact Project panel selected item traversal, label defaults by item type, all-project scans without explicit evidence, item rename/move/delete, proxy state, render queue work, filesystem operations, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "project-preserve-nested-frame-rate-generated-only",
+      "requiredTools": [
+        "set_comp_properties"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "find_project_items",
+        "get_comp_details",
+        "set_comp_properties"
+      ],
+      "candidateIds": [
+        "tool-project-toggle-preserve-nested-frame-rate"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-preserve-nested-frame-rate-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "preserve-nested-frame-rate",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/preserve-nested-frame-rate-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-toggle-preserve-nested-frame-rate.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only preserveNestedFrameRate proof using explicit generated composition targets, get_comp_details read-back before and after mutation, set_comp_properties preserveNestedFrameRate:true with semantic verification and generated-prefix cleanup; source-exact all-project CompItem traversal, ALT-key disable behavior, Project panel selection, non-generated user comp batch mutation, render queue changes, footage interpretation, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "reset-imported-item-names-generated-only",
       "requiredTools": [
         "save_comp_frame_png",

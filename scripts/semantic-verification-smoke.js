@@ -20,6 +20,7 @@ const {
   agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
+  agentPreserveNestedFrameRateScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
@@ -487,7 +488,7 @@ function fakeMutationResult(step, state) {
   if (step.tool === "set_comp_properties") {
     const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
     const updates = {};
-    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"]) {
+    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     state.compProperties = { ...state.compProperties, ...updates };
@@ -1627,6 +1628,8 @@ function fakeReadBackResult(step, state) {
         frameRate: state.compProperties.frameRate,
         bgColor: state.compProperties.bgColor,
         displayStartTime: state.compProperties.displayStartTime,
+        preserveNestedFrameRate: state.compProperties.preserveNestedFrameRate,
+        motionBlur: state.compProperties.motionBlur,
         time: state.compProperties.time,
         workAreaStart: state.compProperties.workAreaStart,
         workAreaDuration: state.compProperties.workAreaDuration
@@ -1669,6 +1672,7 @@ function fakeRunForPlan(plan) {
       frameRate: 24,
       bgColor: [0, 0, 0],
       displayStartTime: 0,
+      preserveNestedFrameRate: false,
       motionBlur: false,
       time: 0,
       workAreaStart: 0,
@@ -2316,7 +2320,8 @@ function assertSetCompPropertiesPasses() {
           width: 1920,
           height: 1080,
           frameRate: 30,
-          bgColor: [0.1, 0.2, 0.3]
+          bgColor: [0.1, 0.2, 0.3],
+          preserveNestedFrameRate: true
         }
       },
       {
@@ -2330,6 +2335,7 @@ function assertSetCompPropertiesPasses() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "passed", `set_comp_properties semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "set_comp_properties width check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:preserveNestedFrameRate") >= 0 && check.status === "passed"), "set_comp_properties preserveNestedFrameRate check should pass.");
 }
 
 function assertSetCompPropertiesReadBackMismatchNeedsReview() {
@@ -2963,6 +2969,16 @@ function assertDakkshinFixtureMutationScopedReadBackPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "Dakkshin set_comp_properties check should pass.");
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "Dakkshin delete_layer absence check should pass.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "Dakkshin set_layer_mask read-back check should pass.");
+}
+
+function assertPreserveNestedFrameRateFixturePasses() {
+  const [scenario] = agentPreserveNestedFrameRateScenarioPlans("Semantic Preserve Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `preserve nested frame rate fixture should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const checks = semantic.checks.filter((check) => check.id.indexOf("set_comp_properties:preserveNestedFrameRate") >= 0 && check.status === "passed");
+  assert.strictEqual(checks.length, 2, "preserve nested frame rate fixture should verify both generated comp property updates.");
 }
 
 function assertDakkshinLiveAeEvidenceShapePasses() {
@@ -3784,6 +3800,7 @@ function main() {
   assertDeleteLayerPasses();
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
+  assertPreserveNestedFrameRateFixturePasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
   assertRefreshCompPanelPasses();
   assertSetCompWorkAreaReadBackFallbackPasses();

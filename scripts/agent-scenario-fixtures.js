@@ -1736,6 +1736,55 @@ function agentProjectItemMetadataScenarioPlans(runPrefix) {
   }));
 }
 
+function agentPreserveNestedFrameRateScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Preserve Nested Frame Rate`;
+  const firstCompName = `${base} Alpha`;
+  const secondCompName = `${base} Beta`;
+  const preserveNestedFrameRate = true;
+
+  return [
+    {
+      id: "generated-preserve-nested-frame-rate",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_comp",
+        "get_comp_details",
+        "get_comp_details",
+        "set_comp_properties",
+        "get_comp_details",
+        "set_comp_properties",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedPreserveNestedFrameRate: true,
+        itemNames: [firstCompName, secondCompName],
+        preserveNestedFrameRate
+      },
+      plan: {
+        summary: "Generated-only live QA for explicit preserveNestedFrameRate comp property updates.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create first generated preserve-nested-frame-rate comp", tool: "create_comp", args: { name: firstCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.07, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only preserve nested frame rate validation" } },
+          { title: "Create second generated preserve-nested-frame-rate comp", tool: "create_comp", args: { name: secondCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.1, 0.07, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only preserve nested frame rate validation" } },
+          { title: "Read first generated preserve setting before update", tool: "get_comp_details", args: { compName: firstCompName, includeLayers: false } },
+          { title: "Read second generated preserve setting before update", tool: "get_comp_details", args: { compName: secondCompName, includeLayers: false } },
+          { title: "Enable preserve nested frame rate on first generated comp", tool: "set_comp_properties", args: { compName: firstCompName, preserveNestedFrameRate } },
+          { title: "Read first generated preserve setting after update", tool: "get_comp_details", args: { compName: firstCompName, includeLayers: false } },
+          { title: "Enable preserve nested frame rate on second generated comp", tool: "set_comp_properties", args: { compName: secondCompName, preserveNestedFrameRate } },
+          { title: "Read second generated preserve setting after update", tool: "get_comp_details", args: { compName: secondCompName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentResetImportedItemNamesScenarioPlans(runPrefix) {
   const base = safeOutputName(`${runPrefix} Reset Imported Item Names`);
   const compName = `${base} Comp`;
@@ -4915,6 +4964,7 @@ module.exports = {
   agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
+  agentPreserveNestedFrameRateScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,

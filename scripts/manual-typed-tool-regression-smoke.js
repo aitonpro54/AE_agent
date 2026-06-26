@@ -515,7 +515,7 @@ function inspectDakkshinM222Cases(testCase, failures) {
     return;
   }
 
-  const safeCompFields = new Set(["compItemIndex", "compName", "width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"]);
+  const safeCompFields = new Set(["compItemIndex", "compName", "width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"]);
   const maskForbiddenFields = new Set(["delete", "remove", "maskIndices", "roto", "rotobrush", "script", "jsx", "propertyPath"]);
   const steps = testCase.plan.steps || [];
   for (let index = 0; index < steps.length; index += 1) {

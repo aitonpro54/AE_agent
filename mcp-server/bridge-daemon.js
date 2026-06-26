@@ -6332,7 +6332,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated track matte changes, use set_layer_track_matte only with one inspected fill layer, one inspected matte layer, expectedLayerName, expectedMatteLayerName, and post-run get_layer_details read-back showing hasTrackMatte, trackMatteTypeName, and trackMatteLayer. Do not use parent-link tools, layer reordering, broad layer scans, or raw ExtendScript as substitutes.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
-    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, and preserveNestedFrameRate on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
     "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, enabled, and guideLayer, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
@@ -9619,7 +9619,7 @@ const tools = [
   },
   {
     name: "set_comp_properties",
-    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime only.",
+    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, and preserveNestedFrameRate only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9641,7 +9641,8 @@ const tools = [
           items: { type: "number" },
           description: "Optional RGB background color as three numbers from 0 to 1."
         },
-        displayStartTime: { type: "number", description: "Optional display start time in seconds." }
+        displayStartTime: { type: "number", description: "Optional display start time in seconds." },
+        preserveNestedFrameRate: { type: "boolean", description: "Optional Preserve frame rate when nested or in render queue setting." }
       }
     }
   },
@@ -12108,6 +12109,7 @@ async function callTool(name, args) {
         workAreaDuration: comp.workAreaDuration,
         frameRate: comp.frameRate,
         displayStartTime: comp.displayStartTime,
+        preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
         time: comp.time,
         bgColor: comp.bgColor,
         motionBlur: comp.motionBlur,
@@ -15858,6 +15860,7 @@ async function callTool(name, args) {
       "frameRate",
       "bgColor",
       "displayStartTime",
+      "preserveNestedFrameRate",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -15897,6 +15900,10 @@ async function callTool(name, args) {
     if (hasArg(args, "displayStartTime")) {
       requested.displayStartTime = optionalNumber(args, "displayStartTime", null);
     }
+    if (hasArg(args, "preserveNestedFrameRate")) {
+      requested.preserveNestedFrameRate = optionalBoolean(args, "preserveNestedFrameRate", null);
+      if (requested.preserveNestedFrameRate === null) return toolResult("preserveNestedFrameRate must be a boolean.", true);
+    }
     if (hasArg(args, "bgColor")) {
       const bgColor = optionalNumberArray(args, "bgColor", null, 3, 3);
       if (bgColor.some((value) => value < 0 || value > 1)) return toolResult("bgColor values must be between 0 and 1.", true);
@@ -15922,6 +15929,7 @@ async function callTool(name, args) {
           frameRate: comp.frameRate,
           bgColor: comp.bgColor ? [comp.bgColor[0], comp.bgColor[1], comp.bgColor[2]] : null,
           displayStartTime: comp.displayStartTime,
+          preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
           numLayers: comp.numLayers
         };
       }
@@ -15939,6 +15947,12 @@ async function callTool(name, args) {
         return __codexColorNear(actual[0], expected[0]) && __codexColorNear(actual[1], expected[1]) && __codexColorNear(actual[2], expected[2]);
       }
 
+      function __codexFieldMatches(after, field, expected) {
+        if (field === "bgColor") return __codexColorMatches(after.bgColor, expected);
+        if (typeof expected === "boolean") return after[field] === expected;
+        return __codexNear(after[field], expected);
+      }
+
       app.beginUndoGroup("Codex Set Comp Properties");
       var before = __codexCompProperties(comp);
       if (requested.width !== undefined) comp.width = requested.width;
@@ -15948,14 +15962,13 @@ async function callTool(name, args) {
       if (requested.frameRate !== undefined) comp.frameRate = requested.frameRate;
       if (requested.bgColor !== undefined) comp.bgColor = requested.bgColor;
       if (requested.displayStartTime !== undefined) comp.displayStartTime = requested.displayStartTime;
+      if (requested.preserveNestedFrameRate !== undefined) comp.preserveNestedFrameRate = requested.preserveNestedFrameRate;
       var after = __codexCompProperties(comp);
       var fieldMatches = {};
       var allMatch = true;
       for (var __fieldIndex = 0; __fieldIndex < requestedKeys.length; __fieldIndex++) {
         var field = requestedKeys[__fieldIndex];
-        var matches = field === "bgColor"
-          ? __codexColorMatches(after.bgColor, requested.bgColor)
-          : __codexNear(after[field], requested[field]);
+        var matches = __codexFieldMatches(after, field, requested[field]);
         fieldMatches[field] = matches;
         if (!matches) allMatch = false;
       }

@@ -292,7 +292,8 @@ const SAFE_COMP_PROPERTY_FIELDS = new Set([
   "duration",
   "frameRate",
   "bgColor",
-  "displayStartTime"
+  "displayStartTime",
+  "preserveNestedFrameRate"
 ]);
 
 const SET_LAYER_MASK_FORBIDDEN_TOKENS = new Set([
@@ -447,6 +448,8 @@ function propertyCandidates(field) {
     displaystart: ["displayStartTime"],
     displaystarttime: ["displayStartTime"],
     starttime: ["displayStartTime"],
+    preservenestedframerate: ["preserveNestedFrameRate"],
+    nestedframeratepreserve: ["preserveNestedFrameRate"],
     itemindexes: ["itemIndices", "itemIndex"],
     itemindices: ["itemIndices", "itemIndex"],
     projectitemindexes: ["itemIndices", "itemIndex"],

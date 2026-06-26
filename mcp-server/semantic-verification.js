@@ -250,7 +250,7 @@ function addLayerEvidence(target, value, source) {
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -262,6 +262,7 @@ function addCompEvidence(target, value, source) {
     frameRate: numberValue(value.frameRate),
     bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
+    preserveNestedFrameRate: value.preserveNestedFrameRate === undefined || value.preserveNestedFrameRate === null ? null : value.preserveNestedFrameRate === true,
     time: numberValue(value.time),
     workAreaStart: numberValue(value.workAreaStart),
     workAreaDuration: numberValue(value.workAreaDuration),
@@ -643,6 +644,7 @@ function compFieldMatches(comp, field, expected) {
       observedColor.length >= 3 &&
       expectedColor.every((value, index) => colorChannelNearlyEqual(value, observedColor[index]));
   }
+  if (typeof expected === "boolean") return comp[field] === expected;
   return nearlyEqual(comp[field], expected);
 }
 
@@ -1918,7 +1920,7 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   const args = step.args || {};
   const updates = isPlainObject(payload.updates) ? payload.updates : {};
   const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
-  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"].filter((field) => hasOwn(args, field));
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"].filter((field) => hasOwn(args, field));
   if (!fields.length) {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:updates`,

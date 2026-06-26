@@ -122,6 +122,7 @@ const IMPORTED_ADVISORY_IDS = [
   "project-file-render-proxy-safety-policy",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
+  "preserve-nested-frame-rate-typed-plan",
   "reset-imported-item-names-typed-plan",
   "set-project-item-labels-to-none-typed-plan",
   "set-all-item-labels-to-none-typed-plan",
@@ -2296,6 +2297,24 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Increment_Composition_Versions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "preserve-nested-frame-rate-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "get_comp_details", "set_comp_properties"],
+        `${id}: preserve nested frame rate workflow should stay on explicit comp property typed tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: preserve nested frame rate workflow must be mutating.`);
+      assert(text.includes("preserveNestedFrameRate"), `${id}: recipe should document preserveNestedFrameRate.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp read-back.`);
+      assert(text.includes("all-project traversal"), `${id}: recipe should reject all-project traversal.`);
+      assert(text.includes("ALT-key"), `${id}: recipe should reject ALT-key branching.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp property mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserveNestedFrameRate/.test(item)), `${id}: verification must require preserveNestedFrameRate read-back.`);
+      assert(solution.notes.some((note) => /all-project comp traversal/i.test(note)), `${id}: notes must reject all-project traversal.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Preserve_Nested_Frame_Rate/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "rename-composition-to-file-name-typed-plan") {
       assert.deepStrictEqual(
@@ -4604,6 +4623,21 @@ function assertActualRetrieval(registry) {
   assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
 
+  const preserveNestedFrameRateRetrieval = retrieveSolutionHints("Enable preserve nested frame rate on explicit generated compositions using set_comp_properties preserveNestedFrameRate true, then read back get_comp_details without all-project traversal.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(preserveNestedFrameRateRetrieval.ok, true);
+  assert(ids(preserveNestedFrameRateRetrieval).includes("preserve-nested-frame-rate-typed-plan"), "preserve nested frame rate recipe should surface for explicit comp property prompts.");
+  const preserveNestedFrameRatePromptSection = formatSolutionHintsForPrompt(preserveNestedFrameRateRetrieval);
+  assert(preserveNestedFrameRatePromptSection.includes("Preserve Nested Frame Rate Typed Plan"), "prompt section should include preserve nested frame rate advisory title.");
+  assert(preserveNestedFrameRatePromptSection.includes("preserveNestedFrameRate"), "prompt section should preserve preserveNestedFrameRate field guidance.");
+  assert(preserveNestedFrameRatePromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for preserve nested frame rate.");
+  assert(preserveNestedFrameRatePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(preserveNestedFrameRatePromptSection.includes("all-project traversal"), "prompt section should preserve all-project traversal warning.");
+  assert(!/run_extendscript/i.test(preserveNestedFrameRatePromptSection), "preserve nested frame rate guidance should not recommend raw ExtendScript.");
+
   const resetImportedItemNamesRetrieval = retrieveSolutionHints("Reset generated imported footage item names to their file display name after creating a generated PNG fixture, importing it with import_footage, binding explicit footage itemIndices, using rename_project_items type footage mode exact, and reading back get_project_snapshot.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5446,6 +5480,23 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "cleanup",
       "Desktop",
       "arbitrary user paths",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "project-preserve-nested-frame-rate-generated-only", {
+    requiredTools: ["set_comp_properties"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-project-toggle-preserve-nested-frame-rate"],
+    scopeIncludes: [
+      "preserveNestedFrameRate",
+      "explicit generated composition targets",
+      "set_comp_properties",
+      "semantic verification",
+      "cleanup",
+      "all-project CompItem traversal",
+      "ALT-key",
+      "non-generated user comp",
+      "render queue",
       "raw JSX"
     ]
   });
