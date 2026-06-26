@@ -26,6 +26,33 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake selected-property rename policy retry (2026-06-26):
+  parent-owned scoped retry for `tool-properties-rename-selected-properties`
+  refreshed current safety/contract/live-readiness evidence without adding a
+  selected-property name mutation lane. The candidate remains terminal because
+  the source-exact script prompts for a base name, reads
+  `app.project.activeItem.selectedProperties`, and writes each selected
+  `PropertyBase.name` with a 1-based suffix, while the current typed surface can
+  read selected property names and mutate values/keyframes/expressions/effect
+  properties but cannot safely rename property display names on generated
+  explicit targets with read-back. Existing parent-reducer evidence was used as
+  baseline, read-only CEP readiness was checked with
+  `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and the scoped
+  retry then used `--context-percent 30`, `--max-items 1`,
+  `--resolution-candidate-ids tool-properties-rename-selected-properties`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`. It returned `completed_no_candidates` with one terminal
+  `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open
+  tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`.
+  Auto synthesis stayed blocked as
+  `classification_not_allowed:unsafe_skip_tool_gap`. Compact proof envelope
+  SHA-256: `94b21d5cc2b255b3a81366eb19655bb5eb77605a0e2a0156f185f89aa1f3021d`.
+  No broad queue processing, unscoped `max-items > 1`, broad/default CEP
+  smoke, Local/Ollama, fallback provider, dependency change, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake disabled-stroke policy retry (2026-06-26):
   parent-owned scoped retry for `tool-properties-remove-disabled-strokes`
   refreshed current safety/contract/live-readiness evidence without adding a
@@ -3877,6 +3904,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-properties-rename-selected-properties` terminal under
+  the current selected-property name mutation evidence. Existing selected
+  property, value/keyframe/expression, effect-property, layer-rename, and
+  project-item rename tools do not safely prove source-exact
+  `PropertyBase.name` mutation because they cannot rename explicit generated
+  property display names and read the new names back. Future completion
+  requires a generated-only `set_property_name` or `rename_properties` typed
+  contract with explicit comp/layer/property targets, expected current name and
+  matchName/propertyIndex guards, reviewed base-name/numbering policy,
+  generated-target guard, checkpoint/edit-session protection, non-empty and
+  max-length validation, fail-closed behavior for ambiguous or non-renamable
+  targets, and read-back through `get_layer_details` or
+  `get_selected_properties`.
+
 - 2026-06-26: Keep `tool-properties-remove-disabled-strokes` terminal under
   the current shape-property deletion policy evidence. Existing selected
   property, stroke expression, color, path-length, and generated shape-layer
@@ -5384,6 +5425,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake selected-property rename policy retry | Required to refresh `tool-properties-rename-selected-properties` under the current safety/contract/live-readiness longrun without approving arbitrary selected-property display-name mutation, raw JSX, generated property-name writes without read-back, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing parent-reducer ticket and ledger annotation read, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-properties-rename-selected-properties`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `94b21d5cc2b255b3a81366eb19655bb5eb77605a0e2a0156f185f89aa1f3021d`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake disabled-stroke policy retry | Required to refresh `tool-properties-remove-disabled-strokes` under the current safety/contract/live-readiness longrun without approving destructive selected shape-property traversal, raw JSX, generated shape-property deletion without read-back, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing parent-reducer ticket and ledger annotation read, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-properties-remove-disabled-strokes`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `93bd905814c2ccd21afc4b6e8ab8b3e7964b31eea1d767fd21bba4bc8517be9e`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
