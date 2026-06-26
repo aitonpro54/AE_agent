@@ -29,6 +29,7 @@ const {
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetGuideLayerScenarioPlans,
   agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
@@ -941,6 +942,24 @@ function openAiCliGridRigControlReplacementScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_GRID_RIG_CONTROL_PREFIX || "Codex QA AUX-GRC",
     scenarioFactory: agentGridRigControlReplacementScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliPuppetGuideLayerScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-puppet-guide-layer",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PUPPET_GUIDE_LAYER_PREFIX || "Codex QA AUX-PUPPET-GUIDE",
+    scenarioFactory: agentPuppetGuideLayerScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7436,6 +7455,43 @@ async function verifyGeneratedGridRigControlReplacementReadBack(scenario, expect
   };
 }
 
+async function verifyGeneratedPuppetGuideLayerReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const layerDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    includeProperties: false
+  });
+  const layer = layerDetails && layerDetails.layer ? layerDetails.layer : {};
+  if (layer.name !== expected.layerName) {
+    throw new Error(`${scenario.id}: generated Puppet guide layer name mismatch; expected ${expected.layerName}, got ${layer.name || "none"}.`);
+  }
+  if (layer.guideLayer !== expected.guideLayer) {
+    throw new Error(`${scenario.id}: generated Puppet guideLayer mismatch; expected ${expected.guideLayer}, got ${layer.guideLayer}.`);
+  }
+
+  const details = await callBridgeTool("get_effect_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: 1,
+    effectName: expected.effectName,
+    effectMatchName: expected.effectMatchName,
+    includeProperties: false
+  });
+  if (!details || !details.effect) {
+    throw new Error(`${scenario.id}: generated Puppet evidence effect ${expected.effectName} was not found by read-back.`);
+  }
+  if (expected.effectMatchName && details.effect.matchName !== expected.effectMatchName) {
+    throw new Error(`${scenario.id}: generated Puppet evidence matchName mismatch; expected ${expected.effectMatchName}, got ${details.effect.matchName}.`);
+  }
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    layer: { index: layer.index, name: layer.name, guideLayer: layer.guideLayer },
+    effect: { name: details.effect.name, matchName: details.effect.matchName }
+  };
+}
+
 async function verifyGeneratedTextShapesFromTextReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -7656,6 +7712,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedGridRigControlReplacement) {
     return verifyGeneratedGridRigControlReplacementReadBack(scenario, expected);
+  }
+
+  if (expected.generatedPuppetGuideLayer) {
+    return verifyGeneratedPuppetGuideLayerReadBack(scenario, expected);
   }
 
   if (expected.generatedTextShapesFromText) {
@@ -8472,6 +8532,10 @@ async function main() {
   }
   if (command === "agent-puppet-pin-type-openai-cli-smoke" || command === "full-ui-agent-puppet-pin-type-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliPuppetPinTypeScenarioConfig());
+    return;
+  }
+  if (command === "agent-puppet-guide-layer-openai-cli-smoke" || command === "full-ui-agent-puppet-guide-layer-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliPuppetGuideLayerScenarioConfig());
     return;
   }
   if (command === "agent-comp-properties-openai-cli-smoke" || command === "full-ui-agent-comp-properties-openai-cli-smoke") {

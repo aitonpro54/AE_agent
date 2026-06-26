@@ -9940,6 +9940,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "toggle-puppet-pins-as-guide-layers-typed-plan",
+      "title": "Toggle Puppet Pins As Guide Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "effects",
+        "puppet",
+        "guide-layer",
+        "layer-metadata",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Set native guideLayer on one explicit generated or reviewed Puppet pin host layer after Puppet-like effect evidence, then read the layer and effect back.",
+        "appliesWhen": [
+          "The user asks to set Puppet pin host layers visible or as guide layers and a generated-only adaptation is acceptable.",
+          "Current typed evidence identifies one explicit comp, one layer index/name, and a Puppet-like effect on that same layer.",
+          "Generated proof can use ADBE FreePin3 evidence; exact Pseudo/Duik pin02 behavior requires explicit reviewed evidence or a separate generated/mock third-party fixture."
+        ],
+        "whenNotToUse": [
+          "The request requires source-exact project-wide comp/layer/effect traversal.",
+          "The request depends on ScriptUI Alt-key branching instead of an explicit guideLayer boolean.",
+          "The request mutates user DuIK effects, puppet pin atoms, pin sizes, property names, expressions, keyframes, transforms, sources, timing, Project items, render queue items, files, or raw JSX."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "puppetGuideLayerTarget",
+          "type": "object",
+          "required": true,
+          "description": "Current typed evidence containing comp identity, one layerIndex, expected layer name, Puppet-like effect name, and effect matchName such as ADBE FreePin3 or explicitly reviewed Pseudo/Duik pin02."
+        },
+        {
+          "name": "guideLayer",
+          "type": "boolean",
+          "required": true,
+          "description": "Reviewed final native guideLayer value. This replaces source Alt-key branching and must be explicit."
+        }
+      ],
+      "targetAssumptions": [
+        "The mutated layer is generated or explicitly reviewed and has Puppet-like effect evidence on the same layer.",
+        "The generated proof lane uses ADBE FreePin3 effect evidence rather than claiming DuIK plugin semantics.",
+        "The workflow mutates only native layer guideLayer through set_layer_metadata on one explicit layer index with expectedLayerNames guards.",
+        "Project-wide traversal, inferred Pseudo/Duik pin02 targets, user DuIK effects, puppet pin atom edits, pin-size/property rename behavior, expressions, keyframes, transforms, sources, timing, Project items, render queue items, file output, and selection persistence are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "create_shape_layer",
+          "add_effect",
+          "get_effect_details",
+          "set_layer_metadata",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create or bind one generated Puppet-like layer, prove effect identity, set native guideLayer with set_layer_metadata, then read back the same layer and effect.",
+        "steps": [
+          "Run get_active_comp or create a generated comp before mutation to capture target comp identity.",
+          "Create or bind one generated layer that can receive ADBE FreePin3, or bind an explicitly reviewed layer with existing Puppet/DuIK-like effect evidence.",
+          "Run add_effect with ADBE FreePin3 only for generated proof targets; otherwise require existing get_effect_details evidence.",
+          "Run get_effect_details with bounded property depth/limit and confirm the effect identity belongs to the reviewed layer.",
+          "Run set_layer_metadata with exactly one layer index, matching expectedLayerNames, and the explicit guideLayer boolean.",
+          "Run get_layer_details after mutation to confirm the same layer name/index and requested guideLayer value.",
+          "Run get_effect_details after mutation to confirm the same Puppet-like effect identity on the same layer.",
+          "Fail closed if the request needs source-exact project-wide traversal, Alt-key branching, inferred Pseudo/Duik pin02 targets, user DuIK mutation, puppet pin atom edits, third-party semantics without a generated/mock fixture, or raw JSX."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the generated comp, layer, effect name, and effect matchName such as ADBE FreePin3 or explicitly reviewed Pseudo/Duik pin02.",
+          "set_layer_metadata result reports one target layer, expectedLayerNames guards, and guideLayer:true or guideLayer:false.",
+          "Post-run get_layer_details evidence shows the same layer with the requested guideLayer value.",
+          "Post-run get_effect_details evidence shows the same Puppet-like effect identity on the same layer.",
+          "Unsupported source-exact project-wide traversal, Alt-key branching, inferred DuIK targets, user plugin mutation, puppet pin atom edits, raw JSX, and unreviewed targets are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-layers-toggle-puppet-pins-as-guide-layers after set_layer_metadata gained guideLayer support.",
+          "Generated-only proof uses ADBE FreePin3 evidence, set_layer_metadata guideLayer, and get_layer_details/get_effect_details read-back; it does not claim exact DuIK plugin semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-layers-toggle-puppet-pins-as-guide-layers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the safe guide-layer portion of kyletmartinez/after-effects-scripts Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx into an explicit generated Puppet-like layer metadata contract using ADBE FreePin3/get_effect_details evidence, set_layer_metadata guideLayer, get_layer_details read-back, and get_effect_details read-back; no source JSX copied. Source-exact project-wide Pseudo/Duik pin02 traversal, ScriptUI Alt-key branching, user DuIK effects, puppet pin atom edits, pin-size/property rename behavior, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Generated/reviewed scoped recipe only; exact DuIK Pseudo/Duik pin02 behavior requires explicit reviewed evidence or a separate generated/mock third-party fixture.",
+        "Use set_layer_metadata only with one explicit layer index, expectedLayerNames, and a reviewed guideLayer boolean.",
+        "Require get_effect_details before and after mutation so Puppet-like effect identity is not inferred from names or project traversal.",
+        "Do not infer Puppet or DuIK targets from selected properties, screenshots, layer names, prior chat context, source Alt-key state, or all-project scans.",
+        "Do not use this recipe for puppet pin atom edits, DuIK pin size changes, property renames, expression edits, keyframe edits, layer transform edits, source relinking, render queue changes, file export, selected-property mutation, or broad composition/project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "round-selected-property-values-typed-plan",
       "title": "Round Selected Property Values Typed Plan",
       "status": "recipe",
@@ -15487,7 +15608,7 @@
       "intent": {
         "summary": "Classify DuIK/Newton third-party semantics as approval-gated typed-tool gaps unless a narrow generated-only recipe fits.",
         "appliesWhen": [
-          "The user asks to match layers to Newton or Illustrator-derived names, copy Newton position keyframes, assign layer parents from third-party naming, rename DuIK puppet pins, or change DuIK pin-size/guide behavior.",
+          "The user asks to match layers to Newton or Illustrator-derived names, copy Newton position keyframes, assign layer parents from third-party naming, rename DuIK puppet pins, change DuIK pin-size behavior, or change DuIK guide behavior that cannot fit the explicit Puppet guide-layer recipe.",
           "The request cannot be narrowed to an existing generated-only typed plan such as explicit Puppet pin property updates, layer metadata, selection, expression, or blend-mode updates."
         ]
       },
@@ -15508,6 +15629,7 @@
       "targetAssumptions": [
         "This recipe is a high-risk policy guard: classification can use read-only evidence, but any matched mutation requires the full mutation gate set.",
         "Existing narrow generated-only Puppet, layer metadata, selection, expression, and blend-mode recipes remain separate and must not be widened to DuIK/Newton semantics.",
+        "The explicit toggle-puppet-pins-as-guide-layers-typed-plan recipe is a separate narrow generated-only layer guideLayer exception and must not be widened to project-wide DuIK scans.",
         "Unsupported requests report a typed-tool gap with the future generated or mock third-party fixture, explicit approval, checkpoint or rollback path, cleanup policy, and typed read-back needed to unblock the family.",
         "Layers, parents, keyframes, effects, properties, sources, Project items, render queue items, files, and selection state are preserved."
       ],
@@ -15559,7 +15681,8 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by reopened Full Intaker parent reducer for DuIK/Newton-like third-party semantics backlog review.",
-          "No scoped retry, generated-only mutating live CEP proof, third-party plugin mutation, parent/keyframe/property mutation, or candidate completion was run in this milestone."
+          "No scoped retry, generated-only mutating live CEP proof, third-party plugin mutation, parent/keyframe/property mutation, or candidate completion was run in this milestone.",
+          "The Puppet guide-layer exception is handled by toggle-puppet-pins-as-guide-layers-typed-plan; this policy still covers DuIK/Newton behavior that cannot fit a narrow generated-only recipe."
         ]
       },
       "promotionHistory": [
@@ -15576,7 +15699,8 @@
         "approval-gated policy guard only; it does not authorize mutation or candidate completion.",
         "Use this policy to report typed-tool gaps for DuIK/Newton-like third-party semantics requests that cannot fit an existing narrow generated-only recipe.",
         "Require a separate narrow typed-tool contract before parent assignment, position keyframe copy, DuIK puppet-pin rename, DuIK pin-size/guide mutation, third-party effect mutation, project-wide traversal, selected-property traversal, or Alt-key branching.",
-        "Do not widen generated-only Puppet, layer metadata, selection, expression, or blend-mode recipes to cover user plugin effects, inferred third-party naming, broad traversal, parent/keyframe/property mutation, or raw script execution."
+        "Do not widen generated-only Puppet, layer metadata, selection, expression, or blend-mode recipes to cover user plugin effects, inferred third-party naming, broad traversal, parent/keyframe/property mutation, or raw script execution.",
+        "Use the Puppet guide-layer recipe only for one explicit generated/reviewed layer with effect evidence and set_layer_metadata guideLayer read-back; keep project-wide DuIK scans on this fail-closed policy."
       ]
     },
     {

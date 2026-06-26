@@ -9,9 +9,10 @@ request cannot be narrowed to an existing generated-only typed plan.
 Covered examples include matching AE layers to Newton/Illustrator layer names,
 copying Newton-derived position keyframes, assigning layer parents from
 third-party naming conventions, renaming DuIK puppet-pin properties, changing
-DuIK pin-size or guide-layer behavior, and scanning project comps for
-third-party pseudo effects such as `Pseudo/Duik pin02`. This policy records a
-fail-closed review path only; it does not approve third-party plugin semantics,
+DuIK pin-size behavior, guide-layer behavior that cannot fit the explicit
+Puppet guide-layer recipe, and scanning project comps for third-party pseudo
+effects such as `Pseudo/Duik pin02`. This policy records a fail-closed review
+path only; it does not approve third-party plugin semantics,
 project-wide scans, parent writes, keyframe copies, effect mutation, or property
 rename mutation by itself.
 
@@ -21,6 +22,9 @@ Existing narrow exceptions stay separate:
   `ADBE FreePin3 PosPin Type` property with read-back.
 - `toggle-puppet-on-transparent-typed-plan` may update an explicit generated
   `ADBE FreePin3 On Transparent` property with read-back.
+- `toggle-puppet-pins-as-guide-layers-typed-plan` may update native
+  `guideLayer` on one explicit generated or reviewed Puppet host layer with
+  effect evidence and layer/effect read-back.
 - `hard-solo-layers-typed-plan`, `difference-blend-mode-typed-plan`, and
   selection recipes may update explicit generated layers only inside their
   documented contracts.

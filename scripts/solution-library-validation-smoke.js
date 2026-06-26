@@ -44,6 +44,7 @@ const IMPORTED_ADVISORY_IDS = [
   "expose-essential-properties-typed-plan",
   "toggle-puppet-on-transparent-typed-plan",
   "toggle-puppet-pin-types-typed-plan",
+  "toggle-puppet-pins-as-guide-layers-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
@@ -176,7 +177,9 @@ const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
   "grid-rig-control-replacement-generated-only",
   "replace-grid-rig-control-typed-plan",
   "effect-enabled-toggle-generated-only",
-  "toggle-specific-effects-typed-plan"
+  "toggle-specific-effects-typed-plan",
+  "puppet-pin-guide-layer-generated-only",
+  "toggle-puppet-pins-as-guide-layers-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -1136,6 +1139,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /generated Puppet pin atom/.test(note)), `${id}: notes must require generated Puppet pin atom evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_Pin_Types/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-pins-as-guide-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_layer_metadata", "get_layer_details"],
+        `${id}: Puppet guide-layer workflow should stay on the narrow generated Puppet evidence and layer metadata sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet guide-layer workflow must be mutating.`);
+      assert(text.includes("guideLayer"), `${id}: recipe should require native guideLayer targeting.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use the layer metadata typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect evidence read-back.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should document generated Puppet evidence.`);
+      assert(text.includes("Pseudo/Duik pin02"), `${id}: recipe should keep exact DuIK semantics explicit.`);
+      assert(text.includes("Alt-key branching"), `${id}: recipe should reject inferred Alt-key behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.steps.some((step) => /guideLayer/.test(step)), `${id}: verification must include guideLayer state.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_layer_details/.test(item)), `${id}: evidence must require layer read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_effect_details/.test(item)), `${id}: evidence must require effect read-back.`);
+      assert(solution.notes.some((note) => /generated\/mock third-party fixture/.test(note)), `${id}: notes must keep exact DuIK behavior behind generated/mock fixture evidence.`);
+      assert(solution.notes.some((note) => /all-project scans/.test(note)), `${id}: notes must reject broad project scans.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_Pins_As_Guide_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -3443,6 +3468,21 @@ function assertActualRetrieval(registry) {
   assert(puppetPinTypePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
   assert(!/run_extendscript/i.test(puppetPinTypePromptSection), "Puppet pin type guidance should not recommend raw ExtendScript.");
 
+  const puppetGuideLayerRetrieval = retrieveSolutionHints("Set a generated Puppet pin host layer as a guide layer after get_effect_details shows ADBE FreePin3, then read back guideLayer through get_layer_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetGuideLayerRetrieval.ok, true);
+  assert(ids(puppetGuideLayerRetrieval).includes("toggle-puppet-pins-as-guide-layers-typed-plan"), "Puppet guide-layer advisory recipe should surface for generated Puppet guide-layer prompts.");
+  const puppetGuideLayerPromptSection = formatSolutionHintsForPrompt(puppetGuideLayerRetrieval);
+  assert(puppetGuideLayerPromptSection.includes("Toggle Puppet Pins As Guide Layers Typed Plan"), "prompt section should include Puppet guide-layer advisory title.");
+  assert(puppetGuideLayerPromptSection.includes("guideLayer"), "prompt section should preserve native guideLayer guidance.");
+  assert(puppetGuideLayerPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata.");
+  assert(puppetGuideLayerPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
+  assert(puppetGuideLayerPromptSection.includes("get_effect_details"), "prompt section should require effect evidence read-back.");
+  assert(!/run_extendscript/i.test(puppetGuideLayerPromptSection), "Puppet guide-layer guidance should not recommend raw ExtendScript.");
+
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5211,6 +5251,24 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "untyped effect-specific toggles"
     ]
   });
+  assertFirstFourSwitchLane(liveLaneRegistry, "puppet-pin-guide-layer-generated-only", {
+    requiredTools: ["get_effect_details", "get_layer_details", "set_layer_metadata"],
+    readBackTools: ["get_layer_details", "get_effect_details"],
+    candidateIds: ["tool-layers-toggle-puppet-pins-as-guide-layers"],
+    scopeIncludes: [
+      "Puppet pin host guide-layer",
+      "ADBE FreePin3",
+      "set_layer_metadata guideLayer:true",
+      "expectedLayerNames",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "inferred Pseudo/Duik pin02 targets",
+      "user DuIK effect mutation",
+      "raw JSX"
+    ]
+  });
   assertFirstFourSwitchLane(liveLaneRegistry, "layer-fill-color-cycle-generated-only", {
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     readBackTools: ["get_effect_details", "get_layer_details"],
@@ -5435,6 +5493,18 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
     /Matte Roundness/,
     /delete_layer/,
     /non-generated destructive replacement/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-puppet-pins-as-guide-layers-typed-plan", ["get_effect_details", "set_layer_metadata", "get_layer_details"], [
+    /Puppet pin host/,
+    /guideLayer/,
+    /ADBE FreePin3/,
+    /Pseudo\/Duik pin02/,
+    /set_layer_metadata/,
+    /get_effect_details/,
+    /get_layer_details/,
+    /project-wide/,
+    /Alt-key/,
     /raw JSX/
   ]);
 

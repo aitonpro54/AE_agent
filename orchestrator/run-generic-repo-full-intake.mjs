@@ -994,6 +994,52 @@ const AUTO_LANE_FAMILIES = Object.freeze([
       "generated-only Puppet pin type proof using explicit ADBE FreePin3 effect evidence, an ADBE FreePin3 PosPin Atom ancestor, one ADBE FreePin3 PosPin Type propertyPath, set_puppet_pin_type enum values 1/position or 4/advanced, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection persistence, raw JSX semantics, and missing generated pin atom evidence remain fail-closed",
   },
   {
+    id: "puppet-pin-guide-layer-generated-only",
+    requiredTools: ["get_effect_details", "get_layer_details", "set_layer_metadata"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "get_project_info",
+      "list_effects",
+      "set_layer_metadata",
+    ],
+    allowedUnsafeSignals: ["propertyTraversal", "thirdPartyAssumption"],
+    candidateIds: ["tool-layers-toggle-puppet-pins-as-guide-layers"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-guide-layer-openai-cli-smoke",
+    proofLane: "puppet-pin-guide-layer",
+    productionTypedTools: true,
+    readBackTools: ["get_layer_details", "get_effect_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-toggle-puppet-pins-as-guide-layers.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Puppet pin host guide-layer proof using explicit generated ADBE FreePin3 effect evidence, one reviewed layer index/name, set_layer_metadata guideLayer:true or guideLayer:false with expectedLayerNames guards, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact all-project traversal, ScriptUI Alt-key branching, inferred Pseudo/Duik pin02 targets, user DuIK effect mutation, puppet pin atom edits, pin-size/property rename behavior, non-generated user assets, source-checkout execution, and raw JSX remain fail-closed",
+  },
+  {
     id: "shape-mask-path-flip-generated-only",
     requiredTools: ["get_path_geometry", "set_path_geometry"],
     allowedTools: [
@@ -1531,7 +1577,6 @@ const POLICY_RESOLUTION_FAMILIES = Object.freeze([
     reason: "third_party_semantics_policy_required",
     candidateIds: [
       "tool-properties-increase-all-pin-sizes",
-      "tool-layers-toggle-puppet-pins-as-guide-layers",
       "tool-layers-rename-puppet-pins-for-duik",
     ],
     policyPath: "recipes/third-party-semantics-safety-policy.md",
@@ -2262,6 +2307,16 @@ function familyRequirementMatches(family, tools) {
   return family.requiredTools.every((tool) => toolSet.has(tool));
 }
 
+function familyRequirementMatchesForCandidate(family, candidate, tools) {
+  if (familyRequirementMatches(family, tools)) return true;
+  const exactProductionCandidateFamily =
+    familyExplicitlyScopesCandidate(family, candidate) &&
+    family.productionTypedTools === true;
+  if (!exactProductionCandidateFamily) return false;
+  const allowedTools = new Set(Array.isArray(family.allowedTools) ? family.allowedTools : []);
+  return family.requiredTools.every((tool) => allowedTools.has(tool));
+}
+
 function familyAllowsAllTools(family, tools) {
   const allowed = new Set(family.allowedTools);
   return tools.every((tool) => allowed.has(tool));
@@ -2323,7 +2378,7 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
 
   const explicitCandidateMatches = AUTO_LANE_FAMILIES
     .filter((family) => familyExplicitlyScopesCandidate(family, candidate))
-    .filter((family) => familyRequirementMatches(family, tools))
+    .filter((family) => familyRequirementMatchesForCandidate(family, candidate, tools))
     .filter((family) => familyAllowsAllTools(family, tools))
     .filter((family) => familyAllowsUnsafeSignals(family, unsafeSignals));
   const hasExplicitUnsafeCandidateMatch = explicitCandidateMatches.length > 0;
@@ -2351,7 +2406,7 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
     ? explicitCandidateMatches
     : AUTO_LANE_FAMILIES
       .filter((family) => familyAppliesToCandidate(family, candidate))
-      .filter((family) => familyRequirementMatches(family, tools));
+      .filter((family) => familyRequirementMatchesForCandidate(family, candidate, tools));
   const exactMatches = requirementMatches.filter((family) => familyAllowsAllTools(family, tools));
   if (exactMatches.length > 1) {
     return failClosedSynthesisReport({

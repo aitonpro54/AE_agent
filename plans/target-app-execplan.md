@@ -26,6 +26,40 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake puppet guide-layer generated-only lane (2026-06-26):
+  parent-owned milestone for `tool-layers-toggle-puppet-pins-as-guide-layers`
+  replaced the stale all-or-nothing DuIK/native `guideLayer` blocker with a
+  narrow generated/reviewed typed adaptation. Added
+  `toggle-puppet-pins-as-guide-layers-typed-plan`, generic intake note,
+  solution registry/retrieval coverage, generated scenario/report smoke
+  coverage, CEP command
+  `full-ui-agent-puppet-guide-layer-openai-cli-smoke`, live-lane family
+  `puppet-pin-guide-layer-generated-only`, runner mapping, and a third-party
+  policy carve-out. The safe lane uses explicit generated `ADBE FreePin3`
+  evidence, one reviewed layer index/name, `set_layer_metadata`
+  `guideLayer:true/false`, and `get_layer_details` / `get_effect_details`
+  read-back. Source-exact project-wide `Pseudo/Duik pin02` traversal,
+  ScriptUI Alt-key branching, inferred DuIK targets, user DuIK mutation,
+  puppet pin atom edits, pin-size/property rename behavior, non-generated user
+  assets, source-checkout execution, raw JSX, launcher edits, push, and PR
+  remain fail-closed. Scoped retry with explicit id, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit` matched the new
+  lane and produced a fresh terminal/live-blocked ticket because generated-only
+  proof failed with `CEP panel is not connected to the bridge`. Compact proof
+  envelope SHA-256: `7698f2534d5271ecddf889a104295715d3b2f4ebdc928ee68efd500b50d5ce62`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  solution/live-lane registries, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/solution-registry-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped candidate selection,
+  dependency change, Local/Ollama, fallback provider, broad/default CEP smoke,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake layer name reset generated-only lane (2026-06-26):
   parent-owned milestone for `tool-layers-reset-layer-names` replaced the old
   empty-name blocker with a narrow generated/reviewed typed adaptation.
@@ -3725,6 +3759,16 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Accept `puppet-pin-guide-layer-generated-only` as the bounded
+  adaptation for `tool-layers-toggle-puppet-pins-as-guide-layers`. The contract
+  may only prove native guide-layer toggling on an explicit generated Puppet
+  host layer with `ADBE FreePin3` evidence, exact reviewed layer identity,
+  `set_layer_metadata.guideLayer`, and typed read-back. DuIK pseudo-effect
+  discovery, source-exact project-wide traversal, inferred selected-layer
+  targets, user DuIK mutation, puppet pin atom edits, pin-size/property rename
+  behavior, raw JSX, source-checkout execution, and non-generated user assets
+  remain fail-closed.
+
 - 2026-06-26: For `tool-layers-replace-grid-rig-control`, the accepted safe
   adaptation is a generated-only replacement lane using existing typed tools
   plus `set_layer_metadata.guideLayer`. A separate monolithic raw-JSX-like
@@ -5174,6 +5218,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake puppet guide-layer generated-only lane | Required to give `tool-layers-toggle-puppet-pins-as-guide-layers` a current generated-only native `guideLayer` lane without approving project-wide DuIK pseudo-effect traversal, Alt-key UI semantics, puppet pin atom edits, raw JSX, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-toggle-puppet-pins-as-guide-layers`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `puppet-pin-guide-layer-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `7698f2534d5271ecddf889a104295715d3b2f4ebdc928ee68efd500b50d5ce62`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full Intake Grid Rig Control replacement generated-only lane | Required to give `tool-layers-replace-grid-rig-control` a current generated-only typed replacement lane without approving raw JSX, broad selected-layer traversal, non-generated destructive replacement, or third-party Flex internals. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-replace-grid-rig-control`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `grid-rig-control-replacement-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `747408c3f0ada449d3b214f234bf6ea674e2fceea8767255ebe98ca99783bbd5`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 

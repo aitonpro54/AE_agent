@@ -32,6 +32,7 @@ const {
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetGuideLayerScenarioPlans,
   agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentKeyframeScenarioPlans,
@@ -863,6 +864,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Atom"));
   assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Type"));
 
+  const [puppetGuideLayer] = agentPuppetGuideLayerScenarioPlans("Codex QA AUX-PUPPET-GUIDE Fixture");
+  assert.strictEqual(puppetGuideLayer.id, "generated-puppet-guide-layer-toggle");
+  assert.strictEqual(puppetGuideLayer.expectedReadBack.generatedPuppetGuideLayer, true);
+  assert.strictEqual(puppetGuideLayer.expectedReadBack.effectMatchName, "ADBE FreePin3");
+  assert.strictEqual(puppetGuideLayer.expectedReadBack.guideLayer, true);
+  assert.deepStrictEqual(puppetGuideLayer.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "add_effect",
+    "get_effect_details",
+    "set_layer_metadata",
+    "get_layer_details",
+    "get_effect_details"
+  ]);
+  assert.deepStrictEqual(puppetGuideLayer.plan.steps[4].args.layerIndices, [1]);
+  assert.deepStrictEqual(puppetGuideLayer.plan.steps[4].args.expectedLayerNames, [puppetGuideLayer.expectedReadBack.layerName]);
+  assert.strictEqual(puppetGuideLayer.plan.steps[4].args.guideLayer, true);
+
   const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
   assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
@@ -1228,7 +1247,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
 
   const [layerNameReset] = agentLayerNameResetScenarioPlans("Codex QA Reset Names Fixture");
 
-  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, puppetGuideLayer, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

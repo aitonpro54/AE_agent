@@ -2034,6 +2034,56 @@ function agentPuppetPinTypeScenarioPlans(runPrefix) {
   }));
 }
 
+function agentPuppetGuideLayerScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Puppet Guide Layer`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const effectName = `${base} Puppet`;
+
+  return [
+    {
+      id: "generated-puppet-guide-layer-toggle",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "add_effect",
+        "get_effect_details",
+        "set_layer_metadata",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      expectedReadBack: {
+        generatedPuppetGuideLayer: true,
+        compName,
+        layerName,
+        effectName,
+        effectMatchName: "ADBE FreePin3",
+        guideLayer: true
+      },
+      plan: {
+        summary: "Generated-only live QA for setting one explicit Puppet host layer as a guide layer.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated Puppet guide-layer comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "Generated-only Puppet guide-layer validation" } },
+          { title: "Create generated Puppet guide-layer shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [260, 150], position: [320, 180], fillColor: [0.24, 0.46, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Add generated Puppet evidence effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE FreePin3", name: effectName } },
+          { title: "Read generated Puppet evidence before guide-layer set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, effectMatchName: "ADBE FreePin3", includeProperties: true, propertyDepth: 4, propertyLimit: 120, includeValues: true } },
+          { title: "Set generated Puppet host as guide layer", tool: "set_layer_metadata", args: { compName, layerIndices: [1], expectedLayerNames: [layerName], guideLayer: true } },
+          { title: "Read generated Puppet guide layer", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Read generated Puppet evidence after guide-layer set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, effectMatchName: "ADBE FreePin3", includeProperties: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentExpressionScenarioPlans(runPrefix) {
   const base = `${runPrefix} Expression`;
   const compName = `${base} Comp`;
@@ -4759,6 +4809,7 @@ module.exports = {
   agentMarkerLifecycleScenarioPlans,
   agentNewToolsScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
+  agentPuppetGuideLayerScenarioPlans,
   agentPuppetPinTypeScenarioPlans,
   agentPuppetOnTransparentScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
