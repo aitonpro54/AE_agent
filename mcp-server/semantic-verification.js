@@ -9,6 +9,7 @@ const MUTATING_TOOLS = new Set([
   "create_adjustment_layer",
   "create_text_layer",
   "create_shapes_from_text",
+  "import_footage",
   "create_camera_layer",
   "create_camera_with_controller",
   "toggle_onion_skinning",

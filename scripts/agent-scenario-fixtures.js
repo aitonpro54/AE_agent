@@ -12,6 +12,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "create_null_layer",
   "create_text_layer",
   "create_shapes_from_text",
+  "import_footage",
   "create_camera_layer",
   "create_camera_with_controller",
   "toggle_onion_skinning",
@@ -1724,6 +1725,61 @@ function agentProjectItemMetadataScenarioPlans(runPrefix) {
             }
           },
           { title: "Read generated project item labels after update", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentResetImportedItemNamesScenarioPlans(runPrefix) {
+  const base = safeOutputName(`${runPrefix} Reset Imported Item Names`);
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const outputFileName = `${base}-footage.png`;
+  const staleFootageName = `${base}-stale-footage-name`;
+  const filePath = `logs/generated-exports/${outputFileName}`;
+
+  return [
+    {
+      id: "generated-reset-imported-item-names",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "save_comp_frame_png",
+        "import_footage",
+        "find_project_items",
+        "get_project_snapshot",
+        "rename_project_items"
+      ],
+      expectedReadBack: {
+        generatedResetImportedItemNames: true,
+        base,
+        compName,
+        layerName,
+        outputFileName,
+        staleFootageName,
+        filePath
+      },
+      plan: {
+        summary: "Generated-only live QA for resetting one explicit imported footage item name to its file display name.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated comp for footage reset fixture", tool: "create_comp", args: { name: compName, width: 320, height: 180, pixelAspect: 1, duration: 1, frameRate: 24, bgColor: [0.04, 0.05, 0.06], allowDuplicateName: false, openInViewer: true, comment: "generated-only imported footage reset validation" } },
+          { title: "Create generated footage reset frame content", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [160, 90], position: [160, 90], fillColor: [0.2, 0.7, 0.55], strokeColor: [1, 1, 1], strokeWidth: 3, duration: 1 } },
+          { title: "Save generated footage reset PNG fixture", tool: "save_comp_frame_png", args: { compName, expectedCompName: compName, time: 0, outputFileName, resolutionFactor: [1, 1], allowOverwrite: true } },
+          { title: "Import generated footage with stale display name", tool: "import_footage", args: { filePath, name: staleFootageName, sequence: false } },
+          { title: "Find stale generated footage before reset", tool: "find_project_items", args: { query: staleFootageName, type: "footage", exactName: true, limit: 1, caseSensitive: true } },
+          { title: "Read generated footage snapshot before reset", tool: "get_project_snapshot", args: { includeComps: false, includeFootage: true, includeFolders: false, maxItems: 100 } },
+          { title: "Reset generated imported footage name to file display name", tool: "rename_project_items", args: { itemIndices: "{{steps.5.result}}", type: "footage", mode: "exact", name: outputFileName, limit: 1 } },
+          { title: "Find reset generated footage after rename", tool: "find_project_items", args: { query: outputFileName, type: "footage", exactName: true, limit: 1, caseSensitive: true } },
+          { title: "Read generated footage snapshot after reset", tool: "get_project_snapshot", args: { includeComps: false, includeFootage: true, includeFolders: false, maxItems: 100 } }
         ]
       }
     }
@@ -4862,6 +4918,7 @@ module.exports = {
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
+  agentResetImportedItemNamesScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,

@@ -26,6 +26,40 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake reset imported item names generated-only lane/retry
+  (2026-06-26): parent-owned scoped milestone for
+  `tool-project-reset-imported-item-names` added a candidate-specific safe
+  adaptation without adding Project panel selection reads. Added
+  `reset-imported-item-names-typed-plan`, generic intake note, solution
+  registry/retrieval coverage, scenario/report smoke coverage, CEP command
+  `full-ui-agent-reset-imported-item-names-openai-cli-smoke`, and
+  self-improvement family `reset-imported-item-names-generated-only`. The safe
+  lane uses a generated PNG under `logs/generated-exports`,
+  `import_footage` with a reviewed stale display name, explicit generated
+  footage `itemIndices` from `find_project_items`/`get_project_snapshot`,
+  `rename_project_items(type:"footage", mode:"exact")` to the file display
+  name, post-mutation snapshot/read-back, semantic verification, generated PNG
+  cleanup, and generated-prefix project-item cleanup. Source-exact Project
+  panel selection reads, relinking, missing-footage repair, arbitrary user file
+  paths, non-generated user assets, item delete/move, render queue work, raw
+  JSX, and source JSX copy remain fail-closed. Scoped retry with explicit id,
+  `--context-percent 40`, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` produced terminal/live-blocked ticket
+  `live-lane-family-04dc73d685a992ff`: lane non-live validation passed,
+  read-only CEP preflight passed, and generated-only live proof failed closed
+  with `CEP panel is not connected to the bridge`. Compact proof envelope
+  SHA-256: `bc6c021f851efaecac9387a4630f61c83d1585be330896d29015ed419cc7d085`.
+  Closeout validation passed: touched-file `node --check`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake project selection folder generated-only lane/retry
   (2026-06-26): parent-owned scoped milestone for
   `tool-project-add-selection-to-new-folder` added a candidate-specific
@@ -3970,6 +4004,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: For `tool-project-reset-imported-item-names`, keep source-exact
+  Project panel selection traversal fail-closed. The accepted adaptation is
+  generated-only and explicit-footage-index based: sandboxed generated PNG,
+  `import_footage`, typed project snapshot/search evidence, exact
+  `rename_project_items` to the reviewed file display name, semantic
+  verification, and generated cleanup. Relinking, missing-footage repair,
+  arbitrary user files, non-generated assets, item delete/move, render queue
+  work, raw JSX, and source JSX copy remain separate gated contracts.
+
 - 2026-06-26: For `tool-project-add-selection-to-new-folder`, keep exact
   Project panel selected-item discovery fail-closed until a separate
   `get_selected_project_items` typed contract exists. The accepted adaptation
@@ -5511,6 +5554,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake reset imported item names generated-only lane/retry | Required to give `tool-project-reset-imported-item-names` a candidate-specific explicit generated imported-footage reset recipe/lane, rerun the scoped candidate from a clean tree, and preserve Project panel selection/relink/user-file/user-asset risks as fail-closed. | Passed: touched JS `node --check` for `mcp-server/semantic-verification.js`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/semantic-verification-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-library-validation-smoke.js`; scoped retry with exact `tool-project-reset-imported-item-names`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warning only. Scoped retry returned terminal/live-blocked ticket `live-lane-family-04dc73d685a992ff`, proof SHA-256 `bc6c021f851efaecac9387a4630f61c83d1585be330896d29015ed419cc7d085`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
 
 | Full Intake project selection folder generated-only lane/retry | Required to give `tool-project-add-selection-to-new-folder` a candidate-specific explicit generated itemIndices foldering recipe/lane, rerun the scoped candidate from a clean tree, and preserve Project panel selection/file/user-asset risks as fail-closed. | Passed: touched JS `node --check` for `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-library-validation-smoke.js`; scoped retry with exact `tool-project-add-selection-to-new-folder`, `--context-percent 45`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warning only. Scoped retry returned terminal/live-blocked ticket `live-lane-family-d3b67468672474ac`, proof SHA-256 `a85c76b887824eb4a1c6ac9805c7f007c5b63977e71ce391b460d890ba00d3d0`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
 

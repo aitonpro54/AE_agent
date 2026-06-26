@@ -56,6 +56,7 @@ const {
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
+  agentResetImportedItemNamesScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,
@@ -529,6 +530,24 @@ function openAiCliProjectItemMetadataScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_ITEM_METADATA_PREFIX || "Codex QA AUX-PI-META",
     scenarioFactory: agentProjectItemMetadataScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliResetImportedItemNamesScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-reset-imported-item-names",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_RESET_IMPORTED_NAMES_PREFIX || "Codex QA AUX-RIIN",
+    scenarioFactory: agentResetImportedItemNamesScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5232,6 +5251,74 @@ async function verifyGeneratedProjectItemMetadataReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedResetImportedItemNamesReadBack(scenario, expected) {
+  const found = await callBridgeTool("find_project_items", {
+    query: expected.outputFileName,
+    type: "footage",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  const match = found.matches && found.matches[0];
+  if (!match || !match.itemIndex) {
+    throw new Error(`${scenario.id}: reset generated imported footage ${expected.outputFileName} was not found by exact-name read-back.`);
+  }
+
+  const stale = await callBridgeTool("find_project_items", {
+    query: expected.staleFootageName,
+    type: "footage",
+    exactName: true,
+    caseSensitive: true,
+    limit: 5
+  });
+  if (stale.matches && stale.matches.length) {
+    throw new Error(`${scenario.id}: stale generated imported footage name remained after reset.`);
+  }
+
+  const snapshot = await callBridgeTool("get_project_snapshot", {
+    includeComps: false,
+    includeFootage: true,
+    includeFolders: false,
+    maxItems: 100
+  });
+  const items = Array.isArray(snapshot.items) ? snapshot.items : [];
+  const item = items.find((candidate) => candidate.itemIndex === match.itemIndex || candidate.name === expected.outputFileName);
+  if (!item) {
+    throw new Error(`${scenario.id}: generated imported footage was not present in project snapshot read-back.`);
+  }
+  if (item.name !== expected.outputFileName) {
+    throw new Error(`${scenario.id}: generated imported footage name mismatch; expected ${expected.outputFileName}, got ${item.name || "missing"}.`);
+  }
+  const normalizedFile = String(item.file || "").replace(/\\/g, "/");
+  if (!normalizedFile.endsWith(`/logs/generated-exports/${expected.outputFileName}`)) {
+    throw new Error(`${scenario.id}: generated imported footage file read-back mismatch; got ${item.file || "missing file path"}.`);
+  }
+
+  const generatedExportDir = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+    ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+    : path.join(__dirname, "..", "logs", "generated-exports");
+  const outputPath = path.join(generatedExportDir, expected.outputFileName);
+  let removedGeneratedExport = false;
+  try {
+    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    removedGeneratedExport = !fs.existsSync(outputPath);
+  } catch (_error) {}
+
+  return {
+    ok: true,
+    footage: {
+      itemIndex: item.itemIndex,
+      name: item.name,
+      file: item.file || null
+    },
+    reset: {
+      staleName: expected.staleFootageName,
+      displayName: expected.outputFileName
+    },
+    removedGeneratedExport
+  };
+}
+
 async function verifyGeneratedCompositionVersionReadBack(scenario, expected) {
   const found = await callBridgeTool("find_project_items", {
     query: expected.base,
@@ -7677,6 +7764,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedProjectItemMetadataReadBack(scenario, expected);
   }
 
+  if (expected.generatedResetImportedItemNames) {
+    return verifyGeneratedResetImportedItemNamesReadBack(scenario, expected);
+  }
+
   if (expected.generatedCompositionVersionToken) {
     return verifyGeneratedCompositionVersionReadBack(scenario, expected);
   }
@@ -8479,6 +8570,10 @@ async function main() {
   }
   if (command === "agent-project-item-metadata-openai-cli-smoke" || command === "full-ui-agent-project-item-metadata-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliProjectItemMetadataScenarioConfig());
+    return;
+  }
+  if (command === "agent-reset-imported-item-names-openai-cli-smoke" || command === "full-ui-agent-reset-imported-item-names-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliResetImportedItemNamesScenarioConfig());
     return;
   }
   if (command === "agent-composition-version-openai-cli-smoke" || command === "full-ui-agent-composition-version-openai-cli-smoke") {

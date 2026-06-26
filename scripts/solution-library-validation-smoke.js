@@ -122,6 +122,7 @@ const IMPORTED_ADVISORY_IDS = [
   "project-file-render-proxy-safety-policy",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
+  "reset-imported-item-names-typed-plan",
   "set-project-item-labels-to-none-typed-plan",
   "set-all-item-labels-to-none-typed-plan",
   "add-comment-to-selected-layers-typed-plan",
@@ -224,6 +225,7 @@ const AVAILABLE_TOOLS = [
   "set_path_geometry",
   "export_path_points",
   "save_comp_frame_png",
+  "import_footage",
   "align_layers_to_time",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -2785,6 +2787,29 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Rename_Selected_Project_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "reset-imported-item-names-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "save_comp_frame_png", "import_footage", "rename_project_items"],
+        `${id}: imported footage reset workflow should stay on the narrow generated footage typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: imported footage reset workflow must be mutating.`);
+      assert(text.includes("import_footage"), `${id}: recipe should use generated footage import.`);
+      assert(text.includes("save_comp_frame_png"), `${id}: recipe should use generated PNG fixture creation.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use project item rename.`);
+      assert(text.includes('type:"footage"'), `${id}: recipe should require footage item targeting.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact project-item rename mode.`);
+      assert(text.includes("file display name"), `${id}: recipe should require file display-name evidence.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should keep generated files sandboxed.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /import_footage/.test(step)), `${id}: verification must include footage import.`);
+      assert(solution.verificationRecipe.steps.some((step) => /rename_project_items/.test(step)), `${id}: verification must include project item rename.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-item rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /file display name/.test(item)), `${id}: verification must require file display-name read-back.`);
+      assert(solution.notes.some((note) => /Project panel selection reads/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /generated\/temp/.test(note)), `${id}: notes must preserve generated/temp scope.`);
+      assert(solution.promotionHistory.some((entry) => /Reset_Imported_Item_Names/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "set-project-item-labels-to-none-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4579,6 +4604,21 @@ function assertActualRetrieval(registry) {
   assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
 
+  const resetImportedItemNamesRetrieval = retrieveSolutionHints("Reset generated imported footage item names to their file display name after creating a generated PNG fixture, importing it with import_footage, binding explicit footage itemIndices, using rename_project_items type footage mode exact, and reading back get_project_snapshot.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(resetImportedItemNamesRetrieval.ok, true);
+  assert(ids(resetImportedItemNamesRetrieval).includes("reset-imported-item-names-typed-plan"), "reset imported item names recipe should surface for imported footage reset prompts.");
+  const resetImportedItemNamesPromptSection = formatSolutionHintsForPrompt(resetImportedItemNamesRetrieval);
+  assert(resetImportedItemNamesPromptSection.includes("Reset Imported Item Names Typed Plan"), "prompt section should include imported footage reset advisory title.");
+  assert(resetImportedItemNamesPromptSection.includes("import_footage"), "prompt section should prefer import_footage for generated footage fixtures.");
+  assert(resetImportedItemNamesPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for reset imported item names.");
+  assert(resetImportedItemNamesPromptSection.includes("file display name"), "prompt section should preserve file display-name evidence.");
+  assert(resetImportedItemNamesPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(resetImportedItemNamesPromptSection), "reset imported item names guidance should not recommend raw ExtendScript.");
+
   const setProjectItemLabelsRetrieval = retrieveSolutionHints("Set generated project item labels to none after reading the current project snapshot, binding explicit itemIndices, using set_project_item_metadata label 0, and reading labels back.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5406,6 +5446,26 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "cleanup",
       "Desktop",
       "arbitrary user paths",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "reset-imported-item-names-generated-only", {
+    requiredTools: ["save_comp_frame_png", "import_footage", "rename_project_items"],
+    readBackTools: ["find_project_items", "get_project_snapshot"],
+    candidateIds: ["tool-project-reset-imported-item-names"],
+    scopeIncludes: [
+      "imported footage name reset",
+      "logs/generated-exports",
+      "import_footage",
+      "type:\"footage\"",
+      "mode:\"exact\"",
+      "file display name",
+      "semantic verification",
+      "generated PNG removal",
+      "Project panel selection",
+      "relinking",
+      "arbitrary user file paths",
+      "non-generated user assets",
       "raw JSX"
     ]
   });

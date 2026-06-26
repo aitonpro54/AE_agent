@@ -57,6 +57,7 @@ const {
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
+  agentResetImportedItemNamesScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
@@ -541,6 +542,26 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(projectItemMetadata.plan.steps[3].args.itemIndices, "{{steps.3.result}}");
   assert.strictEqual(projectItemMetadata.plan.steps[3].args.label, 0);
+
+  const [resetImportedItemNames] = agentResetImportedItemNamesScenarioPlans("Codex QA AUX-RIIN Fixture");
+  assert.strictEqual(resetImportedItemNames.id, "generated-reset-imported-item-names");
+  assert.strictEqual(resetImportedItemNames.expectedReadBack.generatedResetImportedItemNames, true);
+  assert.deepStrictEqual(resetImportedItemNames.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "save_comp_frame_png",
+    "import_footage",
+    "find_project_items",
+    "get_project_snapshot",
+    "rename_project_items",
+    "find_project_items",
+    "get_project_snapshot"
+  ]);
+  assert.strictEqual(resetImportedItemNames.plan.steps[3].args.name, resetImportedItemNames.expectedReadBack.staleFootageName);
+  assert.strictEqual(resetImportedItemNames.plan.steps[6].args.itemIndices, "{{steps.5.result}}");
+  assert.strictEqual(resetImportedItemNames.plan.steps[6].args.type, "footage");
+  assert.strictEqual(resetImportedItemNames.plan.steps[6].args.name, resetImportedItemNames.expectedReadBack.outputFileName);
+  assert(!resetImportedItemNames.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
   assert.strictEqual(compositionVersion.id, "generated-composition-version-token");

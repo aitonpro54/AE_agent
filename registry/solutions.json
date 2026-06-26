@@ -8046,6 +8046,121 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "reset-imported-item-names-typed-plan",
+      "title": "Reset Imported Item Names Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "footage",
+        "import",
+        "rename",
+        "file-display-name",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Reset explicit generated imported footage item names to their local file display names, then read project inventory back.",
+        "appliesWhen": [
+          "The user asks to reset imported footage item names to match their source file names.",
+          "Typed project-item renaming from explicit generated footage item indices is acceptable instead of Project panel selection reads, relinking, missing-footage repair, arbitrary user files, or exact source JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "footageItemIndices",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete generated footage item indices read from current project snapshot, search, folder listing, or import_footage evidence before mutation."
+        },
+        {
+          "name": "fileDisplayName",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed display name derived from current typed footage file evidence, usually the generated fixture filename."
+        }
+      ],
+      "targetAssumptions": [
+        "Every renamed item is generated/temp footage bound by explicit itemIndices before mutation.",
+        "The workflow changes only the Project item display name to the reviewed file display name.",
+        "Current typed tools support importing a generated fixture, inspecting footage file paths, and project item rename by explicit itemIndices, but do not expose current Project panel selection.",
+        "Generated file output is restricted to logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR and is removed after read-back.",
+        "Existing footage sources, item types, parent folders, comp contents, layer source references, render queue items and unlisted project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/reset-imported-item-names-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "save_comp_frame_png",
+          "import_footage",
+          "rename_project_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create or bind generated footage evidence, import it when needed, exact-rename the footage item to its file display name, then read project inventory back.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot before mutation to capture project inventory and candidate footage file evidence.",
+          "For live proof, create a generated PNG fixture with save_comp_frame_png under logs/generated-exports and import it with import_footage using a reviewed stale name.",
+          "Run find_project_items or get_project_snapshot to enumerate the generated footage item and bind concrete itemIndices.",
+          "Run rename_project_items with type footage, mode exact, one concrete item index and the reviewed file display name.",
+          "Run find_project_items and get_project_snapshot after mutation; fail closed if Project panel selection reads, relinking, missing-footage repair, arbitrary user files, non-generated user assets, or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete generated footage itemIndex, stale name, file path and reviewed file display name.",
+          "import_footage imports only the generated/temp fixture and reports footage file evidence.",
+          "rename_project_items reports changedCount:1 and before/after name evidence for one footage item.",
+          "Post-run project read-back shows the affected footage item has the file display name and no stale imported name remains.",
+          "Post-run project read-back shows unchanged item source path, item type, parent folder and unrelated project inventory.",
+          "Post-run evidence shows no unexpected project item deletion, movement, source replacement, relink, render queue mutation, project save/saveAs, arbitrary filesystem write or non-generated user asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-project-reset-imported-item-names as generated-only typed-plan coverage for explicit imported footage item name reset.",
+          "The generated-only lane is candidate-id-gated and uses save_comp_frame_png, import_footage, find_project_items, get_project_snapshot and rename_project_items; parent importer owns validation plus live acceptance."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-project-reset-imported-item-names",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Reset_Imported_Item_Names.jsx into existing typed tools as explicit generated imported footage name reset through import_footage plus rename_project_items type:\"footage\" mode:\"exact\" to the reviewed file display name; no source JSX copied. Current typed tools do not expose Project panel selection, so source-exact selection traversal remains fail-closed. Relinking, missing-footage repair, arbitrary user file imports, non-generated user assets, render queue work, and raw ExtendScript require a separate typed-tool contract.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe for generated/temp imported footage only; do not mutate non-generated user assets or broad project inventory.",
+        "Use save_comp_frame_png only for sandboxed generated PNG fixtures under logs/generated-exports, and remove generated fixture files after verification.",
+        "Require current get_project_snapshot or find_project_items evidence before mutating footage item names; do not infer targets from Project panel selection or prior chat context.",
+        "Require a separate typed-tool contract for Project panel selection reads, source relinking, missing-footage repair, arbitrary user file paths, item deletion, item movement, folder cleanup, dependency cleanup or exact source JSX semantics.",
+        "Do not use this recipe for selected-layer rename, layer source replacement, deep precomp/source duplication, render queue changes, user-asset cleanup or broad project mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-simple-loop-expression-typed-plan",
       "title": "Add Simple Loop Expression Typed Plan",
       "status": "recipe",

@@ -2573,6 +2573,61 @@
       "scope": "generated-only Project item label proof using generated composition project items, find_project_items/get_project_snapshot evidence for concrete itemIndices, set_project_item_metadata label:0 with expectedItemNames guards, post-mutation project-item label read-back, semantic verification, and cleanup; source-exact Project panel selected item traversal, label defaults by item type, all-project scans without explicit evidence, item rename/move/delete, proxy state, render queue work, filesystem operations, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "reset-imported-item-names-generated-only",
+      "requiredTools": [
+        "save_comp_frame_png",
+        "import_footage",
+        "rename_project_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "save_comp_frame_png",
+        "import_footage",
+        "get_project_info",
+        "get_project_snapshot",
+        "find_project_items",
+        "rename_project_items"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-project-reset-imported-item-names"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-reset-imported-item-names-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "reset-imported-item-names",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_project_snapshot"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/semantic-verification.js",
+        "recipes/reset-imported-item-names-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-reset-imported-item-names.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only imported footage name reset proof using a sandboxed PNG from save_comp_frame_png under logs/generated-exports, import_footage with a reviewed stale display name, explicit generated footage itemIndices from find_project_items/get_project_snapshot, rename_project_items type:\"footage\" mode:\"exact\" to the file display name, post-mutation project snapshot/read-back, semantic verification, generated PNG removal, and generated-prefix cleanup; source-exact Project panel selection reads, relinking, missing-footage repair, arbitrary user file paths, non-generated user assets, item delete/move, render queue work, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "project-selection-folder-generated-only",
       "requiredTools": [
         "create_project_folder",
