@@ -895,6 +895,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_project_item_metadata",
+  "set_project_frames_count_type",
   "set_comp_current_time",
   "set_comp_properties",
   "refresh_comp_panel",
@@ -4360,6 +4361,7 @@ const PLANNING_TOOL_NAMES = [
   "create_project_folder",
   "move_project_items_to_folder",
   "set_project_item_metadata",
+  "set_project_frames_count_type",
   "create_text_layer",
   "create_shapes_from_text",
   "import_footage",
@@ -6332,7 +6334,8 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit generated track matte changes, use set_layer_track_matte only with one inspected fill layer, one inspected matte layer, expectedLayerName, expectedMatteLayerName, and post-run get_layer_details read-back showing hasTrackMatte, trackMatteTypeName, and trackMatteLayer. Do not use parent-link tools, layer reordering, broad layer scans, or raw ExtendScript as substitutes.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
-    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, and preserveNestedFrameRate on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For project frame numbering, use set_project_frames_count_type only with an explicit reviewed framesCountType of FC_START_0 or FC_START_1, then read back get_project_info. Do not scan or mutate all project comps through this project-level tool.",
     "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
     "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, enabled, and guideLayer, and must be followed by get_layer_details read-back for each target layer.",
     "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
@@ -7846,6 +7849,26 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {}
+    }
+  },
+  {
+    name: "set_project_frames_count_type",
+    description: "Set the AE Project frame numbering mode to start at frame 0 or frame 1, with explicit read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        framesCountType: {
+          type: "string",
+          enum: ["FC_START_0", "FC_START_1", "startAtZero", "startAtOne"],
+          description: "Requested final Project.framesCountType. Use FC_START_0 for frame numbering that starts at 0 or FC_START_1 for frame numbering that starts at 1."
+        },
+        expectedCurrentFramesCountType: {
+          type: "string",
+          enum: ["FC_START_0", "FC_START_1", "startAtZero", "startAtOne"],
+          description: "Optional guard from get_project_info. The tool fails closed if the current frame numbering mode differs."
+        }
+      },
+      required: ["framesCountType"]
     }
   },
   {
@@ -9619,7 +9642,7 @@ const tools = [
   },
   {
     name: "set_comp_properties",
-    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, and preserveNestedFrameRate only.",
+    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9642,6 +9665,7 @@ const tools = [
           description: "Optional RGB background color as three numbers from 0 to 1."
         },
         displayStartTime: { type: "number", description: "Optional display start time in seconds." },
+        displayStartFrame: { type: "number", description: "Optional native integer display start frame. Requires AE support for CompItem.displayStartFrame." },
         preserveNestedFrameRate: { type: "boolean", description: "Optional Preserve frame rate when nested or in render queue setting." }
       }
     }
@@ -11539,12 +11563,140 @@ async function callTool(name, args) {
   if (name === "get_project_info") {
     const result = await runExtendScriptBody(`
       var project = app.project;
+      function __codexFramesCountTypeSnapshot(targetProject) {
+        var value = null;
+        var name = null;
+        var startFrame = null;
+        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
+        try {
+          if (value === FramesCountType.FC_START_0) {
+            name = "FC_START_0";
+            startFrame = 0;
+          } else if (value === FramesCountType.FC_START_1) {
+            name = "FC_START_1";
+            startFrame = 1;
+          } else if (value !== null && value !== undefined) {
+            name = String(value);
+          }
+        } catch (__framesCountNameError) {
+          if (value !== null && value !== undefined) name = String(value);
+        }
+        return {
+          value: value === null || value === undefined ? null : String(value),
+          name: name,
+          startFrame: startFrame
+        };
+      }
+      var framesCount = __codexFramesCountTypeSnapshot(project);
       return {
         file: project && project.file ? project.file.fsName : null,
         bitsPerChannel: project ? project.bitsPerChannel : null,
         numItems: project ? project.numItems : 0,
         activeItemName: project && project.activeItem ? project.activeItem.name : null,
-        activeItemType: project && project.activeItem ? project.activeItem.typeName : null
+        activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
+        framesCountType: framesCount.name,
+        framesCountTypeValue: framesCount.value,
+        framesCountStartFrame: framesCount.startFrame
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_project_frames_count_type") {
+    const framesCountType = optionalString(args, "framesCountType", "");
+    const expectedCurrentFramesCountType = optionalString(args, "expectedCurrentFramesCountType", "");
+    const normalizeFramesCountType = (value, fieldName) => {
+      const normalized = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (["fcstart0", "startatzero", "start0", "zero", "0"].includes(normalized)) return "FC_START_0";
+      if (["fcstart1", "startatone", "start1", "one", "1"].includes(normalized)) return "FC_START_1";
+      throw new Error(`${fieldName} must be FC_START_0/startAtZero or FC_START_1/startAtOne.`);
+    };
+
+    let requestedFramesCountType;
+    let expectedFramesCountType = "";
+    try {
+      requestedFramesCountType = normalizeFramesCountType(framesCountType, "framesCountType");
+      if (expectedCurrentFramesCountType) {
+        expectedFramesCountType = normalizeFramesCountType(expectedCurrentFramesCountType, "expectedCurrentFramesCountType");
+      }
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      var project = app.project;
+      var requestedFramesCountType = ${aeLiteral(requestedFramesCountType)};
+      var expectedFramesCountType = ${aeLiteral(expectedFramesCountType)};
+
+      function __codexFramesCountTypeSnapshot(targetProject) {
+        var value = null;
+        var name = null;
+        var startFrame = null;
+        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
+        try {
+          if (value === FramesCountType.FC_START_0) {
+            name = "FC_START_0";
+            startFrame = 0;
+          } else if (value === FramesCountType.FC_START_1) {
+            name = "FC_START_1";
+            startFrame = 1;
+          } else if (value !== null && value !== undefined) {
+            name = String(value);
+          }
+        } catch (__framesCountNameError) {
+          if (value !== null && value !== undefined) name = String(value);
+        }
+        return {
+          value: value === null || value === undefined ? null : String(value),
+          name: name,
+          startFrame: startFrame,
+          numItems: targetProject ? targetProject.numItems : 0,
+          activeItemName: targetProject && targetProject.activeItem ? targetProject.activeItem.name : null,
+          activeItemType: targetProject && targetProject.activeItem ? targetProject.activeItem.typeName : null
+        };
+      }
+
+      function __codexFramesCountTypeValue(name) {
+        if (name === "FC_START_0") return FramesCountType.FC_START_0;
+        if (name === "FC_START_1") return FramesCountType.FC_START_1;
+        throw new Error("Unsupported framesCountType: " + name);
+      }
+
+      if (!project) throw new Error("No active project.");
+      var before = __codexFramesCountTypeSnapshot(project);
+      if (expectedFramesCountType && before.name !== expectedFramesCountType) {
+        throw new Error("Project framesCountType guard mismatch. Expected " + expectedFramesCountType + " but found " + before.name + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Project Frames Count Type");
+      try {
+        project.framesCountType = __codexFramesCountTypeValue(requestedFramesCountType);
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexFramesCountTypeSnapshot(project);
+      return {
+        project: {
+          framesCountType: after.name,
+          framesCountStartFrame: after.startFrame,
+          numItems: after.numItems,
+          activeItemName: after.activeItemName,
+          activeItemType: after.activeItemType
+        },
+        before: before,
+        after: after,
+        updates: {
+          framesCountType: requestedFramesCountType,
+          framesCountStartFrame: requestedFramesCountType === "FC_START_0" ? 0 : 1
+        },
+        updatedFields: ["framesCountType"],
+        postVerification: {
+          ok: after.name === requestedFramesCountType,
+          framesCountTypeMatches: after.name === requestedFramesCountType,
+          projectItemCountUnchanged: before.numItems === after.numItems,
+          activeItemUnchanged: before.activeItemName === after.activeItemName && before.activeItemType === after.activeItemType
+        }
       };
     `);
     return toolResult(result.result);
@@ -11607,6 +11759,7 @@ async function callTool(name, args) {
           info.frameRate = item.frameRate;
           info.numLayers = item.numLayers;
           info.displayStartTime = item.displayStartTime;
+          try { info.displayStartFrame = item.displayStartFrame; } catch (__displayStartFrameError) {}
         } else if (item instanceof FootageItem) {
           info.width = item.width || null;
           info.height = item.height || null;
@@ -12089,6 +12242,14 @@ async function callTool(name, args) {
       for (var s = 0; s < comp.selectedLayers.length; s++) {
         selectedLayerIndices.push(comp.selectedLayers[s].index);
       }
+      var displayStartFrame = null;
+      var displayStartFrameSupported = false;
+      try {
+        if (comp.displayStartFrame !== undefined) {
+          displayStartFrame = comp.displayStartFrame;
+          displayStartFrameSupported = true;
+        }
+      } catch (__displayStartFrameError) {}
 
       var layers = [];
       if (includeLayers) {
@@ -12109,6 +12270,8 @@ async function callTool(name, args) {
         workAreaDuration: comp.workAreaDuration,
         frameRate: comp.frameRate,
         displayStartTime: comp.displayStartTime,
+        displayStartFrame: displayStartFrame,
+        displayStartFrameSupported: displayStartFrameSupported,
         preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
         time: comp.time,
         bgColor: comp.bgColor,
@@ -15860,6 +16023,7 @@ async function callTool(name, args) {
       "frameRate",
       "bgColor",
       "displayStartTime",
+      "displayStartFrame",
       "preserveNestedFrameRate",
       "autoCheckpoint",
       "checkpointLabel",
@@ -15900,6 +16064,11 @@ async function callTool(name, args) {
     if (hasArg(args, "displayStartTime")) {
       requested.displayStartTime = optionalNumber(args, "displayStartTime", null);
     }
+    if (hasArg(args, "displayStartFrame")) {
+      const displayStartFrame = optionalNumber(args, "displayStartFrame", null);
+      if (!Number.isInteger(displayStartFrame) || displayStartFrame < 0) return toolResult("displayStartFrame must be a non-negative integer.", true);
+      requested.displayStartFrame = displayStartFrame;
+    }
     if (hasArg(args, "preserveNestedFrameRate")) {
       requested.preserveNestedFrameRate = optionalBoolean(args, "preserveNestedFrameRate", null);
       if (requested.preserveNestedFrameRate === null) return toolResult("preserveNestedFrameRate must be a boolean.", true);
@@ -15919,6 +16088,14 @@ async function callTool(name, args) {
       var requestedKeys = ${aeLiteral(requestedKeys)};
 
       function __codexCompProperties(comp) {
+        var displayStartFrame = null;
+        var displayStartFrameSupported = false;
+        try {
+          if (comp.displayStartFrame !== undefined) {
+            displayStartFrame = comp.displayStartFrame;
+            displayStartFrameSupported = true;
+          }
+        } catch (__displayStartFrameReadError) {}
         return {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name,
@@ -15929,6 +16106,8 @@ async function callTool(name, args) {
           frameRate: comp.frameRate,
           bgColor: comp.bgColor ? [comp.bgColor[0], comp.bgColor[1], comp.bgColor[2]] : null,
           displayStartTime: comp.displayStartTime,
+          displayStartFrame: displayStartFrame,
+          displayStartFrameSupported: displayStartFrameSupported,
           preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
           numLayers: comp.numLayers
         };
@@ -15953,6 +16132,13 @@ async function callTool(name, args) {
         return __codexNear(after[field], expected);
       }
 
+      function __codexSetDisplayStartFrame(targetComp, value) {
+        var supported = false;
+        try { supported = targetComp.displayStartFrame !== undefined; } catch (__displayStartFrameSupportError) {}
+        if (!supported) throw new Error("CompItem.displayStartFrame is not supported by this After Effects version.");
+        targetComp.displayStartFrame = value;
+      }
+
       app.beginUndoGroup("Codex Set Comp Properties");
       var before = __codexCompProperties(comp);
       if (requested.width !== undefined) comp.width = requested.width;
@@ -15962,6 +16148,7 @@ async function callTool(name, args) {
       if (requested.frameRate !== undefined) comp.frameRate = requested.frameRate;
       if (requested.bgColor !== undefined) comp.bgColor = requested.bgColor;
       if (requested.displayStartTime !== undefined) comp.displayStartTime = requested.displayStartTime;
+      if (requested.displayStartFrame !== undefined) __codexSetDisplayStartFrame(comp, requested.displayStartFrame);
       if (requested.preserveNestedFrameRate !== undefined) comp.preserveNestedFrameRate = requested.preserveNestedFrameRate;
       var after = __codexCompProperties(comp);
       var fieldMatches = {};

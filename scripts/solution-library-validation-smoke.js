@@ -123,6 +123,7 @@ const IMPORTED_ADVISORY_IDS = [
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
   "preserve-nested-frame-rate-typed-plan",
+  "project-timecode-start-frames-typed-plan",
   "reset-imported-item-names-typed-plan",
   "set-project-item-labels-to-none-typed-plan",
   "set-all-item-labels-to-none-typed-plan",
@@ -239,6 +240,7 @@ const AVAILABLE_TOOLS = [
   "set_layer_transform",
   "set_comp_current_time",
   "set_comp_properties",
+  "set_project_frames_count_type",
   "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
@@ -2315,6 +2317,30 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserveNestedFrameRate/.test(item)), `${id}: verification must require preserveNestedFrameRate read-back.`);
       assert(solution.notes.some((note) => /all-project comp traversal/i.test(note)), `${id}: notes must reject all-project traversal.`);
       assert(solution.promotionHistory.some((entry) => /Toggle_Preserve_Nested_Frame_Rate/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "project-timecode-start-frames-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "get_project_info", "get_comp_details", "set_project_frames_count_type", "set_comp_properties"],
+        `${id}: project timecode/start-frame workflow should stay on explicit project and comp property typed tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project timecode/start-frame workflow must be mutating.`);
+      assert(text.includes("framesCountType"), `${id}: recipe should document project framesCountType.`);
+      assert(text.includes("displayStartFrame"), `${id}: recipe should document native displayStartFrame.`);
+      assert(text.includes("set_project_frames_count_type"), `${id}: recipe should use the project frame-count typed tool.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("get_project_info"), `${id}: recipe should require project read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp read-back.`);
+      assert(text.includes("Alt-key"), `${id}: recipe should reject Alt-key branching.`);
+      assert(text.includes("all-project"), `${id}: recipe should reject all-project traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_frames_count_type/.test(step)), `${id}: verification must include project frame-count mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp displayStartFrame mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must include project info read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /framesCountType/.test(item)), `${id}: verification must require framesCountType read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /displayStartFrame/.test(item)), `${id}: verification must require displayStartFrame read-back.`);
+      assert(solution.notes.some((note) => /FC_START_0/.test(note)), `${id}: notes must require explicit frame-count mode.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Timecode_And_Start_Frames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "rename-composition-to-file-name-typed-plan") {
       assert.deepStrictEqual(
@@ -4638,6 +4664,22 @@ function assertActualRetrieval(registry) {
   assert(preserveNestedFrameRatePromptSection.includes("all-project traversal"), "prompt section should preserve all-project traversal warning.");
   assert(!/run_extendscript/i.test(preserveNestedFrameRatePromptSection), "preserve nested frame rate guidance should not recommend raw ExtendScript.");
 
+  const projectTimecodeStartFramesRetrieval = retrieveSolutionHints("Set project frame numbering to start at zero with set_project_frames_count_type FC_START_0, then set native displayStartFrame 0 on explicit generated comps and read back get_project_info and get_comp_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(projectTimecodeStartFramesRetrieval.ok, true);
+  assert(ids(projectTimecodeStartFramesRetrieval).includes("project-timecode-start-frames-typed-plan"), "project timecode/start-frame recipe should surface for explicit project frame-count prompts.");
+  const projectTimecodeStartFramesPromptSection = formatSolutionHintsForPrompt(projectTimecodeStartFramesRetrieval);
+  assert(projectTimecodeStartFramesPromptSection.includes("Project Timecode And Start Frames Typed Plan"), "prompt section should include project timecode/start-frame advisory title.");
+  assert(projectTimecodeStartFramesPromptSection.includes("framesCountType"), "prompt section should preserve framesCountType guidance.");
+  assert(projectTimecodeStartFramesPromptSection.includes("displayStartFrame"), "prompt section should preserve native displayStartFrame guidance.");
+  assert(projectTimecodeStartFramesPromptSection.includes("set_project_frames_count_type"), "prompt section should prefer set_project_frames_count_type.");
+  assert(projectTimecodeStartFramesPromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for displayStartFrame.");
+  assert(projectTimecodeStartFramesPromptSection.includes("all-project"), "prompt section should preserve all-project traversal warning.");
+  assert(!/run_extendscript/i.test(projectTimecodeStartFramesPromptSection), "project timecode/start-frame guidance should not recommend raw ExtendScript.");
+
   const resetImportedItemNamesRetrieval = retrieveSolutionHints("Reset generated imported footage item names to their file display name after creating a generated PNG fixture, importing it with import_footage, binding explicit footage itemIndices, using rename_project_items type footage mode exact, and reading back get_project_snapshot.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5497,6 +5539,25 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
       "ALT-key",
       "non-generated user comp",
       "render queue",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "project-timecode-start-frame-generated-only", {
+    requiredTools: ["set_project_frames_count_type", "set_comp_properties"],
+    readBackTools: ["get_project_info", "get_comp_details"],
+    candidateIds: ["tool-project-toggle-timecode-and-start-frames"],
+    scopeIncludes: [
+      "project frame numbering",
+      "native displayStartFrame",
+      "explicit generated composition targets",
+      "set_project_frames_count_type",
+      "set_comp_properties",
+      "semantic verification",
+      "cleanup",
+      "all-project CompItem traversal",
+      "Alt-key",
+      "displayStartTime fallback",
+      "non-generated user comp",
       "raw JSX"
     ]
   });

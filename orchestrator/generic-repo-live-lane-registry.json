@@ -2629,6 +2629,66 @@
       "scope": "generated-only preserveNestedFrameRate proof using explicit generated composition targets, get_comp_details read-back before and after mutation, set_comp_properties preserveNestedFrameRate:true with semantic verification and generated-prefix cleanup; source-exact all-project CompItem traversal, ALT-key disable behavior, Project panel selection, non-generated user comp batch mutation, render queue changes, footage interpretation, broad project mutation, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "project-timecode-start-frame-generated-only",
+      "requiredTools": [
+        "set_project_frames_count_type",
+        "set_comp_properties"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_project_info",
+        "find_project_items",
+        "get_comp_details",
+        "set_project_frames_count_type",
+        "set_comp_properties"
+      ],
+      "candidateIds": [
+        "tool-project-toggle-timecode-and-start-frames"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-timecode-start-frames-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "project-timecode-start-frames",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_project_info",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/project-timecode-start-frames-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-toggle-timecode-and-start-frames.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only project frame numbering and native displayStartFrame proof using explicit generated composition targets, get_project_info and get_comp_details read-back before and after mutation, set_project_frames_count_type FC_START_0/FC_START_1, set_comp_properties displayStartFrame:0, semantic verification and generated-prefix cleanup; source-exact all-project CompItem traversal, ScriptUI Alt-key branching, Project panel selection, non-generated user comp batch mutation, displayStartTime fallback semantics, render queue changes, footage interpretation, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "reset-imported-item-names-generated-only",
       "requiredTools": [
         "save_comp_frame_png",

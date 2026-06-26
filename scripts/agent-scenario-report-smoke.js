@@ -55,6 +55,7 @@ const {
   agentRemainingTailContractsScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentPreserveNestedFrameRateScenarioPlans,
+  agentProjectTimecodeStartFramesScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
@@ -580,6 +581,27 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(preserveNestedFrameRate.plan.steps[4].args.preserveNestedFrameRate, true);
   assert.strictEqual(preserveNestedFrameRate.plan.steps[6].args.preserveNestedFrameRate, true);
   assert(!preserveNestedFrameRate.plan.steps.some((step) => step.tool === "run_extendscript"));
+
+  const [projectTimecodeStartFrames] = agentProjectTimecodeStartFramesScenarioPlans("Codex QA AUX-PTSF Fixture");
+  assert.strictEqual(projectTimecodeStartFrames.id, "generated-project-timecode-start-frames");
+  assert.strictEqual(projectTimecodeStartFrames.expectedReadBack.generatedProjectTimecodeStartFrames, true);
+  assert.deepStrictEqual(projectTimecodeStartFrames.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "get_project_info",
+    "get_comp_details",
+    "get_comp_details",
+    "set_project_frames_count_type",
+    "get_project_info",
+    "set_comp_properties",
+    "get_comp_details",
+    "set_comp_properties",
+    "get_comp_details"
+  ]);
+  assert.strictEqual(projectTimecodeStartFrames.plan.steps[5].args.framesCountType, "FC_START_0");
+  assert.strictEqual(projectTimecodeStartFrames.plan.steps[7].args.displayStartFrame, 0);
+  assert.strictEqual(projectTimecodeStartFrames.plan.steps[9].args.displayStartFrame, 0);
+  assert(!projectTimecodeStartFrames.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
   assert.strictEqual(compositionVersion.id, "generated-composition-version-token");
@@ -1303,7 +1325,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
 
   const [layerNameReset] = agentLayerNameResetScenarioPlans("Codex QA Reset Names Fixture");
 
-  for (const scenario of [timing, transform, projectItems, preserveNestedFrameRate, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, puppetGuideLayer, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
+  for (const scenario of [timing, transform, projectItems, preserveNestedFrameRate, projectTimecodeStartFrames, effectProperty, effectEnabled, expression, parentOpacity, layerTrackMatte, adjustmentPlacement, layerConnectionLine, textShapes, stickEffect, estimatePathLength, pathGeometry, flipPathGeometry, puppetOnTransparent, puppetPinType, puppetGuideLayer, compProperties, compCurrentTime, selectedPropertyValue, layerSwitches, layerMetadata, layerSelection, layerNameReset, keyframes, textToKeys, selectedKeyframeMarker, compositionMarkerRead, ...remainingTails]) {
     assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
     assert(!scenario.plan.steps.some((step) => step.tool === "cleanup_test_items"));
   }

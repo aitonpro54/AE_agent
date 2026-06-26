@@ -33,6 +33,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_project_item_metadata",
+  "set_project_frames_count_type",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -1774,6 +1775,64 @@ function agentPreserveNestedFrameRateScenarioPlans(runPrefix) {
           { title: "Read first generated preserve setting after update", tool: "get_comp_details", args: { compName: firstCompName, includeLayers: false } },
           { title: "Enable preserve nested frame rate on second generated comp", tool: "set_comp_properties", args: { compName: secondCompName, preserveNestedFrameRate } },
           { title: "Read second generated preserve setting after update", tool: "get_comp_details", args: { compName: secondCompName, includeLayers: false } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentProjectTimecodeStartFramesScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Project Timecode Start Frames`;
+  const firstCompName = `${base} Alpha`;
+  const secondCompName = `${base} Beta`;
+  const framesCountType = "FC_START_0";
+  const displayStartFrame = 0;
+
+  return [
+    {
+      id: "generated-project-timecode-start-frames",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_comp",
+        "get_project_info",
+        "get_comp_details",
+        "get_comp_details",
+        "set_project_frames_count_type",
+        "get_project_info",
+        "set_comp_properties",
+        "get_comp_details",
+        "set_comp_properties",
+        "get_comp_details"
+      ],
+      expectedReadBack: {
+        generatedProjectTimecodeStartFrames: true,
+        itemNames: [firstCompName, secondCompName],
+        framesCountType,
+        framesCountStartFrame: 0,
+        displayStartFrame
+      },
+      plan: {
+        summary: "Generated-only live QA for explicit project frame numbering and native comp display start frames.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create first generated timecode-start-frame comp", tool: "create_comp", args: { name: firstCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.07, 0.09, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only project timecode start-frame validation" } },
+          { title: "Create second generated timecode-start-frame comp", tool: "create_comp", args: { name: secondCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.12, 0.07, 0.09], allowDuplicateName: false, openInViewer: false, comment: "generated-only project timecode start-frame validation" } },
+          { title: "Read project frame numbering before update", tool: "get_project_info", args: {} },
+          { title: "Read first generated native display start frame before update", tool: "get_comp_details", args: { compName: firstCompName, includeLayers: false } },
+          { title: "Read second generated native display start frame before update", tool: "get_comp_details", args: { compName: secondCompName, includeLayers: false } },
+          { title: "Set reviewed project frame numbering to start at zero", tool: "set_project_frames_count_type", args: { framesCountType } },
+          { title: "Read project frame numbering after update", tool: "get_project_info", args: {} },
+          { title: "Set first generated native display start frame to zero", tool: "set_comp_properties", args: { compName: firstCompName, displayStartFrame } },
+          { title: "Read first generated native display start frame after update", tool: "get_comp_details", args: { compName: firstCompName, includeLayers: false } },
+          { title: "Set second generated native display start frame to zero", tool: "set_comp_properties", args: { compName: secondCompName, displayStartFrame } },
+          { title: "Read second generated native display start frame after update", tool: "get_comp_details", args: { compName: secondCompName, includeLayers: false } }
         ]
       }
     }
@@ -4965,6 +5024,7 @@ module.exports = {
   agentPuppetOnTransparentScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentPreserveNestedFrameRateScenarioPlans,
+  agentProjectTimecodeStartFramesScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,

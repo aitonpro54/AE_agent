@@ -25,6 +25,7 @@ const MUTATING_TOOLS = new Set([
   "duplicate_layer",
   "duplicate_layers",
   "delete_layer",
+  "set_project_frames_count_type",
   "set_comp_properties",
   "set_layer_mask",
   "move_project_items_to_folder"
@@ -515,7 +516,7 @@ function inspectDakkshinM222Cases(testCase, failures) {
     return;
   }
 
-  const safeCompFields = new Set(["compItemIndex", "compName", "width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"]);
+  const safeCompFields = new Set(["compItemIndex", "compName", "width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"]);
   const maskForbiddenFields = new Set(["delete", "remove", "maskIndices", "roto", "rotobrush", "script", "jsx", "propertyPath"]);
   const steps = testCase.plan.steps || [];
   for (let index = 0; index < steps.length; index += 1) {

@@ -54,6 +54,7 @@ const {
   agentNewToolsScenarioPlans,
   agentParentOpacityExpressionScenarioPlans,
   agentPreserveNestedFrameRateScenarioPlans,
+  agentProjectTimecodeStartFramesScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
   agentProjectSelectionFolderScenarioPlans,
@@ -567,6 +568,24 @@ function openAiCliPreserveNestedFrameRateScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PRESERVE_NESTED_FRAME_RATE_PREFIX || "Codex QA AUX-PNFR",
     scenarioFactory: agentPreserveNestedFrameRateScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliProjectTimecodeStartFramesScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-project-timecode-start-frames",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_TIMECODE_START_FRAMES_PREFIX || "Codex QA AUX-PTSF",
+    scenarioFactory: agentProjectTimecodeStartFramesScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -5371,6 +5390,52 @@ async function verifyGeneratedPreserveNestedFrameRateReadBack(scenario, expected
   };
 }
 
+async function verifyGeneratedProjectTimecodeStartFramesReadBack(scenario, expected) {
+  const projectInfo = await callBridgeTool("get_project_info", {});
+  if (projectInfo.framesCountType !== expected.framesCountType) {
+    throw new Error(`${scenario.id}: project framesCountType mismatch; expected ${expected.framesCountType}, got ${projectInfo.framesCountType}.`);
+  }
+  if (Number(projectInfo.framesCountStartFrame) !== Number(expected.framesCountStartFrame)) {
+    throw new Error(`${scenario.id}: project framesCountStartFrame mismatch; expected ${expected.framesCountStartFrame}, got ${projectInfo.framesCountStartFrame}.`);
+  }
+
+  const itemNames = Array.isArray(expected.itemNames) ? expected.itemNames : [];
+  if (!itemNames.length) {
+    throw new Error(`${scenario.id}: expected generated timecode/start-frame comp names were not configured.`);
+  }
+
+  const comps = [];
+  for (const itemName of itemNames) {
+    const compMatch = await findGeneratedCompByExactName(scenario, itemName);
+    const comp = await callBridgeTool("get_comp_details", {
+      compItemIndex: compMatch.itemIndex,
+      includeLayers: false
+    });
+    if (Number(comp.displayStartFrame) !== Number(expected.displayStartFrame)) {
+      throw new Error(`${scenario.id}: ${itemName} displayStartFrame mismatch; expected ${expected.displayStartFrame}, got ${comp.displayStartFrame}.`);
+    }
+    comps.push({
+      itemIndex: comp.itemIndex,
+      name: comp.name,
+      displayStartFrame: comp.displayStartFrame,
+      displayStartTime: comp.displayStartTime,
+      frameRate: comp.frameRate,
+      duration: comp.duration,
+      numLayers: comp.numLayers
+    });
+  }
+
+  return {
+    ok: true,
+    project: {
+      framesCountType: projectInfo.framesCountType,
+      framesCountStartFrame: projectInfo.framesCountStartFrame
+    },
+    comps,
+    displayStartFrame: expected.displayStartFrame
+  };
+}
+
 async function verifyGeneratedCompositionVersionReadBack(scenario, expected) {
   const found = await callBridgeTool("find_project_items", {
     query: expected.base,
@@ -7824,6 +7889,10 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedPreserveNestedFrameRateReadBack(scenario, expected);
   }
 
+  if (expected.generatedProjectTimecodeStartFrames) {
+    return verifyGeneratedProjectTimecodeStartFramesReadBack(scenario, expected);
+  }
+
   if (expected.generatedCompositionVersionToken) {
     return verifyGeneratedCompositionVersionReadBack(scenario, expected);
   }
@@ -8634,6 +8703,10 @@ async function main() {
   }
   if (command === "agent-preserve-nested-frame-rate-openai-cli-smoke" || command === "full-ui-agent-preserve-nested-frame-rate-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliPreserveNestedFrameRateScenarioConfig());
+    return;
+  }
+  if (command === "agent-project-timecode-start-frames-openai-cli-smoke" || command === "full-ui-agent-project-timecode-start-frames-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliProjectTimecodeStartFramesScenarioConfig());
     return;
   }
   if (command === "agent-composition-version-openai-cli-smoke" || command === "full-ui-agent-composition-version-openai-cli-smoke") {

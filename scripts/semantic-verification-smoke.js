@@ -21,6 +21,7 @@ const {
   agentLayerSelectionScenarioPlans,
   agentLayerTrackMatteScenarioPlans,
   agentPreserveNestedFrameRateScenarioPlans,
+  agentProjectTimecodeStartFramesScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
@@ -38,6 +39,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "set_layer_parent",
   "set_layer_track_matte",
   "set_project_item_metadata",
+  "set_project_frames_count_type",
   "set_layer_mask",
   "set_path_geometry",
   "create_layer_connection_line",
@@ -488,7 +490,7 @@ function fakeMutationResult(step, state) {
   if (step.tool === "set_comp_properties") {
     const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
     const updates = {};
-    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"]) {
+    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     state.compProperties = { ...state.compProperties, ...updates };
@@ -507,6 +509,33 @@ function fakeMutationResult(step, state) {
         fieldMatches,
         compIdentityMatches: true,
         layerCountUnchanged: true
+      }
+    }, compName);
+  }
+  if (step.tool === "set_project_frames_count_type") {
+    const framesCountType = args.framesCountType || "FC_START_0";
+    const framesCountStartFrame = framesCountType === "FC_START_1" || framesCountType === "startAtOne" ? 1 : 0;
+    const before = { ...state.projectInfo };
+    state.projectInfo = {
+      ...state.projectInfo,
+      framesCountType: framesCountStartFrame === 0 ? "FC_START_0" : "FC_START_1",
+      framesCountStartFrame
+    };
+    const after = { ...state.projectInfo };
+    return withVerification({
+      project: after,
+      before,
+      after,
+      updates: {
+        framesCountType: after.framesCountType,
+        framesCountStartFrame
+      },
+      updatedFields: ["framesCountType"],
+      postVerification: {
+        ok: true,
+        framesCountTypeMatches: true,
+        projectItemCountUnchanged: true,
+        activeItemUnchanged: true
       }
     }, compName);
   }
@@ -1510,6 +1539,14 @@ function fakeMutationResult(step, state) {
 }
 
 function fakeReadBackResult(step, state) {
+  if (step.tool === "get_project_info") {
+    return {
+      ...state.projectInfo,
+      numItems: state.projectItems.length,
+      activeItemName: state.lastCompName || null,
+      activeItemType: state.lastCompName ? "Composition" : null
+    };
+  }
   if (step.tool === "find_project_items") {
     const query = step.args && step.args.query ? step.args.query : "";
     return {
@@ -1628,6 +1665,7 @@ function fakeReadBackResult(step, state) {
         frameRate: state.compProperties.frameRate,
         bgColor: state.compProperties.bgColor,
         displayStartTime: state.compProperties.displayStartTime,
+        displayStartFrame: state.compProperties.displayStartFrame,
         preserveNestedFrameRate: state.compProperties.preserveNestedFrameRate,
         motionBlur: state.compProperties.motionBlur,
         time: state.compProperties.time,
@@ -1664,6 +1702,15 @@ function fakeRunForPlan(plan) {
     compMarkers: [],
     masks: [],
     essentialGraphicsControllers: [],
+    projectInfo: {
+      file: null,
+      bitsPerChannel: 8,
+      numItems: 0,
+      activeItemName: null,
+      activeItemType: null,
+      framesCountType: "FC_START_1",
+      framesCountStartFrame: 1
+    },
     compProperties: {
       width: 1280,
       height: 720,
@@ -1672,6 +1719,7 @@ function fakeRunForPlan(plan) {
       frameRate: 24,
       bgColor: [0, 0, 0],
       displayStartTime: 0,
+      displayStartFrame: 1,
       preserveNestedFrameRate: false,
       motionBlur: false,
       time: 0,
@@ -2981,6 +3029,17 @@ function assertPreserveNestedFrameRateFixturePasses() {
   assert.strictEqual(checks.length, 2, "preserve nested frame rate fixture should verify both generated comp property updates.");
 }
 
+function assertProjectTimecodeStartFramesFixturePasses() {
+  const [scenario] = agentProjectTimecodeStartFramesScenarioPlans("Semantic Project Timecode Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `project timecode/start-frame fixture should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_frames_count_type:frames-count-type") >= 0 && check.status === "passed"), "project frame count type fixture should verify get_project_info read-back.");
+  const checks = semantic.checks.filter((check) => check.id.indexOf("set_comp_properties:displayStartFrame") >= 0 && check.status === "passed");
+  assert.strictEqual(checks.length, 2, "project timecode/start-frame fixture should verify both native displayStartFrame updates.");
+}
+
 function assertDakkshinLiveAeEvidenceShapePasses() {
   const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Live Evidence Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -3801,6 +3860,7 @@ function main() {
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
   assertPreserveNestedFrameRateFixturePasses();
+  assertProjectTimecodeStartFramesFixturePasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
   assertRefreshCompPanelPasses();
   assertSetCompWorkAreaReadBackFallbackPasses();

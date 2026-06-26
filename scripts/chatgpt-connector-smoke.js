@@ -307,6 +307,7 @@ function assertReadOnlyTools(tools) {
     "set_layer_metadata",
     "set_layer_blending_mode",
     "set_project_item_metadata",
+    "set_project_frames_count_type",
     "set_layer_transform",
     "set_comp_current_time",
     "set_comp_properties",

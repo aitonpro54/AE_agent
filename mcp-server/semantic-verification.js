@@ -36,6 +36,7 @@ const MUTATING_TOOLS = new Set([
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_project_item_metadata",
+  "set_project_frames_count_type",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -69,6 +70,7 @@ const MUTATING_TOOLS = new Set([
 
 const READ_BACK_TOOLS = new Set([
   "get_bridge_status",
+  "get_project_info",
   "get_project_snapshot",
   "get_active_comp",
   "get_selected_layers",
@@ -201,6 +203,23 @@ function boolValue(value) {
   return null;
 }
 
+function normalizeFramesCountTypeName(value) {
+  const normalized = String(value === undefined || value === null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+  if (["fcstart0", "startatzero", "start0", "zero", "0"].includes(normalized)) return "FC_START_0";
+  if (["fcstart1", "startatone", "start1", "one", "1"].includes(normalized)) return "FC_START_1";
+  return "";
+}
+
+function framesCountStartFrameForName(value) {
+  const name = normalizeFramesCountTypeName(value);
+  if (name === "FC_START_0") return 0;
+  if (name === "FC_START_1") return 1;
+  return null;
+}
+
 function addLayerEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
   const index = numberValue(value.index);
@@ -250,7 +269,7 @@ function addLayerEvidence(target, value, source) {
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -262,6 +281,7 @@ function addCompEvidence(target, value, source) {
     frameRate: numberValue(value.frameRate),
     bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
+    displayStartFrame: numberValue(value.displayStartFrame),
     preserveNestedFrameRate: value.preserveNestedFrameRate === undefined || value.preserveNestedFrameRate === null ? null : value.preserveNestedFrameRate === true,
     time: numberValue(value.time),
     workAreaStart: numberValue(value.workAreaStart),
@@ -269,6 +289,18 @@ function addCompEvidence(target, value, source) {
     motionBlur: value.motionBlur === undefined || value.motionBlur === null ? null : value.motionBlur === true,
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
+  });
+}
+
+function addProjectEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const framesCountType = normalizeFramesCountTypeName(value.framesCountType);
+  const framesCountStartFrame = numberValue(value.framesCountStartFrame);
+  if (!framesCountType && framesCountStartFrame === null) return;
+  target.projects.push({
+    framesCountType,
+    framesCountStartFrame: framesCountStartFrame === null ? framesCountStartFrameForName(framesCountType) : framesCountStartFrame,
+    source: source || "observed project"
   });
 }
 
@@ -329,6 +361,7 @@ function createEvidenceStore(readBackSteps) {
     masks: [],
     markers: [],
     markerSignatures: new Set(),
+    projects: [],
     projectItems: [],
     properties: [],
     essentialGraphicsControllers: []
@@ -486,6 +519,7 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (!isPlainObject(payload)) return;
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
+  addProjectEvidence(evidence, payload, source);
   addLayerEvidence(evidence, payload, source);
   addCompEvidence(evidence, payload, source);
   addMaskEvidence(evidence, payload, source);
@@ -500,6 +534,7 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
     for (const controller of payload.controllers) addEssentialGraphicsControllerEvidence(evidence, controller, source);
   }
   if (isPlainObject(payload.item)) addProjectItemEvidence(evidence, payload.item, source);
+  if (isPlainObject(payload.project)) addProjectEvidence(evidence, payload.project, source);
   if (Array.isArray(payload.items)) {
     for (const item of payload.items) addProjectItemEvidence(evidence, item, source);
   }
@@ -1346,6 +1381,47 @@ function checkSetProjectItemMetadata(checks, step, payload, evidence) {
   });
 }
 
+function observedProjectFramesCountEvidence(evidence, expectedFramesCountType) {
+  const expected = normalizeFramesCountTypeName(expectedFramesCountType);
+  if (!expected || !evidence || !Array.isArray(evidence.projects)) return null;
+  const expectedStartFrame = framesCountStartFrameForName(expected);
+  for (const project of evidence.projects) {
+    const observed = normalizeFramesCountTypeName(project.framesCountType);
+    const observedStartFrame = numberValue(project.framesCountStartFrame);
+    if (observed === expected || (expectedStartFrame !== null && nearlyEqual(observedStartFrame, expectedStartFrame))) {
+      return project.source || "observed project framesCountType";
+    }
+  }
+  return null;
+}
+
+function checkSetProjectFramesCountType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizeFramesCountTypeName(
+    args.framesCountType ||
+    payload.framesCountType ||
+    (payload.updates && payload.updates.framesCountType) ||
+    (payload.project && payload.project.framesCountType)
+  );
+  const postVerification = payload.postVerification || {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.project || {};
+  const observed = normalizeFramesCountTypeName(after.framesCountType);
+  const readBackEvidence = observedProjectFramesCountEvidence(evidence.readBack, expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:frames-count-type`,
+    title: "Project frame count type matches explicit request",
+    expected: expected || "FC_START_0 or FC_START_1",
+    observed: observed || "missing project framesCountType",
+    passed: Boolean(expected) &&
+      observed === expected &&
+      postVerification.ok === true &&
+      postVerification.framesCountTypeMatches === true &&
+      postVerification.projectItemCountUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_project_info read-back matched set_project_frames_count_type."
+  });
+}
+
 function normalizePuppetPinTypeEvidence(value) {
   const number = numberValue(value);
   if (number === 1 || number === 4) return number;
@@ -1920,7 +1996,7 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   const args = step.args || {};
   const updates = isPlainObject(payload.updates) ? payload.updates : {};
   const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
-  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "preserveNestedFrameRate"].filter((field) => hasOwn(args, field));
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"].filter((field) => hasOwn(args, field));
   if (!fields.length) {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:updates`,
@@ -2496,6 +2572,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_project_item_metadata") {
     checkSetProjectItemMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_frames_count_type") {
+    checkSetProjectFramesCountType(checks, step, payload, evidence);
     return;
   }
 

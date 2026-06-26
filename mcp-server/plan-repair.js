@@ -293,6 +293,7 @@ const SAFE_COMP_PROPERTY_FIELDS = new Set([
   "frameRate",
   "bgColor",
   "displayStartTime",
+  "displayStartFrame",
   "preserveNestedFrameRate"
 ]);
 
@@ -447,6 +448,8 @@ function propertyCandidates(field) {
     bgcolor: ["bgColor"],
     displaystart: ["displayStartTime"],
     displaystarttime: ["displayStartTime"],
+    displaystartframe: ["displayStartFrame"],
+    startframe: ["displayStartFrame"],
     starttime: ["displayStartTime"],
     preservenestedframerate: ["preserveNestedFrameRate"],
     nestedframeratepreserve: ["preserveNestedFrameRate"],

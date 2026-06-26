@@ -8150,6 +8150,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "project-timecode-start-frames-typed-plan",
+      "title": "Project Timecode And Start Frames Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "composition",
+        "timecode",
+        "start-frame",
+        "displayStartFrame",
+        "framesCountType",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set project frame numbering and native displayStartFrame on explicit generated or reviewed compositions with typed read-back.",
+        "appliesWhen": [
+          "The user asks to toggle project timecode/start-frame numbering or set composition frame numbering to start at 0 or 1.",
+          "No all-project traversal; a safe adaptation over concrete generated/reviewed composition targets and an explicit project framesCountType is acceptable."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "framesCountType",
+          "type": "string",
+          "required": true,
+          "description": "Explicit final project frame numbering mode: FC_START_0 or FC_START_1."
+        },
+        {
+          "name": "targetComps",
+          "type": "array",
+          "required": true,
+          "description": "Concrete composition itemIndex/name values proven by current create_comp, find_project_items, or get_comp_details evidence."
+        },
+        {
+          "name": "displayStartFrame",
+          "type": "number",
+          "required": true,
+          "description": "Native integer CompItem.displayStartFrame requested for every accepted target composition."
+        }
+      ],
+      "targetAssumptions": [
+        "Every target is a generated or explicitly reviewed composition bound by current typed evidence before mutation.",
+        "Alt-key branching is replaced with an explicit reviewed framesCountType.",
+        "The workflow changes only project framesCountType and native displayStartFrame through typed tools.",
+        "All-project CompItem traversal, Project panel selection, non-generated user comp batch mutation, displayStartTime fallback semantics, render queue changes, footage interpretation, raw ExtendScript and exact source JSX behavior remain typed-tool gaps."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/project-timecode-start-frames-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "create_comp",
+          "get_project_info",
+          "get_comp_details",
+          "set_project_frames_count_type",
+          "set_comp_properties"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read project and explicit composition targets, set only project framesCountType plus native displayStartFrame, then read project and comps back.",
+        "steps": [
+          "Run create_comp or get_comp_details to bind every explicit generated/reviewed composition before mutation.",
+          "Run get_project_info before mutation and record framesCountType and framesCountStartFrame.",
+          "Run get_comp_details before mutation and record itemIndex/name, native displayStartFrame, displayStartTime, frameRate, duration, dimensions, layer count and work area.",
+          "Normalize the requested final project mode to FC_START_0 or FC_START_1 and disclose that this replaces Alt-key branching.",
+          "Run set_project_frames_count_type with the reviewed framesCountType.",
+          "Run get_project_info after mutation and compare framesCountType and framesCountStartFrame.",
+          "Run set_comp_properties once per concrete comp with only displayStartFrame, verifyAfter and idempotency evidence.",
+          "Run get_comp_details after each comp mutation and compare native displayStartFrame plus unchanged structural fields."
+        ],
+        "expectedEvidence": [
+          "Pre-run get_project_info shows the current project frame-count mode.",
+          "set_project_frames_count_type reports updatedFields:[\"framesCountType\"] and postVerification.ok:true.",
+          "Post-run get_project_info shows the requested framesCountType and framesCountStartFrame.",
+          "Pre-run get_comp_details shows every target composition identity and current native displayStartFrame value.",
+          "set_comp_properties reports updatedFields:[\"displayStartFrame\"] and postVerification.ok:true.",
+          "Post-run get_comp_details shows the requested displayStartFrame on the same composition item.",
+          "Post-run read-back shows unchanged width, height, duration, frameRate, layer count, work area and comp item identity.",
+          "The plan reports all-project traversal, Alt-key branching, displayStartTime fallback, non-generated user comp mutation, render queue changes, footage interpretation, raw ExtendScript and exact source JSX behavior as unsupported."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by safety/contract/live-readiness longrun for tool-project-toggle-timecode-and-start-frames as generated-only typed-plan coverage for explicit project framesCountType and native displayStartFrame updates.",
+          "Generated-only proof uses full-ui-agent-project-timecode-start-frames-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-project-toggle-timecode-and-start-frames",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the frame-count and native displayStartFrame intent from Toggle_Timecode_And_Start_Frames.jsx into typed tools; no source JSX copied. The source script's ScriptUI Alt-key branch and all-project CompItem traversal remain fail-closed. The safe adaptation requires an explicit framesCountType, explicit generated/reviewed comp targets, set_project_frames_count_type, set_comp_properties(displayStartFrame:<integer>), get_project_info/get_comp_details read-back, semantic verification and cleanup.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency and read-back verification.",
+        "Use explicit FC_START_0 or FC_START_1 requests; do not infer keyboard-state toggle behavior.",
+        "Do not use this recipe for broad all-project comp traversal, non-generated user comp batch mutation, Project panel selection, displayStartTime fallback semantics, render queue edits, footage interpretation changes, raw ExtendScript or exact source JSX semantics."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "reset-imported-item-names-typed-plan",
       "title": "Reset Imported Item Names Typed Plan",
       "status": "recipe",
