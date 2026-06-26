@@ -26,6 +26,27 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake DuIK puppet-pin rename policy retry (2026-06-26):
+  parent-owned scoped retry for `tool-layers-rename-puppet-pins-for-duik`
+  refreshed the current safety/contract evidence without adding a mutation
+  lane. The source behavior remains policy-only terminal because it depends on
+  ScriptUI Alt-key branching, selected Puppet pin property traversal, and
+  `PropertyBase.name` mutation for DuIK arm/leg names, while the product still
+  lacks a generated or mock DuIK fixture, reviewed selected-property name
+  writer, and puppet-pin rename read-back contract. The explicit-id retry used
+  `--max-items 1`, `--resolution-candidate-ids
+  tool-layers-rename-puppet-pins-for-duik`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit`; it returned
+  `completed_no_candidates` with one terminal
+  `policy-resolution-third-party-semantics-safety-policy` ticket, no open
+  tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`.
+  Compact proof envelope SHA-256:
+  `4485ab87970e6e8ddef651a0681bf29c9c3b0bfb6362a9b374a616c173a8b8ff`.
+  No live CEP proof, broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, Local/Ollama, fallback provider, dependency change,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake puppet guide-layer generated-only lane (2026-06-26):
   parent-owned milestone for `tool-layers-toggle-puppet-pins-as-guide-layers`
   replaced the stale all-or-nothing DuIK/native `guideLayer` blocker with a
@@ -3759,6 +3780,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-layers-rename-puppet-pins-for-duik` on
+  `third-party-semantics-safety-policy`. Current typed tools can inspect
+  selected properties and rename layers, but they cannot safely rename Puppet
+  pin property identities or prove DuIK pseudo-effect semantics with typed
+  read-back. Any future completion needs a parent-approved generated or mock
+  DuIK fixture, explicit mode input instead of Alt-key state, checkpoint or
+  rollback policy, cleanup, and a reviewed selected-property-name writer with
+  post-rename read-back.
+
 - 2026-06-26: Accept `puppet-pin-guide-layer-generated-only` as the bounded
   adaptation for `tool-layers-toggle-puppet-pins-as-guide-layers`. The contract
   may only prove native guide-layer toggling on an explicit generated Puppet
@@ -5218,6 +5248,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake DuIK puppet-pin rename policy retry | Required to refresh `tool-layers-rename-puppet-pins-for-duik` under the current safety/contract/live-readiness longrun without approving DuIK property rename mutation, project-wide scans, Alt-key UI semantics, raw JSX, or non-generated user-asset mutation. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, current ledger candidate and policy-ticket reads, and scoped retry with explicit `tool-layers-rename-puppet-pins-for-duik`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. The retry returned `completed_no_candidates`, one terminal `policy-resolution-third-party-semantics-safety-policy` ticket, no open tickets, no requeue, proof envelope SHA-256 `4485ab87970e6e8ddef651a0681bf29c9c3b0bfb6362a9b374a616c173a8b8ff`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warnings only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake puppet guide-layer generated-only lane | Required to give `tool-layers-toggle-puppet-pins-as-guide-layers` a current generated-only native `guideLayer` lane without approving project-wide DuIK pseudo-effect traversal, Alt-key UI semantics, puppet pin atom edits, raw JSX, or non-generated user-asset mutation. | Passed focused implementation and scoped closeout validation: touched-file `node --check`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-registry-smoke.js`; `node scripts/solution-library-validation-smoke.js`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with explicit `tool-layers-toggle-puppet-pins-as-guide-layers`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. The clean retry mapped the candidate to `puppet-pin-guide-layer-generated-only`, ran all lane non-live validation successfully, produced proof envelope SHA-256 `7698f2534d5271ecddf889a104295715d3b2f4ebdc928ee68efd500b50d5ce62`, and kept `changedPathCount=0` / `unplannedPathCount=0`. Generated-only live proof failed closed with `CEP panel is not connected to the bridge`. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source-checkout execution, non-generated user-asset mutation, launcher edit, push, PR, or GitHub automation was run. |
 
