@@ -26,6 +26,31 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake disabled-stroke policy retry (2026-06-26):
+  parent-owned scoped retry for `tool-properties-remove-disabled-strokes`
+  refreshed current safety/contract/live-readiness evidence without adding a
+  new mutation lane. The candidate remains terminal because the source-exact
+  script recursively traverses selected layer property groups and removes
+  disabled `ADBE Vector Graphic - Stroke` groups with `property.remove()`,
+  while the current typed surface cannot create/read disabled stroke group
+  state or remove only shape stroke property groups on generated targets.
+  Existing parent-reducer evidence was used as baseline, read-only CEP
+  readiness was checked with `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, and the scoped
+  retry then used `--context-percent 40`, `--max-items 1`,
+  `--resolution-candidate-ids tool-properties-remove-disabled-strokes`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`. It returned `completed_no_candidates` with one terminal
+  `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open
+  tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`.
+  Auto synthesis stayed blocked as
+  `classification_not_allowed:unsafe_skip_tool_gap`. Compact proof envelope
+  SHA-256: `93bd905814c2ccd21afc4b6e8ab8b3e7964b31eea1d767fd21bba4bc8517be9e`.
+  No broad queue processing, unscoped `max-items > 1`, broad/default CEP
+  smoke, Local/Ollama, fallback provider, dependency change, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake Lottie drop-shadow policy retry (2026-06-26):
   parent-owned scoped retry for `tool-lottie-convert-drop-shadows-for-lottie`
   refreshed current safety/contract/live-readiness evidence without adding a
@@ -3852,6 +3877,17 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-properties-remove-disabled-strokes` terminal under
+  the current shape-property deletion policy evidence. Existing selected
+  property, stroke expression, color, path-length, and generated shape-layer
+  tools do not safely prove source-exact disabled stroke cleanup because they
+  cannot create or mark generated `ADBE Vector Graphic - Stroke` groups as
+  disabled, expose stable stroke-group enabled read-back, or remove only those
+  stroke groups from explicit generated targets. Future completion requires a
+  generated-only `shape_property_delete` typed contract with disabled-stroke
+  fixture creation, before/after read-back, semantic removal-count checks,
+  checkpoint/cleanup handling, and no selected user-layer traversal or raw JSX.
+
 - 2026-06-26: Keep `tool-lottie-convert-drop-shadows-for-lottie` terminal
   under the current Lottie/property policy evidence. Existing effect-property,
   layer transform, layer metadata, and Lottie out-point contracts are not enough
@@ -5348,6 +5384,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake disabled-stroke policy retry | Required to refresh `tool-properties-remove-disabled-strokes` under the current safety/contract/live-readiness longrun without approving destructive selected shape-property traversal, raw JSX, generated shape-property deletion without read-back, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing parent-reducer ticket and ledger annotation read, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-properties-remove-disabled-strokes`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `93bd905814c2ccd21afc4b6e8ab8b3e7964b31eea1d767fd21bba4bc8517be9e`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake Lottie drop-shadow policy retry | Required to refresh `tool-lottie-convert-drop-shadows-for-lottie` under the current safety/contract/live-readiness longrun without approving source-exact third-party/effect traversal, recursive vector color mutation, layer parenting, keyframe cleanup, raw JSX, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing contract/lane search, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-lottie-convert-drop-shadows-for-lottie`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-cfd3a2aece823ae2` ticket, no open tickets, no requeue, proof envelope SHA-256 `428ad64ed8c743dde08359b52cf8d800baf34829b1c49e696d3c01d251da63b0`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
