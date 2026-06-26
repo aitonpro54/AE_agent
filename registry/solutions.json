@@ -7353,6 +7353,117 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "add-selection-to-new-folder-typed-plan",
+      "title": "Add Selection To New Folder Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-item",
+        "project-folder",
+        "selection",
+        "generated-only",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create one new generated Project folder and move explicit generated Project item indices into it with typed project-item tools.",
+        "appliesWhen": [
+          "The user asks to add selected Project items to a new folder.",
+          "The source selected-item intent can be safely adapted to explicit generated Project items from current typed evidence; current typed tools do not expose Project panel selection state."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "itemIndices",
+          "type": "project-item-selection",
+          "required": true,
+          "description": "Concrete generated Project item indices read from get_project_snapshot, find_project_items, or list_project_folder_items before mutation."
+        },
+        {
+          "name": "newFolderName",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed generated Project folder name to create with create_project_folder allowExisting:false."
+        }
+      ],
+      "targetAssumptions": [
+        "Every moved item is bound by explicit itemIndices from current typed project evidence before mutation.",
+        "The destination is one new generated Project folder created by create_project_folder with a reviewed name.",
+        "Current typed tools support Project folder creation, explicit project item movement, and folder read-back, but do not expose current Project panel selection.",
+        "Existing item names, sources, types, comp contents, layer source references, render queue items, project files, existing folders, and unlisted Project items are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/add-selection-to-new-folder-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "list_project_folder_items",
+          "create_project_folder",
+          "move_project_items_to_folder"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read generated Project item evidence, create one new generated folder, move explicit item indices into it, then read back folder membership and project inventory.",
+        "steps": [
+          "Run get_project_info and get_project_snapshot before mutation to capture project inventory.",
+          "Run find_project_items or list_project_folder_items to enumerate the explicit generated Project items to move.",
+          "Require a concrete itemIndices list from current typed evidence and a reviewed new generated Project folder name before confirmation.",
+          "Run create_project_folder with allowExisting:false for the reviewed generated folder name.",
+          "Run move_project_items_to_folder with only those explicit itemIndices and the newly created folder target.",
+          "Run list_project_folder_items and get_project_snapshot after mutation; fail closed if Project panel selection reads, empty-selection UI alerts, folder deletion, item rename, source relinking, render queue work, filesystem access, or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete `itemIndices` list entry and expected item name/type.",
+          "create_project_folder returns the generated destination folder identity.",
+          "move_project_items_to_folder reports only the accepted generated target count.",
+          "Post-run list_project_folder_items shows every accepted item under the new generated folder and no unlisted Project items moved.",
+          "Post-run get_project_snapshot shows no unexpected project item deletion, rename, source replacement, layer relink, import, render queue mutation, project file write, filesystem access, or folder cleanup."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by reopened Full Intaker parent reducer for tool-project-add-selection-to-new-folder as generated-only typed-plan coverage for explicit Project item foldering.",
+          "The generated-only lane creates generated comp Project items, creates one generated Project folder, moves only explicit typed itemIndices, and reads folder/project inventory back."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-26",
+          "from": "generic-repo-importer-tool-project-add-selection-to-new-folder",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Selection_To_New_Folder.jsx into existing typed tools as explicit generated Project item movement into one newly created generated folder; no source JSX copied. Current typed tools do not expose Project panel selection, so true selected-item discovery, empty-selection UI behavior, folder deletion, item rename, source relinking, render queue work, filesystem access, non-generated user assets, and exact source JSX semantics require a separate get_selected_project_items typed contract or another reviewed typed-tool contract.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Use this recipe only for explicit generated Project items and one new generated destination folder.",
+        "Project panel selection reads require a future get_selected_project_items typed contract with generated-only proof and empty-selection fail-closed behavior.",
+        "Require current get_project_snapshot, find_project_items, or list_project_folder_items evidence before mutating project item parent folders; do not infer item targets from prior chat context.",
+        "Do not delete folders, rename items, relink sources, import/export files, mutate render queue items, save the project, touch non-generated user assets, traverse the filesystem, or run raw ExtendScript."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-labeled-items-to-render-queue-typed-plan",
       "title": "Add Labeled Items To Render Queue Typed Plan",
       "status": "recipe",

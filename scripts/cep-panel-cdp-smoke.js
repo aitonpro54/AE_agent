@@ -55,6 +55,7 @@ const {
   agentParentOpacityExpressionScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
+  agentProjectSelectionFolderScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,
@@ -367,6 +368,24 @@ function openAiCliProjectItemsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_ITEMS_PREFIX || "Codex QA AUX050",
     scenarioFactory: agentProjectItemsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliProjectSelectionFolderScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-project-selection-folder",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_PROJECT_SELECTION_FOLDER_PREFIX || "Codex QA AUX-PSF",
+    scenarioFactory: agentProjectSelectionFolderScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -8452,6 +8471,10 @@ async function main() {
   }
   if (command === "agent-project-items-openai-cli-smoke" || command === "full-ui-agent-project-items-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliProjectItemsScenarioConfig());
+    return;
+  }
+  if (command === "agent-project-selection-folder-openai-cli-smoke" || command === "full-ui-agent-project-selection-folder-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliProjectSelectionFolderScenarioConfig());
     return;
   }
   if (command === "agent-project-item-metadata-openai-cli-smoke" || command === "full-ui-agent-project-item-metadata-openai-cli-smoke") {

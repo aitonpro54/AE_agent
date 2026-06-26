@@ -26,6 +26,40 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake project selection folder generated-only lane/retry
+  (2026-06-26): parent-owned scoped milestone for
+  `tool-project-add-selection-to-new-folder` added a candidate-specific
+  generated-only typed adaptation without adding a broad Project panel
+  selection reader. Added `add-selection-to-new-folder-typed-plan`, generic
+  intake note, solution registry/retrieval coverage, scenario/report smoke
+  coverage, CEP command
+  `full-ui-agent-project-selection-folder-openai-cli-smoke`, and
+  self-improvement family `project-selection-folder-generated-only`. The safe
+  lane uses current typed Project evidence for explicit generated
+  `itemIndices`, creates one reviewed generated Project folder with
+  `create_project_folder`, moves only those explicit items with
+  `move_project_items_to_folder`, and verifies folder/project read-back through
+  `list_project_folder_items` and `get_project_snapshot`. Source-exact Project
+  panel selection reads, empty-selection UI behavior, non-generated user
+  assets, item rename/delete, source relinking, import/export, render queue
+  work, filesystem access, raw JSX, and source JSX copy remain fail-closed.
+  Scoped retry with explicit id, `--context-percent 45`, `--max-items 1`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json` produced terminal/live-blocked ticket
+  `live-lane-family-d3b67468672474ac`: bounded self-improvement selected the
+  new family, lane non-live validation passed, read-only CEP preflight passed,
+  and generated-only live proof failed closed with
+  `CEP panel is not connected to the bridge`. Compact proof envelope SHA-256:
+  `a85c76b887824eb4a1c6ac9805c7f007c5b63977e71ce391b460d890ba00d3d0`.
+  Closeout validation passed: touched-file `node --check`, JSON parse for
+  registry/live-lane registry, `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake export-path-points live-readiness retry (2026-06-26):
   parent-owned scoped retry for `tool-properties-export-path-points` refreshed
   current safety/contract/live-readiness evidence using the existing
@@ -3936,6 +3970,13 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: For `tool-project-add-selection-to-new-folder`, keep exact
+  Project panel selected-item discovery fail-closed until a separate
+  `get_selected_project_items` typed contract exists. The accepted adaptation
+  is generated-only and explicit-index based: current typed Project evidence,
+  one reviewed generated destination folder, move/read-back, semantic
+  verification, and cleanup.
+
 - 2026-06-26: Keep `tool-properties-export-path-points`
   terminal/live-blocked under the current generated-only file-output contract.
   The product already has a narrow `export_path_points` typed adaptation with
@@ -5470,6 +5511,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake project selection folder generated-only lane/retry | Required to give `tool-project-add-selection-to-new-folder` a candidate-specific explicit generated itemIndices foldering recipe/lane, rerun the scoped candidate from a clean tree, and preserve Project panel selection/file/user-asset risks as fail-closed. | Passed: touched JS `node --check` for `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json` and `orchestrator/generic-repo-live-lane-registry.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-library-validation-smoke.js`; scoped retry with exact `tool-project-add-selection-to-new-folder`, `--context-percent 45`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warning only. Scoped retry returned terminal/live-blocked ticket `live-lane-family-d3b67468672474ac`, proof SHA-256 `a85c76b887824eb4a1c6ac9805c7f007c5b63977e71ce391b460d890ba00d3d0`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
 
 | Full Intake export-path-points live-readiness retry | Required to refresh `tool-properties-export-path-points` under the current safety/contract/live-readiness longrun without approving Desktop/user-path writes, broad selected path traversal, arbitrary overwrite, path mutation, raw JSX, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing contract/lane search, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, scoped retry with explicit `tool-properties-export-path-points`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`, current ticket/report reads, scoped `node scripts/cep-panel-cdp-smoke.js reload`, and bridge `/health` check. The retry returned `completed_no_candidates`, one terminal `live-lane-family-9fa066d8da8b8326` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `37eec275bcb3678cce879f483cb0e2be1b038a028e2086367243d2c067b2393b`, `changedPathCount=0`, and `unplannedPathCount=0`. Lane non-live validation passed; generated-only live proof failed closed with `CEP panel is not connected to the bridge`, and `/health.panelConnected` remained `false` after reload. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 

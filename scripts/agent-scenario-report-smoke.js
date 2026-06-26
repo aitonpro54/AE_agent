@@ -56,6 +56,7 @@ const {
   agentParentOpacityExpressionScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
+  agentProjectSelectionFolderScenarioPlans,
   agentResetWorkAreaScenarioPlans,
   agentRenderQueueScenarioPlans,
   agentSelectedKeyframeMarkerScenarioPlans,
@@ -511,6 +512,22 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(projectItems.plan.steps.some((step) => step.tool === "replace_layer_source"));
   assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
   assert.strictEqual(projectItems.plan.steps[6].resultBindings.itemIndices, "{{steps.6.renamed.0.itemIndex}}");
+
+  const [projectSelectionFolder] = agentProjectSelectionFolderScenarioPlans("Codex QA AUX-PSF Fixture");
+  assert.strictEqual(projectSelectionFolder.id, "generated-project-selection-folder");
+  assert.strictEqual(projectSelectionFolder.expectedReadBack.generatedProjectSelectionFolder, true);
+  assert.deepStrictEqual(projectSelectionFolder.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_comp",
+    "find_project_items",
+    "create_project_folder",
+    "move_project_items_to_folder",
+    "list_project_folder_items",
+    "get_project_snapshot"
+  ]);
+  assert.strictEqual(projectSelectionFolder.plan.steps[4].args.itemIndices, "{{steps.3.result}}");
+  assert.strictEqual(projectSelectionFolder.plan.steps[5].args.folderName, projectSelectionFolder.expectedReadBack.folderName);
+  assert(!projectSelectionFolder.plan.steps.some((step) => step.tool === "run_extendscript"));
 
   const [projectItemMetadata] = agentProjectItemMetadataScenarioPlans("Codex QA AUX-PI-META Fixture");
   assert.strictEqual(projectItemMetadata.id, "generated-project-item-metadata-label");

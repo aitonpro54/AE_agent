@@ -200,6 +200,7 @@ const AVAILABLE_TOOLS = [
   "get_comp_details",
   "get_render_queue_status",
   "create_comp",
+  "create_project_folder",
   "create_solid_layer",
   "create_shape_layer",
   "create_layer_connection_line",
@@ -2590,6 +2591,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-selection-to-new-folder-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "create_project_folder", "move_project_items_to_folder"],
+        `${id}: selected Project item folder workflow should stay on the narrow generated project-item move typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item folder workflow must be mutating.`);
+      assert(text.includes("new generated Project folder"), `${id}: recipe should document generated destination folder scope.`);
+      assert(text.includes("create_project_folder"), `${id}: recipe should use the project folder creation typed tool.`);
+      assert(text.includes("move_project_items_to_folder"), `${id}: recipe should use the project item move typed tool.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should require folder content read-back.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_project_folder/.test(step)), `${id}: verification must include folder creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /move_project_items_to_folder/.test(step)), `${id}: verification must include project item movement.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /concrete `itemIndices`/.test(item)), `${id}: verification must require explicit item indices.`);
+      assert(solution.notes.some((note) => /Project panel selection reads/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /get_selected_project_items/.test(note)), `${id}: notes must name the future selected-project-item contract.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Selection_To_New_Folder/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-labeled-items-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4451,6 +4472,21 @@ function assertActualRetrieval(registry) {
   assert(mergeImportedPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder for imported item workflows.");
   assert(mergeImportedPromptSection.includes("project-panel selection"), "prompt section should preserve project-panel selection warning.");
   assert(!/run_extendscript/i.test(mergeImportedPromptSection), "merge-imported guidance should not recommend raw ExtendScript.");
+
+  const addSelectionToNewFolderRetrieval = retrieveSolutionHints("Add selected generated Project items to a new folder after reading project item evidence, creating a generated Project folder, moving explicit item indices, and reading back folder contents.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addSelectionToNewFolderRetrieval.ok, true);
+  assert(ids(addSelectionToNewFolderRetrieval).includes("add-selection-to-new-folder-typed-plan"), "add selection to new folder advisory recipe should surface for project item folder prompts.");
+  const addSelectionToNewFolderPromptSection = formatSolutionHintsForPrompt(addSelectionToNewFolderRetrieval);
+  assert(addSelectionToNewFolderPromptSection.includes("Add Selection To New Folder Typed Plan"), "prompt section should include add-selection folder advisory title.");
+  assert(addSelectionToNewFolderPromptSection.includes("create_project_folder"), "prompt section should prefer create_project_folder.");
+  assert(addSelectionToNewFolderPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder.");
+  assert(addSelectionToNewFolderPromptSection.includes("list_project_folder_items"), "prompt section should require folder read-back.");
+  assert(addSelectionToNewFolderPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(addSelectionToNewFolderPromptSection), "add-selection folder guidance should not recommend raw ExtendScript.");
 
   const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
     registry,

@@ -1638,6 +1638,52 @@ function agentProjectItemsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentProjectSelectionFolderScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Project Selection Folder`;
+  const folderName = `${base} Folder`;
+  const firstCompName = `${base} Alpha`;
+  const secondCompName = `${base} Beta`;
+
+  return [
+    {
+      id: "generated-project-selection-folder",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "find_project_items",
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "list_project_folder_items",
+        "get_project_snapshot"
+      ],
+      expectedReadBack: {
+        generatedProjectSelectionFolder: true,
+        folderName,
+        itemNames: [firstCompName, secondCompName]
+      },
+      plan: {
+        summary: "Generated-only live QA for moving explicit generated Project items into a new generated folder.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create first generated Project folder target comp", tool: "create_comp", args: { name: firstCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.07, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only Project selection folder validation" } },
+          { title: "Create second generated Project folder target comp", tool: "create_comp", args: { name: secondCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.1, 0.07, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only Project selection folder validation" } },
+          { title: "Find explicit generated Project items before folder move", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
+          { title: "Create generated destination Project folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
+          { title: "Move explicit generated Project items into generated folder", tool: "move_project_items_to_folder", args: { itemIndices: "{{steps.3.result}}", targetFolderName: folderName } },
+          { title: "Read generated folder contents after move", tool: "list_project_folder_items", args: { folderName, recursive: false, type: "comp", limit: 10 } },
+          { title: "Read Project snapshot after generated folder move", tool: "get_project_snapshot", args: { limit: 25 } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentProjectItemMetadataScenarioPlans(runPrefix) {
   const base = `${runPrefix} Project Item Labels`;
   const firstCompName = `${base} Alpha`;
@@ -4815,6 +4861,7 @@ module.exports = {
   agentParentOpacityExpressionScenarioPlans,
   agentProjectItemMetadataScenarioPlans,
   agentProjectItemsScenarioPlans,
+  agentProjectSelectionFolderScenarioPlans,
   agentRenameFindReplaceScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentRenderQueueScenarioPlans,

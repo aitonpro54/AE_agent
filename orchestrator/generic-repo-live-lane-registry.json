@@ -2573,6 +2573,59 @@
       "scope": "generated-only Project item label proof using generated composition project items, find_project_items/get_project_snapshot evidence for concrete itemIndices, set_project_item_metadata label:0 with expectedItemNames guards, post-mutation project-item label read-back, semantic verification, and cleanup; source-exact Project panel selected item traversal, label defaults by item type, all-project scans without explicit evidence, item rename/move/delete, proxy state, render queue work, filesystem operations, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "project-selection-folder-generated-only",
+      "requiredTools": [
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "list_project_folder_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_project_info",
+        "get_project_snapshot",
+        "find_project_items",
+        "list_project_folder_items",
+        "create_project_folder",
+        "move_project_items_to_folder"
+      ],
+      "candidateIds": [
+        "tool-project-add-selection-to-new-folder"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-selection-folder-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "project-selection-folder",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "list_project_folder_items",
+        "get_project_snapshot"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/add-selection-to-new-folder-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-add-selection-to-new-folder.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Project item foldering proof using explicit generated itemIndices from current typed project evidence, create_project_folder for one reviewed generated destination, move_project_items_to_folder, list_project_folder_items/get_project_snapshot read-back, semantic verification, and generated-prefix cleanup; source-exact Project panel selection reads, empty-selection UI alerts, non-generated user assets, item rename/delete, source relinking, render queue work, filesystem access, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "composition-marker-read-generated-only",
       "requiredTools": [
         "get_comp_details"
