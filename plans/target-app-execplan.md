@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake Lottie drop-shadow policy retry (2026-06-26):
+  parent-owned scoped retry for `tool-lottie-convert-drop-shadows-for-lottie`
+  refreshed current safety/contract/live-readiness evidence without adding a
+  new mutation lane. The candidate remains terminal because the source-exact
+  Lottie Drop Shadow conversion still requires third-party/effect semantics
+  outside the current typed surface: effect enable/removal, recursive vector
+  stroke/fill color writes, layer parenting, transform keyframe cleanup, and
+  selected-layer/effect traversal. Read-only CEP readiness was checked first
+  with `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; the scoped
+  retry then used `--context-percent 40`, `--max-items 1`,
+  `--resolution-candidate-ids tool-lottie-convert-drop-shadows-for-lottie`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`. It returned `completed_no_candidates` with one terminal
+  `live-lane-family-cfd3a2aece823ae2` ticket, no open tickets, no requeue,
+  `changedPathCount=0`, and `unplannedPathCount=0`. Compact proof envelope
+  SHA-256: `428ad64ed8c743dde08359b52cf8d800baf34829b1c49e696d3c01d251da63b0`.
+  No broad queue processing, unscoped `max-items > 1`, broad/default CEP
+  smoke, Local/Ollama, fallback provider, dependency change, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake Puppet pin type policy retry (2026-06-26):
   parent-owned scoped retry for `tool-properties-toggle-puppet-pin-types`
   refreshed current safety/contract/live-readiness evidence without adding a
@@ -3830,6 +3852,16 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-lottie-convert-drop-shadows-for-lottie` terminal
+  under the current Lottie/property policy evidence. Existing effect-property,
+  layer transform, layer metadata, and Lottie out-point contracts are not enough
+  for source-exact Drop Shadow conversion because the source requires reviewed
+  effect enabled/removal behavior, recursive vector color writes, layer
+  parenting, transform keyframe cleanup, and selected effect traversal. Future
+  completion requires narrow generated-only typed contracts and semantic
+  verification for those operations, or an explicitly narrowed advisory recipe
+  that fails closed for unsupported source semantics.
+
 - 2026-06-26: Keep `tool-properties-toggle-puppet-pin-types` on
   `puppet-pin-atom-generated-only-readiness-policy`. The existing
   `set_puppet_pin_type` typed tool remains narrow enough for reviewed Puppet
@@ -5316,6 +5348,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake Lottie drop-shadow policy retry | Required to refresh `tool-lottie-convert-drop-shadows-for-lottie` under the current safety/contract/live-readiness longrun without approving source-exact third-party/effect traversal, recursive vector color mutation, layer parenting, keyframe cleanup, raw JSX, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing contract/lane search, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-lottie-convert-drop-shadows-for-lottie`, `--context-percent 40`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-cfd3a2aece823ae2` ticket, no open tickets, no requeue, proof envelope SHA-256 `428ad64ed8c743dde08359b52cf8d800baf34829b1c49e696d3c01d251da63b0`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake Puppet pin type policy retry | Required to refresh `tool-properties-toggle-puppet-pin-types` under the current safety/contract/live-readiness longrun without approving selected Puppet pin traversal, automatic Puppet pin creation, raw JSX, user Puppet effect mutation, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing contract/lane search, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current policy-ticket read, and scoped retry with explicit `tool-properties-toggle-puppet-pin-types`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `policy-resolution-puppet-pin-atom-generated-only-readiness-policy` ticket, no open tickets, no requeue, proof envelope SHA-256 `49e27dde3f545476d4a29d0a81ca9f3bb39237a7e98914be06e3ea7096ee9166`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. The first parallel `check:rules` attempt failed on a transient temp-file race with `smoke:solutions`; the standalone rerun passed. No JS files were touched, so touched-file `node --check` was not required. |
 
