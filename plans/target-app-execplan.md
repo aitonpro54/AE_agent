@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake DuIK pin-size policy retry (2026-06-26):
+  parent-owned scoped retry for `tool-properties-increase-all-pin-sizes`
+  refreshed current safety/contract evidence without adding a mutation lane.
+  The source behavior remains policy-only terminal because it prompts for a
+  size percentage, scans every project composition/layer effect for the
+  third-party `Pseudo/Duik pin02` pseudo-effect, and writes effect property 2.
+  Current typed tools can inspect and set explicit reviewed effect properties,
+  but the product still lacks a generated or mock DuIK fixture, exact pin-size
+  property identity proof, safe project-wide third-party traversal contract,
+  checkpoint/rollback and cleanup policy for that mutation, and typed semantic
+  read-back for DuIK pin-size behavior. The explicit-id retry used
+  `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids
+  tool-properties-increase-all-pin-sizes`,
+  `--allow-self-improvement-lane-synthesis`, and `--no-commit`; it returned
+  `completed_no_candidates` with one terminal
+  `policy-resolution-third-party-semantics-safety-policy` ticket, no open
+  tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`.
+  Compact proof envelope SHA-256:
+  `8aa462f7effe2e20842a5613b3c3c60bb091710acad7361ecb9f777ac629ce1a`.
+  No live CEP proof, broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, Local/Ollama, fallback provider, dependency change,
+  raw JSX copy, source-checkout execution, non-generated user-asset mutation,
+  launcher edit, push, or PR was run.
+
 - [x] Full Intake DuIK puppet-pin rename policy retry (2026-06-26):
   parent-owned scoped retry for `tool-layers-rename-puppet-pins-for-duik`
   refreshed the current safety/contract evidence without adding a mutation
@@ -3780,6 +3804,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-properties-increase-all-pin-sizes` on
+  `third-party-semantics-safety-policy`. Existing typed effect-property tools
+  are not enough for source-exact DuIK pin-size semantics because the source
+  relies on project-wide third-party pseudo-effect traversal and an unproven
+  property-2 pin-size identity. Future completion requires a parent-approved
+  generated or mock DuIK fixture, explicit pin-size property identity,
+  checkpoint/rollback and cleanup policy, and typed before/after read-back
+  before any DuIK pin-size mutation.
+
 - 2026-06-26: Keep `tool-layers-rename-puppet-pins-for-duik` on
   `third-party-semantics-safety-policy`. Current typed tools can inspect
   selected properties and rename layers, but they cannot safely rename Puppet
@@ -5248,6 +5281,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake DuIK pin-size policy retry | Required to refresh `tool-properties-increase-all-pin-sizes` under the current safety/contract/live-readiness longrun without approving DuIK pin-size mutation, project-wide third-party effect scans, raw JSX, source-checkout execution, or non-generated user-asset mutation. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, current policy-ticket read, existing contract/lane search, and scoped retry with explicit `tool-properties-increase-all-pin-sizes`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. The retry returned `completed_no_candidates`, one terminal `policy-resolution-third-party-semantics-safety-policy` ticket, no open tickets, no requeue, proof envelope SHA-256 `8aa462f7effe2e20842a5613b3c3c60bb091710acad7361ecb9f777ac629ce1a`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake DuIK puppet-pin rename policy retry | Required to refresh `tool-layers-rename-puppet-pins-for-duik` under the current safety/contract/live-readiness longrun without approving DuIK property rename mutation, project-wide scans, Alt-key UI semantics, raw JSX, or non-generated user-asset mutation. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, current ledger candidate and policy-ticket reads, and scoped retry with explicit `tool-layers-rename-puppet-pins-for-duik`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`. The retry returned `completed_no_candidates`, one terminal `policy-resolution-third-party-semantics-safety-policy` ticket, no open tickets, no requeue, proof envelope SHA-256 `4485ab87970e6e8ddef651a0681bf29c9c3b0bfb6362a9b374a616c173a8b8ff`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warnings only. No JS files were touched, so touched-file `node --check` was not required. |
 
