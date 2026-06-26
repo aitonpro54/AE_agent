@@ -26,6 +26,38 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake export-path-points live-readiness retry (2026-06-26):
+  parent-owned scoped retry for `tool-properties-export-path-points` refreshed
+  current safety/contract/live-readiness evidence using the existing
+  `export-path-points-typed-plan` and
+  `shape-mask-path-export-points-generated-only` lane. The safe adaptation
+  remains generated-only: one explicit generated Shape or Mask path target,
+  `get_path_geometry` read-back, `export_path_points` writing a simple `.txt`
+  only under the generated export root with byte-length/SHA-256/content
+  evidence, final `get_path_geometry`/`get_layer_details` read-back, semantic
+  verification, and generated artifact cleanup. Source-exact Desktop
+  `points.txt` writes, `comp.selectedProperties` traversal, arbitrary
+  `outputPath` or user paths, expression-driven or truncated paths,
+  multi-target batches, overwrite outside generated exports, path mutation,
+  and raw JSX remain fail-closed. Read-only CEP readiness was checked with
+  `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; the scoped
+  retry then used `--context-percent 30`, `--max-items 1`,
+  `--resolution-candidate-ids tool-properties-export-path-points`,
+  `--allow-self-improvement-lane-synthesis`, `--no-commit`, and
+  `--compact-json`. It returned `completed_no_candidates` with one terminal
+  `live-lane-family-9fa066d8da8b8326` ticket for the exact candidate, no open
+  tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`.
+  Lane non-live validation passed; generated-only live proof failed closed with
+  `CEP panel is not connected to the bridge`. A scoped CDP `reload` was tried,
+  but bridge `/health` still reported `panelConnected:false`. Compact proof
+  envelope SHA-256:
+  `37eec275bcb3678cce879f483cb0e2be1b038a028e2086367243d2c067b2393b`.
+  No broad queue processing, unscoped `max-items > 1`, broad/default CEP
+  smoke, Local/Ollama, fallback provider, dependency change, raw JSX copy,
+  source-checkout execution, non-generated user-asset mutation, launcher edit,
+  push, or PR was run.
+
 - [x] Full Intake selected-property rename policy retry (2026-06-26):
   parent-owned scoped retry for `tool-properties-rename-selected-properties`
   refreshed current safety/contract/live-readiness evidence without adding a
@@ -3904,6 +3936,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-26: Keep `tool-properties-export-path-points`
+  terminal/live-blocked under the current generated-only file-output contract.
+  The product already has a narrow `export_path_points` typed adaptation with
+  generated export-root writes, SHA-256/content evidence, geometry read-back,
+  semantic verification, and cleanup policy. The scoped retry failed only at
+  live proof readiness because the local bridge daemon was healthy but
+  `/health.panelConnected` stayed `false` after a scoped CDP `reload`.
+  Completion requires a connected CEP panel/bridge session and saved AE project
+  so `full-ui-agent-export-path-points-openai-cli-smoke` can run generated-only
+  proof. Source-exact Desktop/user-path writes, broad selected path traversal,
+  arbitrary overwrite, expression-driven/truncated paths, path mutation, and
+  raw JSX remain separate fail-closed requirements.
+
 - 2026-06-26: Keep `tool-properties-rename-selected-properties` terminal under
   the current selected-property name mutation evidence. Existing selected
   property, value/keyframe/expression, effect-property, layer-rename, and
@@ -5425,6 +5470,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake export-path-points live-readiness retry | Required to refresh `tool-properties-export-path-points` under the current safety/contract/live-readiness longrun without approving Desktop/user-path writes, broad selected path traversal, arbitrary overwrite, path mutation, raw JSX, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing contract/lane search, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, scoped retry with explicit `tool-properties-export-path-points`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`, current ticket/report reads, scoped `node scripts/cep-panel-cdp-smoke.js reload`, and bridge `/health` check. The retry returned `completed_no_candidates`, one terminal `live-lane-family-9fa066d8da8b8326` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `37eec275bcb3678cce879f483cb0e2be1b038a028e2086367243d2c067b2393b`, `changedPathCount=0`, and `unplannedPathCount=0`. Lane non-live validation passed; generated-only live proof failed closed with `CEP panel is not connected to the bridge`, and `/health.panelConnected` remained `false` after reload. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
 | Full Intake selected-property rename policy retry | Required to refresh `tool-properties-rename-selected-properties` under the current safety/contract/live-readiness longrun without approving arbitrary selected-property display-name mutation, raw JSX, generated property-name writes without read-back, or broad queue processing. | Passed scoped evidence: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, existing parent-reducer ticket and ledger annotation read, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, current ticket read, and scoped retry with explicit `tool-properties-rename-selected-properties`, `--context-percent 30`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`. The retry returned `completed_no_candidates`, one terminal `live-lane-family-0e4f08dad3367dcc` ticket for the exact candidate, no open tickets, no requeue, proof envelope SHA-256 `94b21d5cc2b255b3a81366eb19655bb5eb77605a0e2a0156f185f89aa1f3021d`, `changedPathCount=0`, and `unplannedPathCount=0`. Closeout validation passed: `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warning only. No JS files were touched, so touched-file `node --check` was not required. |
 
