@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake composition panel refresh recovery retry
+  (2026-06-27): after human recovery, read-only CEP readiness and MCP
+  `get_project_snapshot` succeeded. The leftover generated prefix
+  `Codex QA AUX-REFRESH 73366659` was removed through a backend-owned M100
+  proposal for `cleanup_test_items`, with dry-run, confirmed run, protected
+  edit session `ai-plan-ed7c258d`, checkpoint
+  `backups/empty_test_comp-checkpoint-session-ai-plan-ed7c258d-2026-06-27T15-34-38-419Z.aep`,
+  and post-cleanup read-back showing only `Comp 1`, `Solids`, and
+  `Onion Skin`. A bounded scoped Full Intaker retry then ran with explicit
+  `--resolution-candidate-ids tool-compositions-force-composition-panel-refresh`,
+  `--max-items 1`, and `--context-percent 55`. The lane non-live validation
+  passed, but the generated-only live proof failed closed again at
+  `refresh_comp_panel`: AE timed out after submit to `evalScript` on generated
+  comp `Codex QA AUX-REFRESH 74522602 Comp Refresh Comp`. The run created
+  checkpoint
+  `backups/empty_test_comp-checkpoint-session-ai-plan-bf853146-2026-06-27T15-35-54-728Z.aep`,
+  finished edit session `ai-plan-bf853146` as `needs-review`, recorded terminal
+  ticket `live-lane-family-04dc73d685a992ff`, and proof envelope SHA-256
+  `9f4f8264dcc648655c4455c4f382856b632b57936217932e9d4d72992b2def56`.
+  Post-failure read-only `get_project_snapshot` timed out again, so no second
+  live proof, no cleanup of the new generated prefix, no broad/default CEP
+  smoke, no unscoped queue processing, no Local/Ollama, no fallback provider,
+  no raw JSX fallback, no launcher edit, no push, and no PR was run. Human
+  AE/panel/project recovery is required before any further live retry or
+  generated cleanup.
+
 - [x] Full Intake composition panel refresh live-readiness retry
   (2026-06-27): parent-owned scoped attempt for
   `tool-compositions-force-composition-panel-refresh` verified that the current
