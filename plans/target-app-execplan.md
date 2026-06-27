@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-set-track-matte-to-above: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-track-matte-to-above); live gate ready, importer batch full-intake-kyletmartinez-f425624821-import, commit recorded after candidate commit.
+
+- [x] Full Intake set track matte to above generated-only lane/rerun
+  (2026-06-27): parent-owned scoped milestone for
+  `tool-layers-set-track-matte-to-above` reused the existing
+  `layer-track-matte-generated-only` family, `set_layer_track_matte` bridge
+  tool, `set-track-matte-to-above-typed-plan` recipe, semantic verification,
+  and CEP command `full-ui-agent-layer-track-matte-openai-cli-smoke`. The safe
+  lane uses explicit generated same-comp fill/matte layer evidence, the
+  reviewed immediately-above matte layer, `trackMatteType:"luma_inverted"`,
+  expected layer-name guards, `get_layer_details` read-back for
+  `hasTrackMatte:true`, `trackMatteTypeName:"luma_inverted"`, and matching
+  `trackMatteLayer`, plus generated cleanup. Direct generated-only live proof
+  and strict Full Intaker live rerun passed for the explicit candidate. Proof
+  envelope SHA-256:
+  `04fed01c2946ec781d27ebe09c901cedd0f7cd714e03e207b09aad93cd627eec`.
+  Ledger counts are now `completed=40`, `blocked_or_skipped=35`, `queued=0`,
+  `failed=0`. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  raw JSX copy, launcher edit, push, or PR was run.
 - [x] Full intake tool-layers-set-all-track-matte-labels: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-all-track-matte-labels); live gate ready, importer batch full-intake-kyletmartinez-75e0975b23-import, commit recorded after candidate commit.
 
 - [x] Full Intake track matte labels generated-only lane/rerun
@@ -4131,6 +4151,7 @@ check.
 
 ## Decision Log
 
+- 2026-06-27: Generic full-intake orchestrator processed `Layers/Set_Track_Matte_To_Above.jsx` as `tool-layers-set-track-matte-to-above`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-track-matte-to-above).
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Set_All_Track_Matte_Labels.jsx` as `tool-layers-set-all-track-matte-labels`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-all-track-matte-labels).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Toggle_Preserve_Nested_Frame_Rate.jsx` as `tool-project-toggle-preserve-nested-frame-rate`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-toggle-preserve-nested-frame-rate).
@@ -5697,6 +5718,7 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-set-track-matte-to-above | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f425624821-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-layers-set-all-track-matte-labels | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-75e0975b23-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-project-toggle-preserve-nested-frame-rate | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2513d110d8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6235,6 +6257,29 @@ check.
   Fill layers with `hasTrackMatte:true`, source-exact broad active-comp scans
   without typed matte-role evidence, track matte relationship edits, layer
   reordering, all-layer or selected-layer label changes, Project item labels,
+  non-generated user assets, raw JSX, dependency/package changes, source merge,
+  branch, commit, push, PR, and GitHub automation remain fail-closed.
+  Validation was intentionally not run because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
+  branches, commits, push, and PR actions. No recipe, registry, or shared smoke
+  rewrite was needed beyond this child-run closeout note. `.codex/handoff.md`
+  creation was attempted but blocked by filesystem ACL `Access denied` in this
+  detached worktree, so this plan entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-39c92f376b`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-layers-set-track-matte-to-above` in
+  `recipes/set-track-matte-to-above-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires explicit same-comp fill/matte layer evidence,
+  the reviewed immediately-above matte layer, `set_layer_track_matte` with
+  `trackMatteType:"luma_inverted"`, expected layer-name guards when available,
+  and post-mutation `get_layer_details` read-back for `hasTrackMatte:true`,
+  `trackMatteTypeName:"luma_inverted"`, and matching `trackMatteLayer`
+  identity. Topmost fill layers, ambiguous selection, hidden layer reordering,
+  parent-link substitution, broad timeline scans, label/comment/lock/effect/
+  expression/timing/source edits, Project item or render queue changes,
   non-generated user assets, raw JSX, dependency/package changes, source merge,
   branch, commit, push, PR, and GitHub automation remain fail-closed.
   Validation was intentionally not run because the child-run intent forbids
