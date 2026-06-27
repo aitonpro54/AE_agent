@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-add-fill-with-color-cycle: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle); live gate ready, importer batch full-intake-kyletmartinez-bba6b16982-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-layers-toggle-specific-effects: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects); live gate ready, importer batch full-intake-kyletmartinez-2c4f9a6f54-import, commit recorded after candidate commit.
 
 - [x] Full Intake composition panel refresh recovery retry
@@ -4271,6 +4273,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Fill_With_Color_Cycle.jsx` as `tool-layers-add-fill-with-color-cycle`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Toggle_Specific_Effects.jsx` as `tool-layers-toggle-specific-effects`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects).
 
 - 2026-06-27: For `tool-compositions-force-composition-panel-refresh`,
@@ -5868,6 +5872,8 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-add-fill-with-color-cycle | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-bba6b16982-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-layers-toggle-specific-effects | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2c4f9a6f54-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full Intake composition panel refresh live-readiness retry | Required to decide whether `tool-compositions-force-composition-panel-refresh` can move from the reopened backlog to completed using the existing generated-only typed lane. | Blocked with fresh evidence: compact preflight passed; `git status --short --branch` showed a clean tracked worktree ahead of origin; compact status/proof/ledger summary passed; proposal-only explorer and parent reducer search confirmed `recipes/force-composition-panel-refresh-typed-plan.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `orchestrator/run-generic-repo-full-intake.mjs`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/semantic-verification-smoke.js`, `scripts/solution-library-validation-smoke.js`, and `mcp-server/bridge-daemon.js` coverage. Read-only `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` initially passed. Direct generated-only `node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke` failed closed: `refresh_comp_panel` timed out after submit to AE `evalScript`; checkpoint `backups/empty_test_comp-checkpoint-session-ai-plan-ce2daae4-2026-06-27T15-16-40-817Z.aep` was created; edit session `ai-plan-ce2daae4` finished `needs-review`; generated cleanup expired before delivery. After `node scripts/cep-panel-cdp-smoke.js reload`, connector readiness passed again, but MCP `get_project_snapshot` still timed out after submit, so no second live proof or scoped Full Intaker rerun was run. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, AE restart, launcher edit, push, PR, or GitHub automation was run. |
@@ -6318,6 +6324,27 @@ check.
   blocked by filesystem ACL `Access denied` in this detached worktree.
 
 ## AUX-021 Child-Run Closeout
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-37d2818ec0`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-layers-add-fill-with-color-cycle` in
+  `recipes/add-fill-with-color-cycle-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only/stateless and requires current explicit target-layer evidence,
+  one reviewed palette color, `add_effect` with `ADBE Fill`,
+  `get_effect_details includeProperties:true includeValues:true`,
+  `set_effect_property` with `setAtTime:false`, and post-mutation
+  `get_effect_details` plus `get_layer_details` read-back. Source-exact
+  `app.settings`/`app.preferences` persistence, automatic cross-run
+  next-color state, broad selected-layer traversal, unreviewed user assets,
+  unrelated layer/effect/property edits, raw JSX, dependency/package changes,
+  source merge, branch, commit, push, PR, and GitHub automation remain
+  fail-closed. Validation was intentionally not run because the child-run
+  intent forbids validation, live AE/CEP/CDP, OpenAI CLI planner runs,
+  dependency changes, branches, commits, push, and PR actions. No recipe,
+  registry, or shared smoke rewrite was needed beyond this child-run closeout
+  note.
 
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-0d0c323f8b`:
   preflight found a clean tracked worktree and confirmed existing planned
