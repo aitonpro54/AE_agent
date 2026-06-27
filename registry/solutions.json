@@ -8089,7 +8089,7 @@
         "mode": "typed-plan",
         "mutating": true,
         "riskLevel": "medium",
-        "recipePath": "recipes/preserve-nested-frame-rate-typed-plan.md",
+        "recipePath": "recipes/toggle-preserve-nested-frame-rate-typed-plan.md",
         "scriptPath": null,
         "preferredTools": [
           "create_comp",

@@ -2301,6 +2301,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "preserve-nested-frame-rate-typed-plan") {
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-preserve-nested-frame-rate-typed-plan.md", `${id}: importer-planned alias recipe path should stay registered.`);
       assert.deepStrictEqual(
         solution.execution.preferredTools,
         ["create_comp", "get_comp_details", "set_comp_properties"],

@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-project-toggle-preserve-nested-frame-rate: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-toggle-preserve-nested-frame-rate); live gate ready, importer batch full-intake-kyletmartinez-2513d110d8-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-project-toggle-timecode-and-start-frames: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-toggle-timecode-and-start-frames); live gate ready, importer batch full-intake-kyletmartinez-5a0197cbd0-import, commit recorded after candidate commit.
 
 - [x] Full Intake project timecode/start frames generated-only lane/retry
@@ -114,6 +116,20 @@ old `AE_agent` repository remains the historical source.
   `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
   `npm.cmd run smoke:full-intake`, read-only CEP preflight
   `inspect`/`connector-status-smoke`, and `git diff --check` with LF/CRLF
+  warnings only. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  launcher edit, push, or PR was run.
+  Continuation on 2026-06-27 reran read-only CEP readiness, direct
+  generated-only live proof, and the strict Full Intaker transaction for the
+  same explicit id after the panel/bridge was available. The candidate
+  completed with live rerun `passed`, proof envelope SHA-256
+  `cd5ac213393753f347b24f34a46c5f64b0d636fc3b4b1489b242daba1a540e81`,
+  `changedPathCount=4`, `unplannedPathCount=0`, and ledger counts
+  `completed=38`, `blocked_or_skipped=37`. Closeout validation passed:
+  touched-file `node --check`, JSON parse for `registry/solutions.json` and
+  `.codex/active-thread.json`, `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF
   warnings only. No broad queue processing, unscoped `max-items > 1`,
   broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
   launcher edit, push, or PR was run.
@@ -4096,6 +4112,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Project/Toggle_Preserve_Nested_Frame_Rate.jsx` as `tool-project-toggle-preserve-nested-frame-rate`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-toggle-preserve-nested-frame-rate).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Toggle_Timecode_And_Start_Frames.jsx` as `tool-project-toggle-timecode-and-start-frames`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-toggle-timecode-and-start-frames).
 
 - 2026-06-26: For `tool-project-toggle-preserve-nested-frame-rate`, accept only
@@ -5658,6 +5676,8 @@ check.
 
 ## Validation
 
+| Full intake tool-project-toggle-preserve-nested-frame-rate | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2513d110d8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-project-toggle-timecode-and-start-frames | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5a0197cbd0-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full Intake preserve nested frame rate generated-only lane/retry | Required to give `tool-project-toggle-preserve-nested-frame-rate` a candidate-specific explicit generated/reviewed comp-property recipe/lane, extend the bounded comp typed-tool contract, rerun the scoped candidate from a clean tree, and preserve all-project traversal, ALT-key, Project panel selection, render queue, footage interpretation, raw JSX, and non-generated user comp mutation risks as fail-closed. | Passed: touched JS `node --check` for `mcp-server/bridge-daemon.js`, `mcp-server/plan-repair.js`, `mcp-server/semantic-verification.js`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/cep-panel-cdp-smoke.js`, `scripts/manual-typed-tool-regression-smoke.js`, `scripts/semantic-verification-smoke.js`, `scripts/smoke-test.js`, and `scripts/solution-library-validation-smoke.js`; JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and `.codex/active-thread.json`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:provider-contract`; `npm.cmd run smoke:provider-api`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; read-only `node scripts/cep-panel-cdp-smoke.js inspect`; read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`; scoped retry with exact `tool-project-toggle-preserve-nested-frame-rate`, `--context-percent 45`, `--max-items 1`, `--resolution-candidate-ids`, `--allow-self-improvement-lane-synthesis`, `--no-commit`, and `--compact-json`; compact status/proof/ledger-summary; and `git diff --check` with LF/CRLF warning only. The clean scoped retry returned `completed_no_candidates`, terminal/live-blocked ticket `live-lane-family-38ae83698cf1183b`, proof SHA-256 `c2780c332d053c6c52ad97b294ba49c043382fda7b3eddbb9081855bc905e0e5`, no open tickets, no requeue, `changedPathCount=0`, and `unplannedPathCount=0`; lane non-live validation passed, and generated-only live proof failed closed because the CEP panel was not connected to the bridge. |
@@ -6157,6 +6177,27 @@ check.
   creation was attempted but blocked by the patch tool as writing outside the
   project in this detached worktree, so this plan entry records the child-run
   durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-e64b00e59e`:
+  preflight found a clean tracked worktree and confirmed existing safe
+  generated-only coverage for `tool-project-toggle-preserve-nested-frame-rate`
+  in the `preserve-nested-frame-rate-typed-plan` registry entry and
+  solution-library assertions. The child run added the importer-planned alias
+  recipe path `recipes/toggle-preserve-nested-frame-rate-typed-plan.md`,
+  pointed the existing solution entry at that planned recipe path, and added
+  one focused smoke assertion for the alias. The safe adaptation remains
+  limited to explicit generated/reviewed composition targets,
+  `get_comp_details` pre/post read-back, and `set_comp_properties` with only
+  `preserveNestedFrameRate:<boolean>`. Source-exact all-project `CompItem`
+  traversal, ALT-key toggle/disable semantics, Project panel selection,
+  non-generated user comp batch mutation, render queue changes, footage
+  interpretation, raw JSX, dependency/package changes, source merge, branch,
+  commit, push, PR, and GitHub automation remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. `.codex/handoff.md` creation was attempted but blocked
+  by filesystem ACL `Access denied` in this detached worktree, so this plan
+  entry records the child-run durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
