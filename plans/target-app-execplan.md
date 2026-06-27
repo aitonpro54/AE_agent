@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-compositions-rename-composition-to-file-name: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-rename-composition-to-file-name); live gate ready, importer batch full-intake-kyletmartinez-b12c8070ad-import, commit recorded after candidate commit.
+
+- [x] Full Intake composition rename-to-file-name generated-only lane/rerun
+  (2026-06-27): parent-owned scoped milestone for
+  `tool-compositions-rename-composition-to-file-name` reused
+  `composition-rename-to-file-name-generated-only`,
+  `rename-composition-to-file-name-typed-plan`, `get_project_info`,
+  `find_project_items`, `get_comp_details`, `rename_project_items`, semantic
+  verification, and CEP command
+  `full-ui-agent-comp-rename-file-name-openai-cli-smoke`. The first direct
+  proof exposed a smoke harness verifier gap: the scenario set
+  `projectFileBasename` but fell through to the generic folder-move read-back
+  branch that expected `compName`. Added a dedicated
+  `generatedCompositionRenameFileName` read-back verifier in
+  `scripts/cep-panel-cdp-smoke.js`, then direct generated-only live proof and
+  the strict Full Intaker live rerun passed for the explicit candidate. Proof
+  envelope SHA-256:
+  `b41496312a423f955fc12cad6975944a4bb72b97c7a8d21a2f3cb352c5793179`.
+  Ledger counts are now `completed=44`, `blocked_or_skipped=31`, `queued=0`,
+  `failed=0`. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  raw JSX copy, launcher edit, push, or PR was run.
+
 - [x] Full intake tool-layers-parent-closest-layers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-parent-closest-layers); live gate ready, importer batch full-intake-kyletmartinez-3b807fa003-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-layers-parent-selected-layers-to-layers-below: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-parent-selected-layers-to-layers-below); live gate ready, importer batch full-intake-kyletmartinez-4942d7d93d-import, commit recorded after candidate commit.
@@ -4197,6 +4220,8 @@ check.
 
 ## Decision Log
 
+- 2026-06-27: Generic full-intake orchestrator processed `Compositions/Rename_Composition_To_File_Name.jsx` as `tool-compositions-rename-composition-to-file-name`, keeping shared merge/validation/live/doc/commit gates serial and accepting only the existing generated-only project-file-basename composition rename lane with explicit generated comp item evidence, typed read-back, semantic verification, and generated cleanup (full-intake:full-intake-kyletmartinez:tool-compositions-rename-composition-to-file-name).
+
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Parent_Closest_Layers.jsx` as `tool-layers-parent-closest-layers`, keeping shared merge/validation/live/doc/commit gates serial and accepting only the existing generated-only closest-layer parenting lane with explicit child/parent nearest-pair evidence, typed read-back, semantic verification, and generated cleanup (full-intake:full-intake-kyletmartinez:tool-layers-parent-closest-layers).
 
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Parent_Selected_Layers_To_Layers_Below.jsx` as `tool-layers-parent-selected-layers-to-layers-below`, keeping shared merge/validation/live/doc/commit gates serial and accepting only the existing generated-only layer-below parenting lane with explicit child/parent pairs, typed read-back, semantic verification, and generated cleanup (full-intake:full-intake-kyletmartinez:tool-layers-parent-selected-layers-to-layers-below).
@@ -5780,6 +5805,8 @@ check.
 
 ## Validation
 
+| Full intake tool-compositions-rename-composition-to-file-name | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b12c8070ad-import`, direct and runner-owned generated-only live reruns `passed`, proof envelope SHA-256 `b41496312a423f955fc12cad6975944a4bb72b97c7a8d21a2f3cb352c5793179`, `contractComplete=true`, `changedPathCount=1`, `unplannedPathCount=0`, and ledger counts `completed=44`, `blocked_or_skipped=31`. Fixed `scripts/cep-panel-cdp-smoke.js` to verify `generatedCompositionRenameFileName` read-back through `projectFileBasename` instead of falling through to the folder-move verifier. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-layers-parent-closest-layers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3b807fa003-import`, direct and runner-owned generated-only live reruns `passed`, proof envelope SHA-256 `ba9fb1d3910a9d5a4c7f2317c2af9f3838a01babd715b16a0d8ef2e78c5ecfc9`, `contractComplete=true`, `changedPathCount=1`, `unplannedPathCount=0`, and ledger counts `completed=43`, `blocked_or_skipped=32`. Fixed `scripts/cep-panel-cdp-smoke.js` to read the transcript tail and wait for outcome verification so long Agent plan messages do not hide the final `Outcome verification: passed` evidence. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-parent-selected-layers-to-layers-below | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-4942d7d93d-import`, live rerun `passed`, proof envelope SHA-256 `2bd0d7640c81abfa2a666877ec5fb7afd28f30be35fa83a0f312d25749be6b72`, `contractComplete=true`, `changedPathCount=1`, `unplannedPathCount=0`, and ledger counts `completed=42`, `blocked_or_skipped=33`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6427,6 +6454,29 @@ check.
   note. `.codex/handoff.md` creation was attempted but blocked by filesystem
   ACL `Access denied` in this detached worktree, so this plan entry records the
   child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-2d0b074fd1`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-compositions-rename-composition-to-file-name` in
+  `recipes/rename-composition-to-file-name-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires `get_project_info.file` basename evidence,
+  exactly one explicit generated composition project item from
+  `find_project_items`/`get_comp_details`, collision review,
+  `rename_project_items` with `type:"comp"` and `mode:"exact"`, and
+  post-mutation read-back through `find_project_items` plus
+  `get_comp_details`. Unsaved projects, Project panel selection semantics,
+  arbitrary filesystem reads/writes, project save/saveAs, source relinking,
+  broad composition traversal, non-generated user assets, raw JSX,
+  dependency/package changes, source merge, branch, commit, push, PR, and
+  GitHub automation remain fail-closed. Validation was intentionally not run
+  because the child-run intent forbids validation, live AE/CEP/CDP, OpenAI CLI
+  planner runs, dependency changes, branches, commits, push, and PR actions.
+  No recipe, registry, or shared smoke rewrite was needed beyond this
+  child-run closeout note. `.codex/handoff.md` creation was attempted but
+  blocked by filesystem ACL `Access denied` in this detached worktree, so this
+  plan entry records the child-run durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
