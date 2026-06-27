@@ -5986,6 +5986,79 @@ async function verifyGeneratedLayerDifferenceBlendModeReadBack(scenario, expecte
   };
 }
 
+async function verifyGeneratedLayerTrackMatteReadBack(scenario, expected) {
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const fillLayer = layers.find((layer) => layer.name === expected.fillName);
+  const matteLayer = layers.find((layer) => layer.name === expected.matteName);
+  if (!fillLayer || !fillLayer.index || !matteLayer || !matteLayer.index) {
+    throw new Error(`${scenario.id}: generated track matte fill/matte layers were not found by read-back.`);
+  }
+
+  const fillDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: fillLayer.index,
+    includeProperties: false
+  });
+  const matteDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: matteLayer.index,
+    includeProperties: false
+  });
+  const fill = fillDetails && fillDetails.layer ? fillDetails.layer : {};
+  const matte = matteDetails && matteDetails.layer ? matteDetails.layer : {};
+  const trackMatteLayer = fill.trackMatteLayer || {};
+  const expectedTrackMatteType = String(expected.trackMatteType || "").toLowerCase();
+  const observedTrackMatteType = String(fill.trackMatteTypeName || "").toLowerCase();
+
+  if (Number(fill.index) !== Number(expected.fillLayerIndex) || fill.name !== expected.fillName) {
+    throw new Error(`${scenario.id}: generated fill layer read-back mismatch; expected ${expected.fillName} at ${expected.fillLayerIndex}.`);
+  }
+  if (Number(matte.index) !== Number(expected.matteLayerIndex) || matte.name !== expected.matteName) {
+    throw new Error(`${scenario.id}: generated matte layer read-back mismatch; expected ${expected.matteName} at ${expected.matteLayerIndex}.`);
+  }
+  if (fill.hasTrackMatte !== true) {
+    throw new Error(`${scenario.id}: generated fill layer did not report hasTrackMatte:true.`);
+  }
+  if (Number(trackMatteLayer.index) !== Number(matte.index) || trackMatteLayer.name !== matte.name) {
+    throw new Error(`${scenario.id}: generated fill layer trackMatteLayer mismatch; expected ${matte.name}.`);
+  }
+  if (expectedTrackMatteType && observedTrackMatteType !== expectedTrackMatteType) {
+    throw new Error(`${scenario.id}: generated fill layer trackMatteTypeName mismatch; expected ${expectedTrackMatteType}, got ${observedTrackMatteType || "missing"}.`);
+  }
+  if (matte.isTrackMatte !== true) {
+    throw new Error(`${scenario.id}: generated matte layer did not report isTrackMatte:true.`);
+  }
+
+  return {
+    ok: true,
+    comp: {
+      itemIndex: compMatch.itemIndex,
+      name: compMatch.name
+    },
+    fill: {
+      index: fill.index,
+      name: fill.name,
+      hasTrackMatte: fill.hasTrackMatte === true,
+      trackMatteTypeName: fill.trackMatteTypeName,
+      trackMatteLayer: {
+        index: trackMatteLayer.index,
+        name: trackMatteLayer.name
+      }
+    },
+    matte: {
+      index: matte.index,
+      name: matte.name,
+      isTrackMatte: matte.isTrackMatte === true
+    }
+  };
+}
+
 async function verifyGeneratedLayerSelectionReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const selected = await callBridgeTool("get_selected_layers", {});
@@ -7935,6 +8008,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedLayerDifferenceBlendMode) {
     return verifyGeneratedLayerDifferenceBlendModeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedLayerTrackMatte) {
+    return verifyGeneratedLayerTrackMatteReadBack(scenario, expected);
   }
 
   if (expected.generatedAdjustmentLayerPlacement) {
