@@ -7099,6 +7099,37 @@ async function verifyExactProjectItemSearchReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedCompositionRenameFileNameReadBack(scenario, expected) {
+  const renamedName = expected.projectFileBasename;
+  if (!renamedName) {
+    throw new Error(`${scenario.id}: generated composition rename expectedReadBack is missing projectFileBasename.`);
+  }
+  const compMatch = await findGeneratedCompByExactName(scenario, renamedName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: false
+  });
+  if (comp.name !== renamedName) {
+    throw new Error(`${scenario.id}: renamed generated comp mismatch; expected ${renamedName}, got ${comp.name}.`);
+  }
+  if (expected.originalName && comp.name === expected.originalName) {
+    throw new Error(`${scenario.id}: generated comp still has original name ${expected.originalName}.`);
+  }
+  return {
+    ok: true,
+    comp: {
+      itemIndex: comp.itemIndex || compMatch.itemIndex,
+      name: comp.name,
+      type: compMatch.type || null,
+      width: comp.width,
+      height: comp.height,
+      duration: comp.duration,
+      frameRate: comp.frameRate,
+      numLayers: comp.numLayers
+    }
+  };
+}
+
 async function verifyMarkerReadBack(scenario, expected) {
   const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
   const comp = await callBridgeTool("get_comp_details", {
@@ -7968,6 +7999,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedCompositionVersionToken) {
     return verifyGeneratedCompositionVersionReadBack(scenario, expected);
+  }
+
+  if (expected.generatedCompositionRenameFileName) {
+    return verifyGeneratedCompositionRenameFileNameReadBack(scenario, expected);
   }
 
   if (expected.generatedRenderQueue) {
