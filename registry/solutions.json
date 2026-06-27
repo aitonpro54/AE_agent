@@ -8202,7 +8202,7 @@
         "mode": "typed-plan",
         "mutating": true,
         "riskLevel": "medium",
-        "recipePath": "recipes/project-timecode-start-frames-typed-plan.md",
+        "recipePath": "recipes/toggle-timecode-and-start-frames-typed-plan.md",
         "scriptPath": null,
         "preferredTools": [
           "create_comp",

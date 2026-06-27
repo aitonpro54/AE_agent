@@ -2319,6 +2319,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.promotionHistory.some((entry) => /Toggle_Preserve_Nested_Frame_Rate/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "project-timecode-start-frames-typed-plan") {
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-timecode-and-start-frames-typed-plan.md", `${id}: importer-planned alias recipe path should stay registered.`);
       assert.deepStrictEqual(
         solution.execution.preferredTools,
         ["create_comp", "get_project_info", "get_comp_details", "set_project_frames_count_type", "set_comp_properties"],

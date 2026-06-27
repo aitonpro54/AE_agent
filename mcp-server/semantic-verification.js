@@ -1405,7 +1405,13 @@ function checkSetProjectFramesCountType(checks, step, payload, evidence) {
   );
   const postVerification = payload.postVerification || {};
   const after = isPlainObject(payload.after) ? payload.after : payload.project || {};
-  const observed = normalizeFramesCountTypeName(after.framesCountType);
+  const project = isPlainObject(payload.project) ? payload.project : {};
+  const observed = normalizeFramesCountTypeName(
+    after.framesCountType ||
+    after.name ||
+    project.framesCountType ||
+    payload.framesCountType
+  );
   const readBackEvidence = observedProjectFramesCountEvidence(evidence.readBack, expected);
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:frames-count-type`,

@@ -3032,6 +3032,18 @@ function assertPreserveNestedFrameRateFixturePasses() {
 function assertProjectTimecodeStartFramesFixturePasses() {
   const [scenario] = agentProjectTimecodeStartFramesScenarioPlans("Semantic Project Timecode Fixture");
   const run = fakeRunForPlan(scenario.plan);
+  const setProjectFramesStep = run.steps.find((step) => step.tool === "set_project_frames_count_type");
+  if (setProjectFramesStep && setProjectFramesStep.result && setProjectFramesStep.result.after) {
+    const after = setProjectFramesStep.result.after;
+    setProjectFramesStep.result.after = {
+      value: after.framesCountTypeValue || "2612",
+      name: after.framesCountType,
+      startFrame: after.framesCountStartFrame,
+      numItems: after.numItems,
+      activeItemName: after.activeItemName,
+      activeItemType: after.activeItemType
+    };
+  }
   const semantic = buildSemanticVerification(scenario.plan, run);
   const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
   assert.strictEqual(semantic.status, "passed", `project timecode/start-frame fixture should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
