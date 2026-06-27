@@ -84,7 +84,7 @@ function safeOutputName(value) {
 function exactPlanPrompt(plan) {
   return [
     "Return exactly this JSON object as the AE Agent plan. Do not add markdown, code fences, prose, comments, or renamed fields.",
-    "The JSON object below is the complete QA fixture. Keep the steps array length, order, titles, tool names, args, summary, risk, and requiresCheckpoint unchanged.",
+    "The JSON object below is the complete QA fixture. Keep the steps array length, order, titles, tool names, args, resultBindings, summary, risk, and requiresCheckpoint unchanged.",
     "Do not add discovery, inspection, checkpoint, cleanup, verification, or explanatory steps. The bridge runner already handles validation, dry-run, protected edit sessions, verification, and cleanup.",
     "Use only the listed typed MCP tools. All generated asset names intentionally start with the QA prefix.",
     JSON.stringify(plan, null, 2)
@@ -1670,9 +1670,9 @@ function agentProjectSelectionFolderScenarioPlans(runPrefix) {
         steps: [
           { title: "Create first generated Project folder target comp", tool: "create_comp", args: { name: firstCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.07, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only Project selection folder validation" } },
           { title: "Create second generated Project folder target comp", tool: "create_comp", args: { name: secondCompName, width: 320, height: 180, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.1, 0.07, 0.12], allowDuplicateName: false, openInViewer: false, comment: "generated-only Project selection folder validation" } },
-          { title: "Find explicit generated Project items before folder move", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
           { title: "Create generated destination Project folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
-          { title: "Move explicit generated Project items into generated folder", tool: "move_project_items_to_folder", args: { itemIndices: "{{steps.3.result}}", targetFolderName: folderName } },
+          { title: "Find explicit generated Project items before folder move", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
+          { title: "Move explicit generated Project items into generated folder", tool: "move_project_items_to_folder", args: { targetFolderName: folderName }, resultBindings: { itemIndices: "{{steps.4.result}}" } },
           { title: "Read generated folder contents after move", tool: "list_project_folder_items", args: { folderName, recursive: false, type: "comp", limit: 10 } },
           { title: "Read Project snapshot after generated folder move", tool: "get_project_snapshot", args: { limit: 25 } }
         ]

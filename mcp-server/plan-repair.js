@@ -854,7 +854,14 @@ function immediatePreviousTool(steps, stepIndex) {
   return stepToolName(steps[stepIndex - 1]);
 }
 
-function bindingForMissingField(field, steps, stepIndex) {
+function nearestPreviousToolIndex(steps, stepIndex, names) {
+  for (let index = stepIndex - 1; index >= 0; index -= 1) {
+    if (names.has(stepToolName(steps[index]))) return index;
+  }
+  return -1;
+}
+
+function bindingForMissingField(field, steps, stepIndex, currentToolName) {
   const immediate = immediatePreviousTool(steps, stepIndex);
   if (field === "compItemIndex" && hasPreviousTool(steps, stepIndex, COMP_RESULT_TOOLS)) {
     return "{{compItemIndex}}";
@@ -871,6 +878,10 @@ function bindingForMissingField(field, steps, stepIndex) {
     if (hasPreviousTool(steps, stepIndex, PROJECT_ITEM_RESULT_TOOLS)) return "{{itemIndices}}";
   }
   if (field === "itemIndices") {
+    if (currentToolName === "move_project_items_to_folder") {
+      const projectItemSearchIndex = nearestPreviousToolIndex(steps, stepIndex, new Set(["find_project_items", "list_project_folder_items"]));
+      if (projectItemSearchIndex >= 0) return `{{steps.${projectItemSearchIndex + 1}.result}}`;
+    }
     if (hasPreviousTool(steps, stepIndex, SELECTED_SOURCE_RESULT_TOOLS)) return "{{selectedPrecompItemIndices}}";
     if (hasPreviousTool(steps, stepIndex, PROJECT_ITEM_RESULT_TOOLS)) return "{{itemIndices}}";
   }
@@ -1140,7 +1151,7 @@ function repairMissingRequired(step, stepIndex, steps, tool, actions) {
   for (const field of requiredFields(tool)) {
     if (hasOwn(args, field) && !missingValue(args[field])) continue;
     if (hasOwn(bindings, field) && !missingValue(bindings[field])) continue;
-    const binding = bindingForMissingField(field, steps, stepIndex);
+    const binding = bindingForMissingField(field, steps, stepIndex, tool.name);
     if (!binding) continue;
     bindings[field] = binding;
     changed = true;

@@ -522,13 +522,14 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(projectSelectionFolder.plan.steps.map((step) => step.tool), [
     "create_comp",
     "create_comp",
-    "find_project_items",
     "create_project_folder",
+    "find_project_items",
     "move_project_items_to_folder",
     "list_project_folder_items",
     "get_project_snapshot"
   ]);
-  assert.strictEqual(projectSelectionFolder.plan.steps[4].args.itemIndices, "{{steps.3.result}}");
+  assert.strictEqual(projectSelectionFolder.plan.steps[4].args.itemIndices, undefined);
+  assert.strictEqual(projectSelectionFolder.plan.steps[4].resultBindings.itemIndices, "{{steps.4.result}}");
   assert.strictEqual(projectSelectionFolder.plan.steps[5].args.folderName, projectSelectionFolder.expectedReadBack.folderName);
   assert(!projectSelectionFolder.plan.steps.some((step) => step.tool === "run_extendscript"));
 

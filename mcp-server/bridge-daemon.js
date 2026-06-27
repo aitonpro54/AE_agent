@@ -12018,6 +12018,7 @@ async function callTool(name, args) {
 
       app.beginUndoGroup("Codex Move Project Items To Folder");
       try {
+        var itemsToMove = [];
         for (var i = 0; i < itemIndices.length; i++) {
           var item = app.project.item(itemIndices[i]);
           if (!item) throw new Error("Project item not found at index " + itemIndices[i] + ".");
@@ -12028,6 +12029,16 @@ async function callTool(name, args) {
           if (item instanceof FolderItem && __codexIsItemInsideFolder(targetFolder, item)) {
             throw new Error("Cannot move a folder into itself or one of its descendants: " + item.name + ".");
           }
+          for (var seenIndex = 0; seenIndex < itemsToMove.length; seenIndex++) {
+            if (itemsToMove[seenIndex].item === item) {
+              throw new Error("Duplicate project item target at index " + itemIndices[i] + ": " + item.name + ".");
+            }
+          }
+          itemsToMove.push({ item: item, requestedIndex: itemIndices[i] });
+        }
+
+        for (var moveIndex = 0; moveIndex < itemsToMove.length; moveIndex++) {
+          var item = itemsToMove[moveIndex].item;
 
           var previousFolderPath = "";
           try { previousFolderPath = __codexFolderPath(item); } catch (__previousFolderPathError) {}

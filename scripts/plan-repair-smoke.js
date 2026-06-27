@@ -503,6 +503,24 @@ async function main() {
     });
     assert.strictEqual(folderTargetRepair.repairedPlan.steps[2].args.targetFolderItemIndex, "{{folderItemIndex}}");
 
+    const folderMoveSearchBindingRepair = await validatePlan("folder-move-search-binding", {
+      summary: "Move explicit generated project search results into a generated folder.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Find generated comps", tool: "find_project_items", args: { query: "Repair Smoke Move", type: "comp", limit: 2 } },
+        { title: "Create folder", tool: "create_project_folder", args: { name: "Repair Smoke Move Folder" } },
+        { title: "Move found comps", tool: "move_project_items_to_folder", args: { targetFolderName: "Repair Smoke Move Folder" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["find_project_items", "create_project_folder", "move_project_items_to_folder"],
+      actionTypes: ["missing-required-binding"]
+    });
+    assert.strictEqual(folderMoveSearchBindingRepair.repairedPlan.steps[2].resultBindings.itemIndices, "{{steps.1.result}}");
+
     const markerCompAliasRepair = await validatePlan("marker-comp-binding-alias", {
       summary: "Create a comp, add a layer, and add a marker using a marker comp alias.",
       risk: "medium",

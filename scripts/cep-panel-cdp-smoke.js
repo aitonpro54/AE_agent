@@ -7066,6 +7066,20 @@ async function verifyFolderMoveReadBack(scenario, expected) {
     limit: 20
   });
   const folderItems = Array.isArray(folder.items) ? folder.items : [];
+  if (Array.isArray(expected.itemNames) && expected.itemNames.length) {
+    const missingNames = expected.itemNames.filter((name) => !folderItems.some((item) => item.name === name));
+    if (missingNames.length) {
+      throw new Error(`${scenario.id}: generated folder does not contain expected comps ${missingNames.join(", ")}.`);
+    }
+    return {
+      ok: true,
+      folder: {
+        name: expected.folderName,
+        returned: folder.returned,
+        containsComps: expected.itemNames
+      }
+    };
+  }
   const folderComp = folderItems.find((item) => item.name === expected.compName);
   if (!folderComp) {
     throw new Error(`${scenario.id}: generated folder does not contain comp ${expected.compName}.`);
@@ -7979,6 +7993,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedProjectItems) {
     return verifyGeneratedProjectItemsReadBack(scenario, expected);
+  }
+
+  if (expected.generatedProjectSelectionFolder) {
+    return verifyFolderMoveReadBack(scenario, expected);
   }
 
   if (expected.generatedProjectItemMetadata) {
