@@ -1671,7 +1671,7 @@ function stateExpression() {
     workingExists: !!document.querySelector(".chat-message.chat-working"),
     workingText: document.querySelector(".chat-message.chat-working .typing-indicator") ? document.querySelector(".chat-message.chat-working .typing-indicator").textContent : "",
     workingDots: document.querySelectorAll(".chat-message.chat-working .typing-dots i").length,
-    transcript: document.getElementById("chatTranscript") ? document.getElementById("chatTranscript").innerText.slice(0, 16000) : "",
+    transcript: document.getElementById("chatTranscript") ? document.getElementById("chatTranscript").innerText.slice(-64000) : "",
     log: document.getElementById("log") ? document.getElementById("log").innerText.slice(0, 4000) : "",
     hardcoreRequests: window.__codexHardcoreAutopilotRequests || [],
     confirmMessages: window.__codexPanelConfirmMessages || []
@@ -8305,7 +8305,7 @@ async function runAgentScenario(send, scenario, config) {
   const runClicked = await evaluate(send, clickExpression("runPlanButton"));
   if (!runClicked || !runClicked.ok) throw new Error(`${scenario.id}: Run plan button was not clickable.`);
 
-  const run = await waitFor(send, `${scenario.id} protected run`, (state) => {
+  let run = await waitFor(send, `${scenario.id} protected run`, (state) => {
     if (state.sendDisabled !== false) return false;
     if (state.transcript.indexOf("Run: ok") >= 0) return true;
     if (state.transcript.indexOf("Run: needs review") >= 0) return true;
@@ -8343,6 +8343,18 @@ async function runAgentScenario(send, scenario, config) {
       ? JSON.stringify(run.planRunSemanticVerification, null, 2).slice(0, 4000)
       : "missing";
     throw new Error(`${scenario.id}: semantic verification was not passed for ${scenarioConfig.label}.\nSemantic: ${semanticDetails}\n${run.transcript.slice(-3000)}`);
+  }
+  if (
+    run.transcript.indexOf("Outcome verification: passed") < 0 &&
+    run.transcript.indexOf("Outcome verification: needs review") < 0
+  ) {
+    run = await waitFor(send, `${scenario.id} outcome verification`, (state) => (
+      state.sendDisabled === false &&
+      (
+        state.transcript.indexOf("Outcome verification: passed") >= 0 ||
+        state.transcript.indexOf("Outcome verification: needs review") >= 0
+      )
+    ), 30000).catch(() => run);
   }
   const outcomePassed = run.transcript.indexOf("Outcome verification: passed") >= 0;
   const allowedNeedsReviewWithReadBack = Boolean(
