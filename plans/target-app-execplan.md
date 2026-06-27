@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-set-all-track-matte-labels: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-all-track-matte-labels); live gate ready, importer batch full-intake-kyletmartinez-75e0975b23-import, commit recorded after candidate commit.
+
+- [x] Full Intake track matte labels generated-only lane/rerun
+  (2026-06-27): parent-owned scoped milestone for
+  `tool-layers-set-all-track-matte-labels` reused the existing
+  `layer-track-matte-generated-only` family and `set-all-track-matte-labels`
+  recipe. The first scoped retry exposed a live proof verifier gap: the
+  generated track-matte scenario fell through to the camera read-back branch.
+  Added a dedicated `generatedLayerTrackMatte` read-back verifier in
+  `scripts/cep-panel-cdp-smoke.js` that checks `hasTrackMatte:true`,
+  `isTrackMatte:true`, `trackMatteLayer`, and `trackMatteTypeName`.
+  Direct generated-only live proof and strict Full Intaker live rerun then
+  passed for the explicit candidate. Proof envelope SHA-256:
+  `0a569374aa80c85b7a299578c4d33973382231a6be73a5ca4153415e11df98dd`.
+  Ledger counts are now `completed=39`, `blocked_or_skipped=36`, `queued=0`,
+  `failed=0`. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  raw JSX copy, launcher edit, push, or PR was run.
+
 - [x] Full intake tool-project-toggle-preserve-nested-frame-rate: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-toggle-preserve-nested-frame-rate); live gate ready, importer batch full-intake-kyletmartinez-2513d110d8-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-project-toggle-timecode-and-start-frames: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-toggle-timecode-and-start-frames); live gate ready, importer batch full-intake-kyletmartinez-5a0197cbd0-import, commit recorded after candidate commit.
@@ -4112,6 +4131,8 @@ check.
 
 ## Decision Log
 
+- 2026-06-27: Generic full-intake orchestrator processed `Layers/Set_All_Track_Matte_Labels.jsx` as `tool-layers-set-all-track-matte-labels`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-all-track-matte-labels).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Toggle_Preserve_Nested_Frame_Rate.jsx` as `tool-project-toggle-preserve-nested-frame-rate`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-toggle-preserve-nested-frame-rate).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Toggle_Timecode_And_Start_Frames.jsx` as `tool-project-toggle-timecode-and-start-frames`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-toggle-timecode-and-start-frames).
@@ -5676,6 +5697,8 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-set-all-track-matte-labels | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-75e0975b23-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-project-toggle-preserve-nested-frame-rate | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2513d110d8-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-project-toggle-timecode-and-start-frames | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5a0197cbd0-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6198,6 +6221,28 @@ check.
   push, and PR actions. `.codex/handoff.md` creation was attempted but blocked
   by filesystem ACL `Access denied` in this detached worktree, so this plan
   entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-89a477b011`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-layers-set-all-track-matte-labels` in
+  `recipes/set-all-track-matte-labels-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires current same-comp layer inventory, explicit
+  `isTrackMatte:true` target derivation, `set_layer_metadata` with `label:16`,
+  expected layer-name guards when available, and post-mutation
+  `get_layer_details` or `get_comp_details includeLayers:true` read-back.
+  Fill layers with `hasTrackMatte:true`, source-exact broad active-comp scans
+  without typed matte-role evidence, track matte relationship edits, layer
+  reordering, all-layer or selected-layer label changes, Project item labels,
+  non-generated user assets, raw JSX, dependency/package changes, source merge,
+  branch, commit, push, PR, and GitHub automation remain fail-closed.
+  Validation was intentionally not run because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
+  branches, commits, push, and PR actions. No recipe, registry, or shared smoke
+  rewrite was needed beyond this child-run closeout note. `.codex/handoff.md`
+  creation was attempted but blocked by filesystem ACL `Access denied` in this
+  detached worktree, so this plan entry records the child-run durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
