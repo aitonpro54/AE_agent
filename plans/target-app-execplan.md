@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-toggle-specific-effects: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects); live gate ready, importer batch full-intake-kyletmartinez-2c4f9a6f54-import, commit recorded after candidate commit.
+
 - [x] Full Intake composition panel refresh recovery retry
   (2026-06-27): after human recovery, read-only CEP readiness and MCP
   `get_project_snapshot` succeeded. The leftover generated prefix
@@ -4269,6 +4271,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Toggle_Specific_Effects.jsx` as `tool-layers-toggle-specific-effects`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects).
+
 - 2026-06-27: For `tool-compositions-force-composition-panel-refresh`,
   accept only the existing generated-only `composition-panel-refresh-generated-only`
   adaptation through `refresh_comp_panel`, prior/final `get_comp_details`
@@ -5864,6 +5868,8 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-toggle-specific-effects | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2c4f9a6f54-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full Intake composition panel refresh live-readiness retry | Required to decide whether `tool-compositions-force-composition-panel-refresh` can move from the reopened backlog to completed using the existing generated-only typed lane. | Blocked with fresh evidence: compact preflight passed; `git status --short --branch` showed a clean tracked worktree ahead of origin; compact status/proof/ledger summary passed; proposal-only explorer and parent reducer search confirmed `recipes/force-composition-panel-refresh-typed-plan.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `orchestrator/run-generic-repo-full-intake.mjs`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/semantic-verification-smoke.js`, `scripts/solution-library-validation-smoke.js`, and `mcp-server/bridge-daemon.js` coverage. Read-only `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` initially passed. Direct generated-only `node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke` failed closed: `refresh_comp_panel` timed out after submit to AE `evalScript`; checkpoint `backups/empty_test_comp-checkpoint-session-ai-plan-ce2daae4-2026-06-27T15-16-40-817Z.aep` was created; edit session `ai-plan-ce2daae4` finished `needs-review`; generated cleanup expired before delivery. After `node scripts/cep-panel-cdp-smoke.js reload`, connector readiness passed again, but MCP `get_project_snapshot` still timed out after submit, so no second live proof or scoped Full Intaker rerun was run. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, AE restart, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full intake tool-compositions-rename-composition-to-file-name | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b12c8070ad-import`, direct and runner-owned generated-only live reruns `passed`, proof envelope SHA-256 `b41496312a423f955fc12cad6975944a4bb72b97c7a8d21a2f3cb352c5793179`, `contractComplete=true`, `changedPathCount=1`, `unplannedPathCount=0`, and ledger counts `completed=44`, `blocked_or_skipped=31`. Fixed `scripts/cep-panel-cdp-smoke.js` to verify `generatedCompositionRenameFileName` read-back through `projectFileBasename` instead of falling through to the folder-move verifier. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6538,6 +6544,31 @@ check.
   child-run closeout note. `.codex/handoff.md` creation was attempted but
   blocked by filesystem ACL `Access denied` in this detached worktree, so this
   plan entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-8196826d79`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-layers-toggle-specific-effects` in
+  `recipes/toggle-specific-effects-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires explicit comp/layer/effect identity, current
+  `effect.enabled` evidence from `list_effects` or `get_effect_details`, one
+  reviewed final `enabled` boolean, guarded `set_effect_enabled` with
+  `expectedCurrentEnabled` when available, and post-mutation
+  `get_effect_details` plus `get_layer_details` read-back. Source-exact
+  project-wide traversal, Alt-key behavior, broad selected-layer scans, fuzzy
+  effect matching, unreviewed user effects, third-party effect semantics,
+  effect addition/removal/reordering, property edits, non-generated user
+  assets, raw JSX, dependency/package changes, source merge, branch, commit,
+  push, PR, and GitHub automation remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. No recipe, registry, or shared smoke rewrite was
+  needed beyond this child-run closeout note. `.codex/handoff.md` creation was
+  attempted after creating `.codex/`, but the patch tool rejected the hidden
+  path as outside the project in this detached worktree and PowerShell
+  `Set-Content` then failed with filesystem ACL `Access denied`, so this plan
+  entry records the child-run durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
