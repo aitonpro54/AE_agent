@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-26",
+  "updatedAt": "2026-06-27",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -16264,6 +16264,126 @@
         "Use this policy to report typed-tool gaps for project/file/render/proxy/user-file requests that cannot fit an existing narrow generated-only recipe.",
         "Require a separate narrow typed-tool contract before render start, render queue cleanup, proxy mutation, project-file reveal, project save/saveAs, user file input/output, folder cleanup, or arbitrary path output.",
         "Do not widen generated-only render queue setup, generated path export, or project item label recipes to cover user assets, broad cleanup, render execution, proxies, OS actions, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "parent-opacity-typed-plan",
+      "title": "Parent Opacity Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "parenting",
+        "opacity",
+        "expression",
+        "generated-only",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Apply a parent-opacity expression to one explicit generated child layer with set_layer_parent, set_expression, and typed read-back.",
+        "appliesWhen": [
+          "The request is scoped to making one generated or explicitly reviewed child layer follow or clamp to its parent opacity.",
+          "Current get_selected_layers, get_comp_details, or get_layer_details evidence identifies the child layer, parent layer, and opacity property path.",
+          "The accepted child -> parent relationship is represented as concrete same-comp layer indices and expected names."
+        ],
+        "whenNotToUse": [
+          "The child or parent identity is missing, ambiguous, cross-comp, non-generated without explicit review, or would create a parent cycle.",
+          "The opacity property cannot be read through typed layer/property evidence.",
+          "The request needs broad selected-layer parenting, expression restoration/deletion, layer reordering, track matte edits, non-opacity property edits, raw JSX, file I/O, or render queue work."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "childLayerIndex",
+          "type": "number",
+          "required": true,
+          "description": "Concrete one-based child layer index from current typed layer evidence."
+        },
+        {
+          "name": "parentLayerIndex",
+          "type": "number",
+          "required": true,
+          "description": "Concrete one-based parent layer index from current same-comp typed evidence."
+        },
+        {
+          "name": "opacityExpression",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed expression for ADBE Transform Group.ADBE Opacity, normally Math.min(value, thisLayer.parent.transform.opacity.value);"
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one generated or explicitly reviewed composition.",
+        "Selection wording is reduced to one concrete child layer and one concrete parent layer before mutation.",
+        "Only the reviewed child layer's parent link and opacity expression are mutated.",
+        "Layer creation, deletion, duplication, renaming, reordering, timing, sources, track mattes, effects, non-opacity properties, project items, render queue state, files, non-generated user assets, expression deletion/restoration, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/parent-opacity-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_parent",
+          "set_expression"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind one child and one parent layer from typed evidence, set the parent relationship, set the child opacity expression, then read both relationship and expression back.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers when selection is the user-facing input.",
+          "Run get_comp_details or get_layer_details to bind child and parent layer indices/names plus current opacity property evidence.",
+          "Reject ambiguous identity, cross-comp targets, parent cycles, missing opacity evidence, non-generated user assets, and expression restoration/deletion requests.",
+          "Run set_layer_parent with expectedLayerName and expectedParentName when the reviewed parent relationship is not already present.",
+          "Run set_expression on ADBE Transform Group.ADBE Opacity for the reviewed child layer.",
+          "Run get_layer_details after mutation and verify parent.index/name, expression text, expressionEnabled:true, and no expression error."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, child layer index/name, parent layer index/name, current parent state, and opacity property path.",
+          "set_layer_parent reports postVerification.parentMatches:true or the plan records that the reviewed relationship already existed.",
+          "Post-run get_layer_details shows the child parent index/name matches the reviewed parent layer.",
+          "Post-run get_layer_details shows ADBE Transform Group.ADBE Opacity has the reviewed expression, expressionEnabled:true, and no expression error.",
+          "Unsupported bulk parenting, parent cycles, track matte edits, layer reordering, expression deletion/restoration, non-generated assets, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by AUX-021 generic repository importer child run for tool-layers-parent-opacity as generated-only typed-plan coverage using existing set_layer_parent and set_expression tools.",
+          "Generated-only proof lane is selected-layer-parent-opacity-expression-generated-only and uses full-ui-agent-parent-opacity-expression-openai-cli-smoke."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-27",
+          "from": "generic-repo-importer-tool-layers-parent-opacity",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the parent-opacity expression intent into current typed tools as explicit generated child/parent layer evidence, guarded set_layer_parent, set_expression on the child opacity property, and get_layer_details read-back; no source JSX copied. Bulk parenting, expression restoration/deletion, track matte edits, layer reordering, non-generated user assets, and raw JSX/source semantics remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use set_layer_parent only with explicit child/parent indices and expected-name guards.",
+        "Use set_expression only on ADBE Transform Group.ADBE Opacity for the reviewed child layer.",
+        "Require get_layer_details read-back for both the parent relationship and opacity expression."
       ]
     },
     {

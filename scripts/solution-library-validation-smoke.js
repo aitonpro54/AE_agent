@@ -153,6 +153,7 @@ const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
 ];
 const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
   "selected-layer-parent-opacity-expression-generated-only",
+  "parent-opacity-typed-plan",
   "selected-layer-parent-below-generated-only",
   "parent-selected-layers-to-layers-below-typed-plan",
   "selected-layer-parent-closest-generated-only",
@@ -5122,6 +5123,21 @@ function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistr
   assert(parentLane.scope.includes("layer stack reordering"), `${parentLaneId}: lane must fail closed on broad reorder semantics.`);
   assert(parentLane.scope.includes("non-generated user assets"), `${parentLaneId}: lane must reject non-generated user assets.`);
   assert(parentLane.scope.includes("raw JSX/source semantics"), `${parentLaneId}: lane must reject raw source semantics.`);
+
+  const parentOpacityRecipe = solutionById(registry, "parent-opacity-typed-plan");
+  assert(parentOpacityRecipe, "Missing parent-opacity recipe: parent-opacity-typed-plan");
+  const parentOpacityText = solutionContractText(parentOpacityRecipe, recipeText(parentOpacityRecipe));
+  assert.strictEqual(parentOpacityRecipe.execution.mutating, true, "parent-opacity-typed-plan: must be mutating through set_layer_parent and set_expression.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-opacity-typed-plan: must prefer set_layer_parent.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("set_expression"), "parent-opacity-typed-plan: must prefer set_expression.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("get_layer_details"), "parent-opacity-typed-plan: must require typed layer read-back.");
+  assert(parentOpacityText.includes("ADBE Transform Group.ADBE Opacity"), "parent-opacity-typed-plan: must bind the opacity property path.");
+  assert(parentOpacityText.includes("Math.min(value, thisLayer.parent.transform.opacity.value);"), "parent-opacity-typed-plan: must preserve the reviewed parent-opacity expression.");
+  assert(parentOpacityText.includes("childLayerIndex"), "parent-opacity-typed-plan: must bind an explicit child layer index.");
+  assert(parentOpacityText.includes("parentLayerIndex"), "parent-opacity-typed-plan: must bind an explicit parent layer index.");
+  assert(parentOpacityText.includes("parent cycles"), "parent-opacity-typed-plan: must reject parent cycles.");
+  assert(parentOpacityText.includes("post-mutation read-back") || parentOpacityText.includes("Post-expression"), "parent-opacity-typed-plan: must require post-mutation read-back.");
+  assertNoRawExecutionGuidance("parent-opacity-typed-plan", parentOpacityRecipe, recipeText(parentOpacityRecipe));
 
   const parentBelowLaneId = "selected-layer-parent-below-generated-only";
   const parentBelowLane = liveLaneFamilyById(liveLaneRegistry, parentBelowLaneId);

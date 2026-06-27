@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-layers-parent-opacity: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-parent-opacity); live gate ready, importer batch full-intake-kyletmartinez-3b02b6b613-import, commit recorded after candidate commit.
+
+- [x] Full Intake parent-opacity generated-only lane/rerun
+  (2026-06-27): parent-owned scoped milestone for
+  `tool-layers-parent-opacity` reused
+  `selected-layer-parent-opacity-expression-generated-only`,
+  `set_layer_parent`, `set_expression`, and CEP command
+  `full-ui-agent-parent-opacity-expression-openai-cli-smoke`. The importer
+  added `parent-opacity-typed-plan` coverage with explicit generated or
+  reviewed `childLayerIndex`/`parentLayerIndex`, expected-name guards,
+  `ADBE Transform Group.ADBE Opacity`, post-mutation `get_layer_details`
+  read-back, and fail-closed bulk parenting, parent cycle, track matte,
+  layer reorder, expression restoration/deletion, non-generated user asset,
+  raw JSX, dependency, push, and PR boundaries. Read-only CEP readiness passed.
+  Direct generated-only live proof passed, the first strict live rerun crashed
+  transiently with exit code `3221226505` and no stdout/stderr, direct proof
+  passed again, and the strict Full Intaker live rerun then passed for the
+  explicit candidate. Proof envelope SHA-256:
+  `d648565ce925ab7c037e604e692d3f3338ff13f1900e2d1fe946e57101c7fb2f`.
+  Ledger counts are now `completed=41`, `blocked_or_skipped=34`, `queued=0`,
+  `failed=0`. No broad queue processing, unscoped `max-items > 1`,
+  broad/default CEP smoke, dependency change, Local/Ollama, fallback provider,
+  raw JSX copy, launcher edit, push, or PR was run.
+
 - [x] Full intake tool-layers-set-track-matte-to-above: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-set-track-matte-to-above); live gate ready, importer batch full-intake-kyletmartinez-f425624821-import, commit recorded after candidate commit.
 
 - [x] Full Intake set track matte to above generated-only lane/rerun
@@ -4151,6 +4175,18 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Layers/Parent_Opacity.jsx` as `tool-layers-parent-opacity`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-parent-opacity).
+
+- 2026-06-27: For `tool-layers-parent-opacity`, accept only the explicit
+  generated/reviewed parent-opacity expression adaptation. Keep the source
+  ScriptUI/selection semantics reduced to typed evidence, one child layer, one
+  parent layer, `set_layer_parent`, `set_expression` on
+  `ADBE Transform Group.ADBE Opacity`, semantic verification, and
+  `get_layer_details` read-back. Bulk parenting, parent cycles, track matte
+  edits, layer reordering, expression restoration/deletion, non-generated user
+  assets, raw JSX/source execution, dependency changes, push, and PR remain
+  fail-closed.
+
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Set_Track_Matte_To_Above.jsx` as `tool-layers-set-track-matte-to-above`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-track-matte-to-above).
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Set_All_Track_Matte_Labels.jsx` as `tool-layers-set-all-track-matte-labels`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-set-all-track-matte-labels).
 
@@ -5718,6 +5754,10 @@ check.
 
 ## Validation
 
+| Full intake tool-layers-parent-opacity | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-3b02b6b613-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
+| Full Intake parent-opacity generated-only lane/rerun | Required to complete `tool-layers-parent-opacity` under current safety/contract/live-readiness rules after the old blocker was OpenAI CLI/CEP readiness. | Passed: compact preflight, `git status --short --branch`, compact status/proof/ledger summary, read-only `node scripts/cep-panel-cdp-smoke.js inspect`, read-only `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`, direct `node scripts/cep-panel-cdp-smoke.js full-ui-agent-parent-opacity-expression-openai-cli-smoke`, strict Full Intaker phases with explicit `tool-layers-parent-opacity`, `--max-items 1`, `--allow-self-improvement-lane-synthesis`, and `--no-commit`, repeated direct proof after one transient runner crash exit `3221226505`, successful strict live rerun, touched JS `node --check scripts/solution-library-validation-smoke.js`, JSON parse for `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and `.codex/active-thread.json`, `node scripts/agent-scenario-report-smoke.js`, `node scripts/semantic-verification-smoke.js`, `node scripts/solution-library-validation-smoke.js`, `node scripts/solution-registry-smoke.js`, `node scripts/solution-retrieval-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:full-intake`, and `git diff --check` with LF/CRLF warnings only. Final proof envelope SHA-256 `d648565ce925ab7c037e604e692d3f3338ff13f1900e2d1fe946e57101c7fb2f`, `contractComplete=true`, `changedPathCount=4`, `unplannedPathCount=0`, and ledger counts `completed=41`, `blocked_or_skipped=34`. |
+
 | Full intake tool-layers-set-track-matte-to-above | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f425624821-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake tool-layers-set-all-track-matte-labels | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-75e0975b23-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
@@ -6286,6 +6326,28 @@ check.
   validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
   branches, commits, push, and PR actions. No recipe, registry, or shared smoke
   rewrite was needed beyond this child-run closeout note. `.codex/handoff.md`
+  creation was attempted but blocked by filesystem ACL `Access denied` in this
+  detached worktree, so this plan entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-73efa6e8a5`:
+  preflight found a clean tracked worktree and confirmed existing generated-only
+  live-lane/scenario coverage for `tool-layers-parent-opacity` through
+  `selected-layer-parent-opacity-expression-generated-only`,
+  `agentParentOpacityExpressionScenarioPlans`, and
+  `full-ui-agent-parent-opacity-expression-openai-cli-smoke`. The child run
+  added `recipes/parent-opacity-typed-plan.md`, registered
+  `parent-opacity-typed-plan` in `registry/solutions.json`, and appended one
+  focused solution-library assertion block for the recipe. The safe adaptation
+  remains limited to one explicit generated or reviewed child layer and parent
+  layer, `set_layer_parent` with expected-name guards, `set_expression` on
+  `ADBE Transform Group.ADBE Opacity`, and post-mutation `get_layer_details`
+  read-back for parent identity and expression state. Bulk parenting,
+  expression restoration/deletion, track matte edits, layer reordering,
+  non-generated user assets, raw JSX/source semantics, dependency/package
+  changes, source merge, branch, commit, push, PR, and GitHub automation remain
+  fail-closed. Validation was intentionally not run because the child-run intent
+  forbids validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency
+  changes, branches, commits, push, and PR actions. `.codex/handoff.md`
   creation was attempted but blocked by filesystem ACL `Access denied` in this
   detached worktree, so this plan entry records the child-run durable status.
 
