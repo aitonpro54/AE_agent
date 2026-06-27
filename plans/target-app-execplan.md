@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full Intake composition panel refresh live-readiness retry
+  (2026-06-27): parent-owned scoped attempt for
+  `tool-compositions-force-composition-panel-refresh` verified that the current
+  safe lane already exists as `composition-panel-refresh-generated-only` with
+  `force-composition-panel-refresh-typed-plan`, `refresh_comp_panel`,
+  `get_comp_details`, semantic verification, solution registry coverage, and
+  CEP command `full-ui-agent-comp-refresh-openai-cli-smoke`. Read-only
+  readiness initially passed. The generated-only protected proof then failed
+  closed when `refresh_comp_panel` timed out after submit to AE `evalScript`.
+  The run created checkpoint
+  `backups/empty_test_comp-checkpoint-session-ai-plan-ce2daae4-2026-06-27T15-16-40-817Z.aep`,
+  left edit session `ai-plan-ce2daae4` as `needs-review`, and the follow-up
+  generated cleanup attempt expired before delivery. After panel reload,
+  connector readiness recovered, but direct read-only AE scripting still timed
+  out on `get_project_snapshot`, so no second live proof, scoped Full Intaker
+  rerun, broad smoke, raw JSX fallback, AE restart, launcher edit, push, or PR
+  was run. This id remains blocked on human AE project/panel recovery before
+  another generated-only live retry.
+
 - [x] Full intake tool-compositions-rename-composition-to-file-name: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-rename-composition-to-file-name); live gate ready, importer batch full-intake-kyletmartinez-b12c8070ad-import, commit recorded after candidate commit.
 
 - [x] Full Intake composition rename-to-file-name generated-only lane/rerun
@@ -4220,6 +4239,16 @@ check.
 
 ## Decision Log
 
+- 2026-06-27: For `tool-compositions-force-composition-panel-refresh`,
+  accept only the existing generated-only `composition-panel-refresh-generated-only`
+  adaptation through `refresh_comp_panel`, prior/final `get_comp_details`
+  read-back, `expectedMotionBlur`, semantic verification, and generated cleanup.
+  Do not substitute raw JSX, `set_comp_properties`, layer `motionBlur`, broad
+  active-viewer fidelity claims, non-generated user comp mutation, file I/O,
+  render queue work, launcher edits, push, or PR. Current live acceptance is
+  blocked by AE `evalScript` timeout after the protected `refresh_comp_panel`
+  step; human AE/panel recovery is required before another live retry.
+
 - 2026-06-27: Generic full-intake orchestrator processed `Compositions/Rename_Composition_To_File_Name.jsx` as `tool-compositions-rename-composition-to-file-name`, keeping shared merge/validation/live/doc/commit gates serial and accepting only the existing generated-only project-file-basename composition rename lane with explicit generated comp item evidence, typed read-back, semantic verification, and generated cleanup (full-intake:full-intake-kyletmartinez:tool-compositions-rename-composition-to-file-name).
 
 - 2026-06-27: Generic full-intake orchestrator processed `Layers/Parent_Closest_Layers.jsx` as `tool-layers-parent-closest-layers`, keeping shared merge/validation/live/doc/commit gates serial and accepting only the existing generated-only closest-layer parenting lane with explicit child/parent nearest-pair evidence, typed read-back, semantic verification, and generated cleanup (full-intake:full-intake-kyletmartinez:tool-layers-parent-closest-layers).
@@ -5804,6 +5833,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full Intake composition panel refresh live-readiness retry | Required to decide whether `tool-compositions-force-composition-panel-refresh` can move from the reopened backlog to completed using the existing generated-only typed lane. | Blocked with fresh evidence: compact preflight passed; `git status --short --branch` showed a clean tracked worktree ahead of origin; compact status/proof/ledger summary passed; proposal-only explorer and parent reducer search confirmed `recipes/force-composition-panel-refresh-typed-plan.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `orchestrator/run-generic-repo-full-intake.mjs`, `scripts/agent-scenario-fixtures.js`, `scripts/agent-scenario-report-smoke.js`, `scripts/semantic-verification-smoke.js`, `scripts/solution-library-validation-smoke.js`, and `mcp-server/bridge-daemon.js` coverage. Read-only `node scripts/cep-panel-cdp-smoke.js inspect` and `node scripts/cep-panel-cdp-smoke.js connector-status-smoke` initially passed. Direct generated-only `node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke` failed closed: `refresh_comp_panel` timed out after submit to AE `evalScript`; checkpoint `backups/empty_test_comp-checkpoint-session-ai-plan-ce2daae4-2026-06-27T15-16-40-817Z.aep` was created; edit session `ai-plan-ce2daae4` finished `needs-review`; generated cleanup expired before delivery. After `node scripts/cep-panel-cdp-smoke.js reload`, connector readiness passed again, but MCP `get_project_snapshot` still timed out after submit, so no second live proof or scoped Full Intaker rerun was run. No broad queue, unscoped `max-items > 1`, broad/default CEP smoke, Local/Ollama, fallback provider, dependency/package change, raw JSX copy, AE restart, launcher edit, push, PR, or GitHub automation was run. |
 
 | Full intake tool-compositions-rename-composition-to-file-name | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-b12c8070ad-import`, direct and runner-owned generated-only live reruns `passed`, proof envelope SHA-256 `b41496312a423f955fc12cad6975944a4bb72b97c7a8d21a2f3cb352c5793179`, `contractComplete=true`, `changedPathCount=1`, `unplannedPathCount=0`, and ledger counts `completed=44`, `blocked_or_skipped=31`. Fixed `scripts/cep-panel-cdp-smoke.js` to verify `generatedCompositionRenameFileName` read-back through `projectFileBasename` instead of falling through to the folder-move verifier. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
