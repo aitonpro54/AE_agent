@@ -48,9 +48,13 @@ old `AE_agent` repository remains the historical source.
   Post-failure read-only `get_project_snapshot` timed out again, so no second
   live proof, no cleanup of the new generated prefix, no broad/default CEP
   smoke, no unscoped queue processing, no Local/Ollama, no fallback provider,
-  no raw JSX fallback, no launcher edit, no push, and no PR was run. Human
-  AE/panel/project recovery is required before any further live retry or
-  generated cleanup.
+  no raw JSX fallback, no launcher edit, no push, and no PR was run. Because
+  this is the second scoped `refresh_comp_panel` timeout after otherwise
+  healthy generated setup/read-back, this candidate is treated as freshly
+  terminal/live-blocked until the typed implementation or acceptance strategy is
+  changed. Human AE/panel/project recovery is required only to inspect/cleanup
+  generated leftovers before continuing to another scoped family; do not retry
+  this id again in the current longrun.
 
 - [x] Full Intake composition panel refresh live-readiness retry
   (2026-06-27): parent-owned scoped attempt for
