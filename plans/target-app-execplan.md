@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-properties-export-path-points: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-export-path-points); live gate ready, importer batch full-intake-kyletmartinez-f30f026e2c-import, commit recorded after candidate commit.
+
 - [x] Terminal safety contracts architecture foundation (2026-06-28):
   compact preflight for `full-intake-kyletmartinez` found a clean tracked
   worktree, compact status/proof completed, and ledger terminal state
@@ -4296,6 +4298,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Properties/Export_Path_Points.jsx` as `tool-properties-export-path-points`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-export-path-points).
+
 - 2026-06-28: Generated-only file/render/cleanup safety contracts are now a
   shared bridge/planning validation surface, not only recipe prose. File output
   remains limited to simple filenames under `logs/generated-exports` or
@@ -5910,6 +5914,8 @@ check.
 
 ## Validation
 
+| Full intake tool-properties-export-path-points | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f30f026e2c-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Terminal safety contracts architecture foundation | Required to create reusable generated-only file IO and cleanup/delete guardrails without processing the real queue or completing blocked candidates. | Passed: touched-file `node --check`; `node scripts/generated-safety-contracts-smoke.js`; `node scripts/plan-classification-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-registry-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:solutions`; and `git diff --check` with LF/CRLF warnings only. |
 
 | Full intake tool-project-add-selection-to-new-folder | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-fa71826547-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6662,6 +6668,29 @@ check.
   path as outside the project in this detached worktree and PowerShell
   `Set-Content` then failed with filesystem ACL `Access denied`, so this plan
   entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-d16c0418c9`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-properties-export-path-points` in
+  `recipes/export-path-points-typed-plan.md`, `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only/file-output scoped and requires current `get_path_geometry`
+  evidence for exactly one generated or explicitly reviewed Shape or Mask path,
+  reviewed vertices, `export_path_points` with `decimalPlaces:2`,
+  `rotateFirstPointToEnd:true`, a simple generated `.txt` `outputFileName`,
+  byte/hash/content read-back, optional generated artifact cleanup, and
+  post-export `get_path_geometry` proof that path geometry did not mutate.
+  Source-exact `comp.selectedProperties` traversal, Desktop `points.txt`
+  writes, arbitrary user paths or output paths, expression-driven or truncated
+  paths, multi-target exports, path mutation, raw JSX, dependency/package
+  changes, source merge, branch, commit, push, PR, and GitHub automation remain
+  fail-closed. Validation was intentionally not run because the child-run
+  intent forbids validation, live AE/CEP/CDP, OpenAI CLI planner runs,
+  dependency changes, branches, commits, push, and PR actions. No recipe,
+  registry, or shared smoke rewrite was needed beyond this child-run closeout
+  note. `.codex/handoff.md` creation was attempted through `apply_patch` but
+  blocked as writing outside the project for this detached hidden path, so this
+  plan entry records the child-run durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
