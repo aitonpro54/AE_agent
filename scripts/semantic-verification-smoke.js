@@ -25,6 +25,7 @@ const {
   agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
+  agentExportTextToFileScenarioPlans,
   agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
@@ -45,6 +46,7 @@ const LOCAL_MUTATING_TOOLS = new Set([
   "create_layer_connection_line",
   "create_shapes_from_text",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "set_puppet_pin_type",
   "set_effect_enabled",
@@ -2918,6 +2920,50 @@ function assertExportPathPointsMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points per-step file check should pass.");
 }
 
+function assertExportTextToFilePasses() {
+  const [scenario] = agentExportTextToFileScenarioPlans("Codex Semantic Export Text Fixture");
+  const expectedContent = scenario.expectedReadBack.expectedContent;
+  const outputFileName = scenario.expectedReadBack.outputFileName;
+  const run = fakeRunForPlan(scenario.plan);
+  for (const step of run.steps) {
+    if (step.tool === "get_layer_details" && step.args.layerIndex === 1) {
+      step.result = {
+        comp: { name: scenario.expectedReadBack.compName },
+        layer: layerInfo(scenario.expectedReadBack.textName, { index: 1, textLayer: true, layerKind: "text" }),
+        text: { kind: "TextDocument", text: scenario.expectedReadBack.sourceText }
+      };
+    }
+    if (step.tool === "get_layer_details" && step.args.layerIndex === 2) {
+      step.result = {
+        comp: { name: scenario.expectedReadBack.compName },
+        layer: layerInfo(scenario.expectedReadBack.solidName, { index: 2, textLayer: false })
+      };
+    }
+    if (step.tool === "export_text_to_file") {
+      step.result = {
+        outputFileName,
+        outputPath: `logs/generated-exports/${outputFileName}`,
+        layerCount: 2,
+        textLayerCount: 1,
+        nonTextLayerCount: 1,
+        exportedText: expectedContent,
+        contentPreview: expectedContent,
+        file: {
+          outputFileName,
+          outputPath: `logs/generated-exports/${outputFileName}`,
+          byteLength: Buffer.byteLength(expectedContent, "utf8"),
+          sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          existsAfter: true
+        }
+      };
+    }
+  }
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `export_text_to_file semantic verification should pass with post-export read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("export_text_to_file:file") >= 0 && check.status === "passed"), "export_text_to_file file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_text_to_file:content") >= 0 && check.status === "passed"), "export_text_to_file content check should pass.");
+}
+
 function assertSaveCompFramePngPasses() {
   const plan = {
     summary: "Save one generated composition frame to a sandboxed PNG.",
@@ -3885,6 +3931,7 @@ function main() {
   assertSetPathGeometryMissingReadBackNeedsReview();
   assertExportPathPointsPasses();
   assertExportPathPointsMissingReadBackNeedsReview();
+  assertExportTextToFilePasses();
   assertSaveCompFramePngPasses();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();

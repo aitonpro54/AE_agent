@@ -21,6 +21,16 @@ const GENERATED_FILE_OUTPUT_TOOL_CONTRACTS = Object.freeze({
     requiresHashReadBack: true,
     requiresPostReadBack: true
   }),
+  export_text_to_file: Object.freeze({
+    id: "generated-file-output:export-text-to-file",
+    kind: "generated-file-output",
+    rootId: GENERATED_EXPORT_ROOT_ID,
+    filenameField: "outputFileName",
+    defaultFilename: "export.txt",
+    allowedExtensions: Object.freeze([".txt"]),
+    requiresHashReadBack: true,
+    requiresPostReadBack: true
+  }),
   save_comp_frame_png: Object.freeze({
     id: "generated-file-output:save-comp-frame-png",
     kind: "generated-file-output",
@@ -90,6 +100,7 @@ const TERMINAL_SAFETY_CANDIDATE_TAXONOMY = Object.freeze({
     "tool-project-export-text-to-file": Object.freeze({
       blockerClass: "FOUT-TEXT",
       contractPrimitive: "GeneratedArtifactRootPolicy",
+      currentNarrowTool: "export_text_to_file",
       unblockCondition: "explicit generated text-layer binding, simple .txt output, byte/hash/content read-back"
     }),
     "tool-project-manually-render-png-sequence": Object.freeze({

@@ -9933,6 +9933,115 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "export-text-to-file-typed-plan",
+      "title": "Export Text To File Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "text-layer",
+        "selection",
+        "file-output",
+        "generic-importer",
+        "kyletmartinez-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Export reviewed selected-layer text evidence to logs/generated-exports with sha256 read-back, not Desktop.",
+        "appliesWhen": [
+          "The user asks to export selected text layers to a text file and accepts generated-output scoping.",
+          "Current get_selected_layers and get_layer_details evidence identifies selected text and non-text layers before export."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayerEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current selected-layer evidence, including Source Text from get_layer_details for every text layer and explicit non-text layer entries for fallback lines."
+        },
+        {
+          "name": "outputFileName",
+          "type": "string",
+          "required": false,
+          "description": "Simple generated .txt filename. Paths, Desktop writes, and user-selected locations are rejected."
+        }
+      ],
+      "targetAssumptions": [
+        "The selected layers are generated or explicitly reviewed and bound by current typed evidence before export.",
+        "Every selected text layer has current get_layer_details Source Text evidence.",
+        "The exported content preserves the source payload shape: ordinal, Source Text or [Not a text layer], and a blank line after each block.",
+        "Desktop writes, arbitrary outputPath values, user-selected file locations, source checkout execution, raw ExtendScript, layer selection mutation, Source Text mutation, render queue items, Project items, and non-generated user assets are preserved or rejected."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/export-text-to-file-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "export_text_to_file"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected layers, read Source Text for every selected text layer, export reviewed evidence with export_text_to_file to logs/generated-exports with sha256, then read selected layers back.",
+        "steps": [
+          "Run get_active_comp or get_selected_layers to capture active composition identity and selected layer order.",
+          "Run get_layer_details for every selected text layer and capture text.text Source Text evidence.",
+          "Fail closed when selected-layer evidence is empty, text Source Text evidence is missing, order is ambiguous, evidence is truncated, or the requested output is Desktop/user path/arbitrary outputPath.",
+          "Run export_text_to_file with reviewed selected-layer evidence, expectedLayerCount, and a simple generated outputFileName.",
+          "Run get_selected_layers or get_layer_details again and prove the layer selection/stack and Source Text evidence remain bounded after export.",
+          "Fail closed if source-exact Desktop export, arbitrary user paths, raw ExtendScript, layer mutation, or Project/file-system side effects outside generated exports are required."
+        ],
+        "expectedEvidence": [
+          "Pre-export get_selected_layers identifies the exact selected layer count, order, names, indices, and text/non-text state.",
+          "Pre-export get_layer_details identifies Source Text for every selected text layer.",
+          "export_text_to_file result reports generated outputPath, outputFileName, byteLength, sha256, contentPreview, exportedText, per-layer summary, and cleanup state.",
+          "The exported content matches ordinal blocks with Source Text for text layers and [Not a text layer] for non-text layers.",
+          "Post-export selected-layer or layer-details read-back shows no Source Text, layer stack, Project item, render queue, Desktop/user path, raw JSX, or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by generated-file-output Full Intaker parent reducer for tool-project-export-text-to-file as generated-only advisory typed-plan coverage for selected-layer text export.",
+          "Generated-only proof uses get_selected_layers, get_layer_details, and the parent-approved export_text_to_file file-output policy; parent importer owns live acceptance and scoped retry evidence."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-28",
+          "from": "generic-repo-importer-tool-project-export-text-to-file",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the safe payload shape behind kyletmartinez/after-effects-scripts Project/Export_Text_To_File.jsx into a generated-only typed tool, export_text_to_file, with selected-layer evidence, Source Text read-back, simple .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, byte length and sha256 read-back, optional cleanup, and post-export selected-layer read-back; no source JSX copied. Source-exact ~/Desktop/export.txt writes, arbitrary user paths, file dialogs, source checkout execution, selection mutation, layer text mutation, Project item mutation, render queue work, and raw JSX remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, idempotency, and read-back verification.",
+        "Require current get_selected_layers and get_layer_details Source Text evidence before exporting selected-layer text; do not infer selected text from prior chat context.",
+        "Use export_text_to_file only with reviewed selected-layer evidence and simple generated .txt filenames under the generated export root.",
+        "Require a post-export selected-layer or layer-details read-back to prove the export did not mutate AE project state.",
+        "Require a separate typed-tool contract for source-exact Desktop export, arbitrary outputPath values, user file prompts, missing Source Text evidence, multi-comp selection assumptions, or exact source JSX semantics.",
+        "Do not use this recipe for text edits, text-layer creation from files, SRT parsing, render queue changes, proxy changes, Project item cleanup, source relinking, non-generated user-asset mutation, arbitrary filesystem writes, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "status": "recipe",
       "requiredSafetyGates": {
         "planValidation": true,

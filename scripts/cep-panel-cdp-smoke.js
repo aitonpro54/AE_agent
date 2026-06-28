@@ -26,6 +26,7 @@ const {
   agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,
+  agentExportTextToFileScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
@@ -748,6 +749,24 @@ function openAiCliExportPathPointsScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_EXPORT_PATH_POINTS_PREFIX || "Codex QA AUX-EXPORT",
     scenarioFactory: agentExportPathPointsScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliExportTextToFileScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-export-text-to-file",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_EXPORT_TEXT_TO_FILE_PREFIX || "Codex QA AUX-EXPORT-TEXT",
+    scenarioFactory: agentExportTextToFileScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -7495,6 +7514,58 @@ async function verifyGeneratedPathPointsExportReadBack(scenario, expected) {
   };
 }
 
+async function verifyGeneratedTextFileExportReadBack(scenario, expected) {
+  const generatedExportDir = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+    ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+    : path.join(__dirname, "..", "logs", "generated-exports");
+  const outputPath = path.join(generatedExportDir, expected.outputFileName);
+  if (!fs.existsSync(outputPath)) {
+    throw new Error(`${scenario.id}: generated text export file was not found: ${outputPath}`);
+  }
+  const content = fs.readFileSync(outputPath, "utf8");
+  if (content !== expected.expectedContent) {
+    throw new Error(`${scenario.id}: generated text export content mismatch.`);
+  }
+
+  const compMatch = await findGeneratedCompByExactName(scenario, expected.compName);
+  const comp = await callBridgeTool("get_comp_details", {
+    compItemIndex: compMatch.itemIndex,
+    includeLayers: true,
+    layerLimit: 20
+  });
+  const layers = Array.isArray(comp.layers) ? comp.layers : [];
+  const textLayer = layers.find((item) => item.name === expected.textName);
+  const solidLayer = layers.find((item) => item.name === expected.solidName);
+  if (!textLayer || !textLayer.index || textLayer.textLayer !== true) {
+    throw new Error(`${scenario.id}: generated text export source layer was not found by read-back.`);
+  }
+  if (!solidLayer || !solidLayer.index || solidLayer.textLayer === true) {
+    throw new Error(`${scenario.id}: generated non-text export source layer was not found by read-back.`);
+  }
+  const textDetails = await callBridgeTool("get_layer_details", {
+    compItemIndex: compMatch.itemIndex,
+    layerIndex: textLayer.index,
+    includeProperties: false
+  });
+  if (!textDetails || !textDetails.text || textDetails.text.text !== expected.sourceText) {
+    throw new Error(`${scenario.id}: generated text export Source Text read-back mismatch.`);
+  }
+
+  try {
+    fs.unlinkSync(outputPath);
+  } catch (_error) {}
+
+  return {
+    ok: true,
+    comp: { itemIndex: compMatch.itemIndex, name: compMatch.name },
+    textLayer: { index: textLayer.index, name: textLayer.name },
+    nonTextLayer: { index: solidLayer.index, name: solidLayer.name },
+    outputFileName: expected.outputFileName,
+    bytes: Buffer.byteLength(content, "utf8"),
+    removedGeneratedExport: !fs.existsSync(outputPath)
+  };
+}
+
 async function verifyGeneratedCompFramePngExportReadBack(scenario, expected) {
   const generatedExportDir = process.env.AE_AGENT_GENERATED_EXPORT_DIR
     ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
@@ -7941,6 +8012,10 @@ async function verifyAgentScenarioReadBack(scenario) {
 
   if (expected.generatedPathPointsExport) {
     return verifyGeneratedPathPointsExportReadBack(scenario, expected);
+  }
+
+  if (expected.generatedTextFileExport) {
+    return verifyGeneratedTextFileExportReadBack(scenario, expected);
   }
 
   if (expected.generatedCompFramePngExport) {
@@ -8913,6 +8988,10 @@ async function main() {
   }
   if (command === "agent-export-path-points-openai-cli-smoke" || command === "full-ui-agent-export-path-points-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliExportPathPointsScenarioConfig());
+    return;
+  }
+  if (command === "agent-export-text-to-file-openai-cli-smoke" || command === "full-ui-agent-export-text-to-file-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliExportTextToFileScenarioConfig());
     return;
   }
   if (command === "agent-essential-graphics-openai-cli-smoke" || command === "full-ui-agent-essential-graphics-openai-cli-smoke") {

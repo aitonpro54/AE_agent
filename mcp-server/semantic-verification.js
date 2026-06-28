@@ -29,6 +29,7 @@ const MUTATING_TOOLS = new Set([
   "create_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "set_puppet_pin_type",
   "set_effect_enabled",
@@ -2327,6 +2328,73 @@ function checkExportPathPoints(checks, step, payload) {
   });
 }
 
+function sourceTextFromExportTextLayerEvidence(rawLayer) {
+  const raw = isPlainObject(rawLayer) ? rawLayer : {};
+  const layer = isPlainObject(raw.layer) ? raw.layer : raw;
+  const textPayload = isPlainObject(raw.text) ? raw.text : isPlainObject(layer.text) ? layer.text : null;
+  const sourceText = typeof raw.sourceText === "string"
+    ? raw.sourceText
+    : typeof layer.sourceText === "string"
+      ? layer.sourceText
+      : typeof raw.text === "string"
+        ? raw.text
+        : typeof layer.text === "string"
+          ? layer.text
+          : typeof (textPayload && textPayload.text) === "string"
+            ? textPayload.text
+            : null;
+  const textLayer = raw.textLayer === true ||
+    layer.textLayer === true ||
+    raw.layerKind === "text" ||
+    layer.layerKind === "text" ||
+    raw.type === "text" ||
+    layer.type === "text" ||
+    Boolean(textPayload && textPayload.kind === "TextDocument") ||
+    sourceText !== null;
+  return textLayer ? sourceText : "[Not a text layer]";
+}
+
+function expectedExportTextContent(args) {
+  const layers = Array.isArray(args.layers) ? args.layers : Array.isArray(args.layerEvidence) ? args.layerEvidence : [];
+  return layers.map((layer, index) => {
+    const text = sourceTextFromExportTextLayerEvidence(layer);
+    return `${index + 1}:\n${text === null ? "" : text}\n\n`;
+  }).join("");
+}
+
+function checkExportTextToFile(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "export.txt";
+  const expectedContent = expectedExportTextContent(args);
+  const observedContent = String(payload.exportedText || payload.contentPreview || "");
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+  const expectedLayerCount = Array.isArray(args.layers)
+    ? args.layers.length
+    : Array.isArray(args.layerEvidence)
+      ? args.layerEvidence.length
+      : 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated selected-text export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated text export file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Exported selected-layer text matches reviewed evidence",
+    expected: compactText(expectedContent, 220),
+    observed: compactText(observedContent, 220),
+    passed: expectedLayerCount > 0 && observedContent === expectedContent,
+    evidence: stepLabel(step)
+  });
+}
+
 function checkSaveCompFramePng(checks, step, payload) {
   const args = step.args || {};
   const file = isPlainObject(payload.file) ? payload.file : {};
@@ -2767,6 +2835,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "export_path_points") {
     checkExportPathPoints(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "export_text_to_file") {
+    checkExportTextToFile(checks, step, payload);
     return;
   }
 

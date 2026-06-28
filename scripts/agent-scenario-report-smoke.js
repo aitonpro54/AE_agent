@@ -29,6 +29,7 @@ const {
   agentEssentialGraphicsScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,
+  agentExportTextToFileScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
@@ -1290,6 +1291,24 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(exportPathPoints.plan.steps[6].args.outputFileName.endsWith(".txt"), true);
   assert.deepStrictEqual(exportPathPoints.plan.steps[6].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
   assert.strictEqual(exportPathPoints.plan.steps[7].args.includeKeyframes, true);
+
+  const [exportTextToFile] = agentExportTextToFileScenarioPlans("Codex QA AUX-EXPORT-TEXT Fixture");
+  assert.strictEqual(exportTextToFile.id, "generated-export-text-to-file");
+  assert.strictEqual(exportTextToFile.expectedReadBack.generatedTextFileExport, true);
+  assert.deepStrictEqual(exportTextToFile.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_solid_layer",
+    "create_text_layer",
+    "set_layer_selection",
+    "get_selected_layers",
+    "get_layer_details",
+    "get_layer_details",
+    "export_text_to_file",
+    "get_selected_layers"
+  ]);
+  assert.strictEqual(exportTextToFile.plan.steps[7].args.outputFileName.endsWith(".txt"), true);
+  assert.strictEqual(exportTextToFile.plan.steps[7].args.expectedLayerCount, 2);
+  assert(exportTextToFile.expectedReadBack.expectedContent.includes("[Not a text layer]"));
 
   const [essentialGraphics] = agentEssentialGraphicsScenarioPlans("Codex QA AUX-EG Fixture");
   assert.strictEqual(essentialGraphics.id, "generated-essential-graphics-controller");

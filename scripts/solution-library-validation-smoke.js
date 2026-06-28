@@ -120,6 +120,7 @@ const IMPORTED_ADVISORY_IDS = [
   "add-selected-compositions-to-render-queue-typed-plan",
   "third-party-semantics-safety-policy",
   "project-file-render-proxy-safety-policy",
+  "export-text-to-file-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
   "rename-selected-project-items-typed-plan",
   "preserve-nested-frame-rate-typed-plan",
@@ -146,6 +147,7 @@ const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
 const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
   "project-file-render-proxy-safety-policy",
   "export-path-points-typed-plan",
+  "export-text-to-file-typed-plan",
   "save-frame-as-png-typed-plan",
   "add-folder-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
@@ -227,6 +229,7 @@ const AVAILABLE_TOOLS = [
   "get_path_geometry",
   "set_path_geometry",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "import_footage",
   "align_layers_to_time",
@@ -1042,6 +1045,28 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /export_path_points/.test(note)), `${id}: notes must require generated file export.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Export_Path_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "export-text-to-file-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "export_text_to_file"],
+        `${id}: export-text workflow should stay on selected-layer read, Source Text evidence, and generated text export.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: export-text workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require Source Text read-back.`);
+      assert(text.includes("export_text_to_file"), `${id}: recipe should use the generated text export typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("[Not a text layer]"), `${id}: recipe should preserve non-text fallback lines.`);
+      assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Source Text/.test(item)), `${id}: verification must require Source Text evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.notes.some((note) => /get_selected_layers/.test(note)), `${id}: notes must require selected-layer read evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Export_Text_To_File/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "save-frame-as-png-typed-plan") {
       assert.deepStrictEqual(
@@ -3486,6 +3511,23 @@ function assertActualRetrieval(registry) {
   assert(exportPathPointsPromptSection.includes("sha256"), "prompt section should require hash evidence.");
   assert(!/run_extendscript/i.test(exportPathPointsPromptSection), "export-path-points guidance should not recommend raw ExtendScript.");
 
+  const exportTextToFileRetrieval = retrieveSolutionHints("Export selected text layers to a generated txt file after get_selected_layers and get_layer_details Source Text evidence, preserving Not a text layer fallback lines and sha256 read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(exportTextToFileRetrieval.ok, true);
+  assert(ids(exportTextToFileRetrieval).includes("export-text-to-file-typed-plan"), "export-text-to-file advisory recipe should surface for generated selected text export prompts.");
+  const exportTextToFilePromptSection = formatSolutionHintsForPrompt(exportTextToFileRetrieval);
+  assert(exportTextToFilePromptSection.includes("Export Text To File Typed Plan"), "prompt section should include export-text advisory title.");
+  assert(exportTextToFilePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence.");
+  assert(exportTextToFilePromptSection.includes("get_layer_details"), "prompt section should require Source Text read-back.");
+  assert(exportTextToFilePromptSection.includes("export_text_to_file"), "prompt section should prefer export_text_to_file for generated file output.");
+  assert(exportTextToFilePromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(exportTextToFilePromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(exportTextToFilePromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(!/run_extendscript/i.test(exportTextToFilePromptSection), "export-text guidance should not recommend raw ExtendScript.");
+
   const saveFramePngRetrieval = retrieveSolutionHints("Save the current frame from a generated composition to a PNG file under the generated export folder after get_comp_details read-back, using save_comp_frame_png, sha256 evidence, and resolutionFactor restoration.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5074,6 +5116,17 @@ function assertFirstFourFileRenderProxyContracts(registry) {
       assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
       assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
       assert(contractText.includes("Post-export get_path_geometry"), `${id}: export must require post-export geometry read-back.`);
+    } else if (id === "export-text-to-file-typed-plan") {
+      assert(solution.execution.preferredTools.includes("export_text_to_file"), `${id}: generated text export must use export_text_to_file.`);
+      assert(solution.execution.preferredTools.includes("get_selected_layers"), `${id}: export must require selected-layer evidence.`);
+      assert(solution.execution.preferredTools.includes("get_layer_details"), `${id}: export must require Source Text read-back.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".txt"), `${id}: export must require a simple generated text filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(contractText.includes("Source Text"), `${id}: export must require Source Text evidence.`);
+      assert(contractText.includes("[Not a text layer]"), `${id}: export must preserve non-text fallback lines.`);
     } else if (id === "save-frame-as-png-typed-plan") {
       assert(solution.execution.preferredTools.includes("save_comp_frame_png"), `${id}: generated PNG export must use save_comp_frame_png.`);
       assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);

@@ -90,6 +90,9 @@ function assertPlanContractMetadata() {
   const fileContracts = generatedSafety.contractsForPlanStep("save_comp_frame_png", { outputFileName: "frame.png" });
   assert.strictEqual(fileContracts.length, 1);
   assert.strictEqual(fileContracts[0].kind, "generated-file-output");
+  const textContracts = generatedSafety.contractsForPlanStep("export_text_to_file", { outputFileName: "export.txt" });
+  assert.strictEqual(textContracts.length, 1);
+  assert.strictEqual(textContracts[0].id, "generated-file-output:export-text-to-file");
 
   const renderContracts = generatedSafety.contractsForPlanStep("set_render_queue_output", { outputPath: "logs/generated-renders/render.png" });
   assert.strictEqual(renderContracts.length, 1);
@@ -101,6 +104,8 @@ function assertPlanContractMetadata() {
 
   assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("export_path_points", { outputFileName: "points.txt" }), []);
   assert(generatedSafety.validateGeneratedSafetyStep("export_path_points", { outputFileName: "Desktop/points.txt" }).length > 0);
+  assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("export_text_to_file", { outputFileName: "export.txt" }), []);
+  assert(generatedSafety.validateGeneratedSafetyStep("export_text_to_file", { outputFileName: "Desktop/export.txt" }).length > 0);
   assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("cleanup_test_items", { namePrefix: "Codex QA", confirm: true }), []);
   assert(generatedSafety.validateGeneratedSafetyStep("cleanup_test_items", { namePrefix: "User", confirm: true }).some((issue) => /generated prefix/.test(issue)));
 }

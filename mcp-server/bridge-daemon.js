@@ -882,6 +882,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
@@ -2294,7 +2295,7 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
-  if (toolName === "export_path_points" || toolName === "save_comp_frame_png") {
+  if (toolName === "export_path_points" || toolName === "export_text_to_file" || toolName === "save_comp_frame_png") {
     const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
     const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
     const byteLength = Number(file.byteLength || 0);
@@ -2682,6 +2683,138 @@ function exportPathPointsFile(args) {
       sha256,
       existsAfter,
       deletedAfterReadBack: deleteAfterReadBack
+    }
+  };
+}
+
+function stringValueOrNull(value) {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return null;
+  return null;
+}
+
+function sourceTextFromLayerEvidence(rawLayer) {
+  const raw = rawLayer && typeof rawLayer === "object" && !Array.isArray(rawLayer) ? rawLayer : {};
+  const layer = raw.layer && typeof raw.layer === "object" && !Array.isArray(raw.layer) ? raw.layer : raw;
+  const textPayload = raw.text && typeof raw.text === "object" && !Array.isArray(raw.text)
+    ? raw.text
+    : layer.text && typeof layer.text === "object" && !Array.isArray(layer.text)
+      ? layer.text
+      : null;
+
+  return stringValueOrNull(raw.sourceText) ||
+    stringValueOrNull(layer.sourceText) ||
+    stringValueOrNull(raw.text) ||
+    stringValueOrNull(layer.text) ||
+    stringValueOrNull(textPayload && textPayload.text);
+}
+
+function textExportLayerFromEvidence(rawLayer, ordinal) {
+  const raw = rawLayer && typeof rawLayer === "object" && !Array.isArray(rawLayer) ? rawLayer : {};
+  const layer = raw.layer && typeof raw.layer === "object" && !Array.isArray(raw.layer) ? raw.layer : raw;
+  const textPayload = raw.text && typeof raw.text === "object" && !Array.isArray(raw.text)
+    ? raw.text
+    : layer.text && typeof layer.text === "object" && !Array.isArray(layer.text)
+      ? layer.text
+      : null;
+  const sourceText = sourceTextFromLayerEvidence(raw);
+  const textLayer = raw.textLayer === true ||
+    layer.textLayer === true ||
+    raw.layerKind === "text" ||
+    layer.layerKind === "text" ||
+    raw.type === "text" ||
+    layer.type === "text" ||
+    Boolean(textPayload && textPayload.kind === "TextDocument") ||
+    sourceText !== null;
+
+  if (textLayer && sourceText === null) {
+    throw new Error(`layers[${ordinal - 1}] is a text layer but does not include Source Text evidence.`);
+  }
+  if (sourceText !== null && Buffer.byteLength(sourceText, "utf8") > 100000) {
+    throw new Error(`layers[${ordinal - 1}] Source Text exceeds the 100000 byte export limit.`);
+  }
+
+  return {
+    ordinal,
+    layerIndex: Number(layer.index || raw.index || ordinal) || ordinal,
+    layerName: String(layer.name || raw.name || ""),
+    textLayer,
+    sourceText: textLayer ? sourceText : null,
+    outputText: textLayer ? sourceText : "[Not a text layer]"
+  };
+}
+
+function buildSelectedTextExportContent(entries) {
+  return entries.map((entry, index) => `${index + 1}:\n${entry.outputText}\n\n`).join("");
+}
+
+function exportTextToFile(args) {
+  const sourceLayers = Array.isArray(args && args.layers)
+    ? args.layers
+    : Array.isArray(args && args.layerEvidence)
+      ? args.layerEvidence
+      : [];
+  if (!sourceLayers.length) {
+    throw new Error("layers evidence is required and must include at least one selected layer.");
+  }
+  if (sourceLayers.length > 100) {
+    throw new Error("layers evidence is limited to 100 selected layers.");
+  }
+
+  const expectedLayerCount = optionalPositiveInteger(args || {}, "expectedLayerCount");
+  if (expectedLayerCount !== null && expectedLayerCount !== sourceLayers.length) {
+    throw new Error(`expectedLayerCount ${expectedLayerCount} did not match layers evidence count ${sourceLayers.length}.`);
+  }
+
+  const deleteAfterReadBack = optionalBoolean(args || {}, "deleteAfterReadBack", false);
+  const allowOverwrite = optionalBoolean(args || {}, "allowOverwrite", false);
+  const { outputFileName, resolvedPath } = resolveGeneratedExportFile(optionalString(args || {}, "outputFileName", "export.txt"));
+  const entries = sourceLayers.map((layer, index) => textExportLayerFromEvidence(layer, index + 1));
+  const content = buildSelectedTextExportContent(entries);
+  if (Buffer.byteLength(content, "utf8") > 1000000) {
+    throw new Error("Generated text export exceeds the 1000000 byte export limit.");
+  }
+
+  if (fs.existsSync(resolvedPath)) {
+    if (!allowOverwrite) {
+      throw new Error("Generated text output already exists. Use a unique outputFileName or allowOverwrite:true.");
+    }
+    fs.unlinkSync(resolvedPath);
+  }
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  fs.writeFileSync(resolvedPath, content, "utf8");
+  const readBack = fs.readFileSync(resolvedPath, "utf8");
+  const sha256 = crypto.createHash("sha256").update(readBack).digest("hex");
+  let existsAfter = true;
+  if (deleteAfterReadBack) {
+    fs.unlinkSync(resolvedPath);
+    existsAfter = fs.existsSync(resolvedPath);
+  }
+
+  return {
+    outputFileName,
+    outputPath: resolvedPath,
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    layerCount: entries.length,
+    textLayerCount: entries.filter((entry) => entry.textLayer).length,
+    nonTextLayerCount: entries.filter((entry) => !entry.textLayer).length,
+    lines: entries.map((entry) => ({
+      ordinal: entry.ordinal,
+      layerIndex: entry.layerIndex,
+      layerName: entry.layerName,
+      textLayer: entry.textLayer,
+      textLength: entry.outputText.length
+    })),
+    contentPreview: readBack.slice(0, 1000),
+    exportedText: readBack,
+    file: {
+      outputFileName,
+      outputPath: resolvedPath,
+      byteLength: Buffer.byteLength(readBack, "utf8"),
+      sha256,
+      existsAfter,
+      deletedAfterReadBack: deleteAfterReadBack,
+      mimeType: "text/plain"
     }
   };
 }
@@ -4420,6 +4553,7 @@ const PLANNING_TOOL_NAMES = [
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
@@ -6388,7 +6522,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
     "For explicit effect enabled-state changes, use set_effect_enabled only after list_effects or get_effect_details identifies one effect instance by effectIndex, effectName, or effectMatchName and current enabled state. Prefer explicit enabled:true/false over ambiguous toggle wording, and read back with get_effect_details/get_layer_details. Do not scan all project comps, mutate unreviewed user effects, edit effect properties, or use raw ExtendScript.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, comp-frame export, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, save_comp_frame_png, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Use save_comp_frame_png only for explicit generated compositions, reviewed frame time, and simple .png output names under the generated export root; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For camera, text, shape, mask, comp-frame export, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, export_text_to_file, save_comp_frame_png, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Use export_text_to_file only after get_selected_layers plus get_layer_details Source Text evidence for each selected text layer and only for generated .txt files; never write Desktop or arbitrary user paths. Use save_comp_frame_png only for explicit generated compositions, reviewed frame time, and simple .png output names under the generated export root; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
     "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
     "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
@@ -8338,6 +8472,41 @@ const tools = [
         variableName: {
           type: "string",
           description: "JavaScript variable name for the text payload. Defaults to points."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, write and read/hash the generated file, then delete it for generated proof cleanup. Defaults to false."
+        }
+      }
+    }
+  },
+  {
+    name: "export_text_to_file",
+    description: "Write reviewed selected-layer Source Text evidence to a generated local text export under logs/generated-exports. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layers: {
+          type: "array",
+          description: "Ordered selected-layer evidence from current get_selected_layers plus get_layer_details. Text layers must include Source Text evidence; non-text layers are exported as [Not a text layer].",
+          items: { type: "object" }
+        },
+        layerEvidence: {
+          type: "array",
+          description: "Alias for layers when passing get_layer_details result objects.",
+          items: { type: "object" }
+        },
+        expectedLayerCount: {
+          type: "number",
+          description: "Optional guard for selected layer count."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Optional generated .txt filename. Must be a simple filename, not a path. Defaults to export.txt."
+        },
+        allowOverwrite: {
+          type: "boolean",
+          description: "When true, allows replacing an existing generated .txt with the same simple filename. Defaults to false."
         },
         deleteAfterReadBack: {
           type: "boolean",
@@ -12812,6 +12981,14 @@ async function callTool(name, args) {
   if (name === "export_path_points") {
     try {
       return toolResult(exportPathPointsFile(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "export_text_to_file") {
+    try {
+      return toolResult(exportTextToFile(args || {}));
     } catch (error) {
       return toolResult(error.message || String(error), true);
     }

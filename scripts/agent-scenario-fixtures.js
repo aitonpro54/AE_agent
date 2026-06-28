@@ -58,6 +58,7 @@ const AGENT_SCENARIO_MUTATING_TOOLS = new Set([
   "set_layer_mask",
   "set_path_geometry",
   "export_path_points",
+  "export_text_to_file",
   "save_comp_frame_png",
   "add_comp_marker",
   "add_layer_marker",
@@ -3310,6 +3311,71 @@ function agentExportPathPointsScenarioPlans(runPrefix) {
   }));
 }
 
+function agentExportTextToFileScenarioPlans(runPrefix) {
+  const base = `${runPrefix} Export Text`;
+  const compName = `${base} Comp`;
+  const textName = `${base} Text`;
+  const solidName = `${base} Solid`;
+  const sourceText = "Generated export text\nSecond line";
+  const outputFileName = `${safeOutputName(base)}-text.txt`;
+  const expectedContent = `1:\n${sourceText}\n\n2:\n[Not a text layer]\n\n`;
+  const textLayerEvidence = {
+    layer: { index: 1, name: textName, textLayer: true, layerKind: "text" },
+    text: { kind: "TextDocument", text: sourceText }
+  };
+  const nonTextLayerEvidence = {
+    layer: { index: 2, name: solidName, textLayer: false, layerKind: null }
+  };
+
+  return [
+    {
+      id: "generated-export-text-to-file",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "set_layer_selection",
+        "get_selected_layers",
+        "get_layer_details",
+        "get_layer_details",
+        "export_text_to_file",
+        "get_selected_layers"
+      ],
+      expectedReadBack: {
+        generatedTextFileExport: true,
+        compName,
+        textName,
+        solidName,
+        outputFileName,
+        expectedContent,
+        sourceText
+      },
+      plan: {
+        summary: "Generated-only live QA for Export Text To File semantics using selected text-layer evidence and safe generated file output.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated export text comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.07], allowDuplicateName: false, openInViewer: true, comment: "Generated-only export text validation" } },
+          { title: "Create generated non-text export layer", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.18, 0.28, 0.36], width: 520, height: 260, duration: 3 } },
+          { title: "Create generated export text layer", tool: "create_text_layer", args: { compName, name: textName, text: sourceText, position: [320, 180], fontSize: 42, fillColor: [0.94, 0.9, 0.74], duration: 3 } },
+          { title: "Select generated export layers", tool: "set_layer_selection", args: { compName, layerIndices: [1, 2], mode: "replace", expectedLayerNames: [textName, solidName], verifyAfter: true } },
+          { title: "Read selected export layers", tool: "get_selected_layers", args: {} },
+          { title: "Read selected text layer Source Text", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
+          { title: "Read selected non-text layer", tool: "get_layer_details", args: { compName, layerIndex: 2, includeProperties: false } },
+          { title: "Export selected text evidence to safe file", tool: "export_text_to_file", args: { layers: [textLayerEvidence, nonTextLayerEvidence], expectedLayerCount: 2, outputFileName } },
+          { title: "Read selected layers after text export", tool: "get_selected_layers", args: {} }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentEssentialGraphicsScenarioPlans(runPrefix) {
   const base = `${runPrefix} Essential Graphics`;
   const compName = `${base} Comp`;
@@ -4997,6 +5063,7 @@ module.exports = {
   agentExpressionScenarioPlans,
   agentEstimatePathLengthScenarioPlans,
   agentExportPathPointsScenarioPlans,
+  agentExportTextToFileScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
