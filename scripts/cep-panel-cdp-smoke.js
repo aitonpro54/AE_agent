@@ -6711,6 +6711,10 @@ function sourceTextValue(value) {
   return value === undefined || value === null ? "" : String(value);
 }
 
+function normalizeSourceTextReadBack(value) {
+  return sourceTextValue(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
 async function verifyGeneratedSourceTextKeyframesReadBack(scenario, expected) {
   const { comp, layer, property } = await readGeneratedLayerProperty(scenario, expected, { propertyDepth: 2, propertyLimit: 100 });
   const expectedKeyframes = Array.isArray(expected.keyframes) ? expected.keyframes : [];
@@ -7547,8 +7551,10 @@ async function verifyGeneratedTextFileExportReadBack(scenario, expected) {
     layerIndex: textLayer.index,
     includeProperties: false
   });
-  if (!textDetails || !textDetails.text || textDetails.text.text !== expected.sourceText) {
-    throw new Error(`${scenario.id}: generated text export Source Text read-back mismatch.`);
+  const observedSourceText = normalizeSourceTextReadBack(textDetails && textDetails.text);
+  const expectedSourceText = normalizeSourceTextReadBack(expected.sourceText);
+  if (!textDetails || !textDetails.text || observedSourceText !== expectedSourceText) {
+    throw new Error(`${scenario.id}: generated text export Source Text read-back mismatch; expected ${JSON.stringify(expectedSourceText)}, got ${JSON.stringify(observedSourceText)}.`);
   }
 
   try {
