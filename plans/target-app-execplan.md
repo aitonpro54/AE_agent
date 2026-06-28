@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-project-add-selection-to-new-folder: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-add-selection-to-new-folder); live gate ready, importer batch full-intake-kyletmartinez-fa71826547-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-layers-add-fill-with-color-cycle: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle); live gate ready, importer batch full-intake-kyletmartinez-bba6b16982-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-layers-toggle-specific-effects: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects); live gate ready, importer batch full-intake-kyletmartinez-2c4f9a6f54-import, commit recorded after candidate commit.
@@ -4273,6 +4275,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Project/Add_Selection_To_New_Folder.jsx` as `tool-project-add-selection-to-new-folder`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-add-selection-to-new-folder).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Fill_With_Color_Cycle.jsx` as `tool-layers-add-fill-with-color-cycle`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Toggle_Specific_Effects.jsx` as `tool-layers-toggle-specific-effects`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-toggle-specific-effects).
@@ -5872,6 +5876,8 @@ check.
 
 ## Validation
 
+| Full intake tool-project-add-selection-to-new-folder | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-fa71826547-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-layers-add-fill-with-color-cycle | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-bba6b16982-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-layers-toggle-specific-effects | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2c4f9a6f54-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6588,6 +6594,30 @@ check.
   effect addition/removal/reordering, property edits, non-generated user
   assets, raw JSX, dependency/package changes, source merge, branch, commit,
   push, PR, and GitHub automation remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. No recipe, registry, or shared smoke rewrite was
+  needed beyond this child-run closeout note. `.codex/handoff.md` creation was
+  attempted after creating `.codex/`, but the patch tool rejected the hidden
+  path as outside the project in this detached worktree and PowerShell
+  `Set-Content` then failed with filesystem ACL `Access denied`, so this plan
+  entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-7108d1d346`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-project-add-selection-to-new-folder` in
+  `recipes/add-selection-to-new-folder-typed-plan.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only and requires current typed Project item evidence, concrete
+  `itemIndices`, one reviewed generated folder name, `create_project_folder`
+  with `allowExisting:false`, `move_project_items_to_folder` for only those
+  explicit items, and `list_project_folder_items` plus `get_project_snapshot`
+  read-back. Source-exact Project panel selection reads, empty-selection UI
+  alerts, folder deletion, item rename, source relinking, import/export,
+  render queue work, filesystem access, broad project mutation, non-generated
+  user assets, raw JSX, dependency/package changes, source merge, branch,
+  commit, push, PR, and GitHub automation remain fail-closed. Validation was
   intentionally not run because the child-run intent forbids validation, live
   AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
   push, and PR actions. No recipe, registry, or shared smoke rewrite was
