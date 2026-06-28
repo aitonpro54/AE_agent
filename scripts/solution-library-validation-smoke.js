@@ -2777,6 +2777,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(text.includes("Desktop"), `${id}: policy should reject Desktop/arbitrary user paths.`);
       assert(text.includes("sha256"), `${id}: policy should require generated file hash read-back for future contracts.`);
       assert(text.includes("generated/temp assets"), `${id}: policy should require generated/temp proof first.`);
+      assert(text.includes("logs/generated-renders"), `${id}: policy should constrain render output setup to the generated render root.`);
       assert(solution.verificationRecipe.steps.some((step) => /risk classification/.test(step)), `${id}: verification must require risk classification.`);
       assert(solution.verificationRecipe.steps.some((step) => /typed-tool gap/.test(step)), `${id}: verification must require typed-tool gap reporting.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /does not mutate/.test(item)), `${id}: verification must prove read-only inspection does not mutate.`);
@@ -5061,6 +5062,7 @@ function assertFirstFourFileRenderProxyContracts(registry) {
       assert(contractText.includes("generated/temp assets"), `${id}: policy must require generated/temp assets first.`);
       assert(contractText.includes("byte length") && contractText.includes("sha256"), `${id}: policy must require byte/hash evidence for file output contracts.`);
       assert(contractText.includes("reject Desktop"), `${id}: policy must reject Desktop and arbitrary path writes.`);
+      assert(contractText.includes("logs/generated-renders"), `${id}: policy must constrain render output setup to the generated render root.`);
       assert(contractText.includes("separate render queue setup from render start"), `${id}: policy must separate queue setup from render execution.`);
       assert(contractText.includes("reversible proxy state"), `${id}: policy must require reversible proxy read-back.`);
       assert(contractText.includes("enumerate every deletion target"), `${id}: policy must require cleanup target enumeration.`);

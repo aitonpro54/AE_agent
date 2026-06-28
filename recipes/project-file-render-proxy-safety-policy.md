@@ -16,7 +16,10 @@ cleanup mutation by itself.
 Existing narrow exceptions stay separate:
 
 - `add-folder-to-render-queue-typed-plan` may add explicit generated
-  compositions to the render queue without starting a render.
+  compositions to the render queue without starting a render. Any optional
+  render output path must be a generated output filename under
+  `logs/generated-renders/` or `AE_AGENT_GENERATED_RENDER_OUTPUT_DIR`; it must
+  not be an arbitrary project, Desktop, or user folder path.
 - `export-path-points-typed-plan` may write reviewed path vertices only to the
   bridge generated export root with hash read-back.
 - `set-project-item-labels-to-none-typed-plan` may update explicit generated
@@ -54,9 +57,11 @@ Existing narrow exceptions stay separate:
   paths, user-selected files, and overwrite of unrelated files.
 - File-input contracts must bind a user-approved file or generated fixture,
   validate extension/content limits, and reject broad folder traversal.
-- Render contracts must separate render queue setup from render start. Render
-  start, output module writes, output folder writes, and rendered artifact
-  cleanup need explicit approval and read-back.
+- Render contracts must separate render queue setup from render start. Optional
+  render queue output setup must stay under `logs/generated-renders/` or
+  `AE_AGENT_GENERATED_RENDER_OUTPUT_DIR`. Render start, output module writes
+  outside the generated render root, output folder writes, and rendered
+  artifact cleanup need explicit approval and read-back.
 - Proxy contracts must prove every target item from current project evidence,
   distinguish generated from user assets, and include reversible proxy state
   read-back before and after mutation.

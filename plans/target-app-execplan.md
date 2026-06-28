@@ -26,6 +26,27 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Terminal safety contracts architecture foundation (2026-06-28):
+  compact preflight for `full-intake-kyletmartinez` found a clean tracked
+  worktree, compact status/proof completed, and ledger terminal state
+  `entries=75`, `completed=47`, `blocked_or_skipped=28`, `queued=0`,
+  `failed=0`. No real queue processing, candidate selection, ledger write,
+  live AE/CEP mutation, Local/Ollama, fallback provider, dependency change,
+  push, PR, or launcher edit was run. Proposal-only subagents produced a
+  blocker taxonomy for the 13 target terminal ids: file IO classes
+  `FOUT-PNG-SINGLE`, `FIN-SRT-CONTENT`, `FIN-TEXT-CONTENT`, `FOUT-TEXT`,
+  `FOUT-PNG-SEQUENCE`, `HOST-REVEAL`, `PROXY-SET-FOLDER`,
+  `FOUT-TXT-GEOMETRY`; cleanup/delete classes `RQ-DELETE`,
+  `PROJECT-FOLDER-DELETE`, `FS-SANDBOX-CLEANUP`, `PROXY-CLEAR`, and
+  `IMPORT-FOOTAGE-RENAME`. Added shared
+  `mcp-server/generated-safety-contracts.js` policy helpers, plan validation
+  and risk-classification hooks for generated file IO/render output/cleanup,
+  semantic file evidence checks, a generated render output root
+  `logs/generated-renders`, and non-live smoke coverage. This foundation does
+  not complete any blocked candidate; future candidate milestones still need
+  one-at-a-time generated fixtures, dry-run/read-back proof, and live acceptance
+  when approved.
+
 - [x] Full intake tool-project-add-selection-to-new-folder: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-add-selection-to-new-folder); live gate ready, importer batch full-intake-kyletmartinez-fa71826547-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-layers-add-fill-with-color-cycle: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle); live gate ready, importer batch full-intake-kyletmartinez-bba6b16982-import, commit recorded after candidate commit.
@@ -4275,6 +4296,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-28: Generated-only file/render/cleanup safety contracts are now a
+  shared bridge/planning validation surface, not only recipe prose. File output
+  remains limited to simple filenames under `logs/generated-exports` or
+  `AE_AGENT_GENERATED_EXPORT_DIR` with byte/hash/read-back evidence. Render
+  queue output setup is narrowed to simple generated filenames under
+  `logs/generated-renders` or `AE_AGENT_GENERATED_RENDER_OUTPUT_DIR` and still
+  does not approve render start. Cleanup/delete remains blocked except for
+  existing generated-prefix `cleanup_test_items`; future render queue, Project
+  folder, filesystem, proxy, and imported-footage cleanup candidates need
+  separate generated fixtures, dry-run target enumeration, destructive gate,
+  checkpoint/edit-session policy, and post-cleanup read-back before any
+  candidate can be completed.
+
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Add_Selection_To_New_Folder.jsx` as `tool-project-add-selection-to-new-folder`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-add-selection-to-new-folder).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Layers/Add_Fill_With_Color_Cycle.jsx` as `tool-layers-add-fill-with-color-cycle`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-layers-add-fill-with-color-cycle).
@@ -5875,6 +5909,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Terminal safety contracts architecture foundation | Required to create reusable generated-only file IO and cleanup/delete guardrails without processing the real queue or completing blocked candidates. | Passed: touched-file `node --check`; `node scripts/generated-safety-contracts-smoke.js`; `node scripts/plan-classification-smoke.js`; `node scripts/semantic-verification-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `node scripts/solution-registry-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; `npm.cmd run smoke:solutions`; and `git diff --check` with LF/CRLF warnings only. |
 
 | Full intake tool-project-add-selection-to-new-folder | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-fa71826547-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 

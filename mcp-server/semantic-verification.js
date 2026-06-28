@@ -1,5 +1,7 @@
 "use strict";
 
+const { generatedFileEvidenceIssues } = require("./generated-safety-contracts");
+
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
@@ -2296,14 +2298,16 @@ function checkExportPathPoints(checks, step, payload) {
   const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
   const contentPreview = String(payload.contentPreview || "");
   const variableName = args.variableName || "points";
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
 
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:file`,
     title: "Generated path-points export file was written and read back",
     expected: expectedFileName,
-    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}`,
-    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk,
-    evidence: file.outputPath || "No generated export file evidence."
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated export file evidence.") : fileContractIssues.join(" ")
   });
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:points`,
@@ -2336,14 +2340,16 @@ function checkSaveCompFramePng(checks, step, payload) {
   const requestedTime = hasOwn(args, "time") ? Number(args.time) : null;
   const observedTime = Number(frame.time);
   const timeMatches = requestedTime === null || (Number.isFinite(observedTime) && nearlyEqual(observedTime, requestedTime, 0.0001));
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
 
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:file`,
     title: "Generated composition frame PNG was written and read back",
     expected: expectedFileName,
-    observed: `${file.outputFileName || "missing"}; bytes=${byteLength}; sha256=${hashOk}`,
-    passed: file.outputFileName === expectedFileName && byteLength > 0 && hashOk && String(file.mimeType || "") === "image/png",
-    evidence: file.outputPath || "No generated PNG file evidence."
+    observed: `${file.outputFileName || "missing"}; bytes=${byteLength}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && byteLength > 0 && hashOk && String(file.mimeType || "") === "image/png" && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated PNG file evidence.") : fileContractIssues.join(" ")
   });
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:resolution-factor`,

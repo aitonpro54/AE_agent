@@ -103,8 +103,8 @@ function agentScenarioPlans(runPrefix, renderQueueBaselineTotal) {
   const sourceBase = `${runPrefix} Source`;
   const renderBase = `${runPrefix} Render`;
   const renderIndex = Number(renderQueueBaselineTotal || 0) + 1;
-  const renderOutput = `logs/${safeOutputName(renderBase)}.mov`;
-  const renderOutputUpdated = `logs/${safeOutputName(renderBase)}-updated.mov`;
+  const renderOutput = `logs/generated-renders/${safeOutputName(renderBase)}.mov`;
+  const renderOutputUpdated = `logs/generated-renders/${safeOutputName(renderBase)}-updated.mov`;
 
   return [
     {

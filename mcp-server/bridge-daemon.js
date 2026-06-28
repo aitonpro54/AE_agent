@@ -11,6 +11,7 @@ const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
+const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -44,6 +45,9 @@ const DEV_REQUESTS_DIR = process.env.AE_AGENT_DEV_REQUEST_DIR
 const GENERATED_EXPORT_DIR = process.env.AE_AGENT_GENERATED_EXPORT_DIR
   ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
   : path.join(LOG_DIR, "generated-exports");
+const GENERATED_RENDER_OUTPUT_DIR = process.env.AE_AGENT_GENERATED_RENDER_OUTPUT_DIR
+  ? path.resolve(process.env.AE_AGENT_GENERATED_RENDER_OUTPUT_DIR)
+  : path.join(LOG_DIR, "generated-renders");
 const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
   ? path.resolve(process.env.AE_AGENT_HARDCORE_SESSION_DIR)
   : path.join(LOG_DIR, "hardcore-sessions");
@@ -809,6 +813,8 @@ function getBridgeStatus() {
     aiChatLogFile: AI_CHAT_LOG_FILE,
     idempotencyLogFile: IDEMPOTENCY_LOG_FILE,
     generatedExportDir: GENERATED_EXPORT_DIR,
+    generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR,
+    generatedSafetyContractVersion: generatedSafety.GENERATED_SAFETY_CONTRACT_VERSION,
     hardcoreSessionDir: HARDCORE_SESSIONS_DIR,
     agentSecretsFile: AGENT_SECRETS_FILE,
     backupDir: BACKUP_DIR,
@@ -2544,43 +2550,31 @@ function resolveExistingFile(filePath) {
 }
 
 function resolveOutputFilePath(filePath) {
-  const requestedPath = optionalString({ filePath }, "filePath", "");
-  if (!requestedPath) {
-    throw new Error("outputPath is required.");
-  }
-  return path.resolve(PROJECT_ROOT, requestedPath);
+  return generatedSafety.resolveGeneratedRenderOutputPath({
+    projectRoot: PROJECT_ROOT,
+    generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR,
+    requestedPath: optionalString({ filePath }, "filePath", "")
+  }).resolvedPath;
 }
 
 function resolveGeneratedExportFile(outputFileName) {
-  const requestedName = optionalString({ outputFileName }, "outputFileName", "points.txt") || "points.txt";
-  if (path.isAbsolute(requestedName) || requestedName.includes("/") || requestedName.includes("\\")) {
-    throw new Error("outputFileName must be a simple generated .txt filename, not a path.");
-  }
-  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}\.txt$/i.test(requestedName)) {
-    throw new Error("outputFileName must be 1-96 safe characters ending in .txt.");
-  }
-
-  const resolvedPath = path.resolve(GENERATED_EXPORT_DIR, requestedName);
-  if (!isPathInside(GENERATED_EXPORT_DIR, resolvedPath)) {
-    throw new Error("outputFileName must resolve inside the generated export folder.");
-  }
-  return { outputFileName: requestedName, resolvedPath };
+  return generatedSafety.resolveGeneratedFile({
+    root: GENERATED_EXPORT_DIR,
+    requestedName: optionalString({ outputFileName }, "outputFileName", "points.txt"),
+    defaultFilename: "points.txt",
+    allowedExtensions: [".txt"],
+    label: "outputFileName"
+  });
 }
 
 function resolveGeneratedPngExportFile(outputFileName) {
-  const requestedName = optionalString({ outputFileName }, "outputFileName", "frame.png") || "frame.png";
-  if (path.isAbsolute(requestedName) || requestedName.includes("/") || requestedName.includes("\\")) {
-    throw new Error("outputFileName must be a simple generated .png filename, not a path.");
-  }
-  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}\.png$/i.test(requestedName)) {
-    throw new Error("outputFileName must be 1-96 safe characters ending in .png.");
-  }
-
-  const resolvedPath = path.resolve(GENERATED_EXPORT_DIR, requestedName);
-  if (!isPathInside(GENERATED_EXPORT_DIR, resolvedPath)) {
-    throw new Error("outputFileName must resolve inside the generated export folder.");
-  }
-  return { outputFileName: requestedName, resolvedPath };
+  return generatedSafety.resolveGeneratedFile({
+    root: GENERATED_EXPORT_DIR,
+    requestedName: optionalString({ outputFileName }, "outputFileName", "frame.png"),
+    defaultFilename: "frame.png",
+    allowedExtensions: [".png"],
+    label: "outputFileName"
+  });
 }
 
 function optionalResolutionFactor(args, name) {
@@ -3384,6 +3378,9 @@ function validateAgentPlanObject(plan, requestId, context) {
   let mutatingCount = 0;
   let unknownToolCount = 0;
   let executableCount = 0;
+  let generatedFileIoCount = 0;
+  let generatedRenderOutputCount = 0;
+  let generatedCleanupDeleteCount = 0;
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index] && typeof steps[index] === "object" ? steps[index] : {};
@@ -3399,6 +3396,16 @@ function validateAgentPlanObject(plan, requestId, context) {
     const boundRequired = [];
     const autofixes = [];
     const stepWarnings = [];
+    const safetyContracts = generatedSafety.contractsForPlanStep(toolName, safeArgs);
+    const generatedSafetyIssues = toolName ? generatedSafety.validateGeneratedSafetyStep(toolName, safeArgs, {
+      projectRoot: PROJECT_ROOT,
+      generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
+    }) : [];
+    for (const contract of safetyContracts) {
+      if (contract.kind === "generated-file-output") generatedFileIoCount += 1;
+      if (contract.kind === "generated-render-output") generatedRenderOutputCount += 1;
+      if (contract.kind === "generated-cleanup-delete") generatedCleanupDeleteCount += 1;
+    }
 
     if (!toolName) {
       validatedSteps.push({
@@ -3409,6 +3416,7 @@ function validateAgentPlanObject(plan, requestId, context) {
         valid: true,
         executable: false,
         mutatesProject: false,
+        safetyContracts,
         args: safeArgs,
         safeArgs,
         warnings: stepWarnings,
@@ -3438,6 +3446,9 @@ function validateAgentPlanObject(plan, requestId, context) {
       }
       if (boundRequired.length) {
         stepWarnings.push(`Runtime bindings must resolve before execution: ${boundRequired.join(", ")}.`);
+      }
+      if (generatedSafetyIssues.length) {
+        stepWarnings.push(`Generated-only safety contract failed: ${generatedSafetyIssues.join(" ")}`);
       }
     }
 
@@ -3472,10 +3483,11 @@ function validateAgentPlanObject(plan, requestId, context) {
       title: step.title || step.intent || toolName,
       intent: step.intent || "",
       tool: toolName,
-      valid: Boolean(tool) && planningTool && missingRequired.length === 0,
-      executable: Boolean(tool) && planningTool && missingRequired.length === 0 && boundRequired.length === 0,
+      valid: Boolean(tool) && planningTool && missingRequired.length === 0 && generatedSafetyIssues.length === 0,
+      executable: Boolean(tool) && planningTool && missingRequired.length === 0 && boundRequired.length === 0 && generatedSafetyIssues.length === 0,
       requiresRuntimeBinding: boundRequired.length > 0,
       mutatesProject: mutating,
+      safetyContracts,
       targetSummary: planStepTargetSummary(toolName, safeArgs),
       args: planStepArgs(step),
       safeArgs,
@@ -3499,6 +3511,15 @@ function validateAgentPlanObject(plan, requestId, context) {
   if (executableCount <= 0) {
     warnings.push("Plan has no executable MCP tool steps.");
   }
+  if (generatedFileIoCount > 0) {
+    warnings.push(`${generatedFileIoCount} generated-only file IO step(s) require reviewed filename, generated root, byte/hash evidence, and post-output read-back.`);
+  }
+  if (generatedRenderOutputCount > 0) {
+    warnings.push(`${generatedRenderOutputCount} generated render-output setup step(s) require paths under logs/generated-renders and render queue read-back; render start remains unsupported here.`);
+  }
+  if (generatedCleanupDeleteCount > 0) {
+    warnings.push(`${generatedCleanupDeleteCount} generated cleanup/delete step(s) require generated prefix, explicit limit, destructive gate, and post-cleanup read-back.`);
+  }
 
   const invalidSteps = validatedSteps.filter((step) => !step.valid && step.tool);
   const validation = {
@@ -3507,6 +3528,9 @@ function validateAgentPlanObject(plan, requestId, context) {
     stepCount: steps.length,
     executableCount,
     mutatingCount,
+    generatedFileIoCount,
+    generatedRenderOutputCount,
+    generatedCleanupDeleteCount,
     unknownToolCount,
     invalidStepCount: invalidSteps.length,
     requiresCheckpoint: sourcePlan.requiresCheckpoint === true || mutatingCount > 1,
@@ -3524,6 +3548,9 @@ function compactAgentPlanValidationSummary(validation) {
     stepCount: Number(validation.stepCount || 0),
     executableCount: Number(validation.executableCount || 0),
     mutatingCount: Number(validation.mutatingCount || 0),
+    generatedFileIoCount: Number(validation.generatedFileIoCount || 0),
+    generatedRenderOutputCount: Number(validation.generatedRenderOutputCount || 0),
+    generatedCleanupDeleteCount: Number(validation.generatedCleanupDeleteCount || 0),
     unknownToolCount: Number(validation.unknownToolCount || 0),
     invalidStepCount: Number(validation.invalidStepCount || 0),
     classification: validation.classification && validation.classification.category || null
@@ -10103,7 +10130,7 @@ const tools = [
   },
   {
     name: "add_comp_to_render_queue",
-    description: "Add the active or specified composition to the After Effects render queue.",
+    description: "Add the active or specified composition to the After Effects render queue without starting a render. outputPath must stay under logs/generated-renders or AE_AGENT_GENERATED_RENDER_OUTPUT_DIR.",
     inputSchema: {
       type: "object",
       properties: {
@@ -10111,20 +10138,20 @@ const tools = [
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
         outputModuleTemplate: { type: "string", description: "Optional output module template name." },
-        outputPath: { type: "string", description: "Optional output file path." }
+        outputPath: { type: "string", description: "Optional generated render output filename or logs/generated-renders path. Absolute paths, Desktop/user paths, and nested folders are rejected." }
       }
     }
   },
   {
     name: "set_render_queue_output",
-    description: "Set output path and templates for an existing render queue item.",
+    description: "Set output path and templates for an existing render queue item without starting a render. outputPath must stay under logs/generated-renders or AE_AGENT_GENERATED_RENDER_OUTPUT_DIR.",
     inputSchema: {
       type: "object",
       properties: {
         renderQueueItemIndex: { type: "number", description: "1-based render queue item index." },
         renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
         outputModuleTemplate: { type: "string", description: "Optional output module template name." },
-        outputPath: { type: "string", description: "Optional output file path." }
+        outputPath: { type: "string", description: "Optional generated render output filename or logs/generated-renders path. Absolute paths, Desktop/user paths, and nested folders are rejected." }
       },
       required: ["renderQueueItemIndex"]
     }
