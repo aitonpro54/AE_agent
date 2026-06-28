@@ -2577,6 +2577,24 @@ function resolveGeneratedPngExportFile(outputFileName) {
   });
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForNonEmptyFile(filePath, options = {}) {
+  const timeoutMs = Math.max(100, Math.min(10000, Number(options.timeoutMs || 3000)));
+  const intervalMs = Math.max(25, Math.min(1000, Number(options.intervalMs || 75)));
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath);
+      if (stat.isFile() && stat.size > 0) return stat;
+    }
+    await delay(intervalMs);
+  }
+  return null;
+}
+
 function optionalResolutionFactor(args, name) {
   const values = optionalNumberArray(args || {}, name, null, 2, 2);
   if (!values) return null;
@@ -12851,9 +12869,6 @@ async function callTool(name, args) {
           comp.resolutionFactor = originalResolutionFactor;
           restoredResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
         }
-        if (!saved) {
-          throw new Error("saveFrameToPng did not create the generated PNG file.");
-        }
 
         return {
           comp: {
@@ -12886,7 +12901,8 @@ async function callTool(name, args) {
       if (result && result.ok === false) {
         return toolResult(result.error || "save_comp_frame_png failed.", true);
       }
-      if (!fs.existsSync(output.resolvedPath)) {
+      const outputStat = await waitForNonEmptyFile(output.resolvedPath, { timeoutMs: 3000, intervalMs: 75 });
+      if (!outputStat) {
         return toolResult("Generated PNG output was not found after saveFrameToPng.", true);
       }
 
