@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-project-export-text-to-file: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file); live gate ready, importer batch full-intake-kyletmartinez-2e851a71d7-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-compositions-save-frame-as-png: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png); live gate ready, importer batch full-intake-kyletmartinez-5d81f66c1d-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-properties-export-path-points: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-properties-export-path-points); live gate ready, importer batch full-intake-kyletmartinez-f30f026e2c-import, commit recorded after candidate commit.
@@ -4300,6 +4302,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `Project/Export_Text_To_File.jsx` as `tool-project-export-text-to-file`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file).
+
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Save_Frame_As_PNG.jsx` as `tool-compositions-save-frame-as-png`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Properties/Export_Path_Points.jsx` as `tool-properties-export-path-points`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-properties-export-path-points).
@@ -5918,6 +5922,8 @@ check.
 
 ## Validation
 
+| Full intake tool-project-export-text-to-file | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2e851a71d7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-compositions-save-frame-as-png | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-5d81f66c1d-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-properties-export-path-points | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-f30f026e2c-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -6722,6 +6728,32 @@ check.
   note. `.codex/handoff.md` creation was attempted through `apply_patch` but
   blocked as writing outside the project for this detached hidden path, so this
   plan entry records the child-run durable status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-f6ba153a55`:
+  preflight found a clean tracked worktree and confirmed existing planned
+  coverage for `tool-project-export-text-to-file` in
+  `recipes/export-text-to-file-typed-plan.md`, `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`. The safe adaptation remains
+  generated-only/file-output scoped and requires current selected-layer
+  evidence, `get_layer_details` Source Text read-back for every selected text
+  layer, explicit non-text fallback entries, `export_text_to_file` with
+  reviewed evidence and a simple generated `.txt` `outputFileName` under
+  `logs/generated-exports` or `AE_AGENT_GENERATED_EXPORT_DIR`, byte/hash/content
+  read-back, optional generated artifact cleanup, and post-export
+  `get_selected_layers` or `get_layer_details` proof that AE project state did
+  not mutate. Source-exact `~/Desktop/export.txt` writes, arbitrary user paths
+  or output paths, native file dialogs, source checkout execution, selected
+  layer mutation, Source Text mutation, Project item or render queue changes,
+  non-generated user assets, raw JSX, dependency/package changes, source merge,
+  branch, commit, push, PR, and GitHub automation remain fail-closed.
+  Validation was intentionally not run because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
+  branches, commits, push, and PR actions. No recipe, registry, or shared smoke
+  rewrite was needed beyond this child-run closeout note. `.codex/handoff.md`
+  creation was attempted after creating `.codex`, but `apply_patch` rejected
+  the hidden path as outside the project and PowerShell `Set-Content` failed
+  with filesystem ACL `Access denied`, so this plan entry records the child-run
+  durable status.
 
 ## Handoff
 Use `.codex/handoff.md` for compact continuation state after each milestone.
