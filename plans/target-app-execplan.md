@@ -64,6 +64,23 @@ old `AE_agent` repository remains the historical source.
   `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and
   `git diff --check` with LF/CRLF warnings only.
 
+- [ ] Two-repo intake handoff after ledger creation (2026-06-29):
+  auto-intake ledgers were created for both approved target repos. Dakkshin
+  ledger path:
+  `.codex-runtime/sdk/generic-repo-importer/dakkshin-after-effects-mcp-8ab3434b-intake/queue-ledger.json`;
+  TheLlamainator ledger path:
+  `.codex-runtime/sdk/generic-repo-importer/thellamainator-after-effects-mcp-2ddcdc38-intake/queue-ledger.json`.
+  Each ledger has `entries=11`: 3 queued `existing_typed_tools_recipe_only`
+  candidates (`tool-src-scripts-getlayerinfo`,
+  `tool-src-scripts-getprojectinfo`, `tool-src-scripts-listcompositions`),
+  7 `blocked_live_lane_required`, and 1 `blocked_policy`
+  (`tool-src-scripts-mcp-bridge-auto`). The three queued JSX scripts are
+  normalized-identical across the two source checkouts, so accept them once and
+  record TheLlamainator as already-covered duplicate evidence unless future
+  source inventory proves a distinct contract. Dakkshin `getlayerinfo` has one
+  stale `failed_import` caused by the now-fixed operational identity guard and
+  should be retried first in the next thread.
+
 - [x] Full intake tool-project-export-text-to-file: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file); live gate ready, importer batch full-intake-kyletmartinez-2e851a71d7-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-compositions-save-frame-as-png: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png); live gate ready, importer batch full-intake-kyletmartinez-5d81f66c1d-import, commit recorded after candidate commit.
