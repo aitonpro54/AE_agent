@@ -113,6 +113,41 @@ const CHILD_RUN_MONOLITH_PATHS = new Set([
 const SECRET_PATTERN =
   /\b(?:[A-Z0-9]+[_-])*?(?:api[_-]?key|access[_-]?token|secret|password)\b\s*[:=]\s*["']?(?:sk-|xox|ghp_|[A-Za-z0-9_\-]{12,})/i;
 const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
+const OPERATIONAL_IDENTITY_FIELDS = new Set([
+  "actualWorktreePath",
+  "allowedReadRoots",
+  "batchReport",
+  "checkout",
+  "childRunResultPath",
+  "command",
+  "cwd",
+  "deniedReadRoots",
+  "failureReason",
+  "importerRunId",
+  "latestTicket",
+  "ledgerPath",
+  "location",
+  "manifestPath",
+  "path",
+  "previousFailure",
+  "recoveryIntent",
+  "reportPath",
+  "repo",
+  "resultSummaryPath",
+  "root",
+  "runId",
+  "runRoot",
+  "sourceRepo",
+  "sourcePath",
+  "sourceRoot",
+  "stderrPath",
+  "stdoutPath",
+  "targetRepo",
+  "targetRoot",
+  "ticketPath",
+  "worktreePath",
+  "worktreeRoot",
+]);
 
 const HELP = `
 Generic repository tool importer skeleton
@@ -339,10 +374,39 @@ function assertNoLocalOllamaProvider(value, label) {
 }
 
 function assertNoNamedRepoAssumptions(value, label) {
-  const text = typeof value === "string" ? value : stableStringify(redactOperationalIdentityFields(value));
+  const redacted = typeof value === "string" ? value : redactOperationalIdentityFields(value);
+  const text = typeof redacted === "string" ? redacted : stableStringify(redacted);
   if (NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
-    throw new Error(`${label} must not contain named-repo assumptions`);
+    const paths = namedRepoAssumptionPaths(redacted);
+    const suffix = paths.length > 0 ? ` at ${paths.slice(0, 5).join(", ")}` : "";
+    throw new Error(`${label} must not contain named-repo assumptions${suffix}`);
   }
+}
+
+function namedRepoAssumptionPaths(value, prefix = "$", matches = []) {
+  if (matches.length >= 5) {
+    return matches;
+  }
+  if (typeof value === "string") {
+    if (NAMED_REPO_ASSUMPTION_PATTERN.test(value)) {
+      matches.push(prefix);
+    }
+    return matches;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => namedRepoAssumptionPaths(item, `${prefix}[${index}]`, matches));
+    return matches;
+  }
+  if (!value || typeof value !== "object") {
+    return matches;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    namedRepoAssumptionPaths(child, `${prefix}.${key}`, matches);
+    if (matches.length >= 5) {
+      break;
+    }
+  }
+  return matches;
 }
 
 function redactOperationalIdentityFields(value) {
@@ -355,14 +419,7 @@ function redactOperationalIdentityFields(value) {
 
   const redacted = {};
   for (const [key, child] of Object.entries(value)) {
-    if (
-      key === "runId" ||
-      key === "location" ||
-      key === "path" ||
-      key === "allowedReadRoots" ||
-      key === "deniedReadRoots" ||
-      key === "sourceRoot"
-    ) {
+    if (OPERATIONAL_IDENTITY_FIELDS.has(key)) {
       redacted[key] = "<operational-identity>";
       continue;
     }

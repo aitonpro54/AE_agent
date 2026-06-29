@@ -3036,6 +3036,71 @@ function assertManifestNamedRepoGuardFailureIsScopedImportRetry() {
   }
 }
 
+function assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry() {
+  const fixture = createFixture("cm-retry");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "Selection", "Layer_Info.jsx"),
+      "function layerInfo() { return true; }\n",
+      "utf8"
+    );
+    const failed = entry({
+      id: "tool-selection-layer-info",
+      sourcePath: "Selection/Layer_Info.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        failureReason: "controlled source merge inputs must not contain named-repo assumptions",
+        plannedPaths: ["scripts/imported-tools/cm-layer-info.js"],
+        sliceId: "fixture-cm-info-import"
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "controlled source merge inputs must not contain named-repo assumptions",
+      batchReport: null
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "cm-retry",
+        1,
+        fakeCodexEnv(binDir),
+        ["--resolution-candidate-ids", failed.id]
+      )
+    );
+    assert.strictEqual(output.status, "completed", JSON.stringify({
+      status: output.status,
+      items: output.items?.map((item) => ({
+        candidateId: item.candidateId,
+        status: item.status,
+        reason: item.reason,
+        importStatus: item.importStatus,
+      })),
+    }));
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [failed.id]);
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "cm-layer-info.js")));
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "completed");
+    assert.strictEqual(
+      ledger.entries[0].previousFailClosed.reason,
+      "controlled source merge inputs must not contain named-repo assumptions"
+    );
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("cm-layer-info.js"), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function writeChildTimeoutEvidence(fixture, entryToRecover) {
   const importerRunId = "queue-fixture-child-timeout-import";
   const batchRunId = "fixture-child-timeout-import";
@@ -3481,6 +3546,7 @@ function main() {
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
+  assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
   assertChildTimeoutRecoveryDiscoversMissingBatchReportPath();
   assertChildTimeoutSummaryContractFailsClosed();

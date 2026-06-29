@@ -1509,6 +1509,19 @@ function assertSuccessfulControlledSourceMergeFixture() {
   }
 }
 
+function assertControlledSourceMergeOperationalIdentityAllowedFixture() {
+  const fixture = createTempFixture("controlled-merge-dakkshin-operational");
+  try {
+    const runId = "aux022-controlled-merge-operational";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertControlledSourceMergeArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertControlledSourceMergeTrackedModifiedPathFixture() {
   const fixture = createTempFixture("controlled-merge-tracked-modified");
   try {
@@ -2298,6 +2311,7 @@ function main() {
   assertImplementationChildRunProcessFailureFixture();
   assertImplementationChildRunResumeFixture();
   assertSuccessfulControlledSourceMergeFixture();
+  assertControlledSourceMergeOperationalIdentityAllowedFixture();
   assertControlledSourceMergeTrackedModifiedPathFixture();
   assertControlledSourceMergeMissingEvidenceFixture();
   assertControlledSourceMergeDirtyTargetFixture();

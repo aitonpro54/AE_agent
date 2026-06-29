@@ -119,6 +119,7 @@ const CHILD_TIMEOUT_REASONS = Object.freeze([
   "implementation-child-run-timeout",
 ]);
 const IMPORT_RETRY_REASONS = Object.freeze([
+  "controlled source merge inputs must not contain named-repo assumptions",
   "manifest must not contain named-repo assumptions",
   "resume-manifest-hash-mismatch",
 ]);
