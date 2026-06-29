@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-src-scripts-getprojectinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-9de8f09a6f-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-src-scripts-getlayerinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-7d9433864e-import, commit recorded after candidate commit.
 - [x] AUX-021 importer child-run wrapper `queue-batch-1-778c56fab9`:
   preflight found a clean tracked worktree. The detached child run imported
@@ -47,6 +49,27 @@ old `AE_agent` repository remains the historical source.
   by the patch tool as writing outside the project in this detached worktree,
   so this plan entry records the child-run durable status if handoff remains
   unavailable.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-6182c72b19`:
+  preflight found a clean tracked worktree. The detached child run imported
+  `tool-src-scripts-getprojectinfo` as read-only advisory typed-plan coverage in
+  `recipes/getprojectinfo-typed-plan.md`, with intake note
+  `recipes/generic-repo-intake/tool-src-scripts-getprojectinfo.md`, registry
+  entry `getprojectinfo-typed-plan`, and one focused solution-library assertion
+  block. The safe adaptation uses only `get_project_info` to report current
+  project identity/file state, saved or unsaved state, frame-count settings,
+  application/project context, and explicit unavailable fields from typed
+  evidence. Source-exact `getProjectInfo.jsx` formatting, hidden AE Project
+  object traversal, arbitrary filesystem reads, broad project inventory, raw
+  script execution, project save/saveAs, render queue changes, project item
+  mutation, user-asset mutation, dependency/package changes, source merge,
+  branch, commit, push, PR, and GitHub automation remain fail-closed.
+  Validation was intentionally not run because the child-run intent forbids
+  validation, live AE/CEP/CDP, OpenAI CLI planner runs, dependency changes,
+  branches, commits, push, and PR actions. `.codex/handoff.md` creation was
+  attempted but blocked by the patch tool as writing outside the project in
+  this detached worktree, so this plan entry records the child-run durable
+  status.
 
 - [ ] Two-repo reconcile intake for Dakkshin/TheLlamainator
   (2026-06-29): compact preflight started from clean tracked state at commit
@@ -4396,6 +4419,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getProjectInfo.jsx` as `tool-src-scripts-getprojectinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo).
+
 - 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getLayerInfo.jsx` as `tool-src-scripts-getlayerinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo).
 
 - 2026-06-29: Treat Full Intaker/importer named source identity failures as
@@ -6022,6 +6047,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-src-scripts-getprojectinfo | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-9de8f09a6f-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-src-scripts-getlayerinfo | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-7d9433864e-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 

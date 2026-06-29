@@ -135,7 +135,8 @@ const IMPORTED_ADVISORY_IDS = [
   "set-track-matte-to-above-typed-plan",
   "frame-navigator-typed-plan",
   "milliseconds-to-frames-typed-plan",
-  "getlayerinfo-typed-plan"
+  "getlayerinfo-typed-plan",
+  "getprojectinfo-typed-plan"
 ];
 const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
   "read-composition-markers-typed-plan",
@@ -739,6 +740,19 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /layer indices\/names/.test(item)), `${id}: verification must require target layer identity evidence.`);
       assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
       assert(solution.promotionHistory.some((entry) => /getLayerInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "getprojectinfo-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info"],
+        `${id}: project-info inspection should stay on get_project_info.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: project-info adaptation must remain read-only.`);
+      assert(text.includes("get_project_info"), `${id}: recipe should require project info read-back.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must read current project info.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /project identity\/file state/.test(item)), `${id}: verification must require project identity/file-state evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /getProjectInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

@@ -12967,6 +12967,102 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "getprojectinfo-typed-plan",
+      "title": "Get Project Info Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "project-info",
+        "inspection",
+        "generic-importer",
+        "dakkshin-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Report current project information from get_project_info typed read evidence only.",
+        "appliesWhen": [
+          "The user asks for project-level information such as project name, saved or file state, frame-count settings, basic project metadata, or bridge-exposed project context.",
+          "The requested workflow is inspection-only and can be satisfied from current get_project_info typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "detailScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional requested detail scope such as project file/name state, frame-count settings, application context, or other bridge-exposed metadata."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Project information is bound from current get_project_info evidence before reporting.",
+        "Unavailable project fields are reported as unavailable or typed-tool gaps instead of inferred from hidden AE state.",
+        "Project files, project items, render queue items, selection state, and user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/getprojectinfo-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read current project context with get_project_info only, then report exact returned project information and typed-tool gaps.",
+        "steps": [
+          "Run get_project_info to capture current project identity, file state, frame-count settings, application context, or offline/unavailable state.",
+          "Report only returned typed-tool fields such as project file/name state, saved or unsaved state, frame-count settings, application/project context, or unavailable fields.",
+          "Report missing, unsupported, ambiguous, unavailable, or offline fields as typed-tool gaps.",
+          "Fail closed when source-exact getProjectInfo.jsx formatting, hidden AE Project object traversal, arbitrary filesystem reads, broad project inventory, raw script execution, project save/saveAs, render queue changes, project item mutation, or user-asset mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites project identity/file state or offline/unavailable state returned by get_project_info.",
+          "Every reported project field uses only data returned by get_project_info.",
+          "Ambiguous, missing, unavailable, unsupported, or offline fields are labeled as typed-tool gaps.",
+          "No mutating tool, raw script execution, filesystem write, project item mutation, render queue edit, or project save/saveAs appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-src-scripts-getprojectinfo generic repository importer as advisory read-only typed project-information coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed project-inspection semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-29",
+          "from": "generic-repo-importer-tool-src-scripts-getprojectinfo",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the project-information inspection idea behind src/scripts/getProjectInfo.jsx into existing typed read tools as read-only project-detail guidance; no source JSX copied. The recipe uses get_project_info and remains fail-closed for source-exact formatting, hidden AE Project object traversal, arbitrary filesystem reads, broad project inventory, raw script execution, project save/saveAs, render queue changes, project item mutation, and user-asset mutation. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only project information; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current get_project_info evidence before reporting project details; do not infer project identity, file state, or frame-count settings from prior chat context.",
+        "Use get_project_info only for current bridge-exposed project metadata; do not substitute project snapshot, render queue, filesystem, or raw script execution for unavailable fields.",
+        "Do not use this recipe for project saves, project item rename/move/delete/import/export, render queue edits, arbitrary filesystem access, broad project inventory, raw script execution, or exact source JSX behavior."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "getpropertyparent-typed-plan",
       "title": "Get Property Parent Typed Plan",
       "status": "recipe",
