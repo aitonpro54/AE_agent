@@ -26,6 +26,8 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-src-scripts-listcompositions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-listcompositions); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-0f9202bea5-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-src-scripts-getprojectinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-9de8f09a6f-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-src-scripts-getlayerinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-7d9433864e-import, commit recorded after candidate commit.
@@ -70,6 +72,31 @@ old `AE_agent` repository remains the historical source.
   attempted but blocked by the patch tool as writing outside the project in
   this detached worktree, so this plan entry records the child-run durable
   status.
+
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-24c1ebc98e`:
+  preflight found a clean tracked worktree, absent prompt artifact at
+  `implementation/batch-prompts/queue-batch-1-24c1ebc98e.md`, absent source
+  `src/scripts/listCompositions.jsx`, and no existing
+  `listcompositions-typed-plan` recipe or registry entry. The detached child
+  run imported `tool-src-scripts-listcompositions` as read-only advisory
+  typed-plan coverage in `recipes/listcompositions-typed-plan.md`, with intake
+  note `recipes/generic-repo-intake/tool-src-scripts-listcompositions.md`,
+  registry entry `listcompositions-typed-plan`, and one focused
+  solution-library assertion block. The safe adaptation uses only
+  `get_project_info`, `get_project_snapshot`, `find_project_items`, and
+  optional `get_comp_details` to report current composition inventory from
+  typed evidence. Source-exact `listCompositions.jsx` formatting, hidden
+  `CompItem` traversal, Project panel selection reads, composition creation/
+  rename/delete/property mutation, render queue changes, filesystem access,
+  raw script execution, user-asset mutation, dependency/package changes,
+  source merge, branch, commit, push, PR, and GitHub automation remain
+  fail-closed. Validation was intentionally not run because the child-run
+  intent forbids validation, live AE/CEP/CDP, OpenAI CLI planner runs,
+  dependency changes, branches, commits, push, and PR actions. No commit was
+  created because child-run boundaries forbid commits. `.codex/handoff.md`
+  creation was attempted after creating `.codex/`, but `apply_patch` rejected
+  the hidden path as outside the project in this detached worktree, so this
+  plan entry records the child-run durable status.
 
 - [ ] Two-repo reconcile intake for Dakkshin/TheLlamainator
   (2026-06-29): compact preflight started from clean tracked state at commit
@@ -4419,6 +4446,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `src/scripts/listCompositions.jsx` as `tool-src-scripts-listcompositions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-listcompositions).
+
 - 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getProjectInfo.jsx` as `tool-src-scripts-getprojectinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo).
 
 - 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getLayerInfo.jsx` as `tool-src-scripts-getlayerinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo).
@@ -6047,6 +6076,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-src-scripts-listcompositions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-0f9202bea5-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-src-scripts-getprojectinfo | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-9de8f09a6f-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 

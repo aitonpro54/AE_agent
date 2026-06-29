@@ -13063,6 +13063,110 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "listcompositions-typed-plan",
+      "title": "List Compositions Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "project",
+        "compositions",
+        "list-compositions",
+        "inspection",
+        "generic-importer",
+        "dakkshin-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Report current project composition inventory from typed read tools only.",
+        "appliesWhen": [
+          "The user asks to list compositions in the current project or needs compact composition inventory before a later reviewed plan.",
+          "The requested workflow is inspection-only and can be satisfied from current project-info, project-snapshot, project-item search, or composition-detail typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "compositionQuery",
+          "type": "object",
+          "required": false,
+          "description": "Optional current-evidence filter such as composition name, folder context, item type, or requested detail scope."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Composition inventory is bound from current project snapshot, project item search, or explicit comp-detail evidence before reporting.",
+        "Unavailable composition fields are reported as unavailable or typed-tool gaps instead of inferred from hidden AE state.",
+        "Compositions, layers, project items, render queue items, project files, selection state, and user assets are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/listcompositions-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_project_info",
+          "get_project_snapshot",
+          "find_project_items",
+          "get_comp_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read current project composition inventory with typed read tools only, then report exact returned composition information and typed-tool gaps.",
+        "steps": [
+          "Run get_project_info when project identity, saved/file state, or offline/unavailable state should be reported with the inventory.",
+          "Run get_project_snapshot to capture current project item inventory and bind composition item indices and names from typed evidence.",
+          "Run find_project_items when a narrowed composition search by explicit name, folder context, or item type is requested.",
+          "Run get_comp_details only for concrete compositions identified by current typed evidence and only when additional exposed comp fields are requested.",
+          "Report only returned typed-tool fields such as composition item name, item index, folder context when available, dimensions, duration, frame rate, work-area fields, layer counts, marker summaries, or unavailable fields.",
+          "Report missing, unsupported, ambiguous, offline, or truncated fields as typed-tool gaps.",
+          "Fail closed when source-exact listCompositions.jsx formatting, hidden CompItem traversal, Project panel selection reads, raw script execution, composition mutation, render queue changes, filesystem access, or user-asset mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites project identity or offline/unavailable state when get_project_info is used.",
+          "The composition list cites concrete item indices/names returned by get_project_snapshot or find_project_items.",
+          "Any detailed composition fields use only data returned by get_comp_details for concrete evidence-backed compositions.",
+          "Ambiguous, missing, unavailable, unsupported, offline, or truncated fields are labeled as typed-tool gaps.",
+          "No mutating tool, raw script execution, filesystem access, Project panel selection change, composition mutation, render queue edit, or user-asset mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-src-scripts-listcompositions generic repository importer as advisory read-only typed composition-inventory coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed composition-inventory semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-29",
+          "from": "generic-repo-importer-tool-src-scripts-listcompositions",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the composition-listing inspection idea behind src/scripts/listCompositions.jsx into existing typed read tools as read-only composition-inventory guidance; no source JSX copied. The recipe uses get_project_info, get_project_snapshot, find_project_items, and optional get_comp_details, and remains fail-closed for source-exact formatting, hidden AE CompItem traversal, Project panel selection reads, raw script execution, composition creation/rename/delete/property mutation, render queue changes, filesystem access, and user-asset mutation. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only composition inventory; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current project snapshot, project item search, or explicit composition detail evidence before reporting composition inventory; do not infer targets from prior chat context.",
+        "Use get_comp_details only for concrete evidence-backed compositions and only for the requested detail scope.",
+        "Do not use this recipe for composition creation, rename, deletion, property edits, layer changes, render queue edits, Project panel selection reads, filesystem access, raw script execution, broad hidden object traversal, or exact source JSX behavior."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "getpropertyparent-typed-plan",
       "title": "Get Property Parent Typed Plan",
       "status": "recipe",

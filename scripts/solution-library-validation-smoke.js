@@ -136,7 +136,8 @@ const IMPORTED_ADVISORY_IDS = [
   "frame-navigator-typed-plan",
   "milliseconds-to-frames-typed-plan",
   "getlayerinfo-typed-plan",
-  "getprojectinfo-typed-plan"
+  "getprojectinfo-typed-plan",
+  "listcompositions-typed-plan"
 ];
 const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
   "read-composition-markers-typed-plan",
@@ -753,6 +754,22 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /project identity\/file state/.test(item)), `${id}: verification must require project identity/file-state evidence.`);
       assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
       assert(solution.promotionHistory.some((entry) => /getProjectInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "listcompositions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "get_comp_details"],
+        `${id}: composition-list inspection should stay on typed read tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: composition-list adaptation must remain read-only.`);
+      assert(text.includes("get_project_snapshot"), `${id}: recipe should require project snapshot read-back.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should allow narrowed composition search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should allow detail reads for concrete compositions.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must read current project inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read concrete composition details only when requested.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /item indices\/names/.test(item)), `${id}: verification must require composition identity evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /listCompositions\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
