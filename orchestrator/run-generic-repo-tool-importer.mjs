@@ -339,10 +339,36 @@ function assertNoLocalOllamaProvider(value, label) {
 }
 
 function assertNoNamedRepoAssumptions(value, label) {
-  const text = typeof value === "string" ? value : stableStringify(value);
+  const text = typeof value === "string" ? value : stableStringify(redactOperationalIdentityFields(value));
   if (NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
     throw new Error(`${label} must not contain named-repo assumptions`);
   }
+}
+
+function redactOperationalIdentityFields(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactOperationalIdentityFields(item));
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const redacted = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (
+      key === "runId" ||
+      key === "location" ||
+      key === "path" ||
+      key === "allowedReadRoots" ||
+      key === "deniedReadRoots" ||
+      key === "sourceRoot"
+    ) {
+      redacted[key] = "<operational-identity>";
+      continue;
+    }
+    redacted[key] = redactOperationalIdentityFields(child);
+  }
+  return redacted;
 }
 
 function resolveInside(cwd, candidate, label) {
@@ -1392,10 +1418,6 @@ function collectSourceInventory(sourceRoot, manifest) {
       if (!secretMatch && SECRET_PATTERN.test(text)) {
         secretMatch = relative;
       }
-      if (NAMED_REPO_ASSUMPTION_PATTERN.test(relative) || NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
-        throw new Error(`named-repo-assumption-detected: ${relative}`);
-      }
-
       files.push({
         path: relative,
         size: stat.size,

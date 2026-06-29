@@ -49,6 +49,21 @@ old `AE_agent` repository remains the historical source.
   auto-intake ledgers for only these two target repos and classify new evidence
   as already-covered, missing-safe, or blocked before product changes.
 
+- [x] Full Intake importer operational identity guard fix (2026-06-29):
+  Dakkshin strict Full Intake selected `tool-src-scripts-getlayerinfo`, proved
+  live lane `not_required`, then failed before product changes with
+  `manifest must not contain named-repo assumptions` because the generic
+  importer checked the entire manifest and matched the approved source checkout
+  path/run id. Narrowed the guard to redact operational identity fields
+  (`runId`, path/location/read-root fields, `sourceRoot`) while preserving the
+  semantic `requestedGoal` rejection for named-repo assumptions; source
+  repository text is no longer treated as a target-product assumption. Added
+  importer smoke coverage proving Dakkshin source identity is allowed during
+  analysis only when the import goal remains generic. Validation passed:
+  touched-file `node --check`, `node scripts/sdk-generic-repo-importer-command-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and
+  `git diff --check` with LF/CRLF warnings only.
+
 - [x] Full intake tool-project-export-text-to-file: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file); live gate ready, importer batch full-intake-kyletmartinez-2e851a71d7-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-compositions-save-frame-as-png: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png); live gate ready, importer batch full-intake-kyletmartinez-5d81f66c1d-import, commit recorded after candidate commit.

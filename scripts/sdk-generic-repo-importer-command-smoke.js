@@ -637,6 +637,23 @@ function assertNamedRepoAssumptionFixture() {
   }
 }
 
+function assertNamedRepoOperationalIdentityAllowedFixture() {
+  const fixture = createTempFixture("dakkshin-operational-identity");
+  try {
+    fs.writeFileSync(
+      path.join(fixture.source, "README.md"),
+      "Fixture source identity mentions Dakkshin, but the import goal stays generic.\n",
+      "utf8",
+    );
+    const manifest = validManifest(fixture, "aux016-dakkshin-operational");
+    const manifestPath = writeManifest(fixture.root, manifest);
+    const result = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(result.status, "stopped_after_analysis");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertAnalysisResumeFixture() {
   const fixture = createTempFixture("analysis-resume");
   try {
@@ -2257,6 +2274,7 @@ function main() {
   assertUnsafeSecretFixture();
   assertLicenseStopFixture();
   assertNamedRepoAssumptionFixture();
+  assertNamedRepoOperationalIdentityAllowedFixture();
   assertAnalysisResumeFixture();
   assertSuccessfulImplementationPlanningFixture();
   assertImplementationMissingAnalysisArtifactFixture();
