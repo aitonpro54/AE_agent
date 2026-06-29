@@ -26,6 +26,20 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Two-repo read-only reconcile closeout (2026-06-29):
+  Dakkshin accepted the three read-only existing-typed-tools recipe candidates
+  one at a time: `tool-src-scripts-getlayerinfo` (`4475e81`),
+  `tool-src-scripts-getprojectinfo` (`5f57b39`), and
+  `tool-src-scripts-listcompositions` (`6b91493`). The recovery also required
+  guard commit `0fa21e2` after controlled merge exposed operational
+  `actualWorktreeRelativePath` metadata. TheLlamainator copies were not
+  imported again: raw hashes differ only because BOM/comments/blank lines
+  differ, while functional hashes after stripping BOM, line comments, blank
+  lines, and surrounding whitespace match Dakkshin evidence
+  (`cba18613`, `ee1ef0fd`, `56c249f9`). TheLlamainator read-only entries are
+  recorded in its runtime ledger as terminal duplicate-evidence skips, leaving
+  both approved ledgers with zero queued and zero failed entries.
+
 - [x] Full intake tool-src-scripts-listcompositions: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-listcompositions); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-0f9202bea5-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-src-scripts-getprojectinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-9de8f09a6f-import, commit recorded after candidate commit.
@@ -4446,6 +4460,14 @@ check.
 
 ## Decision Log
 
+- 2026-06-29: For the two-repo read-only family, accept recipe coverage only
+  once through Dakkshin and classify the TheLlamainator copies as already
+  covered duplicate evidence. The source files are not byte-identical, but the
+  only observed differences are BOM/comment/blank-line formatting; functional
+  normalized hashes match for all three scripts. Avoid duplicate recipe-path
+  imports and keep remaining live-lane-required/policy-blocked entries terminal
+  until a separate generated-only lane milestone is approved.
+
 - 2026-05-27: Generic full-intake orchestrator processed `src/scripts/listCompositions.jsx` as `tool-src-scripts-listcompositions`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-listcompositions).
 
 - 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getProjectInfo.jsx` as `tool-src-scripts-getprojectinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getprojectinfo).
@@ -6076,6 +6098,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Two-repo read-only reconcile closeout | Required to prove the approved Dakkshin/TheLlamainator queues were terminal without importing duplicate recipe paths or touching launcher files. | Passed: compact preflight; `npm.cmd run check:rules`; compact Dakkshin status/proof/ledger summaries; TheLlamainator ledger summary; `node --check orchestrator/run-generic-repo-tool-importer.mjs`; `node --check scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-importer-command-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; functional duplicate hash check for the three TheLlamainator read-only scripts; final ledger summaries with Dakkshin `completed:3`, TheLlamainator `skipped_unsafe_candidate:3`, both `queued=0`, `failed=0`; and `git diff --check` with LF/CRLF warnings only. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, launcher edit, push, PR, or broad repo outside the two approved targets was run. |
 
 | Full intake tool-src-scripts-listcompositions | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-0f9202bea5-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
