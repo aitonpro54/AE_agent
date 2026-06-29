@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [ ] Two-repo reconcile intake for Dakkshin/TheLlamainator
+  (2026-06-29): compact preflight started from clean tracked state at commit
+  `946137c629732c3e22a60aac10daeaecf6d10bab` with user context `20`
+  and synthetic context about `30` after one broad runtime listing. Reconciliation
+  map before any new import:
+  Dakkshin already has accepted advisory recipes
+  `basic-comp-setup-typed-plan`, `safe-effect-addition-typed-plan`, and
+  `selected-layers-animation-typed-plan`; registry entries tagged
+  `dakkshin-advisory`; generated-only scenario coverage in
+  `agentDakkshinTypedToolsScenarioPlans`; CEP, semantic, plan-repair, manual
+  typed-tool regression, and solution-library smoke coverage; existing scenario
+  tools include `create_comp`, `set_comp_properties`, `create_solid_layer`,
+  `get_comp_details`, `delete_layer`, `set_layer_mask`, and
+  `get_layer_details`. TheLlamainator is currently local architecture evidence
+  only through `docs/ready-solutions-research.md`: file bridge
+  `ae_command.json` / `ae_mcp_result.json`, split run/get-results, stale-result
+  detection, stable bridge directory, richer tool catalog, help prompts, and
+  user-level install. No existing target run-id directories were found under
+  `.codex-runtime/sdk/generic-repo-importer` or
+  `.codex-runtime/sdk/generic-repo-full-intake`. Next step is to create/resume
+  auto-intake ledgers for only these two target repos and classify new evidence
+  as already-covered, missing-safe, or blocked before product changes.
+
 - [x] Full intake tool-project-export-text-to-file: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file); live gate ready, importer batch full-intake-kyletmartinez-2e851a71d7-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-compositions-save-frame-as-png: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png); live gate ready, importer batch full-intake-kyletmartinez-5d81f66c1d-import, commit recorded after candidate commit.
