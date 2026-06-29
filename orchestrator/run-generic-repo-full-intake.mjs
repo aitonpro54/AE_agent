@@ -119,6 +119,7 @@ const CHILD_TIMEOUT_REASONS = Object.freeze([
   "implementation-child-run-timeout",
 ]);
 const IMPORT_RETRY_REASONS = Object.freeze([
+  "manifest must not contain named-repo assumptions",
   "resume-manifest-hash-mismatch",
 ]);
 const LEGACY_REASONING_EFFORT_CLI_ERROR = "unexpected argument '--reasoning-effort'";
