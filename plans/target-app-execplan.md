@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-applyeffect` policy closeout
+  (2026-06-29): source comparison confirmed the bounded effect branch adds an
+  effect by display name or matchName and optionally writes effect properties,
+  while the unsafe branch applies arbitrary user-provided `presetPath` / `.ffx`
+  files through `applyPreset`. Existing typed coverage already handles the
+  bounded branch through `safe-effect-addition-typed-plan`, `add_effect`,
+  `get_effect_details`, and `set_effect_property` after typed property
+  evidence. Added candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-applyeffect.md` and recorded
+  both Dakkshin and TheLlamainator runtime entries as `blocked_policy` /
+  `unsafe_skip_tool_gap` for the arbitrary preset path. TheLlamainator differs
+  in the helper emptiness check hash, but exposes the same safe effect-add path
+  and the same preset-path policy gap. No raw JSX copy, bridge change, live
+  lane, dependency change, push, or PR was used. Validation passed:
+  `git diff --check` with LF/CRLF warning only,
+  `npm.cmd run check:rules`, `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-createcomposition`
   closeout (2026-06-29): compact preflight for the scoped longrun found
   context `20`, branch `codex/full-intake-runtime-cleanup` ahead `11`, and no
