@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-createcomposition`
+  closeout (2026-06-29): compact preflight for the scoped longrun found
+  context `20`, branch `codex/full-intake-runtime-cleanup` ahead `11`, and no
+  active baton owner. Source comparison confirmed `createComposition.jsx`
+  creates one comp from `name`, `width`, `height`, `pixelAspect`, `duration`,
+  `frameRate`, and optional `backgroundColor`. Existing typed coverage already
+  matches this through `create_comp`, `get_comp_details`,
+  `recipes/basic-comp-setup-typed-plan.md`, registry id
+  `basic-comp-setup-typed-plan`, and solution-library retrieval smoke. Added
+  candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-createcomposition.md`; no
+  bridge contract change, live lane, raw JSX copy, dependency change, push, or
+  PR was used. Runtime ledgers now record Dakkshin as `completed` and
+  TheLlamainator as terminal duplicate evidence with matching functional hash
+  `9c44bf13`. Current compact matrix: `createComposition` already-covered;
+  normal `applyEffect` covered but arbitrary `presetPath` remains a policy gap;
+  `applyEffectTemplate` recipe gap; `createShapeLayer` polygon/star typed-tool
+  gap; `createSolidLayer` recipe gap; `createTextLayer` alignment typed-tool
+  gap; `setLayerProperties` recipe gap around existing transform/timing tools.
+  Validation passed: `git diff --check` with LF/CRLF warning only,
+  `npm.cmd run check:rules`, `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake` after one
+  initial 124s timeout and a successful 168s retry.
+
 - [x] Two-repo read-only reconcile closeout (2026-06-29):
   Dakkshin accepted the three read-only existing-typed-tools recipe candidates
   one at a time: `tool-src-scripts-getlayerinfo` (`4475e81`),
