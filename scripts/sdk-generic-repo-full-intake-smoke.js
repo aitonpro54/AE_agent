@@ -3072,7 +3072,7 @@ function assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry() {
         fixture,
         ledgerPath,
         registryPath,
-        "cm-retry",
+        "full-intake-dakkshin-cm-retry",
         1,
         fakeCodexEnv(binDir),
         ["--resolution-candidate-ids", failed.id]

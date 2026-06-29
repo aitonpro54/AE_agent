@@ -115,9 +115,12 @@ const SECRET_PATTERN =
 const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
 const OPERATIONAL_IDENTITY_FIELDS = new Set([
   "actualWorktreePath",
+  "actualWorktreeRelativePath",
   "allowedReadRoots",
   "batchReport",
+  "batchResultPath",
   "checkout",
+  "childRunIntentPath",
   "childRunResultPath",
   "command",
   "cwd",
@@ -130,6 +133,8 @@ const OPERATIONAL_IDENTITY_FIELDS = new Set([
   "manifestPath",
   "path",
   "previousFailure",
+  "plannedWorktreePath",
+  "promptPath",
   "recoveryIntent",
   "reportPath",
   "repo",
