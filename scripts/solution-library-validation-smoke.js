@@ -134,7 +134,8 @@ const IMPORTED_ADVISORY_IDS = [
   "set-all-track-matte-labels-typed-plan",
   "set-track-matte-to-above-typed-plan",
   "frame-navigator-typed-plan",
-  "milliseconds-to-frames-typed-plan"
+  "milliseconds-to-frames-typed-plan",
+  "getlayerinfo-typed-plan"
 ];
 const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
   "read-composition-markers-typed-plan",
@@ -425,7 +426,9 @@ function assertImportedAdvisoryQuality(registry) {
     assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
     assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
     assert(
-      solution.tags.includes("kyletmartinez-advisory") || solution.tags.includes("ae-scripting-advisory"),
+      solution.tags.includes("kyletmartinez-advisory") ||
+        solution.tags.includes("ae-scripting-advisory") ||
+        solution.tags.includes("dakkshin-advisory"),
       `${id}: imported source advisory tag should be present for retrieval/audit.`
     );
     assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
@@ -722,6 +725,20 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /reportedFrames/.test(item)), `${id}: verification must require reported frame evidence.`);
       assert(solution.notes.some((note) => /Do not infer frame rate/.test(note)), `${id}: notes must forbid guessed frame rates.`);
       assert(solution.promotionHistory.some((entry) => /Milliseconds_To_Frames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "getlayerinfo-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details"],
+        `${id}: layer-info inspection should stay on typed read tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: layer-info adaptation must remain read-only.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer detail read-back.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must bind selected-layer evidence when selected layers are targeted.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read concrete layer details.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /layer indices\/names/.test(item)), `${id}: verification must require target layer identity evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /getLayerInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,

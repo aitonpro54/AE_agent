@@ -12857,6 +12857,116 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "getlayerinfo-typed-plan",
+      "title": "Get Layer Info Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-info",
+        "selected-layers",
+        "inspection",
+        "generic-importer",
+        "dakkshin-advisory",
+        "typed-tool",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Report selected or explicit layer information from typed read tools only.",
+        "appliesWhen": [
+          "The user asks for details about selected layers or a specific layer, including name, index, type, timing, switches, source context, markers, effects, masks, transforms, properties, expressions, or other exposed layer fields.",
+          "The requested workflow is inspection-only and can be satisfied from current active-comp, selected-layer, comp-detail, or layer-detail typed evidence."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "layerTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current selected-layer evidence or explicit comp/layer index evidence identifying the layers to inspect."
+        },
+        {
+          "name": "detailScope",
+          "type": "string",
+          "required": false,
+          "description": "Optional requested detail scope such as timing, switches, source context, markers, effects, masks, transform/property summary, or expressions."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow is read-only and reports only current typed-tool evidence.",
+        "Layer targets are bound from current active-comp, selected-layer, comp-detail, or layer-detail evidence before inspection.",
+        "Unavailable layer fields are reported as unavailable or typed-tool gaps instead of inferred from hidden AE state.",
+        "Layers, properties, keyframes, expressions, effects, selection state, sources, render queue items, project items, and project files are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/getlayerinfo-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Read active comp, selected layer, comp-detail, or layer-detail context with typed read tools only, then report exact returned layer information and typed-tool gaps.",
+        "steps": [
+          "Run get_active_comp to capture active comp identity and current basic layer context, or use explicit current comp evidence when the target is not active.",
+          "Run get_selected_layers when the request targets selected layers and bind only returned layer indices and names.",
+          "Run get_comp_details with layer detail enabled when explicit layer indices or names need comp-level inventory before deeper inspection.",
+          "Run get_layer_details only for concrete layers identified by current typed evidence and only for the requested detail scope.",
+          "Report only returned typed-tool fields such as layer name/index/type, timing, source/precomp context, switches, markers, effects, masks, transform/property summaries, expressions, or unavailable fields.",
+          "Report missing, unsupported, truncated, or ambiguous fields as typed-tool gaps.",
+          "Fail closed when source-exact getLayerInfo.jsx formatting, hidden AE object traversal, broad project scans, raw script execution, selection changes, or mutation is required."
+        ],
+        "expectedEvidence": [
+          "The report cites active-comp or explicit comp identity, or offline/unavailable state from typed tools.",
+          "Selected-layer workflows cite selected layer indices/names returned by get_selected_layers.",
+          "Explicit-layer workflows cite comp-detail or layer-detail evidence for each inspected layer.",
+          "Every reported layer field uses only data returned by get_selected_layers, get_comp_details, or get_layer_details.",
+          "No mutating tool, raw script execution, layer conversion, selection change, source relink, property edit, keyframe edit, expression edit, effect edit, render queue edit, or project-item mutation appears in the plan."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-src-scripts-getlayerinfo generic repository importer as advisory read-only typed layer-information coverage.",
+          "The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing typed read tools, and fail-closed layer-inspection semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-29",
+          "from": "generic-repo-importer-tool-src-scripts-getlayerinfo",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the layer-information inspection idea behind src/scripts/getLayerInfo.jsx into existing typed read tools as read-only layer-detail guidance; no source JSX copied. The recipe uses get_active_comp, get_selected_layers, get_comp_details, and get_layer_details, and remains fail-closed for source-exact formatting, hidden AE object traversal, broad project scans, raw script execution, selection changes, layer/property/effect/keyframe/expression mutation, source relinking, render queue changes, and user-asset mutation. Parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses Agent plan validation when used in planning context.",
+        "Use this recipe only for read-only selected or explicit layer information; do not request allowMutations or checkpoint protection for this recipe itself.",
+        "Require current typed evidence before reporting layer details; do not infer targets from prior chat context.",
+        "Use get_layer_details only for concrete evidence-backed layers and only for the requested detail scope.",
+        "Do not use this recipe for layer conversion, layer creation, source relinking, effects, properties, keyframes, expressions, selection changes, broad project scans, raw script execution, or exact source JSX behavior."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "getpropertyparent-typed-plan",
       "title": "Get Property Parent Typed Plan",
       "status": "recipe",

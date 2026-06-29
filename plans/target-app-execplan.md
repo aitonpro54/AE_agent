@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Full intake tool-src-scripts-getlayerinfo: completed by reusable generic full-intake orchestrator (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo); live gate not_required, importer batch full-intake-dakkshin-after-effects-m-7d9433864e-import, commit recorded after candidate commit.
+- [x] AUX-021 importer child-run wrapper `queue-batch-1-778c56fab9`:
+  preflight found a clean tracked worktree. The detached child run imported
+  `tool-src-scripts-getlayerinfo` as read-only advisory typed-plan coverage in
+  `recipes/getlayerinfo-typed-plan.md`, with intake note
+  `recipes/generic-repo-intake/tool-src-scripts-getlayerinfo.md`, registry entry
+  `getlayerinfo-typed-plan`, and one focused solution-library assertion block.
+  The safe adaptation uses only `get_active_comp`, `get_selected_layers`,
+  `get_comp_details`, and `get_layer_details` to report current selected or
+  explicit layer information from typed evidence. Source-exact
+  `getLayerInfo.jsx` formatting, hidden AE object traversal, broad project
+  scans, raw script execution, selection changes, layer/property/effect/
+  keyframe/expression mutation, source relinking, render queue changes,
+  user-asset mutation, dependency/package changes, source merge, branch, commit,
+  push, PR, and GitHub automation remain fail-closed. Validation was
+  intentionally not run because the child-run intent forbids validation, live
+  AE/CEP/CDP, OpenAI CLI planner runs, dependency changes, branches, commits,
+  push, and PR actions. `.codex/handoff.md` creation was attempted but blocked
+  by the patch tool as writing outside the project in this detached worktree,
+  so this plan entry records the child-run durable status if handoff remains
+  unavailable.
+
 - [ ] Two-repo reconcile intake for Dakkshin/TheLlamainator
   (2026-06-29): compact preflight started from clean tracked state at commit
   `946137c629732c3e22a60aac10daeaecf6d10bab` with user context `20`
@@ -4374,6 +4396,8 @@ check.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `src/scripts/getLayerInfo.jsx` as `tool-src-scripts-getlayerinfo`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-dakkshin-after-effects-mcp:tool-src-scripts-getlayerinfo).
+
 - 2026-06-29: Treat Full Intaker/importer named source identity failures as
   recoverable only when they are operational guard false positives (`manifest`
   or `controlled source merge inputs`) and the requested goal remains generic.
@@ -5998,6 +6022,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Full intake tool-src-scripts-getlayerinfo | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-dakkshin-after-effects-mcp`: live lane `not_required`, batch `full-intake-dakkshin-after-effects-m-7d9433864e-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Two-repo Dakkshin source identity recovery hardening | Required before retrying `tool-src-scripts-getlayerinfo` after two false-positive named-repo guard failures in the importer/full-intake recovery path. | Passed: `node --check orchestrator/run-generic-repo-full-intake.mjs`; `node --check orchestrator/run-generic-repo-tool-importer.mjs`; `node --check scripts/sdk-generic-repo-full-intake-smoke.js`; `node --check scripts/sdk-generic-repo-importer-command-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. No product recipe was accepted yet; Dakkshin `tool-src-scripts-getlayerinfo` remains `failed_import` from the pre-fix controlled-merge attempt and should be requeued/retried next. |
 
