@@ -64,6 +64,23 @@ old `AE_agent` repository remains the historical source.
   `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and
   `git diff --check` with LF/CRLF warnings only.
 
+- [x] Full Intake source identity recovery hardening (2026-06-29):
+  continuing the two-repo Dakkshin retry exposed two importer recovery gaps
+  before product changes: the stale `manifest must not contain named-repo
+  assumptions` failure was not requeued by Full Intaker, and the next retry
+  failed at `controlled_merge` because controlled merge inputs still included
+  operational source identity (`source.repo`, checkout/run/report paths, and
+  child command paths). Added scoped retry reasons for both failures, expanded
+  importer operational identity redaction while preserving semantic
+  `requestedGoal` named-repo rejection, and added smoke coverage for analysis,
+  controlled merge, and Full Intaker recovery. Commits: `f600dbe` and
+  `3fe4c7e`. Validation passed: touched-file `node --check`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, and
+  `git diff --check` with LF/CRLF warnings only. Dakkshin
+  `tool-src-scripts-getlayerinfo` is still
+  `failed_import` in the ledger from the pre-fix controlled-merge attempt and
+  must be requeued/retried next with `--resolution-candidate-ids`.
+
 - [ ] Two-repo intake handoff after ledger creation (2026-06-29):
   auto-intake ledgers were created for both approved target repos. Dakkshin
   ledger path:
@@ -78,8 +95,8 @@ old `AE_agent` repository remains the historical source.
   normalized-identical across the two source checkouts, so accept them once and
   record TheLlamainator as already-covered duplicate evidence unless future
   source inventory proves a distinct contract. Dakkshin `getlayerinfo` has one
-  stale `failed_import` caused by the now-fixed operational identity guard and
-  should be retried first in the next thread.
+  stale `failed_import` from the now-fixed controlled-merge source identity
+  guard and should be requeued/retried first in the next thread.
 
 - [x] Full intake tool-project-export-text-to-file: completed by reusable generic full-intake orchestrator (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file); live gate ready, importer batch full-intake-kyletmartinez-2e851a71d7-import, commit recorded after candidate commit.
 
@@ -4357,6 +4374,11 @@ check.
 
 ## Decision Log
 
+- 2026-06-29: Treat Full Intaker/importer named source identity failures as
+  recoverable only when they are operational guard false positives (`manifest`
+  or `controlled source merge inputs`) and the requested goal remains generic.
+  Keep semantic named-repo assumptions in `requestedGoal` fail-closed.
+
 - 2026-05-27: Generic full-intake orchestrator processed `Project/Export_Text_To_File.jsx` as `tool-project-export-text-to-file`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-project-export-text-to-file).
 
 - 2026-05-27: Generic full-intake orchestrator processed `Compositions/Save_Frame_As_PNG.jsx` as `tool-compositions-save-frame-as-png`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-kyletmartinez:tool-compositions-save-frame-as-png).
@@ -5976,6 +5998,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Two-repo Dakkshin source identity recovery hardening | Required before retrying `tool-src-scripts-getlayerinfo` after two false-positive named-repo guard failures in the importer/full-intake recovery path. | Passed: `node --check orchestrator/run-generic-repo-full-intake.mjs`; `node --check orchestrator/run-generic-repo-tool-importer.mjs`; `node --check scripts/sdk-generic-repo-full-intake-smoke.js`; `node --check scripts/sdk-generic-repo-importer-command-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:full-intake`; and `git diff --check` with LF/CRLF warnings only. No product recipe was accepted yet; Dakkshin `tool-src-scripts-getlayerinfo` remains `failed_import` from the pre-fix controlled-merge attempt and should be requeued/retried next. |
 
 | Full intake tool-project-export-text-to-file | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-kyletmartinez`: live lane `ready`, batch `full-intake-kyletmartinez-2e851a71d7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
