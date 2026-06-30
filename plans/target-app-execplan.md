@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped reveal-project-file continuation recheck (2026-06-30):
+  launcher continuation after the proxy removal milestone selected exactly one
+  next candidate, `tool-project-reveal-project-file`. Exact source review of
+  `Project/Reveal_Project_File.jsx` verified source SHA
+  `971fbc6c8670919ca54c220b84fc383ad5db36137d34b24ded7e443519fe250a`
+  and source behavior that calls `app.project.file.parent.execute()` to open
+  the saved project file location in Finder or Explorer, with an alert fallback
+  when the folder cannot be opened. Current safe support can report saved
+  project metadata and path evidence through read-only `get_project_info`, and
+  `project-file-render-proxy-safety-policy` plus
+  `HostRevealPolicy` metadata classify project-file reveal as approval-gated,
+  but there is no current reveal/open-folder typed tool, live lane, dry-run
+  shell-disabled contract, generated saved-project fixture, OS-specific
+  semantic verification, or approved shell/reveal permission. Reducer decision:
+  keep source-exact project-file reveal terminal/fail-closed for this longrun.
+  No live proof, scoped runner retry, product source, recipe, registry, runtime
+  ledger, source checkout, launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped remove-all-proxies continuation recheck (2026-06-30):
   launcher continuation after the manual PNG sequence milestone selected
   exactly one next candidate, `tool-project-remove-all-proxies`. Exact source
@@ -5301,6 +5319,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-reveal-project-file` terminal for source-exact
+  behavior. The Kylet source calls `app.project.file.parent.execute()`, which
+  launches the host OS Finder/Explorer for the saved project file folder and
+  falls back to an alert on failure. Current typed support can read/report
+  project file metadata with `get_project_info` and classify reveal risk through
+  `project-file-render-proxy-safety-policy` / `HostRevealPolicy` metadata, but
+  it cannot perform, dry-run, approve, or semantically verify OS reveal/open
+  folder behavior. Do not promote read-only path reporting as this candidate;
+  future unblock requires a separate reveal/open-folder typed contract with a
+  saved generated project fixture or explicit safe project-file policy, shell
+  launch disabled by default, explicit reveal approval, OS-specific handling,
+  semantic verification, and no raw JSX fallback.
+
 - 2026-06-30: Keep `tool-project-remove-all-proxies` source-exact behavior
   terminal/fail-closed during the Kylet newly-unblocked continuation after the
   manual PNG sequence milestone. The exact script iterates all Project items,
@@ -7374,6 +7405,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped reveal-project-file continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-remove-all-proxies`, review exact source behavior against current project-file/reveal typed contracts, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/ticket slices; exact source review for `Project/Reveal_Project_File.jsx`; source SHA verification; registry/live-lane review for `project-file-render-proxy-safety-policy`, read-only `get_project_info`, `HostRevealPolicy` metadata, and missing reveal/open-folder typed support. Reducer decision kept source-exact project-file reveal terminal/fail-closed because current safe contracts can report project file metadata but cannot launch, dry-run, approve, read back, or semantically verify Finder/Explorer `Folder.execute()` behavior. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped remove-all-proxies continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-manually-render-png-sequence`, review exact source behavior against current proxy/project typed contracts, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/ticket slices; exact source review for `Project/Remove_All_Proxies.jsx`; source SHA verification; registry/live-lane review for proxy support and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact global proxy removal terminal/fail-closed because current safe contracts do not expose proxy set/clear operations, `useProxy` or proxy source read-back, generated proxy asset sandboxing, reversible proxy-state semantic verification, or cleanup/checkpoint policy for this mutation. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
