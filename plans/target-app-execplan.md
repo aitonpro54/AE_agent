@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-createsolidlayer`
+  already-covered closeout (2026-06-30): source comparison confirmed Dakkshin
+  and TheLlamainator are functional duplicates after BOM/comment/blank-line
+  normalization (`082dca4a`). Existing `create_solid_layer` covers the safe
+  generated solid branch with explicit target comp, generated name, color,
+  dimensions, pixel aspect, start time, duration, and typed read-back.
+  Existing `create_adjustment_layer` covers the source `isAdjustment` branch
+  with `adjustmentLayer:true` read-back, and `set_layer_transform` covers
+  source-style explicit `position` after generated layer identity is known.
+  Added candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-createsolidlayer.md`; no new
+  registry entry or bridge contract was needed. Source temp args file I/O, raw
+  ExtendScript execution, JSON wrapper formatting, source-default visual values
+  when arguments are omitted, unverified active-comp assumptions, source-exact
+  stack placement, and selection side effects remain fail-closed. Runtime
+  ledgers now record Dakkshin as `completed` and TheLlamainator as duplicate
+  `skipped_unsafe_candidate`. No live lane, source checkout write, dependency
+  change, launcher edit, push, or PR was used. Validation passed:
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:full-intake`, JSON parse for `.codex/active-thread.json`
+  and both ledgers, and `git diff --check` with LF/CRLF warning only; no
+  JavaScript files were touched.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-createshapelayer` typed-tool
   gap closeout (2026-06-30): source comparison confirmed Dakkshin and
   TheLlamainator are functional duplicates after BOM/comment/blank-line
