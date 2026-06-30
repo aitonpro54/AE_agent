@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped selected-property rename recheck: Rename Selected
+  Properties (2026-06-30): compact Kylet-only `blocked_or_skipped`
+  continuation selected exactly one next candidate,
+  `tool-properties-rename-selected-properties`. Exact source review of
+  `Properties/Rename_Selected_Properties.jsx` showed source behavior that
+  opens an undo group, prompts for a base name with default `Shape`, reads
+  `app.project.activeItem.selectedProperties`, then writes each selected
+  `PropertyBase.name` to the base name plus a 1-based numeric suffix. Current
+  product support can read selected property names, matchNames, property paths,
+  values, expressions, and layer context, and can mutate explicit property
+  values, keyframes, expressions, effect properties, layer names, and project
+  item names. It still has no reviewed typed contract to write
+  `PropertyBase.name`, no generated-only selected-property display-name fixture,
+  no read-back proof for property display-name mutation semantics, and no
+  generated-target guard for arbitrary active-comp selected property traversal.
+  Reducer decision: keep the source-exact selected-property rename behavior
+  terminal/fail-closed under the existing selected-property-name writer gap; no
+  live proof or scoped runner retry was run because the exact source behavior
+  still does not map to current safe typed contracts and live mutation was not
+  separately approved. No product source, recipe, registry, runtime ledger,
+  source checkout, launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped disabled-stroke recheck: Remove Disabled Strokes
   (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
   exactly one next candidate, `tool-properties-remove-disabled-strokes`.
@@ -5102,6 +5124,23 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-properties-rename-selected-properties` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
+  Exact source behavior depends on a prompt-provided base name, active-comp
+  `selectedProperties`, direct `PropertyBase.name` writes, and automatic
+  1-based suffixing. Existing typed tools can read selected-property evidence
+  and safely mutate explicit values, keyframes, expressions, effect properties,
+  layer names, or project item names, but they do not provide a reviewed
+  generated-only writer/read-back lane for property display names. Unblock
+  condition: add a parent-approved generated-only `set_property_name` or
+  `rename_properties` typed contract with explicit comp target, layer index,
+  property path, expected current name, matchName/propertyIndex guard, reviewed
+  base-name and numbering policy, checkpoint/edit-session protection,
+  non-empty/max-length validation, fail-closed behavior for non-renamable or
+  ambiguous targets, and read-back through `get_layer_details` or
+  `get_selected_properties`; avoid raw JSX fallback and arbitrary user
+  selected-property traversal.
 
 - 2026-06-30: Keep `tool-properties-remove-disabled-strokes` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
