@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped remove-all-proxies continuation recheck (2026-06-30):
+  launcher continuation after the manual PNG sequence milestone selected
+  exactly one next candidate, `tool-project-remove-all-proxies`. Exact source
+  review of `Project/Remove_All_Proxies.jsx` verified source SHA
+  `a750031e01a49b25ca520b19d564eba72edea8784381ce0ffd30d9171795b348`
+  and source behavior that opens one undo group, iterates every
+  `app.project` item from `project.numItems` down to `1`, filters
+  `CompItem` instances with `item.useProxy`, and calls `item.setProxyToNone()`
+  for each proxy-enabled comp. Current support remains a read-only/high-risk
+  policy guard for proxy removal through
+  `project-file-render-proxy-safety-policy`; current Project typed tools can
+  inspect, rename, move, label, and replace explicit generated/reviewed Project
+  items or layer sources, but they do not expose `useProxy`/proxy source
+  read-back or a proxy set/clear mutation contract. Reducer decision: keep
+  source-exact global proxy removal terminal/fail-closed for this longrun. No
+  live proof, scoped runner retry, product source, recipe, registry, runtime
+  ledger, source checkout, launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped manually-render-png-sequence continuation recheck
   (2026-06-30): launcher continuation after the Overlord cleanup milestone
   selected exactly one next candidate,
@@ -5283,6 +5301,24 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-remove-all-proxies` source-exact behavior
+  terminal/fail-closed during the Kylet newly-unblocked continuation after the
+  manual PNG sequence milestone. The exact script iterates all Project items,
+  checks `CompItem.useProxy`, and calls `setProxyToNone()` on every
+  proxy-enabled comp, which is a global proxy-state mutation. Existing Project
+  item contracts and live lanes can inspect bounded Project inventory and
+  mutate explicit generated/reviewed names, folders, labels, layer sources, or
+  render queue setup, but no current typed contract provides proxy set/clear
+  operations, `useProxy` or proxy source read-back, generated proxy asset/file
+  sandboxing, or semantic verification for reversible proxy state. The
+  `project-file-render-proxy-safety-policy` remains an approval-gated guard,
+  not authorization to mutate. Unblock condition: add explicit parent/user
+  approval plus a generated-only Project item proxy typed-tool family limited
+  to explicit generated comp targets, with proxy set/clear operations,
+  dry-run/checkpoint protection, `useProxy` and proxy source read-back,
+  generated proxy asset sandbox policy, semantic verification,
+  cleanup/rollback, and no raw JSX fallback.
+
 - 2026-06-30: Keep `tool-project-manually-render-png-sequence` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after Overlord cleanup. The exact script opens `Folder.selectDialog`, creates
@@ -7338,6 +7374,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped remove-all-proxies continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-manually-render-png-sequence`, review exact source behavior against current proxy/project typed contracts, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/ticket slices; exact source review for `Project/Remove_All_Proxies.jsx`; source SHA verification; registry/live-lane review for proxy support and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact global proxy removal terminal/fail-closed because current safe contracts do not expose proxy set/clear operations, `useProxy` or proxy source read-back, generated proxy asset sandboxing, reversible proxy-state semantic verification, or cleanup/checkpoint policy for this mutation. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped manually-render-png-sequence continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-up-overlord-folder`, review exact source behavior after the new single-frame PNG generated-output lane, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract/ticket slices; exact source review for `Project/Manually_Render_PNG_Sequence.jsx`; source SHA verification; contract review for `save_comp_frame_png`, `save-frame-as-png-typed-plan`, generic intake save-frame note, current live-lane registry scope, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact manual PNG sequence rendering terminal/fail-closed because current safe contracts can save one reviewed generated frame under the generated export root with hash/PNG evidence and `resolutionFactor` restoration, but do not approve user-selected output folders, PNG sequence manifests, arbitrary folder creation, frame-loop output generation, `comp.time` restore/read-back for a sequence, cleanup/rollback for generated sequence files, or non-generated user outputs. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
