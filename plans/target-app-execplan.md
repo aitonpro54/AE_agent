@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] NEWLY UNBLOCKED intake recheck shortlist milestone (2026-06-30):
+  compact preflight reran from user-reported context `20%`, clean tracked
+  worktree, and prior baton `handed_off_pending`. Shortlist matrix was built
+  only from terminal/blocked/skipped ledger entries and targeted source text:
+
+  | Candidate/family | Ledger status | Decision |
+  | --- | --- | --- |
+  | Dakkshin/TheLlamainator `tool-src-scripts-createtextlayer` | Dakkshin `completed`; TheLlamainator `skipped_unsafe_candidate` duplicate | Selected as smallest safe duplicate-family. Existing commit `732043b` covers bounded `left|center|right` paragraph justification through typed `create_text_layer`/`update_text_layer`; no new recipe, registry, bridge, source, or ledger mutation needed. |
+  | Dakkshin/TheLlamainator `tool-src-scripts-createshapelayer` | Dakkshin `completed`; TheLlamainator `skipped_unsafe_candidate` duplicate | Selected in the same duplicate-family. Existing commit `03c257a` covers bounded polygon/star through typed `create_shape_layer`; no new recipe, registry, bridge, source, or ledger mutation needed. |
+  | Dakkshin/TheLlamainator `tool-src-scripts-mcp-bridge-auto` | `blocked_policy` | Excluded: only safe embedded intents map to existing typed tools; the wrapper remains blocked by Documents command/result files, `eval`, arbitrary dispatcher, source execution, and broad bridge-auto transport. |
+  | Dakkshin/TheLlamainator `applyEffect` / `applyEffectTemplate` | `blocked_policy` | Excluded: remaining blockers are arbitrary `.ffx`/preset paths and Curves point/channel semantics. |
+  | Kylet text/shape/layer timing/transform hits | `blocked_or_skipped` | Not selected in this milestone. The compact matrix found likely false-positive or still-missing contracts: file parsing, menu-command text-to-shape conversion, open dynamic vector path/expression connector, layer reorder/insert-before, puppet/render/proxy/project cleanup, or selected-property semantics. Continue with one scoped Kylet timing/transform candidate only after exact source review confirms it matches current safe typed contracts. |
+
+  The reviewable work for this milestone is documentation/handoff/baton only:
+  it records that the newly unblocked TheLlamainator text/shape candidates are
+  already safely closed as duplicates of the Dakkshin typed contracts, while the
+  next longrun should continue with a narrower Kylet candidate-specific review.
+  No broad queue processing, raw JSX copy, source checkout write, dependency
+  change, live CEP/AE mutation, launcher edit, push, or PR was used.
+
 - [x] Dakkshin final gap `tool-src-scripts-mcp-bridge-auto` policy closeout
   (2026-06-30): scoped matrix found no existing recipe/registry/product entry
   for the auto-running source bridge wrapper. Added
@@ -4700,6 +4720,15 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: NEWLY UNBLOCKED recheck reducer decision: do not reopen
+  TheLlamainator `createTextLayer` or `createShapeLayer` ledgers for new
+  product work. They are functional duplicates already covered by Dakkshin
+  typed contracts (`732043b` text justification, `03c257a` polygon/star), and a
+  second recipe/registry path would duplicate the reviewed contract. Continue
+  remaining work only as scoped Kylet candidate reviews; accept a candidate only
+  when the exact source behavior maps to current safe typed timing/transform
+  contracts with read-back, otherwise keep it terminal with a precise blocker.
+
 - 2026-06-30: For Dakkshin/TheLlamainator `mcp-bridge-auto`, do not implement
   a product command-file bridge. The source surface is a high-risk bridge
   wrapper, not a bounded AE operation: ScriptUI auto-run, Documents file I/O,
@@ -6389,6 +6418,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| NEWLY UNBLOCKED intake recheck shortlist milestone | Required to produce the compact shortlist matrix, choose one smallest safe family, and record a reducer decision without broad queue processing, raw JSX, source checkout writes, launcher edits, push, or PR. | Passed: compact preflight; targeted plan/ledger/source slices; compact full-intake status/proof/ledger summaries; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, Dakkshin ledger, TheLlamainator ledger, and Kylet triage ledger; `git diff --check` with Windows line-ending warning only; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No JavaScript files were touched, and no product/runtime/ledger mutation was made. |
 
 | Dakkshin final gap `tool-src-scripts-mcp-bridge-auto` policy closeout | Required to decide whether the final bridge-auto policy gap could become a safe typed/product contract without raw JSX, source writes, dependency changes, live mutation, or broad queue processing. | Passed: compact preflight; targeted source/ledger/product search; scoped matrix for Dakkshin and TheLlamainator bridge-auto variants; JSON parse for `.codex/active-thread.json`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and both ledgers; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files, bridge code, registry entry, live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 
