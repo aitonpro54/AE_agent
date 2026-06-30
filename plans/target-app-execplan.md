@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped timing/transform recheck: Newton layer matching
+  (2026-06-30): compact Kylet-only shortlist was rebuilt from the 25
+  `blocked_or_skipped` entries in
+  `.codex-runtime/sdk/generic-repo-importer/kyletmartinez-after-effects-scripts-742f32d4-intake/queue-ledger.triage-75.json`.
+  The closest timing/transform candidate was
+  `tool-layers-match-layers-to-newton-layers`; exact source review of
+  `Layers/Match_Layers_To_Newton_Layers.jsx` showed a full active-comp scan for
+  `Illustrator Icon N`, lookup of matching `Newton Icon N`, copying either the
+  first Position keyframe or current Position value, and assigning
+  `layer.parent = parent`. Current safe contracts cover bounded
+  `set_layer_transform`, `set_layer_time_range`, generated-only
+  `set_layer_parent` lanes, and explicit `set_property_keyframes`, but there is
+  no candidate-specific Newton/Illustrator generated-pair contract that combines
+  prefix matching, Position keyframe/value copy, parent-link mutation,
+  read-back, semantic verification, and cleanup/checkpoint policy. Reducer
+  decision: keep the candidate terminal; do not mutate product files, recipes,
+  registry, source checkout, or ledgers. The next longrun should continue with a
+  different Kylet `blocked_or_skipped` candidate only after exact source review,
+  not from broad `position`/`duration` word matches.
+
 - [x] NEWLY UNBLOCKED intake recheck shortlist milestone (2026-06-30):
   compact preflight reran from user-reported context `20%`, clean tracked
   worktree, and prior baton `handed_off_pending`. Shortlist matrix was built
@@ -4699,6 +4719,14 @@ old `AE_agent` repository remains the historical source.
 
 ## Next Milestone
 
+For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
+`blocked_or_skipped` candidates one at a time. Do not reopen
+`tool-layers-match-layers-to-newton-layers` unless a reviewed generated-only
+Newton/Illustrator pair contract exists for explicit layer-name pairs,
+Position keyframe/value copy, parent assignment read-back, semantic
+verification, cleanup/checkpoint policy, and fail-closed third-party naming
+guards.
+
 Current prepared max-scope generated-only live proof set is closed for this
 run. `full-ui-agent-layer-selection-openai-cli-smoke` passed, and the only
 remaining prepared family without a passing proof is
@@ -4719,6 +4747,17 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-layers-match-layers-to-newton-layers` terminal during
+  the Kylet timing/transform recheck. Existing safe transform/timing contracts
+  and generated-only parenting lanes are not enough for source-exact Newton
+  behavior because the candidate combines third-party prefix matching, Position
+  keyframe/current-value copy, and parent-link mutation. Future unblock requires
+  a narrow generated-only Newton/Illustrator pair contract with explicit target
+  pairs, `set_property_keyframes`/position evidence, `set_layer_parent`
+  read-back, semantic verification, cleanup/checkpoint policy, and no raw JSX,
+  source checkout write, dependency change, broad queue processing, or live
+  mutation without separate approval.
 
 - 2026-06-30: NEWLY UNBLOCKED recheck reducer decision: do not reopen
   TheLlamainator `createTextLayer` or `createShapeLayer` ledgers for new
@@ -6418,6 +6457,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped timing/transform recheck: Newton layer matching | Required to build a fresh Kylet-only shortlist from `blocked_or_skipped` entries, pick at most one candidate, and accept it only if exact source behavior maps to current safe typed contracts with explicit generated targets, read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe slices; exact source review for `Layers/Match_Layers_To_Newton_Layers.jsx`; parent-reducer ticket review for `tool-layers-match-layers-to-newton-layers`; registry/recipe contract search for `set_layer_transform`, `set_layer_time_range`, `set_property_keyframes`, and `set_layer_parent`; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, and no product/runtime/ledger/source mutation was made. |
 
 | NEWLY UNBLOCKED intake recheck shortlist milestone | Required to produce the compact shortlist matrix, choose one smallest safe family, and record a reducer decision without broad queue processing, raw JSX, source checkout writes, launcher edits, push, or PR. | Passed: compact preflight; targeted plan/ledger/source slices; compact full-intake status/proof/ledger summaries; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, Dakkshin ledger, TheLlamainator ledger, and Kylet triage ledger; `git diff --check` with Windows line-ending warning only; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No JavaScript files were touched, and no product/runtime/ledger mutation was made. |
 
