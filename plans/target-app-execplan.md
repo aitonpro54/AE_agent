@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped disabled-stroke recheck: Remove Disabled Strokes
+  (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
+  exactly one next candidate, `tool-properties-remove-disabled-strokes`.
+  Exact source review of `Properties/Remove_Disabled_Strokes.jsx` showed
+  source behavior that reads the active comp selection, recursively traverses
+  each selected layer property tree from the end, removes disabled
+  `ADBE Vector Graphic - Stroke` property groups with `property.remove()`, and
+  alerts the removed count. Current product support can create/read generated
+  shape layers, selected properties, path geometry, stroke expressions, and
+  delete whole generated layers, but no current typed contract creates or marks
+  disabled vector stroke groups, reads stable stroke-group enabled/presence
+  semantics, removes only shape stroke property groups, or verifies the removal
+  count on generated targets. Reducer decision: keep source-exact destructive
+  selected shape-property traversal terminal/fail-closed under the existing
+  `shape_property_delete` contract gap; no live proof or scoped runner retry
+  was run because the exact source behavior does not map to current safe typed
+  contracts and live mutation was not separately approved. No product source,
+  recipe, registry, runtime ledger, source checkout, launcher file, dependency,
+  push, or PR was mutated.
+
 - [x] Kylet scoped DuIK pin-size recheck: Increase All Pin Sizes
   (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
   exactly one next candidate, `tool-properties-increase-all-pin-sizes`. Exact
@@ -5083,6 +5103,23 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-properties-remove-disabled-strokes` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
+  Exact source behavior depends on active-comp selected layers, recursive
+  property-group traversal, `ADBE Vector Graphic - Stroke` identity,
+  `property.enabled === false`, destructive `property.remove()`, and removal
+  count reporting. Existing typed tools are acceptable only for explicit
+  generated or reviewed targets with current read-back evidence; they do not
+  prove generated disabled-stroke fixture creation, stable stroke-group
+  enabled/presence read-back, deletion of only disabled stroke groups, or
+  semantic count verification. Unblock condition: add a parent-approved
+  generated-only `shape_property_delete` contract and proof lane that creates
+  or safely marks disabled generated vector strokes, removes only disabled
+  `ADBE Vector Graphic - Stroke` groups from explicit generated targets, reads
+  back before/after stroke-group presence and enabled state, verifies removal
+  counts and preservation of enabled strokes, records cleanup/checkpoint policy,
+  avoids selected user-layer traversal, and forbids raw JSX fallback.
+
 - 2026-06-30: Keep `tool-properties-increase-all-pin-sizes` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
   Exact source behavior prompts for a percentage, traverses all project
@@ -6956,6 +6993,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped disabled-stroke recheck: Remove Disabled Strokes | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/live-lane, and parent-reducer ticket slices; exact source review for `Properties/Remove_Disabled_Strokes.jsx`; product contract search for disabled-stroke, shape-property delete, `ADBE Vector Graphic - Stroke`, selected-property, generated shape/stroke, and whole-layer delete coverage; next blocked-id lookup found `tool-properties-rename-selected-properties`. Reducer decision kept source-exact disabled stroke group removal terminal/fail-closed because current typed contracts still lack generated disabled-stroke fixture creation or marking, stable stroke-group enabled/presence read-back, deletion of only disabled `ADBE Vector Graphic - Stroke` groups, and semantic removed-count verification. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped DuIK pin-size recheck: Increase All Pin Sizes | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/policy/live-lane, and ticket slices; exact source review for `Properties/Increase_All_Pin_Sizes.jsx`; product contract search for DuIK/pin-size support, explicit effect-property tools, Puppet On Transparent, Puppet pin type, Puppet guide-layer, and third-party semantics policy coverage; next blocked-id lookup found `tool-properties-remove-disabled-strokes`. Reducer decision kept source-exact project-wide DuIK pin-size mutation terminal/fail-closed because current typed contracts still lack a generated/mock `Pseudo/Duik pin02` fixture, exact property-2 pin-size identity proof, project-wide safe traversal, and semantic DuIK pin-size read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
