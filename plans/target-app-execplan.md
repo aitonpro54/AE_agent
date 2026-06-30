@@ -26,6 +26,23 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped SRT-to-text-layers continuation recheck
+  (2026-06-30): launcher continuation after the Puppet pin type milestone
+  selected exactly one next candidate,
+  `tool-layers-convert-srt-to-text-layers`. Exact source review of
+  `Layers/Convert_SRT_To_Text_Layers.jsx` showed source behavior that opens
+  `File.openDialog("SRT")`, reads the selected local SRT file through AE
+  `File` IO, parses subtitle time blocks, creates text layers with
+  `composition.layers.addText()`, writes Source Text, and sets each generated
+  text layer in/out points. Current product support can create generated text
+  layers with explicit timing and read them back, but it still has no approved
+  generated-only SRT content-input policy or proof lane that replaces local
+  file picker/File IO with reviewed SRT text or parsed subtitle blocks.
+  Reducer decision: keep the source-exact file-based SRT conversion terminal
+  for this longrun. No live proof, scoped runner retry, product source, recipe,
+  registry, runtime ledger, source checkout, launcher file, dependency, push,
+  or PR was mutated.
+
 - [x] Kylet scoped Puppet pin type continuation recheck
   (2026-06-30): launcher continuation after the selected-property rename
   milestone selected exactly one next candidate,
@@ -5147,6 +5164,19 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-layers-convert-srt-to-text-layers` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after Puppet pin type. The exact script depends on local SRT file selection
+  and AE File IO before creating timed text layers. Existing
+  `create_text_layer` timing support is deliberately narrower: it requires
+  explicit reviewed/generated text and finite timing inputs plus typed
+  read-back. Unblock condition: add a parent-approved generated-only SRT
+  content-input lane that accepts reviewed SRT text or parsed subtitle blocks
+  as explicit inputs, rejects file paths and `File.openDialog`, creates timed
+  generated text layers through typed tools, verifies text/timing with
+  `get_layer_details`/`get_comp_details`, preserves checkpoint and cleanup
+  policy, and records license-safe no-raw-JSX adaptation evidence.
+
 - 2026-06-30: Keep `tool-properties-toggle-puppet-pin-types` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after selected-property rename. Existing `set_puppet_pin_type` support is
@@ -7071,6 +7101,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped SRT-to-text-layers continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-properties-toggle-puppet-pin-types`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/registry/live-lane slices; exact source review for `Layers/Convert_SRT_To_Text_Layers.jsx`; contract review for existing `create_text_layer` timing/read-back support and missing SRT-specific generated-only content-input lane. Reducer decision kept source-exact SRT file conversion terminal/fail-closed because current safe contracts do not approve AE file picker/File IO, user SRT file reads, raw JSX execution, or inferred local file content. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped Puppet pin type continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-properties-rename-selected-properties`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger/source/recipe/orchestrator/live-lane/plan slices; exact source review for `Properties/Toggle_Puppet_Pin_Types.jsx`; contract review for `recipes/toggle-puppet-pin-types-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md`, `orchestrator/run-generic-repo-full-intake.mjs`, `orchestrator/generic-repo-live-lane-registry.json`, and the Kylet triage ledger entry. Reducer decision kept source-exact selected Puppet pin type toggling terminal/fail-closed because current `set_puppet_pin_type` support is explicit-target only and still lacks generated Puppet pin atom fixture/bind proof, selected-pin traversal guards, source-exact toggle proof, and arbitrary selected Puppet pin read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
