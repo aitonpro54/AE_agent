@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped layer-name reset recheck: Reset Layer Names (2026-06-30):
+  compact Kylet-only `blocked_or_skipped` map selected exactly one next
+  candidate, `tool-layers-reset-layer-names`, because current product history
+  contains `reset-layer-names-typed-plan` and the
+  `layer-empty-name-reset-generated-only` lane. Exact source review of
+  `Layers/Reset_Layer_Names.jsx` showed source behavior that reads
+  `app.project.activeItem`, iterates every layer in the active composition from
+  `comp.numLayers` down to `1`, and assigns `layer.name = ""` inside an undo
+  group. Reducer decision: accept this candidate only as the existing narrow
+  generated/reviewed typed adaptation, not as source-exact arbitrary user-comp
+  mutation. The acceptable path is one explicit generated or reviewed
+  composition, `get_comp_details includeLayers:true`, concrete layer indices and
+  `expectedLayerNames` from the same inventory, one `rename_layers` call per
+  reviewed layer with `mode:"exact"`, `name:""`, `allowEmptyName:true`,
+  `verifyAfter:true`, final `get_comp_details` read-back, semantic
+  verification, checkpoint/edit-session protection, and generated cleanup.
+  Source-exact all-active-comp user-layer reset, stale layer order,
+  multi-layer empty exact rename, Project item rename, source relinking, timing
+  or layer-order edits, effects, masks, parenting, expressions, render queue
+  work, file I/O, source-checkout execution, raw JSX, dependency changes, push,
+  and PR remain fail-closed. No fresh live proof was run because this longrun
+  does not separately approve live AE mutation.
+
 - [x] Kylet scoped grid-rig recheck: Replace Grid Rig Control (2026-06-30):
   compact Kylet-only `blocked_or_skipped` map selected exactly one next
   candidate, `tool-layers-replace-grid-rig-control`, because current product
@@ -4846,8 +4869,23 @@ old `AE_agent` repository remains the historical source.
 
 For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
 `blocked_or_skipped` candidates one at a time. The next first look after the
-grid-rig closeout is `tool-layers-reset-layer-names`, or the next Kylet
+layer-name reset closeout is `tool-layers-toggle-puppet-pins-as-guide-layers`,
+or the next Kylet
 `blocked_or_skipped` entry if exact source review shows it is a worse fit.
+
+Do not reopen `tool-layers-reset-layer-names` for source-exact arbitrary
+active-comp user-layer mutation. The accepted mapping is only the existing
+`layer-empty-name-reset-generated-only` path: one explicit generated or reviewed
+composition, `get_comp_details includeLayers:true`, concrete layer indices and
+`expectedLayerNames` from the same inventory, one `rename_layers` call per
+reviewed layer with `mode:"exact"`, `name:""`, `allowEmptyName:true`,
+`verifyAfter:true`, final `get_comp_details` read-back, semantic verification,
+checkpoint/edit-session protection, generated cleanup, and fail-closed behavior
+for stale layer order, multi-layer empty exact rename, Project item rename,
+source relinking, timing/order edits, effects, masks, parenting, expressions,
+render queue work, file I/O, source-checkout execution, raw JSX, dependency
+changes, push, or PR. A fresh generated-only live proof still requires explicit
+live mutation approval.
 
 Do not reopen `tool-layers-replace-grid-rig-control` for completion unless the
 existing `grid-rig-control-replacement-generated-only` path can run a fresh
@@ -4930,6 +4968,17 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Accept `tool-layers-reset-layer-names` only as the existing
+  generated/reviewed typed adaptation during the Kylet newly-unblocked recheck.
+  Exact source behavior sets every layer name in `app.project.activeItem` to
+  `""`; current product support maps that behavior only through
+  `rename_layers` with `mode:"exact"`, `name:""`, `allowEmptyName:true`, one
+  explicit layer index per call, `expectedLayerNames`, read-back, semantic
+  verification, checkpoint/edit-session protection, and generated cleanup.
+  Source-exact arbitrary active-comp user-layer reset and raw JSX remain
+  fail-closed. No live proof was run because live mutation was not separately
+  approved in this longrun.
 
 - 2026-06-30: Keep `tool-layers-replace-grid-rig-control`
   terminal/live-blocked during the Kylet newly-unblocked recheck. Exact source
@@ -6736,6 +6785,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped layer-name reset recheck: Reset Layer Names | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry, live-lane, bridge contract, semantic-verification, scenario, and ticket slices; exact source review for `Layers/Reset_Layer_Names.jsx`; contract review for `recipes/reset-layer-names-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-reset-layer-names.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `mcp-server/bridge-daemon.js`, `mcp-server/semantic-verification.js`, the Kylet triage ledger entry, and reset-name live-lane tickets; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped grid-rig recheck: Replace Grid Rig Control | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Replace_Grid_Rig_Control.jsx`; contract review for `recipes/replace-grid-rig-control-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-replace-grid-rig-control.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane tickets; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
