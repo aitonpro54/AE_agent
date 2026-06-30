@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped Project reset imported item names recheck
+  (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
+  exactly one next candidate, `tool-project-reset-imported-item-names`. Exact
+  source review of `Project/Reset_Imported_Item_Names.jsx` showed source
+  behavior that wraps an undo group, reads `app.project.selection`, iterates
+  selected project items, filters `FootageItem` instances, and assigns
+  `item.name = item.mainSource.file.displayName`. Current product support has
+  a narrow generated-only advisory recipe/lane for explicit generated imported
+  footage using a sandboxed generated PNG, `import_footage`, typed
+  `find_project_items` / `get_project_snapshot` evidence, exact
+  `rename_project_items(type:"footage", mode:"exact")`, semantic verification,
+  generated PNG cleanup, and generated project-item cleanup. Reducer decision:
+  keep source-exact Project panel selection traversal, relinking,
+  missing-footage repair, arbitrary user file paths, non-generated assets, item
+  delete/move, render queue work, raw JSX, and source JSX copy fail-closed; no
+  fresh live proof or scoped runner retry was run because this continuation
+  does not separately approve live AE mutation. No product source, recipe,
+  registry, runtime ledger, source checkout, launcher file, dependency, push,
+  or PR was mutated.
+
 - [x] Kylet scoped Lottie drop-shadow recheck: Convert Drop Shadows For Lottie
   (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
   exactly one next candidate, `tool-lottie-convert-drop-shadows-for-lottie`.
@@ -5043,6 +5063,20 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-reset-imported-item-names` source-exact
+  behavior fail-closed during the Kylet newly-unblocked recheck. Exact source
+  behavior depends on Project panel selection (`app.project.selection`) and
+  resets selected `FootageItem` names from `item.mainSource.file.displayName`.
+  The existing accepted adaptation remains generated-only and explicit-target
+  based: sandboxed generated footage, `import_footage`, typed project
+  snapshot/search evidence, `rename_project_items(type:"footage",
+  mode:"exact")` to the reviewed file display name, semantic verification,
+  checkpoint/edit-session protection, and generated cleanup. Source-exact
+  selected Project item discovery, relinking, missing-footage repair, arbitrary
+  user file paths, non-generated user assets, item delete/move, render queue
+  work, raw JSX, and source JSX copy remain separate gated contracts. No live
+  proof was run because live mutation was not separately approved.
+
 - 2026-06-30: Keep `tool-lottie-convert-drop-shadows-for-lottie` terminal
   during the Kylet newly-unblocked recheck. Exact source behavior mutates the
   selected active-comp layer and generated duplicates through Drop Shadow effect
@@ -6887,6 +6921,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped Project reset imported item names recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry/live-lane, generated-safety-contract, and ticket slices; exact source review for `Project/Reset_Imported_Item_Names.jsx`; contract review for `recipes/reset-imported-item-names-typed-plan.md`, `recipes/generic-repo-intake/tool-project-reset-imported-item-names.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `mcp-server/generated-safety-contracts.js`, scenario/report smoke references, and the Kylet triage ledger entry; next blocked-id lookup found `tool-properties-increase-all-pin-sizes`. Reducer decision kept source-exact Project panel selection traversal fail-closed and accepted only the existing generated-only explicit-footage-index adaptation. Closeout validation passed: JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warning only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped Lottie drop-shadow recheck: Convert Drop Shadows For Lottie | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/live-lane, and ticket slices; exact source review for `Lottie/Convert_Drop_Shadows_For_Lottie.jsx`; compact contract checks for current generated-only effect enabled, parent, property value, keyframe, and Lottie out-point lanes; registry search showing no `tool-lottie-convert-drop-shadows-for-lottie` recipe/solution; and next blocked-id lookup. Reducer decision kept the candidate terminal because current typed contracts still lack generated-only effect removal, recursive vector color traversal, transform keyframe cleanup, source-exact selected-layer/effect traversal, and combined Lottie conversion proof. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
