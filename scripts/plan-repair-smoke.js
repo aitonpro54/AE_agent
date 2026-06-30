@@ -162,6 +162,25 @@ async function main() {
     assert.strictEqual(textRepair.repairedPlan.steps[1].resultBindings.layerIndex, "{{layerIndex}}");
     assert.strictEqual(textRepair.repairedPlan.steps[1].args.justification, "center");
 
+    const shapeRepair = await validatePlan("shape-polystar-alias", {
+      summary: "Create a generated star shape with source-style shapeType args.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Add star", tool: "createShapeLayer", args: { compName: "Repair Smoke Comp", name: "Repair Smoke Star", shapeType: "star", pointCount: 5, outer_radius: 120, inner_radius: 48 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_shape_layer"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.shape, "star");
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.points, 5);
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.outerRadius, 120);
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.innerRadius, 48);
+
     await validatePlan("camera-layer-alias", {
       summary: "Create a simple generated camera.",
       risk: "medium",

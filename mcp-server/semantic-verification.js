@@ -2594,15 +2594,54 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "create_shape_layer") {
+    const layerShapeContents = payload.layer && Array.isArray(payload.layer.shapeContents) ? payload.layer.shapeContents : [];
+    const requestedShapeType = args.shape || "rectangle";
+    const readBackShape = layerShapeContents.find((item) => item && item.type === requestedShapeType) || layerShapeContents[0] || {};
+    const shapeSummary = isPlainObject(payload.shape) ? payload.shape : {};
+    const observedShape = { ...readBackShape, ...shapeSummary };
     checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created shape layer name matches request");
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:shape`,
       title: "Created shape summary matches request",
-      expected: `${args.shape || "rectangle"} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
-      observed: payload.shape ? `${payload.shape.type || ""} ${Array.isArray(payload.shape.size) ? payload.shape.size.join("x") : ""}`.trim() : "missing shape summary",
-      passed: Boolean(payload.shape) && (!args.shape || payload.shape.type === args.shape),
+      expected: `${requestedShapeType} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
+      observed: observedShape.type ? `${observedShape.type || ""} ${Array.isArray(observedShape.size) ? observedShape.size.join("x") : ""}`.trim() : "missing shape summary",
+      passed: Boolean(observedShape.type) &&
+        observedShape.type === requestedShapeType &&
+        (!hasOwn(args, "size") || numberArrayMatches(observedShape.size, args.size)),
       evidence: stepLabel(step)
     });
+    if (requestedShapeType === "polygon" || requestedShapeType === "star") {
+      const expectedStarType = args.starType || requestedShapeType;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:star-type`,
+        title: "Created polystar type matches request",
+        expected: expectedStarType,
+        observed: observedShape.starType || observedShape.type || "missing starType",
+        passed: (observedShape.starType || observedShape.type) === expectedStarType,
+        evidence: stepLabel(step)
+      });
+      for (const key of ["points", "outerRadius"]) {
+        if (!hasOwn(args, key)) continue;
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:${key}`,
+          title: `Created polystar ${key} matches request`,
+          expected: args[key],
+          observed: observedShape[key],
+          passed: nearlyEqual(observedShape[key], args[key]),
+          evidence: stepLabel(step)
+        });
+      }
+      if (requestedShapeType === "star" && hasOwn(args, "innerRadius")) {
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:innerRadius`,
+          title: "Created star innerRadius matches request",
+          expected: args.innerRadius,
+          observed: observedShape.innerRadius,
+          passed: nearlyEqual(observedShape.innerRadius, args.innerRadius),
+          evidence: stepLabel(step)
+        });
+      }
+    }
     return;
   }
 

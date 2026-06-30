@@ -2369,6 +2369,83 @@ async function verifyMutationResult(toolName, args, payload) {
         return null;
       }
 
+      function __codexLayerShapeChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__shapeDirectPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__shapeFallbackPropertyError) {}
+        }
+        try {
+          for (var __sp = 1; __sp <= group.numProperties; __sp++) {
+            var child = group.property(__sp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__shapeChildPropertyError) {}
+        return null;
+      }
+
+      function __codexLayerShapeValue(group, matchName, fallbackName) {
+        var prop = __codexLayerShapeChildProperty(group, matchName, fallbackName);
+        if (!prop) return null;
+        try { return prop.value; } catch (__shapeValueError) {}
+        return null;
+      }
+
+      function __codexLayerPolystarTypeName(value) {
+        try { if (value === PolystarPathType.POLYGON) return "polygon"; } catch (__polygonTypeNameError) {}
+        try { if (value === PolystarPathType.STAR) return "star"; } catch (__starTypeNameError) {}
+        if (Number(value) === 2) return "polygon";
+        if (Number(value) === 1) return "star";
+        try { return String(value); } catch (__polystarTypeStringError) {}
+        return null;
+      }
+
+      function __codexLayerShapeContentsInfo(layer) {
+        var shapes = [];
+        try {
+          var root = layer.property("ADBE Root Vectors Group");
+          if (!root) return shapes;
+          for (var __g = 1; __g <= root.numProperties; __g++) {
+            var group = root.property(__g);
+            if (!group || group.matchName !== "ADBE Vector Group") continue;
+            var contents = __codexLayerShapeChildProperty(group, "ADBE Vectors Group", "Contents");
+            if (!contents) continue;
+            for (var __c = 1; __c <= contents.numProperties; __c++) {
+              var shapeProp = contents.property(__c);
+              if (!shapeProp) continue;
+              var shapeInfo = {
+                groupName: group.name || "",
+                name: shapeProp.name || "",
+                matchName: shapeProp.matchName || ""
+              };
+              if (shapeProp.matchName === "ADBE Vector Shape - Rect") {
+                shapeInfo.type = "rectangle";
+                shapeInfo.size = __codexLayerShapeValue(shapeProp, "ADBE Vector Rect Size", "Size");
+              } else if (shapeProp.matchName === "ADBE Vector Shape - Ellipse") {
+                shapeInfo.type = "ellipse";
+                shapeInfo.size = __codexLayerShapeValue(shapeProp, "ADBE Vector Ellipse Size", "Size");
+              } else if (shapeProp.matchName === "ADBE Vector Shape - Star") {
+                shapeInfo.starType = __codexLayerPolystarTypeName(__codexLayerShapeValue(shapeProp, "ADBE Vector Star Type", "Type"));
+                shapeInfo.type = shapeInfo.starType || "star";
+                shapeInfo.points = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Points", "Points");
+                shapeInfo.outerRadius = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Outer Radius", "Outer Radius");
+                shapeInfo.innerRadius = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Inner Radius", "Inner Radius");
+              } else {
+                continue;
+              }
+              shapes.push(shapeInfo);
+            }
+          }
+        } catch (__shapeContentsInfoError) {}
+        return shapes;
+      }
+
       function __codexLayerInfo(layer) {
         if (!layer) return null;
         var transform = layer.property("ADBE Transform Group");
@@ -2414,7 +2491,8 @@ async function verifyMutationResult(toolName, args, payload) {
             font: sourceText.font || null,
             fontSize: sourceText.fontSize || null,
             justification: __codexTextJustificationName(sourceText.justification)
-          } : null
+          } : null,
+          shapeContents: isShapeLayer ? __codexLayerShapeContentsInfo(layer) : []
         };
       }
 
@@ -10077,15 +10155,19 @@ const tools = [
   },
   {
     name: "create_shape_layer",
-    description: "Create a rectangle or ellipse shape layer with fill, stroke, size, position, and timing.",
+    description: "Create a rectangle, ellipse, polygon, or star shape layer with fill, stroke, bounded geometry, position, and timing.",
     inputSchema: {
       type: "object",
       properties: {
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
-        shape: { type: "string", enum: ["rectangle", "ellipse"], description: "Shape type. Defaults to rectangle." },
+        shape: { type: "string", enum: ["rectangle", "ellipse", "polygon", "star"], description: "Shape type. Defaults to rectangle." },
         name: { type: "string", description: "Optional layer name." },
-        size: { type: "array", items: { type: "number" }, description: "Shape size [width, height]. Defaults to half comp size." },
+        size: { type: "array", items: { type: "number" }, description: "Rectangle/ellipse size [width, height]. Defaults to half comp size. Not used for polygon/star." },
+        points: { type: "number", description: "Polygon/star point count as an integer from 3 to 64. Defaults to 5 for polygon/star." },
+        outerRadius: { type: "number", description: "Polygon/star outer radius in pixels. Defaults to 100." },
+        innerRadius: { type: "number", description: "Star inner radius in pixels, greater than 0 and less than outerRadius. Defaults to 50. Not used for polygon." },
+        starType: { type: "string", enum: ["polygon", "star"], description: "Optional AE Polystar type guard. Must match shape when provided." },
         position: { type: "array", items: { type: "number" }, description: "Layer position [x, y] or [x, y, z]. Defaults to comp center." },
         fillColor: { type: "array", items: { type: "number" }, description: "Optional RGB fill color with values from 0 to 1." },
         strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1." },
@@ -16960,9 +17042,13 @@ async function callTool(name, args) {
   if (name === "create_shape_layer") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const shape = optionalString(args, "shape", "rectangle");
+    const shape = optionalString(args, "shape", "rectangle").trim().toLowerCase();
     const layerName = optionalString(args, "name", "Codex Shape");
     const size = optionalNumberArray(args, "size", null, 2, 2);
+    const points = optionalNumber(args, "points", 5);
+    const outerRadius = optionalNumber(args, "outerRadius", 100);
+    const innerRadius = optionalNumber(args, "innerRadius", shape === "star" ? 50 : null);
+    const starType = optionalString(args, "starType", "").trim().toLowerCase();
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const fillColor = optionalNumberArray(args, "fillColor", [1, 1, 1], 3, 3);
     const strokeColor = optionalNumberArray(args, "strokeColor", null, 3, 3);
@@ -16970,7 +17056,19 @@ async function callTool(name, args) {
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
 
-    if (!["rectangle", "ellipse"].includes(shape)) return toolResult("shape must be one of: rectangle, ellipse.", true);
+    if (!["rectangle", "ellipse", "polygon", "star"].includes(shape)) return toolResult("shape must be one of: rectangle, ellipse, polygon, star.", true);
+    const isPolystar = shape === "polygon" || shape === "star";
+    if (isPolystar && size) return toolResult("size is only supported for rectangle and ellipse; use outerRadius for polygon/star.", true);
+    if (!isPolystar && (hasArg(args, "points") || hasArg(args, "outerRadius") || hasArg(args, "innerRadius") || hasArg(args, "starType"))) {
+      return toolResult("points, outerRadius, innerRadius, and starType are only supported for polygon/star.", true);
+    }
+    if (isPolystar) {
+      if (starType && starType !== shape) return toolResult("starType must match shape for polygon/star.", true);
+      if (!Number.isInteger(points) || points < 3 || points > 64) return toolResult("points must be an integer from 3 to 64.", true);
+      if (outerRadius <= 0 || outerRadius > 10000) return toolResult("outerRadius must be greater than 0 and at most 10000.", true);
+      if (shape === "polygon" && hasArg(args, "innerRadius")) return toolResult("innerRadius is only supported for star.", true);
+      if (shape === "star" && (innerRadius <= 0 || innerRadius >= outerRadius)) return toolResult("innerRadius must be greater than 0 and less than outerRadius.", true);
+    }
     if (size && (size[0] <= 0 || size[1] <= 0)) return toolResult("size values must be greater than 0.", true);
     if (fillColor.some((value) => value < 0 || value > 1)) return toolResult("fillColor values must be between 0 and 1.", true);
     if (strokeColor && strokeColor.some((value) => value < 0 || value > 1)) return toolResult("strokeColor values must be between 0 and 1.", true);
@@ -16981,8 +17079,12 @@ async function callTool(name, args) {
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var shapeType = ${aeLiteral(shape)};
+      var isPolystar = shapeType === "polygon" || shapeType === "star";
       var layerName = ${aeLiteral(layerName)};
       var requestedSize = ${size ? aeLiteral(size) : "[comp.width / 2, comp.height / 2]"};
+      var requestedPoints = ${points};
+      var requestedOuterRadius = ${outerRadius};
+      var requestedInnerRadius = ${innerRadius === null ? "null" : innerRadius};
       var requestedPosition = ${position ? aeLiteral(position) : "[comp.width / 2, comp.height / 2]"};
       var fillColor = ${aeLiteral(fillColor)};
       var strokeColor = ${strokeColor ? aeLiteral(strokeColor) : "null"};
@@ -16990,16 +17092,34 @@ async function callTool(name, args) {
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "null" : duration};
 
+      function __codexPolystarTypeValue(typeName) {
+        if (typeName === "polygon") {
+          try { return PolystarPathType.POLYGON; } catch (__polygonTypeValueError) {}
+          return 2;
+        }
+        try { return PolystarPathType.STAR; } catch (__starTypeValueError) {}
+        return 1;
+      }
+
       app.beginUndoGroup("Codex Create Shape Layer");
       var layer = comp.layers.addShape();
       if (layerName) layer.name = layerName;
       var root = layer.property("ADBE Root Vectors Group");
       var group = root.addProperty("ADBE Vector Group");
-      group.name = shapeType === "ellipse" ? "Ellipse" : "Rectangle";
+      group.name = shapeType === "ellipse" ? "Ellipse" : (shapeType === "polygon" ? "Polygon" : (shapeType === "star" ? "Star" : "Rectangle"));
       var contents = group.property("ADBE Vectors Group");
-      var shapeProp = contents.addProperty(shapeType === "ellipse" ? "ADBE Vector Shape - Ellipse" : "ADBE Vector Shape - Rect");
-      var sizeProp = shapeProp.property(shapeType === "ellipse" ? "ADBE Vector Ellipse Size" : "ADBE Vector Rect Size");
-      if (sizeProp) sizeProp.setValue(requestedSize);
+      var shapeProp = null;
+      if (isPolystar) {
+        shapeProp = contents.addProperty("ADBE Vector Shape - Star");
+        shapeProp.property("ADBE Vector Star Type").setValue(__codexPolystarTypeValue(shapeType));
+        shapeProp.property("ADBE Vector Star Points").setValue(requestedPoints);
+        shapeProp.property("ADBE Vector Star Outer Radius").setValue(requestedOuterRadius);
+        if (shapeType === "star") shapeProp.property("ADBE Vector Star Inner Radius").setValue(requestedInnerRadius);
+      } else {
+        shapeProp = contents.addProperty(shapeType === "ellipse" ? "ADBE Vector Shape - Ellipse" : "ADBE Vector Shape - Rect");
+        var sizeProp = shapeProp.property(shapeType === "ellipse" ? "ADBE Vector Ellipse Size" : "ADBE Vector Rect Size");
+        if (sizeProp) sizeProp.setValue(requestedSize);
+      }
       var fill = contents.addProperty("ADBE Vector Graphic - Fill");
       fill.property("ADBE Vector Fill Color").setValue(fillColor);
       if (strokeColor !== null || strokeWidth > 0) {
@@ -17020,7 +17140,9 @@ async function callTool(name, args) {
       var response = {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         layer: __codexLayerInfo(layer),
-        shape: { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+        shape: isPolystar
+          ? { type: shapeType, starType: shapeType, points: requestedPoints, outerRadius: requestedOuterRadius, innerRadius: requestedInnerRadius, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+          : { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
       };
       app.endUndoGroup();
       return response;

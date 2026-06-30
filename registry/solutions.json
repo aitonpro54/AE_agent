@@ -725,6 +725,119 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "shape-layer-polystar-typed-plan",
+      "title": "Shape Layer Polystar Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "shape",
+        "shape-layer",
+        "polygon",
+        "star",
+        "polystar",
+        "generated-only",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create generated or explicitly reviewed polygon and star shape layers with bounded typed geometry and shapeContents read-back.",
+        "appliesWhen": [
+          "The user asks to create a polygon or star shape layer.",
+          "The target composition is explicit and the requested geometry can be reviewed as points and radii.",
+          "The plan can use create_shape_layer without raw JSX, source checkout scripts, arbitrary vector path edits, or hidden native defaults."
+        ],
+        "whenNotToUse": [
+          "The request needs arbitrary vector path vertices, roundness, trim paths, repeaters, expressions, source temp-args wrappers, selection side effects, non-generated user-asset mutation without review, file I/O, raw JSX, or render queue work."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetComposition",
+          "type": "comp",
+          "required": true,
+          "description": "Current get_active_comp/get_comp_details evidence, compName, or compItemIndex for one explicit target composition."
+        },
+        {
+          "name": "shape",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed shape type: polygon or star."
+        },
+        {
+          "name": "pointsAndRadii",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed integer points from 3 to 64, positive outerRadius, and star innerRadius lower than outerRadius when applicable."
+        }
+      ],
+      "targetAssumptions": [
+        "New polygon/star layers are generated or explicitly named before mutation.",
+        "Polygon/star geometry is represented only by create_shape_layer shape, points, outerRadius, and star innerRadius.",
+        "Post-mutation get_layer_details or get_comp_details exposes shapeContents for read-back.",
+        "Raw JSX, source wrappers, arbitrary vector path editing, hidden native defaults, and non-generated user assets remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/shape-layer-polystar-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "create_shape_layer",
+          "get_layer_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Create one reviewed polygon or star layer with create_shape_layer, then read back shapeContents.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to bind the target composition.",
+          "Run create_shape_layer with shape polygon or star, explicit points, outerRadius, and star innerRadius when applicable.",
+          "Run get_layer_details or get_comp_details after mutation and verify shapeContents type/starType, points, outerRadius, and innerRadius for stars.",
+          "Fail closed for rectangle/ellipse size confusion, arbitrary path vertices, raw JSX, source wrappers, file I/O, broad scans, and unreviewed user assets."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies one explicit target composition and generated/reviewed layer name.",
+          "Mutation uses create_shape_layer with bounded polygon/star geometry only.",
+          "Post-run read-back shows matching shapeContents.type/starType, points, outerRadius, and star innerRadius when applicable.",
+          "Unsupported source-exact polygon/star behavior is reported as a typed-tool gap."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by Dakkshin/TheLlamainator final-gaps closeout for createShapeLayer polygon/star support."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-30",
+          "from": "dakkshin-final-gaps-createShapeLayer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 final-gaps follow-up added bounded create_shape_layer polygon/star support with points/radii validation, compact shapeContents read-back, and semantic verification; no raw JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use explicit points and radii for polygon/star requests.",
+        "Require get_layer_details or get_comp_details shapeContents read-back before claiming success.",
+        "Do not generalize this recipe to arbitrary vector paths, trim/repeater/roundness edits, source wrappers, selection side effects, or non-generated user assets."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "selected-layers-animation-typed-plan",
       "title": "Selected Layers Animation Typed Plan",
       "status": "recipe",

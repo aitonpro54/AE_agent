@@ -103,7 +103,7 @@ function layerInfo(name, overrides = {}) {
   const startTime = overrides.startTime === undefined ? 0 : overrides.startTime;
   const inPoint = overrides.inPoint === undefined ? startTime : overrides.inPoint;
   const outPoint = overrides.outPoint === undefined ? inPoint + 1 : overrides.outPoint;
-  return {
+  const result = {
     index: overrides.index || 1,
     id: overrides.id || null,
     name: name || "Layer",
@@ -131,6 +131,10 @@ function layerInfo(name, overrides = {}) {
     text: (overrides.text || overrides.justification) ? { text: overrides.text || "", fontSize: overrides.fontSize || null, justification: overrides.justification || null } : null,
     source: overrides.source || null
   };
+  if (overrides.shapeContents) {
+    result.shapeContents = overrides.shapeContents;
+  }
+  return result;
 }
 
 function reindexLayers(layers) {
@@ -1164,11 +1168,29 @@ function fakeMutationResult(step, state) {
     return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize, justification: args.justification } }, compName, layer);
   }
   if (step.tool === "create_shape_layer") {
-    const layer = insertLayerAtTop(state, layerInfo(args.name, { index: 1 }));
+    const shapeType = args.shape || "rectangle";
+    const shapeSummary = shapeType === "polygon" || shapeType === "star"
+      ? {
+        type: shapeType,
+        starType: args.starType || shapeType,
+        points: args.points === undefined ? 5 : args.points,
+        outerRadius: args.outerRadius === undefined ? 100 : args.outerRadius,
+        innerRadius: shapeType === "star" ? (args.innerRadius === undefined ? 50 : args.innerRadius) : null,
+        fillColor: args.fillColor,
+        strokeColor: args.strokeColor,
+        strokeWidth: args.strokeWidth
+      }
+      : { type: shapeType, size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth };
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
+      matchName: "ADBE Vector Layer",
+      shapeLayer: true,
+      shapeContents: [shapeSummary]
+    }));
     return withVerification({
       comp: { name: compName },
       layer,
-      shape: { type: args.shape || "rectangle", size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth }
+      shape: shapeSummary
     }, compName, layer);
   }
   if (step.tool === "create_layer_connection_line") {
@@ -3942,6 +3964,82 @@ function assertTextJustificationPasses() {
   assert(mismatch.checks.some((check) => check.id.indexOf("update_text_layer:justification") >= 0 && check.status === "failed"), "mismatched update_text_layer justification should fail.");
 }
 
+function assertShapeLayerPolystarPasses() {
+  const plan = {
+    summary: "Create generated polygon and star shape layers with explicit bounded geometry.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated polygon",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Shape Polystar Fixture",
+          name: "Shape Polystar Polygon",
+          shape: "polygon",
+          points: 6,
+          outerRadius: 120,
+          position: [240, 180],
+          fillColor: [0.24, 0.58, 0.86],
+          strokeColor: [1, 1, 1],
+          strokeWidth: 2,
+          duration: 3
+        }
+      },
+      {
+        title: "Read generated polygon",
+        tool: "get_layer_details",
+        args: {
+          compName: "Shape Polystar Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      },
+      {
+        title: "Create generated star",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Shape Polystar Fixture",
+          name: "Shape Polystar Star",
+          shape: "star",
+          points: 5,
+          outerRadius: 130,
+          innerRadius: 55,
+          position: [420, 180],
+          fillColor: [0.92, 0.58, 0.18],
+          strokeColor: [1, 1, 1],
+          strokeWidth: 2,
+          duration: 3
+        }
+      },
+      {
+        title: "Read generated star",
+        tool: "get_layer_details",
+        args: {
+          compName: "Shape Polystar Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `polygon/star shape semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:points") >= 0 && check.status === "passed"), "create_shape_layer points check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:outerRadius") >= 0 && check.status === "passed"), "create_shape_layer outerRadius check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:innerRadius") >= 0 && check.status === "passed"), "create_shape_layer innerRadius check should pass.");
+
+  const mismatchRun = fakeRunForPlan(plan);
+  const starStep = mismatchRun.steps.find((step) => step.tool === "create_shape_layer" && step.args.shape === "star");
+  starStep.result.shape.outerRadius = 99;
+  starStep.result.layer.shapeContents[0].outerRadius = 99;
+  const mismatch = buildSemanticVerification(plan, mismatchRun);
+  assert.strictEqual(mismatch.status, "needs_review", "polygon/star shape geometry mismatch should fail closed.");
+  assert(mismatch.checks.some((check) => check.id.indexOf("create_shape_layer:outerRadius") >= 0 && check.status === "failed"), "mismatched outerRadius should fail.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -4014,6 +4112,7 @@ function main() {
   assertLayerParentClosestScenarioPasses();
   assertLayerNameResetScenarioPasses();
   assertTextJustificationPasses();
+  assertShapeLayerPolystarPasses();
 
   console.log(JSON.stringify({
     ok: true,

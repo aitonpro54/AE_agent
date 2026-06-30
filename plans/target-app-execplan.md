@@ -26,6 +26,41 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin final gap `tool-src-scripts-createshapelayer` polygon/star typed
+  contract (2026-06-30): reopened the previous createShapeLayer terminal gap
+  for a bounded safe slice and implemented `create_shape_layer` support for
+  `shape:"polygon"` and `shape:"star"` with integer `points` from 3 to 64,
+  positive `outerRadius`, star `innerRadius` lower than `outerRadius`, and
+  guarded `starType` matching. `__codexLayerInfo` now exposes compact
+  `shapeContents` read-back for rectangle, ellipse, polygon, and star layers;
+  semantic verification checks polygon/star `type`, `starType`, `points`,
+  `outerRadius`, and `innerRadius` mismatch behavior. Added plan-repair aliases
+  for source-style `shapeType`, `pointCount`, and radius field names, recipe
+  `recipes/shape-layer-polystar-typed-plan.md`, registry id
+  `shape-layer-polystar-typed-plan`, and updated
+  `recipes/generic-repo-intake/tool-src-scripts-createshapelayer.md`. Runtime
+  ledgers now record Dakkshin `tool-src-scripts-createshapelayer` as
+  `completed` / `typed_tool_contract_implemented`; TheLlamainator remains a
+  duplicate `skipped_unsafe_candidate` with duplicate contract evidence. Still
+  fail-closed: source temp args/filesystem/JSON wrapper behavior, raw JSX,
+  hidden native defaults, rectangle/ellipse `size` semantics for polygon/star,
+  arbitrary vector path vertices, roundness, trim paths, repeaters,
+  expressions, broad shape group mutation, and non-generated user-asset
+  mutation without explicit review/rollback. No dependency change, live CEP/AE
+  mutation, source checkout write, launcher edit, push, or PR was used.
+  Validation passed: touched-file `node --check`, JSON parse for
+  `.codex/active-thread.json`, registry, live-lane registry, and both ledgers,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/plan-repair-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `node scripts/manual-typed-tool-regression-smoke.js`,
+  `node scripts/agent-scenario-report-smoke.js`,
+  `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
+  `npm.cmd run smoke:bridge`, `npm.cmd run smoke:full-intake`,
+  `npm.cmd run check:rules`, and `git diff --check` with Windows line-ending
+  warnings only. This entry supersedes the earlier createShapeLayer
+  polygon/star terminal-gap closeout below.
+
 - [x] Dakkshin final gap `tool-src-scripts-createtextlayer` paragraph
   justification typed contract (2026-06-30): добавлен bounded
   `justification:left|center|right` contract в `create_text_layer` и
@@ -4641,6 +4676,16 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: For Dakkshin/TheLlamainator `createShapeLayer`, reopen the
+  previous polygon/star terminal gap only for a bounded typed contract. Accept
+  `shape:"polygon"` / `shape:"star"` through `create_shape_layer` with integer
+  `points` from 3 to 64, positive `outerRadius`, star `innerRadius` lower than
+  `outerRadius`, guarded `starType`, compact `shapeContents` read-back, and
+  semantic mismatch checks. Keep source temp args/filesystem/JSON wrapper
+  behavior, raw JSX, hidden native defaults, arbitrary vector paths, roundness,
+  trim paths, repeaters, expressions, broad shape group mutation, and
+  non-generated user assets fail-closed.
+
 - 2026-06-30: For Dakkshin/TheLlamainator `createTextLayer`, implement only
   bounded paragraph justification semantics in typed tools: `left`, `center`,
   and `right` normalize to AE `ParagraphJustification`, are accepted by
@@ -6309,6 +6354,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Dakkshin final gap `tool-src-scripts-createshapelayer` polygon/star typed contract | Required to replace the previous polygon/star terminal blocker with a bounded typed-tool contract, semantic verification, recipe/registry coverage, and ledger closeout without raw JSX or live mutation. | Passed: compact preflight; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and both ledgers; touched JS `node --check`; `node scripts/semantic-verification-smoke.js`; `node scripts/plan-repair-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/manual-typed-tool-regression-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; `npm.cmd run check:rules`; and `git diff --check` with Windows line-ending warnings only. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 
 | Dakkshin missing nuance `tool-src-scripts-setlayerproperties` closeout | Required to close the last scoped Dakkshin missing-nuance candidate by mapping only safe transform/timing behavior to existing typed tools and recording unsupported source-exact behavior as fail-closed. | Passed: compact preflight; targeted source/tool/ledger inspection; functional duplicate hash check for Dakkshin/TheLlamainator (`4b307329`); JSON parse for `.codex/active-thread.json` and both ledgers; `git diff --check`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No touched JavaScript files, live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 

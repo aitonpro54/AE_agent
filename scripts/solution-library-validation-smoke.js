@@ -21,6 +21,7 @@ const DAKKSHIN_ADVISORY_IDS = [
   "safe-effect-addition-typed-plan",
   "effect-template-chain-typed-plan",
   "text-layer-justification-typed-plan",
+  "shape-layer-polystar-typed-plan",
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
@@ -3242,6 +3243,29 @@ function assertActualRetrieval(registry) {
   assert(textJustificationPromptSection.includes("Text Layer Justification Typed Plan"), "prompt section should include text justification guidance title.");
   assert(textJustificationPromptSection.includes("update_text_layer"), "prompt section should prefer update_text_layer for existing text alignment.");
   assert(textJustificationPromptSection.includes("get_layer_details"), "prompt section should require text layer read-back.");
+
+  const shapePolystarSolution = solutionById(registry, "shape-layer-polystar-typed-plan");
+  assert(shapePolystarSolution, "Missing Dakkshin shape-layer polystar advisory recipe.");
+  const shapePolystarText = solutionContractText(shapePolystarSolution, recipeText(shapePolystarSolution));
+  assert(shapePolystarText.includes("create_shape_layer"), "shape polystar recipe should use create_shape_layer.");
+  assert(shapePolystarText.includes("shapeContents"), "shape polystar recipe should require shapeContents read-back.");
+  assert(shapePolystarText.includes("points"), "shape polystar recipe should document points.");
+  assert(shapePolystarText.includes("outerRadius"), "shape polystar recipe should document outerRadius.");
+  assert(shapePolystarText.includes("innerRadius"), "shape polystar recipe should document innerRadius.");
+  assert(/3 to 64/.test(shapePolystarText), "shape polystar recipe should keep points bounded.");
+  assertNoRawExecutionGuidance("shape-layer-polystar-typed-plan", shapePolystarSolution, recipeText(shapePolystarSolution));
+
+  const shapePolystarRetrieval = retrieveSolutionHints("Create a generated six point polygon and a five point star shape layer, then read back shapeContents points and radii.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(shapePolystarRetrieval.ok, true);
+  assert(ids(shapePolystarRetrieval).includes("shape-layer-polystar-typed-plan"), "shape polystar recipe should surface for polygon/star prompts.");
+  const shapePolystarPromptSection = formatSolutionHintsForPrompt(shapePolystarRetrieval);
+  assert(shapePolystarPromptSection.includes("Shape Layer Polystar Typed Plan"), "prompt section should include shape polystar guidance title.");
+  assert(shapePolystarPromptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer.");
+  assert(shapePolystarPromptSection.includes("shapeContents"), "prompt section should require shapeContents read-back.");
 
   const animationRetrieval = retrieveSolutionHints("Animate the selected layers with opacity and position keyframes.", {
     registry,
