@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped manually-render-png-sequence continuation recheck
+  (2026-06-30): launcher continuation after the Overlord cleanup milestone
+  selected exactly one next candidate,
+  `tool-project-manually-render-png-sequence`. Exact source review of
+  `Project/Manually_Render_PNG_Sequence.jsx` verified source SHA
+  `77b9c6cec284d0519cb65d3fce0801a46093741d8a3522e401aceadfd22be661`
+  and source behavior that opens `Folder.selectDialog`, creates an output
+  folder named after the active comp, sets `comp.time` to
+  `workAreaStart - frameDuration`, advances by `frameDuration` through the
+  work area, and writes numbered PNG files through undocumented
+  `comp.saveFrameToPng`. Current product support now includes the narrow
+  generated-only `save_comp_frame_png` contract for one explicit generated
+  frame under `logs/generated-exports` / `AE_AGENT_GENERATED_EXPORT_DIR`, with
+  byte/hash/PNG evidence, `resolutionFactor` restoration, and post-export
+  `get_comp_details` read-back. It still does not approve source-exact PNG
+  sequence export, user-selected output folders, arbitrary folder creation,
+  frame-loop output manifests, `comp.time` restore/read-back for a sequence, or
+  cleanup/rollback for generated sequence files. Reducer decision: keep
+  source-exact manual PNG sequence rendering terminal/fail-closed for this
+  longrun. No live proof, scoped runner retry, product source, recipe,
+  registry, runtime ledger, source checkout, launcher file, dependency, push,
+  or PR was mutated.
+
 - [x] Kylet scoped clean-up-overlord-folder continuation recheck
   (2026-06-30): launcher continuation after the clean selected folder milestone
   selected exactly one next candidate,
@@ -5260,6 +5283,26 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-manually-render-png-sequence` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after Overlord cleanup. The exact script opens `Folder.selectDialog`, creates
+  a destination folder under the selected folder using the active comp name,
+  mutates `comp.time` across the active comp work area, and writes a numbered
+  PNG sequence through undocumented `comp.saveFrameToPng`. The current
+  `save_comp_frame_png` lane is a useful narrow exception for one explicit
+  generated frame under the bridge generated export root, with byte/hash/PNG
+  evidence, `resolutionFactor` restoration, optional generated cleanup, and
+  final comp read-back. It is not a sequence contract and must not be widened
+  to cover user-selected folders, arbitrary output paths, output folder
+  creation, source-exact recursion, render deliverables, or non-generated user
+  assets. Unblock condition: add explicit parent/user approval plus an approved
+  generated-only PNG sequence typed contract with sandboxed output root,
+  bounded frame/work-area and max-frame policy, no dialog/raw JSX, explicit
+  generated filename/folder policy, `comp.time` restore/read-back, created-file
+  list/count/name/hash verification, semantic verification, cleanup/rollback,
+  checkpoint/edit-session protection, and an explicit decision on the
+  undocumented `saveFrameToPng` risk.
+
 - 2026-06-30: Keep `tool-project-clean-up-overlord-folder` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after clean selected folder. The exact script requires a saved project, an
@@ -7295,6 +7338,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped manually-render-png-sequence continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-up-overlord-folder`, review exact source behavior after the new single-frame PNG generated-output lane, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract/ticket slices; exact source review for `Project/Manually_Render_PNG_Sequence.jsx`; source SHA verification; contract review for `save_comp_frame_png`, `save-frame-as-png-typed-plan`, generic intake save-frame note, current live-lane registry scope, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact manual PNG sequence rendering terminal/fail-closed because current safe contracts can save one reviewed generated frame under the generated export root with hash/PNG evidence and `resolutionFactor` restoration, but do not approve user-selected output folders, PNG sequence manifests, arbitrary folder creation, frame-loop output generation, `comp.time` restore/read-back for a sequence, cleanup/rollback for generated sequence files, or non-generated user outputs. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped clean-up-overlord-folder continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-selected-folder`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract slices; exact source review for `Project/Clean_Up_Overlord_Folder.jsx`; contract review for current Project item/folder typed tools, generated Project-folder render support, generated export exception, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact Overlord filesystem cleanup terminal/fail-closed because current safe contracts can inspect/move/label/queue explicit generated Project items and perform narrow generated export, but do not approve sibling filesystem folder traversal, Desktop backup folder creation, file copy/delete cleanup, third-party Overlord assumptions, or preservation proof for non-generated user assets. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
