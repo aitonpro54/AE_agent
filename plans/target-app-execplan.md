@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-createtextlayer` typed-tool
+  gap closeout (2026-06-30): source comparison confirmed Dakkshin and
+  TheLlamainator are functional duplicates after BOM/comment/blank-line
+  normalization (`24c3ece0`). Existing `create_text_layer` covers the safe
+  generated text branch with explicit target comp, text, optional generated
+  name, position, font size, fill color, start time, duration, and typed
+  read-back; `update_text_layer` covers post-create Source Text and common
+  TextDocument updates after generated layer identity is known. Added candidate
+  note `recipes/generic-repo-intake/tool-src-scripts-createtextlayer.md`; no
+  new registry entry or bridge contract was needed. Source
+  `alignment`/`ParagraphJustification` left/center/right behavior, source
+  `fontFamily` creation-time assignment through `create_text_layer`, temp args
+  file I/O, raw ExtendScript execution, JSON wrapper formatting,
+  source-default visual values when arguments are omitted, source-exact stack
+  placement, and selection side effects remain fail-closed. Runtime ledgers now
+  record Dakkshin as `blocked_policy` and TheLlamainator as duplicate
+  `skipped_unsafe_candidate`. No live lane, source checkout write, dependency
+  change, launcher edit, push, or PR was used. Validation passed: JSON parse
+  for `.codex/active-thread.json` and both ledgers, `git diff --check`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and
+  `npm.cmd run smoke:full-intake`; no JavaScript files were touched.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-createsolidlayer`
   already-covered closeout (2026-06-30): source comparison confirmed Dakkshin
   and TheLlamainator are functional duplicates after BOM/comment/blank-line
