@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped DuIK pin-size recheck: Increase All Pin Sizes
+  (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
+  exactly one next candidate, `tool-properties-increase-all-pin-sizes`. Exact
+  source review of `Properties/Increase_All_Pin_Sizes.jsx` showed source
+  behavior that prompts for a size percentage, traverses every `CompItem` in
+  `app.project`, scans every layer `ADBE Effect Parade`, matches third-party
+  `Pseudo/Duik pin02`, and writes `effect.property(2).setValue(size)`. Current
+  product support can inspect and mutate explicit effect properties with
+  `list_effects` / `get_effect_details` / `set_effect_property`, and it has
+  narrow Puppet/guide-layer exceptions, but no generated or mock DuIK pin-size
+  fixture, no proof that property index 2 is the pin-size control in the
+  installed environment, no source-safe project-wide traversal contract, and no
+  semantic DuIK pin-size read-back. Reducer decision: keep source-exact
+  project-wide DuIK pin-size mutation terminal/fail-closed under the existing
+  third-party semantics policy; no live proof or scoped runner retry was run
+  because the exact source behavior does not map to current safe typed
+  contracts and live mutation was not separately approved. No product source,
+  recipe, registry, runtime ledger, source checkout, launcher file, dependency,
+  push, or PR was mutated.
+
 - [x] Kylet scoped Project reset imported item names recheck
   (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
   exactly one next candidate, `tool-project-reset-imported-item-names`. Exact
@@ -5063,6 +5083,21 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-properties-increase-all-pin-sizes` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
+  Exact source behavior prompts for a percentage, traverses all project
+  compositions and layers, searches third-party `Pseudo/Duik pin02` effects,
+  and writes raw effect property index 2. Existing typed effect-property tools
+  are acceptable only for explicit generated or reviewed targets with current
+  `get_effect_details` evidence; they do not prove a generated/mock DuIK
+  fixture, exact pin-size property identity, project-wide safe traversal, or
+  semantic DuIK pin-size read-back. The existing
+  `third-party-semantics-safety-policy` remains the correct terminal mapping.
+  Unblock condition: add a parent-approved generated-only or mock
+  `duik_pin_size` contract that proves exact pseudo-effect/property identity,
+  mutates only explicit generated/reviewed targets, records checkpoint/cleanup
+  policy, and verifies typed read-back before any DuIK pin-size mutation.
+
 - 2026-06-30: Keep `tool-project-reset-imported-item-names` source-exact
   behavior fail-closed during the Kylet newly-unblocked recheck. Exact source
   behavior depends on Project panel selection (`app.project.selection`) and
@@ -6921,6 +6956,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped DuIK pin-size recheck: Increase All Pin Sizes | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/policy/live-lane, and ticket slices; exact source review for `Properties/Increase_All_Pin_Sizes.jsx`; product contract search for DuIK/pin-size support, explicit effect-property tools, Puppet On Transparent, Puppet pin type, Puppet guide-layer, and third-party semantics policy coverage; next blocked-id lookup found `tool-properties-remove-disabled-strokes`. Reducer decision kept source-exact project-wide DuIK pin-size mutation terminal/fail-closed because current typed contracts still lack a generated/mock `Pseudo/Duik pin02` fixture, exact property-2 pin-size identity proof, project-wide safe traversal, and semantic DuIK pin-size read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped Project reset imported item names recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry/live-lane, generated-safety-contract, and ticket slices; exact source review for `Project/Reset_Imported_Item_Names.jsx`; contract review for `recipes/reset-imported-item-names-typed-plan.md`, `recipes/generic-repo-intake/tool-project-reset-imported-item-names.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `mcp-server/generated-safety-contracts.js`, scenario/report smoke references, and the Kylet triage ledger entry; next blocked-id lookup found `tool-properties-increase-all-pin-sizes`. Reducer decision kept source-exact Project panel selection traversal fail-closed and accepted only the existing generated-only explicit-footage-index adaptation. Closeout validation passed: JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warning only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
