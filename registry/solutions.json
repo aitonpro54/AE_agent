@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-27",
+  "updatedAt": "2026-06-30",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -275,6 +275,124 @@
       ],
       "notes": [
         "The recipe prefers matchName/read-back and must not use display-name-only raw execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "effect-template-chain-typed-plan",
+      "title": "Effect Template Chain Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "effects",
+        "effect-template",
+        "template",
+        "effect-chain",
+        "gaussian-blur",
+        "directional-blur",
+        "color-balance",
+        "brightness-contrast",
+        "glow",
+        "drop-shadow",
+        "cinematic-look",
+        "text-pop",
+        "matchname",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Apply a reviewed whitelisted effect template or effect chain to a verified layer with typed effect read-back.",
+        "appliesWhen": [
+          "The user asks for gaussian-blur, directional-blur, color-balance, brightness-contrast, glow, drop-shadow, cinematic-look, or text-pop.",
+          "The planner needs a fixed effect-template chain without raw JSX, arbitrary presets, or unknown template names.",
+          "Simple effect properties can be set only after get_effect_details identifies the exact property target."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected layer or explicit layer target verified before adding any template effects."
+        },
+        {
+          "name": "templateName",
+          "type": "string",
+          "required": true,
+          "description": "One reviewed whitelist value: gaussian-blur, directional-blur, color-balance, brightness-contrast, glow, drop-shadow, cinematic-look, or text-pop."
+        },
+        {
+          "name": "customSettings",
+          "type": "object",
+          "required": false,
+          "description": "Optional simple numeric, boolean, or RGBA settings to apply only after typed property evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "An active composition exists.",
+        "The target layer is selected or explicitly identified before mutation.",
+        "Standalone curves and curve point/channel edits are out of scope."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/effect-template-chain-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "add_effect",
+          "get_effect_details",
+          "set_effect_property"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read back every added effect and property mutation for the whitelisted template chain.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers or equivalent explicit target evidence before mutation.",
+          "Run add_effect for each whitelisted effect matchName in template order.",
+          "Run get_effect_details after each add_effect and before any property mutation.",
+          "Run set_effect_property only for exact property targets identified by get_effect_details.",
+          "Run final get_effect_details and get_layer_details read-back."
+        ],
+        "expectedEvidence": [
+          "The expected effect matchNames are present on the verified layer in the requested template chain.",
+          "Any property change uses exact property evidence from get_effect_details before and after mutation.",
+          "Standalone curves, unknown templates, and ambiguous properties are recorded as fail-closed."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded as a Dakkshin-inspired advisory recipe using existing effect typed-tool coverage."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-30",
+          "from": "dakkshin-missing-nuance-applyeffecttemplate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 Dakkshin missing-nuance closeout adapted only the fixed applyEffectTemplate whitelist into typed add_effect/get_effect_details/set_effect_property guidance; raw JSX, standalone curves, unknown templates, and arbitrary presets remain fail-closed.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use only whitelisted template names and effect matchNames.",
+        "ADBE CurvesCustom is allowed only as the unconfigured first effect in cinematic-look; curve point/channel edits need a separate contract.",
+        "Unknown template names, arbitrary effect chains, and display-name-only property writes fail closed."
       ]
     },
     {

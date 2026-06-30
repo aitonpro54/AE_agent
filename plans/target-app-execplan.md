@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-applyeffecttemplate`
+  closeout (2026-06-30): source comparison confirmed a fixed effect-template
+  whitelist for `gaussian-blur`, `directional-blur`, `color-balance`,
+  `brightness-contrast`, `glow`, `drop-shadow`, `cinematic-look`, and
+  `text-pop`. Added `recipes/effect-template-chain-typed-plan.md`,
+  registry id `effect-template-chain-typed-plan`, solution-library retrieval
+  assertions, and candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-applyeffecttemplate.md`.
+  Runtime ledgers now record the Dakkshin and TheLlamainator entries as
+  `blocked_policy` / `unsafe_skip_tool_gap`: the safe whitelist is covered by
+  typed `add_effect`, `get_effect_details`, and `set_effect_property`, while
+  standalone `curves`, curve point/channel semantics, unknown template aliases,
+  raw JSX, temp args, filesystem wrapper behavior, and arbitrary preset/effect
+  chains remain fail-closed. No bridge change, live lane, source checkout write,
+  dependency change, push, or PR was used. Validation passed:
+  `node --check scripts/solution-library-validation-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and
+  `npm.cmd run smoke:full-intake`.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-applyeffect` policy closeout
   (2026-06-29): source comparison confirmed the bounded effect branch adds an
   effect by display name or matchName and optionally writes effect properties,
@@ -4502,6 +4522,14 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: For Dakkshin/TheLlamainator `applyEffectTemplate`, accept only
+  the fixed safe effect-template whitelist as a typed recipe. Treat standalone
+  `curves`, curve point/channel mutation, unknown template aliases, arbitrary
+  effect chains, raw JSX execution, and temp-args/filesystem wrapper behavior as
+  terminal policy gaps until a separate typed Curves contract and generated-only
+  proof exist. TheLlamainator source differs in comments/wrapper enumeration, so
+  record semantic equivalence instead of duplicate hash equality.
+
 - 2026-06-29: For the two-repo read-only family, accept recipe coverage only
   once through Dakkshin and classify the TheLlamainator copies as already
   covered duplicate evidence. The source files are not byte-identical, but the
@@ -6140,6 +6168,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Dakkshin missing nuance `tool-src-scripts-applyeffecttemplate` closeout | Required to cover the safe fixed effect-template whitelist without copying raw JSX or approving ambiguous Curves property semantics. | Passed: compact preflight; targeted source/registry/ledger inspection; JSON parse for registry and both ledgers; `node --check scripts/solution-library-validation-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing was run. |
 
 | Two-repo read-only reconcile closeout | Required to prove the approved Dakkshin/TheLlamainator queues were terminal without importing duplicate recipe paths or touching launcher files. | Passed: compact preflight; `npm.cmd run check:rules`; compact Dakkshin status/proof/ledger summaries; TheLlamainator ledger summary; `node --check orchestrator/run-generic-repo-tool-importer.mjs`; `node --check scripts/sdk-generic-repo-full-intake-smoke.js`; `node scripts/sdk-generic-repo-importer-command-smoke.js`; `node scripts/sdk-generic-repo-full-intake-smoke.js`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; functional duplicate hash check for the three TheLlamainator read-only scripts; final ledger summaries with Dakkshin `completed:3`, TheLlamainator `skipped_unsafe_candidate:3`, both `queued=0`, `failed=0`; and `git diff --check` with LF/CRLF warnings only. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, launcher edit, push, PR, or broad repo outside the two approved targets was run. |
 

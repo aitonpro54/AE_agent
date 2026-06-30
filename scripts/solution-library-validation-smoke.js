@@ -19,6 +19,7 @@ const SEEDED_IDS = ["active-comp-context-review", "selected-layers-align-to-cti"
 const DAKKSHIN_ADVISORY_IDS = [
   "basic-comp-setup-typed-plan",
   "safe-effect-addition-typed-plan",
+  "effect-template-chain-typed-plan",
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
@@ -3192,6 +3193,31 @@ function assertActualRetrieval(registry) {
   });
   assert.strictEqual(effectRetrieval.ok, true);
   assert(ids(effectRetrieval).includes("safe-effect-addition-typed-plan"), "safe effect advisory recipe should surface for effect prompt.");
+
+  const effectTemplateSolution = solutionById(registry, "effect-template-chain-typed-plan");
+  const effectTemplateText = recipeText(effectTemplateSolution);
+  assert(effectTemplateText.includes("gaussian-blur"), "effect template recipe should document gaussian-blur.");
+  assert(effectTemplateText.includes("directional-blur"), "effect template recipe should document directional-blur.");
+  assert(effectTemplateText.includes("color-balance"), "effect template recipe should document color-balance.");
+  assert(effectTemplateText.includes("brightness-contrast"), "effect template recipe should document brightness-contrast.");
+  assert(effectTemplateText.includes("glow"), "effect template recipe should document glow.");
+  assert(effectTemplateText.includes("drop-shadow"), "effect template recipe should document drop-shadow.");
+  assert(effectTemplateText.includes("cinematic-look"), "effect template recipe should document cinematic-look.");
+  assert(effectTemplateText.includes("text-pop"), "effect template recipe should document text-pop.");
+  assert(effectTemplateText.includes("ADBE CurvesCustom"), "effect template recipe should mention CurvesCustom scope.");
+  assert(/standalone `curves`.*not enabled/i.test(effectTemplateText), "effect template recipe should fail closed for standalone curves.");
+  assert(/unknown templates/i.test(effectTemplateText), "effect template recipe should fail closed for unknown templates.");
+
+  const effectTemplateRetrieval = retrieveSolutionHints("Apply the text-pop effect template to a selected layer with drop shadow and glow, then read back effect details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(effectTemplateRetrieval.ok, true);
+  assert(ids(effectTemplateRetrieval).includes("effect-template-chain-typed-plan"), "effect template recipe should surface for template-chain prompts.");
+  const effectTemplatePromptSection = formatSolutionHintsForPrompt(effectTemplateRetrieval);
+  assert(effectTemplatePromptSection.includes("Effect Template Chain Typed Plan"), "prompt section should include effect template guidance title.");
+  assert(effectTemplatePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
 
   const animationRetrieval = retrieveSolutionHints("Animate the selected layers with opacity and position keyframes.", {
     registry,
