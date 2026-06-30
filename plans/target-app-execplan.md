@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped clean-render-queue continuation recheck
+  (2026-06-30): launcher continuation after the DuIK puppet-pin rename
+  milestone selected exactly one next candidate,
+  `tool-project-clean-render-queue`. Exact source review of
+  `Project/Clean_Render_Queue.jsx` showed source behavior that opens a
+  `Clean Render Queue` undo group, iterates `app.project.renderQueue` from
+  `numItems` down to `1`, and calls `renderQueue.item(i).remove()` for every
+  render queue item. Current product support can add explicit generated comps
+  to the render queue, optionally update reviewed output settings, and read
+  render queue status through `add_comp_to_render_queue`,
+  `set_render_queue_output`, and `get_render_queue_status`. Existing
+  generated-only render queue recipes explicitly forbid queue deletion or
+  reordering, and `project-file-render-proxy-safety-policy` keeps render queue
+  cleanup behind a separate approval-gated typed contract. Reducer decision:
+  keep source-exact global render queue cleanup terminal/fail-closed for this
+  longrun. No live proof, scoped runner retry, product source, recipe,
+  registry, runtime ledger, source checkout, launcher file, dependency, push,
+  or PR was mutated.
+
 - [x] Kylet scoped DuIK puppet-pin rename continuation recheck
   (2026-06-30): launcher continuation after the Newton layer matching
   milestone selected exactly one next candidate,
@@ -5201,6 +5220,24 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-clean-render-queue` source-exact behavior
+  terminal/fail-closed during the Kylet newly-unblocked continuation after
+  DuIK puppet-pin rename. The exact script deletes every global render queue
+  item through `renderQueue.item(i).remove()` without generated-prefix,
+  baseline, dry-run, confirmation, or non-generated preservation guards.
+  Existing safe contracts are setup/read/update only:
+  `add_comp_to_render_queue`, `set_render_queue_output`, and
+  `get_render_queue_status`; the current render queue recipes explicitly forbid
+  deletion/reordering. Unblock condition: add a parent-approved production
+  typed `remove_render_queue_item` or `cleanup_render_queue` contract limited to
+  generated-prefix or explicitly approved queue items, with target
+  enumeration, dry-run/confirmation, checkpoint/edit-session protection,
+  baseline and post-cleanup read-back through `get_render_queue_status`,
+  semantic verification that non-generated queue items are preserved, cleanup
+  or rollback notes, and no raw JSX fallback, source checkout write, render
+  execution, broad queue processing, dependency change, or unapproved live
+  mutation.
+
 - 2026-06-30: Keep `tool-layers-rename-puppet-pins-for-duik` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after Newton layer matching. The exact script depends on active-comp selected
@@ -7173,6 +7210,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped clean-render-queue continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-rename-puppet-pins-for-duik`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/ticket/policy/contract slices; exact source review for `Project/Clean_Render_Queue.jsx`; contract review for existing render queue setup/read/update support, `add-folder-to-render-queue-typed-plan`, `add-selected-compositions-to-render-queue-typed-plan`, `add-labeled-items-to-render-queue-typed-plan`, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact global render queue cleanup terminal/fail-closed because current safe contracts can add/read/update generated render queue items but do not approve deleting every queue item or safely deleting only generated queue items. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped DuIK puppet-pin rename continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-match-layers-to-newton-layers`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/policy/contract slices; exact source review for `Layers/Rename_Puppet_Pins_For_DuIK.jsx`; contract review for current `get_selected_properties`, `set_property_value`, `set_property_keyframes`, `set_puppet_pin_type`, `rename_layers`, `toggle-puppet-pin-types-typed-plan`, `toggle-puppet-pins-as-guide-layers-typed-plan`, and `third-party-semantics-safety-policy` coverage. Reducer decision kept source-exact DuIK puppet-pin property rename terminal/fail-closed because current safe contracts do not approve selected `PropertyBase.name` mutation, Alt-key mode semantics, generated/mock DuIK fixture assumptions, or puppet-pin rename read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
