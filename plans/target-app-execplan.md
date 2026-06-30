@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped set-proxies-from-folder continuation recheck (2026-06-30):
+  launcher continuation after the reveal-project-file milestone selected exactly
+  one next candidate, `tool-project-set-proxies-from-folder`, which is the last
+  Kylet `blocked_or_skipped` entry in the canonical triage ledger order. Exact
+  source review of `Project/Set_Proxies_From_Folder.jsx` verified source SHA
+  `3b1dfa9b298a948139405281aea6673d3404ba223f769bbe83c769b1f9604efe`
+  and source behavior that opens `Folder.selectDialog`, reads every file in the
+  selected folder, maps each file display-name stem to `fsName`, iterates all
+  Project items, and calls `CompItem.setProxy(new File(path))` for each
+  matching comp. Current support remains policy/metadata-only for this source
+  behavior: `project-file-render-proxy-safety-policy` and `ProxyStatePolicy`
+  metadata classify the required future gate, but no current typed tool or live
+  lane exposes `CompItem.setProxy`, `useProxy`/proxy source read-back,
+  generated proxy file sandboxing, dry-run/checkpoint/rollback, or semantic
+  verification for name-to-proxy matching. Reducer decision: keep source-exact
+  proxy relinking from folder terminal/fail-closed for this longrun. No live
+  proof, scoped runner retry, product source, recipe, registry, runtime ledger,
+  source checkout, launcher file, dependency, push, or PR was mutated. No next
+  Kylet `blocked_or_skipped` candidate remains in this recheck sequence.
+
 - [x] Kylet scoped reveal-project-file continuation recheck (2026-06-30):
   launcher continuation after the proxy removal milestone selected exactly one
   next candidate, `tool-project-reveal-project-file`. Exact source review of
@@ -5319,6 +5339,22 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-set-proxies-from-folder` source-exact behavior
+  terminal/fail-closed and close the Kylet newly-unblocked recheck sequence.
+  The exact script depends on user folder selection, arbitrary local folder
+  traversal, filename-to-comp matching, and `CompItem.setProxy(File)` mutations
+  across the project. Current typed support can classify the proxy risk through
+  `project-file-render-proxy-safety-policy` and records `ProxyStatePolicy`
+  metadata in generated safety contracts, but that metadata is only an unblock
+  condition, not an executable or validated proxy mutation contract. Existing
+  Project item/source tools such as `replace_layer_source` are not equivalent
+  to Project/CompItem proxy assignment and do not provide reversible proxy
+  state read-back. Future unblock requires a parent/user-approved generated-only
+  Project item proxy typed-tool family with sandboxed generated proxy files,
+  explicit generated comp targets, proxy set/read-back operations,
+  dry-run/checkpoint and cleanup/rollback policy, semantic verification for
+  name-to-proxy matching, and no raw JSX fallback.
+
 - 2026-06-30: Keep `tool-project-reveal-project-file` terminal for source-exact
   behavior. The Kylet source calls `app.project.file.parent.execute()`, which
   launches the host OS Finder/Explorer for the saved project file folder and
@@ -7405,6 +7441,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped set-proxies-from-folder continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-reveal-project-file`, review exact source behavior against current proxy/file typed contracts, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/ticket slices; exact source review for `Project/Set_Proxies_From_Folder.jsx`; source SHA verification; registry/product search for proxy support; `project-file-render-proxy-safety-policy`, `ProxyStatePolicy`, and live-lane metadata review. Reducer decision kept source-exact proxy relinking from folder terminal/fail-closed because current safe contracts can classify proxy risk but cannot set proxies, read back `useProxy`/proxy source state, sandbox generated proxy files, prove reversible proxy state, or semantically verify folder filename-to-comp matching. No next Kylet `blocked_or_skipped` candidate remains. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped reveal-project-file continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-remove-all-proxies`, review exact source behavior against current project-file/reveal typed contracts, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/ticket slices; exact source review for `Project/Reveal_Project_File.jsx`; source SHA verification; registry/live-lane review for `project-file-render-proxy-safety-policy`, read-only `get_project_info`, `HostRevealPolicy` metadata, and missing reveal/open-folder typed support. Reducer decision kept source-exact project-file reveal terminal/fail-closed because current safe contracts can report project file metadata but cannot launch, dry-run, approve, read back, or semantically verify Finder/Explorer `Folder.execute()` behavior. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
