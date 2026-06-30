@@ -26,6 +26,33 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped puppet guide-layer recheck: Toggle Puppet Pins As Guide
+  Layers (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation
+  selected exactly one next candidate,
+  `tool-layers-toggle-puppet-pins-as-guide-layers`, because current product
+  history contains `toggle-puppet-pins-as-guide-layers-typed-plan` and the
+  `puppet-pin-guide-layer-generated-only` lane. Exact source review of
+  `Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx` showed source behavior that
+  wraps an undo group, reads `ScriptUI.environment.keyboardState.altKey`, sets
+  `guideLayer = (altKey === true)`, scans every `CompItem` in
+  `app.project.items`, scans every layer and effect, and writes
+  `layer.guideLayer = guideLayer` for effects whose `matchName` is
+  `Pseudo/Duik pin02`. Reducer decision: accept this candidate only as the
+  existing narrow generated/reviewed typed adaptation, not as source-exact
+  all-project DuIK mutation. The acceptable path is one explicit generated or
+  reviewed Puppet host layer, current `get_effect_details` evidence for
+  `ADBE FreePin3` or explicitly reviewed `Pseudo/Duik pin02` on the same
+  layer, one concrete layer index/name, an explicit reviewed `guideLayer`
+  boolean rather than Alt-key inference, `set_layer_metadata.guideLayer`,
+  `get_layer_details` and `get_effect_details` read-back, semantic
+  verification, checkpoint/edit-session protection, and generated cleanup.
+  Source-exact project-wide traversal, inferred DuIK targets, user DuIK effect
+  mutation, puppet pin atom edits, pin-size/property rename behavior, selected
+  property semantics, source-checkout execution, raw JSX, dependency changes,
+  live mutation without separate approval, push, and PR remain fail-closed. No
+  fresh live proof was run because this longrun does not separately approve
+  live AE mutation; the latest lane ticket remains `blocked_live_proof_failed`.
+
 - [x] Kylet scoped layer-name reset recheck: Reset Layer Names (2026-06-30):
   compact Kylet-only `blocked_or_skipped` map selected exactly one next
   candidate, `tool-layers-reset-layer-names`, because current product history
@@ -4869,7 +4896,7 @@ old `AE_agent` repository remains the historical source.
 
 For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
 `blocked_or_skipped` candidates one at a time. The next first look after the
-layer-name reset closeout is `tool-layers-toggle-puppet-pins-as-guide-layers`,
+puppet guide-layer closeout is `tool-lottie-convert-drop-shadows-for-lottie`,
 or the next Kylet
 `blocked_or_skipped` entry if exact source review shows it is a worse fit.
 
@@ -4886,6 +4913,20 @@ source relinking, timing/order edits, effects, masks, parenting, expressions,
 render queue work, file I/O, source-checkout execution, raw JSX, dependency
 changes, push, or PR. A fresh generated-only live proof still requires explicit
 live mutation approval.
+
+Do not reopen `tool-layers-toggle-puppet-pins-as-guide-layers` for
+source-exact all-project DuIK mutation. The accepted mapping is only the
+existing `puppet-pin-guide-layer-generated-only` path: one explicit generated or
+reviewed Puppet host layer, `get_effect_details` evidence for `ADBE FreePin3`
+or explicitly reviewed `Pseudo/Duik pin02` on that same layer, one concrete
+layer index/name, explicit reviewed `guideLayer:true` or `guideLayer:false`,
+`set_layer_metadata.guideLayer`, `get_layer_details` and `get_effect_details`
+read-back, semantic verification, checkpoint/edit-session protection, generated
+cleanup, and fail-closed behavior for all-project traversal, Alt-key branching,
+inferred DuIK targets, user DuIK effect mutation, puppet pin atom edits,
+pin-size/property rename behavior, selected-property semantics, source-checkout
+execution, raw JSX, dependency changes, push, or PR. A fresh generated-only live
+proof still requires explicit live mutation approval.
 
 Do not reopen `tool-layers-replace-grid-rig-control` for completion unless the
 existing `grid-rig-control-replacement-generated-only` path can run a fresh
@@ -4968,6 +5009,20 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Accept `tool-layers-toggle-puppet-pins-as-guide-layers` only as
+  the existing generated/reviewed typed adaptation during the Kylet
+  newly-unblocked recheck. Exact source behavior scans every project
+  composition, layer, and effect for `Pseudo/Duik pin02`, then writes native
+  `layer.guideLayer` from ScriptUI Alt-key state. Current product support maps
+  only the safe portion through `get_effect_details` evidence on one explicit
+  generated or reviewed Puppet host layer, an explicit reviewed `guideLayer`
+  boolean, `set_layer_metadata.guideLayer`, layer/effect read-back, semantic
+  verification, checkpoint/edit-session protection, and generated cleanup.
+  Source-exact project-wide DuIK traversal, inferred targets, user DuIK effect
+  mutation, Alt-key branching, raw JSX, and live mutation without separate
+  approval remain fail-closed. No live proof was run in this milestone; the
+  latest lane ticket remains `blocked_live_proof_failed`.
 
 - 2026-06-30: Accept `tool-layers-reset-layer-names` only as the existing
   generated/reviewed typed adaptation during the Kylet newly-unblocked recheck.
@@ -6785,6 +6840,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped puppet guide-layer recheck: Toggle Puppet Pins As Guide Layers | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry, live-lane, and ticket slices; exact source review for `Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx`; contract review for `recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-toggle-puppet-pins-as-guide-layers.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake` passed on rerun after the first 120s shell timeout; and `git diff --check` with Windows line-ending warning only. Source-safe reducer decision accepted only the existing generated/reviewed typed adaptation and kept source-exact project-wide DuIK mutation fail-closed. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped layer-name reset recheck: Reset Layer Names | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry, live-lane, bridge contract, semantic-verification, scenario, and ticket slices; exact source review for `Layers/Reset_Layer_Names.jsx`; contract review for `recipes/reset-layer-names-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-reset-layer-names.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `mcp-server/bridge-daemon.js`, `mcp-server/semantic-verification.js`, the Kylet triage ledger entry, and reset-name live-lane tickets; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
