@@ -26,6 +26,29 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped layer connector recheck: Connect two layers with a line
+  (2026-06-30): compact Kylet-only `blocked_or_skipped` map selected exactly
+  one next candidate, `tool-layers-connect-two-layers-with-a-line`, because
+  current product history contains `connect-two-layers-with-a-line-typed-plan`
+  and the `layer-connection-line-generated-only` lane. Exact source review of
+  `Layers/Connect_Two_Layers_With_A_Line.jsx` showed source behavior that reads
+  `app.project.activeItem`, assumes two selected layers, captures their names,
+  creates a shape layer, moves it to the end, adds a white stroke with width
+  `3`, writes an open `createPath` expression from each endpoint layer's
+  `toComp(anchorPoint)`, deselects and locks the connector, and freezes connector
+  position with `posterizeTime(0); [0, 0];`. Current safe product mapping is
+  narrower and acceptable only for explicit generated or reviewed endpoint
+  layers: `create_layer_connection_line` with `fromLayerIndex`, `toLayerIndex`,
+  expected endpoint names, locked generated connector output, path/expression
+  read-back, semantic verification, checkpoint/edit-session protection, and
+  generated cleanup. Reducer decision: keep the candidate terminal/live-blocked
+  for this longrun because the existing generated-only lane's non-live checks and
+  read-only CEP preflight passed, but its mutating proof failed with
+  `CEP panel is not connected to the bridge`, and this continuation does not
+  separately approve a new live mutating retry. No product files, recipes,
+  registry, source checkout, runtime ledger, launcher file, push, or PR was
+  mutated.
+
 - [x] Kylet scoped layer placement recheck: Add 3D Break (2026-06-30):
   compact Kylet-only `blocked_or_skipped` map selected exactly one next
   candidate, `tool-layers-add-3d-break`, because current product history
@@ -4868,6 +4891,25 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-layers-connect-two-layers-with-a-line`
+  terminal/live-blocked during the Kylet newly-unblocked recheck. Exact source
+  behavior creates a shape layer, adds a stroked open vector path, binds the path
+  to two selected endpoint layer anchor points through generated expressions,
+  moves the connector to the end, deselects it, locks it, and freezes connector
+  position. Current product coverage already has the narrow generated-only
+  `create_layer_connection_line` adaptation with explicit endpoint layer
+  indices/names, expected-name guards, one locked generated connector layer,
+  open two-point path/expression read-back, semantic verification, and
+  cleanup/checkpoint policy. It cannot be marked completed in this continuation
+  because the latest generated-only lane proof failed on
+  `CEP panel is not connected to the bridge`, and no new live mutation was
+  separately approved. Future unblock requires AE/panel/bridge recovery plus a
+  fresh generated-only live proof through the existing lane; do not substitute
+  raw JSX, broad selected-layer traversal, generic open-path editing, arbitrary
+  expressions, thin-rectangle/static guide substitutes, endpoint layer mutation,
+  non-generated user assets, file I/O, render queue work, source checkout writes,
+  dependency changes, broad queue processing, push, or PR.
+
 - 2026-06-30: Keep `tool-layers-add-3d-break` terminal/live-blocked during the
   Kylet newly-unblocked recheck. Exact source behavior creates a solid
   adjustment layer and moves the new layer before the selected/top layer.
@@ -6634,6 +6676,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped layer connector recheck: Connect two layers with a line | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Connect_Two_Layers_With_A_Line.jsx`; contract review for `recipes/connect-two-layers-with-a-line-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-connect-two-layers-with-a-line.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket/report; source-safe reducer decision kept the candidate terminal/live-blocked because fresh generated-only live mutation was not approved and the latest proof failed on `CEP panel is not connected to the bridge`. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
 | Kylet scoped layer placement recheck: Add 3D Break | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Add_3D_Break.jsx`; contract review for `recipes/add-3d-break-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-add-3d-break.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket/report; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and the Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
