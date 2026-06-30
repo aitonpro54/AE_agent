@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped grid-rig recheck: Replace Grid Rig Control (2026-06-30):
+  compact Kylet-only `blocked_or_skipped` map selected exactly one next
+  candidate, `tool-layers-replace-grid-rig-control`, because current product
+  history contains `replace-grid-rig-control-typed-plan` and the
+  `grid-rig-control-replacement-generated-only` lane. Exact source review of
+  `Layers/Replace_Grid_Rig_Control.jsx` showed source behavior that reads
+  `app.project.activeItem`, takes `comp.selectedLayers[0]`, creates a shape
+  layer, copies `enabled`, `guideLayer`, `label`, and `name`, adds two
+  `ADBE Slider Control` effects named `Gutter` and `Matte Roundness`, then
+  removes the old selected layer. Current safe product mapping is narrower and
+  acceptable only for one explicit generated or reviewed old control layer:
+  `create_shape_layer`, `set_layer_metadata` for reviewed `label`, `enabled`,
+  and `guideLayer`, two `add_effect` calls, exact `delete_layer`, final
+  `get_comp_details` / `get_layer_details` / `get_effect_details` read-back,
+  semantic verification, checkpoint/edit-session protection, and generated
+  cleanup. Reducer decision: keep the candidate terminal/live-blocked for this
+  longrun because the existing generated-only lane's non-live checks previously
+  passed, but its mutating proof failed with `CEP panel is not connected to the
+  bridge`, and this continuation does not separately approve a new live
+  mutating retry. No product files, recipes, registry, source checkout, runtime
+  ledger, launcher file, push, or PR was mutated.
+
 - [x] Kylet scoped layer connector recheck: Connect two layers with a line
   (2026-06-30): compact Kylet-only `blocked_or_skipped` map selected exactly
   one next candidate, `tool-layers-connect-two-layers-with-a-line`, because
@@ -4823,7 +4845,25 @@ old `AE_agent` repository remains the historical source.
 ## Next Milestone
 
 For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
-`blocked_or_skipped` candidates one at a time. Do not reopen
+`blocked_or_skipped` candidates one at a time. The next first look after the
+grid-rig closeout is `tool-layers-reset-layer-names`, or the next Kylet
+`blocked_or_skipped` entry if exact source review shows it is a worse fit.
+
+Do not reopen `tool-layers-replace-grid-rig-control` for completion unless the
+existing `grid-rig-control-replacement-generated-only` path can run a fresh
+generated-only live proof after human AE/panel/bridge recovery and explicit
+live mutation approval. The only acceptable adaptation is one explicit generated
+or reviewed old control layer, `create_shape_layer`, reviewed metadata
+preservation through `set_layer_metadata` for `label`, `enabled`, and
+`guideLayer`, two named `ADBE Slider Control` effects, exact old-layer deletion,
+stack/layer/effect read-back, semantic verification, checkpoint/edit-session
+protection, generated cleanup, and fail-closed behavior for source-exact broad
+selected-layer traversal, arbitrary user-layer replacement, third-party Flex
+internals, expression/property copying, parenting, track mattes, arbitrary
+effect copying, file I/O, render queue work, source-checkout execution, raw JSX,
+dependency changes, push, or PR.
+
+Do not reopen
 `tool-layers-reset-selected-layer-labels` unless a reviewed AE
 label-preference/default-label reader exists for machine-independent preference
 keys by layer type, with generated or explicitly reviewed targets, typed
@@ -4890,6 +4930,26 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-layers-replace-grid-rig-control`
+  terminal/live-blocked during the Kylet newly-unblocked recheck. Exact source
+  behavior replaces `comp.selectedLayers[0]` with a new shape layer, preserves
+  `enabled`, `guideLayer`, `label`, and `name`, adds `Gutter` and
+  `Matte Roundness` Slider Control effects, then deletes the old layer. Current
+  product coverage already has the narrow generated-only
+  `grid-rig-control-replacement-generated-only` adaptation with explicit old
+  layer identity, metadata preservation, two named effects, exact old-layer
+  deletion, typed stack/layer/effect read-back, semantic verification, and
+  cleanup/checkpoint policy. It cannot be marked completed in this continuation
+  because the latest generated-only lane proof failed on
+  `CEP panel is not connected to the bridge`, and no new live mutation was
+  separately approved. Future unblock requires AE/panel/bridge recovery plus a
+  fresh generated-only live proof through the existing lane; do not substitute
+  raw JSX, broad selected-layer traversal, arbitrary user-layer replacement,
+  third-party Flex internals, expression/property copying, parenting, track
+  mattes, arbitrary effect copying, non-generated user assets, file I/O, render
+  queue work, source checkout writes, dependency changes, broad queue
+  processing, push, or PR.
 
 - 2026-06-30: Keep `tool-layers-connect-two-layers-with-a-line`
   terminal/live-blocked during the Kylet newly-unblocked recheck. Exact source
@@ -6676,6 +6736,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped grid-rig recheck: Replace Grid Rig Control | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Replace_Grid_Rig_Control.jsx`; contract review for `recipes/replace-grid-rig-control-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-replace-grid-rig-control.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane tickets; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
 | Kylet scoped layer connector recheck: Connect two layers with a line | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Connect_Two_Layers_With_A_Line.jsx`; contract review for `recipes/connect-two-layers-with-a-line-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-connect-two-layers-with-a-line.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket/report; source-safe reducer decision kept the candidate terminal/live-blocked because fresh generated-only live mutation was not approved and the latest proof failed on `CEP panel is not connected to the bridge`. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
