@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped properties recheck: Puppet pin type toggle (2026-06-30):
+  compact Kylet-only blocked/skipped map selected exactly one next candidate,
+  `tool-properties-toggle-puppet-pin-types`, because current product history has
+  a generated-only `toggle-puppet-pin-types-typed-plan` and
+  `set_puppet_pin_type` contract. Exact source review of
+  `Properties/Toggle_Puppet_Pin_Types.jsx` showed source-exact behavior over
+  `comp.selectedProperties`: for each selected `ADBE FreePin3 PosPin Atom`, it
+  reads child `ADBE FreePin3 PosPin Type` and toggles enum `1 <-> 4`. The
+  existing typed contract is narrower: it requires an explicit generated or
+  reviewed Puppet effect target, exact `ADBE FreePin3 PosPin Type` property
+  path under a proven `ADBE FreePin3 PosPin Atom`, explicit requested enum,
+  checkpoint/edit-session protection, read-back, semantic verification, and
+  fail-closed behavior for selected-property traversal or missing pin atom
+  evidence. Reducer decision: keep the candidate terminal for this longrun; the
+  current safe contract can represent a future explicit generated pin target but
+  does not satisfy source-exact selected Puppet pin traversal or the unresolved
+  generated pin atom/read-back proof gap. No product files, recipes, registry,
+  source checkout, or ledgers were mutated.
+
 - [x] Kylet scoped timing/transform recheck: Newton layer matching
   (2026-06-30): compact Kylet-only shortlist was rebuilt from the 25
   `blocked_or_skipped` entries in
@@ -4727,6 +4746,13 @@ Position keyframe/value copy, parent assignment read-back, semantic
 verification, cleanup/checkpoint policy, and fail-closed third-party naming
 guards.
 
+Do not reopen `tool-properties-toggle-puppet-pin-types` unless a generated or
+explicitly reviewed Puppet pin atom contract exists with exact
+`ADBE FreePin3 PosPin Type` property paths, enum `1`/`4` toggle semantics,
+selected-property or explicit-target policy, typed read-back, semantic
+verification, cleanup/checkpoint policy, and fail-closed behavior for missing
+pin atom evidence.
+
 Current prepared max-scope generated-only live proof set is closed for this
 run. `full-ui-agent-layer-selection-openai-cli-smoke` passed, and the only
 remaining prepared family without a passing proof is
@@ -4747,6 +4773,19 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-properties-toggle-puppet-pin-types` terminal during
+  the Kylet newly-unblocked recheck. Exact source behavior depends on
+  `comp.selectedProperties` containing `ADBE FreePin3 PosPin Atom` groups and
+  toggles child `ADBE FreePin3 PosPin Type` enum `1 <-> 4`. Current
+  `set_puppet_pin_type` coverage is generated-only and explicit-target: it can
+  set a reviewed `ADBE FreePin3 PosPin Type` path under proven pin atom
+  evidence, but it does not approve source-exact selected-property traversal,
+  automatic pin atom creation, user Puppet effects, or the still-unresolved
+  generated pin atom/read-back proof lane. Future unblock requires explicit
+  generated pin atom evidence, typed read-back, semantic verification,
+  cleanup/checkpoint policy, and no raw JSX, source checkout write, dependency
+  change, broad queue processing, or live mutation without separate approval.
 
 - 2026-06-30: Keep `tool-layers-match-layers-to-newton-layers` terminal during
   the Kylet timing/transform recheck. Existing safe transform/timing contracts
@@ -6457,6 +6496,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped properties recheck: Puppet pin type toggle | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing are all satisfied. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe slices; exact source review for `Properties/Toggle_Puppet_Pin_Types.jsx`; contract review for `recipes/toggle-puppet-pin-types-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md`, registry/lane references, and the Kylet triage ledger entry; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, and no product/runtime/ledger/source mutation was made. |
 
 | Kylet scoped timing/transform recheck: Newton layer matching | Required to build a fresh Kylet-only shortlist from `blocked_or_skipped` entries, pick at most one candidate, and accept it only if exact source behavior maps to current safe typed contracts with explicit generated targets, read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe slices; exact source review for `Layers/Match_Layers_To_Newton_Layers.jsx`; parent-reducer ticket review for `tool-layers-match-layers-to-newton-layers`; registry/recipe contract search for `set_layer_transform`, `set_layer_time_range`, `set_property_keyframes`, and `set_layer_parent`; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, and no product/runtime/ledger/source mutation was made. |
 
