@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-createshapelayer` typed-tool
+  gap closeout (2026-06-30): source comparison confirmed Dakkshin and
+  TheLlamainator are functional duplicates after BOM/comment/blank-line
+  normalization (`b5237a1`). Existing `create_shape_layer` covers only the safe
+  explicit `rectangle` and `ellipse` path with `name`, `size`, `position`,
+  fill/stroke styling, timing, and read-back through `get_layer_details` or
+  `get_comp_details`; added candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-createshapelayer.md`. Current
+  typed tools do not expose source `polygon`/`star`, `points`, Star Type, Outer
+  Radius, or Inner Radius semantics, so those remain terminal pending a
+  separate bridge contract, generated-only fixture, semantic read-back,
+  cleanup/checkpoint policy, and proof. Runtime ledgers now record Dakkshin as
+  `blocked_policy` and TheLlamainator as duplicate `skipped_unsafe_candidate`.
+  No raw JSX copy, bridge change, live lane, dependency change, source checkout
+  write, launcher edit, push, or PR was used. Validation passed:
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, and
+  `npm.cmd run smoke:full-intake`; no JavaScript files were touched.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-applyeffecttemplate`
   closeout (2026-06-30): source comparison confirmed a fixed effect-template
   whitelist for `gaussian-blur`, `directional-blur`, `color-balance`,
