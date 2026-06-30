@@ -26,6 +26,32 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin missing nuance `tool-src-scripts-setlayerproperties`
+  existing-typed-tools closeout (2026-06-30): source comparison confirmed
+  Dakkshin and TheLlamainator are functional duplicates after BOM/comment/
+  blank-line/inline-comment normalization (`4b307329`). Added candidate note
+  `recipes/generic-repo-intake/tool-src-scripts-setlayerproperties.md`.
+  Existing `set_layer_transform` covers the safe single-layer `position`,
+  `scale`, Z `rotation`, and `opacity` slice; existing
+  `set_layer_time_range` covers reviewed timing changes when the plan binds a
+  concrete target layer and computes explicit `outPoint` for source-style
+  duration semantics. `get_layer_details`/`get_comp_details` provide pre/post
+  read-back. Temp args file I/O, raw ExtendScript execution, source JSON
+  formatting, unverified active-comp fallback, broad comp scans, hidden
+  layer-name search side effects, source-exact duration shortcuts without
+  explicit timing evidence, 3D orientation/X/Y/Z rotation semantics, separated
+  dimensions, parent/world-space conversion, anchor inference,
+  expression/keyframe preservation semantics, selection side effects, source
+  relinking, layer order changes, render queue changes, and non-generated user
+  asset mutation remain fail-closed. Runtime ledgers now record Dakkshin as
+  `completed` and TheLlamainator as duplicate `skipped_unsafe_candidate`,
+  leaving both scoped ledgers with zero queued and zero failed entries. No live
+  lane, source checkout write, dependency change, launcher edit, push, or PR
+  was used. Validation passed: JSON parse for `.codex/active-thread.json` and
+  both ledgers, `git diff --check`, `npm.cmd run check:rules`,
+  `npm.cmd run smoke:solutions`, and `npm.cmd run smoke:full-intake`; no
+  JavaScript files were touched.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-createtextlayer` typed-tool
   gap closeout (2026-06-30): source comparison confirmed Dakkshin and
   TheLlamainator are functional duplicates after BOM/comment/blank-line
@@ -4585,6 +4611,18 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: For Dakkshin/TheLlamainator `setLayerProperties`, accept only
+  the existing typed-tool transform/timing slice: concrete layer-index binding
+  from current typed evidence, `set_layer_transform` for position/scale/Z
+  rotation/opacity, `set_layer_time_range` for reviewed timing with explicit
+  outPoint when source-style duration matters, and layer read-back. Treat temp
+  args file I/O, raw JSX, broad comp scans, unverified active-comp fallback,
+  hidden layer-name search, source-exact duration shortcuts, 3D orientation or
+  separate-axis rotation, separated dimensions, parent/world-space conversion,
+  anchor inference, expression/keyframe preservation, selection side effects,
+  and arbitrary property mutation as fail-closed without a separate typed
+  contract and generated-only proof.
+
 - 2026-06-30: For Dakkshin/TheLlamainator `applyEffectTemplate`, accept only
   the fixed safe effect-template whitelist as a typed recipe. Treat standalone
   `curves`, curve point/channel mutation, unknown template aliases, arbitrary
@@ -6231,6 +6269,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Dakkshin missing nuance `tool-src-scripts-setlayerproperties` closeout | Required to close the last scoped Dakkshin missing-nuance candidate by mapping only safe transform/timing behavior to existing typed tools and recording unsupported source-exact behavior as fail-closed. | Passed: compact preflight; targeted source/tool/ledger inspection; functional duplicate hash check for Dakkshin/TheLlamainator (`4b307329`); JSON parse for `.codex/active-thread.json` and both ledgers; `git diff --check`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No touched JavaScript files, live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 
 | Dakkshin missing nuance `tool-src-scripts-applyeffecttemplate` closeout | Required to cover the safe fixed effect-template whitelist without copying raw JSX or approving ambiguous Curves property semantics. | Passed: compact preflight; targeted source/registry/ledger inspection; JSON parse for registry and both ledgers; `node --check scripts/solution-library-validation-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; and `npm.cmd run smoke:full-intake`. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing was run. |
 
