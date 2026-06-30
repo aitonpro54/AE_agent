@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped layer-label recheck: Reset selected layer labels
+  (2026-06-30): compact Kylet-only blocked/skipped map selected exactly one
+  next candidate, `tool-layers-reset-selected-layer-labels`, because current
+  product history has explicit layer-label writes through `set_layer_metadata`.
+  Exact source review of `Layers/Reset_Selected_Layer_Labels.jsx` showed
+  source-exact behavior that reads AE machine-independent preferences from
+  `Label Preference Indices Section 5`, maps layer type/source type to default
+  label preference keys, traverses `comp.selectedLayers`, and writes
+  `layer.label = label` only when the preference exists. Existing safe label
+  contracts are narrower: they require explicit generated or reviewed targets,
+  concrete `layerIndices`, `expectedLayerNames` where available, explicit label
+  values such as `label:16`, checkpoint/edit-session protection, typed
+  read-back, and semantic verification. Reducer decision: keep this candidate
+  terminal for this longrun; hard-coded AE default label values, layer-type
+  guesses, or substituting explicit label writes for preference-derived
+  defaults would not preserve source behavior. No product files, recipes,
+  registry, source checkout, or ledgers were mutated.
+
 - [x] Kylet scoped properties recheck: Puppet pin type toggle (2026-06-30):
   compact Kylet-only blocked/skipped map selected exactly one next candidate,
   `tool-properties-toggle-puppet-pin-types`, because current product history has
@@ -4740,6 +4758,15 @@ old `AE_agent` repository remains the historical source.
 
 For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
 `blocked_or_skipped` candidates one at a time. Do not reopen
+`tool-layers-reset-selected-layer-labels` unless a reviewed AE
+label-preference/default-label reader exists for machine-independent preference
+keys by layer type, with generated or explicitly reviewed targets, typed
+read-back of the resolved label values, semantic verification,
+cleanup/checkpoint policy, and fail-closed behavior when preference evidence is
+missing. Do not approximate it with hard-coded label defaults or explicit label
+writes.
+
+Do not reopen
 `tool-layers-match-layers-to-newton-layers` unless a reviewed generated-only
 Newton/Illustrator pair contract exists for explicit layer-name pairs,
 Position keyframe/value copy, parent assignment read-back, semantic
@@ -4773,6 +4800,18 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-layers-reset-selected-layer-labels` terminal during
+  the Kylet newly-unblocked recheck. Exact source behavior reads AE
+  machine-independent default label preferences by layer type/source type before
+  writing selected layers. Current `set_layer_metadata` coverage can write only
+  explicit reviewed label values on explicit generated/reviewed layer targets;
+  it does not expose a typed AE preference/default-label reader, a
+  machine-independent preference contract, or semantic proof that resolved
+  preference labels match source behavior. Future unblock requires that typed
+  preference/read-back contract plus cleanup/checkpoint policy, and still keeps
+  raw JSX, source checkout writes, dependency changes, broad queue processing,
+  and live mutation approval-gated.
 
 - 2026-06-30: Keep `tool-properties-toggle-puppet-pin-types` terminal during
   the Kylet newly-unblocked recheck. Exact source behavior depends on
@@ -6496,6 +6535,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped layer-label recheck: Reset selected layer labels | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing are all satisfied. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe slices; exact source review for `Layers/Reset_Selected_Layer_Labels.jsx`; contract review for `set_layer_metadata`, `recipes/set-all-track-matte-labels-typed-plan.md`, `recipes/set-all-layer-labels-to-none-typed-plan.md`, `recipes/replace-grid-rig-control-typed-plan.md`, registry/lane references, and the Kylet triage ledger entry; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, and no product/runtime/ledger/source mutation was made. |
 
 | Kylet scoped properties recheck: Puppet pin type toggle | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing are all satisfied. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe slices; exact source review for `Properties/Toggle_Puppet_Pin_Types.jsx`; contract review for `recipes/toggle-puppet-pin-types-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md`, registry/lane references, and the Kylet triage ledger entry; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, and no product/runtime/ledger/source mutation was made. |
 
