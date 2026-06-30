@@ -26,6 +26,27 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped clean-selected-folder continuation recheck
+  (2026-06-30): launcher continuation after the clean render queue milestone
+  selected exactly one next candidate,
+  `tool-project-clean-selected-folder`. Exact source review of
+  `Project/Clean_Selected_Folder.jsx` showed source behavior that opens a
+  `Clean Selected Folder(s)` undo group, recursively walks selected Project
+  folders from `folder.numItems` down to `1`, removes non-folder items whose
+  `usedIn.length === 0`, repeatedly recurses nested folders until no more
+  removals are found, deletes empty nested folders, and deletes the selected
+  folder itself when it becomes empty and is not `app.project.rootFolder`.
+  Current product support can find/list Project items and folders, create
+  folders, move explicit Project items to folders, set explicit item labels,
+  and run test-prefix cleanup through `cleanup_test_items`, but it has no
+  reviewed `usedIn`-aware recursive Project item/folder deletion contract.
+  Existing Project folder/render recipes explicitly forbid folder deletion and
+  cleanup, and `project-file-render-proxy-safety-policy` keeps cleanup behind a
+  separate approval-gated typed contract. Reducer decision: keep source-exact
+  selected-folder cleanup terminal/fail-closed for this longrun. No live proof,
+  scoped runner retry, product source, recipe, registry, runtime ledger, source
+  checkout, launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped clean-render-queue continuation recheck
   (2026-06-30): launcher continuation after the DuIK puppet-pin rename
   milestone selected exactly one next candidate,
@@ -5220,6 +5241,31 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-clean-selected-folder` source-exact behavior
+  terminal/fail-closed during the Kylet newly-unblocked continuation after
+  clean render queue. The exact script recursively deletes unused items from
+  selected Project folders with `item.usedIn.length === 0`, removes empty
+  nested folders, and removes the selected folder itself when it is empty and
+  not the root folder. Existing safe contracts are Project item/folder
+  read/move/metadata only: `get_project_info`, `get_project_snapshot`,
+  `find_project_items`, `list_project_folder_items`, `create_project_folder`,
+  `move_project_items_to_folder`, and `set_project_item_metadata`.
+  `cleanup_test_items` is a generated-prefix test cleanup helper, not a
+  selected-folder, `usedIn`-aware, recursive Project cleanup contract. Existing
+  `add-selection-to-new-folder-typed-plan`,
+  `add-folder-to-render-queue-typed-plan`, and
+  `project-file-render-proxy-safety-policy` all keep folder/item deletion and
+  cleanup out of scope. Unblock condition: add a parent-approved production
+  typed `cleanup_project_folder_items` or `remove_project_items` contract
+  limited to generated-prefix or explicitly approved folders/items, with
+  selected-folder replacement by explicit folder identity, target enumeration,
+  `usedIn`/dependency evidence, dry-run/confirmation, checkpoint/edit-session
+  protection, pre/post `get_project_snapshot` and `list_project_folder_items`
+  read-back, semantic verification that non-generated and referenced assets are
+  preserved, cleanup or rollback notes, and no raw JSX fallback, source
+  checkout write, broad queue processing, dependency change, filesystem
+  cleanup, or unapproved live mutation.
+
 - 2026-06-30: Keep `tool-project-clean-render-queue` source-exact behavior
   terminal/fail-closed during the Kylet newly-unblocked continuation after
   DuIK puppet-pin rename. The exact script deletes every global render queue
@@ -7210,6 +7256,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped clean-selected-folder continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-render-queue`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract slices; exact source review for `Project/Clean_Selected_Folder.jsx`; contract review for current Project item/folder typed tools, `cleanup_test_items`, `add-selection-to-new-folder-typed-plan`, `add-folder-to-render-queue-typed-plan`, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact selected-folder cleanup terminal/fail-closed because current safe contracts can list/find/create/move/label Project items and perform test-prefix cleanup, but do not approve selected-folder recursive deletion, `usedIn`-aware cleanup, empty-folder deletion, or preservation proof for referenced/non-generated Project assets. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped clean-render-queue continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-rename-puppet-pins-for-duik`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/ticket/policy/contract slices; exact source review for `Project/Clean_Render_Queue.jsx`; contract review for existing render queue setup/read/update support, `add-folder-to-render-queue-typed-plan`, `add-selected-compositions-to-render-queue-typed-plan`, `add-labeled-items-to-render-queue-typed-plan`, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact global render queue cleanup terminal/fail-closed because current safe contracts can add/read/update generated render queue items but do not approve deleting every queue item or safely deleting only generated queue items. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
