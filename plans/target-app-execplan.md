@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped layer placement recheck: Add 3D Break (2026-06-30):
+  compact Kylet-only `blocked_or_skipped` map selected exactly one next
+  candidate, `tool-layers-add-3d-break`, because current product history
+  contains `add-3d-break-typed-plan` and the
+  `adjustment-layer-placement-generated-only` lane. Exact source review of
+  `Layers/Add_3D_Break.jsx` showed source behavior that reads
+  `app.project.activeItem`, computes the minimum selected layer index or a top
+  fallback, creates a gray solid named `=== 3D Break ===`, sets
+  `adjustmentLayer = true`, then calls `moveBefore(comp.layers[index])`.
+  Current safe product mapping is narrower and acceptable only for one explicit
+  generated or reviewed guarded layer: `create_adjustment_layer` with
+  `insertBeforeLayerIndex` and `expectedBeforeLayerName`, pre/post
+  `get_comp_details` / `get_layer_details`, `adjustmentLayer:true`,
+  `immediatelyBefore:true`, semantic verification, checkpoint/edit-session
+  protection, and generated cleanup. Reducer decision: keep the candidate
+  terminal/live-blocked for this longrun because the existing generated-only
+  lane's non-live checks and read-only CEP preflight passed, but its mutating
+  proof failed with `CEP panel is not connected to the bridge`, and this
+  continuation does not separately approve a new live mutating retry. No
+  product files, recipes, registry, source checkout, runtime ledger, launcher
+  file, push, or PR was mutated.
+
 - [x] Kylet scoped compositions recheck: Force composition panel refresh
   (2026-06-30): compact Kylet-only `blocked_or_skipped` map selected exactly
   one next candidate, `tool-compositions-force-composition-panel-refresh`,
@@ -4813,6 +4835,18 @@ fidelity, broad active comp assumptions, raw JSX, `set_comp_properties`, layer
 `motionBlur`, non-generated user comp mutation, file I/O, render queue work, or
 source checkout writes.
 
+Do not reopen `tool-layers-add-3d-break` for completion unless the existing
+`adjustment-layer-placement-generated-only` path can run a fresh generated-only
+live proof after human AE/panel/bridge recovery and explicit live mutation
+approval. The only acceptable adaptation is `create_adjustment_layer` for one
+explicit generated or reviewed guarded layer with `insertBeforeLayerIndex`,
+`expectedBeforeLayerName`, pre/post `get_comp_details` / `get_layer_details`,
+`adjustmentLayer:true`, `immediatelyBefore:true`, semantic verification,
+checkpoint/edit-session protection, generated cleanup, and fail-closed behavior
+for source-exact broad selected-layer traversal, generic existing layer
+reordering, raw JSX, non-generated user assets, file I/O, render queue work, or
+source checkout writes.
+
 Current prepared max-scope generated-only live proof set is closed for this
 run. `full-ui-agent-layer-selection-openai-cli-smoke` passed, and the only
 remaining prepared family without a passing proof is
@@ -4833,6 +4867,22 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-layers-add-3d-break` terminal/live-blocked during the
+  Kylet newly-unblocked recheck. Exact source behavior creates a solid
+  adjustment layer and moves the new layer before the selected/top layer.
+  Current product coverage already has the narrow generated-only
+  `create_adjustment_layer` adaptation with explicit guarded layer evidence,
+  `insertBeforeLayerIndex`, `expectedBeforeLayerName`, stack read-back,
+  `adjustmentLayer:true`, `immediatelyBefore:true`, semantic verification, and
+  cleanup/checkpoint policy. It cannot be marked completed in this continuation
+  because the latest generated-only lane proof failed on `CEP panel is not
+  connected to the bridge`, and no new live mutation was separately approved.
+  Future unblock requires AE/panel/bridge recovery plus a fresh generated-only
+  live proof through the existing lane; do not substitute raw JSX, generic
+  layer reordering, broad selected-layer traversal, non-generated user assets,
+  file I/O, render queue work, source checkout writes, dependency changes,
+  broad queue processing, push, or PR.
 
 - 2026-06-30: Keep `tool-compositions-force-composition-panel-refresh`
   terminal/live-blocked during the Kylet newly-unblocked recheck. Exact source
@@ -6584,6 +6634,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped layer placement recheck: Add 3D Break | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Layers/Add_3D_Break.jsx`; contract review for `recipes/add-3d-break-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-add-3d-break.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket/report; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and the Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
 | Kylet scoped compositions recheck: Force composition panel refresh | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation, and no broad queue processing are all satisfied. | Passed: compact preflight; ledger discovery; compact status/proof/ledger summaries; targeted `rg -n` plan/ledger/source/recipe/registry/lane slices; exact source review for `Compositions/Force_Composition_Panel_Refresh.jsx`; contract review for `recipes/force-composition-panel-refresh-typed-plan.md`, `recipes/generic-repo-intake/tool-compositions-force-composition-panel-refresh.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, `mcp-server/bridge-daemon.js`, and the latest live-lane report; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and the Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake` passed on rerun after the first 120s shell timeout; and `git diff --check` with Windows line-ending warning only. No JavaScript files were touched, no live CEP/AE mutation was run, and no product/runtime/ledger/source mutation was made. |
 
