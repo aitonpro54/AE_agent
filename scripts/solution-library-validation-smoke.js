@@ -20,6 +20,7 @@ const DAKKSHIN_ADVISORY_IDS = [
   "basic-comp-setup-typed-plan",
   "safe-effect-addition-typed-plan",
   "effect-template-chain-typed-plan",
+  "text-layer-justification-typed-plan",
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
@@ -211,6 +212,7 @@ const AVAILABLE_TOOLS = [
   "get_render_queue_status",
   "create_comp",
   "create_project_folder",
+  "create_text_layer",
   "create_solid_layer",
   "create_shape_layer",
   "create_layer_connection_line",
@@ -260,6 +262,7 @@ const AVAILABLE_TOOLS = [
   "rename_project_items",
   "set_project_item_metadata",
   "get_layer_details",
+  "update_text_layer",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
   "move_project_items_to_folder",
@@ -3218,6 +3221,27 @@ function assertActualRetrieval(registry) {
   const effectTemplatePromptSection = formatSolutionHintsForPrompt(effectTemplateRetrieval);
   assert(effectTemplatePromptSection.includes("Effect Template Chain Typed Plan"), "prompt section should include effect template guidance title.");
   assert(effectTemplatePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+
+  const textJustificationSolution = solutionById(registry, "text-layer-justification-typed-plan");
+  assert(textJustificationSolution, "Missing Dakkshin text justification advisory recipe.");
+  const textJustificationText = solutionContractText(textJustificationSolution, recipeText(textJustificationSolution));
+  assert(textJustificationText.includes("create_text_layer"), "text justification recipe should use create_text_layer.");
+  assert(textJustificationText.includes("update_text_layer"), "text justification recipe should use update_text_layer.");
+  assert(textJustificationText.includes("text.justification"), "text justification recipe should require typed text.justification read-back.");
+  assert(textJustificationText.includes("left, center, or right"), "text justification recipe should keep the supported enum bounded.");
+  assertNoRawExecutionGuidance("text-layer-justification-typed-plan", textJustificationSolution, recipeText(textJustificationSolution));
+
+  const textJustificationRetrieval = retrieveSolutionHints("Create a centered generated text layer, then update it to right paragraph alignment and read back text justification.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(textJustificationRetrieval.ok, true);
+  assert(ids(textJustificationRetrieval).includes("text-layer-justification-typed-plan"), "text justification recipe should surface for paragraph alignment prompts.");
+  const textJustificationPromptSection = formatSolutionHintsForPrompt(textJustificationRetrieval);
+  assert(textJustificationPromptSection.includes("Text Layer Justification Typed Plan"), "prompt section should include text justification guidance title.");
+  assert(textJustificationPromptSection.includes("update_text_layer"), "prompt section should prefer update_text_layer for existing text alignment.");
+  assert(textJustificationPromptSection.includes("get_layer_details"), "prompt section should require text layer read-back.");
 
   const animationRetrieval = retrieveSolutionHints("Animate the selected layers with opacity and position keyframes.", {
     registry,

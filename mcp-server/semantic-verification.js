@@ -132,6 +132,23 @@ function sameString(left, right) {
   return String(left || "") === String(right || "");
 }
 
+function normalizeTextJustification(value) {
+  if (value === undefined || value === null) return "";
+  const normalized = String(value).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["left", "left_justify", "left_justified"].includes(normalized)) return "left";
+  if (["center", "centre", "center_justify", "centered", "center_justified"].includes(normalized)) return "center";
+  if (["right", "right_justify", "right_justified"].includes(normalized)) return "right";
+  return normalized;
+}
+
+function textJustificationFromPayload(payload) {
+  const layerText = payload && payload.layer && payload.layer.text;
+  if (layerText && hasOwn(layerText, "justification")) return layerText.justification;
+  const text = payload && payload.text;
+  if (text && typeof text === "object" && hasOwn(text, "justification")) return text.justification;
+  return "";
+}
+
 function numberArrayValue(value) {
   const raw = Array.isArray(value)
     ? value
@@ -2479,6 +2496,18 @@ function verifyStep(checks, step, evidence) {
         evidence: stepLabel(step)
       });
     }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Created text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
     return;
   }
 
@@ -2538,16 +2567,29 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "update_text_layer") {
-    if (!hasOwn(args, "text")) return;
-    const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text && payload.text.text;
-    pushCheck(checks, {
-      id: `${step.index || "step"}:${step.tool}:text`,
-      title: "Updated text content matches request",
-      expected: args.text,
-      observed,
-      passed: sameString(observed, args.text),
-      evidence: stepLabel(step)
-    });
+    if (hasOwn(args, "text")) {
+      const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text && payload.text.text;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:text`,
+        title: "Updated text content matches request",
+        expected: args.text,
+        observed,
+        passed: sameString(observed, args.text),
+        evidence: stepLabel(step)
+      });
+    }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Updated text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
     return;
   }
 

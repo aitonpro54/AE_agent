@@ -108,9 +108,9 @@ function layerInfo(name, overrides = {}) {
     id: overrides.id || null,
     name: name || "Layer",
     matchName: overrides.matchName || "ADBE AV Layer",
-    textLayer: overrides.textLayer === undefined ? Boolean(overrides.text) : overrides.textLayer,
+    textLayer: overrides.textLayer === undefined ? Boolean(overrides.text || overrides.justification) : overrides.textLayer,
     shapeLayer: overrides.shapeLayer === undefined ? overrides.matchName === "ADBE Vector Layer" : overrides.shapeLayer,
-    layerKind: overrides.layerKind || (overrides.text ? "text" : (overrides.shapeLayer || overrides.matchName === "ADBE Vector Layer" ? "shape" : null)),
+    layerKind: overrides.layerKind || (overrides.text || overrides.justification ? "text" : (overrides.shapeLayer || overrides.matchName === "ADBE Vector Layer" ? "shape" : null)),
     startTime,
     inPoint,
     outPoint,
@@ -128,7 +128,7 @@ function layerInfo(name, overrides = {}) {
     threeDLayer: overrides.threeDLayer === undefined ? false : overrides.threeDLayer,
     parent: overrides.parent === undefined ? null : overrides.parent,
     transform: overrides.transform || null,
-    text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
+    text: (overrides.text || overrides.justification) ? { text: overrides.text || "", fontSize: overrides.fontSize || null, justification: overrides.justification || null } : null,
     source: overrides.source || null
   };
 }
@@ -218,7 +218,8 @@ function fakeMutationResult(step, state) {
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1),
       text: args.text,
-      fontSize: args.fontSize
+      fontSize: args.fontSize,
+      justification: args.justification
     }));
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
   }
@@ -1159,8 +1160,8 @@ function fakeMutationResult(step, state) {
     return withVerification({ comp: { name: compName }, time, split, layers: split.map((item) => item.newLayer) }, compName);
   }
   if (step.tool === "update_text_layer") {
-    const layer = layerInfo("Updated Text", { index: args.layerIndex, text: args.text, fontSize: args.fontSize });
-    return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize } }, compName, layer);
+    const layer = layerInfo("Updated Text", { index: args.layerIndex, text: args.text, fontSize: args.fontSize, justification: args.justification });
+    return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize, justification: args.justification } }, compName, layer);
   }
   if (step.tool === "create_shape_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, { index: 1 }));
@@ -3884,6 +3885,63 @@ function assertLayerNameResetScenarioPasses() {
   assert.strictEqual(renameChecks.length, 2, "empty layer-name reset scenario should verify both single-layer rename steps.");
 }
 
+function textJustificationPlan() {
+  return {
+    summary: "Create and update generated text paragraph justification.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated center-justified text",
+        tool: "create_text_layer",
+        args: {
+          compName: "Text Justification Fixture",
+          name: "Text Justification Layer",
+          text: "Justified",
+          fontSize: 42,
+          justification: "center"
+        }
+      },
+      {
+        title: "Update generated text justification",
+        tool: "update_text_layer",
+        args: {
+          compName: "Text Justification Fixture",
+          layerIndex: 1,
+          justification: "right"
+        }
+      },
+      {
+        title: "Read generated text justification",
+        tool: "get_layer_details",
+        args: {
+          compName: "Text Justification Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+}
+
+function assertTextJustificationPasses() {
+  const plan = textJustificationPlan();
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `text justification semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_text_layer:justification") >= 0 && check.status === "passed"), "create_text_layer justification check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("update_text_layer:justification") >= 0 && check.status === "passed"), "update_text_layer justification check should pass.");
+
+  const mismatchRun = fakeRunForPlan(plan);
+  const updateStep = mismatchRun.steps.find((step) => step.tool === "update_text_layer");
+  updateStep.result.layer.text.justification = "left";
+  updateStep.result.text.justification = "left";
+  const mismatch = buildSemanticVerification(plan, mismatchRun);
+  assert.strictEqual(mismatch.status, "needs_review", "text justification mismatch should fail closed.");
+  assert(mismatch.checks.some((check) => check.id.indexOf("update_text_layer:justification") >= 0 && check.status === "failed"), "mismatched update_text_layer justification should fail.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -3955,6 +4013,7 @@ function main() {
   assertLayerParentBelowScenarioPasses();
   assertLayerParentClosestScenarioPasses();
   assertLayerNameResetScenarioPasses();
+  assertTextJustificationPasses();
 
   console.log(JSON.stringify({
     ok: true,

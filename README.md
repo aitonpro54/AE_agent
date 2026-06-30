@@ -55,7 +55,7 @@ It has these main parts:
 - `create_comp` - creates a production composition with explicit settings.
 - `create_project_folder` - creates a project folder with optional parent folder placement.
 - `move_project_items_to_folder` - moves explicit project items into an existing folder or the project root.
-- `create_text_layer` - creates a text layer in the active comp or a comp by project item index.
+- `create_text_layer` - creates a text layer with optional paragraph justification in the active comp or a comp by project item index.
 - `import_footage` - imports a local file as footage.
 - `create_solid_layer` - creates a solid layer.
 - `create_null_layer` - creates a null layer.
@@ -74,7 +74,7 @@ It has these main parts:
 - `replace_layer_source` - swaps layer sources while preserving transforms.
 - `rename_layers` - renames selected or specified layers with exact, prefix, suffix, or find-replace modes.
 - `rename_project_items` - renames project items by explicit indexes or scoped search.
-- `update_text_layer` - updates Source Text and common TextDocument fields.
+- `update_text_layer` - updates Source Text, paragraph justification, and common TextDocument fields.
 - `create_shape_layer` - creates a rectangle or ellipse shape layer.
 - `fit_layer_to_comp` - scales layers to contain, cover, or stretch to the comp.
 - `set_property_keyframes` - sets explicit keyframes on a layer property.

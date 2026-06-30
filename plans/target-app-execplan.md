@@ -26,6 +26,36 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin final gap `tool-src-scripts-createtextlayer` paragraph
+  justification typed contract (2026-06-30): добавлен bounded
+  `justification:left|center|right` contract в `create_text_layer` и
+  `update_text_layer`, включая AE `ParagraphJustification` mapping, typed
+  `TextDocument` read-back через `__codexLayerInfo` / `get_layer_details`,
+  semantic verification checks, `alignment` -> `justification` plan-repair
+  aliases, recipe `recipes/text-layer-justification-typed-plan.md`, registry id
+  `text-layer-justification-typed-plan`, README note и обновление intake note
+  `recipes/generic-repo-intake/tool-src-scripts-createtextlayer.md`. Runtime
+  ledgers now record Dakkshin `tool-src-scripts-createtextlayer` as
+  `completed` / `typed_tool_contract_implemented`; TheLlamainator stays a
+  duplicate `skipped_unsafe_candidate` with the old text-alignment blocker
+  removed. Still fail-closed: full justify, vertical text, paragraph boxes,
+  text animators, source temp args/filesystem/JSON wrapper behavior,
+  source-exact stack/selection side effects, arbitrary TextDocument mutation,
+  and non-generated user-asset mutation without explicit review/rollback. No
+  raw JSX copy, dependency change, live CEP mutation, launcher edit, push, or
+  PR was used. Validation passed: touched-file `node --check`,
+  `node scripts/semantic-verification-smoke.js`,
+  `node scripts/plan-repair-smoke.js`,
+  `node scripts/solution-library-validation-smoke.js`,
+  `node scripts/manual-typed-tool-regression-smoke.js`,
+  `node scripts/agent-scenario-report-smoke.js`,
+  `node scripts/sdk-generic-repo-full-intake-smoke.js`,
+  `node scripts/sdk-generic-repo-importer-command-smoke.js`,
+  `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+  `npm.cmd run smoke:planning`, `npm.cmd run smoke:bridge`,
+  `npm.cmd run smoke:full-intake`, JSON parse for registry/live-lane/ledgers,
+  and `git diff --check` with Windows line-ending warnings only.
+
 - [x] Dakkshin missing nuance `tool-src-scripts-setlayerproperties`
   existing-typed-tools closeout (2026-06-30): source comparison confirmed
   Dakkshin and TheLlamainator are functional duplicates after BOM/comment/
@@ -4610,6 +4640,16 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: For Dakkshin/TheLlamainator `createTextLayer`, implement only
+  bounded paragraph justification semantics in typed tools: `left`, `center`,
+  and `right` normalize to AE `ParagraphJustification`, are accepted by
+  `create_text_layer` and `update_text_layer`, and must be proven by
+  `get_layer_details` / `get_comp_details` `text.justification` read-back.
+  Add precise plan-repair aliases for `alignment` / `paragraphJustification`.
+  Do not generalize this to full justification, vertical text, paragraph boxes,
+  baseline/anchor inference, arbitrary TextDocument mutation, source temp args,
+  source-exact selection/stack placement, non-generated user assets, or raw JSX.
 
 - 2026-06-30: For Dakkshin/TheLlamainator `setLayerProperties`, accept only
   the existing typed-tool transform/timing slice: concrete layer-index binding

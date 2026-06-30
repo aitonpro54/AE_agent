@@ -1694,6 +1694,15 @@ function optionalString(args, name, fallback) {
   return String(args[name]);
 }
 
+function optionalTextJustification(args, name, fallback) {
+  if (!hasArg(args, name)) return fallback;
+  const normalized = String(args[name]).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["left", "left_justify", "left_justified"].includes(normalized)) return "left";
+  if (["center", "centre", "center_justify", "centered", "center_justified"].includes(normalized)) return "center";
+  if (["right", "right_justify", "right_justified"].includes(normalized)) return "right";
+  throw new Error(`${name} must be one of: left, center, right.`);
+}
+
 function optionalBoolean(args, name, fallback) {
   if (!hasArg(args, name)) return fallback;
   const value = args[name];
@@ -2352,6 +2361,14 @@ async function verifyMutationResult(toolName, args, payload) {
         }
       }
 
+      function __codexTextJustificationName(value) {
+        try { if (value === ParagraphJustification.LEFT_JUSTIFY) return "left"; } catch (__leftJustificationNameError) {}
+        try { if (value === ParagraphJustification.CENTER_JUSTIFY) return "center"; } catch (__centerJustificationNameError) {}
+        try { if (value === ParagraphJustification.RIGHT_JUSTIFY) return "right"; } catch (__rightJustificationNameError) {}
+        try { return String(value); } catch (__justificationStringError) {}
+        return null;
+      }
+
       function __codexLayerInfo(layer) {
         if (!layer) return null;
         var transform = layer.property("ADBE Transform Group");
@@ -2395,7 +2412,8 @@ async function verifyMutationResult(toolName, args, payload) {
           text: sourceText ? {
             text: sourceText.text || "",
             font: sourceText.font || null,
-            fontSize: sourceText.fontSize || null
+            fontSize: sourceText.fontSize || null,
+            justification: __codexTextJustificationName(sourceText.justification)
           } : null
         };
       }
@@ -8790,6 +8808,11 @@ const tools = [
           items: { type: "number" },
           description: "Optional RGB fill color with values from 0 to 1."
         },
+        justification: {
+          type: "string",
+          enum: ["left", "center", "right"],
+          description: "Optional paragraph justification for the created TextDocument."
+        },
         startTime: {
           type: "number",
           description: "Optional layer start time in seconds."
@@ -10046,7 +10069,8 @@ const tools = [
         applyStroke: { type: "boolean", description: "Whether stroke is enabled." },
         strokeWidth: { type: "number", description: "Optional stroke width." },
         tracking: { type: "number", description: "Optional tracking value." },
-        leading: { type: "number", description: "Optional leading value." }
+        leading: { type: "number", description: "Optional leading value." },
+        justification: { type: "string", enum: ["left", "center", "right"], description: "Optional paragraph justification." }
       },
       required: ["layerIndex"]
     }
@@ -10910,6 +10934,22 @@ async function callTool(name, args) {
         throw new Error("Unsupported trackMatteType '" + name + "'. Allowed values: alpha, alpha_inverted, luma, luma_inverted.");
       }
 
+      function __codexTextJustificationName(value) {
+        try { if (value === ParagraphJustification.LEFT_JUSTIFY) return "left"; } catch (__leftJustificationNameError) {}
+        try { if (value === ParagraphJustification.CENTER_JUSTIFY) return "center"; } catch (__centerJustificationNameError) {}
+        try { if (value === ParagraphJustification.RIGHT_JUSTIFY) return "right"; } catch (__rightJustificationNameError) {}
+        try { return String(value); } catch (__justificationStringError) {}
+        return null;
+      }
+
+      function __codexTextJustificationValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "left") return ParagraphJustification.LEFT_JUSTIFY;
+        if (normalized === "center") return ParagraphJustification.CENTER_JUSTIFY;
+        if (normalized === "right") return ParagraphJustification.RIGHT_JUSTIFY;
+        throw new Error("Unsupported justification '" + name + "'. Allowed values: left, center, right.");
+      }
+
       function __codexLayerInfo(layer) {
         var isTextLayer = false;
         var isShapeLayer = false;
@@ -10962,6 +11002,10 @@ async function callTool(name, args) {
         try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
+        try {
+          var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+          info.text = __codexValuePreview(textProp);
+        } catch (__layerTextPreviewError) {}
 
         return info;
       }
@@ -11128,7 +11172,8 @@ async function callTool(name, args) {
               font: value.font || null,
               fontSize: value.fontSize || null,
               fillColor: value.fillColor || null,
-              applyFill: value.applyFill || false
+              applyFill: value.applyFill || false,
+              justification: __codexTextJustificationName(value.justification)
             };
           }
         } catch (__textDocumentError) {}
@@ -11282,6 +11327,7 @@ async function callTool(name, args) {
         if (patch.strokeWidth !== undefined) doc.strokeWidth = Number(patch.strokeWidth);
         if (patch.tracking !== undefined) doc.tracking = Number(patch.tracking);
         if (patch.leading !== undefined) doc.leading = Number(patch.leading);
+        if (patch.justification !== undefined) doc.justification = __codexTextJustificationValue(patch.justification);
         return doc;
       }
 
@@ -13544,6 +13590,7 @@ async function callTool(name, args) {
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const fontSize = optionalNumber(args, "fontSize", null);
     const fillColor = optionalNumberArray(args, "fillColor", null, 3, 3);
+    const justification = optionalTextJustification(args, "justification", null);
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
 
@@ -13561,6 +13608,7 @@ async function callTool(name, args) {
       var requestedPosition = ${position ? aeLiteral(position) : "null"};
       var requestedFontSize = ${fontSize === null ? "null" : fontSize};
       var requestedFillColor = ${fillColor ? aeLiteral(fillColor) : "null"};
+      var requestedJustification = ${justification === null ? "null" : aeLiteral(justification)};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "null" : duration};
 
@@ -13575,6 +13623,7 @@ async function callTool(name, args) {
         textDocument.applyFill = true;
         textDocument.fillColor = requestedFillColor;
       }
+      if (requestedJustification !== null) textDocument.justification = __codexTextJustificationValue(requestedJustification);
       textProp.setValue(textDocument);
 
       var transform = layer.property("ADBE Transform Group");
@@ -13597,7 +13646,8 @@ async function callTool(name, args) {
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
-        text: textValue
+        text: textValue,
+        textDocument: __codexValuePreview(textProp)
       };
       app.endUndoGroup();
       return response;
@@ -16876,6 +16926,7 @@ async function callTool(name, args) {
     for (const key of ["text", "font", "fontSize", "fillColor", "applyFill", "strokeColor", "applyStroke", "strokeWidth", "tracking", "leading"]) {
       if (hasArg(args, key)) patch[key] = args[key];
     }
+    if (hasArg(args, "justification")) patch.justification = optionalTextJustification(args, "justification", null);
     if (!Object.keys(patch).length) return toolResult("Provide at least one text field to update.", true);
     if (hasArg(patch, "fontSize") && Number(patch.fontSize) <= 0) return toolResult("fontSize must be greater than 0.", true);
     if (hasArg(patch, "strokeWidth") && Number(patch.strokeWidth) < 0) return toolResult("strokeWidth must be 0 or greater.", true);

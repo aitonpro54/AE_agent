@@ -616,6 +616,115 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "text-layer-justification-typed-plan",
+      "title": "Text Layer Justification Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "text",
+        "text-layer",
+        "paragraph",
+        "alignment",
+        "justification",
+        "generated-only",
+        "dakkshin-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Create or update a generated/reviewed text layer with left, center, or right paragraph justification using typed TextDocument tools and read-back.",
+        "appliesWhen": [
+          "The user asks to create left, center, or right aligned text, or change a reviewed text layer's paragraph alignment.",
+          "The target composition is explicit and update targets have current typed text-layer evidence.",
+          "The requested alignment can be normalized to left, center, or right."
+        ],
+        "whenNotToUse": [
+          "The request needs full justify, vertical text, paragraph box dimensions, baseline or anchor inference, text animators, expression/keyframe edits, source-exact selection or stack placement, arbitrary TextDocument fields, raw JSX, file I/O, or render queue work."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetTextLayer",
+          "type": "object",
+          "required": false,
+          "description": "For updates, current get_layer_details or get_comp_details evidence identifying one text layer by comp, layerIndex, and expected name/source text when available."
+        },
+        {
+          "name": "justification",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed paragraph justification: left, center, or right."
+        }
+      ],
+      "targetAssumptions": [
+        "New text layers are generated or explicitly named before mutation.",
+        "Existing text layers are updated only after typed text-layer evidence identifies the exact layer.",
+        "Only TextDocument paragraph justification is changed unless other covered create_text_layer/update_text_layer fields are explicitly reviewed.",
+        "Full justification, arbitrary TextDocument mutation, text animators, selection side effects, raw JSX, and non-generated user assets remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/text-layer-justification-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "get_layer_details",
+          "create_text_layer",
+          "update_text_layer"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Normalize the reviewed justification to left/center/right, create or update one explicit text layer, then read back text.justification.",
+        "steps": [
+          "Run get_active_comp or get_comp_details to bind the target composition.",
+          "For updates, run get_layer_details first and confirm the target is a text layer.",
+          "Run create_text_layer or update_text_layer with justification left, center, or right.",
+          "Run get_layer_details after mutation and verify text.justification matches the reviewed value.",
+          "Fail closed for full justify, arbitrary TextDocument fields, broad layer scans, non-generated user assets, raw JSX, file I/O, and render queue work."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies comp and text layer target when updating.",
+          "Mutation uses create_text_layer or update_text_layer with justification:left|center|right.",
+          "Post-run get_layer_details shows matching text.justification on the same layer.",
+          "Unsupported source-exact alignment behavior is reported as a typed-tool gap."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by Dakkshin/TheLlamainator final-gaps closeout for createTextLayer paragraph alignment."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-06-30",
+          "from": "dakkshin-final-gaps-createTextLayer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Milestone 187 follow-up added bounded create_text_layer/update_text_layer justification support for left, center, and right ParagraphJustification with semantic verification and plan-repair alias coverage; no raw JSX copied.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Use only left, center, or right paragraph justification.",
+        "Require get_layer_details read-back before claiming success.",
+        "Do not generalize this recipe to arbitrary TextDocument edits, full justification, source-exact selection behavior, or non-generated user assets."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "selected-layers-animation-typed-plan",
       "title": "Selected Layers Animation Typed Plan",
       "status": "recipe",

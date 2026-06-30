@@ -150,7 +150,7 @@ async function main() {
       requiresCheckpoint: true,
       steps: [
         { title: "Create text", tool: "create_text_layer", args: { text: "Repair Smoke", fontSize: 24 } },
-        { title: "Update text", tool: "update_text", args: { content: "Repair Smoke Updated", fontSize: 32 } }
+        { title: "Update text", tool: "update_text", args: { content: "Repair Smoke Updated", fontSize: 32, alignment: "center" } }
       ]
     }, {
       applied: true,
@@ -160,6 +160,7 @@ async function main() {
       actionTypes: ["tool-alias", "arg-alias", "missing-required-binding"]
     });
     assert.strictEqual(textRepair.repairedPlan.steps[1].resultBindings.layerIndex, "{{layerIndex}}");
+    assert.strictEqual(textRepair.repairedPlan.steps[1].args.justification, "center");
 
     await validatePlan("camera-layer-alias", {
       summary: "Create a simple generated camera.",
