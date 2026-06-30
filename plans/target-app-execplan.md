@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped DuIK puppet-pin rename continuation recheck
+  (2026-06-30): launcher continuation after the Newton layer matching
+  milestone selected exactly one next candidate,
+  `tool-layers-rename-puppet-pins-for-duik`. Exact source review of
+  `Layers/Rename_Puppet_Pins_For_DuIK.jsx` showed source behavior that reads
+  `ScriptUI.environment.keyboardState.altKey`, chooses leg names
+  `Hip`/`Knee`/`Ankle` or arm names `Shoulder`/`Elbow`/`Wrist`, scans
+  active-comp `selectedProperties`, matches display names like `Puppet Pin N`,
+  derives `N`, then writes each selected `PropertyBase.name`. Current product
+  support can read selected-property evidence and mutate explicit property
+  values, keyframes, expressions, Puppet pin type enum values, layer metadata,
+  and layer names, but it still has no reviewed selected-property display-name
+  writer, no generated/mock DuIK or Puppet pin rename fixture, no Alt-key-free
+  explicit mode contract, and no post-rename property-name read-back. Reducer
+  decision: keep source-exact DuIK puppet-pin property rename terminal for this
+  longrun. No live proof, scoped runner retry, product source, recipe,
+  registry, runtime ledger, source checkout, launcher file, dependency, push,
+  or PR was mutated.
+
 - [x] Kylet scoped text-layers-from-file continuation recheck
   (2026-06-30): launcher continuation after the SRT-to-text-layers milestone
   selected exactly one next candidate,
@@ -5182,6 +5201,26 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-layers-rename-puppet-pins-for-duik` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after Newton layer matching. The exact script depends on active-comp selected
+  Puppet pin properties, display-name parsing, Alt-key UI state for arm/leg
+  mode, and direct `PropertyBase.name` mutation. Existing safe contracts are
+  narrower: `get_selected_properties` may read current property evidence,
+  `set_property_value`/`set_property_keyframes`/expression tools may mutate
+  explicit property payloads, `set_puppet_pin_type` may update a reviewed pin
+  type enum, and `rename_layers` may rename layers. None provide a reviewed
+  selected-property display-name writer or puppet-pin rename read-back.
+  Unblock condition: add a parent-approved generated-only
+  `set_property_name`/`rename_selected_properties` or Puppet-pin-name typed
+  contract with explicit comp target, layer index, property path, expected
+  current property display name, matchName/propertyIndex guard, explicit
+  `arm|leg` mode instead of Alt-key state, bounds checks for Puppet Pin 1..3,
+  checkpoint/edit-session protection, cleanup policy, post-rename read-back
+  through `get_selected_properties`/`get_layer_details`, semantic verification,
+  and no raw JSX fallback, source checkout write, broad selected-property
+  traversal, or user DuIK mutation.
+
 - 2026-06-30: Keep `tool-layers-create-text-layers-from-file` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after SRT-to-text-layers. The exact script depends on local text file
@@ -7134,6 +7173,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped DuIK puppet-pin rename continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-match-layers-to-newton-layers`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/policy/contract slices; exact source review for `Layers/Rename_Puppet_Pins_For_DuIK.jsx`; contract review for current `get_selected_properties`, `set_property_value`, `set_property_keyframes`, `set_puppet_pin_type`, `rename_layers`, `toggle-puppet-pin-types-typed-plan`, `toggle-puppet-pins-as-guide-layers-typed-plan`, and `third-party-semantics-safety-policy` coverage. Reducer decision kept source-exact DuIK puppet-pin property rename terminal/fail-closed because current safe contracts do not approve selected `PropertyBase.name` mutation, Alt-key mode semantics, generated/mock DuIK fixture assumptions, or puppet-pin rename read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped text-layers-from-file continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-convert-srt-to-text-layers`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/contract slices; exact source review for `Layers/Create_Text_Layers_From_File.jsx`; contract review for existing `create_text_layer` explicit text/read-back support and missing reviewed-lines generated-only content-input lane. Reducer decision kept source-exact local text-file import terminal/fail-closed because current safe contracts do not approve AE file picker/File IO, user file reads, raw JSX execution, or inferred local file content. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
