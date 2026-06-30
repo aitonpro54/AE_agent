@@ -26,6 +26,26 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped Lottie drop-shadow recheck: Convert Drop Shadows For Lottie
+  (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation selected
+  exactly one next candidate, `tool-lottie-convert-drop-shadows-for-lottie`.
+  Exact source review of `Lottie/Convert_Drop_Shadows_For_Lottie.jsx` showed a
+  source-exact mutating workflow on `app.project.activeItem.selectedLayers[0]`:
+  collect every `ADBE Drop Shadow` effect, duplicate one shadow layer per
+  effect, remove all effects from each duplicate, recursively set vector
+  stroke/fill colors, separate Position dimensions, remove Position/Scale/
+  Rotation/Opacity keyframes, set remapped opacity and offset position, add
+  Gaussian Blur with softness `* 0.75`, set shadow-layer parent/label, and
+  disable all effects on the original selected layer. Current typed coverage
+  only handles isolated generated effect enabled-state, parent, static property,
+  and keyframe lanes; it does not provide a generated-only source-safe contract
+  for effect removal, recursive vector color traversal, transform keyframe
+  cleanup, source-exact selected-layer/effect traversal, or the combined Lottie
+  conversion recipe. Reducer decision: keep the candidate terminal under the
+  existing blocker; no live mutation, broad queue processing, raw JSX copy,
+  source-checkout write, dependency change, product source, recipe, registry, or
+  runtime ledger mutation was performed.
+
 - [x] Kylet scoped puppet guide-layer recheck: Toggle Puppet Pins As Guide
   Layers (2026-06-30): compact Kylet-only `blocked_or_skipped` continuation
   selected exactly one next candidate,
@@ -4895,10 +4915,23 @@ old `AE_agent` repository remains the historical source.
 ## Next Milestone
 
 For NEWLY UNBLOCKED longrun continuation, keep processing Kylet
-`blocked_or_skipped` candidates one at a time. The next first look after the
-puppet guide-layer closeout is `tool-lottie-convert-drop-shadows-for-lottie`,
-or the next Kylet
-`blocked_or_skipped` entry if exact source review shows it is a worse fit.
+`blocked_or_skipped` candidates one at a time. The next factual
+`blocked_or_skipped` entry after the Lottie drop-shadow closeout is
+`tool-project-reset-imported-item-names`; use exact source review before
+accepting anything.
+
+Do not reopen `tool-lottie-convert-drop-shadows-for-lottie` for source-exact
+Lottie Drop Shadow conversion under the current typed surface. Exact source
+behavior duplicates the selected layer for each Drop Shadow, removes effects
+from duplicates, recursively writes vector stroke/fill colors, removes transform
+keyframes, offsets and blurs duplicate layers, parents them to the source layer,
+labels them, and disables original effects. Current safe contracts cover only
+isolated generated effect enabled-state, parent, static property, and keyframe
+lanes; they still do not prove effect removal, recursive vector color traversal,
+transform keyframe cleanup, source-exact selected-layer/effect traversal, or the
+combined conversion workflow. Future completion requires generated-only typed
+contracts with read-back and semantic verification for those operations, or an
+explicit advisory recipe that fails closed for unsupported source semantics.
 
 Do not reopen `tool-layers-reset-layer-names` for source-exact arbitrary
 active-comp user-layer mutation. The accepted mapping is only the existing
@@ -5009,6 +5042,20 @@ stick-effect-expression/layer-selection waves unless needed for a regression
 check.
 
 ## Decision Log
+
+- 2026-06-30: Keep `tool-lottie-convert-drop-shadows-for-lottie` terminal
+  during the Kylet newly-unblocked recheck. Exact source behavior mutates the
+  selected active-comp layer and generated duplicates through Drop Shadow effect
+  reads, duplicate-layer creation, effect removal, recursive vector stroke/fill
+  color writes, transform keyframe removal, opacity/position/blur writes,
+  layer parenting/labeling, and disabling original effects. Current product
+  support still lacks a source-safe generated-only contract for effect removal,
+  recursive vector color traversal, transform keyframe cleanup, source-exact
+  selected-layer/effect traversal, and the combined Lottie conversion workflow.
+  Existing `set_effect_enabled`, `set_layer_parent`, static `set_property_value`,
+  and generated keyframe lanes remain too narrow and fail closed for these
+  semantics. No live proof was run because live mutation was not separately
+  approved.
 
 - 2026-06-30: Accept `tool-layers-toggle-puppet-pins-as-guide-layers` only as
   the existing generated/reviewed typed adaptation during the Kylet
@@ -6840,6 +6887,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped Lottie drop-shadow recheck: Convert Drop Shadows For Lottie | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/live-lane, and ticket slices; exact source review for `Lottie/Convert_Drop_Shadows_For_Lottie.jsx`; compact contract checks for current generated-only effect enabled, parent, property value, keyframe, and Lottie out-point lanes; registry search showing no `tool-lottie-convert-drop-shadows-for-lottie` recipe/solution; and next blocked-id lookup. Reducer decision kept the candidate terminal because current typed contracts still lack generated-only effect removal, recursive vector color traversal, transform keyframe cleanup, source-exact selected-layer/effect traversal, and combined Lottie conversion proof. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped puppet guide-layer recheck: Toggle Puppet Pins As Guide Layers | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, recipe, registry, live-lane, and ticket slices; exact source review for `Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx`; contract review for `recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md`, `recipes/generic-repo-intake/tool-layers-toggle-puppet-pins-as-guide-layers.md`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, the Kylet triage ledger entry, and the latest live-lane ticket; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and Kylet triage ledger; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake` passed on rerun after the first 120s shell timeout; and `git diff --check` with Windows line-ending warning only. Source-safe reducer decision accepted only the existing generated/reviewed typed adaptation and kept source-exact project-wide DuIK mutation fail-closed. No JavaScript files were touched, no live CEP/AE mutation was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
