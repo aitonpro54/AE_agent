@@ -26,6 +26,30 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Dakkshin final gap `tool-src-scripts-mcp-bridge-auto` policy closeout
+  (2026-06-30): scoped matrix found no existing recipe/registry/product entry
+  for the auto-running source bridge wrapper. Added
+  `recipes/generic-repo-intake/tool-src-scripts-mcp-bridge-auto.md` recording
+  the terminal blocker: ScriptUI palette, scheduled polling of
+  `Documents/ae-mcp-bridge/ae_command.json`, result/status writes to user
+  Documents, `eval` JSON fallback, and a broad mutating dispatcher cannot be
+  imported into AE Agent without bypassing typed-tool proposal, confirmation,
+  checkpoint, and read-back gates. The safe embedded operations are mapped only
+  to existing typed tools and recipes for comp/text/shape/solid/adjustment/
+  camera creation, layer transform/timing/text/mask/duplicate/delete, effect
+  add/property, keyframe/expression, and marker workflows. TheLlamainator's
+  wider bridge-auto variant is not duplicate-equivalent; its additional preset,
+  audio, remove-effect, centering, and inferred/bulk marker helpers remain
+  separate typed-contract gaps. Runtime ledgers keep both entries
+  `blocked_policy` / `unsafe_skip_tool_gap` with terminal policy evidence and
+  future unblock conditions. No bridge code, registry entry, raw JSX copy,
+  dependency change, live CEP/AE mutation, source checkout write, launcher edit,
+  broad queue processing, push, or PR was used. Validation passed: JSON parse
+  for `.codex/active-thread.json`, registry, live-lane registry, and both
+  ledgers; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`;
+  `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows
+  line-ending warnings only. No JavaScript files were touched.
+
 - [x] Dakkshin final gap `tool-src-scripts-createshapelayer` polygon/star typed
   contract (2026-06-30): reopened the previous createShapeLayer terminal gap
   for a bounded safe slice and implemented `create_shape_layer` support for
@@ -4676,6 +4700,17 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: For Dakkshin/TheLlamainator `mcp-bridge-auto`, do not implement
+  a product command-file bridge. The source surface is a high-risk bridge
+  wrapper, not a bounded AE operation: ScriptUI auto-run, Documents file I/O,
+  status/result file mutation, `eval` fallback, and dispatcher access to many
+  project-mutating helpers. Treat the wrapper as a terminal policy gap until a
+  separate safe queue contract exists with no `eval`, no arbitrary user-path
+  command bus, strict typed-tool allowlist routing, proposal/dry-run/confirm
+  gates, checkpoint or edit-session policy, idempotency, generated fixtures,
+  semantic read-back, and cleanup. Safe command intents should continue to route
+  through existing typed tools and per-family recipes.
+
 - 2026-06-30: For Dakkshin/TheLlamainator `createShapeLayer`, reopen the
   previous polygon/star terminal gap only for a bounded typed contract. Accept
   `shape:"polygon"` / `shape:"star"` through `create_shape_layer` with integer
@@ -6354,6 +6389,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Dakkshin final gap `tool-src-scripts-mcp-bridge-auto` policy closeout | Required to decide whether the final bridge-auto policy gap could become a safe typed/product contract without raw JSX, source writes, dependency changes, live mutation, or broad queue processing. | Passed: compact preflight; targeted source/ledger/product search; scoped matrix for Dakkshin and TheLlamainator bridge-auto variants; JSON parse for `.codex/active-thread.json`, `registry/solutions.json`, `orchestrator/generic-repo-live-lane-registry.json`, and both ledgers; `npm.cmd run check:rules`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:full-intake`; and `git diff --check` with Windows line-ending warnings only. No JavaScript files, bridge code, registry entry, live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 
 | Dakkshin final gap `tool-src-scripts-createshapelayer` polygon/star typed contract | Required to replace the previous polygon/star terminal blocker with a bounded typed-tool contract, semantic verification, recipe/registry coverage, and ledger closeout without raw JSX or live mutation. | Passed: compact preflight; JSON parse for `.codex/active-thread.json`, registry, live-lane registry, and both ledgers; touched JS `node --check`; `node scripts/semantic-verification-smoke.js`; `node scripts/plan-repair-smoke.js`; `node scripts/solution-library-validation-smoke.js`; `node scripts/manual-typed-tool-regression-smoke.js`; `node scripts/agent-scenario-report-smoke.js`; `npm.cmd run smoke:solutions`; `npm.cmd run smoke:planning`; `npm.cmd run smoke:bridge`; `npm.cmd run smoke:full-intake`; `npm.cmd run check:rules`; and `git diff --check` with Windows line-ending warnings only. No live CEP/AE mutation, Local/Ollama, fallback provider, dependency/package change, source checkout write, launcher edit, push, PR, or broad queue processing. |
 
