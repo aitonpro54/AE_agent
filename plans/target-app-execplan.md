@@ -26,6 +26,28 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped Puppet pin type continuation recheck
+  (2026-06-30): launcher continuation after the selected-property rename
+  milestone selected exactly one next candidate,
+  `tool-properties-toggle-puppet-pin-types`. Exact source review of
+  `Properties/Toggle_Puppet_Pin_Types.jsx` showed source behavior that opens
+  an undo group, reads `app.project.activeItem.selectedProperties`, filters
+  selected `ADBE FreePin3 PosPin Atom` entries, reads child
+  `ADBE FreePin3 PosPin Type`, and toggles enum `1 <-> 4`. Current product
+  support includes a narrow generated/reviewed-target
+  `set_puppet_pin_type` contract and `toggle-puppet-pin-types-typed-plan`, but
+  that contract requires explicit `get_effect_details` evidence, one exact
+  `ADBE FreePin3 PosPin Type` property path under a proven
+  `ADBE FreePin3 PosPin Atom`, explicit enum intent, read-back, semantic
+  verification, checkpoint/edit-session protection, and cleanup. Reducer
+  decision: keep the source-exact selected Puppet pin traversal terminal for
+  this longrun because the reviewed typed surface still does not prove safe
+  generated Puppet pin atom creation/binding, selected pin traversal,
+  source-exact toggle semantics, or read-back for arbitrary selected Puppet
+  pins. No live proof, scoped runner retry, product source, recipe, registry,
+  runtime ledger, source checkout, launcher file, dependency, push, or PR was
+  mutated.
+
 - [x] Kylet scoped selected-property rename recheck: Rename Selected
   Properties (2026-06-30): compact Kylet-only `blocked_or_skipped`
   continuation selected exactly one next candidate,
@@ -5125,6 +5147,23 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-properties-toggle-puppet-pin-types` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after selected-property rename. Existing `set_puppet_pin_type` support is
+  deliberately narrower than the source script: it may set only one explicit
+  generated or reviewed `ADBE FreePin3 PosPin Type` target after current
+  `get_effect_details` evidence proves the `ADBE FreePin3` effect, pin atom
+  ancestor, property path, and enum intent. The source script instead consumes
+  active-comp selected Puppet pin atoms and toggles their child type property,
+  which still lacks generated Puppet pin atom fixture/bind evidence,
+  selected-pin traversal guards, source-exact toggle proof, and read-back
+  coverage for arbitrary selected pins. Unblock condition: add a generated-only
+  or explicitly reviewed Puppet pin atom fixture/creation/binding lane, prove
+  `ADBE FreePin3 PosPin Atom` and `ADBE FreePin3 PosPin Type` read-back through
+  typed tools, constrain enum writes to `1` and `4`, preserve checkpoint and
+  cleanup policy, and avoid raw JSX, user Puppet effect mutation, or inferred
+  selection targets.
+
 - 2026-06-30: Keep `tool-properties-rename-selected-properties` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked recheck.
   Exact source behavior depends on a prompt-provided base name, active-comp
@@ -7032,6 +7071,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped Puppet pin type continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-properties-rename-selected-properties`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger/source/recipe/orchestrator/live-lane/plan slices; exact source review for `Properties/Toggle_Puppet_Pin_Types.jsx`; contract review for `recipes/toggle-puppet-pin-types-typed-plan.md`, `recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md`, `orchestrator/run-generic-repo-full-intake.mjs`, `orchestrator/generic-repo-live-lane-registry.json`, and the Kylet triage ledger entry. Reducer decision kept source-exact selected Puppet pin type toggling terminal/fail-closed because current `set_puppet_pin_type` support is explicit-target only and still lacks generated Puppet pin atom fixture/bind proof, selected-pin traversal guards, source-exact toggle proof, and arbitrary selected Puppet pin read-back. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped disabled-stroke recheck: Remove Disabled Strokes | Required to pick at most one Kylet `blocked_or_skipped` candidate whose exact source behavior might match current safe typed contracts, then accept it only if explicit generated or reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing are all satisfied. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact status/proof/ledger summaries; targeted candidate ledger, source, plan, registry/live-lane, and parent-reducer ticket slices; exact source review for `Properties/Remove_Disabled_Strokes.jsx`; product contract search for disabled-stroke, shape-property delete, `ADBE Vector Graphic - Stroke`, selected-property, generated shape/stroke, and whole-layer delete coverage; next blocked-id lookup found `tool-properties-rename-selected-properties`. Reducer decision kept source-exact disabled stroke group removal terminal/fail-closed because current typed contracts still lack generated disabled-stroke fixture creation or marking, stable stroke-group enabled/presence read-back, deletion of only disabled `ADBE Vector Graphic - Stroke` groups, and semantic removed-count verification. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
