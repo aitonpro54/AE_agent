@@ -26,6 +26,25 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped clean-up-overlord-folder continuation recheck
+  (2026-06-30): launcher continuation after the clean selected folder milestone
+  selected exactly one next candidate,
+  `tool-project-clean-up-overlord-folder`. Exact source review of
+  `Project/Clean_Up_Overlord_Folder.jsx` showed source behavior that requires a
+  saved project, finds the Project panel folder named `Overlord`, finds a
+  sibling filesystem folder named `Overlord` next to the `.aep`, recursively
+  gathers imported `FootageItem.file.fsName` paths from the Project folder,
+  compares them to files in the filesystem folder, copies unused files into
+  `Folder.desktop/Overlord (Deleted)` with conflict renaming, and removes the
+  original files. Current product support can inspect Project items/folders,
+  move or label explicit generated Project items, queue explicit generated
+  Project-folder comps, and write narrow generated exports, but it has no
+  approved Overlord-style filesystem traversal/copy/delete cleanup contract or
+  Desktop backup/rollback policy. Reducer decision: keep source-exact Overlord
+  cleanup terminal/fail-closed for this longrun. No live proof, scoped runner
+  retry, product source, recipe, registry, runtime ledger, source checkout,
+  launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped clean-selected-folder continuation recheck
   (2026-06-30): launcher continuation after the clean render queue milestone
   selected exactly one next candidate,
@@ -5241,6 +5260,26 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-project-clean-up-overlord-folder` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after clean selected folder. The exact script requires a saved project, an
+  `Overlord` Project folder, a sibling filesystem `Overlord` folder next to the
+  `.aep`, Project footage `file.fsName` comparison, Desktop backup folder
+  creation, file copy with collision renaming, and original file removal.
+  Existing safe contracts are Project item/folder inspection, explicit
+  generated Project item movement/metadata, generated Project-folder render
+  queue setup, and narrow generated file export only; they do not approve
+  external folder traversal, third-party Overlord assumptions, Desktop backup
+  writes, arbitrary file copy/delete, or source-equivalent cleanup. Unblock
+  condition: add explicit parent/user approval plus a generated-only filesystem
+  cleanup sandbox for Overlord-style assets with allowlisted scratch roots,
+  pre-mutation target enumeration, dry-run preview, explicit confirmation,
+  conflict/overwrite policy, rollback or backup read-back evidence,
+  checkpoint/edit-session protection, proof that Desktop/source-checkout and
+  non-generated user assets are not touched by default, semantic verification,
+  and no raw JSX fallback, source checkout write, broad queue processing,
+  dependency change, or unapproved live mutation.
+
 - 2026-06-30: Keep `tool-project-clean-selected-folder` source-exact behavior
   terminal/fail-closed during the Kylet newly-unblocked continuation after
   clean render queue. The exact script recursively deletes unused items from
@@ -7256,6 +7295,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped clean-up-overlord-folder continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-selected-folder`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract slices; exact source review for `Project/Clean_Up_Overlord_Folder.jsx`; contract review for current Project item/folder typed tools, generated Project-folder render support, generated export exception, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact Overlord filesystem cleanup terminal/fail-closed because current safe contracts can inspect/move/label/queue explicit generated Project items and perform narrow generated export, but do not approve sibling filesystem folder traversal, Desktop backup folder creation, file copy/delete cleanup, third-party Overlord assumptions, or preservation proof for non-generated user assets. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped clean-selected-folder continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-project-clean-render-queue`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton inspection and activation; ledger discovery; compact status/proof/ledger summary; targeted candidate ledger/source/plan/policy/contract slices; exact source review for `Project/Clean_Selected_Folder.jsx`; contract review for current Project item/folder typed tools, `cleanup_test_items`, `add-selection-to-new-folder-typed-plan`, `add-folder-to-render-queue-typed-plan`, and `project-file-render-proxy-safety-policy`. Reducer decision kept source-exact selected-folder cleanup terminal/fail-closed because current safe contracts can list/find/create/move/label Project items and perform test-prefix cleanup, but do not approve selected-folder recursive deletion, `usedIn`-aware cleanup, empty-folder deletion, or preservation proof for referenced/non-generated Project assets. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
