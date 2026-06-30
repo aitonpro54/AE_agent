@@ -26,6 +26,24 @@ old `AE_agent` repository remains the historical source.
 
 ## Progress
 
+- [x] Kylet scoped text-layers-from-file continuation recheck
+  (2026-06-30): launcher continuation after the SRT-to-text-layers milestone
+  selected exactly one next candidate,
+  `tool-layers-create-text-layers-from-file`. Exact source review of
+  `Layers/Create_Text_Layers_From_File.jsx` showed source behavior that opens
+  `File.openDialog("Text File")`, reads the selected local text file through
+  AE `File.open("r")` / `readln()`, and creates one active-comp text layer per
+  file line with `comp.layers.addText()`. Existing `create_text_layer` support
+  can create explicit reviewed/generated text layers and read them back, but it
+  still does not approve AE file picker/File IO, arbitrary user file contents,
+  raw JSX execution, or a source-exact local-file import. Reducer decision:
+  keep this source-exact file-based text-layer creation terminal for this
+  longrun. A future safe adaptation would need a parent-approved generated-only
+  reviewed-lines content-input lane that rejects local file paths/dialogs and
+  verifies created layer count/text through typed read-back. No live proof,
+  scoped runner retry, product source, recipe, registry, runtime ledger, source
+  checkout, launcher file, dependency, push, or PR was mutated.
+
 - [x] Kylet scoped SRT-to-text-layers continuation recheck
   (2026-06-30): launcher continuation after the Puppet pin type milestone
   selected exactly one next candidate,
@@ -5164,6 +5182,21 @@ check.
 
 ## Decision Log
 
+- 2026-06-30: Keep `tool-layers-create-text-layers-from-file` source-exact
+  behavior terminal/fail-closed during the Kylet newly-unblocked continuation
+  after SRT-to-text-layers. The exact script depends on local text file
+  selection and AE File IO before creating one text layer per file line.
+  Existing `create_text_layer` support is deliberately narrower: it requires
+  explicit reviewed/generated text inputs and typed read-back. It does not
+  approve file picker/File IO, arbitrary user file reads, raw JSX execution, or
+  inferring reviewed text from a local path. Unblock condition: add a
+  parent-approved generated-only reviewed-lines content-input lane that accepts
+  explicit text lines as data, rejects file paths and `File.openDialog`,
+  creates generated text layers through typed tools, verifies layer count/text
+  with `get_layer_details`/`get_comp_details`, documents the historical
+  hyphen/underscore id mapping, preserves checkpoint and cleanup policy, and
+  records license-safe no-raw-JSX adaptation evidence.
+
 - 2026-06-30: Keep `tool-layers-convert-srt-to-text-layers` source-exact
   behavior terminal/fail-closed during the Kylet newly-unblocked continuation
   after Puppet pin type. The exact script depends on local SRT file selection
@@ -7101,6 +7134,8 @@ check.
   source merge, validation, scoped retry evidence, and commit.
 
 ## Validation
+
+| Kylet scoped text-layers-from-file continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-layers-convert-srt-to-text-layers`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/contract slices; exact source review for `Layers/Create_Text_Layers_From_File.jsx`; contract review for existing `create_text_layer` explicit text/read-back support and missing reviewed-lines generated-only content-input lane. Reducer decision kept source-exact local text-file import terminal/fail-closed because current safe contracts do not approve AE file picker/File IO, user file reads, raw JSX execution, or inferred local file content. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
 | Kylet scoped SRT-to-text-layers continuation recheck | Required to pick at most one Kylet `blocked_or_skipped` candidate after `tool-properties-toggle-puppet-pin-types`, review exact source behavior, and accept it only if it mapped to current safe typed contracts with explicit generated/reviewed targets, typed read-back, semantic verification, cleanup/checkpoint policy, no raw JSX copy, no source checkout write, no dependency change, no live mutation without approval, and no broad queue processing. | Passed/terminal: compact preflight; baton activation; ledger discovery; compact ledger summary; targeted candidate ledger/source/plan/ticket/registry/live-lane slices; exact source review for `Layers/Convert_SRT_To_Text_Layers.jsx`; contract review for existing `create_text_layer` timing/read-back support and missing SRT-specific generated-only content-input lane. Reducer decision kept source-exact SRT file conversion terminal/fail-closed because current safe contracts do not approve AE file picker/File IO, user SRT file reads, raw JSX execution, or inferred local file content. No JavaScript files were touched, no live CEP/AE mutation or scoped runner retry was run, and no product source/recipe/registry/runtime ledger/source-checkout mutation was made. |
 
