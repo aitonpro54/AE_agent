@@ -34,9 +34,9 @@ audit trees, old plan archives, generated proof dumps, or longrun runtime logs.
 - Historical source material stays in the legacy repository and git history.
   New repository docs should record only current state, decisions, validation,
   and exact next steps.
-- Local runtime outputs are ignored and disposable: `.codex-runtime/`, `logs/`,
-  `backups/`, `snapshots/`, `pro-review-bundles/`, `.codex-autonomy/logs/`,
-  and `.codex-autonomy/runs/`.
+- Local runtime outputs are ignored and disposable: `.codex-runtime/`,
+  `.codex-autonomy/`, `logs/`, `backups/`, `snapshots/`, and
+  `pro-review-bundles/`.
 - AE-specific Full Intaker/importer tools remain in this repo. Generic reusable
   SDK orchestration should move to the sibling `codex-sdk-orchestrator-tool`
   only through a separate reviewed migration.

@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("assert");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -31,6 +32,18 @@ const allowedReferenceFiles = new Set([
   path.normalize("docs/cleanup-migration.md"),
 ]);
 
+const ignoredRuntimeRoots = [
+  ".codex",
+  ".codex-runtime",
+  ".codex-autonomy",
+  auditLiteral,
+  "logs",
+  "backups",
+  "snapshots",
+  "pro-review-bundles",
+  oldPlanRoot,
+];
+
 function walk(relativePath) {
   const absolute = path.join(repo, relativePath);
   if (!fs.existsSync(absolute)) return [];
@@ -46,6 +59,15 @@ function walk(relativePath) {
 
 function readText(relativePath) {
   return fs.readFileSync(path.join(repo, relativePath), "utf8");
+}
+
+function gitLsFiles(args = []) {
+  return execFileSync("git", ["ls-files", ...args], {
+    cwd: repo,
+    encoding: "utf8",
+  })
+    .split(/\r?\n/)
+    .filter(Boolean);
 }
 
 function assertNoOldReferences() {
@@ -81,6 +103,39 @@ function assertPackageSurface() {
   assert(!packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0, "clean repo should not carry unused SDK dependency.");
 }
 
+function assertRuntimeRootsUntracked() {
+  const tracked = new Set(gitLsFiles());
+  const violations = [];
+  for (const file of tracked) {
+    const normalized = file.replace(/\\/g, "/");
+    for (const root of ignoredRuntimeRoots) {
+      if (normalized === root || normalized.startsWith(`${root}/`)) {
+        violations.push(normalized);
+      }
+    }
+  }
+  assert.deepStrictEqual(violations, [], "Runtime/cache/archive roots must stay untracked.");
+}
+
+function assertIgnoreSurface() {
+  const gitignore = readText(".gitignore");
+  for (const pattern of [
+    ".codex/",
+    ".codex-runtime/",
+    ".codex-autonomy/",
+    "logs/*.jsonl",
+    "backups/*.aep",
+    "pro-review-bundles/",
+  ]) {
+    assert(gitignore.includes(pattern), `.gitignore must include ${pattern}`);
+  }
+}
+
+function assertPlanCompact() {
+  const lineCount = readText("plans/target-app-execplan.md").split(/\r?\n/).length;
+  assert(lineCount <= 180, `target-app-execplan.md must stay compact; found ${lineCount} lines.`);
+}
+
 function assertCopiedCore() {
   for (const relativePath of [
     "cep-panel/index.html",
@@ -103,6 +158,9 @@ function main() {
   assertNoOldReferences();
   assertPackageSurface();
   assertCopiedCore();
+  assertRuntimeRootsUntracked();
+  assertIgnoreSurface();
+  assertPlanCompact();
   console.log("Clean current check: pass");
 }
 

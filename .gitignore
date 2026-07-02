@@ -13,8 +13,6 @@ pro-review-bundles/
 backups/*.aep
 backups/*.aepx
 .codex/
-.codex-autonomy/logs/
-.codex-autonomy/runs/
 .codex-runtime/
 .codex-audit/
 dist/
@@ -28,3 +26,4 @@ __pycache__/
 *.key
 credentials*
 secrets*
+.codex-autonomy/

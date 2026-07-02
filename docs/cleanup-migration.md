@@ -21,8 +21,7 @@ The following are runtime artifacts and must stay ignored:
 
 - `.codex/`
 - `.codex-runtime/`
-- `.codex-autonomy/logs/`
-- `.codex-autonomy/runs/`
+- `.codex-autonomy/`
 - `logs/`
 - `backups/`
 - `snapshots/`

@@ -14,9 +14,8 @@ Maintain AE Agent 2.0.0 in this clean repository. The product target is
   evidence; do not recreate audit archives, proof dumps, plan archives, old
   handoff-only docs, or generated runtime logs here.
 - Keep runtime outputs ignored and local, including `.codex/`,
-  `.codex-runtime/`, `logs/`, `backups/`, `snapshots/`,
-  `pro-review-bundles/`, `.codex-autonomy/logs/`, and
-  `.codex-autonomy/runs/`.
+  `.codex-runtime/`, `.codex-autonomy/`, `logs/`, `backups/`, `snapshots/`,
+  and `pro-review-bundles/`.
 - Work milestone by milestone. Resolve small ambiguities autonomously and
   record decisions in the plan or handoff.
 - After each completed milestone, update `.codex/handoff.md` with goal, files

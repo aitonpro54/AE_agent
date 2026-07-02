@@ -19,9 +19,9 @@ The product target is in `specs/target-app.md`. The active work plan is
   Intaker/importer tooling.
 - `specs/`, `docs/`, `plans/`: compact current product and project docs.
 
-Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`, `logs/`,
-`backups/`, `snapshots/`, `pro-review-bundles/`, `.codex-autonomy/logs/`, and
-`.codex-autonomy/runs/`.
+Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`,
+`.codex-autonomy/`, `logs/`, `backups/`, `snapshots/`, and
+`pro-review-bundles/`.
 
 ## Run The Bridge
 
