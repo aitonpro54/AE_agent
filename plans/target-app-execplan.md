@@ -18,16 +18,19 @@ evidence trees, old plan archives, or longrun runtime logs.
   artifacts from `.codex-runtime/`, `logs/`, `backups/`, `snapshots/`, and
   `pro-review-bundles/`. `.codex/handoff.md` remains the compact continuation
   file. Commit: `4863eb9`.
-- [ ] Documentation cleanup: keep README, AGENTS, cleanup migration notes, and
-  this execution plan compact and current.
-- [ ] Tracked tooling cleanup: remove tracked `.codex-autonomy` runtime state,
-  keep any useful automation as stateless tooling, and strengthen ignore/rule
-  guards.
-- [ ] Registry/test noise cleanup: normalize visible QA fixture naming and
-  reduce historical importer/proof references without changing typed-tool
-  contracts.
-- [ ] Final guard pass: run relevant checks, update `.codex/handoff.md`, and
-  leave one reviewable commit per completed milestone.
+- [x] Documentation cleanup (2026-07-02): kept README, AGENTS, cleanup
+  migration notes, releases, project memory, and this execution plan compact;
+  removed stale architecture and unsafe-triage docs. Commit: `5de90a3`.
+- [x] Tracked tooling cleanup (2026-07-02): removed tracked
+  `.codex-autonomy` state, ignored the runtime root, and kept autonomy as a
+  stateless dev tool. Commit: `c556a24`.
+- [x] Registry/test noise cleanup (2026-07-02): normalized visible QA fixture
+  naming and historical importer references without changing typed-tool
+  contracts. Commit: `2305f5c`.
+- [x] Final guard pass (2026-07-02): strengthened clean-current guard for
+  tracked runtime roots, compact plan size, ignore surface, and legacy
+  longrun/evidence markers outside importer protocol fixtures. Commit: final
+  guard commit.
 
 ## Decision Log
 
@@ -46,6 +49,8 @@ evidence trees, old plan archives, or longrun runtime logs.
 - Unsafe external-script candidates remain fail-closed until a narrow typed
   bridge contract, generated-only fixture, read-back, semantic verification,
   and approval path exist.
+- Longrun/evidence marker literals are allowed only where they are protocol
+  contracts or smoke fixtures for the generic repository importer.
 
 ## Validation Notes
 

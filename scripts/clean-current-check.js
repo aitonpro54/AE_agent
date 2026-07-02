@@ -35,6 +35,18 @@ const allowedReferenceFiles = new Set([
   path.normalize("docs/cleanup-migration.md"),
 ]);
 
+const allowedImporterProtocolFiles = new Set([
+  path.normalize("orchestrator/run-generic-repo-importer-supervisor.mjs"),
+  path.normalize("orchestrator/run-generic-repo-tool-importer.mjs"),
+  path.normalize("orchestrator/run-generic-repo-queue-supervisor.mjs"),
+  path.normalize("orchestrator/run-generic-repo-full-intake.mjs"),
+  path.normalize("orchestrator/contracts/generic-repo-importer-contract.json"),
+  path.normalize("orchestrator/contracts/generic-repo-importer-supervisor-plan.json"),
+  path.normalize("scripts/sdk-generic-repo-importer-command-smoke.js"),
+  path.normalize("scripts/sdk-generic-repo-queue-supervisor-smoke.js"),
+  path.normalize("scripts/sdk-generic-repo-full-intake-smoke.js"),
+]);
+
 const ignoredRuntimeRoots = [
   ".codex",
   ".codex-runtime",
@@ -45,6 +57,45 @@ const ignoredRuntimeRoots = [
   "snapshots",
   "pro-review-bundles",
   oldPlanRoot,
+];
+
+const legacyMarkerRules = [
+  {
+    label: "old QA prefix",
+    pattern: new RegExp(["Codex", "QA", "AUX"].join("\\s+")),
+  },
+  {
+    label: "old external source name",
+    pattern: new RegExp(["Ky", "let"].join("")),
+  },
+  {
+    label: "old external source run id",
+    pattern: new RegExp(["kylet", "martinez"].join("")),
+  },
+  {
+    label: "old queue batch id",
+    pattern: new RegExp(["queue", "batch"].join("-")),
+  },
+  {
+    label: "old blocked status literal",
+    pattern: new RegExp(["blocked", "or", "skipped"].join("_")),
+  },
+  {
+    label: "old continuation-doc label",
+    pattern: new RegExp(["handoff", "only"].join("-")),
+  },
+  {
+    label: "old evidence packet label",
+    pattern: new RegExp(["audit", "packet"].join("\\s+")),
+  },
+  {
+    label: "old evidence dump label",
+    pattern: new RegExp(["proof", "dump"].join("\\s+")),
+  },
+  {
+    label: "old auxiliary lane id",
+    pattern: new RegExp(["AUX", "\\d+"].join("-")),
+  },
 ];
 
 function walk(relativePath) {
@@ -96,6 +147,27 @@ function assertNoOldReferences() {
     }
   }
   assert.deepStrictEqual(violations, [], "Clean repo must not reference old audit/archive paths.");
+}
+
+function assertNoLegacyMarkersOutsideImporterProtocol() {
+  const violations = [];
+  for (const root of scannedRoots) {
+    for (const relativePath of walk(root)) {
+      const normalized = path.normalize(relativePath);
+      if (allowedImporterProtocolFiles.has(normalized)) continue;
+      const text = readText(relativePath);
+      for (const rule of legacyMarkerRules) {
+        if (rule.pattern.test(text)) {
+          violations.push(`${relativePath}: ${rule.label}`);
+        }
+      }
+    }
+  }
+  assert.deepStrictEqual(
+    violations,
+    [],
+    "Legacy longrun/evidence markers must stay out of product docs, registry, recipes, and non-protocol scripts."
+  );
 }
 
 function assertPackageSurface() {
@@ -159,6 +231,7 @@ function assertCopiedCore() {
 
 function main() {
   assertNoOldReferences();
+  assertNoLegacyMarkersOutsideImporterProtocol();
   assertPackageSurface();
   assertCopiedCore();
   assertRuntimeRootsUntracked();
