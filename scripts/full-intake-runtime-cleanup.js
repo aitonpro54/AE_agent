@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DEFAULT_RUNTIME_ROOT = ".codex-runtime";
-const DEFAULT_RUN_ID = "full-intake-kyletmartinez";
+const DEFAULT_RUN_ID = "full-intake-current";
 
 function usage() {
   return `Usage: node scripts/full-intake-runtime-cleanup.js [options]

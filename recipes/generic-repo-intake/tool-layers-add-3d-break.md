@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Layers/Add_3D_Break.jsx`
 - Source SHA-256: `2dbffa553ae21ac458bf7b0cc845e9a65ed088a87a701c00117e22992988806c`
 

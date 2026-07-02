@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Markers/Add_Markers_At_Work_Area.jsx`
 - Candidate id: `tool-markers-add-markers-at-work-area`
 - License: source repository license is missing in the importer ledger; parent

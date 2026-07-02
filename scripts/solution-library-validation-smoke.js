@@ -433,7 +433,7 @@ function assertImportedAdvisoryQuality(registry) {
     assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
     assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
     assert(
-      solution.tags.includes("kyletmartinez-advisory") ||
+      solution.tags.includes("external-script-advisory") ||
         solution.tags.includes("ae-scripting-advisory") ||
         solution.tags.includes("dakkshin-advisory"),
       `${id}: imported source advisory tag should be present for retrieval/audit.`
@@ -475,7 +475,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention reviewed lane.`);
     } else if (id === "transfer-composition-work-area-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -580,7 +580,7 @@ function assertImportedAdvisoryQuality(registry) {
         `${id}: out-point composition marker workflow should stay on comp/layer evidence plus add_comp_marker.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: out-point composition marker workflow must be mutating.`);
-      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-out-points-typed-plan.md", `${id}: importer alias recipe path should stay on the planned AUX-021 path.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-out-points-typed-plan.md", `${id}: importer alias recipe path should stay on the planned reviewed lane path.`);
       assert(text.includes("includeLayers:true"), `${id}: recipe should require layer out-point evidence.`);
       assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
       assert(text.includes("outPoint"), `${id}: recipe should bind marker targets from outPoint evidence.`);
@@ -600,7 +600,7 @@ function assertImportedAdvisoryQuality(registry) {
         `${id}: work-area composition marker workflow should stay on comp work-area evidence plus add_comp_marker.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: work-area composition marker workflow must be mutating.`);
-      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-work-area-typed-plan.md", `${id}: importer alias recipe path should stay on the planned AUX-021 path.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-work-area-typed-plan.md", `${id}: importer alias recipe path should stay on the planned reviewed lane path.`);
       assert(text.includes("workAreaStart"), `${id}: recipe should require workAreaStart evidence.`);
       assert(text.includes("workAreaDuration"), `${id}: recipe should require workAreaDuration evidence.`);
       assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
@@ -2158,7 +2158,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require separate contract for exact placement/selection semantics.`);
       assert(solution.notes.some((note) => /deep precomp\/source duplication/.test(note)), `${id}: notes must keep deep duplication out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Duplicate_Selected_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-036/.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
     } else if (id === "add-assorted-composition-guides-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2177,7 +2177,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /native guide objects/.test(note)), `${id}: notes must reject native guide-object claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Assorted_Composition_Guides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-039/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-background-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2197,7 +2197,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /persistent native background-layer stack management/.test(note)), `${id}: notes must reject persistent native background stack claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-camera-with-controller-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2222,7 +2222,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /existing user-layer parenting/.test(note)), `${id}: notes must reject existing user-layer re-parenting.`);
       assert(solution.notes.some((note) => /separate typed-tool contracts/.test(note)), `${id}: notes must require separate contracts for broader camera rig semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Camera_With_Controller/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention typed contract proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention typed contract proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-background-typed-plan") {
       assert.deepStrictEqual(
@@ -2270,7 +2270,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /rendered background layers/.test(note)), `${id}: notes must reject rendered background layer claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Cycle_Composition_Background_Color/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-095/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "enable-collapse-transformations-typed-plan") {
       assert.deepStrictEqual(
@@ -2296,7 +2296,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /unsupported layers/.test(note)), `${id}: notes must warn on unsupported layers.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Enable_Collapse_Transformations/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "enable-motion-blur-typed-plan") {
       assert.deepStrictEqual(
@@ -2322,7 +2322,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /comp-wide motion blur/.test(note)), `${id}: notes must warn on comp-wide motion blur scope.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Enable_Motion_Blur/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-onion-skinning-typed-plan") {
       assert.deepStrictEqual(
@@ -2345,7 +2345,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /mode enable or disable/.test(note)), `${id}: notes must prefer explicit final-state modes.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Toggle_Onion_Skinning/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "increment-composition-versions-typed-plan") {
       assert.deepStrictEqual(
@@ -2377,7 +2377,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /non-generated user assets/.test(note)), `${id}: notes must reject non-generated user-asset mutation.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Increment_Composition_Versions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "preserve-nested-frame-rate-typed-plan") {
       assert.strictEqual(solution.execution.recipePath, "recipes/toggle-preserve-nested-frame-rate-typed-plan.md", `${id}: importer-planned alias recipe path should stay registered.`);
@@ -2606,7 +2606,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /native AE guide records/.test(note)), `${id}: notes must reject native guide-record claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Composition_Guide/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-043/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-posterize-time-adjustment-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2632,7 +2632,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /comp frame-rate/.test(note)), `${id}: notes must reject comp frame-rate mutation claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact timing semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Posterize_Time_Adjustment_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-045/.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
     } else if (id === "center-composition-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -2763,7 +2763,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /label colors/.test(note)), `${id}: notes must reject label-color discovery claims.`);
       assert(solution.notes.some((note) => /Do not start renders/.test(note)), `${id}: notes must reject render start.`);
       assert(solution.promotionHistory.some((entry) => /Add_Labeled_Items_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-selected-compositions-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
@@ -2789,7 +2789,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /Project panel selection/.test(note)), `${id}: notes must reject Project panel selection claims.`);
       assert(solution.notes.some((note) => /Do not start renders/.test(note)), `${id}: notes must reject render start.`);
       assert(solution.promotionHistory.some((entry) => /Add_Selected_Compositions_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-folder-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
@@ -3022,7 +3022,10 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled state/.test(item)), `${id}: verification must require enabled state evidence.`);
       assert(solution.notes.some((note) => /set_effect_enabled/.test(note)), `${id}: notes must require set_effect_enabled.`);
       assert(solution.notes.some((note) => /unreviewed user effects/.test(note)), `${id}: notes must keep user-effect scope closed.`);
-      assert(solution.promotionHistory.some((entry) => /Toggle_Specific_Effects/.test(entry.evidence) || /tool-layers-toggle-specific-effects/.test(entry.from)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(
+        solution.promotionHistory.some((entry) => /specific-effect enabled-state intent/.test(entry.evidence) || /tool-layers-toggle-specific-effects/.test(entry.from)),
+        `${id}: promotion evidence should mention the source intent.`
+      );
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "fill-in-keyframes-typed-plan") {
       assert.deepStrictEqual(

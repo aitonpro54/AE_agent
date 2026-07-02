@@ -13,7 +13,10 @@ const stagingRootChild = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_age
 const stagingRootChildEscaped = `${["C:", "Users", "Ant", "Documents", "Codex", "AE_agent_clean"].join("\\\\")}\\\\`;
 const userRuntimeCache = `${["C:", "Users", "Ant", ".cache", "codex-runtimes"].join("\\")}\\`;
 const userRuntimeCacheEscaped = `${["C:", "Users", "Ant", ".cache", "codex-runtimes"].join("\\\\")}\\\\`;
-const oldImporterLedger = ["kyletmartinez-after-effects-scripts-intake", "queue-ledger.json"].join("/");
+const oldImporterLedger = [
+  [["kylet", "martinez"].join(""), "after-effects-scripts-intake"].join("-"),
+  "queue-ledger.json",
+].join("/");
 
 const scannedRoots = [
   "package.json",

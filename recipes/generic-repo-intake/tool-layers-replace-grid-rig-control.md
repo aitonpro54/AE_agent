@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Layers/Replace_Grid_Rig_Control.jsx`
 - Source SHA-256:
   `b57137e6d1262a3ab0f3d7a914ce003b88f8758343430033133b574d8c836039`

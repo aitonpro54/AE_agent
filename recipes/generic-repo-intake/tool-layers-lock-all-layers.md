@@ -4,7 +4,7 @@
 
 - Source path: `Layers/Lock_All_Layers.jsx`
 - Candidate id: `tool-layers-lock-all-layers`
-- Import run: `queue-full-intake-kyletmartinez-5756553037-import`
+- Import run: `external-script-intake-run`
 
 ## Adaptation
 

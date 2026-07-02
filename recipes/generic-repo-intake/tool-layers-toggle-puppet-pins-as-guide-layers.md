@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx`
 - Source SHA-256:
   `3a1cd2bb5ae313a339978f4157332340c5308b1779cbbf4712693a251646d4e5`

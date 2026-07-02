@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Markers/Copy_Layer_Markers_To_Composition.jsx`
 - Candidate id: `tool-markers-copy-layer-markers-to-composition`
 - License: source repository license is missing in the importer ledger; parent

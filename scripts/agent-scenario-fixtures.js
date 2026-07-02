@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const DEFAULT_PLANNER_FIXTURE_PREFIX = "Codex QA Planner Fixture";
 const DEFAULT_RENDER_QUEUE_BASELINE_TOTAL = 0;
@@ -252,12 +252,12 @@ function agentRenderQueueScenarioPlans(runPrefix, renderQueueBaselineTotal) {
         renderQueueItemIndex: renderIndex
       },
       plan: {
-        summary: "AUX-098 generated-only live QA for explicit Project folder to render queue setup without starting a render.",
+        summary: "AE_AGENT_QA_098 generated-only live QA for explicit Project folder to render queue setup without starting a render.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
           { title: "Create generated render queue folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
-          { title: "Create generated render queue comp", tool: "create_comp", args: { name: renderBase, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-098 generated-only render queue validation" } },
+          { title: "Create generated render queue comp", tool: "create_comp", args: { name: renderBase, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_098 generated-only render queue validation" } },
           { title: "Move generated comp into generated render queue folder", tool: "move_project_items_to_folder", args: { targetFolderName: folderName }, resultBindings: { itemIndices: "{{steps.2.itemIndex}}" } },
           { title: "List generated render queue folder contents", tool: "list_project_folder_items", args: { folderName, recursive: true, type: "comp", limit: 10 } },
           { title: "Add generated folder comp to render queue", tool: "add_comp_to_render_queue", args: { compName: renderBase } },
@@ -747,11 +747,11 @@ function agentLayerSelectionScenarioPlans(runPrefix) {
         selectedLayerNames
       },
       plan: {
-        summary: "AUX-101 generated-only live QA for explicit layer selection mutation and read-back.",
+        summary: "AE_AGENT_QA_101 generated-only live QA for explicit layer selection mutation and read-back.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated layer-selection comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-101 generated-only layer selection validation" } },
+          { title: "Create generated layer-selection comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_101 generated-only layer selection validation" } },
           { title: "Create generated selection solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.18, 0.24, 0.32], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
           { title: "Create generated selection shape", tool: "create_shape_layer", args: { compName, name: shapeName, shape: "rectangle", size: [180, 120], position: [280, 180], fillColor: [0.25, 0.62, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Create generated selection text", tool: "create_text_layer", args: { compName, text: "Selection", name: textName, position: [360, 180], fontSize: 48, fillColor: [0.9, 0.9, 0.86], startTime: 0, duration: 3 } },
@@ -778,7 +778,7 @@ function agentLayerMetadataScenarioPlans(runPrefix) {
   const targetLayerIndices = [1, 2];
   const targetLayerNames = [textName, solidName];
   const metadata = {
-    comment: "AUX-LM generated layer metadata",
+    comment: "AE_AGENT_QA_LM generated layer metadata",
     label: 9,
     locked: true
   };
@@ -804,11 +804,11 @@ function agentLayerMetadataScenarioPlans(runPrefix) {
         metadata
       },
       plan: {
-        summary: "AUX-LM generated-only live QA for explicit layer comment, label, and locked metadata.",
+        summary: "AE_AGENT_QA_LM generated-only live QA for explicit layer comment, label, and locked metadata.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated layer-metadata comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-LM generated-only layer metadata validation" } },
+          { title: "Create generated layer-metadata comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_LM generated-only layer metadata validation" } },
           { title: "Create generated metadata solid", tool: "create_solid_layer", args: { compName, name: solidName, color: [0.22, 0.28, 0.36], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
           { title: "Create generated metadata text", tool: "create_text_layer", args: { compName, text: "Metadata", name: textName, position: [360, 180], fontSize: 44, fillColor: [0.95, 0.9, 0.76], startTime: 0, duration: 3 } },
           { title: "Read generated layer stack before metadata", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
@@ -1185,7 +1185,7 @@ function agentResetWorkAreaScenarioPlans(runPrefix) {
         shortWorkArea
       },
       plan: {
-        summary: "AUX-026 generated-only live QA for resetting a generated comp work area to full duration.",
+        summary: "AE_AGENT_QA_026 generated-only live QA for resetting a generated comp work area to full duration.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
@@ -1275,7 +1275,7 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
         layerCountAfter: 2
       },
       plan: {
-        summary: "AUX-032 generated-only live QA for rename_layers findReplace on generated layer names.",
+        summary: "AE_AGENT_QA_032 generated-only live QA for rename_layers findReplace on generated layer names.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
@@ -1292,7 +1292,7 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
               bgColor: [0.08, 0.1, 0.12],
               allowDuplicateName: false,
               openInViewer: false,
-              comment: "AUX-032 generated-only rename findReplace validation"
+              comment: "AE_AGENT_QA_032 generated-only rename findReplace validation"
             }
           },
           {
@@ -1315,7 +1315,7 @@ function agentRenameFindReplaceScenarioPlans(runPrefix) {
             args: {
               compName,
               name: layerBName,
-              text: "AUX-032 Alpha",
+              text: "AE_AGENT_QA_032 Alpha",
               position: [320, 180],
               fontSize: 44,
               fillColor: [0.95, 0.95, 0.85],
@@ -1517,11 +1517,11 @@ function agentLayerTimingScenarioPlans(runPrefix) {
         ]
       },
       plan: {
-        summary: "AUX-050 generated-only live QA for layer timing typed tools.",
+        summary: "AE_AGENT_QA_050 generated-only live QA for layer timing typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated layer timing comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only layer timing validation" } },
+          { title: "Create generated layer timing comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.06, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_050 generated-only layer timing validation" } },
           { title: "Create first generated timing layer", tool: "create_solid_layer", args: { compName, name: layerAName, color: [0.18, 0.45, 0.9], width: 220, height: 160, pixelAspect: 1, startTime: 0, duration: 3.5 } },
           { title: "Create second generated timing layer", tool: "create_solid_layer", args: { compName, name: layerBName, color: [0.9, 0.35, 0.18], width: 220, height: 160, pixelAspect: 1, startTime: 0, duration: 3.5 } },
           { title: "Trim generated timing layers", tool: "set_layer_time_range", args: { compName, layerIndices: [1, 2], inPoint: 0.5, outPoint: 3 } },
@@ -1564,11 +1564,11 @@ function agentLayerTransformScenarioPlans(runPrefix) {
         opacity: 64
       },
       plan: {
-        summary: "AUX-050 generated-only live QA for layer transform and fit typed tools.",
+        summary: "AE_AGENT_QA_050 generated-only live QA for layer transform and fit typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated transform comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.09, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only transform validation" } },
+          { title: "Create generated transform comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.09, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_050 generated-only transform validation" } },
           { title: "Create generated transform shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [160, 90], position: [120, 90], fillColor: [0.25, 0.75, 0.95], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Fit generated transform shape to comp", tool: "fit_layer_to_comp", args: { compName, layerIndices: [1], mode: "contain", alignX: "center", alignY: "center" } },
           { title: "Set generated transform read-back values", tool: "set_layer_transform", args: { compName, layerIndex: 1, position: [320, 180], opacity: 64 } },
@@ -1616,12 +1616,12 @@ function agentProjectItemsScenarioPlans(runPrefix) {
         layerName
       },
       plan: {
-        summary: "AUX-050 generated-only live QA for project-item rename, folder, move, and source replacement typed tools.",
+        summary: "AE_AGENT_QA_050 generated-only live QA for project-item rename, folder, move, and source replacement typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated project-items main comp", tool: "create_comp", args: { name: mainCompName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only project-items validation" } },
-          { title: "Create generated project-items replacement comp", tool: "create_comp", args: { name: replacementName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only replacement source" } },
+          { title: "Create generated project-items main comp", tool: "create_comp", args: { name: mainCompName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_050 generated-only project-items validation" } },
+          { title: "Create generated project-items replacement comp", tool: "create_comp", args: { name: replacementName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_050 generated-only replacement source" } },
           { title: "Create generated project-items source layer", tool: "create_solid_layer", args: { compName: mainCompName, name: layerName, color: [0.35, 0.45, 0.9], width: 320, height: 180, pixelAspect: 1, startTime: 0, duration: 3 } },
           { title: "Create generated project-items folder", tool: "create_project_folder", args: { name: folderName, allowExisting: false } },
           { title: "Replace generated layer source with generated comp", tool: "replace_layer_source", args: { compName: mainCompName, layerIndices: [1], sourceItemName: replacementName, sourceItemType: "comp", fixExpressions: true } },
@@ -1926,12 +1926,12 @@ function agentCompositionVersionScenarioPlans(runPrefix) {
         afterToken: "v002"
       },
       plan: {
-        summary: "AUX-097 generated-only live QA for explicit composition version-token rename.",
+        summary: "AE_AGENT_QA_097 generated-only live QA for explicit composition version-token rename.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create first generated versioned comp", tool: "create_comp", args: { name: firstName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AUX-097 generated-only composition version validation" } },
-          { title: "Create second generated versioned comp", tool: "create_comp", args: { name: secondName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AUX-097 generated-only secondary version source" } },
+          { title: "Create first generated versioned comp", tool: "create_comp", args: { name: firstName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.1, 0.12], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_097 generated-only composition version validation" } },
+          { title: "Create second generated versioned comp", tool: "create_comp", args: { name: secondName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.1, 0.08, 0.14], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_097 generated-only secondary version source" } },
           { title: "Rename generated version token", tool: "rename_project_items", args: { query: base, type: "comp", exactName: false, caseSensitive: true, limit: 2, mode: "findReplace", find: "v001", replace: "v002" } },
           { title: "Find generated versioned comps after rename", tool: "find_project_items", args: { query: base, type: "comp", limit: 10, caseSensitive: true } },
           { title: "Read first generated renamed comp", tool: "get_comp_details", args: { compName: renamedFirstName, includeLayers: false } }
@@ -2066,11 +2066,11 @@ function agentEffectPropertyScenarioPlans(runPrefix) {
         color: [0.95, 0.18, 0.22, 1]
       },
       plan: {
-        summary: "AUX-050 generated-only live QA for effect property typed tools.",
+        summary: "AE_AGENT_QA_050 generated-only live QA for effect property typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated effect-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AUX-050 generated-only effect property validation" } },
+          { title: "Create generated effect-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_050 generated-only effect property validation" } },
           { title: "Create generated effect-property shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [320, 180], position: [320, 180], fillColor: [0.2, 0.4, 0.85], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Add generated Fill effect", tool: "add_effect", args: { compName, layerIndex: 1, effect: "ADBE Fill", name: effectName } },
           { title: "Inspect generated Fill effect before property set", tool: "get_effect_details", args: { compName, layerIndex: 1, effectName, includeProperties: true, propertyDepth: 1, propertyLimit: 20 } },
@@ -2323,11 +2323,11 @@ function agentExpressionScenarioPlans(runPrefix) {
         expression
       },
       plan: {
-        summary: "AUX-061 generated-only live QA for expression set/clear typed tools.",
+        summary: "AE_AGENT_QA_061 generated-only live QA for expression set/clear typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated expression comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-061 generated-only expression validation" } },
+          { title: "Create generated expression comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.08, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_061 generated-only expression validation" } },
           { title: "Create generated expression shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [180, 120], position: [320, 180], fillColor: [0.18, 0.55, 0.92], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
           { title: "Set generated position expression", tool: "set_expression", args: { compName, layerIndex: 1, propertyPath, expression, enabled: true } },
@@ -3460,11 +3460,11 @@ function agentCompPropertiesScenarioPlans(runPrefix) {
         workArea
       },
       plan: {
-        summary: "AUX-061 generated-only live QA for explicit comp properties and work-area typed tools.",
+        summary: "AE_AGENT_QA_061 generated-only live QA for explicit comp properties and work-area typed tools.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated comp-properties comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: false, comment: "AUX-061 generated-only comp properties validation" } },
+          { title: "Create generated comp-properties comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.04, 0.05, 0.07], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_061 generated-only comp properties validation" } },
           { title: "Set generated comp properties", tool: "set_comp_properties", args: { compName, ...compProperties } },
           { title: "Read generated comp properties after property update", tool: "get_comp_details", args: { compName, includeLayers: false } },
           { title: "Set generated comp work area", tool: "set_comp_work_area", args: { compName, ...workArea } },
@@ -3595,11 +3595,11 @@ function agentSelectedPropertyValueScenarioPlans(runPrefix) {
         value: expectedValue
       },
       plan: {
-        summary: "AUX-072 generated-only live QA for selected/generated layer property value edits.",
+        summary: "AE_AGENT_QA_072 generated-only live QA for selected/generated layer property value edits.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated selected-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-072 generated-only selected property value validation" } },
+          { title: "Create generated selected-property comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_072 generated-only selected property value validation" } },
           { title: "Create generated selected-property shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [200, 120], position: [320, 180], fillColor: [0.82, 0.36, 0.18], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
           { title: "Set generated opacity value", tool: "set_property_value", args: { compName, layerIndex: 1, propertyPath, value: expectedValue, setAtTime: false } },
@@ -3646,12 +3646,12 @@ function agentLayerSwitchScenarioPlans(runPrefix) {
         }
       },
       plan: {
-        summary: "AUX-096 generated-only live QA for explicit layer switch attributes.",
+        summary: "AE_AGENT_QA_096 generated-only live QA for explicit layer switch attributes.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated layer-switch comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AUX-096 generated-only layer switch validation" } },
-          { title: "Create generated layer-switch source comp", tool: "create_comp", args: { name: sourceCompName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.02, 0.03, 0.05], allowDuplicateName: false, openInViewer: false, comment: "AUX-096 generated-only layer switch source validation" } },
+          { title: "Create generated layer-switch comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_096 generated-only layer switch validation" } },
+          { title: "Create generated layer-switch source comp", tool: "create_comp", args: { name: sourceCompName, width: 320, height: 180, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.02, 0.03, 0.05], allowDuplicateName: false, openInViewer: false, comment: "AE_AGENT_QA_096 generated-only layer switch source validation" } },
           { title: "Add generated source comp as layer", tool: "add_project_item_to_comp", args: { compName, itemName: sourceCompName, itemType: "comp", name: layerName, duration: 3 } },
           { title: "Inspect generated layer switches", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: false } },
           { title: "Enable generated collapse transformations", tool: "set_property_value", args: { compName, layerIndex: 1, propertyPath: "collapseTransformation", value: true, setAtTime: false } },
@@ -3702,11 +3702,11 @@ function agentKeyframeScenarioPlans(runPrefix) {
         interpolation: "bezier"
       },
       plan: {
-        summary: "AUX-083 generated-only live QA for explicit property keyframes and temporal ease.",
+        summary: "AE_AGENT_QA_083 generated-only live QA for explicit property keyframes and temporal ease.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated keyframe comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AUX-083 generated-only keyframe validation" } },
+          { title: "Create generated keyframe comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_083 generated-only keyframe validation" } },
           { title: "Create generated keyframe target shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.22, 0.62, 0.88], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Inspect generated selected-property state", tool: "get_selected_properties", args: { includeValues: true, includeExpressions: true } },
           { title: "Set generated opacity keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes } },
@@ -3806,11 +3806,11 @@ function agentSelectedKeyframeMarkerScenarioPlans(runPrefix) {
         markerDuration: 0
       },
       plan: {
-        summary: "AUX-093 generated-only live QA for adding layer markers at reviewed selected keyframe times.",
+        summary: "AE_AGENT_QA_093 generated-only live QA for adding layer markers at reviewed selected keyframe times.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated selected-keyframe marker comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AUX-093 generated-only selected keyframe marker validation" } },
+          { title: "Create generated selected-keyframe marker comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.08, 0.1], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_093 generated-only selected keyframe marker validation" } },
           { title: "Create generated selected-keyframe marker shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.3, 0.66, 0.82], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Create reviewed marker keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes } },
           { title: "Inspect generated selected-keyframe property state", tool: "get_selected_properties", args: { includeValues: true, includeKeyframes: true, includeExpressions: true } },
@@ -4083,11 +4083,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         cameraZoom: 650
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for a camera parented to a 3D null controller.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for a camera parented to a 3D null controller.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated camera-controller comp", tool: "create_comp", args: { name: `${cameraBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only camera controller validation" } },
+          { title: "Create generated camera-controller comp", tool: "create_comp", args: { name: `${cameraBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.05, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only camera controller validation" } },
           { title: "Create generated camera with controller", tool: "create_camera_with_controller", args: { compName: `${cameraBase} Comp`, cameraName: `${cameraBase} Camera`, controllerName: `${cameraBase} Controller`, pointOfInterest: [320, 180, 0], cameraPosition: [0, 0, -888.8889], zoom: 650, startTime: 0, duration: 3, separateControllerPositionDimensions: true } },
           { title: "Read generated camera parent", tool: "get_layer_details", args: { compName: `${cameraBase} Comp`, includeProperties: false }, resultBindings: { layerIndex: "{{steps.2.cameraLayer.index}}" } },
           { title: "Read generated controller state", tool: "get_layer_details", args: { compName: `${cameraBase} Comp`, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true }, resultBindings: { layerIndex: "{{steps.2.controllerLayer.index}}" } }
@@ -4110,11 +4110,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         effectName: "Onion Skin"
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for CC Wide Time onion skinning.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for CC Wide Time onion skinning.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated onion-skin comp", tool: "create_comp", args: { name: `${onionBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.03, 0.04, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only onion skin validation" } },
+          { title: "Create generated onion-skin comp", tool: "create_comp", args: { name: `${onionBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.03, 0.04, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only onion skin validation" } },
           { title: "Enable generated onion skinning", tool: "toggle_onion_skinning", args: { compName: `${onionBase} Comp`, mode: "enable", layerName: "Onion Skin", effectName: "Onion Skin" } },
           { title: "Read generated onion skin layer", tool: "get_layer_details", args: { compName: `${onionBase} Comp`, includeProperties: false }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } },
           { title: "Read generated CC Wide Time effect", tool: "get_effect_details", args: { compName: `${onionBase} Comp`, effectName: "Onion Skin", includeProperties: true, includeValues: true }, resultBindings: { layerIndex: "{{steps.2.layer.index}}" } }
@@ -4139,11 +4139,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         minKeyframeCount: 3
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for expression fill-in keyframes with redundant-key removal.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for expression fill-in keyframes with redundant-key removal.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated fill-keyframes comp", tool: "create_comp", args: { name: `${fillBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.06, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only fill keyframes validation" } },
+          { title: "Create generated fill-keyframes comp", tool: "create_comp", args: { name: `${fillBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 2, frameRate: 24, bgColor: [0.06, 0.06, 0.08], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only fill keyframes validation" } },
           { title: "Create generated fill-keyframes shape", tool: "create_shape_layer", args: { compName: `${fillBase} Comp`, name: `${fillBase} Shape`, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.25, 0.55, 0.9], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 2 } },
           { title: "Set generated stepped opacity expression", tool: "set_expression", args: { compName: `${fillBase} Comp`, layerIndex: 1, propertyPath: opacityPath, expression: "time < 1 ? 20 : 80", enabled: true } },
           { title: "Fill generated expression into keyframes", tool: "fill_in_keyframes", args: { compName: `${fillBase} Comp`, layerIndex: 1, propertyPath: opacityPath, startTime: 0, endTime: 2, sampleEveryFrames: 12, removeRedundant: true, clearExpression: true } },
@@ -4170,11 +4170,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         keyframeValue: 60
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for keyframing the current post-expression value.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for keyframing the current post-expression value.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated current-expression comp", tool: "create_comp", args: { name: `${currentValueBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.06, 0.05], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only current expression validation" } },
+          { title: "Create generated current-expression comp", tool: "create_comp", args: { name: `${currentValueBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.07, 0.06, 0.05], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only current expression validation" } },
           { title: "Create generated current-expression shape", tool: "create_shape_layer", args: { compName: `${currentValueBase} Comp`, name: `${currentValueBase} Shape`, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.82, 0.52, 0.24], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Set generated opacity expression", tool: "set_expression", args: { compName: `${currentValueBase} Comp`, layerIndex: 1, propertyPath: opacityPath, expression: "time * 40 + 10", enabled: true } },
           { title: "Keyframe generated current expression value", tool: "keyframe_current_value_from_expression", args: { compName: `${currentValueBase} Comp`, layerIndex: 1, propertyPath: opacityPath, time: 1.25, requireExpression: true } },
@@ -4201,11 +4201,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         inSpatialTangent: [-100, -50]
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for setting a spatial in tangent from previous keyframe distance.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for setting a spatial in tangent from previous keyframe distance.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated spatial-tangent comp", tool: "create_comp", args: { name: `${spatialBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.07, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only spatial tangent validation" } },
+          { title: "Create generated spatial-tangent comp", tool: "create_comp", args: { name: `${spatialBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.04, 0.07, 0.06], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only spatial tangent validation" } },
           { title: "Create generated spatial-tangent shape", tool: "create_shape_layer", args: { compName: `${spatialBase} Comp`, name: `${spatialBase} Shape`, shape: "rectangle", size: [120, 80], position: [120, 120], fillColor: [0.35, 0.8, 0.55], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Set generated position keyframes", tool: "set_property_keyframes", args: { compName: `${spatialBase} Comp`, layerIndex: 1, propertyPath: positionPath, clearExisting: true, keyframes: [{ time: 0, value: [100, 100] }, { time: 1, value: [300, 200] }, { time: 2, value: [420, 260] }] } },
           { title: "Set generated spatial in tangent", tool: "set_spatial_in_tangent", args: { compName: `${spatialBase} Comp`, layerIndex: 1, propertyPath: positionPath, keyIndex: 2, factor: 0.5 } },
@@ -4231,11 +4231,11 @@ function agentRemainingTailContractsScenarioPlans(runPrefix) {
         ySliderName: "Y Size"
       },
       plan: {
-        summary: "AUX-099 generated-only live QA for separating rectangle size dimensions with sliders.",
+        summary: "AE_AGENT_QA_099 generated-only live QA for separating rectangle size dimensions with sliders.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
-          { title: "Create generated separate-size comp", tool: "create_comp", args: { name: `${sizeBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "AUX-099 generated-only separate size validation" } },
+          { title: "Create generated separate-size comp", tool: "create_comp", args: { name: `${sizeBase} Comp`, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.05, 0.07], allowDuplicateName: false, openInViewer: true, comment: "AE_AGENT_QA_099 generated-only separate size validation" } },
           { title: "Create generated separate-size shape", tool: "create_shape_layer", args: { compName: `${sizeBase} Comp`, name: `${sizeBase} Shape`, shape: "rectangle", size: [240, 120], position: [320, 180], fillColor: [0.66, 0.42, 0.86], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
           { title: "Separate generated shape size dimensions", tool: "separate_shape_size_dimensions", args: { compName: `${sizeBase} Comp`, layerIndex: 1, propertyPath: rectSizePath, xSliderName: "X Size", ySliderName: "Y Size" } },
           { title: "Read generated separate-size expression", tool: "get_layer_details", args: { compName: `${sizeBase} Comp`, layerIndex: 1, includeProperties: true, propertyDepth: 4, propertyLimit: 160, includeValues: true, includeExpressions: true } }
@@ -4328,7 +4328,7 @@ function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
         effectMatchName: "ADBE Fill"
       },
       plan: {
-        summary: "AUX-039 generated-only live QA for assorted composition guide overlay layers.",
+        summary: "AE_AGENT_QA_039 generated-only live QA for assorted composition guide overlay layers.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
@@ -4345,7 +4345,7 @@ function agentAssortedCompositionGuidesScenarioPlans(runPrefix) {
               bgColor: [0.08, 0.09, 0.1],
               allowDuplicateName: false,
               openInViewer: false,
-              comment: "AUX-039 generated-only assorted composition guide overlay validation"
+              comment: "AE_AGENT_QA_039 generated-only assorted composition guide overlay validation"
             }
           },
           ...guideSpecs.map((guide) => ({
@@ -4433,7 +4433,7 @@ function agentCompositionGuideScenarioPlans(runPrefix) {
         strokeWidth: 20
       },
       plan: {
-        summary: "AUX-043 generated-only live QA for a generated composition guide overlay.",
+        summary: "AE_AGENT_QA_043 generated-only live QA for a generated composition guide overlay.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
@@ -4450,7 +4450,7 @@ function agentCompositionGuideScenarioPlans(runPrefix) {
               bgColor: [0.04, 0.04, 0.05],
               allowDuplicateName: false,
               openInViewer: false,
-              comment: "AUX-043 generated-only composition guide overlay validation"
+              comment: "AE_AGENT_QA_043 generated-only composition guide overlay validation"
             }
           },
           {
@@ -4532,7 +4532,7 @@ function agentBackgroundLayerScenarioPlans(runPrefix) {
         effectMatchName: "ADBE Fill"
       },
       plan: {
-        summary: "AUX-041 generated-only live QA for adding a generated full-comp background layer.",
+        summary: "AE_AGENT_QA_041 generated-only live QA for adding a generated full-comp background layer.",
         risk: "medium",
         requiresCheckpoint: true,
         steps: [
@@ -4549,7 +4549,7 @@ function agentBackgroundLayerScenarioPlans(runPrefix) {
               bgColor: [0.06, 0.07, 0.08],
               allowDuplicateName: false,
               openInViewer: false,
-              comment: "AUX-041 generated-only background layer validation"
+              comment: "AE_AGENT_QA_041 generated-only background layer validation"
             }
           },
           {

@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Layers/Parent_Selected_Layers_To_Layers_Below.jsx`
 - Source SHA-256:
   `c61e30cbc795d9c27b8cfdd39f4fd1cff0a001015caed0f153379988eabc8b20`

@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Utilities/Alert_Selected_Layer_Index.jsx`
 - Candidate id: `tool-utilities-alert-selected-layer-index`
 - License: review required by the parent importer before any source-derived

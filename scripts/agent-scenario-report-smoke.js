@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const assert = require("assert");
 const fs = require("fs");
@@ -223,10 +223,10 @@ function assertDakkshinGeneratedOnlyFixture() {
 }
 
 function assertResetWorkAreaGeneratedOnlyFixture() {
-  const [scenario] = agentResetWorkAreaScenarioPlans("Codex QA AUX026 Fixture");
-  assert(scenario, "AUX-026 reset work area scenario should be registered.");
+  const [scenario] = agentResetWorkAreaScenarioPlans("AE_AGENT_QA_026 Fixture");
+  assert(scenario, "Scenario reset work area scenario should be registered.");
   assert.strictEqual(scenario.id, "generated-reset-work-area");
-  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX026 Fixture Reset Work Area");
+  assert.strictEqual(scenario.cleanupPrefix, "AE_AGENT_QA_026 Fixture Reset Work Area");
   assert.deepStrictEqual(scenario.expectedTools, [
     "create_test_comp",
     "set_comp_work_area",
@@ -250,16 +250,16 @@ function assertResetWorkAreaGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[1].args.start, 1);
   assert.strictEqual(scenario.plan.steps[3].args.start, 0);
   assert.strictEqual(scenario.plan.steps[3].args.duration, 5);
-  assert(!toolSequence.includes("run_extendscript"), "AUX-026 fixture must not use raw ExtendScript.");
-  assert(!toolSequence.includes("cleanup_test_items"), "AUX-026 fixture cleanup is owned by the scenario runner.");
+  assert(!toolSequence.includes("run_extendscript"), "Scenario fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "Scenario fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
 function assertRenameFindReplaceGeneratedOnlyFixture() {
-  const [scenario] = agentRenameFindReplaceScenarioPlans("Codex QA AUX032 Fixture");
-  assert(scenario, "AUX-032 rename findReplace scenario should be registered.");
+  const [scenario] = agentRenameFindReplaceScenarioPlans("AE_AGENT_QA_032 Fixture");
+  assert(scenario, "Scenario rename findReplace scenario should be registered.");
   assert.strictEqual(scenario.id, "generated-rename-find-replace");
-  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX032 Fixture Rename Find Replace");
+  assert.strictEqual(scenario.cleanupPrefix, "AE_AGENT_QA_032 Fixture Rename Find Replace");
   assert.deepStrictEqual(scenario.expectedTools, [
     "create_comp",
     "create_solid_layer",
@@ -272,12 +272,12 @@ function assertRenameFindReplaceGeneratedOnlyFixture() {
   assert.strictEqual(scenario.expectedReadBack.findReplaceLayerRename, true);
   assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
   assert.deepStrictEqual(scenario.expectedReadBack.beforeNames, [
-    "Codex QA AUX032 Fixture Rename Find Replace Alpha Plate",
-    "Codex QA AUX032 Fixture Rename Find Replace Alpha Text"
+    "AE_AGENT_QA_032 Fixture Rename Find Replace Alpha Plate",
+    "AE_AGENT_QA_032 Fixture Rename Find Replace Alpha Text"
   ]);
   assert.deepStrictEqual(scenario.expectedReadBack.afterNames, [
-    "Codex QA AUX032 Fixture Rename Find Replace Beta Plate",
-    "Codex QA AUX032 Fixture Rename Find Replace Beta Text"
+    "AE_AGENT_QA_032 Fixture Rename Find Replace Beta Plate",
+    "AE_AGENT_QA_032 Fixture Rename Find Replace Beta Text"
   ]);
 
   const toolSequence = scenario.plan.steps.map((step) => step.tool);
@@ -293,8 +293,8 @@ function assertRenameFindReplaceGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[4].args.find, "Alpha");
   assert.strictEqual(scenario.plan.steps[4].args.replace, "Beta");
   assert.strictEqual(scenario.plan.steps[4].args.caseSensitive, true);
-  assert(!toolSequence.includes("run_extendscript"), "AUX-032 fixture must not use raw ExtendScript.");
-  assert(!toolSequence.includes("cleanup_test_items"), "AUX-032 fixture cleanup is owned by the scenario runner.");
+  assert(!toolSequence.includes("run_extendscript"), "Scenario fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "Scenario fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
@@ -342,10 +342,10 @@ function assertLayerNameResetGeneratedOnlyFixture() {
 }
 
 function assertAssortedCompositionGuidesGeneratedOnlyFixture() {
-  const [scenario] = agentAssortedCompositionGuidesScenarioPlans("Codex QA AUX039 Fixture");
-  assert(scenario, "AUX-039 assorted composition guides scenario should be registered.");
+  const [scenario] = agentAssortedCompositionGuidesScenarioPlans("AE_AGENT_QA_039 Fixture");
+  assert(scenario, "Scenario assorted composition guides scenario should be registered.");
   assert.strictEqual(scenario.id, "generated-assorted-composition-guides");
-  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX039 Fixture Assorted Guides");
+  assert.strictEqual(scenario.cleanupPrefix, "AE_AGENT_QA_039 Fixture Assorted Guides");
   assert.deepStrictEqual(scenario.expectedTools, [
     "create_comp",
     "create_shape_layer",
@@ -359,7 +359,7 @@ function assertAssortedCompositionGuidesGeneratedOnlyFixture() {
   assert.strictEqual(scenario.expectedReadBack.compName.indexOf(scenario.cleanupPrefix), 0);
   assert.strictEqual(scenario.expectedReadBack.layerCountAfter, 5);
   assert.strictEqual(scenario.expectedReadBack.effectMatchName, "ADBE Fill");
-  assert.strictEqual(scenario.expectedReadBack.effectLayerName, "Codex QA AUX039 Fixture Assorted Guides Title Safe Frame");
+  assert.strictEqual(scenario.expectedReadBack.effectLayerName, "AE_AGENT_QA_039 Fixture Assorted Guides Title Safe Frame");
   assert.deepStrictEqual(scenario.expectedReadBack.guideSpecs.map((guide) => guide.key), [
     "edges",
     "centerVertical",
@@ -390,16 +390,16 @@ function assertAssortedCompositionGuidesGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[6].args.effect, "ADBE Fill");
   assert.strictEqual(scenario.plan.steps[6].resultBindings.layerIndex, "{{steps.6.layer.index}}");
   assert.strictEqual(scenario.plan.steps[8].resultBindings.layerIndex, "{{steps.6.layer.index}}");
-  assert(!toolSequence.includes("run_extendscript"), "AUX-039 fixture must not use raw ExtendScript.");
-  assert(!toolSequence.includes("cleanup_test_items"), "AUX-039 fixture cleanup is owned by the scenario runner.");
+  assert(!toolSequence.includes("run_extendscript"), "Scenario fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "Scenario fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
 function assertBackgroundLayerGeneratedOnlyFixture() {
-  const [scenario] = agentBackgroundLayerScenarioPlans("Codex QA AUX041 Fixture");
-  assert(scenario, "AUX-041 background layer scenario should be registered.");
+  const [scenario] = agentBackgroundLayerScenarioPlans("AE_AGENT_QA_041 Fixture");
+  assert(scenario, "Scenario background layer scenario should be registered.");
   assert.strictEqual(scenario.id, "generated-background-layer");
-  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX041 Fixture Background Layer");
+  assert.strictEqual(scenario.cleanupPrefix, "AE_AGENT_QA_041 Fixture Background Layer");
   assert.deepStrictEqual(scenario.expectedTools, [
     "create_comp",
     "create_shape_layer",
@@ -431,16 +431,16 @@ function assertBackgroundLayerGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[2].args.effect, "ADBE Fill");
   assert.strictEqual(scenario.plan.steps[2].resultBindings.layerIndex, "{{steps.2.layer.index}}");
   assert.strictEqual(scenario.plan.steps[5].args.layerIndex, 2);
-  assert(!toolSequence.includes("run_extendscript"), "AUX-041 fixture must not use raw ExtendScript.");
-  assert(!toolSequence.includes("cleanup_test_items"), "AUX-041 fixture cleanup is owned by the scenario runner.");
+  assert(!toolSequence.includes("run_extendscript"), "Scenario fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "Scenario fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
 function assertCompositionGuideGeneratedOnlyFixture() {
-  const [scenario] = agentCompositionGuideScenarioPlans("Codex QA AUX043 Fixture");
-  assert(scenario, "AUX-043 composition guide scenario should be registered.");
+  const [scenario] = agentCompositionGuideScenarioPlans("AE_AGENT_QA_043 Fixture");
+  assert(scenario, "Scenario composition guide scenario should be registered.");
   assert.strictEqual(scenario.id, "generated-composition-guide");
-  assert.strictEqual(scenario.cleanupPrefix, "Codex QA AUX043 Fixture Composition Guide");
+  assert.strictEqual(scenario.cleanupPrefix, "AE_AGENT_QA_043 Fixture Composition Guide");
   assert.deepStrictEqual(scenario.expectedTools, [
     "create_comp",
     "create_shape_layer",
@@ -467,13 +467,13 @@ function assertCompositionGuideGeneratedOnlyFixture() {
   assert.strictEqual(scenario.plan.steps[1].args.strokeWidth, 20);
   assert.deepStrictEqual(scenario.plan.steps[1].args.strokeColor, [1, 0, 1]);
   assert.strictEqual(scenario.plan.steps[3].resultBindings.layerIndex, "{{steps.2.layer.index}}");
-  assert(!toolSequence.includes("run_extendscript"), "AUX-043 fixture must not use raw ExtendScript.");
-  assert(!toolSequence.includes("cleanup_test_items"), "AUX-043 fixture cleanup is owned by the scenario runner.");
+  assert(!toolSequence.includes("run_extendscript"), "Scenario fixture must not use raw ExtendScript.");
+  assert(!toolSequence.includes("cleanup_test_items"), "Scenario fixture cleanup is owned by the scenario runner.");
   assert(scenario.prompt.indexOf("Return exactly this JSON object") >= 0);
 }
 
 function assertResolutionFamilyGeneratedOnlyFixtures() {
-  const [timing] = agentLayerTimingScenarioPlans("Codex QA AUX050 Fixture");
+  const [timing] = agentLayerTimingScenarioPlans("AE_AGENT_QA_050 Fixture");
   assert.strictEqual(timing.id, "generated-layer-timing");
   assert.strictEqual(timing.expectedReadBack.generatedLayerTiming, true);
   assert.deepStrictEqual(timing.plan.steps.map((step) => step.tool), [
@@ -497,7 +497,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert(!timing.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [transform] = agentLayerTransformScenarioPlans("Codex QA AUX050 Fixture");
+  const [transform] = agentLayerTransformScenarioPlans("AE_AGENT_QA_050 Fixture");
   assert.strictEqual(transform.id, "generated-layer-transform");
   assert.strictEqual(transform.expectedReadBack.generatedLayerTransform, true);
   assert.deepStrictEqual(transform.plan.steps.map((step) => step.tool), [
@@ -509,7 +509,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(transform.plan.steps[3].args.opacity, 64);
 
-  const [projectItems] = agentProjectItemsScenarioPlans("Codex QA AUX050 Fixture");
+  const [projectItems] = agentProjectItemsScenarioPlans("AE_AGENT_QA_050 Fixture");
   assert.strictEqual(projectItems.id, "generated-project-items");
   assert.strictEqual(projectItems.expectedReadBack.generatedProjectItems, true);
   assert(projectItems.plan.steps.some((step) => step.tool === "move_project_items_to_folder"));
@@ -517,7 +517,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(projectItems.plan.steps.some((step) => step.tool === "rename_project_items"));
   assert.strictEqual(projectItems.plan.steps[6].resultBindings.itemIndices, "{{steps.6.renamed.0.itemIndex}}");
 
-  const [projectSelectionFolder] = agentProjectSelectionFolderScenarioPlans("Codex QA AUX-PSF Fixture");
+  const [projectSelectionFolder] = agentProjectSelectionFolderScenarioPlans("AE_AGENT_QA_PSF Fixture");
   assert.strictEqual(projectSelectionFolder.id, "generated-project-selection-folder");
   assert.strictEqual(projectSelectionFolder.expectedReadBack.generatedProjectSelectionFolder, true);
   assert.deepStrictEqual(projectSelectionFolder.plan.steps.map((step) => step.tool), [
@@ -534,7 +534,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(projectSelectionFolder.plan.steps[5].args.folderName, projectSelectionFolder.expectedReadBack.folderName);
   assert(!projectSelectionFolder.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [projectItemMetadata] = agentProjectItemMetadataScenarioPlans("Codex QA AUX-PI-META Fixture");
+  const [projectItemMetadata] = agentProjectItemMetadataScenarioPlans("AE_AGENT_QA_PI-META Fixture");
   assert.strictEqual(projectItemMetadata.id, "generated-project-item-metadata-label");
   assert.strictEqual(projectItemMetadata.expectedReadBack.generatedProjectItemMetadata, true);
   assert.deepStrictEqual(projectItemMetadata.plan.steps.map((step) => step.tool), [
@@ -547,7 +547,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(projectItemMetadata.plan.steps[3].args.itemIndices, "{{steps.3.result}}");
   assert.strictEqual(projectItemMetadata.plan.steps[3].args.label, 0);
 
-  const [resetImportedItemNames] = agentResetImportedItemNamesScenarioPlans("Codex QA AUX-RIIN Fixture");
+  const [resetImportedItemNames] = agentResetImportedItemNamesScenarioPlans("AE_AGENT_QA_RIIN Fixture");
   assert.strictEqual(resetImportedItemNames.id, "generated-reset-imported-item-names");
   assert.strictEqual(resetImportedItemNames.expectedReadBack.generatedResetImportedItemNames, true);
   assert.deepStrictEqual(resetImportedItemNames.plan.steps.map((step) => step.tool), [
@@ -567,7 +567,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(resetImportedItemNames.plan.steps[6].args.name, resetImportedItemNames.expectedReadBack.outputFileName);
   assert(!resetImportedItemNames.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [preserveNestedFrameRate] = agentPreserveNestedFrameRateScenarioPlans("Codex QA AUX-PNFR Fixture");
+  const [preserveNestedFrameRate] = agentPreserveNestedFrameRateScenarioPlans("AE_AGENT_QA_PNFR Fixture");
   assert.strictEqual(preserveNestedFrameRate.id, "generated-preserve-nested-frame-rate");
   assert.strictEqual(preserveNestedFrameRate.expectedReadBack.generatedPreserveNestedFrameRate, true);
   assert.deepStrictEqual(preserveNestedFrameRate.plan.steps.map((step) => step.tool), [
@@ -584,7 +584,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(preserveNestedFrameRate.plan.steps[6].args.preserveNestedFrameRate, true);
   assert(!preserveNestedFrameRate.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [projectTimecodeStartFrames] = agentProjectTimecodeStartFramesScenarioPlans("Codex QA AUX-PTSF Fixture");
+  const [projectTimecodeStartFrames] = agentProjectTimecodeStartFramesScenarioPlans("AE_AGENT_QA_PTSF Fixture");
   assert.strictEqual(projectTimecodeStartFrames.id, "generated-project-timecode-start-frames");
   assert.strictEqual(projectTimecodeStartFrames.expectedReadBack.generatedProjectTimecodeStartFrames, true);
   assert.deepStrictEqual(projectTimecodeStartFrames.plan.steps.map((step) => step.tool), [
@@ -605,7 +605,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(projectTimecodeStartFrames.plan.steps[9].args.displayStartFrame, 0);
   assert(!projectTimecodeStartFrames.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [compositionVersion] = agentCompositionVersionScenarioPlans("Codex QA AUX097 Fixture");
+  const [compositionVersion] = agentCompositionVersionScenarioPlans("AE_AGENT_QA_097 Fixture");
   assert.strictEqual(compositionVersion.id, "generated-composition-version-token");
   assert.strictEqual(compositionVersion.expectedReadBack.generatedCompositionVersionToken, true);
   assert.deepStrictEqual(compositionVersion.plan.steps.map((step) => step.tool), [
@@ -619,7 +619,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionVersion.plan.steps[2].args.find, "v001");
   assert.strictEqual(compositionVersion.plan.steps[2].args.replace, "v002");
 
-  const [compositionRenameFileName] = agentCompositionRenameFileNameScenarioPlans("Codex QA AUX-CRFN Fixture");
+  const [compositionRenameFileName] = agentCompositionRenameFileNameScenarioPlans("AE_AGENT_QA_CRFN Fixture");
   assert.strictEqual(compositionRenameFileName.id, "generated-composition-rename-file-name");
   assert.strictEqual(compositionRenameFileName.expectedReadBack.generatedCompositionRenameFileName, true);
   assert.deepStrictEqual(compositionRenameFileName.plan.steps.map((step) => step.tool), [
@@ -637,7 +637,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionRenameFileName.plan.steps[4].args.name, compositionRenameFileName.expectedReadBack.projectFileBasename);
   assert(!compositionRenameFileName.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [compositionSaveFramePng] = agentCompositionSaveFramePngScenarioPlans("Codex QA AUX-CSFP Fixture");
+  const [compositionSaveFramePng] = agentCompositionSaveFramePngScenarioPlans("AE_AGENT_QA_CSFP Fixture");
   assert.strictEqual(compositionSaveFramePng.id, "generated-composition-save-frame-png");
   assert.strictEqual(compositionSaveFramePng.expectedReadBack.generatedCompFramePngExport, true);
   assert.deepStrictEqual(compositionSaveFramePng.plan.steps.map((step) => step.tool), [
@@ -653,7 +653,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(compositionSaveFramePng.plan.steps[3].args.resolutionFactor, [1, 1]);
   assert(!compositionSaveFramePng.plan.steps.some((step) => step.tool === "run_extendscript"));
 
-  const [renderQueue] = agentRenderQueueScenarioPlans("Codex QA AUX098 Fixture", 2);
+  const [renderQueue] = agentRenderQueueScenarioPlans("AE_AGENT_QA_098 Fixture", 2);
   assert.strictEqual(renderQueue.id, "generated-render-queue-setup");
   assert.strictEqual(renderQueue.expectedReadBack.generatedRenderQueue, true);
   assert.deepStrictEqual(renderQueue.plan.steps.map((step) => step.tool), [
@@ -668,7 +668,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(renderQueue.plan.steps[3].args.recursive, true);
   assert.strictEqual(renderQueue.plan.steps[5].args.limit, 6);
 
-  const [effectProperty] = agentEffectPropertyScenarioPlans("Codex QA AUX050 Fixture");
+  const [effectProperty] = agentEffectPropertyScenarioPlans("AE_AGENT_QA_050 Fixture");
   assert.strictEqual(effectProperty.id, "generated-effect-property");
   assert.strictEqual(effectProperty.expectedReadBack.generatedEffectProperty, true);
   assert.deepStrictEqual(effectProperty.plan.steps.map((step) => step.tool), [
@@ -681,7 +681,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(effectProperty.plan.steps[4].args.propertyIndex, 3);
 
-  const [effectEnabled] = agentEffectEnabledScenarioPlans("Codex QA AUX-EFFECT-ENABLED Fixture");
+  const [effectEnabled] = agentEffectEnabledScenarioPlans("AE_AGENT_QA_EFFECT-ENABLED Fixture");
   assert.strictEqual(effectEnabled.id, "generated-effect-enabled-toggle");
   assert.strictEqual(effectEnabled.expectedReadBack.generatedEffectEnabled, true);
   assert.deepStrictEqual(effectEnabled.plan.steps.map((step) => step.tool), [
@@ -697,7 +697,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(effectEnabled.plan.steps[4].args.expectedCurrentEnabled, true);
   assert.strictEqual(effectEnabled.plan.steps[4].args.enabled, false);
 
-  const [expression] = agentExpressionScenarioPlans("Codex QA AUX061 Fixture");
+  const [expression] = agentExpressionScenarioPlans("AE_AGENT_QA_061 Fixture");
   assert.strictEqual(expression.id, "generated-expression-set-clear");
   assert.strictEqual(expression.expectedReadBack.generatedExpressionSetClear, true);
   assert.deepStrictEqual(expression.plan.steps.map((step) => step.tool), [
@@ -711,7 +711,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(expression.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Position");
 
-  const [parametricAnchor] = agentParametricAnchorExpressionScenarioPlans("Codex QA AUX-MPAP Fixture");
+  const [parametricAnchor] = agentParametricAnchorExpressionScenarioPlans("AE_AGENT_QA_MPAP Fixture");
   assert.strictEqual(parametricAnchor.id, "generated-parametric-anchor-expression");
   assert.strictEqual(parametricAnchor.expectedReadBack.generatedParametricAnchorExpression, true);
   assert.deepStrictEqual(parametricAnchor.plan.steps.map((step) => step.tool), [
@@ -736,7 +736,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(parametricAnchor.plan.steps[5].resultBindings, undefined);
   assert(parametricAnchor.plan.steps[5].args.expression.includes("thisProperty.propertyGroup(1).size[0] / -2"));
 
-  const [parentOpacity] = agentParentOpacityExpressionScenarioPlans("Codex QA AUX105 Fixture");
+  const [parentOpacity] = agentParentOpacityExpressionScenarioPlans("AE_AGENT_QA_105 Fixture");
   assert.strictEqual(parentOpacity.id, "generated-parent-opacity-expression");
   assert.strictEqual(parentOpacity.expectedReadBack.generatedParentOpacityExpression, true);
   assert.deepStrictEqual(parentOpacity.plan.steps.map((step) => step.tool), [
@@ -754,7 +754,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(parentOpacity.plan.steps[5].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(parentOpacity.plan.steps[5].resultBindings, undefined);
 
-  const [layerParentBelow] = agentLayerParentBelowScenarioPlans("Codex QA AUX-LPB Fixture");
+  const [layerParentBelow] = agentLayerParentBelowScenarioPlans("AE_AGENT_QA_LPB Fixture");
   assert.strictEqual(layerParentBelow.id, "generated-layer-parent-below");
   assert.strictEqual(layerParentBelow.expectedReadBack.generatedLayerParentBelow, true);
   assert.deepStrictEqual(layerParentBelow.plan.steps.map((step) => step.tool), [
@@ -777,7 +777,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerParentBelow.plan.steps[9].args.parentLayerIndex, 3);
   assert.strictEqual(layerParentBelow.plan.steps[7].resultBindings, undefined);
 
-  const [layerParentClosest] = agentLayerParentClosestScenarioPlans("Codex QA AUX-LPC Fixture");
+  const [layerParentClosest] = agentLayerParentClosestScenarioPlans("AE_AGENT_QA_LPC Fixture");
   assert.strictEqual(layerParentClosest.id, "generated-layer-parent-closest");
   assert.strictEqual(layerParentClosest.expectedReadBack.generatedLayerParentClosest, true);
   assert.deepStrictEqual(layerParentClosest.plan.steps.map((step) => step.tool), [
@@ -806,7 +806,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(layerParentClosest.expectedReadBack.parentPairs.map((pair) => pair.distancePx), [40, 35]);
   assert.strictEqual(layerParentClosest.plan.steps[12].resultBindings, undefined);
 
-  const [layerTrackMatte] = agentLayerTrackMatteScenarioPlans("Codex QA AUX107 Fixture");
+  const [layerTrackMatte] = agentLayerTrackMatteScenarioPlans("AE_AGENT_QA_107 Fixture");
   assert.strictEqual(layerTrackMatte.id, "generated-layer-track-matte");
   assert.strictEqual(layerTrackMatte.expectedReadBack.generatedLayerTrackMatte, true);
   assert.deepStrictEqual(layerTrackMatte.plan.steps.map((step) => step.tool), [
@@ -823,7 +823,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerTrackMatte.plan.steps[5].args.trackMatteType, "luma_inverted");
   assert.strictEqual(layerTrackMatte.plan.steps[5].resultBindings, undefined);
 
-  const [adjustmentPlacement] = agentAdjustmentLayerPlacementScenarioPlans("Codex QA AUX109 Fixture");
+  const [adjustmentPlacement] = agentAdjustmentLayerPlacementScenarioPlans("AE_AGENT_QA_109 Fixture");
   assert.strictEqual(adjustmentPlacement.id, "generated-adjustment-layer-placement");
   assert.strictEqual(adjustmentPlacement.expectedReadBack.generatedAdjustmentLayerPlacement, true);
   assert.deepStrictEqual(adjustmentPlacement.plan.steps.map((step) => step.tool), [
@@ -839,7 +839,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(adjustmentPlacement.plan.steps[4].args.expectedBeforeLayerName, adjustmentPlacement.expectedReadBack.targetName);
   assert.strictEqual(adjustmentPlacement.plan.steps[4].resultBindings, undefined);
 
-  const [layerConnectionLine] = agentLayerConnectionLineScenarioPlans("Codex QA AUX-LCL Fixture");
+  const [layerConnectionLine] = agentLayerConnectionLineScenarioPlans("AE_AGENT_QA_LCL Fixture");
   assert.strictEqual(layerConnectionLine.id, "generated-layer-connection-line");
   assert.strictEqual(layerConnectionLine.expectedReadBack.generatedLayerConnectionLine, true);
   assert.deepStrictEqual(layerConnectionLine.plan.steps.map((step) => step.tool), [
@@ -856,7 +856,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerConnectionLine.plan.steps[5].args.lockLayer, true);
   assert.strictEqual(layerConnectionLine.plan.steps[5].resultBindings, undefined);
 
-  const [textShapes] = agentTextShapesScenarioPlans("Codex QA AUX-TTS Fixture");
+  const [textShapes] = agentTextShapesScenarioPlans("AE_AGENT_QA_TTS Fixture");
   assert.strictEqual(textShapes.id, "generated-text-shapes-from-text");
   assert.strictEqual(textShapes.expectedReadBack.generatedTextShapesFromText, true);
   assert.deepStrictEqual(textShapes.plan.steps.map((step) => step.tool), [
@@ -871,7 +871,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(textShapes.plan.steps[3].args.shapeLayerName, textShapes.expectedReadBack.shapeName);
   assert.strictEqual(textShapes.plan.steps[3].resultBindings, undefined);
 
-  const [stickEffect] = agentStickEffectExpressionScenarioPlans("Codex QA AUX106 Fixture");
+  const [stickEffect] = agentStickEffectExpressionScenarioPlans("AE_AGENT_QA_106 Fixture");
   assert.strictEqual(stickEffect.id, "generated-stick-effect-expression");
   assert.strictEqual(stickEffect.expectedReadBack.generatedStickEffectExpression, true);
   assert.deepStrictEqual(stickEffect.plan.steps.map((step) => step.tool), [
@@ -887,7 +887,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[1].matchName, "ADBE Ramp");
   assert.strictEqual(stickEffect.plan.steps[4].args.propertyPath[2].matchName, "ADBE Ramp-0001");
 
-  const [estimatePathLength] = agentEstimatePathLengthScenarioPlans("Codex QA AUX-EPL Fixture");
+  const [estimatePathLength] = agentEstimatePathLengthScenarioPlans("AE_AGENT_QA_EPL Fixture");
   assert.strictEqual(estimatePathLength.id, "generated-estimate-path-length");
   assert.strictEqual(estimatePathLength.expectedReadBack.generatedEstimatePathLength, true);
   assert.deepStrictEqual(estimatePathLength.plan.steps.map((step) => step.tool), [
@@ -910,7 +910,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(estimatePathLength.expectedReadBack.minLengthValue, 716);
   assert.strictEqual(estimatePathLength.expectedReadBack.maxLengthValue, 718);
 
-  const [puppetOnTransparent] = agentPuppetOnTransparentScenarioPlans("Codex QA AUX-PUPPET Fixture");
+  const [puppetOnTransparent] = agentPuppetOnTransparentScenarioPlans("AE_AGENT_QA_PUPPET Fixture");
   assert.strictEqual(puppetOnTransparent.id, "generated-puppet-on-transparent");
   assert.strictEqual(puppetOnTransparent.expectedReadBack.generatedEffectProperty, true);
   assert.strictEqual(puppetOnTransparent.expectedReadBack.effectMatchName, "ADBE FreePin3");
@@ -926,7 +926,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(puppetOnTransparent.plan.steps[4].args.propertyMatchName, "ADBE FreePin3 On Transparent");
   assert.strictEqual(puppetOnTransparent.plan.steps[4].args.value, true);
 
-  const [puppetPinType] = agentPuppetPinTypeScenarioPlans("Codex QA AUX-PUPPET-PIN Fixture");
+  const [puppetPinType] = agentPuppetPinTypeScenarioPlans("AE_AGENT_QA_PUPPET-PIN Fixture");
   assert.strictEqual(puppetPinType.id, "generated-puppet-pin-type");
   assert.strictEqual(puppetPinType.expectedReadBack.generatedPuppetPinType, true);
   assert.strictEqual(puppetPinType.expectedReadBack.effectMatchName, "ADBE FreePin3");
@@ -944,7 +944,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Atom"));
   assert(puppetPinType.plan.steps[4].args.pinTypePropertyPath.some((segment) => segment.matchName === "ADBE FreePin3 PosPin Type"));
 
-  const [puppetGuideLayer] = agentPuppetGuideLayerScenarioPlans("Codex QA AUX-PUPPET-GUIDE Fixture");
+  const [puppetGuideLayer] = agentPuppetGuideLayerScenarioPlans("AE_AGENT_QA_PUPPET-GUIDE Fixture");
   assert.strictEqual(puppetGuideLayer.id, "generated-puppet-guide-layer-toggle");
   assert.strictEqual(puppetGuideLayer.expectedReadBack.generatedPuppetGuideLayer, true);
   assert.strictEqual(puppetGuideLayer.expectedReadBack.effectMatchName, "ADBE FreePin3");
@@ -962,7 +962,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(puppetGuideLayer.plan.steps[4].args.expectedLayerNames, [puppetGuideLayer.expectedReadBack.layerName]);
   assert.strictEqual(puppetGuideLayer.plan.steps[4].args.guideLayer, true);
 
-  const [compProperties] = agentCompPropertiesScenarioPlans("Codex QA AUX061 Fixture");
+  const [compProperties] = agentCompPropertiesScenarioPlans("AE_AGENT_QA_061 Fixture");
   assert.strictEqual(compProperties.id, "generated-comp-properties-work-area");
   assert.strictEqual(compProperties.expectedReadBack.generatedCompPropertiesWorkArea, true);
   assert.deepStrictEqual(compProperties.plan.steps.map((step) => step.tool), [
@@ -975,7 +975,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compProperties.plan.steps[1].args.width, 720);
   assert.strictEqual(compProperties.plan.steps[3].args.duration, 3.5);
 
-  const [compRefresh] = agentCompRefreshScenarioPlans("Codex QA AUX-REFRESH Fixture");
+  const [compRefresh] = agentCompRefreshScenarioPlans("AE_AGENT_QA_REFRESH Fixture");
   assert.strictEqual(compRefresh.id, "generated-comp-panel-refresh");
   assert.strictEqual(compRefresh.expectedReadBack.generatedCompPanelRefresh, true);
   assert.deepStrictEqual(compRefresh.plan.steps.map((step) => step.tool), [
@@ -986,7 +986,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.strictEqual(compRefresh.plan.steps[2].args.expectedMotionBlur, false);
 
-  const [compCurrentTime] = agentCompCurrentTimeScenarioPlans("Codex QA AUX-CTI Fixture");
+  const [compCurrentTime] = agentCompCurrentTimeScenarioPlans("AE_AGENT_QA_CTI Fixture");
   assert.strictEqual(compCurrentTime.id, "generated-comp-current-time");
   assert.strictEqual(compCurrentTime.expectedReadBack.generatedCompCurrentTime, true);
   assert.deepStrictEqual(compCurrentTime.plan.steps.map((step) => step.tool), [
@@ -1001,7 +1001,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compCurrentTime.plan.steps[4].args.frame, 42);
   assert.strictEqual(compCurrentTime.plan.steps[4].args.frameRate, 24);
 
-  const [selectedPropertyValue] = agentSelectedPropertyValueScenarioPlans("Codex QA AUX072 Fixture");
+  const [selectedPropertyValue] = agentSelectedPropertyValueScenarioPlans("AE_AGENT_QA_072 Fixture");
   assert.strictEqual(selectedPropertyValue.id, "generated-selected-property-value");
   assert.strictEqual(selectedPropertyValue.expectedReadBack.generatedSelectedPropertyValue, true);
   assert.deepStrictEqual(selectedPropertyValue.plan.steps.map((step) => step.tool), [
@@ -1014,7 +1014,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(selectedPropertyValue.plan.steps[3].args.value, 42);
 
-  const [layerSwitches] = agentLayerSwitchScenarioPlans("Codex QA AUX096 Fixture");
+  const [layerSwitches] = agentLayerSwitchScenarioPlans("AE_AGENT_QA_096 Fixture");
   assert.strictEqual(layerSwitches.id, "generated-layer-switches");
   assert.strictEqual(layerSwitches.expectedReadBack.generatedLayerSwitches, true);
   assert.deepStrictEqual(layerSwitches.plan.steps.map((step) => step.tool), [
@@ -1030,7 +1030,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(layerSwitches.plan.steps[4].args.propertyPath, "collapseTransformation");
   assert.strictEqual(layerSwitches.plan.steps[6].args.propertyPath, "motionBlur");
 
-  const [layerMetadata] = agentLayerMetadataScenarioPlans("Codex QA AUX-LM Fixture");
+  const [layerMetadata] = agentLayerMetadataScenarioPlans("AE_AGENT_QA_LM Fixture");
   assert.strictEqual(layerMetadata.id, "generated-layer-metadata");
   assert.strictEqual(layerMetadata.expectedReadBack.generatedLayerMetadata, true);
   assert.deepStrictEqual(layerMetadata.plan.steps.map((step) => step.tool), [
@@ -1044,11 +1044,11 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.deepStrictEqual(layerMetadata.plan.steps[4].args.layerIndices, [1, 2]);
   assert.deepStrictEqual(layerMetadata.plan.steps[4].args.expectedLayerNames, [
-    "Codex QA AUX-LM Fixture Layer Metadata Text",
-    "Codex QA AUX-LM Fixture Layer Metadata Solid"
+    "AE_AGENT_QA_LM Fixture Layer Metadata Text",
+    "AE_AGENT_QA_LM Fixture Layer Metadata Solid"
   ]);
 
-  const [layerEnabledHardSolo] = agentLayerEnabledHardSoloScenarioPlans("Codex QA AUX-LE Fixture");
+  const [layerEnabledHardSolo] = agentLayerEnabledHardSoloScenarioPlans("AE_AGENT_QA_LE Fixture");
   assert.strictEqual(layerEnabledHardSolo.id, "generated-layer-enabled-hard-solo");
   assert.strictEqual(layerEnabledHardSolo.expectedReadBack.generatedLayerEnabledHardSolo, true);
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps.map((step) => step.tool), [
@@ -1067,7 +1067,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(layerEnabledHardSolo.plan.steps[8].args.layerIndices, [2]);
   assert.strictEqual(layerEnabledHardSolo.plan.steps[8].args.enabled, false);
 
-  const [gridRigControl] = agentGridRigControlReplacementScenarioPlans("Codex QA AUX-GRC Fixture");
+  const [gridRigControl] = agentGridRigControlReplacementScenarioPlans("AE_AGENT_QA_GRC Fixture");
   assert.strictEqual(gridRigControl.id, "generated-grid-rig-control-replacement");
   assert.strictEqual(gridRigControl.expectedReadBack.generatedGridRigControlReplacement, true);
   assert.deepStrictEqual(gridRigControl.plan.steps.map((step) => step.tool), [
@@ -1091,7 +1091,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(gridRigControl.plan.steps[8].args.name, "Matte Roundness");
   assert.strictEqual(gridRigControl.plan.steps[9].args.layerIndex, 2);
 
-  const [layerBlendingMode] = agentLayerBlendingModeScenarioPlans("Codex QA AUX-LB Fixture");
+  const [layerBlendingMode] = agentLayerBlendingModeScenarioPlans("AE_AGENT_QA_LB Fixture");
   assert.strictEqual(layerBlendingMode.id, "generated-layer-difference-blend-mode");
   assert.strictEqual(layerBlendingMode.expectedReadBack.generatedLayerDifferenceBlendMode, true);
   assert.deepStrictEqual(layerBlendingMode.plan.steps.map((step) => step.tool), [
@@ -1108,7 +1108,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(layerBlendingMode.plan.steps[6].args.layerIndices, [1, 2]);
   assert.strictEqual(layerBlendingMode.plan.steps[6].args.blendingMode, "difference");
 
-  const [layerSelection] = agentLayerSelectionScenarioPlans("Codex QA AUX101 Fixture");
+  const [layerSelection] = agentLayerSelectionScenarioPlans("AE_AGENT_QA_101 Fixture");
   assert.strictEqual(layerSelection.id, "generated-layer-selection-set");
   assert.strictEqual(layerSelection.expectedReadBack.generatedLayerSelection, true);
   assert.deepStrictEqual(layerSelection.plan.steps.map((step) => step.tool), [
@@ -1123,11 +1123,11 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   ]);
   assert.deepStrictEqual(layerSelection.plan.steps[5].args.layerIndices, [1, 2]);
   assert.deepStrictEqual(layerSelection.plan.steps[5].args.expectedLayerNames, [
-    "Codex QA AUX101 Fixture Layer Selection Text",
-    "Codex QA AUX101 Fixture Layer Selection Shape"
+    "AE_AGENT_QA_101 Fixture Layer Selection Text",
+    "AE_AGENT_QA_101 Fixture Layer Selection Shape"
   ]);
 
-  const [keyframes] = agentKeyframeScenarioPlans("Codex QA AUX083 Fixture");
+  const [keyframes] = agentKeyframeScenarioPlans("AE_AGENT_QA_083 Fixture");
   assert.strictEqual(keyframes.id, "generated-keyframe-ease");
   assert.strictEqual(keyframes.expectedReadBack.generatedKeyframeEase, true);
   assert.deepStrictEqual(keyframes.plan.steps.map((step) => step.tool), [
@@ -1142,7 +1142,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(keyframes.plan.steps[3].args.keyframes.length, 3);
   assert.deepStrictEqual(keyframes.plan.steps[4].args.keyIndices, [1, 2, 3]);
 
-  const [textToKeys] = agentTextToKeysScenarioPlans("Codex QA AUX-TTK Fixture");
+  const [textToKeys] = agentTextToKeysScenarioPlans("AE_AGENT_QA_TTK Fixture");
   assert.strictEqual(textToKeys.id, "generated-source-text-keyframes");
   assert.strictEqual(textToKeys.expectedReadBack.generatedSourceTextKeyframes, true);
   assert.deepStrictEqual(textToKeys.plan.steps.map((step) => step.tool), [
@@ -1158,7 +1158,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
     "AE Agent"
   ]);
 
-  const [selectedKeyframeMarker] = agentSelectedKeyframeMarkerScenarioPlans("Codex QA AUX093 Fixture");
+  const [selectedKeyframeMarker] = agentSelectedKeyframeMarkerScenarioPlans("AE_AGENT_QA_093 Fixture");
   assert.strictEqual(selectedKeyframeMarker.id, "generated-selected-keyframe-layer-marker");
   assert.strictEqual(selectedKeyframeMarker.expectedReadBack.markerReadBack, true);
   assert.deepStrictEqual(selectedKeyframeMarker.plan.steps.map((step) => step.tool), [
@@ -1172,7 +1172,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.time, 1);
   assert.strictEqual(selectedKeyframeMarker.plan.steps[4].args.comment, "");
 
-  const [compositionMarkerRead] = agentCompositionMarkerReadScenarioPlans("Codex QA AUX-CMR Fixture");
+  const [compositionMarkerRead] = agentCompositionMarkerReadScenarioPlans("AE_AGENT_QA_CMR Fixture");
   assert.strictEqual(compositionMarkerRead.id, "generated-composition-marker-read");
   assert.strictEqual(compositionMarkerRead.expectedReadBack.compositionMarkerReadBack, true);
   assert.deepStrictEqual(compositionMarkerRead.plan.steps.map((step) => step.tool), [
@@ -1182,7 +1182,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionMarkerRead.plan.steps[1].args.includeMarkers, true);
   assert.strictEqual(compositionMarkerRead.plan.steps[1].args.markerLimit, 10);
 
-  const [compositionMarkerWorkArea] = agentCompositionMarkerWorkAreaScenarioPlans("Codex QA AUX-CMWA Fixture");
+  const [compositionMarkerWorkArea] = agentCompositionMarkerWorkAreaScenarioPlans("AE_AGENT_QA_CMWA Fixture");
   assert.strictEqual(compositionMarkerWorkArea.id, "generated-composition-marker-work-area");
   assert.strictEqual(compositionMarkerWorkArea.expectedReadBack.compositionMarkerWorkAreaReadBack, true);
   assert.deepStrictEqual(compositionMarkerWorkArea.plan.steps.map((step) => step.tool), [
@@ -1198,7 +1198,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.start, 0.75);
   assert.strictEqual(compositionMarkerWorkArea.plan.steps[4].args.duration, 1.5);
 
-  const [compositionLayerMarkerCopy] = agentCompositionLayerMarkerCopyScenarioPlans("Codex QA AUX-CMLMC Fixture");
+  const [compositionLayerMarkerCopy] = agentCompositionLayerMarkerCopyScenarioPlans("AE_AGENT_QA_CMLMC Fixture");
   assert.strictEqual(compositionLayerMarkerCopy.id, "generated-composition-layer-marker-copy");
   assert.strictEqual(compositionLayerMarkerCopy.expectedReadBack.compositionLayerMarkerCopyReadBack, true);
   assert.deepStrictEqual(compositionLayerMarkerCopy.plan.steps.map((step) => step.tool), [
@@ -1218,7 +1218,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionLayerMarkerCopy.plan.steps[8].args.expectedMarkerCountBefore, 1);
   assert.strictEqual(compositionLayerMarkerCopy.plan.steps[9].args.includeMarkers, true);
 
-  const [compositionMarkerAdd] = agentCompositionMarkerAddScenarioPlans("Codex QA AUX-CMA Fixture");
+  const [compositionMarkerAdd] = agentCompositionMarkerAddScenarioPlans("AE_AGENT_QA_CMA Fixture");
   assert.strictEqual(compositionMarkerAdd.id, "generated-composition-marker-add");
   assert.strictEqual(compositionMarkerAdd.expectedReadBack.compositionMarkerAddReadBack, true);
   assert.deepStrictEqual(compositionMarkerAdd.plan.steps.map((step) => step.tool), [
@@ -1237,7 +1237,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(compositionMarkerAdd.plan.steps[5].args.expectedMarkerCountBefore, 2);
   assert.strictEqual(compositionMarkerAdd.plan.steps[6].args.includeMarkers, true);
 
-  const [pathGeometry] = agentPathGeometryScenarioPlans("Codex QA AUX-PATH Fixture");
+  const [pathGeometry] = agentPathGeometryScenarioPlans("AE_AGENT_QA_PATH Fixture");
   assert.strictEqual(pathGeometry.id, "generated-shape-mask-path-geometry");
   assert.strictEqual(pathGeometry.expectedReadBack.generatedPathGeometry, true);
   assert.deepStrictEqual(pathGeometry.plan.steps.map((step) => step.tool), [
@@ -1253,7 +1253,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(pathGeometry.plan.steps[4].args.keyframes.length, 2);
   assert.strictEqual(pathGeometry.plan.steps[5].args.includeKeyframes, true);
 
-  const [flipPathGeometry] = agentFlipPathGeometryScenarioPlans("Codex QA AUX-FLIP Fixture");
+  const [flipPathGeometry] = agentFlipPathGeometryScenarioPlans("AE_AGENT_QA_FLIP Fixture");
   assert.strictEqual(flipPathGeometry.id, "generated-flip-path-geometry");
   assert.strictEqual(flipPathGeometry.expectedReadBack.generatedPathGeometry, true);
   assert.deepStrictEqual(flipPathGeometry.plan.steps.map((step) => step.tool), [
@@ -1273,7 +1273,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(flipPathGeometry.plan.steps[6].args.keyframes.length, 2);
   assert.strictEqual(flipPathGeometry.plan.steps[7].args.includeKeyframes, true);
 
-  const [exportPathPoints] = agentExportPathPointsScenarioPlans("Codex QA AUX-EXPORT Fixture");
+  const [exportPathPoints] = agentExportPathPointsScenarioPlans("AE_AGENT_QA_EXPORT Fixture");
   assert.strictEqual(exportPathPoints.id, "generated-export-path-points");
   assert.strictEqual(exportPathPoints.expectedReadBack.generatedPathPointsExport, true);
   assert.deepStrictEqual(exportPathPoints.plan.steps.map((step) => step.tool), [
@@ -1292,7 +1292,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.deepStrictEqual(exportPathPoints.plan.steps[6].args.vertices, exportPathPoints.expectedReadBack.geometry.vertices);
   assert.strictEqual(exportPathPoints.plan.steps[7].args.includeKeyframes, true);
 
-  const [exportTextToFile] = agentExportTextToFileScenarioPlans("Codex QA AUX-EXPORT-TEXT Fixture");
+  const [exportTextToFile] = agentExportTextToFileScenarioPlans("AE_AGENT_QA_EXPORT-TEXT Fixture");
   assert.strictEqual(exportTextToFile.id, "generated-export-text-to-file");
   assert.strictEqual(exportTextToFile.expectedReadBack.generatedTextFileExport, true);
   assert.deepStrictEqual(exportTextToFile.plan.steps.map((step) => step.tool), [
@@ -1310,7 +1310,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(exportTextToFile.plan.steps[7].args.expectedLayerCount, 2);
   assert(exportTextToFile.expectedReadBack.expectedContent.includes("[Not a text layer]"));
 
-  const [essentialGraphics] = agentEssentialGraphicsScenarioPlans("Codex QA AUX-EG Fixture");
+  const [essentialGraphics] = agentEssentialGraphicsScenarioPlans("AE_AGENT_QA_EG Fixture");
   assert.strictEqual(essentialGraphics.id, "generated-essential-graphics-controller");
   assert.strictEqual(essentialGraphics.expectedReadBack.generatedEssentialGraphicsController, true);
   assert.strictEqual(essentialGraphics.expectedReadBack.propertyMatchName, "ADBE Opacity");
@@ -1327,7 +1327,7 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(essentialGraphics.plan.steps[4].args.expectedControllerCountBefore, 0);
   assert.strictEqual(essentialGraphics.plan.steps[5].tool, "get_essential_graphics_controllers");
 
-  const remainingTails = agentRemainingTailContractsScenarioPlans("Codex QA AUX099 Fixture");
+  const remainingTails = agentRemainingTailContractsScenarioPlans("AE_AGENT_QA_099 Fixture");
   assert.deepStrictEqual(remainingTails.map((scenario) => scenario.id), [
     "generated-camera-controller-rig",
     "generated-onion-skinning-wide-time",

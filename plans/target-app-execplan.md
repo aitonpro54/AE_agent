@@ -10,7 +10,7 @@ verification.
 This repository is the clean working baseline. It keeps the product runtime,
 typed tools, recipes, solution registry, provider layer, and current
 AE-specific Full Intaker/importer tooling. It must not depend on historical
-audit trees, old plan archives, generated proof dumps, or longrun runtime logs.
+evidence trees, old plan archives, or longrun runtime logs.
 
 ## Current Milestones
 

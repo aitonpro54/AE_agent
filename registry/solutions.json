@@ -407,7 +407,7 @@
         "color-cycle",
         "effect-property",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -491,10 +491,10 @@
       "promotionHistory": [
         {
           "date": "2026-06-25",
-          "from": "full-intake-kyletmartinez",
+          "from": "external-script-intake",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the typed effect-property part of kyletmartinez/after-effects-scripts Layers/Add_Fill_With_Color_Cycle.jsx into existing add_effect/get_effect_details/set_effect_property coverage. Source-exact app.settings/app.preferences color-cycle persistence remains fail-closed.",
+          "evidence": "Adapted only the typed effect-property part of reviewed external AE script collection Layers/Add_Fill_With_Color_Cycle.jsx into existing add_effect/get_effect_details/set_effect_property coverage. Source-exact app.settings/app.preferences color-cycle persistence remains fail-closed.",
           "commit": null
         }
       ],
@@ -515,7 +515,7 @@
         "toggle",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -601,7 +601,7 @@
       "promotionHistory": [
         {
           "date": "2026-06-25",
-          "from": "full-intake-kyletmartinez-tool-layers-toggle-specific-effects",
+          "from": "external-script-intake",
           "to": "recipe",
           "reviewer": "codex",
           "evidence": "Adapted only the specific-effect enabled-state intent into set_effect_enabled with exact generated layer/effect identity, before/after get_effect_details, get_layer_details read-back and semantic verification; no source JSX copied. Project-wide traversal, Alt-key branching, broad selected-layer scans, unreviewed user effects, third-party effect semantics, effect addition/removal/reordering, property edits and raw JSX remain fail-closed.",
@@ -1238,7 +1238,7 @@
         "timeline",
         "reset",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1299,7 +1299,7 @@
         "bridgeVersion": "2.0.0",
         "projectKind": "synthetic",
         "notes": [
-          "Seeded by AUX-021 generic repository importer as advisory typed-plan coverage for resetting a comp work area."
+          "Seeded by reviewed lane generic repository importer as advisory typed-plan coverage for resetting a comp work area."
         ]
       },
       "promotionHistory": [
@@ -1308,7 +1308,7 @@
           "from": "generic-repo-importer-kmrwa2",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "AUX-021 adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Reset_Composition_Work_Area.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "evidence": "reviewed lane adapted only the idea behind reviewed external AE script collection Compositions/Reset_Composition_Work_Area.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -1333,7 +1333,7 @@
         "paste",
         "settings",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1452,7 +1452,7 @@
         "keyTime",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1533,7 +1533,7 @@
           "from": "generic-repo-importer-composition-marker-terminal-review",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the composition marker read requirement behind kyletmartinez/after-effects-scripts marker-derived composition workflows into get_comp_details includeMarkers:true evidence ordered by comp.markerProperty.keyTime; no source JSX copied. Marker creation/update/delete, layer marker substitution, audio-derived markers, marker-derived work-area mutation and exact source JSX semantics require separate typed-tool contracts and parent-owned validation.",
+          "evidence": "Adapted only the composition marker read requirement behind reviewed external AE script collection marker-derived composition workflows into get_comp_details includeMarkers:true evidence ordered by comp.markerProperty.keyTime; no source JSX copied. Marker creation/update/delete, layer marker substitution, audio-derived markers, marker-derived work-area mutation and exact source JSX semantics require separate typed-tool contracts and parent-owned validation.",
           "commit": null
         }
       ],
@@ -1559,7 +1559,7 @@
         "workAreaStart",
         "workAreaDuration",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1677,7 +1677,7 @@
         "timeline",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1792,7 +1792,7 @@
         "timeline",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -1908,7 +1908,7 @@
         "layer-out-point",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2006,7 +2006,7 @@
       "notes": [
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Use only current get_comp_details evidence for layer outPoint and composition marker count binding; do not infer marker targets from prior chat context.",
-        "Importer alias path: recipes/add-markers-at-out-points-typed-plan.md carries the same safe typed composition marker add contract for AUX-021 child batches.",
+        "Importer alias path: recipes/add-markers-at-out-points-typed-plan.md carries the same safe typed composition marker add contract for reviewed lane child batches.",
         "Do not use this recipe for work-area boundary marker creation, marker update/delete, audio-derived markers, layer marker mutation, work-area changes, layer timing changes, file I/O, render queue work, or raw ExtendScript."
       ]
     },
@@ -2025,7 +2025,7 @@
         "workAreaDuration",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2123,7 +2123,7 @@
       "notes": [
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Use only current get_comp_details evidence for workAreaStart, workAreaDuration, and composition marker count binding; do not infer marker targets from prior chat context.",
-        "Importer alias path: recipes/add-markers-at-work-area-typed-plan.md carries the same safe typed composition marker add contract for AUX-021 child batches.",
+        "Importer alias path: recipes/add-markers-at-work-area-typed-plan.md carries the same safe typed composition marker add contract for reviewed lane child batches.",
         "Do not use this recipe for out-point marker creation, marker update/delete, audio-derived markers, layer marker mutation, work-area mutation, layer timing changes, file I/O, render queue work, or raw ExtendScript."
       ]
     },
@@ -2139,7 +2139,7 @@
         "selected-layers",
         "timeline",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2223,7 +2223,7 @@
           "from": "generic-repo-importer-kmmsl1",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "kmmsl1 adapted only the idea behind kyletmartinez/after-effects-scripts Markers/Add_Markers_To_Selected_Layers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "evidence": "kmmsl1 adapted only the idea behind reviewed external AE script collection Markers/Add_Markers_To_Selected_Layers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -2246,7 +2246,7 @@
         "selected-properties",
         "add-layer-marker",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2349,7 +2349,7 @@
           "from": "generic-repo-importer-tool-markers-add-markers-at-selected-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Markers/Add_Markers_At_Selected_Keyframes.jsx into existing typed tools as selected-property keyframe-to-layer-marker guidance for adding layer markers at explicit reviewed selectedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/indices, computed markerTargets disclosure, add_layer_marker with a present comment field and get_layer_details marker read-back. Selected-key discovery without explicit reviewed keyframes, composition markers, audio-derived markers, marker update/delete, property/keyframe value edits, keyframe time edits, layer timing changes, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Markers/Add_Markers_At_Selected_Keyframes.jsx into existing typed tools as selected-property keyframe-to-layer-marker guidance for adding layer markers at explicit reviewed selectedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/indices, computed markerTargets disclosure, add_layer_marker with a present comment field and get_layer_details marker read-back. Selected-key discovery without explicit reviewed keyframes, composition markers, audio-derived markers, marker update/delete, property/keyframe value edits, keyframe time edits, layer timing changes, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -2376,7 +2376,7 @@
         "prefix",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2454,7 +2454,7 @@
           "from": "generic-repo-importer-kmlan1",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "kmlan1 adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Append_To_Layer_Name.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "evidence": "kmlan1 adapted only the idea behind reviewed external AE script collection Layers/Append_To_Layer_Name.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -2476,7 +2476,7 @@
         "exact",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2557,7 +2557,7 @@
           "from": "generic-repo-importer-tool-layers-rename-selected-layers-with-text",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Rename_Selected_Layers_With_Text.jsx into existing selected-layer rename typed tools; no source JSX copied. Because current rename_layers multi-layer exact mode appends unpadded numbers unless a template is used, same-text exact rename guidance uses one rename_layers call per concrete selected layer; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Rename_Selected_Layers_With_Text.jsx into existing selected-layer rename typed tools; no source JSX copied. Because current rename_layers multi-layer exact mode appends unpadded numbers unless a template is used, same-text exact rename guidance uses one rename_layers call per concrete selected layer; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -2583,7 +2583,7 @@
         "zero-padding",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2668,7 +2668,7 @@
           "from": "generic-repo-importer-kmlrn1",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "kmlrn1 adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Rename_Selected_Layers_With_Numbers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "evidence": "kmlrn1 adapted only the idea behind reviewed external AE script collection Layers/Rename_Selected_Layers_With_Numbers.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -2692,7 +2692,7 @@
         "sequence",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2779,7 +2779,7 @@
           "from": "generic-repo-importer-kmlrl1",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "kmlrl1 adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Rename_Selected_Layers_With_Letters.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
+          "evidence": "kmlrl1 adapted only the idea behind reviewed external AE script collection Layers/Rename_Selected_Layers_With_Letters.jsx at d017a775fd3f474963313b40882650800917aec9 into existing typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -2804,7 +2804,7 @@
         "literal",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -2897,7 +2897,7 @@
           "from": "generic-repo-importer-tool-layers-replace-text-in-layer-name",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Replace_Text_In_Layer_Name.jsx into existing typed tools; no source JSX copied. AUX-032 registered a generated-only OpenAI CLI lane for rename_layers findReplace.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Replace_Text_In_Layer_Name.jsx into existing typed tools; no source JSX copied. reviewed lane registered a generated-only OpenAI CLI lane for rename_layers findReplace.",
           "commit": null
         }
       ],
@@ -2922,7 +2922,7 @@
         "generated-only",
         "typed-tool",
         "generic-importer",
-        "kyletmartinez-advisory"
+        "external-script-advisory"
       ],
       "intent": {
         "summary": "Reset reviewed generated layer names to empty strings, then read the layer names back.",
@@ -3023,7 +3023,7 @@
         "timing",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3095,7 +3095,7 @@
           "from": "generic-repo-importer-tool-layers-get-selected-layer-duration",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Get_Selected_Layer_Duration.jsx into existing read-only typed tools; no source JSX copied.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Get_Selected_Layer_Duration.jsx into existing read-only typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -3118,7 +3118,7 @@
         "frameDuration",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3204,7 +3204,7 @@
           "from": "generic-repo-importer-tool-lottie-prepare-layer-out-points-for-lottie",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the timing intent behind kyletmartinez/after-effects-scripts Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx into existing typed tools as explicit generated comp/layer outPoint guidance using get_comp_details, set_layer_time_range, and get_layer_details read-back; no source JSX copied. Source-exact all-project CompItem traversal, user comp mutation, exporter hidden state, native undo semantics and raw ExtendScript require a separate generated-prefix traversal contract or fail closed.",
+          "evidence": "Adapted only the timing intent behind reviewed external AE script collection Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx into existing typed tools as explicit generated comp/layer outPoint guidance using get_comp_details, set_layer_time_range, and get_layer_details read-back; no source JSX copied. Source-exact all-project CompItem traversal, user comp mutation, exporter hidden state, native undo semantics and raw ExtendScript require a separate generated-prefix traversal contract or fail closed.",
           "commit": null
         }
       ],
@@ -3227,7 +3227,7 @@
         "copy",
         "clone",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool",
         "duplicate_layers"
       ],
@@ -3306,7 +3306,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-layers-duplicate-selected-layer generic repository importer as advisory typed-plan coverage for selected-layer duplication.",
-          "Live evidence reuses the M207 generated-only duplicate_layers OpenAI CLI lane rerun in AUX-036."
+          "Live evidence reuses the M207 generated-only duplicate_layers OpenAI CLI lane rerun in reviewed lane."
         ]
       },
       "promotionHistory": [
@@ -3315,7 +3315,7 @@
           "from": "generic-repo-importer-tool-layers-duplicate-selected-layer",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Duplicate_Selected_Layer.jsx into existing typed tools; no source JSX copied. AUX-036 reran the M207 generated-only duplicate_layers OpenAI CLI lane as reusable live evidence.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Duplicate_Selected_Layer.jsx into existing typed tools; no source JSX copied. reviewed lane reran the M207 generated-only duplicate_layers OpenAI CLI lane as reusable live evidence.",
           "commit": null
         }
       ],
@@ -3338,7 +3338,7 @@
         "safe-area",
         "shape-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3418,7 +3418,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-add-assorted-composition-guides generic repository importer as advisory typed-plan coverage for generated guide overlays.",
-          "Live evidence was proved in AUX-039 with generated-only OpenAI CLI guide-overlay lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
+          "Live evidence was proved in reviewed lane with generated-only OpenAI CLI guide-overlay lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
         ]
       },
       "promotionHistory": [
@@ -3427,7 +3427,7 @@
           "from": "generic-repo-importer-tool-compositions-add-assorted-composition-guides",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Assorted_Composition_Guides.jsx into existing typed tools as generated shape-layer guide overlays; no source JSX copied. AUX-039 registered and proved the generated-only OpenAI CLI guide-overlay lane.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Add_Assorted_Composition_Guides.jsx into existing typed tools as generated shape-layer guide overlays; no source JSX copied. reviewed lane registered and proved the generated-only OpenAI CLI guide-overlay lane.",
           "commit": null
         }
       ],
@@ -3450,7 +3450,7 @@
         "shape-layers",
         "generated-layer",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3532,7 +3532,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-add-background-layer generic repository importer as advisory typed-plan coverage for generated full-comp background shape layers.",
-          "Live evidence was proved in AUX-041 with generated-only OpenAI CLI background-layer lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
+          "Live evidence was proved in reviewed lane with generated-only OpenAI CLI background-layer lane over create_comp, create_shape_layer, add_effect, get_comp_details and get_layer_details."
         ]
       },
       "promotionHistory": [
@@ -3541,7 +3541,7 @@
           "from": "generic-repo-importer-tool-compositions-add-background-layer",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Background_Layer.jsx into existing typed tools as a generated full-comp shape-layer background; no source JSX copied. AUX-041 registered and proved the generated-only OpenAI CLI background-layer lane.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Add_Background_Layer.jsx into existing typed tools as a generated full-comp shape-layer background; no source JSX copied. reviewed lane registered and proved the generated-only OpenAI CLI background-layer lane.",
           "commit": null
         }
       ],
@@ -3565,7 +3565,7 @@
         "parenting",
         "three-d-null",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3683,7 +3683,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-add-camera-with-controller generic repository importer as advisory typed-plan coverage over create_camera_with_controller.",
-          "AUX-099 already added and validated production typed camera-controller contract coverage with generated-only OpenAI CLI read-back/semantic proof."
+          "reviewed lane already added and validated production typed camera-controller contract coverage with generated-only OpenAI CLI read-back/semantic proof."
         ]
       },
       "promotionHistory": [
@@ -3692,7 +3692,7 @@
           "from": "generic-repo-importer-tool-compositions-add-camera-with-controller",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Camera_With_Controller.jsx into existing typed tools as explicit create_camera_with_controller guidance plus get_layer_details parent/controller read-back; no source JSX copied. Current contract remains fail-closed for existing-layer re-parenting, multi-camera switch rigs, expression-controller orchestration, recursive/global camera setup and exact source JSX semantics. AUX-099 proved the typed camera-controller contract and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Add_Camera_With_Controller.jsx into existing typed tools as explicit create_camera_with_controller guidance plus get_layer_details parent/controller read-back; no source JSX copied. Current contract remains fail-closed for existing-layer re-parenting, multi-camera switch rigs, expression-controller orchestration, recursive/global camera setup and exact source JSX semantics. reviewed lane proved the typed camera-controller contract and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -3718,7 +3718,7 @@
         "bgColor",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3811,7 +3811,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-background",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Background.jsx into existing typed tools as explicit nested source composition bgColor mutation through set_comp_properties; no source JSX copied. Visible rendered background layers, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Background.jsx into existing typed tools as explicit nested source composition bgColor mutation through set_comp_properties; no source JSX copied. Visible rendered background layers, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -3839,7 +3839,7 @@
         "grayscale",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -3920,7 +3920,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-cycle-composition-background-color generic repository importer as advisory typed-plan coverage for active comp bgColor cycling.",
-          "AUX-095 already proved a candidate-id-gated generated-only active-comp bgColor lane over get_active_comp, set_comp_properties and get_comp_details; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already proved a candidate-id-gated generated-only active-comp bgColor lane over get_active_comp, set_comp_properties and get_comp_details; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -3929,7 +3929,7 @@
           "from": "generic-repo-importer-tool-compositions-cycle-composition-background-color",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Cycle_Composition_Background_Color.jsx into existing typed tools as active composition bgColor cycling through set_comp_properties; no source JSX copied. The recipe requires current active comp read-back, currentBgColor, reviewed cycleMode, disclosed nextBgColor and post-mutation get_comp_details evidence. Source-exact grayscale cycling, rendered background layers, project-wide traversal, nested source-comp updates, template batch changes and exact source JSX semantics require a separate typed-tool contract. AUX-095 proved generated-only active-comp bgColor read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Cycle_Composition_Background_Color.jsx into existing typed tools as active composition bgColor cycling through set_comp_properties; no source JSX copied. The recipe requires current active comp read-back, currentBgColor, reviewed cycleMode, disclosed nextBgColor and post-mutation get_comp_details evidence. Source-exact grayscale cycling, rendered background layers, project-wide traversal, nested source-comp updates, template batch changes and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only active-comp bgColor read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -3958,7 +3958,7 @@
         "continuous-rasterization",
         "set-property-value",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4036,7 +4036,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-enable-collapse-transformations generic repository importer as advisory typed-plan coverage for explicit collapseTransformation layer-switch enabling.",
-          "AUX-096 already proved a generated-only layer-switch lane over set_property_value, get_layer_details, semantic verification and cleanup; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already proved a generated-only layer-switch lane over set_property_value, get_layer_details, semantic verification and cleanup; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -4045,7 +4045,7 @@
           "from": "generic-repo-importer-tool-compositions-enable-collapse-transformations",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Enable_Collapse_Transformations.jsx into existing typed tools as explicit layer-switch collapseTransformation enabling through set_property_value; no source JSX copied. The recipe requires current active comp and layer-detail evidence, accepted target disclosure, propertyPath collapseTransformation, value true, setAtTime:false and post-mutation get_layer_details read-back. Unsupported layer kinds, recursive all-nested-comp traversal, project-wide collapse enabling, comp-wide motion blur, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract. AUX-096 proved generated-only layer-switch read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Enable_Collapse_Transformations.jsx into existing typed tools as explicit layer-switch collapseTransformation enabling through set_property_value; no source JSX copied. The recipe requires current active comp and layer-detail evidence, accepted target disclosure, propertyPath collapseTransformation, value true, setAtTime:false and post-mutation get_layer_details read-back. Unsupported layer kinds, recursive all-nested-comp traversal, project-wide collapse enabling, comp-wide motion blur, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only layer-switch read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -4072,7 +4072,7 @@
         "motionBlur",
         "set-property-value",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4150,7 +4150,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-enable-motion-blur generic repository importer as advisory typed-plan coverage for explicit motionBlur layer-switch enabling.",
-          "AUX-096 already proved a generated-only layer-switch lane over set_property_value, get_layer_details, semantic verification and cleanup; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already proved a generated-only layer-switch lane over set_property_value, get_layer_details, semantic verification and cleanup; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -4159,7 +4159,7 @@
           "from": "generic-repo-importer-tool-compositions-enable-motion-blur",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Enable_Motion_Blur.jsx into existing typed tools as explicit layer-switch motionBlur enabling through set_property_value; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, and existing AUX-096 layer-switch lane proof. The recipe requires current active comp and layer-detail evidence, accepted target disclosure, propertyPath motionBlur, value true, setAtTime:false and post-mutation get_layer_details read-back. Unsupported layer kinds, comp-wide motion blur enablement, renderer or shutter settings, recursive all-nested-comp traversal, project-wide layer traversal, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract. AUX-096 proved generated-only layer-switch read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Enable_Motion_Blur.jsx into existing typed tools as explicit layer-switch motionBlur enabling through set_property_value; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, and existing reviewed lane layer-switch lane proof. The recipe requires current active comp and layer-detail evidence, accepted target disclosure, propertyPath motionBlur, value true, setAtTime:false and post-mutation get_layer_details read-back. Unsupported layer kinds, comp-wide motion blur enablement, renderer or shutter settings, recursive all-nested-comp traversal, project-wide layer traversal, onion-skinning, version duplication, camera/controller parenting, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only layer-switch read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -4185,7 +4185,7 @@
         "cc-wide-time",
         "comp-comment-token",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4286,7 +4286,7 @@
           "from": "generic-repo-importer-tool-compositions-toggle-onion-skinning",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Toggle_Onion_Skinning.jsx into existing typed tools as generated onion-skinning enable/disable/toggle guidance through toggle_onion_skinning; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing toggle_onion_skinning contract, semantic verification, and registered onion-skinning-wide-time generated-only lane. The recipe requires one verified target comp, reviewed mode, generated layer/effect disclosure, toggle_onion_skinning execution, and get_layer_details/get_effect_details or comp read-back for generated adjustment layer, CC Wide Time effect, and *onion-skinning* comp comment token. Arbitrary source JSX behavior, global property traversal, cleanup of non-generated layers, custom effect graphs, renderer settings, recursive precomp traversal, source relinking, comp duplication and unrelated layer/property edits require a separate typed-tool contract. AUX-099 proved generated-only onion-skinning read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Toggle_Onion_Skinning.jsx into existing typed tools as generated onion-skinning enable/disable/toggle guidance through toggle_onion_skinning; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing toggle_onion_skinning contract, semantic verification, and registered onion-skinning-wide-time generated-only lane. The recipe requires one verified target comp, reviewed mode, generated layer/effect disclosure, toggle_onion_skinning execution, and get_layer_details/get_effect_details or comp read-back for generated adjustment layer, CC Wide Time effect, and *onion-skinning* comp comment token. Arbitrary source JSX behavior, global property traversal, cleanup of non-generated layers, custom effect graphs, renderer settings, recursive precomp traversal, source relinking, comp duplication and unrelated layer/property edits require a separate typed-tool contract. reviewed lane proved generated-only onion-skinning read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -4314,7 +4314,7 @@
         "timing",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4407,7 +4407,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-duration",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Duration.jsx into existing typed tools as explicit nested source composition duration mutation through set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, recursive traversal, shared-source ambiguity, source duplication/relinking, work-area changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Duration.jsx into existing typed tools as explicit nested source composition duration mutation through set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, recursive traversal, shared-source ambiguity, source duplication/relinking, work-area changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -4435,7 +4435,7 @@
         "timing",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4538,7 +4538,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-duration-with-timecode",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Duration_With_Timecode.jsx into existing typed tools as explicit nested source composition duration mutation through reviewed timecode-to-durationSeconds conversion and set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, drop-frame timecode semantics, recursive traversal, shared-source ambiguity, source duplication/relinking, work-area changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Duration_With_Timecode.jsx into existing typed tools as explicit nested source composition duration mutation through reviewed timecode-to-durationSeconds conversion and set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, drop-frame timecode semantics, recursive traversal, shared-source ambiguity, source duplication/relinking, work-area changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -4566,7 +4566,7 @@
         "timing",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4669,7 +4669,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-start-frame",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Start_Frame.jsx into existing typed tools as explicit nested source composition displayStartTime mutation through reviewed startFrame/frameRate conversion and set_comp_properties; no source JSX copied. Parent layer retiming/startTime changes, keyframe/expression shifts, duration/work-area conversion, native displayStartFrame semantics, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Start_Frame.jsx into existing typed tools as explicit nested source composition displayStartTime mutation through reviewed startFrame/frameRate conversion and set_comp_properties; no source JSX copied. Parent layer retiming/startTime changes, keyframe/expression shifts, duration/work-area conversion, native displayStartFrame semantics, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -4695,7 +4695,7 @@
         "timing",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4789,7 +4789,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-frame-rate",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Frame_Rate.jsx into existing typed tools as explicit nested source composition frameRate mutation through set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, duration/work-area conversion, frame-count preservation, footage interpretation changes, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Frame_Rate.jsx into existing typed tools as explicit nested source composition frameRate mutation through set_comp_properties; no source JSX copied. Layer retiming, parent layer stretch/in-out changes, keyframe/expression shifts, duration/work-area conversion, frame-count preservation, footage interpretation changes, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -4817,7 +4817,7 @@
         "timing",
         "comp-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -4920,7 +4920,7 @@
           "from": "generic-repo-importer-tool-compositions-change-nested-composition-work-area",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Change_Nested_Composition_Work_Area.jsx into existing typed tools as explicit nested source composition workAreaStart/workAreaDuration mutation through set_comp_work_area; no source JSX copied. Layer retiming, parent layer startTime/in-out changes, keyframe/expression shifts, duration changes, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Change_Nested_Composition_Work_Area.jsx into existing typed tools as explicit nested source composition workAreaStart/workAreaDuration mutation through set_comp_work_area; no source JSX copied. Layer retiming, parent layer startTime/in-out changes, keyframe/expression shifts, duration changes, recursive traversal, shared-source ambiguity, source duplication/relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -4946,7 +4946,7 @@
         "version-token",
         "find-replace",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5034,7 +5034,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-increment-composition-versions generic repository importer as advisory typed-plan coverage for generated composition version-token renaming.",
-          "AUX-097 already added a candidate-id-gated generated-only lane over explicit generated comp names using rename_project_items findReplace, find_project_items and get_comp_details read-back; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already added a candidate-id-gated generated-only lane over explicit generated comp names using rename_project_items findReplace, find_project_items and get_comp_details read-back; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -5043,7 +5043,7 @@
           "from": "generic-repo-importer-tool-compositions-increment-composition-versions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Increment_Composition_Versions.jsx into existing typed tools as explicit generated composition project item version-token rename through rename_project_items mode:\"findReplace\"; no source JSX copied. The recipe requires current find_project_items and get_comp_details evidence, generated composition names only, literal currentVersionToken and nextVersionToken disclosure, collision review and post-mutation read-back. Arbitrary version parsing, numeric carry behavior, all-composition traversal, source relinking, comp duplication, onion-skinning, camera/controller parenting, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. AUX-097 proved generated-only composition version-token read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Increment_Composition_Versions.jsx into existing typed tools as explicit generated composition project item version-token rename through rename_project_items mode:\"findReplace\"; no source JSX copied. The recipe requires current find_project_items and get_comp_details evidence, generated composition names only, literal currentVersionToken and nextVersionToken disclosure, collision review and post-mutation read-back. Arbitrary version parsing, numeric carry behavior, all-composition traversal, source relinking, comp duplication, onion-skinning, camera/controller parenting, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only composition version-token read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -5068,7 +5068,7 @@
         "rename",
         "project-file-basename",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5154,7 +5154,7 @@
           "from": "generic-repo-importer-tool-compositions-rename-composition-to-file-name",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Rename_Composition_To_File_Name.jsx into existing typed tools as exact generated composition project item rename to the reviewed get_project_info.file basename; no source JSX copied. The recipe requires a saved project file path, concrete generated comp itemIndices, collision review and post-mutation read-back. Unsaved project inference, Project panel selection, project save/saveAs, arbitrary filesystem reads/writes, source relinking, non-generated user-asset mutation and exact source JSX semantics remain fail-closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Rename_Composition_To_File_Name.jsx into existing typed tools as exact generated composition project item rename to the reviewed get_project_info.file basename; no source JSX copied. The recipe requires a saved project file path, concrete generated comp itemIndices, collision review and post-mutation read-back. Unsaved project inference, Project panel selection, project save/saveAs, arbitrary filesystem reads/writes, source relinking, non-generated user-asset mutation and exact source JSX semantics remain fail-closed.",
           "commit": null
         }
       ],
@@ -5179,7 +5179,7 @@
         "png",
         "save-frame",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5268,7 +5268,7 @@
           "from": "generic-repo-importer-tool-compositions-save-frame-as-png",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the safe frame-output idea behind kyletmartinez/after-effects-scripts Compositions/Save_Frame_As_PNG.jsx into a generated-only typed tool, save_comp_frame_png, with simple .png output under logs/generated-exports, byte length and sha256 read-back, PNG mime evidence, resolutionFactor restoration proof and post-export get_comp_details read-back; no source JSX copied. Folder.selectDialog, source-exact app.settings/app.preferences persistence, Shift-key branching, Desktop/user-selected paths, render queue start, project save/saveAs, non-generated user assets and raw JSX remain fail-closed.",
+          "evidence": "Adapted only the safe frame-output idea behind reviewed external AE script collection Compositions/Save_Frame_As_PNG.jsx into a generated-only typed tool, save_comp_frame_png, with simple .png output under logs/generated-exports, byte length and sha256 read-back, PNG mime evidence, resolutionFactor restoration proof and post-export get_comp_details read-back; no source JSX copied. Folder.selectDialog, source-exact app.settings/app.preferences persistence, Shift-key branching, Desktop/user-selected paths, render queue start, project save/saveAs, non-generated user assets and raw JSX remain fail-closed.",
           "commit": null
         }
       ],
@@ -5293,7 +5293,7 @@
         "guide-overlay",
         "shape-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5372,7 +5372,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-add-composition-guide generic repository importer as advisory typed-plan coverage for generated composition guide overlays.",
-          "Live evidence was proved in AUX-043 with generated-only OpenAI CLI composition-guide lane over create_comp, create_shape_layer, get_comp_details and get_layer_details."
+          "Live evidence was proved in reviewed lane with generated-only OpenAI CLI composition-guide lane over create_comp, create_shape_layer, get_comp_details and get_layer_details."
         ]
       },
       "promotionHistory": [
@@ -5381,7 +5381,7 @@
           "from": "generic-repo-importer-tool-compositions-add-composition-guide",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Composition_Guide.jsx into existing typed tools as a generated composition guide overlay shape layer; no source JSX copied. AUX-043 registered and proved the generated-only OpenAI CLI composition-guide lane.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Add_Composition_Guide.jsx into existing typed tools as a generated composition guide overlay shape layer; no source JSX copied. reviewed lane registered and proved the generated-only OpenAI CLI composition-guide lane.",
           "commit": null
         }
       ],
@@ -5404,7 +5404,7 @@
         "effect",
         "time-stylization",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5489,7 +5489,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-compositions-add-posterize-time-adjustment-layer generic repository importer as advisory typed-plan coverage for generated Posterize Time adjustment layers.",
-          "AUX-045 documented auto-lane synthesis readiness for this candidate family; this detached child-run only updates planned recipe, registry, smoke, plan and handoff paths."
+          "reviewed lane documented auto-lane synthesis readiness for this candidate family; this detached child-run only updates planned recipe, registry, smoke, plan and handoff paths."
         ]
       },
       "promotionHistory": [
@@ -5498,7 +5498,7 @@
           "from": "generic-repo-importer-tool-compositions-add-posterize-time-adjustment-layer",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Add_Posterize_Time_Adjustment_Layer.jsx into existing typed tools as a generated adjustment layer with ADBE Posterize Time effect read-back; no source JSX copied. AUX-045 established the safe auto-lane synthesis context for this candidate family; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Add_Posterize_Time_Adjustment_Layer.jsx into existing typed tools as a generated adjustment layer with ADBE Posterize Time effect read-back; no source JSX copied. reviewed lane established the safe auto-lane synthesis context for this candidate family; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -5523,7 +5523,7 @@
         "measurement",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5604,7 +5604,7 @@
           "from": "generic-repo-importer-tool-layers-calculate-distance-between-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Calculate_Distance_Between_Layers.jsx into existing read-only typed tools; no source JSX copied.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Calculate_Distance_Between_Layers.jsx into existing read-only typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -5626,7 +5626,7 @@
         "selected-layers",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5694,7 +5694,7 @@
           "from": "generic-repo-importer-tool-selection-layer-selection-get",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Layer_Selection_Get.jsx into existing read-only typed tools; no source JSX copied.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Layer_Selection_Get.jsx into existing read-only typed tools; no source JSX copied.",
           "commit": null
         }
       ],
@@ -5718,7 +5718,7 @@
         "utility",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5810,7 +5810,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -5900,7 +5900,7 @@
           "from": "generic-repo-importer-tool-selection-layer-selection-set",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Layer_Selection_Set.jsx into typed set_layer_selection guidance for explicit layerIndices with optional expectedNames, replacement selection semantics, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Persistent named selection sets, fuzzy name matching, selection by type/label/randomness, cross-comp selection and exact native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Layer_Selection_Set.jsx into typed set_layer_selection guidance for explicit layerIndices with optional expectedNames, replacement selection semantics, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Persistent named selection sets, fuzzy name matching, selection by type/label/randomness, cross-comp selection and exact native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -5926,7 +5926,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6028,7 +6028,7 @@
           "from": "generic-repo-importer-tool-selection-select-all-children",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_All_Children.jsx into existing typed tools as direct child layer selection through get_selected_layers/get_comp_details parent evidence, computed childLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Recursive descendant traversal, fuzzy parent matching, selection without parent evidence, parenting changes, layer mutations, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_All_Children.jsx into existing typed tools as direct child layer selection through get_selected_layers/get_comp_details parent evidence, computed childLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Recursive descendant traversal, fuzzy parent matching, selection without parent evidence, parenting changes, layer mutations, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6056,7 +6056,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6148,7 +6148,7 @@
           "from": "generic-repo-importer-tool-selection-select-disabled-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Disabled_Layers.jsx into existing typed tools as disabled layer selection through get_comp_details enabled:false or equivalent disabled/video-switch evidence, computed disabledLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Disabled-state discovery without typed layer evidence, enabled-state toggling, shy/solo/locked/hidden-state selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Disabled_Layers.jsx into existing typed tools as disabled layer selection through get_comp_details enabled:false or equivalent disabled/video-switch evidence, computed disabledLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Disabled-state discovery without typed layer evidence, enabled-state toggling, shy/solo/locked/hidden-state selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6176,7 +6176,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6268,7 +6268,7 @@
           "from": "generic-repo-importer-tool-selection-select-guide-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Guide_Layers.jsx into existing typed tools as guide layer selection through get_comp_details guideLayer:true or equivalent guide-layer evidence, computed guideLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Guide-layer discovery without typed layer evidence, guideLayer flag mutation, native guide record selection, generated guide overlay creation, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Guide_Layers.jsx into existing typed tools as guide layer selection through get_comp_details guideLayer:true or equivalent guide-layer evidence, computed guideLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Guide-layer discovery without typed layer evidence, guideLayer flag mutation, native guide record selection, generated guide overlay creation, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6297,7 +6297,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6397,7 +6397,7 @@
           "from": "generic-repo-importer-tool-selection-select-layers-below-label",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Layers_Below_Label.jsx into existing typed tools as below-label layer selection through get_comp_details layer order plus explicit reviewed anchorLayerIndex and typed label evidence, computed belowLabelLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so source-exact label-color scanning, label mutation, fuzzy matching, cross-comp selection, project-panel selection, selecting layers above the anchor and native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Layers_Below_Label.jsx into existing typed tools as below-label layer selection through get_comp_details layer order plus explicit reviewed anchorLayerIndex and typed label evidence, computed belowLabelLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so source-exact label-color scanning, label mutation, fuzzy matching, cross-comp selection, project-panel selection, selecting layers above the anchor and native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6426,7 +6426,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6518,7 +6518,7 @@
           "from": "generic-repo-importer-tool-selection-select-non-null-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Non-Null_Layers.jsx into existing typed tools as non-null layer selection through get_comp_details nullLayer:false, isNull:false, or equivalent non-null evidence, computed nonNullLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Null-state discovery without typed layer evidence, null-layer creation/conversion/deletion, fuzzy name/type matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Non-Null_Layers.jsx into existing typed tools as non-null layer selection through get_comp_details nullLayer:false, isNull:false, or equivalent non-null evidence, computed nonNullLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Null-state discovery without typed layer evidence, null-layer creation/conversion/deletion, fuzzy name/type matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6546,7 +6546,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6646,7 +6646,7 @@
           "from": "generic-repo-importer-tool-selection-select-parent-layer",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Parent_Layer.jsx into existing typed tools as direct parent layer selection through get_selected_layers selected child evidence, get_comp_details parentLayerIndex or equivalent typed parent evidence, computed parentLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Parent discovery without typed layer evidence, parent-link mutation, recursive ancestor selection, child/descendant selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Parent_Layer.jsx into existing typed tools as direct parent layer selection through get_selected_layers selected child evidence, get_comp_details parentLayerIndex or equivalent typed parent evidence, computed parentLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. Parent discovery without typed layer evidence, parent-link mutation, recursive ancestor selection, child/descendant selection, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6674,7 +6674,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6773,7 +6773,7 @@
           "from": "generic-repo-importer-tool-selection-select-random-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Random_Layers.jsx into existing typed tools as reviewed random layer selection through get_comp_details eligible layer inventory, reviewed randomSelectionPolicy, computed randomLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Random_Layers.jsx into existing typed tools as reviewed random layer selection through get_comp_details eligible layer inventory, reviewed randomSelectionPolicy, computed randomLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so nondeterministic native UI randomness, random seed persistence, weighted/random-by-type selection, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6802,7 +6802,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -6894,7 +6894,7 @@
           "from": "generic-repo-importer-tool-selection-select-shape-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Shape_Layers.jsx into existing typed tools as shape layer selection through get_comp_details shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer evidence, computed shapeLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so shape-layer discovery without typed layer evidence, shape content inspection, shape layer creation/conversion, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Shape_Layers.jsx into existing typed tools as shape layer selection through get_comp_details shapeLayer:true, layerKind:\"shape\", type:\"shape\", or equivalent shape-layer evidence, computed shapeLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so shape-layer discovery without typed layer evidence, shape content inspection, shape layer creation/conversion, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -6923,7 +6923,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7015,7 +7015,7 @@
           "from": "generic-repo-importer-tool-selection-select-text-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Text_Layers.jsx into existing typed tools as text layer selection through get_comp_details textLayer:true, layerKind:\"text\", type:\"text\", sourceText capability, or equivalent text-layer evidence, computed textLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so text-layer discovery without typed layer evidence, source text inspection, text layer creation/conversion, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Text_Layers.jsx into existing typed tools as text layer selection through get_comp_details textLayer:true, layerKind:\"text\", type:\"text\", sourceText capability, or equivalent text-layer evidence, computed textLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so text-layer discovery without typed layer evidence, source text inspection, text layer creation/conversion, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7045,7 +7045,7 @@
         "selected-layers",
         "set-selection",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7137,7 +7137,7 @@
           "from": "generic-repo-importer-tool-selection-select-unparented-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Selection/Select_Unparented_Layers.jsx into existing typed tools as unparented layer selection through get_comp_details parentLayerIndex:null/0, parentIndex:null/0, empty parentName, or equivalent no-parent evidence, computed unparentedLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so parent-link discovery without typed layer evidence, parent-link mutation, recursive hierarchy traversal, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Selection/Select_Unparented_Layers.jsx into existing typed tools as unparented layer selection through get_comp_details parentLayerIndex:null/0, parentIndex:null/0, empty parentName, or equivalent no-parent evidence, computed unparentedLayerIndices, set_layer_selection replacement selection, verifyAfter:true and get_selected_layers read-back; no source JSX copied. The source JSX was not present in this detached child-run worktree, so parent-link discovery without typed layer evidence, parent-link mutation, recursive hierarchy traversal, fuzzy matching, cross-comp selection, project-panel selection and exact source JSX/native UI side effects require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7166,7 +7166,7 @@
         "transform",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7251,7 +7251,7 @@
           "from": "generic-repo-importer-tool-compositions-center-composition",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Compositions/Center_Composition.jsx into existing typed tools as explicit layer transform positioning to the target composition center; no source JSX copied. Exact viewer centering, anchor/source-bounds recentering, comp resize/crop, nested source mutation and parent/world-space conversion require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Compositions/Center_Composition.jsx into existing typed tools as explicit layer transform positioning to the target composition center; no source JSX copied. Exact viewer centering, anchor/source-bounds recentering, comp resize/crop, nested source mutation and parent/world-space conversion require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7276,7 +7276,7 @@
         "layers",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7361,7 +7361,7 @@
           "from": "generic-repo-importer-tool-layers-find-specific-effect",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Find_Specific_Effect.jsx into existing read-only typed tools for layer/effect inspection; no source JSX copied. The detached child-run had no local source JSX artifact, so exact selection-side effects or raw search semantics require parent/source review and a separate typed-tool contract if needed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Find_Specific_Effect.jsx into existing read-only typed tools for layer/effect inspection; no source JSX copied. The detached child-run had no local source JSX artifact, so exact selection-side effects or raw search semantics require parent/source review and a separate typed-tool contract if needed.",
           "commit": null
         }
       ],
@@ -7386,7 +7386,7 @@
         "align",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7465,7 +7465,7 @@
           "from": "generic-repo-importer-tool-layers-set-to-average-position",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Set_To_Average_Position.jsx into existing typed tools as selected-layer transform position averaging; no source JSX copied. Anchor/bounds center averaging, parent/world-space conversion, separated dimensions, selection changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Set_To_Average_Position.jsx into existing typed tools as selected-layer transform position averaging; no source JSX copied. Anchor/bounds center averaging, parent/world-space conversion, separated dimensions, selection changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7490,7 +7490,7 @@
         "origin",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7569,7 +7569,7 @@
           "from": "generic-repo-importer-tool-layers-zero-position",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Zero_Position.jsx into existing typed tools as selected-layer transform Position zeroing; no source JSX copied. Anchor reset, bounds centering, full transform reset, comp-space placement for parented layers, separated dimensions, selection changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Zero_Position.jsx into existing typed tools as selected-layer transform Position zeroing; no source JSX copied. Anchor reset, bounds centering, full transform reset, comp-space placement for parented layers, separated dimensions, selection changes and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7594,7 +7594,7 @@
         "selected-items",
         "folder",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7679,7 +7679,7 @@
           "from": "generic-repo-importer-tool-project-merge-imported-selected-items",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Merge_Imported_Selected_Items.jsx into existing typed tools as explicit imported project item movement; no source JSX copied. Project-panel selection reads, automatic duplicate-name merging, imported wrapper folder deletion, dependency cleanup, source relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Merge_Imported_Selected_Items.jsx into existing typed tools as explicit imported project item movement; no source JSX copied. Project-panel selection reads, automatic duplicate-name merging, imported wrapper folder deletion, dependency cleanup, source relinking and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -7703,7 +7703,7 @@
         "selection",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7790,7 +7790,7 @@
           "from": "generic-repo-importer-tool-project-add-selection-to-new-folder",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Selection_To_New_Folder.jsx into existing typed tools as explicit generated Project item movement into one newly created generated folder; no source JSX copied. Current typed tools do not expose Project panel selection, so true selected-item discovery, empty-selection UI behavior, folder deletion, item rename, source relinking, render queue work, filesystem access, non-generated user assets, and exact source JSX semantics require a separate get_selected_project_items typed contract or another reviewed typed-tool contract.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Add_Selection_To_New_Folder.jsx into existing typed tools as explicit generated Project item movement into one newly created generated folder; no source JSX copied. Current typed tools do not expose Project panel selection, so true selected-item discovery, empty-selection UI behavior, folder deletion, item rename, source relinking, render queue work, filesystem access, non-generated user assets, and exact source JSX semantics require a separate get_selected_project_items typed contract or another reviewed typed-tool contract.",
           "commit": null
         }
       ],
@@ -7815,7 +7815,7 @@
         "render-queue",
         "labeled-items",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -7895,7 +7895,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-project-add-labeled-items-to-render-queue generic repository importer as advisory typed-plan coverage for generated-only render queue setup.",
-          "AUX-098 already added a candidate-id-gated generated-only render queue lane over add_comp_to_render_queue, set_render_queue_output and get_render_queue_status; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already added a candidate-id-gated generated-only render queue lane over add_comp_to_render_queue, set_render_queue_output and get_render_queue_status; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -7904,7 +7904,7 @@
           "from": "generic-repo-importer-tool-project-add-labeled-items-to-render-queue",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Labeled_Items_To_Render_Queue.jsx into existing typed tools as explicit generated composition render queue setup through add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose project item label colors, so true label-color discovery, Project panel selection reads, footage/folder queueing, render start, queue cleanup/reordering, save/saveAs, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. AUX-098 proved generated-only render queue read-back/cleanup and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Add_Labeled_Items_To_Render_Queue.jsx into existing typed tools as explicit generated composition render queue setup through add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose project item label colors, so true label-color discovery, Project panel selection reads, footage/folder queueing, render start, queue cleanup/reordering, save/saveAs, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only render queue read-back/cleanup and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -7930,7 +7930,7 @@
         "render-queue",
         "selected-compositions",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8010,7 +8010,7 @@
         "projectKind": "synthetic",
         "notes": [
           "Seeded by tool-project-add-selected-compositions-to-render-queue generic repository importer as advisory typed-plan coverage for generated-only render queue setup.",
-          "AUX-098 already added a candidate-id-gated generated-only render queue lane over add_comp_to_render_queue, set_render_queue_output and get_render_queue_status; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
+          "reviewed lane already added a candidate-id-gated generated-only render queue lane over add_comp_to_render_queue, set_render_queue_output and get_render_queue_status; this detached child patch records recipe, registry, smoke and handoff guidance for parent-controlled merge."
         ]
       },
       "promotionHistory": [
@@ -8019,7 +8019,7 @@
           "from": "generic-repo-importer-tool-project-add-selected-compositions-to-render-queue",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Selected_Compositions_To_Render_Queue.jsx into existing typed tools as explicit generated composition render queue setup through add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose Project panel selected composition state, so true selected-comp discovery, selected footage/folder queueing, render start, queue cleanup/reordering, save/saveAs, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. AUX-098 proved generated-only render queue read-back/cleanup and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Add_Selected_Compositions_To_Render_Queue.jsx into existing typed tools as explicit generated composition render queue setup through add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose Project panel selected composition state, so true selected-comp discovery, selected footage/folder queueing, render start, queue cleanup/reordering, save/saveAs, non-generated user-asset mutation and exact source JSX semantics require a separate typed-tool contract. reviewed lane proved generated-only render queue read-back/cleanup and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -8045,7 +8045,7 @@
         "generated-composition",
         "render-queue",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8135,7 +8135,7 @@
           "from": "generic-repo-importer-tool-project-add-folder-to-render-queue",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Add_Folder_To_Render_Queue.jsx into existing typed tools as explicit generated Project folder traversal through list_project_folder_items, generated comp verification with get_comp_details, render queue insertion with add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose Project panel selected-folder state, so true selected-folder discovery, filesystem folder traversal, non-generated user-asset queueing, render start, queue cleanup/reordering, save/saveAs and exact source JSX semantics require a separate typed-tool contract.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Add_Folder_To_Render_Queue.jsx into existing typed tools as explicit generated Project folder traversal through list_project_folder_items, generated comp verification with get_comp_details, render queue insertion with add_comp_to_render_queue, optional set_render_queue_output, and get_render_queue_status read-back; no source JSX copied. Current typed tools do not expose Project panel selected-folder state, so true selected-folder discovery, filesystem folder traversal, non-generated user-asset queueing, render start, queue cleanup/reordering, save/saveAs and exact source JSX semantics require a separate typed-tool contract.",
           "commit": null
         }
       ],
@@ -8161,7 +8161,7 @@
         "replace",
         "literal",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8260,7 +8260,7 @@
           "from": "generic-repo-importer-tool-project-replace-text-in-project-item-name",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Replace_Text_In_Project_Item_Name.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe literal find/replace adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"findReplace\" mutation with explicit literal find, replace and caseSensitive behavior; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Replace_Text_In_Project_Item_Name.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe literal find/replace adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"findReplace\" mutation with explicit literal find, replace and caseSensitive behavior; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -8285,7 +8285,7 @@
         "exact",
         "selected-items",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8371,7 +8371,7 @@
           "from": "generic-repo-importer-tool-project-rename-selected-project-items",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Rename_Selected_Project_Items.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe same-text adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"exact\" mutation per concrete project item; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Rename_Selected_Project_Items.jsx into existing typed project-item rename tools; no source JSX copied. Current typed tools do not expose Project panel selection, so the safe same-text adaptation requires explicit itemIndices from current typed evidence and one rename_project_items mode:\"exact\" mutation per concrete project item; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -8396,7 +8396,7 @@
         "preserveNestedFrameRate",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8502,7 +8502,7 @@
         "framesCountType",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8623,7 +8623,7 @@
         "file-display-name",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8711,7 +8711,7 @@
           "from": "generic-repo-importer-tool-project-reset-imported-item-names",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Project/Reset_Imported_Item_Names.jsx into existing typed tools as explicit generated imported footage name reset through import_footage plus rename_project_items type:\"footage\" mode:\"exact\" to the reviewed file display name; no source JSX copied. Current typed tools do not expose Project panel selection, so source-exact selection traversal remains fail-closed. Relinking, missing-footage repair, arbitrary user file imports, non-generated user assets, render queue work, and raw ExtendScript require a separate typed-tool contract.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Project/Reset_Imported_Item_Names.jsx into existing typed tools as explicit generated imported footage name reset through import_footage plus rename_project_items type:\"footage\" mode:\"exact\" to the reviewed file display name; no source JSX copied. Current typed tools do not expose Project panel selection, so source-exact selection traversal remains fail-closed. Relinking, missing-footage repair, arbitrary user file imports, non-generated user assets, render queue work, and raw ExtendScript require a separate typed-tool contract.",
           "commit": null
         }
       ],
@@ -8736,7 +8736,7 @@
         "loopout",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8815,7 +8815,7 @@
           "from": "generic-repo-importer-tool-expressions-add-simple-loop-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Add_Simple_Loop_Expression.jsx into existing typed tools as selected-property set_expression loopOut() guidance; no source JSX copied. Current typed tools require current get_selected_properties evidence and get_layer_details read-back; loop variants, keyframe generation, expression controllers, time-remap setup, broad property scans and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Add_Simple_Loop_Expression.jsx into existing typed tools as selected-property set_expression loopOut() guidance; no source JSX copied. Current typed tools require current get_selected_properties evidence and get_layer_details read-back; loop variants, keyframe generation, expression controllers, time-remap setup, broad property scans and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -8839,7 +8839,7 @@
         "append-expression",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -8925,7 +8925,7 @@
           "from": "generic-repo-importer-tool-expressions-append-to-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Append_To_Expression.jsx into existing typed tools as selected-property set_expression append guidance; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, explicit appendText, computed final-expression disclosure and get_layer_details read-back; syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Append_To_Expression.jsx into existing typed tools as selected-property set_expression append guidance; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, explicit appendText, computed final-expression disclosure and get_layer_details read-back; syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -8952,7 +8952,7 @@
         "shape-layer",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9032,7 +9032,7 @@
           "from": "generic-repo-importer-tool-expressions-apply-maintain-stroke-width-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Apply_Maintain_Stroke_Width_Expression.jsx into existing typed tools as selected-property set_expression guidance for explicit stroke width properties; no source JSX copied. Current typed tools require current get_selected_properties evidence, stroke width identity evidence and get_layer_details read-back; broad stroke discovery, nonuniform-scale compensation, nested shape transform traversal, expression controllers, syntax repair, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Apply_Maintain_Stroke_Width_Expression.jsx into existing typed tools as selected-property set_expression guidance for explicit stroke width properties; no source JSX copied. Current typed tools require current get_selected_properties evidence, stroke width identity evidence and get_layer_details read-back; broad stroke discovery, nonuniform-scale compensation, nested shape transform traversal, expression controllers, syntax repair, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9063,7 +9063,7 @@
         "replace-expression",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9150,7 +9150,7 @@
           "from": "generic-repo-importer-tool-expressions-update-stroke-weight-expressions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Update_Stroke_Weight_Expressions.jsx into existing typed tools as selected stroke width property set_expression guidance for replacing current stroke weight expression text with explicit reviewed updatedStrokeWeightExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, stroke width identity evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; broad stroke discovery, expression creation from scratch, automatic syntax repair, expression controllers, nonuniform-scale compensation, nested shape transform traversal, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Update_Stroke_Weight_Expressions.jsx into existing typed tools as selected stroke width property set_expression guidance for replacing current stroke weight expression text with explicit reviewed updatedStrokeWeightExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, stroke width identity evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; broad stroke discovery, expression creation from scratch, automatic syntax repair, expression controllers, nonuniform-scale compensation, nested shape transform traversal, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9179,7 +9179,7 @@
         "toggle-expression",
         "selected-layers",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9261,7 +9261,7 @@
           "from": "generic-repo-importer-tool-expressions-toggle-maintain-scale-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Toggle_Maintain_Scale_Expression.jsx into existing typed tools as selected-layer Transform > Scale set_expression guidance for toggling a reviewed immediate-parent maintain-scale expression; no source JSX copied. Current typed tools require current get_selected_layers and get_layer_details evidence, explicit Scale property paths, set_expression enabled:true/false toggle state and get_layer_details read-back; expression deletion, nested parent-chain compensation, expression controllers, syntax repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Toggle_Maintain_Scale_Expression.jsx into existing typed tools as selected-layer Transform > Scale set_expression guidance for toggling a reviewed immediate-parent maintain-scale expression; no source JSX copied. Current typed tools require current get_selected_layers and get_layer_details evidence, explicit Scale property paths, set_expression enabled:true/false toggle state and get_layer_details read-back; expression deletion, nested parent-chain compensation, expression controllers, syntax repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9288,7 +9288,7 @@
         "expression-enabled",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9368,7 +9368,7 @@
           "from": "generic-repo-importer-tool-expressions-disable-selected-expressions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Disable_Selected_Expressions.jsx into existing typed tools as selected-property set_expression guidance for disabling current expressions without deleting expression text; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, preservation of the same expression text, set_expression enabled:false and get_layer_details read-back; expression clearing/deletion, syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Disable_Selected_Expressions.jsx into existing typed tools as selected-property set_expression guidance for disabling current expressions without deleting expression text; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, preservation of the same expression text, set_expression enabled:false and get_layer_details read-back; expression clearing/deletion, syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9393,7 +9393,7 @@
         "expression-enabled",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9473,7 +9473,7 @@
           "from": "generic-repo-importer-tool-expressions-enable-selected-expressions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Enable_Selected_Expressions.jsx into existing typed tools as selected-property set_expression guidance for enabling current expressions without rewriting expression text; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, preservation of the same expression text, set_expression enabled:true and get_layer_details read-back; expression creation/replacement, syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Enable_Selected_Expressions.jsx into existing typed tools as selected-property set_expression guidance for enabling current expressions without rewriting expression text; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, preservation of the same expression text, set_expression enabled:true and get_layer_details read-back; expression creation/replacement, syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9502,7 +9502,7 @@
         "layers",
         "read-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9587,7 +9587,7 @@
           "from": "generic-repo-importer-tool-expressions-find-all-expressions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Find_All_Expressions.jsx into existing read-only typed tools for active-comp expression inventory; no source JSX copied. Current typed tools require get_active_comp, concrete layer enumeration through list_layers or get_comp_details, get_layer_details expression/property read-back, or get_selected_properties for selected-property scope; expression mutation, selection side effects, project-wide recursive scans, missing nested property expression detail and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Find_All_Expressions.jsx into existing read-only typed tools for active-comp expression inventory; no source JSX copied. Current typed tools require get_active_comp, concrete layer enumeration through list_layers or get_comp_details, get_layer_details expression/property read-back, or get_selected_properties for selected-property scope; expression mutation, selection side effects, project-wide recursive scans, missing nested property expression detail and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9613,7 +9613,7 @@
         "fix-expression",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9699,7 +9699,7 @@
           "from": "generic-repo-importer-tool-expressions-fix-fresh-pickwhip-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Fix_Fresh_Pickwhip_Expression.jsx into existing typed tools as selected-property set_expression guidance for replacing a current fresh pickwhip expression with explicit reviewed fixedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; automatic pick-whip source target discovery, AST-level expression repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Fix_Fresh_Pickwhip_Expression.jsx into existing typed tools as selected-property set_expression guidance for replacing a current fresh pickwhip expression with explicit reviewed fixedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; automatic pick-whip source target discovery, AST-level expression repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9725,7 +9725,7 @@
         "replace-expression",
         "selected-properties",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9811,7 +9811,7 @@
           "from": "generic-repo-importer-tool-expressions-update-expressions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Expressions/Update_Expressions.jsx into existing typed tools as selected-property set_expression guidance for replacing current expression text with explicit reviewed updatedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; expression creation from scratch, automatic syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Expressions/Update_Expressions.jsx into existing typed tools as selected-property set_expression guidance for replacing current expression text with explicit reviewed updatedExpressionText; no source JSX copied. Current typed tools require current get_selected_properties expression evidence, previous/final expression disclosure, set_expression and get_layer_details read-back; expression creation from scratch, automatic syntax repair, expression controllers, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -9837,7 +9837,7 @@
         "effect-expression",
         "set-expression",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -9920,7 +9920,7 @@
           "from": "generic-repo-importer-tool-layers-stick-effect-to-layer",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Stick_Effect_To_Layer.jsx into existing typed tools as explicit 2D spatial property set_expression guidance for applying toComp(anchorPoint + value); with get_selected_properties or generated get_effect_details evidence and get_layer_details/get_effect_details read-back; no source JSX copied. Source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, existing-expression overwrite without review, controller setup, selection side effects and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Stick_Effect_To_Layer.jsx into existing typed tools as explicit 2D spatial property set_expression guidance for applying toComp(anchorPoint + value); with get_selected_properties or generated get_effect_details evidence and get_layer_details/get_effect_details read-back; no source JSX copied. Source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, existing-expression overwrite without review, controller setup, selection side effects and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -9946,7 +9946,7 @@
         "slider-controls",
         "effect-expression",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10038,7 +10038,7 @@
           "from": "generic-repo-importer-tool-properties-estimate-path-length",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Estimate_Path_Length.jsx into existing typed tools as generated-only Slider Control and set_expression guidance for one explicit generated parametric rectangle path target; no source JSX copied. Current typed tools require generated layer/path evidence, add_effect/get_effect_details for Path Samples and Path Length, set_effect_property for reviewed sample count, set_expression for the generated rectangle-perimeter sampling expression, and get_layer_details/get_effect_details read-back. Source-exact comp.selectedProperties traversal, arbitrary Bezier pointOnPath geometry, mask paths, keyframed paths, existing slider reuse, expression merging, selection side effects, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Estimate_Path_Length.jsx into existing typed tools as generated-only Slider Control and set_expression guidance for one explicit generated parametric rectangle path target; no source JSX copied. Current typed tools require generated layer/path evidence, add_effect/get_effect_details for Path Samples and Path Length, set_effect_property for reviewed sample count, set_expression for the generated rectangle-perimeter sampling expression, and get_layer_details/get_effect_details read-back. Source-exact comp.selectedProperties traversal, arbitrary Bezier pointOnPath geometry, mask paths, keyframed paths, existing slider reuse, expression merging, selection side effects, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -10063,7 +10063,7 @@
         "mask-path",
         "path-geometry",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10148,7 +10148,7 @@
           "from": "generic-repo-importer-tool-properties-flip-path",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Flip_Path.jsx into existing typed tools as generated-only get_path_geometry and set_path_geometry guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require full path geometry read-back, reviewed horizontal or vertical flip math over vertices plus inTangents/outTangents, expression-disabled state, closed-state preservation, bounded keyframe preservation, set_path_geometry mutation, and get_path_geometry read-back. Source-exact ScriptUI direction UI, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Flip_Path.jsx into existing typed tools as generated-only get_path_geometry and set_path_geometry guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require full path geometry read-back, reviewed horizontal or vertical flip math over vertices plus inTangents/outTangents, expression-disabled state, closed-state preservation, bounded keyframe preservation, set_path_geometry mutation, and get_path_geometry read-back. Source-exact ScriptUI direction UI, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, file output, and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -10174,7 +10174,7 @@
         "path-geometry",
         "file-output",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10258,7 +10258,7 @@
           "from": "generic-repo-importer-tool-properties-export-path-points",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Export_Path_Points.jsx into existing typed tools as generated-only get_path_geometry plus export_path_points guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require path geometry read-back, reviewed vertices, safe generated .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, sha256/content read-back, optional cleanup, and post-export get_path_geometry verification. Source-exact comp.selectedProperties traversal, Desktop points.txt writes, arbitrary user paths, expression-driven or truncated paths, path mutation, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Export_Path_Points.jsx into existing typed tools as generated-only get_path_geometry plus export_path_points guidance for one explicit shape or mask path target; no source JSX copied. Current typed tools require path geometry read-back, reviewed vertices, safe generated .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, sha256/content read-back, optional cleanup, and post-export get_path_geometry verification. Source-exact comp.selectedProperties traversal, Desktop points.txt writes, arbitrary user paths, expression-driven or truncated paths, path mutation, and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -10282,7 +10282,7 @@
         "selection",
         "file-output",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10367,7 +10367,7 @@
           "from": "generic-repo-importer-tool-project-export-text-to-file",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the safe payload shape behind kyletmartinez/after-effects-scripts Project/Export_Text_To_File.jsx into a generated-only typed tool, export_text_to_file, with selected-layer evidence, Source Text read-back, simple .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, byte length and sha256 read-back, optional cleanup, and post-export selected-layer read-back; no source JSX copied. Source-exact ~/Desktop/export.txt writes, arbitrary user paths, file dialogs, source checkout execution, selection mutation, layer text mutation, Project item mutation, render queue work, and raw JSX remain fail-closed.",
+          "evidence": "Adapted only the safe payload shape behind reviewed external AE script collection Project/Export_Text_To_File.jsx into a generated-only typed tool, export_text_to_file, with selected-layer evidence, Source Text read-back, simple .txt output under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR, byte length and sha256 read-back, optional cleanup, and post-export selected-layer read-back; no source JSX copied. Source-exact ~/Desktop/export.txt writes, arbitrary user paths, file dialogs, source checkout execution, selection mutation, layer text mutation, Project item mutation, render queue work, and raw JSX remain fail-closed.",
           "commit": null
         }
       ],
@@ -10409,7 +10409,7 @@
         "propertyPath",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10481,7 +10481,7 @@
       "promotionHistory": [
         {
           "date": "2026-06-06",
-          "from": "generic-repo-importer-kyletmartinez/tool-properties-add-properties-to-essential-graphics",
+          "from": "generic-repo-importer-external-script-source/tool-properties-add-properties-to-essential-graphics",
           "to": "recipe",
           "reviewer": "codex",
           "evidence": "Adapted Add_Properties_To_Essential_Graphics as generated-only typed-tool contract with add_property_to_essential_graphics and get_essential_graphics_controllers; no source JSX copied.",
@@ -10524,7 +10524,7 @@
         "expression",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10596,7 +10596,7 @@
       "promotionHistory": [
         {
           "date": "2026-06-06",
-          "from": "generic-repo-importer-kyletmartinez/tool-properties-expose-essential-properties",
+          "from": "generic-repo-importer-external-script-source/tool-properties-expose-essential-properties",
           "to": "recipe",
           "reviewer": "codex",
           "evidence": "Adapted Expose_Essential_Properties as generated-only typed-tool contract with get_layer_essential_properties and explicit set_expression path; no source JSX copied.",
@@ -10620,7 +10620,7 @@
         "puppet",
         "effect-property",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10707,7 +10707,7 @@
           "from": "generic-repo-importer-tool-properties-toggle-puppet-on-transparent",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the effect-property idea behind kyletmartinez/after-effects-scripts Properties/Toggle_Puppet_On_Transparent.jsx into existing typed tools as generated-only ADBE FreePin3 On Transparent guidance for one explicit generated effect target; no source JSX copied. Current typed tools require generated layer/effect evidence, add_effect/get_effect_details for ADBE FreePin3, set_effect_property with propertyMatchName ADBE FreePin3 On Transparent for a reviewed boolean value, and get_effect_details read-back. Source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the effect-property idea behind reviewed external AE script collection Properties/Toggle_Puppet_On_Transparent.jsx into existing typed tools as generated-only ADBE FreePin3 On Transparent guidance for one explicit generated effect target; no source JSX copied. Current typed tools require generated layer/effect evidence, add_effect/get_effect_details for ADBE FreePin3, set_effect_property with propertyMatchName ADBE FreePin3 On Transparent for a reviewed boolean value, and get_effect_details read-back. Source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -10731,7 +10731,7 @@
         "puppet-pin",
         "effect-property",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -10826,7 +10826,7 @@
           "from": "generic-repo-importer-tool-properties-toggle-puppet-pin-types",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the Puppet pin type idea behind kyletmartinez/after-effects-scripts Properties/Toggle_Puppet_Pin_Types.jsx into a new narrow set_puppet_pin_type typed contract for one explicit ADBE FreePin3 PosPin Type property under ADBE FreePin3 PosPin Atom evidence; no source JSX copied. Current typed tools require get_effect_details evidence, reviewed pinType enum 1/position or 4/advanced, set_puppet_pin_type mutation, and get_effect_details read-back. Source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the Puppet pin type idea behind reviewed external AE script collection Properties/Toggle_Puppet_Pin_Types.jsx into a new narrow set_puppet_pin_type typed contract for one explicit ADBE FreePin3 PosPin Type property under ADBE FreePin3 PosPin Atom evidence; no source JSX copied. Current typed tools require get_effect_details evidence, reviewed pinType enum 1/position or 4/advanced, set_puppet_pin_type mutation, and get_effect_details read-back. Source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection side effects, and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -10851,7 +10851,7 @@
         "layer-metadata",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool",
         "full-intake"
       ],
@@ -10947,7 +10947,7 @@
           "from": "generic-repo-importer-tool-layers-toggle-puppet-pins-as-guide-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the safe guide-layer portion of kyletmartinez/after-effects-scripts Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx into an explicit generated Puppet-like layer metadata contract using ADBE FreePin3/get_effect_details evidence, set_layer_metadata guideLayer, get_layer_details read-back, and get_effect_details read-back; no source JSX copied. Source-exact project-wide Pseudo/Duik pin02 traversal, ScriptUI Alt-key branching, user DuIK effects, puppet pin atom edits, pin-size/property rename behavior, and raw JSX remain fail-closed.",
+          "evidence": "Adapted only the safe guide-layer portion of reviewed external AE script collection Layers/Toggle_Puppet_Pins_As_Guide_Layers.jsx into an explicit generated Puppet-like layer metadata contract using ADBE FreePin3/get_effect_details evidence, set_layer_metadata guideLayer, get_layer_details read-back, and get_effect_details read-back; no source JSX copied. Source-exact project-wide Pseudo/Duik pin02 traversal, ScriptUI Alt-key branching, user DuIK effects, puppet pin atom edits, pin-size/property rename behavior, and raw JSX remain fail-closed.",
           "commit": null
         }
       ],
@@ -10972,7 +10972,7 @@
         "selected-properties",
         "set-property-value",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11058,7 +11058,7 @@
           "from": "generic-repo-importer-tool-properties-round-selected-property-values",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Round_Selected_Property_Values.jsx into existing typed tools as selected-property set_property_value guidance for rounding static numeric property values; no source JSX copied. Current typed tools require current get_selected_properties value evidence, previous/roundedValue disclosure, set_property_value with setAtTime:false and get_layer_details read-back; expression mutation, keyframe rounding, color rounding, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Round_Selected_Property_Values.jsx into existing typed tools as selected-property set_property_value guidance for rounding static numeric property values; no source JSX copied. Current typed tools require current get_selected_properties value evidence, previous/roundedValue disclosure, set_property_value with setAtTime:false and get_layer_details read-back; expression mutation, keyframe rounding, color rounding, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11084,7 +11084,7 @@
         "selected-properties",
         "set-property-value",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11170,7 +11170,7 @@
           "from": "generic-repo-importer-tool-properties-set-new-color",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Set_New_Color.jsx into existing typed tools as selected-property set_property_value guidance for setting static color property values to an explicit reviewed newColor; no source JSX copied. Current typed tools require current get_selected_properties color value evidence, previous/newColor disclosure, set_property_value with setAtTime:false and get_layer_details read-back; color picker UI behavior, broad fill/stroke discovery, layer label color changes, effect creation, expression mutation, keyframe color mutation, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Set_New_Color.jsx into existing typed tools as selected-property set_property_value guidance for setting static color property values to an explicit reviewed newColor; no source JSX copied. Current typed tools require current get_selected_properties color value evidence, previous/newColor disclosure, set_property_value with setAtTime:false and get_layer_details read-back; color picker UI behavior, broad fill/stroke discovery, layer label color changes, effect creation, expression mutation, keyframe color mutation, TextDocument/path mutation, separated-dimension rewiring, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11196,7 +11196,7 @@
         "selected-properties",
         "set-property-value",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11283,7 +11283,7 @@
           "from": "generic-repo-importer-tool-properties-swap-selected-property-dimensions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Swap_Selected_Property_Dimensions.jsx into existing typed tools as selected-property set_property_value guidance for swapping reviewed dimensional components on static numeric array values; no source JSX copied. Current typed tools require current get_selected_properties value evidence, previous/dimensionSwap/swappedValue disclosure, set_property_value with setAtTime:false and get_layer_details read-back; value swapping across different properties, color channel swapping, expression mutation, keyframe mutation, TextDocument/path mutation, separated-dimension rewiring, arbitrary axis permutation, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Swap_Selected_Property_Dimensions.jsx into existing typed tools as selected-property set_property_value guidance for swapping reviewed dimensional components on static numeric array values; no source JSX copied. Current typed tools require current get_selected_properties value evidence, previous/dimensionSwap/swappedValue disclosure, set_property_value with setAtTime:false and get_layer_details read-back; value swapping across different properties, color channel swapping, expression mutation, keyframe mutation, TextDocument/path mutation, separated-dimension rewiring, arbitrary axis permutation, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11311,7 +11311,7 @@
         "expressions",
         "slider-controls",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11406,7 +11406,7 @@
           "from": "generic-repo-importer-tool-properties-separate-size-dimensions",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Properties/Separate_Size_Dimensions.jsx into existing typed tools as rectangle/ellipse shape Size separation guidance using separate_shape_size_dimensions; no source JSX copied. Current typed tools require current get_selected_properties or equivalent explicit typed evidence, one reviewed shape Size propertyPath, previous size and reviewed xSliderName/ySliderName disclosure, separate_shape_size_dimensions mutation, get_layer_details expression read-back and get_effect_details slider read-back when needed; arbitrary property traversal, non-shape Size properties, selected-property guessing, existing expression preservation, expression merging, slider reuse, keyframed size preservation, text/path/mask mutation, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Properties/Separate_Size_Dimensions.jsx into existing typed tools as rectangle/ellipse shape Size separation guidance using separate_shape_size_dimensions; no source JSX copied. Current typed tools require current get_selected_properties or equivalent explicit typed evidence, one reviewed shape Size propertyPath, previous size and reviewed xSliderName/ySliderName disclosure, separate_shape_size_dimensions mutation, get_layer_details expression read-back and get_effect_details slider read-back when needed; arbitrary property traversal, non-shape Size properties, selected-property guessing, existing expression preservation, expression merging, slider reuse, keyframed size preservation, text/path/mask mutation, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11434,7 +11434,7 @@
         "expressions",
         "parametric-anchor",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11521,7 +11521,7 @@
           "from": "generic-repo-importer-tool-properties-move-parametric-anchor-point",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the behavior behind kyletmartinez/after-effects-scripts Properties/Move_Parametric_Anchor_Point.jsx into typed guidance for explicit ADBE Vector Rect Position and ADBE Vector Ellipse Position expression mutation; no source JSX copied. Current typed tools require current selected-property or generated get_layer_details evidence, reviewed anchorPositionKey, final expression disclosure, set_expression mutation, and get_layer_details read-back; modal ScriptUI choice, silent selectedProperties batch traversal, unreviewed existing-expression overwrite, keyframed/animated preservation, shape path edits, layer Transform Anchor Point mutation, selection persistence and exact source JSX semantics remain fail-closed.",
+          "evidence": "Adapted only the behavior behind reviewed external AE script collection Properties/Move_Parametric_Anchor_Point.jsx into typed guidance for explicit ADBE Vector Rect Position and ADBE Vector Ellipse Position expression mutation; no source JSX copied. Current typed tools require current selected-property or generated get_layer_details evidence, reviewed anchorPositionKey, final expression disclosure, set_expression mutation, and get_layer_details read-back; modal ScriptUI choice, silent selectedProperties batch traversal, unreviewed existing-expression overwrite, keyframed/animated preservation, shape path edits, layer Transform Anchor Point mutation, selection persistence and exact source JSX semantics remain fail-closed.",
           "commit": null
         }
       ],
@@ -11547,7 +11547,7 @@
         "set-property-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11652,7 +11652,7 @@
           "from": "generic-repo-importer-tool-keyframes-invert-selected-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Invert_Selected_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for inverting explicit reviewed selectedKeyframes into computed invertedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/invertedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Invert_Selected_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for inverting explicit reviewed selectedKeyframes into computed invertedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/invertedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11679,7 +11679,7 @@
         "hold-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11780,7 +11780,7 @@
           "from": "generic-repo-importer-tool-keyframes-make-hold-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Make_Hold_Keyframes.jsx into existing typed tools as selected-property apply_keyframe_ease guidance for converting explicit reviewed selectedKeyframes to hold interpolation; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/holdKeyframes disclosure, apply_keyframe_ease with interpolation:\"hold\" and explicit keyIndices, and get_layer_details read-back. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Make_Hold_Keyframes.jsx into existing typed tools as selected-property apply_keyframe_ease guidance for converting explicit reviewed selectedKeyframes to hold interpolation; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, previous/holdKeyframes disclosure, apply_keyframe_ease with interpolation:\"hold\" and explicit keyIndices, and get_layer_details read-back. Selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11808,7 +11808,7 @@
         "set-property-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -11913,7 +11913,7 @@
           "from": "generic-repo-importer-tool-keyframes-multiply-selected-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Multiply_Selected_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for multiplying explicit reviewed selectedKeyframes by keyframeValueMultiplier into computed multipliedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, numeric scalar or numeric-array value shapes, previous/multipliedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, additive offsets, per-axis custom math, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Multiply_Selected_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for multiplying explicit reviewed selectedKeyframes by keyframeValueMultiplier into computed multipliedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, numeric scalar or numeric-array value shapes, previous/multipliedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, additive offsets, per-axis custom math, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -11941,7 +11941,7 @@
         "set-property-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12062,7 +12062,7 @@
           "from": "generic-repo-importer-tool-keyframes-posterize-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Posterize_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for posterizing explicit reviewed selectedKeyframes onto a reviewed posterizeFrameGrid with completePropertyKeyframes and preservedUnselectedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, get_layer_details complete keyframe read-back, explicit selectedKeyframes with times/values/indices, previous/completePropertyKeyframes/posterizedKeyframes/preservedUnselectedKeyframes disclosure, set_property_keyframes with clearExisting:true only after full rewrite evidence, and get_layer_details read-back; optional apply_keyframe_ease requires explicit post-rewrite key indices. Selected-key discovery without explicit reviewed keyframes, incomplete keyframe read-back, unresolved time collisions, interpolation/ease preservation, spatial tangent preservation, expression-derived sampling, destructive key deletion, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Posterize_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for posterizing explicit reviewed selectedKeyframes onto a reviewed posterizeFrameGrid with completePropertyKeyframes and preservedUnselectedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, get_layer_details complete keyframe read-back, explicit selectedKeyframes with times/values/indices, previous/completePropertyKeyframes/posterizedKeyframes/preservedUnselectedKeyframes disclosure, set_property_keyframes with clearExisting:true only after full rewrite evidence, and get_layer_details read-back; optional apply_keyframe_ease requires explicit post-rewrite key indices. Selected-key discovery without explicit reviewed keyframes, incomplete keyframe read-back, unresolved time collisions, interpolation/ease preservation, spatial tangent preservation, expression-derived sampling, destructive key deletion, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -12091,7 +12091,7 @@
         "set-property-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12196,7 +12196,7 @@
           "from": "generic-repo-importer-tool-keyframes-round-selected-keyframe-values",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Round_Selected_Keyframe_Values.jsx into existing typed tools as selected-property set_property_keyframes guidance for rounding explicit reviewed selectedKeyframes by roundingMode nearestInteger into computed roundedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, numeric scalar or numeric-array value shapes, previous/roundedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, decimal precision/increment rounding, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Round_Selected_Keyframe_Values.jsx into existing typed tools as selected-property set_property_keyframes guidance for rounding explicit reviewed selectedKeyframes by roundingMode nearestInteger into computed roundedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, explicit selectedKeyframes with times/values/indices, numeric scalar or numeric-array value shapes, previous/roundedKeyframes disclosure, set_property_keyframes with clearExisting:false and get_layer_details read-back; optional apply_keyframe_ease requires explicit keyIndices. Selected-key discovery without explicit reviewed keyframes, decimal precision/increment rounding, color/text/path mutation, exact interpolation/ease preservation, expression-derived sampling, destructive key removal, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -12224,7 +12224,7 @@
         "set-property-keyframes",
         "apply-keyframe-ease",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12345,7 +12345,7 @@
           "from": "generic-repo-importer-tool-keyframes-remove-redundant-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Remove_Redundant_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for removing explicit reviewed redundantKeyframes under a reviewed redundancyRule with completePropertyKeyframes, preservedKeyframes and prunedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, get_layer_details complete keyframe read-back, completePropertyKeyframes, explicit redundantKeyframes with times/values/indices, previous/removedRedundantKeyframes/preservedKeyframes/prunedKeyframes disclosure, set_property_keyframes with clearExisting:true only after full rewrite evidence, and get_layer_details read-back; optional apply_keyframe_ease requires explicit post-rewrite key indices. Selected-key discovery without explicit reviewed keyframes, incomplete keyframe read-back, automatic fuzzy duplicate detection, interpolation/ease preservation, spatial tangent preservation, expression-derived sampling, broad cleanup heuristics, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Remove_Redundant_Keyframes.jsx into existing typed tools as selected-property set_property_keyframes guidance for removing explicit reviewed redundantKeyframes under a reviewed redundancyRule with completePropertyKeyframes, preservedKeyframes and prunedKeyframes; no source JSX copied. Current typed tools require current get_selected_properties evidence, get_layer_details complete keyframe read-back, completePropertyKeyframes, explicit redundantKeyframes with times/values/indices, previous/removedRedundantKeyframes/preservedKeyframes/prunedKeyframes disclosure, set_property_keyframes with clearExisting:true only after full rewrite evidence, and get_layer_details read-back; optional apply_keyframe_ease requires explicit post-rewrite key indices. Selected-key discovery without explicit reviewed keyframes, incomplete keyframe read-back, automatic fuzzy duplicate detection, interpolation/ease preservation, spatial tangent preservation, expression-derived sampling, broad cleanup heuristics, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
           "commit": null
         }
       ],
@@ -12373,7 +12373,7 @@
         "fill-in-keyframes",
         "fill_in_keyframes",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12476,7 +12476,7 @@
           "from": "generic-repo-importer-tool-keyframes-fill-in-keyframes",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Fill_In_Keyframes.jsx into existing typed tools as expression/value sampling guidance through fill_in_keyframes; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing fill_in_keyframes contract, semantic verification, and registered fill-in-keyframes-expression-sampling generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed startTime/endTime/sampleEveryFrames/removeRedundant/clearExpression settings, fill_in_keyframes execution, and get_layer_details read-back for sampled linear keyframes plus expression clearing state. Broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only fill-in-keyframes read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Fill_In_Keyframes.jsx into existing typed tools as expression/value sampling guidance through fill_in_keyframes; no source JSX copied. The detached child worktree did not contain the source JSX, so scope came from the child-run wrapper, candidate name, existing fill_in_keyframes contract, semantic verification, and registered fill-in-keyframes-expression-sampling generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed startTime/endTime/sampleEveryFrames/removeRedundant/clearExpression settings, fill_in_keyframes execution, and get_layer_details read-back for sampled linear keyframes plus expression clearing state. Broad expression conversion, multi-property batch baking, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. reviewed lane includes generated-only fill-in-keyframes read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -12504,7 +12504,7 @@
         "keyframe-current-value-from-expression",
         "keyframe_current_value_from_expression",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12601,7 +12601,7 @@
           "from": "generic-repo-importer-tool-keyframes-keyframe-current-value-from-expression",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Keyframe_Current_Value_From_Expression.jsx into existing typed tools as current post-expression value keyframing guidance through keyframe_current_value_from_expression; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing keyframe_current_value_from_expression contract, semantic verification, and registered current-expression-keyframe generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed target time or CTI default, reviewed requireExpression behavior, keyframe_current_value_from_expression execution, and get_layer_details read-back for the captured keyframe plus preserved expression state. Range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only current-expression keyframe read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Keyframe_Current_Value_From_Expression.jsx into existing typed tools as current post-expression value keyframing guidance through keyframe_current_value_from_expression; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing keyframe_current_value_from_expression contract, semantic verification, and registered current-expression-keyframe generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property evidence, one target property, reviewed target time or CTI default, reviewed requireExpression behavior, keyframe_current_value_from_expression execution, and get_layer_details read-back for the captured keyframe plus preserved expression state. Range baking, broad expression conversion, multi-property batch keyframing, unsupported value shapes, interpolation/ease preservation, spatial tangent preservation, arbitrary expression edits, selection side effects and exact source semantics require a separate typed-tool contract. reviewed lane includes generated-only current-expression keyframe read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -12632,7 +12632,7 @@
         "set-spacial-in-tanget",
         "set_spatial_in_tangent",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -12728,7 +12728,7 @@
           "from": "generic-repo-importer-tool-keyframes-set-spacial-in-tanget",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Keyframes/Set_Spacial_In_Tanget.jsx into existing typed tools as spatial in tangent guidance through set_spatial_in_tangent; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing set_spatial_in_tangent contract, semantic verification, and registered generated-spatial-in-tangent generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property/keyframe evidence, one spatial property, reviewed keyIndex 2 or later, reviewed factor, previous/current keyframe value disclosure, set_spatial_in_tangent execution, and get_layer_details read-back for inSpatialTangent plus preserved outSpatialTangent. Selected-key discovery without explicit reviewed keyframes, arbitrary tangent vectors, out-tangent editing, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects and exact source semantics require a separate typed-tool contract. AUX-099 includes generated-only spatial tangent read-back and parent importer owns validation plus live acceptance.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Keyframes/Set_Spacial_In_Tanget.jsx into existing typed tools as spatial in tangent guidance through set_spatial_in_tangent; no source JSX copied. Scope came from the child-run wrapper, candidate name, existing set_spatial_in_tangent contract, semantic verification, and registered generated-spatial-in-tangent generated-only lane. The recipe requires current selected-property evidence or equivalent explicit property/keyframe evidence, one spatial property, reviewed keyIndex 2 or later, reviewed factor, previous/current keyframe value disclosure, set_spatial_in_tangent execution, and get_layer_details read-back for inSpatialTangent plus preserved outSpatialTangent. Selected-key discovery without explicit reviewed keyframes, arbitrary tangent vectors, out-tangent editing, non-spatial properties, first-key tangent requests, path/mask/shape tangent workflows, interpolation/ease preservation, selection side effects and exact source semantics require a separate typed-tool contract. reviewed lane includes generated-only spatial tangent read-back and parent importer owns validation plus live acceptance.",
           "commit": null
         }
       ],
@@ -14039,7 +14039,7 @@
       "promotionHistory": [
         {
           "date": "2026-06-25",
-          "from": "full-intake-kyletmartinez-tool-layers-add-3d-break",
+          "from": "external-script-intake",
           "to": "recipe",
           "reviewer": "codex",
           "evidence": "Adapted only the safe Add 3D Break intent into a generated adjustment-layer placement contract using get_active_comp/get_selected_layers/get_comp_details/get_layer_details plus create_adjustment_layer insertBeforeLayerIndex and expectedBeforeLayerName. Source-exact broad selected-layer traversal, generic layer reordering, raw JSX, and non-generated user-asset mutation remain fail-closed.",
@@ -15671,7 +15671,7 @@
         "layer-label",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -15776,7 +15776,7 @@
         "matte",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -15882,7 +15882,7 @@
         "expression",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -16441,7 +16441,7 @@
         "bridgeVersion": "2.0.0",
         "projectKind": "synthetic",
         "notes": [
-          "Seeded by AUX-021 importer child-run wrapper for tool-project-set-all-item-labels-to-none as the importer-planned alias of existing generated-only project item label coverage.",
+          "Seeded by reviewed lane importer child-run wrapper for tool-project-set-all-item-labels-to-none as the importer-planned alias of existing generated-only project item label coverage.",
           "No generated-only mutating live CEP proof was run in this child worktree."
         ]
       },
@@ -16584,7 +16584,7 @@
         "hard-solo",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -16673,7 +16673,7 @@
           "from": "generic-repo-importer-tool-layers-hard-solo-layers",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Hard_Solo_Layers.jsx into existing typed tools as explicit generated selected/unselected Layer.enabled guidance through set_layer_metadata and get_layer_details read-back; no source JSX copied. Current typed tools require get_selected_layers and get_comp_details evidence, expected layer-name guards, generated or explicitly reviewed targets, checkpoint/edit-session protection, and post-mutation read-back. Native solo switches, broad selected-layer traversal, previous-enabled-state restore, multi-comp scope, non-generated user assets, selection persistence and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Hard_Solo_Layers.jsx into existing typed tools as explicit generated selected/unselected Layer.enabled guidance through set_layer_metadata and get_layer_details read-back; no source JSX copied. Current typed tools require get_selected_layers and get_comp_details evidence, expected layer-name guards, generated or explicitly reviewed targets, checkpoint/edit-session protection, and post-mutation read-back. Native solo switches, broad selected-layer traversal, previous-enabled-state restore, multi-comp scope, non-generated user assets, selection persistence and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -16696,7 +16696,7 @@
         "difference",
         "generated-only",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -16784,7 +16784,7 @@
           "from": "generic-repo-importer-tool-layers-toggle-difference-blend-mode",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the idea behind kyletmartinez/after-effects-scripts Layers/Toggle_Difference_Blend_Mode.jsx into typed tools as explicit generated selected-layer Layer.blendingMode guidance through set_layer_blending_mode and get_layer_details read-back; no source JSX copied. Current typed tools require get_selected_layers and get_comp_details evidence, expected layer-name guards, optional expectedCurrentBlendingModes guards, generated or explicitly reviewed targets, checkpoint/edit-session protection, and post-mutation read-back. Source-exact Alt-key branching, toggle-back/restoration behavior, broad selected-layer traversal, other blend modes, non-generated user assets, selection persistence and raw ExtendScript require a separate typed-tool contract or fail closed.",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection Layers/Toggle_Difference_Blend_Mode.jsx into typed tools as explicit generated selected-layer Layer.blendingMode guidance through set_layer_blending_mode and get_layer_details read-back; no source JSX copied. Current typed tools require get_selected_layers and get_comp_details evidence, expected layer-name guards, optional expectedCurrentBlendingModes guards, generated or explicitly reviewed targets, checkpoint/edit-session protection, and post-mutation read-back. Source-exact Alt-key branching, toggle-back/restoration behavior, broad selected-layer traversal, other blend modes, non-generated user assets, selection persistence and raw ExtendScript require a separate typed-tool contract or fail closed.",
           "commit": null
         }
       ],
@@ -16812,7 +16812,7 @@
         "keyframes",
         "approval-gated",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -16930,7 +16930,7 @@
         "user-file",
         "approval-gated",
         "generic-importer",
-        "kyletmartinez-advisory",
+        "external-script-advisory",
         "typed-tool"
       ],
       "intent": {
@@ -17125,7 +17125,7 @@
         "bridgeVersion": "2.0.0",
         "projectKind": "synthetic",
         "notes": [
-          "Seeded by AUX-021 generic repository importer child run for tool-layers-parent-opacity as generated-only typed-plan coverage using existing set_layer_parent and set_expression tools.",
+          "Seeded by reviewed lane generic repository importer child run for tool-layers-parent-opacity as generated-only typed-plan coverage using existing set_layer_parent and set_expression tools.",
           "Generated-only proof lane is selected-layer-parent-opacity-expression-generated-only and uses full-ui-agent-parent-opacity-expression-openai-cli-smoke."
         ]
       },

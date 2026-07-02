@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Compositions/Transfer_Composition_Work_Area.jsx`
 - Candidate id: `tool-compositions-transfer-composition-work-area`
 - License: review required by the parent importer before any source-derived

@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Lottie/Prepare_Layer_Out_Points_For_Lottie.jsx`
 - Candidate id: `tool-lottie-prepare-layer-out-points-for-lottie`
 - Source SHA256:

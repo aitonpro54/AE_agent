@@ -11,8 +11,8 @@ Maintain AE Agent 2.0.0 in this clean repository. The product target is
 - Keep only current product code, typed tools, recipes, registry, bridge, CEP
   panel, provider layer, and AE-specific Full Intaker/importer tooling.
 - Treat the legacy repository and git history as the source for historical
-  evidence; do not recreate audit archives, proof dumps, plan archives, old
-  handoff-only docs, or generated runtime logs here.
+  context; do not recreate legacy evidence archives or generated runtime logs
+  here.
 - Keep runtime outputs ignored and local, including `.codex/`,
   `.codex-runtime/`, `.codex-autonomy/`, `logs/`, `backups/`, `snapshots/`,
   and `pro-review-bundles/`.

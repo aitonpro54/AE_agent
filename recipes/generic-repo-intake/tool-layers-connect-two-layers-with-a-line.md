@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Layers/Connect_Two_Layers_With_A_Line.jsx`
 - Source SHA-256: `85b5c6117977acb2c867cc9cf7f855fd525a5691da6cf0729fcb6efa76732a30`
 

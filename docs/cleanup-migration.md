@@ -30,10 +30,10 @@ The following are runtime artifacts and must stay ignored:
 
 ## Not Part Of Baseline
 
-- old audit packet trees
+- old evidence trees
 - historical execution-plan archives
-- generated proof/report dumps
-- old handoff-only docs
+- generated report dumps
+- old continuation-only docs
 - broad generic SDK governance history
 
 Historical questions should be answered from git history or the legacy

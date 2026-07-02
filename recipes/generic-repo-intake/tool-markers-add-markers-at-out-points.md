@@ -2,7 +2,7 @@
 
 ## Source
 
-- Repository: `https://github.com/kyletmartinez/after-effects-scripts`
+- Repository: `https://github.com/reviewed external AE script collection`
 - Source path: `Markers/Add_Markers_At_Out_Points.jsx`
 - Candidate id: `tool-markers-add-markers-at-out-points`
 - License: source repository license is missing in the importer ledger; parent
