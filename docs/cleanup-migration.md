@@ -1,44 +1,47 @@
 # Cleanup Migration
 
-Дата миграции: 2026-06-04.
+Clean baseline date: 2026-06-04. Aggressive cleanup refresh: 2026-07-02.
 
-Clean baseline был подготовлен в staging-каталоге `AE_agent_clean`, затем стал
-активным проектом по пути `C:\Users\Ant\Documents\Codex\AE_agent`.
-Старый проект сохранен как dated legacy directory
-`C:\Users\Ant\Documents\Codex\AE_agent_legacy_2026-06-04` и остается
-историческим источником для точечного lookup.
+This repository is the active AE Agent 2.0.0 baseline. It keeps product code,
+typed tools, recipes, registry, provider integration, bridge/CEP surfaces, and
+current AE-specific Full Intaker/importer tooling.
 
-## Что перенесено
+## Kept
 
-- CEP panel, bridge/MCP server, ChatGPT connector, target spec and compact
-  project docs.
-- Current provider, planning, semantic verification, solution-library and
-  bridge smoke scripts.
-- Current `generic-repo:*` Full Intaker/importer tools and compact runtime
-  helpers for AE-specific intake work.
-- Registry and active recipes.
+- CEP panel and local bridge/MCP server
+- ChatGPT connector
+- Provider, planning, semantic verification, and bridge smoke scripts
+- Current AE-specific Full Intaker/importer commands
+- Reviewed recipes and solution registry
+- Compact specs, docs, plans, and handoff notes
 
-## Что намеренно не перенесено
+## Local Only
 
-- Git history and old repository metadata.
-- Runtime/cache/log/output folders: `.codex/`, `.codex-runtime/`, `logs/`,
-  `backups/`, `snapshots/`, `pro-review-bundles/`, `node_modules/`.
-- Historical SDK audit packet tree: `.codex-audit/**`.
-- Historical execution plan archives: `plans/archive/**`.
-- Old handoff-only docs and old SDK conveyor/governance proof scripts.
+The following are runtime artifacts and must stay ignored:
 
-## Новый baseline
+- `.codex/`
+- `.codex-runtime/`
+- `.codex-autonomy/logs/`
+- `.codex-autonomy/runs/`
+- `logs/`
+- `backups/`
+- `snapshots/`
+- `pro-review-bundles/`
+- `node_modules/`
 
-The clean repo keeps AE Agent product behavior and current useful tools, but it
-does not rely on historical proof packets at runtime. Historical questions
-should be answered from the legacy repository. New work should add compact
-current evidence in this repo instead of recreating a broad archive tree.
+## Not Part Of Baseline
+
+- old audit packet trees
+- historical execution-plan archives
+- generated proof/report dumps
+- old handoff-only docs
+- broad generic SDK governance history
+
+Historical questions should be answered from git history or the legacy
+repository, not by adding archives back into this baseline.
 
 Primary validation entrypoint:
 
 ```powershell
-npm run check:rules
+npm.cmd run check:rules
 ```
-
-Product and Full Intaker smokes are exposed through the `smoke:*` package
-scripts and can be run individually during future milestones.

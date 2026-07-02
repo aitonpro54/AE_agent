@@ -1,62 +1,49 @@
 # Project Memory
 
-Дата обновления: 2026-06-04.
+Дата обновления: 2026-07-02.
 
 ## Current Workspace
 
 - Active project root: `C:\Users\Ant\Documents\Codex\AE_agent`.
-- Repository status: clean standalone baseline repo on `main`.
-- Historical source: after replacement, the previous AE Agent workspace is kept
-  as the dated legacy directory outside this repo and should be used only for
-  targeted historical lookup.
+- Current branch: `codex/full-intake-runtime-cleanup`.
+- Target product: AE Agent 2.0.0.
+- Active spec: `specs/target-app.md`.
+- Active plan: `plans/target-app-execplan.md`.
 
 ## Product Goal
 
 AE Agent is a local After Effects CEP panel backed by a local bridge daemon and
-MCP adapter. The bridge owns provider access, safe AE plan validation, execution
-gates, logs, checkpoints, edit sessions, and typed tools. Codex remains the
-agent; the panel and bridge provide reliable AE capabilities and safety rails.
+MCP adapter. The bridge owns provider access, safe AE plan validation,
+execution gates, logs, checkpoints, edit sessions, and typed tools.
 
-## Current Architecture
+## Runtime Architecture
 
 ```text
-Codex -> stdio MCP adapter -> local bridge daemon -> CEP panel -> After Effects
+Codex/App client -> stdio MCP adapter -> bridge daemon -> CEP panel -> After Effects
 ```
 
-- `mcp-server/mcp-adapter.js` owns MCP stdio and starts or connects to the
-  daemon when needed.
+- `mcp-server/mcp-adapter.js` owns MCP stdio and connects to the daemon.
 - `mcp-server/bridge-daemon.js` owns the local HTTP bridge, command queue,
   retained results, provider calls, safety gates, checkpoints, and tool
   execution.
-- `cep-panel/` stays a passive client that polls for commands and posts results.
-- `registry/` and `recipes/` hold current reusable AE solution knowledge.
-- `orchestrator/` keeps only the current AE-specific Full Intaker/importer
-  subset and compact runtime helpers.
+- `cep-panel/` is the local panel client that polls commands and posts results.
+- `registry/` and `recipes/` hold reviewed AE solution knowledge.
+- `orchestrator/` keeps current AE-specific Full Intaker/importer tooling.
 
-## Clean Repository Decisions
+## Repository Rules
 
-- Runtime outputs stay ignored and local: `.codex/`, `.codex-runtime/`, `logs/`,
-  `backups/`, and generated proof/report folders are not committed.
-- Old audit packets, execution-plan archives, historical proof dumps, and old
-  handoff-only docs are not part of this repo.
-- Full Intaker/importer commands must receive explicit current ledger paths for
-  real runs; the clean repo must not rely on generated ledgers from the old
-  workspace.
-- Local/Ollama, fallback providers, broad CEP smoke, live mutation, dependency
-  changes, push, and PR creation remain approval-gated.
+- Keep docs compact and current.
+- Keep runtime outputs ignored and local.
+- Keep reusable generic SDK orchestration out of this repo unless a separate
+  reviewed migration approves it.
+- Keep Local/Ollama, fallback providers, broad CEP smoke, live mutation,
+  dependency changes, push, and PR approval-gated.
 
-## Current Validation Surface
+## Validation
 
-- `npm run check:rules` is the default local validation entrypoint.
-- Product smoke groups live in `package.json` as `smoke:*` scripts.
-- Read-only live connectivity checks are:
-  - `node scripts/cep-panel-cdp-smoke.js inspect`
-  - `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`
-
-## Next Useful Work
-
-1. Keep product work in this clean repo after user acceptance.
-2. Keep the dated legacy directory until the clean baseline has been accepted
-   and used for normal work.
-3. Resume product milestones from compact current docs and handoffs, not from
-   old generated proof archives.
+- Default: `npm.cmd run check:rules`
+- Source edits: touched-file `node --check` plus `git diff --check`
+- Product/tooling edits: relevant `smoke:*` scripts from `package.json`
+- Read-only live connectivity, when AE and panel are available:
+  `node scripts/cep-panel-cdp-smoke.js inspect` and
+  `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`

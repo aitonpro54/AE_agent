@@ -2,19 +2,23 @@
 
 ## Project goal
 
-Build and maintain AE Agent 2.0.0 in this clean repository. The target product
-is described in `specs/target-app.md`; the active execution plan is
+Maintain AE Agent 2.0.0 in this clean repository. The product target is
+`specs/target-app.md`; the active execution plan is
 `plans/target-app-execplan.md`.
 
 ## Clean repository rules
 
-- The old `AE_agent` repository is the historical source. This clean repo must
-  not depend on old audit packet trees, plan archives, generated runtime logs,
-  old handoff-only docs, or broad proof dumps.
-- Keep runtime outputs ignored and local.
-- Work milestone by milestone.
-- Resolve small ambiguities autonomously and record decisions in the plan or
-  handoff.
+- Keep only current product code, typed tools, recipes, registry, bridge, CEP
+  panel, provider layer, and AE-specific Full Intaker/importer tooling.
+- Treat the legacy repository and git history as the source for historical
+  evidence; do not recreate audit archives, proof dumps, plan archives, old
+  handoff-only docs, or generated runtime logs here.
+- Keep runtime outputs ignored and local, including `.codex/`,
+  `.codex-runtime/`, `logs/`, `backups/`, `snapshots/`,
+  `pro-review-bundles/`, `.codex-autonomy/logs/`, and
+  `.codex-autonomy/runs/`.
+- Work milestone by milestone. Resolve small ambiguities autonomously and
+  record decisions in the plan or handoff.
 - After each completed milestone, update `.codex/handoff.md` with goal, files
   touched, validation, decisions, risks, commit id, and exact next prompt.
 - Keep `plans/target-app-execplan.md` compact and current.
@@ -40,9 +44,9 @@ is described in `specs/target-app.md`; the active execution plan is
 ## SDK and Full Intaker boundary
 
 - Keep AE Agent-specific Full Intaker/importer tooling in this repo.
-- Do not rebuild the broad generic SDK orchestrator history here.
-- Move generic reusable SDK orchestration behavior toward the sibling
-  `codex-sdk-orchestrator-tool` in a separate reviewed migration.
+- Do not rebuild broad generic SDK orchestration history here. Move reusable
+  generic SDK behavior toward the sibling `codex-sdk-orchestrator-tool` only in
+  a separate reviewed migration.
 - Keep Local/Ollama, fallback providers, broad CEP smoke, live mutation,
   dependency changes, push, and PR approval-gated.
 
@@ -51,7 +55,7 @@ is described in `specs/target-app.md`; the active execution plan is
 Before marking a milestone complete, run the checks relevant to touched files.
 For this clean baseline, the default command is:
 
-- `npm run check:rules`
+- `npm.cmd run check:rules`
 
 For source changes, also run:
 
@@ -60,12 +64,12 @@ For source changes, also run:
 
 For product/tooling changes, run the relevant smoke groups:
 
-- `npm run smoke:provider-contract`
-- `npm run smoke:provider-api`
-- `npm run smoke:solutions`
-- `npm run smoke:planning`
-- `npm run smoke:bridge`
-- `npm run smoke:full-intake`
+- `npm.cmd run smoke:provider-contract`
+- `npm.cmd run smoke:provider-api`
+- `npm.cmd run smoke:solutions`
+- `npm.cmd run smoke:planning`
+- `npm.cmd run smoke:bridge`
+- `npm.cmd run smoke:full-intake`
 
 For read-only live connectivity, when After Effects and the panel are available:
 
