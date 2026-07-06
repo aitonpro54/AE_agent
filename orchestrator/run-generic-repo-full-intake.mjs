@@ -103,6 +103,7 @@ const TERMINAL_ITEM_STATUSES = new Set([
   "blocked_live_lane_validation_failed",
   "blocked_live_preflight_failed",
   "blocked_live_proof_failed",
+  "blocked_child_runner_usage_limit",
   "blocked_policy",
   "completed",
   "failed_import",
@@ -122,6 +123,10 @@ const IMPORT_RETRY_REASONS = Object.freeze([
   "controlled source merge inputs must not contain named-repo assumptions",
   "manifest must not contain named-repo assumptions",
   "resume-manifest-hash-mismatch",
+]);
+const CHILD_USAGE_LIMIT_REASONS = Object.freeze([
+  "You've hit your usage limit",
+  "hit your usage limit",
 ]);
 const LEGACY_REASONING_EFFORT_CLI_ERROR = "unexpected argument '--reasoning-effort'";
 const SHARED_OWNER_PATHS = Object.freeze([
@@ -3422,6 +3427,55 @@ function requeueEntryAfterResolution(entry, ticket, extraImplementation = {}) {
   attachResolutionReference(entry, ticket, "resolved_requeued");
 }
 
+function blockEntryForChildRunnerUsageLimit(entry, ticket, evidence) {
+  const now = new Date().toISOString();
+  const reason = childUsageLimitItemReason(evidence);
+  if (entry.failClosed) {
+    entry.previousFailClosed = entry.failClosed;
+  }
+  entry.status = "blocked_child_runner_usage_limit";
+  entry.blockedAt = now;
+  entry.nextAction = evidence.retryAfterText
+    ? `retry_after_child_runner_usage_limit_reset_${safeId(evidence.retryAfterText)}`
+    : "retry_after_child_runner_usage_limit_reset";
+  entry.failClosed = {
+    schema: "generic-repo-full-intake.fail-closed.v1",
+    runId: ticket.runId,
+    candidateId: entry.id,
+    sourcePath: entry.sourcePath,
+    status: entry.status,
+    reason,
+    blockers: [
+      {
+        code: "child_runner_usage_limit",
+        retryAfterText: evidence.retryAfterText || null,
+      },
+    ],
+    liveLaneStatus: entry.liveGate?.status || null,
+    liveLaneReport: entry.liveGate?.failClosedEvidence || null,
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerUsageLimit: evidence,
+    safetyPolicy: {
+      broadCepSmokeAllowed: false,
+      dependencyPackageChangesAllowed: false,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationOutsideGeneratedOnlyLaneAllowed: false,
+    },
+    createdAt: now,
+  };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerUsageLimit: evidence,
+    failureReason: reason,
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+}
+
 function nextQueueRankAllocator(ledger) {
   let nextRank = ledger.entries.reduce((max, entry) => (
     Number.isInteger(entry.queueRank) ? Math.max(max, entry.queueRank) : max
@@ -3744,6 +3798,34 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     });
     if (discoveredBatchReport) {
       batchReportByCandidateId.set(entry.id, discoveredBatchReport);
+    }
+    const usageLimitEvidence = discoveredBatchReport
+      ? childUsageLimitFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
+      : null;
+    if (usageLimitEvidence && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: usageLimitEvidence.reason,
+        type: "child-runner-usage-limit",
+      });
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...usageLimitEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+        },
+        groupId,
+        reason: "child_runner_usage_limit_wait_required",
+        runId,
+        runRoot,
+        status: "terminal_unresolved",
+        targetRepo,
+        type: "child-runner-usage-limit",
+      });
+      blockEntryForChildRunnerUsageLimit(entry, ticket, usageLimitEvidence);
+      tickets.push(ticket);
+      continue;
     }
     let kind = recoverableImportFailureKind(entry);
     if (
@@ -4536,6 +4618,79 @@ function isLegacyReasoningEffortCliFailure({ batchReportPath, targetRepo }) {
   ));
 }
 
+function childSummaryText(summary) {
+  return [
+    summary?.stderr?.tail,
+    summary?.stderrTail,
+    summary?.error,
+    summary?.reason,
+  ].filter(Boolean).join("\n");
+}
+
+function childUsageLimitRetryAfterText(text) {
+  const match = /try again at\s+([^\.\n]+)/i.exec(String(text || ""));
+  return match ? match[1].trim() : null;
+}
+
+function isChildUsageLimitSummary(summary) {
+  const text = childSummaryText(summary);
+  return (
+    summary?.status === "failed_process" &&
+    Number(summary.exitCode) !== 0 &&
+    Array.isArray(summary.changedPaths) &&
+    summary.changedPaths.length === 0 &&
+    Array.isArray(summary.unplannedPaths) &&
+    summary.unplannedPaths.length === 0 &&
+    CHILD_USAGE_LIMIT_REASONS.some((fragment) => text.includes(fragment))
+  );
+}
+
+function childUsageLimitFailureEvidence({ batchReportPath, targetRepo }) {
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "child-usage-limit-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
+  const importerRunId = report?.importer?.runId || report?.items?.[0]?.importerRunId || null;
+  if (!importerRunId) return null;
+  let summaries = [];
+  try {
+    summaries = childRunSummariesForImporter(targetRepo, importerRunId);
+  } catch (_error) {
+    return null;
+  }
+  const summary = summaries.find(isChildUsageLimitSummary) || null;
+  if (!summary) return null;
+  const text = childSummaryText(summary);
+  return {
+    batchId: summary.batchId || null,
+    batchReport: batchReportPath || null,
+    importerRunId,
+    reason: "codex_child_runner_usage_limit",
+    retryAfterText: childUsageLimitRetryAfterText(text),
+    stderrTailContainsUsageLimit: true,
+  };
+}
+
+function childUsageLimitItemReason(evidence) {
+  return evidence?.retryAfterText
+    ? `codex_child_runner_usage_limit_retry_after:${evidence.retryAfterText}`
+    : "codex_child_runner_usage_limit";
+}
+
+function pendingChildRunnerUsageLimitBlocker(ledger) {
+  const entry = (ledger.entries || []).find((candidate) => candidate.status === "blocked_child_runner_usage_limit");
+  if (!entry) return null;
+  const evidence = entry.implementation?.childRunnerUsageLimit || entry.failClosed?.childRunnerUsageLimit || {};
+  return {
+    code: "child-runner-usage-limit",
+    candidateId: entry.id,
+    reason: entry.failClosed?.reason || entry.implementation?.failureReason || "codex_child_runner_usage_limit",
+    retryAfterText: evidence.retryAfterText || null,
+    resolutionTicket: entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null,
+  };
+}
+
 function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath }) {
   const report = readCompactJsonIfExists(
     absoluteReportPath(targetRepo, batchReportPath),
@@ -5062,12 +5217,18 @@ function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targe
     },
     createdAt: now,
   };
+  if (item.childRunnerUsageLimit) {
+    entry.failClosed.childRunnerUsageLimit = item.childRunnerUsageLimit;
+  }
   entry.implementation = {
     ...(entry.implementation || {}),
     failureReason: item.reason || null,
     batchReport: item.batchReport || entry.implementation?.batchReport || null,
     plannedPaths: Array.isArray(entry.implementation?.plannedPaths) ? entry.implementation.plannedPaths : [],
   };
+  if (item.childRunnerUsageLimit) {
+    entry.implementation.childRunnerUsageLimit = item.childRunnerUsageLimit;
+  }
   if (item.resolutionTicket) {
     const ticket = readResolutionTicket(targetRepo, item.resolutionTicket);
     if (ticket) {
@@ -6160,6 +6321,68 @@ function runStrictOnePhase({
           targetRepo,
         });
       }
+      const usageLimitEvidence = childUsageLimitFailureEvidence({
+        batchReportPath: error?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (usageLimitEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: usageLimitEvidence.reason,
+          type: "child-runner-usage-limit",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...usageLimitEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_usage_limit_wait_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-usage-limit",
+        });
+        item.status = "blocked_child_runner_usage_limit";
+        item.reason = childUsageLimitItemReason(usageLimitEvidence);
+        item.blockers = [
+          {
+            code: "child_runner_usage_limit",
+            retryAfterText: usageLimitEvidence.retryAfterText || null,
+          },
+        ];
+        item.batchReport = usageLimitEvidence.batchReport || error?.report?.reportPath || null;
+        item.childRunnerUsageLimit = usageLimitEvidence;
+        item.resolutionTicket = ticket.isolation.ticketPath;
+        item.resolutionStatus = "terminal_unresolved";
+        item.completedAt = new Date().toISOString();
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_usage_limit",
+          reason: item.reason,
+          runId,
+        });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
       const finalError = recoveryError || error;
       item.status = "failed_import";
       item.reason = finalError.message;
@@ -6872,6 +7095,48 @@ export async function runFullIntake(options, cwd = process.cwd()) {
     assertRequiredLedgerShape(initialLedger);
   }
 
+  const childRunnerUsageLimitBlocker = pendingChildRunnerUsageLimitBlocker(initialLedger);
+  if (childRunnerUsageLimitBlocker) {
+    report.status = "blocked_child_runner_usage_limit";
+    report.ok = true;
+    report.blockers.push(childRunnerUsageLimitBlocker);
+    state.status = report.status;
+    state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
+    appendEvent(runRoot, { event: "child_runner_usage_limit_global_stop", runId, ...childRunnerUsageLimitBlocker });
+    writeJson(path.join(runRoot, "run-report.json"), report);
+    return report;
+  }
+
   if (strictOnePhase) {
     return runStrictOnePhase({
       contextBudget,
@@ -7106,6 +7371,56 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         });
         break;
       } else {
+        const usageLimitEvidence = childUsageLimitFailureEvidence({
+          batchReportPath: error?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+          targetRepo,
+        });
+        if (usageLimitEvidence) {
+          const groupId = resolutionGroupId({
+            candidate,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+            reason: usageLimitEvidence.reason,
+            type: "child-runner-usage-limit",
+          });
+          const ticket = recordResolutionTicket({
+            affected: [candidate],
+            evidence: {
+              ...usageLimitEvidence,
+              familyId: candidate.liveGate?.synthesisFamily || null,
+            },
+            groupId,
+            reason: "child_runner_usage_limit_wait_required",
+            runId,
+            runRoot,
+            status: "terminal_unresolved",
+            targetRepo,
+            type: "child-runner-usage-limit",
+          });
+          item.status = "blocked_child_runner_usage_limit";
+          item.reason = childUsageLimitItemReason(usageLimitEvidence);
+          item.blockers = [
+            {
+              code: "child_runner_usage_limit",
+              retryAfterText: usageLimitEvidence.retryAfterText || null,
+            },
+          ];
+          item.batchReport = usageLimitEvidence.batchReport || error?.report?.reportPath || null;
+          item.childRunnerUsageLimit = usageLimitEvidence;
+          item.resolutionTicket = ticket.isolation.ticketPath;
+          item.resolutionStatus = "terminal_unresolved";
+          item.completedAt = new Date().toISOString();
+          processedIds.add(candidate.id);
+          updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+          state = saveState(runRoot, pushItem(state, item));
+          report.items.push(item);
+          appendEvent(runRoot, {
+            candidateId: candidate.id,
+            event: "candidate_blocked_child_runner_usage_limit",
+            reason: item.reason,
+            runId,
+          });
+          continue;
+        }
         const finalError = recoveryError || error;
         item.status = "failed_import";
         item.reason = finalError.message;

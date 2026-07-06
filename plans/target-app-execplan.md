@@ -58,6 +58,11 @@ evidence trees, old plan archives, or longrun runtime logs.
   queue candidate ids that preserve underscores, such as
   `tool-ar_addfolders`, resolve to importer-discovered ids such as
   `tool-ar-addfolders` instead of crashing during implementation planning.
+- [x] Aturtur child-runner quota gate (2026-07-06): added a Full Intaker
+  failure class for Codex child-runner usage limits. Child `codex exec` quota
+  failures now become `blocked_child_runner_usage_limit` with retry evidence
+  instead of candidate/content `failed_import`; a global gate stops new queued
+  candidate selection while the quota blocker is unresolved.
 
 ## Decision Log
 
@@ -95,6 +100,10 @@ evidence trees, old plan archives, or longrun runtime logs.
 - Queue supervisor/importer integration must resolve queue candidate aliases
   consistently across validation, planning, and prompt generation. Alias
   mismatch is a tooling blocker to fix, not a candidate terminal blocker.
+- Codex child-runner quota exhaustion is an external runtime blocker, not a
+  candidate/content failure. While `blocked_child_runner_usage_limit` exists in
+  the ledger, the Full Intaker must not select another queued candidate and burn
+  the same exhausted child-runner path.
 
 ## Validation Notes
 
@@ -221,6 +230,26 @@ Run note 2026-07-06, candidate artifact completion guard:
 - `git diff --check`: pass.
 - `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass; includes the
   parent-doc-only child fixture proving no candidate artifact cannot complete.
+- `npm.cmd run smoke:full-intake`: pass.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
+Run note 2026-07-06, child-runner quota gate:
+
+- Progress: detected `tool-ar_addfolders` failed only because child `codex exec`
+  hit usage quota. Reclassified the runtime candidate to
+  `blocked_child_runner_usage_limit` with retry text `Jul 7th, 2026 1:14 AM`;
+  no product artifact was imported and no next queued candidate was selected.
+- Decision Log: quota exhaustion is external runtime state. It is not license,
+  missing validation, raw JSX, or candidate-content failure. The new global gate
+  stops serial intake while the quota blocker is unresolved.
+- `node --check orchestrator/run-generic-repo-full-intake.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `git diff --check`: pass, with existing CRLF warnings only.
+- `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
 - `npm.cmd run smoke:full-intake`: pass.
 - `npm.cmd run smoke:solutions`: pass.
 - `npm.cmd run smoke:planning`: pass.

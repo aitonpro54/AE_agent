@@ -3049,6 +3049,95 @@ function writeLegacyReasoningEffortCliEvidence(fixture, entryToRecover, runId) {
   return { batchReportPath: relativeBatchReportPath };
 }
 
+function writeChildUsageLimitEvidence(fixture, entryToBlock, runId) {
+  const importerRunId = "queue-fixture-child-usage-limit-import";
+  const batchRunId = "fixture-child-usage-limit-import";
+  const batchId = "queue-batch-1-usagelimit";
+  const runRoot = path.join(fixture.target, ".codex-runtime", "sdk", "generic-repo-importer", importerRunId);
+  const childSummaryDir = path.join(runRoot, "implementation", "child-run-summaries");
+  fs.mkdirSync(childSummaryDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(childSummaryDir, `${batchId}.result-summary.json`),
+    `${JSON.stringify({
+      schema: "generic-repo-tool-importer.implementation-child-run-result-summary.v1",
+      runId: importerRunId,
+      manifestHash: "fixture-child-usage-limit",
+      batchId,
+      status: "failed_process",
+      timeoutMs: 600000,
+      model: "gpt-5.5",
+      reasoningEffort: "high",
+      plannedPaths: entryToBlock.implementation.plannedPaths,
+      changedPaths: [],
+      unplannedPaths: [],
+      plannedPathGate: "passed",
+      exitCode: 1,
+      stdout: { bytes: 0, lineCount: 0, tail: "", tailLineCount: 0, truncated: false },
+      stderr: {
+        bytes: 180,
+        lineCount: 2,
+        tail: "ERROR: You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Jul 7th, 2026 1:14 AM.",
+        tailLineCount: 1,
+        truncated: false
+      },
+      contextGuard: { status: "passed", violations: [] },
+      worktreeCreated: true,
+      childRunCreated: true,
+      controlledMergeApplied: false,
+      validationCommandsRun: false,
+      liveCepAeRun: false,
+      localOllamaUsed: false,
+      fallbackProviderUsed: false,
+      dependencyChanged: false,
+      productRuntimeEdited: false
+    }, null, 2)}\n`,
+    "utf8"
+  );
+
+  const batchReportPath = path.join(
+    fixture.target,
+    ".codex-runtime",
+    "sdk",
+    "generic-repo-full-intake",
+    runId,
+    "queue-supervisor",
+    batchRunId,
+    "batch-report.json"
+  );
+  const relativeBatchReportPath = path.relative(fixture.target, batchReportPath).replace(/\\/g, "/");
+  fs.mkdirSync(path.dirname(batchReportPath), { recursive: true });
+  fs.writeFileSync(
+    batchReportPath,
+    `${JSON.stringify({
+      schema: "generic-repo-queue-supervisor.batch-report.v1",
+      ok: false,
+      status: "failed_during_import",
+      runId: batchRunId,
+      reportPath: relativeBatchReportPath,
+      selectedCandidateIds: [entryToBlock.id],
+      importer: {
+        manifestPath: null,
+        runId: importerRunId,
+        result: null,
+        error: `implementation-child-run-failed: ${batchId}`
+      },
+      items: [
+        {
+          candidateId: entryToBlock.id,
+          sourcePath: entryToBlock.sourcePath,
+          status: "failed_importer",
+          reason: `implementation-child-run-failed: ${batchId}`,
+          importerRunId,
+          plannedPaths: entryToBlock.implementation.plannedPaths
+        }
+      ]
+    }, null, 2)}\n`,
+    "utf8"
+  );
+  return { batchReportPath: relativeBatchReportPath };
+}
+
 function assertLegacyReasoningEffortCliFailureIsScopedImportRetry() {
   const fixture = createFixture("legacy-cli");
   try {
@@ -3101,6 +3190,123 @@ function assertLegacyReasoningEffortCliFailureIsScopedImportRetry() {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
     assert.strictEqual(ledger.entries[0].status, "completed");
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("layer-selection-set.js"), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertChildUsageLimitFailureBlocksUntilReset() {
+  const fixture = createFixture("child-usage-limit");
+  try {
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "Selection", "Layer_Info.jsx"),
+      "function layerInfo() { return true; }\n",
+      "utf8"
+    );
+    const failed = entry({
+      id: "tool-selection-layer-info",
+      sourcePath: "Selection/Layer_Info.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        failureReason: "implementation-child-run-failed: queue-batch-1-usagelimit",
+        plannedPaths: ["recipes/generic-repo-intake/tool-selection-layer-info.md"],
+        sliceId: "fixture-layer-info-import"
+      },
+      status: "failed_import",
+      queueRank: 1
+    });
+    const runId = "child-usage-limit";
+    const evidence = writeChildUsageLimitEvidence(fixture, failed, runId);
+    failed.failClosed = {
+      status: "failed_import",
+      reason: "batch-importer-failed: implementation-child-run-failed: queue-batch-1-usagelimit",
+      batchReport: evidence.batchReportPath
+    };
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [failed]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1,
+        {},
+        ["--resolution-candidate-ids", failed.id]
+      )
+    );
+    assert.strictEqual(output.status, "blocked_child_runner_usage_limit");
+    assert.strictEqual(output.resolutionQueue.terminalTicketCount, 1);
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, []);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries[0].status, "blocked_child_runner_usage_limit");
+    assert.strictEqual(ledger.entries[0].failClosed.status, "blocked_child_runner_usage_limit");
+    assert.strictEqual(ledger.entries[0].implementation.childRunnerUsageLimit.retryAfterText, "Jul 7th, 2026 1:14 AM");
+    assert.strictEqual(ledger.entries[0].resolution.status, "terminal_unresolved");
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, ledger.entries[0].resolution.latestTicket), "utf8"));
+    assert.strictEqual(ticket.type, "child-runner-usage-limit");
+    assert.strictEqual(ticket.status, "terminal_unresolved");
+    assert.strictEqual(ticket.evidence.retryAfterText, "Jul 7th, 2026 1:14 AM");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertChildUsageLimitStopsNewCandidateSelection() {
+  const fixture = createFixture("child-usage-global");
+  try {
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(path.join(fixture.source, "Selection", "Blocked.jsx"), "function blocked() { return true; }\n", "utf8");
+    fs.writeFileSync(path.join(fixture.source, "Selection", "Queued.jsx"), "function queued() { return true; }\n", "utf8");
+    const blocked = entry({
+      id: "tool-selection-blocked",
+      sourcePath: "Selection/Blocked.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      implementation: {
+        childRunnerUsageLimit: {
+          reason: "codex_child_runner_usage_limit",
+          retryAfterText: "Jul 7th, 2026 1:14 AM"
+        },
+        failureReason: "codex_child_runner_usage_limit_retry_after:Jul 7th, 2026 1:14 AM",
+        plannedPaths: ["recipes/generic-repo-intake/tool-selection-blocked.md"]
+      },
+      failClosed: {
+        status: "blocked_child_runner_usage_limit",
+        reason: "codex_child_runner_usage_limit_retry_after:Jul 7th, 2026 1:14 AM",
+        childRunnerUsageLimit: {
+          reason: "codex_child_runner_usage_limit",
+          retryAfterText: "Jul 7th, 2026 1:14 AM"
+        }
+      },
+      status: "blocked_child_runner_usage_limit",
+      queueRank: 1
+    });
+    blocked.resolution = {
+      latestTicket: ".codex-runtime/sdk/generic-repo-full-intake/child-usage-global/resolution-tickets/fixture/ticket.json",
+      status: "terminal_unresolved"
+    };
+    const queued = entry({
+      id: "tool-selection-queued-after-usage-limit",
+      sourcePath: "Selection/Queued.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [blocked, queued]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "child-usage-global", 1));
+    assert.strictEqual(output.status, "blocked_child_runner_usage_limit");
+    assert.strictEqual(output.items.length, 0);
+    assert.strictEqual(output.blockers[0].candidateId, blocked.id);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(ledger.entries.find((item) => item.id === queued.id).status, "queued");
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
   }
@@ -3675,6 +3881,8 @@ function main() {
   assertScopedUnsafeSkipPolicyResolutionStaysTerminal();
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
+  assertChildUsageLimitFailureBlocksUntilReset();
+  assertChildUsageLimitStopsNewCandidateSelection();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
   assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
