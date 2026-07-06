@@ -1916,7 +1916,10 @@ function validateSharedPathOwnership(manifest, batches) {
 function buildPromptText(manifest, batch, candidates) {
   const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
   const candidateSummaries = batch.candidateIds.map((candidateIdValue) => {
-    const candidate = candidateById.get(candidateIdValue);
+    const candidate = candidateForRequestedId(candidateById, candidateIdValue);
+    if (!candidate) {
+      throw new Error(`implementation-batch-candidate-missing: ${candidateIdValue}`);
+    }
     return {
       id: candidate.id,
       kind: candidate.kind,

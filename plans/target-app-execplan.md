@@ -53,6 +53,11 @@ evidence trees, old plan archives, or longrun runtime logs.
   files that do not overlap planned/shared paths, keeps tracked or overlapping
   dirty paths fail-closed, and stages only accepted proposal/parent-owned paths
   for reducer commits.
+- [x] Importer candidate alias planning fix (2026-07-06): aligned
+  implementation prompt generation with the existing importer alias resolver so
+  queue candidate ids that preserve underscores, such as
+  `tool-ar_addfolders`, resolve to importer-discovered ids such as
+  `tool-ar-addfolders` instead of crashing during implementation planning.
 
 ## Decision Log
 
@@ -87,6 +92,9 @@ evidence trees, old plan archives, or longrun runtime logs.
   outputs plus parent-owned plan/handoff paths. Unrelated untracked local files
   may be tolerated only with explicit opt-in and must remain unstaged and
   untouched.
+- Queue supervisor/importer integration must resolve queue candidate aliases
+  consistently across validation, planning, and prompt generation. Alias
+  mismatch is a tooling blocker to fix, not a candidate terminal blocker.
 
 ## Validation Notes
 
@@ -153,6 +161,19 @@ Run note 2026-07-06, unrelated-untracked reducer guard:
 - `git diff --check`: pass.
 - `npm.cmd run smoke:full-intake`: pass; includes default dirty-central
   fail-closed coverage and explicit unrelated-untracked opt-in coverage.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
+Run note 2026-07-06, importer candidate alias planning fix:
+
+- `node --check orchestrator/run-generic-repo-tool-importer.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
+- `git diff --check`: pass.
+- `npm.cmd run smoke:full-intake`: pass; includes an underscore queue-id to
+  hyphen importer-id alias fixture.
 - `npm.cmd run smoke:solutions`: pass.
 - `npm.cmd run smoke:planning`: pass.
 - `npm.cmd run check:rules`: still blocked by pre-existing untracked

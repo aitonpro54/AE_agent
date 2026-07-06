@@ -852,6 +852,45 @@ function assertSuccessfulImplementationPlanningFixture() {
   }
 }
 
+function assertImplementationBatchCandidateAliasFixture() {
+  const fixture = createTempFixture("implementation-candidate-alias");
+  try {
+    fs.writeFileSync(
+      path.join(fixture.source, "AR_AddFolders.jsx"),
+      "function addFolders() { return true; }\n",
+      "utf8",
+    );
+    const runId = "aux017-candidate-alias";
+    const manifest = validManifest(fixture, runId);
+    manifest.implementation.plannedPathsPerBatch = [
+      {
+        id: "underscore-alias",
+        candidateIds: ["tool-ar_addfolders"],
+        plannedPaths: ["scripts/imported-tools/ar-addfolders.js"],
+      },
+    ];
+    const manifestPath = writeManifest(fixture.root, manifest);
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+
+    const output = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+    assert.strictEqual(output.status, "stopped_after_implementation_planning");
+    const promptPath = path.join(
+      fixture.target,
+      ".codex-runtime",
+      "sdk",
+      "generic-repo-importer",
+      runId,
+      "implementation",
+      "batch-prompts",
+      "underscore-alias.md",
+    );
+    const prompt = fs.readFileSync(promptPath, "utf8");
+    assert(prompt.includes("tool-ar-addfolders"), "prompt should resolve underscore queue id to importer candidate id");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertImplementationMissingAnalysisArtifactFixture() {
   const fixture = createTempFixture("implementation-missing-analysis");
   try {
@@ -2378,6 +2417,7 @@ function main() {
   assertNamedRepoOperationalIdentityAllowedFixture();
   assertAnalysisResumeFixture();
   assertSuccessfulImplementationPlanningFixture();
+  assertImplementationBatchCandidateAliasFixture();
   assertImplementationMissingAnalysisArtifactFixture();
   assertImplementationForbiddenPathFixture();
   assertImplementationDependencyChangeFixture();
