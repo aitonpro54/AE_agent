@@ -43,6 +43,10 @@ evidence trees, old plan archives, or longrun runtime logs.
   provenance, keeps no-push/no-PR/no-remote-publication/local-use-only
   boundaries, and does not disable validation, duplicate, path-scope, raw-copy,
   or reducer gates.
+- [x] Aturtur comment-aware risk scan infrastructure (2026-07-06): fixed the
+  generic repo auto-intake risk scanner so URLs inside JSX comments/headers do
+  not falsely trigger `usesNetwork` and force every candidate into
+  `unsafe_skip_tool_gap`. Real code/string network indicators remain scanned.
 
 ## Decision Log
 
@@ -70,6 +74,9 @@ evidence trees, old plan archives, or longrun runtime logs.
   central source merge, push, PR, remote publication, live CEP/AE mutation,
   dependency change, Local/Ollama, or fallback provider is allowed, and normal
   typed validation/reducer gates still apply.
+- Risk classification must be based on executable JSX surface, not header
+  comments. Comment-only project/homepage URLs are provenance metadata and must
+  not be treated as network behavior.
 
 ## Validation Notes
 
@@ -109,6 +116,19 @@ Run note 2026-07-06, license override infrastructure:
 - `git diff --check`: pass.
 - `npm.cmd run smoke:full-intake`: pass; includes default missing-license
   fail-closed fixture and explicit local personal-use override fixture.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
+Run note 2026-07-06, comment-aware risk scan infrastructure:
+
+- `node --check orchestrator/run-generic-repo-auto-intake.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
+- `git diff --check`: pass.
+- `npm.cmd run smoke:full-intake`: pass; includes a comment-only URL fixture
+  proving the candidate is not classified as `usesNetwork`.
 - `npm.cmd run smoke:solutions`: pass.
 - `npm.cmd run smoke:planning`: pass.
 - `npm.cmd run check:rules`: still blocked by pre-existing untracked

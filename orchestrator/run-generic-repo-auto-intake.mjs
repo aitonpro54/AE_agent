@@ -581,15 +581,80 @@ function sourceTextForRisk(sourceRoot, relativePath, maxFileBytes) {
   return readSmallFile(absolute, maxFileBytes);
 }
 
+function stripCommentsForRiskScan(text) {
+  const input = String(text || "");
+  let output = "";
+  let inBlockComment = false;
+  let inLineComment = false;
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const next = input[index + 1];
+
+    if (inLineComment) {
+      if (char === "\n" || char === "\r") {
+        inLineComment = false;
+        output += char;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (char === "*" && next === "/") {
+        inBlockComment = false;
+        index += 1;
+      } else if (char === "\n" || char === "\r") {
+        output += char;
+      }
+      continue;
+    }
+
+    if (inSingleQuote || inDoubleQuote) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (inSingleQuote && char === "'") inSingleQuote = false;
+      if (inDoubleQuote && char === "\"") inDoubleQuote = false;
+      continue;
+    }
+
+    if (char === "/" && next === "/") {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      inBlockComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === "'") inSingleQuote = true;
+    if (char === "\"") inDoubleQuote = true;
+    output += char;
+  }
+
+  return output;
+}
+
 function riskFlagsForSource(text) {
+  const scanText = stripCommentsForRiskScan(text);
   const risk = {
     rawJsxSource: true,
-    usesEval: /\beval\s*\(|new Function\s*\(/i.test(text),
-    usesFileSystem: /\b(?:File|Folder)\b|(?:\$\.evalFile)/.test(text),
-    usesNetwork: /\b(?:Socket|http:\/\/|https:\/\/|curl|fetch\s*\()/i.test(text),
-    usesExternalProcess: /system\.callSystem|app\.system/i.test(text),
-    usesRenderQueue: /renderQueue/i.test(text),
-    mutatesProject: /\b(?:remove|delete|setValue|setValueAtTime|executeCommand|addComp|layers\.add|save)\b/i.test(text),
+    usesEval: /\beval\s*\(|new Function\s*\(/i.test(scanText),
+    usesFileSystem: /\b(?:File|Folder)\b|(?:\$\.evalFile)/.test(scanText),
+    usesNetwork: /\b(?:Socket|http:\/\/|https:\/\/|curl|fetch\s*\()/i.test(scanText),
+    usesExternalProcess: /system\.callSystem|app\.system/i.test(scanText),
+    usesRenderQueue: /renderQueue/i.test(scanText),
+    mutatesProject: /\b(?:remove|delete|setValue|setValueAtTime|executeCommand|addComp|layers\.add|save)\b/i.test(scanText),
   };
   risk.highRisk = risk.usesEval || risk.usesNetwork || risk.usesExternalProcess;
   risk.needsLiveLane = risk.usesRenderQueue || risk.mutatesProject;

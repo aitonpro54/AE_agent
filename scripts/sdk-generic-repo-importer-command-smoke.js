@@ -638,6 +638,18 @@ function assertAutoIntakePersonalUseLicenseOverrideFixture() {
   const fixture = createTempFixture("auto-license-override");
   try {
     fs.rmSync(path.join(fixture.source, "LICENSE"), { force: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "commentUrlOnly.jsx"),
+      [
+        "/*",
+        "Website: http://example.invalid/",
+        "*/",
+        "function commentUrlOnly() { return true; }",
+        "commentUrlOnly();",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
     const baseArgs = [
       "--repo",
       fixture.source,
@@ -683,6 +695,11 @@ function assertAutoIntakePersonalUseLicenseOverrideFixture() {
     assert.strictEqual(queued.license.localPersonalUseOverride, true);
     assert.strictEqual(queued.license.userDecision, "local_personal_use_license_override=true");
     assert.strictEqual(queued.implementation.rawJsxCopyAllowed, false);
+    const commentUrlOnly = ledger.entries.find((entry) => entry.id === "tool-commenturlonly");
+    assert(commentUrlOnly, "expected comment URL fixture candidate");
+    assert.strictEqual(commentUrlOnly.riskFlags.usesNetwork, false);
+    assert.strictEqual(commentUrlOnly.classification, "existing_typed_tools_recipe_only");
+    assert.strictEqual(commentUrlOnly.status, "queued");
 
     const proof = readJson(path.resolve(fixture.target, overrideOutput.artifacts.proof));
     assert.strictEqual(proof.assertions.localPersonalUseLicenseOverrideRecorded, true);
