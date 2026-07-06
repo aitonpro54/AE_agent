@@ -5,22 +5,13 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { checkAgentReadiness, chatWithAgent, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
-const {
-  PROVIDER_KINDS,
-  providerReadinessFromStatus
-} = require("../mcp-server/provider-contracts");
-const {
-  createLocalSecretStore,
-  redactSensitiveObject
-} = require("../mcp-server/local-secret-store");
 
 const EXPECTED_PROVIDER_AGENT_ORDER = [
   "openai-api",
   "openai-cli",
   "gemini-api",
   "claude-api",
-  "openrouter",
-  "ollama-local"
+  "openrouter"
 ];
 
 const MANAGED_ENV = [
@@ -48,10 +39,7 @@ const MANAGED_ENV = [
   "OPENROUTER_KEY",
   "OPENROUTER_MODEL",
   "OPENROUTER_FREE_MODEL",
-  "OPENROUTER_MODELS",
-  "OLLAMA_MODEL",
-  "OLLAMA_MODELS",
-  "OLLAMA_BASE_URL"
+  "OPENROUTER_MODELS"
 ];
 
 function saveEnv() {
@@ -196,143 +184,7 @@ function assertModelsShape(agent, label) {
   assert(agent.models.includes(agent.model), `${label} selected model should be in models`);
 }
 
-function assertProviderContract(agent, providerKind, storageMode) {
-  assert.strictEqual(agent.providerKind, providerKind);
-  assert(agent.providerContract, `${agent.id} should expose providerContract`);
-  assert.strictEqual(agent.providerContract.providerKind, providerKind);
-  assert.strictEqual(agent.providerContract.readinessVersion, "provider-readiness.v1");
-  assert(agent.providerContract.readinessStates.includes("ready"));
-  assert(agent.providerContract.readinessStates.includes("needs_auth"));
-  assert.strictEqual(agent.secretStorage.mode, storageMode);
-  if (storageMode === "bridge-local-secret-store") {
-    assert.strictEqual(agent.secretStorage.browserLocalStorage, "forbidden");
-  }
-  assertNonEmptyString(agent.billingLabel, `${agent.id}.billingLabel`);
-  assertNonEmptyString(agent.authDescription, `${agent.id}.authDescription`);
-}
-
-function assertProviderReadinessFixtures() {
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "custom-empty", provider: "custom", requiresApiKey: false, baseUrl: "" },
-      { configured: false, checkedAt: "fixture" }
-    ).state,
-    "not_configured"
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "openai-cli", apiStyle: "codex-cli", codexStatus: { installed: false, loggedIn: false }, models: [] },
-      { configured: false, codexStatus: { installed: false, loggedIn: false }, checkedAt: "fixture" }
-    ),
-    { providerKind: "openai-codex-cli", checkedAt: "fixture", state: "missing_dependency", dependency: "codex" }
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "ollama-local", apiStyle: "ollama", provider: "ollama", baseUrl: "http://127.0.0.1:11434", models: [] },
-      { configured: true, reachable: false, checkedAt: "fixture" }
-    ),
-    { providerKind: "local-ollama", checkedAt: "fixture", state: "missing_dependency", dependency: "ollama" }
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "openai-api", requiresApiKey: true, baseUrl: "https://api.openai.com/v1", models: ["gpt-5"] },
-      { configured: false, providerError: { code: "missing_auth", message: "missing key" }, checkedAt: "fixture" }
-    ).state,
-    "needs_auth"
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "openrouter", provider: "openrouter", baseUrl: "https://openrouter.ai/api/v1", models: ["openrouter/free"] },
-      { canChat: true, remoteModels: [{ id: "openrouter/free" }], checkedAt: "fixture" }
-    ),
-    {
-      providerKind: "openrouter-api",
-      checkedAt: "fixture",
-      state: "ready",
-      modelIds: ["openrouter/free"],
-      billingLabel: "OpenRouter API billing"
-    }
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "gemini-api", apiStyle: "gemini", baseUrl: "https://example.invalid", models: ["gemini-fixture"] },
-      { providerError: { code: "rate_limited", retryAfterMs: 2500 }, checkedAt: "fixture" }
-    ),
-    { providerKind: "gemini-api", checkedAt: "fixture", state: "rate_limited", retryAfterMs: 2500 }
-  );
-  assert.deepStrictEqual(
-    providerReadinessFromStatus(
-      { id: "claude-api", apiStyle: "anthropic", baseUrl: "https://example.invalid", models: ["claude-fixture"] },
-      { status: "model_unavailable", providerError: { code: "model_unavailable", message: "bad model" }, checkedAt: "fixture" }
-    ),
-    { providerKind: "claude-api", checkedAt: "fixture", state: "error", code: "model_unavailable", safeMessage: "bad model" }
-  );
-}
-
-function assertSecretStoreFixtures() {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-secret-store-"));
-  const env = {};
-  const file = path.join(tempDir, "agent-secrets.json");
-  const rawKey = "sk-test-provider-contract-123456";
-  const rotatedKey = "sk-test-provider-contract-rotated";
-  try {
-    const store = createLocalSecretStore({ file, env });
-    const saved = store.save("openai-api", rawKey);
-    assert.strictEqual(saved.action, "save");
-    assert.strictEqual(saved.apiKeyEnv, "OPENAI_API_KEY");
-    assert.strictEqual(saved.exists, true);
-    assert.strictEqual(saved.keySuffix, "3456");
-    assert.strictEqual(saved.masked, "****3456");
-    assert.strictEqual(saved.storage.browserLocalStorage, "forbidden");
-    assert.strictEqual(env.OPENAI_API_KEY, rawKey);
-    assert(!JSON.stringify(saved).includes(rawKey), "save result must not expose the raw key");
-
-    const read = store.read("openai-api");
-    assert.strictEqual(read.exists, true);
-    assert.strictEqual(read.masked, "****3456");
-    assert(!JSON.stringify(read).includes(rawKey), "read result must not expose the raw key");
-
-    const redacted = redactSensitiveObject({
-      OPENAI_API_KEY: rawKey,
-      nested: {
-        authorization: `Bearer ${rawKey}`,
-        ordinary: "visible"
-      }
-    });
-    const redactedText = JSON.stringify(redacted);
-    assert(!redactedText.includes(rawKey), "redaction must remove raw key values");
-    assert(redactedText.includes("visible"), "redaction must preserve non-sensitive values");
-
-    const rotated = store.rotate("openai-api", rotatedKey);
-    assert.strictEqual(rotated.action, "rotate");
-    assert.strictEqual(rotated.keySuffix, "ated");
-    assert.strictEqual(env.OPENAI_API_KEY, rotatedKey);
-    assert(!JSON.stringify(rotated).includes(rotatedKey), "rotate result must not expose the raw key");
-
-    const removed = store.delete("openai-api");
-    assert.strictEqual(removed.action, "delete");
-    assert.strictEqual(removed.deleted, true);
-    assert.strictEqual(removed.exists, false);
-    assert.strictEqual(Object.prototype.hasOwnProperty.call(env, "OPENAI_API_KEY"), false);
-
-    assert.throws(() => store.save("openai-cli", rawKey), /API-key provider modes/);
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  }
-}
-
 async function main() {
-  assert.deepStrictEqual(PROVIDER_KINDS, [
-    "openai-api",
-    "openai-codex-cli",
-    "claude-api",
-    "gemini-api",
-    "openrouter-api",
-    "local-ollama"
-  ]);
-  assertProviderReadinessFixtures();
-  assertSecretStoreFixtures();
-
   const saved = saveEnv();
   try {
     setEnv("CODEX_CLI_PATH", "definitely-missing-codex-cli-for-provider-contract-smoke.exe");
@@ -360,9 +212,6 @@ async function main() {
     setEnv("OPENROUTER_MODEL", null);
     setEnv("OPENROUTER_FREE_MODEL", null);
     setEnv("OPENROUTER_MODELS", null);
-    setEnv("OLLAMA_MODEL", "ollama-smoke");
-    setEnv("OLLAMA_MODELS", "ollama-smoke");
-    setEnv("OLLAMA_BASE_URL", "http://127.0.0.1:11434");
 
     const listed = await listAgents({});
     const providerAgentIds = listed.agents
@@ -376,9 +225,7 @@ async function main() {
     const geminiApi = findAgent(listed.agents, "gemini-api");
     const claudeApi = findAgent(listed.agents, "claude-api");
     const openRouter = findAgent(listed.agents, "openrouter");
-    const ollamaLocal = findAgent(listed.agents, "ollama-local");
 
-    assertProviderContract(openAiApi, "openai-api", "bridge-local-secret-store");
     assert.strictEqual(openAiApi.providerGroup, "openai");
     assert.strictEqual(openAiApi.authMode, "api");
     assert.strictEqual(openAiApi.transport, "openai-chat-completions");
@@ -387,11 +234,8 @@ async function main() {
     assert.strictEqual(openAiApi.canSaveKey, true);
     assert.strictEqual(openAiApi.setupAction, "save_api_key");
     assert.strictEqual(openAiApi.configured, false);
-    assert.match(openAiApi.billingLabel, /API billing/);
-    assert.match(openAiApi.authDescription, /does not use ChatGPT subscription/i);
     assertModelOptionsShape(openAiApi, "OpenAI API");
 
-    assertProviderContract(openAiCli, "openai-codex-cli", "none");
     assert.strictEqual(openAiCli.providerGroup, "openai");
     assert.strictEqual(openAiCli.authMode, "cli");
     assert.strictEqual(openAiCli.transport, "codex-cli");
@@ -400,8 +244,6 @@ async function main() {
     assert.strictEqual(openAiCli.canSaveKey, false);
     assert.strictEqual(openAiCli.setupAction, "codex_login");
     assert.strictEqual(openAiCli.configured, false);
-    assert.match(openAiCli.billingLabel, /ChatGPT\/Codex CLI subscription/);
-    assert.match(openAiCli.authDescription, /No OpenAI API key/i);
     assert(openAiCli.codexStatus, "OpenAI CLI should expose codexStatus");
     assert.strictEqual(openAiCli.codexStatus.installed, false);
     assert.strictEqual(openAiCli.codexStatus.loggedIn, false);
@@ -412,7 +254,6 @@ async function main() {
     assert(!openAiCli.models.includes("Codex Auto Review"));
     assert(!openAiCli.models.includes("codex-auto-review"));
 
-    assertProviderContract(geminiApi, "gemini-api", "bridge-local-secret-store");
     assert.strictEqual(geminiApi.providerGroup, "gemini");
     assert.strictEqual(geminiApi.authMode, "api");
     assert.strictEqual(geminiApi.transport, "gemini-generate-content");
@@ -422,7 +263,6 @@ async function main() {
     assert.strictEqual(geminiApi.configured, false);
     assertModelOptionsShape(geminiApi, "Gemini API");
 
-    assertProviderContract(claudeApi, "claude-api", "bridge-local-secret-store");
     assert.strictEqual(claudeApi.providerGroup, "claude");
     assert.strictEqual(claudeApi.authMode, "api");
     assert.strictEqual(claudeApi.transport, "anthropic-messages");
@@ -432,7 +272,6 @@ async function main() {
     assert.strictEqual(claudeApi.configured, false);
     assertModelOptionsShape(claudeApi, "Claude API");
 
-    assertProviderContract(openRouter, "openrouter-api", "bridge-local-secret-store");
     assert.strictEqual(openRouter.providerGroup, "openrouter");
     assert.strictEqual(openRouter.authMode, "api");
     assert.strictEqual(openRouter.transport, "openai-chat-completions");
@@ -442,21 +281,6 @@ async function main() {
     assert.strictEqual(openRouter.setupAction, "save_api_key");
     assert.strictEqual(openRouter.configured, false);
     assertModelsShape(openRouter, "OpenRouter");
-
-    assertProviderContract(ollamaLocal, "local-ollama", "none");
-    assert.strictEqual(ollamaLocal.providerGroup, "local");
-    assert.strictEqual(ollamaLocal.authMode, "local");
-    assert.strictEqual(ollamaLocal.requiresApiKey, false);
-    assert.strictEqual(ollamaLocal.canSaveKey, false);
-    assert.strictEqual(ollamaLocal.setupAction, "detect_ollama");
-    assertModelsShape(ollamaLocal, "Local Ollama");
-
-    const apiReadiness = await checkAgentReadiness({
-      agentId: "openai-api",
-      model: openAiApi.model
-    });
-    assert.strictEqual(apiReadiness.providerReadiness.state, "needs_auth");
-    assert.strictEqual(apiReadiness.providerReadiness.providerKind, "openai-api");
 
     setEnv("CODEX_CLI_MODEL", "codex-smoke-selected");
     setEnv("CODEX_CLI_MODELS", "codex-smoke-a,codex-smoke-selected");
@@ -497,8 +321,6 @@ async function main() {
     assert.strictEqual(readiness.canChat, false);
     assert.strictEqual(readiness.configured, false);
     assert.match(readiness.error, /Codex CLI was not found|run codex login/i);
-    assert.strictEqual(readiness.providerReadiness.state, "missing_dependency");
-    assert.strictEqual(readiness.providerReadiness.dependency, "codex");
     assert(readiness.agent.codexStatus.versionCheck, "Readiness should echo Codex CLI version diagnostics");
 
     let missingCliSetupError = null;
@@ -530,7 +352,6 @@ async function main() {
       });
       assert.strictEqual(fakeReadiness.canChat, false);
       assert.strictEqual(fakeReadiness.configured, false);
-      assert.strictEqual(fakeReadiness.providerReadiness.state, "needs_auth");
       assert.strictEqual(fakeReadiness.agent.codexStatus.loginStatusCheck.status, 1);
       fakeNotLoggedIn = fakeReadiness.agent.codexStatus;
     });
@@ -548,8 +369,6 @@ async function main() {
       assert.strictEqual(fakeReadiness.modelAvailable, true);
       assert.strictEqual(fakeReadiness.canChat, true);
       assert.strictEqual(fakeReadiness.status, "ready");
-      assert.strictEqual(fakeReadiness.providerReadiness.state, "ready");
-      assert.strictEqual(fakeReadiness.providerReadiness.billingLabel, "ChatGPT/Codex CLI subscription");
       assert.strictEqual(fakeReadiness.agent.codexStatus.loginStatusCheck.status, 0);
       assert.match(fakeReadiness.agent.codexStatus.loginStatusCheck.output, /Logged in from fake Codex/);
       fakeLoggedIn = fakeReadiness.agent.codexStatus;
@@ -570,7 +389,6 @@ async function main() {
         assert.strictEqual(fakeReadiness.configured, true);
         assert.strictEqual(fakeReadiness.canChat, true);
         assert.strictEqual(fakeReadiness.status, "ready");
-        assert.strictEqual(fakeReadiness.providerReadiness.state, "ready");
         assert.match(fakeReadiness.agent.codexStatus.loginStatusCheck.output, /Logged in from fake cmd Codex/);
         const longPrompt = `Return fake response for stdin path.\n${"x".repeat(12000)}`;
         const chat = await chatWithAgent({
@@ -614,14 +432,11 @@ async function main() {
       ok: true,
       checked: {
         openAiApi: {
-          providerKind: openAiApi.providerKind,
           authMode: openAiApi.authMode,
           setupAction: openAiApi.setupAction,
-          requiresApiKey: openAiApi.requiresApiKey,
-          readinessState: apiReadiness.providerReadiness.state
+          requiresApiKey: openAiApi.requiresApiKey
         },
         openAiCli: {
-          providerKind: openAiCli.providerKind,
           authMode: openAiCli.authMode,
           setupAction: openAiCli.setupAction,
           requiresApiKey: openAiCli.requiresApiKey,
@@ -634,31 +449,22 @@ async function main() {
           fakeCmdLoggedInLoginCheck: fakeCmdLoggedIn ? fakeCmdLoggedIn.loginStatusCheck.status : "not_applicable"
         },
         geminiApi: {
-          providerKind: geminiApi.providerKind,
           authMode: geminiApi.authMode,
           setupAction: geminiApi.setupAction,
           requiresApiKey: geminiApi.requiresApiKey,
           model: geminiApi.model
         },
         claudeApi: {
-          providerKind: claudeApi.providerKind,
           authMode: claudeApi.authMode,
           setupAction: claudeApi.setupAction,
           requiresApiKey: claudeApi.requiresApiKey,
           model: claudeApi.model
         },
         openRouter: {
-          providerKind: openRouter.providerKind,
           authMode: openRouter.authMode,
           setupAction: openRouter.setupAction,
           requiresApiKey: openRouter.requiresApiKey,
           models: openRouter.models
-        },
-        ollamaLocal: {
-          providerKind: ollamaLocal.providerKind,
-          authMode: ollamaLocal.authMode,
-          setupAction: ollamaLocal.setupAction,
-          requiresApiKey: ollamaLocal.requiresApiKey
         }
       }
     }, null, 2));

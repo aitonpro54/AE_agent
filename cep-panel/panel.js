@@ -1019,7 +1019,6 @@
       if (agent.codexStatus && !agent.codexStatus.installed) return "Codex CLI was not found. Install Codex, then run codex login.";
       return "Sign in with ChatGPT through Codex CLI, then use CLI models here. No OpenAI API key is used.";
     }
-    if (agent.authDescription) return agent.authDescription;
     if (agent.id === "openai-api") return "Uses OpenAI API billing. Paste an API key to enable API models.";
     if (agent.id === "gemini-api") return "Uses Google Gemini API billing. Paste an API key to enable Gemini models.";
     if (agent.id === "claude-api") return "Uses Anthropic API billing. Paste an API key to enable Claude models.";
@@ -1145,15 +1144,11 @@
 
     addAgentDetail("Provider", agent.label || agent.id);
     addAgentDetail("Mode", agent.authMode || agent.transport || "-");
-    addAgentDetail("Billing", agent.billingLabel || "-");
     addAgentDetail("Endpoint", agent.transport === "codex-cli" ? "codex exec" : compactUrl(agent.baseUrl));
     addAgentDetail("Model", selectedModel() || agent.model || "-");
     addAgentDetail("Models", modelCount + " / " + modelSourceLabel(agent.modelSource));
     addAgentDetail("Status", readinessLabel(agent));
     addAgentDetail("Setup", agent.requiresApiKey ? (agent.configured ? "key saved" : "key required") : "local");
-    if (agent.secretStorage && agent.secretStorage.mode) {
-      addAgentDetail("Secrets", agent.secretStorage.browserLocalStorage === "forbidden" ? "bridge store only" : agent.secretStorage.mode);
-    }
     if (agent.notes) addAgentDetail("Notes", agent.notes);
     if (agent.error) addAgentDetail("Last error", agent.error);
   }

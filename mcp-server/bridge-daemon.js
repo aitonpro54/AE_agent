@@ -7,7 +7,6 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const aiAgents = require("./ai-agents");
-const { createLocalSecretStore, secretTargetForAgent } = require("./local-secret-store");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
@@ -55,10 +54,6 @@ const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
 const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
-const AGENT_SECRET_STORE = createLocalSecretStore({
-  file: AGENT_SECRETS_FILE,
-  env: process.env
-});
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
@@ -403,13 +398,24 @@ function writeJsonFileAtomic(file, value) {
 }
 
 function agentApiKeyEnvName(agentId) {
-  const target = secretTargetForAgent(agentId);
-  return target ? target.envName : "";
+  if (agentId === "openai-api") return "OPENAI_API_KEY";
+  if (agentId === "gemini-api") return "GEMINI_API_KEY";
+  if (agentId === "claude-api") return "ANTHROPIC_API_KEY";
+  if (agentId === "openrouter") return "OPENROUTER_API_KEY";
+  if (agentId === "ollama-cloud") return "OLLAMA_CLOUD_API_KEY";
+  return "";
 }
 
 function loadAgentSecrets() {
   try {
-    return AGENT_SECRET_STORE.loadIntoEnv();
+    const secrets = readJsonFile(AGENT_SECRETS_FILE) || {};
+    const apiKeys = secrets.apiKeys && typeof secrets.apiKeys === "object" ? secrets.apiKeys : {};
+    for (const envName of Object.keys(apiKeys)) {
+      if (!process.env[envName] && typeof apiKeys[envName] === "string" && apiKeys[envName]) {
+        process.env[envName] = apiKeys[envName];
+      }
+    }
+    return secrets;
   } catch (error) {
     recordEvent("ai_agent_secrets_load_failed", { error: error.message || String(error) });
     return {};
@@ -424,21 +430,31 @@ function saveAgentApiKey(agentId, apiKey) {
   }
 
   const key = optionalString({ apiKey }, "apiKey", "").trim();
-  const saved = AGENT_SECRET_STORE.save(normalizedAgentId, key);
+  if (!key) throw new Error("apiKey is required.");
+  if (key.length < 12) throw new Error("apiKey looks too short.");
+
+  const secrets = loadAgentSecrets();
+  const apiKeys = secrets.apiKeys && typeof secrets.apiKeys === "object" ? secrets.apiKeys : {};
+  apiKeys[envName] = key;
+  const nextSecrets = {
+    ...secrets,
+    apiKeys,
+    updatedAt: new Date().toISOString()
+  };
+  writeJsonFileAtomic(AGENT_SECRETS_FILE, nextSecrets);
+  process.env[envName] = key;
   recordEvent("ai_agent_key_saved", {
     agentId: normalizedAgentId,
     apiKeyEnv: envName,
-    keySuffix: saved.keySuffix,
+    keySuffix: key.slice(-4),
     secretsFile: AGENT_SECRETS_FILE
   });
   return {
     agentId: normalizedAgentId,
     apiKeyEnv: envName,
     saved: true,
-    keySuffix: saved.keySuffix,
-    masked: saved.masked,
-    secretsFile: AGENT_SECRETS_FILE,
-    storage: saved.storage
+    keySuffix: key.slice(-4),
+    secretsFile: AGENT_SECRETS_FILE
   };
 }
 

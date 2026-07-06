@@ -6,11 +6,6 @@ const https = require("https");
 const path = require("path");
 const { spawn, spawnSync } = require("child_process");
 const { createTailAccumulator } = require("../orchestrator/bounded-process-result.cjs");
-const {
-  providerContractForAgent,
-  providerKindForAgent,
-  providerReadinessFromStatus
-} = require("./provider-contracts");
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -810,12 +805,10 @@ function canListModelsWithoutApiKey(agent) {
 }
 
 function publicAgent(agent, extra) {
-  const providerContract = providerContractForAgent(agent);
   return {
     id: agent.id,
     label: agent.label,
     provider: agent.provider,
-    providerKind: providerKindForAgent(agent),
     providerGroup: agent.providerGroup || agent.provider,
     authMode: agent.authMode || null,
     transport: agent.transport || agent.apiStyle || null,
@@ -830,22 +823,10 @@ function publicAgent(agent, extra) {
     apiKeyEnv: agent.apiKeyEnv || null,
     canSaveKey: Boolean(agent.canSaveKey),
     setupAction: agent.setupAction || null,
-    billingLabel: providerContract.billingLabel,
-    authLabel: providerContract.authLabel,
-    authDescription: providerContract.authDescription,
-    secretStorage: providerContract.secretStorage,
-    providerContract,
     free: Boolean(agent.free),
     codexStatus: agent.apiStyle === "codex-cli" ? agent.codexStatus || getCodexCliStatus() : null,
     notes: agent.notes || null,
     ...(extra || {})
-  };
-}
-
-function readinessResult(agent, result) {
-  return {
-    ...result,
-    providerReadiness: providerReadinessFromStatus(agent, result)
   };
 }
 
@@ -1138,7 +1119,7 @@ async function checkAgentReadiness(args) {
       phase: "setup",
       model: model || null
     });
-    return readinessResult(agent, {
+    return {
       checkedAt,
       agent: publicAgent(agent, { providerError }),
       model: model || null,
@@ -1150,7 +1131,7 @@ async function checkAgentReadiness(args) {
       status: providerError.status,
       error: providerError.message,
       providerError
-    });
+    };
   }
 
   if (!model) {
@@ -1158,7 +1139,7 @@ async function checkAgentReadiness(args) {
       phase: "setup",
       model: null
     });
-    return readinessResult(agent, {
+    return {
       checkedAt,
       agent: publicAgent(agent, { providerError }),
       model: null,
@@ -1170,11 +1151,11 @@ async function checkAgentReadiness(args) {
       status: providerError.status,
       error: providerError.message,
       providerError
-    });
+    };
   }
 
   if (!checkModels) {
-    return readinessResult(agent, {
+    return {
       checkedAt,
       agent: publicAgent(agent),
       model,
@@ -1185,7 +1166,7 @@ async function checkAgentReadiness(args) {
       canChat: true,
       status: "ready_unverified",
       error: null
-    });
+    };
   }
 
   try {
@@ -1222,7 +1203,7 @@ async function checkAgentReadiness(args) {
     }
     const error = providerError ? providerError.message : null;
 
-    return readinessResult(agent, {
+    return {
       checkedAt,
       agent: publicAgent(agent, {
         reachable,
@@ -1241,14 +1222,14 @@ async function checkAgentReadiness(args) {
       status: canChat ? "ready" : providerError ? providerError.status : "provider_error",
       error,
       providerError
-    });
+    };
   } catch (error) {
     const normalizedError = normalizeProviderError(agent, error, {
       phase: "models",
       model
     });
     const providerError = normalizedError.providerError;
-    return readinessResult(agent, {
+    return {
       checkedAt,
       agent: publicAgent(agent, {
         reachable: false,
@@ -1268,7 +1249,7 @@ async function checkAgentReadiness(args) {
       status: providerError.status,
       error: providerError.message,
       providerError
-    });
+    };
   }
 }
 
@@ -1326,19 +1307,6 @@ async function listAgents(args) {
           });
         }
       }
-      const readiness = {
-        checkedAt: new Date().toISOString(),
-        configured,
-        reachable: modelState.reachable,
-        modelAvailable,
-        modelSource,
-        modelCount: remoteModels.length,
-        remoteModels: remoteModels.slice(0, 200),
-        canChat,
-        status: canChat ? "ready" : providerError ? providerError.status : "provider_error",
-        error: providerError ? providerError.message : null,
-        providerError
-      };
       enriched.push({
         ...publicAgent(agent, {
           reachable: modelState.reachable,
@@ -1350,10 +1318,9 @@ async function listAgents(args) {
         modelAvailable,
         modelSource,
         canChat,
-        status: readiness.status,
-        error: readiness.error,
-        providerError,
-        providerReadiness: providerReadinessFromStatus(agent, readiness)
+        status: canChat ? "ready" : providerError ? providerError.status : "provider_error",
+        error: providerError ? providerError.message : null,
+        providerError
       });
     } catch (error) {
       const normalizedError = normalizeProviderError(agent, error, {
@@ -1361,18 +1328,6 @@ async function listAgents(args) {
         model: agent.model
       });
       const providerError = normalizedError.providerError;
-      const readiness = {
-        checkedAt: new Date().toISOString(),
-        configured: true,
-        reachable: false,
-        modelAvailable: false,
-        canChat: false,
-        status: providerError.status,
-        modelCount: 0,
-        remoteModels: [],
-        error: providerError.message,
-        providerError
-      };
       enriched.push(publicAgent(agent, {
         reachable: false,
         modelAvailable: false,
@@ -1381,8 +1336,7 @@ async function listAgents(args) {
         modelCount: 0,
         remoteModels: [],
         error: providerError.message,
-        providerError,
-        providerReadiness: providerReadinessFromStatus(agent, readiness)
+        providerError
       }));
     }
   }
