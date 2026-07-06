@@ -54,8 +54,14 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   на Windows может запускать child Codex с actual `danger-full-access`,
   сохраняя requested `workspace-write` в evidence и все post-run gates; старые
   shell blockers можно снять только scoped CLI reset-флагом.
+- [x] AUX-021 detached child-run import: scoped batch
+  `queue-batch-1-3826875c5d` добавил advisory typed-plan coverage для
+  `tool-ar-addexpmantainscalewhenparented` без source merge, commit, live runs
+  или raw JSX.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_AddExpMantainScaleWhenParented.jsx` as `tool-ar_addexpmantainscalewhenparented`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented).
 
 - Source license для aturtur игнорируется только как local personal-use
   blocker. Это не разрешает raw JSX copy, remote publication, push, PR,
@@ -77,6 +83,11 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - Если candidate требует отсутствующий typed tool или proof lane, следующий
   большой цикл должен сначала создать узкий contract/lane, затем requeue/retry
   только подходящих кандидатов через обычные gates.
+- `AR_AddExpMantainScaleWhenParented.jsx` импортирован только как advisory
+  selected-parented-layer Scale expression workflow на существующих typed tools
+  `get_selected_layers`, `get_layer_details` и `set_expression`; parenting
+  mutation, unparented-layer handling, raw JSX и source-exact semantics остаются
+  fail-closed.
 
 ## Validation Notes
 
@@ -109,9 +120,24 @@ npm.cmd run smoke:full-intake
 - `git diff --check`: pass, только существующие CRLF warnings.
 - `npm.cmd run check:rules`: pass.
 
+AUX-021 `queue-batch-1-3826875c5d`:
+
+- Validation/smoke команды не запускались: child-run intent запретил validation
+  runs, live AE/CEP/CDP/OpenAI CLI planner runs, package/dependency changes,
+  commits и source merge.
+- Изменения ограничены planned paths batch-а.
+
 ## Next Step
 
-После успешного `check:rules` обновить `.codex/handoff.md`, сделать один
-reviewable local commit без push, затем продолжить aturtur intake через
-существующий launcher. Если ledger все еще содержит старые shell blockers,
-сначала выполнить scoped resolution/requeue, затем bounded retry.
+Parent importer должен прочитать detached worktree diff для
+`queue-batch-1-3826875c5d`, выполнить собственные planned-path/source-merge
+gates и только затем решать, принимать ли advisory typed-plan import в parent
+repo. Child-run commit/source merge не выполнялся по hard boundary.
+
+## Progress
+
+- [x] Full intake tool-ar_addexpmantainscalewhenparented: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-af04158558-import, commit recorded after candidate commit.
+
+## Validation
+
+| Full intake tool-ar_addexpmantainscalewhenparented | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-af04158558-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |

@@ -66,6 +66,7 @@ const IMPORTED_ADVISORY_IDS = [
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
+  "ar-addexpmantainscalewhenparented-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
@@ -4045,6 +4046,23 @@ function assertActualRetrieval(registry) {
   assert(toggleMaintainScaleExpressionPromptSection.includes("enabled:false"), "prompt section should preserve toggle-off guidance.");
   assert(toggleMaintainScaleExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(toggleMaintainScaleExpressionPromptSection), "toggle-maintain-scale guidance should not recommend raw ExtendScript.");
+
+  const arMaintainScaleWhenParentedRetrieval = retrieveSolutionHints("Add expression maintain scale when parented to the selected already parented layers after inspecting selected layer parent evidence, then read back Transform Scale expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arMaintainScaleWhenParentedRetrieval.ok, true);
+  assert(ids(arMaintainScaleWhenParentedRetrieval).includes("ar-addexpmantainscalewhenparented-typed-plan"), "AR maintain-scale-when-parented advisory recipe should surface for selected parented layer Scale expression prompts.");
+  const arMaintainScaleWhenParentedPromptSection = formatSolutionHintsForPrompt(arMaintainScaleWhenParentedRetrieval);
+  assert(arMaintainScaleWhenParentedPromptSection.includes("AR Add Expression Maintain Scale When Parented Typed Plan"), "prompt section should include AR maintain-scale-when-parented advisory title.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for AR maintain-scale-when-parented workflows.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("parent evidence"), "prompt section should preserve parent evidence guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("Transform > Scale"), "prompt section should preserve Scale property target guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("set_expression"), "prompt section should prefer set_expression for AR maintain-scale-when-parented workflows.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("parent.transform.scale"), "prompt section should preserve parent scale compensation guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(arMaintainScaleWhenParentedPromptSection), "AR maintain-scale-when-parented guidance should not recommend raw ExtendScript.");
 
   const disableSelectedExpressionsRetrieval = retrieveSolutionHints("Disable the existing expressions on the selected properties after inspecting selected property expressions, but do not delete or clear the expression text; read back expression enabled state.", {
     registry,

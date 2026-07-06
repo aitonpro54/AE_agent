@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-06-30",
+  "updatedAt": "2026-07-07",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -9274,6 +9274,118 @@
         "Do not overwrite or disable unrelated existing expressions unless prior expression evidence is surfaced and the user explicitly confirms replacement.",
         "Require a separate typed-tool contract for nested parent-chain compensation, separated dimensions, controller rigs, expression syntax repair, broad property scans, selection side effects, expression deletion or exact source JSX semantics.",
         "Do not use this recipe for expression clearing, keyframe edits, layer transform value edits, layer timing changes, effect edits, source relinking, render queue changes, layer parenting changes, selected-layer rename or broad composition mutation."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-addexpmantainscalewhenparented-typed-plan",
+      "title": "AR Add Expression Maintain Scale When Parented Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "expressions",
+        "layers",
+        "properties",
+        "scale",
+        "maintain-scale",
+        "mantain-scale",
+        "parent-scale",
+        "parented-layers",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Add a bounded immediate-parent maintain-scale expression to selected layers' Transform > Scale properties only when current typed evidence shows the layers are already parented.",
+        "appliesWhen": [
+          "The user asks to add or apply a maintain scale expression when selected layers are parented, including AR_AddExpMantainScaleWhenParented-style requests.",
+          "Typed selected-layer Scale expression mutation is acceptable instead of source-exact selection side effects, parenting mutation, expression deletion, nested parent-chain compensation, controller rigs, expression syntax repair, broad property scans, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedParentedLayers",
+          "type": "object",
+          "required": true,
+          "description": "Current get_selected_layers and get_layer_details evidence containing one or more selected parented layers with concrete layerIndex values, parent evidence, and Transform > Scale expression state."
+        }
+      ],
+      "targetAssumptions": [
+        "Every mutated Scale property is bound from current get_selected_layers and get_layer_details evidence before mutation.",
+        "Every target is clearly identified as an already parented selected layer with an exact Transform > Scale propertyPath and expression-capable state.",
+        "The default safe expression text is a reviewed immediate-parent maintain-scale expression using parent.transform.scale with a try/catch fallback to value, represented with line breaks in the plan.",
+        "The workflow adds the reviewed maintain-scale expression with enabled:true to selected parented layers that have no current Scale expression.",
+        "Existing unrelated expressions are not overwritten or disabled unless the plan reports prior expression evidence and the user explicitly confirms replacement.",
+        "The workflow changes only expression text/enabled state on explicitly selected already parented layers' Scale properties.",
+        "Layer parenting, transform values, names, sources, timing, effects, masks, keyframes, render queue items, selection state and unselected layers are preserved."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-addexpmantainscalewhenparented-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_expression"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected-layer, parent and Scale expression evidence, add the reviewed maintain-scale expression to each explicit parented Transform > Scale target, then read layer/property expression details back.",
+        "steps": [
+          "Run get_active_comp, get_selected_layers and get_layer_details before mutation to capture active comp identity, selected layerIndex values, parent evidence, exact Transform > Scale propertyPath values, current expression text and expressionEnabled state.",
+          "Fail closed when selected-layer evidence is empty, lacks concrete layerIndex targets, lacks parent evidence, lacks Transform > Scale property evidence, is not expression-capable, or shows an unrelated existing expression that the user has not confirmed replacing.",
+          "Run one set_expression step per selected parented Scale property target with the reviewed maintain-scale expression and enabled:true.",
+          "Run get_layer_details for every affected layer with expression/property detail read-back.",
+          "Fail closed if parenting mutation, unparented-layer handling, expression deletion, nested parent-chain compensation, separated-dimension handling, expression controllers, syntax repair, broad property scans, selection side effects or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies every concrete selected layer target, its parent evidence and its Transform > Scale property path.",
+          "Each set_expression result reports the expected maintain-scale expression text, expressionEnabled:true and no expressionError.",
+          "Post-run get_layer_details shows each affected selected parented layer's Scale property has the expected maintain-scale expression enabled on the expected layer/property path.",
+          "Post-run evidence shows no parenting, keyframe, timing, effect, source, render queue, layer transform value, layer name, selection state or unselected layer mutation.",
+          "Unsupported unparented-layer targets, parenting changes, expression deletion, unrelated-expression replacement, nested parent-chain compensation, expression controller setup, broad scans and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by tool-ar-addexpmantainscalewhenparented generic repository importer as advisory typed-plan coverage for selected parented-layer Scale maintain-expression add workflows.",
+          "The source JSX was not present in this detached child-run worktree; this patch adapts only the candidate idea into existing typed expression tools and leaves parent importer validation/live acceptance to the parent flow."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-addexpmantainscalewhenparented",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the idea behind reviewed external AE script collection AR_AddExpMantainScaleWhenParented.jsx into existing typed tools as selected parented-layer Transform > Scale set_expression guidance for adding a reviewed immediate-parent maintain-scale expression; no source JSX copied. Current typed tools require current get_selected_layers and get_layer_details evidence, explicit parent evidence, exact Scale property paths, set_expression enabled:true state and get_layer_details read-back; parenting mutation, unparented-layer handling, expression deletion, nested parent-chain compensation, expression controllers, syntax repair, broad property scans, selection side effects and exact source JSX semantics require a separate typed-tool contract; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer evidence from get_selected_layers plus get_layer_details Scale expression evidence before mutating expression text or enabled state; do not infer targets from prior chat context.",
+        "Apply this recipe only to explicitly selected layers that current typed evidence shows are already parented.",
+        "Use the reviewed immediate-parent parent.transform.scale maintain-scale expression exactly as disclosed in the plan unless a separate typed-tool contract covers a different expression.",
+        "Do not create, remove or change parenting as part of this expression workflow.",
+        "Do not overwrite or disable unrelated existing expressions unless prior expression evidence is surfaced and the user explicitly confirms replacement.",
+        "Require a separate typed-tool contract for unparented-layer handling, parenting changes, nested parent-chain compensation, separated dimensions, controller rigs, expression syntax repair, broad property scans, selection side effects, expression deletion or exact source JSX semantics.",
+        "Do not use this recipe for expression clearing, expression toggling, keyframe edits, layer transform value edits, layer timing changes, effect edits, source relinking, render queue changes, layer parenting changes, selected-layer rename or broad composition mutation."
       ]
     },
     {
