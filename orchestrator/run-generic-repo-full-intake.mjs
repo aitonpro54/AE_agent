@@ -1704,6 +1704,11 @@ Options:
                               usage-limit reset and requeue only the scoped
                               blocked candidate ids. Requires matching
                               --resolution-candidate-ids.
+  --resolve-child-runner-shell-unavailable-reset <ids>
+                              Explicitly confirm the child-runner shell
+                              environment is fixed and requeue only the scoped
+                              shell-blocked candidate ids. Requires matching
+                              --resolution-candidate-ids.
   --resolve-live-lanes-before-parallel
                               In opt-in parallel mode, run scoped parent-owned
                               live-lane resolution before scheduling child worktrees.
@@ -1751,6 +1756,7 @@ const VALUE_OPTIONS = new Set([
   "parallel-candidate-ids",
   "parallel-candidate-limit",
   "report-dir",
+  "resolve-child-runner-shell-unavailable-reset",
   "resolve-child-runner-usage-limit-reset",
   "resolution-candidate-ids",
   "run-id",
@@ -3598,6 +3604,46 @@ function resetChildRunnerUsageLimitEntry(entry, ticket, evidence) {
   }
 }
 
+function resetChildRunnerShellUnavailableEntry(entry, ticket, evidence) {
+  const resetAt = new Date().toISOString();
+  const previousFailureReason = entry.failClosed?.reason || entry.implementation?.failureReason || childShellLaunchItemReason(evidence);
+  const previousResolutionTicket = entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null;
+  const resetRecord = {
+    schema: "generic-repo-full-intake.child-runner-shell-unavailable-reset.v1",
+    userConfirmedEnvironmentReady: true,
+    confirmationSource: "explicit_cli_option",
+    option: "--resolve-child-runner-shell-unavailable-reset",
+    previousBatchReport: evidence.batchReport || entry.failClosed?.batchReport || entry.implementation?.batchReport || null,
+    previousFailureReason,
+    previousResolutionTicket,
+    previousShellErrorText: evidence.shellErrorText || null,
+    resetAt,
+    resetCandidateScope: [entry.id],
+    safeguards: {
+      artifactGateBypassed: false,
+      duplicateChecksBypassed: false,
+      pathPolicyBypassed: false,
+      reducerRulesBypassed: false,
+      validationBypassed: false,
+    },
+  };
+  requeueEntryAfterResolution(entry, ticket, {
+    batchReport: null,
+    childRunnerShellUnavailableReset: resetRecord,
+    previousFailureReason,
+    recoveryIntent: {
+      mode: "retry_after_child_runner_shell_environment_reset",
+      previousBatchReport: resetRecord.previousBatchReport,
+      previousShellErrorText: resetRecord.previousShellErrorText,
+      ticketPath: ticket.isolation.ticketPath,
+    },
+    retryNonce: ticket.evidence.retryNonce,
+  });
+  if (entry.implementation) {
+    delete entry.implementation.failureReason;
+  }
+}
+
 function nextQueueRankAllocator(ledger) {
   let nextRank = ledger.entries.reduce((max, entry) => (
     Number.isInteger(entry.queueRank) ? Math.max(max, entry.queueRank) : max
@@ -4086,16 +4132,18 @@ function processImportFailureResolutionTickets({
   return { requeuedCandidateIds, tickets };
 }
 
-function processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCandidateIds = null, runId, runRoot, targetRepo }) {
+function processChildRunnerShellFailureResolutionTickets({
+  childRunnerShellUnavailableResetIds = null,
+  ledger,
+  resolutionCandidateIds = null,
+  runId,
+  runRoot,
+  targetRepo,
+}) {
+  const requeuedCandidateIds = [];
   const tickets = [];
   for (const entry of ledger.entries) {
     if (!candidateAllowedByResolutionScope(entry, resolutionCandidateIds)) {
-      continue;
-    }
-    if (entry.status === "blocked_child_runner_shell_unavailable") {
-      continue;
-    }
-    if (entry.status !== "blocked_no_candidate_artifact" && entry.failClosed?.status !== "blocked_no_candidate_artifact") {
       continue;
     }
     const knownBatchReport = entry.failClosed?.batchReport || entry.implementation?.batchReport || null;
@@ -4110,6 +4158,58 @@ function processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCan
     const shellFailureEvidence = discoveredBatchReport
       ? childShellLaunchFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
       : null;
+    const resetRequested = childRunnerShellUnavailableResetIds instanceof Set && childRunnerShellUnavailableResetIds.has(entry.id);
+    if (resetRequested && entry.status === "blocked_child_runner_shell_unavailable" && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+      const previousEvidence = {
+        ...(entry.implementation?.childRunnerShellFailure || {}),
+        ...(entry.failClosed?.childRunnerShellFailure || {}),
+        ...(shellFailureEvidence || {}),
+        batchReport:
+          shellFailureEvidence?.batchReport ||
+          discoveredBatchReport ||
+          entry.failClosed?.batchReport ||
+          entry.implementation?.batchReport ||
+          null,
+      };
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: "user_confirmed_child_runner_shell_environment_reset",
+        type: "child-runner-shell-unavailable-reset",
+      });
+      const retryNonce = safeId(`${groupId}-${sha256Text(`${entry.id}:${runId}:${previousEvidence.batchReport || ""}`).slice(0, 8)}`);
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...previousEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+          retryNonce,
+          userDecision: {
+            childRunnerShellEnvironmentResetConfirmed: true,
+            confirmationSource: "explicit_cli_option",
+            option: "--resolve-child-runner-shell-unavailable-reset",
+            scopedCandidateIds: [entry.id],
+          },
+        },
+        groupId,
+        reason: "user_confirmed_child_runner_shell_environment_reset_requeued",
+        runId,
+        runRoot,
+        status: "resolved_requeued",
+        targetRepo,
+        type: "child-runner-shell-unavailable-reset",
+      });
+      resetChildRunnerShellUnavailableEntry(entry, ticket, previousEvidence);
+      requeuedCandidateIds.push(entry.id);
+      tickets.push(ticket);
+      continue;
+    }
+    if (entry.status === "blocked_child_runner_shell_unavailable") {
+      continue;
+    }
+    if (entry.status !== "blocked_no_candidate_artifact" && entry.failClosed?.status !== "blocked_no_candidate_artifact") {
+      continue;
+    }
     if (!shellFailureEvidence) {
       continue;
     }
@@ -4136,7 +4236,7 @@ function processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCan
     blockEntryForChildRunnerShellUnavailable(entry, ticket, shellFailureEvidence);
     tickets.push(ticket);
   }
-  return { tickets };
+  return { requeuedCandidateIds, tickets };
 }
 
 function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo }) {
@@ -4196,6 +4296,7 @@ function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRe
 
 function processResolutionTickets({
   allowSelfImprovementLaneSynthesis = false,
+  childRunnerShellUnavailableResetIds = null,
   childRunnerUsageLimitResetIds = null,
   includeBlockedLiveLaneRequired = false,
   includeImportFailureTickets = true,
@@ -4235,8 +4336,15 @@ function processResolutionTickets({
       })
     : { requeuedCandidateIds: [], tickets: [] };
   const shell = includeImportFailureTickets
-    ? processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo })
-    : { tickets: [] };
+    ? processChildRunnerShellFailureResolutionTickets({
+        childRunnerShellUnavailableResetIds,
+        ledger,
+        resolutionCandidateIds,
+        runId,
+        runRoot,
+        targetRepo,
+      })
+    : { requeuedCandidateIds: [], tickets: [] };
   if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0 || shell.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
@@ -4252,7 +4360,7 @@ function processResolutionTickets({
       type: ticket.type,
       affectedCandidateIds: ticket.affectedCandidateIds,
     })),
-    requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds]),
+    requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds, ...shell.requeuedCandidateIds]),
     terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length + shell.tickets.length,
     closedCandidateIds: closed.closedCandidateIds,
     openTicketCount: 0,
@@ -7201,7 +7309,17 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   const registryPath = resolveOptionalPath(cwd, options.liveLaneRegistry, DEFAULT_LIVE_LANE_REGISTRY);
   const registry = readLiveLaneRegistry(registryPath);
   const resolutionCandidateIds = parseCsvSet(options.resolutionCandidateIds);
+  const childRunnerShellUnavailableResetIds = parseCsvSet(options.resolveChildRunnerShellUnavailableReset);
   const childRunnerUsageLimitResetIds = parseCsvSet(options.resolveChildRunnerUsageLimitReset);
+  if (childRunnerShellUnavailableResetIds instanceof Set && childRunnerShellUnavailableResetIds.size > 0) {
+    if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
+      throw new Error("--resolve-child-runner-shell-unavailable-reset requires matching --resolution-candidate-ids");
+    }
+    const missingScopeIds = Array.from(childRunnerShellUnavailableResetIds).filter((id) => !resolutionCandidateIds.has(id));
+    if (missingScopeIds.length > 0) {
+      throw new Error(`--resolve-child-runner-shell-unavailable-reset ids must be included in --resolution-candidate-ids: ${missingScopeIds.join(",")}`);
+    }
+  }
   if (childRunnerUsageLimitResetIds instanceof Set && childRunnerUsageLimitResetIds.size > 0) {
     if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
       throw new Error("--resolve-child-runner-usage-limit-reset requires matching --resolution-candidate-ids");
@@ -7380,6 +7498,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
       preResolutionQueue = processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerShellUnavailableResetIds,
         childRunnerUsageLimitResetIds,
         includeBlockedLiveLaneRequired: true,
         includeImportFailureTickets: false,
@@ -7439,6 +7558,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
     : processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerShellUnavailableResetIds,
         childRunnerUsageLimitResetIds,
         ledger: initialLedger,
         ledgerPath,

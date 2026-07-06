@@ -45,6 +45,7 @@ const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
 const PROOF_ENVELOPE_SCHEMA = "generic-repo-tool-importer.proof-envelope.v1";
 const PARENT_OUTPUT_SCHEMA = "generic-repo-tool-importer.parent-compact-output.v1";
+const CHILD_RUNNER_DANGER_FALLBACK_ENV = "AE_AGENT_ALLOW_CHILD_RUNNER_DANGER_FULL_ACCESS_ON_WINDOWS_SANDBOX_FAILURE";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
@@ -2635,20 +2636,22 @@ function buildChildRunPrompt(intent, contextPack) {
 }
 
 function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
+  const sandbox = childRunSandboxSelection();
   const codexArgs = [
     "exec",
     "--cd",
     worktreePath,
     "--sandbox",
-    "workspace-write",
+    sandbox.actual,
     "--ephemeral",
     "-c",
     "approval_policy=\"never\"",
-    "-c",
-    "sandbox_workspace_write.network_access=false",
     "--disable",
     "web_search",
   ];
+  if (sandbox.actual === "workspace-write") {
+    codexArgs.splice(8, 0, "-c", "sandbox_workspace_write.network_access=false");
+  }
   const model = childRunWriterModel(manifest, batch);
   if (model) {
     codexArgs.push("--model", model);
@@ -2664,6 +2667,7 @@ function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
       args: ["/d", "/s", "/c", "codex", ...codexArgs],
       displayCommand: "codex",
       displayArgs: codexArgs,
+      sandbox,
     };
   }
   return {
@@ -2671,6 +2675,30 @@ function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
     args: codexArgs,
     displayCommand: "codex",
     displayArgs: codexArgs,
+    sandbox,
+  };
+}
+
+function envFlagEnabled(name) {
+  return /^(1|true|yes|on)$/i.test(String(process.env[name] || "").trim());
+}
+
+function childRunSandboxSelection() {
+  if (process.platform === "win32" && envFlagEnabled(CHILD_RUNNER_DANGER_FALLBACK_ENV)) {
+    return {
+      requested: "workspace-write",
+      actual: "danger-full-access",
+      fallback: true,
+      reason: "user_opt_in_windows_sandbox_unavailable",
+      env: CHILD_RUNNER_DANGER_FALLBACK_ENV,
+    };
+  }
+  return {
+    requested: "workspace-write",
+    actual: "workspace-write",
+    fallback: false,
+    reason: null,
+    env: null,
   };
 }
 
@@ -2807,6 +2835,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
       args: invocation.displayArgs,
       stdin: "compact child context pack wrapper",
     },
+    sandbox: invocation.sandbox,
     exitCode: result.status,
     signal: result.signal || null,
     error: result.error ? result.error.message : null,
@@ -2868,6 +2897,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     exitCode: childRunResult.exitCode,
     signal: childRunResult.signal,
     error: childRunResult.error,
+    sandbox: childRunResult.sandbox,
     stdoutPath,
     stderrPath,
     stdout: stdoutSummary,

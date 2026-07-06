@@ -3453,6 +3453,83 @@ function assertChildShellLaunchFailureBlocksNewCandidateSelection() {
   }
 }
 
+function assertChildShellUnavailableResetRequiresExplicitScopedOptIn() {
+  const fixture = createFixture("child-shell-reset");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(path.join(fixture.source, "Selection", "Shell_Reset.jsx"), "function shellReset() { return true; }\n", "utf8");
+    const blocked = entry({
+      id: "tool-selection-shell-reset",
+      sourcePath: "Selection/Shell_Reset.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        plannedPaths: ["scripts/imported-tools/shell-reset.js"],
+        sliceId: "fixture-shell-reset-import"
+      },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [blocked]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const blockedOutput = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "child-shell-reset",
+        1,
+        {
+          ...fakeCodexEnv(binDir),
+          FAKE_CODEX_SHELL_UNAVAILABLE: "1"
+        }
+      )
+    );
+    assert.strictEqual(blockedOutput.status, "blocked_child_runner_shell_unavailable");
+    const blockedLedger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const blockedAfter = blockedLedger.entries[0];
+    assert.strictEqual(blockedAfter.status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(blockedAfter.failClosed.childRunnerShellFailure.shellErrorText, "CreateProcessWithLogonW failed");
+    const previousBatchReport = blockedAfter.failClosed.batchReport;
+
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        "child-shell-reset",
+        1,
+        fakeCodexEnv(binDir),
+        [
+          "--resolution-candidate-ids",
+          blocked.id,
+          "--resolve-child-runner-shell-unavailable-reset",
+          blocked.id
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed", JSON.stringify(output.items));
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [blocked.id]);
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, output.resolutionQueue.tickets[0].path), "utf8"));
+    assert.strictEqual(ticket.type, "child-runner-shell-unavailable-reset");
+    assert.strictEqual(ticket.status, "resolved_requeued");
+    assert.strictEqual(ticket.evidence.userDecision.childRunnerShellEnvironmentResetConfirmed, true);
+    assert.deepStrictEqual(ticket.evidence.userDecision.scopedCandidateIds, [blocked.id]);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const entryAfter = ledger.entries[0];
+    assert.strictEqual(entryAfter.status, "completed");
+    assert.strictEqual(entryAfter.previousFailClosed.status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(entryAfter.implementation.childRunnerShellUnavailableReset.userConfirmedEnvironmentReady, true);
+    assert.strictEqual(entryAfter.implementation.childRunnerShellUnavailableReset.previousBatchReport, previousBatchReport);
+    assert.strictEqual(entryAfter.implementation.childRunnerShellUnavailableReset.safeguards.validationBypassed, false);
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "shell-reset.js")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("shell-reset.js"), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertManifestNamedRepoGuardFailureIsScopedImportRetry() {
   const fixture = createFixture("manifest-guard-retry");
   try {
@@ -4026,6 +4103,7 @@ function main() {
   assertChildUsageLimitResetRequiresExplicitScopedOptIn();
   assertChildUsageLimitStopsNewCandidateSelection();
   assertChildShellLaunchFailureBlocksNewCandidateSelection();
+  assertChildShellUnavailableResetRequiresExplicitScopedOptIn();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
   assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();

@@ -1282,6 +1282,7 @@ function assertImplementationChildRunArtifacts(output, fixture, runId) {
   assert.strictEqual(childResult.status, "child_run_completed");
   assert.strictEqual(childResult.model, "gpt-5.5");
   assert.strictEqual(childResult.reasoningEffort, "high");
+  assert.strictEqual(childResult.sandbox.requested, "workspace-write");
   assert.strictEqual(childResult.contextGuard.status, "passed");
   assert.deepStrictEqual(childResult.changedPaths, ["scripts/imported-tools/tool-tool.js"]);
   assert.deepStrictEqual(childResult.unplannedPaths, []);
@@ -1324,6 +1325,40 @@ function assertSuccessfulImplementationChildRunFixture() {
     );
     assert.strictEqual(output.resumed, true);
     assertImplementationChildRunArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertWindowsChildRunSandboxFallbackFixture() {
+  if (process.platform !== "win32") return;
+  const fixture = createTempFixture("implementation-child-sandbox-fallback");
+  try {
+    const runId = "aux021-child-sandbox-fallback";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        {
+          ...fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+          AE_AGENT_ALLOW_CHILD_RUNNER_DANGER_FULL_ACCESS_ON_WINDOWS_SANDBOX_FAILURE: "1",
+        },
+      ),
+    );
+    assert.strictEqual(output.resumed, true);
+    const childRun = readJson(path.join(runRoot, "implementation", "child-run-run.json"));
+    const firstBatch = childRun.batches[0];
+    const childResult = readJson(path.join(runRoot, firstBatch.childRunResultPath));
+    assert.strictEqual(childResult.status, "child_run_completed");
+    assert.strictEqual(childResult.sandbox.requested, "workspace-write");
+    assert.strictEqual(childResult.sandbox.actual, "danger-full-access");
+    assert.strictEqual(childResult.sandbox.fallback, true);
+    assert(childResult.command.args.includes("danger-full-access"));
+    assert(!childResult.command.args.includes("sandbox_workspace_write.network_access=false"));
+    assert.deepStrictEqual(childResult.unplannedPaths, []);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
   }
@@ -2429,6 +2464,7 @@ function main() {
   assertImplementationWorktreeRunOwnedPathFixture();
   assertImplementationWorktreeResumeFixture();
   assertSuccessfulImplementationChildRunFixture();
+  assertWindowsChildRunSandboxFallbackFixture();
   assertImplementationChildRunLargeOutputFixture();
   assertImplementationChildRunTokenGuardFixture();
   assertImplementationChildRunOutputGuardFixture();
