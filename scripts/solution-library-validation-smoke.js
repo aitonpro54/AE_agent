@@ -120,6 +120,7 @@ const IMPORTED_ADVISORY_IDS = [
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
   "merge-imported-selected-items-typed-plan",
+  "ar-addfolders-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
   "third-party-semantics-safety-policy",
@@ -2740,6 +2741,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /get_selected_project_items/.test(note)), `${id}: notes must name the future selected-project-item contract.`);
       assert(solution.promotionHistory.some((entry) => /Add_Selection_To_New_Folder/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-addfolders-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "create_project_folder", "find_project_items", "list_project_folder_items"],
+        `${id}: AR add folders workflow should stay on the narrow project-folder creation typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Project folder creation workflow must be mutating.`);
+      assert(text.includes("reviewed generated Project folder"), `${id}: recipe should document reviewed generated folder scope.`);
+      assert(text.includes("create_project_folder"), `${id}: recipe should use the project folder creation typed tool.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should allow project item read-back.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should allow folder inventory read-back.`);
+      assert(text.includes("Project panel selected"), `${id}: recipe should fail closed for Project panel selected folders/items.`);
+      assert(text.includes("filesystem traversal"), `${id}: recipe should fail closed for filesystem traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_project_folder/.test(step)), `${id}: verification must include folder creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items|list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /generated folder/.test(item)), `${id}: verification must require generated folder evidence.`);
+      assert(solution.notes.some((note) => /selected-folder or selected-item/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+      assert(solution.promotionHistory.some((entry) => /AR_AddFolders/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-labeled-items-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4766,6 +4787,21 @@ function assertActualRetrieval(registry) {
   assert(addSelectionToNewFolderPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(addSelectionToNewFolderPromptSection), "add-selection folder guidance should not recommend raw ExtendScript.");
 
+  const arAddFoldersRetrieval = retrieveSolutionHints("Create reviewed generated Project folders after reading project inventory with get_project_snapshot, using create_project_folder and folder read-back without Project panel selected folders or filesystem traversal.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arAddFoldersRetrieval.ok, true);
+  assert(ids(arAddFoldersRetrieval).includes("ar-addfolders-typed-plan"), "AR add folders advisory recipe should surface for generated Project folder prompts.");
+  const arAddFoldersPromptSection = formatSolutionHintsForPrompt(arAddFoldersRetrieval);
+  assert(arAddFoldersPromptSection.includes("AR Add Folders Typed Plan"), "prompt section should include AR add folders advisory title.");
+  assert(arAddFoldersPromptSection.includes("create_project_folder"), "prompt section should prefer create_project_folder.");
+  assert(arAddFoldersPromptSection.includes("get_project_snapshot"), "prompt section should require project inventory evidence.");
+  assert(arAddFoldersPromptSection.includes("Project panel selected"), "prompt section should preserve Project panel selection warning.");
+  assert(arAddFoldersPromptSection.includes("filesystem traversal"), "prompt section should preserve filesystem traversal warning.");
+  assert(!/run_extendscript/i.test(arAddFoldersPromptSection), "AR add folders guidance should not recommend raw ExtendScript.");
+
   const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5018,6 +5054,7 @@ function assertActualRetrieval(registry) {
       centerComposition: ids(centerCompositionRetrieval),
       averagePosition: ids(averagePositionRetrieval),
       zeroPosition: ids(zeroPositionRetrieval),
+      arAddFolders: ids(arAddFoldersRetrieval),
       selectedCompositionsRenderQueue: ids(addSelectedCompositionsRenderQueueRetrieval),
       findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
