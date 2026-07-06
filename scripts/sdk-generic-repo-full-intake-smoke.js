@@ -293,6 +293,10 @@ function writeFakeCodex(root) {
       '    console.error("missing planned path");',
       '    process.exit(8);',
       '  }',
+      '  if (process.env.FAKE_CODEX_NO_WRITE === "1") {',
+      '    console.log(`fake codex intentionally wrote no candidate artifact for ${relative}`);',
+      '    return;',
+      '  }',
       '  const absolute = path.join(cwd, relative);',
       '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
       '  fs.writeFileSync(absolute, `// fake full-intake import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
@@ -1555,6 +1559,46 @@ function assertSerialAllowsUnrelatedUntrackedCentralTreeWithOptIn() {
     assert(!committedPaths.includes("local-note.txt"), "unrelated untracked file must not be committed");
     const status = sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]);
     assert(status.includes("?? local-note.txt"), "unrelated untracked local file should remain untouched");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertSerialCompletionRequiresCandidateArtifact() {
+  const fixture = createFixture("no-artifact");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const importedPath = "scripts/imported-tools/no-artifact.js";
+    const candidate = entry({
+      id: "tool-layers-read-only-fixture",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-no-artifact",
+        plannedPaths: [importedPath]
+      },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "no-artifact",
+      1,
+      { ...fakeCodexEnv(binDir), FAKE_CODEX_WRITE_PATH: "plans/target-app-execplan.md" }
+    ));
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.status, "completed_with_blocked_candidates");
+    assert.strictEqual(output.items[0].status, "blocked_no_candidate_artifact");
+    assert.strictEqual(output.items[0].reason, "controlled_merge_produced_no_candidate_artifact");
+    assert.strictEqual(output.commits.length, 0, "no candidate artifact should mean no completion commit");
+    assert(!fs.existsSync(path.join(fixture.target, importedPath)), "missing artifact should remain missing");
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const blocked = ledger.entries.find((entry) => entry.id === "tool-layers-read-only-fixture");
+    assert.strictEqual(blocked.status, "blocked_no_candidate_artifact");
   } finally {
     removeFixture(fixture.root);
   }
@@ -3601,6 +3645,7 @@ function main() {
   assertParallelReducerRefusesDirtyCentralTree();
   assertParallelReducerAllowsUnrelatedUntrackedCentralTreeWithOptIn();
   assertSerialAllowsUnrelatedUntrackedCentralTreeWithOptIn();
+  assertSerialCompletionRequiresCandidateArtifact();
   assertParallelContextBudgetStopsBeforeNewWork();
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();

@@ -5279,6 +5279,16 @@ function commitAllowedPathsForCandidate({ batch, candidate, item }) {
   ], 128);
 }
 
+function candidateArtifactPaths(candidate) {
+  const parentOnly = new Set([".codex/handoff.md", "plans/target-app-execplan.md"]);
+  return candidatePlannedPaths(candidate).filter((repoPath) => !parentOnly.has(normalizeRepoPath(repoPath)));
+}
+
+function candidateArtifactDirtyPaths({ candidate, targetRepo }) {
+  const artifactPaths = new Set(candidateArtifactPaths(candidate));
+  return gitChangedPaths(targetRepo).filter((repoPath) => artifactPaths.has(normalizeRepoPath(repoPath)));
+}
+
 function pushItem(state, item) {
   const existingIndex = state.items.findIndex((entry) => entry.candidateId === item.candidateId);
   if (existingIndex >= 0) {
@@ -6449,6 +6459,38 @@ function runStrictOnePhase({
   }
 
   if (completedPhase === "ledger_docs_handoff_commit_finalization") {
+    const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
+    if (artifactDirtyPaths.length === 0) {
+      item.status = "blocked_no_candidate_artifact";
+      item.reason = "controlled_merge_produced_no_candidate_artifact";
+      item.completedAt = new Date().toISOString();
+      const blockedLedger = readJson(ledgerPath, "queue-ledger");
+      updateLedgerTerminalStatus({ candidate, item, ledger: blockedLedger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      report.status = "completed_with_blocked_candidates";
+      report.ok = true;
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_blocked_no_candidate_artifact",
+        runId,
+      });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
     const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
     report.contextBudget.lastDecision = docsDecision;
     if (docsDecision.action !== "continue") {
@@ -7149,6 +7191,24 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
     } else {
       item.liveRerunStatus = "not_required";
+    }
+
+    const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
+    if (artifactDirtyPaths.length === 0) {
+      item.status = "blocked_no_candidate_artifact";
+      item.reason = "controlled_merge_produced_no_candidate_artifact";
+      item.completedAt = new Date().toISOString();
+      processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+      state = saveState(runRoot, pushItem(state, item));
+      report.items.push(item);
+      report.status = "completed_with_blocked_candidates";
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_blocked_no_candidate_artifact",
+        runId,
+      });
+      continue;
     }
 
     const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
