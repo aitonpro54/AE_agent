@@ -103,6 +103,7 @@ const TERMINAL_ITEM_STATUSES = new Set([
   "blocked_live_lane_validation_failed",
   "blocked_live_preflight_failed",
   "blocked_live_proof_failed",
+  "blocked_child_runner_shell_unavailable",
   "blocked_child_runner_usage_limit",
   "blocked_policy",
   "completed",
@@ -127,6 +128,10 @@ const IMPORT_RETRY_REASONS = Object.freeze([
 const CHILD_USAGE_LIMIT_REASONS = Object.freeze([
   "You've hit your usage limit",
   "hit your usage limit",
+]);
+const CHILD_SHELL_LAUNCH_REASONS = Object.freeze([
+  "CreateProcessWithLogonW failed",
+  "windows sandbox",
 ]);
 const LEGACY_REASONING_EFFORT_CLI_ERROR = "unexpected argument '--reasoning-effort'";
 const SHARED_OWNER_PATHS = Object.freeze([
@@ -3482,6 +3487,69 @@ function blockEntryForChildRunnerUsageLimit(entry, ticket, evidence) {
   attachResolutionReference(entry, ticket, "terminal_unresolved");
 }
 
+function blockEntryForChildRunnerShellUnavailable(entry, ticket, evidence) {
+  const now = new Date().toISOString();
+  const reason = childShellLaunchItemReason(evidence);
+  if (entry.failClosed) {
+    entry.previousFailClosed = entry.failClosed;
+  }
+  entry.status = "blocked_child_runner_shell_unavailable";
+  entry.blockedAt = now;
+  entry.nextAction = "fix_child_runner_shell_environment_before_retry";
+  entry.failClosed = {
+    schema: "generic-repo-full-intake.fail-closed.v1",
+    runId: ticket.runId,
+    candidateId: entry.id,
+    sourcePath: entry.sourcePath,
+    status: entry.status,
+    reason,
+    blockers: [
+      {
+        code: "child_runner_shell_unavailable",
+        shellErrorText: evidence.shellErrorText || null,
+      },
+    ],
+    liveLaneStatus: entry.liveGate?.status || null,
+    liveLaneReport: entry.liveGate?.failClosedEvidence || null,
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerShellFailure: evidence,
+    safetyPolicy: {
+      broadCepSmokeAllowed: false,
+      dependencyPackageChangesAllowed: false,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationOutsideGeneratedOnlyLaneAllowed: false,
+    },
+    createdAt: now,
+  };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerShellFailure: evidence,
+    failureReason: reason,
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+}
+
+function markItemForChildRunnerShellUnavailable(item, ticket, evidence) {
+  item.status = "blocked_child_runner_shell_unavailable";
+  item.reason = childShellLaunchItemReason(evidence);
+  item.blockers = [
+    {
+      code: "child_runner_shell_unavailable",
+      shellErrorText: evidence.shellErrorText || null,
+    },
+  ];
+  item.batchReport = evidence.batchReport || item.batchReport || null;
+  item.childRunnerShellFailure = evidence;
+  item.resolutionTicket = ticket.isolation.ticketPath;
+  item.resolutionStatus = "terminal_unresolved";
+  item.completedAt = new Date().toISOString();
+}
+
 function childRunnerUsageLimitResetMatchesEvidence(entry, evidence) {
   const reset = entry.implementation?.childRunnerUsageLimitReset;
   if (!reset || reset.userConfirmedReset !== true) return false;
@@ -4018,6 +4086,59 @@ function processImportFailureResolutionTickets({
   return { requeuedCandidateIds, tickets };
 }
 
+function processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCandidateIds = null, runId, runRoot, targetRepo }) {
+  const tickets = [];
+  for (const entry of ledger.entries) {
+    if (!candidateAllowedByResolutionScope(entry, resolutionCandidateIds)) {
+      continue;
+    }
+    if (entry.status === "blocked_child_runner_shell_unavailable") {
+      continue;
+    }
+    if (entry.status !== "blocked_no_candidate_artifact" && entry.failClosed?.status !== "blocked_no_candidate_artifact") {
+      continue;
+    }
+    const knownBatchReport = entry.failClosed?.batchReport || entry.implementation?.batchReport || null;
+    const verifiedKnownBatchReport = knownBatchReport && existsSync(absoluteReportPath(targetRepo, knownBatchReport))
+      ? knownBatchReport
+      : null;
+    const discoveredBatchReport = verifiedKnownBatchReport || discoverCandidateBatchReportPath({
+      candidateId: entry.id,
+      runRoot,
+      targetRepo,
+    });
+    const shellFailureEvidence = discoveredBatchReport
+      ? childShellLaunchFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
+      : null;
+    if (!shellFailureEvidence) {
+      continue;
+    }
+    const groupId = resolutionGroupId({
+      candidate: entry,
+      familyId: entry.liveGate?.synthesisFamily || null,
+      reason: shellFailureEvidence.reason,
+      type: "child-runner-shell-unavailable",
+    });
+    const ticket = recordResolutionTicket({
+      affected: [entry],
+      evidence: {
+        ...shellFailureEvidence,
+        familyId: entry.liveGate?.synthesisFamily || null,
+      },
+      groupId,
+      reason: "child_runner_shell_environment_required",
+      runId,
+      runRoot,
+      status: "terminal_unresolved",
+      targetRepo,
+      type: "child-runner-shell-unavailable",
+    });
+    blockEntryForChildRunnerShellUnavailable(entry, ticket, shellFailureEvidence);
+    tickets.push(ticket);
+  }
+  return { tickets };
+}
+
 function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo }) {
   const ticketsRoot = path.join(runRoot, "resolution-tickets");
   if (!existsSync(ticketsRoot)) {
@@ -4113,7 +4234,10 @@ function processResolutionTickets({
         targetRepo,
       })
     : { requeuedCandidateIds: [], tickets: [] };
-  if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
+  const shell = includeImportFailureTickets
+    ? processChildRunnerShellFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo })
+    : { tickets: [] };
+  if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0 || shell.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
   }
@@ -4121,7 +4245,7 @@ function processResolutionTickets({
     schema: "generic-repo-full-intake.resolution-queue.v1",
     runId,
     status: "terminal",
-    tickets: [...closed.tickets, ...live.tickets, ...imports.tickets].map((ticket) => ({
+    tickets: [...closed.tickets, ...live.tickets, ...imports.tickets, ...shell.tickets].map((ticket) => ({
       groupId: ticket.groupId,
       path: ticket.isolation.ticketPath,
       status: ticket.status,
@@ -4129,7 +4253,7 @@ function processResolutionTickets({
       affectedCandidateIds: ticket.affectedCandidateIds,
     })),
     requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds]),
-    terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length,
+    terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length + shell.tickets.length,
     closedCandidateIds: closed.closedCandidateIds,
     openTicketCount: 0,
   };
@@ -4764,6 +4888,17 @@ function isChildUsageLimitSummary(summary) {
   );
 }
 
+function isChildShellLaunchFailureSummary(summary) {
+  const text = childSummaryText(summary);
+  return (
+    Array.isArray(summary?.changedPaths) &&
+    summary.changedPaths.length === 0 &&
+    Array.isArray(summary?.unplannedPaths) &&
+    summary.unplannedPaths.length === 0 &&
+    CHILD_SHELL_LAUNCH_REASONS.some((fragment) => text.includes(fragment))
+  );
+}
+
 function childUsageLimitFailureEvidence({ batchReportPath, targetRepo }) {
   const report = readCompactJsonIfExists(
     absoluteReportPath(targetRepo, batchReportPath),
@@ -4791,10 +4926,45 @@ function childUsageLimitFailureEvidence({ batchReportPath, targetRepo }) {
   };
 }
 
+function childShellLaunchFailureEvidence({ batchReportPath, targetRepo }) {
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "child-shell-launch-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
+  const importerRunId = report?.importer?.runId || report?.items?.[0]?.importerRunId || null;
+  if (!importerRunId) return null;
+  let summaries = [];
+  try {
+    summaries = childRunSummariesForImporter(targetRepo, importerRunId);
+  } catch (_error) {
+    return null;
+  }
+  const summary = summaries.find(isChildShellLaunchFailureSummary) || null;
+  if (!summary) return null;
+  const text = childSummaryText(summary);
+  const matchedReason = CHILD_SHELL_LAUNCH_REASONS.find((fragment) => text.includes(fragment)) || "child_shell_launch_failed";
+  return {
+    batchId: summary.batchId || null,
+    batchReport: batchReportPath || null,
+    childRunStatus: summary.status || null,
+    importerRunId,
+    reason: "codex_child_runner_shell_unavailable",
+    shellErrorText: matchedReason,
+    stderrTailContainsShellFailure: true,
+  };
+}
+
 function childUsageLimitItemReason(evidence) {
   return evidence?.retryAfterText
     ? `codex_child_runner_usage_limit_retry_after:${evidence.retryAfterText}`
     : "codex_child_runner_usage_limit";
+}
+
+function childShellLaunchItemReason(evidence) {
+  return evidence?.shellErrorText
+    ? `codex_child_runner_shell_unavailable:${safeId(evidence.shellErrorText)}`
+    : "codex_child_runner_shell_unavailable";
 }
 
 function pendingChildRunnerUsageLimitBlocker(ledger) {
@@ -4806,6 +4976,19 @@ function pendingChildRunnerUsageLimitBlocker(ledger) {
     candidateId: entry.id,
     reason: entry.failClosed?.reason || entry.implementation?.failureReason || "codex_child_runner_usage_limit",
     retryAfterText: evidence.retryAfterText || null,
+    resolutionTicket: entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null,
+  };
+}
+
+function pendingChildRunnerShellUnavailableBlocker(ledger) {
+  const entry = (ledger.entries || []).find((candidate) => candidate.status === "blocked_child_runner_shell_unavailable");
+  if (!entry) return null;
+  const evidence = entry.implementation?.childRunnerShellFailure || entry.failClosed?.childRunnerShellFailure || {};
+  return {
+    code: "child-runner-shell-unavailable",
+    candidateId: entry.id,
+    reason: entry.failClosed?.reason || entry.implementation?.failureReason || "codex_child_runner_shell_unavailable",
+    shellErrorText: evidence.shellErrorText || null,
     resolutionTicket: entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null,
   };
 }
@@ -5339,6 +5522,9 @@ function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targe
   if (item.childRunnerUsageLimit) {
     entry.failClosed.childRunnerUsageLimit = item.childRunnerUsageLimit;
   }
+  if (item.childRunnerShellFailure) {
+    entry.failClosed.childRunnerShellFailure = item.childRunnerShellFailure;
+  }
   entry.implementation = {
     ...(entry.implementation || {}),
     failureReason: item.reason || null,
@@ -5347,6 +5533,9 @@ function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targe
   };
   if (item.childRunnerUsageLimit) {
     entry.implementation.childRunnerUsageLimit = item.childRunnerUsageLimit;
+  }
+  if (item.childRunnerShellFailure) {
+    entry.implementation.childRunnerShellFailure = item.childRunnerShellFailure;
   }
   if (item.resolutionTicket) {
     const ticket = readResolutionTicket(targetRepo, item.resolutionTicket);
@@ -6803,6 +6992,59 @@ function runStrictOnePhase({
   if (completedPhase === "ledger_docs_handoff_commit_finalization") {
     const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
     if (artifactDirtyPaths.length === 0) {
+      const shellFailureEvidence = childShellLaunchFailureEvidence({
+        batchReportPath: item.batchReport || batch?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (shellFailureEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: shellFailureEvidence.reason,
+          type: "child-runner-shell-unavailable",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...shellFailureEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_shell_environment_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-shell-unavailable",
+        });
+        markItemForChildRunnerShellUnavailable(item, ticket, shellFailureEvidence);
+        const blockedLedger = readJson(ledgerPath, "queue-ledger");
+        updateLedgerTerminalStatus({ candidate, item, ledger: blockedLedger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        report.status = "blocked_child_runner_shell_unavailable";
+        report.ok = true;
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_shell_unavailable",
+          reason: item.reason,
+          runId,
+        });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
       item.status = "blocked_no_candidate_artifact";
       item.reason = "controlled_merge_produced_no_candidate_artifact";
       item.completedAt = new Date().toISOString();
@@ -7268,6 +7510,48 @@ export async function runFullIntake(options, cwd = process.cwd()) {
     return report;
   }
 
+  const childRunnerShellUnavailableBlocker = pendingChildRunnerShellUnavailableBlocker(initialLedger);
+  if (childRunnerShellUnavailableBlocker) {
+    report.status = "blocked_child_runner_shell_unavailable";
+    report.ok = true;
+    report.blockers.push(childRunnerShellUnavailableBlocker);
+    state.status = report.status;
+    state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
+    appendEvent(runRoot, { event: "child_runner_shell_unavailable_global_stop", runId, ...childRunnerShellUnavailableBlocker });
+    writeJson(path.join(runRoot, "run-report.json"), report);
+    return report;
+  }
+
   if (strictOnePhase) {
     return runStrictOnePhase({
       contextBudget,
@@ -7641,6 +7925,45 @@ export async function runFullIntake(options, cwd = process.cwd()) {
 
     const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
     if (artifactDirtyPaths.length === 0) {
+      const shellFailureEvidence = childShellLaunchFailureEvidence({
+        batchReportPath: item.batchReport || batch?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (shellFailureEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: shellFailureEvidence.reason,
+          type: "child-runner-shell-unavailable",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...shellFailureEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_shell_environment_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-shell-unavailable",
+        });
+        markItemForChildRunnerShellUnavailable(item, ticket, shellFailureEvidence);
+        processedIds.add(candidate.id);
+        updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+        state = saveState(runRoot, pushItem(state, item));
+        report.items.push(item);
+        report.status = "blocked_child_runner_shell_unavailable";
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_shell_unavailable",
+          reason: item.reason,
+          runId,
+        });
+        continue;
+      }
       item.status = "blocked_no_candidate_artifact";
       item.reason = "controlled_merge_produced_no_candidate_artifact";
       item.completedAt = new Date().toISOString();

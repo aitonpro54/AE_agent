@@ -70,6 +70,13 @@ evidence trees, old plan archives, or longrun runtime logs.
   resolution ticket and ledger entry, requeues only the scoped quota-blocked
   candidates, consumes only the previous batch evidence, and keeps validation,
   artifact, duplicate, path, reducer, no-push, and no-PR gates unchanged.
+- [x] Aturtur child-runner shell blocker infrastructure (2026-07-06): added
+  detection for child Codex runs that complete with no product changes because
+  the Windows sandbox cannot launch shell commands (`CreateProcessWithLogonW`
+  / `windows sandbox`). These now become
+  `blocked_child_runner_shell_unavailable` external blockers with evidence and
+  a global queue stop instead of misleading `blocked_no_candidate_artifact`
+  candidate/content failures.
 
 ## Decision Log
 
@@ -115,6 +122,10 @@ evidence trees, old plan archives, or longrun runtime logs.
   parent-owned option after a recorded user decision. The reset is not a
   validation bypass: it only returns the named candidate to `queued` so the next
   normal serial reducer step can rerun all usual gates.
+- Child-runner shell launch failures are external runtime blockers. If a child
+  run cannot execute even basic shell commands in its worktree, the queue must
+  stop before selecting another candidate; this protects candidates from false
+  `blocked_no_candidate_artifact` terminal outcomes.
 
 ## Validation Notes
 
@@ -277,6 +288,26 @@ Run note 2026-07-06, child-runner quota reset infrastructure:
   `childRunnerUsageLimitReset` and `userDecision` evidence, requeues only the
   named quota-blocked candidate, and does not bypass validation, artifact,
   duplicate, path-policy, reducer, no-push, or no-PR gates.
+- `node --check orchestrator/run-generic-repo-full-intake.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `git diff --check`: pass, with existing CRLF warnings only.
+- `npm.cmd run smoke:full-intake`: pass.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
+Run note 2026-07-06, child-runner shell blocker infrastructure:
+
+- Progress: added `blocked_child_runner_shell_unavailable` detection for child
+  Codex runs whose logs show `CreateProcessWithLogonW failed` / `windows
+  sandbox` and produce no candidate artifact.
+- Decision Log: this is external runtime state, not candidate/content failure.
+  The runner records child-run evidence, writes a resolution ticket, updates
+  the ledger entry, and globally stops queued candidate selection until the
+  child shell environment is fixed.
 - `node --check orchestrator/run-generic-repo-full-intake.mjs`: pass.
 - `node --check scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
 - `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass.

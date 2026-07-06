@@ -297,6 +297,11 @@ function writeFakeCodex(root) {
       '    console.log(`fake codex intentionally wrote no candidate artifact for ${relative}`);',
       '    return;',
       '  }',
+      '  if (process.env.FAKE_CODEX_SHELL_UNAVAILABLE === "1") {',
+      '    console.log("Shell unavailable in child worktree.");',
+      '    console.error("windows sandbox: CreateProcessWithLogonW failed: 1909");',
+      '    return;',
+      '  }',
       '  const absolute = path.join(cwd, relative);',
       '  fs.mkdirSync(path.dirname(absolute), { recursive: true });',
       '  fs.writeFileSync(absolute, `// fake full-intake import\\nmodule.exports = ${JSON.stringify(relative)};\\n`, "utf8");',
@@ -3391,6 +3396,63 @@ function assertChildUsageLimitStopsNewCandidateSelection() {
   }
 }
 
+function assertChildShellLaunchFailureBlocksNewCandidateSelection() {
+  const fixture = createFixture("child-shell-global");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(path.join(fixture.source, "Selection", "Shell_Blocked.jsx"), "function shellBlocked() { return true; }\n", "utf8");
+    fs.writeFileSync(path.join(fixture.source, "Selection", "Queued.jsx"), "function queued() { return true; }\n", "utf8");
+    const blocked = entry({
+      id: "tool-selection-shell-blocked",
+      sourcePath: "Selection/Shell_Blocked.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        plannedPaths: ["scripts/imported-tools/shell-blocked.js"],
+        sliceId: "fixture-shell-blocked-import"
+      },
+      queueRank: 1
+    });
+    const queued = entry({
+      id: "tool-selection-queued-after-shell-blocker",
+      sourcePath: "Selection/Queued.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        plannedPaths: ["scripts/imported-tools/queued-after-shell-blocker.js"],
+        sliceId: "fixture-queued-after-shell-blocker-import"
+      },
+      queueRank: 2
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [blocked, queued]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const env = {
+      ...fakeCodexEnv(binDir),
+      FAKE_CODEX_SHELL_UNAVAILABLE: "1"
+    };
+    const output = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "child-shell-global", 1, env));
+    assert.strictEqual(output.status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(output.items[0].candidateId, blocked.id);
+    assert.strictEqual(output.items[0].status, "blocked_child_runner_shell_unavailable");
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const blockedAfter = ledger.entries.find((item) => item.id === blocked.id);
+    const queuedAfter = ledger.entries.find((item) => item.id === queued.id);
+    assert.strictEqual(blockedAfter.status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(blockedAfter.failClosed.childRunnerShellFailure.shellErrorText, "CreateProcessWithLogonW failed");
+    assert.strictEqual(queuedAfter.status, "queued");
+    const stopped = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "child-shell-global", 1, env));
+    assert.strictEqual(stopped.status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(stopped.items.length, 0);
+    assert.strictEqual(stopped.blockers[0].candidateId, blocked.id);
+    assert.strictEqual(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "queued-after-shell-blocker.js")), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertManifestNamedRepoGuardFailureIsScopedImportRetry() {
   const fixture = createFixture("manifest-guard-retry");
   try {
@@ -3963,6 +4025,7 @@ function main() {
   assertChildUsageLimitFailureBlocksUntilReset();
   assertChildUsageLimitResetRequiresExplicitScopedOptIn();
   assertChildUsageLimitStopsNewCandidateSelection();
+  assertChildShellLaunchFailureBlocksNewCandidateSelection();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
   assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();
   assertChildTimeoutResolutionRecoversImporterWorktreePatch();
