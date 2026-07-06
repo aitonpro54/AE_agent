@@ -88,6 +88,8 @@ function parseArgs(argv) {
       options.compactJson = true;
     } else if (arg === "--json") {
       options.json = true;
+    } else if (arg === "--allow-unlicensed-personal-use-intake") {
+      options.allowUnlicensedPersonalUseIntake = true;
     } else if (arg === "--repo") {
       options.repo = argv[++index];
     } else if (arg === "--run-id") {
@@ -117,9 +119,15 @@ function usage() {
   return [
     "Usage:",
     "  node orchestrator/run-generic-repo-auto-intake.mjs --repo <github-url-or-local-path> --run-id <id> --context-percent <n> --parallel-candidate-limit 2 --compact-json",
+    "  node orchestrator/run-generic-repo-auto-intake.mjs --repo <repo> --run-id <id> --context-percent <n> --allow-unlicensed-personal-use-intake --compact-json",
     "",
     "Creates a bounded ignored auto-intake runtime with inventory, queue ledger,",
     "plan-only parallel candidate scheduling, compact status, proof, and handoff.",
+    "",
+    "License override:",
+    "  --allow-unlicensed-personal-use-intake is an explicit local-only opt-in.",
+    "  It records provenance and the no-push/no-PR/no-remote-publication boundary,",
+    "  but does not disable validation, duplicate, path, raw-copy, or reducer gates.",
   ].join("\n");
 }
 
@@ -621,7 +629,18 @@ function candidateIdFromPath(relativePath) {
   return safeId(`tool-${relativePath}`, "tool-candidate");
 }
 
-function buildEntries({ inventory, sourceRoot }) {
+function localPersonalUseLicenseOverrideFor(options, inventory) {
+  const enabled = options.allowUnlicensedPersonalUseIntake === true;
+  const applies = enabled && inventory.license.referenceOnlyDefault === true;
+  return {
+    enabled,
+    applies,
+    userDecision: enabled ? "local_personal_use_license_override=true" : null,
+    boundary: enabled ? "local-use-only-no-push-no-pr-no-remote-publication" : null,
+  };
+}
+
+function buildEntries({ inventory, licenseOverride, sourceRoot }) {
   let queueRank = 1;
   return inventory.files
     .filter((file) => file.category === "jsx" || file.category === "jsxinc")
@@ -631,7 +650,8 @@ function buildEntries({ inventory, sourceRoot }) {
       const authors = authorsForSource(text);
       const classification = classifyCandidate(riskFlags);
       const safeClassification = SAFE_CLASSIFICATIONS.has(classification);
-      const referenceOnly = inventory.license.referenceOnlyDefault === true;
+      const sourceReferenceOnly = inventory.license.referenceOnlyDefault === true;
+      const referenceOnly = sourceReferenceOnly && !licenseOverride.applies;
       const canQueueForImport = !referenceOnly && safeClassification && riskFlags.level === "low";
       const rank = canQueueForImport ? queueRank++ : null;
       const status = referenceOnly
@@ -665,6 +685,11 @@ function buildEntries({ inventory, sourceRoot }) {
           recognized: inventory.license.recognized,
           referenceOnly,
           importAllowed: !referenceOnly,
+          sourceReferenceOnlyDefault: sourceReferenceOnly,
+          sourceImportAllowed: inventory.license.importAllowed,
+          localPersonalUseOverride: licenseOverride.applies,
+          userDecision: licenseOverride.applies ? licenseOverride.userDecision : null,
+          publicationBoundary: licenseOverride.applies ? licenseOverride.boundary : null,
           attributionRequired: inventory.license.attributionRequired === true,
           rawJsxCopyAllowed: false,
         },
@@ -705,7 +730,7 @@ function firstQueued(entries) {
     .sort((left, right) => left.queueRank - right.queueRank || left.id.localeCompare(right.id))[0] || null;
 }
 
-function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout }) {
+function buildLedger({ cwd, entries, identity, inventory, licenseOverride, runId, sourceCheckout }) {
   const target = targetGitInfo(cwd);
   const queued = firstQueued(entries);
   const ledger = {
@@ -722,6 +747,10 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       licenseStatus: inventory.license.status,
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
       attributionRequired: inventory.license.attributionRequired === true,
+      localPersonalUseLicenseOverride: licenseOverride.enabled,
+      licenseOverrideApplied: licenseOverride.applies,
+      userDecision: licenseOverride.userDecision,
+      publicationBoundary: licenseOverride.boundary,
     },
     target: {
       repoPath: normalizeRepoPath(cwd),
@@ -738,6 +767,8 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       noDependencyOrPackageChanges: true,
       noRawJsxCopiedIntoProduct: true,
       noUserAssetMutation: true,
+      localPersonalUseOnly: licenseOverride.enabled,
+      remotePublicationAllowed: false,
       sourceRepoWritesAllowed: false,
       parallelAllowedOnlyFor: ["plan-only candidate scheduling"],
       serialGates: [
@@ -754,14 +785,18 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       ],
     },
     licensePolicy: {
-      failClosedOnMissingOrUnrecognized: true,
+      failClosedOnMissingOrUnrecognized: !licenseOverride.applies,
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
       rawJsxCopyAllowed: false,
-      importAllowed: inventory.license.importAllowed,
+      importAllowed: licenseOverride.applies ? true : inventory.license.importAllowed,
       attributionRequired: inventory.license.attributionRequired === true,
       status: inventory.license.status,
       id: inventory.license.id,
       file: inventory.license.file,
+      localPersonalUseOverride: licenseOverride.enabled,
+      overrideApplied: licenseOverride.applies,
+      userDecision: licenseOverride.userDecision,
+      publicationBoundary: licenseOverride.boundary,
     },
     classificationBuckets: countBy(entries, (entry) => entry.classification),
     statusBuckets: countBy(entries, (entry) => entry.status),
@@ -773,7 +808,9 @@ function buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout 
       sourcePath: queued.sourcePath,
       classification: queued.classification,
       suggestedTools: queued.suggestedTools,
-      reason: "First safe queued candidate with permissive recognized license.",
+      reason: licenseOverride.applies
+        ? "First safe queued candidate after explicit local personal-use license override; license remains provenance-only."
+        : "First safe queued candidate with permissive recognized license.",
     };
   }
   return ledger;
@@ -812,6 +849,7 @@ function buildParallelPlan({ baseHead, limit, runId, selected }) {
         id: entry.license.id,
         referenceOnly: entry.license.referenceOnly,
         importAllowed: entry.license.importAllowed,
+        localPersonalUseOverride: entry.license.localPersonalUseOverride === true,
       },
       riskLevel: entry.riskFlags.level,
       plannedPaths: entry.implementation.plannedPaths,
@@ -871,7 +909,7 @@ function artifactRef(cwd, filePath) {
   };
 }
 
-function buildStatus({ artifacts, entries, inventory, limit, runId, selected, slug }) {
+function buildStatus({ artifacts, entries, inventory, licenseOverride, limit, runId, selected, slug }) {
   return {
     schema: STATUS_SCHEMA,
     ok: true,
@@ -890,6 +928,10 @@ function buildStatus({ artifacts, entries, inventory, limit, runId, selected, sl
       id: inventory.license.id,
       referenceOnlyDefault: inventory.license.referenceOnlyDefault,
       attributionRequired: inventory.license.attributionRequired === true,
+      localPersonalUseOverride: licenseOverride.enabled,
+      overrideApplied: licenseOverride.applies,
+      userDecision: licenseOverride.userDecision,
+      publicationBoundary: licenseOverride.boundary,
     },
     parallel: {
       mode: "plan_only",
@@ -905,7 +947,7 @@ function buildStatus({ artifacts, entries, inventory, limit, runId, selected, sl
   };
 }
 
-function buildProof({ artifacts, candidateLimit, entries, inventory, parallelPlan, runId, slug }) {
+function buildProof({ artifacts, candidateLimit, entries, inventory, licenseOverride, parallelPlan, runId, slug }) {
   const missingOrUnrecognized = inventory.license.status === "missing" || inventory.license.status === "unrecognized";
   const attributionRequired = inventory.license.attributionRequired === true;
   return {
@@ -916,8 +958,12 @@ function buildProof({ artifacts, candidateLimit, entries, inventory, parallelPla
     assertions: {
       boundedLedger: entries.length <= candidateLimit,
       missingOrUnrecognizedLicenseReferenceOnly: missingOrUnrecognized
-        ? entries.every((entry) => entry.referenceOnly === true && entry.status === "reference_only")
+        ? licenseOverride.applies || entries.every((entry) => entry.referenceOnly === true && entry.status === "reference_only")
         : true,
+      localPersonalUseLicenseOverrideRecorded: !licenseOverride.enabled ||
+        (licenseOverride.userDecision === "local_personal_use_license_override=true" &&
+          licenseOverride.boundary === "local-use-only-no-push-no-pr-no-remote-publication"),
+      licenseOverrideDoesNotAllowPublication: !licenseOverride.enabled || licenseOverride.boundary?.includes("no-push"),
       noLocalOllama: true,
       noFallbackProviders: true,
       noLiveCepAe: true,
@@ -935,7 +981,7 @@ function buildProof({ artifacts, candidateLimit, entries, inventory, parallelPla
   };
 }
 
-function writeRuntimeHandoff({ artifacts, entries, inventory, runId, slug }) {
+function writeRuntimeHandoff({ artifacts, entries, inventory, licenseOverride, runId, slug }) {
   const lines = [
     "# Generic Repo Auto Intake Handoff",
     "",
@@ -953,6 +999,12 @@ function writeRuntimeHandoff({ artifacts, entries, inventory, runId, slug }) {
     "",
     "decisions:",
     `- licenseStatus=${inventory.license.status}; referenceOnlyDefault=${inventory.license.referenceOnlyDefault}.`,
+    ...(licenseOverride.enabled
+      ? [
+          `- ${licenseOverride.userDecision}; applied=${licenseOverride.applies}; boundary=${licenseOverride.boundary}.`,
+          "- License/provenance is informational for this local run only; all validation, reducer, duplicate, path-scope, and raw-copy gates remain active.",
+        ]
+      : []),
     "- raw JSX copy, candidate execution, child worktrees, central merge, Local/Ollama, fallback providers, live CEP/AE, dependency changes, push and PR are disabled.",
     "",
     "nextPrompt: Review the generated queue-ledger.json and parallel-plan.json, then choose explicit candidate ids before any future scoped execution.",
@@ -961,7 +1013,7 @@ function writeRuntimeHandoff({ artifacts, entries, inventory, runId, slug }) {
   return lines.join("\n");
 }
 
-function compactOutput({ artifacts, entries, identity, inventory, limit, runId, selected, slug }) {
+function compactOutput({ artifacts, entries, identity, inventory, licenseOverride, limit, runId, selected, slug }) {
   return {
     schema: COMPACT_OUTPUT_SCHEMA,
     ok: true,
@@ -976,6 +1028,10 @@ function compactOutput({ artifacts, entries, identity, inventory, limit, runId, 
         id: inventory.license.id,
         referenceOnlyDefault: inventory.license.referenceOnlyDefault,
         attributionRequired: inventory.license.attributionRequired === true,
+        localPersonalUseOverride: licenseOverride.enabled,
+        overrideApplied: licenseOverride.applies,
+        userDecision: licenseOverride.userDecision,
+        publicationBoundary: licenseOverride.boundary,
       },
     },
     counts: {
@@ -1045,11 +1101,12 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
 
   const source = prepareSource(identity, runRoot);
   const inventory = collectInventory(source.checkout, options);
+  const licenseOverride = localPersonalUseLicenseOverrideFor(options, inventory);
   const inventoryPath = path.join(runRoot, "inventory.json");
   writeJson(inventoryPath, inventory);
 
-  const entries = buildEntries({ inventory, sourceRoot: source.checkout }).slice(0, candidateLimit);
-  const ledger = buildLedger({ cwd, entries, identity, inventory, runId, sourceCheckout: source.checkout });
+  const entries = buildEntries({ inventory, licenseOverride, sourceRoot: source.checkout }).slice(0, candidateLimit);
+  const ledger = buildLedger({ cwd, entries, identity, inventory, licenseOverride, runId, sourceCheckout: source.checkout });
   const ledgerPath = path.join(runRoot, "queue-ledger.json");
   writeJson(ledgerPath, ledger);
 
@@ -1080,6 +1137,7 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
     artifacts: artifactBase,
     entries,
     inventory,
+    licenseOverride,
     limit: parallelLimit,
     runId,
     selected,
@@ -1095,6 +1153,7 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
     candidateLimit,
     entries,
     inventory,
+    licenseOverride,
     parallelPlan,
     runId,
     slug,
@@ -1106,7 +1165,7 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
   const handoffPath = path.join(runRoot, "handoff.md");
   writeFileSync(
     handoffPath,
-    writeRuntimeHandoff({ artifacts: artifactsWithProof, entries, inventory, runId, slug }),
+    writeRuntimeHandoff({ artifacts: artifactsWithProof, entries, inventory, licenseOverride, runId, slug }),
     "utf8",
   );
   const artifacts = { ...artifactsWithProof, handoff: artifactRef(cwd, handoffPath) };
@@ -1123,7 +1182,17 @@ export async function runAutoIntake(options, cwd = process.cwd()) {
     ledger,
     parallelPlan,
     artifacts,
-    compact: compactOutput({ artifacts, entries, identity, inventory, limit: parallelLimit, runId, selected, slug }),
+    compact: compactOutput({
+      artifacts,
+      entries,
+      identity,
+      inventory,
+      licenseOverride,
+      limit: parallelLimit,
+      runId,
+      selected,
+      slug,
+    }),
   };
 }
 

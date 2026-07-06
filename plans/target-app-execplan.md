@@ -36,6 +36,13 @@ evidence trees, old plan archives, or longrun runtime logs.
   did not expose a recognized license, so all 46 JSX candidates remain
   `reference_only` with no queued import or worktree execution. Ledger:
   `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
+- [x] Aturtur local-use license override infrastructure (2026-07-06): added
+  explicit `--allow-unlicensed-personal-use-intake` support to the generic repo
+  auto-intake runner. The override is opt-in, records
+  `local_personal_use_license_override=true`, preserves source license
+  provenance, keeps no-push/no-PR/no-remote-publication/local-use-only
+  boundaries, and does not disable validation, duplicate, path-scope, raw-copy,
+  or reducer gates.
 
 ## Decision Log
 
@@ -56,10 +63,13 @@ evidence trees, old plan archives, or longrun runtime logs.
   and approval path exist.
 - Longrun/evidence marker literals are allowed only where they are protocol
   contracts or smoke fixtures for the generic repository importer.
-- Missing or unrecognized upstream license keeps external scripts in
-  reference-only mode. For `aturtur/after-effects-scripts`, no raw JSX copy,
-  central source merge, candidate execution, child worktree execution, push, PR,
-  live CEP/AE, dependency change, Local/Ollama, or fallback provider was used.
+- Default missing or unrecognized upstream license handling remains fail-closed
+  reference-only. For `full-intake-aturtur-after-effects-scripts`, the user
+  explicitly approved a local-only personal-use override. That run-level
+  decision is informational for license/provenance only: no raw JSX copy,
+  central source merge, push, PR, remote publication, live CEP/AE mutation,
+  dependency change, Local/Ollama, or fallback provider is allowed, and normal
+  typed validation/reducer gates still apply.
 
 ## Validation Notes
 
@@ -91,6 +101,19 @@ Run note 2026-07-06, `full-intake-aturtur-after-effects-scripts`:
 - `npm.cmd run smoke:solutions`: pass.
 - `npm.cmd run smoke:planning`: pass.
 - `npm.cmd run smoke:full-intake`: pass on rerun with a 300s timeout.
+
+Run note 2026-07-06, license override infrastructure:
+
+- `node --check orchestrator/run-generic-repo-auto-intake.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
+- `git diff --check`: pass.
+- `npm.cmd run smoke:full-intake`: pass; includes default missing-license
+  fail-closed fixture and explicit local personal-use override fixture.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
 
 Live AE/CEP checks are read-only unless the current milestone explicitly
 approves mutation:

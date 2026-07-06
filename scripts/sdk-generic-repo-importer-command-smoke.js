@@ -8,6 +8,7 @@ const { spawnSync } = require("child_process");
 
 const repo = path.resolve(__dirname, "..");
 const runner = path.join(repo, "orchestrator/run-generic-repo-tool-importer.mjs");
+const autoIntakeRunner = path.join(repo, "orchestrator/run-generic-repo-auto-intake.mjs");
 
 function sh(cwd, args) {
   const result = spawnSync(args[0], args.slice(1), {
@@ -21,6 +22,16 @@ function sh(cwd, args) {
 
 function run(args, cwd = repo, env = {}) {
   return spawnSync(process.execPath, [runner, ...args], {
+    cwd,
+    env: { ...process.env, ...env },
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 60000,
+  });
+}
+
+function runAutoIntake(args, cwd = repo, env = {}) {
+  return spawnSync(process.execPath, [autoIntakeRunner, ...args], {
     cwd,
     env: { ...process.env, ...env },
     encoding: "utf8",
@@ -617,6 +628,65 @@ function assertLicenseStopFixture() {
     const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
     assert.notStrictEqual(result.status, 0);
     assert.match(result.stderr, /license-review-failed/);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertAutoIntakePersonalUseLicenseOverrideFixture() {
+  const fixture = createTempFixture("auto-license-override");
+  try {
+    fs.rmSync(path.join(fixture.source, "LICENSE"), { force: true });
+    const baseArgs = [
+      "--repo",
+      fixture.source,
+      "--run-id",
+      "aux016-auto-license-override",
+      "--context-percent",
+      "0",
+      "--parallel-candidate-limit",
+      "2",
+      "--compact-json",
+    ];
+
+    const defaultOutput = parseJson(runAutoIntake(baseArgs, fixture.target));
+    assert.strictEqual(defaultOutput.source.license.status, "missing");
+    assert.strictEqual(defaultOutput.source.license.localPersonalUseOverride, false);
+    assert.strictEqual(defaultOutput.counts.queuedCandidates, 0);
+    assert(defaultOutput.counts.referenceOnlyCandidates > 0);
+    assert(defaultOutput.statusBuckets.reference_only > 0);
+
+    const overrideOutput = parseJson(
+      runAutoIntake([...baseArgs, "--allow-unlicensed-personal-use-intake"], fixture.target),
+    );
+    assert.strictEqual(overrideOutput.source.license.status, "missing");
+    assert.strictEqual(overrideOutput.source.license.localPersonalUseOverride, true);
+    assert.strictEqual(overrideOutput.source.license.overrideApplied, true);
+    assert.strictEqual(overrideOutput.source.license.userDecision, "local_personal_use_license_override=true");
+    assert.strictEqual(
+      overrideOutput.source.license.publicationBoundary,
+      "local-use-only-no-push-no-pr-no-remote-publication",
+    );
+    assert.strictEqual(overrideOutput.counts.referenceOnlyCandidates, 0);
+    assert(overrideOutput.counts.queuedCandidates > 0);
+    assert(overrideOutput.parallel.selectedCandidateIds.length > 0);
+
+    const ledger = readJson(path.resolve(fixture.target, overrideOutput.artifacts.ledger));
+    assert.strictEqual(ledger.licensePolicy.failClosedOnMissingOrUnrecognized, false);
+    assert.strictEqual(ledger.licensePolicy.localPersonalUseOverride, true);
+    assert.strictEqual(ledger.licensePolicy.overrideApplied, true);
+    assert.strictEqual(ledger.constraints.remotePublicationAllowed, false);
+    assert.strictEqual(ledger.constraints.noRawJsxCopiedIntoProduct, true);
+    const queued = ledger.entries.find((entry) => entry.status === "queued");
+    assert(queued, "expected at least one queued low-risk candidate");
+    assert.strictEqual(queued.license.localPersonalUseOverride, true);
+    assert.strictEqual(queued.license.userDecision, "local_personal_use_license_override=true");
+    assert.strictEqual(queued.implementation.rawJsxCopyAllowed, false);
+
+    const proof = readJson(path.resolve(fixture.target, overrideOutput.artifacts.proof));
+    assert.strictEqual(proof.assertions.localPersonalUseLicenseOverrideRecorded, true);
+    assert.strictEqual(proof.assertions.licenseOverrideDoesNotAllowPublication, true);
     assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
   } finally {
     removeFixture(fixture.root);
@@ -2286,6 +2356,7 @@ function main() {
   assertMissingOutputFailClosedFixture();
   assertUnsafeSecretFixture();
   assertLicenseStopFixture();
+  assertAutoIntakePersonalUseLicenseOverrideFixture();
   assertNamedRepoAssumptionFixture();
   assertNamedRepoOperationalIdentityAllowedFixture();
   assertAnalysisResumeFixture();
