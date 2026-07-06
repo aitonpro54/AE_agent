@@ -31,6 +31,11 @@ evidence trees, old plan archives, or longrun runtime logs.
   tracked runtime roots, compact plan size, ignore surface, and legacy
   longrun/evidence markers outside importer protocol fixtures. Commit: final
   guard commit.
+- [x] Aturtur reference-only intake init (2026-07-06): created guarded
+  auto-intake runtime for `aturtur/after-effects-scripts`; the source repository
+  did not expose a recognized license, so all 46 JSX candidates remain
+  `reference_only` with no queued import or worktree execution. Ledger:
+  `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
 
 ## Decision Log
 
@@ -51,6 +56,10 @@ evidence trees, old plan archives, or longrun runtime logs.
   and approval path exist.
 - Longrun/evidence marker literals are allowed only where they are protocol
   contracts or smoke fixtures for the generic repository importer.
+- Missing or unrecognized upstream license keeps external scripts in
+  reference-only mode. For `aturtur/after-effects-scripts`, no raw JSX copy,
+  central source merge, candidate execution, child worktree execution, push, PR,
+  live CEP/AE, dependency change, Local/Ollama, or fallback provider was used.
 
 ## Validation Notes
 
@@ -71,6 +80,17 @@ Run focused smoke groups when their surface changes:
 - `npm.cmd run smoke:planning`
 - `npm.cmd run smoke:bridge`
 - `npm.cmd run smoke:full-intake`
+
+Run note 2026-07-06, `full-intake-aturtur-after-effects-scripts`:
+
+- `node orchestrator/run-generic-repo-auto-intake.mjs --repo https://github.com/aturtur/after-effects-scripts --run-id full-intake-aturtur-after-effects-scripts --context-percent 0 --parallel-candidate-limit 4 --compact-json`: pass; created reference-only runtime with 46 candidates and no queued imports.
+- `node orchestrator/run-generic-repo-full-intake.mjs --ledger .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json --run-id full-intake-aturtur-after-effects-scripts --plan-parallel-candidate-worktrees --parallel-candidate-limit 4 --compact-json --context-percent 0`: pass; selected 0 candidates, created 0 worktrees.
+- `node orchestrator/full-intake-ledger-summary.mjs --ledger .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json --compact`: pass; `entries=46`, `reference_only=46`.
+- `npm.cmd run check:rules`: blocked by pre-existing untracked `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status literal; not caused by this milestone's tracked edit.
+- `git diff --check`: pass.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run smoke:full-intake`: pass on rerun with a 300s timeout.
 
 Live AE/CEP checks are read-only unless the current milestone explicitly
 approves mutation:
