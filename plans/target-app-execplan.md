@@ -31,6 +31,24 @@ evidence trees, old plan archives, or longrun runtime logs.
   tracked runtime roots, compact plan size, ignore surface, and legacy
   longrun/evidence markers outside importer protocol fixtures. Commit: final
   guard commit.
+- [ ] Provider/Auth Contracts + Codex CLI Read-Only Planner: define and test
+  the non-mutating provider/auth/planning surface before runtime provider or
+  CLI implementation. Scope: provider readiness/result contracts, UI-facing
+  billing/auth copy, secret-store interface plus redaction, Codex CLI detection
+  and fixture-only JSONL parsing, scratch-dir planner contract, AE Plan gate
+  fixtures, and generated fixtures only. Likely touched surfaces:
+  `mcp-server/`, `scripts/`, `cep-panel/`, `specs/`, and this plan. Stop-lines:
+  no live AE mutation, no raw ExtendScript fallback implementation, no
+  broad/default CEP smoke, no OpenAI CLI planner live lane, no Local/Ollama live
+  path, no fallback routing, no ChatGPT cookies/undocumented APIs, no
+  dependency changes, no push/PR. Acceptance: readiness fixtures cover every
+  provider state, API-vs-CLI copy is deterministic, secrets are masked and not
+  stored in browser localStorage, Codex CLI runs only from generated scratch
+  input when enabled, JSONL parser covers auth/model/malformed/timeout/cancel/
+  partial/non-zero/final-message cases, AE Plan fixtures cover read-only,
+  mutating, invalid tool, raw script rejection, idempotency, and semantic
+  verifier failure. Validate with touched-file `node --check`,
+  `npm.cmd run check:rules`, `git diff --check`, and focused non-live smokes.
 
 ## Decision Log
 
@@ -51,6 +69,12 @@ evidence trees, old plan archives, or longrun runtime logs.
   and approval path exist.
 - Longrun/evidence marker literals are allowed only where they are protocol
   contracts or smoke fixtures for the generic repository importer.
+- Codex CLI planning is treated as untrusted text generation. The bridge must
+  launch it only from a generated, redacted per-request scratch directory and
+  parse bounded JSONL output into a normalized backend result before any AE Plan
+  validation.
+- OpenAI API billing and ChatGPT/Codex CLI subscription access are separate
+  provider modes with distinct readiness, UI labels, storage, and error states.
 
 ## Validation Notes
 
@@ -71,6 +95,10 @@ Run focused smoke groups when their surface changes:
 - `npm.cmd run smoke:planning`
 - `npm.cmd run smoke:bridge`
 - `npm.cmd run smoke:full-intake`
+
+Provider/Auth + planner contract milestones also require generated fixture
+coverage for provider readiness, secret redaction, Codex CLI JSONL parsing, and
+AE Plan normalization before any live provider or live planner lane is enabled.
 
 Live AE/CEP checks are read-only unless the current milestone explicitly
 approves mutation:
