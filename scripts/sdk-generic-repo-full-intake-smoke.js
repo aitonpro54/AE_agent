@@ -1477,6 +1477,47 @@ function assertParallelReducerRefusesDirtyCentralTree() {
   }
 }
 
+function assertParallelReducerAllowsUnrelatedUntrackedCentralTreeWithOptIn() {
+  const fixture = createFixture("pdu");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const candidate = entry({
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-parallel-untracked-central",
+        plannedPaths: ["scripts/imported-tools/parallel-untracked-central.js"]
+      },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    fs.writeFileSync(path.join(fixture.target, "local-note.txt"), "local\n", "utf8");
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "pdu",
+      1,
+      fakeCodexEnv(binDir),
+      [
+        "--parallel-candidate-worktrees",
+        "--parallel-candidate-limit",
+        "1",
+        "--allow-unrelated-untracked-central-tree"
+      ]
+    ));
+    assert.strictEqual(output.status, "parallel_reducer_completed");
+    assert.strictEqual(output.parallel.worktrees.created, 1);
+    assert(output.commits.length === 1, "parent reducer should commit accepted proposal");
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "parallel-untracked-central.js")));
+    const status = sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]);
+    assert(status.includes("?? local-note.txt"), "unrelated untracked local file should remain untouched");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertParallelContextBudgetStopsBeforeNewWork() {
   const fixture = createFixture("pct");
   try {
@@ -3516,6 +3557,7 @@ function main() {
   assertParallelChildExecutionProducesAcceptedFileProposals();
   assertParallelChildRejectsNonAppendSharedSmokeRewrite();
   assertParallelReducerRefusesDirtyCentralTree();
+  assertParallelReducerAllowsUnrelatedUntrackedCentralTreeWithOptIn();
   assertParallelContextBudgetStopsBeforeNewWork();
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();

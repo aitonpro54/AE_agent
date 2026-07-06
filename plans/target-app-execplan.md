@@ -47,6 +47,12 @@ evidence trees, old plan archives, or longrun runtime logs.
   generic repo auto-intake risk scanner so URLs inside JSX comments/headers do
   not falsely trigger `usesNetwork` and force every candidate into
   `unsafe_skip_tool_gap`. Real code/string network indicators remain scanned.
+- [x] Parallel reducer unrelated-untracked guard (2026-07-06): added explicit
+  `--allow-unrelated-untracked-central-tree` support for scoped parallel
+  candidate runs. The opt-in permits only unrelated untracked central worktree
+  files that do not overlap planned/shared paths, keeps tracked or overlapping
+  dirty paths fail-closed, and stages only accepted proposal/parent-owned paths
+  for reducer commits.
 
 ## Decision Log
 
@@ -77,6 +83,10 @@ evidence trees, old plan archives, or longrun runtime logs.
 - Risk classification must be based on executable JSX surface, not header
   comments. Comment-only project/homepage URLs are provenance metadata and must
   not be treated as network behavior.
+- Parallel candidate reducer commits must be path-scoped to accepted proposal
+  outputs plus parent-owned plan/handoff paths. Unrelated untracked local files
+  may be tolerated only with explicit opt-in and must remain unstaged and
+  untouched.
 
 ## Validation Notes
 
@@ -129,6 +139,20 @@ Run note 2026-07-06, comment-aware risk scan infrastructure:
 - `git diff --check`: pass.
 - `npm.cmd run smoke:full-intake`: pass; includes a comment-only URL fixture
   proving the candidate is not classified as `usesNetwork`.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
+Run note 2026-07-06, unrelated-untracked reducer guard:
+
+- `node --check orchestrator/run-generic-repo-full-intake.mjs`: pass.
+- `node --check orchestrator/parallel-candidate-worktrees.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `git diff --check`: pass.
+- `npm.cmd run smoke:full-intake`: pass; includes default dirty-central
+  fail-closed coverage and explicit unrelated-untracked opt-in coverage.
 - `npm.cmd run smoke:solutions`: pass.
 - `npm.cmd run smoke:planning`: pass.
 - `npm.cmd run check:rules`: still blocked by pre-existing untracked

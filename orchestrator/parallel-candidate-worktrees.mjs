@@ -213,8 +213,22 @@ function statusEntryPath(entry) {
   return normalizeRepoPath(renameIndex >= 0 ? raw.slice(renameIndex + 4) : raw);
 }
 
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
+function gitChangedEntries(cwd) {
+  return gitStatusEntries(cwd)
+    .map((entry) => ({
+      path: statusEntryPath(entry),
+      status: statusEntryCode(entry),
+    }))
+    .filter((entry) => entry.path)
+    .sort((left, right) => left.path.localeCompare(right.path));
+}
+
 function gitChangedPaths(cwd) {
-  return gitStatusEntries(cwd).map(statusEntryPath).filter(Boolean).sort();
+  return gitChangedEntries(cwd).map((entry) => entry.path);
 }
 
 function gitPathIsIgnored(cwd, repoPath) {
@@ -226,6 +240,28 @@ function gitPathIsIgnored(cwd, repoPath) {
   return result.status === 0;
 }
 
+function dirtyCentralTreeBlockers(cwd, selected, options = {}) {
+  const changed = gitChangedEntries(cwd).filter((entry) => !gitPathIsIgnored(cwd, entry.path));
+  if (!options.allowUnrelatedUntrackedCentralTree) return changed;
+
+  const plannedPaths = new Set(
+    selected
+      .flatMap((candidate) => candidatePlannedPaths(candidate))
+      .map(normalizeRepoPath),
+  );
+  const overlapsPlannedPath = (repoPath) => {
+    const normalized = normalizeRepoPath(repoPath);
+    return Array.from(plannedPaths).some(
+      (plannedPath) =>
+        normalized === plannedPath ||
+        normalized.startsWith(`${plannedPath}/`) ||
+        plannedPath.startsWith(`${normalized}/`),
+    );
+  };
+
+  return changed.filter((entry) => entry.status !== "??" || overlapsPlannedPath(entry.path));
+}
+
 function gitPathIsTracked(cwd, repoPath) {
   const result = spawnSync("git", ["ls-files", "--error-unmatch", repoPath], {
     cwd,
@@ -235,9 +271,13 @@ function gitPathIsTracked(cwd, repoPath) {
   return result.status === 0;
 }
 
-function stageAndCommitReviewableChanges(targetRepo, message) {
+function stageAndCommitReviewableChanges(targetRepo, message, allowedPaths = null) {
+  const allowed = Array.isArray(allowedPaths)
+    ? new Set(allowedPaths.map(normalizeRepoPath).filter(Boolean))
+    : null;
   const paths = gitChangedPaths(targetRepo)
     .filter((repoPath) => !gitPathIsIgnored(targetRepo, repoPath))
+    .filter((repoPath) => !allowed || allowed.has(normalizeRepoPath(repoPath)))
     .filter((repoPath) => gitPathIsTracked(targetRepo, repoPath) || existsSync(path.join(targetRepo, repoPath)));
   if (paths.length === 0) {
     return null;
@@ -1475,12 +1515,16 @@ export function reduceParallelCandidateProposals({
   ledger,
   ledgerPath,
   noCommit = false,
+  options = {},
   proposals,
   runId,
   runRoot,
   targetRepo,
 }) {
-  const dirtyBefore = gitChangedPaths(targetRepo).filter((repoPath) => !gitPathIsIgnored(targetRepo, repoPath));
+  const selectedForProposals = proposals
+    .map((proposal) => (ledger.entries || []).find((entry) => entry.id === proposal.candidateId))
+    .filter(Boolean);
+  const dirtyBefore = dirtyCentralTreeBlockers(targetRepo, selectedForProposals, options).map((entry) => entry.path);
   if (dirtyBefore.length > 0) {
     return {
       schema: PARALLEL_REDUCER_SCHEMA,
@@ -1558,7 +1602,12 @@ export function reduceParallelCandidateProposals({
     planPath = updateParentPlanForParallel({ accepted, rejected, runId, targetRepo });
     handoffPath = writeParentHandoffForParallel({ accepted, commitId: null, rejected, runId, targetRepo });
     if (!noCommit) {
-      commitId = stageAndCommitReviewableChanges(targetRepo, "AUX: accept parallel candidate proposals");
+      const commitPaths = sortedUnique([
+        ...accepted.flatMap((entry) => entry.touchedPaths || []),
+        planPath,
+        handoffPath,
+      ]);
+      commitId = stageAndCommitReviewableChanges(targetRepo, "AUX: accept parallel candidate proposals", commitPaths);
     }
     if (commitId) {
       handoffPath = writeParentHandoffForParallel({ accepted, commitId, rejected, runId, targetRepo });
@@ -1777,7 +1826,7 @@ export async function runParallelCandidateWorktrees({
     return report;
   }
 
-  const dirtyBeforeParallelWork = gitChangedPaths(targetRepo).filter((repoPath) => !gitPathIsIgnored(targetRepo, repoPath));
+  const dirtyBeforeParallelWork = dirtyCentralTreeBlockers(targetRepo, selected, options).map((entry) => entry.path);
   if (dirtyBeforeParallelWork.length > 0) {
     const reducer = {
       schema: PARALLEL_REDUCER_SCHEMA,
@@ -1923,6 +1972,7 @@ export async function runParallelCandidateWorktrees({
     ledger,
     ledgerPath,
     noCommit: options.noCommit === true,
+    options,
     proposals,
     runId,
     runRoot,

@@ -1681,6 +1681,12 @@ Options:
   --allow-batch-mode           Explicitly approve parent-facing max-items > 1.
   --allow-self-improvement-lane-synthesis
                               Allow bounded live-lane synthesis. Default is disabled.
+  --allow-unrelated-untracked-central-tree
+                              In parallel candidate mode, permit unrelated
+                              untracked central worktree files that do not
+                              overlap planned candidate/shared paths. Tracked
+                              dirty paths and overlapping untracked paths still
+                              fail closed.
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
@@ -1739,6 +1745,7 @@ const VALUE_OPTIONS = new Set([
 const BOOLEAN_OPTIONS = new Set([
   "allow-batch-mode",
   "allow-full-json-for-debug",
+  "allow-unrelated-untracked-central-tree",
   "allow-self-improvement-lane-synthesis",
   "compact-json",
   "help",
