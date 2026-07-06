@@ -61,6 +61,8 @@ evidence trees, old plan archives, or longrun runtime logs.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_AddExpMantainScaleWhenParented.jsx` as `tool-ar_addexpmantainscalewhenparented`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented).
+
 - Historical source material stays in the legacy repository and git history.
   New repository docs should record only current state, decisions, validation,
   and exact next steps.
@@ -216,3 +218,11 @@ approves mutation:
 Use `.codex/handoff.md` after each milestone. Keep it concise: goal, current
 state, files touched, validation, decisions, risks, commit id, and exact next
 prompt.
+
+## Progress
+
+- [x] Full intake tool-ar_addexpmantainscalewhenparented: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-cb035c41c0-import, commit recorded after candidate commit.
+
+## Validation
+
+| Full intake tool-ar_addexpmantainscalewhenparented | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-cb035c41c0-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
