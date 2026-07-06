@@ -54,10 +54,9 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   на Windows может запускать child Codex с actual `danger-full-access`,
   сохраняя requested `workspace-write` в evidence и все post-run gates; старые
   shell blockers можно снять только scoped CLI reset-флагом.
-- [x] AUX-021 detached child-run import: scoped batch
-  `queue-batch-1-3826875c5d` добавил advisory typed-plan coverage для
-  `tool-ar-addexpmantainscalewhenparented` без source merge, commit, live runs
-  или raw JSX.
+- [x] Full intake import for `tool-ar_addexpmantainscalewhenparented`: добавлен
+  advisory typed-plan coverage без raw JSX, live mutation, dependency changes,
+  push или PR.
 
 ## Decision Log
 
@@ -88,6 +87,8 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   `get_selected_layers`, `get_layer_details` и `set_expression`; parenting
   mutation, unparented-layer handling, raw JSX и source-exact semantics остаются
   fail-closed.
+- Imported advisory recipe ids должны иметь явные smoke quality checks; compact
+  plan notes не должны сохранять legacy batch/AUX markers в product docs.
 
 ## Validation Notes
 
@@ -110,7 +111,7 @@ git diff --check
 npm.cmd run smoke:full-intake
 ```
 
-Последний milestone, Windows child-runner fallback:
+Последний infrastructure milestone, Windows child-runner fallback:
 
 - `node --check orchestrator/run-generic-repo-tool-importer.mjs`: pass.
 - `node --check scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
@@ -120,24 +121,17 @@ npm.cmd run smoke:full-intake
 - `git diff --check`: pass, только существующие CRLF warnings.
 - `npm.cmd run check:rules`: pass.
 
-AUX-021 `queue-batch-1-3826875c5d`:
-
-- Validation/smoke команды не запускались: child-run intent запретил validation
-  runs, live AE/CEP/CDP/OpenAI CLI planner runs, package/dependency changes,
-  commits и source merge.
-- Изменения ограничены planned paths batch-а.
-
-## Next Step
-
-Parent importer должен прочитать detached worktree diff для
-`queue-batch-1-3826875c5d`, выполнить собственные planned-path/source-merge
-gates и только затем решать, принимать ли advisory typed-plan import в parent
-repo. Child-run commit/source merge не выполнялся по hard boundary.
-
 ## Progress
 
-- [x] Full intake tool-ar_addexpmantainscalewhenparented: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-af04158558-import, commit recorded after candidate commit.
+- [x] Full intake `tool-ar_addexpmantainscalewhenparented`: completed by the
+  reusable generic full-intake orchestrator. Live gate was not required; parent
+  reducer accepted only planned recipe, registry, smoke, plan and handoff
+  changes.
+- [x] Post-merge validation cleanup: legacy runtime markers убраны из активного
+  плана, а `solution-library-validation-smoke` получил explicit quality/retrieval
+  checks для `ar-addexpmantainscalewhenparented-typed-plan`.
 
 ## Validation
 
-| Full intake tool-ar_addexpmantainscalewhenparented | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-af04158558-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Full intake `tool-ar_addexpmantainscalewhenparented` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Post-merge validation cleanup | Required because `check:rules` rejected legacy runtime markers and `smoke:solutions` required explicit quality coverage for the new advisory recipe id. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, and `git diff --check` passed. |

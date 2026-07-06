@@ -3154,6 +3154,25 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /set_layer_track_matte/.test(note)), `${id}: notes must require set_layer_track_matte.`);
       assert(solution.promotionHistory.some((entry) => /Set_Track_Matte_To_Above/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-addexpmantainscalewhenparented-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_expression"],
+        `${id}: maintain-scale expression workflow should stay on the narrow selected-layer expression sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: maintain-scale expression workflow must be mutating.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require Scale expression read-back.`);
+      assert(text.includes("parent.transform.scale.value"), `${id}: recipe should disclose the reviewed immediate-parent scale expression.`);
+      assert(text.includes("Do not create, remove, or change parenting"), `${id}: recipe should forbid hidden parenting mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /parent evidence/.test(step)), `${id}: verification must require parent evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled-expression read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /no expressionError/.test(item)), `${id}: verification must require expression-error read-back.`);
+      assert(solution.notes.some((note) => /Do not create, remove or change parenting/.test(note)), `${id}: notes must keep parenting mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /AR_AddExpMantainScaleWhenParented/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -4057,7 +4076,7 @@ function assertActualRetrieval(registry) {
   const arMaintainScaleWhenParentedPromptSection = formatSolutionHintsForPrompt(arMaintainScaleWhenParentedRetrieval);
   assert(arMaintainScaleWhenParentedPromptSection.includes("AR Add Expression Maintain Scale When Parented Typed Plan"), "prompt section should include AR maintain-scale-when-parented advisory title.");
   assert(arMaintainScaleWhenParentedPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for AR maintain-scale-when-parented workflows.");
-  assert(arMaintainScaleWhenParentedPromptSection.includes("parent evidence"), "prompt section should preserve parent evidence guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("selectedParentedLayers"), "prompt section should preserve selected-parented-layer target guidance.");
   assert(arMaintainScaleWhenParentedPromptSection.includes("Transform > Scale"), "prompt section should preserve Scale property target guidance.");
   assert(arMaintainScaleWhenParentedPromptSection.includes("set_expression"), "prompt section should prefer set_expression for AR maintain-scale-when-parented workflows.");
   assert(arMaintainScaleWhenParentedPromptSection.includes("parent.transform.scale"), "prompt section should preserve parent scale compensation guidance.");
