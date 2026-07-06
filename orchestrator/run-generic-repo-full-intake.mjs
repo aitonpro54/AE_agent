@@ -1682,11 +1682,10 @@ Options:
   --allow-self-improvement-lane-synthesis
                               Allow bounded live-lane synthesis. Default is disabled.
   --allow-unrelated-untracked-central-tree
-                              In parallel candidate mode, permit unrelated
-                              untracked central worktree files that do not
-                              overlap planned candidate/shared paths. Tracked
-                              dirty paths and overlapping untracked paths still
-                              fail closed.
+                              Permit unrelated untracked central worktree
+                              files that do not overlap planned
+                              candidate/shared paths. Tracked dirty paths and
+                              overlapping untracked paths still fail closed.
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
@@ -1957,8 +1956,22 @@ function gitStatusEntries(cwd) {
   return output ? output.split(/\r?\n/).filter(Boolean) : [];
 }
 
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
+function gitChangedEntries(cwd) {
+  return gitStatusEntries(cwd)
+    .map((entry) => ({
+      path: statusEntryPath(entry),
+      status: statusEntryCode(entry),
+    }))
+    .filter((entry) => entry.path)
+    .sort((left, right) => left.path.localeCompare(right.path));
+}
+
 function gitChangedPaths(cwd) {
-  return gitStatusEntries(cwd).map(statusEntryPath).filter(Boolean).sort();
+  return gitChangedEntries(cwd).map((entry) => entry.path);
 }
 
 function gitStatusSha256(cwd) {
@@ -1989,6 +2002,30 @@ function gitPathIsTracked(cwd, repoPath) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   return result.status === 0;
+}
+
+function dirtyTargetPathsForOptions(cwd, candidates, options = {}) {
+  const changed = gitChangedEntries(cwd).filter((entry) => !gitPathIsIgnored(cwd, entry.path));
+  if (options.allowUnrelatedUntrackedCentralTree !== true) {
+    return changed.map((entry) => entry.path);
+  }
+  const plannedPaths = new Set(
+    (candidates || [])
+      .flatMap((candidate) => candidatePlannedPaths(candidate))
+      .map(normalizeRepoPath),
+  );
+  const overlapsPlannedPath = (repoPath) => {
+    const normalized = normalizeRepoPath(repoPath);
+    return Array.from(plannedPaths).some(
+      (plannedPath) =>
+        normalized === plannedPath ||
+        normalized.startsWith(`${plannedPath}/`) ||
+        plannedPath.startsWith(`${normalized}/`),
+    );
+  };
+  return changed
+    .filter((entry) => entry.status !== "??" || overlapsPlannedPath(entry.path))
+    .map((entry) => entry.path);
 }
 
 function isDependencyPath(repoPath) {
@@ -4391,7 +4428,7 @@ function createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo })
   return ledgerPath;
 }
 
-function runCandidateImport({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImport({ allowUnrelatedUntrackedCentralTree = false, candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -4409,6 +4446,7 @@ function runCandidateImport({ candidate, contextPercent, ledger, runId, runRoot,
         reportDir,
         runId: batchRunId,
         targetRepo,
+        ...(allowUnrelatedUntrackedCentralTree ? { allowUnrelatedUntrackedCentralTree: true } : {}),
       },
       REPO_ROOT,
     );
@@ -5172,9 +5210,13 @@ function writeHandoff({ candidate, commitId, item, state, targetRepo }) {
   return normalizeRepoPath(path.relative(targetRepo, handoffPath));
 }
 
-function stageAndCommitReviewableChanges(targetRepo, message) {
+function stageAndCommitReviewableChanges(targetRepo, message, allowedPaths = null) {
+  const allowed = Array.isArray(allowedPaths)
+    ? new Set(allowedPaths.map(normalizeRepoPath).filter(Boolean))
+    : null;
   const paths = gitChangedPaths(targetRepo)
     .filter((repoPath) => !gitPathIsIgnored(targetRepo, repoPath))
+    .filter((repoPath) => !allowed || allowed.has(normalizeRepoPath(repoPath)))
     .filter((repoPath) => gitPathIsTracked(targetRepo, repoPath) || existsSync(path.join(targetRepo, repoPath)));
   if (paths.length === 0) {
     return null;
@@ -5222,6 +5264,19 @@ function stageAndCommitReviewableChanges(targetRepo, message) {
     throw new Error(`git-commit-failed: ${commitResult.stderr || commitResult.stdout}`);
   }
   return gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+}
+
+function commitAllowedPathsForCandidate({ batch, candidate, item }) {
+  const importedItem = (batch?.report?.items || []).find((entry) => entry.candidateId === candidate.id) || null;
+  return compactPathArray([
+    ...candidatePlannedPaths(candidate),
+    ...(Array.isArray(item?.plannedPaths) ? item.plannedPaths : []),
+    ...(Array.isArray(importedItem?.plannedPaths) ? importedItem.plannedPaths : []),
+    item?.planPath,
+    item?.handoffPath,
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md",
+  ], 128);
 }
 
 function pushItem(state, item) {
@@ -5455,7 +5510,7 @@ function importerManifestPathFromBatch(targetRepo, batch) {
   return pathFromTarget(targetRepo, manifestPath);
 }
 
-function runCandidateImporterPhase({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImporterPhase({ allowUnrelatedUntrackedCentralTree = false, candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -5472,6 +5527,7 @@ function runCandidateImporterPhase({ candidate, contextPercent, ledger, runId, r
       reportDir,
       runId: batchRunId,
       targetRepo,
+      ...(allowUnrelatedUntrackedCentralTree ? { allowUnrelatedUntrackedCentralTree: true } : {}),
     },
     REPO_ROOT,
   );
@@ -5715,27 +5771,6 @@ function runStrictOnePhase({
   }
 
   if (completedPhase === "select_candidate") {
-    const dirtyBefore = gitChangedPaths(targetRepo);
-    if (dirtyBefore.length > 0) {
-      report.status = "blocked_target_dirty";
-      report.ok = false;
-      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
-      return finishStrictPhaseReport({
-        batch,
-        candidate,
-        gitHeadBefore,
-        item,
-        ledgerPath,
-        ledgerSha256Before,
-        liveRerun,
-        registryPath,
-        report,
-        runRoot,
-        state,
-        targetRepo,
-      });
-    }
-
     const processedIds = terminalProcessedIds(state, initialLedger);
     candidate = selectNextQueuedRankedCandidate(initialLedger, processedIds);
     if (!candidate) {
@@ -5749,6 +5784,27 @@ function runStrictOnePhase({
         ledgerPath,
         ledgerSha256Before,
         liveRerun: null,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    const dirtyBefore = dirtyTargetPathsForOptions(targetRepo, [candidate], options);
+    if (dirtyBefore.length > 0) {
+      report.status = "blocked_target_dirty";
+      report.ok = false;
+      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
         registryPath,
         report,
         runRoot,
@@ -6012,6 +6068,7 @@ function runStrictOnePhase({
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
         batch = runCandidateImporterPhase({
+          allowUnrelatedUntrackedCentralTree: options.allowUnrelatedUntrackedCentralTree === true,
           candidate,
           contextPercent: nestedBatchContextPercent(contextBudget),
           ledger,
@@ -6454,7 +6511,11 @@ function runStrictOnePhase({
     const commitId =
       options.noCommit === true
         ? null
-        : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
+        : stageAndCommitReviewableChanges(
+            targetRepo,
+            `feat: import ${safeId(candidate.id)} recipe`,
+            commitAllowedPathsForCandidate({ batch, candidate, item }),
+          );
     item.commitId = commitId;
     item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
     if (commitId) {
@@ -6796,14 +6857,6 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   let lastLiveRerun = null;
 
   while (considered < maxItems) {
-    const dirtyBefore = gitChangedPaths(targetRepo);
-    if (dirtyBefore.length > 0) {
-      report.status = "blocked_target_dirty";
-      report.ok = false;
-      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
-      break;
-    }
-
     const ledger = readJson(ledgerPath, "queue-ledger");
     assertRequiredLedgerShape(ledger);
     let activeLedger = ledger;
@@ -6812,6 +6865,15 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       report.status = considered === 0 ? "completed_no_candidates" : "completed";
       break;
     }
+
+    const dirtyBefore = dirtyTargetPathsForOptions(targetRepo, [candidate], options);
+    if (dirtyBefore.length > 0) {
+      report.status = "blocked_target_dirty";
+      report.ok = false;
+      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
+      break;
+    }
+
     considered += 1;
 
     const item = itemFromCandidate(candidate, runId);
@@ -6930,6 +6992,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
         batch = runCandidateImport({
+          allowUnrelatedUntrackedCentralTree: options.allowUnrelatedUntrackedCentralTree === true,
           candidate,
           contextPercent: nestedBatchContextPercent(contextBudget),
           ledger: activeLedger,
@@ -7018,7 +7081,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         state = saveState(runRoot, pushItem(state, item));
         report.items.push(item);
         appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_import_failed", reason: finalError.message, runId });
-        if (gitChangedPaths(targetRepo).length > 0) {
+        if (dirtyTargetPathsForOptions(targetRepo, [candidate], options).length > 0) {
           report.status = "stopped_after_failed_import_dirty_target";
           report.ok = false;
           break;
@@ -7120,7 +7183,11 @@ export async function runFullIntake(options, cwd = process.cwd()) {
     const commitId =
       options.noCommit === true
         ? null
-        : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
+        : stageAndCommitReviewableChanges(
+            targetRepo,
+            `feat: import ${safeId(candidate.id)} recipe`,
+            commitAllowedPathsForCandidate({ batch, candidate, item }),
+          );
     item.commitId = commitId;
     item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
     if (commitId) {

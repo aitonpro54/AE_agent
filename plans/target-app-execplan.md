@@ -180,6 +180,31 @@ Run note 2026-07-06, importer candidate alias planning fix:
   `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
   literal; not caused by this infrastructure change.
 
+Run note 2026-07-06, serial unrelated-untracked intake guard:
+
+- Progress: extended the explicit `--allow-unrelated-untracked-central-tree`
+  gate from parallel proposals into serial full-intake, queue-supervisor, and
+  importer boundaries so unrelated `??` files can coexist with candidate
+  intake without weakening tracked/overlap dirty checks.
+- Decision Log: the opt-in records exact unrelated untracked paths in the
+  importer manifest/state; importer clean-or-owned checks ignore only those
+  exact paths while they remain `??`, and serial candidate commits stage only
+  candidate planned paths plus parent-owned plan/handoff paths.
+- `node --check orchestrator/run-generic-repo-full-intake.mjs`: pass.
+- `node --check orchestrator/run-generic-repo-queue-supervisor.mjs`: pass.
+- `node --check orchestrator/run-generic-repo-tool-importer.mjs`: pass.
+- `node --check scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `node --check scripts/sdk-generic-repo-queue-supervisor-smoke.js`: pass.
+- `git diff --check`: pass.
+- `node scripts/sdk-generic-repo-queue-supervisor-smoke.js`: pass.
+- `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
+- `npm.cmd run smoke:full-intake`: pass.
+- `npm.cmd run smoke:solutions`: pass.
+- `npm.cmd run smoke:planning`: pass.
+- `npm.cmd run check:rules`: still blocked by pre-existing untracked
+  `plans/full-intake-unsafe-skip-triage.md` containing an old blocked-status
+  literal; not caused by this infrastructure change.
+
 Live AE/CEP checks are read-only unless the current milestone explicitly
 approves mutation:
 

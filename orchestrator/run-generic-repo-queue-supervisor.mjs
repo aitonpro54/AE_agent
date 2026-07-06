@@ -86,6 +86,11 @@ Options:
                         per candidate as blocked_needs_live_lane.
   --prepare-only         With --batch, stop after importer analysis and
                         implementation planning instead of child runs/merge.
+  --allow-unrelated-untracked-central-tree
+                        Permit unrelated untracked target repo files that do
+                        not overlap selected candidate/shared planned paths.
+                        Tracked dirty paths and overlapping untracked paths
+                        still fail closed.
   --json                 Print full machine-readable output for local debug.
   --compact-json         Print bounded parent-facing output with proof refs.
   --help                 Show this help.
@@ -104,6 +109,7 @@ or creates PRs.
 const VALUE_OPTIONS = new Set(["context-percent", "ledger", "max-items", "report-dir", "run-id", "target-repo"]);
 const BOOLEAN_OPTIONS = new Set([
   "batch",
+  "allow-unrelated-untracked-central-tree",
   "compact-json",
   "help",
   "json",
@@ -287,9 +293,27 @@ function statusEntryPath(entry) {
   return normalizeRepoPath(renameIndex === -1 ? raw : raw.slice(renameIndex + 4));
 }
 
-function gitChangedPaths(cwd) {
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
+function gitChangedEntries(cwd) {
   const output = gitOutput(cwd, ["status", "--porcelain=v1", "--untracked-files=all"], "status");
-  return output ? output.split(/\r?\n/).filter(Boolean).map(statusEntryPath).sort() : [];
+  return output
+    ? output
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((entry) => ({
+          path: statusEntryPath(entry),
+          status: statusEntryCode(entry),
+        }))
+        .filter((entry) => entry.path)
+        .sort((left, right) => left.path.localeCompare(right.path))
+    : [];
+}
+
+function gitChangedPaths(cwd) {
+  return gitChangedEntries(cwd).map((entry) => entry.path);
 }
 
 function isDependencyPath(repoPath) {
@@ -588,8 +612,48 @@ function candidateNonLiveSafetyBlockers(entry, ledger) {
   return candidateBlockers(entry, ledger).filter((entryBlocker) => entryBlocker.code !== "required-live-lane-missing");
 }
 
-function targetPolicyBlockers(ledger, changedPaths) {
+function dirtyTargetPathsForOptions(changedEntries, runItems, options = {}) {
+  if (options.allowUnrelatedUntrackedCentralTree !== true) {
+    return changedEntries.map((entry) => entry.path);
+  }
+  const plannedPaths = new Set(
+    (runItems || [])
+      .flatMap((item) => item.plannedPaths || [])
+      .map(normalizeRepoPath),
+  );
+  const overlapsPlannedPath = (repoPath) => {
+    const normalized = normalizeRepoPath(repoPath);
+    return Array.from(plannedPaths).some(
+      (plannedPath) =>
+        normalized === plannedPath ||
+        normalized.startsWith(`${plannedPath}/`) ||
+        plannedPath.startsWith(`${normalized}/`),
+    );
+  };
+  return changedEntries
+    .filter((entry) => entry.status !== "??" || overlapsPlannedPath(entry.path))
+    .map((entry) => entry.path);
+}
+
+function allowedUnrelatedUntrackedPathsForOptions(changedEntries, runItems, options = {}) {
+  if (options.allowUnrelatedUntrackedCentralTree !== true) {
+    return [];
+  }
+  const blocked = new Set(dirtyTargetPathsForOptions(changedEntries, runItems, options));
+  return sortedUnique(
+    changedEntries
+      .filter((entry) => entry.status === "??")
+      .map((entry) => entry.path)
+      .filter((repoPath) => !blocked.has(repoPath)),
+  );
+}
+
+function targetPolicyBlockers(ledger, changedEntriesOrPaths, options = {}, runItems = []) {
   const policyBlockers = [];
+  const changedEntries = (changedEntriesOrPaths || []).map((entry) =>
+    typeof entry === "string" ? { path: entry, status: "unknown" } : entry,
+  );
+  const changedPaths = dirtyTargetPathsForOptions(changedEntries, runItems, options);
 
   if (changedPaths.length > 0) {
     policyBlockers.push(
@@ -836,7 +900,7 @@ function batchStatus({ eligibleItems, importError, importerResult, items, policy
   return "completed";
 }
 
-function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, targetRepo }) {
+function buildImporterManifest({ allowedUnrelatedUntrackedPaths = [], eligibleItems, ledger, runId, sourceCheckout, targetRepo }) {
   const plannedPaths = sortedUnique(eligibleItems.flatMap((item) => item.plannedPaths));
   const candidateIds = eligibleItems.map((item) => item.candidateId);
   const batchId = safeId(`queue-batch-${candidateIds.length}-${sha256Text(candidateIds.join("|")).slice(0, 10)}`);
@@ -863,6 +927,7 @@ function buildImporterManifest({ eligibleItems, ledger, runId, sourceCheckout, t
     targetRepo: {
       path: targetRepo,
       allowedWritePaths: plannedPaths,
+      allowedUnrelatedUntrackedPaths,
       detachedAllowed: ledger.target.detachedAllowed === true,
       forbiddenWritePaths: [
         ".git/**",
@@ -1220,11 +1285,13 @@ function runBatch(options, cwd = process.cwd()) {
   const reportPath = batchReportPath(targetRepo, options, runId);
   const manifestPath = importerManifestPath(targetRepo, options, runId);
   const context = contextBlockers(options, { requireKnown: true });
-  const changedPathsBefore = gitChangedPaths(targetRepo);
+  const changedEntriesBefore = gitChangedEntries(targetRepo);
+  const changedPathsBefore = changedEntriesBefore.map((entry) => entry.path);
   const selection = selectQueuedRankedCandidatesForBatch(ledger, maxItems);
   const items = selection.selected.map((entry, index) => classifyBatchCandidate(entry, index + 1, ledger, options));
   const eligibleItems = items.filter((item) => item.eligibleForImport);
-  const policyBlockers = [...context.blockers, ...targetPolicyBlockers(ledger, changedPathsBefore)];
+  const policyBlockers = [...context.blockers, ...targetPolicyBlockers(ledger, changedEntriesBefore, options, items)];
+  const allowedUnrelatedUntrackedPaths = allowedUnrelatedUntrackedPathsForOptions(changedEntriesBefore, items, options);
   const prepareOnly = options.prepareOnly === true;
   let importerResult = null;
   let importerResultSummary = null;
@@ -1236,6 +1303,7 @@ function runBatch(options, cwd = process.cwd()) {
     try {
       sourceCheckout = resolveSourceCheckout(targetRepo, ledger);
       importerManifest = buildImporterManifest({
+        allowedUnrelatedUntrackedPaths,
         eligibleItems,
         ledger,
         runId,
@@ -1414,11 +1482,12 @@ function buildPlan(options, cwd = process.cwd()) {
   const runId = planRunId(options, ledgerHash, maxItems);
   const reportPath = planReportPath(targetRepo, options, runId);
   const context = contextBlockers(options);
-  const changedPaths = gitChangedPaths(targetRepo);
   const selection = selectQueuedSafeCandidates(ledger, maxItems);
   const runList = selection.selected.map((entry, index) => buildRunItem(entry, index + 1, ledger, options));
+  const changedEntries = gitChangedEntries(targetRepo);
+  const changedPaths = changedEntries.map((entry) => entry.path);
   const candidateSafetyBlockers = selection.selected.flatMap((entry) => candidateBlockers(entry, ledger));
-  const policyBlockers = targetPolicyBlockers(ledger, changedPaths);
+  const policyBlockers = targetPolicyBlockers(ledger, changedEntries, options, runList);
 
   const blockers = [
     ...context.blockers,

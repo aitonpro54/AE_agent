@@ -476,6 +476,9 @@ function validateManifest(contract, manifest) {
   requireString(manifest.targetRepo.path, "manifest.targetRepo.path");
   requireArray(manifest.targetRepo.allowedWritePaths, "manifest.targetRepo.allowedWritePaths");
   requireArray(manifest.targetRepo.forbiddenWritePaths, "manifest.targetRepo.forbiddenWritePaths");
+  if (Object.prototype.hasOwnProperty.call(manifest.targetRepo, "allowedUnrelatedUntrackedPaths")) {
+    requireArray(manifest.targetRepo.allowedUnrelatedUntrackedPaths, "manifest.targetRepo.allowedUnrelatedUntrackedPaths");
+  }
   if (manifest.targetRepo.branchPolicy !== schema.targetRepo.branchPolicy) {
     throw new Error(`manifest.targetRepo.branchPolicy must be ${schema.targetRepo.branchPolicy}`);
   }
@@ -613,8 +616,28 @@ function statusEntryPath(entry) {
   return normalizeRepoPath(normalizedPath);
 }
 
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
 function gitStatusPaths(cwd) {
   return sortedNormalizedPaths(gitStatusEntries(cwd).map(statusEntryPath));
+}
+
+function isAllowedUnrelatedUntrackedEntry(entry, state) {
+  if (statusEntryCode(entry) !== "??") {
+    return false;
+  }
+  const allowed = new Set((state?.allowedUnrelatedUntrackedPaths || []).map(normalizeRepoPath));
+  return allowed.has(statusEntryPath(entry));
+}
+
+function gitStatusPathsExcludingAllowedUnrelated(cwd, state) {
+  return sortedNormalizedPaths(
+    gitStatusEntries(cwd)
+      .filter((entry) => !isAllowedUnrelatedUntrackedEntry(entry, state))
+      .map(statusEntryPath),
+  );
 }
 
 function assertGitTargetCleanOrOwned(cwd, state) {
@@ -626,6 +649,7 @@ function assertGitTargetCleanOrOwned(cwd, state) {
 
   const owned = new Set((state?.ownedDirtyPaths || []).map(normalizeRepoPath));
   const unowned = dirtyEntries
+    .filter((entry) => !isAllowedUnrelatedUntrackedEntry(entry, state))
     .map(statusEntryPath)
     .filter((entry) => !owned.has(entry));
   if (unowned.length > 0) {
@@ -1287,6 +1311,7 @@ function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPat
     createdAt: now,
     updatedAt: now,
     resumeCount: 0,
+    allowedUnrelatedUntrackedPaths: sortedNormalizedPaths(manifest.targetRepo.allowedUnrelatedUntrackedPaths || []),
     ownedDirtyPaths: [],
     flags: {
       analysisStarted: false,
@@ -3101,7 +3126,7 @@ function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRep
   validateMergeSharedPathOwnership(manifest, worktreePlan);
   const { childRun, results } = readImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
   assertNoNamedRepoAssumptions({ manifest, worktreePlan, childRun, results }, "controlled source merge inputs");
-  assertGitTargetCleanOrOwned(targetRepo, { ownedDirtyPaths: [] });
+  assertGitTargetCleanOrOwned(targetRepo, { ...state, ownedDirtyPaths: [] });
 
   const targetHeadBefore = gitCurrentHead(targetRepo);
   const targetBranch = gitCurrentBranch(targetRepo, { allowDetached: manifest.targetRepo.detachedAllowed === true });
@@ -3197,7 +3222,7 @@ function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRep
     }
   }
 
-  const ownedDirtyPaths = gitStatusPaths(targetRepo);
+  const ownedDirtyPaths = gitStatusPathsExcludingAllowedUnrelated(targetRepo, state);
   const unownedDirtyPaths = ownedDirtyPaths.filter((dirtyPath) => !appliedPaths.includes(dirtyPath));
   if (unownedDirtyPaths.length > 0) {
     throw new Error(`controlled-merge-unowned-dirty-paths-after-apply: ${unownedDirtyPaths.join(", ")}`);
@@ -3295,7 +3320,7 @@ function verifyControlledSourceMergeOutputs(runRoot, targetRepo, state) {
   ) {
     throw new Error("controlled-merge-boundary-violated");
   }
-  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), state.ownedDirtyPaths)) {
     throw new Error("controlled-merge-owned-dirty-paths-drift");
   }
   return report;
@@ -3553,7 +3578,7 @@ function buildNonLiveValidationArtifacts({ manifest, manifestHash, targetRepo, r
   const mergeReport = verifyControlledSourceMergeOutputs(runRoot, targetRepo, state);
   const touchedPaths = sortedNormalizedPaths(mergeReport.ownedDirtyPaths || mergeReport.appliedPaths || []);
   assertGitTargetCleanOrOwned(targetRepo, state);
-  if (!sameStringSet(gitStatusPaths(targetRepo), touchedPaths)) {
+  if (!sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), touchedPaths)) {
     throw new Error("non-live-validation-target-dirty-paths-drift");
   }
 
@@ -3581,7 +3606,7 @@ function buildNonLiveValidationArtifacts({ manifest, manifestHash, targetRepo, r
   }
 
   const afterSnapshot = snapshotPaths(targetRepo, touchedPaths);
-  const dirtyPathsAfter = gitStatusPaths(targetRepo);
+  const dirtyPathsAfter = gitStatusPathsExcludingAllowedUnrelated(targetRepo, state);
   const snapshotUnchanged = sameSnapshots(beforeSnapshot, afterSnapshot);
   const commandsPassed = commandResults.every((command) => command.status === "passed" || command.status === "skipped");
   const dirtyPathsStable = sameStringSet(dirtyPathsAfter, touchedPaths);
@@ -3649,7 +3674,7 @@ function verifyNonLiveValidationOutputs(runRoot, targetRepo, state) {
     throw new Error("non-live-validation-boundary-violated");
   }
   assertGitTargetCleanOrOwned(targetRepo, state);
-  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), state.ownedDirtyPaths)) {
     throw new Error("non-live-validation-owned-dirty-paths-drift");
   }
   return report;
@@ -5371,7 +5396,10 @@ export function runImporter(options, cwd = process.cwd()) {
   assertRunRootIgnored(targetRepo, manifest.run.runId, runRootBase);
 
   const existingState = loadState(runRoot);
-  assertGitTargetCleanOrOwned(targetRepo, existingState);
+  assertGitTargetCleanOrOwned(targetRepo, existingState || {
+    allowedUnrelatedUntrackedPaths: manifest.targetRepo.allowedUnrelatedUntrackedPaths || [],
+    ownedDirtyPaths: [],
+  });
 
   const { normalizedManifest, manifestHash } = createNormalizedManifest(manifest, manifestPath, contractPath);
   let state;

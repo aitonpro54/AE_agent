@@ -362,6 +362,61 @@ function assertDirtyTargetFailsClosed() {
   }
 }
 
+function assertUnrelatedUntrackedTargetAllowedWithOptIn() {
+  const fixture = createFixture("dirty-untracked-opt-in");
+  try {
+    const eligiblePath = "scripts/imported-tools/tool-compositions-add-background-layer.js";
+    const ledgerPath = writeLedger(
+      fixture,
+      validLedger(fixture, [
+        entry({
+          id: "tool-compositions-add-background-layer",
+          sourcePath: "Compositions/Add_Background_Layer.jsx",
+          classification: "small_safe_typed_tool_library_recipe_addition",
+          liveGate: { required: false, status: "not_required_for_fixture" },
+          implementation: {
+            sliceId: null,
+            plannedPaths: [eligiblePath],
+          },
+          suggestedTools: ["get_active_comp", "create_shape_layer", "get_layer_details"],
+          queueRank: 1,
+        }),
+      ]),
+    );
+    const binDir = writeFakeCodex(fixture.root);
+    fs.writeFileSync(path.join(fixture.target, "local-note.txt"), "local\n", "utf8");
+    const output = parseJson(
+      run(
+        [
+          "--batch",
+          "--ledger",
+          ledgerPath,
+          "--target-repo",
+          fixture.target,
+          "--context-percent",
+          "5",
+          "--max-items",
+          "1",
+          "--run-id",
+          "dirty-untracked-opt-in",
+          "--allow-unrelated-untracked-central-tree",
+          "--json",
+        ],
+        repo,
+        fakeCodexEnv(binDir),
+      ),
+    );
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.status, "imported_non_live_validated");
+    assert(output.target.changedPathsBefore.includes("local-note.txt"));
+    assert(fs.existsSync(path.join(fixture.target, eligiblePath)), "eligible candidate should be imported");
+    const status = sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]);
+    assert(status.includes("?? local-note.txt"), "unrelated untracked local file should remain untouched");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertMissingLedgerFieldsFailClosed() {
   const fixture = createFixture("missing-field");
   try {
@@ -738,6 +793,7 @@ function assertLocalOllamaPolicyFailsClosed() {
 function main() {
   assertPlanOnlySuccess();
   assertDirtyTargetFailsClosed();
+  assertUnrelatedUntrackedTargetAllowedWithOptIn();
   assertMissingLedgerFieldsFailClosed();
   assertUnsafeRankedClassificationFailsClosed();
   assertRequiredLiveLaneMissingFailsClosed();

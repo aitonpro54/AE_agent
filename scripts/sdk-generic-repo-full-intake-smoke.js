@@ -1518,6 +1518,48 @@ function assertParallelReducerAllowsUnrelatedUntrackedCentralTreeWithOptIn() {
   }
 }
 
+function assertSerialAllowsUnrelatedUntrackedCentralTreeWithOptIn() {
+  const fixture = createFixture("sdu");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    const importedPath = "scripts/imported-tools/serial-untracked-central.js";
+    const candidate = entry({
+      id: "tool-layers-read-only-fixture",
+      sourcePath: "Layers/Read_Only_Fixture.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture" },
+      implementation: {
+        sliceId: "fixture-serial-untracked-central",
+        plannedPaths: [importedPath]
+      },
+      queueRank: 1
+    });
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [candidate]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    fs.writeFileSync(path.join(fixture.target, "local-note.txt"), "local\n", "utf8");
+    const output = parseJson(runFullIntakeFixture(
+      fixture,
+      ledgerPath,
+      registryPath,
+      "sdu",
+      1,
+      fakeCodexEnv(binDir),
+      ["--allow-unrelated-untracked-central-tree"]
+    ));
+    assert.strictEqual(output.ok, true);
+    assert.strictEqual(output.status, "completed");
+    assert(output.commits.length === 1, "serial import should create one reviewable commit");
+    assert(fs.existsSync(path.join(fixture.target, importedPath)));
+    const committedPaths = sh(fixture.target, ["git", "show", "--name-only", "--format=", output.commits[0]]);
+    assert(committedPaths.includes(importedPath), "candidate import path should be committed");
+    assert(!committedPaths.includes("local-note.txt"), "unrelated untracked file must not be committed");
+    const status = sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]);
+    assert(status.includes("?? local-note.txt"), "unrelated untracked local file should remain untouched");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertParallelContextBudgetStopsBeforeNewWork() {
   const fixture = createFixture("pct");
   try {
@@ -3558,6 +3600,7 @@ function main() {
   assertParallelChildRejectsNonAppendSharedSmokeRewrite();
   assertParallelReducerRefusesDirtyCentralTree();
   assertParallelReducerAllowsUnrelatedUntrackedCentralTreeWithOptIn();
+  assertSerialAllowsUnrelatedUntrackedCentralTreeWithOptIn();
   assertParallelContextBudgetStopsBeforeNewWork();
   assertCompletedCandidateAndAutoLane();
   assertHugeChildOutputDoesNotBloatParentReports();
