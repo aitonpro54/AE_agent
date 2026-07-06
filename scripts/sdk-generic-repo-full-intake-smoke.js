@@ -3256,6 +3256,85 @@ function assertChildUsageLimitFailureBlocksUntilReset() {
   }
 }
 
+function assertChildUsageLimitResetRequiresExplicitScopedOptIn() {
+  const fixture = createFixture("child-usage-reset");
+  try {
+    const binDir = writeFakeCodex(fixture.root);
+    fs.mkdirSync(path.join(fixture.source, "Selection"), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "Selection", "Layer_Info_Reset.jsx"),
+      "function layerInfoReset() { return true; }\n",
+      "utf8"
+    );
+    const blocked = entry({
+      id: "tool-selection-layer-info-reset",
+      sourcePath: "Selection/Layer_Info_Reset.jsx",
+      classification: "existing_typed_tools_recipe_only",
+      liveGate: { required: false, status: "not_required_for_fixture_retry" },
+      suggestedTools: ["get_active_comp", "get_layer_details"],
+      implementation: {
+        childRunnerUsageLimit: {
+          reason: "codex_child_runner_usage_limit",
+          retryAfterText: "Jul 7th, 2026 1:14 AM"
+        },
+        failureReason: "codex_child_runner_usage_limit_retry_after:Jul 7th, 2026 1:14 AM",
+        plannedPaths: ["scripts/imported-tools/layer-info-reset.js"],
+        sliceId: "fixture-layer-info-reset-import"
+      },
+      failClosed: {
+        status: "blocked_child_runner_usage_limit",
+        reason: "codex_child_runner_usage_limit_retry_after:Jul 7th, 2026 1:14 AM",
+        childRunnerUsageLimit: {
+          reason: "codex_child_runner_usage_limit",
+          retryAfterText: "Jul 7th, 2026 1:14 AM"
+        }
+      },
+      status: "blocked_child_runner_usage_limit",
+      queueRank: 1
+    });
+    const runId = "child-usage-reset";
+    const evidence = writeChildUsageLimitEvidence(fixture, blocked, runId);
+    blocked.implementation.batchReport = evidence.batchReportPath;
+    blocked.failClosed.batchReport = evidence.batchReportPath;
+    const ledgerPath = writeLedger(fixture, validLedger(fixture, [blocked]));
+    const registryPath = writeRegistry(fixture, { entries: [] });
+    const output = parseJson(
+      runFullIntakeFixture(
+        fixture,
+        ledgerPath,
+        registryPath,
+        runId,
+        1,
+        fakeCodexEnv(binDir),
+        [
+          "--resolution-candidate-ids",
+          blocked.id,
+          "--resolve-child-runner-usage-limit-reset",
+          blocked.id
+        ]
+      )
+    );
+    assert.strictEqual(output.status, "completed", JSON.stringify(output.items));
+    assert.deepStrictEqual(output.resolutionQueue.requeuedCandidateIds, [blocked.id]);
+    const ticket = JSON.parse(fs.readFileSync(path.join(fixture.target, output.resolutionQueue.tickets[0].path), "utf8"));
+    assert.strictEqual(ticket.type, "child-runner-usage-limit-reset");
+    assert.strictEqual(ticket.status, "resolved_requeued");
+    assert.strictEqual(ticket.evidence.userDecision.childRunnerUsageLimitResetConfirmed, true);
+    assert.deepStrictEqual(ticket.evidence.userDecision.scopedCandidateIds, [blocked.id]);
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    const entryAfter = ledger.entries[0];
+    assert.strictEqual(entryAfter.status, "completed");
+    assert.strictEqual(entryAfter.previousFailClosed.status, "blocked_child_runner_usage_limit");
+    assert.strictEqual(entryAfter.implementation.childRunnerUsageLimitReset.userConfirmedReset, true);
+    assert.strictEqual(entryAfter.implementation.childRunnerUsageLimitReset.previousBatchReport, evidence.batchReportPath);
+    assert.strictEqual(entryAfter.implementation.childRunnerUsageLimitReset.safeguards.validationBypassed, false);
+    assert(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "layer-info-reset.js")));
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]).includes("layer-info-reset.js"), false);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertChildUsageLimitStopsNewCandidateSelection() {
   const fixture = createFixture("child-usage-global");
   try {
@@ -3882,6 +3961,7 @@ function main() {
   assertScopedResolutionCandidateIdsOnlyProcessRequestedLane();
   assertLegacyReasoningEffortCliFailureIsScopedImportRetry();
   assertChildUsageLimitFailureBlocksUntilReset();
+  assertChildUsageLimitResetRequiresExplicitScopedOptIn();
   assertChildUsageLimitStopsNewCandidateSelection();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
   assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();

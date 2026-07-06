@@ -1694,6 +1694,11 @@ Options:
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
+  --resolve-child-runner-usage-limit-reset <ids>
+                              Explicitly confirm a user-reported child-runner
+                              usage-limit reset and requeue only the scoped
+                              blocked candidate ids. Requires matching
+                              --resolution-candidate-ids.
   --resolve-live-lanes-before-parallel
                               In opt-in parallel mode, run scoped parent-owned
                               live-lane resolution before scheduling child worktrees.
@@ -1741,6 +1746,7 @@ const VALUE_OPTIONS = new Set([
   "parallel-candidate-ids",
   "parallel-candidate-limit",
   "report-dir",
+  "resolve-child-runner-usage-limit-reset",
   "resolution-candidate-ids",
   "run-id",
   "soft-stop-percent",
@@ -3476,6 +3482,54 @@ function blockEntryForChildRunnerUsageLimit(entry, ticket, evidence) {
   attachResolutionReference(entry, ticket, "terminal_unresolved");
 }
 
+function childRunnerUsageLimitResetMatchesEvidence(entry, evidence) {
+  const reset = entry.implementation?.childRunnerUsageLimitReset;
+  if (!reset || reset.userConfirmedReset !== true) return false;
+  const previousBatchReport = normalizeRepoPath(reset.previousBatchReport || "");
+  const evidenceBatchReport = normalizeRepoPath(evidence?.batchReport || "");
+  return previousBatchReport !== "" && previousBatchReport === evidenceBatchReport;
+}
+
+function resetChildRunnerUsageLimitEntry(entry, ticket, evidence) {
+  const resetAt = new Date().toISOString();
+  const previousFailureReason = entry.failClosed?.reason || entry.implementation?.failureReason || childUsageLimitItemReason(evidence);
+  const previousResolutionTicket = entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null;
+  const resetRecord = {
+    schema: "generic-repo-full-intake.child-runner-usage-limit-reset.v1",
+    userConfirmedReset: true,
+    confirmationSource: "explicit_cli_option",
+    option: "--resolve-child-runner-usage-limit-reset",
+    previousBatchReport: evidence.batchReport || entry.failClosed?.batchReport || entry.implementation?.batchReport || null,
+    previousFailureReason,
+    previousResolutionTicket,
+    previousRetryAfterText: evidence.retryAfterText || null,
+    resetAt,
+    resetCandidateScope: [entry.id],
+    safeguards: {
+      artifactGateBypassed: false,
+      duplicateChecksBypassed: false,
+      pathPolicyBypassed: false,
+      reducerRulesBypassed: false,
+      validationBypassed: false,
+    },
+  };
+  requeueEntryAfterResolution(entry, ticket, {
+    batchReport: null,
+    childRunnerUsageLimitReset: resetRecord,
+    previousFailureReason,
+    recoveryIntent: {
+      mode: "retry_after_child_runner_usage_limit_reset",
+      previousBatchReport: resetRecord.previousBatchReport,
+      previousRetryAfterText: resetRecord.previousRetryAfterText,
+      ticketPath: ticket.isolation.ticketPath,
+    },
+    retryNonce: ticket.evidence.retryNonce,
+  });
+  if (entry.implementation) {
+    delete entry.implementation.failureReason;
+  }
+}
+
 function nextQueueRankAllocator(ledger) {
   let nextRank = ledger.entries.reduce((max, entry) => (
     Number.isInteger(entry.queueRank) ? Math.max(max, entry.queueRank) : max
@@ -3778,7 +3832,14 @@ function processLiveLaneResolutionTickets({
   return { requeuedCandidateIds, tickets };
 }
 
-function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds = null, runId, runRoot, targetRepo }) {
+function processImportFailureResolutionTickets({
+  childRunnerUsageLimitResetIds = null,
+  ledger,
+  resolutionCandidateIds = null,
+  runId,
+  runRoot,
+  targetRepo,
+}) {
   const tickets = [];
   const requeuedCandidateIds = [];
   const buckets = new Map();
@@ -3802,7 +3863,57 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     const usageLimitEvidence = discoveredBatchReport
       ? childUsageLimitFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
       : null;
-    if (usageLimitEvidence && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+    const resetRequested = childRunnerUsageLimitResetIds instanceof Set && childRunnerUsageLimitResetIds.has(entry.id);
+    if (resetRequested && entry.status === "blocked_child_runner_usage_limit" && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+      const previousEvidence = {
+        ...(entry.implementation?.childRunnerUsageLimit || {}),
+        ...(entry.failClosed?.childRunnerUsageLimit || {}),
+        ...(usageLimitEvidence || {}),
+        batchReport:
+          usageLimitEvidence?.batchReport ||
+          discoveredBatchReport ||
+          entry.failClosed?.batchReport ||
+          entry.implementation?.batchReport ||
+          null,
+      };
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: "user_confirmed_child_runner_usage_limit_reset",
+        type: "child-runner-usage-limit-reset",
+      });
+      const retryNonce = safeId(`${groupId}-${sha256Text(`${entry.id}:${runId}:${previousEvidence.batchReport || ""}`).slice(0, 8)}`);
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...previousEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+          retryNonce,
+          userDecision: {
+            childRunnerUsageLimitResetConfirmed: true,
+            confirmationSource: "explicit_cli_option",
+            option: "--resolve-child-runner-usage-limit-reset",
+            scopedCandidateIds: [entry.id],
+          },
+        },
+        groupId,
+        reason: "user_confirmed_child_runner_usage_limit_reset_requeued",
+        runId,
+        runRoot,
+        status: "resolved_requeued",
+        targetRepo,
+        type: "child-runner-usage-limit-reset",
+      });
+      resetChildRunnerUsageLimitEntry(entry, ticket, previousEvidence);
+      requeuedCandidateIds.push(entry.id);
+      tickets.push(ticket);
+      continue;
+    }
+    if (
+      usageLimitEvidence &&
+      !childRunnerUsageLimitResetMatchesEvidence(entry, usageLimitEvidence) &&
+      SAFE_CLASSIFICATIONS.has(entry.classification)
+    ) {
       const groupId = resolutionGroupId({
         candidate: entry,
         familyId: entry.liveGate?.synthesisFamily || null,
@@ -3964,6 +4075,7 @@ function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRe
 
 function processResolutionTickets({
   allowSelfImprovementLaneSynthesis = false,
+  childRunnerUsageLimitResetIds = null,
   includeBlockedLiveLaneRequired = false,
   includeImportFailureTickets = true,
   includeStaleChildTimeoutTickets = true,
@@ -3992,7 +4104,14 @@ function processResolutionTickets({
     timeoutMs,
   });
   const imports = includeImportFailureTickets
-    ? processImportFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo })
+    ? processImportFailureResolutionTickets({
+        childRunnerUsageLimitResetIds,
+        ledger,
+        resolutionCandidateIds,
+        runId,
+        runRoot,
+        targetRepo,
+      })
     : { requeuedCandidateIds: [], tickets: [] };
   if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
@@ -6840,6 +6959,16 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   const registryPath = resolveOptionalPath(cwd, options.liveLaneRegistry, DEFAULT_LIVE_LANE_REGISTRY);
   const registry = readLiveLaneRegistry(registryPath);
   const resolutionCandidateIds = parseCsvSet(options.resolutionCandidateIds);
+  const childRunnerUsageLimitResetIds = parseCsvSet(options.resolveChildRunnerUsageLimitReset);
+  if (childRunnerUsageLimitResetIds instanceof Set && childRunnerUsageLimitResetIds.size > 0) {
+    if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
+      throw new Error("--resolve-child-runner-usage-limit-reset requires matching --resolution-candidate-ids");
+    }
+    const missingScopeIds = Array.from(childRunnerUsageLimitResetIds).filter((id) => !resolutionCandidateIds.has(id));
+    if (missingScopeIds.length > 0) {
+      throw new Error(`--resolve-child-runner-usage-limit-reset ids must be included in --resolution-candidate-ids: ${missingScopeIds.join(",")}`);
+    }
+  }
   const { resumed, state: loadedState } = loadOrCreateState({ ledgerPath, maxItems, runId, runRoot, targetRepo });
   let state = loadedState;
   const gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
@@ -7009,6 +7138,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
       preResolutionQueue = processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerUsageLimitResetIds,
         includeBlockedLiveLaneRequired: true,
         includeImportFailureTickets: false,
         includeStaleChildTimeoutTickets: false,
@@ -7067,6 +7197,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
     : processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerUsageLimitResetIds,
         ledger: initialLedger,
         ledgerPath,
         registry,
