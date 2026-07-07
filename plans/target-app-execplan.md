@@ -21,6 +21,12 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - Текущее состояние очереди до нового retry: часть кандидатов заблокирована
   внешним child-runner shell issue, часть требует live lane, часть остается в
   очереди.
+- Последний autonomous-longrun цикл остановлен после третьего scoped повтора
+  `codex_child_runner_shell_unavailable:CreateProcessWithLogonW-failed`
+  (`tool-ar_coloriselayers`, `tool-ar_coloriselayersbytype`,
+  `tool-ar_createdivisionguides`). Новые queued candidates не берутся до
+  подтвержденного исправления child-runner shell environment или отдельного
+  разрешенного reset/fallback решения.
 - Push, PR, remote writes, dependency changes, Local/Ollama, fallback providers,
   broad CEP smoke и mutating live AE validation остаются approval-gated.
 
@@ -64,9 +70,18 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - [x] Full intake import for `tool-ar_addfolders`: добавлен advisory typed-plan
   coverage для generated Project folder creation без raw JSX, live mutation,
   dependency changes, push или PR.
+- [x] Repeated child-runner shell blocker stop: after three scoped candidates
+  hit the same `CreateProcessWithLogonW` child-runner failure, autonomous intake
+  stopped without burning additional queued candidates.
 
 ## Decision Log
 
+- 2026-07-07: Autonomous longrun stopped after the third scoped repeat of
+  `codex_child_runner_shell_unavailable:CreateProcessWithLogonW-failed`
+  (`tool-ar_coloriselayers`, `tool-ar_coloriselayersbytype`,
+  `tool-ar_createdivisionguides`). Do not continue queued candidates, reset the
+  shell-blocked candidates, or enable child danger-full-access fallback until
+  the shell environment fix or fallback/reset permission is explicit.
 - 2026-07-07: Durable full-intake runner теперь трактует recorded
   child-runner shell unavailable как candidate-local blocker, если остаются
   другие ranked queued candidates. `tool-ar_coloriselayers` не requeue'ится без
@@ -108,34 +123,12 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 
 ## Validation Notes
 
-Базовый guard:
-
-```powershell
-npm.cmd run check:rules
-```
-
-Для source edits:
-
-```powershell
-node --check <touched-js-or-mjs>
-git diff --check
-```
-
-Для Full Intaker/importer изменений:
-
-```powershell
-npm.cmd run smoke:full-intake
-```
-
-Последний infrastructure milestone, Windows child-runner fallback:
-
-- `node --check orchestrator/run-generic-repo-tool-importer.mjs`: pass.
-- `node --check scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
-- `node scripts/sdk-generic-repo-importer-command-smoke.js`: pass.
-- `node scripts/sdk-generic-repo-full-intake-smoke.js`: pass.
-- `npm.cmd run smoke:full-intake`: pass.
-- `git diff --check`: pass, только существующие CRLF warnings.
-- `npm.cmd run check:rules`: pass.
+Default guard remains `npm.cmd run check:rules`; source edits also require
+`node --check <touched-js-or-mjs>` and `git diff --check`; Full
+Intaker/importer edits require relevant smoke coverage. Last infrastructure
+milestone validation passed `npm.cmd run smoke:full-intake`,
+`npm.cmd run check:rules`, and `git diff --check` with existing CRLF warnings
+only.
 
 ## Progress
 
@@ -161,11 +154,16 @@ npm.cmd run smoke:full-intake
   runtime markers removed; `solution-library` and
   `solution-library-validation-smoke` now preserve Project panel selection and
   filesystem traversal warnings in compact retrieval.
+- [x] Repeated child-runner shell blocker stop: `tool-ar_createdivisionguides`
+  reached `ledger_docs_handoff_commit_finalization` after non-live validation,
+  then hit the same child-runner shell failure. Queue burn stopped at
+  `blocked_child_runner_shell_unavailable=3`, `queued=16`.
 
 ## Validation
 
 | Full intake `tool-ar_addfolders` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake `tool-ar_addexpmantainscalewhenparented` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Shell-blocker queued continuation guard | Required because durable full-intake state stopped globally on `tool-ar_coloriselayers` shell failure and could not reach safe queued candidates. | `node --check orchestrator/run-generic-repo-full-intake.mjs`, `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, `node scripts/sdk-generic-repo-full-intake-smoke.js`, `npm.cmd run smoke:full-intake`, `npm.cmd run check:rules`, and `git diff --check` passed; diff check reported CRLF normalization warnings only. |
+| Repeated child-runner shell blocker stop | Required because the same external child-runner shell failure repeated across three scoped candidates, meeting the longrun stop threshold. | Compact status/proof/ledger-summary show `tool-ar_createdivisionguides` blocked at `ledger_docs_handoff_commit_finalization`, `blocked_child_runner_shell_unavailable=3`, `queued=16`; no Local/Ollama, fallback providers, dependency changes, live mutation, push, PR, or reset/fallback was used. |
 | Post-merge validation cleanup | Required because `check:rules` rejected legacy runtime markers and `smoke:solutions` required explicit quality coverage for the new advisory recipe id. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, and `git diff --check` passed. |
 | Post-merge validation cleanup for `tool-ar_addfolders` | Required because `check:rules` rejected legacy runtime markers and compact solution retrieval needed to surface Project panel selection/filesystem traversal warnings. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`, and `git diff --check` passed. |
