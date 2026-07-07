@@ -15,6 +15,8 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
 - Последний completed candidate: `tool-ar_sequencelayers`.
+- Последний detached child proposal: `tool-ar_splitlayersintoframes`
+  ожидает parent merge/validation.
 - Compact counts после candidate: `entries=46`, `completed=15`, `queued=6`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
 - User-approved push текущей ветки разрешен после clean validation; PR/GitHub
@@ -39,9 +41,12 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   `tool-ar_nullstocornerpins`, and `tool-ar_parentabove`.
 - [x] Detached child proposals completed for `tool-ar_selectevenlayers` and
   `tool-ar_selectoddlayers`.
+- [x] Detached child proposal completed for `tool-ar_splitlayersintoframes`.
 - [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=6`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_SplitLayersIntoFrames.jsx` as `tool-ar_splitlayersintoframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_splitlayersintoframes).
 
 - 2026-07-07: Generic full-intake orchestrator processes queued AR advisory
   candidates through serial merge/validation/ledger/docs/handoff/commit gates;
@@ -71,6 +76,12 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   worktree, so source-exact AE Keyframe Assistant behavior, hidden selection
   ordering, overlap/dissolve UI behavior, raw JSX, live validation, dependency
   changes, push, and PR remain out of scope.
+- 2026-07-07: `tool-ar_splitlayersintoframes` detached child-run proposal
+  imports selected-layer one-frame timing guidance through existing
+  `set_layer_time_range` coverage. Source JSX was absent in the detached child
+  worktree, so source-exact layer splitting, duplication, source slicing,
+  hidden selection ordering, raw JSX, live validation, dependency changes,
+  push, and PR remain out of scope.
 
 - 2026-07-07: Generic full-intake orchestrator processed
   `AR_NullsToCornerPins.jsx` as `tool-ar_nullstocornerpins`, keeping
@@ -106,6 +117,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- [x] Full intake tool-ar_splitlayersintoframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_splitlayersintoframes); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-e909cffea9-import, commit recorded after candidate commit.
+- [x] `tool-ar_splitlayersintoframes` detached child-run proposal added
+  advisory recipe, intake note, registry metadata, and append-only solution
+  smoke assertions; parent importer still owns merge, validation, ledger, docs,
+  handoff, and commit gates.
 - [x] `tool-ar_sequencelayers` completed by the reusable generic full-intake
   orchestrator; live lane `not_required`, batch
   `full-intake-aturtur-after-effects-sc-b1f63fca05-import`, proof
@@ -136,11 +152,14 @@ Default guard remains `npm.cmd run check:rules`. Source edits also require
 `node --check <touched-js-or-mjs>` and `git diff --check`; Full Intaker/importer
 edits require relevant smoke coverage.
 
-Recent child runs intentionally did not run validation under the child-run hard
-boundary; parent importer owns planned-path proof, JSON/JS checks, solution
-smoke, source merge, ledger update, docs, handoff, and commit.
+Recent child runs, including `tool-ar_splitlayersintoframes`, intentionally did
+not run validation under the child-run hard boundary; parent importer owns
+planned-path proof, JSON/JS checks, solution smoke, source merge, ledger update,
+docs, handoff, and commit.
 
 ## Validation
+
+| Full intake tool-ar_splitlayersintoframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-e909cffea9-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 Latest candidate validation: `tool-ar_sequencelayers` passed compact
 status/proof/ledger checks, JS syntax, solution-library smoke, `check:rules`,

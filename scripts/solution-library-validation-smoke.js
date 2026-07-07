@@ -6740,3 +6740,64 @@ function assertArSequenceLayersAppendOnlySmoke() {
 }
 
 assertArSequenceLayersAppendOnlySmoke();
+
+function assertArSplitLayersIntoFramesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-splitlayersintoframes-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: split layers into frames timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR split layers into frames workflow should stay on selected-layer timing typed tools.`
+  );
+  assert(solution.tags.includes("frames"), `${id}: frames tag should be present.`);
+  assert(solution.tags.includes("split-layers"), `${id}: split-layers tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SplitLayersIntoFrames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("splitLayersIntoFramesSpec"), `${id}: recipe should require a reviewed splitLayersIntoFramesSpec.`);
+  assert(text.includes("oneFrameDurationPolicy"), `${id}: recipe should require a reviewed one-frame duration policy.`);
+  assert(text.includes("frameDuration"), `${id}: recipe should document frame duration semantics.`);
+  assert(text.includes("targetFrameTiming"), `${id}: recipe should require computed targetFrameTiming.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("actual layer splitting"), `${id}: recipe must reject actual layer splitting without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer frame timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer frame timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer order.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /splitLayersIntoFramesSpec/.test(item)), `${id}: evidence must require splitLayersIntoFramesSpec.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /one frame duration later/.test(item)), `${id}: evidence must require one-frame read-back boundaries.`);
+  assert(solution.notes.some((note) => /hidden selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact selection ordering.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SplitLayersIntoFrames by retiming selected layers into one-frame spans using selected-layer order, splitLayersIntoFramesSpec, frameDuration, targetFrameTiming, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR split layers into frames advisory recipe should surface for selected layer frame timing prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Split Layers Into Frames Typed Plan"), "prompt section should include AR split layers into frames advisory title.");
+  assert(promptSection.includes("splitLayersIntoFramesSpec"), "prompt section should preserve split layers into frames spec guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(promptSection.includes("frameDuration"), "prompt section should preserve frame duration guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR split layers into frames guidance should not recommend raw ExtendScript.");
+}
+
+assertArSplitLayersIntoFramesAppendOnlySmoke();

@@ -19360,6 +19360,126 @@
         "Require a separate typed-tool contract for source-exact AE sequence-layers behavior, hidden selection ordering, overlap/dissolve UI semantics, native undo behavior, layer splitting, ripple edits, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, reordering, source relinking, parenting, track matte changes, effect edits, expression edits, keyframe edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-splitlayersintoframes-typed-plan",
+      "title": "AR Split Layers Into Frames Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "frames",
+        "split-layers",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Retiming reviewed selected active-comp layers into explicit frameDuration spans by computing targetFrameTiming and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_SplitLayersIntoFrames.jsx, split selected layers into frames, or arrange selected layers as one-frame slices.",
+          "Current typed selected-layer evidence identifies selected-layer order, frame rate, frame duration, and every target accepted for timing mutation.",
+          "Source-exact layer splitting, layer duplication, source footage slicing, native undo semantics, hidden selection ordering, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "splitLayersIntoFramesSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed frame timing spec with ordered target layer indices/names, firstFrameTime, frameRate, frameDuration, oneFrameDurationPolicy, and rounded target in/out values."
+        },
+        {
+          "name": "selectedLayerOrder",
+          "type": "array",
+          "required": true,
+          "description": "Current get_selected_layers evidence or an explicitly reviewed ordered target list used for frame-by-frame timing."
+        },
+        {
+          "name": "targetFrameTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed rounded one-frame inPoint and outPoint values for each accepted layer target."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected layer inPoint and outPoint values.",
+        "Selected-layer order, first frame time, frame rate, frame duration, one-frame duration policy, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not split layers, duplicate layers, slice sources, or change startTime, stretch, source footage timing, keyframes, markers, effects, expressions, labels, names, parenting, track mattes, layer order, selection state, comp work area/duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact split-layers-into-frames behavior, hidden selection ordering, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-splitlayersintoframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp and selected-layer timing, build reviewed splitLayersIntoFramesSpec, set only rounded one-frame in/out values, then read the same layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, frame duration, selected-layer count, and current time context.",
+          "Run get_selected_layers to bind selected-layer order or require an explicitly reviewed ordered target list.",
+          "Run get_layer_details for every selected target to capture current inPoint, outPoint, startTime, duration, lock/shy state when available, and generated or explicit approval status.",
+          "Build and show splitLayersIntoFramesSpec with ordered selected layer indices/names, firstFrameTime, frameRate, frameDuration, oneFrameDurationPolicy, rounded targetFrameTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, ambiguous selected order, missing or non-finite frame rate, unsafe locked targets, unsupported source-exact layer splitting or duplication behavior, source slicing, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit layer targets with computed rounded one-frame inPoint and outPoint values.",
+          "Run get_layer_details after mutation and compare every accepted layer's inPoint and outPoint with targetFrameTiming."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, frame rate, frame duration, selected-layer order, reviewed splitLayersIntoFramesSpec, and every accepted layer index/name with current timing.",
+          "Dry-run evidence shows firstFrameTime, oneFrameDurationPolicy, rounded targetFrameTiming, accepted and skipped layers, and the exact selected order used.",
+          "Each set_layer_time_range result reports only the reviewed layer target and computed one-frame inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted layer starts at the expected rounded frame boundary and ends one frame duration later.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_splitlayersintoframes as advisory selected-layer one-frame timing typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-splitlayersintoframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level split selected active-comp layers into frame-sized spans intent associated with AR_SplitLayersIntoFrames.jsx into existing typed tools: get_active_comp, get_selected_layers, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-layer timing evidence, reviewed selected order, reviewed splitLayersIntoFramesSpec, frame-rounded one-frame target inPoint/outPoint values, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Source-exact layer splitting, layer duplication, source footage slicing, native undo semantics, hidden selection ordering, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp selected-layer timing evidence before computing splitLayersIntoFramesSpec; do not infer selected order, first frame, frame duration, or target timing from prior chat context, screenshots, layer names, labels, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed target layer indices and computed rounded one-frame inPoint/outPoint values.",
+        "Require get_layer_details read-back after timing mutation.",
+        "Require a separate typed-tool contract for source-exact layer splitting, layer duplication, source footage slicing, hidden selection ordering, native undo behavior, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for actual layer splitting, layer creation, layer deletion, layer duplication, renaming, reordering, source relinking, parenting, track matte changes, effect edits, expression edits, keyframe edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
