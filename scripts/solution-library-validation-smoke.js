@@ -6568,3 +6568,59 @@ function assertArParentAboveOddAppendOnlySmoke() {
 }
 
 assertArParentAboveOddAppendOnlySmoke();
+
+function assertArSelectEvenLayersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-selectevenlayers-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: even-layer selection should be a gated selection-state mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer selection should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+    `${id}: AR select even layers workflow should stay on typed comp inventory, selection write, and read-back tools.`
+  );
+  assert(solution.tags.includes("selection"), `${id}: selection tag should be present.`);
+  assert(solution.tags.includes("even-selection"), `${id}: even-selection tag should be present.`);
+  assert(solution.tags.includes("set-selection"), `${id}: set-selection tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SelectEvenLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("evenSelectionPolicy"), `${id}: recipe should require a reviewed evenSelectionPolicy.`);
+  assert(text.includes("evenLayerIndices"), `${id}: recipe should require computed evenLayerIndices.`);
+  assert(text.includes("one-based"), `${id}: recipe should preserve one-based layer index semantics.`);
+  assert(text.includes("set_layer_selection"), `${id}: recipe should prefer typed selection mutation.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selection-state mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selection-state mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must include set_layer_selection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /evenLayerIndices/.test(item)), `${id}: evidence must require evenLayerIndices.`);
+  assert(solution.notes.some((note) => /source-exact selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact ordering.`);
+  assert(solution.notes.some((note) => /set_layer_selection/.test(note)), `${id}: notes must require guarded set_layer_selection usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SelectEvenLayers by selecting even-indexed active comp layers using evenSelectionPolicy, evenLayerIndices, set_layer_selection, one-based layer order, and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR select even layers advisory recipe should surface for even layer selection prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Select Even Layers Typed Plan"), "prompt section should include AR select even layers advisory title.");
+  assert(promptSection.includes("evenSelectionPolicy"), "prompt section should preserve even-selection policy guidance.");
+  assert(promptSection.includes("evenLayerIndices"), "prompt section should preserve even-layer index guidance.");
+  assert(promptSection.includes("set_layer_selection"), "prompt section should prefer typed selection mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR select even layers guidance should not recommend raw ExtendScript.");
+}
+
+assertArSelectEvenLayersAppendOnlySmoke();
