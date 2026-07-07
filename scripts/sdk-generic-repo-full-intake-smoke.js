@@ -3396,7 +3396,7 @@ function assertChildUsageLimitStopsNewCandidateSelection() {
   }
 }
 
-function assertChildShellLaunchFailureBlocksNewCandidateSelection() {
+function assertChildShellLaunchFailureAllowsLaterQueuedCandidateSelection() {
   const fixture = createFixture("child-shell-global");
   try {
     const binDir = writeFakeCodex(fixture.root);
@@ -3416,15 +3416,7 @@ function assertChildShellLaunchFailureBlocksNewCandidateSelection() {
       queueRank: 1
     });
     const queued = entry({
-      id: "tool-selection-queued-after-shell-blocker",
-      sourcePath: "Selection/Queued.jsx",
-      classification: "existing_typed_tools_recipe_only",
       liveGate: { required: false, status: "not_required_for_fixture_retry" },
-      suggestedTools: ["get_active_comp", "get_layer_details"],
-      implementation: {
-        plannedPaths: ["scripts/imported-tools/queued-after-shell-blocker.js"],
-        sliceId: "fixture-queued-after-shell-blocker-import"
-      },
       queueRank: 2
     });
     const ledgerPath = writeLedger(fixture, validLedger(fixture, [blocked, queued]));
@@ -3443,11 +3435,15 @@ function assertChildShellLaunchFailureBlocksNewCandidateSelection() {
     assert.strictEqual(blockedAfter.status, "blocked_child_runner_shell_unavailable");
     assert.strictEqual(blockedAfter.failClosed.childRunnerShellFailure.shellErrorText, "CreateProcessWithLogonW failed");
     assert.strictEqual(queuedAfter.status, "queued");
-    const stopped = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "child-shell-global", 1, env));
-    assert.strictEqual(stopped.status, "blocked_child_runner_shell_unavailable");
-    assert.strictEqual(stopped.items.length, 0);
-    assert.strictEqual(stopped.blockers[0].candidateId, blocked.id);
-    assert.strictEqual(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "queued-after-shell-blocker.js")), false);
+    const continued = parseJson(runFullIntakeFixture(fixture, ledgerPath, registryPath, "child-shell-global", 1, fakeCodexEnv(binDir)));
+    assert.strictEqual(continued.status, "completed", JSON.stringify(continued.items));
+    assert.strictEqual(continued.items[0].candidateId, queued.id);
+    assert.strictEqual(continued.items[0].status, "completed");
+    const finalLedger = JSON.parse(fs.readFileSync(ledgerPath, "utf8"));
+    assert.strictEqual(finalLedger.entries.find((item) => item.id === blocked.id).status, "blocked_child_runner_shell_unavailable");
+    assert.strictEqual(finalLedger.entries.find((item) => item.id === queued.id).status, "completed");
+    assert.strictEqual(fs.existsSync(path.join(fixture.target, "scripts", "imported-tools", "composition-guide.js")), true);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
   }
@@ -4102,7 +4098,7 @@ function main() {
   assertChildUsageLimitFailureBlocksUntilReset();
   assertChildUsageLimitResetRequiresExplicitScopedOptIn();
   assertChildUsageLimitStopsNewCandidateSelection();
-  assertChildShellLaunchFailureBlocksNewCandidateSelection();
+  assertChildShellLaunchFailureAllowsLaterQueuedCandidateSelection();
   assertChildShellUnavailableResetRequiresExplicitScopedOptIn();
   assertManifestNamedRepoGuardFailureIsScopedImportRetry();
   assertControlledMergeNamedRepoGuardFailureIsScopedImportRetry();

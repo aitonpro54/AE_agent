@@ -54,6 +54,10 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   на Windows может запускать child Codex с actual `danger-full-access`,
   сохраняя requested `workspace-write` в evidence и все post-run gates; старые
   shell blockers можно снять только scoped CLI reset-флагом.
+- [x] Shell-blocker queued continuation: recorded
+  `blocked_child_runner_shell_unavailable` entries больше не создают durable
+  global stop, пока в ledger остаются другие ranked queued candidates; reset
+  заблокированного кандидата по-прежнему требует explicit scoped confirmation.
 - [x] Full intake import for `tool-ar_addexpmantainscalewhenparented`: добавлен
   advisory typed-plan coverage без raw JSX, live mutation, dependency changes,
   push или PR.
@@ -63,6 +67,11 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 
 ## Decision Log
 
+- 2026-07-07: Durable full-intake runner теперь трактует recorded
+  child-runner shell unavailable как candidate-local blocker, если остаются
+  другие ranked queued candidates. `tool-ar_coloriselayers` не requeue'ится без
+  explicit scoped reset confirmation; child-runner usage-limit blocker остается
+  global stop.
 - 2026-07-07: `tool-ar_addfolders` imported as advisory
   `ar-addfolders-typed-plan`, narrowed to reviewed generated Project folder
   creation via existing typed tools; Project panel selection, filesystem
@@ -130,6 +139,13 @@ npm.cmd run smoke:full-intake
 
 ## Progress
 
+- [x] Shell-blocker queued continuation guard: `run-generic-repo-full-intake`
+  теперь не останавливает весь durable run на уже recorded
+  `blocked_child_runner_shell_unavailable`, когда можно выбрать следующий
+  ranked queued candidate. Smoke coverage обновлен, чтобы проверять, что
+  recorded blocker остается blocked, а следующий candidate действительно
+  выбирается.
+
 - [x] Full intake `tool-ar_addfolders`: completed by the reusable generic
   full-intake orchestrator. Live gate was not required; parent reducer accepted
   only planned recipe, registry, smoke, plan and handoff changes.
@@ -150,5 +166,6 @@ npm.cmd run smoke:full-intake
 
 | Full intake `tool-ar_addfolders` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake `tool-ar_addexpmantainscalewhenparented` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Shell-blocker queued continuation guard | Required because durable full-intake state stopped globally on `tool-ar_coloriselayers` shell failure and could not reach safe queued candidates. | `node --check orchestrator/run-generic-repo-full-intake.mjs`, `node --check scripts/sdk-generic-repo-full-intake-smoke.js`, `node scripts/sdk-generic-repo-full-intake-smoke.js`, `npm.cmd run smoke:full-intake`, `npm.cmd run check:rules`, and `git diff --check` passed; diff check reported CRLF normalization warnings only. |
 | Post-merge validation cleanup | Required because `check:rules` rejected legacy runtime markers and `smoke:solutions` required explicit quality coverage for the new advisory recipe id. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, and `git diff --check` passed. |
 | Post-merge validation cleanup for `tool-ar_addfolders` | Required because `check:rules` rejected legacy runtime markers and compact solution retrieval needed to surface Project panel selection/filesystem traversal warnings. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`, and `git diff --check` passed. |

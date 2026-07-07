@@ -5091,6 +5091,10 @@ function pendingChildRunnerUsageLimitBlocker(ledger) {
 function pendingChildRunnerShellUnavailableBlocker(ledger) {
   const entry = (ledger.entries || []).find((candidate) => candidate.status === "blocked_child_runner_shell_unavailable");
   if (!entry) return null;
+  const hasQueuedRankedCandidate = (ledger.entries || []).some((candidate) => (
+    candidate.status === "queued" && Number.isInteger(candidate.queueRank)
+  ));
+  if (hasQueuedRankedCandidate) return null;
   const evidence = entry.implementation?.childRunnerShellFailure || entry.failClosed?.childRunnerShellFailure || {};
   return {
     code: "child-runner-shell-unavailable",
