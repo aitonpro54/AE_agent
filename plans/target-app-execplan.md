@@ -43,11 +43,16 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   selected-layer timing division recipe using `set_layer_time_range` with
   selected-layer order, first-layer duration, frame-boundary rounding, and
   `get_layer_details` read-back.
+- [x] Detached child-run imported `tool-ar_linkpuppetpinstonulls` as a read-only
+  advisory typed-tool-gap recipe for Puppet pin to null-controller linking,
+  limited to typed evidence gathering and future contract requirements.
 - [x] Repeated child-runner shell blocker stop recorded after three scoped
   candidates hit the same Windows shell launch failure.
 - [x] Post-commit validation cleanup completed for `tool-ar_createdivisionguides`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_LinkPuppetPinsToNulls.jsx` as `tool-ar_linkpuppetpinstonulls`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_linkpuppetpinstonulls).
 
 - 2026-05-27: Generic full-intake orchestrator processed `AR_DivideLayersDuration.jsx` as `tool-ar_dividelayersduration`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_dividelayersduration).
 
@@ -62,6 +67,12 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   selection internals, native undo behavior, layer splitting, ripple edits,
   keyframe shifts, `startTime`/stretch/source timing changes, raw JSX, live
   validation, dependency changes, push and PR remain out of scope.
+- 2026-07-07: Detached child-run imported `tool-ar_linkpuppetpinstonulls` as a
+  read-only advisory `ar-linkpuppetpinstonulls-typed-plan`. Source JSX was not
+  present in the child worktree, so actual null-controller creation, Puppet pin
+  expression/link writes, parenting, cleanup, coordinate-space handling, user
+  Puppet/DuIK mutation, raw JSX, live validation, dependency changes, push and
+  PR remain out of scope.
 - 2026-07-07: Post-commit smoke cleanup for `tool-ar_createfusionloaders`
   kept the active plan compact and moved the `File.execute` editor-launch
   warning into compact retrieval metadata.
@@ -122,6 +133,8 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 
 ## Progress
 
+- [x] Full intake tool-ar_linkpuppetpinstonulls: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_linkpuppetpinstonulls); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-a312b6a586-import, commit recorded after candidate commit.
+
 - [x] Full intake tool-ar_dividelayersduration: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_dividelayersduration); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-06c3b720e1-import, commit recorded after candidate commit.
 
 - [x] Advisory candidates completed through guarded runner:
@@ -142,6 +155,9 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - [x] `tool-ar_dividelayersduration` child-run: recipe, intake note, registry
   metadata, and append-only solution-library smoke coverage added in detached
   importer worktree without validation runs.
+- [x] `tool-ar_linkpuppetpinstonulls` child-run: read-only recipe, intake note,
+  registry metadata, handoff, and append-only solution-library smoke coverage
+  added in detached importer worktree without validation runs.
 - [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=15`.
 
 ## Validation Notes
@@ -165,6 +181,12 @@ Latest `tool-ar_createfusionloaders` post-commit cleanup validation passed:
 inside the proposal-only child worktree. Parent importer should run the relevant
 solution-library smoke tier before source merge acceptance.
 
+`tool-ar_linkpuppetpinstonulls` child-run validation was intentionally not run
+inside the proposal-only child worktree. Parent importer should run the relevant
+solution-library smoke tier before source merge acceptance.
+
 ## Validation
+
+| Full intake tool-ar_linkpuppetpinstonulls | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-a312b6a586-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_dividelayersduration | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-06c3b720e1-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
