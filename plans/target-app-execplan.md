@@ -48,6 +48,8 @@ Runtime outputs остаются ignored/local.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_AlignKeyframes.jsx` as `tool-ar_alignkeyframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_alignkeyframes).
+
 - Source license for aturtur is ignored only as a local personal-use blocker.
   It does not permit raw JSX copy, remote publication, PRs, dependency changes,
   or disabled validation/reducer gates.
@@ -65,6 +67,9 @@ Runtime outputs остаются ignored/local.
   with `set_property_keyframes clearExisting:true`, exact final times/values,
   `get_selected_properties`, `get_layer_details`, and boundary
   `get_comp_details` evidence where needed.
+- Detached generic-importer child-runs remain proposal-only for queued
+  candidates; they may draft recipe/registry/smoke metadata but must not claim
+  parent acceptance, source merge, live proof, validation, or commit.
 - The first scoped requeue attempt failed after main AR plans validated and ran:
   cleanup M100 proposal rejected `AE_AGENT_QA_*` as an unreviewed generated
   prefix. The fix adds that existing live-harness namespace to the cleanup
@@ -74,6 +79,8 @@ Runtime outputs остаются ignored/local.
   checkpoints under `backups/`, semantic verification, and cleanup.
 
 ## Progress
+
+- [x] Full intake tool-ar_alignkeyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_alignkeyframes); live gate ready, importer batch full-intake-aturtur-after-effects-sc-9e44f0d147-import, commit recorded after candidate commit.
 
 - Full Intake completed through `tool-ar_workareatoselectedlayer`; live lanes
   for completed advisory imports were `not_required` and proof remained
@@ -88,6 +95,11 @@ Runtime outputs остаются ignored/local.
 - After bridge-daemon restart, both AR live smokes passed end-to-end:
   `full-ui-agent-ar-keyframe-timing-openai-cli-smoke` and
   `full-ui-agent-ar-keyframe-boundary-timing-openai-cli-smoke`.
+- A detached child-run drafted `ar-alignkeyframes-typed-plan` as a typed-only
+  selected-keyframe alignment advisory recipe using `get_active_comp`,
+  `get_selected_properties`, `get_layer_details`, and
+  `set_property_keyframes clearExisting:true`. The source JSX was not present
+  in the detached worktree and no source JSX was copied.
 
 ## Validation Notes
 
@@ -117,3 +129,12 @@ direct cleanup `/agents/plan/propose` validation for `AE_AGENT_QA_*`,
 `npm.cmd run check:rules`, `npm.cmd run smoke:bridge`,
 `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
 `npm.cmd run smoke:full-intake`, and `git diff --check`.
+
+Detached child-run validation was not run by design: the child-run boundary
+forbids validation runs, live AE/CEP/CDP, OpenAI CLI planner runs,
+dependency/package changes, commits, pushes, PRs, and source merge application.
+Parent importer owns review and validation before acceptance.
+
+## Validation
+
+| Full intake tool-ar_alignkeyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-9e44f0d147-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
