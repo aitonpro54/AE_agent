@@ -6509,3 +6509,62 @@ function assertArParentAboveAppendOnlySmoke() {
 }
 
 assertArParentAboveAppendOnlySmoke();
+
+function assertArParentAboveOddAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-parentaboveodd-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: parent-above-odd workflow should be a gated parent-link mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer parenting should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_selection", "set_layer_parent"],
+    `${id}: AR parent above odd workflow should stay on typed selection, layer-order, parent-write, and read-back tools.`
+  );
+  assert(solution.tags.includes("parenting"), `${id}: parenting tag should be present.`);
+  assert(solution.tags.includes("odd-selection"), `${id}: odd-selection tag should be present.`);
+  assert(solution.tags.includes("generated-only"), `${id}: generated-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_ParentAboveOdd/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("parentAboveOddSpec"), `${id}: recipe should require a reviewed parentAboveOddSpec.`);
+  assert(text.includes("oddSelectionPolicy"), `${id}: recipe should require reviewed odd-selection policy.`);
+  assert(text.includes("above-parent"), `${id}: recipe should preserve above-parent layer semantics.`);
+  assert(text.includes("topmost"), `${id}: recipe should reject topmost selected children.`);
+  assert(text.includes("cycles"), `${id}: recipe should reject parent cycles.`);
+  assert(text.includes("post-mutation read-back"), `${id}: recipe should require post-mutation read-back.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: parent-link mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: parent-link mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_parent/.test(step)), `${id}: verification must include set_layer_parent.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer parent read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /odd child -> above-parent pair/.test(item)), `${id}: evidence must require odd child above-parent pairs.`);
+  assert(solution.notes.some((note) => /source-exact odd-selection semantics/.test(note)), `${id}: notes must require a separate contract for source-exact odd-selection semantics.`);
+  assert(solution.notes.some((note) => /set_layer_parent/.test(note)), `${id}: notes must require guarded set_layer_parent usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_ParentAboveOdd by parenting reviewed odd selected generated child layers to the layer directly above each child using parentAboveOddSpec, oddSelectionPolicy, set_layer_parent, expected names, cycle checks, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR parent above odd advisory recipe should surface for parent-above-odd selected layer prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Parent Above Odd Typed Plan"), "prompt section should include AR parent above odd advisory title.");
+  assert(promptSection.includes("parentAboveOddSpec"), "prompt section should preserve parent-above-odd spec guidance.");
+  assert(promptSection.includes("oddSelectionPolicy"), "prompt section should preserve odd-selection policy guidance.");
+  assert(promptSection.includes("set_layer_parent"), "prompt section should prefer typed parent-link mutation.");
+  assert(promptSection.includes("above-parent"), "prompt section should preserve above-parent semantics.");
+  assert(!/run_extendscript/i.test(promptSection), "AR parent above odd guidance should not recommend raw ExtendScript.");
+}
+
+assertArParentAboveOddAppendOnlySmoke();

@@ -14,11 +14,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний завершенный candidate: `tool-ar_parentabove`.
+- Последний child-run proposal: `tool-ar_parentaboveodd`.
 - Compact counts после candidate: `entries=46`, `completed=11`, `queued=10`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Текущая веха для `tool-ar_parentabove` завершена; следующий цикл
-  должен продолжить bounded `--max-items 1` loop.
+- Detached child-run proposal для `tool-ar_parentaboveodd` подготовлен;
+  parent reducer должен выполнить source merge/validation/ledger gates.
 - User-approved push текущей ветки разрешен после clean validation; PR/GitHub
   issue/PR mutations и unrelated remote writes остаются запрещены.
 
@@ -43,9 +43,18 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_ParentAboveOdd.jsx` as `tool-ar_parentaboveodd`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_parentaboveodd).
+
 - 2026-07-07: Generic full-intake orchestrator processed
   `AR_ParentAbove.jsx` as `tool-ar_parentabove`, keeping
   merge/validation/ledger/docs/handoff/commit gates parent-owned and serial.
+- 2026-07-07: `tool-ar_parentaboveodd` child-run proposal imports
+  `ar-parentaboveodd-typed-plan` as generated/reviewed odd-scope selected-layer
+  parenting guidance through existing `set_layer_parent` coverage. Source JSX
+  was absent in the detached child worktree, so source-exact odd-selection
+  semantics, selection ordering, native UI side effects, layer reordering,
+  broad non-generated parenting, raw JSX, live validation, dependency changes,
+  push, and PR remain out of scope.
 - 2026-07-07: `tool-ar_parentabove` child-run proposal imports
   `ar-parentabove-typed-plan` as generated/reviewed selected-layer parenting
   guidance through existing `set_layer_parent` coverage. Source JSX was absent
@@ -87,10 +96,17 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- [x] Full intake tool-ar_parentaboveodd: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_parentaboveodd); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-bd7defe8b7-import, commit recorded after candidate commit.
+
 - [x] `tool-ar_parentabove` candidate completed by reusable generic
   full-intake orchestrator; live lane `not_required`, proof
   `contractComplete=true`, unplanned paths `0`, unrelated untracked paths
   allowed by explicit local opt-in.
+
+- [x] Detached child proposal for `tool-ar_parentaboveodd` added advisory
+  recipe, intake note, registry metadata, and append-only smoke assertions.
+  Source merge, validation, ledger, docs, handoff, and commit gates remain
+  parent-owned.
 
 - [x] `tool-ar_nullstocornerpins` candidate completed by reusable generic
   full-intake orchestrator; live lane `not_required`, proof
@@ -121,5 +137,7 @@ checks. Initial post-commit `check:rules` failed only because this plan reached
 212 lines; this compact cleanup keeps the active plan under the 180-line guard.
 
 ## Validation
+
+| Full intake tool-ar_parentaboveodd | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-bd7defe8b7-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_parentabove | Let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-d4d60aacdb-import`, proof `contractComplete=true`, unplanned paths `0`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, broad CEP smoke, PR, or GitHub mutation was performed. |
