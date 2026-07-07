@@ -11,11 +11,11 @@ Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_workareatoselectedlayer`.
-- Compact counts: `entries=46`, `completed=21`, `queued=0`,
-  `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Next: re-run scoped lane resolution/requeue for six AR keyframe candidates,
-  then serial parent acceptance with `--max-items 1`.
+- Последний completed candidate: `tool-ar_alignkeyframes`.
+- Compact counts: `entries=46`, `completed=22`, `queued=5`,
+  `blocked_live_lane_required=18`, `blocked_policy=1`, `failed=0`.
+- Next: serial parent acceptance with `--max-items 1` for remaining AR
+  keyframe candidates, starting with `tool-ar_distributekeyframesbystep`.
 - Push текущей ветки разрешен после clean validation; PR/GitHub issue/PR
   mutations и unrelated remote writes запрещены.
 
@@ -37,8 +37,14 @@ Runtime outputs остаются ignored/local.
 - [x] Cleanup safety fix: generated cleanup M100 contract accepts existing
   `AE_AGENT_QA_*` live-harness namespace while preserving prefix, confirm,
   limit, proposal, checkpoint/edit-session, cleanup, and read-back gates.
-- [ ] Requeue scoped AR keyframe candidates once lane proof succeeds:
+- [x] Requeue scoped AR keyframe candidates once lane proof succeeds:
   `tool-ar_alignkeyframes`, `tool-ar_distributekeyframesbystep`,
+  `tool-ar_distributekeyframesevenly`,
+  `tool-ar_distributekeyframestocomp`,
+  `tool-ar_distributekeyframestolayer`,
+  `tool-ar_distributekeyframestoworkarea`.
+- [ ] Serially accept remaining AR keyframe candidates:
+  `tool-ar_distributekeyframesbystep`,
   `tool-ar_distributekeyframesevenly`,
   `tool-ar_distributekeyframestocomp`,
   `tool-ar_distributekeyframestolayer`,
@@ -100,6 +106,9 @@ Runtime outputs остаются ignored/local.
   `get_selected_properties`, `get_layer_details`, and
   `set_property_keyframes clearExisting:true`. The source JSX was not present
   in the detached worktree and no source JSX was copied.
+- `tool-ar_alignkeyframes` was accepted by parent-owned serial intake, validated,
+  committed as `af1d839503814595332536825e0b66095703a51a`, and pushed to
+  `origin/codex/pro-review-longrun`.
 
 ## Validation Notes
 
@@ -137,4 +146,4 @@ Parent importer owns review and validation before acceptance.
 
 ## Validation
 
-| Full intake tool-ar_alignkeyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-9e44f0d147-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Full intake tool-ar_alignkeyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, live rerun `passed`, commit `af1d839503814595332536825e0b66095703a51a`, and push to `origin/codex/pro-review-longrun`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, PR, or GitHub issue/PR mutation was performed. |
