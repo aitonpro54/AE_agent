@@ -7047,3 +7047,66 @@ function assertArTrimLayersToWorkAreaAppendOnlySmoke() {
 }
 
 assertArTrimLayersToWorkAreaAppendOnlySmoke();
+
+function assertArWorkAreaToSelectedLayerAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-workareatoselectedlayer-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: work area to selected layer workflow must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-layer work area mutation should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_work_area"],
+    `${id}: AR work area to selected layer workflow should stay on selected-layer timing read-back and comp work-area typed tools.`
+  );
+  assert(solution.tags.includes("work-area"), `${id}: work-area tag should be present.`);
+  assert(solution.tags.includes("selected-layer"), `${id}: selected-layer tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_WorkAreaToSelectedLayer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("workAreaToSelectedLayerSpec"), `${id}: recipe should require a reviewed workAreaToSelectedLayerSpec.`);
+  assert(text.includes("verifiedSelectedLayerTiming"), `${id}: recipe should require selected-layer timing evidence.`);
+  assert(text.includes("targetWorkAreaTiming"), `${id}: recipe should require computed targetWorkAreaTiming.`);
+  assert(text.includes("workAreaStart"), `${id}: recipe should require workAreaStart evidence.`);
+  assert(text.includes("workAreaDuration"), `${id}: recipe should require workAreaDuration evidence.`);
+  assert(text.includes("set_comp_work_area"), `${id}: recipe should use the comp work-area typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve selected layer startTime.`);
+  assert(text.includes("layer retiming"), `${id}: recipe must reject layer retiming without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected-layer-to-work-area mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected-layer-to-work-area mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include selected layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include set_comp_work_area.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /targetWorkAreaTiming/.test(item)), `${id}: evidence must require targetWorkAreaTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaStart/.test(item)), `${id}: evidence must require requested workAreaStart read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaDuration/.test(item)), `${id}: evidence must require requested workAreaDuration read-back.`);
+  assert(solution.notes.some((note) => /layer retiming/.test(note)), `${id}: notes must require a separate contract for layer retiming.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_WorkAreaToSelectedLayer by setting the active comp work area from verifiedSelectedLayerTiming using workAreaToSelectedLayerSpec, targetWorkAreaTiming, workAreaStart, workAreaDuration, set_comp_work_area, and get_comp_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR work area to selected layer advisory recipe should surface for selected-layer-to-work-area prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Work Area To Selected Layer Typed Plan"), "prompt section should include AR work area to selected layer advisory title.");
+  assert(promptSection.includes("workAreaToSelectedLayerSpec"), "prompt section should preserve work area to selected layer spec guidance.");
+  assert(promptSection.includes("verifiedSelectedLayerTiming"), "prompt section should preserve verified selected layer timing guidance.");
+  assert(promptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR work area to selected layer guidance should not recommend raw ExtendScript.");
+}
+
+assertArWorkAreaToSelectedLayerAppendOnlySmoke();

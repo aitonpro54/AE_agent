@@ -14,10 +14,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_trimlayerstoworkarea`.
-- Compact counts после candidate: `entries=46`, `completed=20`, `queued=1`,
+- Последний completed candidate: `tool-ar_workareatoselectedlayer`.
+- Compact counts после candidate: `entries=46`, `completed=21`, `queued=0`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Next queued preview: `tool-ar_workareatoselectedlayer`.
+- Next queued preview: none; remaining non-completed entries are blocked or
+  policy-gated.
 - User-approved push текущей ветки разрешен после clean validation; PR/GitHub
   issue/PR mutations и unrelated remote writes остаются запрещены.
 
@@ -30,18 +31,26 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Child-runner resilience: quota/shell blockers classified, Windows env
   fallback scoped, and queued continuation avoids durable false stops.
 - [x] Advisory imports completed through guarded runner up to
-  `tool-ar_trimlayerstoworkarea` with parent-owned merge/validation/ledger/docs
+  `tool-ar_workareatoselectedlayer` with parent-owned merge/validation/ledger/docs
   and one reviewable commit per milestone.
-- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=1`.
+- [x] Continue bounded `--max-items 1` intake loop for remaining `queued=1`.
 - [ ] For `blocked_live_lane_required=24`, build a missing-validation map,
   create feasible narrow lanes, requeue scoped candidates, then retry.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_WorkAreaToSelectedLayer.jsx` as `tool-ar_workareatoselectedlayer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_workareatoselectedlayer).
+
 - 2026-07-07: `tool-ar_trimlayerstoworkarea` imports selected-layer
   trim-to-active-work-area timing guidance using existing active-comp/work-area
   read-back fields, `verifiedWorkAreaTiming`, and
   `set_layer_time_range`; comp work area mutation, raw JSX, live validation,
+  source merge, ledger update, commit, push, and PR remain parent-owned or
+  fail-closed.
+- 2026-07-07: Detached child proposal for `tool-ar_workareatoselectedlayer`
+  imports active-comp work-area mutation guidance from reviewed selected-layer
+  timing evidence using existing `set_comp_work_area`, `get_comp_details`, and
+  selected-layer read-back fields; raw JSX, layer retiming, live validation,
   source merge, ledger update, commit, push, and PR remain parent-owned or
   fail-closed.
 - 2026-07-07: `tool-ar_trimlayerstoparent` imported selected-layer
@@ -94,10 +103,17 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- [x] Full intake tool-ar_workareatoselectedlayer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_workareatoselectedlayer); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-2cb9302d80-import, commit recorded after candidate commit.
+
 - [x] `tool-ar_trimlayerstoworkarea` completed by reusable generic full-intake
   orchestrator; live lane `not_required`, proof `contractComplete=true`,
   unplanned paths `0`.
 - [x] Detached child proposal prepared for `tool-ar_trimlayerstoworkarea` in
+  importer-owned worktree only: added advisory recipe, intake note, registry
+  metadata, and append-only solution smoke assertions; validation, source merge,
+  ledger update, docs closeout, and commit were intentionally not run in the
+  child.
+- [x] Detached child proposal prepared for `tool-ar_workareatoselectedlayer` in
   importer-owned worktree only: added advisory recipe, intake note, registry
   metadata, and append-only solution smoke assertions; validation, source merge,
   ledger update, docs closeout, and commit were intentionally not run in the
@@ -137,13 +153,20 @@ Recent child runs intentionally did not run validation under the child-run hard
 boundary; parent importer owns planned-path proof, JSON/JS checks, solution
 smoke, source merge, ledger update, docs, handoff, and commit.
 
-Latest candidate validation: `tool-ar_trimlayerstoworkarea` passed compact
+Latest detached child proposal: `tool-ar_workareatoselectedlayer` was prepared
+without validation under explicit child-run hard boundaries. Parent importer
+owns JSON/JS checks, solution-library smoke, source merge, ledger update, docs,
+handoff, and commit.
+
+Latest candidate validation: `tool-ar_workareatoselectedlayer` passed compact
 status/proof/ledger checks, touched JS syntax check, solution-library smoke,
 `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
 `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`,
 `git diff --check`, and `git diff --check HEAD~1 HEAD`.
 
 ## Validation
+
+| Full intake tool-ar_workareatoselectedlayer | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-2cb9302d80-import`, live rerun `not_required`. Runner-created commit `f7e217b7379ac51027df4e8c88cadd747f1e73db` was amended only for compact plan validation/current-focus cleanup; final commit id is recorded in handoff. Post-commit parent validation passed compact proof/ledger/status, `node --check`, solution-library smoke, `check:rules`, `smoke:solutions`, `smoke:planning`, `smoke:full-intake`, and diff whitespace checks. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, PR, or GitHub issue/PR mutation was performed. |
 
 | Full intake tool-ar_trimlayerstoworkarea | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-76c704789d-import`, live rerun `not_required`. Post-commit parent validation passed compact proof/ledger/status, `node --check`, solution-library smoke, `check:rules`, `smoke:solutions`, `smoke:planning`, `smoke:full-intake`, and diff whitespace checks. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, PR, or GitHub automation was performed. |
 

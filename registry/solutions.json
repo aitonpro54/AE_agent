@@ -19972,6 +19972,133 @@
         "Require a separate typed-tool contract for comp work area mutation, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for comp work area edits, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-workareatoselectedlayer-typed-plan",
+      "title": "AR Work Area To Selected Layer Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "composition",
+        "comp",
+        "layers",
+        "timing",
+        "work-area",
+        "workAreaStart",
+        "workAreaDuration",
+        "selected-layer",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Set the active composition work area to reviewed selected-layer timing bounds by computing targetWorkAreaTiming and applying set_comp_work_area with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_WorkAreaToSelectedLayer.jsx, set the work area to a selected layer, or make the active comp work area match selected-layer timing.",
+          "Current typed active-comp, selected-layer, layer-detail, and comp-detail evidence identifies the selected-layer timing bounds and active composition accepted for work-area mutation.",
+          "Layer retiming, source-exact native UI side effects, current-time inference, source footage trimming, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "workAreaToSelectedLayerSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed work-area timing spec with target comp identity, selected layer indices/names, timing source, skipped-target reasons, and target work-area values."
+        },
+        {
+          "name": "verifiedSelectedLayerTiming",
+          "type": "object",
+          "required": true,
+          "description": "Explicit reviewed selected-layer timing evidence, including finite inPoint, outPoint, computed duration, selected layer identity, and frame rate when available."
+        },
+        {
+          "name": "targetWorkAreaTiming",
+          "type": "object",
+          "required": true,
+          "description": "Computed workAreaStart and workAreaDuration values derived from selected-layer timing and checked against the active comp duration."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed workAreaStart and workAreaDuration values.",
+        "Selected layer targets, selected-layer timing source, active comp duration, frame rate when available, and target work-area timing are reviewed before mutation.",
+        "The default safe adaptation uses one selected layer; multi-layer aggregation requires an explicit reviewed policy such as earliest accepted inPoint to latest accepted outPoint.",
+        "The safe adaptation does not change layer timing and does not change comp duration, frame rate, background color, sources, effects, expressions, keyframes, markers, labels, names, parenting, track mattes, layer order, selection state, project items, files, render queue items, or non-target comps.",
+        "Source-exact hidden selection ordering, native UI side effects, layer retiming, source footage trimming, native undo behavior, current-time inference, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-workareatoselectedlayer-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "get_comp_details",
+          "set_comp_work_area"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp and selected-layer timing, build reviewed workAreaToSelectedLayerSpec, set only comp work-area values, then read the same comp back.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, selected-layer count, current time, and available work area context.",
+          "Run get_selected_layers to bind current selected layers and reject empty, stale, or ambiguous selected-layer evidence.",
+          "Run get_layer_details for every accepted selected layer to capture current inPoint, outPoint, startTime, duration, lock/shy state when available, and generated or explicit review status.",
+          "Run get_comp_details before mutation to capture current workAreaStart, workAreaDuration, duration, frameRate, width, height, bgColor, layer count, marker count when available, and the same comp identity.",
+          "Build and show workAreaToSelectedLayerSpec with target comp identity, selected layer indices/names, selected timing source, verifiedSelectedLayerTiming, targetWorkAreaTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, hidden selection ordering requirements, missing or non-finite selected-layer timing, non-positive target workAreaDuration, out-of-bounds work-area values, layer retiming requests, broad comp traversal, and raw JSX behavior.",
+          "Run set_comp_work_area once against the verified active comp with only reviewed start, reviewed duration, verifyAfter, and idempotency evidence.",
+          "Run get_comp_details after mutation and compare workAreaStart and workAreaDuration with targetWorkAreaTiming while confirming comp duration, frameRate, width, height, bgColor, layer count, marker count when available, and comp identity were preserved.",
+          "Run get_layer_details after mutation when needed to confirm selected-layer inPoint, outPoint, and startTime were not changed."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, selected or explicit layers, verifiedSelectedLayerTiming, previous comp work area, and reviewed workAreaToSelectedLayerSpec.",
+          "Dry-run evidence shows accepted and skipped layers, skipped-target reasons, selected timing source, and computed targetWorkAreaTiming with requested workAreaStart and requested workAreaDuration.",
+          "The set_comp_work_area result reports only the reviewed active comp target and computed workAreaStart/workAreaDuration timing values.",
+          "Post-run get_comp_details shows requested workAreaStart and requested workAreaDuration on the same active comp.",
+          "Post-run evidence shows unchanged comp duration, frameRate, width, height, bgColor, layer count, marker state when available, selected-layer inPoint, selected-layer outPoint, selected-layer startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, project items, files, render queue items, and non-target comps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_workareatoselectedlayer as advisory selected-layer-to-work-area typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing active-comp/selected-layer/layer-detail read-back fields and set_comp_work_area coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-workareatoselectedlayer",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level set active composition work area from reviewed selected-layer timing bounds intent associated with AR_WorkAreaToSelectedLayer.jsx into existing typed tools: get_active_comp, get_selected_layers, get_layer_details, get_comp_details, and set_comp_work_area. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current active-comp and selected-layer timing evidence, explicit reviewed workAreaToSelectedLayerSpec, verifiedSelectedLayerTiming, target workAreaStart/workAreaDuration values derived from selected layer inPoint/outPoint, checkpoint/edit-session protection, idempotency, and get_comp_details read-back. Source-exact hidden selection ordering, native UI side effects, layer retiming, source footage trimming, native undo semantics, current-time inference, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp, selected-layer, layer-detail, and comp-detail evidence before computing workAreaToSelectedLayerSpec; do not infer selected timing, selected order, frame rate, or target work-area timing from prior chat context, screenshots, layer names, labels, visual timeline state, current time, comp duration alone, or source-script assumptions.",
+        "Use set_comp_work_area only with explicit reviewed active comp identity and computed workAreaStart/workAreaDuration values from verified selected-layer timing.",
+        "Require get_comp_details read-back after work-area mutation and confirm selected-layer timing was not changed.",
+        "Require a separate typed-tool contract for source-exact hidden selection ordering, native UI side effects, layer retiming, source footage trimming, native undo behavior, current-time inference, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for layer timing edits, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, keyframe edits, source relinking, render queue work, project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
