@@ -18,12 +18,12 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   Windows child-runner blockers.
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний завершенный candidate: `tool-ar_coloriselayersbytype`.
-- Последние compact counts: `entries=46`, `completed=4`, `queued=17`,
+- Последний завершенный candidate: `tool-ar_createdivisionguides`.
+- Последние compact counts: `entries=46`, `completed=5`, `queued=16`,
   `blocked_live_lane_required=24`, `blocked_policy=1`.
-- Compact status еще показывает historical `tool-ar_createdivisionguides`
-  shell blocker в runtime state; следующий fresh cycle должен начать с compact
-  preflight и обычного bounded `--max-items 1` loop.
+- Compact status завершен для `tool-ar_createdivisionguides`; следующий fresh
+  cycle должен начать с compact preflight и обычного bounded `--max-items 1`
+  loop.
 - Push, PR, remote writes, dependency changes, Local/Ollama, fallback providers,
   broad CEP smoke и mutating live AE validation остаются approval-gated.
 
@@ -64,10 +64,14 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   candidates hit the same Windows shell launch failure.
 - [x] Detached importer child-run advisory import completed for
   `tool-ar_createdivisionguides`.
+- [x] Post-commit validation cleanup completed for `tool-ar_createdivisionguides`.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed `AR_CreateDivisionGuides.jsx` as `tool-ar_createdivisionguides`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createdivisionguides).
+- 2026-05-27: Generic full-intake orchestrator processed `AR_CreateDivisionGuides.jsx` as `tool-ar_createdivisionguides`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue.
+- 2026-07-07: Post-commit cleanup for `tool-ar_createdivisionguides` removed
+  legacy auxiliary lane markers and moved the native `CompItem.addGuide`
+  unsupported warning into compact solution metadata.
 
 - Source license для aturtur игнорируется только как local personal-use blocker.
   Это не разрешает raw JSX copy, remote publication, push, PR, dependency
@@ -112,7 +116,9 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 
 ## Progress
 
-- [x] Full intake tool-ar_createdivisionguides: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createdivisionguides); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-476049e7d6-import, commit recorded after candidate commit.
+- [x] Full intake tool-ar_createdivisionguides: completed by reusable generic full-intake orchestrator; live gate not_required, importer batch full-intake-aturtur-after-effects-sc-476049e7d6-import, commit recorded after candidate commit.
+- [x] `tool-ar_createdivisionguides` post-commit validation cleanup: compact
+  plan markers removed, compact retrieval warning fixed, cleanup smokes passed.
 
 - [x] `tool-ar_coloriselayersbytype`: completed by reusable generic full-intake
   orchestrator. Live lane `not_required`; parent reducer accepted only planned
@@ -152,10 +158,17 @@ handoff:
 
 Latest `tool-ar_createdivisionguides` child-run validation state:
 
-- No validation commands were run in the detached child-run because the
-  AUX-021 batch explicitly forbade validation runs.
+- No validation commands were run in the detached child-run because that
+  child batch explicitly forbade validation runs.
 - Child-run edits were limited to planned recipe, registry, append-only smoke,
   plan, and handoff paths.
+
+Latest `tool-ar_createdivisionguides` post-commit cleanup validation state:
+
+- Passed: `node --check scripts\solution-library-validation-smoke.js`,
+  `git diff --check HEAD~1 HEAD`, `git diff --check`, `check:rules`,
+  `smoke:solutions`, `smoke:planning`, and `smoke:full-intake`. A parallel
+  `check:rules` attempt hit a transient temp-file race; serial rerun passed.
 
 ## Validation
 

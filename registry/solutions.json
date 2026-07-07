@@ -8210,7 +8210,7 @@
         "postMutationReadBack": true
       },
       "verificationRecipe": {
-        "summary": "Compute division guide overlay geometry from typed comp dimensions, create generated guide layers, optionally style them, then read generated guide layers back.",
+        "summary": "Use generated shape-layer overlays, not native CompItem.addGuide records; compute geometry from typed comp dimensions and read layers back.",
         "steps": [
           "Run create_comp only when a new generated comp is requested; otherwise bind one explicit target comp with get_comp_details before mutation.",
           "Read target comp width and height, current layer count, and target comp identity before computing guide coordinates.",
