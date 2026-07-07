@@ -107,6 +107,7 @@ function assertPlanContractMetadata() {
   assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("export_text_to_file", { outputFileName: "export.txt" }), []);
   assert(generatedSafety.validateGeneratedSafetyStep("export_text_to_file", { outputFileName: "Desktop/export.txt" }).length > 0);
   assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("cleanup_test_items", { namePrefix: "Codex QA", confirm: true }), []);
+  assert.deepStrictEqual(generatedSafety.validateGeneratedSafetyStep("cleanup_test_items", { namePrefix: "AE_AGENT_QA_AR_KEY Fixture", confirm: true }), []);
   assert(generatedSafety.validateGeneratedSafetyStep("cleanup_test_items", { namePrefix: "User", confirm: true }).some((issue) => /generated prefix/.test(issue)));
 }
 

@@ -346,8 +346,8 @@ function validateGeneratedSafetyStep(toolName, args = {}, options = {}) {
   if (cleanupContract) {
     const prefix = String(args && args[cleanupContract.prefixField] || "Codex Test").trim();
     if (prefix.length < 3) issues.push(`${cleanupContract.prefixField} must be at least 3 characters.`);
-    if (!/^Codex(?:\s|[-_])|^AE Agent(?:\s|[-_])|^Generated(?:\s|[-_])/i.test(prefix)) {
-      issues.push(`${cleanupContract.prefixField} must use a reviewed generated prefix such as Codex, AE Agent, or Generated.`);
+    if (!/^Codex(?:\s|[-_])|^AE Agent(?:\s|[-_])|^AE_AGENT_QA(?:\s|[-_])|^Generated(?:\s|[-_])/i.test(prefix)) {
+      issues.push(`${cleanupContract.prefixField} must use a reviewed generated prefix such as Codex, AE Agent, AE_AGENT_QA, or Generated.`);
     }
     if (args && args[cleanupContract.confirmField] !== true) {
       issues.push(`${cleanupContract.confirmField}:true is required for generated cleanup/delete.`);
