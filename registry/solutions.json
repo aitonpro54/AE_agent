@@ -8378,6 +8378,125 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "ar-dividelayersduration-typed-plan",
+      "title": "AR Divide Layers Duration Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selected-layers",
+        "layer-timing",
+        "duration",
+        "sequence",
+        "inPoint",
+        "outPoint",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Divide reviewed selected layers into equal sequential timing sections based on the first selected layer duration using set_layer_time_range and read-back.",
+        "appliesWhen": [
+          "The user asks to divide selected layers duration, sequence selected layers inside the first selected layer's duration, or references AR_DivideLayersDuration.jsx.",
+          "Selected-layer order, first selected layer duration, comp frame rate, and every target layer's current in/out timing are available through current typed evidence.",
+          "The workflow can use a reviewed divideLayersDurationSpec with ordered selected layer targets, sectionDuration, rounded target inPoint/outPoint values, and skipped-target reasons.",
+          "The selected layers are generated or explicitly approved for timing mutation, and a typed timing adaptation is acceptable instead of raw ExtendScript.",
+          "The workflow does not require source-exact AE selection internals, native undo behavior, layer splitting, ripple edits, keyframe shifts, startTime changes, stretch/source timing changes, or exact source JSX behavior."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected active-comp layers with current typed evidence for order, layer indices/names, inPoint, outPoint, generated/approved status, and safety state."
+        },
+        {
+          "name": "divideLayersDurationSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed timing spec with selected layer order, firstLayerDuration, selectedLayerCount, sectionDuration, frameRate, rounded target timing, accepted layers, and skipped-target reasons."
+        }
+      ],
+      "targetAssumptions": [
+        "The active composition and selected layers are inspected before any timing mutation.",
+        "The first selected layer's visible duration is computed as outPoint - inPoint from current typed evidence.",
+        "Each accepted layer receives an equal sectionDuration of firstLayerDuration divided by selectedLayerCount.",
+        "The first accepted layer keeps its original inPoint; each following accepted layer starts at the previous accepted layer's rounded outPoint.",
+        "All accepted outPoint values are rounded to frame boundaries using the reviewed comp frameRate.",
+        "The workflow changes only reviewed selected layer inPoint and outPoint values through set_layer_time_range.",
+        "Existing startTime, stretch, source timing, keyframes, markers, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target layers are preserved.",
+        "Source-exact selection internals, native undo behavior, layer splitting, ripple edits, keyframe shifts, stretch/source timing changes, broad comp traversal, raw script execution, and exact source JSX behavior remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-dividelayersduration-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected-layer timing and order, compute equal rounded section timing from the first selected layer duration, mutate only explicit layer in/out points, then read the same layers back.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers to capture active composition identity, comp frame rate or frame duration, selected-layer count, and selected-layer order.",
+          "Run get_layer_details for every selected target and capture layer index, name, inPoint, outPoint, startTime, safety state, and generated or explicit approval evidence.",
+          "Build a reviewed divideLayersDurationSpec with selected layer order, firstLayerDuration, selectedLayerCount, sectionDuration, rounded target inPoint/outPoint values, accepted layers, and skipped-target reasons.",
+          "Fail closed when selected-layer evidence is empty, selected order is ambiguous, firstLayerDuration is missing or non-positive, frameRate is missing or non-finite, any target is locked or unsafe to retime, target timing exceeds approved bounds, or exact source JSX behavior is required.",
+          "Run set_layer_time_range only for explicit reviewed selected layer targets, setting the computed inPoint and outPoint values while preserving startTime and unrelated layer state.",
+          "Run get_layer_details and, when useful, get_selected_layers after mutation to prove accepted layer timing matches the divideLayersDurationSpec and non-target state remains bounded."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies active comp frameRate, selected-layer order, first selected layer duration, and every accepted layer index/name with current inPoint and outPoint values.",
+          "Dry-run evidence shows divideLayersDurationSpec, accepted/skipped layers, skipped-target reasons, sectionDuration, rounded target inPoint/outPoint values, and the selected order used.",
+          "Every set_layer_time_range result targets one explicit reviewed selected layer and sets only the computed inPoint and outPoint values.",
+          "Post-run get_layer_details shows the first accepted layer keeps its original inPoint, each following accepted layer starts at the previous rounded outPoint, and every accepted outPoint equals the expected rounded section boundary.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_dividelayersduration as advisory selected-layer timing division coverage without live validation in the child-run.",
+          "The source JSX was inspected from the importer source checkout and narrowed to typed selected-layer timing evidence plus set_layer_time_range read-back; no source JSX was copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-dividelayersduration",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer duration division intent associated with AR_DivideLayersDuration.jsx into existing typed tools: get_active_comp, get_selected_layers, get_layer_details, and set_layer_time_range. The safe adaptation computes first selected layer duration from typed inPoint/outPoint evidence, divides that duration by selectedLayerCount, rounds accepted outPoint values to comp frame boundaries, changes only reviewed selected layer inPoint/outPoint values, and requires post-mutation get_layer_details read-back; no source JSX copied. Source-exact AE selection internals, native undo behavior, layer splitting, ripple edits, keyframe shifts, startTime changes, stretch/source timing changes, broad comp traversal, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_selected_layers and get_layer_details timing evidence before computing or mutating selected layer durations; do not infer selected order, first layer duration, frame rate, or target timing from prior chat context.",
+        "Use set_layer_time_range only for explicit reviewed selected layer inPoint/outPoint updates described by divideLayersDurationSpec.",
+        "Require post-mutation get_layer_details read-back to prove accepted layer timing changed as expected and non-target timing stayed unchanged.",
+        "Require a separate typed-tool contract for source-exact selection ordering, native undo behavior, layer splitting, ripple edits, keyframe shifting, startTime or stretch changes, source timing changes, broad comp traversal, selection mutation, raw ExtendScript, or exact source JSX semantics.",
+        "Do not use this recipe for comp duration/work-area changes, marker edits, expression/keyframe edits, layer order changes, source relinking, render queue work, file operations, arbitrary user-asset mutation, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-labeled-items-to-render-queue-typed-plan",
       "title": "Add Labeled Items To Render Queue Typed Plan",
       "status": "recipe",

@@ -28,43 +28,28 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 
 ## Milestones
 
-- [x] Clean baseline purge: runtime/log/backup/snapshot/pro-review outputs
-  очищены или оставлены ignored/local.
-- [x] Documentation/tooling cleanup: текущие README/AGENTS/release/migration
-  docs сохранены компактно, исторические evidence/archive ссылки убраны.
-- [x] Guard pass: clean-current guard проверяет runtime roots, compact plan,
-  ignore surface и legacy-маркеры вне importer protocol fixtures.
-- [x] Aturtur reference intake init: auto-intake runtime создан, кандидаты
-  обнаружены без импорта product artifacts.
-- [x] Local-use license override: добавлен явный opt-in для личного локального
-  приема без upstream license blocker; provenance сохраняется, публикация и
-  raw-copy не разрешаются.
-- [x] Comment-aware risk scan: URL в JSX comments/headers не превращают весь
-  кандидат в unsafe network case.
-- [x] Unrelated untracked guard: reducer/serial boundaries могут явно терпеть
-  unrelated `??` файлы, не staging их и не ослабляя tracked/overlap checks.
-- [x] Candidate alias planning: queue ids с underscore корректно резолвятся в
-  importer ids с hyphen.
-- [x] Candidate artifact completion guard: parent-doc-only изменения больше не
-  считаются успешным импортом candidate artifact.
-- [x] Child-runner quota gate/reset: quota exhaustion классифицируется как
-  внешний blocker, reset разрешен только scoped parent-owned опцией.
-- [x] Child-runner shell blocker detection: `CreateProcessWithLogonW failed` и
-  `windows sandbox` фиксируются как внешний runtime blocker.
-- [x] Windows child-runner fallback/reset: явный env opt-in может запускать
-  child Codex с actual `danger-full-access`, сохраняя requested
-  `workspace-write` в evidence и все post-run gates.
-- [x] Shell-blocker queued continuation: recorded shell blockers больше не
-  создают durable global stop, пока остаются другие ranked queued candidates.
-- [x] Advisory imports completed for `tool-ar_addexpmantainscalewhenparented`,
-  `tool-ar_addfolders`, `tool-ar_coloriselayers`,
-  `tool-ar_coloriselayersbytype`, `tool-ar_createdivisionguides`, and
-  `tool-ar_createfusionloaders`.
+- [x] Clean baseline/docs guard: runtime outputs ignored/local, current docs
+  compact, clean-current guard active.
+- [x] Aturtur intake protocol hardening: init, local-use license opt-in,
+  comment-aware risk scan, untracked guard, alias resolution, and artifact
+  completion guard.
+- [x] Child-runner resilience: quota/shell blockers classified, Windows env
+  fallback scoped, and queued continuation avoids durable false stops.
+- [x] Advisory imports completed through guarded runner:
+  `tool-ar_addexpmantainscalewhenparented`, `tool-ar_addfolders`,
+  `tool-ar_coloriselayers`, `tool-ar_coloriselayersbytype`,
+  `tool-ar_createdivisionguides`, and `tool-ar_createfusionloaders`.
+- [x] Detached child-run imported `tool-ar_dividelayersduration` as an advisory
+  selected-layer timing division recipe using `set_layer_time_range` with
+  selected-layer order, first-layer duration, frame-boundary rounding, and
+  `get_layer_details` read-back.
 - [x] Repeated child-runner shell blocker stop recorded after three scoped
   candidates hit the same Windows shell launch failure.
 - [x] Post-commit validation cleanup completed for `tool-ar_createdivisionguides`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_DivideLayersDuration.jsx` as `tool-ar_dividelayersduration`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_dividelayersduration).
 
 - 2026-07-07: Post-commit cleanup for `tool-ar_createdivisionguides` removed
   legacy auxiliary lane markers and moved the native `CompItem.addGuide`
@@ -72,6 +57,11 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - 2026-07-07: Detached child-run imported `tool-ar_createfusionloaders` as an
   advisory generated Fusion Loader text export recipe using selected AVLayer
   source/timing read-back and generated `export_text_to_file` output only.
+- 2026-07-07: Detached child-run imported `tool-ar_dividelayersduration` as an
+  advisory selected-layer `inPoint`/`outPoint` timing recipe. Source-exact AE
+  selection internals, native undo behavior, layer splitting, ripple edits,
+  keyframe shifts, `startTime`/stretch/source timing changes, raw JSX, live
+  validation, dependency changes, push and PR remain out of scope.
 - 2026-07-07: Post-commit smoke cleanup for `tool-ar_createfusionloaders`
   kept the active plan compact and moved the `File.execute` editor-launch
   warning into compact retrieval metadata.
@@ -121,10 +111,18 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   clipboard behavior, raw Fusion settings, arbitrary user paths, unsupported
   formats, raw JSX, live validation, dependency changes, push and PR remain out
   of scope.
+- `tool-ar_dividelayersduration` imported as advisory
+  `ar-dividelayersduration-typed-plan`, narrowed to reviewed selected-layer
+  timing division through `set_layer_time_range`; ambiguous selection order,
+  non-positive first-layer duration, unsafe targets, layer splitting, ripple
+  edits, keyframe shifts, `startTime`/stretch/source timing changes, raw JSX,
+  live validation, dependency changes, push and PR remain out of scope.
 - Imported advisory recipe ids require explicit smoke quality/retrieval checks;
   compact plan notes must not preserve legacy runtime markers.
 
 ## Progress
+
+- [x] Full intake tool-ar_dividelayersduration: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_dividelayersduration); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-06c3b720e1-import, commit recorded after candidate commit.
 
 - [x] Advisory candidates completed through guarded runner:
   `tool-ar_addexpmantainscalewhenparented`, `tool-ar_addfolders`,
@@ -141,6 +139,9 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   approved by the user for the listed shell-blocked candidates only.
 - [x] `tool-ar_createfusionloaders` deferred post-commit smoke tier: plan kept
   below the compact guard limit and solution retrieval warning fixed.
+- [x] `tool-ar_dividelayersduration` child-run: recipe, intake note, registry
+  metadata, and append-only solution-library smoke coverage added in detached
+  importer worktree without validation runs.
 - [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=15`.
 
 ## Validation Notes
@@ -159,3 +160,11 @@ Latest `tool-ar_createfusionloaders` post-commit cleanup validation passed:
 `node scripts\solution-library-validation-smoke.js`, `check:rules`,
 `smoke:solutions`, `smoke:planning`, and `smoke:full-intake` (first
 `smoke:full-intake` attempt timed out at 120s; 300s rerun passed).
+
+`tool-ar_dividelayersduration` child-run validation was intentionally not run
+inside the proposal-only child worktree. Parent importer should run the relevant
+solution-library smoke tier before source merge acceptance.
+
+## Validation
+
+| Full intake tool-ar_dividelayersduration | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-06c3b720e1-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |

@@ -6215,3 +6215,61 @@ function assertArCreateFusionLoadersAppendOnlySmoke() {
 }
 
 assertArCreateFusionLoadersAppendOnlySmoke();
+
+function assertArDivideLayersDurationAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-dividelayersduration-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected layer timing division must be mutating.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR divide layers duration workflow should stay on selected-layer timing typed tools.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DivideLayersDuration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("divideLayersDurationSpec"), `${id}: recipe should require a reviewed divideLayersDurationSpec.`);
+  assert(text.includes("first selected layer's current duration"), `${id}: recipe should document first selected layer duration semantics.`);
+  assert(text.includes("sectionDuration"), `${id}: recipe should compute equal sectionDuration values.`);
+  assert(text.includes("rounded to the nearest frame"), `${id}: recipe should document frame-boundary rounding.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer timing division must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer timing division must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer order.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /first selected layer duration/.test(item)), `${id}: evidence must require first selected layer duration.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /rounded section boundary/.test(item)), `${id}: evidence must require rounded timing boundaries.`);
+  assert(solution.notes.some((note) => /selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact selection ordering.`);
+  assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+
+  const retrieval = retrieveSolutionHints("Divide selected layers duration into equal sequential sections from the first selected layer duration, using get_selected_layers order, get_layer_details timing evidence, set_layer_time_range, and rounded outPoint read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR divide layers duration advisory recipe should surface for selected layer duration division prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Divide Layers Duration Typed Plan"), "prompt section should include AR divide layers duration advisory title.");
+  assert(promptSection.includes("divideLayersDurationSpec"), "prompt section should preserve divide layer duration spec guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(promptSection.includes("first selected layer"), "prompt section should preserve first selected layer duration semantics.");
+  assert(!/run_extendscript/i.test(promptSection), "AR divide layers duration guidance should not recommend raw ExtendScript.");
+}
+
+assertArDivideLayersDurationAppendOnlySmoke();
