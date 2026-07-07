@@ -8020,6 +8020,127 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "ar-coloriselayersbytype-typed-plan",
+      "title": "AR Colorise Layers By Type Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-type",
+        "layer-label",
+        "label-color",
+        "colorise-layers",
+        "colorize-layers",
+        "selected-layers",
+        "active-comp",
+        "metadata",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set active-comp Layer.label values by reviewed typed layer-kind evidence and a reviewed typeToLabelMap, then read labels back.",
+        "appliesWhen": [
+          "The user asks to colorise or colorize layers by type, classify layer types into label colors, or references AR_ColoriseLayersByType.jsx.",
+          "Current typed evidence identifies concrete active-comp layer indices and returned layer-kind fields for every accepted target.",
+          "The workflow can use a reviewed typeToLabelMap whose label indices are AE labelIndex values from 0 through 16.",
+          "The workflow does not require source-exact AR type classifier behavior, hidden AE class checks, palette UI behavior, automatic label selection, Project item labels, property color values, cross-comp changes, broad project scans, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "typeToLabelMap",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed mapping from typed layer-kind values returned by current evidence to AE label indices from 0 through 16."
+        },
+        {
+          "name": "layerTypeTargets",
+          "type": "object",
+          "required": true,
+          "description": "Current active-comp layer evidence containing concrete one-based layerIndex values, optional expected layer names, returned layer-kind fields, and current label state when available."
+        }
+      ],
+      "targetAssumptions": [
+        "Every target layer is bound from current active-comp typed evidence before mutation.",
+        "Layer type grouping uses only returned fields such as type, layerType, matchName, textLayer, shapeLayer, cameraLayer, lightLayer, nullLayer, adjustmentLayer, guideLayer, source/precomp evidence, or equivalent available layer-kind fields.",
+        "A reviewed typeToLabelMap with AE labelIndex values from 0 through 16 is disclosed in the dry-run plan before confirmation.",
+        "The workflow changes only Layer.label on explicit active-comp layer indices through set_layer_metadata.",
+        "Layer names, layer order, selection state, switches, timing, sources, effects, expressions, masks, keyframes, parenting, track matte relationships, project items, render queue items, files, and non-target layers are preserved.",
+        "Source-exact AR type classifier behavior, hidden AE class checks, palette UI behavior, automatic label selection, Project item labels, property color values, cross-comp changes, broad project scans, and raw script execution remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-coloriselayersbytype-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_metadata"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read active-comp layer-kind and label evidence, group explicit targets by reviewed typeToLabelMap, set labels per group, then read labels back.",
+        "steps": [
+          "Run get_active_comp before mutation to capture active comp identity.",
+          "Run get_selected_layers when the request targets selected layers, or get_comp_details includeLayers:true when the request explicitly targets all active-comp layers.",
+          "Run get_layer_details for accepted layers when deeper layer-kind fields or current label read-back evidence are needed.",
+          "Build a reviewed typeToLabelMap only from typed layer-kind evidence and AE labelIndex values in 0..16.",
+          "Fail closed when target evidence is empty, lacks concrete layerIndex values, active-comp inventory is incomplete, layer-kind fields are unavailable, a layer type is unmapped, or source-exact AR type classifier behavior is required.",
+          "Run set_layer_metadata once per accepted label group with explicit layerIndices, optional expectedLayerNames and label:<reviewed labelIndex>.",
+          "Run get_layer_details or get_comp_details includeLayers:true after mutation and verify every accepted layer reports the expected label for its reviewed typed layer kind.",
+          "Fail closed if hidden AE class checks, automatic label selection, Project item label mutation, property color mutation, layer rename, selection mutation, cross-comp mutation, broad project scans, raw ExtendScript or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the active comp, every accepted layer index, optional expected names, returned layer-kind fields, current label state when available, and skipped targets with reasons.",
+          "Dry-run evidence lists the reviewed typeToLabelMap, accepted type groups, label indices, and concrete layer targets before confirmation.",
+          "set_layer_metadata reports only label:<reviewed labelIndex> updates for concrete layer indices and expected-name guards when available.",
+          "Post-run read-back shows every accepted layer has the expected label for its reviewed typed layer kind.",
+          "Post-run evidence shows no layer rename, order change, selection-state mutation, switch mutation, timing/source/effect/expression/keyframe/mask/parenting/track-matte mutation, Project item label mutation, property color mutation, render queue mutation, file write, cross-comp mutation, broad project scan or non-target layer mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_coloriselayersbytype as advisory typed layer-kind label metadata coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree or targeted .codex-runtime search; scope came from the child-run wrapper, candidate name, existing typed layer evidence tools, and fail-closed layer label semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-coloriselayersbytype",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the layer-label-by-type intent associated with AR_ColoriseLayersByType.jsx into existing typed tools as active-comp Layer.label mutation grouped by current typed layer-kind evidence through get_active_comp, get_selected_layers, get_comp_details, get_layer_details and set_layer_metadata; no source JSX copied. Source-exact AR type classifier behavior, hidden AE class checks, palette UI behavior, automatic label selection, implicit label-name mapping, Project item labels, property color values, cross-comp changes, broad project scans, selection mutation, raw ExtendScript and exact source JSX semantics require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current typed active-comp evidence before mutating layer labels; do not infer targets or layer kinds from prior chat context, screenshots, layer names alone, visual order, or source script state.",
+        "Use this recipe only for explicit reviewed typeToLabelMap values applied to concrete active-comp layer indices.",
+        "Require get_layer_details or get_comp_details includeLayers:true read-back after mutation to prove each accepted layer has the expected label value for its reviewed typed layer kind.",
+        "Do not mutate Project item labels, property color values, layer names, order, selection state, switches, timing, sources, effects, expressions, masks, keyframes, parenting, track matte relationships, render queue items, files, or non-target layers.",
+        "Require a separate typed-tool contract for source-exact AR type classifier behavior, hidden AE class checks, palette UI behavior, automatic label selection, label-name inference without explicit mapping, cross-comp label changes, Project item label mutation, property color mutation, broad project scans, raw ExtendScript or exact source JSX behavior."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-labeled-items-to-render-queue-typed-plan",
       "title": "Add Labeled Items To Render Queue Typed Plan",
       "status": "recipe",

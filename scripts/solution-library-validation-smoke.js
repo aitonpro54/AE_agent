@@ -68,6 +68,7 @@ const IMPORTED_ADVISORY_IDS = [
   "toggle-maintain-scale-expression-typed-plan",
   "ar-addexpmantainscalewhenparented-typed-plan",
   "ar-coloriselayers-typed-plan",
+  "ar-coloriselayersbytype-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
@@ -3176,6 +3177,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /Project item label/.test(note) || /Project item/.test(note)), `${id}: notes must reject Project item label mutation.`);
       assert(solution.promotionHistory.some((entry) => /AR_ColoriseLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-coloriselayersbytype-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_metadata"],
+        `${id}: AR colorise layers by type workflow should stay on active-comp layer evidence plus metadata writes.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: layer-label-by-type workflow must be mutating.`);
+      assert(text.includes("typeToLabelMap"), `${id}: recipe should require a reviewed type-to-label map.`);
+      assert(text.includes("0..16"), `${id}: recipe should document the accepted AE label range.`);
+      assert(text.includes("layer-kind"), `${id}: recipe should require typed layer-kind evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should support complete active-comp layer inventory evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer label read-back.`);
+      assert(text.includes("source-exact type classifier"), `${id}: recipe should reject source-exact type classifier behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typeToLabelMap/.test(step)), `${id}: verification must include typeToLabelMap.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /layer-kind/.test(item)), `${id}: verification must require layer-kind evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /hidden AE class checks/.test(note)), `${id}: notes must reject hidden AE class checks.`);
+      assert(solution.promotionHistory.some((entry) => /AR_ColoriseLayersByType/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "set-track-matte-to-above-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4836,6 +4858,21 @@ function assertActualRetrieval(registry) {
   assert(arColoriseLayersPromptSection.includes("palette UI behavior"), "prompt section should preserve palette UI warning.");
   assert(!/run_extendscript/i.test(arColoriseLayersPromptSection), "AR colorise layers guidance should not recommend raw ExtendScript.");
 
+  const arColoriseLayersByTypeRetrieval = retrieveSolutionHints("Colorise layers by type after reading active comp layer-kind evidence, building a reviewed typeToLabelMap, setting layer labels with set_layer_metadata, and reading labels back without hidden AE class checks.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arColoriseLayersByTypeRetrieval.ok, true);
+  assert(ids(arColoriseLayersByTypeRetrieval).includes("ar-coloriselayersbytype-typed-plan"), "AR colorise layers by type advisory recipe should surface for type-based layer label prompts.");
+  const arColoriseLayersByTypePromptSection = formatSolutionHintsForPrompt(arColoriseLayersByTypeRetrieval);
+  assert(arColoriseLayersByTypePromptSection.includes("AR Colorise Layers By Type Typed Plan"), "prompt section should include AR colorise layers by type advisory title.");
+  assert(arColoriseLayersByTypePromptSection.includes("typeToLabelMap"), "prompt section should preserve type-to-label map guidance.");
+  assert(arColoriseLayersByTypePromptSection.includes("layer-kind"), "prompt section should preserve layer-kind evidence guidance.");
+  assert(arColoriseLayersByTypePromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for layer labels.");
+  assert(arColoriseLayersByTypePromptSection.includes("hidden AE class checks"), "prompt section should preserve hidden class-check warning.");
+  assert(!/run_extendscript/i.test(arColoriseLayersByTypePromptSection), "AR colorise layers by type guidance should not recommend raw ExtendScript.");
+
   const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -5089,6 +5126,7 @@ function assertActualRetrieval(registry) {
       averagePosition: ids(averagePositionRetrieval),
       zeroPosition: ids(zeroPositionRetrieval),
       arAddFolders: ids(arAddFoldersRetrieval),
+      arColoriseLayersByType: ids(arColoriseLayersByTypeRetrieval),
       selectedCompositionsRenderQueue: ids(addSelectedCompositionsRenderQueueRetrieval),
       findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
