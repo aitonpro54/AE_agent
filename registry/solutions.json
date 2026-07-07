@@ -18745,6 +18745,127 @@
         "Require a separate typed-tool contract before running add_effect, set_effect_property, set_expression, set_layer_parent, layer-creation tools, or any raw script execution.",
         "Do not use this recipe for effect-property writes, expression edits, layer parenting, layer creation, layer transform edits, layer timing changes, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-parentabove-typed-plan",
+      "title": "AR Parent Above Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "parenting",
+        "selection",
+        "generated-only",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Parent explicit generated or reviewed selected child layers to the layers directly above them with set_layer_parent and typed read-back, using a reviewed parentAboveSpec.",
+        "appliesWhen": [
+          "The user asks to run AR_ParentAbove.jsx, parent selected layers above, or parent selected layers to the layer directly above each selected child.",
+          "Current typed evidence identifies each selected child layer and its reviewed above-parent layer from same-comp layer order.",
+          "Every accepted child -> above-parent pair is represented as concrete same-comp layer indices and expected names before mutation.",
+          "Source-exact selection side effects, native UI state, broad non-generated parenting, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedChildLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Concrete one-based selected child layer indices from current typed selection evidence."
+        },
+        {
+          "name": "parentAboveSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed comp identity, selected child indices/names, above-parent indices/names, skipped targets, cycle checks, and idempotency expectations."
+        },
+        {
+          "name": "parentPairs",
+          "type": "array",
+          "required": true,
+          "description": "Reviewed childLayerIndex, expectedLayerName, parentLayerIndex, and expectedParentName pairs derived from same-comp layer order."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one generated or explicitly reviewed composition.",
+        "Selection wording is reduced to concrete generated or explicitly reviewed child layer indices before mutation.",
+        "Each above-parent layer is derived from current same-comp layer-order evidence, not from screenshots, layer names, stale context, or source-script assumptions.",
+        "Only parent links for the reviewed child layers are mutated.",
+        "Layer creation, deletion, duplication, renaming, reordering, timing, sources, track mattes, effects, expressions, properties, project items, render queue state, files, non-generated user assets, hidden selection side effects, native script behavior, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-parentabove-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_selection",
+          "set_layer_parent"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind selected child layers and above-parent layers from typed evidence, show parentAboveSpec, run set_layer_parent for each reviewed pair, then read every child parent back.",
+        "steps": [
+          "Run get_active_comp to bind the target composition.",
+          "Run get_selected_layers and get_comp_details includeLayers:true to bind selected children and complete enough layer order.",
+          "Build and show parentAboveSpec with child -> above-parent pairs, skipped targets, cycle checks, and expected names.",
+          "Reject topmost selected children, missing above-parent layers, truncated inventory, ambiguous identity, non-generated user-asset mutation without explicit review, and cycles.",
+          "Run set_layer_parent for each reviewed pair with expectedLayerName and expectedParentName.",
+          "Run get_layer_details after mutation for every child and verify parent.index/name match the reviewed above-parent layer."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, selected child indices/names, full enough layer order, and every child -> above-parent pair.",
+          "Dry-run evidence shows parentAboveSpec, skipped targets, cycle checks, exact child/parent indices, and expected names.",
+          "Each set_layer_parent result reports postVerification.parentMatches:true.",
+          "Post-run get_layer_details shows every child parent index/name matches the reviewed above-parent layer.",
+          "Unsupported top-layer selections, cycles, broad user-layer parenting, layer reordering, track matte edits, non-generated assets, and exact source JSX semantics are reported as typed-tool gaps."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_parentabove as advisory selected-layer parent-above typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing set_layer_parent coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-parentabove",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level parent selected layers to the layer directly above intent associated with AR_ParentAbove.jsx into existing typed tools: get_active_comp, get_selected_layers, get_comp_details, get_layer_details, set_layer_selection, and set_layer_parent. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires explicit generated or reviewed selected child layers, same-comp above-parent derivation, reviewed parentAboveSpec, expected-name guarded set_layer_parent writes, checkpoint/edit-session protection, and get_layer_details read-back. Source-exact selection ordering, native UI side effects, layer reordering, broad non-generated parenting, cycle-prone parent writes, track matte changes, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current selected-layer and layer-order evidence before building parentAboveSpec; do not infer above-parent targets from prior chat context, screenshots, layer names alone, or source-script assumptions.",
+        "Use set_layer_parent only with explicit child/parent indices and expected-name guards.",
+        "Require get_layer_details read-back for every child parent link after mutation.",
+        "Require a separate typed-tool contract for source-exact selection ordering, native UI side effects, layer reordering, broad non-generated parenting, cycle-prone parent writes, track matte changes, or exact source JSX semantics.",
+        "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, timing edits, source relinking, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
