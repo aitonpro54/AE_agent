@@ -19118,6 +19118,129 @@
         "Require a separate typed-tool contract for source-exact selection ordering, native UI side effects, zero-based or selected-ordinal even semantics, cross-comp selection, Project panel selection, or exact source JSX semantics.",
         "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, reordering, timing edits, source relinking, parenting, track matte changes, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-selectoddlayers-typed-plan",
+      "title": "AR Select Odd Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "selection",
+        "odd-selection",
+        "set-selection",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Select reviewed odd-indexed active-comp layers with set_layer_selection and typed read-back, using an explicit oddSelectionPolicy.",
+        "appliesWhen": [
+          "The user asks to run AR_SelectOddLayers.jsx, select odd layers, or select every odd-indexed layer in the active composition.",
+          "Current typed layer inventory identifies complete enough one-based layer order to compute concrete oddLayerIndices before selection mutation.",
+          "Source-exact native UI behavior, hidden selection ordering, cross-comp selection, Project panel selection, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "oddLayerIndices",
+          "type": "array",
+          "required": true,
+          "description": "Computed one-based active-comp layer indices accepted for odd-layer selection."
+        },
+        {
+          "name": "oddSelectionPolicy",
+          "type": "string",
+          "required": true,
+          "description": "Reviewed policy defining odd selection semantics. The supported default is one-based AE layer index where layer.index % 2 === 1."
+        },
+        {
+          "name": "expectedNames",
+          "type": "array",
+          "required": false,
+          "description": "Optional layer names paired with oddLayerIndices for post-selection read-back."
+        },
+        {
+          "name": "layerOrderEvidence",
+          "type": "array",
+          "required": true,
+          "description": "Current get_comp_details layer inventory evidence used to compute oddLayerIndices and skipped even layers."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only its layer selection state.",
+        "Odd-layer targets are derived only from current typed layer inventory and reviewed one-based layer-index semantics unless an alternate policy is explicitly reviewed.",
+        "The safe adaptation does not create, delete, duplicate, rename, reorder, retime, relink, parent, unparent, toggle switches, edit effects, expressions, keyframes, masks, project items, render queue state, files, or user assets.",
+        "Source-exact native UI side effects, hidden selection ordering, zero-based or selected-ordinal semantics, cross-comp selection, Project panel selection, and raw JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-selectoddlayers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_comp_details",
+          "set_layer_selection",
+          "get_selected_layers"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp and layer order, compute oddLayerIndices from reviewed oddSelectionPolicy, set replacement selection, then read selected layers back.",
+        "steps": [
+          "Run get_active_comp to bind the target composition.",
+          "Run get_comp_details includeLayers:true with a sufficient layerLimit to bind complete enough one-based layer order.",
+          "Build and show oddSelectionPolicy, oddLayerIndices, optional expected names, skipped even layers, and layer-order evidence.",
+          "Reject missing active comp, truncated inventory, ambiguous odd-selection policy, empty odd target set, cross-comp or Project panel selection, source-exact native side effects, and raw JSX behavior.",
+          "Run set_layer_selection with computed oddLayerIndices, optional expectedNames, replacement selection semantics, verifyAfter:true, and a stable idempotency key.",
+          "Run get_selected_layers after mutation and compare selected count, indices, and names with the computed odd layer set."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, complete enough layer inventory, reviewed oddSelectionPolicy, and every accepted odd layer index/name.",
+          "Dry-run evidence shows oddLayerIndices, optional expected names, skipped even layers, and one-based layer-order evidence.",
+          "set_layer_selection result reports the computed odd layer indices, replacement selection semantics, verifyAfter:true, and no non-selection mutation.",
+          "Post-run get_selected_layers shows exactly the expected odd-layer count, selected layer indices, and expected names.",
+          "Empty, truncated, unsupported, ambiguous, source-exact, cross-comp, or Project panel selection requests are reported as typed-tool gaps or no-op decisions instead of approximate selection."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_selectoddlayers as advisory active-comp odd-layer selection typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing set_layer_selection coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-selectoddlayers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level select odd active-comp layers intent associated with AR_SelectOddLayers.jsx into existing typed tools: get_active_comp, get_comp_details, set_layer_selection, and get_selected_layers. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current layer inventory, reviewed oddSelectionPolicy, concrete one-based oddLayerIndices, replacement selection through set_layer_selection, checkpoint/edit-session protection, idempotency, and get_selected_layers read-back. Source-exact native UI side effects, hidden selection ordering, zero-based or selected-ordinal odd semantics without explicit review, cross-comp selection, Project panel selection, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp layer inventory before computing oddLayerIndices; do not infer targets from prior chat context, screenshots, layer names, labels, or source-script assumptions.",
+        "Use set_layer_selection only with explicit oddLayerIndices and optional expected-name guards.",
+        "Require get_selected_layers read-back after selection mutation.",
+        "Require a separate typed-tool contract for source-exact selection ordering, native UI side effects, zero-based or selected-ordinal odd semantics, cross-comp selection, Project panel selection, or exact source JSX semantics.",
+        "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, reordering, timing edits, source relinking, parenting, track matte changes, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }

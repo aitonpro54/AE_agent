@@ -6624,3 +6624,59 @@ function assertArSelectEvenLayersAppendOnlySmoke() {
 }
 
 assertArSelectEvenLayersAppendOnlySmoke();
+
+function assertArSelectOddLayersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-selectoddlayers-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: odd-layer selection should be a gated selection-state mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer selection should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+    `${id}: AR select odd layers workflow should stay on typed comp inventory, selection write, and read-back tools.`
+  );
+  assert(solution.tags.includes("selection"), `${id}: selection tag should be present.`);
+  assert(solution.tags.includes("odd-selection"), `${id}: odd-selection tag should be present.`);
+  assert(solution.tags.includes("set-selection"), `${id}: set-selection tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SelectOddLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("oddSelectionPolicy"), `${id}: recipe should require a reviewed oddSelectionPolicy.`);
+  assert(text.includes("oddLayerIndices"), `${id}: recipe should require computed oddLayerIndices.`);
+  assert(text.includes("one-based"), `${id}: recipe should preserve one-based layer index semantics.`);
+  assert(text.includes("set_layer_selection"), `${id}: recipe should prefer typed selection mutation.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selection-state mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selection-state mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must include set_layer_selection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /oddLayerIndices/.test(item)), `${id}: evidence must require oddLayerIndices.`);
+  assert(solution.notes.some((note) => /source-exact selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact ordering.`);
+  assert(solution.notes.some((note) => /set_layer_selection/.test(note)), `${id}: notes must require guarded set_layer_selection usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SelectOddLayers by selecting odd-indexed active comp layers using oddSelectionPolicy, oddLayerIndices, set_layer_selection, one-based layer order, and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR select odd layers advisory recipe should surface for odd layer selection prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Select Odd Layers Typed Plan"), "prompt section should include AR select odd layers advisory title.");
+  assert(promptSection.includes("oddSelectionPolicy"), "prompt section should preserve odd-selection policy guidance.");
+  assert(promptSection.includes("oddLayerIndices"), "prompt section should preserve odd-layer index guidance.");
+  assert(promptSection.includes("set_layer_selection"), "prompt section should prefer typed selection mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR select odd layers guidance should not recommend raw ExtendScript.");
+}
+
+assertArSelectOddLayersAppendOnlySmoke();
