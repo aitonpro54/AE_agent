@@ -19241,6 +19241,125 @@
         "Require a separate typed-tool contract for source-exact selection ordering, native UI side effects, zero-based or selected-ordinal odd semantics, cross-comp selection, Project panel selection, or exact source JSX semantics.",
         "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, reordering, timing edits, source relinking, parenting, track matte changes, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-sequencelayers-typed-plan",
+      "title": "AR Sequence Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "sequence-layers",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Sequence reviewed selected active-comp layers by computing explicit durationPolicy-based rounded in/out timing and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_SequenceLayers.jsx, sequence selected layers, or place selected layers one after another in time.",
+          "Current typed selected-layer evidence identifies selected-layer order, current timing, frame rate, and every target accepted for timing mutation.",
+          "Source-exact AE Keyframe Assistant behavior, hidden selection ordering, overlap/dissolve UI behavior, native undo semantics, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "sequenceLayersSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed sequence timing spec with ordered target layer indices/names, sequenceStartTime, durationPolicy, optional overlapOrGapSeconds, frameRate, and rounded target in/out values."
+        },
+        {
+          "name": "selectedLayerOrder",
+          "type": "array",
+          "required": true,
+          "description": "Current get_selected_layers evidence or an explicitly reviewed ordered target list used for sequence timing."
+        },
+        {
+          "name": "targetTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed rounded inPoint and outPoint values for each accepted layer target."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected layer inPoint and outPoint values.",
+        "Selected-layer order, sequence start time, duration policy, optional overlap or gap, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not change startTime, stretch, source footage timing, keyframes, markers, effects, expressions, labels, names, parenting, track mattes, layer order, selection state, comp work area/duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact AE sequence-layers UI behavior, hidden selection ordering, overlap/dissolve dialog semantics, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-sequencelayers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp and selected-layer timing, build reviewed sequenceLayersSpec, set only rounded in/out values, then read the same layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, selected-layer count, and current time context.",
+          "Run get_selected_layers to bind selected-layer order or require an explicitly reviewed ordered target list.",
+          "Run get_layer_details for every selected target to capture current inPoint, outPoint, startTime, duration, lock/shy state when available, and generated or explicit approval status.",
+          "Build and show sequenceLayersSpec with ordered selected layer indices/names, sequenceStartTime, durationPolicy, optional overlapOrGapSeconds, rounded target timing, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, ambiguous selected order, ambiguous duration or overlap/gap policy, missing or non-finite frame rate, unsafe locked targets, unsupported source-exact AE sequence-layers behavior, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit layer targets with computed rounded inPoint and outPoint values.",
+          "Run get_layer_details after mutation and compare every accepted layer's inPoint and outPoint with targetTiming."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, frame rate, selected-layer order, reviewed sequenceLayersSpec, and every accepted layer index/name with current timing.",
+          "Dry-run evidence shows sequenceStartTime, durationPolicy, optional overlapOrGapSeconds, rounded targetTiming, accepted and skipped layers, and the exact selected order used.",
+          "Each set_layer_time_range result reports only the reviewed layer target and computed inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted layer starts and ends at the expected rounded sequence boundary.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_sequencelayers as advisory selected-layer timing sequence typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-sequencelayers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level sequence selected active-comp layers intent associated with AR_SequenceLayers.jsx into existing typed tools: get_active_comp, get_selected_layers, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-layer timing evidence, reviewed selected order, reviewed sequenceLayersSpec, frame-rounded target inPoint/outPoint values, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Source-exact AE Keyframe Assistant behavior, hidden selection ordering, overlap/dissolve UI behavior, native undo semantics, layer splitting, ripple edits, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp selected-layer timing evidence before computing sequenceLayersSpec; do not infer selected order, duration policy, overlap/gap policy, or target timing from prior chat context, screenshots, layer names, labels, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed target layer indices and computed rounded inPoint/outPoint values.",
+        "Require get_layer_details read-back after timing mutation.",
+        "Require a separate typed-tool contract for source-exact AE sequence-layers behavior, hidden selection ordering, overlap/dissolve UI semantics, native undo behavior, layer splitting, ripple edits, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for layer creation, layer deletion, layer duplication, renaming, reordering, source relinking, parenting, track matte changes, effect edits, expression edits, keyframe edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }

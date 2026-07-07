@@ -14,8 +14,8 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_selectoddlayers`.
-- Compact counts после candidate: `entries=46`, `completed=14`, `queued=7`,
+- Последний completed candidate: `tool-ar_sequencelayers`.
+- Compact counts после candidate: `entries=46`, `completed=15`, `queued=6`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
 - User-approved push текущей ветки разрешен после clean validation; PR/GitHub
   issue/PR mutations и unrelated remote writes остаются запрещены.
@@ -39,18 +39,14 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   `tool-ar_nullstocornerpins`, and `tool-ar_parentabove`.
 - [x] Detached child proposals completed for `tool-ar_selectevenlayers` and
   `tool-ar_selectoddlayers`.
-- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=7`.
+- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=6`.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed recent queued AR
-  advisory candidates through serial merge/validation/live/doc/commit gates,
-  including `tool-ar_parentaboveodd`, `tool-ar_selectevenlayers`, and
-  `tool-ar_selectoddlayers`.
-
-- 2026-07-07: Generic full-intake orchestrator processed
-  `AR_ParentAbove.jsx` as `tool-ar_parentabove`, keeping
-  merge/validation/ledger/docs/handoff/commit gates parent-owned and serial.
+- 2026-07-07: Generic full-intake orchestrator processes queued AR advisory
+  candidates through serial merge/validation/ledger/docs/handoff/commit gates;
+  recent completed items include `tool-ar_parentabove`,
+  `tool-ar_parentaboveodd`, parity selection, and `tool-ar_sequencelayers`.
 - 2026-07-07: `tool-ar_parentaboveodd` child-run proposal imports
   `ar-parentaboveodd-typed-plan` as generated/reviewed odd-scope selected-layer
   parenting guidance through existing `set_layer_parent` coverage. Source JSX
@@ -69,6 +65,12 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   coverage. Source-exact ordering, alternate parity semantics, cross-comp or
   Project panel selection, raw JSX, live validation, dependency changes, push,
   and PR remain out of scope.
+- 2026-07-07: `tool-ar_sequencelayers` detached child-run proposal imports
+  selected-layer timing sequence guidance through existing
+  `set_layer_time_range` coverage. Source JSX was absent in the detached child
+  worktree, so source-exact AE Keyframe Assistant behavior, hidden selection
+  ordering, overlap/dissolve UI behavior, raw JSX, live validation, dependency
+  changes, push, and PR remain out of scope.
 
 - 2026-07-07: Generic full-intake orchestrator processed
   `AR_NullsToCornerPins.jsx` as `tool-ar_nullstocornerpins`, keeping
@@ -104,29 +106,13 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
-- [x] Full intake tool-ar_selectoddlayers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_selectoddlayers); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-1822ba3f08-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-ar_selectevenlayers: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_selectevenlayers); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-379ecd1525-import, commit recorded after candidate commit.
-
-- [x] Full intake tool-ar_parentaboveodd: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_parentaboveodd); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-bd7defe8b7-import, commit recorded after candidate commit.
-
-- [x] `tool-ar_parentabove` candidate completed by reusable generic
-  full-intake orchestrator; live lane `not_required`, proof
-  `contractComplete=true`, unplanned paths `0`, unrelated untracked paths
-  allowed by explicit local opt-in.
-
-- [x] Detached child proposal for `tool-ar_parentaboveodd` added advisory
-  recipe, intake note, registry metadata, and append-only smoke assertions.
-  Source merge, validation, ledger, docs, handoff, and commit gates remain
-  parent-owned.
-- [x] Detached child proposal for `tool-ar_selectevenlayers` added advisory
-  recipe, intake note, registry metadata, and append-only smoke assertions.
-  Source merge, validation, ledger, docs, handoff, and commit gates remain
-  parent-owned.
-- [x] Detached child proposal for `tool-ar_selectoddlayers` added advisory
-  recipe, intake note, registry metadata, and append-only smoke assertions.
-  Source merge, validation, ledger, docs, handoff, and commit gates remain
-  parent-owned.
+- [x] `tool-ar_sequencelayers` completed by the reusable generic full-intake
+  orchestrator; live lane `not_required`, batch
+  `full-intake-aturtur-after-effects-sc-b1f63fca05-import`, proof
+  `contractComplete=true`, unplanned paths `0`.
+- [x] Recent queued AR candidates through `tool-ar_selectoddlayers` remain
+  completed with parent-owned source merge, validation, ledger, docs, handoff,
+  and commit gates.
 
 - [x] `tool-ar_nullstocornerpins` candidate completed by reusable generic
   full-intake orchestrator; live lane `not_required`, proof
@@ -150,22 +136,14 @@ Default guard remains `npm.cmd run check:rules`. Source edits also require
 `node --check <touched-js-or-mjs>` and `git diff --check`; Full Intaker/importer
 edits require relevant smoke coverage.
 
-Parity-selection child runs intentionally did not run validation under the
-child-run hard boundary; parent importer owns planned-path proof, JSON/JS checks,
-solution smoke, source merge, ledger update, docs, handoff, and commit.
-
-`tool-ar_parentabove` parent acceptance validation passed compact
-status/proof/ledger checks, `node --check`, solution-library smoke,
-`smoke:solutions`, `smoke:planning`, `smoke:full-intake`, and diff whitespace
-checks. Initial post-commit `check:rules` failed only because this plan reached
-212 lines; this compact cleanup keeps the active plan under the 180-line guard.
+Recent child runs intentionally did not run validation under the child-run hard
+boundary; parent importer owns planned-path proof, JSON/JS checks, solution
+smoke, source merge, ledger update, docs, handoff, and commit.
 
 ## Validation
 
-| Full intake tool-ar_selectoddlayers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-1822ba3f08-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-ar_selectevenlayers | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-379ecd1525-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-ar_parentaboveodd | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-bd7defe8b7-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
-
-| Full intake tool-ar_parentabove | Let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-d4d60aacdb-import`, proof `contractComplete=true`, unplanned paths `0`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, broad CEP smoke, PR, or GitHub mutation was performed. |
+Latest candidate validation: `tool-ar_sequencelayers` passed compact
+status/proof/ledger checks, JS syntax, solution-library smoke, `check:rules`,
+`smoke:solutions`, `smoke:planning`, `smoke:full-intake`, and diff whitespace
+checks after compacting this plan and preserving `durationPolicy` in prompt
+retrieval.
