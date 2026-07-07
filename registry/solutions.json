@@ -8260,6 +8260,124 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "ar-createfusionloaders-typed-plan",
+      "title": "AR Create Fusion Loaders Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "fusion",
+        "fusion-loader",
+        "loader-nodes",
+        "selected-layers",
+        "avlayer",
+        "footage",
+        "file-output",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Export reviewed Fusion Loader node text for selected AVLayers from typed source/timing evidence into a generated text artifact.",
+        "appliesWhen": [
+          "The user asks to create Fusion loaders, Fusion Loader nodes, or references AR_CreateFusionLoaders.jsx.",
+          "Selected active-comp AVLayers have typed file-backed footage, source path, frame rate, duration, in point, out point, and start time evidence.",
+          "A generated text export through export_text_to_file is acceptable instead of temp-folder output, editor launch, clipboard behavior, or raw ExtendScript.",
+          "The workflow can use a reviewed fusionLoaderExportSpec with selected layer order, simple .txt outputFileName, allowed file format mapping, trim frames, and image-sequence start-frame evidence when needed.",
+          "The workflow does not require raw Fusion settings export, arbitrary user paths, unsupported footage formats, Project panel selection, render queue work, or exact source JSX behavior."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "selectedLayers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Selected active-comp AVLayers with current typed evidence for layer order, source file path, source frame rate/duration, in point, out point, and start time."
+        },
+        {
+          "name": "fusionLoaderExportSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed export spec with selected layer order, outputFileName, allowed Fusion format ids, computed trim frames, and image-sequence start-frame evidence when needed."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow reads only the active composition and explicitly selected layers before export.",
+        "Every exported layer is an AVLayer with file-backed footage and enough typed source/timing evidence to compute Fusion Loader trim values.",
+        "Supported format mapping is limited to jpg/JpegFormat, png/PNGFormat, tif/TiffFormat, dpx/DPXFormat, exr/OpenEXRFormat, mov/mp4/QuickTimeMovies, and R3D/R3DFormat.",
+        "The generated text contains Tools=ordered() and one LoaderN block per accepted layer, with reviewed Filename, FormatID, TrimIn, TrimOut, GlobalEnd, and sequence fields when required.",
+        "File output stays under logs/generated-exports/ or AE_AGENT_GENERATED_EXPORT_DIR using export_text_to_file.",
+        "Existing layers, sources, masks, effects, expressions, keyframes, selection state, comp timing, project items, render queue items, source files, and non-generated user assets are preserved.",
+        "Temp-folder writes, File.execute, external editor launch, clipboard behavior, raw Fusion settings, arbitrary output paths, unsupported formats, Project panel selection, render queue work, raw script execution, and exact source JSX behavior remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-createfusionloaders-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "export_text_to_file"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected AVLayer source/timing evidence, generate reviewed Fusion Loader text, export it with export_text_to_file under generated exports, then read selected layers back.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers to capture active composition identity, selected layer count, and selected layer order.",
+          "Run get_layer_details for every candidate selected layer and capture AVLayer/file-backed source path, frame rate, duration or frame count, in point, out point, and start time evidence.",
+          "Build a reviewed fusionLoaderExportSpec with accepted layer order, outputFileName, allowed file format ids, computed TrimIn, computed TrimOut, computed GlobalEnd, image-sequence StartFrame values when needed, and skipped-target reasons.",
+          "Fail closed when selected-layer evidence is empty, layer order is ambiguous, any target is not file-backed AVLayer footage, timing/source evidence is missing, an image-sequence start frame is unproven, an extension is unsupported, or raw Fusion settings are required.",
+          "Run export_text_to_file with reviewed Fusion Loader text, expected loader count, and a simple generated .txt outputFileName under the generated export root.",
+          "Run get_selected_layers or get_layer_details again after export to prove selected layers, source/timing evidence, and AE project state remain bounded."
+        ],
+        "expectedEvidence": [
+          "Pre-export evidence identifies the active comp, selected layer order, accepted AVLayer names/indices, source file paths, frame rates, durations, in/out/start timing, computed trim values, and reviewed file format ids.",
+          "Dry-run evidence shows fusionLoaderExportSpec, accepted/skipped layers, skipped-target reasons, computed loader count, outputFileName, and a Fusion text preview containing Tools=ordered(){ without raw settings.",
+          "export_text_to_file result reports generated outputPath, outputFileName, byteLength, sha256, contentPreview, exportedText, per-layer summary, and cleanup state.",
+          "The exported text includes exactly one LoaderN = Loader block per accepted layer with reviewed Filename, FormatID, TrimIn, TrimOut, GlobalEnd, and required sequence fields.",
+          "Post-export selected-layer or layer-details read-back shows no layer stack, source, timing, expression, effect, Project item, render queue, temp-folder, Desktop/user path, raw JSX, or non-generated user-asset mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_createfusionloaders as advisory generated Fusion Loader text export coverage without live validation in the child-run.",
+          "The source JSX was inspected from the importer source checkout and narrowed to typed selected-layer/source timing evidence plus generated export_text_to_file output; no source JSX was copied."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-createfusionloaders",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the Fusion Loader node text export intent associated with AR_CreateFusionLoaders.jsx into existing typed tools: get_active_comp, get_selected_layers, get_layer_details, and export_text_to_file. The safe adaptation uses reviewed selected AVLayer source/timing evidence, limited Fusion format mapping, computed trim values, simple .txt output under generated exports, sha256/read-back evidence, and post-export selected-layer read-back; no source JSX copied. Source-exact temp-folder writes, File.execute editor launch, clipboard behavior, raw Fusion settings export, arbitrary user paths, unsupported formats, Project panel selection, render queue work, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_selected_layers and get_layer_details evidence before generating Fusion Loader text; do not infer selected AVLayers, source paths, timing, or start frames from prior chat context.",
+        "Use export_text_to_file only with reviewed Fusion Loader text and simple generated .txt filenames under the generated export root.",
+        "Require a post-export selected-layer or layer-details read-back to prove the export did not mutate AE project state.",
+        "Require a separate typed-tool contract for source-exact temp-folder output, File.execute/editor launch, clipboard behavior, arbitrary outputPath values, native file prompts, raw Fusion settings export, missing source/timing evidence, unsupported formats, Project panel selection, render queue work, or exact source JSX semantics.",
+        "Do not use this recipe for footage import, proxy/render operations, text-layer export, Project item cleanup, source relinking, layer mutation, arbitrary filesystem writes, or raw script execution."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-labeled-items-to-render-queue-typed-plan",
       "title": "Add Labeled Items To Render Queue Typed Plan",
       "status": "recipe",

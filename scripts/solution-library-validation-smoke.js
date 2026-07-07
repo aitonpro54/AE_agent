@@ -6160,3 +6160,58 @@ function assertArCreateDivisionGuidesAppendOnlySmoke() {
 }
 
 assertArCreateDivisionGuidesAppendOnlySmoke();
+
+function assertArCreateFusionLoadersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-createfusionloaders-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: Fusion Loader text export must be a file-output side effect.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "export_text_to_file"],
+    `${id}: AR create Fusion loaders workflow should stay on selected-layer read-back and generated text export.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_CreateFusionLoaders/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("fusionLoaderExportSpec"), `${id}: recipe should require a reviewed fusionLoaderExportSpec.`);
+  assert(text.includes("Fusion Loader"), `${id}: recipe should document Fusion Loader text generation.`);
+  assert(text.includes("export_text_to_file"), `${id}: recipe should use generated text export.`);
+  assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+  assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+  assert(text.includes("File.execute"), `${id}: recipe should fail closed for source-exact editor launch.`);
+  assert(text.includes("raw Fusion settings"), `${id}: recipe should fail closed for raw Fusion settings export.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include selected layer source/timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /LoaderN = Loader/.test(item)), `${id}: evidence must require generated Loader blocks.`);
+  assert(solution.notes.some((note) => /post-export selected-layer/.test(note)), `${id}: notes must require post-export selected-layer read-back.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+
+  const retrieval = retrieveSolutionHints("Create Fusion loader nodes from selected AVLayers and export reviewed Fusion Loader text to a generated txt file with export_text_to_file and sha256 read-back instead of temp folder File.execute.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR create Fusion loaders advisory recipe should surface for Fusion Loader export prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Create Fusion Loaders Typed Plan"), "prompt section should include AR create Fusion loaders advisory title.");
+  assert(promptSection.includes("fusionLoaderExportSpec"), "prompt section should preserve Fusion loader export spec guidance.");
+  assert(promptSection.includes("export_text_to_file"), "prompt section should prefer generated text export.");
+  assert(promptSection.includes("File.execute"), "prompt section should preserve source-exact editor launch warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR create Fusion loaders guidance should not recommend raw ExtendScript.");
+}
+
+assertArCreateFusionLoadersAppendOnlySmoke();

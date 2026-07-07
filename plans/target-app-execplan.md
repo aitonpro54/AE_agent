@@ -65,13 +65,20 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - [x] Detached importer child-run advisory import completed for
   `tool-ar_createdivisionguides`.
 - [x] Post-commit validation cleanup completed for `tool-ar_createdivisionguides`.
+- [x] Detached importer child-run advisory import completed for
+  `tool-ar_createfusionloaders`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_CreateFusionLoaders.jsx` as `tool-ar_createfusionloaders`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createfusionloaders).
 
 - 2026-05-27: Generic full-intake orchestrator processed `AR_CreateDivisionGuides.jsx` as `tool-ar_createdivisionguides`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue.
 - 2026-07-07: Post-commit cleanup for `tool-ar_createdivisionguides` removed
   legacy auxiliary lane markers and moved the native `CompItem.addGuide`
   unsupported warning into compact solution metadata.
+- 2026-07-07: Detached child-run imported `tool-ar_createfusionloaders` as an
+  advisory generated Fusion Loader text export recipe using selected AVLayer
+  source/timing read-back and generated `export_text_to_file` output only.
 
 - Source license для aturtur игнорируется только как local personal-use blocker.
   Это не разрешает raw JSX copy, remote publication, push, PR, dependency
@@ -111,10 +118,19 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   dimensions; native `CompItem.addGuide`, ruler snapping, guide-index semantics,
   existing guide cleanup, source-exact ScriptUI prompts, raw JSX, live
   validation, dependency changes, push and PR remain out of scope.
+- `tool-ar_createfusionloaders` imported as advisory
+  `ar-createfusionloaders-typed-plan`, narrowed to generated Fusion Loader text
+  export from current selected AVLayer source/timing evidence through
+  `export_text_to_file`; temp-folder writes, `File.execute`, editor launch,
+  clipboard behavior, raw Fusion settings, arbitrary user paths, unsupported
+  formats, raw JSX, live validation, dependency changes, push and PR remain out
+  of scope.
 - Imported advisory recipe ids require explicit smoke quality/retrieval checks;
   compact plan notes must not preserve legacy runtime markers.
 
 ## Progress
+
+- [x] Full intake tool-ar_createfusionloaders: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createfusionloaders); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-2b49b5a7ea-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-ar_createdivisionguides: completed by reusable generic full-intake orchestrator; live gate not_required, importer batch full-intake-aturtur-after-effects-sc-476049e7d6-import, commit recorded after candidate commit.
 - [x] `tool-ar_createdivisionguides` post-commit validation cleanup: compact
@@ -126,6 +142,10 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - [x] `tool-ar_createdivisionguides`: completed by detached importer child-run
   as advisory generated division guide overlay recipe. Live lane not run in the
   child-run by boundary; parent importer owns downstream validation/merge gates.
+- [x] `tool-ar_createfusionloaders`: completed by detached importer child-run
+  as advisory generated Fusion Loader text export recipe. Live lane and
+  validation were not run in the child-run by boundary; parent importer owns
+  downstream validation/merge gates.
 - [x] `tool-ar_coloriselayers`: completed by reusable generic full-intake
   orchestrator. Live lane `not_required`; parent reducer accepted only planned
   recipe, registry, smoke, plan and handoff changes.
@@ -170,6 +190,15 @@ Latest `tool-ar_createdivisionguides` post-commit cleanup validation state:
   `smoke:solutions`, `smoke:planning`, and `smoke:full-intake`. A parallel
   `check:rules` attempt hit a transient temp-file race; serial rerun passed.
 
+Latest `tool-ar_createfusionloaders` child-run validation state:
+
+- No validation commands were run in the detached child-run because that child
+  batch explicitly forbade validation runs.
+- Child-run edits were limited to planned recipe, registry, append-only smoke,
+  plan, and handoff paths.
+
 ## Validation
+
+| Full intake tool-ar_createfusionloaders | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-2b49b5a7ea-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_createdivisionguides | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-476049e7d6-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
