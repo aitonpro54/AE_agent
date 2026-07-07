@@ -6924,3 +6924,64 @@ function assertArTrimLayersToMatteAppendOnlySmoke() {
 }
 
 assertArTrimLayersToMatteAppendOnlySmoke();
+
+function assertArTrimLayersToParentAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-trimlayerstoparent-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: trim layers to parent timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer parent timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR trim layers to parent workflow should stay on selected-layer, parent read-back, and layer timing typed tools.`
+  );
+  assert(solution.tags.includes("trim"), `${id}: trim tag should be present.`);
+  assert(solution.tags.includes("parenting"), `${id}: parenting tag should be present.`);
+  assert(solution.tags.includes("parent-layer"), `${id}: parent-layer tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_TrimLayersToParent/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("trimLayersToParentSpec"), `${id}: recipe should require a reviewed trimLayersToParentSpec.`);
+  assert(text.includes("verifiedParentLayerTiming"), `${id}: recipe should require verified parent timing evidence.`);
+  assert(text.includes("targetTrimTiming"), `${id}: recipe should require computed targetTrimTiming.`);
+  assert(text.includes("parentLayerIndex"), `${id}: recipe should require parent relationship evidence.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("parent assignment/removal"), `${id}: recipe must reject parent relationship mutation without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer trim-to-parent timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer trim-to-parent timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include child and parent layer read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /verifiedParentLayerTiming/.test(item)), `${id}: evidence must require verifiedParentLayerTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /parent layer inPoint/.test(item)), `${id}: evidence must require trim-to-parent read-back boundaries.`);
+  assert(solution.notes.some((note) => /parent assignment\/removal/.test(note)), `${id}: notes must require a separate contract for parent relationship mutation.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_TrimLayersToParent by trimming selected child layers to verified parent layer timing using trimLayersToParentSpec, verifiedParentLayerTiming, targetTrimTiming, parentLayerIndex, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR trim layers to parent advisory recipe should surface for selected layer trim-to-parent prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Trim Layers To Parent Typed Plan"), "prompt section should include AR trim layers to parent advisory title.");
+  assert(promptSection.includes("trimLayersToParentSpec"), "prompt section should preserve trim layers to parent spec guidance.");
+  assert(promptSection.includes("verifiedParentLayerTiming"), "prompt section should preserve verified parent timing guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR trim layers to parent guidance should not recommend raw ExtendScript.");
+}
+
+assertArTrimLayersToParentAppendOnlySmoke();

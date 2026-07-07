@@ -19727,6 +19727,129 @@
         "Require a separate typed-tool contract for track matte creation/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, matte layer mutation, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for track matte assignment, matte layer edits, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-trimlayerstoparent-typed-plan",
+      "title": "AR Trim Layers To Parent Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "trim",
+        "parenting",
+        "parent-layer",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Trim reviewed selected active-comp child layers to verified parent layer timing bounds by computing targetTrimTiming and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_TrimLayersToParent.jsx, trim layers to parent, or make selected child layer timing match a verified parent layer.",
+          "Current typed selected-layer and layer-detail evidence identifies child targets, parent relationships, parent layer timing, and every layer accepted for timing mutation.",
+          "Parent assignment/removal, layer reordering, source-exact native UI side effects, source footage trimming, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "trimLayersToParentSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed trim timing spec with target comp identity, child layer indices/names, verified parent layer indices/names, parent timing source, skipped-target reasons, and target in/out values."
+        },
+        {
+          "name": "verifiedParentLayerTiming",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed per-target parent layer timing evidence, including parent layer index/name and finite inPoint/outPoint values from current typed read-back."
+        },
+        {
+          "name": "targetTrimTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed inPoint and outPoint values for each accepted child layer target, derived from the verified parent layer timing."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected child layer inPoint and outPoint values.",
+        "Child layer targets, verified parent layer identity, parent timing source, frame rate when available, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not create, remove, assign, or clear parent relationships and does not change startTime, stretch, source footage timing, markers, effects, expressions, labels, names, parent layers, track mattes, layer order, selection state, comp work area/duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-trimlayerstoparent-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp, selected child layers, verified parent relationships, and parent timing; build reviewed trimLayersToParentSpec; set only child layer in/out values; then read the same child and parent layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, selected-layer count, current time, and target selection context.",
+          "Run get_selected_layers when child target layers are implied by current selection and reject stale, empty, or ambiguous selected-layer evidence.",
+          "Run get_layer_details or get_comp_details includeLayers:true to bind each child layer, current timing, lock/shy state when available, parentLayerIndex or equivalent parent identity evidence, and parent layer evidence.",
+          "Run get_layer_details for every verified parent layer to capture concrete parent layer identity and inPoint/outPoint timing values.",
+          "Build and show trimLayersToParentSpec with target comp identity, child layer indices/names, verified parent layer indices/names, parent timing source, targetTrimTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, missing parent relationship evidence, missing or ambiguous parent layer identity, missing parent timing, unsafe locked targets, target outPoint not greater than target inPoint, unsupported parent relationship edits, layer reordering, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit child layer targets with computed inPoint and outPoint values from verified parent timing.",
+          "Run get_layer_details after mutation and compare every accepted child layer's inPoint and outPoint with targetTrimTiming while confirming the parent relationship still points to the same parent layer."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, selected or explicit child layers, verified parent layer identity, reviewed trimLayersToParentSpec, and current child/parent timing.",
+          "Dry-run evidence shows accepted and skipped layers, skipped-target reasons, verifiedParentLayerTiming, parent timing source, and computed targetTrimTiming.",
+          "Each set_layer_time_range result reports only the reviewed child layer target and computed inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted child layer starts at the verified parent layer inPoint and ends at the verified parent layer outPoint.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, parent layer timing, parent assignments, track matte assignments, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_trimlayerstoparent as advisory selected-layer trim-to-parent typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing parent relationship read-back fields and set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-trimlayerstoparent",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level trim selected active-comp child layers to verified parent layer timing bounds intent associated with AR_TrimLayersToParent.jsx into existing typed tools: get_active_comp, get_selected_layers, get_comp_details, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-layer and parent relationship evidence, explicit reviewed trimLayersToParentSpec, verifiedParentLayerTiming, target inPoint/outPoint values derived from the parent layer, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Parent assignment/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo semantics, startTime or stretch changes, parent layer mutation, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp selected-layer and parent relationship evidence before computing trimLayersToParentSpec; do not infer parent identity, parent timing, selected order, frame rate, or target timing from prior chat context, screenshots, layer names, labels, visual stack position, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed child layer indices and computed inPoint/outPoint values from verified parent layer timing.",
+        "Require get_layer_details read-back after timing mutation and confirm the same parent relationship still exists.",
+        "Require a separate typed-tool contract for parent assignment/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, parent layer mutation, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for parent assignment, parent layer edits, layer creation, layer deletion, layer duplication, renaming, reordering, track matte changes, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
