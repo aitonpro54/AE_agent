@@ -14,14 +14,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний завершенный candidate: `tool-ar_linkpuppetpinstonulls`.
-- Compact counts после candidate: `entries=46`, `completed=8`, `queued=13`,
+- Последний завершенный candidate: `tool-ar_maskstofusionpolygons`.
+- Compact counts после candidate: `entries=46`, `completed=9`, `queued=12`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Текущая локальная cleanup-веха для `tool-ar_linkpuppetpinstonulls` завершена;
+- Текущая локальная cleanup-веха для `tool-ar_maskstofusionpolygons` завершена;
   следующий цикл должен продолжить bounded `--max-items 1` loop.
-- Detached child-run `queue-batch-1-0d3dbbb1cc` подготовил proposal для
-  `tool-ar_maskstofusionpolygons`; parent importer/reducer владеет validation,
-  source merge и ledger update.
 - Push, PR, remote writes, dependency changes, Local/Ollama, fallback providers,
   broad CEP smoke и mutating live AE validation остаются approval-gated.
 
@@ -42,12 +39,16 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Post-commit validation cleanup completed for `tool-ar_createdivisionguides`
   and `tool-ar_createfusionloaders`.
 - [x] Post-commit validation cleanup for `tool-ar_linkpuppetpinstonulls`.
-- [x] Detached child-run proposal for `tool-ar_maskstofusionpolygons`.
-- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=13`.
+- [x] Advisory import completed for `tool-ar_maskstofusionpolygons`.
+- [x] Post-commit validation cleanup for `tool-ar_maskstofusionpolygons`.
+- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=12`.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed `AR_MasksToFusionPolygons.jsx` as `tool-ar_maskstofusionpolygons`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_maskstofusionpolygons).
+- 2026-07-07: Generic full-intake orchestrator processed
+  `AR_MasksToFusionPolygons.jsx` as `tool-ar_maskstofusionpolygons`, keeping
+  merge, validation, ledger, docs, handoff, and commit gates parent-owned and
+  serial.
 
 - Source license для aturtur игнорируется только как local personal-use blocker.
   Это не разрешает raw JSX copy, remote publication, push, PR, dependency
@@ -97,7 +98,10 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
-- [x] Full intake tool-ar_maskstofusionpolygons: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_maskstofusionpolygons); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-48aa1e00f8-import, commit recorded after candidate commit.
+- [x] `tool-ar_maskstofusionpolygons` candidate commit:
+  `c1b9b14c1f888f876f4d178535dd0cb2b5fbb79e`; live lane `not_required`,
+  proof `contractComplete=true`, unrelated untracked paths allowed by explicit
+  local opt-in.
 
 - [x] Guarded runner completed `tool-ar_addexpmantainscalewhenparented`,
   `tool-ar_addfolders`, `tool-ar_coloriselayers`,
@@ -106,7 +110,6 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   `tool-ar_linkpuppetpinstonulls`.
 - [x] `tool-ar_linkpuppetpinstonulls` candidate commit:
   `c17da56c5ef63b200c05bf4bf22d284df7bc1a04`; live lane `not_required`,
-  batch `full-intake-aturtur-after-effects-sc-a312b6a586-import`,
   proof `contractComplete=true`, unplanned paths `0`.
 - [x] Compact closeout after candidate: status completed, ledger
   `completed=8`, `queued=13`, no related processes, tracked tree clean except
@@ -114,9 +117,9 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Cleanup validation for `tool-ar_linkpuppetpinstonulls`: high-risk
   checkpoint gate fixed, retrieval metadata surfaced typed-tool gap guidance,
   plan compacted to 115 lines, and relevant smoke tier passed.
-- [x] Child-run `queue-batch-1-0d3dbbb1cc` added
-  `ar-maskstofusionpolygons-typed-plan`, intake note, registry entry, and
-  append-only solution-library smoke assertion block in the detached worktree.
+- [x] Cleanup validation for `tool-ar_maskstofusionpolygons`: remove legacy
+  runtime markers from plan notes and surface clipboard fail-closed guidance in
+  compact retrieval metadata.
 
 ## Validation Notes
 
@@ -136,11 +139,16 @@ and `git diff --check HEAD~1 HEAD`. Initial failures were fixed by setting the
 high-risk advisory `checkpointOrEditSession` gate, surfacing exact typed-tool
 gap retrieval wording, and compacting the active plan from 193 to 115 lines.
 
-`tool-ar_maskstofusionpolygons` child-run did not run validation by explicit
-batch boundary. Parent importer/reducer must run the relevant syntax,
-solution-library, rules, solutions/planning/full-intake, and diff checks before
-accepting or merging this proposal.
+`tool-ar_maskstofusionpolygons` post-commit validation initially failed because
+the active plan preserved a child-run batch marker and compact solution
+retrieval did not surface the clipboard fail-closed warning. Cleanup removes the
+runtime marker and moves the clipboard warning into compact intent metadata.
+Cleanup validation passed `node --check scripts\solution-library-validation-smoke.js`,
+`node scripts\solution-library-validation-smoke.js`, `npm.cmd run check:rules`,
+`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
+`npm.cmd run smoke:full-intake`, `git diff --check`, and a targeted `rg`
+runtime-marker check.
 
 ## Validation
 
-| Full intake tool-ar_maskstofusionpolygons | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-48aa1e00f8-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Full intake tool-ar_maskstofusionpolygons | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, live rerun `not_required`, commit `c1b9b14c1f888f876f4d178535dd0cb2b5fbb79e`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |

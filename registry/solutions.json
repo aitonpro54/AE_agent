@@ -18529,7 +18529,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Export one reviewed AE Mask path as generated Fusion Polygon text using get_path_geometry, export_text_to_file, and post-export geometry read-back.",
+        "summary": "Export one reviewed AE Mask path as generated Fusion Polygon text without clipboard mutation, using get_path_geometry, export_text_to_file, and post-export geometry read-back.",
         "appliesWhen": [
           "The user asks to convert AE masks to Fusion polygons, export mask paths as Fusion Polygon nodes, or references AR_MasksToFusionPolygons.jsx.",
           "Current get_path_geometry evidence identifies one explicit generated or reviewed Mask path target with vertices, tangents, closed state, and non-truncated geometry.",
