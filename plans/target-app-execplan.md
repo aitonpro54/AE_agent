@@ -62,8 +62,12 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   `tool-ar_coloriselayersbytype`.
 - [x] Repeated child-runner shell blocker stop recorded after three scoped
   candidates hit the same Windows shell launch failure.
+- [x] Detached importer child-run advisory import completed for
+  `tool-ar_createdivisionguides`.
 
 ## Decision Log
+
+- 2026-05-27: Generic full-intake orchestrator processed `AR_CreateDivisionGuides.jsx` as `tool-ar_createdivisionguides`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createdivisionguides).
 
 - Source license для aturtur игнорируется только как local personal-use blocker.
   Это не разрешает raw JSX copy, remote publication, push, PR, dependency
@@ -97,14 +101,25 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
   palette UI, automatic label selection, Project item labels, property colors,
   broad project scans, raw JSX, live validation, dependency changes, push and PR
   remain out of scope.
+- `tool-ar_createdivisionguides` imported as advisory
+  `ar-createdivisionguides-typed-plan`, narrowed to generated visual division
+  guide overlays computed from reviewed row/column counts and typed comp
+  dimensions; native `CompItem.addGuide`, ruler snapping, guide-index semantics,
+  existing guide cleanup, source-exact ScriptUI prompts, raw JSX, live
+  validation, dependency changes, push and PR remain out of scope.
 - Imported advisory recipe ids require explicit smoke quality/retrieval checks;
   compact plan notes must not preserve legacy runtime markers.
 
 ## Progress
 
+- [x] Full intake tool-ar_createdivisionguides: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_createdivisionguides); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-476049e7d6-import, commit recorded after candidate commit.
+
 - [x] `tool-ar_coloriselayersbytype`: completed by reusable generic full-intake
   orchestrator. Live lane `not_required`; parent reducer accepted only planned
   recipe, registry, smoke, plan and handoff changes.
+- [x] `tool-ar_createdivisionguides`: completed by detached importer child-run
+  as advisory generated division guide overlay recipe. Live lane not run in the
+  child-run by boundary; parent importer owns downstream validation/merge gates.
 - [x] `tool-ar_coloriselayers`: completed by reusable generic full-intake
   orchestrator. Live lane `not_required`; parent reducer accepted only planned
   recipe, registry, smoke, plan and handoff changes.
@@ -134,3 +149,14 @@ handoff:
   untracked files.
 - Additional post-commit validation found and fixed active-plan guard issues
   before amending the milestone commit.
+
+Latest `tool-ar_createdivisionguides` child-run validation state:
+
+- No validation commands were run in the detached child-run because the
+  AUX-021 batch explicitly forbade validation runs.
+- Child-run edits were limited to planned recipe, registry, append-only smoke,
+  plan, and handoff paths.
+
+## Validation
+
+| Full intake tool-ar_createdivisionguides | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-476049e7d6-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |

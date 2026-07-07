@@ -6108,3 +6108,55 @@ function main() {
 }
 
 main();
+
+function assertArCreateDivisionGuidesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-createdivisionguides-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: division guide overlay workflow must be mutating.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["create_comp", "get_comp_details", "create_shape_layer", "add_effect", "get_effect_details", "get_layer_details"],
+    `${id}: AR create division guides workflow should stay on generated guide overlay typed tools.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_CreateDivisionGuides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("divisionGuideSpec"), `${id}: recipe should require a reviewed divisionGuideSpec.`);
+  assert(text.includes("generated visual division guide overlays"), `${id}: recipe should document generated guide overlay adaptation.`);
+  assert(text.includes("CompItem.addGuide"), `${id}: recipe should fail closed for native AE guide semantics.`);
+  assert(text.includes("get_layer_details"), `${id}: recipe should require guide overlay read-back.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.verificationRecipe.steps.some((step) => /create_shape_layer/.test(step)), `${id}: verification must include generated guide overlay creation.`);
+  assert(solution.verificationRecipe.steps.some((step) => /divisionGuideSpec/.test(step)), `${id}: verification must include divisionGuideSpec review.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed vertical and\/or horizontal guide coordinates/.test(item)), `${id}: evidence must require computed division coordinates.`);
+  assert(solution.notes.some((note) => /native AE guide records/.test(note)), `${id}: notes must reject native guide-record claims.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
+
+  const retrieval = retrieveSolutionHints("Create AR division guides as generated guide overlays with reviewed columns and rows, using create_shape_layer and get_layer_details read-back instead of native CompItem.addGuide.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR create division guides advisory recipe should surface for division guide overlay prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Create Division Guides Typed Plan"), "prompt section should include AR create division guides advisory title.");
+  assert(promptSection.includes("divisionGuideSpec"), "prompt section should preserve division guide spec guidance.");
+  assert(promptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer for generated division guides.");
+  assert(promptSection.includes("CompItem.addGuide"), "prompt section should preserve native guide warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR create division guides guidance should not recommend raw ExtendScript.");
+}
+
+assertArCreateDivisionGuidesAppendOnlySmoke();
