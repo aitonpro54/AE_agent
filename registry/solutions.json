@@ -7972,7 +7972,7 @@
         "postMutationReadBack": true
       },
       "verificationRecipe": {
-        "summary": "Read selected-layer label evidence, set only the reviewed labelIndex on explicit selected layer indices, then read layer labels back.",
+        "summary": "Read selected-layer label evidence; palette UI behavior unsupported; set reviewed labelIndex and read labels back.",
         "steps": [
           "Run get_active_comp and get_selected_layers before mutation to capture active comp identity, selected layerIndex values and optional selected layer names.",
           "Run get_layer_details or get_comp_details includeLayers:true for selected layers when current label read-back evidence is available.",
@@ -8024,13 +8024,11 @@
       "title": "AR Colorise Layers By Type Typed Plan",
       "status": "recipe",
       "tags": [
-        "layers",
         "layer-type",
         "layer-label",
         "label-color",
         "colorise-layers",
         "colorize-layers",
-        "selected-layers",
         "active-comp",
         "metadata",
         "generic-importer",
@@ -8091,7 +8089,7 @@
         "postMutationReadBack": true
       },
       "verificationRecipe": {
-        "summary": "Read active-comp layer-kind and label evidence, group explicit targets by reviewed typeToLabelMap, set labels per group, then read labels back.",
+        "summary": "Read layer-kind evidence; hidden AE class checks unsupported; group by typeToLabelMap and read labels back.",
         "steps": [
           "Run get_active_comp before mutation to capture active comp identity.",
           "Run get_selected_layers when the request targets selected layers, or get_comp_details includeLayers:true when the request explicitly targets all active-comp layers.",
