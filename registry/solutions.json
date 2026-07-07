@@ -7906,6 +7906,120 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "ar-coloriselayers-typed-plan",
+      "title": "AR Colorise Layers Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "layer-label",
+        "label-color",
+        "colorise-layers",
+        "colorize-layers",
+        "selected-layers",
+        "metadata",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool"
+      ],
+      "intent": {
+        "summary": "Set selected active-comp layers to one explicit reviewed AE label index through typed layer metadata tools and read back label state.",
+        "appliesWhen": [
+          "The user asks to colorise or colorize selected layers, set selected layer label colors, or references AR_ColoriseLayers.jsx.",
+          "Current selected-layer evidence identifies concrete active-comp layer indices and the requested color can be reviewed as one AE labelIndex value from 0 through 16.",
+          "The workflow does not require source-exact palette UI behavior, automatic color cycling, random label assignment, Project item labels, property color values, cross-comp changes, or raw JSX semantics."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "labelIndex",
+          "type": "number",
+          "required": true,
+          "description": "Reviewed AE layer label index from 0 through 16."
+        },
+        {
+          "name": "selectedLayerTargets",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current get_selected_layers evidence containing concrete one-based selected layerIndex values and optional expected layer names."
+        }
+      ],
+      "targetAssumptions": [
+        "Every target layer is bound from current get_selected_layers evidence before mutation.",
+        "One reviewed labelIndex from 0 through 16 is disclosed in the dry-run plan before confirmation.",
+        "The workflow changes only Layer.label on explicitly selected active-comp layers through set_layer_metadata.",
+        "Layer names, layer order, selection state, switches, timing, sources, effects, expressions, masks, keyframes, parenting, track matte relationships, project items, render queue items, files, and non-target layers are preserved.",
+        "Source-exact AR color palette UI behavior, automatic cycling, random color assignment, label-name inference, Project item labels, property color values, cross-comp changes, and raw script execution remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-coloriselayers-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_layer_details",
+          "set_layer_metadata"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read selected-layer label evidence, set only the reviewed labelIndex on explicit selected layer indices, then read layer labels back.",
+        "steps": [
+          "Run get_active_comp and get_selected_layers before mutation to capture active comp identity, selected layerIndex values and optional selected layer names.",
+          "Run get_layer_details or get_comp_details includeLayers:true for selected layers when current label read-back evidence is available.",
+          "Fail closed when selected-layer evidence is empty, lacks concrete layerIndex values, layer inventory is truncated, the requested color cannot be mapped to one reviewed labelIndex, or source-exact AR palette behavior is required.",
+          "Run set_layer_metadata once with explicit layerIndices, optional expectedLayerNames and label:<reviewed labelIndex>.",
+          "Run get_layer_details or get_comp_details includeLayers:true after mutation and verify every accepted selected layer reports the expected label value.",
+          "Fail closed if automatic color cycling, random labels, Project item label mutation, property color mutation, layer rename, selection mutation, cross-comp mutation, raw ExtendScript or exact source JSX behavior is required."
+        ],
+        "expectedEvidence": [
+          "Pre-run typed evidence identifies the active comp, every selected layer index, optional expected names and current label state when available.",
+          "Dry-run evidence lists the reviewed labelIndex and all accepted selected layer targets before confirmation.",
+          "set_layer_metadata reports only label:<reviewed labelIndex> updates for concrete selected layer indices and expected-name guards when available.",
+          "Post-run read-back shows every accepted selected layer has the expected label value.",
+          "Post-run evidence shows no layer rename, order change, selection-state mutation, switch mutation, timing/source/effect/expression/keyframe/mask/parenting/track-matte mutation, Project item label mutation, property color mutation, render queue mutation, file write, cross-comp mutation or non-target layer mutation."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_coloriselayers as advisory selected-layer label metadata coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree; scope came from the child-run wrapper, candidate name, existing typed metadata tools, and fail-closed selected-layer label semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-coloriselayers",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the selected-layer label-color intent associated with AR_ColoriseLayers.jsx into existing typed tools as selected active-comp Layer.label mutation through get_active_comp, get_selected_layers, get_layer_details and set_layer_metadata; no source JSX copied. Source-exact palette UI behavior, automatic color cycling, random label assignment, implicit label-name mapping, Project item labels, property color values, cross-comp changes, selection mutation, raw ExtendScript and exact source JSX semantics require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current get_selected_layers evidence before mutating layer labels; do not infer targets from prior chat context, screenshots, layer names, or source script state.",
+        "Use this recipe only for one explicit reviewed labelIndex applied to concrete selected active-comp layer indices.",
+        "Require get_layer_details or get_comp_details includeLayers:true read-back after mutation to prove each accepted selected layer has the expected label value.",
+        "Do not mutate Project item labels, property color values, layer names, order, selection state, switches, timing, sources, effects, expressions, masks, keyframes, parenting, track matte relationships, render queue items, files, or non-target layers.",
+        "Require a separate typed-tool contract for source-exact palette UI behavior, automatic color cycling, random label assignment, label-name inference without explicit mapping, cross-comp label changes, Project item label mutation, property color mutation, raw ExtendScript or exact source JSX behavior."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "add-labeled-items-to-render-queue-typed-plan",
       "title": "Add Labeled Items To Render Queue Typed Plan",
       "status": "recipe",

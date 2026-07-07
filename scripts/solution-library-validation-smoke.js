@@ -67,6 +67,7 @@ const IMPORTED_ADVISORY_IDS = [
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
   "ar-addexpmantainscalewhenparented-typed-plan",
+  "ar-coloriselayers-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
@@ -3157,6 +3158,24 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /isTrackMatte/.test(note)), `${id}: notes must require typed matte-role evidence.`);
       assert(solution.promotionHistory.some((entry) => /Set_All_Track_Matte_Labels/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-coloriselayers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_metadata"],
+        `${id}: AR colorise layers workflow should stay on the narrow selected-layer metadata sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-layer label workflow must be mutating.`);
+      assert(text.includes("labelIndex"), `${id}: recipe should require a reviewed AE label index.`);
+      assert(text.includes("0..16"), `${id}: recipe should document the accepted AE label range.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer label read-back.`);
+      assert(text.includes("palette UI behavior"), `${id}: recipe should reject source-exact palette UI behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /Project item label/.test(note) || /Project item/.test(note)), `${id}: notes must reject Project item label mutation.`);
+      assert(solution.promotionHistory.some((entry) => /AR_ColoriseLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "set-track-matte-to-above-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -4801,6 +4820,21 @@ function assertActualRetrieval(registry) {
   assert(arAddFoldersPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(arAddFoldersPromptSection.includes("filesystem traversal"), "prompt section should preserve filesystem traversal warning.");
   assert(!/run_extendscript/i.test(arAddFoldersPromptSection), "AR add folders guidance should not recommend raw ExtendScript.");
+
+  const arColoriseLayersRetrieval = retrieveSolutionHints("Colorise selected active-comp layers by reading get_selected_layers evidence, choosing one reviewed labelIndex, setting selected layer labels with set_layer_metadata, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arColoriseLayersRetrieval.ok, true);
+  assert(ids(arColoriseLayersRetrieval).includes("ar-coloriselayers-typed-plan"), "AR colorise layers advisory recipe should surface for selected layer label prompts.");
+  const arColoriseLayersPromptSection = formatSolutionHintsForPrompt(arColoriseLayersRetrieval);
+  assert(arColoriseLayersPromptSection.includes("AR Colorise Layers Typed Plan"), "prompt section should include AR colorise layers advisory title.");
+  assert(arColoriseLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for label coloring.");
+  assert(arColoriseLayersPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for layer labels.");
+  assert(arColoriseLayersPromptSection.includes("labelIndex"), "prompt section should preserve reviewed labelIndex guidance.");
+  assert(arColoriseLayersPromptSection.includes("palette UI behavior"), "prompt section should preserve palette UI warning.");
+  assert(!/run_extendscript/i.test(arColoriseLayersPromptSection), "AR colorise layers guidance should not recommend raw ExtendScript.");
 
   const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
     registry,
