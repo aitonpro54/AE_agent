@@ -56,8 +56,9 @@ pin position properties with read-back.
 - Current recipe is read-only advisory because the work requires coordinated
   generated null-layer creation plus Puppet pin position expression/link
   mutation that is not accepted as a single safe typed contract here.
-- It requires normal Agent plan validation for inspection and gap reporting. It
-  does not require mutation permission, confirmation, checkpoint, edit-session,
+- It requires normal Agent plan validation for inspection and gap reporting, and
+  keeps checkpoint/edit-session protection as the high-risk guard before any
+  future mutation. It does not require mutation permission, confirmation,
   idempotency, or post-mutation verification while it remains read-only.
 - Do not infer selected Puppet pins, pin coordinates, controller null names,
   expression targets, or coordinate spaces from screenshots, prior chat

@@ -6309,6 +6309,7 @@ function assertArLinkPuppetPinsToNullsAppendOnlySmoke() {
   assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
   assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
   assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only advisory must not allow mutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: high-risk advisory should preserve checkpoint/edit-session protection.`);
   assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, false, `${id}: read-only advisory must not claim post-mutation read-back.`);
   assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include Puppet effect inspection.`);
   assert(solution.verificationRecipe.steps.some((step) => /linkPuppetPinsToNullsSpec/.test(step)), `${id}: verification must report the future-link spec.`);

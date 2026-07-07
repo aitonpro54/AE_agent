@@ -8513,7 +8513,7 @@
         "read-only"
       ],
       "intent": {
-        "summary": "Classify Puppet pin to null-controller linking requests with typed layer/property/effect evidence and fail closed until reviewed null creation plus pin expression/link contracts exist.",
+        "summary": "Classify Puppet pin to null-controller linking requests as a typed-tool gap with typed layer/property/effect evidence, then fail closed until reviewed null creation plus pin expression/link contracts exist.",
         "appliesWhen": [
           "The user asks to link Puppet pins to nulls, create null controllers for Puppet pins, or references AR_LinkPuppetPinsToNulls.jsx.",
           "Current active-comp, selected-layer, selected-property, layer, and Puppet effect evidence is needed before deciding whether a future mutating contract could safely apply the request.",
@@ -8559,7 +8559,7 @@
         "explicitConfirmation": false,
         "allowMutations": false,
         "idempotency": false,
-        "checkpointOrEditSession": false,
+        "checkpointOrEditSession": true,
         "postMutationReadBack": false
       },
       "verificationRecipe": {
