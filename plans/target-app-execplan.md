@@ -57,18 +57,16 @@ Full Intaker/importer tooling. Исторические evidence trees, runtime 
 - [x] Full intake import for `tool-ar_addexpmantainscalewhenparented`: добавлен
   advisory typed-plan coverage без raw JSX, live mutation, dependency changes,
   push или PR.
-- [x] Child-run import for `tool-ar_addfolders`: добавлен advisory typed-plan
+- [x] Full intake import for `tool-ar_addfolders`: добавлен advisory typed-plan
   coverage для generated Project folder creation без raw JSX, live mutation,
-  validation runs, dependency changes, commit, push или PR.
+  dependency changes, push или PR.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed `AR_AddFolders.jsx` as `tool-ar_addfolders`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addfolders).
-- 2026-07-07: AUX-021 child-run `queue-batch-1-98da373076` imported
-  `tool-ar_addfolders` as advisory `ar-addfolders-typed-plan`, narrowed to
-  reviewed generated Project folder creation via existing typed tools because
-  `AR_AddFolders.jsx` was not available in scoped runtime search and exact
-  source behavior remains fail-closed.
+- 2026-07-07: `tool-ar_addfolders` imported as advisory
+  `ar-addfolders-typed-plan`, narrowed to reviewed generated Project folder
+  creation via existing typed tools; Project panel selection, filesystem
+  traversal, raw JSX, and exact source behavior remain fail-closed.
 - 2026-05-27: Generic full-intake orchestrator processed `AR_AddExpMantainScaleWhenParented.jsx` as `tool-ar_addexpmantainscalewhenparented`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addexpmantainscalewhenparented).
 
 - Source license для aturtur игнорируется только как local personal-use
@@ -132,7 +130,9 @@ npm.cmd run smoke:full-intake
 
 ## Progress
 
-- [x] Full intake tool-ar_addfolders: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_addfolders); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-b6730c9f24-import, commit recorded after candidate commit.
+- [x] Full intake `tool-ar_addfolders`: completed by the reusable generic
+  full-intake orchestrator. Live gate was not required; parent reducer accepted
+  only planned recipe, registry, smoke, plan and handoff changes.
 
 - [x] Full intake `tool-ar_addexpmantainscalewhenparented`: completed by the
   reusable generic full-intake orchestrator. Live gate was not required; parent
@@ -141,16 +141,14 @@ npm.cmd run smoke:full-intake
 - [x] Post-merge validation cleanup: legacy runtime markers убраны из активного
   плана, а `solution-library-validation-smoke` получил explicit quality/retrieval
   checks для `ar-addexpmantainscalewhenparented-typed-plan`.
-- [x] Child-run `tool-ar_addfolders`: создан recipe
-  `recipes/ar-addfolders-typed-plan.md`, intake note
-  `recipes/generic-repo-intake/tool-ar_addfolders.md`, registry entry и
-  targeted solution-library smoke assertions/retrieval hints. В child-run не
-  выполнялись validation runs, live AE/CEP/CDP, source merge, dependency
-  changes, commit, push или PR.
+- [x] Post-merge validation cleanup for `tool-ar_addfolders`: active plan
+  runtime markers removed; `solution-library` and
+  `solution-library-validation-smoke` now preserve Project panel selection and
+  filesystem traversal warnings in compact retrieval.
 
 ## Validation
 
-| Full intake tool-ar_addfolders | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-b6730c9f24-import`, live rerun `not_required`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Full intake `tool-ar_addfolders` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Full intake `tool-ar_addexpmantainscalewhenparented` | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Candidate completed with live lane `not_required` and no live rerun. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 | Post-merge validation cleanup | Required because `check:rules` rejected legacy runtime markers and `smoke:solutions` required explicit quality coverage for the new advisory recipe id. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:full-intake`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, and `git diff --check` passed. |
-| Child-run `tool-ar_addfolders` | Required to leave reviewable advisory import artifacts in the detached importer-owned worktree for parent reducer review. | Validation runs were intentionally not run because this child-run forbids validation/live/CEP/AE/OpenAI CLI planner runs. Read-only preflight found no existing `ar-addfolders-typed-plan`, `tool-ar-addfolders`, or `tool-ar_addfolders` registry duplicate before import. |
+| Post-merge validation cleanup for `tool-ar_addfolders` | Required because `check:rules` rejected legacy runtime markers and compact solution retrieval needed to surface Project panel selection/filesystem traversal warnings. | `node --check scripts/solution-library-validation-smoke.js`, `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`, and `git diff --check` passed. |

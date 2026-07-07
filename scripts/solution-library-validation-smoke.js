@@ -2752,12 +2752,12 @@ function assertImportedAdvisoryQuality(registry) {
       assert(text.includes("create_project_folder"), `${id}: recipe should use the project folder creation typed tool.`);
       assert(text.includes("find_project_items"), `${id}: recipe should allow project item read-back.`);
       assert(text.includes("list_project_folder_items"), `${id}: recipe should allow folder inventory read-back.`);
-      assert(text.includes("Project panel selected"), `${id}: recipe should fail closed for Project panel selected folders/items.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection of folders/items.`);
       assert(text.includes("filesystem traversal"), `${id}: recipe should fail closed for filesystem traversal.`);
       assert(solution.verificationRecipe.steps.some((step) => /create_project_folder/.test(step)), `${id}: verification must include folder creation.`);
       assert(solution.verificationRecipe.steps.some((step) => /find_project_items|list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /generated folder/.test(item)), `${id}: verification must require generated folder evidence.`);
-      assert(solution.notes.some((note) => /selected-folder or selected-item/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /Project panel selection/.test(note)), `${id}: notes must reject Project panel selection claims.`);
       assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
       assert(solution.promotionHistory.some((entry) => /AR_AddFolders/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
@@ -4798,7 +4798,7 @@ function assertActualRetrieval(registry) {
   assert(arAddFoldersPromptSection.includes("AR Add Folders Typed Plan"), "prompt section should include AR add folders advisory title.");
   assert(arAddFoldersPromptSection.includes("create_project_folder"), "prompt section should prefer create_project_folder.");
   assert(arAddFoldersPromptSection.includes("get_project_snapshot"), "prompt section should require project inventory evidence.");
-  assert(arAddFoldersPromptSection.includes("Project panel selected"), "prompt section should preserve Project panel selection warning.");
+  assert(arAddFoldersPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(arAddFoldersPromptSection.includes("filesystem traversal"), "prompt section should preserve filesystem traversal warning.");
   assert(!/run_extendscript/i.test(arAddFoldersPromptSection), "AR add folders guidance should not recommend raw ExtendScript.");
 

@@ -13,7 +13,7 @@ without raw JSX or Project panel selection assumptions.
   mutation and created as a generated Project folder.
 - Current typed project evidence can be read before mutation with
   `get_project_info` and `get_project_snapshot`.
-- The workflow does not require Project panel selected-item discovery, folder
+- The workflow does not require Project panel selection discovery, folder
   deletion, item movement, source relinking, render queue work, filesystem
   traversal, project save/saveAs, or exact source JSX behavior.
 
@@ -33,7 +33,7 @@ without raw JSX or Project panel selection assumptions.
    read back every generated folder identity.
 6. Report created folders, skipped existing folders, and any unsupported source
    behavior in the final evidence.
-7. Fail closed if the task requires Project panel selected folders/items, broad
+7. Fail closed if the task requires Project panel selection of folders/items, broad
    project organization, folder deletion, moving project items, importing files,
    filesystem folder traversal, render queue changes, project save/saveAs, or
    raw script execution.

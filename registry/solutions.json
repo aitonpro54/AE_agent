@@ -7821,7 +7821,7 @@
         "appliesWhen": [
           "The user asks to add one or more Project folders or references AR_AddFolders.jsx.",
           "The requested folder names can be reviewed before mutation and represented as generated Project folders.",
-          "The workflow does not require Project panel selected folders/items, filesystem folder traversal, folder deletion, item movement, render queue work, save/saveAs, or exact source JSX behavior."
+          "The workflow does not require Project panel selection of folders/items, filesystem folder traversal, folder deletion, item movement, render queue work, save/saveAs, or exact source JSX behavior."
         ]
       },
       "inputs": [
@@ -7836,7 +7836,7 @@
         "Every folder name is reviewed in the dry-run plan before mutation.",
         "Each mutation creates one generated Project folder with create_project_folder.",
         "Existing Project items, item sources, item parent folders, render queue items, project files, and non-generated user assets are preserved.",
-        "Current typed tools do not expose Project panel selected-folder or selected-item state."
+        "Current typed tools do not expose Project panel selection state for folders or items."
       ],
       "execution": {
         "mode": "typed-plan",
@@ -7867,7 +7867,7 @@
           "Require a reviewed folderNames list in the dry-run plan before confirmation.",
           "Run create_project_folder once per reviewed generated folder name with allowExisting:false unless explicit reuse was approved.",
           "Run find_project_items or list_project_folder_items after mutation to read back every generated folder identity.",
-          "Run get_project_snapshot after mutation; fail closed if Project panel selected folders/items, filesystem folder traversal, folder deletion, item movement, render queue work, save/saveAs, or exact source JSX behavior is required."
+          "Run get_project_snapshot after mutation; fail closed if Project panel selection of folders/items, filesystem folder traversal, folder deletion, item movement, render queue work, save/saveAs, or exact source JSX behavior is required."
         ],
         "expectedEvidence": [
           "Pre-run typed evidence identifies current project context and existing folder inventory.",
@@ -7882,7 +7882,7 @@
         "bridgeVersion": "2.0.0",
         "projectKind": "synthetic",
         "notes": [
-          "Seeded by AUX-021 generic repository importer child-run for tool-ar_addfolders as generated-only typed-plan coverage without live validation in the child-run.",
+          "Seeded by the generic repository importer child-run for tool-ar_addfolders as generated-only typed-plan coverage without live validation in the child-run.",
           "Validation remains parent-owned because this child-run was forbidden from running validation."
         ]
       },
@@ -7892,14 +7892,14 @@
           "from": "generic-repo-importer-tool-ar-addfolders",
           "to": "recipe",
           "reviewer": "codex",
-          "evidence": "Adapted only the safe Project folder creation intent associated with AR_AddFolders.jsx into existing typed tools: get_project_info, get_project_snapshot, create_project_folder, find_project_items, and list_project_folder_items. Source-exact raw JSX, Project panel selected folders/items, folder deletion, item movement, filesystem traversal, render queue work, save/saveAs, non-generated user assets, and exact source behavior remain fail-closed; no source JSX copied.",
+          "evidence": "Adapted only the safe Project folder creation intent associated with AR_AddFolders.jsx into existing typed tools: get_project_info, get_project_snapshot, create_project_folder, find_project_items, and list_project_folder_items. Source-exact raw JSX, Project panel selection of folders/items, folder deletion, item movement, filesystem traversal, render queue work, save/saveAs, non-generated user assets, and exact source behavior remain fail-closed; no source JSX copied.",
           "commit": null
         }
       ],
       "notes": [
         "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
         "Use this recipe only for reviewed generated Project folder creation.",
-        "Project panel selected-folder or selected-item reads require a separate typed-tool contract with generated-only proof and empty-selection fail-closed behavior.",
+        "Project panel selection reads for folders or items require a separate typed-tool contract with generated-only proof and empty-selection fail-closed behavior.",
         "Require current get_project_info and get_project_snapshot evidence before creating folders; do not infer folder targets from prior chat context.",
         "Do not move Project items, delete folders, rename items, relink sources, import/export files, mutate render queue items, save the project, touch non-generated user assets, traverse filesystem folders, or run raw ExtendScript."
       ]

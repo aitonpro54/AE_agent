@@ -40,6 +40,7 @@ const PROMPT_KEY_TERMS = Object.freeze([
   "Desktop",
   "sha256",
   "resolutionFactor",
+  "filesystem traversal",
   "project-panel selection",
   "Project panel selection",
   "parentLayerIndex",
