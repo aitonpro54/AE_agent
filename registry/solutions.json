@@ -8276,7 +8276,7 @@
         "typed-tool"
       ],
       "intent": {
-        "summary": "Export reviewed Fusion Loader node text for selected AVLayers from typed source/timing evidence into a generated text artifact.",
+        "summary": "Export reviewed Fusion Loader text for selected AVLayers via export_text_to_file; File.execute stays fail-closed.",
         "appliesWhen": [
           "The user asks to create Fusion loaders, Fusion Loader nodes, or references AR_CreateFusionLoaders.jsx.",
           "Selected active-comp AVLayers have typed file-backed footage, source path, frame rate, duration, in point, out point, and start time evidence.",
