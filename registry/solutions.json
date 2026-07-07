@@ -19480,6 +19480,130 @@
         "Require a separate typed-tool contract for source-exact layer splitting, layer duplication, source footage slicing, hidden selection ordering, native undo behavior, keyframe shifts, startTime or stretch changes, source timing changes, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for actual layer splitting, layer creation, layer deletion, layer duplication, renaming, reordering, source relinking, parenting, track matte changes, effect edits, expression edits, keyframe edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-trimlayerstokeyframes-typed-plan",
+      "title": "AR Trim Layers To Keyframes Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "trim",
+        "keyframes",
+        "selected-layers",
+        "selected-keyframes",
+        "selected-properties",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Trim reviewed selected active-comp layers to explicit selected keyframe time bounds by computing targetTrimTiming and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_TrimLayersToKeyframes.jsx, trim layers to keyframes, or make selected layer timing match reviewed keyframe bounds.",
+          "Current typed selected-layer and selected-property evidence identifies layer targets, selectedKeyframeBounds, frame rate, and every layer accepted for timing mutation.",
+          "Source-exact selected-key discovery, hidden selection ordering, native UI side effects, keyframe movement, time-remap edits, source footage trimming, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "trimLayersToKeyframesSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed trim timing spec with target comp identity, trim mode, selected layer indices/names, selected property paths, selectedKeyframeBounds, frame rate, optional includeLastKeyframeFrame policy, and rounded target in/out values."
+        },
+        {
+          "name": "selectedKeyframeBounds",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed per-layer keyframe time bounds derived from current selected-property evidence, including property paths and finite first/last selected keyframe times."
+        },
+        {
+          "name": "targetTrimTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed rounded inPoint and outPoint values for each accepted layer target."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected layer inPoint and outPoint values.",
+        "Selected layer targets, selected property paths, selected keyframe time bounds, trim mode, frame rate, optional one-frame-inclusive policy, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not move, create, delete, or edit keyframes and does not change startTime, stretch, source footage timing, markers, effects, expressions, labels, names, parenting, track mattes, layer order, selection state, comp work area/duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact selected-key discovery, hidden selection ordering, native UI side effects, time-remap edits, source footage trimming, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-trimlayerstokeyframes-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_selected_properties",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp, selected layers, selected properties, and keyframe bounds; build reviewed trimLayersToKeyframesSpec; set only rounded in/out values; then read the same layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, frame duration, selected-layer count, selected-property context, and current time.",
+          "Run get_selected_layers to bind concrete selected layer targets from current typed evidence.",
+          "Run get_selected_properties to capture selected property and explicit selected-keyframe timing evidence, then require reviewed selectedKeyframeBounds for every accepted layer.",
+          "Run get_layer_details for every selected target to capture current inPoint, outPoint, startTime, duration, lock/shy state when available, property keyframe context, and generated or explicit approval status.",
+          "Build and show trimLayersToKeyframesSpec with target comp identity, trim mode, selected layer indices/names, selected property paths, selectedKeyframeBounds, optional includeLastKeyframeFrame policy, rounded targetTrimTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, missing selected-property or selected-keyframe bounds, ambiguous per-layer keyframe bounds, missing or non-finite frame rate, unsafe locked targets, target outPoint not greater than target inPoint, unsupported source-exact selected-key discovery, time-remap edits, source trimming, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit layer targets with computed rounded inPoint and outPoint values.",
+          "Run get_layer_details after mutation and compare every accepted layer's inPoint and outPoint with targetTrimTiming."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, frame rate, selected layers, selected properties, reviewed selectedKeyframeBounds, reviewed trimLayersToKeyframesSpec, and every accepted layer index/name with current timing.",
+          "Dry-run evidence shows trim mode, optional includeLastKeyframeFrame policy, rounded targetTrimTiming, accepted and skipped layers, and the exact selected keyframe bounds used.",
+          "Each set_layer_time_range result reports only the reviewed layer target and computed inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted layer starts at the expected first selected keyframe boundary and ends at the expected last selected keyframe or approved one-frame-inclusive boundary.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframe times and values, interpolation, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, selected-property targets, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_trimlayerstokeyframes as advisory selected-layer trim-to-keyframe typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing selected-property evidence and set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-trimlayerstokeyframes",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level trim selected active-comp layers to keyframe-derived bounds intent associated with AR_TrimLayersToKeyframes.jsx into existing typed tools: get_active_comp, get_selected_layers, get_selected_properties, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-layer and selected-property evidence, explicit reviewed selectedKeyframeBounds, reviewed trimLayersToKeyframesSpec, frame-rounded target inPoint/outPoint values, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Source-exact selected-key discovery, hidden selection ordering, native UI side effects, keyframe movement, keyframe creation or deletion, time-remap edits, source footage trimming, native undo semantics, startTime or stretch changes, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp selected-layer and selected-property evidence before computing trimLayersToKeyframesSpec; do not infer selected keyframe bounds, selected order, frame rate, trim mode, or target timing from prior chat context, screenshots, layer names, labels, property names alone, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed target layer indices and computed rounded inPoint/outPoint values.",
+        "Require get_layer_details read-back after timing mutation.",
+        "Require a separate typed-tool contract for source-exact selected-key discovery, hidden selection ordering, native UI side effects, keyframe movement, keyframe creation or deletion, time-remap edits, source footage trimming, native undo behavior, startTime or stretch changes, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for keyframe edits, time-remap edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
