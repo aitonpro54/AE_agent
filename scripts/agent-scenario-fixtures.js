@@ -3723,6 +3723,139 @@ function agentKeyframeScenarioPlans(runPrefix) {
   }));
 }
 
+function agentArKeyframeTimingScenarioPlans(runPrefix) {
+  const base = `${runPrefix} AR Keyframe Timing`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Opacity";
+  const initialKeyframes = [
+    { time: 0, value: 10 },
+    { time: 0.5, value: 60 },
+    { time: 1.25, value: 30 },
+    { time: 2.25, value: 90 }
+  ];
+  const targetKeyframes = [
+    { time: 0.25, value: 10 },
+    { time: 1, value: 60 },
+    { time: 1.75, value: 30 },
+    { time: 2.5, value: 90 }
+  ];
+
+  return [
+    {
+      id: "generated-ar-keyframe-timing",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_property_keyframes",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedArKeyframeTiming: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        keyframeCount: targetKeyframes.length,
+        keyframes: targetKeyframes,
+        initialKeyframes,
+        selectedKeyframePolicy: "reviewed-explicit-subset-full-sequence-rewrite"
+      },
+      plan: {
+        summary: "Generated-only live QA for AR selected-keyframe timing rewrite using explicit reviewed keyframes.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated AR keyframe timing comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 3, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "generated-only AR keyframe timing validation" } },
+          { title: "Create generated AR keyframe target shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.22, 0.62, 0.88], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 3 } },
+          { title: "Seed reviewed source keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes: initialKeyframes } },
+          { title: "Inspect generated selected-property keyframes", tool: "get_selected_properties", args: { includeValues: true, includeKeyframes: true, includeExpressions: true } },
+          { title: "Rewrite generated AR keyframe timing", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes: targetKeyframes } },
+          { title: "Read generated AR keyframe timing", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
+function agentArKeyframeBoundaryTimingScenarioPlans(runPrefix) {
+  const base = `${runPrefix} AR Keyframe Boundary`;
+  const compName = `${base} Comp`;
+  const layerName = `${base} Shape`;
+  const propertyPath = "ADBE Transform Group.ADBE Opacity";
+  const initialKeyframes = [
+    { time: 0.25, value: 20 },
+    { time: 1, value: 80 },
+    { time: 2, value: 45 },
+    { time: 3.25, value: 70 }
+  ];
+  const targetKeyframes = [
+    { time: 0.5, value: 20 },
+    { time: 1.333333, value: 80 },
+    { time: 2.166667, value: 45 },
+    { time: 3, value: 70 }
+  ];
+
+  return [
+    {
+      id: "generated-ar-keyframe-boundary-timing",
+      cleanupPrefix: base,
+      expectedTools: [
+        "create_comp",
+        "create_shape_layer",
+        "set_comp_work_area",
+        "set_layer_time_range",
+        "set_property_keyframes",
+        "get_comp_details",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      expectedReadBack: {
+        generatedArKeyframeBoundaryTiming: true,
+        compName,
+        layerName,
+        propertyPath: ["ADBE Transform Group", "ADBE Opacity"],
+        keyframeCount: targetKeyframes.length,
+        keyframes: targetKeyframes,
+        initialKeyframes,
+        compDuration: 4,
+        workArea: { start: 0.5, duration: 2.5 },
+        layerTiming: { inPoint: 0.5, outPoint: 3 },
+        selectedKeyframePolicy: "reviewed-boundary-derived-full-sequence-rewrite"
+      },
+      plan: {
+        summary: "Generated-only live QA for AR boundary-derived selected-keyframe distribution.",
+        risk: "medium",
+        requiresCheckpoint: true,
+        steps: [
+          { title: "Create generated AR keyframe boundary comp", tool: "create_comp", args: { name: compName, width: 640, height: 360, pixelAspect: 1, duration: 4, frameRate: 24, bgColor: [0.06, 0.07, 0.09], allowDuplicateName: false, openInViewer: true, comment: "generated-only AR keyframe boundary validation" } },
+          { title: "Create generated AR boundary target shape", tool: "create_shape_layer", args: { compName, name: layerName, shape: "rectangle", size: [220, 120], position: [320, 180], fillColor: [0.28, 0.58, 0.78], strokeColor: [1, 1, 1], strokeWidth: 2, duration: 4 } },
+          { title: "Set generated boundary work area", tool: "set_comp_work_area", args: { compName, start: 0.5, duration: 2.5 } },
+          { title: "Set generated boundary layer timing", tool: "set_layer_time_range", args: { compName, layerIndices: [1], inPoint: 0.5, outPoint: 3 } },
+          { title: "Seed reviewed boundary source keyframes", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes: initialKeyframes } },
+          { title: "Inspect generated boundary evidence", tool: "get_comp_details", args: { compName, includeLayers: true, layerLimit: 10 } },
+          { title: "Inspect generated selected-property boundary keyframes", tool: "get_selected_properties", args: { includeValues: true, includeKeyframes: true, includeExpressions: true } },
+          { title: "Rewrite generated AR boundary keyframe timing", tool: "set_property_keyframes", args: { compName, layerIndex: 1, propertyPath, clearExisting: true, keyframes: targetKeyframes } },
+          { title: "Read generated AR boundary keyframes", tool: "get_layer_details", args: { compName, layerIndex: 1, includeProperties: true, propertyDepth: 2, propertyLimit: 80, includeValues: true, includeExpressions: true } }
+        ]
+      }
+    }
+  ].map((scenario) => ({
+    ...scenario,
+    expectedStepCount: scenario.plan.steps.length,
+    expectedMutatingCount: expectedMutatingCount(scenario.plan),
+    prompt: exactPlanPrompt(scenario.plan)
+  }));
+}
+
 function agentTextToKeysScenarioPlans(runPrefix) {
   const base = `${runPrefix} Text To Keys`;
   const compName = `${base} Comp`;
@@ -5065,6 +5198,8 @@ module.exports = {
   agentExportPathPointsScenarioPlans,
   agentExportTextToFileScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
+  agentArKeyframeBoundaryTimingScenarioPlans,
+  agentArKeyframeTimingScenarioPlans,
   agentKeyframeScenarioPlans,
   agentPathGeometryScenarioPlans,
   agentAdjustmentLayerPlacementScenarioPlans,

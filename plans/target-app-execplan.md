@@ -41,6 +41,13 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - 2026-05-27: Generic full-intake orchestrator processed `AR_WorkAreaToSelectedLayer.jsx` as `tool-ar_workareatoselectedlayer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_workareatoselectedlayer).
 
+- 2026-07-07: Missing-validation map grouped remaining live blockers into
+  keyframe timing, effects, file/SRT/render/project cleanup, shape/mask, and
+  tracked-light lane families. First feasible infrastructure milestone adds
+  generated-only AR selected-keyframe timing and boundary-distribution lanes
+  for six keyframe candidates; requeue/acceptance remains parent-owned and
+  scoped after the lane infrastructure commit.
+
 - 2026-07-07: `tool-ar_trimlayerstoworkarea` imports selected-layer
   trim-to-active-work-area timing guidance using existing active-comp/work-area
   read-back fields, `verifiedWorkAreaTiming`, and
@@ -103,6 +110,15 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- [x] Lane infrastructure: added two generated-only AR keyframe live-lane
+  families and OpenAI CLI smoke fixtures for selected-keyframe timing rewrite
+  and boundary-derived distribution. Scoped candidates:
+  `tool-ar_alignkeyframes`, `tool-ar_distributekeyframesbystep`,
+  `tool-ar_distributekeyframesevenly`,
+  `tool-ar_distributekeyframestocomp`,
+  `tool-ar_distributekeyframestolayer`, and
+  `tool-ar_distributekeyframestoworkarea`.
+
 - [x] Full intake tool-ar_workareatoselectedlayer: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_workareatoselectedlayer); live gate not_required, importer batch full-intake-aturtur-after-effects-sc-2cb9302d80-import, commit recorded after candidate commit.
 
 - [x] `tool-ar_trimlayerstoworkarea` completed by reusable generic full-intake
@@ -163,6 +179,16 @@ status/proof/ledger checks, touched JS syntax check, solution-library smoke,
 `npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
 `npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`,
 `git diff --check`, and `git diff --check HEAD~1 HEAD`.
+
+Latest lane infrastructure validation: AR keyframe timing lanes passed
+`node --check` for touched JS, JSON parse for the live-lane registry,
+`node scripts/agent-scenario-report-smoke.js`,
+`node scripts/solution-library-validation-smoke.js`,
+`node scripts/semantic-verification-smoke.js`,
+`npm.cmd run check:rules`, `npm.cmd run smoke:solutions`,
+`npm.cmd run smoke:planning`, `npm.cmd run smoke:full-intake`, and
+`git diff --check`. The first `smoke:full-intake` attempt timed out at the
+short parent timeout; rerun with a longer timeout passed.
 
 ## Validation
 

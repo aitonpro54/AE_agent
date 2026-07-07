@@ -6063,6 +6063,68 @@ function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
   return FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS;
 }
 
+function assertArKeyframeLane(liveLaneRegistry, id, expected) {
+  const lane = liveLaneFamilyById(liveLaneRegistry, id);
+  assert(lane, `Missing AR keyframe lane family: ${id}`);
+  assert.strictEqual(lane.productionTypedTools, true, `${id}: lane must use production typed tools.`);
+  assert.strictEqual(lane.semanticVerification, true, `${id}: lane must require semantic verification.`);
+  for (const tool of expected.requiredTools) {
+    assert(lane.requiredTools.includes(tool), `${id}: lane must require ${tool}.`);
+  }
+  for (const tool of expected.allowedTools) {
+    assert(lane.allowedTools.includes(tool), `${id}: lane must allow ${tool}.`);
+  }
+  for (const tool of expected.readBackTools) {
+    assert(lane.readBackTools.includes(tool), `${id}: lane must read back through ${tool}.`);
+  }
+  for (const candidateId of expected.candidateIds) {
+    assert(lane.candidateIds.includes(candidateId), `${id}: lane must stay scoped to ${candidateId}.`);
+  }
+  for (const text of expected.scopeIncludes) {
+    assert(lane.scope.includes(text), `${id}: lane scope must include "${text}".`);
+  }
+  return expected.candidateIds;
+}
+
+function assertArKeyframeLanes(liveLaneRegistry) {
+  return {
+    timing: assertArKeyframeLane(liveLaneRegistry, "ar-selected-keyframe-timing-generated-only", {
+      requiredTools: ["get_selected_properties", "set_property_keyframes"],
+      allowedTools: ["get_selected_properties", "set_property_keyframes", "get_layer_details"],
+      readBackTools: ["get_selected_properties", "get_layer_details"],
+      candidateIds: [
+        "tool-ar_alignkeyframes",
+        "tool-ar_distributekeyframesbystep",
+        "tool-ar_distributekeyframesevenly"
+      ],
+      scopeIncludes: [
+        "set_property_keyframes clearExisting:true",
+        "complete generated scalar property keyframe sequence",
+        "get_selected_properties plus get_layer_details read-back",
+        "source-exact native selected-key discovery",
+        "raw JSX algorithms remain fail-closed"
+      ]
+    }),
+    boundary: assertArKeyframeLane(liveLaneRegistry, "ar-selected-keyframe-boundary-distribution-generated-only", {
+      requiredTools: ["get_comp_details", "get_selected_properties", "set_property_keyframes"],
+      allowedTools: ["get_comp_details", "get_selected_properties", "set_property_keyframes", "get_layer_details"],
+      readBackTools: ["get_comp_details", "get_selected_properties", "get_layer_details"],
+      candidateIds: [
+        "tool-ar_distributekeyframestocomp",
+        "tool-ar_distributekeyframestolayer",
+        "tool-ar_distributekeyframestoworkarea"
+      ],
+      scopeIncludes: [
+        "reviewed comp duration/work-area",
+        "generated layer in/out evidence",
+        "boundary-derived times/values",
+        "comp/layer/work-area mutation",
+        "raw JSX algorithms remain fail-closed"
+      ]
+    })
+  };
+}
+
 function main() {
   const registry = readRegistry();
   const liveLaneRegistry = readLiveLaneRegistry();
@@ -6074,6 +6136,7 @@ function main() {
   const firstFourFileRenderProxyContracts = assertFirstFourFileRenderProxyContracts(registry);
   const firstFourParentingMatteReorderContracts = assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry);
   const firstFourLayerEffectSwitchContracts = assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry);
+  const arKeyframeLanes = assertArKeyframeLanes(liveLaneRegistry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -6091,7 +6154,8 @@ function main() {
       compositionMarkerContracts: firstFourCompositionMarkerContracts,
       fileRenderProxyContracts: firstFourFileRenderProxyContracts,
       parentingMatteReorderContracts: firstFourParentingMatteReorderContracts,
-      layerEffectSwitchContracts: firstFourLayerEffectSwitchContracts
+      layerEffectSwitchContracts: firstFourLayerEffectSwitchContracts,
+      arKeyframeLanes
     },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,

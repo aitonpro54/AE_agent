@@ -32,6 +32,8 @@ const {
   agentExportTextToFileScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
+  agentArKeyframeBoundaryTimingScenarioPlans,
+  agentArKeyframeTimingScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
   agentPuppetGuideLayerScenarioPlans,
   agentPuppetPinTypeScenarioPlans,
@@ -1141,6 +1143,42 @@ function assertResolutionFamilyGeneratedOnlyFixtures() {
   assert.strictEqual(keyframes.plan.steps[3].args.propertyPath, "ADBE Transform Group.ADBE Opacity");
   assert.strictEqual(keyframes.plan.steps[3].args.keyframes.length, 3);
   assert.deepStrictEqual(keyframes.plan.steps[4].args.keyIndices, [1, 2, 3]);
+
+  const [arKeyframeTiming] = agentArKeyframeTimingScenarioPlans("AE_AGENT_QA_AR_KEY Fixture");
+  assert.strictEqual(arKeyframeTiming.id, "generated-ar-keyframe-timing");
+  assert.strictEqual(arKeyframeTiming.expectedReadBack.generatedArKeyframeTiming, true);
+  assert.deepStrictEqual(arKeyframeTiming.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "set_property_keyframes",
+    "get_selected_properties",
+    "set_property_keyframes",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(arKeyframeTiming.plan.steps[2].args.clearExisting, true);
+  assert.strictEqual(arKeyframeTiming.plan.steps[4].args.clearExisting, true);
+  assert.deepStrictEqual(arKeyframeTiming.expectedReadBack.keyframes.map((keyframe) => keyframe.time), [0.25, 1, 1.75, 2.5]);
+  assert.deepStrictEqual(arKeyframeTiming.expectedReadBack.keyframes.map((keyframe) => keyframe.value), [10, 60, 30, 90]);
+
+  const [arKeyframeBoundary] = agentArKeyframeBoundaryTimingScenarioPlans("AE_AGENT_QA_AR_BOUNDARY Fixture");
+  assert.strictEqual(arKeyframeBoundary.id, "generated-ar-keyframe-boundary-timing");
+  assert.strictEqual(arKeyframeBoundary.expectedReadBack.generatedArKeyframeBoundaryTiming, true);
+  assert.deepStrictEqual(arKeyframeBoundary.plan.steps.map((step) => step.tool), [
+    "create_comp",
+    "create_shape_layer",
+    "set_comp_work_area",
+    "set_layer_time_range",
+    "set_property_keyframes",
+    "get_comp_details",
+    "get_selected_properties",
+    "set_property_keyframes",
+    "get_layer_details"
+  ]);
+  assert.strictEqual(arKeyframeBoundary.plan.steps[4].args.clearExisting, true);
+  assert.strictEqual(arKeyframeBoundary.plan.steps[7].args.clearExisting, true);
+  assert.deepStrictEqual(arKeyframeBoundary.expectedReadBack.workArea, { start: 0.5, duration: 2.5 });
+  assert.deepStrictEqual(arKeyframeBoundary.expectedReadBack.layerTiming, { inPoint: 0.5, outPoint: 3 });
+  assert.deepStrictEqual(arKeyframeBoundary.expectedReadBack.keyframes.map((keyframe) => keyframe.time), [0.5, 1.333333, 2.166667, 3]);
 
   const [textToKeys] = agentTextToKeysScenarioPlans("AE_AGENT_QA_TTK Fixture");
   assert.strictEqual(textToKeys.id, "generated-source-text-keyframes");

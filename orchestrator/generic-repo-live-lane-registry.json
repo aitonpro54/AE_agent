@@ -607,6 +607,105 @@
       "scope": "generated-only selected/generated property keyframe proof using get_selected_properties, set_property_keyframes, apply_keyframe_ease, get_layer_details, read-back, semantic verification, and cleanup; expression-derived sampling, spatial tangent editing, selected-key discovery without explicit reviewed keyframes, and source-exact keyframe algorithms remain fail-closed"
     },
     {
+      "id": "ar-selected-keyframe-timing-generated-only",
+      "requiredTools": [
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-ar_alignkeyframes",
+        "tool-ar_distributekeyframesbystep",
+        "tool-ar_distributekeyframesevenly"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-ar-keyframe-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "ar-selected-keyframe-timing",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only AR selected-keyframe timing proof using explicit reviewed selected keyframe times, set_property_keyframes clearExisting:true to rewrite the complete generated scalar property keyframe sequence, get_selected_properties plus get_layer_details read-back confirming requested times/values and cleanup; source-exact native selected-key discovery, hidden UI selection order, interpolation/ease preservation beyond explicitly rewritten values, spatial tangent editing, and raw JSX algorithms remain fail-closed"
+    },
+    {
+      "id": "ar-selected-keyframe-boundary-distribution-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_selected_properties",
+        "set_comp_work_area",
+        "set_layer_time_range",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-ar_distributekeyframestocomp",
+        "tool-ar_distributekeyframestolayer",
+        "tool-ar_distributekeyframestoworkarea"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-ar-keyframe-boundary-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "ar-selected-keyframe-boundary-distribution",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only AR selected-keyframe boundary distribution proof using get_comp_details for reviewed comp duration/work-area and generated layer in/out evidence, explicit reviewed selected keyframe subset, set_property_keyframes clearExisting:true for the complete generated scalar property keyframe sequence, get_selected_properties plus get_layer_details read-back confirming boundary-derived times/values and cleanup; comp/layer/work-area mutation, source-exact native selected-key discovery, interpolation/ease preservation beyond explicitly rewritten values, arbitrary user layers, and raw JSX algorithms remain fail-closed"
+    },
+    {
       "id": "text-to-keys-generated-only",
       "requiredTools": [
         "get_selected_layers",

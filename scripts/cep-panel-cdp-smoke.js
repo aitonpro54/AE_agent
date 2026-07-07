@@ -29,6 +29,8 @@ const {
   agentExportTextToFileScenarioPlans,
   agentExpressionScenarioPlans,
   agentFlipPathGeometryScenarioPlans,
+  agentArKeyframeBoundaryTimingScenarioPlans,
+  agentArKeyframeTimingScenarioPlans,
   agentParametricAnchorExpressionScenarioPlans,
   agentPuppetGuideLayerScenarioPlans,
   agentPuppetPinTypeScenarioPlans,
@@ -1091,6 +1093,42 @@ function openAiCliKeyframeScenarioConfig() {
     readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
     runPrefixBase: process.env.CEP_PANEL_AGENT_KEYFRAMES_PREFIX || "AE_AGENT_QA_083",
     scenarioFactory: agentKeyframeScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliArKeyframeTimingScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-ar-keyframe-timing",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_AR_KEYFRAME_TIMING_PREFIX || "AE_AGENT_QA_AR_KEY",
+    scenarioFactory: agentArKeyframeTimingScenarioPlans,
+    skipRenderQueueCleanup: true,
+    requireFinalReadBack: true,
+    requireSemanticVerificationPassed: true,
+    disallowProviderFallbacks: true
+  };
+}
+
+function openAiCliArKeyframeBoundaryTimingScenarioConfig() {
+  return {
+    label: "openai-cli-gpt-5.5-ar-keyframe-boundary",
+    agentId: OPENAI_CLI_AGENT_ID,
+    model: OPENAI_CLI_MODEL,
+    providerGroup: "openai",
+    authMode: "cli",
+    requirePanelPlans: true,
+    readinessTimeoutMs: OPENAI_CLI_WAIT_MS,
+    runPrefixBase: process.env.CEP_PANEL_AGENT_AR_KEYFRAME_BOUNDARY_PREFIX || "AE_AGENT_QA_AR_BOUNDARY",
+    scenarioFactory: agentArKeyframeBoundaryTimingScenarioPlans,
     skipRenderQueueCleanup: true,
     requireFinalReadBack: true,
     requireSemanticVerificationPassed: true,
@@ -6154,6 +6192,24 @@ async function verifyGeneratedKeyframeReadBack(scenario, expected) {
   if (Number(property.numKeys || 0) !== Number(expected.keyframeCount || 0)) {
     throw new Error(`${scenario.id}: expected ${expected.keyframeCount} generated keyframe(s), got ${property.numKeys || 0}.`);
   }
+  const expectedKeyframes = Array.isArray(expected.keyframes) ? expected.keyframes : [];
+  const observedKeyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const observed = [];
+  for (const item of expectedKeyframes) {
+    const keyframe = observedKeyframes.find((candidate) => numbersMatch(item.time, candidate.time, 0.001));
+    if (!keyframe) {
+      throw new Error(`${scenario.id}: generated keyframe at ${item.time} was not found by read-back.`);
+    }
+    const expectedValue = item.value;
+    const observedValue = keyframe.value;
+    const valueMatches = Array.isArray(expectedValue)
+      ? numberArraysMatch(expectedValue, observedValue, 0.001)
+      : numbersMatch(expectedValue, observedValue, 0.001);
+    if (!valueMatches) {
+      throw new Error(`${scenario.id}: generated keyframe value mismatch at ${item.time}; expected ${JSON.stringify(expectedValue)}, got ${JSON.stringify(observedValue)}.`);
+    }
+    observed.push({ time: keyframe.time, value: keyframe.value });
+  }
 
   return {
     ok: true,
@@ -6169,6 +6225,7 @@ async function verifyGeneratedKeyframeReadBack(scenario, expected) {
     keyframes: {
       propertyPath: expected.propertyPath,
       count: Number(property.numKeys || 0),
+      observed,
       easedKeyIndices: expected.keyIndices || [],
       interpolation: expected.interpolation || null
     }
@@ -8176,6 +8233,14 @@ async function verifyAgentScenarioReadBack(scenario) {
     return verifyGeneratedKeyframeReadBack(scenario, expected);
   }
 
+  if (expected.generatedArKeyframeTiming) {
+    return verifyGeneratedKeyframeReadBack(scenario, expected);
+  }
+
+  if (expected.generatedArKeyframeBoundaryTiming) {
+    return verifyGeneratedKeyframeReadBack(scenario, expected);
+  }
+
   if (expected.generatedSourceTextKeyframes) {
     return verifyGeneratedSourceTextKeyframesReadBack(scenario, expected);
   }
@@ -9074,6 +9139,14 @@ async function main() {
   }
   if (command === "agent-keyframes-openai-cli-smoke" || command === "full-ui-agent-keyframes-openai-cli-smoke") {
     await agentScenarioSmoke(openAiCliKeyframeScenarioConfig());
+    return;
+  }
+  if (command === "agent-ar-keyframe-timing-openai-cli-smoke" || command === "full-ui-agent-ar-keyframe-timing-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliArKeyframeTimingScenarioConfig());
+    return;
+  }
+  if (command === "agent-ar-keyframe-boundary-timing-openai-cli-smoke" || command === "full-ui-agent-ar-keyframe-boundary-timing-openai-cli-smoke") {
+    await agentScenarioSmoke(openAiCliArKeyframeBoundaryTimingScenarioConfig());
     return;
   }
   if (command === "agent-text-to-keys-openai-cli-smoke" || command === "full-ui-agent-text-to-keys-openai-cli-smoke") {
