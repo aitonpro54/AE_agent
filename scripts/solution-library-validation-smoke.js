@@ -6394,3 +6394,62 @@ function assertArMasksToFusionPolygonsAppendOnlySmoke() {
 }
 
 assertArMasksToFusionPolygonsAppendOnlySmoke();
+
+function assertArNullsToCornerPinsAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-nullstocornerpins-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, false, `${id}: nulls to Corner Pin linking must stay read-only until mutating contracts exist.`);
+  assert.strictEqual(solution.execution.riskLevel, "high", `${id}: nulls to Corner Pin linking should preserve high-risk classification.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_selected_properties", "get_layer_details", "list_effects", "get_effect_details"],
+    `${id}: AR nulls to Corner Pin workflow should stay on read-only typed evidence tools.`
+  );
+  assert(solution.tags.includes("typed-tool-gap"), `${id}: typed-tool-gap tag should be present.`);
+  assert(solution.tags.includes("read-only"), `${id}: read-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_NullsToCornerPins/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("nullsToCornerPinsSpec"), `${id}: recipe should require a reviewed nullsToCornerPinsSpec.`);
+  assert(text.includes("Corner Pin"), `${id}: recipe should document Corner Pin target inspection.`);
+  assert(text.includes("get_layer_details"), `${id}: recipe should inspect null controller layer evidence.`);
+  assert(text.includes("get_effect_details"), `${id}: recipe should inspect Corner Pin-like effect details.`);
+  assert(text.includes("Do not create"), `${id}: recipe should fail closed on creation/mutation.`);
+  assert(text.includes("coordinate-space"), `${id}: recipe should preserve coordinate-space gap.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only advisory must not allow mutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: high-risk advisory should preserve checkpoint/edit-session protection.`);
+  assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, false, `${id}: read-only advisory must not claim post-mutation read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include null controller layer inspection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include Corner Pin effect inspection.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /null controller layers/.test(item)), `${id}: evidence must require null controller layers.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /no null layer creation/.test(item)), `${id}: evidence must prove read-only behavior.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for mutation.`);
+  assert(solution.notes.some((note) => /set_effect_property/.test(note)), `${id}: notes must reject effect-property mutation without a separate contract.`);
+
+  const retrieval = retrieveSolutionHints("Connect four null controller layers to Corner Pin points after get_layer_details and get_effect_details show null positions and effect point property paths, but report the missing expression and effect-property mutation contract.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR nulls to Corner Pin advisory recipe should surface for null controller Corner Pin prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Nulls To Corner Pins Typed Plan"), "prompt section should include AR nulls to Corner Pins advisory title.");
+  assert(promptSection.includes("nullsToCornerPinsSpec"), "prompt section should preserve nulls to Corner Pin spec guidance.");
+  assert(promptSection.includes("get_effect_details"), "prompt section should prefer Corner Pin effect inspection.");
+  assert(promptSection.includes("typed-tool gap"), "prompt section should preserve typed-tool gap guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR nulls to Corner Pin guidance should not recommend raw ExtendScript.");
+}
+
+assertArNullsToCornerPinsAppendOnlySmoke();

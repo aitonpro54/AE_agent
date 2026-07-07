@@ -18624,6 +18624,127 @@
         "Require a separate typed-tool contract for source-exact selected mask traversal, multi-mask batch conversion, animated mask conversion, roto or feather fidelity, clipboard behavior, arbitrary outputPath values, native dialogs, raw Fusion settings, or exact source JSX semantics.",
         "Do not use this recipe for mask/path edits, layer transform edits, layer timing changes, source relinking, render queue work, Project item mutation, clipboard mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-nullstocornerpins-typed-plan",
+      "title": "AR Nulls To Corner Pins Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "nulls",
+        "corner-pin",
+        "effects",
+        "selected-layers",
+        "selected-properties",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool-gap",
+        "read-only"
+      ],
+      "intent": {
+        "summary": "Inspect a requested null-controller to Corner Pin workflow and report the missing typed contracts without creating nulls, adding effects, writing expressions, or mutating effect properties.",
+        "appliesWhen": [
+          "The user asks to drive Corner Pin points from null layers, connect nulls to corner pins, or references AR_NullsToCornerPins.jsx.",
+          "Current active-comp, selected-layer, selected-property, layer, and effect evidence can be gathered before any mutation decision.",
+          "The request can be classified against explicit null controller layers and a reviewed Corner Pin-like effect target from typed evidence.",
+          "Current safe handling is read-only advisory: it reports nullsToCornerPinsSpec and the missing contracts instead of mutating layers, effects, expressions, parenting, or transforms."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targetLayer",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current typed evidence identifying the active comp and explicit layer that would receive or already has the Corner Pin-like effect."
+        },
+        {
+          "name": "cornerNullControllers",
+          "type": "layer-selection",
+          "required": true,
+          "description": "Current get_layer_details evidence for the reviewed null controller layers, including indices, names, type/null status, Position values, parent state, lock/shy state, and expression state."
+        },
+        {
+          "name": "nullsToCornerPinsSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed advisory spec with target layer/effect identity, four corner labels, null-controller mapping, proposed point-property paths, coordinate-space assumptions, expression/link behavior, and skipped-target reasons."
+        }
+      ],
+      "targetAssumptions": [
+        "The current accepted behavior is read-only inspection and typed-tool-gap reporting.",
+        "Every target layer, controller null, selected property, effect, and point property must be bound from current typed evidence before a future mutation is considered.",
+        "The plan reports proposed corner/null mapping only from explicit reviewed evidence and does not infer source-exact selection ordering.",
+        "Layer stack, null layers, effects, Corner Pin point values, expressions, transforms, keyframes, masks, sources, Project items, render queue items, files, and selection state are preserved.",
+        "Source-exact selected-layer ordering, automatic null creation, Corner Pin effect creation, point-expression authoring, coordinate-space conversion, cleanup, effect-property mutation, raw ExtendScript, and exact source JSX behavior remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "high",
+        "recipePath": "recipes/ar-nullstocornerpins-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_selected_properties",
+          "get_layer_details",
+          "list_effects",
+          "get_effect_details"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Gather active comp, selected layer/property, layer detail, and effect detail evidence, then report nullsToCornerPinsSpec plus missing typed contracts without mutation.",
+        "steps": [
+          "Run get_active_comp to bind active composition identity, dimensions, current time, and selected-layer/property context.",
+          "Run get_selected_layers and get_selected_properties when the request is selection-driven; fail closed if target layer, controller nulls, selected properties, or corner mapping are ambiguous.",
+          "Run get_layer_details for every explicit candidate controller null and target layer to review layer indices, names, type/null status, Position evidence, parent state, locked/shy state, source/timing identity, and existing expressions.",
+          "Run list_effects or get_effect_details for the explicit target layer when an existing Corner Pin-like effect must be inspected, and capture effect identity, matchName when available, point property paths, expression state, value shape, and current values.",
+          "Build and report nullsToCornerPinsSpec with comp identity, target layer, Corner Pin-like effect identity, four reviewed corner labels, null layer mapping, proposed point-property paths, coordinate-space assumptions, expression/link behavior, and skipped-target reasons.",
+          "Fail closed instead of running add_effect, set_effect_property, set_expression, set_layer_parent, layer-creation tools, raw ExtendScript, or script runners."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the active comp, explicit target layer, candidate null controller layers, selected properties when relevant, and reviewed Corner Pin-like effect targets.",
+          "get_layer_details evidence lists controller null layer positions, target layer identity, transform/expression state, locked/shy state, and parent state.",
+          "get_effect_details evidence lists exact Corner Pin-like point property paths, current values, value shapes, and expression state when an effect target exists.",
+          "The reported nullsToCornerPinsSpec includes proposed corner labels, null-controller mapping, target effect/property paths, coordinate-space assumptions, skipped-target reasons, and missing typed contracts.",
+          "The plan states that no null layer creation, Corner Pin effect creation, effect-property write, expression/link write, parenting, selection mutation, raw ExtendScript, or script file execution is performed."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_nullstocornerpins as advisory null-controller to Corner Pin typed-tool-gap coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing typed evidence tools, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-nullstocornerpins",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level null-controller to Corner Pin intent associated with AR_NullsToCornerPins.jsx into read-only typed evidence guidance using get_active_comp, get_selected_layers, get_selected_properties, get_layer_details, list_effects, and get_effect_details. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior reports nullsToCornerPinsSpec plus missing contracts and does not create nulls, add effects, write expressions, mutate effect points, parent layers, or change transforms. Source-exact selected-layer ordering, automatic null creation, Corner Pin effect creation, point-expression authoring, coordinate-space conversion, cleanup, effect-property mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation and must not mutate layers, effects, expressions, transforms, project items, render queue items, files, or selection state with current tools.",
+        "Require current get_layer_details and get_effect_details evidence before reporting a nullsToCornerPinsSpec; do not infer null order, corner labels, coordinate mapping, or effect targets from prior chat context.",
+        "Use this recipe to surface the typed-tool gap for generated null/controller creation, exact Corner Pin point binding, expression/link writing, coordinate-space conversion, idempotency, cleanup, and post-mutation read-back.",
+        "Require a separate typed-tool contract before running add_effect, set_effect_property, set_expression, set_layer_parent, layer-creation tools, or any raw script execution.",
+        "Do not use this recipe for effect-property writes, expression edits, layer parenting, layer creation, layer transform edits, layer timing changes, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }

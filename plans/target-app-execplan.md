@@ -14,11 +14,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний завершенный candidate: `tool-ar_maskstofusionpolygons`.
-- Compact counts после candidate: `entries=46`, `completed=9`, `queued=12`,
+- Последний завершенный candidate: `tool-ar_nullstocornerpins`.
+- Compact counts после candidate: `entries=46`, `completed=10`, `queued=11`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Текущая локальная cleanup-веха для `tool-ar_maskstofusionpolygons` завершена;
-  следующий цикл должен продолжить bounded `--max-items 1` loop.
+- Текущая веха для `tool-ar_nullstocornerpins` завершена; следующий цикл
+  должен продолжить bounded `--max-items 1` loop.
 - Push, PR, remote writes, dependency changes, Local/Ollama, fallback providers,
   broad CEP smoke и mutating live AE validation остаются approval-gated.
 
@@ -41,9 +41,14 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Post-commit validation cleanup for `tool-ar_linkpuppetpinstonulls`.
 - [x] Advisory import completed for `tool-ar_maskstofusionpolygons`.
 - [x] Post-commit validation cleanup for `tool-ar_maskstofusionpolygons`.
-- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=12`.
+- [x] Advisory import completed for `tool-ar_nullstocornerpins`.
+- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=11`.
 
 ## Decision Log
+
+- 2026-07-07: Generic full-intake orchestrator processed
+  `AR_NullsToCornerPins.jsx` as `tool-ar_nullstocornerpins`, keeping
+  shared merge, validation, ledger, docs, handoff, and commit gates serial.
 
 - 2026-07-07: Generic full-intake orchestrator processed
   `AR_MasksToFusionPolygons.jsx` as `tool-ar_maskstofusionpolygons`, keeping
@@ -95,8 +100,21 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   child worktree; source-exact selected mask traversal, multi-mask batches,
   animated masks, clipboard behavior, arbitrary paths, raw Fusion settings,
   raw JSX, live validation, dependency changes, push and PR remain out of scope.
+- 2026-07-07: `tool-ar_nullstocornerpins` child-run proposal imports
+  `ar-nullstocornerpins-typed-plan` as a read-only high-risk advisory. Source
+  JSX was absent in the detached child worktree, so current handling only
+  gathers typed active-comp, selected-layer/property, layer, and effect evidence
+  and reports `nullsToCornerPinsSpec` plus missing contracts. Null creation,
+  Corner Pin effect creation, effect point writes, expressions, parenting,
+  coordinate conversion, cleanup, raw JSX, live validation, dependency changes,
+  push and PR remain out of scope.
 
 ## Progress
+
+- [x] `tool-ar_nullstocornerpins` candidate completed by reusable generic
+  full-intake orchestrator; live lane `not_required`, proof
+  `contractComplete=true`, unplanned paths `0`, unrelated untracked paths
+  allowed by explicit local opt-in.
 
 - [x] `tool-ar_maskstofusionpolygons` candidate commit:
   `c1b9b14c1f888f876f4d178535dd0cb2b5fbb79e`; live lane `not_required`,
@@ -120,6 +138,10 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Cleanup validation for `tool-ar_maskstofusionpolygons`: remove legacy
   runtime markers from plan notes and surface clipboard fail-closed guidance in
   compact retrieval metadata.
+- [x] Detached child-run proposal for `tool-ar_nullstocornerpins`: added
+  read-only advisory recipe, intake note, registry metadata, and append-only
+  solution-library smoke assertions. No validation, commit, source merge, live
+  run, dependency change, push, or PR was performed in the child-run.
 
 ## Validation Notes
 
@@ -149,6 +171,18 @@ Cleanup validation passed `node --check scripts\solution-library-validation-smok
 `npm.cmd run smoke:full-intake`, `git diff --check`, and a targeted `rg`
 runtime-marker check.
 
+`tool-ar_nullstocornerpins` parent acceptance validation passed:
+`node --check scripts\solution-library-validation-smoke.js`,
+`node scripts\solution-library-validation-smoke.js`, `npm.cmd run check:rules`,
+`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
+`npm.cmd run smoke:full-intake`, `git diff --check`, and
+`git diff --check HEAD~1 HEAD`. The accepted recipe remains read-only advisory
+typed-tool-gap coverage; null creation, Corner Pin effect creation, effect
+point mutation, expressions, parenting, raw JSX, dependency changes, push, PR,
+and live mutation remain out of scope.
+
 ## Validation
+
+| Full intake tool-ar_nullstocornerpins | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, batch `full-intake-aturtur-after-effects-sc-2f1c9f9db5-import`, live rerun `not_required`, proof `contractComplete=true`, post-commit validation tier passed. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_maskstofusionpolygons | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `not_required`, live rerun `not_required`, commit `c1b9b14c1f888f876f4d178535dd0cb2b5fbb79e`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
