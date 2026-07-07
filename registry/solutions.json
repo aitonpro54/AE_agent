@@ -19604,6 +19604,129 @@
         "Require a separate typed-tool contract for source-exact selected-key discovery, hidden selection ordering, native UI side effects, keyframe movement, keyframe creation or deletion, time-remap edits, source footage trimming, native undo behavior, startTime or stretch changes, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for keyframe edits, time-remap edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-trimlayerstomatte-typed-plan",
+      "title": "AR Trim Layers To Matte Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "trim",
+        "track-matte",
+        "matte",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Trim reviewed selected active-comp fill layers to verified track matte timing bounds by computing targetTrimTiming and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_TrimLayersToMatte.jsx, trim layers to matte, or make selected fill layer timing match a verified track matte layer.",
+          "Current typed selected-layer and layer-detail evidence identifies fill targets, matte relationships, matte layer timing, and every layer accepted for timing mutation.",
+          "Track matte creation/removal, layer reordering, source-exact native UI side effects, source footage trimming, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "trimLayersToMatteSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed trim timing spec with target comp identity, fill layer indices/names, verified matte layer indices/names, existing matte type, matte timing source, skipped-target reasons, and target in/out values."
+        },
+        {
+          "name": "verifiedMatteLayerTiming",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed per-target matte layer timing evidence, including matte layer index/name and finite inPoint/outPoint values from current typed read-back."
+        },
+        {
+          "name": "targetTrimTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed inPoint and outPoint values for each accepted fill layer target, derived from the verified matte layer timing."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected fill layer inPoint and outPoint values.",
+        "Fill layer targets, verified matte layer identity, existing matte type, matte timing source, frame rate when available, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not create, remove, assign, or reorder track matte relationships and does not change startTime, stretch, source footage timing, markers, effects, expressions, labels, names, parenting, matte layers, layer order, selection state, comp work area/duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-trimlayerstomatte-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp, selected fill layers, verified matte relationships, and matte timing; build reviewed trimLayersToMatteSpec; set only fill layer in/out values; then read the same fill and matte layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, selected-layer count, current time, and target selection context.",
+          "Run get_selected_layers when target layers are implied by current selection and reject stale, empty, or ambiguous selected-layer evidence.",
+          "Run get_layer_details or get_comp_details includeLayers:true to bind each fill layer, current timing, lock/shy state when available, hasTrackMatte, trackMatteTypeName, and trackMatteLayer evidence.",
+          "Run get_layer_details for every verified matte layer to capture concrete matte layer identity and inPoint/outPoint timing values.",
+          "Build and show trimLayersToMatteSpec with target comp identity, fill layer indices/names, verified matte layer indices/names, existing matte type, matte timing source, targetTrimTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, missing hasTrackMatte:true, missing or ambiguous matte layer identity, missing matte timing, unsafe locked targets, target outPoint not greater than target inPoint, unsupported track matte relationship edits, layer reordering, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit fill layer targets with computed inPoint and outPoint values from verified matte timing.",
+          "Run get_layer_details after mutation and compare every accepted fill layer's inPoint and outPoint with targetTrimTiming while confirming the matte relationship still points to the same matte layer."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, selected or explicit fill layers, verified matte layer identity, matte type, reviewed trimLayersToMatteSpec, and current fill/matte timing.",
+          "Dry-run evidence shows accepted and skipped layers, skipped-target reasons, verifiedMatteLayerTiming, matte timing source, and computed targetTrimTiming.",
+          "Each set_layer_time_range result reports only the reviewed fill layer target and computed inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted fill layer starts at the verified matte layer inPoint and ends at the verified matte layer outPoint.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, matte layer timing, matte assignments, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_trimlayerstomatte as advisory selected-layer trim-to-matte typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing track-matte read-back fields and set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-trimlayerstomatte",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level trim selected active-comp layers to verified track matte timing bounds intent associated with AR_TrimLayersToMatte.jsx into existing typed tools: get_active_comp, get_selected_layers, get_comp_details, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-layer and matte relationship evidence, explicit reviewed trimLayersToMatteSpec, verifiedMatteLayerTiming, target inPoint/outPoint values derived from the matte layer, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Track matte creation/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo semantics, startTime or stretch changes, matte layer mutation, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp selected-layer and matte relationship evidence before computing trimLayersToMatteSpec; do not infer matte identity, matte timing, selected order, frame rate, or target timing from prior chat context, screenshots, layer names, labels, visual stack position, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed fill layer indices and computed inPoint/outPoint values from verified matte layer timing.",
+        "Require get_layer_details read-back after timing mutation and confirm the same track matte relationship still exists.",
+        "Require a separate typed-tool contract for track matte creation/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, matte layer mutation, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for track matte assignment, matte layer edits, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }

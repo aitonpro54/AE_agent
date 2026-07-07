@@ -14,12 +14,11 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_trimlayerstokeyframes`.
-- Compact counts после candidate: `entries=46`, `completed=17`, `queued=4`,
+- Последний completed candidate: `tool-ar_trimlayerstomatte`.
+- Compact counts после candidate: `entries=46`, `completed=18`, `queued=3`,
   `blocked_live_lane_required=24`, `blocked_policy=1`, `failed=0`.
-- Next queued preview: `tool-ar_trimlayerstomatte`,
-  `tool-ar_trimlayerstoparent`, `tool-ar_trimlayerstoworkarea`,
-  `tool-ar_workareatoselectedlayer`.
+- Next queued preview: `tool-ar_trimlayerstoparent`,
+  `tool-ar_trimlayerstoworkarea`, `tool-ar_workareatoselectedlayer`.
 - User-approved push текущей ветки разрешен после clean validation; PR/GitHub
   issue/PR mutations и unrelated remote writes остаются запрещены.
 
@@ -32,9 +31,9 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 - [x] Child-runner resilience: quota/shell blockers classified, Windows env
   fallback scoped, and queued continuation avoids durable false stops.
 - [x] Advisory imports completed through guarded runner up to
-  `tool-ar_trimlayerstokeyframes` with parent-owned merge/validation/ledger/docs
+  `tool-ar_trimlayerstomatte` with parent-owned merge/validation/ledger/docs
   and one reviewable commit per milestone.
-- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=4`.
+- [ ] Continue bounded `--max-items 1` intake loop for remaining `queued=3`.
 - [ ] For `blocked_live_lane_required=24`, build a missing-validation map,
   create feasible narrow lanes, requeue scoped candidates, then retry.
 
@@ -47,6 +46,9 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
   selected-layer timing guidance through existing typed coverage such as
   `set_layer_time_range`; trim-to-keyframe also requires
   `get_selected_properties` evidence.
+- 2026-07-07: `tool-ar_trimlayerstomatte` imports selected-layer
+  trim-to-matte timing guidance using existing matte read-back fields,
+  `verifiedMatteLayerTiming`, and `set_layer_time_range`.
 - 2026-07-07: Source JSX was absent in detached child worktrees for recent AR
   timing/selection candidates, so source-exact hidden selection ordering,
   native UI side effects, keyframe movement, layer duplication/slicing,
@@ -77,10 +79,13 @@ Intaker/importer tooling. Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- [x] `tool-ar_trimlayerstomatte` completed by reusable generic full-intake
+  orchestrator; live lane `not_required`, proof `contractComplete=true`,
+  unplanned paths `0`.
+
 - [x] `tool-ar_trimlayerstokeyframes` completed by reusable generic full-intake
-  orchestrator; live lane `not_required`, batch
-  `full-intake-aturtur-after-effects-sc-dd76d3bd31-import`, proof
-  `contractComplete=true`, unplanned paths `0`.
+  orchestrator; live lane `not_required`, proof `contractComplete=true`,
+  unplanned paths `0`.
 - [x] Recent queued AR candidates through `tool-ar_splitlayersintoframes` remain
   completed with parent-owned source merge, validation, ledger, docs, handoff,
   and commit gates.
@@ -100,7 +105,10 @@ Recent child runs intentionally did not run validation under the child-run hard
 boundary; parent importer owns planned-path proof, JSON/JS checks, solution
 smoke, source merge, ledger update, docs, handoff, and commit.
 
-Latest candidate validation: `tool-ar_trimlayerstokeyframes` passed compact
+Latest candidate validation: `tool-ar_trimlayerstomatte` passed compact
 status/proof/ledger checks, `node --check`, solution-library smoke,
-`check:rules`, `smoke:solutions`, `smoke:planning`, `smoke:full-intake`, and
-diff whitespace checks after compacting this plan.
+`check:rules`, `smoke:planning`, `smoke:full-intake`, and diff whitespace
+checks. `smoke:solutions` initially caught a missing
+`verifiedMatteLayerTiming` recipe token; this cleanup adds the explicit evidence
+token before rerunning the failed solution smoke and amending the candidate
+commit.
