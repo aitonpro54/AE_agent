@@ -6334,3 +6334,63 @@ function assertArLinkPuppetPinsToNullsAppendOnlySmoke() {
 }
 
 assertArLinkPuppetPinsToNullsAppendOnlySmoke();
+
+function assertArMasksToFusionPolygonsAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-maskstofusionpolygons-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: Fusion Polygon text export must be a file-output side effect.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: generated mask-to-Fusion export should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_path_geometry", "export_text_to_file"],
+    `${id}: AR masks to Fusion polygons workflow should stay on path geometry read-back and generated text export.`
+  );
+  assert(solution.tags.includes("mask-path"), `${id}: mask-path tag should be present.`);
+  assert(solution.tags.includes("fusion-polygon"), `${id}: fusion-polygon tag should be present.`);
+  assert(solution.tags.includes("file-output"), `${id}: file-output tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_MasksToFusionPolygons/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("fusionPolygonExportSpec"), `${id}: recipe should require a reviewed fusionPolygonExportSpec.`);
+  assert(text.includes("get_path_geometry"), `${id}: recipe should read mask path geometry.`);
+  assert(text.includes("export_text_to_file"), `${id}: recipe should use generated text export.`);
+  assert(text.includes("Fusion Polygon"), `${id}: recipe should document Fusion Polygon text generation.`);
+  assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+  assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+  assert(text.includes("clipboard"), `${id}: recipe should fail closed for clipboard behavior.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: file-output export must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: file-output export must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include mask path geometry read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /Fusion Polygon-style node payload/.test(item)), `${id}: evidence must require generated Fusion Polygon payload.`);
+  assert(solution.notes.some((note) => /post-export get_path_geometry read-back/.test(note)), `${id}: notes must require post-export geometry read-back.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require separate contracts for source-exact semantics.`);
+
+  const retrieval = retrieveSolutionHints("Convert a selected AE mask path to Fusion Polygon text after get_path_geometry reads vertices and tangents, write a generated txt with export_text_to_file, and read the mask geometry back without clipboard or raw JSX.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR masks to Fusion polygons advisory recipe should surface for mask path Fusion Polygon export prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Masks To Fusion Polygons Typed Plan"), "prompt section should include AR masks to Fusion polygons advisory title.");
+  assert(promptSection.includes("fusionPolygonExportSpec"), "prompt section should preserve Fusion Polygon export spec guidance.");
+  assert(promptSection.includes("get_path_geometry"), "prompt section should prefer mask path geometry read-back.");
+  assert(promptSection.includes("export_text_to_file"), "prompt section should prefer generated text export.");
+  assert(promptSection.includes("clipboard"), "prompt section should preserve clipboard warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR masks to Fusion polygons guidance should not recommend raw ExtendScript.");
+}
+
+assertArMasksToFusionPolygonsAppendOnlySmoke();
