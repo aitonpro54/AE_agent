@@ -19850,6 +19850,128 @@
         "Require a separate typed-tool contract for parent assignment/removal, layer reordering, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, parent layer mutation, selection mutation, or exact source JSX semantics.",
         "Do not use this recipe for parent assignment, parent layer edits, layer creation, layer deletion, layer duplication, renaming, reordering, track matte changes, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-trimlayerstoworkarea-typed-plan",
+      "title": "AR Trim Layers To Work Area Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "layers",
+        "timing",
+        "trim",
+        "work-area",
+        "selected-layers",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Trim reviewed selected active-comp layers to verified composition work area bounds by computing targetTrimTiming and applying set_layer_time_range with read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_TrimLayersToWorkArea.jsx, trim layers to work area, or make selected layer timing match the active composition work area.",
+          "Current typed active-comp, comp-detail, selected-layer, and layer-detail evidence identifies work area timing, selected targets, and every layer accepted for timing mutation.",
+          "Comp work area mutation, source-exact native UI side effects, source footage trimming, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "trimLayersToWorkAreaSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed trim timing spec with target comp identity, selected layer indices/names, work area timing source, skipped-target reasons, and target in/out values."
+        },
+        {
+          "name": "verifiedWorkAreaTiming",
+          "type": "object",
+          "required": true,
+          "description": "Explicit reviewed active comp work area timing evidence, including finite workAreaStart, workAreaDuration, computed workAreaEnd, and frame rate when available."
+        },
+        {
+          "name": "targetTrimTiming",
+          "type": "array",
+          "required": true,
+          "description": "Computed inPoint and outPoint values for each accepted selected layer target, derived from the verified work area timing."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected layer inPoint and outPoint values.",
+        "Selected layer targets, verified work area start/end, work area timing source, frame rate when available, and target timing are reviewed before mutation.",
+        "Every mutated layer is generated or explicitly approved for timing mutation from current typed evidence.",
+        "The safe adaptation does not change the comp work area and does not change startTime, stretch, source footage timing, markers, effects, expressions, labels, names, parenting, track mattes, layer order, selection state, comp duration, project items, files, render queue items, or non-target layers.",
+        "Source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-trimlayerstoworkarea-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_layers",
+          "get_comp_details",
+          "get_layer_details",
+          "set_layer_time_range"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp, work area timing, selected layers, and selected-layer timing; build reviewed trimLayersToWorkAreaSpec; set only selected layer in/out values; then read the same layers back.",
+        "steps": [
+          "Run get_active_comp to bind the active comp identity, frame rate, selected-layer count, current time, and available work area context.",
+          "Run get_comp_details to capture concrete workAreaStart, workAreaDuration, computed workAreaEnd, and confirm the same target comp identity when get_active_comp does not provide complete work area timing.",
+          "Run get_selected_layers when target layers are implied by current selection and reject stale, empty, or ambiguous selected-layer evidence.",
+          "Run get_layer_details for every selected target to capture current timing, lock/shy state when available, generated or explicit approval status, and current inPoint/outPoint/startTime values.",
+          "Build and show trimLayersToWorkAreaSpec with target comp identity, selected layer indices/names, work area timing source, verifiedWorkAreaTiming, targetTrimTiming, accepted layers, skipped layers, and skipped-target reasons.",
+          "Reject missing active comp, empty selected-layer evidence, missing or non-finite work area timing, non-positive work area duration, unsafe locked targets, target outPoint not greater than target inPoint, unsupported comp work area edits, broad comp traversal, and raw JSX behavior.",
+          "Run set_layer_time_range only for accepted explicit selected layer targets with computed inPoint and outPoint values from verified work area timing.",
+          "Run get_layer_details after mutation and compare every accepted selected layer's inPoint and outPoint with targetTrimTiming while confirming comp work area timing was not changed."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, selected or explicit layers, verifiedWorkAreaTiming, reviewed trimLayersToWorkAreaSpec, and current selected-layer timing.",
+          "Dry-run evidence shows accepted and skipped layers, skipped-target reasons, work area timing source, and computed targetTrimTiming.",
+          "Each set_layer_time_range result reports only the reviewed selected layer target and computed inPoint/outPoint timing values.",
+          "Post-run get_layer_details shows every accepted selected layer starts at the verified work area start and ends at the verified work area end.",
+          "Post-run evidence shows unchanged startTime, source timing, keyframes, effects, expressions, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target layer timing."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_trimlayerstoworkarea as advisory selected-layer trim-to-work-area typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing active-comp/work-area read-back fields and set_layer_time_range coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-07",
+          "from": "generic-repo-importer-tool-ar-trimlayerstoworkarea",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level trim selected active-comp layers to verified work area timing bounds intent associated with AR_TrimLayersToWorkArea.jsx into existing typed tools: get_active_comp, get_selected_layers, get_comp_details, get_layer_details, and set_layer_time_range. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current active-comp work area and selected-layer evidence, explicit reviewed trimLayersToWorkAreaSpec, verifiedWorkAreaTiming, target inPoint/outPoint values derived from the work area, generated or explicitly approved targets, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Comp work area mutation, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo semantics, startTime or stretch changes, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp work area and selected-layer evidence before computing trimLayersToWorkAreaSpec; do not infer work area timing, selected order, frame rate, or target timing from prior chat context, screenshots, layer names, labels, comp duration alone, visual timeline state, or source-script assumptions.",
+        "Use set_layer_time_range only with explicit reviewed selected layer indices and computed inPoint/outPoint values from verified work area timing.",
+        "Require get_layer_details read-back after timing mutation and confirm the comp work area was not changed.",
+        "Require a separate typed-tool contract for comp work area mutation, source-exact hidden selection ordering, native UI side effects, source footage trimming, native undo behavior, startTime or stretch changes, selection mutation, or exact source JSX semantics.",
+        "Do not use this recipe for comp work area edits, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, keyframe edits, source relinking, render queue work, Project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
