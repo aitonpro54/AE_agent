@@ -11,11 +11,11 @@ Runtime outputs остаются ignored/local.
 
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_distributekeyframesbystep`.
-- Compact counts: `entries=46`, `completed=23`, `queued=4`,
+- Последний completed candidate: `tool-ar_distributekeyframesevenly`.
+- Compact counts: `entries=46`, `completed=24`, `queued=3`,
   `blocked_live_lane_required=18`, `blocked_policy=1`, `failed=0`.
 - Next: serial parent acceptance with `--max-items 1` for remaining AR
-  keyframe candidates, starting with `tool-ar_distributekeyframesevenly`.
+  keyframe candidates, starting with `tool-ar_distributekeyframestoworkarea`.
 - Push текущей ветки разрешен после clean validation; PR/GitHub issue/PR
   mutations и unrelated remote writes запрещены.
 
@@ -44,11 +44,11 @@ Runtime outputs остаются ignored/local.
   `tool-ar_distributekeyframestolayer`,
   `tool-ar_distributekeyframestoworkarea`.
 - [x] Serially accept `tool-ar_distributekeyframesbystep`.
+- [x] Serially accept `tool-ar_distributekeyframesevenly`.
 - [ ] Serially accept remaining AR keyframe candidates:
-  `tool-ar_distributekeyframesevenly`,
+  `tool-ar_distributekeyframestoworkarea`,
   `tool-ar_distributekeyframestocomp`,
-  `tool-ar_distributekeyframestolayer`,
-  `tool-ar_distributekeyframestoworkarea`.
+  `tool-ar_distributekeyframestolayer`.
 - [ ] Create next feasible lane families for remaining visual/effect,
   file/SRT/render/project cleanup, shape/mask, and tracked-light blockers.
 
@@ -95,6 +95,10 @@ Runtime outputs остаются ignored/local.
   `mcp-server/solution-library.js` support diff was accepted separately to
   preserve `distributionAnchorTime` and `distributionStep` in prompt hints; it
   does not add execution capability or raw JSX behavior.
+- 2026-07-08: Parent accepted `tool-ar_distributekeyframesevenly`
+  after restoring the AE Agent CEP panel on CDP port 8870 and adding a small
+  runner recovery fix so failed live reruns can continue when unrelated
+  untracked local files are present.
 - The first scoped requeue attempt failed after main AR plans validated and ran:
   cleanup M100 proposal rejected `AE_AGENT_QA_*` as an unreviewed generated
   prefix. The fix adds that existing live-harness namespace to the cleanup
@@ -131,11 +135,9 @@ Runtime outputs остаются ignored/local.
   intake, completed with live lane `ready` and generated-only live rerun
   `passed`, committed as `1dfa4e45a5551a765b3472e5ef3963f8da41ed72`, and
   post-validated with the small prompt-hint support diff in this cycle.
-- Detached child-run proposal for `tool-ar_distributekeyframesevenly` drafted
-  recipe, registry, intake note, and append-only solution-library smoke metadata
-  only. No validation, live run, source merge, commit, push, PR, dependency
-  change, Local/Ollama, fallback provider, or web search was performed in the
-  child-run.
+- `tool-ar_distributekeyframesevenly` was accepted by parent-owned serial
+  intake, completed with live lane `ready`, generated-only live rerun `passed`,
+  and commit `ddda0203d04d1f9963498cbac56e4cf9b91a18c5`.
 
 ## Validation Notes
 
@@ -144,34 +146,12 @@ Default guard remains `npm.cmd run check:rules`. Source edits require
 changes require `smoke:solutions`, `smoke:planning`, and `smoke:full-intake`;
 bridge/tooling changes require provider/bridge smoke coverage.
 
-Latest AR keyframe lane infrastructure validation passed:
-`node --check` for touched JS, JSON parse for the live-lane registry,
-`node scripts/agent-scenario-report-smoke.js`,
-`node scripts/solution-library-validation-smoke.js`,
-`node scripts/semantic-verification-smoke.js`, `npm.cmd run check:rules`,
-`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
-`npm.cmd run smoke:full-intake`, `git diff --check`, and read-only CEP
-`inspect`/`connector-status-smoke`.
-
-Current cleanup safety fix validation passed:
-`node --check mcp-server/generated-safety-contracts.js`,
-`node --check scripts/generated-safety-contracts-smoke.js`,
-`node scripts/generated-safety-contracts-smoke.js`,
-direct cleanup `/agents/plan/propose` validation for `AE_AGENT_QA_*`,
-`npm.cmd run smoke:provider-contract`,
-`npm.cmd run smoke:provider-api`,
-`full-ui-agent-ar-keyframe-timing-openai-cli-smoke`,
-`full-ui-agent-ar-keyframe-boundary-timing-openai-cli-smoke`,
-`npm.cmd run check:rules`, `npm.cmd run smoke:bridge`,
-`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
-`npm.cmd run smoke:full-intake`, and `git diff --check`.
-
-Current `tool-ar_distributekeyframesbystep` parent validation passed:
-`node --check mcp-server/solution-library.js`,
-`node --check scripts/solution-library-validation-smoke.js`,
-`git diff --check HEAD~1 HEAD`, `git diff --check`,
-`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
-`npm.cmd run smoke:full-intake`, and `npm.cmd run check:rules`.
+Latest AR keyframe and runner validation passed before this update:
+`node --check` for touched JS, `npm.cmd run smoke:planning`,
+`npm.cmd run smoke:full-intake`, live CEP `inspect` and
+`connector-status-smoke`, and compact proof for
+`tool-ar_distributekeyframesevenly` with `contractComplete=true` and
+`unplannedPathCount=0`.
 
 ## Validation
 

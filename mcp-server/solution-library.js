@@ -78,6 +78,8 @@ const PROMPT_KEY_TERMS = Object.freeze([
   "clearExisting:true",
   "distributionAnchorTime",
   "distributionStep",
+  "distributionStartTime",
+  "distributionEndTime",
   "redundancyRule",
   "redundantKeyframes",
   "removedRedundantKeyframes",
