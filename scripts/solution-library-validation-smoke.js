@@ -7238,3 +7238,70 @@ function assertArAlignKeyframesAppendOnlySmoke() {
 }
 
 assertArAlignKeyframesAppendOnlySmoke();
+
+function assertArDistributeKeyframesByStepAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframesbystep-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe step distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes by step workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("step"), `${id}: step tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesByStep/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesByStepSpec"), `${id}: recipe should require a reviewed distributeKeyframesByStepSpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("distributedKeyframes"), `${id}: recipe should require computed distributedKeyframes.`);
+  assert(text.includes("distributionStep"), `${id}: recipe should require a reviewed distribution step.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe step distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe step distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /distributedKeyframes/.test(item)), `${id}: evidence must require distributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesByStep by spacing reviewed selectedKeyframesToDistribute from distributionAnchorTime by distributionStep using distributeKeyframesByStepSpec, preservedUnselectedKeyframes, distributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes by step advisory recipe should surface for selected keyframe step distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes By Step Typed Plan"), "prompt section should include AR distribute keyframes by step advisory title.");
+  assert(promptSection.includes("distributeKeyframesByStepSpec"), "prompt section should preserve distribute keyframes by step spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("distributionStep"), "prompt section should preserve distribution step guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes by step guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesByStepAppendOnlySmoke();

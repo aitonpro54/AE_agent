@@ -12,6 +12,8 @@ Runtime outputs остаются ignored/local.
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
 - Последний completed candidate: `tool-ar_alignkeyframes`.
+- Последний detached child-run draft: `tool-ar_distributekeyframesbystep`,
+  ожидает parent review/validation.
 - Compact counts: `entries=46`, `completed=22`, `queued=5`,
   `blocked_live_lane_required=18`, `blocked_policy=1`, `failed=0`.
 - Next: serial parent acceptance with `--max-items 1` for remaining AR
@@ -54,6 +56,8 @@ Runtime outputs остаются ignored/local.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesByStep.jsx` as `tool-ar_distributekeyframesbystep`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesbystep).
+
 - 2026-05-27: Generic full-intake orchestrator processed `AR_AlignKeyframes.jsx` as `tool-ar_alignkeyframes`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_alignkeyframes).
 
 - Source license for aturtur is ignored only as a local personal-use blocker.
@@ -76,6 +80,11 @@ Runtime outputs остаются ignored/local.
 - Detached generic-importer child-runs remain proposal-only for queued
   candidates; they may draft recipe/registry/smoke metadata but must not claim
   parent acceptance, source merge, live proof, validation, or commit.
+- 2026-07-08: Detached child-run drafted
+  `ar-distributekeyframesbystep-typed-plan` as a typed-only selected-keyframe
+  fixed-step distribution advisory recipe. The source JSX was not present in
+  the detached worktree, no source JSX was copied, and parent importer still
+  owns review, validation, acceptance, and any source merge.
 - The first scoped requeue attempt failed after main AR plans validated and ran:
   cleanup M100 proposal rejected `AE_AGENT_QA_*` as an unreviewed generated
   prefix. The fix adds that existing live-harness namespace to the cleanup
@@ -85,6 +94,8 @@ Runtime outputs остаются ignored/local.
   checkpoints under `backups/`, semantic verification, and cleanup.
 
 ## Progress
+
+- [x] Full intake tool-ar_distributekeyframesbystep: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesbystep); live gate ready, importer batch full-intake-aturtur-after-effects-sc-d79cb843f7-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-ar_alignkeyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_alignkeyframes); live gate ready, importer batch full-intake-aturtur-after-effects-sc-9e44f0d147-import, commit recorded after candidate commit.
 
@@ -109,6 +120,12 @@ Runtime outputs остаются ignored/local.
 - `tool-ar_alignkeyframes` was accepted by parent-owned serial intake, validated,
   committed as `af1d839503814595332536825e0b66095703a51a`, and pushed to
   `origin/codex/pro-review-longrun`.
+- Detached child-run drafted
+  `tool-ar_distributekeyframesbystep` recipe/registry/smoke metadata only:
+  `recipes/ar-distributekeyframesbystep-typed-plan.md`,
+  `recipes/generic-repo-intake/tool-ar_distributekeyframesbystep.md`,
+  `registry/solutions.json`, and
+  `scripts/solution-library-validation-smoke.js`.
 
 ## Validation Notes
 
@@ -144,6 +161,11 @@ forbids validation runs, live AE/CEP/CDP, OpenAI CLI planner runs,
 dependency/package changes, commits, pushes, PRs, and source merge application.
 Parent importer owns review and validation before acceptance.
 
+Current detached child-run also did not run validation by design under the same
+boundary; parent importer owns all validation before acceptance.
+
 ## Validation
+
+| Full intake tool-ar_distributekeyframesbystep | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-d79cb843f7-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_alignkeyframes | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, live rerun `passed`, commit `af1d839503814595332536825e0b66095703a51a`, and push to `origin/codex/pro-review-longrun`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, PR, or GitHub issue/PR mutation was performed. |

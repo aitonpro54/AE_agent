@@ -20219,6 +20219,127 @@
         "Require a separate typed-tool contract for source-exact selected-key discovery, hidden UI ordering, native side effects, interpolation/ease or spatial tangent preservation without explicit payloads, same-time collision resolution beyond an explicit reviewed policy, selection mutation, native undo behavior, or exact source JSX semantics.",
         "Do not use this recipe for layer timing edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, comp work area changes, render queue work, project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "ar-distributekeyframesbystep-typed-plan",
+      "title": "AR Distribute Keyframes By Step Typed Plan",
+      "status": "recipe",
+      "tags": [
+        "keyframes",
+        "selected-keyframes",
+        "selected-properties",
+        "distribute",
+        "timing",
+        "step",
+        "generic-importer",
+        "external-script-advisory",
+        "typed-tool",
+        "full-intake"
+      ],
+      "intent": {
+        "summary": "Distribute explicit reviewed selected keyframes by a reviewed fixed time step with set_property_keyframes clearExisting:true and read-back.",
+        "appliesWhen": [
+          "The user asks to run AR_DistributeKeyframesByStep.jsx, distribute selected keyframes by step, or space selected keyframes at a fixed timeline interval.",
+          "Current typed active-comp, selected-property, complete keyframe, and layer-detail evidence identifies property targets, selectedKeyframesToDistribute, preservedUnselectedKeyframes, frame rate, distributionAnchorTime, and distributionStep.",
+          "Source-exact native selected-key discovery, hidden UI ordering, native dialog/default step behavior, selection side effects, interpolation or tangent transfer beyond explicit reviewed payloads, and raw JSX behavior are not required."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "distributeKeyframesByStepSpec",
+          "type": "object",
+          "required": true,
+          "description": "Reviewed distribution spec with target comp identity, frame rate, distribution mode, distributionAnchorTime, distributionStep, accepted property targets, complete keyframe sequences, selectedKeyframesToDistribute, preservedUnselectedKeyframes, distributedKeyframes, skipped targets, and skipped-target reasons."
+        },
+        {
+          "name": "selectedKeyframesToDistribute",
+          "type": "array",
+          "required": true,
+          "description": "Explicit reviewed selected keyframe evidence for each accepted property target, including keyframe indices when available, ordered selection/timing evidence, times, values, value shape, and property path."
+        },
+        {
+          "name": "distributedKeyframes",
+          "type": "array",
+          "required": true,
+          "description": "Computed complete replacement keyframe sequence for each accepted property target, preserving unselected keyframes and moving reviewed selected keyframes to times spaced from distributionAnchorTime by distributionStep."
+        }
+      ],
+      "targetAssumptions": [
+        "The workflow targets one active composition and changes only reviewed selected keyframe timing on explicit property paths.",
+        "Every mutated property is generated or explicitly approved for keyframe timing mutation from current typed evidence.",
+        "Complete pre-run keyframe sequences, selectedKeyframesToDistribute, distributionAnchorTime, distributionStep, preservedUnselectedKeyframes, distributedKeyframes, selected-key order, and same-time collision policy are reviewed before mutation.",
+        "The safe adaptation does not change layer timing, source timing, keyframe values unless explicitly reviewed, expressions, effects, markers, labels, names, parenting, track mattes, layer order, selection state, comp duration/work area, project items, files, render queue items, or non-target properties.",
+        "Source-exact selected-key discovery, hidden UI ordering, native dialog/default step behavior, native side effects, native undo behavior, raw ExtendScript, and exact source JSX remain fail-closed."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/ar-distributekeyframesbystep-typed-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_active_comp",
+          "get_selected_properties",
+          "get_layer_details",
+          "set_property_keyframes"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Bind active comp, selected-property keyframes, complete property keyframe sequences, distribution anchor, and step; build reviewed distributeKeyframesByStepSpec; rewrite only full accepted property keyframe sequences; then read the same layer/property paths back.",
+        "steps": [
+          "Run get_active_comp to bind active comp identity, frame rate, frame duration, current time, selected-property context, and comp timing boundaries.",
+          "Run get_selected_properties with keyframe/value detail to bind concrete layer indices, property paths, value shapes, expression state, selected keyframe identities when available, and current keyframe evidence.",
+          "Run get_layer_details for every affected layer to capture complete property keyframe read-back for the accepted property paths.",
+          "Build and show distributeKeyframesByStepSpec with target comp identity, frame rate, distribution mode, distributionAnchorTime, distributionStep, accepted property targets, complete keyframe sequences, selectedKeyframesToDistribute, preservedUnselectedKeyframes, distributedKeyframes, skipped targets, and skipped-target reasons.",
+          "Reject missing active comp, missing or non-finite frame rate, empty selected-property evidence, enabled expressions, unsupported value shapes, incomplete keyframe read-back, ambiguous selected keyframes, ambiguous selected-key order, missing or out-of-bounds distributionAnchorTime, missing or non-positive distributionStep, unresolved same-property time collisions, broad comp traversal, and raw JSX behavior.",
+          "Run set_property_keyframes once per accepted property target with clearExisting:true only after the full replacement sequence is reviewed.",
+          "Run get_layer_details after mutation and compare the affected property keyframes with distributedKeyframes and preservedUnselectedKeyframes."
+        ],
+        "expectedEvidence": [
+          "Pre-run evidence identifies the target comp, frame rate, selected property targets, complete property keyframes, reviewed selectedKeyframesToDistribute, reviewed distributeKeyframesByStepSpec, and every accepted target layer/property path.",
+          "Dry-run evidence shows distribution mode, distributionAnchorTime, distributionStep, rounded distributedKeyframes, preservedUnselectedKeyframes, accepted and skipped targets, skipped-target reasons, and the exact keyframe sequence that will be written for each accepted property.",
+          "Each set_property_keyframes result reports the expected property path, clearExisting:true, and expected full replacement keyframe count.",
+          "Post-run get_layer_details shows the accepted selected keyframes spaced by the reviewed step from the reviewed anchor and all preserved unselected keyframes still present on the same property paths.",
+          "Post-run evidence shows unchanged keyframe values unless explicitly reviewed, layer timing, source timing, expressions, effects, names, labels, parenting, layer order, selection state, comp duration/work area, project items, files, render queue items, and non-target properties."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": "AE Agent 2.0.0",
+        "bridgeVersion": "2.0.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Seeded by the generic repository importer child-run for tool-ar_distributekeyframesbystep as advisory selected-keyframe fixed-step distribution typed-plan coverage without live validation in the child-run.",
+          "The source JSX was not present in this detached child-run worktree, so scope came from the child-run wrapper, candidate name, existing selected-property evidence, set_property_keyframes coverage, and fail-closed source-exact semantics."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-07-08",
+          "from": "generic-repo-importer-tool-ar-distributekeyframesbystep",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Adapted only the high-level selected-keyframe fixed-step distribution intent associated with AR_DistributeKeyframesByStep.jsx into existing typed tools: get_active_comp, get_selected_properties, get_layer_details, and set_property_keyframes. The detached child worktree did not contain the source JSX, so no source JSX was copied. Current accepted behavior requires current selected-property evidence, complete property keyframe read-back, explicit reviewed selectedKeyframesToDistribute, distributeKeyframesByStepSpec, distributionAnchorTime, distributionStep, preservedUnselectedKeyframes, distributedKeyframes, set_property_keyframes clearExisting:true only after full replacement evidence, checkpoint/edit-session protection, idempotency, and get_layer_details read-back. Source-exact native selected-key discovery, hidden UI ordering, native dialog/default step behavior, interpolation/ease or spatial tangent preservation without explicit payloads, unresolved time collisions, selection mutation, raw ExtendScript, and exact source JSX behavior require separate typed-tool contracts or remain fail-closed; parent importer owns validation and live acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe only; execution still uses normal Agent plan validation, dry-run/run gates, checkpoint/edit-session protection, idempotency, and read-back verification.",
+        "Require current active-comp, selected-property, complete keyframe, and layer-detail evidence before computing distributeKeyframesByStepSpec; do not infer selected keys, selected-key order, anchor time, step value, frame rate, value shape, collision policy, or property targets from prior chat context, screenshots, layer names, property names alone, or source-script assumptions.",
+        "Use set_property_keyframes with clearExisting:true only after the full replacement sequence for each exact property path is reviewed and preserves unselected keyframes.",
+        "Require get_layer_details read-back after keyframe timing mutation.",
+        "Require a separate typed-tool contract for source-exact selected-key discovery, hidden UI ordering, native dialog/default step behavior, native side effects, interpolation/ease or spatial tangent preservation without explicit payloads, same-time collision resolution beyond an explicit reviewed policy, selection mutation, native undo behavior, or exact source JSX semantics.",
+        "Do not use this recipe for layer timing edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, comp work area changes, render queue work, project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
+      ]
     }
   ]
 }
