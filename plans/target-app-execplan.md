@@ -116,12 +116,9 @@ Runtime outputs остаются ignored/local.
 
 ## Progress
 
-- [x] Full intake tool-ar_distributekeyframestoworkarea: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestoworkarea); live gate ready, importer batch full-intake-aturtur-after-effects-sc-59833c8d3b-import, commit recorded after candidate commit.
-
+- [x] Full intake tool-ar_distributekeyframestoworkarea: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestoworkarea); live gate ready, generated-only live rerun passed, commit recorded after candidate commit.
 - [x] Full intake tool-ar_distributekeyframesevenly: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesevenly); live gate ready, importer batch full-intake-aturtur-after-effects-sc-9b827826e5-import, commit recorded after candidate commit.
-
 - [x] Full intake tool-ar_distributekeyframesbystep: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesbystep); live gate ready, importer batch full-intake-aturtur-after-effects-sc-d79cb843f7-import, commit recorded after candidate commit.
-
 - [x] Full intake tool-ar_alignkeyframes: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_alignkeyframes); live gate ready, importer batch full-intake-aturtur-after-effects-sc-9e44f0d147-import, commit recorded after candidate commit.
 
 - Full Intake completed through `tool-ar_workareatoselectedlayer`; live lanes
@@ -147,12 +144,10 @@ Runtime outputs остаются ignored/local.
 - `tool-ar_distributekeyframesevenly` was accepted by parent-owned serial
   intake, completed with live lane `ready`, generated-only live rerun `passed`,
   and commit `ddda0203d04d1f9963498cbac56e4cf9b91a18c5`.
-- Detached importer child-run
-  `queue-full-intake-aturtur-after-effects-sc-59833c8d3b-import /
-  queue-batch-1-588d3fcfd2` drafted proposal metadata for
-  `tool-ar_distributekeyframestoworkarea` only; it did not run validation, live
-  AE/CEP/CDP, source merge, commit, push, PR, dependency change, or parent
-  acceptance.
+- Detached importer child-run drafted proposal metadata for
+  `tool-ar_distributekeyframestoworkarea` only; validation, live AE/CEP/CDP,
+  source merge, commit, push, PR, dependency change, and parent acceptance
+  remained parent-owned.
 
 ## Validation Notes
 
@@ -170,7 +165,7 @@ Latest AR keyframe and runner validation passed before this update:
 
 ## Validation
 
-| Full intake tool-ar_distributekeyframestoworkarea | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-59833c8d3b-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+| Full intake tool-ar_distributekeyframestoworkarea | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_distributekeyframesevenly | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-9b827826e5-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
