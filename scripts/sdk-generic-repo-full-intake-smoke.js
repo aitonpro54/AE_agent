@@ -1870,13 +1870,24 @@ function assertFailedLiveRerunCanRecoverPlannedDirtyTransaction() {
     assert.strictEqual(failedOutput.lastItem.status, "failed_live_rerun");
     assert.notStrictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
 
-    const recovered = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, 1, env);
+    fs.writeFileSync(path.join(fixture.target, "unrelated-local-note.md"), "local note\n", "utf8");
+    const recovered = runFullIntakeFixtureCompactPhase(
+      fixture,
+      ledgerPath,
+      registryPath,
+      runId,
+      1,
+      env,
+      ["--allow-unrelated-untracked-central-tree"]
+    );
     assert.strictEqual(recovered.status, 0, recovered.stderr || recovered.stdout);
     const recoveredOutput = JSON.parse(recovered.stdout);
     assert.strictEqual(recoveredOutput.status, "phase_boundary", recovered.stdout);
     assert.strictEqual(recoveredOutput.strictOnePhase.completedPhase, "generated_only_live_rerun");
     assert.strictEqual(recoveredOutput.strictOnePhase.nextPhase, "ledger_docs_handoff_commit_finalization");
     assert.strictEqual(recoveredOutput.lastItem.status, "generated_only_live_rerun_complete");
+    assert.match(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), /unrelated-local-note\.md/);
+    fs.rmSync(path.join(fixture.target, "unrelated-local-note.md"), { force: true });
 
     const final = runFullIntakeFixtureCompactPhase(fixture, ledgerPath, registryPath, runId, 1, env);
     assert.strictEqual(final.status, 0, final.stderr || final.stdout);

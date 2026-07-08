@@ -5934,7 +5934,7 @@ function loadBatchFromItem({ item, targetRepo }) {
   };
 }
 
-function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, runId, state, targetRepo }) {
+function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, options = {}, runId, state, targetRepo }) {
   if (!dirtyPaths.length || state.activeTransaction) return null;
   const failedItem = (state.items || [])
     .slice()
@@ -5942,7 +5942,18 @@ function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, runId, 
     .find((entry) => entry?.status === "failed_live_rerun" && Array.isArray(entry.plannedPaths) && entry.plannedPaths.length > 0);
   if (!failedItem) return null;
   const plannedSet = new Set(failedItem.plannedPaths.map(normalizeRepoPath));
-  const dirtyIsPlanned = dirtyPaths.every((repoPath) => plannedSet.has(normalizeRepoPath(repoPath)) || SHARED_OWNER_PATHS.includes(normalizeRepoPath(repoPath)));
+  const dirtyPathsForRecovery = options.allowUnrelatedUntrackedCentralTree === true
+    ? gitChangedEntries(targetRepo)
+      .filter((entry) => !gitPathIsIgnored(targetRepo, entry.path))
+      .filter((entry) => {
+        if (entry.status !== "??") return true;
+        const normalized = normalizeRepoPath(entry.path);
+        return plannedSet.has(normalized) || SHARED_OWNER_PATHS.includes(normalized);
+      })
+      .map((entry) => entry.path)
+    : dirtyPaths;
+  if (!dirtyPathsForRecovery.length) return null;
+  const dirtyIsPlanned = dirtyPathsForRecovery.every((repoPath) => plannedSet.has(normalizeRepoPath(repoPath)) || SHARED_OWNER_PATHS.includes(normalizeRepoPath(repoPath)));
   if (!dirtyIsPlanned) return null;
   const candidate = (ledger.entries || []).find((entry) => entry.id === failedItem.candidateId);
   if (!candidate || candidate.status !== "failed_live_rerun") return null;
@@ -6341,6 +6352,7 @@ function runStrictOnePhase({
     const recovery = findRecoverableFailedLiveRerunTransaction({
       dirtyPaths: dirtyBefore,
       ledger: initialLedger,
+      options,
       runId,
       state,
       targetRepo,
