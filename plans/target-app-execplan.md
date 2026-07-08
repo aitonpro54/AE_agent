@@ -54,6 +54,8 @@ Runtime outputs остаются ignored/local.
 
 ## Decision Log
 
+- 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesToComp.jsx` as `tool-ar_distributekeyframestocomp`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestocomp).
+
 - 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesToWorkArea.jsx` as `tool-ar_distributekeyframestoworkarea`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestoworkarea).
 
 - 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesEvenly.jsx` as `tool-ar_distributekeyframesevenly`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesevenly).
@@ -97,6 +99,11 @@ Runtime outputs остаются ignored/local.
   selected-keyframe work-area distribution advisory recipe. The source JSX was
   not present in the detached worktree, no source JSX was copied, and parent
   importer still owns review, validation, acceptance, and any source merge.
+- 2026-07-08: Detached child-run drafted
+  `ar-distributekeyframestocomp-typed-plan` as a typed-only selected-keyframe
+  comp-bound distribution advisory recipe. The source JSX was not present in
+  the detached worktree, no source JSX was copied, and parent importer still
+  owns review, validation, acceptance, and any source merge.
 - 2026-07-08: Parent accepted `tool-ar_distributekeyframesbystep`
   serially with the existing AR keyframe timing live lane. A small
   `mcp-server/solution-library.js` support diff was accepted separately to
@@ -115,6 +122,8 @@ Runtime outputs остаются ignored/local.
   checkpoints under `backups/`, semantic verification, and cleanup.
 
 ## Progress
+
+- [x] Full intake tool-ar_distributekeyframestocomp: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestocomp); live gate ready, importer batch full-intake-aturtur-after-effects-sc-13ce256e50-import, commit recorded after candidate commit.
 
 - [x] Full intake tool-ar_distributekeyframestoworkarea: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestoworkarea); live gate ready, generated-only live rerun passed, commit recorded after candidate commit.
 - [x] Full intake tool-ar_distributekeyframesevenly: completed by reusable generic full-intake orchestrator (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframesevenly); live gate ready, importer batch full-intake-aturtur-after-effects-sc-9b827826e5-import, commit recorded after candidate commit.
@@ -148,6 +157,10 @@ Runtime outputs остаются ignored/local.
   `tool-ar_distributekeyframestoworkarea` only; validation, live AE/CEP/CDP,
   source merge, commit, push, PR, dependency change, and parent acceptance
   remained parent-owned.
+- Detached importer child-run drafted proposal metadata for
+  `tool-ar_distributekeyframestocomp` only; validation, live AE/CEP/CDP,
+  source merge, commit, push, PR, dependency change, and parent acceptance
+  remained parent-owned.
 
 ## Validation Notes
 
@@ -165,6 +178,8 @@ Latest AR keyframe and runner validation passed before this update:
 
 ## Validation
 
+| Full intake tool-ar_distributekeyframestocomp | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-13ce256e50-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
+
 | Full intake tool-ar_distributekeyframestoworkarea | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
 
 | Full intake tool-ar_distributekeyframesevenly | Required to let one top-level generic repo intake run handle lane proof, recipe import, non-live validation, generated-only live rerun, ledger update, docs/handoff, and commit for this queued candidate. | Passed in run `full-intake-aturtur-after-effects-scripts`: live lane `ready`, batch `full-intake-aturtur-after-effects-sc-9b827826e5-import`, live rerun `passed`, commit `recorded after candidate commit`. No Local/Ollama, fallback provider, dependency/package change, raw JSX copy, source checkout write, broad CEP smoke, push, PR, or GitHub automation was performed. |
@@ -176,3 +191,5 @@ Latest AR keyframe and runner validation passed before this update:
 | Child-run proposal tool-ar_distributekeyframesevenly | Required to draft importer-owned advisory metadata in a detached proposal batch without parent acceptance or live/source merge actions. | Drafted only planned paths for `ar-distributekeyframesevenly-typed-plan`; validation intentionally not run by child-run boundary. Parent importer owns review, validation, live acceptance, ledger updates, source merge, and commit. |
 
 | Child-run proposal tool-ar_distributekeyframestoworkarea | Required to draft importer-owned advisory metadata in a detached proposal batch without parent acceptance or live/source merge actions. | Drafted only planned paths for `ar-distributekeyframestoworkarea-typed-plan`; validation intentionally not run by child-run boundary. Parent importer owns review, validation, live acceptance, ledger updates, source merge, and commit. |
+
+| Child-run proposal tool-ar_distributekeyframestocomp | Required to draft importer-owned advisory metadata in a detached proposal batch without parent acceptance or live/source merge actions. | Drafted only planned paths for `ar-distributekeyframestocomp-typed-plan`; validation intentionally not run by child-run boundary. Parent importer owns review, validation, live acceptance, ledger updates, source merge, and commit. |
