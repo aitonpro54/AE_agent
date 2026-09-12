@@ -33,6 +33,16 @@ Maintain AE Agent 2.0.0 in this clean repository. The product target is
 
 ## Engineering rules
 
+- В AE-задачах сначала ищи готовое решение через `search_solutions`, затем
+  читай нужные страницы `get_solution`; не загружай весь registry в контекст.
+- Используй свежие результаты инспекции в пределах операции; запрашивай только
+  недостающие поля. После мутаций проверяй изменённые цели заново.
+- Для поддерживаемых операций предпочитай `build_solution_plan`, затем
+  `propose_ai_agent_plan` и обычные dry-run/confirmation/read-back gates.
+  Raw JSX допустим только при конкретном пробеле typed tools.
+- Расход и ограничения измерений описаны в `docs/solution-reuse.md`;
+  `npm.cmd run report:reuse` показывает наблюдаемые события, не процент экономии.
+
 - Reuse existing components and design tokens.
 - Do not introduce a parallel design system.
 - Prefer small, typed modules over large monolithic files.

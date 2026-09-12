@@ -7,6 +7,9 @@ execution gates, checkpoints, logs, and verification.
 The product target is in `specs/target-app.md`. The active work plan is
 `plans/target-app-execplan.md`.
 
+Поиск готовых решений через MCP, локальные генераторы планов и измерение
+их использования описаны в [руководстве по повторному использованию](docs/solution-reuse.md).
+
 ## What Stays In This Repo
 
 - `cep-panel/`: the CEP UI.

@@ -9,6 +9,12 @@ Runtime outputs остаются ignored/local.
 
 ## Текущий фокус
 
+- 2026-09-12: по аудиту реализовано повторное использование решений: полный
+  ограниченный planner prompt, MCP discovery, RU/EN retrieval, локальные
+  генераторы планов и telemetry. Live mutation, providers и push в этот
+  цикл не входят; старый intake backlog сохраняется ниже.
+- Проверяемые этапы: prompt/transport → discovery/retrieval → builders/метрики.
+
 - Run id: `full-intake-aturtur-after-effects-scripts`.
 - Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
 - Последний completed candidate: `tool-ar_distributekeyframestolayer`.
@@ -21,6 +27,9 @@ Runtime outputs остаются ignored/local.
 
 ## Milestones
 
+- [x] Устранить silent truncation и сократить контекст планировщика.
+- [x] Подключить MCP discovery и проверить естественные RU/EN запросы.
+- [x] Добавить детерминированный plan builder и измерения reuse/usage.
 - [x] Clean baseline/docs guard, runtime ignore policy, and compact plan guard.
 - [x] Aturtur intake hardening: init, local-use license opt-in, risk scan,
   untracked guard, alias resolution, artifact guard.
@@ -54,6 +63,13 @@ Runtime outputs остаются ignored/local.
   file/SRT/render/project cleanup, shape/mask, and tracked-light blockers.
 
 ## Decision Log
+
+- 2026-09-12: discovery и builders работают локально; MCP runner разрешает
+  только dry-run, реальная mutation сохраняет CEP confirmation workflow.
+- 2026-09-12: первые 4 builders ограничены scalar linear ключами; обязательны
+  canonical paths, preflight и exact post-readback. Новых dependencies нет.
+- 2026-09-12: telemetry отделяет hints/declared IDs от исполнения; реальные
+  usage и A/B неизвестны до замеров. Runtime port исключает mock-серверы.
 
 - 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesToLayer.jsx` as `tool-ar_distributekeyframestolayer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestolayer).
 
@@ -109,6 +125,17 @@ Runtime outputs остаются ignored/local.
 
 ## Progress
 
+- 2026-09-12: MCP 115 → 119 tools; 12/12 RU и EN запросов находят ожидаемое
+  решение в top-3; все 181 точных названий находятся. Навык AE обновлён.
+- Рабочий daemon обновлён; поиск/get/builder проверены через Codex MCP,
+  CEP online. Старый adapter поддержан серверным preview-only маршрутом.
+- Planner сохраняет обязательный конец prompt; стрессовый пример — 13 397
+  символов при бюджете 24 000. Это не измерение биллинга Codex.
+- Добавлены report:reuse и offline report:reuse-ab; руководство
+  docs/solution-reuse.md фиксирует границы и 8 сценариев будущего A/B.
+- Следующий этап продуктовой оценки: реальные сопоставимые A/B trials после
+  отдельного согласования provider/live scope. Старый intake не запускался.
+
 - Full Intake completed all queued candidates through
   `tool-ar_distributekeyframestolayer`.
 - AR keyframe timing/boundary lane family accepted six candidates with
@@ -130,7 +157,13 @@ Default guard remains `npm.cmd run check:rules`. Source edits require
 changes require `smoke:solutions`, `smoke:planning`, and `smoke:full-intake`;
 bridge/tooling changes require provider/bridge smoke coverage.
 
-Latest validation in this cycle:
+Валидация улучшений reuse 2026-09-12: check:rules, syntax (21 JS),
+smoke:solutions, smoke:bridge, smoke:planning, smoke:provider-contract/API,
+smoke:full-intake — pass; discovery и runner проверены на mock panel.
+Навык: стандартный quick_validate недоступен без PyYAML; YAML frontmatter
+сохранён, инструкции и ссылки проверены вручную. Real AE mutation не было.
+
+Предыдущая валидация intake:
 `node --check mcp-server/solution-library.js`,
 `node --check scripts/solution-library-validation-smoke.js`,
 `npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,

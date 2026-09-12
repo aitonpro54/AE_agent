@@ -161,6 +161,12 @@ async function getTools() {
 
 async function callDaemonTool(name, args) {
   await ensureDaemonRunning();
+  // MCP previews plans; the existing CEP confirmation surface owns execution.
+  // Model-authored confirm:true is not independent user approval.
+  if (name === "run_ai_agent_plan") {
+    if (!args || args.dryRun !== true) return toolResult({ok: false, code: "mcp_plan_dry_run_only",
+      error: "MCP plan runs require dryRun:true. Confirm and execute mutations through the existing CEP plan workflow."}, true);
+  }
   const response = await daemonRequest("POST", "/tools/call", {
     name,
     arguments: args || {}
@@ -184,6 +190,7 @@ async function handleRpc(message) {
         capabilities: {
           tools: {}
         },
+        instructions: "For AE tasks, use search_solutions first to find reviewed reusable workflows, then get_solution for the actual recipe and required tool contracts. Reuse current typed inspection evidence. Prefer deterministic build_solution_plan where supported. Use propose_ai_agent_plan and run_ai_agent_plan with dryRun:true for previews; actual mutation requires the existing CEP confirmation workflow. Use raw ExtendScript only for an identified typed-tool gap. Discovery and plan builders are local and do not call another model.",
         serverInfo: {
           name: SERVER_NAME,
           version: SERVER_VERSION
