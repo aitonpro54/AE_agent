@@ -246,6 +246,67 @@ async function main() {
       assert(classification.riskSignals.some((line) => line.indexOf("mutating") >= 0));
     });
 
+    const generatedFileIo = await validatePlan("generated-file-io", {
+      summary: "Save a generated comp frame to a sandboxed PNG.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Save generated comp frame",
+          tool: "save_comp_frame_png",
+          args: {
+            compName: "Codex Classification Smoke",
+            expectedCompName: "Codex Classification Smoke",
+            outputFileName: "classification-smoke.png",
+            time: 0
+          }
+        }
+      ]
+    }, "risky", (classification) => {
+      assert.strictEqual(classification.validationSummary.generatedFileIoCount, 1);
+      assert(classification.riskSignals.some((line) => line.indexOf("generated-only file IO") >= 0));
+      assert(classification.safetySignals.some((line) => line.indexOf("Generated safety contracts active") >= 0));
+    });
+
+    const generatedRenderOutput = await validatePlan("generated-render-output", {
+      summary: "Queue a generated comp to a generated render output path without starting a render.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Add generated comp to render queue",
+          tool: "add_comp_to_render_queue",
+          args: {
+            compName: "Codex Classification Smoke",
+            outputPath: "logs/generated-renders/classification-smoke.mov"
+          }
+        }
+      ]
+    }, "risky", (classification) => {
+      assert.strictEqual(classification.validationSummary.generatedRenderOutputCount, 1);
+      assert(classification.riskSignals.some((line) => line.indexOf("render-output setup") >= 0));
+    });
+
+    const broadRenderOutput = await validatePlan("broad-render-output", {
+      summary: "Try to queue a generated comp to a broad logs output path.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        {
+          title: "Add generated comp to broad render path",
+          tool: "add_comp_to_render_queue",
+          args: {
+            compName: "Codex Classification Smoke",
+            outputPath: "logs/classification-smoke.mov"
+          }
+        }
+      ]
+    }, "needs clarification", (classification, validation) => {
+      assert.strictEqual(validation.ok, false);
+      assert.strictEqual(classification.blocksRun, true);
+      assert(validation.steps[0].warnings.some((line) => line.indexOf("Generated-only safety contract failed") >= 0));
+    });
+
     const unsupported = await validatePlan("unsupported", {
       summary: "Try a local operator tool inside an Agent plan.",
       risk: "low",
@@ -276,6 +337,9 @@ async function main() {
         safe: safe.category,
         ambiguous: needsClarification.category,
         risky: risky.category,
+        generatedFileIo: generatedFileIo.category,
+        generatedRenderOutput: generatedRenderOutput.category,
+        broadRenderOutput: broadRenderOutput.category,
         unsupported: unsupported.category
       }
     }, null, 2));

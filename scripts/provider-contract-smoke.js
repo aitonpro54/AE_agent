@@ -4,7 +4,7 @@ const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { checkAgentReadiness, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
+const { checkAgentReadiness, chatWithAgent, launchCodexLogin, listAgents } = require("../mcp-server/ai-agents");
 
 const EXPECTED_PROVIDER_AGENT_ORDER = [
   "openai-api",
@@ -92,6 +92,57 @@ async function withFakeNodeCodex(loginExitCode, loginText, callback) {
     return await callback();
   } finally {
     process.chdir(oldCwd);
+    setEnv("CODEX_CLI_PATH", oldCodexCliPath);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function withFakeCmdCodex(loginExitCode, loginText, callback) {
+  const oldCodexCliPath = Object.prototype.hasOwnProperty.call(process.env, "CODEX_CLI_PATH")
+    ? process.env.CODEX_CLI_PATH
+    : undefined;
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-fake-codex-cmd-"));
+  const shimScriptPath = path.join(tempDir, "codex-shim.js");
+  const shimCmdPath = path.join(tempDir, "codex.cmd");
+  const capturePath = path.join(tempDir, "exec-capture.json");
+  const shimScript = [
+    "const fs = require(\"fs\");",
+    "const args = process.argv.slice(2);",
+    "if (args[0] === \"--version\") {",
+    "  console.log(\"codex-cli fake-cmd\");",
+    "  process.exit(0);",
+    "}",
+    "if (args[0] === \"login\" && args[1] === \"status\") {",
+    `  console.log(${JSON.stringify(loginText)});`,
+    `  process.exit(${Number(loginExitCode) || 0});`,
+    "}",
+    "if (args[0] === \"exec\") {",
+    "  let stdin = \"\";",
+    "  process.stdin.setEncoding(\"utf8\");",
+    "  process.stdin.on(\"data\", (chunk) => { stdin += chunk; });",
+    "  process.stdin.on(\"end\", () => {",
+    `    fs.writeFileSync(${JSON.stringify(capturePath)}, JSON.stringify({ args, stdin }), \"utf8\");`,
+    "    console.log(JSON.stringify({ type: \"thread.started\", thread_id: \"fake-cmd-thread\" }));",
+    "    console.log(JSON.stringify({ type: \"turn.started\" }));",
+    "    console.log(JSON.stringify({ type: \"item.completed\", item: { type: \"agent_message\", text: \"FAKE CMD CHAT OK\" } }));",
+    "    console.log(JSON.stringify({ type: \"turn.completed\", usage: { input_tokens: stdin.length, output_tokens: 4 } }));",
+    "  });",
+    "  return;",
+    "}",
+    "console.error(\"Unsupported fake Codex command: \" + args.join(\" \"));",
+    "process.exit(2);"
+  ].join("\n");
+  const shimCmd = [
+    "@echo off",
+    `"${process.execPath}" "%~dp0codex-shim.js" %*`
+  ].join("\r\n");
+  fs.writeFileSync(shimScriptPath, shimScript, "utf8");
+  fs.writeFileSync(shimCmdPath, shimCmd, "utf8");
+
+  try {
+    setEnv("CODEX_CLI_PATH", shimCmdPath);
+    return await callback(shimCmdPath, capturePath);
+  } finally {
     setEnv("CODEX_CLI_PATH", oldCodexCliPath);
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -323,6 +374,47 @@ async function main() {
       fakeLoggedIn = fakeReadiness.agent.codexStatus;
     });
 
+    let fakeCmdLoggedIn = null;
+    if (process.platform === "win32") {
+      await withFakeCmdCodex(0, "Logged in from fake cmd Codex", async (shimCmdPath, capturePath) => {
+        const fakeListed = await listAgents({});
+        const fakeCli = findAgent(fakeListed.agents, "openai-cli");
+        const fakeReadiness = await checkAgentReadiness({
+          agentId: "openai-cli",
+          model: fakeCli.model
+        });
+        assert.strictEqual(fakeCli.codexStatus.command, shimCmdPath);
+        assert.strictEqual(fakeCli.codexStatus.versionCheck.invokedCommand, "cmd.exe");
+        assert.strictEqual(fakeCli.codexStatus.loginStatusCheck.invokedCommand, "cmd.exe");
+        assert.strictEqual(fakeReadiness.configured, true);
+        assert.strictEqual(fakeReadiness.canChat, true);
+        assert.strictEqual(fakeReadiness.status, "ready");
+        assert.match(fakeReadiness.agent.codexStatus.loginStatusCheck.output, /Logged in from fake cmd Codex/);
+        const longPrompt = `Return fake response for stdin path.\n${"x".repeat(12000)}`;
+        const chat = await chatWithAgent({
+          agentId: "openai-cli",
+          model: fakeCli.model,
+          prompt: longPrompt,
+          timeoutMs: 10000,
+          includeRawResponse: true
+        });
+        assert.strictEqual(chat.text, "FAKE CMD CHAT OK");
+        const captured = JSON.parse(fs.readFileSync(capturePath, "utf8"));
+        assert.strictEqual(captured.args[0], "exec");
+        assert.strictEqual(captured.args[captured.args.length - 1], "-");
+        assert(captured.args.includes("--json"), "Expected Codex CLI JSONL mode.");
+        assert(captured.args.includes("--sandbox"), "Expected Codex CLI sandbox flag.");
+        assert(!captured.args.includes(longPrompt), "OpenAI CLI prompt must not be passed as an argv value.");
+        assert(captured.stdin.includes(longPrompt), "OpenAI CLI prompt should be piped through stdin.");
+        assert(captured.stdin.length > 12000, "Expected long prompt to survive stdin piping.");
+        fakeCmdLoggedIn = {
+          ...fakeReadiness.agent.codexStatus,
+          stdinPromptLength: captured.stdin.length,
+          chatText: chat.text
+        };
+      });
+    }
+
     let unsupportedSetupError = null;
     try {
       launchCodexLogin({
@@ -353,7 +445,8 @@ async function main() {
           setupLaunchBlocked: missingCliSetupError.status.status,
           missingCliVersionCheck: openAiCli.codexStatus.versionCheck.status,
           fakeNotLoggedInLoginCheck: fakeNotLoggedIn.loginStatusCheck.status,
-          fakeLoggedInLoginCheck: fakeLoggedIn.loginStatusCheck.status
+          fakeLoggedInLoginCheck: fakeLoggedIn.loginStatusCheck.status,
+          fakeCmdLoggedInLoginCheck: fakeCmdLoggedIn ? fakeCmdLoggedIn.loginStatusCheck.status : "not_applicable"
         },
         geminiApi: {
           authMode: geminiApi.authMode,

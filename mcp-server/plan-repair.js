@@ -54,19 +54,67 @@ const TOOL_ALIASES = {
   setlayerselection: "set_layer_selection",
   selectlayers: "set_layer_selection",
   selectlayer: "set_layer_selection",
+  setlayerparent: "set_layer_parent",
+  parentlayer: "set_layer_parent",
+  parentlayers: "set_layer_parent",
   deletelayer: "delete_layer",
   removelayer: "delete_layer",
   setcompositionproperties: "set_comp_properties",
   setcompproperties: "set_comp_properties",
   setcompositionprops: "set_comp_properties",
+  refreshcomppanel: "refresh_comp_panel",
+  refreshcompositionpanel: "refresh_comp_panel",
+  forcecompositionpanelrefresh: "refresh_comp_panel",
+  forcecomppanelrefresh: "refresh_comp_panel",
   setlayermask: "set_layer_mask",
   updatelayermask: "set_layer_mask",
+  getpathgeometry: "get_path_geometry",
+  getlayerpathgeometry: "get_path_geometry",
+  setpathgeometry: "set_path_geometry",
+  setlayerpathgeometry: "set_path_geometry",
+  setshapepathgeometry: "set_path_geometry",
+  setmaskpathgeometry: "set_path_geometry",
+  exportpathpoints: "export_path_points",
+  exportpathpointstofile: "export_path_points",
+  exporttexttofile: "export_text_to_file",
+  exportselectedtext: "export_text_to_file",
+  exportselectedtexttofile: "export_text_to_file",
+  savecompframepng: "save_comp_frame_png",
+  savecompositionframepng: "save_comp_frame_png",
+  saveframetopng: "save_comp_frame_png",
+  saveframeaspng: "save_comp_frame_png",
+  setpuppetpintype: "set_puppet_pin_type",
+  togglepuppetpintype: "set_puppet_pin_type",
+  setfreepinpintype: "set_puppet_pin_type",
+  seteffectenabled: "set_effect_enabled",
+  toggleeffectenabled: "set_effect_enabled",
+  enableeffect: "set_effect_enabled",
+  disableeffect: "set_effect_enabled",
+  getlayeressentialproperties: "get_layer_essential_properties",
+  listlayeressentialproperties: "get_layer_essential_properties",
+  getessentialproperties: "get_layer_essential_properties",
+  listessentialproperties: "get_layer_essential_properties",
+  getessentialgraphicscontrollers: "get_essential_graphics_controllers",
+  listessentialgraphicscontrollers: "get_essential_graphics_controllers",
+  getmotiongraphicstemplatecontrollers: "get_essential_graphics_controllers",
+  listmotiongraphicstemplatecontrollers: "get_essential_graphics_controllers",
+  addpropertytoessentialgraphics: "add_property_to_essential_graphics",
+  addtoessentialgraphics: "add_property_to_essential_graphics",
+  addtomotiongraphicstemplate: "add_property_to_essential_graphics",
+  addpropertytomotiongraphicstemplate: "add_property_to_essential_graphics",
   fitlayer: "fit_layer_to_comp",
   fittocomp: "fit_layer_to_comp",
   fitlayertocomp: "fit_layer_to_comp",
   alignlayers: "align_layers_to_time",
   alignselectedlayers: "align_layers_to_time",
   alignlayerstotime: "align_layers_to_time",
+  setcurrenttime: "set_comp_current_time",
+  setcompcurrenttime: "set_comp_current_time",
+  setcompositioncurrenttime: "set_comp_current_time",
+  setplayhead: "set_comp_current_time",
+  setcti: "set_comp_current_time",
+  gotoframe: "set_comp_current_time",
+  jumptoframe: "set_comp_current_time",
   setworkarea: "set_comp_work_area",
   setcompworkarea: "set_comp_work_area",
   trimlayers: "set_layer_time_range",
@@ -95,6 +143,16 @@ const TOOL_ALIASES = {
   renameprojectitems: "rename_project_items",
   setlayermetadata: "set_layer_metadata",
   updatelayermetadata: "set_layer_metadata",
+  setlayerblendingmode: "set_layer_blending_mode",
+  setlayerblendmode: "set_layer_blending_mode",
+  setblendingmode: "set_layer_blending_mode",
+  setblendmode: "set_layer_blending_mode",
+  toggledifferenceblendmode: "set_layer_blending_mode",
+  toggledifferenceblendingmode: "set_layer_blending_mode",
+  setprojectitemmetadata: "set_project_item_metadata",
+  updateprojectitemmetadata: "set_project_item_metadata",
+  setprojectitemlabel: "set_project_item_metadata",
+  setprojectitemlabels: "set_project_item_metadata",
   setlayerproperty: "set_property_value",
   setproperty: "set_property_value",
   setpropertyvalue: "set_property_value",
@@ -123,6 +181,10 @@ const TOOL_ALIASES = {
   getrenderqueuestatus: "get_render_queue_status",
   settransform: "set_layer_transform",
   setlayertransform: "set_layer_transform",
+  createcompmarker: "add_comp_marker",
+  createcompositionmarker: "add_comp_marker",
+  addcompmarker: "add_comp_marker",
+  addcompositionmarker: "add_comp_marker",
   createmarker: "add_layer_marker",
   createlayermarker: "add_layer_marker",
   addmarker: "add_layer_marker",
@@ -233,7 +295,9 @@ const SAFE_COMP_PROPERTY_FIELDS = new Set([
   "duration",
   "frameRate",
   "bgColor",
-  "displayStartTime"
+  "displayStartTime",
+  "displayStartFrame",
+  "preserveNestedFrameRate"
 ]);
 
 const SET_LAYER_MASK_FORBIDDEN_TOKENS = new Set([
@@ -359,7 +423,15 @@ function propertyCandidates(field) {
     copysuffix: ["nameSuffix"],
     duplicatesuffix: ["nameSuffix"],
     namesuffix: ["nameSuffix"],
+    shapetype: ["shape"],
+    polystartype: ["starType"],
+    startype: ["starType"],
+    pointradius: ["outerRadius"],
+    outerradius: ["outerRadius"],
+    innerradius: ["innerRadius"],
     points: ["vertices"],
+    pointcount: ["points", "vertices"],
+    pointscount: ["points", "vertices"],
     maskpoints: ["vertices"],
     pathpoints: ["vertices"],
     maskvertices: ["vertices"],
@@ -387,7 +459,11 @@ function propertyCandidates(field) {
     bgcolor: ["bgColor"],
     displaystart: ["displayStartTime"],
     displaystarttime: ["displayStartTime"],
+    displaystartframe: ["displayStartFrame"],
+    startframe: ["displayStartFrame"],
     starttime: ["displayStartTime"],
+    preservenestedframerate: ["preserveNestedFrameRate"],
+    nestedframeratepreserve: ["preserveNestedFrameRate"],
     itemindexes: ["itemIndices", "itemIndex"],
     itemindices: ["itemIndices", "itemIndex"],
     projectitemindexes: ["itemIndices", "itemIndex"],
@@ -413,6 +489,10 @@ function propertyCandidates(field) {
     content: ["text"],
     contents: ["text"],
     textcontent: ["text"],
+    alignment: ["justification"],
+    textalignment: ["justification"],
+    paragraphalignment: ["justification"],
+    paragraphjustification: ["justification"],
     keys: ["keyframes"],
     keyframearray: ["keyframes"],
     keyframevalues: ["keyframes"],
@@ -789,7 +869,14 @@ function immediatePreviousTool(steps, stepIndex) {
   return stepToolName(steps[stepIndex - 1]);
 }
 
-function bindingForMissingField(field, steps, stepIndex) {
+function nearestPreviousToolIndex(steps, stepIndex, names) {
+  for (let index = stepIndex - 1; index >= 0; index -= 1) {
+    if (names.has(stepToolName(steps[index]))) return index;
+  }
+  return -1;
+}
+
+function bindingForMissingField(field, steps, stepIndex, currentToolName) {
   const immediate = immediatePreviousTool(steps, stepIndex);
   if (field === "compItemIndex" && hasPreviousTool(steps, stepIndex, COMP_RESULT_TOOLS)) {
     return "{{compItemIndex}}";
@@ -806,6 +893,10 @@ function bindingForMissingField(field, steps, stepIndex) {
     if (hasPreviousTool(steps, stepIndex, PROJECT_ITEM_RESULT_TOOLS)) return "{{itemIndices}}";
   }
   if (field === "itemIndices") {
+    if (currentToolName === "move_project_items_to_folder") {
+      const projectItemSearchIndex = nearestPreviousToolIndex(steps, stepIndex, new Set(["find_project_items", "list_project_folder_items"]));
+      if (projectItemSearchIndex >= 0) return `{{steps.${projectItemSearchIndex + 1}.result}}`;
+    }
     if (hasPreviousTool(steps, stepIndex, SELECTED_SOURCE_RESULT_TOOLS)) return "{{selectedPrecompItemIndices}}";
     if (hasPreviousTool(steps, stepIndex, PROJECT_ITEM_RESULT_TOOLS)) return "{{itemIndices}}";
   }
@@ -1075,7 +1166,7 @@ function repairMissingRequired(step, stepIndex, steps, tool, actions) {
   for (const field of requiredFields(tool)) {
     if (hasOwn(args, field) && !missingValue(args[field])) continue;
     if (hasOwn(bindings, field) && !missingValue(bindings[field])) continue;
-    const binding = bindingForMissingField(field, steps, stepIndex);
+    const binding = bindingForMissingField(field, steps, stepIndex, tool.name);
     if (!binding) continue;
     bindings[field] = binding;
     changed = true;

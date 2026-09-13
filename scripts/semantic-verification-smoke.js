@@ -8,19 +8,51 @@ const {
 } = require("../mcp-server/semantic-verification");
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
+  agentEffectEnabledScenarioPlans,
   agentDakkshinTypedToolsScenarioPlans,
+  agentLayerBlendingModeScenarioPlans,
+  agentLayerEnabledHardSoloScenarioPlans,
+  agentGridRigControlReplacementScenarioPlans,
   agentLayerMetadataScenarioPlans,
+  agentLayerParentBelowScenarioPlans,
+  agentLayerParentClosestScenarioPlans,
+  agentLayerNameResetScenarioPlans,
+  agentParentOpacityExpressionScenarioPlans,
   agentLayerSelectionScenarioPlans,
+  agentLayerTrackMatteScenarioPlans,
+  agentPreserveNestedFrameRateScenarioPlans,
+  agentProjectTimecodeStartFramesScenarioPlans,
+  agentProjectItemMetadataScenarioPlans,
   agentRemainingTailContractsScenarioPlans,
   agentScenarioPlans,
+  agentExportTextToFileScenarioPlans,
+  agentTextShapesScenarioPlans,
   agentTextToKeysScenarioPlans
 } = require("./agent-scenario-fixtures");
 
 const LOCAL_MUTATING_TOOLS = new Set([
+  "create_adjustment_layer",
   "delete_layer",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_layer_metadata",
-  "set_layer_mask"
+  "set_layer_blending_mode",
+  "set_layer_parent",
+  "set_layer_track_matte",
+  "set_project_item_metadata",
+  "set_project_frames_count_type",
+  "set_layer_mask",
+  "set_path_geometry",
+  "create_layer_connection_line",
+  "create_shapes_from_text",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
+  "set_puppet_pin_type",
+  "set_effect_enabled",
+  "add_property_to_essential_graphics",
+  "set_comp_current_time",
+  "add_comp_marker"
 ]);
 
 function clone(value) {
@@ -71,11 +103,14 @@ function layerInfo(name, overrides = {}) {
   const startTime = overrides.startTime === undefined ? 0 : overrides.startTime;
   const inPoint = overrides.inPoint === undefined ? startTime : overrides.inPoint;
   const outPoint = overrides.outPoint === undefined ? inPoint + 1 : overrides.outPoint;
-  return {
+  const result = {
     index: overrides.index || 1,
     id: overrides.id || null,
     name: name || "Layer",
     matchName: overrides.matchName || "ADBE AV Layer",
+    textLayer: overrides.textLayer === undefined ? Boolean(overrides.text || overrides.justification) : overrides.textLayer,
+    shapeLayer: overrides.shapeLayer === undefined ? overrides.matchName === "ADBE Vector Layer" : overrides.shapeLayer,
+    layerKind: overrides.layerKind || (overrides.text || overrides.justification ? "text" : (overrides.shapeLayer || overrides.matchName === "ADBE Vector Layer" ? "shape" : null)),
     startTime,
     inPoint,
     outPoint,
@@ -83,10 +118,23 @@ function layerInfo(name, overrides = {}) {
     comment: overrides.comment === undefined ? "" : overrides.comment,
     label: overrides.label === undefined ? 0 : overrides.label,
     locked: overrides.locked === undefined ? false : overrides.locked,
+    blendingModeName: overrides.blendingModeName || "normal",
+    hasTrackMatte: overrides.hasTrackMatte === undefined ? false : overrides.hasTrackMatte,
+    isTrackMatte: overrides.isTrackMatte === undefined ? false : overrides.isTrackMatte,
+    trackMatteTypeName: overrides.trackMatteTypeName || "none",
+    trackMatteLayer: overrides.trackMatteLayer === undefined ? null : overrides.trackMatteLayer,
+    nullLayer: overrides.nullLayer === undefined ? false : overrides.nullLayer,
+    adjustmentLayer: overrides.adjustmentLayer === undefined ? false : overrides.adjustmentLayer,
+    threeDLayer: overrides.threeDLayer === undefined ? false : overrides.threeDLayer,
+    parent: overrides.parent === undefined ? null : overrides.parent,
     transform: overrides.transform || null,
-    text: overrides.text ? { text: overrides.text, fontSize: overrides.fontSize || null } : null,
+    text: (overrides.text || overrides.justification) ? { text: overrides.text || "", fontSize: overrides.fontSize || null, justification: overrides.justification || null } : null,
     source: overrides.source || null
   };
+  if (overrides.shapeContents) {
+    result.shapeContents = overrides.shapeContents;
+  }
+  return result;
 }
 
 function reindexLayers(layers) {
@@ -125,7 +173,7 @@ function renameAfter(before, args) {
 function fakeMutationResult(step, state) {
   const args = step.args || {};
   const compName = args.compName || args.name || state.lastCompName || "Fixture Comp";
-  if (step.tool === "create_test_comp") {
+  if (step.tool === "create_test_comp" || step.tool === "create_comp") {
     state.lastCompName = args.name;
     state.projectItems.push({ itemIndex: state.nextItemIndex++, name: args.name, type: "comp" });
     return withVerification({
@@ -151,16 +199,75 @@ function fakeMutationResult(step, state) {
       solid: { color: args.color, width: args.width, height: args.height }
     }, compName, layer);
   }
+  if (step.tool === "create_null_layer") {
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
+      nullLayer: true,
+      startTime: args.startTime || 0,
+      inPoint: args.startTime || 0,
+      outPoint: (args.startTime || 0) + (args.duration || 1)
+    }));
+    return withVerification({
+      comp: { name: compName },
+      layer
+    }, compName, layer);
+  }
   if (step.tool === "create_text_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, {
       index: 1,
+      matchName: "ADBE Text Layer",
+      textLayer: true,
+      layerKind: "text",
       startTime: args.startTime || 0,
       inPoint: args.startTime || 0,
       outPoint: (args.startTime || 0) + (args.duration || 1),
       text: args.text,
-      fontSize: args.fontSize
+      fontSize: args.fontSize,
+      justification: args.justification
     }));
     return withVerification({ comp: { name: compName }, layer, text: args.text }, compName, layer);
+  }
+  if (step.tool === "create_shapes_from_text") {
+    const sourceLayer = state.layers.find((layer) => Number(layer.index) === Number(args.layerIndex || 1)) ||
+      layerInfo(args.expectedLayerName || "Text Source", {
+        index: args.layerIndex || 1,
+        matchName: "ADBE Text Layer",
+        textLayer: true,
+        layerKind: "text",
+        text: args.expectedSourceText || "AE"
+      });
+    const beforeCount = state.layers.length;
+    const shapeLayer = insertLayerAtTop(state, layerInfo(args.shapeLayerName || `${sourceLayer.name} Outlines`, {
+      index: 1,
+      matchName: "ADBE Vector Layer",
+      shapeLayer: true,
+      layerKind: "shape",
+      locked: args.lockCreatedShapeLayer === true
+    }));
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      menuCommand: { name: "Create Shapes from Text", id: 3781 },
+      sourceLayerBefore: {
+        index: args.layerIndex || sourceLayer.index,
+        id: sourceLayer.id || null,
+        name: args.expectedLayerName || sourceLayer.name,
+        text: args.expectedSourceText || sourceLayer.text && sourceLayer.text.text || ""
+      },
+      sourceLayerAfter: { ...sourceLayer, index: sourceLayer.index + 1 },
+      shapeLayer,
+      outline: { vectorGroupCount: 2 },
+      layerCountBefore: beforeCount,
+      layerCountAfter: state.layers.length,
+      createdLayerCount: 1,
+      postVerification: {
+        ok: true,
+        createdShapeLayer: true,
+        outlineGroupCount: 2,
+        layerCountDelta: 1,
+        sourceTextMatched: true,
+        sourceNameMatched: true
+      }
+    }, compName, shapeLayer);
   }
   if (step.tool === "create_camera_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, {
@@ -226,6 +333,22 @@ function fakeMutationResult(step, state) {
       effect: { name: args.effectName || "Onion Skin", matchName: "CC Wide Time" },
       properties: [{ name: "Blend", matchName: "CC Wide Time-0001", value: aePropertyPreview(50) }]
     }, compName, layer);
+  }
+  if (step.tool === "add_effect") {
+    const effect = {
+      propertyIndex: state.effects.length + 1,
+      name: args.name || args.effect || "Effect",
+      matchName: args.effect || "ADBE Effect",
+      enabled: true,
+      layerIndex: args.layerIndex || 1
+    };
+    state.effects.push(effect);
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex || 1}`, { index: args.layerIndex || 1 }),
+      effect,
+      properties: []
+    }, compName);
   }
   if (step.tool === "create_layer_mask") {
     const layer = layerInfo("Mask Fixture Solid", { index: args.layerIndex || 1 });
@@ -374,7 +497,7 @@ function fakeMutationResult(step, state) {
   if (step.tool === "set_comp_properties") {
     const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
     const updates = {};
-    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"]) {
+    for (const field of ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     state.compProperties = { ...state.compProperties, ...updates };
@@ -396,11 +519,59 @@ function fakeMutationResult(step, state) {
       }
     }, compName);
   }
+  if (step.tool === "set_project_frames_count_type") {
+    const framesCountType = args.framesCountType || "FC_START_0";
+    const framesCountStartFrame = framesCountType === "FC_START_1" || framesCountType === "startAtOne" ? 1 : 0;
+    const before = { ...state.projectInfo };
+    state.projectInfo = {
+      ...state.projectInfo,
+      framesCountType: framesCountStartFrame === 0 ? "FC_START_0" : "FC_START_1",
+      framesCountStartFrame
+    };
+    const after = { ...state.projectInfo };
+    return withVerification({
+      project: after,
+      before,
+      after,
+      updates: {
+        framesCountType: after.framesCountType,
+        framesCountStartFrame
+      },
+      updatedFields: ["framesCountType"],
+      postVerification: {
+        ok: true,
+        framesCountTypeMatches: true,
+        projectItemCountUnchanged: true,
+        activeItemUnchanged: true
+      }
+    }, compName);
+  }
+  if (step.tool === "refresh_comp_panel") {
+    const before = { ...state.compProperties, name: compName, itemIndex: 1, numLayers: state.layers.length };
+    const transient = { ...before, motionBlur: !before.motionBlur };
+    const after = { ...before };
+    state.compProperties = { ...after };
+    return withVerification({
+      comp: after,
+      before,
+      transient,
+      after,
+      refreshMethod: "comp.motionBlur-double-toggle",
+      postVerification: {
+        ok: true,
+        compIdentityMatches: true,
+        motionBlurRestored: true,
+        transientToggled: true,
+        layerCountUnchanged: true,
+        workAreaUnchanged: true
+      }
+    }, compName);
+  }
   if (step.tool === "set_layer_metadata") {
     const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
     const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
     const updates = {};
-    for (const field of ["comment", "label", "locked"]) {
+    for (const field of ["comment", "label", "locked", "enabled", "guideLayer"]) {
       if (Object.prototype.hasOwnProperty.call(args, field)) updates[field] = args[field];
     }
     if (!state.layers.length) {
@@ -443,6 +614,267 @@ function fakeMutationResult(step, state) {
         updatedFields: Object.keys(updates)
       }
     }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_layer_blending_mode") {
+    const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    const expectedLayerNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const blendingModeName = String(args.blendingMode || "difference").toLowerCase();
+    if (!state.layers.length) {
+      state.layers = layerIndices.map((layerIndex, index) => layerInfo(expectedLayerNames[index] || `Blending Fixture Layer ${layerIndex}`, { index: layerIndex }));
+    }
+    const changed = layerIndices.map((layerIndex, index) => {
+      let layer = state.layers.find((item) => Number(item.index) === layerIndex);
+      if (!layer) {
+        layer = layerInfo(expectedLayerNames[index] || `Blending Fixture Layer ${layerIndex}`, { index: layerIndex });
+        state.layers.push(layer);
+        state.layers.sort((left, right) => left.index - right.index);
+      }
+      const before = { ...layer };
+      layer.blendingModeName = blendingModeName;
+      const after = { ...layer };
+      return {
+        layerIndex,
+        expectedLayerName: expectedLayerNames[index] || null,
+        requestedBlendingMode: blendingModeName,
+        before,
+        after,
+        fieldMatches: { blendingMode: true }
+      };
+    });
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndices: layerIndices,
+      expectedLayerNames,
+      requestedBlendingMode: blendingModeName,
+      changedCount: changed.length,
+      layer: changed.length === 1 ? changed[0].after : null,
+      layers: changed.map((item) => item.after),
+      changed,
+      postVerification: {
+        ok: true,
+        requestedCount: layerIndices.length,
+        changedCount: changed.length,
+        requestedBlendingMode: blendingModeName
+      }
+    }, compName, changed[0] && changed[0].after);
+  }
+  if (step.tool === "set_layer_track_matte") {
+    const layerIndex = Number(args.layerIndex || 1);
+    const matteLayerIndex = Number(args.matteLayerIndex || 2);
+    const expectedLayerName = String(args.expectedLayerName || `Track Matte Fixture Fill ${layerIndex}`);
+    const expectedMatteLayerName = String(args.expectedMatteLayerName || `Track Matte Fixture Matte ${matteLayerIndex}`);
+    const trackMatteTypeName = String(args.trackMatteType || "luma_inverted").toLowerCase();
+    let layer = state.layers.find((item) => Number(item.index) === layerIndex);
+    if (!layer) {
+      layer = layerInfo(expectedLayerName, { index: layerIndex });
+      state.layers.push(layer);
+    }
+    let matteLayer = state.layers.find((item) => Number(item.index) === matteLayerIndex);
+    if (!matteLayer) {
+      matteLayer = layerInfo(expectedMatteLayerName, { index: matteLayerIndex });
+      state.layers.push(matteLayer);
+    }
+    state.layers.sort((left, right) => left.index - right.index);
+    const before = { ...layer };
+    const matteBefore = { ...matteLayer };
+    matteLayer.isTrackMatte = true;
+    layer.hasTrackMatte = true;
+    layer.trackMatteTypeName = trackMatteTypeName;
+    layer.trackMatteLayer = { ...matteLayer };
+    const after = { ...layer, trackMatteLayer: { ...matteLayer } };
+    const matteAfter = { ...matteLayer };
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length },
+      requestedLayerIndex: layerIndex,
+      requestedMatteLayerIndex: matteLayerIndex,
+      requestedTrackMatteType: trackMatteTypeName,
+      expectedLayerName,
+      expectedMatteLayerName,
+      before,
+      matteBefore,
+      layer: after,
+      matteLayer: matteAfter,
+      postVerification: {
+        ok: true,
+        hasTrackMatteMatches: true,
+        matteLayerMatches: true,
+        trackMatteTypeMatches: true,
+        matteRoleMatches: true,
+        layerNameMatches: true,
+        matteLayerNameMatches: true
+      }
+    }, compName, after);
+  }
+  if (step.tool === "set_project_item_metadata") {
+    const expectedItemNames = Array.isArray(args.expectedItemNames) ? args.expectedItemNames.map(String) : [];
+    let itemIndices = Array.isArray(args.itemIndices) ? args.itemIndices.map(Number).filter((value) => Number.isFinite(value) && value > 0) : [];
+    if (!itemIndices.length && expectedItemNames.length) {
+      itemIndices = expectedItemNames.map((expectedName) => {
+        let item = state.projectItems.find((candidate) => candidate.name === expectedName);
+        if (!item) {
+          item = { itemIndex: state.nextItemIndex++, name: expectedName, type: "comp", label: 9 };
+          state.projectItems.push(item);
+        }
+        return item.itemIndex;
+      });
+    }
+    if (!itemIndices.length) {
+      itemIndices = state.projectItems.map((item) => item.itemIndex);
+    }
+    const label = Number.isFinite(Number(args.label)) ? Number(args.label) : 0;
+    const changed = itemIndices.map((itemIndex, index) => {
+      let item = state.projectItems.find((candidate) => Number(candidate.itemIndex) === Number(itemIndex));
+      if (!item) {
+        item = {
+          itemIndex,
+          name: expectedItemNames[index] || `Project Item ${itemIndex}`,
+          type: "comp",
+          label: 9
+        };
+        state.projectItems.push(item);
+      }
+      const before = { ...item };
+      item.label = label;
+      const after = { ...item };
+      return {
+        itemIndex,
+        expectedItemName: expectedItemNames[index] || null,
+        before,
+        after,
+        fieldMatches: { label: true }
+      };
+    });
+    return withVerification({
+      requestedItemIndices: itemIndices,
+      expectedItemNames,
+      updates: { label },
+      updatedFields: ["label"],
+      changedCount: changed.length,
+      item: changed.length === 1 ? changed[0].after : null,
+      items: changed.map((item) => item.after),
+      changed,
+      postVerification: {
+        ok: true,
+        requestedCount: itemIndices.length,
+        changedCount: changed.length,
+        updatedFields: ["label"]
+      }
+    }, expectedItemNames[0] || compName);
+  }
+  if (step.tool === "set_puppet_pin_type") {
+    const rawPinType = args.pinType === "advanced" ? 4 : args.pinType === "position" ? 1 : Number(args.pinType || 4);
+    const pinType = rawPinType === 1 ? 1 : 4;
+    const propertyPath = args.pinTypePropertyPath || [
+      { matchName: "ADBE Effect Parade" },
+      { matchName: "ADBE FreePin3", name: args.effectName || "Puppet" },
+      { matchName: "ADBE FreePin3 PosPin Atom", name: args.expectedPinName || "Puppet Pin 1" },
+      { matchName: "ADBE FreePin3 PosPin Type", name: "Type" }
+    ];
+    const layer = layerInfo("Puppet Pin Fixture Shape", { index: args.layerIndex || 1 });
+    const effect = {
+      name: args.effectName || "Puppet",
+      matchName: "ADBE FreePin3",
+      propertyPath: propertyPath.slice(0, 2)
+    };
+    const pinAtom = {
+      name: args.expectedPinName || "Puppet Pin 1",
+      matchName: "ADBE FreePin3 PosPin Atom",
+      propertyPath: propertyPath.slice(0, propertyPath.length - 1)
+    };
+    const property = fakePropertyInfo(propertyPath, pinType);
+    property.matchName = "ADBE FreePin3 PosPin Type";
+    state.propertyValues.push(property);
+    return withVerification({
+      comp: { name: compName },
+      layer,
+      effect,
+      pinAtom,
+      property,
+      pinTypeBefore: args.expectedCurrentPinType === undefined ? 1 : Number(args.expectedCurrentPinType),
+      pinType,
+      pinTypeAfter: pinType,
+      allowedPinTypes: [1, 4],
+      propertyPath
+    }, compName, layer);
+  }
+  if (step.tool === "set_effect_enabled") {
+    let effect = state.effects.find((candidate) => (
+      (!args.effectName || candidate.name === args.effectName) &&
+      (!args.effectMatchName || candidate.matchName === args.effectMatchName) &&
+      (!args.effectIndex || Number(candidate.propertyIndex) === Number(args.effectIndex))
+    ));
+    if (!effect) {
+      effect = {
+        propertyIndex: args.effectIndex || state.effects.length + 1,
+        name: args.effectName || "Effect",
+        matchName: args.effectMatchName || "ADBE Effect",
+        enabled: args.expectedCurrentEnabled === undefined ? true : Boolean(args.expectedCurrentEnabled),
+        layerIndex: args.layerIndex || 1
+      };
+      state.effects.push(effect);
+    }
+    const before = { ...effect };
+    effect.enabled = Boolean(args.enabled);
+    const after = { ...effect };
+    return withVerification({
+      comp: { name: compName },
+      layer: layerInfo(`Layer ${args.layerIndex || 1}`, { index: args.layerIndex || 1 }),
+      effect: after,
+      before: { effect: before },
+      after: { effect: after },
+      requestedEnabled: Boolean(args.enabled),
+      expectedCurrentEnabled: args.expectedCurrentEnabled === undefined ? null : Boolean(args.expectedCurrentEnabled),
+      postVerification: {
+        ok: true,
+        enabledMatches: true,
+        expectedCurrentMatched: true
+      }
+    }, compName);
+  }
+  if (step.tool === "add_property_to_essential_graphics") {
+    const propertyPath = args.propertyPath || [
+      { matchName: "ADBE Transform Group" },
+      { matchName: "ADBE Opacity", name: "Opacity" }
+    ];
+    const controllerName = String(args.controllerName || "Essential Graphics Fixture Opacity");
+    const layer = layerInfo(args.expectedLayerName || "Essential Graphics Fixture Layer", { index: args.layerIndex || 1 });
+    const property = fakePropertyInfo(propertyPath, 100);
+    if (args.expectedPropertyName) property.name = args.expectedPropertyName;
+    if (args.expectedPropertyMatchName) property.matchName = args.expectedPropertyMatchName;
+    state.propertyValues.push(property);
+    const beforeControllers = {
+      count: state.essentialGraphicsControllers.length,
+      controllers: state.essentialGraphicsControllers.slice()
+    };
+    const controller = {
+      index: beforeControllers.count + 1,
+      name: controllerName,
+      propertyName: property.name,
+      propertyMatchName: property.matchName
+    };
+    state.essentialGraphicsControllers.push(controller);
+    const afterControllers = {
+      count: state.essentialGraphicsControllers.length,
+      controllers: state.essentialGraphicsControllers.slice()
+    };
+    return withVerification({
+      comp: { name: compName, numLayers: state.layers.length || 1 },
+      layer,
+      property,
+      controllerName,
+      added: true,
+      beforeControllers,
+      afterControllers,
+      controller,
+      postVerification: {
+        ok: true,
+        controllerCountBefore: beforeControllers.count,
+        controllerCountAfter: afterControllers.count,
+        controllerCountIncremented: true,
+        controllerNamePresent: true,
+        canAddBefore: true
+      }
+    }, compName, layer);
   }
   if (step.tool === "set_layer_mask") {
     const beforeMaskCount = state.masks.length;
@@ -506,6 +938,44 @@ function fakeMutationResult(step, state) {
         opacityMatches: true,
         featherMatches: true,
         expansionMatches: true
+      }
+    }, compName);
+  }
+  if (step.tool === "add_comp_marker") {
+    const marker = {
+      keyIndex: state.compMarkers.length + 1,
+      time: args.time,
+      comment: args.comment,
+      duration: args.duration || 0
+    };
+    const beforeCount = state.compMarkers.length;
+    state.compMarkers.push(marker);
+    return withVerification({
+      comp: { name: compName, duration: state.compProperties.duration, frameRate: state.compProperties.frameRate },
+      marker,
+      markersBefore: {
+        count: beforeCount,
+        returned: beforeCount,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice(0, beforeCount)
+      },
+      markers: {
+        count: state.compMarkers.length,
+        returned: state.compMarkers.length,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice()
+      },
+      postVerification: {
+        ok: true,
+        markerCountBefore: beforeCount,
+        markerCountAfter: state.compMarkers.length,
+        expectedMarkerCountAfter: beforeCount + 1,
+        markerCountIncremented: true,
+        timeMatches: true,
+        commentMatches: true,
+        durationMatches: true
       }
     }, compName);
   }
@@ -604,10 +1074,58 @@ function fakeMutationResult(step, state) {
     }, compName, layer);
   }
   if (step.tool === "set_comp_work_area") {
+    const before = {
+      workAreaStart: state.compProperties.workAreaStart,
+      workAreaDuration: state.compProperties.workAreaDuration
+    };
+    state.compProperties.workAreaStart = args.start;
+    state.compProperties.workAreaDuration = args.duration;
     return withVerification({
       comp: { name: compName },
+      before,
+      after: {
+        workAreaStart: state.compProperties.workAreaStart,
+        workAreaDuration: state.compProperties.workAreaDuration
+      },
       workAreaStart: args.start,
       workAreaDuration: args.duration
+    }, compName);
+  }
+  if (step.tool === "set_comp_current_time") {
+    const frameRate = args.frameRate || state.compProperties.frameRate;
+    const targetTime = args.time === undefined ? Number(args.frame || 0) / frameRate : args.time;
+    const before = {
+      name: compName,
+      time: state.compProperties.time,
+      duration: state.compProperties.duration,
+      frameRate: state.compProperties.frameRate,
+      width: state.compProperties.width,
+      height: state.compProperties.height,
+      numLayers: state.layers.length,
+      workAreaStart: 0,
+      workAreaDuration: state.compProperties.duration
+    };
+    state.compProperties.time = targetTime;
+    const after = { ...before, time: targetTime };
+    return withVerification({
+      comp: { name: compName, time: targetTime, duration: state.compProperties.duration, frameRate: state.compProperties.frameRate },
+      requested: {
+        time: targetTime,
+        frame: args.frame === undefined ? null : args.frame,
+        frameRate: args.frame === undefined ? null : frameRate,
+        clampToDuration: args.clampToDuration === true
+      },
+      targetTime,
+      clamped: false,
+      before,
+      after,
+      postVerification: {
+        ok: true,
+        timeMatches: true,
+        withinBounds: true,
+        compIdentityMatches: true,
+        structuralFieldsUnchanged: true
+      }
     }, compName);
   }
   if (step.tool === "set_layer_time_range") {
@@ -646,16 +1164,142 @@ function fakeMutationResult(step, state) {
     return withVerification({ comp: { name: compName }, time, split, layers: split.map((item) => item.newLayer) }, compName);
   }
   if (step.tool === "update_text_layer") {
-    const layer = layerInfo("Updated Text", { index: args.layerIndex, text: args.text, fontSize: args.fontSize });
-    return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize } }, compName, layer);
+    const layer = layerInfo("Updated Text", { index: args.layerIndex, text: args.text, fontSize: args.fontSize, justification: args.justification });
+    return withVerification({ comp: { name: compName }, layer, text: { text: args.text, fontSize: args.fontSize, justification: args.justification } }, compName, layer);
   }
   if (step.tool === "create_shape_layer") {
-    const layer = layerInfo(args.name, { index: state.nextLayerIndex++ });
+    const shapeType = args.shape || "rectangle";
+    const shapeSummary = shapeType === "polygon" || shapeType === "star"
+      ? {
+        type: shapeType,
+        starType: args.starType || shapeType,
+        points: args.points === undefined ? 5 : args.points,
+        outerRadius: args.outerRadius === undefined ? 100 : args.outerRadius,
+        innerRadius: shapeType === "star" ? (args.innerRadius === undefined ? 50 : args.innerRadius) : null,
+        fillColor: args.fillColor,
+        strokeColor: args.strokeColor,
+        strokeWidth: args.strokeWidth
+      }
+      : { type: shapeType, size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth };
+    const layer = insertLayerAtTop(state, layerInfo(args.name, {
+      index: 1,
+      matchName: "ADBE Vector Layer",
+      shapeLayer: true,
+      shapeContents: [shapeSummary]
+    }));
     return withVerification({
       comp: { name: compName },
       layer,
-      shape: { type: args.shape || "rectangle", size: args.size, fillColor: args.fillColor, strokeColor: args.strokeColor, strokeWidth: args.strokeWidth }
+      shape: shapeSummary
     }, compName, layer);
+  }
+  if (step.tool === "create_layer_connection_line") {
+    const expression = [
+      `var fromLayer = thisComp.layer(${JSON.stringify(args.expectedFromLayerName || "From Layer")});`,
+      `var toLayer = thisComp.layer(${JSON.stringify(args.expectedToLayerName || "To Layer")});`,
+      "var fromPoint = thisLayer.fromComp(fromLayer.toComp(fromLayer.transform.anchorPoint));",
+      "var toPoint = thisLayer.fromComp(toLayer.toComp(toLayer.transform.anchorPoint));",
+      "createPath([[fromPoint[0], fromPoint[1]], [toPoint[0], toPoint[1]]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);"
+    ].join("\n");
+    const layer = insertLayerAtTop(state, layerInfo(args.name || "Codex Connection Line", {
+      index: 1,
+      locked: args.lockLayer === false ? false : true
+    }));
+    const pathGeometry = {
+      name: "Path",
+      matchName: "ADBE Vector Shape",
+      propertyPath: [
+        { matchName: "ADBE Root Vectors Group" },
+        { matchName: "ADBE Vector Group", name: args.pathGroupName || "Connector" },
+        { matchName: "ADBE Vectors Group" },
+        { matchName: "ADBE Vector Shape - Group", name: "Connector Path" },
+        { matchName: "ADBE Vector Shape" }
+      ],
+      canSetExpression: true,
+      expressionEnabled: true,
+      expressionError: "",
+      expression,
+      geometry: {
+        kind: "Shape",
+        closed: false,
+        vertexCount: 2,
+        vertices: [[180, 180], [460, 180]],
+        inTangents: [[0, 0], [0, 0]],
+        outTangents: [[0, 0], [0, 0]],
+        truncated: false
+      }
+    };
+    return withVerification({
+      comp: { name: compName },
+      connector: layer,
+      layer,
+      targets: {
+        from: layerInfo(args.expectedFromLayerName || "From Layer", { index: args.fromLayerIndex || 2 }),
+        to: layerInfo(args.expectedToLayerName || "To Layer", { index: args.toLayerIndex || 1 })
+      },
+      path: pathGeometry,
+      pathGeometry,
+      stroke: {
+        color: args.strokeColor || [1, 1, 1],
+        width: args.strokeWidth || 4
+      },
+      expression,
+      expressionEnabled: true,
+      expressionError: "",
+      postVerification: {
+        ok: true,
+        pathOpen: true,
+        vertexCount: 2,
+        expressionEnabled: true,
+        expressionMatches: true,
+        expressionError: "",
+        locked: args.lockLayer === false ? false : true,
+        lockRequested: args.lockLayer === false ? false : true,
+        connectorLayerIsTop: true,
+        fromLayerNameMatches: true,
+        toLayerNameMatches: true
+      }
+    }, compName, layer);
+  }
+  if (step.tool === "create_adjustment_layer") {
+    const beforeLayerIndex = args.insertBeforeLayerIndex || null;
+    let beforeLayer = beforeLayerIndex ? state.layers[beforeLayerIndex - 1] : null;
+    if (beforeLayerIndex && !beforeLayer) {
+      beforeLayer = layerInfo(args.expectedBeforeLayerName || `Layer ${beforeLayerIndex}`, { index: beforeLayerIndex });
+      state.layers[beforeLayerIndex - 1] = beforeLayer;
+      reindexLayers(state.layers);
+    }
+    const layer = layerInfo(args.name || "Codex Adjustment", {
+      index: 1,
+      adjustmentLayer: true,
+      startTime: args.startTime === undefined ? 0 : args.startTime,
+      outPoint: args.duration || 1
+    });
+    if (beforeLayer) {
+      state.layers.splice(Math.max(0, beforeLayer.index - 1), 0, layer);
+      reindexLayers(state.layers);
+      beforeLayer = state.layers.find((item) => item.name === beforeLayer.name) || null;
+    } else {
+      insertLayerAtTop(state, layer);
+    }
+    const created = state.layers.find((item) => item.name === layer.name) || state.layers[0];
+    return withVerification({
+      comp: { name: compName },
+      layer: created,
+      placement: {
+        insertBeforeLayerIndex: beforeLayerIndex,
+        expectedBeforeLayerName: args.expectedBeforeLayerName || "",
+        beforeLayerBeforeMove: beforeLayer ? { ...beforeLayer, index: beforeLayerIndex } : null,
+        beforeLayerAfterMove: beforeLayer,
+        immediatelyBefore: beforeLayer ? created.index + 1 === beforeLayer.index : null
+      },
+      solid: {
+        color: args.color || [1, 1, 1],
+        width: args.width || 640,
+        height: args.height || 360,
+        pixelAspect: args.pixelAspect || 1
+      }
+    }, compName, created);
   }
   if (step.tool === "fit_layer_to_comp") {
     return withVerification({
@@ -771,6 +1415,43 @@ function fakeMutationResult(step, state) {
       outSpatialTangent: [0, 0]
     }, compName);
   }
+  if (step.tool === "set_layer_parent") {
+    const childIndex = Number(args.layerIndex);
+    const parentIndex = Number(args.parentLayerIndex);
+    const child = state.layers.find((item) => Number(item.index) === childIndex) ||
+      layerInfo(args.expectedLayerName || `Layer ${childIndex}`, { index: childIndex });
+    const parent = state.layers.find((item) => Number(item.index) === parentIndex) ||
+      layerInfo(args.expectedParentName || `Layer ${parentIndex}`, { index: parentIndex });
+    const updatedChild = {
+      ...child,
+      name: args.expectedLayerName || child.name,
+      parent: {
+        index: parent.index,
+        id: parent.id || null,
+        name: args.expectedParentName || parent.name
+      }
+    };
+    state.layers = state.layers.map((item) => (
+      Number(item.index) === childIndex ? updatedChild : item
+    ));
+    if (!state.layers.some((item) => Number(item.index) === childIndex)) state.layers.push(updatedChild);
+    return withVerification({
+      comp: { name: compName },
+      layer: updatedChild,
+      parent: { ...parent, name: args.expectedParentName || parent.name },
+      beforeParent: child.parent || null,
+      requestedLayerIndex: childIndex,
+      requestedParentLayerIndex: parentIndex,
+      expectedLayerName: args.expectedLayerName || null,
+      expectedParentName: args.expectedParentName || null,
+      postVerification: {
+        ok: true,
+        parentMatches: true,
+        childNameMatches: !args.expectedLayerName || updatedChild.name === args.expectedLayerName,
+        parentNameMatches: !args.expectedParentName || updatedChild.parent.name === args.expectedParentName
+      }
+    }, compName, updatedChild);
+  }
   if (step.tool === "set_expression") {
     return withVerification({
       comp: { name: compName },
@@ -883,6 +1564,14 @@ function fakeMutationResult(step, state) {
 }
 
 function fakeReadBackResult(step, state) {
+  if (step.tool === "get_project_info") {
+    return {
+      ...state.projectInfo,
+      numItems: state.projectItems.length,
+      activeItemName: state.lastCompName || null,
+      activeItemType: state.lastCompName ? "Composition" : null
+    };
+  }
   if (step.tool === "find_project_items") {
     const query = step.args && step.args.query ? step.args.query : "";
     return {
@@ -919,6 +1608,7 @@ function fakeReadBackResult(step, state) {
         truncated: false,
         items: state.layerMarkers.slice()
       },
+      effects: state.effects.filter((effect) => Number(effect.layerIndex || 1) === Number(layerIndex)),
       propertyTree: state.propertyValues.slice()
     };
   }
@@ -930,6 +1620,61 @@ function fakeReadBackResult(step, state) {
         numLayers: state.layers.length
       },
       selectedLayers
+    };
+  }
+  if (step.tool === "get_effect_details") {
+    const effect = state.effects.find((candidate) => (
+      (!step.args || !step.args.effectName || candidate.name === step.args.effectName) &&
+      (!step.args || !step.args.effectMatchName || candidate.matchName === step.args.effectMatchName) &&
+      (!step.args || !step.args.effectIndex || Number(candidate.propertyIndex) === Number(step.args.effectIndex))
+    )) || {
+      propertyIndex: step.args && step.args.effectIndex || 1,
+      name: step.args && step.args.effectName || "Puppet",
+      matchName: step.args && step.args.effectMatchName || "ADBE FreePin3",
+      enabled: true,
+      layerIndex: step.args && step.args.layerIndex || 1
+    };
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp"
+      },
+      layer: layerInfo("Effect Fixture Layer", { index: step.args && step.args.layerIndex || 1 }),
+      effect,
+      propertiesReturned: state.propertyValues.length,
+      propertiesTruncated: false,
+      properties: state.propertyValues.slice()
+    };
+  }
+  if (step.tool === "get_layer_essential_properties") {
+    const layerIndex = step.args && step.args.layerIndex || 1;
+    const layer = state.layers.find((item) => Number(item.index) === Number(layerIndex)) ||
+      layerInfo("Essential Graphics Fixture Layer", { index: layerIndex });
+    const properties = state.propertyValues.slice();
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: state.layers.length || 1
+      },
+      layer,
+      essentialProperties: {
+        available: true,
+        count: properties.length,
+        returned: properties.length,
+        truncated: false,
+        properties
+      }
+    };
+  }
+  if (step.tool === "get_essential_graphics_controllers") {
+    const controllers = state.essentialGraphicsControllers.slice();
+    return {
+      comp: {
+        name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+        numLayers: state.layers.length || 1
+      },
+      motionGraphicsTemplateName: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
+      controllerCount: controllers.length,
+      controllers
     };
   }
   if (step.tool === "get_comp_details" || step.tool === "list_layers") {
@@ -944,10 +1689,23 @@ function fakeReadBackResult(step, state) {
         duration: state.compProperties.duration,
         frameRate: state.compProperties.frameRate,
         bgColor: state.compProperties.bgColor,
-        displayStartTime: state.compProperties.displayStartTime
+        displayStartTime: state.compProperties.displayStartTime,
+        displayStartFrame: state.compProperties.displayStartFrame,
+        preserveNestedFrameRate: state.compProperties.preserveNestedFrameRate,
+        motionBlur: state.compProperties.motionBlur,
+        time: state.compProperties.time,
+        workAreaStart: state.compProperties.workAreaStart,
+        workAreaDuration: state.compProperties.workAreaDuration
       },
       layerCount: layers.length,
-      layers
+      layers,
+      markers: {
+        count: state.compMarkers.length,
+        returned: state.compMarkers.length,
+        truncated: false,
+        orderedBy: "comp.markerProperty.keyTime",
+        items: state.compMarkers.slice()
+      }
     };
   }
   return { ok: true };
@@ -963,9 +1721,21 @@ function fakeRunForPlan(plan) {
     layers: [],
     selectedLayers: [],
     propertyValues: [],
+    effects: [],
     renderQueueItems: [],
     layerMarkers: [],
+    compMarkers: [],
     masks: [],
+    essentialGraphicsControllers: [],
+    projectInfo: {
+      file: null,
+      bitsPerChannel: 8,
+      numItems: 0,
+      activeItemName: null,
+      activeItemType: null,
+      framesCountType: "FC_START_1",
+      framesCountStartFrame: 1
+    },
     compProperties: {
       width: 1280,
       height: 720,
@@ -973,7 +1743,13 @@ function fakeRunForPlan(plan) {
       duration: 4,
       frameRate: 24,
       bgColor: [0, 0, 0],
-      displayStartTime: 0
+      displayStartTime: 0,
+      displayStartFrame: 1,
+      preserveNestedFrameRate: false,
+      motionBlur: false,
+      time: 0,
+      workAreaStart: 0,
+      workAreaDuration: 4
     }
   };
   const steps = (plan.steps || []).map((step, index) => {
@@ -1304,6 +2080,254 @@ function assertLayerMetadataPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "set_layer_metadata read-back check should pass.");
 }
 
+function assertLayerEnabledHardSoloPasses() {
+  const [scenario] = agentLayerEnabledHardSoloScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer enabled hard-solo semantic verification should pass: ${semantic.summary}`);
+  const metadataChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0);
+  assert(metadataChecks.length >= 2, "hard-solo fixture should verify selected and unselected layer enabled metadata.");
+  assert(metadataChecks.every((check) => check.status === "passed"), "hard-solo layer enabled read-back checks should pass.");
+}
+
+function assertGridRigControlReplacementPasses() {
+  const [scenario] = agentGridRigControlReplacementScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `grid-rig control replacement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "grid-rig fixture should verify guideLayer/enabled metadata.");
+  assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "grid-rig fixture should verify old layer deletion.");
+  assert(semantic.checks.some((check) => check.id.indexOf("add_effect:effect") >= 0 && check.status === "passed"), "grid-rig fixture should verify added slider effects.");
+}
+
+function assertLayerBlendingModePasses() {
+  const [scenario] = agentLayerBlendingModeScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `layer blending mode semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_blending_mode:blending-mode") >= 0 && check.status === "passed"), "set_layer_blending_mode read-back check should pass.");
+}
+
+function layerParentPlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Set generated child parent",
+      tool: "set_layer_parent",
+      args: {
+        compName: "Parent Fixture",
+        layerIndex: 1,
+        parentLayerIndex: 2,
+        expectedLayerName: "Parent Fixture Child",
+        expectedParentName: "Parent Fixture Parent"
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated child parent",
+      tool: "get_layer_details",
+      args: { compName: "Parent Fixture", layerIndex: 1 }
+    });
+  }
+  return {
+    summary: "Parent one generated child layer to one generated parent and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertLayerParentPasses() {
+  const plan = layerParentPlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_parent semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed"), "set_layer_parent read-back check should pass.");
+}
+
+function assertLayerParentMissingReadBackNeedsReview() {
+  const plan = layerParentPlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_layer_parent must require post-run get_layer_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "failed"), "missing set_layer_parent read-back should fail.");
+}
+
+function assertLayerTrackMattePasses() {
+  const [scenario] = agentLayerTrackMatteScenarioPlans("Codex Semantic Track Matte Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_layer_track_matte semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_track_matte:track-matte") >= 0 && check.status === "passed"), "set_layer_track_matte read-back check should pass.");
+}
+
+function assertLayerTrackMatteMissingReadBackNeedsReview() {
+  const [scenario] = agentLayerTrackMatteScenarioPlans("Codex Semantic Track Matte Missing Readback");
+  const plan = {
+    ...scenario.plan,
+    steps: scenario.plan.steps.filter((step) => !(step.tool === "get_layer_details" && /after update/i.test(step.title || "")))
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_layer_track_matte must require post-run get_layer_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_track_matte:track-matte") >= 0 && check.status === "failed"), "missing set_layer_track_matte read-back should fail.");
+}
+
+function assertAdjustmentLayerPlacementPasses() {
+  const plan = {
+    summary: "Create generated adjustment layer immediately above a guarded generated layer.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create target fixture",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Target"
+        }
+      },
+      {
+        title: "Create foreground fixture",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Foreground"
+        }
+      },
+      {
+        title: "Create adjustment break before target",
+        tool: "create_adjustment_layer",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          name: "Adjustment Placement Break",
+          insertBeforeLayerIndex: 2,
+          expectedBeforeLayerName: "Adjustment Placement Target",
+          duration: 2
+        }
+      },
+      {
+        title: "Read adjustment break",
+        tool: "get_layer_details",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          layerIndex: 2,
+          includeProperties: false
+        }
+      },
+      {
+        title: "Read guarded target",
+        tool: "get_layer_details",
+        args: {
+          compName: "Adjustment Placement Fixture",
+          layerIndex: 3,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_adjustment_layer placement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:adjustment-layer") >= 0 && check.status === "passed"), "adjustment layer flag check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_adjustment_layer:placement") >= 0 && check.status === "passed"), "adjustment layer placement check should pass.");
+}
+
+function assertLayerConnectionLinePasses() {
+  const plan = {
+    summary: "Create a generated dynamic connector line between two explicit generated layers.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create connection source",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Connection Line Fixture",
+          name: "Connection Line From",
+          shape: "ellipse",
+          position: [180, 180]
+        }
+      },
+      {
+        title: "Create connection target",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Connection Line Fixture",
+          name: "Connection Line To",
+          shape: "rectangle",
+          position: [460, 180]
+        }
+      },
+      {
+        title: "Create generated connection line",
+        tool: "create_layer_connection_line",
+        args: {
+          compName: "Connection Line Fixture",
+          fromLayerIndex: 2,
+          toLayerIndex: 1,
+          expectedFromLayerName: "Connection Line From",
+          expectedToLayerName: "Connection Line To",
+          name: "Connection Line Connector",
+          strokeColor: [0.2, 0.8, 1],
+          strokeWidth: 5,
+          duration: 3,
+          lockLayer: true
+        }
+      },
+      {
+        title: "Read generated connection line",
+        tool: "get_layer_details",
+        args: {
+          compName: "Connection Line Fixture",
+          layerIndex: 1,
+          includeProperties: true,
+          includeExpressions: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_layer_connection_line semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:open-path") >= 0 && check.status === "passed"), "connection line open path check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:expression") >= 0 && check.status === "passed"), "connection line expression check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_layer_connection_line:locked") >= 0 && check.status === "passed"), "connection line lock check should pass.");
+}
+
+function assertTextShapesPasses() {
+  const [scenario] = agentTextShapesScenarioPlans("Codex Semantic TTS Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failed = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `create_shapes_from_text semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shapes_from_text:shape-layer") >= 0 && check.status === "passed"), "text-to-shape layer check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shapes_from_text:outline-groups") >= 0 && check.status === "passed"), "text-to-shape outline group check should pass.");
+}
+
+function assertProjectItemMetadataPasses() {
+  const [scenario] = agentProjectItemMetadataScenarioPlans("Codex Semantic Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_project_item_metadata semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_item_metadata:metadata") >= 0 && check.status === "passed"), "set_project_item_metadata read-back check should pass.");
+}
+
+function assertProjectItemMetadataMissingReadBackNeedsReview() {
+  const [scenario] = agentProjectItemMetadataScenarioPlans("Codex Semantic Fixture Missing Readback");
+  const plan = {
+    ...scenario.plan,
+    steps: scenario.plan.steps.filter((step) => step.tool !== "find_project_items" || /before/.test(step.title))
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_project_item_metadata must require post-run project-item read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_item_metadata:metadata") >= 0 && check.status === "failed"), "set_project_item_metadata missing read-back should fail.");
+}
+
 function assertDeleteLayerPasses() {
   const plan = {
     summary: "Delete one inspected generated layer and inspect the comp.",
@@ -1369,7 +2393,8 @@ function assertSetCompPropertiesPasses() {
           width: 1920,
           height: 1080,
           frameRate: 30,
-          bgColor: [0.1, 0.2, 0.3]
+          bgColor: [0.1, 0.2, 0.3],
+          preserveNestedFrameRate: true
         }
       },
       {
@@ -1383,6 +2408,7 @@ function assertSetCompPropertiesPasses() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "passed", `set_comp_properties semantic verification should pass: ${semantic.summary}`);
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "set_comp_properties width check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:preserveNestedFrameRate") >= 0 && check.status === "passed"), "set_comp_properties preserveNestedFrameRate check should pass.");
 }
 
 function assertSetCompPropertiesReadBackMismatchNeedsReview() {
@@ -1408,6 +2434,126 @@ function assertSetCompPropertiesReadBackMismatchNeedsReview() {
   const semantic = buildSemanticVerification(plan, run);
   assert.strictEqual(semantic.status, "needs_review", "set_comp_properties must fail closed on mismatched read-back.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "failed"), "set_comp_properties mismatched read-back should fail.");
+}
+
+function assertRefreshCompPanelPasses() {
+  const plan = {
+    summary: "Refresh one explicit generated composition panel and inspect restored motionBlur.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Refresh generated comp panel",
+        tool: "refresh_comp_panel",
+        args: {
+          compName: "Comp Refresh Fixture",
+          expectedMotionBlur: false
+        }
+      },
+      {
+        title: "Read comp after refresh",
+        tool: "get_comp_details",
+        args: { compName: "Comp Refresh Fixture" }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `refresh_comp_panel semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("refresh_comp_panel:motionBlur-restored") >= 0 && check.status === "passed"), "refresh_comp_panel restored motionBlur check should pass.");
+}
+
+function compWorkAreaPlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Set generated comp work area",
+      tool: "set_comp_work_area",
+      args: {
+        compName: "Comp Work Area Fixture",
+        start: 0.75,
+        duration: 1.5
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated comp work area",
+      tool: "get_comp_details",
+      args: { compName: "Comp Work Area Fixture", includeLayers: false }
+    });
+  }
+  return {
+    summary: "Set one generated composition work area and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetCompWorkAreaReadBackFallbackPasses() {
+  const plan = compWorkAreaPlan(true);
+  const run = fakeRunForPlan(plan);
+  delete run.steps[0].result.workAreaStart;
+  delete run.steps[0].result.workAreaDuration;
+  delete run.steps[0].result.after;
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_comp_work_area read-back fallback should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaStart") >= 0 && check.status === "passed"), "workAreaStart read-back fallback should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaDuration") >= 0 && check.status === "passed"), "workAreaDuration read-back fallback should pass.");
+}
+
+function assertSetCompWorkAreaMissingReadBackNeedsReview() {
+  const plan = compWorkAreaPlan(false);
+  const run = fakeRunForPlan(plan);
+  delete run.steps[0].result.workAreaStart;
+  delete run.steps[0].result.workAreaDuration;
+  delete run.steps[0].result.after;
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_comp_work_area must require post-run get_comp_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaStart") >= 0 && check.status === "failed"), "missing workAreaStart read-back should fail.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_work_area:workAreaDuration") >= 0 && check.status === "failed"), "missing workAreaDuration read-back should fail.");
+}
+
+function compCurrentTimePlan(includeReadBack = true) {
+  const steps = [
+    {
+      title: "Move generated comp CTI",
+      tool: "set_comp_current_time",
+      args: {
+        compName: "Comp Current Time Fixture",
+        time: 1.25,
+        expectedCurrentTime: 0
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated comp CTI",
+      tool: "get_comp_details",
+      args: { compName: "Comp Current Time Fixture", includeLayers: false }
+    });
+  }
+  return {
+    summary: "Set one generated composition current time and inspect it.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetCompCurrentTimePasses() {
+  const run = fakeRunForPlan(compCurrentTimePlan(true));
+  const semantic = buildSemanticVerification(compCurrentTimePlan(true), run);
+  assert.strictEqual(semantic.status, "passed", `set_comp_current_time semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_current_time:time") >= 0 && check.status === "passed"), "set_comp_current_time read-back check should pass.");
+}
+
+function assertSetCompCurrentTimeMissingReadBackNeedsReview() {
+  const plan = compCurrentTimePlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_comp_current_time must require post-run get_comp_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_comp_current_time:time") >= 0 && check.status === "failed"), "set_comp_current_time missing read-back should fail.");
 }
 
 function assertSetLayerMaskCreateUpdatePasses() {
@@ -1484,6 +2630,451 @@ function assertSetLayerMaskMissingReadBackNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "failed"), "set_layer_mask missing read-back should fail.");
 }
 
+function shapePathFixtureGeometry() {
+  return {
+    closed: true,
+    vertices: [[10, 10], [110, 10], [110, 90], [10, 90]],
+    inTangents: [[0, 0], [-8, 0], [0, -8], [8, 0]],
+    outTangents: [[8, 0], [0, 8], [-8, 0], [0, -8]]
+  };
+}
+
+function shapePathFixturePropertyPath() {
+  return [
+    "ADBE Root Vectors Group",
+    "ADBE Vector Group",
+    "ADBE Vectors Group",
+    "ADBE Vector Shape"
+  ];
+}
+
+function pathGeometryProperty(geometry, propertyPath = shapePathFixturePropertyPath()) {
+  return {
+    name: "Path",
+    matchName: "ADBE Vector Shape",
+    propertyPath: propertyPath.map((segment) => ({ name: segment, matchName: segment })),
+    geometry: { kind: "Shape", vertexCount: geometry.vertices.length, ...clone(geometry) },
+    numKeys: 0,
+    keyframes: []
+  };
+}
+
+function assertSetPathGeometryPasses() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const plan = {
+    summary: "Set one generated shape path geometry and read it back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Set generated shape path",
+        tool: "set_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath,
+          geometry
+        }
+      },
+      {
+        title: "Read generated shape path",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "set_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath),
+          postVerification: {
+            ok: true,
+            geometryMatches: true,
+            keyframesMatch: true,
+            requestedKeyframeCount: 0,
+            afterKeyframeCount: 0
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_path_geometry semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_path_geometry:geometry") >= 0 && check.status === "passed"), "set_path_geometry read-back check should pass.");
+}
+
+function assertSetPathGeometryMissingReadBackNeedsReview() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const plan = {
+    summary: "Set one generated shape path geometry without read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Set generated shape path",
+        tool: "set_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath,
+          geometry
+        }
+      }
+    ]
+  };
+  const run = {
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "set_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath),
+          postVerification: {
+            ok: true,
+            geometryMatches: true,
+            keyframesMatch: true
+          },
+          verification: { ok: true }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_path_geometry must fail closed without post-run read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_path_geometry:geometry") >= 0 && check.status === "failed"), "set_path_geometry missing read-back should fail.");
+}
+
+function assertExportPathPointsPasses() {
+  const geometry = shapePathFixtureGeometry();
+  const propertyPath = shapePathFixturePropertyPath();
+  const vertices = [[10.123, 20.987], [30.555, 40.444], [50, 60]];
+  const exportedPoints = [[30.55, 40.44], [50, 60], [10.12, 20.99]];
+  const plan = {
+    summary: "Export generated path points from get_path_geometry evidence.",
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Read generated shape path",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      },
+      {
+        title: "Export generated path points",
+        tool: "export_path_points",
+        args: {
+          vertices,
+          outputFileName: "semantic-path-points.txt",
+          decimalPlaces: 2,
+          rotateFirstPointToEnd: true
+        }
+      },
+      {
+        title: "Read generated shape path after export",
+        tool: "get_path_geometry",
+        args: {
+          compName: "Path Fixture",
+          layerIndex: 1,
+          targetKind: "shape",
+          propertyPath
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "export_path_points",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          outputFileName: "semantic-path-points.txt",
+          outputPath: "logs/generated-exports/semantic-path-points.txt",
+          pointCount: 3,
+          points: exportedPoints,
+          contentPreview: `var points = ${JSON.stringify(exportedPoints)};`,
+          file: {
+            outputFileName: "semantic-path-points.txt",
+            outputPath: "logs/generated-exports/semantic-path-points.txt",
+            byteLength: 49,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 3,
+        title: plan.steps[2].title,
+        tool: "get_path_geometry",
+        status: "completed",
+        args: plan.steps[2].args,
+        result: {
+          comp: { name: "Path Fixture" },
+          layer: layerInfo("Shape Path Layer"),
+          targetKind: "shape",
+          property: pathGeometryProperty(geometry, propertyPath),
+          pathGeometry: pathGeometryProperty(geometry, propertyPath)
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `export_path_points semantic verification should pass with post-export read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:points") >= 0 && check.status === "passed"), "export_path_points point transform check should pass.");
+}
+
+function assertExportPathPointsMissingReadBackNeedsReview() {
+  const vertices = [[10.123, 20.987], [30.555, 40.444], [50, 60]];
+  const exportedPoints = [[30.55, 40.44], [50, 60], [10.12, 20.99]];
+  const plan = {
+    summary: "Export generated path points without post-export read-back.",
+    risk: "medium",
+    requiresCheckpoint: false,
+    steps: [
+      {
+        title: "Export generated path points",
+        tool: "export_path_points",
+        args: {
+          vertices,
+          outputFileName: "semantic-path-points.txt"
+        }
+      }
+    ]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "export_path_points",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: {
+          outputFileName: "semantic-path-points.txt",
+          outputPath: "logs/generated-exports/semantic-path-points.txt",
+          pointCount: 3,
+          points: exportedPoints,
+          contentPreview: `var points = ${JSON.stringify(exportedPoints)};`,
+          file: {
+            outputFileName: "semantic-path-points.txt",
+            outputPath: "logs/generated-exports/semantic-path-points.txt",
+            byteLength: 49,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true
+          },
+          verification: { ok: true }
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "export_path_points must still require an explicit post-export read-back step.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_path_points:file") >= 0 && check.status === "passed"), "export_path_points per-step file check should pass.");
+}
+
+function assertExportTextToFilePasses() {
+  const [scenario] = agentExportTextToFileScenarioPlans("Codex Semantic Export Text Fixture");
+  const expectedContent = scenario.expectedReadBack.expectedContent;
+  const outputFileName = scenario.expectedReadBack.outputFileName;
+  const run = fakeRunForPlan(scenario.plan);
+  for (const step of run.steps) {
+    if (step.tool === "get_layer_details" && step.args.layerIndex === 1) {
+      step.result = {
+        comp: { name: scenario.expectedReadBack.compName },
+        layer: layerInfo(scenario.expectedReadBack.textName, { index: 1, textLayer: true, layerKind: "text" }),
+        text: { kind: "TextDocument", text: scenario.expectedReadBack.sourceText }
+      };
+    }
+    if (step.tool === "get_layer_details" && step.args.layerIndex === 2) {
+      step.result = {
+        comp: { name: scenario.expectedReadBack.compName },
+        layer: layerInfo(scenario.expectedReadBack.solidName, { index: 2, textLayer: false })
+      };
+    }
+    if (step.tool === "export_text_to_file") {
+      step.result = {
+        outputFileName,
+        outputPath: `logs/generated-exports/${outputFileName}`,
+        layerCount: 2,
+        textLayerCount: 1,
+        nonTextLayerCount: 1,
+        exportedText: expectedContent,
+        contentPreview: expectedContent,
+        file: {
+          outputFileName,
+          outputPath: `logs/generated-exports/${outputFileName}`,
+          byteLength: Buffer.byteLength(expectedContent, "utf8"),
+          sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          existsAfter: true
+        }
+      };
+    }
+  }
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `export_text_to_file semantic verification should pass with post-export read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("export_text_to_file:file") >= 0 && check.status === "passed"), "export_text_to_file file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("export_text_to_file:content") >= 0 && check.status === "passed"), "export_text_to_file content check should pass.");
+}
+
+function assertSaveCompFramePngPasses() {
+  const plan = {
+    summary: "Save one generated composition frame to a sandboxed PNG.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Read generated comp before frame save",
+        tool: "get_comp_details",
+        args: { compName: "Frame Fixture", includeLayers: true }
+      },
+      {
+        title: "Save generated comp frame as PNG",
+        tool: "save_comp_frame_png",
+        args: {
+          compName: "Frame Fixture",
+          expectedCompName: "Frame Fixture",
+          time: 0.5,
+          outputFileName: "semantic-frame.png",
+          resolutionFactor: [1, 1]
+        }
+      },
+      {
+        title: "Read generated comp after frame save",
+        tool: "get_comp_details",
+        args: { compName: "Frame Fixture", includeLayers: true }
+      }
+    ]
+  };
+  const compResult = {
+    itemIndex: 8,
+    name: "Frame Fixture",
+    width: 640,
+    height: 360,
+    duration: 3,
+    frameRate: 24,
+    numLayers: 1,
+    layers: [layerInfo("Frame Shape")]
+  };
+  const run = {
+    ok: true,
+    dryRun: false,
+    steps: [
+      {
+        index: 1,
+        title: plan.steps[0].title,
+        tool: "get_comp_details",
+        status: "completed",
+        args: plan.steps[0].args,
+        result: compResult
+      },
+      {
+        index: 2,
+        title: plan.steps[1].title,
+        tool: "save_comp_frame_png",
+        status: "completed",
+        args: plan.steps[1].args,
+        result: {
+          comp: { itemIndex: 8, name: "Frame Fixture", width: 640, height: 360, duration: 3, frameRate: 24, time: 0, numLayers: 1 },
+          frame: { time: 0.5, frameNumber: 12 },
+          resolutionFactor: { before: [1, 1], applied: [1, 1], after: [1, 1], restored: true },
+          file: {
+            outputFileName: "semantic-frame.png",
+            outputPath: "logs/generated-exports/semantic-frame.png",
+            byteLength: 256,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            existsAfter: true,
+            mimeType: "image/png"
+          },
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 3,
+        title: plan.steps[2].title,
+        tool: "get_comp_details",
+        status: "completed",
+        args: plan.steps[2].args,
+        result: compResult
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `save_comp_frame_png semantic verification should pass with post-export comp read-back: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("save_comp_frame_png:file") >= 0 && check.status === "passed"), "save_comp_frame_png file read-back check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("save_comp_frame_png:resolution-factor") >= 0 && check.status === "passed"), "save_comp_frame_png resolution restoration check should pass.");
+}
+
 function assertDakkshinFixtureMutationScopedReadBackPasses() {
   const [scenario] = agentDakkshinTypedToolsScenarioPlans("Semantic Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -1495,6 +3086,39 @@ function assertDakkshinFixtureMutationScopedReadBackPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_comp_properties:width") >= 0 && check.status === "passed"), "Dakkshin set_comp_properties check should pass.");
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "Dakkshin delete_layer absence check should pass.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_mask:mask") >= 0 && check.status === "passed"), "Dakkshin set_layer_mask read-back check should pass.");
+}
+
+function assertPreserveNestedFrameRateFixturePasses() {
+  const [scenario] = agentPreserveNestedFrameRateScenarioPlans("Semantic Preserve Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `preserve nested frame rate fixture should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const checks = semantic.checks.filter((check) => check.id.indexOf("set_comp_properties:preserveNestedFrameRate") >= 0 && check.status === "passed");
+  assert.strictEqual(checks.length, 2, "preserve nested frame rate fixture should verify both generated comp property updates.");
+}
+
+function assertProjectTimecodeStartFramesFixturePasses() {
+  const [scenario] = agentProjectTimecodeStartFramesScenarioPlans("Semantic Project Timecode Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const setProjectFramesStep = run.steps.find((step) => step.tool === "set_project_frames_count_type");
+  if (setProjectFramesStep && setProjectFramesStep.result && setProjectFramesStep.result.after) {
+    const after = setProjectFramesStep.result.after;
+    setProjectFramesStep.result.after = {
+      value: after.framesCountTypeValue || "2612",
+      name: after.framesCountType,
+      startFrame: after.framesCountStartFrame,
+      numItems: after.numItems,
+      activeItemName: after.activeItemName,
+      activeItemType: after.activeItemType
+    };
+  }
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `project timecode/start-frame fixture should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_project_frames_count_type:frames-count-type") >= 0 && check.status === "passed"), "project frame count type fixture should verify get_project_info read-back.");
+  const checks = semantic.checks.filter((check) => check.id.indexOf("set_comp_properties:displayStartFrame") >= 0 && check.status === "passed");
+  assert.strictEqual(checks.length, 2, "project timecode/start-frame fixture should verify both native displayStartFrame updates.");
 }
 
 function assertDakkshinLiveAeEvidenceShapePasses() {
@@ -1756,6 +3380,84 @@ function assertAddLayerMarkerPasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("add_layer_marker:marker") >= 0), "add layer marker check should be reported.");
 }
 
+function assertAddCompMarkerPasses() {
+  const plan = {
+    summary: "Add one explicit composition marker to a generated composition and inspect comp marker read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add composition marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 1.25,
+          comment: "Comp Marker Fixture Start",
+          duration: 0
+        }
+      },
+      {
+        title: "Read composition markers",
+        tool: "get_comp_details",
+        args: {
+          compName: "Comp Marker Fixture",
+          includeLayers: false,
+          includeMarkers: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `add comp marker semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_comp_marker:marker") >= 0 && check.status === "passed"), "add comp marker check should pass.");
+}
+
+function assertSequentialAddCompMarkersPassWithSharedReadBack() {
+  const plan = {
+    summary: "Add two generated composition markers and inspect both in one read-back.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Add composition start marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 0.75,
+          comment: "Work Area Start",
+          duration: 0
+        }
+      },
+      {
+        title: "Add composition end marker",
+        tool: "add_comp_marker",
+        args: {
+          compName: "Comp Marker Fixture",
+          time: 2.25,
+          comment: "Work Area End",
+          duration: 0
+        }
+      },
+      {
+        title: "Read composition markers",
+        tool: "get_comp_details",
+        args: {
+          compName: "Comp Marker Fixture",
+          includeLayers: false,
+          includeMarkers: true
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const markerChecks = semantic.checks.filter((check) => check.id.indexOf("add_comp_marker:marker") >= 0);
+  assert.strictEqual(semantic.status, "passed", `sequential add comp markers should pass with shared read-back: ${semantic.summary}`);
+  assert.strictEqual(markerChecks.length, 2, "two add comp marker checks should be reported.");
+  assert(markerChecks.every((check) => check.status === "passed"), "both add comp marker checks should pass.");
+}
+
 function assertSetPropertyValuePasses() {
   const plan = {
     summary: "Set one explicit generated layer property value and inspect property read-back.",
@@ -2015,6 +3717,135 @@ function assertMarkerLifecycleSequencePasses() {
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer_marker:marker") >= 0 && check.status === "passed"), "delete marker should still pass on final absent read-back.");
 }
 
+function essentialGraphicsControllerPlan(includePostReadBack = true) {
+  const compName = "Essential Graphics Fixture";
+  const layerIndex = 1;
+  const controllerName = "Source Opacity";
+  const propertyPath = [
+    { matchName: "ADBE Transform Group" },
+    { matchName: "ADBE Opacity", name: "Opacity" }
+  ];
+  const steps = [
+    {
+      title: "Read generated Essential Graphics controllers before mutation",
+      tool: "get_essential_graphics_controllers",
+      args: { compName }
+    },
+    {
+      title: "Add generated opacity to Essential Graphics",
+      tool: "add_property_to_essential_graphics",
+      args: {
+        compName,
+        layerIndex,
+        expectedLayerName: "Essential Graphics Fixture Layer",
+        propertyPath,
+        expectedPropertyMatchName: "ADBE Opacity",
+        controllerName,
+        expectedControllerCountBefore: 0
+      }
+    }
+  ];
+  if (includePostReadBack) {
+    steps.push({
+      title: "Read generated Essential Graphics controllers after mutation",
+      tool: "get_essential_graphics_controllers",
+      args: { compName }
+    });
+  }
+  return {
+    summary: "Add one generated property to Essential Graphics and read controller evidence.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertAddPropertyToEssentialGraphicsPasses() {
+  const plan = essentialGraphicsControllerPlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `add_property_to_essential_graphics semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("add_property_to_essential_graphics:controller") >= 0 && check.status === "passed"), "add_property_to_essential_graphics read-back check should pass.");
+}
+
+function assertAddPropertyToEssentialGraphicsMissingReadBackNeedsReview() {
+  const plan = essentialGraphicsControllerPlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "add_property_to_essential_graphics must require post-run get_essential_graphics_controllers read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("add_property_to_essential_graphics:controller") >= 0 && check.status === "failed"), "add_property_to_essential_graphics missing post-read-back should fail.");
+}
+
+function puppetPinTypePlan(includeReadBack = true) {
+  const propertyPath = [
+    { matchName: "ADBE Effect Parade" },
+    { matchName: "ADBE FreePin3", name: "Puppet" },
+    { matchName: "ADBE FreePin3 PosPin Atom", name: "Puppet Pin 1" },
+    { matchName: "ADBE FreePin3 PosPin Type", name: "Type" }
+  ];
+  const steps = [
+    {
+      title: "Set generated Puppet Pin 1 to Advanced",
+      tool: "set_puppet_pin_type",
+      args: {
+        compName: "Puppet Pin Type Fixture",
+        layerIndex: 1,
+        effectName: "Puppet",
+        pinTypePropertyPath: propertyPath,
+        expectedPinName: "Puppet Pin 1",
+        expectedCurrentPinType: 1,
+        pinType: 4
+      }
+    }
+  ];
+  if (includeReadBack) {
+    steps.push({
+      title: "Read generated Puppet Pin 1 type after mutation",
+      tool: "get_effect_details",
+      args: {
+        compName: "Puppet Pin Type Fixture",
+        layerIndex: 1,
+        effectName: "Puppet",
+        includeProperties: true,
+        includeValues: true,
+        propertyDepth: 5,
+        propertyLimit: 160
+      }
+    });
+  }
+  return {
+    summary: "Puppet pin type semantic fixture",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps
+  };
+}
+
+function assertSetPuppetPinTypePasses() {
+  const plan = puppetPinTypePlan(true);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_puppet_pin_type semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_puppet_pin_type:pin-type") >= 0 && check.status === "passed"), "set_puppet_pin_type read-back check should pass.");
+}
+
+function assertSetPuppetPinTypeMissingReadBackNeedsReview() {
+  const plan = puppetPinTypePlan(false);
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "needs_review", "set_puppet_pin_type must require post-run get_effect_details read-back.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_puppet_pin_type:pin-type") >= 0 && check.status === "failed"), "set_puppet_pin_type missing read-back should fail.");
+}
+
+function assertSetEffectEnabledScenarioPasses() {
+  const [scenario] = agentEffectEnabledScenarioPlans("Codex Semantic Effect Enabled Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `set_effect_enabled semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_effect_enabled:effect-enabled") >= 0 && check.status === "passed"), "set_effect_enabled read-back check should pass.");
+}
+
 function assertSourceTextKeyframesPass() {
   const [scenario] = agentTextToKeysScenarioPlans("Codex Semantic TTK Fixture");
   const run = fakeRunForPlan(scenario.plan);
@@ -2037,6 +3868,178 @@ function assertSourceTextKeyframeMismatchNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_property_keyframes:keyframe-values") >= 0 && check.status === "failed"), "mismatched Source Text keyframe values should fail.");
 }
 
+function assertParentOpacityExpressionScenarioPasses() {
+  const [scenario] = agentParentOpacityExpressionScenarioPlans("Codex Semantic Parent Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  assert.strictEqual(semantic.status, "passed", `parent-opacity expression semantic verification should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_layer_parent.");
+  assert(semantic.checks.some((check) => check.id.indexOf("set_expression:expression") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_expression.");
+}
+
+function assertLayerParentBelowScenarioPasses() {
+  const [scenario] = agentLayerParentBelowScenarioPlans("Codex Semantic Parent Below Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `layer-below parenting semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const parentChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed");
+  assert(parentChecks.length >= 2, "layer-below parenting scenario should verify both set_layer_parent read-backs.");
+}
+
+function assertLayerParentClosestScenarioPasses() {
+  const [scenario] = agentLayerParentClosestScenarioPlans("Codex Semantic Parent Closest Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `closest-layer parenting semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const parentChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed");
+  assert(parentChecks.length >= 2, "closest-layer parenting scenario should verify both set_layer_parent read-backs.");
+}
+
+function assertLayerNameResetScenarioPasses() {
+  const [scenario] = agentLayerNameResetScenarioPlans("Codex Semantic Reset Names Fixture");
+  const run = fakeRunForPlan(scenario.plan);
+  const semantic = buildSemanticVerification(scenario.plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `empty layer-name reset semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  const renameChecks = semantic.checks.filter((check) => check.id.indexOf("rename_layers:rename") >= 0 && check.status === "passed");
+  assert.strictEqual(renameChecks.length, 2, "empty layer-name reset scenario should verify both single-layer rename steps.");
+}
+
+function textJustificationPlan() {
+  return {
+    summary: "Create and update generated text paragraph justification.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated center-justified text",
+        tool: "create_text_layer",
+        args: {
+          compName: "Text Justification Fixture",
+          name: "Text Justification Layer",
+          text: "Justified",
+          fontSize: 42,
+          justification: "center"
+        }
+      },
+      {
+        title: "Update generated text justification",
+        tool: "update_text_layer",
+        args: {
+          compName: "Text Justification Fixture",
+          layerIndex: 1,
+          justification: "right"
+        }
+      },
+      {
+        title: "Read generated text justification",
+        tool: "get_layer_details",
+        args: {
+          compName: "Text Justification Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+}
+
+function assertTextJustificationPasses() {
+  const plan = textJustificationPlan();
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `text justification semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_text_layer:justification") >= 0 && check.status === "passed"), "create_text_layer justification check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("update_text_layer:justification") >= 0 && check.status === "passed"), "update_text_layer justification check should pass.");
+
+  const mismatchRun = fakeRunForPlan(plan);
+  const updateStep = mismatchRun.steps.find((step) => step.tool === "update_text_layer");
+  updateStep.result.layer.text.justification = "left";
+  updateStep.result.text.justification = "left";
+  const mismatch = buildSemanticVerification(plan, mismatchRun);
+  assert.strictEqual(mismatch.status, "needs_review", "text justification mismatch should fail closed.");
+  assert(mismatch.checks.some((check) => check.id.indexOf("update_text_layer:justification") >= 0 && check.status === "failed"), "mismatched update_text_layer justification should fail.");
+}
+
+function assertShapeLayerPolystarPasses() {
+  const plan = {
+    summary: "Create generated polygon and star shape layers with explicit bounded geometry.",
+    risk: "medium",
+    requiresCheckpoint: true,
+    steps: [
+      {
+        title: "Create generated polygon",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Shape Polystar Fixture",
+          name: "Shape Polystar Polygon",
+          shape: "polygon",
+          points: 6,
+          outerRadius: 120,
+          position: [240, 180],
+          fillColor: [0.24, 0.58, 0.86],
+          strokeColor: [1, 1, 1],
+          strokeWidth: 2,
+          duration: 3
+        }
+      },
+      {
+        title: "Read generated polygon",
+        tool: "get_layer_details",
+        args: {
+          compName: "Shape Polystar Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      },
+      {
+        title: "Create generated star",
+        tool: "create_shape_layer",
+        args: {
+          compName: "Shape Polystar Fixture",
+          name: "Shape Polystar Star",
+          shape: "star",
+          points: 5,
+          outerRadius: 130,
+          innerRadius: 55,
+          position: [420, 180],
+          fillColor: [0.92, 0.58, 0.18],
+          strokeColor: [1, 1, 1],
+          strokeWidth: 2,
+          duration: 3
+        }
+      },
+      {
+        title: "Read generated star",
+        tool: "get_layer_details",
+        args: {
+          compName: "Shape Polystar Fixture",
+          layerIndex: 1,
+          includeProperties: false
+        }
+      }
+    ]
+  };
+  const run = fakeRunForPlan(plan);
+  const semantic = buildSemanticVerification(plan, run);
+  const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
+  assert.strictEqual(semantic.status, "passed", `polygon/star shape semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:points") >= 0 && check.status === "passed"), "create_shape_layer points check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:outerRadius") >= 0 && check.status === "passed"), "create_shape_layer outerRadius check should pass.");
+  assert(semantic.checks.some((check) => check.id.indexOf("create_shape_layer:innerRadius") >= 0 && check.status === "passed"), "create_shape_layer innerRadius check should pass.");
+
+  const mismatchRun = fakeRunForPlan(plan);
+  const starStep = mismatchRun.steps.find((step) => step.tool === "create_shape_layer" && step.args.shape === "star");
+  starStep.result.shape.outerRadius = 99;
+  starStep.result.layer.shapeContents[0].outerRadius = 99;
+  const mismatch = buildSemanticVerification(plan, mismatchRun);
+  assert.strictEqual(mismatch.status, "needs_review", "polygon/star shape geometry mismatch should fail closed.");
+  assert(mismatch.checks.some((check) => check.id.indexOf("create_shape_layer:outerRadius") >= 0 && check.status === "failed"), "mismatched outerRadius should fail.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -2055,23 +4058,61 @@ function main() {
   assertDuplicateLayersPairOrderMismatchNeedsReview();
   assertLayerSelectionPasses();
   assertLayerMetadataPasses();
+  assertLayerEnabledHardSoloPasses();
+  assertGridRigControlReplacementPasses();
+  assertLayerBlendingModePasses();
+  assertLayerParentPasses();
+  assertLayerParentMissingReadBackNeedsReview();
+  assertLayerTrackMattePasses();
+  assertLayerTrackMatteMissingReadBackNeedsReview();
+  assertAdjustmentLayerPlacementPasses();
+  assertLayerConnectionLinePasses();
+  assertTextShapesPasses();
+  assertProjectItemMetadataPasses();
+  assertProjectItemMetadataMissingReadBackNeedsReview();
   assertDeleteLayerPasses();
   assertDeleteLayerMissingReadBackNeedsReview();
   assertSetCompPropertiesPasses();
+  assertPreserveNestedFrameRateFixturePasses();
+  assertProjectTimecodeStartFramesFixturePasses();
   assertSetCompPropertiesReadBackMismatchNeedsReview();
+  assertRefreshCompPanelPasses();
+  assertSetCompWorkAreaReadBackFallbackPasses();
+  assertSetCompWorkAreaMissingReadBackNeedsReview();
+  assertSetCompCurrentTimePasses();
+  assertSetCompCurrentTimeMissingReadBackNeedsReview();
   assertSetLayerMaskCreateUpdatePasses();
   assertSetLayerMaskMissingReadBackNeedsReview();
+  assertSetPathGeometryPasses();
+  assertSetPathGeometryMissingReadBackNeedsReview();
+  assertExportPathPointsPasses();
+  assertExportPathPointsMissingReadBackNeedsReview();
+  assertExportTextToFilePasses();
+  assertSaveCompFramePngPasses();
   assertDakkshinFixtureMutationScopedReadBackPasses();
   assertDakkshinLiveAeEvidenceShapePasses();
   assertSetPropertyValuePasses();
   assertSetLayerSwitchValuePasses();
   assertRemainingTailContractToolsPass();
+  assertAddCompMarkerPasses();
+  assertSequentialAddCompMarkersPassWithSharedReadBack();
   assertAddLayerMarkerPasses();
   assertUpdateLayerMarkerPasses();
   assertDeleteLayerMarkerPasses();
   assertMarkerLifecycleSequencePasses();
+  assertAddPropertyToEssentialGraphicsPasses();
+  assertAddPropertyToEssentialGraphicsMissingReadBackNeedsReview();
+  assertSetPuppetPinTypePasses();
+  assertSetPuppetPinTypeMissingReadBackNeedsReview();
+  assertSetEffectEnabledScenarioPasses();
   assertSourceTextKeyframesPass();
   assertSourceTextKeyframeMismatchNeedsReview();
+  assertParentOpacityExpressionScenarioPasses();
+  assertLayerParentBelowScenarioPasses();
+  assertLayerParentClosestScenarioPasses();
+  assertLayerNameResetScenarioPasses();
+  assertTextJustificationPasses();
+  assertShapeLayerPolystarPasses();
 
   console.log(JSON.stringify({
     ok: true,

@@ -289,7 +289,9 @@ function assertReadOnlyTools(tools) {
     "set_layer_mask",
     "duplicate_layer",
     "duplicate_layers",
+    "set_layer_parent",
     "delete_layer",
+    "add_comp_marker",
     "add_layer_marker",
     "update_layer_marker",
     "delete_layer_marker",
@@ -299,9 +301,17 @@ function assertReadOnlyTools(tools) {
     "add_effect",
     "add_comp_to_render_queue",
     "set_property_value",
+    "set_effect_enabled",
+    "set_puppet_pin_type",
+    "add_property_to_essential_graphics",
     "set_layer_metadata",
+    "set_layer_blending_mode",
+    "set_project_item_metadata",
+    "set_project_frames_count_type",
     "set_layer_transform",
+    "set_comp_current_time",
     "set_comp_properties",
+    "refresh_comp_panel",
     "set_comp_work_area",
     "set_layer_time_range",
     "stagger_layers",
@@ -327,6 +337,18 @@ function assertReadOnlyTools(tools) {
   for (const expectedBridgeTool of READ_ONLY_BRIDGE_TOOL_NAMES) {
     assert(names.includes(expectedBridgeTool), `Expected read-only bridge tool ${expectedBridgeTool}`);
   }
+
+  const compDetailsTool = tools.find((tool) => tool.name === "get_comp_details");
+  assert(compDetailsTool, "Expected get_comp_details connector tool.");
+  assert(compDetailsTool.inputSchema.properties.compName, "Expected get_comp_details compName schema.");
+  assert(compDetailsTool.inputSchema.properties.includeMarkers, "Expected get_comp_details includeMarkers schema.");
+  assert(compDetailsTool.inputSchema.properties.markerLimit, "Expected get_comp_details markerLimit schema.");
+  const essentialPropertiesTool = tools.find((tool) => tool.name === "get_layer_essential_properties");
+  assert(essentialPropertiesTool, "Expected get_layer_essential_properties connector tool.");
+  assert(essentialPropertiesTool.inputSchema.properties.layerIndex, "Expected get_layer_essential_properties layerIndex schema.");
+  const essentialControllersTool = tools.find((tool) => tool.name === "get_essential_graphics_controllers");
+  assert(essentialControllersTool, "Expected get_essential_graphics_controllers connector tool.");
+  assert(essentialControllersTool.inputSchema.properties.compName, "Expected get_essential_graphics_controllers compName schema.");
 
   for (const forbidden of banned) {
     assert(!names.includes(forbidden), `Forbidden write/raw/provider tool exposed: ${forbidden}`);

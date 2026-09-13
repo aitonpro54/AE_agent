@@ -11,6 +11,7 @@ const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
+const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -41,6 +42,12 @@ const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
 const DEV_REQUESTS_DIR = process.env.AE_AGENT_DEV_REQUEST_DIR
   ? path.resolve(process.env.AE_AGENT_DEV_REQUEST_DIR)
   : path.join(LOG_DIR, "dev-requests");
+const GENERATED_EXPORT_DIR = process.env.AE_AGENT_GENERATED_EXPORT_DIR
+  ? path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR)
+  : path.join(LOG_DIR, "generated-exports");
+const GENERATED_RENDER_OUTPUT_DIR = process.env.AE_AGENT_GENERATED_RENDER_OUTPUT_DIR
+  ? path.resolve(process.env.AE_AGENT_GENERATED_RENDER_OUTPUT_DIR)
+  : path.join(LOG_DIR, "generated-renders");
 const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
   ? path.resolve(process.env.AE_AGENT_HARDCORE_SESSION_DIR)
   : path.join(LOG_DIR, "hardcore-sessions");
@@ -805,6 +812,9 @@ function getBridgeStatus() {
     logFile: LOG_FILE,
     aiChatLogFile: AI_CHAT_LOG_FILE,
     idempotencyLogFile: IDEMPOTENCY_LOG_FILE,
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR,
+    generatedSafetyContractVersion: generatedSafety.GENERATED_SAFETY_CONTRACT_VERSION,
     hardcoreSessionDir: HARDCORE_SESSIONS_DIR,
     agentSecretsFile: AGENT_SECRETS_FILE,
     backupDir: BACKUP_DIR,
@@ -860,6 +870,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_project_folder",
   "move_project_items_to_folder",
   "create_text_layer",
+  "create_shapes_from_text",
   "import_footage",
   "create_solid_layer",
   "create_null_layer",
@@ -869,18 +880,32 @@ const MUTATING_TOOL_NAMES = new Set([
   "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
+  "set_path_geometry",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_effect_enabled",
+  "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
+  "set_project_item_metadata",
+  "set_project_frames_count_type",
+  "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -891,6 +916,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "rename_project_items",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "fit_layer_to_comp",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -905,6 +931,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "align_layers_to_time",
   "set_layer_transform",
   "apply_transform_expression",
+  "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -1580,7 +1607,7 @@ function hasArg(args, name) {
 }
 
 function hasRequiredPlanArg(toolName, args, name) {
-  if (toolName === "add_layer_marker" && name === "comment") {
+  if ((toolName === "add_layer_marker" || toolName === "add_comp_marker") && name === "comment") {
     return Object.prototype.hasOwnProperty.call(args, name) && args[name] !== undefined && args[name] !== null;
   }
   return hasArg(args, name);
@@ -1667,6 +1694,15 @@ function optionalString(args, name, fallback) {
   return String(args[name]);
 }
 
+function optionalTextJustification(args, name, fallback) {
+  if (!hasArg(args, name)) return fallback;
+  const normalized = String(args[name]).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["left", "left_justify", "left_justified"].includes(normalized)) return "left";
+  if (["center", "centre", "center_justify", "centered", "center_justified"].includes(normalized)) return "center";
+  if (["right", "right_justify", "right_justified"].includes(normalized)) return "right";
+  throw new Error(`${name} must be one of: left, center, right.`);
+}
+
 function optionalBoolean(args, name, fallback) {
   if (!hasArg(args, name)) return fallback;
   const value = args[name];
@@ -1681,6 +1717,18 @@ function optionalBoolean(args, name, fallback) {
     if (["false", "0", "no", "off"].includes(normalized)) return false;
   }
   throw new Error(`${name} must be a boolean.`);
+}
+
+function normalizePuppetPinType(value, fieldName = "pinType") {
+  if (typeof value === "number") {
+    if (value === 1 || value === 4) return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "1" || normalized === "position") return 1;
+    if (normalized === "4" || normalized === "advanced") return 4;
+  }
+  throw new Error(`${fieldName} must be 1/position or 4/advanced.`);
 }
 
 function parseArrayArg(value, name) {
@@ -1713,9 +1761,7 @@ function optionalNumberArray(args, name, fallback, minLength, maxLength) {
   return values;
 }
 
-function requiredPointArray(args, name, minLength, maxLength) {
-  if (!hasArg(args, name)) throw new Error(`${name} is required.`);
-  let raw = args[name];
+function parsePointArrayValue(raw, name, minLength, maxLength) {
   if (typeof raw === "string") raw = JSON.parse(raw);
   if (!Array.isArray(raw)) throw new Error(`${name} must be an array of [x, y] points.`);
   if (minLength && raw.length < minLength) throw new Error(`${name} must include at least ${minLength} points.`);
@@ -1730,6 +1776,76 @@ function requiredPointArray(args, name, minLength, maxLength) {
       throw new Error(`${name}[${index}] must contain finite coordinates.`);
     }
     return [x, y];
+  });
+}
+
+function requiredPointArray(args, name, minLength, maxLength) {
+  if (!hasArg(args, name)) throw new Error(`${name} is required.`);
+  return parsePointArrayValue(args[name], name, minLength, maxLength);
+}
+
+function parsePathGeometryValue(value, name, minVertices, maxVertices) {
+  const raw = typeof value === "string" ? JSON.parse(value) : value;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(`${name} must be an object with vertices, inTangents, outTangents, and closed.`);
+  }
+
+  const vertices = parsePointArrayValue(raw.vertices, `${name}.vertices`, minVertices, maxVertices);
+  const inTangents = parsePointArrayValue(raw.inTangents, `${name}.inTangents`, vertices.length, vertices.length);
+  const outTangents = parsePointArrayValue(raw.outTangents, `${name}.outTangents`, vertices.length, vertices.length);
+  if (typeof raw.closed !== "boolean") throw new Error(`${name}.closed must be a boolean.`);
+  if (raw.closed && vertices.length < 3) throw new Error(`${name}.vertices must include at least 3 points when closed is true.`);
+
+  const coordinateLimit = 1000000;
+  const allPoints = vertices.concat(inTangents, outTangents);
+  if (allPoints.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+    throw new Error(`${name} coordinates must be between -1000000 and 1000000.`);
+  }
+
+  return {
+    vertices,
+    inTangents,
+    outTangents,
+    closed: raw.closed
+  };
+}
+
+function optionalPathGeometry(args, name, fallback) {
+  if (!hasArg(args, name)) return fallback;
+  return parsePathGeometryValue(args[name], name, 2, 80);
+}
+
+function pathGeometryFromTopLevelArgs(args) {
+  if (!hasArg(args || {}, "vertices") && !hasArg(args || {}, "inTangents") && !hasArg(args || {}, "outTangents") && !hasArg(args || {}, "closed")) {
+    return null;
+  }
+  return parsePathGeometryValue({
+    vertices: args.vertices,
+    inTangents: args.inTangents,
+    outTangents: args.outTangents,
+    closed: args.closed
+  }, "geometry", 2, 80);
+}
+
+function requiredPathGeometryKeyframes(args, name) {
+  const raw = args ? args[name] : null;
+  const items = Array.isArray(raw)
+    ? raw
+    : typeof raw === "string" && raw.trim().startsWith("[")
+      ? JSON.parse(raw)
+      : null;
+  if (!Array.isArray(items) || !items.length) throw new Error(`${name} must be a non-empty array.`);
+  if (items.length > 80) throw new Error(`${name} must include no more than 80 keyframes.`);
+  return items.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`${name}[${index}] must be an object.`);
+    }
+    const time = Number(item.time);
+    if (!Number.isFinite(time) || time < 0) throw new Error(`${name}[${index}].time must be a non-negative finite number.`);
+    return {
+      time,
+      geometry: parsePathGeometryValue(item.geometry || item, `${name}[${index}]`, 2, 80)
+    };
   });
 }
 
@@ -1914,7 +2030,7 @@ function compactCheckpoint(checkpoint) {
 function inferMutationTarget(toolName, args, payload) {
   const target = { tool: toolName };
   const request = {};
-  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "renderQueueItemIndex", "outputPath"]) {
+  for (const key of ["compItemIndex", "compName", "layerIndex", "layerIndices", "layerName", "sourceName", "expectedLayerName", "expectedLayerNames", "comment", "label", "locked", "maskIndex", "expectedMaskName", "operation", "maskMode", "targetTime", "time", "frame", "frameRate", "expectedCurrentTime", "clampToDuration", "align", "start", "duration", "startTime", "inPoint", "outPoint", "gap", "overlap", "order", "itemIndex", "itemName", "itemIndices", "expectedItemNames", "itemType", "sourceItemIndex", "sourceItemName", "sourceCompItemIndex", "sourceCompName", "nameSuffix", "effect", "effectIndex", "effectName", "effectMatchName", "property", "propertyPath", "name", "namePrefix", "newCompName", "mode", "shape", "allowEmptyName", "renderQueueItemIndex", "outputPath", "outputFileName"]) {
     if (hasArg(args || {}, key)) request[key] = args[key];
   }
   if (Object.keys(request).length) target.request = request;
@@ -1942,6 +2058,7 @@ function inferMutationTarget(toolName, args, payload) {
     if (payload.duplicatedItems) target.duplicatedItems = payload.duplicatedItems;
     if (payload.renderQueueItem) target.renderQueueItem = payload.renderQueueItem;
     if (payload.renderQueueItems) target.renderQueueItems = payload.renderQueueItems;
+    if (payload.file) target.file = payload.file;
     if (payload.renamed) target.renamed = payload.renamed;
     if (payload.split) target.split = payload.split;
     if (payload.namePrefix) target.namePrefix = payload.namePrefix;
@@ -2187,6 +2304,35 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if (toolName === "export_path_points" || toolName === "export_text_to_file" || toolName === "save_comp_frame_png") {
+    const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
+    const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+    const byteLength = Number(file.byteLength || 0);
+    const restoration = payload && typeof payload === "object" && !Array.isArray(payload)
+      ? payload.resolutionFactor || {}
+      : {};
+    const restored = toolName === "save_comp_frame_png"
+      ? restoration.restored === true
+      : true;
+    return {
+      ok: hashOk && byteLength > 0 && restored,
+      checkedAt: new Date().toISOString(),
+      target: {
+        tool: toolName,
+        outputFileName: file.outputFileName || args && args.outputFileName || null,
+        outputPath: file.outputPath || null
+      },
+      file: {
+        byteLength,
+        sha256: file.sha256 || null,
+        existsAfter: file.existsAfter === true,
+        deletedAfterReadBack: file.deletedAfterReadBack === true
+      },
+      resolutionFactor: toolName === "save_comp_frame_png" ? restoration : null,
+      warnings: hashOk && byteLength > 0 && restored ? [] : ["Generated export file read-back did not include a valid sha256/byteLength or resolutionFactor restoration evidence."]
+    };
+  }
+
   const target = inferVerificationTarget(toolName, args || {}, payload);
   const response = await runExtendScriptBody(`
       var target = ${aeLiteral(target)};
@@ -2215,20 +2361,116 @@ async function verifyMutationResult(toolName, args, payload) {
         }
       }
 
+      function __codexTextJustificationName(value) {
+        try { if (value === ParagraphJustification.LEFT_JUSTIFY) return "left"; } catch (__leftJustificationNameError) {}
+        try { if (value === ParagraphJustification.CENTER_JUSTIFY) return "center"; } catch (__centerJustificationNameError) {}
+        try { if (value === ParagraphJustification.RIGHT_JUSTIFY) return "right"; } catch (__rightJustificationNameError) {}
+        try { return String(value); } catch (__justificationStringError) {}
+        return null;
+      }
+
+      function __codexLayerShapeChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__shapeDirectPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__shapeFallbackPropertyError) {}
+        }
+        try {
+          for (var __sp = 1; __sp <= group.numProperties; __sp++) {
+            var child = group.property(__sp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__shapeChildPropertyError) {}
+        return null;
+      }
+
+      function __codexLayerShapeValue(group, matchName, fallbackName) {
+        var prop = __codexLayerShapeChildProperty(group, matchName, fallbackName);
+        if (!prop) return null;
+        try { return prop.value; } catch (__shapeValueError) {}
+        return null;
+      }
+
+      function __codexLayerPolystarTypeName(value) {
+        try { if (value === PolystarPathType.POLYGON) return "polygon"; } catch (__polygonTypeNameError) {}
+        try { if (value === PolystarPathType.STAR) return "star"; } catch (__starTypeNameError) {}
+        if (Number(value) === 2) return "polygon";
+        if (Number(value) === 1) return "star";
+        try { return String(value); } catch (__polystarTypeStringError) {}
+        return null;
+      }
+
+      function __codexLayerShapeContentsInfo(layer) {
+        var shapes = [];
+        try {
+          var root = layer.property("ADBE Root Vectors Group");
+          if (!root) return shapes;
+          for (var __g = 1; __g <= root.numProperties; __g++) {
+            var group = root.property(__g);
+            if (!group || group.matchName !== "ADBE Vector Group") continue;
+            var contents = __codexLayerShapeChildProperty(group, "ADBE Vectors Group", "Contents");
+            if (!contents) continue;
+            for (var __c = 1; __c <= contents.numProperties; __c++) {
+              var shapeProp = contents.property(__c);
+              if (!shapeProp) continue;
+              var shapeInfo = {
+                groupName: group.name || "",
+                name: shapeProp.name || "",
+                matchName: shapeProp.matchName || ""
+              };
+              if (shapeProp.matchName === "ADBE Vector Shape - Rect") {
+                shapeInfo.type = "rectangle";
+                shapeInfo.size = __codexLayerShapeValue(shapeProp, "ADBE Vector Rect Size", "Size");
+              } else if (shapeProp.matchName === "ADBE Vector Shape - Ellipse") {
+                shapeInfo.type = "ellipse";
+                shapeInfo.size = __codexLayerShapeValue(shapeProp, "ADBE Vector Ellipse Size", "Size");
+              } else if (shapeProp.matchName === "ADBE Vector Shape - Star") {
+                shapeInfo.starType = __codexLayerPolystarTypeName(__codexLayerShapeValue(shapeProp, "ADBE Vector Star Type", "Type"));
+                shapeInfo.type = shapeInfo.starType || "star";
+                shapeInfo.points = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Points", "Points");
+                shapeInfo.outerRadius = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Outer Radius", "Outer Radius");
+                shapeInfo.innerRadius = __codexLayerShapeValue(shapeProp, "ADBE Vector Star Inner Radius", "Inner Radius");
+              } else {
+                continue;
+              }
+              shapes.push(shapeInfo);
+            }
+          }
+        } catch (__shapeContentsInfoError) {}
+        return shapes;
+      }
+
       function __codexLayerInfo(layer) {
         if (!layer) return null;
         var transform = layer.property("ADBE Transform Group");
         var textGroup = null;
         var sourceText = null;
+        var isTextLayer = false;
+        var isShapeLayer = false;
         try { textGroup = layer.property("ADBE Text Properties"); } catch (__textGroupError) {}
         if (textGroup) {
           try { sourceText = textGroup.property("ADBE Text Document").value; } catch (__sourceTextError) {}
+        }
+        try { isTextLayer = layer instanceof TextLayer; } catch (__textLayerClassError) {}
+        if (!isTextLayer && textGroup) isTextLayer = true;
+        try { isShapeLayer = layer instanceof ShapeLayer; } catch (__shapeLayerClassError) {}
+        if (!isShapeLayer) {
+          try { isShapeLayer = layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerFallbackError) {}
         }
         return {
           index: layer.index,
           id: layer.id || null,
           name: layer.name || "",
           matchName: layer.matchName || null,
+          textLayer: isTextLayer,
+          shapeLayer: isShapeLayer,
+          layerKind: isTextLayer ? "text" : (isShapeLayer ? "shape" : null),
           enabled: !!layer.enabled,
           locked: !!layer.locked,
           startTime: layer.startTime,
@@ -2247,8 +2489,10 @@ async function verifyMutationResult(toolName, args, payload) {
           text: sourceText ? {
             text: sourceText.text || "",
             font: sourceText.font || null,
-            fontSize: sourceText.fontSize || null
-          } : null
+            fontSize: sourceText.fontSize || null,
+            justification: __codexTextJustificationName(sourceText.justification)
+          } : null,
+          shapeContents: isShapeLayer ? __codexLayerShapeContentsInfo(layer) : []
         };
       }
 
@@ -2403,11 +2647,272 @@ function resolveExistingFile(filePath) {
 }
 
 function resolveOutputFilePath(filePath) {
-  const requestedPath = optionalString({ filePath }, "filePath", "");
-  if (!requestedPath) {
-    throw new Error("outputPath is required.");
+  return generatedSafety.resolveGeneratedRenderOutputPath({
+    projectRoot: PROJECT_ROOT,
+    generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR,
+    requestedPath: optionalString({ filePath }, "filePath", "")
+  }).resolvedPath;
+}
+
+function resolveGeneratedExportFile(outputFileName) {
+  return generatedSafety.resolveGeneratedFile({
+    root: GENERATED_EXPORT_DIR,
+    requestedName: optionalString({ outputFileName }, "outputFileName", "points.txt"),
+    defaultFilename: "points.txt",
+    allowedExtensions: [".txt"],
+    label: "outputFileName"
+  });
+}
+
+function resolveGeneratedPngExportFile(outputFileName) {
+  return generatedSafety.resolveGeneratedFile({
+    root: GENERATED_EXPORT_DIR,
+    requestedName: optionalString({ outputFileName }, "outputFileName", "frame.png"),
+    defaultFilename: "frame.png",
+    allowedExtensions: [".png"],
+    label: "outputFileName"
+  });
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForNonEmptyFile(filePath, options = {}) {
+  const timeoutMs = Math.max(100, Math.min(10000, Number(options.timeoutMs || 3000)));
+  const intervalMs = Math.max(25, Math.min(1000, Number(options.intervalMs || 75)));
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath);
+      if (stat.isFile() && stat.size > 0) return stat;
+    }
+    await delay(intervalMs);
   }
-  return path.resolve(PROJECT_ROOT, requestedPath);
+  return null;
+}
+
+function optionalResolutionFactor(args, name) {
+  const values = optionalNumberArray(args || {}, name, null, 2, 2);
+  if (!values) return null;
+  return values.map((value) => {
+    const normalized = Math.floor(value);
+    if (!Number.isInteger(normalized) || normalized < 1 || normalized > 99) {
+      throw new Error(`${name} values must be integers from 1 through 99.`);
+    }
+    return normalized;
+  });
+}
+
+function pathPointsGeometryFromArgs(args) {
+  if (hasArg(args || {}, "vertices")) return requiredPointArray(args, "vertices", 1, 80);
+  if (hasArg(args || {}, "geometry")) return optionalPathGeometry(args, "geometry", null).vertices;
+  throw new Error("vertices or geometry is required.");
+}
+
+function roundedCoordinate(value, decimalPlaces) {
+  return Number(Number(value).toFixed(decimalPlaces));
+}
+
+function buildPathPointsExport(vertices, options) {
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(Number(options.decimalPlaces))));
+  const points = vertices.map((point) => [
+    roundedCoordinate(point[0], decimalPlaces),
+    roundedCoordinate(point[1], decimalPlaces)
+  ]);
+  if (options.rotateFirstPointToEnd && points.length > 1) {
+    points.push(points.shift());
+  }
+  const variableName = optionalString(options, "variableName", "points") || "points";
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/.test(variableName)) {
+    throw new Error("variableName must be a valid JavaScript identifier up to 64 characters.");
+  }
+  return {
+    variableName,
+    points,
+    content: `var ${variableName} = ${JSON.stringify(points)};`
+  };
+}
+
+function exportPathPointsFile(args) {
+  const vertices = pathPointsGeometryFromArgs(args || {});
+  const coordinateLimit = 1000000;
+  if (vertices.some((point) => Math.abs(point[0]) > coordinateLimit || Math.abs(point[1]) > coordinateLimit)) {
+    throw new Error("vertices values must be between -1000000 and 1000000.");
+  }
+
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(optionalNumber(args || {}, "decimalPlaces", 2))));
+  const rotateFirstPointToEnd = optionalBoolean(args || {}, "rotateFirstPointToEnd", true);
+  const deleteAfterReadBack = optionalBoolean(args || {}, "deleteAfterReadBack", false);
+  const { outputFileName, resolvedPath } = resolveGeneratedExportFile(optionalString(args || {}, "outputFileName", "points.txt"));
+  const exportData = buildPathPointsExport(vertices, {
+    decimalPlaces,
+    rotateFirstPointToEnd,
+    variableName: optionalString(args || {}, "variableName", "points")
+  });
+
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  fs.writeFileSync(resolvedPath, exportData.content, "utf8");
+  const readBack = fs.readFileSync(resolvedPath, "utf8");
+  const sha256 = crypto.createHash("sha256").update(readBack).digest("hex");
+  let existsAfter = true;
+  if (deleteAfterReadBack) {
+    fs.unlinkSync(resolvedPath);
+    existsAfter = fs.existsSync(resolvedPath);
+  }
+
+  return {
+    outputFileName,
+    outputPath: resolvedPath,
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    decimalPlaces,
+    rotateFirstPointToEnd,
+    variableName: exportData.variableName,
+    sourceVertexCount: vertices.length,
+    pointCount: exportData.points.length,
+    points: exportData.points,
+    contentPreview: readBack.slice(0, 500),
+    file: {
+      outputFileName,
+      outputPath: resolvedPath,
+      byteLength: Buffer.byteLength(readBack, "utf8"),
+      sha256,
+      existsAfter,
+      deletedAfterReadBack: deleteAfterReadBack
+    }
+  };
+}
+
+function stringValueOrNull(value) {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return null;
+  return null;
+}
+
+function sourceTextFromLayerEvidence(rawLayer) {
+  const raw = rawLayer && typeof rawLayer === "object" && !Array.isArray(rawLayer) ? rawLayer : {};
+  const layer = raw.layer && typeof raw.layer === "object" && !Array.isArray(raw.layer) ? raw.layer : raw;
+  const textPayload = raw.text && typeof raw.text === "object" && !Array.isArray(raw.text)
+    ? raw.text
+    : layer.text && typeof layer.text === "object" && !Array.isArray(layer.text)
+      ? layer.text
+      : null;
+
+  return stringValueOrNull(raw.sourceText) ||
+    stringValueOrNull(layer.sourceText) ||
+    stringValueOrNull(raw.text) ||
+    stringValueOrNull(layer.text) ||
+    stringValueOrNull(textPayload && textPayload.text);
+}
+
+function textExportLayerFromEvidence(rawLayer, ordinal) {
+  const raw = rawLayer && typeof rawLayer === "object" && !Array.isArray(rawLayer) ? rawLayer : {};
+  const layer = raw.layer && typeof raw.layer === "object" && !Array.isArray(raw.layer) ? raw.layer : raw;
+  const textPayload = raw.text && typeof raw.text === "object" && !Array.isArray(raw.text)
+    ? raw.text
+    : layer.text && typeof layer.text === "object" && !Array.isArray(layer.text)
+      ? layer.text
+      : null;
+  const sourceText = sourceTextFromLayerEvidence(raw);
+  const textLayer = raw.textLayer === true ||
+    layer.textLayer === true ||
+    raw.layerKind === "text" ||
+    layer.layerKind === "text" ||
+    raw.type === "text" ||
+    layer.type === "text" ||
+    Boolean(textPayload && textPayload.kind === "TextDocument") ||
+    sourceText !== null;
+
+  if (textLayer && sourceText === null) {
+    throw new Error(`layers[${ordinal - 1}] is a text layer but does not include Source Text evidence.`);
+  }
+  if (sourceText !== null && Buffer.byteLength(sourceText, "utf8") > 100000) {
+    throw new Error(`layers[${ordinal - 1}] Source Text exceeds the 100000 byte export limit.`);
+  }
+
+  return {
+    ordinal,
+    layerIndex: Number(layer.index || raw.index || ordinal) || ordinal,
+    layerName: String(layer.name || raw.name || ""),
+    textLayer,
+    sourceText: textLayer ? sourceText : null,
+    outputText: textLayer ? sourceText : "[Not a text layer]"
+  };
+}
+
+function buildSelectedTextExportContent(entries) {
+  return entries.map((entry, index) => `${index + 1}:\n${entry.outputText}\n\n`).join("");
+}
+
+function exportTextToFile(args) {
+  const sourceLayers = Array.isArray(args && args.layers)
+    ? args.layers
+    : Array.isArray(args && args.layerEvidence)
+      ? args.layerEvidence
+      : [];
+  if (!sourceLayers.length) {
+    throw new Error("layers evidence is required and must include at least one selected layer.");
+  }
+  if (sourceLayers.length > 100) {
+    throw new Error("layers evidence is limited to 100 selected layers.");
+  }
+
+  const expectedLayerCount = optionalPositiveInteger(args || {}, "expectedLayerCount");
+  if (expectedLayerCount !== null && expectedLayerCount !== sourceLayers.length) {
+    throw new Error(`expectedLayerCount ${expectedLayerCount} did not match layers evidence count ${sourceLayers.length}.`);
+  }
+
+  const deleteAfterReadBack = optionalBoolean(args || {}, "deleteAfterReadBack", false);
+  const allowOverwrite = optionalBoolean(args || {}, "allowOverwrite", false);
+  const { outputFileName, resolvedPath } = resolveGeneratedExportFile(optionalString(args || {}, "outputFileName", "export.txt"));
+  const entries = sourceLayers.map((layer, index) => textExportLayerFromEvidence(layer, index + 1));
+  const content = buildSelectedTextExportContent(entries);
+  if (Buffer.byteLength(content, "utf8") > 1000000) {
+    throw new Error("Generated text export exceeds the 1000000 byte export limit.");
+  }
+
+  if (fs.existsSync(resolvedPath)) {
+    if (!allowOverwrite) {
+      throw new Error("Generated text output already exists. Use a unique outputFileName or allowOverwrite:true.");
+    }
+    fs.unlinkSync(resolvedPath);
+  }
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  fs.writeFileSync(resolvedPath, content, "utf8");
+  const readBack = fs.readFileSync(resolvedPath, "utf8");
+  const sha256 = crypto.createHash("sha256").update(readBack).digest("hex");
+  let existsAfter = true;
+  if (deleteAfterReadBack) {
+    fs.unlinkSync(resolvedPath);
+    existsAfter = fs.existsSync(resolvedPath);
+  }
+
+  return {
+    outputFileName,
+    outputPath: resolvedPath,
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    layerCount: entries.length,
+    textLayerCount: entries.filter((entry) => entry.textLayer).length,
+    nonTextLayerCount: entries.filter((entry) => !entry.textLayer).length,
+    lines: entries.map((entry) => ({
+      ordinal: entry.ordinal,
+      layerIndex: entry.layerIndex,
+      layerName: entry.layerName,
+      textLayer: entry.textLayer,
+      textLength: entry.outputText.length
+    })),
+    contentPreview: readBack.slice(0, 1000),
+    exportedText: readBack,
+    file: {
+      outputFileName,
+      outputPath: resolvedPath,
+      byteLength: Buffer.byteLength(readBack, "utf8"),
+      sha256,
+      existsAfter,
+      deletedAfterReadBack: deleteAfterReadBack,
+      mimeType: "text/plain"
+    }
+  };
 }
 
 function normalizePropertyPathArg(args, name) {
@@ -3120,6 +3625,9 @@ function validateAgentPlanObject(plan, requestId, context) {
   let mutatingCount = 0;
   let unknownToolCount = 0;
   let executableCount = 0;
+  let generatedFileIoCount = 0;
+  let generatedRenderOutputCount = 0;
+  let generatedCleanupDeleteCount = 0;
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index] && typeof steps[index] === "object" ? steps[index] : {};
@@ -3135,6 +3643,16 @@ function validateAgentPlanObject(plan, requestId, context) {
     const boundRequired = [];
     const autofixes = [];
     const stepWarnings = [];
+    const safetyContracts = generatedSafety.contractsForPlanStep(toolName, safeArgs);
+    const generatedSafetyIssues = toolName ? generatedSafety.validateGeneratedSafetyStep(toolName, safeArgs, {
+      projectRoot: PROJECT_ROOT,
+      generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
+    }) : [];
+    for (const contract of safetyContracts) {
+      if (contract.kind === "generated-file-output") generatedFileIoCount += 1;
+      if (contract.kind === "generated-render-output") generatedRenderOutputCount += 1;
+      if (contract.kind === "generated-cleanup-delete") generatedCleanupDeleteCount += 1;
+    }
 
     if (!toolName) {
       validatedSteps.push({
@@ -3145,6 +3663,7 @@ function validateAgentPlanObject(plan, requestId, context) {
         valid: true,
         executable: false,
         mutatesProject: false,
+        safetyContracts,
         args: safeArgs,
         safeArgs,
         warnings: stepWarnings,
@@ -3174,6 +3693,9 @@ function validateAgentPlanObject(plan, requestId, context) {
       }
       if (boundRequired.length) {
         stepWarnings.push(`Runtime bindings must resolve before execution: ${boundRequired.join(", ")}.`);
+      }
+      if (generatedSafetyIssues.length) {
+        stepWarnings.push(`Generated-only safety contract failed: ${generatedSafetyIssues.join(" ")}`);
       }
     }
 
@@ -3208,10 +3730,11 @@ function validateAgentPlanObject(plan, requestId, context) {
       title: step.title || step.intent || toolName,
       intent: step.intent || "",
       tool: toolName,
-      valid: Boolean(tool) && planningTool && missingRequired.length === 0,
-      executable: Boolean(tool) && planningTool && missingRequired.length === 0 && boundRequired.length === 0,
+      valid: Boolean(tool) && planningTool && missingRequired.length === 0 && generatedSafetyIssues.length === 0,
+      executable: Boolean(tool) && planningTool && missingRequired.length === 0 && boundRequired.length === 0 && generatedSafetyIssues.length === 0,
       requiresRuntimeBinding: boundRequired.length > 0,
       mutatesProject: mutating,
+      safetyContracts,
       targetSummary: planStepTargetSummary(toolName, safeArgs),
       args: planStepArgs(step),
       safeArgs,
@@ -3235,6 +3758,15 @@ function validateAgentPlanObject(plan, requestId, context) {
   if (executableCount <= 0) {
     warnings.push("Plan has no executable MCP tool steps.");
   }
+  if (generatedFileIoCount > 0) {
+    warnings.push(`${generatedFileIoCount} generated-only file IO step(s) require reviewed filename, generated root, byte/hash evidence, and post-output read-back.`);
+  }
+  if (generatedRenderOutputCount > 0) {
+    warnings.push(`${generatedRenderOutputCount} generated render-output setup step(s) require paths under logs/generated-renders and render queue read-back; render start remains unsupported here.`);
+  }
+  if (generatedCleanupDeleteCount > 0) {
+    warnings.push(`${generatedCleanupDeleteCount} generated cleanup/delete step(s) require generated prefix, explicit limit, destructive gate, and post-cleanup read-back.`);
+  }
 
   const invalidSteps = validatedSteps.filter((step) => !step.valid && step.tool);
   const validation = {
@@ -3243,6 +3775,9 @@ function validateAgentPlanObject(plan, requestId, context) {
     stepCount: steps.length,
     executableCount,
     mutatingCount,
+    generatedFileIoCount,
+    generatedRenderOutputCount,
+    generatedCleanupDeleteCount,
     unknownToolCount,
     invalidStepCount: invalidSteps.length,
     requiresCheckpoint: sourcePlan.requiresCheckpoint === true || mutatingCount > 1,
@@ -3260,6 +3795,9 @@ function compactAgentPlanValidationSummary(validation) {
     stepCount: Number(validation.stepCount || 0),
     executableCount: Number(validation.executableCount || 0),
     mutatingCount: Number(validation.mutatingCount || 0),
+    generatedFileIoCount: Number(validation.generatedFileIoCount || 0),
+    generatedRenderOutputCount: Number(validation.generatedRenderOutputCount || 0),
+    generatedCleanupDeleteCount: Number(validation.generatedCleanupDeleteCount || 0),
     unknownToolCount: Number(validation.unknownToolCount || 0),
     invalidStepCount: Number(validation.invalidStepCount || 0),
     classification: validation.classification && validation.classification.category || null
@@ -4081,6 +4619,9 @@ const PLANNING_TOOL_NAMES = [
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
+  "get_path_geometry",
   "get_selected_layers",
   "get_selected_properties",
   "find_project_items",
@@ -4093,7 +4634,10 @@ const PLANNING_TOOL_NAMES = [
   "create_comp",
   "create_project_folder",
   "move_project_items_to_folder",
+  "set_project_item_metadata",
+  "set_project_frames_count_type",
   "create_text_layer",
+  "create_shapes_from_text",
   "import_footage",
   "create_solid_layer",
   "create_null_layer",
@@ -4103,19 +4647,31 @@ const PLANNING_TOOL_NAMES = [
   "toggle_onion_skinning",
   "create_layer_mask",
   "set_layer_mask",
+  "set_path_geometry",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
   "add_project_item_to_comp",
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "duplicate_comp",
   "deep_duplicate_precomp_sources",
   "add_effect",
   "set_effect_property",
+  "set_effect_enabled",
+  "set_puppet_pin_type",
+  "add_property_to_essential_graphics",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
   "align_layers_to_time",
+  "set_comp_current_time",
   "set_comp_properties",
+  "refresh_comp_panel",
   "set_comp_work_area",
   "set_layer_time_range",
   "stagger_layers",
@@ -4126,6 +4682,7 @@ const PLANNING_TOOL_NAMES = [
   "rename_project_items",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "fit_layer_to_comp",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -4140,6 +4697,7 @@ const PLANNING_TOOL_NAMES = [
   "get_render_queue_status",
   "set_layer_transform",
   "apply_transform_expression",
+  "add_comp_marker",
   "add_layer_marker",
   "update_layer_marker",
   "delete_layer_marker",
@@ -6040,17 +6598,29 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, pr
     "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
     "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
     "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
+    "For current time indicator or playhead navigation, use set_comp_current_time only on one explicit comp target with finite seconds or a reviewed frame/frameRate conversion, then read back get_comp_details.time. Do not substitute work-area, layer timing, keyframes, markers, or raw ExtendScript.",
     "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
+    "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; for generated composition marker setup, use add_comp_marker with an explicit comp target, reviewed time/comment, and post-mutation get_comp_details includeMarkers read-back; do not substitute layer marker tools for composition markers.",
     "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
+    "For layer name reset workflows that intentionally set a layer name to an empty string, use rename_layers only with mode:\"exact\", name:\"\", allowEmptyName:true, exactly one explicit layerIndex per step, expectedLayerNames from current typed evidence, verifyAfter:true, and post-mutation get_comp_details read-back. Do not use empty-name reset on broad selected/user layers without generated or reviewed scope.",
     "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
     "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
+    "For explicit generated layer parenting, use set_layer_parent only with one inspected child layer, one inspected parent layer, expectedLayerName, expectedParentName, and post-run get_layer_details read-back. Do not use it for recursive hierarchy edits, bulk parenting, source-exact selection side effects, or non-generated user assets without a separate reviewed contract.",
+    "For explicit generated track matte changes, use set_layer_track_matte only with one inspected fill layer, one inspected matte layer, expectedLayerName, expectedMatteLayerName, and post-run get_layer_details read-back showing hasTrackMatte, trackMatteTypeName, and trackMatteLayer. Do not use parent-link tools, layer reordering, broad layer scans, or raw ExtendScript as substitutes.",
     "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
     "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
-    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
-    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, and locked, and must be followed by get_layer_details read-back for each target layer.",
+    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
+    "For project frame numbering, use set_project_frames_count_type only with an explicit reviewed framesCountType of FC_START_0 or FC_START_1, then read back get_project_info. Do not scan or mutate all project comps through this project-level tool.",
+    "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
+    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, enabled, and guideLayer, and must be followed by get_layer_details read-back for each target layer.",
+    "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
+    "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
     "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
+    "For explicit effect enabled-state changes, use set_effect_enabled only after list_effects or get_effect_details identifies one effect instance by effectIndex, effectName, or effectMatchName and current enabled state. Prefer explicit enabled:true/false over ambiguous toggle wording, and read back with get_effect_details/get_layer_details. Do not scan all project comps, mutate unreviewed user effects, edit effect properties, or use raw ExtendScript.",
     "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, and fitting workflows, use create_camera_layer, update_text_layer, create_shape_layer, create_layer_mask, set_layer_mask, and fit_layer_to_comp. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Update mode needs one explicit maskIndex; do not delete masks, target multiple masks/layers, run roto, or edit arbitrary mask property trees.",
+    "For camera, text, shape, mask, comp-frame export, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, export_text_to_file, save_comp_frame_png, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Use export_text_to_file only after get_selected_layers plus get_layer_details Source Text evidence for each selected text layer and only for generated .txt files; never write Desktop or arbitrary user paths. Use save_comp_frame_png only for explicit generated compositions, reviewed frame time, and simple .png output names under the generated export root; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
+    "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
+    "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
     "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
     "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
     "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
@@ -7557,6 +8127,26 @@ const tools = [
     }
   },
   {
+    name: "set_project_frames_count_type",
+    description: "Set the AE Project frame numbering mode to start at frame 0 or frame 1, with explicit read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        framesCountType: {
+          type: "string",
+          enum: ["FC_START_0", "FC_START_1", "startAtZero", "startAtOne"],
+          description: "Requested final Project.framesCountType. Use FC_START_0 for frame numbering that starts at 0 or FC_START_1 for frame numbering that starts at 1."
+        },
+        expectedCurrentFramesCountType: {
+          type: "string",
+          enum: ["FC_START_0", "FC_START_1", "startAtZero", "startAtOne"],
+          description: "Optional guard from get_project_info. The tool fails closed if the current frame numbering mode differs."
+        }
+      },
+      required: ["framesCountType"]
+    }
+  },
+  {
     name: "get_project_snapshot",
     description: "Return a compact snapshot of project items for script development and navigation.",
     inputSchema: {
@@ -7639,6 +8229,30 @@ const tools = [
           description: "Maximum number of items to return. Defaults to 200, maximum 2000."
         }
       }
+    }
+  },
+  {
+    name: "set_project_item_metadata",
+    description: "Update only the AE label index on explicit project item indices with optional expected item-name guards and required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemIndices: {
+          type: ["number", "array"],
+          description: "Explicit 1-based project item index or indexes from current project-item evidence."
+        },
+        expectedItemNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional item-name guards matching itemIndices order."
+        },
+        label: {
+          type: "number",
+          description: "AE project item label index to set. Must be an integer from 0 through 16."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["itemIndices", "label"]
     }
   },
   {
@@ -7788,6 +8402,10 @@ const tools = [
           type: "number",
           description: "Optional 1-based project item index for the composition. Defaults to active comp."
         },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
         includeLayers: {
           type: "boolean",
           description: "Whether to include layer summaries. Defaults to true."
@@ -7795,6 +8413,14 @@ const tools = [
         layerLimit: {
           type: "number",
           description: "Maximum number of layers to include. Defaults to 200, maximum 1000."
+        },
+        includeMarkers: {
+          type: "boolean",
+          description: "Whether to include composition marker read-back from comp.markerProperty. Defaults to false."
+        },
+        markerLimit: {
+          type: "number",
+          description: "Maximum number of composition markers to include. Defaults to 50, maximum 1000."
         }
       }
     }
@@ -7839,6 +8465,194 @@ const tools = [
         }
       },
       required: ["layerIndex"]
+    }
+  },
+  {
+    name: "get_layer_essential_properties",
+    description: "Read Essential Properties exposed on one explicit precomp layer, including property identity, source evidence, values, and expression state.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        includeValues: {
+          type: "boolean",
+          description: "Whether to include compact value previews. Defaults to true."
+        },
+        includeExpressions: {
+          type: "boolean",
+          description: "Whether to include expression text and expression state. Defaults to true."
+        },
+        propertyLimit: {
+          type: "number",
+          description: "Maximum Essential Properties to return. Defaults to 80, maximum 200."
+        }
+      },
+      required: ["layerIndex"]
+    }
+  },
+  {
+    name: "get_essential_graphics_controllers",
+    description: "Read the Essential Graphics / Motion Graphics Template controller list for one explicit composition.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        }
+      }
+    }
+  },
+  {
+    name: "get_path_geometry",
+    description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
+        compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
+        layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
+        targetKind: { type: "string", enum: ["shape", "mask"], description: "Path target kind. Shape requires propertyPath; mask requires maskIndex." },
+        propertyPath: { type: ["array", "string"], description: "Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property.", items: {} },
+        maskIndex: { type: "number", description: "Required for targetKind=mask. 1-based mask index in the layer mask group." },
+        expectedLayerName: { type: "string", description: "Optional exact layer name guard." },
+        expectedMaskName: { type: "string", description: "Optional exact mask name guard for targetKind=mask." },
+        includeKeyframes: { type: "boolean", description: "Whether to include up to keyframeLimit Shape keyframes. Defaults to true." },
+        keyframeLimit: { type: "number", description: "Maximum keyframes to include. Defaults to 80, maximum 80." }
+      },
+      required: ["layerIndex", "targetKind"]
+    }
+  },
+  {
+    name: "export_path_points",
+    description: "Write rounded path vertices from explicit get_path_geometry evidence to a generated local text export under logs/generated-exports. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        vertices: {
+          type: "array",
+          description: "Vertices from current get_path_geometry evidence as [x, y] points. Required unless geometry is provided.",
+          items: { type: "array", items: { type: "number" } }
+        },
+        geometry: {
+          type: "object",
+          description: "Optional get_path_geometry geometry object with vertices, inTangents, outTangents, and closed. Used only for geometry.vertices."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Optional generated .txt filename. Must be a simple filename, not a path. Defaults to points.txt."
+        },
+        decimalPlaces: {
+          type: "number",
+          description: "Coordinate rounding precision from 0 through 4. Defaults to 2."
+        },
+        rotateFirstPointToEnd: {
+          type: "boolean",
+          description: "Whether to move the first point to the end after rounding. Defaults to true."
+        },
+        variableName: {
+          type: "string",
+          description: "JavaScript variable name for the text payload. Defaults to points."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, write and read/hash the generated file, then delete it for generated proof cleanup. Defaults to false."
+        }
+      }
+    }
+  },
+  {
+    name: "export_text_to_file",
+    description: "Write reviewed selected-layer Source Text evidence to a generated local text export under logs/generated-exports. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        layers: {
+          type: "array",
+          description: "Ordered selected-layer evidence from current get_selected_layers plus get_layer_details. Text layers must include Source Text evidence; non-text layers are exported as [Not a text layer].",
+          items: { type: "object" }
+        },
+        layerEvidence: {
+          type: "array",
+          description: "Alias for layers when passing get_layer_details result objects.",
+          items: { type: "object" }
+        },
+        expectedLayerCount: {
+          type: "number",
+          description: "Optional guard for selected layer count."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Optional generated .txt filename. Must be a simple filename, not a path. Defaults to export.txt."
+        },
+        allowOverwrite: {
+          type: "boolean",
+          description: "When true, allows replacing an existing generated .txt with the same simple filename. Defaults to false."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, write and read/hash the generated file, then delete it for generated proof cleanup. Defaults to false."
+        }
+      }
+    }
+  },
+  {
+    name: "save_comp_frame_png",
+    description: "Save one frame from an explicit generated composition to a generated PNG under logs/generated-exports, then return byte/hash read-back and resolutionFactor restoration evidence. This tool never writes Desktop or arbitrary user paths.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp when compName is not provided."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        expectedCompName: {
+          type: "string",
+          description: "Optional guard; fails if the resolved composition name differs."
+        },
+        time: {
+          type: "number",
+          description: "Composition time in seconds to save. Defaults to the current comp time."
+        },
+        outputFileName: {
+          type: "string",
+          description: "Simple generated .png filename only, not a path. The file is written under logs/generated-exports or AE_AGENT_GENERATED_EXPORT_DIR."
+        },
+        resolutionFactor: {
+          type: "array",
+          description: "Optional [x, y] resolution factor to apply only for the save, then restore. Defaults to [1, 1].",
+          items: { type: "number" },
+          minItems: 2,
+          maxItems: 2
+        },
+        allowOverwrite: {
+          type: "boolean",
+          description: "When true, allows replacing an existing generated .png with the same simple filename. Defaults to false."
+        },
+        deleteAfterReadBack: {
+          type: "boolean",
+          description: "When true, save, read/hash, then delete the generated PNG for proof cleanup. Defaults to false."
+        }
+      }
     }
   },
   {
@@ -8072,6 +8886,11 @@ const tools = [
           items: { type: "number" },
           description: "Optional RGB fill color with values from 0 to 1."
         },
+        justification: {
+          type: "string",
+          enum: ["left", "center", "right"],
+          description: "Optional paragraph justification for the created TextDocument."
+        },
         startTime: {
           type: "number",
           description: "Optional layer start time in seconds."
@@ -8082,6 +8901,48 @@ const tools = [
         }
       },
       required: ["text"]
+    }
+  },
+  {
+    name: "create_shapes_from_text",
+    description: "Convert one explicit text layer into an AE-generated shape outline layer through the native Create Shapes from Text command, with name/text guards and shape-layer read-back. Fails closed if the AE menu command is unavailable.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is not provided. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition."
+        },
+        layerIndex: {
+          type: "number",
+          description: "Required 1-based source text layer index."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact name guard for layerIndex."
+        },
+        expectedSourceText: {
+          type: "string",
+          description: "Optional exact Source Text guard for the source text layer."
+        },
+        shapeLayerName: {
+          type: "string",
+          description: "Optional name to apply to the generated shape layer after conversion."
+        },
+        lockCreatedShapeLayer: {
+          type: "boolean",
+          description: "Whether to lock the generated shape layer after conversion. Defaults to false."
+        },
+        makeActive: {
+          type: "boolean",
+          description: "Whether to open the target comp in the viewer before running the native command. Defaults to true."
+        }
+      },
+      required: ["layerIndex"]
     }
   },
   {
@@ -8148,6 +9009,14 @@ const tools = [
         duration: {
           type: "number",
           description: "Optional layer duration in seconds. Defaults to the composition duration."
+        },
+        insertBeforeLayerIndex: {
+          type: "number",
+          description: "Optional explicit 1-based layer index to place the new adjustment layer immediately above. Only the newly created layer is moved."
+        },
+        expectedBeforeLayerName: {
+          type: "string",
+          description: "Optional exact name guard for insertBeforeLayerIndex."
         }
       }
     }
@@ -8654,6 +9523,145 @@ const tools = [
     }
   },
   {
+    name: "set_effect_enabled",
+    description: "Enable or disable one explicit layer effect instance after current get_effect_details or list_effects evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName, such as ADBE Turbulent Displace."
+        },
+        enabled: {
+          type: "boolean",
+          description: "Requested final enabled state for the resolved effect instance."
+        },
+        expectedCurrentEnabled: {
+          type: "boolean",
+          description: "Optional guard from current read-back. The tool fails closed if the resolved effect has a different enabled state."
+        }
+      },
+      required: ["layerIndex", "enabled"]
+    }
+  },
+  {
+    name: "set_puppet_pin_type",
+    description: "Set one explicit ADBE FreePin3 puppet pin type property to Position or Advanced after get_effect_details evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index in the target composition."
+        },
+        effectIndex: {
+          type: "number",
+          description: "Optional 1-based effect index in the layer effects group."
+        },
+        effectName: {
+          type: "string",
+          description: "Optional exact Puppet effect instance name."
+        },
+        effectMatchName: {
+          type: "string",
+          description: "Optional effect matchName. If provided it must be ADBE FreePin3."
+        },
+        pinTypePropertyPath: {
+          type: "array",
+          description: "Property path from current get_effect_details evidence to the ADBE FreePin3 PosPin Type property. It may be layer-relative or effect-relative and must include or resolve under an ADBE FreePin3 PosPin Atom ancestor.",
+          items: {}
+        },
+        expectedPinName: {
+          type: "string",
+          description: "Optional Puppet pin atom display name expected from get_effect_details evidence, such as Puppet Pin 1."
+        },
+        expectedCurrentPinType: {
+          description: "Optional current pin type expected before mutation. Accepts 1/position or 4/advanced."
+        },
+        pinType: {
+          description: "Requested pin type: 1 or position, or 4 or advanced."
+        }
+      },
+      required: ["layerIndex", "pinTypePropertyPath", "pinType"]
+    }
+  },
+  {
+    name: "add_property_to_essential_graphics",
+    description: "Add one explicit layer property to a composition's Essential Graphics controller list with reviewed naming and controller read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the composition whose Essential Graphics panel is updated."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact generated or explicitly reviewed target composition name."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based layer index containing the property to add."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact layer-name guard from current typed evidence."
+        },
+        propertyPath: {
+          type: ["array", "string"],
+          description: "Exact property path from current get_layer_details/get_selected_properties evidence. String values may be JSON-encoded arrays.",
+          items: {}
+        },
+        expectedPropertyName: {
+          type: "string",
+          description: "Optional display-name guard for the resolved property."
+        },
+        expectedPropertyMatchName: {
+          type: "string",
+          description: "Optional matchName guard for the resolved property."
+        },
+        controllerName: {
+          type: "string",
+          description: "Reviewed Essential Graphics controller name to create. 1-80 characters."
+        },
+        expectedControllerCountBefore: {
+          type: "number",
+          description: "Optional controller-count guard from get_essential_graphics_controllers evidence."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["layerIndex", "propertyPath", "controllerName"]
+    }
+  },
+  {
     name: "set_property_value",
     description: "Set an arbitrary layer property by property path or matchName path.",
     inputSchema: {
@@ -8693,7 +9701,7 @@ const tools = [
   },
   {
     name: "set_layer_metadata",
-    description: "Update only comment, label, and locked on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
+    description: "Update only comment, label, locked, enabled, and guideLayer on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -8726,9 +9734,128 @@ const tools = [
         locked: {
           type: "boolean",
           description: "Optional locked state to set."
+        },
+        enabled: {
+          type: "boolean",
+          description: "Optional layer visibility/enabled state to set."
+        },
+        guideLayer: {
+          type: "boolean",
+          description: "Optional AE guide-layer state to set on explicit generated or reviewed layers."
         }
       },
       required: ["layerIndices"]
+    }
+  },
+  {
+    name: "set_layer_parent",
+    description: "Parent one explicit layer to another explicit layer in the same composition, with optional child/parent name guards.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based child layer index to parent."
+        },
+        parentLayerIndex: {
+          type: "number",
+          description: "1-based parent layer index in the same composition."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact child layer name guard. The tool fails closed on mismatch."
+        },
+        expectedParentName: {
+          type: "string",
+          description: "Optional exact parent layer name guard. The tool fails closed on mismatch."
+        }
+      },
+      required: ["layerIndex", "parentLayerIndex"]
+    }
+  },
+  {
+    name: "set_layer_track_matte",
+    description: "Set one explicit generated layer's track matte to one explicit matte layer in the same composition, with optional name guards and required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Defaults to active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact generated composition name to target when compItemIndex is not provided."
+        },
+        layerIndex: {
+          type: "number",
+          description: "1-based fill layer index that will receive the track matte."
+        },
+        matteLayerIndex: {
+          type: "number",
+          description: "1-based matte layer index in the same composition."
+        },
+        trackMatteType: {
+          type: "string",
+          enum: ["alpha", "alpha_inverted", "luma", "luma_inverted"],
+          description: "Reviewed track matte type to apply."
+        },
+        expectedLayerName: {
+          type: "string",
+          description: "Optional exact fill layer name guard. The tool fails closed on mismatch."
+        },
+        expectedMatteLayerName: {
+          type: "string",
+          description: "Optional exact matte layer name guard. The tool fails closed on mismatch."
+        }
+      },
+      required: ["layerIndex", "matteLayerIndex", "trackMatteType"]
+    }
+  },
+  {
+    name: "set_layer_blending_mode",
+    description: "Set only the reviewed normal or difference blending mode on explicit layer indices in one explicit composition, with optional expected layer-name and current-mode guards plus required read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact generated target composition name."
+        },
+        layerIndices: {
+          type: "array",
+          items: { type: "number" },
+          description: "Required explicit 1-based layer indices. Selection-based discovery must happen in earlier read-only steps."
+        },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected layer names in the same order as layerIndices; mismatches fail closed before mutation."
+        },
+        expectedCurrentBlendingModes: {
+          type: "array",
+          items: { type: "string", enum: ["normal", "difference"] },
+          description: "Optional expected current blending modes in the same order as layerIndices; mismatches fail closed before mutation."
+        },
+        blendingMode: {
+          type: "string",
+          enum: ["normal", "difference"],
+          description: "Reviewed target blending mode. Only normal and difference are supported by this generated-only contract."
+        }
+      },
+      required: ["layerIndices", "blendingMode"]
     }
   },
   {
@@ -8762,6 +9889,47 @@ const tools = [
     }
   },
   {
+    name: "set_comp_current_time",
+    description: "Set the current time indicator for one explicit composition, with bounded seconds or reviewed frame-derived target and read-back verification.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        time: {
+          type: "number",
+          description: "Target current time in seconds. Provide exactly one of time or frame."
+        },
+        frame: {
+          type: "number",
+          description: "Zero-based integer frame to convert to seconds. Provide exactly one of time or frame."
+        },
+        frameRate: {
+          type: "number",
+          description: "Optional positive frame rate for frame conversion. Defaults to the target comp frameRate."
+        },
+        expectedCurrentTime: {
+          type: "number",
+          description: "Optional guard for the current comp time before mutation; mismatches fail closed."
+        },
+        clampToDuration: {
+          type: "boolean",
+          description: "Whether to clamp out-of-range time to [0, duration]. Defaults to false, which fails closed."
+        },
+        openInViewer: {
+          type: "boolean",
+          description: "Whether to open the target comp in the viewer before setting time. Defaults to false."
+        }
+      }
+    }
+  },
+  {
     name: "set_comp_work_area",
     description: "Set the work-area start and duration for the active or specified composition.",
     inputSchema: {
@@ -8789,7 +9957,7 @@ const tools = [
   },
   {
     name: "set_comp_properties",
-    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, and displayStartTime only.",
+    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -8811,7 +9979,30 @@ const tools = [
           items: { type: "number" },
           description: "Optional RGB background color as three numbers from 0 to 1."
         },
-        displayStartTime: { type: "number", description: "Optional display start time in seconds." }
+        displayStartTime: { type: "number", description: "Optional display start time in seconds." },
+        displayStartFrame: { type: "number", description: "Optional native integer display start frame. Requires AE support for CompItem.displayStartFrame." },
+        preserveNestedFrameRate: { type: "boolean", description: "Optional Preserve frame rate when nested or in render queue setting." }
+      }
+    }
+  },
+  {
+    name: "refresh_comp_panel",
+    description: "Force a Composition panel refresh for one explicit composition by temporarily toggling comp.motionBlur and restoring the original value with read-back evidence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Required when compName is omitted. 1-based project item index for the explicit target composition."
+        },
+        compName: {
+          type: "string",
+          description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        expectedMotionBlur: {
+          type: "boolean",
+          description: "Optional guard from prior get_comp_details evidence. The tool fails closed if the current comp.motionBlur state differs."
+        }
       }
     }
   },
@@ -8901,8 +10092,14 @@ const tools = [
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        expectedLayerNames: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional expected source layer names, one per layerIndices entry. When provided, mismatches fail closed before mutation."
+        },
         mode: { type: "string", enum: ["exact", "prefix", "suffix", "findReplace"], description: "Rename mode. Defaults to exact when name is provided." },
         name: { type: "string", description: "Exact base name. For multiple layers, {index} or {n} templates are supported; otherwise a number is appended." },
+        allowEmptyName: { type: "boolean", description: "Explicitly allow mode:\"exact\" with name:\"\" for one reviewed layer reset. Defaults to false." },
         prefix: { type: "string", description: "Prefix to add in prefix mode." },
         suffix: { type: "string", description: "Suffix to add in suffix mode." },
         find: { type: "string", description: "Text to find in findReplace mode." },
@@ -8950,22 +10147,27 @@ const tools = [
         applyStroke: { type: "boolean", description: "Whether stroke is enabled." },
         strokeWidth: { type: "number", description: "Optional stroke width." },
         tracking: { type: "number", description: "Optional tracking value." },
-        leading: { type: "number", description: "Optional leading value." }
+        leading: { type: "number", description: "Optional leading value." },
+        justification: { type: "string", enum: ["left", "center", "right"], description: "Optional paragraph justification." }
       },
       required: ["layerIndex"]
     }
   },
   {
     name: "create_shape_layer",
-    description: "Create a rectangle or ellipse shape layer with fill, stroke, size, position, and timing.",
+    description: "Create a rectangle, ellipse, polygon, or star shape layer with fill, stroke, bounded geometry, position, and timing.",
     inputSchema: {
       type: "object",
       properties: {
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
-        shape: { type: "string", enum: ["rectangle", "ellipse"], description: "Shape type. Defaults to rectangle." },
+        shape: { type: "string", enum: ["rectangle", "ellipse", "polygon", "star"], description: "Shape type. Defaults to rectangle." },
         name: { type: "string", description: "Optional layer name." },
-        size: { type: "array", items: { type: "number" }, description: "Shape size [width, height]. Defaults to half comp size." },
+        size: { type: "array", items: { type: "number" }, description: "Rectangle/ellipse size [width, height]. Defaults to half comp size. Not used for polygon/star." },
+        points: { type: "number", description: "Polygon/star point count as an integer from 3 to 64. Defaults to 5 for polygon/star." },
+        outerRadius: { type: "number", description: "Polygon/star outer radius in pixels. Defaults to 100." },
+        innerRadius: { type: "number", description: "Star inner radius in pixels, greater than 0 and less than outerRadius. Defaults to 50. Not used for polygon." },
+        starType: { type: "string", enum: ["polygon", "star"], description: "Optional AE Polystar type guard. Must match shape when provided." },
         position: { type: "array", items: { type: "number" }, description: "Layer position [x, y] or [x, y, z]. Defaults to comp center." },
         fillColor: { type: "array", items: { type: "number" }, description: "Optional RGB fill color with values from 0 to 1." },
         strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1." },
@@ -8973,6 +10175,29 @@ const tools = [
         startTime: { type: "number", description: "Optional layer start time in seconds." },
         duration: { type: "number", description: "Optional layer duration in seconds." }
       }
+    }
+  },
+  {
+    name: "create_layer_connection_line",
+    description: "Create one generated locked shape layer containing an open stroked path expression that connects two explicit layer anchor points.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Required when compName is not provided. 1-based project item index for the explicit target composition." },
+        compName: { type: "string", description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition." },
+        fromLayerIndex: { type: "number", description: "Required 1-based source layer index for the first anchor endpoint." },
+        toLayerIndex: { type: "number", description: "Required 1-based source layer index for the second anchor endpoint." },
+        expectedFromLayerName: { type: "string", description: "Optional exact name guard for fromLayerIndex." },
+        expectedToLayerName: { type: "string", description: "Optional exact name guard for toLayerIndex." },
+        name: { type: "string", description: "Optional generated connector layer name. Defaults to Codex Connection Line." },
+        pathGroupName: { type: "string", description: "Optional shape group name for the connector path. Defaults to Connector." },
+        strokeColor: { type: "array", items: { type: "number" }, description: "Optional RGB stroke color with values from 0 to 1. Defaults to white." },
+        strokeWidth: { type: "number", description: "Optional connector stroke width. Defaults to 4." },
+        startTime: { type: "number", description: "Optional layer start time in seconds." },
+        duration: { type: "number", description: "Optional layer duration in seconds." },
+        lockLayer: { type: "boolean", description: "Whether to lock the generated connector layer after expression setup. Defaults to true." }
+      },
+      required: ["fromLayerIndex", "toLayerIndex"]
     }
   },
   {
@@ -9023,6 +10248,31 @@ const tools = [
         expansion: { type: "number", description: "Optional mask expansion in pixels." }
       },
       required: ["layerIndex", "operation"]
+    }
+  },
+  {
+    name: "set_path_geometry",
+    description: "Set one explicit Shape or Mask path geometry on one layer using reviewed vertices, inTangents, outTangents, closed state, or a bounded keyframe list, then return immediate read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: { type: "number", description: "Required when compName is not provided. 1-based project item index for the explicit target composition." },
+        compName: { type: "string", description: "Required when compItemIndex is not provided. Exact composition name for the explicit target composition." },
+        layerIndex: { type: "number", description: "Required 1-based layer index in the target composition." },
+        targetKind: { type: "string", enum: ["shape", "mask"], description: "Path target kind. Shape requires propertyPath; mask requires maskIndex." },
+        propertyPath: { type: ["array", "string"], description: "Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property.", items: {} },
+        maskIndex: { type: "number", description: "Required for targetKind=mask. 1-based mask index in the layer mask group." },
+        expectedLayerName: { type: "string", description: "Optional exact layer name guard." },
+        expectedMaskName: { type: "string", description: "Optional exact mask name guard for targetKind=mask." },
+        geometry: { type: "object", description: "Optional geometry object with vertices, inTangents, outTangents, and closed. Required unless keyframes are provided." },
+        vertices: { type: "array", description: "Top-level vertices alternative to geometry.vertices.", items: { type: "array", items: { type: "number" } } },
+        inTangents: { type: "array", description: "Top-level inTangents alternative to geometry.inTangents.", items: { type: "array", items: { type: "number" } } },
+        outTangents: { type: "array", description: "Top-level outTangents alternative to geometry.outTangents.", items: { type: "array", items: { type: "number" } } },
+        closed: { type: "boolean", description: "Top-level closed state alternative to geometry.closed." },
+        keyframes: { type: "array", description: "Optional bounded Shape keyframes; each item needs time plus vertices, inTangents, outTangents, and closed, or a geometry object.", items: { type: "object" } },
+        clearExisting: { type: "boolean", description: "When keyframes are provided, remove existing keys before writing the reviewed sequence. Defaults to false." }
+      },
+      required: ["layerIndex", "targetKind"]
     }
   },
   {
@@ -9173,7 +10423,7 @@ const tools = [
   },
   {
     name: "add_comp_to_render_queue",
-    description: "Add the active or specified composition to the After Effects render queue.",
+    description: "Add the active or specified composition to the After Effects render queue without starting a render. outputPath must stay under logs/generated-renders or AE_AGENT_GENERATED_RENDER_OUTPUT_DIR.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9181,20 +10431,20 @@ const tools = [
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
         outputModuleTemplate: { type: "string", description: "Optional output module template name." },
-        outputPath: { type: "string", description: "Optional output file path." }
+        outputPath: { type: "string", description: "Optional generated render output filename or logs/generated-renders path. Absolute paths, Desktop/user paths, and nested folders are rejected." }
       }
     }
   },
   {
     name: "set_render_queue_output",
-    description: "Set output path and templates for an existing render queue item.",
+    description: "Set output path and templates for an existing render queue item without starting a render. outputPath must stay under logs/generated-renders or AE_AGENT_GENERATED_RENDER_OUTPUT_DIR.",
     inputSchema: {
       type: "object",
       properties: {
         renderQueueItemIndex: { type: "number", description: "1-based render queue item index." },
         renderSettingsTemplate: { type: "string", description: "Optional render settings template name." },
         outputModuleTemplate: { type: "string", description: "Optional output module template name." },
-        outputPath: { type: "string", description: "Optional output file path." }
+        outputPath: { type: "string", description: "Optional generated render output filename or logs/generated-renders path. Absolute paths, Desktop/user paths, and nested folders are rejected." }
       },
       required: ["renderQueueItemIndex"]
     }
@@ -9287,6 +10537,41 @@ const tools = [
         }
       },
       required: ["layerIndex", "property", "expression"]
+    }
+  },
+  {
+    name: "add_comp_marker",
+    description: "Add one composition marker to an explicit composition and return comp.markerProperty read-back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        compItemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index for the target composition. Provide compItemIndex or compName; this tool does not default to the active comp."
+        },
+        compName: {
+          type: "string",
+          description: "Optional exact composition name to target when compItemIndex is not provided. Provide compName or compItemIndex; this tool does not default to the active comp."
+        },
+        time: {
+          type: "number",
+          description: "Marker time in seconds. Must be explicit and within the target composition duration."
+        },
+        comment: {
+          type: "string",
+          description: "Marker comment. Use an explicit empty string only when blank marker semantics are intended."
+        },
+        duration: {
+          type: "number",
+          description: "Optional non-negative marker duration in seconds."
+        },
+        expectedMarkerCountBefore: {
+          type: "number",
+          description: "Optional marker-count guard from prior get_comp_details includeMarkers evidence."
+        },
+        ...MUTATION_CHECKPOINT_SCHEMA_PROPERTIES
+      },
+      required: ["time", "comment"]
     }
   },
   {
@@ -9621,12 +10906,16 @@ async function callTool(name, args) {
 
       function __codexItemReference(item) {
         if (!item) return null;
-        return {
+        var info = {
           itemIndex: __codexProjectIndexForItem(item),
           name: item.name || "",
           type: __codexItemType(item),
           typeName: item.typeName || null
         };
+        try { info.label = item.label; } catch (__itemLabelError) {}
+        try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
+        try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
+        return info;
       }
 
       function __codexMarkerInfo(markerProp, keyIndex) {
@@ -9673,12 +10962,95 @@ async function callTool(name, args) {
         return summary;
       }
 
+      function __codexCompMarkers(comp, limit) {
+        var summary = {
+          count: 0,
+          returned: 0,
+          truncated: false,
+          orderedBy: "comp.markerProperty.keyTime",
+          items: []
+        };
+        try {
+          var markerProp = comp.markerProperty;
+          if (!markerProp) return summary;
+          summary.count = markerProp.numKeys;
+          var effectiveLimit = limit === undefined || limit === null ? 50 : limit;
+          var max = Math.max(0, Math.min(summary.count, effectiveLimit));
+          for (var __cmk = 1; __cmk <= max; __cmk++) {
+            summary.items.push(__codexMarkerInfo(markerProp, __cmk));
+          }
+          summary.returned = summary.items.length;
+          summary.truncated = summary.count > summary.returned;
+        } catch (__compMarkersError) {}
+        return summary;
+      }
+
+      function __codexBlendingModeName(value) {
+        try { if (value === BlendingMode.NORMAL) return "normal"; } catch (__blendNormalNameError) {}
+        try { if (value === BlendingMode.DIFFERENCE) return "difference"; } catch (__blendDifferenceNameError) {}
+        return String(value);
+      }
+
+      function __codexBlendingModeValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "normal") return BlendingMode.NORMAL;
+        if (normalized === "difference") return BlendingMode.DIFFERENCE;
+        throw new Error("Unsupported blendingMode '" + name + "'. Allowed values: normal, difference.");
+      }
+
+      function __codexTrackMatteTypeName(value) {
+        try { if (value === TrackMatteType.NO_TRACK_MATTE) return "none"; } catch (__trackMatteNoneNameError) {}
+        try { if (value === TrackMatteType.ALPHA) return "alpha"; } catch (__trackMatteAlphaNameError) {}
+        try { if (value === TrackMatteType.ALPHA_INVERTED) return "alpha_inverted"; } catch (__trackMatteAlphaInvertedNameError) {}
+        try { if (value === TrackMatteType.LUMA) return "luma"; } catch (__trackMatteLumaNameError) {}
+        try { if (value === TrackMatteType.LUMA_INVERTED) return "luma_inverted"; } catch (__trackMatteLumaInvertedNameError) {}
+        return String(value);
+      }
+
+      function __codexTrackMatteTypeValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "alpha") return TrackMatteType.ALPHA;
+        if (normalized === "alpha_inverted") return TrackMatteType.ALPHA_INVERTED;
+        if (normalized === "luma") return TrackMatteType.LUMA;
+        if (normalized === "luma_inverted") return TrackMatteType.LUMA_INVERTED;
+        throw new Error("Unsupported trackMatteType '" + name + "'. Allowed values: alpha, alpha_inverted, luma, luma_inverted.");
+      }
+
+      function __codexTextJustificationName(value) {
+        try { if (value === ParagraphJustification.LEFT_JUSTIFY) return "left"; } catch (__leftJustificationNameError) {}
+        try { if (value === ParagraphJustification.CENTER_JUSTIFY) return "center"; } catch (__centerJustificationNameError) {}
+        try { if (value === ParagraphJustification.RIGHT_JUSTIFY) return "right"; } catch (__rightJustificationNameError) {}
+        try { return String(value); } catch (__justificationStringError) {}
+        return null;
+      }
+
+      function __codexTextJustificationValue(name) {
+        var normalized = String(name || "").toLowerCase();
+        if (normalized === "left") return ParagraphJustification.LEFT_JUSTIFY;
+        if (normalized === "center") return ParagraphJustification.CENTER_JUSTIFY;
+        if (normalized === "right") return ParagraphJustification.RIGHT_JUSTIFY;
+        throw new Error("Unsupported justification '" + name + "'. Allowed values: left, center, right.");
+      }
+
       function __codexLayerInfo(layer) {
+        var isTextLayer = false;
+        var isShapeLayer = false;
+        try { isTextLayer = layer instanceof TextLayer; } catch (__textLayerClassError) {}
+        if (!isTextLayer) {
+          try { isTextLayer = !!layer.property("ADBE Text Properties"); } catch (__textLayerFallbackError) {}
+        }
+        try { isShapeLayer = layer instanceof ShapeLayer; } catch (__shapeLayerClassError) {}
+        if (!isShapeLayer) {
+          try { isShapeLayer = layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerFallbackError) {}
+        }
         var info = {
           index: layer.index,
           id: layer.id,
           name: layer.name,
           matchName: layer.matchName,
+          textLayer: isTextLayer,
+          shapeLayer: isShapeLayer,
+          layerKind: isTextLayer ? "text" : (isShapeLayer ? "shape" : null),
           enabled: layer.enabled,
           locked: layer.locked,
           shy: layer.shy,
@@ -9698,10 +11070,24 @@ async function callTool(name, args) {
         try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
         try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
         try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
-        try { info.blendingMode = layer.blendingMode; } catch (__blendError) {}
+        try {
+          info.blendingMode = layer.blendingMode;
+          info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
+        } catch (__blendError) {}
+        try { info.hasTrackMatte = !!layer.hasTrackMatte; } catch (__hasTrackMatteError) {}
+        try { info.isTrackMatte = !!layer.isTrackMatte; } catch (__isTrackMatteError) {}
+        try {
+          info.trackMatteType = layer.trackMatteType;
+          info.trackMatteTypeName = __codexTrackMatteTypeName(layer.trackMatteType);
+        } catch (__trackMatteTypeError) {}
+        try { info.trackMatteLayer = layer.trackMatteLayer ? __codexLayerInfo(layer.trackMatteLayer) : null; } catch (__trackMatteLayerError) {}
         try { info.markerCount = __codexLayerMarkers(layer, 0).count; } catch (__markerCountError) {}
         try { info.parent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__parentError) {}
         try { info.source = layer.source ? __codexItemReference(layer.source) : null; } catch (__sourceError) {}
+        try {
+          var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+          info.text = __codexValuePreview(textProp);
+        } catch (__layerTextPreviewError) {}
 
         return info;
       }
@@ -9734,10 +11120,10 @@ async function callTool(name, args) {
         };
       }
 
-      function __codexRenameValue(currentName, mode, index, total, exactName, prefix, suffix, findText, replaceText, caseSensitive) {
+      function __codexRenameValue(currentName, mode, index, total, exactName, prefix, suffix, findText, replaceText, caseSensitive, allowEmptyName) {
         var nextName = currentName || "";
         if (mode === "exact") {
-          if (!exactName) throw new Error("name is required for exact rename mode.");
+          if (!exactName && !(allowEmptyName && exactName === "")) throw new Error("name is required for exact rename mode.");
           nextName = exactName;
           if (total > 1) {
             if (nextName.indexOf("{index}") !== -1 || nextName.indexOf("{n}") !== -1) {
@@ -9817,12 +11203,42 @@ async function callTool(name, args) {
         return info;
       }
 
+      function __codexPointList(points, limit) {
+        var list = [];
+        if (!points) return list;
+        for (var __pl = 0; __pl < points.length && __pl < limit; __pl++) {
+          var point = points[__pl];
+          list.push([point[0], point[1]]);
+        }
+        return list;
+      }
+
+      function __codexShapeGeometryData(value, limit) {
+        try {
+          if (!value || value.vertices === undefined || value.inTangents === undefined || value.outTangents === undefined) return null;
+          var maxPoints = limit || 80;
+          return {
+            kind: "Shape",
+            closed: value.closed === true,
+            vertexCount: value.vertices ? value.vertices.length : 0,
+            vertices: __codexPointList(value.vertices, maxPoints),
+            inTangents: __codexPointList(value.inTangents, maxPoints),
+            outTangents: __codexPointList(value.outTangents, maxPoints),
+            truncated: value.vertices && value.vertices.length > maxPoints
+          };
+        } catch (__shapeGeometryError) {
+          return null;
+        }
+      }
+
       function __codexValuePreview(prop) {
         var value = prop.value;
         if (value === null || value === undefined) return { kind: "null", value: null };
         if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") {
           return { kind: typeof value, value: value };
         }
+        var shapeGeometry = __codexShapeGeometryData(value, 80);
+        if (shapeGeometry) return shapeGeometry;
         if (value instanceof Array) {
           var items = [];
           for (var __v = 0; __v < value.length && __v < 20; __v++) {
@@ -9838,7 +11254,8 @@ async function callTool(name, args) {
               font: value.font || null,
               fontSize: value.fontSize || null,
               fillColor: value.fillColor || null,
-              applyFill: value.applyFill || false
+              applyFill: value.applyFill || false,
+              justification: __codexTextJustificationName(value.justification)
             };
           }
         } catch (__textDocumentError) {}
@@ -9852,6 +11269,8 @@ async function callTool(name, args) {
       function __codexValueData(value) {
         if (value === null || value === undefined) return null;
         if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") return value;
+        var shapeGeometry = __codexShapeGeometryData(value, 80);
+        if (shapeGeometry) return shapeGeometry;
         if (value instanceof Array) {
           var items = [];
           for (var __vd = 0; __vd < value.length && __vd < 20; __vd++) items.push(value[__vd]);
@@ -9990,6 +11409,7 @@ async function callTool(name, args) {
         if (patch.strokeWidth !== undefined) doc.strokeWidth = Number(patch.strokeWidth);
         if (patch.tracking !== undefined) doc.tracking = Number(patch.tracking);
         if (patch.leading !== undefined) doc.leading = Number(patch.leading);
+        if (patch.justification !== undefined) doc.justification = __codexTextJustificationValue(patch.justification);
         return doc;
       }
 
@@ -10127,6 +11547,9 @@ async function callTool(name, args) {
         try { info.numKeys = prop.numKeys || 0; } catch (__numKeysError) {}
         try { info.expressionEnabled = !!prop.expressionEnabled; } catch (__expressionEnabledError) {}
         try { info.expressionError = prop.expressionError || ""; } catch (__expressionErrorError) {}
+        try {
+          if (prop.enabled !== undefined) info.enabled = !!prop.enabled;
+        } catch (__enabledError) {}
         try {
           if (includeExpression && prop.canSetExpression) info.expression = prop.expression || "";
         } catch (__expressionError) {}
@@ -10482,12 +11905,140 @@ async function callTool(name, args) {
   if (name === "get_project_info") {
     const result = await runExtendScriptBody(`
       var project = app.project;
+      function __codexFramesCountTypeSnapshot(targetProject) {
+        var value = null;
+        var name = null;
+        var startFrame = null;
+        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
+        try {
+          if (value === FramesCountType.FC_START_0) {
+            name = "FC_START_0";
+            startFrame = 0;
+          } else if (value === FramesCountType.FC_START_1) {
+            name = "FC_START_1";
+            startFrame = 1;
+          } else if (value !== null && value !== undefined) {
+            name = String(value);
+          }
+        } catch (__framesCountNameError) {
+          if (value !== null && value !== undefined) name = String(value);
+        }
+        return {
+          value: value === null || value === undefined ? null : String(value),
+          name: name,
+          startFrame: startFrame
+        };
+      }
+      var framesCount = __codexFramesCountTypeSnapshot(project);
       return {
         file: project && project.file ? project.file.fsName : null,
         bitsPerChannel: project ? project.bitsPerChannel : null,
         numItems: project ? project.numItems : 0,
         activeItemName: project && project.activeItem ? project.activeItem.name : null,
-        activeItemType: project && project.activeItem ? project.activeItem.typeName : null
+        activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
+        framesCountType: framesCount.name,
+        framesCountTypeValue: framesCount.value,
+        framesCountStartFrame: framesCount.startFrame
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_project_frames_count_type") {
+    const framesCountType = optionalString(args, "framesCountType", "");
+    const expectedCurrentFramesCountType = optionalString(args, "expectedCurrentFramesCountType", "");
+    const normalizeFramesCountType = (value, fieldName) => {
+      const normalized = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (["fcstart0", "startatzero", "start0", "zero", "0"].includes(normalized)) return "FC_START_0";
+      if (["fcstart1", "startatone", "start1", "one", "1"].includes(normalized)) return "FC_START_1";
+      throw new Error(`${fieldName} must be FC_START_0/startAtZero or FC_START_1/startAtOne.`);
+    };
+
+    let requestedFramesCountType;
+    let expectedFramesCountType = "";
+    try {
+      requestedFramesCountType = normalizeFramesCountType(framesCountType, "framesCountType");
+      if (expectedCurrentFramesCountType) {
+        expectedFramesCountType = normalizeFramesCountType(expectedCurrentFramesCountType, "expectedCurrentFramesCountType");
+      }
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      var project = app.project;
+      var requestedFramesCountType = ${aeLiteral(requestedFramesCountType)};
+      var expectedFramesCountType = ${aeLiteral(expectedFramesCountType)};
+
+      function __codexFramesCountTypeSnapshot(targetProject) {
+        var value = null;
+        var name = null;
+        var startFrame = null;
+        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
+        try {
+          if (value === FramesCountType.FC_START_0) {
+            name = "FC_START_0";
+            startFrame = 0;
+          } else if (value === FramesCountType.FC_START_1) {
+            name = "FC_START_1";
+            startFrame = 1;
+          } else if (value !== null && value !== undefined) {
+            name = String(value);
+          }
+        } catch (__framesCountNameError) {
+          if (value !== null && value !== undefined) name = String(value);
+        }
+        return {
+          value: value === null || value === undefined ? null : String(value),
+          name: name,
+          startFrame: startFrame,
+          numItems: targetProject ? targetProject.numItems : 0,
+          activeItemName: targetProject && targetProject.activeItem ? targetProject.activeItem.name : null,
+          activeItemType: targetProject && targetProject.activeItem ? targetProject.activeItem.typeName : null
+        };
+      }
+
+      function __codexFramesCountTypeValue(name) {
+        if (name === "FC_START_0") return FramesCountType.FC_START_0;
+        if (name === "FC_START_1") return FramesCountType.FC_START_1;
+        throw new Error("Unsupported framesCountType: " + name);
+      }
+
+      if (!project) throw new Error("No active project.");
+      var before = __codexFramesCountTypeSnapshot(project);
+      if (expectedFramesCountType && before.name !== expectedFramesCountType) {
+        throw new Error("Project framesCountType guard mismatch. Expected " + expectedFramesCountType + " but found " + before.name + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Project Frames Count Type");
+      try {
+        project.framesCountType = __codexFramesCountTypeValue(requestedFramesCountType);
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexFramesCountTypeSnapshot(project);
+      return {
+        project: {
+          framesCountType: after.name,
+          framesCountStartFrame: after.startFrame,
+          numItems: after.numItems,
+          activeItemName: after.activeItemName,
+          activeItemType: after.activeItemType
+        },
+        before: before,
+        after: after,
+        updates: {
+          framesCountType: requestedFramesCountType,
+          framesCountStartFrame: requestedFramesCountType === "FC_START_0" ? 0 : 1
+        },
+        updatedFields: ["framesCountType"],
+        postVerification: {
+          ok: after.name === requestedFramesCountType,
+          framesCountTypeMatches: after.name === requestedFramesCountType,
+          projectItemCountUnchanged: before.numItems === after.numItems,
+          activeItemUnchanged: before.activeItemName === after.activeItemName && before.activeItemType === after.activeItemType
+        }
       };
     `);
     return toolResult(result.result);
@@ -10538,8 +12089,10 @@ async function callTool(name, args) {
           type: type,
           typeName: item.typeName || null,
           folderPath: __codexFolderPath(item),
+          label: null,
           comment: item.comment || ""
         };
+        try { info.label = item.label; } catch (__itemLabelError) {}
 
         if (item instanceof CompItem) {
           info.width = item.width;
@@ -10548,6 +12101,7 @@ async function callTool(name, args) {
           info.frameRate = item.frameRate;
           info.numLayers = item.numLayers;
           info.displayStartTime = item.displayStartTime;
+          try { info.displayStartFrame = item.displayStartFrame; } catch (__displayStartFrameError) {}
         } else if (item instanceof FootageItem) {
           info.width = item.width || null;
           info.height = item.height || null;
@@ -10806,6 +12360,7 @@ async function callTool(name, args) {
 
       app.beginUndoGroup("Codex Move Project Items To Folder");
       try {
+        var itemsToMove = [];
         for (var i = 0; i < itemIndices.length; i++) {
           var item = app.project.item(itemIndices[i]);
           if (!item) throw new Error("Project item not found at index " + itemIndices[i] + ".");
@@ -10816,6 +12371,16 @@ async function callTool(name, args) {
           if (item instanceof FolderItem && __codexIsItemInsideFolder(targetFolder, item)) {
             throw new Error("Cannot move a folder into itself or one of its descendants: " + item.name + ".");
           }
+          for (var seenIndex = 0; seenIndex < itemsToMove.length; seenIndex++) {
+            if (itemsToMove[seenIndex].item === item) {
+              throw new Error("Duplicate project item target at index " + itemIndices[i] + ": " + item.name + ".");
+            }
+          }
+          itemsToMove.push({ item: item, requestedIndex: itemIndices[i] });
+        }
+
+        for (var moveIndex = 0; moveIndex < itemsToMove.length; moveIndex++) {
+          var item = itemsToMove[moveIndex].item;
 
           var previousFolderPath = "";
           try { previousFolderPath = __codexFolderPath(item); } catch (__previousFolderPathError) {}
@@ -10844,6 +12409,103 @@ async function callTool(name, args) {
           skippedCount: skipped.length,
           moved: moved,
           skipped: skipped
+        };
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_project_item_metadata") {
+    const allowedKeys = new Set([
+      "itemIndices",
+      "expectedItemNames",
+      "label",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_project_item_metadata fields: " + unsupportedKeys.join(", "), true);
+
+    let itemIndices;
+    try {
+      itemIndices = requiredExplicitPositiveIntegerList(args, "itemIndices");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+
+    let expectedItemNames = null;
+    if (hasArg(args, "expectedItemNames")) {
+      expectedItemNames = args.expectedItemNames;
+      if (typeof expectedItemNames === "string" && expectedItemNames.trim().startsWith("[")) {
+        expectedItemNames = JSON.parse(expectedItemNames);
+      }
+      if (!Array.isArray(expectedItemNames)) return toolResult("expectedItemNames must be an array when provided.", true);
+      expectedItemNames = expectedItemNames.map((value) => String(value));
+      if (expectedItemNames.length !== itemIndices.length) {
+        return toolResult("expectedItemNames must have the same length as itemIndices.", true);
+      }
+    }
+
+    const label = optionalNumber(args, "label", null);
+    if (!Number.isInteger(label) || label < 0 || label > 16) return toolResult("label must be an integer from 0 through 16.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var itemIndices = ${aeLiteral(itemIndices)};
+      var expectedItemNames = ${expectedItemNames ? aeLiteral(expectedItemNames) : "null"};
+      var label = ${label};
+
+      app.beginUndoGroup("Codex Set Project Item Metadata");
+      try {
+        var changed = [];
+        var allMatch = true;
+        for (var __pi = 0; __pi < itemIndices.length; __pi++) {
+          var requestedIndex = itemIndices[__pi];
+          var item = app.project.item(requestedIndex);
+          if (!item) throw new Error("Project item not found at index " + requestedIndex + ".");
+          if (expectedItemNames && item.name !== expectedItemNames[__pi]) {
+            throw new Error("Project item name mismatch at index " + requestedIndex + ". Expected '" + expectedItemNames[__pi] + "' but found '" + item.name + "'.");
+          }
+
+          var before = __codexItemReference(item);
+          item.label = Number(label);
+          var after = __codexItemReference(item);
+          var fieldMatches = { label: Number(after.label) === Number(label) };
+          if (!fieldMatches.label) allMatch = false;
+          changed.push({
+            itemIndex: requestedIndex,
+            expectedItemName: expectedItemNames ? expectedItemNames[__pi] : null,
+            before: before,
+            after: after,
+            fieldMatches: fieldMatches
+          });
+        }
+
+        var items = [];
+        for (var __changedIndex = 0; __changedIndex < changed.length; __changedIndex++) {
+          items.push(changed[__changedIndex].after);
+        }
+        return {
+          requestedItemIndices: itemIndices,
+          expectedItemNames: expectedItemNames,
+          updatedFields: ["label"],
+          updates: { label: label },
+          changedCount: changed.length,
+          item: items.length === 1 ? items[0] : null,
+          items: items,
+          changed: changed,
+          postVerification: {
+            ok: allMatch,
+            requestedCount: itemIndices.length,
+            changedCount: changed.length,
+            updatedFields: ["label"]
+          }
         };
       } finally {
         app.endUndoGroup();
@@ -10919,16 +12581,28 @@ async function callTool(name, args) {
     const compName = optionalString(args, "compName", "");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
+    const includeMarkers = optionalBoolean(args, "includeMarkers", false);
+    const markerLimit = Math.max(0, Math.min(1000, Math.floor(optionalNumber(args, "markerLimit", 50))));
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var includeLayers = ${includeLayers ? "true" : "false"};
+      var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
+      var markerLimit = ${markerLimit};
       var selectedLayerIndices = [];
       for (var s = 0; s < comp.selectedLayers.length; s++) {
         selectedLayerIndices.push(comp.selectedLayers[s].index);
       }
+      var displayStartFrame = null;
+      var displayStartFrameSupported = false;
+      try {
+        if (comp.displayStartFrame !== undefined) {
+          displayStartFrame = comp.displayStartFrame;
+          displayStartFrameSupported = true;
+        }
+      } catch (__displayStartFrameError) {}
 
       var layers = [];
       if (includeLayers) {
@@ -10949,12 +12623,17 @@ async function callTool(name, args) {
         workAreaDuration: comp.workAreaDuration,
         frameRate: comp.frameRate,
         displayStartTime: comp.displayStartTime,
+        displayStartFrame: displayStartFrame,
+        displayStartFrameSupported: displayStartFrameSupported,
+        preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
         time: comp.time,
         bgColor: comp.bgColor,
+        motionBlur: comp.motionBlur,
         numLayers: comp.numLayers,
         selectedLayerIndices: selectedLayerIndices,
         layersReturned: layers.length,
         layersTruncated: includeLayers && comp.numLayers > layers.length,
+        markers: includeMarkers ? __codexCompMarkers(comp, markerLimit) : null,
         layers: layers
       };
     `);
@@ -11176,6 +12855,390 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "get_layer_essential_properties") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const includeValues = optionalBoolean(args, "includeValues", true);
+    const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+    const propertyLimit = Math.max(1, Math.min(200, Math.floor(optionalNumber(args, "propertyLimit", 80))));
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialSourceInfo(source) {
+        if (!source) return null;
+        try {
+          if (source instanceof Property) {
+            return {
+              kind: "property",
+              name: source.name || "",
+              matchName: source.matchName || null,
+              propertyIndex: source.propertyIndex || null,
+              propertyPath: __codexPropertyPath(source),
+              canSetExpression: !!source.canSetExpression,
+              propertyValueType: source.propertyValueType || null,
+              unitsText: source.unitsText || ""
+            };
+          }
+        } catch (__sourcePropertyError) {}
+        try {
+          if (source instanceof AVLayer || source instanceof TextLayer || source instanceof ShapeLayer) {
+            return {
+              kind: "layer",
+              layer: __codexLayerInfo(source)
+            };
+          }
+        } catch (__sourceLayerError) {}
+        try {
+          return {
+            kind: "unknown",
+            name: source.name || "",
+            matchName: source.matchName || null
+          };
+        } catch (__unknownSourceError) {
+          return {
+            kind: "unknown"
+          };
+        }
+      }
+
+      function __codexEssentialPropertyInfo(prop, layer, includeValue, includeExpression) {
+        var info = __codexPropertyInfo(prop, layer, includeValue, includeExpression);
+        try { info.unitsText = prop.unitsText || ""; } catch (__unitsTextError) {}
+        try { info.essentialPropertySource = __codexEssentialSourceInfo(prop.essentialPropertySource); } catch (__essentialSourceError) { info.essentialPropertySource = null; }
+        return info;
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var includeValues = ${includeValues ? "true" : "false"};
+      var includeExpressions = ${includeExpressions ? "true" : "false"};
+      var propertyLimit = ${propertyLimit};
+      var group = null;
+      try { group = layer.essentialProperty; } catch (__essentialGroupError) {}
+      var properties = [];
+      var count = 0;
+      if (group) {
+        try { count = group.numProperties || 0; } catch (__essentialCountError) { count = 0; }
+        for (var __ep = 1; __ep <= count && properties.length < propertyLimit; __ep++) {
+          var prop = null;
+          try { prop = group.property(__ep); } catch (__essentialPropertyError) {}
+          if (prop) properties.push(__codexEssentialPropertyInfo(prop, layer, includeValues, includeExpressions));
+        }
+      }
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayers: comp.numLayers
+        },
+        layer: __codexLayerInfo(layer),
+        essentialProperties: {
+          available: !!group,
+          count: count,
+          returned: properties.length,
+          truncated: count > properties.length,
+          properties: properties
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_essential_graphics_controllers") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialGraphicsControllers(comp) {
+        var controllers = [];
+        var count = 0;
+        try { count = comp.motionGraphicsTemplateControllerCount || 0; } catch (__countError) { count = 0; }
+        for (var __eg = 1; __eg <= count; __eg++) {
+          var controllerName = "";
+          try { controllerName = comp.getMotionGraphicsTemplateControllerName(__eg) || ""; } catch (__nameError) {}
+          controllers.push({
+            index: __eg,
+            name: controllerName
+          });
+        }
+        return {
+          count: count,
+          controllers: controllers
+        };
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var controllers = __codexEssentialGraphicsControllers(comp);
+      var templateName = "";
+      try { templateName = comp.motionGraphicsTemplateName || ""; } catch (__templateNameError) {}
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          numLayers: comp.numLayers
+        },
+        motionGraphicsTemplateName: templateName,
+        controllerCount: controllers.count,
+        controllers: controllers.controllers
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "get_path_geometry") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const targetKind = optionalString(args, "targetKind", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMaskName = optionalString(args, "expectedMaskName", "");
+    const includeKeyframes = optionalBoolean(args, "includeKeyframes", true);
+    const keyframeLimit = Math.max(1, Math.min(80, Math.floor(optionalNumber(args, "keyframeLimit", 80))));
+    let propertyPath = null;
+    let maskIndex = null;
+
+    if (!["shape", "mask"].includes(targetKind)) return toolResult("targetKind must be shape or mask.", true);
+    if (targetKind === "shape") {
+      try {
+        propertyPath = normalizePropertyPathArg(args, "propertyPath");
+      } catch (error) {
+        return toolResult(error.message || String(error), true);
+      }
+    } else {
+      maskIndex = optionalPositiveInteger(args, "maskIndex");
+      if (maskIndex === null) return toolResult("maskIndex is required for targetKind=mask.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      var targetKind = ${aeLiteral(targetKind)};
+      var propertyPath = ${propertyPath ? aeLiteral(propertyPath) : "null"};
+      var requestedMaskIndex = ${maskIndex === null ? "null" : maskIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMaskName = ${aeLiteral(expectedMaskName)};
+      var includeKeyframes = ${includeKeyframes ? "true" : "false"};
+      var keyframeLimit = ${keyframeLimit};
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer, includeKeys, limit) {
+        var info = __codexPropertyInfo(prop, owningLayer, false, false);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        if (includeKeys) {
+          info.keyframes = [];
+          var keyCount = 0;
+          try { keyCount = prop.numKeys || 0; } catch (__numKeysError) {}
+          var maxKeys = Math.min(keyCount, limit);
+          for (var __keyIndex = 1; __keyIndex <= maxKeys; __keyIndex++) {
+            info.keyframes.push({
+              index: __keyIndex,
+              time: prop.keyTime(__keyIndex),
+              geometry: __codexShapeGeometryData(prop.keyValue(__keyIndex), 80)
+            });
+          }
+          info.keyframesTruncated = keyCount > maxKeys;
+        }
+        return info;
+      }
+
+      function __codexResolvePathTarget() {
+        if (expectedLayerName && layer.name !== expectedLayerName) {
+          throw new Error("Layer name mismatch. Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+        }
+        if (targetKind === "shape") {
+          var shapeProp = __codexResolveProperty(layer, propertyPath);
+          if (!shapeProp || shapeProp.matchName !== "ADBE Vector Shape") {
+            throw new Error("propertyPath must resolve to an ADBE Vector Shape path property.");
+          }
+          return { property: shapeProp, mask: null };
+        }
+        var maskGroup = layer.property("ADBE Mask Parade");
+        if (!maskGroup) throw new Error("Layer does not support masks.");
+        if (requestedMaskIndex < 1 || requestedMaskIndex > maskGroup.numProperties) throw new Error("maskIndex is outside the layer mask range.");
+        var mask = maskGroup.property(requestedMaskIndex);
+        if (!mask) throw new Error("Mask not found at maskIndex " + requestedMaskIndex + ".");
+        if (expectedMaskName && mask.name !== expectedMaskName) {
+          throw new Error("Mask name mismatch. Expected '" + expectedMaskName + "' but found '" + mask.name + "'.");
+        }
+        var maskShapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        if (!maskShapeProp) throw new Error("Mask shape property was not found.");
+        return { property: maskShapeProp, mask: mask };
+      }
+
+      var target = __codexResolvePathTarget();
+      var pathGeometry = __codexPathGeometryInfo(target.property, layer, includeKeyframes, keyframeLimit);
+      return {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        layer: __codexLayerInfo(layer),
+        targetKind: targetKind,
+        mask: target.mask ? { propertyIndex: target.mask.propertyIndex, name: target.mask.name, matchName: target.mask.matchName } : null,
+        property: pathGeometry,
+        pathGeometry: pathGeometry
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "export_path_points") {
+    try {
+      return toolResult(exportPathPointsFile(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "export_text_to_file") {
+    try {
+      return toolResult(exportTextToFile(args || {}));
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
+  if (name === "save_comp_frame_png") {
+    try {
+      const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+      const compName = optionalString(args, "compName", "");
+      const expectedCompName = optionalString(args, "expectedCompName", "");
+      const requestedTime = hasArg(args, "time") ? optionalNumber(args, "time", 0) : null;
+      const resolutionFactor = optionalResolutionFactor(args, "resolutionFactor") || [1, 1];
+      const deleteAfterReadBack = optionalBoolean(args, "deleteAfterReadBack", false);
+      const allowOverwrite = optionalBoolean(args, "allowOverwrite", false);
+      const output = resolveGeneratedPngExportFile(optionalString(args, "outputFileName", "frame.png"));
+
+      if (requestedTime !== null && requestedTime < 0) {
+        return toolResult("time must be greater than or equal to 0 seconds.", true);
+      }
+      if (fs.existsSync(output.resolvedPath)) {
+        if (!allowOverwrite) {
+          return toolResult("Generated PNG output already exists. Use a unique outputFileName or allowOverwrite:true.", true);
+        }
+        fs.unlinkSync(output.resolvedPath);
+      }
+      fs.mkdirSync(path.dirname(output.resolvedPath), { recursive: true });
+
+      const result = await runExtendScriptBody(`
+        ${resolveCompScript}
+        var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+        var expectedCompName = ${aeLiteral(expectedCompName)};
+        if (expectedCompName && comp.name !== expectedCompName) {
+          throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
+        }
+        if (typeof comp.saveFrameToPng !== "function") {
+          throw new Error("CompItem.saveFrameToPng is not available in this After Effects host.");
+        }
+
+        var requestedTime = ${requestedTime === null ? "null" : JSON.stringify(requestedTime)};
+        var saveTime = requestedTime === null ? comp.time : requestedTime;
+        if (saveTime < 0 || saveTime > comp.duration) {
+          throw new Error("time must be inside the composition duration.");
+        }
+
+        var outputFile = new File(${aeLiteral(output.resolvedPath)});
+        var originalResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
+        var targetResolutionFactor = ${aeLiteral(resolutionFactor)};
+        var restoredResolutionFactor = null;
+        var saved = false;
+        try {
+          comp.resolutionFactor = targetResolutionFactor;
+          comp.saveFrameToPng(saveTime, outputFile);
+          saved = outputFile.exists === true;
+        } finally {
+          comp.resolutionFactor = originalResolutionFactor;
+          restoredResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
+        }
+
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name,
+            width: comp.width,
+            height: comp.height,
+            duration: comp.duration,
+            frameRate: comp.frameRate,
+            time: comp.time,
+            numLayers: comp.numLayers
+          },
+          frame: {
+            time: saveTime,
+            frameNumber: Math.round(saveTime * comp.frameRate)
+          },
+          resolutionFactor: {
+            before: originalResolutionFactor,
+            applied: targetResolutionFactor,
+            after: restoredResolutionFactor,
+            restored: restoredResolutionFactor[0] === originalResolutionFactor[0] && restoredResolutionFactor[1] === originalResolutionFactor[1]
+          },
+          postVerification: {
+            outputFileExists: outputFile.exists === true,
+            resolutionFactorRestored: restoredResolutionFactor[0] === originalResolutionFactor[0] && restoredResolutionFactor[1] === originalResolutionFactor[1]
+          }
+        };
+      `);
+
+      if (result && result.ok === false) {
+        return toolResult(result.error || "save_comp_frame_png failed.", true);
+      }
+      const outputStat = await waitForNonEmptyFile(output.resolvedPath, { timeoutMs: 3000, intervalMs: 75 });
+      if (!outputStat) {
+        return toolResult("Generated PNG output was not found after saveFrameToPng.", true);
+      }
+
+      const bytes = fs.readFileSync(output.resolvedPath);
+      const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
+      const existsBeforeCleanup = fs.existsSync(output.resolvedPath);
+      let existsAfter = existsBeforeCleanup;
+      if (deleteAfterReadBack) {
+        fs.unlinkSync(output.resolvedPath);
+        existsAfter = fs.existsSync(output.resolvedPath);
+      }
+
+      const payload = result.result || {};
+      payload.outputFileName = output.outputFileName;
+      payload.outputPath = output.resolvedPath;
+      payload.generatedExportDir = GENERATED_EXPORT_DIR;
+      payload.file = {
+        outputFileName: output.outputFileName,
+        outputPath: output.resolvedPath,
+        byteLength: bytes.length,
+        sha256,
+        existsAfter,
+        deletedAfterReadBack: deleteAfterReadBack,
+        mimeType: "image/png"
+      };
+      return toolResult(payload);
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+  }
+
   if (name === "get_active_comp") {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -11333,6 +13396,175 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "set_layer_parent") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const parentLayerIndex = requiredPositiveInteger(args, "parentLayerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedParentName = optionalString(args, "expectedParentName", "");
+
+    if (layerIndex === parentLayerIndex) {
+      return toolResult("layerIndex and parentLayerIndex must be different.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndex = ${layerIndex};
+      var parentLayerIndex = ${parentLayerIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedParentName = ${aeLiteral(expectedParentName)};
+
+      if (layerIndex > comp.numLayers) throw new Error("Layer index " + layerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      if (parentLayerIndex > comp.numLayers) throw new Error("Parent layer index " + parentLayerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      var layer = comp.layer(layerIndex);
+      var parentLayer = comp.layer(parentLayerIndex);
+      if (!layer) throw new Error("Layer not found at index " + layerIndex + ".");
+      if (!parentLayer) throw new Error("Parent layer not found at index " + parentLayerIndex + ".");
+      if (layer === parentLayer) throw new Error("Layer cannot be parented to itself.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch at index " + layerIndex + ". Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+      }
+      if (expectedParentName && parentLayer.name !== expectedParentName) {
+        throw new Error("Parent layer name mismatch at index " + parentLayerIndex + ". Expected '" + expectedParentName + "' but found '" + parentLayer.name + "'.");
+      }
+
+      var beforeParent = null;
+      try { beforeParent = layer.parent ? __codexLayerInfo(layer.parent) : null; } catch (__beforeParentError) {}
+
+      app.beginUndoGroup("Codex Set Layer Parent");
+      try {
+        layer.parent = parentLayer;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var childAfter = __codexLayerInfo(layer);
+      var parentAfter = __codexLayerInfo(parentLayer);
+      var parentMatches = childAfter.parent && childAfter.parent.index === parentAfter.index && childAfter.parent.name === parentAfter.name;
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        layer: childAfter,
+        parent: parentAfter,
+        beforeParent: beforeParent,
+        requestedLayerIndex: layerIndex,
+        requestedParentLayerIndex: parentLayerIndex,
+        expectedLayerName: expectedLayerName || null,
+        expectedParentName: expectedParentName || null,
+        postVerification: {
+          ok: parentMatches,
+          parentMatches: parentMatches,
+          childNameMatches: !expectedLayerName || childAfter.name === expectedLayerName,
+          parentNameMatches: !expectedParentName || parentAfter.name === expectedParentName
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_track_matte") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const matteLayerIndex = requiredPositiveInteger(args, "matteLayerIndex");
+    const trackMatteType = optionalString(args, "trackMatteType", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMatteLayerName = optionalString(args, "expectedMatteLayerName", "");
+
+    const allowedTrackMatteTypes = new Set(["alpha", "alpha_inverted", "luma", "luma_inverted"]);
+    if (!allowedTrackMatteTypes.has(trackMatteType)) {
+      return toolResult("trackMatteType must be one of: alpha, alpha_inverted, luma, luma_inverted.", true);
+    }
+    if (layerIndex === matteLayerIndex) {
+      return toolResult("layerIndex and matteLayerIndex must be different.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndex = ${layerIndex};
+      var matteLayerIndex = ${matteLayerIndex};
+      var trackMatteTypeName = ${aeLiteral(trackMatteType)};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMatteLayerName = ${aeLiteral(expectedMatteLayerName)};
+
+      if (layerIndex > comp.numLayers) throw new Error("Layer index " + layerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      if (matteLayerIndex > comp.numLayers) throw new Error("Matte layer index " + matteLayerIndex + " is out of range for comp with " + comp.numLayers + " layers.");
+      var layer = comp.layer(layerIndex);
+      var matteLayer = comp.layer(matteLayerIndex);
+      if (!layer) throw new Error("Layer not found at index " + layerIndex + ".");
+      if (!matteLayer) throw new Error("Matte layer not found at index " + matteLayerIndex + ".");
+      if (layer === matteLayer) throw new Error("Layer cannot use itself as a track matte.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch at index " + layerIndex + ". Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+      }
+      if (expectedMatteLayerName && matteLayer.name !== expectedMatteLayerName) {
+        throw new Error("Matte layer name mismatch at index " + matteLayerIndex + ". Expected '" + expectedMatteLayerName + "' but found '" + matteLayer.name + "'.");
+      }
+
+      var before = __codexLayerInfo(layer);
+      var matteBefore = __codexLayerInfo(matteLayer);
+      var targetType = __codexTrackMatteTypeValue(trackMatteTypeName);
+
+      app.beginUndoGroup("Codex Set Layer Track Matte");
+      try {
+        if (typeof layer.setTrackMatte === "function") {
+          layer.setTrackMatte(matteLayer, targetType);
+        } else {
+          if (matteLayer.index !== layer.index - 1) {
+            throw new Error("This After Effects version requires the matte layer to be immediately above the fill layer for legacy trackMatteType assignment.");
+          }
+          layer.trackMatteType = targetType;
+        }
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexLayerInfo(layer);
+      var matteAfter = __codexLayerInfo(matteLayer);
+      var afterMatteLayer = after.trackMatteLayer || null;
+      var matteLayerMatches = afterMatteLayer && afterMatteLayer.index === matteAfter.index && afterMatteLayer.name === matteAfter.name;
+      var typeMatches = after.trackMatteTypeName === trackMatteTypeName;
+      var hasTrackMatteMatches = after.hasTrackMatte === true;
+      var matteRoleMatches = matteAfter.isTrackMatte === true || matteLayerMatches;
+      return {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          time: comp.time,
+          numLayers: comp.numLayers
+        },
+        layer: after,
+        matteLayer: matteAfter,
+        before: before,
+        matteBefore: matteBefore,
+        requestedLayerIndex: layerIndex,
+        requestedMatteLayerIndex: matteLayerIndex,
+        requestedTrackMatteType: trackMatteTypeName,
+        expectedLayerName: expectedLayerName || null,
+        expectedMatteLayerName: expectedMatteLayerName || null,
+        postVerification: {
+          ok: hasTrackMatteMatches && matteLayerMatches && typeMatches,
+          hasTrackMatteMatches: hasTrackMatteMatches,
+          matteLayerMatches: matteLayerMatches,
+          trackMatteTypeMatches: typeMatches,
+          matteRoleMatches: matteRoleMatches,
+          layerNameMatches: !expectedLayerName || after.name === expectedLayerName,
+          matteLayerNameMatches: !expectedMatteLayerName || matteAfter.name === expectedMatteLayerName
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "get_selected_properties") {
     const includeValues = optionalBoolean(args, "includeValues", true);
     const includeExpressions = optionalBoolean(args, "includeExpressions", true);
@@ -11440,6 +13672,7 @@ async function callTool(name, args) {
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const fontSize = optionalNumber(args, "fontSize", null);
     const fillColor = optionalNumberArray(args, "fillColor", null, 3, 3);
+    const justification = optionalTextJustification(args, "justification", null);
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
 
@@ -11457,6 +13690,7 @@ async function callTool(name, args) {
       var requestedPosition = ${position ? aeLiteral(position) : "null"};
       var requestedFontSize = ${fontSize === null ? "null" : fontSize};
       var requestedFillColor = ${fillColor ? aeLiteral(fillColor) : "null"};
+      var requestedJustification = ${justification === null ? "null" : aeLiteral(justification)};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "null" : duration};
 
@@ -11471,6 +13705,7 @@ async function callTool(name, args) {
         textDocument.applyFill = true;
         textDocument.fillColor = requestedFillColor;
       }
+      if (requestedJustification !== null) textDocument.justification = __codexTextJustificationValue(requestedJustification);
       textProp.setValue(textDocument);
 
       var transform = layer.property("ADBE Transform Group");
@@ -11493,9 +13728,200 @@ async function callTool(name, args) {
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
-        text: textValue
+        text: textValue,
+        textDocument: __codexValuePreview(textProp)
       };
       app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_shapes_from_text") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedSourceText = hasArg(args, "expectedSourceText") ? String(args.expectedSourceText) : null;
+    const shapeLayerName = optionalString(args, "shapeLayerName", "");
+    const lockCreatedShapeLayer = optionalBoolean(args, "lockCreatedShapeLayer", false);
+    const makeActive = optionalBoolean(args, "makeActive", true);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for create_shapes_from_text.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var sourceLayerIndex = ${layerIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedSourceText = ${expectedSourceText === null ? "null" : aeLiteral(expectedSourceText)};
+      var requestedShapeLayerName = ${aeLiteral(shapeLayerName)};
+      var lockCreatedShapeLayer = ${lockCreatedShapeLayer ? "true" : "false"};
+      var makeActive = ${makeActive ? "true" : "false"};
+      var menuCommandName = "Create Shapes from Text";
+
+      function __codexLayerIdKey(layer) {
+        try {
+          if (layer && layer.id !== undefined && layer.id !== null) return String(layer.id);
+        } catch (__layerIdError) {}
+        return null;
+      }
+
+      function __codexSelectedLayerRefs(targetComp) {
+        var selected = [];
+        for (var __s = 0; __s < targetComp.selectedLayers.length; __s++) {
+          var item = targetComp.selectedLayers[__s];
+          selected.push({ index: item.index, id: __codexLayerIdKey(item), name: item.name });
+        }
+        return selected;
+      }
+
+      function __codexIsTextLayer(layer) {
+        if (!layer) return false;
+        try { if (layer instanceof TextLayer) return true; } catch (__textLayerClassError) {}
+        try { return !!layer.property("ADBE Text Properties").property("ADBE Text Document"); } catch (__textLayerPropError) {}
+        return false;
+      }
+
+      function __codexIsShapeLayer(layer) {
+        if (!layer) return false;
+        try { if (layer instanceof ShapeLayer) return true; } catch (__shapeLayerClassError) {}
+        try { return layer.matchName === "ADBE Vector Layer" || !!layer.property("ADBE Root Vectors Group"); } catch (__shapeLayerPropError) {}
+        return false;
+      }
+
+      function __codexSourceTextString(layer) {
+        try {
+          var textProp = layer.property("ADBE Text Properties").property("ADBE Text Document");
+          var doc = textProp.value;
+          return doc && doc.text !== undefined && doc.text !== null ? String(doc.text) : "";
+        } catch (__sourceTextError) {
+          return "";
+        }
+      }
+
+      function __codexVectorGroupCount(layer) {
+        try {
+          var root = layer.property("ADBE Root Vectors Group");
+          return root ? root.numProperties : 0;
+        } catch (__vectorGroupError) {
+          return 0;
+        }
+      }
+
+      function __codexFindLayerById(targetComp, idKey) {
+        if (!idKey) return null;
+        for (var __l = 1; __l <= targetComp.numLayers; __l++) {
+          var candidate = targetComp.layer(__l);
+          if (__codexLayerIdKey(candidate) === idKey) return candidate;
+        }
+        return null;
+      }
+
+      var sourceLayer = comp.layer(sourceLayerIndex);
+      if (!sourceLayer) throw new Error("Layer not found at index " + sourceLayerIndex + ".");
+      if (sourceLayer.locked) throw new Error("Source text layer is locked.");
+      if (!__codexIsTextLayer(sourceLayer)) throw new Error("Layer at index " + sourceLayerIndex + " is not a text layer.");
+      if (expectedLayerName && sourceLayer.name !== expectedLayerName) {
+        throw new Error("Source layer name mismatch. Expected '" + expectedLayerName + "' but found '" + sourceLayer.name + "'.");
+      }
+      var sourceTextBefore = __codexSourceTextString(sourceLayer);
+      if (expectedSourceText !== null && sourceTextBefore !== expectedSourceText) {
+        throw new Error("Source Text mismatch. Expected '" + expectedSourceText + "' but found '" + sourceTextBefore + "'.");
+      }
+
+      var commandId = app.findMenuCommandId(menuCommandName);
+      if (!commandId) {
+        throw new Error("AE menu command not available: " + menuCommandName + ".");
+      }
+
+      var beforeLayerCount = comp.numLayers;
+      var beforeIds = {};
+      for (var __before = 1; __before <= comp.numLayers; __before++) {
+        var beforeLayer = comp.layer(__before);
+        var beforeId = __codexLayerIdKey(beforeLayer);
+        if (beforeId) beforeIds[beforeId] = true;
+      }
+      var sourceLayerId = __codexLayerIdKey(sourceLayer);
+      var selectedBefore = __codexSelectedLayerRefs(comp);
+      var response = null;
+
+      app.beginUndoGroup("Codex Create Shapes From Text");
+      try {
+        if (makeActive && comp.openInViewer) comp.openInViewer();
+        for (var __clear = 1; __clear <= comp.numLayers; __clear++) {
+          comp.layer(__clear).selected = false;
+        }
+        sourceLayer.selected = true;
+        app.executeCommand(commandId);
+
+        var createdLayers = [];
+        for (var __after = 1; __after <= comp.numLayers; __after++) {
+          var afterLayer = comp.layer(__after);
+          var afterId = __codexLayerIdKey(afterLayer);
+          if (afterId && !beforeIds[afterId]) createdLayers.push(afterLayer);
+        }
+        if (!createdLayers.length && comp.numLayers > beforeLayerCount) {
+          for (var __delta = 1; __delta <= comp.numLayers - beforeLayerCount; __delta++) {
+            createdLayers.push(comp.layer(__delta));
+          }
+        }
+
+        var createdShapeLayer = null;
+        for (var __created = 0; __created < createdLayers.length; __created++) {
+          if (__codexIsShapeLayer(createdLayers[__created])) {
+            createdShapeLayer = createdLayers[__created];
+            break;
+          }
+        }
+        if (!createdShapeLayer) {
+          throw new Error("Create Shapes from Text did not produce a detectable shape layer.");
+        }
+        if (requestedShapeLayerName) createdShapeLayer.name = requestedShapeLayerName;
+        if (lockCreatedShapeLayer) createdShapeLayer.locked = true;
+
+        var sourceAfter = __codexFindLayerById(comp, sourceLayerId);
+        if (!sourceAfter && expectedLayerName) {
+          for (var __sourceSearch = 1; __sourceSearch <= comp.numLayers; __sourceSearch++) {
+            var sourceCandidate = comp.layer(__sourceSearch);
+            if (sourceCandidate.name === expectedLayerName && __codexIsTextLayer(sourceCandidate)) {
+              sourceAfter = sourceCandidate;
+              break;
+            }
+          }
+        }
+        var selectedAfter = __codexSelectedLayerRefs(comp);
+        var outlineGroupCount = __codexVectorGroupCount(createdShapeLayer);
+
+        response = {
+          comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, numLayers: comp.numLayers },
+          menuCommand: { name: menuCommandName, id: commandId },
+          sourceLayerBefore: {
+            index: sourceLayerIndex,
+            id: sourceLayerId,
+            name: expectedLayerName || sourceLayer.name,
+            text: sourceTextBefore
+          },
+          sourceLayerAfter: sourceAfter ? __codexLayerInfo(sourceAfter) : null,
+          shapeLayer: __codexLayerInfo(createdShapeLayer),
+          outline: { vectorGroupCount: outlineGroupCount },
+          selectedBefore: selectedBefore,
+          selectedAfter: selectedAfter,
+          layerCountBefore: beforeLayerCount,
+          layerCountAfter: comp.numLayers,
+          createdLayerCount: createdLayers.length,
+          postVerification: {
+            ok: __codexIsShapeLayer(createdShapeLayer) && outlineGroupCount > 0 && comp.numLayers > beforeLayerCount,
+            createdShapeLayer: __codexIsShapeLayer(createdShapeLayer),
+            outlineGroupCount: outlineGroupCount,
+            layerCountDelta: comp.numLayers - beforeLayerCount,
+            sourceTextMatched: expectedSourceText === null || sourceTextBefore === expectedSourceText,
+            sourceNameMatched: !expectedLayerName || (sourceAfter && sourceAfter.name === expectedLayerName) || sourceLayer.name === expectedLayerName
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
       return response;
     `);
     return toolResult(result.result);
@@ -11560,6 +13986,8 @@ async function callTool(name, args) {
     const pixelAspect = optionalNumber(args, "pixelAspect", null);
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
+    const insertBeforeLayerIndex = optionalPositiveInteger(args, "insertBeforeLayerIndex");
+    const expectedBeforeLayerName = optionalString(args, "expectedBeforeLayerName", "");
 
     if (color.some((value) => value < 0 || value > 1)) return toolResult("color values must be between 0 and 1.", true);
     if (width !== null && width <= 0) return toolResult("width must be greater than 0.", true);
@@ -11677,6 +14105,20 @@ async function callTool(name, args) {
       var pixelAspect = ${pixelAspect === null ? "comp.pixelAspect" : pixelAspect};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "comp.duration" : duration};
+      var insertBeforeLayerIndex = ${insertBeforeLayerIndex === null ? "null" : insertBeforeLayerIndex};
+      var expectedBeforeLayerName = ${aeLiteral(expectedBeforeLayerName)};
+      var beforeLayer = null;
+      var beforeLayerBeforeMove = null;
+      if (insertBeforeLayerIndex !== null) {
+        if (insertBeforeLayerIndex < 1 || insertBeforeLayerIndex > comp.numLayers) {
+          throw new Error("insertBeforeLayerIndex does not identify a layer in the target comp.");
+        }
+        beforeLayer = comp.layer(insertBeforeLayerIndex);
+        if (expectedBeforeLayerName && beforeLayer.name !== expectedBeforeLayerName) {
+          throw new Error("expectedBeforeLayerName mismatch for insertBeforeLayerIndex.");
+        }
+        beforeLayerBeforeMove = __codexLayerInfo(beforeLayer);
+      }
 
       app.beginUndoGroup("Codex Create Adjustment Layer");
       var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
@@ -11689,12 +14131,22 @@ async function callTool(name, args) {
         var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
         layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
       }
+      if (beforeLayer !== null) {
+        layer.moveBefore(beforeLayer);
+      }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
+        placement: {
+          insertBeforeLayerIndex: insertBeforeLayerIndex,
+          expectedBeforeLayerName: expectedBeforeLayerName,
+          beforeLayerBeforeMove: beforeLayerBeforeMove,
+          beforeLayerAfterMove: beforeLayer !== null ? __codexLayerInfo(beforeLayer) : null,
+          immediatelyBefore: beforeLayer !== null ? (layer.index + 1 === beforeLayer.index) : null
+        },
         solid: {
           color: color,
           width: width,
@@ -12960,6 +15412,341 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "set_effect_enabled") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const enabled = optionalBoolean(args, "enabled", null);
+    const expectedCurrentEnabled = hasArg(args, "expectedCurrentEnabled")
+      ? optionalBoolean(args, "expectedCurrentEnabled", null)
+      : null;
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+    if (!hasArg(args, "enabled")) return toolResult("enabled is required.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
+      var requestedEnabled = ${enabled ? "true" : "false"};
+      var expectedCurrentEnabled = ${expectedCurrentEnabled === null ? "null" : expectedCurrentEnabled ? "true" : "false"};
+      var beforeEffect = __codexPropertyInfo(effect, layer, false, true);
+      if (beforeEffect.enabled === undefined) {
+        try { beforeEffect.enabled = !!effect.enabled; } catch (__effectEnabledReadError) {}
+      }
+      if (expectedCurrentEnabled !== null && beforeEffect.enabled !== expectedCurrentEnabled) {
+        throw new Error("Effect enabled guard mismatch. Expected " + expectedCurrentEnabled + " but found " + beforeEffect.enabled + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Effect Enabled");
+      try {
+        effect.enabled = requestedEnabled;
+        var afterEffect = __codexPropertyInfo(effect, layer, false, true);
+        if (afterEffect.enabled === undefined) {
+          try { afterEffect.enabled = !!effect.enabled; } catch (__effectEnabledAfterReadError) {}
+        }
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name
+          },
+          layer: __codexLayerInfo(layer),
+          effect: afterEffect,
+          before: {
+            effect: beforeEffect
+          },
+          after: {
+            effect: afterEffect
+          },
+          requestedEnabled: requestedEnabled,
+          expectedCurrentEnabled: expectedCurrentEnabled,
+          postVerification: {
+            ok: afterEffect.enabled === requestedEnabled,
+            enabledMatches: afterEffect.enabled === requestedEnabled,
+            expectedCurrentMatched: expectedCurrentEnabled === null || beforeEffect.enabled === expectedCurrentEnabled
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_puppet_pin_type") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const effectIndex = optionalPositiveInteger(args, "effectIndex");
+    const effectName = optionalString(args, "effectName", "");
+    const effectMatchName = optionalString(args, "effectMatchName", "");
+    const expectedPinName = optionalString(args, "expectedPinName", "");
+    const pinType = normalizePuppetPinType(args.pinType, "pinType");
+    const expectedCurrentPinType = hasArg(args, "expectedCurrentPinType")
+      ? normalizePuppetPinType(args.expectedCurrentPinType, "expectedCurrentPinType")
+      : null;
+
+    let pinTypePropertyPath = null;
+    if (Array.isArray(args.pinTypePropertyPath)) {
+      pinTypePropertyPath = args.pinTypePropertyPath;
+    } else if (typeof args.pinTypePropertyPath === "string" && args.pinTypePropertyPath.trim().startsWith("[")) {
+      pinTypePropertyPath = JSON.parse(args.pinTypePropertyPath);
+    } else if (hasArg(args, "pinTypePropertyPath")) {
+      return toolResult("pinTypePropertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (!effectIndex && !effectName && !effectMatchName) {
+      return toolResult("Provide effectIndex, effectName, or effectMatchName.", true);
+    }
+    if (effectMatchName && effectMatchName !== "ADBE FreePin3") {
+      return toolResult("set_puppet_pin_type only supports effectMatchName ADBE FreePin3.", true);
+    }
+    if (!pinTypePropertyPath || !pinTypePropertyPath.length) {
+      return toolResult("pinTypePropertyPath is required.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexTryResolveProperty(root, propertyPath) {
+        try {
+          return __codexResolveProperty(root, propertyPath);
+        } catch (__resolveError) {
+          return null;
+        }
+      }
+
+      function __codexPropertyAncestor(prop, expectedMatchName, stopAt) {
+        var current = prop;
+        var guard = 0;
+        while (current && guard < 50) {
+          if (current.matchName === expectedMatchName) return current;
+          if (stopAt && current === stopAt) break;
+          try {
+            current = current.parentProperty;
+          } catch (__parentError) {
+            current = null;
+          }
+          guard++;
+        }
+        return null;
+      }
+
+      function __codexResolvePuppetPinTypeProperty(layer, effect, propertyPath) {
+        var prop = __codexTryResolveProperty(layer, propertyPath);
+        if (prop) return prop;
+
+        prop = __codexTryResolveProperty(effect, propertyPath);
+        if (prop) return prop;
+
+        if (propertyPath instanceof Array) {
+          for (var __offset = 0; __offset < propertyPath.length; __offset++) {
+            var suffix = [];
+            for (var __segment = __offset; __segment < propertyPath.length; __segment++) {
+              suffix.push(propertyPath[__segment]);
+            }
+            prop = __codexTryResolveProperty(effect, suffix);
+            if (prop) return prop;
+          }
+        }
+
+        throw new Error("Could not resolve pinTypePropertyPath against the layer or ADBE FreePin3 effect.");
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+
+      var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName || "ADBE FreePin3")});
+      if (effect.matchName !== "ADBE FreePin3") {
+        throw new Error("set_puppet_pin_type only supports ADBE FreePin3 effects.");
+      }
+
+      var propertyPath = ${aeLiteral(pinTypePropertyPath)};
+      var prop = __codexResolvePuppetPinTypeProperty(layer, effect, propertyPath);
+      if (prop.matchName !== "ADBE FreePin3 PosPin Type") {
+        throw new Error("pinTypePropertyPath must resolve to ADBE FreePin3 PosPin Type.");
+      }
+
+      var pinAtom = __codexPropertyAncestor(prop, "ADBE FreePin3 PosPin Atom", effect);
+      if (!pinAtom) {
+        throw new Error("ADBE FreePin3 PosPin Type must be under an ADBE FreePin3 PosPin Atom ancestor.");
+      }
+      var expectedPinName = ${aeLiteral(expectedPinName)};
+      if (expectedPinName && pinAtom.name !== expectedPinName) {
+        throw new Error("Puppet pin atom name mismatch. Expected " + expectedPinName + " but found " + pinAtom.name + ".");
+      }
+
+      var requestedPinType = ${pinType};
+      var expectedCurrentPinType = ${expectedCurrentPinType === null ? "null" : expectedCurrentPinType};
+      var beforeValue = Number(prop.value);
+      if (expectedCurrentPinType !== null && beforeValue !== expectedCurrentPinType) {
+        throw new Error("Puppet pin type current value mismatch. Expected " + expectedCurrentPinType + " but found " + beforeValue + ".");
+      }
+
+      app.beginUndoGroup("Codex Set Puppet Pin Type");
+      prop.setValue(requestedPinType);
+      var afterValue = Number(prop.value);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        layer: __codexLayerInfo(layer),
+        effect: __codexPropertyInfo(effect, layer, false, true),
+        pinAtom: __codexPropertyInfo(pinAtom, layer, false, true),
+        property: __codexPropertyInfo(prop, layer, true, true),
+        pinTypeBefore: beforeValue,
+        pinType: requestedPinType,
+        pinTypeAfter: afterValue,
+        allowedPinTypes: [1, 4],
+        propertyPath: __codexPropertyPath(prop)
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_property_to_essential_graphics") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedPropertyName = optionalString(args, "expectedPropertyName", "");
+    const expectedPropertyMatchName = optionalString(args, "expectedPropertyMatchName", "");
+    const expectedControllerCountBefore = optionalNumber(args, "expectedControllerCountBefore", null);
+    const controllerName = optionalString(args, "controllerName", "").trim();
+
+    let propertyPath = null;
+    if (Array.isArray(args.propertyPath)) {
+      propertyPath = args.propertyPath;
+    } else if (typeof args.propertyPath === "string" && args.propertyPath.trim().startsWith("[")) {
+      propertyPath = JSON.parse(args.propertyPath);
+    } else if (hasArg(args, "propertyPath")) {
+      return toolResult("propertyPath must be an array, or a JSON-encoded array string.", true);
+    }
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+    if (!propertyPath || !propertyPath.length) return toolResult("propertyPath is required.", true);
+    if (!controllerName) return toolResult("controllerName is required.", true);
+    if (controllerName.length > 80) return toolResult("controllerName must be 80 characters or fewer.", true);
+    if (expectedControllerCountBefore !== null && (!Number.isInteger(expectedControllerCountBefore) || expectedControllerCountBefore < 0)) {
+      return toolResult("expectedControllerCountBefore must be a non-negative integer.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+
+      function __codexEssentialGraphicsControllers(comp) {
+        var controllers = [];
+        var count = 0;
+        try { count = comp.motionGraphicsTemplateControllerCount || 0; } catch (__countError) { count = 0; }
+        for (var __eg = 1; __eg <= count; __eg++) {
+          var controllerName = "";
+          try { controllerName = comp.getMotionGraphicsTemplateControllerName(__eg) || ""; } catch (__nameError) {}
+          controllers.push({
+            index: __eg,
+            name: controllerName
+          });
+        }
+        return {
+          count: count,
+          controllers: controllers
+        };
+      }
+
+      function __codexFindController(controllers, name, startIndex) {
+        for (var __fc = 0; __fc < controllers.length; __fc++) {
+          var controller = controllers[__fc];
+          if (controller.index < startIndex) continue;
+          if (controller.name === name) return controller;
+        }
+        return null;
+      }
+
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      if (expectedLayerName && layer.name !== expectedLayerName) {
+        throw new Error("Layer name mismatch. Expected " + expectedLayerName + " but found " + layer.name + ".");
+      }
+
+      var propertyPath = ${aeLiteral(propertyPath)};
+      var prop = __codexResolveProperty(layer, propertyPath);
+      var expectedPropertyName = ${aeLiteral(expectedPropertyName)};
+      var expectedPropertyMatchName = ${aeLiteral(expectedPropertyMatchName)};
+      if (expectedPropertyName && prop.name !== expectedPropertyName) {
+        throw new Error("Property name mismatch. Expected " + expectedPropertyName + " but found " + prop.name + ".");
+      }
+      if (expectedPropertyMatchName && prop.matchName !== expectedPropertyMatchName) {
+        throw new Error("Property matchName mismatch. Expected " + expectedPropertyMatchName + " but found " + prop.matchName + ".");
+      }
+      if (typeof prop.canAddToMotionGraphicsTemplate !== "function") {
+        throw new Error("Resolved property does not support canAddToMotionGraphicsTemplate.");
+      }
+      if (typeof prop.addToMotionGraphicsTemplateAs !== "function") {
+        throw new Error("Resolved property does not support addToMotionGraphicsTemplateAs.");
+      }
+
+      var beforeControllers = __codexEssentialGraphicsControllers(comp);
+      var expectedCount = ${expectedControllerCountBefore === null ? "null" : expectedControllerCountBefore};
+      if (expectedCount !== null && beforeControllers.count !== expectedCount) {
+        throw new Error("Essential Graphics controller count mismatch. Expected " + expectedCount + " but found " + beforeControllers.count + ".");
+      }
+
+      var canAdd = false;
+      try { canAdd = prop.canAddToMotionGraphicsTemplate(comp) === true; } catch (__canAddError) { throw new Error("canAddToMotionGraphicsTemplate failed: " + __canAddError.message); }
+      if (!canAdd) {
+        throw new Error("Property cannot be added to the Essential Graphics panel for this composition.");
+      }
+
+      var requestedControllerName = ${aeLiteral(controllerName)};
+      app.beginUndoGroup("Codex Add Property To Essential Graphics");
+      try {
+        var added = prop.addToMotionGraphicsTemplateAs(comp, requestedControllerName) === true;
+        var afterControllers = __codexEssentialGraphicsControllers(comp);
+        var newController = __codexFindController(afterControllers.controllers, requestedControllerName, beforeControllers.count + 1);
+        var existingController = newController || __codexFindController(afterControllers.controllers, requestedControllerName, 1);
+        return {
+          comp: {
+            itemIndex: __codexProjectIndexForItem(comp),
+            name: comp.name,
+            numLayers: comp.numLayers
+          },
+          layer: __codexLayerInfo(layer),
+          property: __codexPropertyInfo(prop, layer, true, true),
+          controllerName: requestedControllerName,
+          added: added,
+          beforeControllers: beforeControllers,
+          afterControllers: afterControllers,
+          controller: existingController,
+          postVerification: {
+            ok: added === true && !!existingController && afterControllers.count === beforeControllers.count + 1,
+            controllerCountIncremented: afterControllers.count === beforeControllers.count + 1,
+            controllerNamePresent: !!existingController,
+            canAddBefore: canAdd
+          }
+        };
+      } finally {
+        app.endUndoGroup();
+      }
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "set_property_value") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -13069,6 +15856,8 @@ async function callTool(name, args) {
       "comment",
       "label",
       "locked",
+      "enabled",
+      "guideLayer",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -13113,9 +15902,15 @@ async function callTool(name, args) {
     if (hasArg(args, "locked")) {
       requested.locked = optionalBoolean(args, "locked", false);
     }
+    if (hasArg(args, "enabled")) {
+      requested.enabled = optionalBoolean(args, "enabled", true);
+    }
+    if (hasArg(args, "guideLayer")) {
+      requested.guideLayer = optionalBoolean(args, "guideLayer", false);
+    }
 
     const requestedKeys = Object.keys(requested);
-    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, or locked.", true);
+    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, enabled, or guideLayer.", true);
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -13129,6 +15924,8 @@ async function callTool(name, args) {
         if (field === "comment") return String(after.comment || "") === String(requested.comment || "");
         if (field === "label") return Number(after.label) === Number(requested.label);
         if (field === "locked") return after.locked === requested.locked;
+        if (field === "enabled") return after.enabled === requested.enabled;
+        if (field === "guideLayer") return after.guideLayer === requested.guideLayer;
         return false;
       }
 
@@ -13144,13 +15941,15 @@ async function callTool(name, args) {
         }
 
         var before = __codexLayerInfo(layer);
-        if (before.locked && (requested.comment !== undefined || requested.label !== undefined) && requested.locked !== false) {
-          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment or label.");
+        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined || requested.guideLayer !== undefined) && requested.locked !== false) {
+          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, enabled, or guideLayer.");
         }
 
         if (requested.locked === false) layer.locked = false;
         if (requested.comment !== undefined) layer.comment = String(requested.comment);
         if (requested.label !== undefined) layer.label = Number(requested.label);
+        if (requested.enabled !== undefined) layer.enabled = requested.enabled;
+        if (requested.guideLayer !== undefined) layer.guideLayer = requested.guideLayer;
         if (requested.locked === true) layer.locked = true;
 
         var after = __codexLayerInfo(layer);
@@ -13191,6 +15990,140 @@ async function callTool(name, args) {
           requestedCount: layerIndices.length,
           changedCount: changed.length,
           updatedFields: requestedKeys
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_layer_blending_mode") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_layer_blending_mode.", true);
+
+    const allowedKeys = new Set([
+      "compItemIndex",
+      "compName",
+      "layerIndices",
+      "expectedLayerNames",
+      "expectedCurrentBlendingModes",
+      "blendingMode",
+      "autoCheckpoint",
+      "checkpointLabel",
+      "idempotencyKey",
+      "idempotencyScope",
+      "verifyAfter",
+      M100_DIRECT_ESCAPE_HATCH_ARG
+    ]);
+    const unsupportedKeys = Object.keys(args || {}).filter((key) => !allowedKeys.has(key));
+    if (unsupportedKeys.length) return toolResult("Unsupported set_layer_blending_mode fields: " + unsupportedKeys.join(", "), true);
+
+    let layerIndices;
+    try {
+      layerIndices = requiredExplicitPositiveIntegerList(args, "layerIndices");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) return toolResult("expectedLayerNames must be an array when provided.", true);
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
+
+    let expectedCurrentBlendingModes = null;
+    if (hasArg(args, "expectedCurrentBlendingModes")) {
+      expectedCurrentBlendingModes = args.expectedCurrentBlendingModes;
+      if (typeof expectedCurrentBlendingModes === "string" && expectedCurrentBlendingModes.trim().startsWith("[")) {
+        expectedCurrentBlendingModes = JSON.parse(expectedCurrentBlendingModes);
+      }
+      if (!Array.isArray(expectedCurrentBlendingModes)) return toolResult("expectedCurrentBlendingModes must be an array when provided.", true);
+      expectedCurrentBlendingModes = expectedCurrentBlendingModes.map((value) => String(value).trim().toLowerCase());
+      if (expectedCurrentBlendingModes.length !== layerIndices.length) {
+        return toolResult("expectedCurrentBlendingModes must have the same length as layerIndices.", true);
+      }
+      const invalidExpectedModes = expectedCurrentBlendingModes.filter((value) => !["normal", "difference"].includes(value));
+      if (invalidExpectedModes.length) return toolResult("expectedCurrentBlendingModes only supports normal or difference.", true);
+    }
+
+    const blendingMode = optionalString(args, "blendingMode", "").trim().toLowerCase();
+    if (!["normal", "difference"].includes(blendingMode)) return toolResult("blendingMode must be normal or difference.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
+      var expectedCurrentBlendingModes = ${expectedCurrentBlendingModes ? aeLiteral(expectedCurrentBlendingModes) : "null"};
+      var targetModeName = ${aeLiteral(blendingMode)};
+      var targetMode = __codexBlendingModeValue(targetModeName);
+
+      app.beginUndoGroup("Codex Set Layer Blending Mode");
+      var changed = [];
+      var allMatch = true;
+      for (var __li = 0; __li < layerIndices.length; __li++) {
+        var requestedIndex = layerIndices[__li];
+        var layer = comp.layer(requestedIndex);
+        if (!layer) throw new Error("Layer not found at index " + requestedIndex + ".");
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__li]) {
+          throw new Error("Layer name mismatch at index " + requestedIndex + ". Expected '" + expectedLayerNames[__li] + "' but found '" + layer.name + "'.");
+        }
+
+        var before = __codexLayerInfo(layer);
+        var beforeModeName = before.blendingModeName || __codexBlendingModeName(layer.blendingMode);
+        if (expectedCurrentBlendingModes && beforeModeName !== expectedCurrentBlendingModes[__li]) {
+          throw new Error("Layer blending mode mismatch at index " + requestedIndex + ". Expected '" + expectedCurrentBlendingModes[__li] + "' but found '" + beforeModeName + "'.");
+        }
+        if (before.locked) throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting blending mode.");
+
+        layer.blendingMode = targetMode;
+        var after = __codexLayerInfo(layer);
+        var fieldMatches = {
+          blendingMode: after.blendingModeName === targetModeName
+        };
+        if (!fieldMatches.blendingMode) allMatch = false;
+        changed.push({
+          layerIndex: requestedIndex,
+          expectedLayerName: expectedLayerNames ? expectedLayerNames[__li] : null,
+          expectedCurrentBlendingMode: expectedCurrentBlendingModes ? expectedCurrentBlendingModes[__li] : null,
+          requestedBlendingMode: targetModeName,
+          before: before,
+          after: after,
+          fieldMatches: fieldMatches
+        });
+      }
+
+      var layers = [];
+      for (var __changedIndex = 0; __changedIndex < changed.length; __changedIndex++) {
+        layers.push(changed[__changedIndex].after);
+      }
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name
+        },
+        requestedLayerIndices: layerIndices,
+        expectedLayerNames: expectedLayerNames,
+        expectedCurrentBlendingModes: expectedCurrentBlendingModes,
+        requestedBlendingMode: targetModeName,
+        changedCount: changed.length,
+        layer: layers.length === 1 ? layers[0] : null,
+        layers: layers,
+        changed: changed,
+        postVerification: {
+          ok: allMatch,
+          requestedCount: layerIndices.length,
+          changedCount: changed.length,
+          requestedBlendingMode: targetModeName
         }
       };
       app.endUndoGroup();
@@ -13279,6 +16212,125 @@ async function callTool(name, args) {
     return toolResult(result.result);
   }
 
+  if (name === "set_comp_current_time") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const hasTime = hasArg(args, "time");
+    const hasFrame = hasArg(args, "frame");
+    const time = hasTime ? optionalNumber(args, "time", null) : null;
+    const frame = hasFrame ? optionalNumber(args, "frame", null) : null;
+    const frameRate = hasArg(args, "frameRate") ? optionalNumber(args, "frameRate", null) : null;
+    const expectedCurrentTime = hasArg(args, "expectedCurrentTime") ? optionalNumber(args, "expectedCurrentTime", null) : null;
+    const clampToDuration = optionalBoolean(args, "clampToDuration", false);
+    const openInViewer = optionalBoolean(args, "openInViewer", false);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
+    if (hasTime === hasFrame) return toolResult("Provide exactly one of time or frame.", true);
+    if (hasTime && (time === null || !Number.isFinite(time))) return toolResult("time must be a finite number of seconds.", true);
+    if (hasFrame && (frame === null || !Number.isFinite(frame) || !Number.isInteger(frame) || frame < 0)) {
+      return toolResult("frame must be a finite zero-based integer.", true);
+    }
+    if (frameRate !== null && (!Number.isFinite(frameRate) || frameRate <= 0)) return toolResult("frameRate must be greater than 0.", true);
+    if (expectedCurrentTime !== null && !Number.isFinite(expectedCurrentTime)) return toolResult("expectedCurrentTime must be finite when provided.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var requestedTime = ${hasTime ? time : "null"};
+      var requestedFrame = ${hasFrame ? frame : "null"};
+      var explicitFrameRate = ${frameRate === null ? "null" : frameRate};
+      var expectedCurrentTime = ${expectedCurrentTime === null ? "null" : expectedCurrentTime};
+      var clampToDuration = ${clampToDuration ? "true" : "false"};
+      var openInViewer = ${openInViewer ? "true" : "false"};
+
+      function __codexFiniteNumber(value) {
+        return typeof value === "number" && isFinite(value);
+      }
+
+      function __codexCompTimeSnapshot(targetComp) {
+        return {
+          itemIndex: __codexProjectIndexForItem(targetComp),
+          name: targetComp.name,
+          time: targetComp.time,
+          duration: targetComp.duration,
+          frameRate: targetComp.frameRate,
+          displayStartTime: targetComp.displayStartTime,
+          workAreaStart: targetComp.workAreaStart,
+          workAreaDuration: targetComp.workAreaDuration,
+          width: targetComp.width,
+          height: targetComp.height,
+          numLayers: targetComp.numLayers
+        };
+      }
+
+      var frameRateUsed = null;
+      if (requestedFrame !== null) {
+        frameRateUsed = explicitFrameRate !== null ? explicitFrameRate : comp.frameRate;
+        if (!__codexFiniteNumber(frameRateUsed) || frameRateUsed <= 0) throw new Error("frameRate must be greater than 0 for frame-derived current time.");
+        requestedTime = requestedFrame / frameRateUsed;
+      }
+      if (!__codexFiniteNumber(requestedTime)) throw new Error("Target current time must be finite.");
+
+      var before = __codexCompTimeSnapshot(comp);
+      if (expectedCurrentTime !== null && Math.abs(before.time - expectedCurrentTime) > 0.001) {
+        throw new Error("Current time guard mismatch. Expected " + expectedCurrentTime + " but found " + before.time + ".");
+      }
+
+      var targetTime = requestedTime;
+      var clamped = false;
+      if (targetTime < 0 || targetTime > comp.duration) {
+        if (!clampToDuration) throw new Error("Target current time must be between 0 and composition duration.");
+        targetTime = Math.max(0, Math.min(comp.duration, targetTime));
+        clamped = true;
+      }
+
+      app.beginUndoGroup("Codex Set Comp Current Time");
+      try {
+        if (openInViewer && comp.openInViewer) comp.openInViewer();
+        comp.time = targetTime;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var after = __codexCompTimeSnapshot(comp);
+      var timeMatches = Math.abs(after.time - targetTime) <= 0.001;
+      return {
+        comp: {
+          itemIndex: after.itemIndex,
+          name: after.name,
+          time: after.time,
+          duration: after.duration,
+          frameRate: after.frameRate
+        },
+        requested: {
+          time: requestedTime,
+          frame: requestedFrame,
+          frameRate: frameRateUsed,
+          clampToDuration: clampToDuration
+        },
+        targetTime: targetTime,
+        clamped: clamped,
+        before: before,
+        after: after,
+        postVerification: {
+          ok: timeMatches,
+          timeMatches: timeMatches,
+          withinBounds: targetTime >= 0 && targetTime <= after.duration,
+          compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
+          structuralFieldsUnchanged:
+            before.duration === after.duration &&
+            before.frameRate === after.frameRate &&
+            before.width === after.width &&
+            before.height === after.height &&
+            before.numLayers === after.numLayers &&
+            before.workAreaStart === after.workAreaStart &&
+            before.workAreaDuration === after.workAreaDuration
+        }
+      };
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "set_comp_work_area") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
@@ -13334,6 +16386,8 @@ async function callTool(name, args) {
       "frameRate",
       "bgColor",
       "displayStartTime",
+      "displayStartFrame",
+      "preserveNestedFrameRate",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -13373,6 +16427,15 @@ async function callTool(name, args) {
     if (hasArg(args, "displayStartTime")) {
       requested.displayStartTime = optionalNumber(args, "displayStartTime", null);
     }
+    if (hasArg(args, "displayStartFrame")) {
+      const displayStartFrame = optionalNumber(args, "displayStartFrame", null);
+      if (!Number.isInteger(displayStartFrame) || displayStartFrame < 0) return toolResult("displayStartFrame must be a non-negative integer.", true);
+      requested.displayStartFrame = displayStartFrame;
+    }
+    if (hasArg(args, "preserveNestedFrameRate")) {
+      requested.preserveNestedFrameRate = optionalBoolean(args, "preserveNestedFrameRate", null);
+      if (requested.preserveNestedFrameRate === null) return toolResult("preserveNestedFrameRate must be a boolean.", true);
+    }
     if (hasArg(args, "bgColor")) {
       const bgColor = optionalNumberArray(args, "bgColor", null, 3, 3);
       if (bgColor.some((value) => value < 0 || value > 1)) return toolResult("bgColor values must be between 0 and 1.", true);
@@ -13388,6 +16451,14 @@ async function callTool(name, args) {
       var requestedKeys = ${aeLiteral(requestedKeys)};
 
       function __codexCompProperties(comp) {
+        var displayStartFrame = null;
+        var displayStartFrameSupported = false;
+        try {
+          if (comp.displayStartFrame !== undefined) {
+            displayStartFrame = comp.displayStartFrame;
+            displayStartFrameSupported = true;
+          }
+        } catch (__displayStartFrameReadError) {}
         return {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name,
@@ -13398,6 +16469,9 @@ async function callTool(name, args) {
           frameRate: comp.frameRate,
           bgColor: comp.bgColor ? [comp.bgColor[0], comp.bgColor[1], comp.bgColor[2]] : null,
           displayStartTime: comp.displayStartTime,
+          displayStartFrame: displayStartFrame,
+          displayStartFrameSupported: displayStartFrameSupported,
+          preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
           numLayers: comp.numLayers
         };
       }
@@ -13415,6 +16489,19 @@ async function callTool(name, args) {
         return __codexColorNear(actual[0], expected[0]) && __codexColorNear(actual[1], expected[1]) && __codexColorNear(actual[2], expected[2]);
       }
 
+      function __codexFieldMatches(after, field, expected) {
+        if (field === "bgColor") return __codexColorMatches(after.bgColor, expected);
+        if (typeof expected === "boolean") return after[field] === expected;
+        return __codexNear(after[field], expected);
+      }
+
+      function __codexSetDisplayStartFrame(targetComp, value) {
+        var supported = false;
+        try { supported = targetComp.displayStartFrame !== undefined; } catch (__displayStartFrameSupportError) {}
+        if (!supported) throw new Error("CompItem.displayStartFrame is not supported by this After Effects version.");
+        targetComp.displayStartFrame = value;
+      }
+
       app.beginUndoGroup("Codex Set Comp Properties");
       var before = __codexCompProperties(comp);
       if (requested.width !== undefined) comp.width = requested.width;
@@ -13424,14 +16511,14 @@ async function callTool(name, args) {
       if (requested.frameRate !== undefined) comp.frameRate = requested.frameRate;
       if (requested.bgColor !== undefined) comp.bgColor = requested.bgColor;
       if (requested.displayStartTime !== undefined) comp.displayStartTime = requested.displayStartTime;
+      if (requested.displayStartFrame !== undefined) __codexSetDisplayStartFrame(comp, requested.displayStartFrame);
+      if (requested.preserveNestedFrameRate !== undefined) comp.preserveNestedFrameRate = requested.preserveNestedFrameRate;
       var after = __codexCompProperties(comp);
       var fieldMatches = {};
       var allMatch = true;
       for (var __fieldIndex = 0; __fieldIndex < requestedKeys.length; __fieldIndex++) {
         var field = requestedKeys[__fieldIndex];
-        var matches = field === "bgColor"
-          ? __codexColorMatches(after.bgColor, requested.bgColor)
-          : __codexNear(after[field], requested[field]);
+        var matches = __codexFieldMatches(after, field, requested[field]);
         fieldMatches[field] = matches;
         if (!matches) allMatch = false;
       }
@@ -13447,6 +16534,69 @@ async function callTool(name, args) {
           fieldMatches: fieldMatches,
           compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
           layerCountUnchanged: before.numLayers === after.numLayers
+        }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "refresh_comp_panel") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const expectedMotionBlur = optionalBoolean(args, "expectedMotionBlur", null);
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for refresh_comp_panel.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var expectedMotionBlur = ${expectedMotionBlur === null ? "null" : aeLiteral(expectedMotionBlur)};
+
+      function __codexCompRefreshState(comp) {
+        return {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          width: comp.width,
+          height: comp.height,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          workAreaStart: comp.workAreaStart,
+          workAreaDuration: comp.workAreaDuration,
+          time: comp.time,
+          motionBlur: !!comp.motionBlur,
+          numLayers: comp.numLayers
+        };
+      }
+
+      var before = __codexCompRefreshState(comp);
+      if (expectedMotionBlur !== null && before.motionBlur !== expectedMotionBlur) {
+        throw new Error("Expected comp.motionBlur " + expectedMotionBlur + " but found " + before.motionBlur + ".");
+      }
+      app.beginUndoGroup("Codex Refresh Comp Panel");
+      comp.motionBlur = !before.motionBlur;
+      var transient = __codexCompRefreshState(comp);
+      comp.motionBlur = before.motionBlur;
+      var after = __codexCompRefreshState(comp);
+      var response = {
+        comp: after,
+        before: before,
+        transient: transient,
+        after: after,
+        refreshMethod: "comp.motionBlur-double-toggle",
+        postVerification: {
+          ok: before.itemIndex === after.itemIndex &&
+            before.name === after.name &&
+            before.motionBlur === after.motionBlur &&
+            transient.motionBlur !== before.motionBlur &&
+            before.numLayers === after.numLayers &&
+            before.workAreaStart === after.workAreaStart &&
+            before.workAreaDuration === after.workAreaDuration,
+          compIdentityMatches: before.itemIndex === after.itemIndex && before.name === after.name,
+          motionBlurRestored: before.motionBlur === after.motionBlur,
+          transientToggled: transient.motionBlur !== before.motionBlur,
+          layerCountUnchanged: before.numLayers === after.numLayers,
+          workAreaUnchanged: before.workAreaStart === after.workAreaStart && before.workAreaDuration === after.workAreaDuration
         }
       };
       app.endUndoGroup();
@@ -13701,15 +16851,34 @@ async function callTool(name, args) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
-    const mode = optionalString(args, "mode", hasArg(args, "name") ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
-    const renameName = optionalString(args, "name", "");
+    const hasRenameName = Object.prototype.hasOwnProperty.call(args, "name") && args.name !== undefined && args.name !== null;
+    const mode = optionalString(args, "mode", hasRenameName ? "exact" : hasArg(args, "prefix") ? "prefix" : hasArg(args, "suffix") ? "suffix" : "findReplace");
+    const renameName = hasRenameName ? String(args.name) : "";
+    const allowEmptyName = optionalBoolean(args, "allowEmptyName", false);
     const prefix = optionalString(args, "prefix", "");
     const suffix = optionalString(args, "suffix", "");
     const findText = optionalString(args, "find", "");
     const replaceText = optionalString(args, "replace", "");
     const caseSensitive = optionalBoolean(args, "caseSensitive", true);
+    let expectedLayerNames = null;
+    if (hasArg(args, "expectedLayerNames")) {
+      expectedLayerNames = args.expectedLayerNames;
+      if (typeof expectedLayerNames === "string" && expectedLayerNames.trim().startsWith("[")) {
+        expectedLayerNames = JSON.parse(expectedLayerNames);
+      }
+      if (!Array.isArray(expectedLayerNames)) return toolResult("expectedLayerNames must be an array when provided.", true);
+      expectedLayerNames = expectedLayerNames.map((value) => String(value));
+      if (!layerIndices || expectedLayerNames.length !== layerIndices.length) {
+        return toolResult("expectedLayerNames must have the same length as layerIndices.", true);
+      }
+    }
 
     if (!["exact", "prefix", "suffix", "findReplace"].includes(mode)) return toolResult("mode must be one of: exact, prefix, suffix, findReplace.", true);
+    if (allowEmptyName) {
+      if (mode !== "exact" || renameName !== "") return toolResult("allowEmptyName is only valid with mode:\"exact\" and name:\"\".", true);
+      if (!layerIndices || layerIndices.length !== 1) return toolResult("Empty layer-name reset requires exactly one explicit layer index per rename_layers call.", true);
+      if (!expectedLayerNames || expectedLayerNames.length !== 1) return toolResult("Empty layer-name reset requires expectedLayerNames for the target layer.", true);
+    }
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -13717,6 +16886,8 @@ async function callTool(name, args) {
       var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
       var mode = ${aeLiteral(mode)};
       var exactName = ${aeLiteral(renameName)};
+      var allowEmptyName = ${allowEmptyName ? "true" : "false"};
+      var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
       var prefix = ${aeLiteral(prefix)};
       var suffix = ${aeLiteral(suffix)};
       var findText = ${aeLiteral(findText)};
@@ -13728,8 +16899,11 @@ async function callTool(name, args) {
       for (var __i = 0; __i < layers.length; __i++) {
         var layer = layers[__i];
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
+        if (expectedLayerNames && layer.name !== expectedLayerNames[__i]) {
+          throw new Error("Layer name mismatch at index " + layer.index + ". Expected '" + expectedLayerNames[__i] + "' but found '" + layer.name + "'.");
+        }
         var beforeName = layer.name;
-        var nextName = __codexRenameValue(beforeName, mode, __i + 1, layers.length, exactName, prefix, suffix, findText, replaceText, caseSensitive);
+        var nextName = __codexRenameValue(beforeName, mode, __i + 1, layers.length, exactName, prefix, suffix, findText, replaceText, caseSensitive, allowEmptyName);
         layer.name = nextName;
         renamed.push({
           index: layer.index,
@@ -13741,6 +16915,8 @@ async function callTool(name, args) {
       var response = {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         mode: mode,
+        expectedLayerNames: expectedLayerNames,
+        allowEmptyName: allowEmptyName,
         changedCount: renamed.length,
         renamed: renamed,
         layers: renamed.map(function (item) { return item.layer; })
@@ -13832,6 +17008,7 @@ async function callTool(name, args) {
     for (const key of ["text", "font", "fontSize", "fillColor", "applyFill", "strokeColor", "applyStroke", "strokeWidth", "tracking", "leading"]) {
       if (hasArg(args, key)) patch[key] = args[key];
     }
+    if (hasArg(args, "justification")) patch.justification = optionalTextJustification(args, "justification", null);
     if (!Object.keys(patch).length) return toolResult("Provide at least one text field to update.", true);
     if (hasArg(patch, "fontSize") && Number(patch.fontSize) <= 0) return toolResult("fontSize must be greater than 0.", true);
     if (hasArg(patch, "strokeWidth") && Number(patch.strokeWidth) < 0) return toolResult("strokeWidth must be 0 or greater.", true);
@@ -13865,9 +17042,13 @@ async function callTool(name, args) {
   if (name === "create_shape_layer") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const shape = optionalString(args, "shape", "rectangle");
+    const shape = optionalString(args, "shape", "rectangle").trim().toLowerCase();
     const layerName = optionalString(args, "name", "Codex Shape");
     const size = optionalNumberArray(args, "size", null, 2, 2);
+    const points = optionalNumber(args, "points", 5);
+    const outerRadius = optionalNumber(args, "outerRadius", 100);
+    const innerRadius = optionalNumber(args, "innerRadius", shape === "star" ? 50 : null);
+    const starType = optionalString(args, "starType", "").trim().toLowerCase();
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const fillColor = optionalNumberArray(args, "fillColor", [1, 1, 1], 3, 3);
     const strokeColor = optionalNumberArray(args, "strokeColor", null, 3, 3);
@@ -13875,7 +17056,19 @@ async function callTool(name, args) {
     const startTime = optionalNumber(args, "startTime", null);
     const duration = optionalNumber(args, "duration", null);
 
-    if (!["rectangle", "ellipse"].includes(shape)) return toolResult("shape must be one of: rectangle, ellipse.", true);
+    if (!["rectangle", "ellipse", "polygon", "star"].includes(shape)) return toolResult("shape must be one of: rectangle, ellipse, polygon, star.", true);
+    const isPolystar = shape === "polygon" || shape === "star";
+    if (isPolystar && size) return toolResult("size is only supported for rectangle and ellipse; use outerRadius for polygon/star.", true);
+    if (!isPolystar && (hasArg(args, "points") || hasArg(args, "outerRadius") || hasArg(args, "innerRadius") || hasArg(args, "starType"))) {
+      return toolResult("points, outerRadius, innerRadius, and starType are only supported for polygon/star.", true);
+    }
+    if (isPolystar) {
+      if (starType && starType !== shape) return toolResult("starType must match shape for polygon/star.", true);
+      if (!Number.isInteger(points) || points < 3 || points > 64) return toolResult("points must be an integer from 3 to 64.", true);
+      if (outerRadius <= 0 || outerRadius > 10000) return toolResult("outerRadius must be greater than 0 and at most 10000.", true);
+      if (shape === "polygon" && hasArg(args, "innerRadius")) return toolResult("innerRadius is only supported for star.", true);
+      if (shape === "star" && (innerRadius <= 0 || innerRadius >= outerRadius)) return toolResult("innerRadius must be greater than 0 and less than outerRadius.", true);
+    }
     if (size && (size[0] <= 0 || size[1] <= 0)) return toolResult("size values must be greater than 0.", true);
     if (fillColor.some((value) => value < 0 || value > 1)) return toolResult("fillColor values must be between 0 and 1.", true);
     if (strokeColor && strokeColor.some((value) => value < 0 || value > 1)) return toolResult("strokeColor values must be between 0 and 1.", true);
@@ -13886,8 +17079,12 @@ async function callTool(name, args) {
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var shapeType = ${aeLiteral(shape)};
+      var isPolystar = shapeType === "polygon" || shapeType === "star";
       var layerName = ${aeLiteral(layerName)};
       var requestedSize = ${size ? aeLiteral(size) : "[comp.width / 2, comp.height / 2]"};
+      var requestedPoints = ${points};
+      var requestedOuterRadius = ${outerRadius};
+      var requestedInnerRadius = ${innerRadius === null ? "null" : innerRadius};
       var requestedPosition = ${position ? aeLiteral(position) : "[comp.width / 2, comp.height / 2]"};
       var fillColor = ${aeLiteral(fillColor)};
       var strokeColor = ${strokeColor ? aeLiteral(strokeColor) : "null"};
@@ -13895,16 +17092,34 @@ async function callTool(name, args) {
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "null" : duration};
 
+      function __codexPolystarTypeValue(typeName) {
+        if (typeName === "polygon") {
+          try { return PolystarPathType.POLYGON; } catch (__polygonTypeValueError) {}
+          return 2;
+        }
+        try { return PolystarPathType.STAR; } catch (__starTypeValueError) {}
+        return 1;
+      }
+
       app.beginUndoGroup("Codex Create Shape Layer");
       var layer = comp.layers.addShape();
       if (layerName) layer.name = layerName;
       var root = layer.property("ADBE Root Vectors Group");
       var group = root.addProperty("ADBE Vector Group");
-      group.name = shapeType === "ellipse" ? "Ellipse" : "Rectangle";
+      group.name = shapeType === "ellipse" ? "Ellipse" : (shapeType === "polygon" ? "Polygon" : (shapeType === "star" ? "Star" : "Rectangle"));
       var contents = group.property("ADBE Vectors Group");
-      var shapeProp = contents.addProperty(shapeType === "ellipse" ? "ADBE Vector Shape - Ellipse" : "ADBE Vector Shape - Rect");
-      var sizeProp = shapeProp.property(shapeType === "ellipse" ? "ADBE Vector Ellipse Size" : "ADBE Vector Rect Size");
-      if (sizeProp) sizeProp.setValue(requestedSize);
+      var shapeProp = null;
+      if (isPolystar) {
+        shapeProp = contents.addProperty("ADBE Vector Shape - Star");
+        shapeProp.property("ADBE Vector Star Type").setValue(__codexPolystarTypeValue(shapeType));
+        shapeProp.property("ADBE Vector Star Points").setValue(requestedPoints);
+        shapeProp.property("ADBE Vector Star Outer Radius").setValue(requestedOuterRadius);
+        if (shapeType === "star") shapeProp.property("ADBE Vector Star Inner Radius").setValue(requestedInnerRadius);
+      } else {
+        shapeProp = contents.addProperty(shapeType === "ellipse" ? "ADBE Vector Shape - Ellipse" : "ADBE Vector Shape - Rect");
+        var sizeProp = shapeProp.property(shapeType === "ellipse" ? "ADBE Vector Ellipse Size" : "ADBE Vector Rect Size");
+        if (sizeProp) sizeProp.setValue(requestedSize);
+      }
       var fill = contents.addProperty("ADBE Vector Graphic - Fill");
       fill.property("ADBE Vector Fill Color").setValue(fillColor);
       if (strokeColor !== null || strokeWidth > 0) {
@@ -13925,7 +17140,168 @@ async function callTool(name, args) {
       var response = {
         comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
         layer: __codexLayerInfo(layer),
-        shape: { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+        shape: isPolystar
+          ? { type: shapeType, starType: shapeType, points: requestedPoints, outerRadius: requestedOuterRadius, innerRadius: requestedInnerRadius, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+          : { type: shapeType, size: requestedSize, fillColor: fillColor, strokeColor: strokeColor, strokeWidth: strokeWidth }
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "create_layer_connection_line") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const fromLayerIndex = requiredPositiveInteger(args, "fromLayerIndex");
+    const toLayerIndex = requiredPositiveInteger(args, "toLayerIndex");
+    const expectedFromLayerName = optionalString(args, "expectedFromLayerName", "");
+    const expectedToLayerName = optionalString(args, "expectedToLayerName", "");
+    const layerName = optionalString(args, "name", "Codex Connection Line");
+    const pathGroupName = optionalString(args, "pathGroupName", "Connector");
+    const strokeColor = optionalNumberArray(args, "strokeColor", [1, 1, 1], 3, 3);
+    const strokeWidth = optionalNumber(args, "strokeWidth", 4);
+    const startTime = optionalNumber(args, "startTime", null);
+    const duration = optionalNumber(args, "duration", null);
+    const lockLayer = optionalBoolean(args, "lockLayer", true);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for create_layer_connection_line.", true);
+    if (fromLayerIndex === toLayerIndex) return toolResult("fromLayerIndex and toLayerIndex must target two different layers.", true);
+    if (strokeColor.some((value) => value < 0 || value > 1)) return toolResult("strokeColor values must be between 0 and 1.", true);
+    if (strokeWidth <= 0) return toolResult("strokeWidth must be greater than 0.", true);
+    if (duration !== null && duration <= 0) return toolResult("duration must be greater than 0.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var fromLayer = comp.layer(${fromLayerIndex});
+      var toLayer = comp.layer(${toLayerIndex});
+      if (!fromLayer) throw new Error("fromLayerIndex did not resolve to a layer.");
+      if (!toLayer) throw new Error("toLayerIndex did not resolve to a layer.");
+      if (fromLayer === toLayer) throw new Error("fromLayerIndex and toLayerIndex must target two different layers.");
+      var expectedFromLayerName = ${aeLiteral(expectedFromLayerName)};
+      var expectedToLayerName = ${aeLiteral(expectedToLayerName)};
+      if (expectedFromLayerName && fromLayer.name !== expectedFromLayerName) {
+        throw new Error("fromLayer name mismatch. Expected '" + expectedFromLayerName + "' but found '" + fromLayer.name + "'.");
+      }
+      if (expectedToLayerName && toLayer.name !== expectedToLayerName) {
+        throw new Error("toLayer name mismatch. Expected '" + expectedToLayerName + "' but found '" + toLayer.name + "'.");
+      }
+      var layerName = ${aeLiteral(layerName)};
+      var pathGroupName = ${aeLiteral(pathGroupName)};
+      var strokeColor = ${aeLiteral(strokeColor)};
+      var strokeWidth = ${strokeWidth};
+      var requestedStartTime = ${startTime === null ? "null" : startTime};
+      var requestedDuration = ${duration === null ? "null" : duration};
+      var lockLayer = ${lockLayer ? "true" : "false"};
+
+      function __codexExpressionString(value) {
+        return JSON.stringify(String(value || ""));
+      }
+
+      function __codexLayerPosition2D(targetLayer) {
+        var transform = targetLayer.property("ADBE Transform Group");
+        var positionProp = transform ? transform.property("ADBE Position") : null;
+        var position = positionProp ? positionProp.value : [0, 0];
+        return [Number(position[0]) || 0, Number(position[1]) || 0];
+      }
+
+      function __codexOpenPath(points) {
+        var shape = new Shape();
+        shape.vertices = points;
+        shape.inTangents = [[0, 0], [0, 0]];
+        shape.outTangents = [[0, 0], [0, 0]];
+        shape.closed = false;
+        return shape;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer) {
+        var info = __codexPropertyInfo(prop, owningLayer, true, true);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        return info;
+      }
+
+      app.beginUndoGroup("Codex Create Layer Connection Line");
+      var lineLayer = comp.layers.addShape();
+      if (layerName) lineLayer.name = layerName;
+      var transform = lineLayer.property("ADBE Transform Group");
+      if (transform && transform.property("ADBE Position")) transform.property("ADBE Position").setValue([0, 0]);
+      if (requestedStartTime !== null) {
+        lineLayer.startTime = requestedStartTime;
+        lineLayer.inPoint = requestedStartTime;
+      }
+      if (requestedDuration !== null) {
+        var baseTime = requestedStartTime !== null ? requestedStartTime : lineLayer.inPoint;
+        lineLayer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
+      }
+
+      var root = lineLayer.property("ADBE Root Vectors Group");
+      var group = root.addProperty("ADBE Vector Group");
+      group.name = pathGroupName || "Connector";
+      var contents = group.property("ADBE Vectors Group");
+      var pathGroup = contents.addProperty("ADBE Vector Shape - Group");
+      pathGroup.name = "Connector Path";
+      var pathProp = pathGroup.property("ADBE Vector Shape");
+      if (!pathProp) throw new Error("Could not create connector path property.");
+      var stroke = contents.addProperty("ADBE Vector Graphic - Stroke");
+      if (!stroke) throw new Error("Could not create connector stroke.");
+      stroke.property("ADBE Vector Stroke Color").setValue(strokeColor);
+      stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth);
+
+      var initialPoints = [__codexLayerPosition2D(fromLayer), __codexLayerPosition2D(toLayer)];
+      pathProp.setValue(__codexOpenPath(initialPoints));
+      if (!pathProp.canSetExpression) throw new Error("Connector path property cannot receive expressions.");
+      var expression = [
+        "var fromLayer = thisComp.layer(" + __codexExpressionString(fromLayer.name) + ");",
+        "var toLayer = thisComp.layer(" + __codexExpressionString(toLayer.name) + ");",
+        "var fromPoint = thisLayer.fromComp(fromLayer.toComp(fromLayer.transform.anchorPoint));",
+        "var toPoint = thisLayer.fromComp(toLayer.toComp(toLayer.transform.anchorPoint));",
+        "createPath([[fromPoint[0], fromPoint[1]], [toPoint[0], toPoint[1]]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);"
+      ].join("\\n");
+      pathProp.expression = expression;
+      try { pathProp.expressionEnabled = true; } catch (__expressionEnabledError) {}
+      if (lockLayer) lineLayer.locked = true;
+
+      var pathInfo = __codexPathGeometryInfo(pathProp, lineLayer);
+      var geometry = pathInfo.geometry || {};
+      var expressionValue = pathProp.expression || "";
+      var expressionError = pathProp.expressionError || "";
+      var postVerification = {
+        ok: geometry.closed === false &&
+          Number(geometry.vertexCount || 0) === 2 &&
+          pathProp.expressionEnabled === true &&
+          expressionValue === expression &&
+          !expressionError &&
+          (!lockLayer || lineLayer.locked === true),
+        pathOpen: geometry.closed === false,
+        vertexCount: Number(geometry.vertexCount || 0),
+        expressionEnabled: pathProp.expressionEnabled === true,
+        expressionMatches: expressionValue === expression,
+        expressionError: expressionError,
+        locked: lineLayer.locked === true,
+        lockRequested: lockLayer,
+        connectorLayerIsTop: lineLayer.index === 1,
+        fromLayerNameMatches: !expectedFromLayerName || fromLayer.name === expectedFromLayerName,
+        toLayerNameMatches: !expectedToLayerName || toLayer.name === expectedToLayerName
+      };
+      var response = {
+        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        connector: __codexLayerInfo(lineLayer),
+        layer: __codexLayerInfo(lineLayer),
+        targets: {
+          from: __codexLayerInfo(fromLayer),
+          to: __codexLayerInfo(toLayer)
+        },
+        path: pathInfo,
+        pathGeometry: pathInfo,
+        stroke: {
+          color: strokeColor,
+          width: strokeWidth
+        },
+        expression: expressionValue,
+        expressionEnabled: pathProp.expressionEnabled === true,
+        expressionError: expressionError,
+        postVerification: postVerification
       };
       app.endUndoGroup();
       return response;
@@ -14377,6 +17753,225 @@ async function callTool(name, args) {
         postVerification: postVerification
       };
       app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "set_path_geometry") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const targetKind = optionalString(args, "targetKind", "").toLowerCase();
+    const expectedLayerName = optionalString(args, "expectedLayerName", "");
+    const expectedMaskName = optionalString(args, "expectedMaskName", "");
+    const clearExisting = optionalBoolean(args, "clearExisting", false);
+    let propertyPath = null;
+    let maskIndex = null;
+    let geometry = null;
+    let keyframes = null;
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_path_geometry.", true);
+    if (!["shape", "mask"].includes(targetKind)) return toolResult("targetKind must be shape or mask.", true);
+    if (targetKind === "shape") {
+      try {
+        propertyPath = normalizePropertyPathArg(args, "propertyPath");
+      } catch (error) {
+        return toolResult(error.message || String(error), true);
+      }
+    } else {
+      maskIndex = optionalPositiveInteger(args, "maskIndex");
+      if (maskIndex === null) return toolResult("maskIndex is required for targetKind=mask.", true);
+    }
+
+    try {
+      geometry = optionalPathGeometry(args, "geometry", null) || pathGeometryFromTopLevelArgs(args);
+      if (hasArg(args, "keyframes")) keyframes = requiredPathGeometryKeyframes(args, "keyframes");
+    } catch (error) {
+      return toolResult(error.message || String(error), true);
+    }
+    if (geometry && keyframes) return toolResult("Provide either geometry or keyframes, not both.", true);
+    if (!geometry && !keyframes) return toolResult("geometry or keyframes are required for set_path_geometry.", true);
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var layer = comp.layer(${layerIndex});
+      if (!layer) throw new Error("Layer not found.");
+      if (layer.locked) throw new Error("Layer is locked.");
+      var targetKind = ${aeLiteral(targetKind)};
+      var propertyPath = ${propertyPath ? aeLiteral(propertyPath) : "null"};
+      var requestedMaskIndex = ${maskIndex === null ? "null" : maskIndex};
+      var expectedLayerName = ${aeLiteral(expectedLayerName)};
+      var expectedMaskName = ${aeLiteral(expectedMaskName)};
+      var requestedGeometry = ${geometry ? aeLiteral(geometry) : "null"};
+      var requestedKeyframes = ${keyframes ? aeLiteral(keyframes) : "null"};
+      var clearExisting = ${clearExisting ? "true" : "false"};
+
+      function __codexFindChildProperty(group, matchName, fallbackName) {
+        if (!group) return null;
+        try {
+          var direct = group.property(matchName);
+          if (direct) return direct;
+        } catch (__directPropertyError) {}
+        if (fallbackName) {
+          try {
+            var fallback = group.property(fallbackName);
+            if (fallback) return fallback;
+          } catch (__fallbackPropertyError) {}
+        }
+        try {
+          for (var __cp = 1; __cp <= group.numProperties; __cp++) {
+            var child = group.property(__cp);
+            if (child && (child.matchName === matchName || child.name === fallbackName)) return child;
+          }
+        } catch (__childPropertyError) {}
+        return null;
+      }
+
+      function __codexBuildShapeFromGeometry(data) {
+        var shape = new Shape();
+        shape.vertices = data.vertices;
+        shape.inTangents = data.inTangents;
+        shape.outTangents = data.outTangents;
+        shape.closed = data.closed === true;
+        return shape;
+      }
+
+      function __codexPathGeometryInfo(prop, owningLayer, includeKeys, limit) {
+        var info = __codexPropertyInfo(prop, owningLayer, false, false);
+        info.geometry = __codexShapeGeometryData(prop.value, 80);
+        if (includeKeys) {
+          info.keyframes = [];
+          var keyCount = 0;
+          try { keyCount = prop.numKeys || 0; } catch (__numKeysError) {}
+          var maxKeys = Math.min(keyCount, limit);
+          for (var __keyIndex = 1; __keyIndex <= maxKeys; __keyIndex++) {
+            info.keyframes.push({
+              index: __keyIndex,
+              time: prop.keyTime(__keyIndex),
+              geometry: __codexShapeGeometryData(prop.keyValue(__keyIndex), 80)
+            });
+          }
+          info.keyframesTruncated = keyCount > maxKeys;
+        }
+        return info;
+      }
+
+      function __codexNear(a, b) {
+        return Math.abs(Number(a) - Number(b)) <= 0.0001;
+      }
+
+      function __codexPointListMatches(actual, expected) {
+        if (!actual || !expected || actual.length !== expected.length) return false;
+        for (var __pm = 0; __pm < expected.length; __pm++) {
+          if (!actual[__pm] || !expected[__pm] || actual[__pm].length < 2 || expected[__pm].length < 2) return false;
+          if (!__codexNear(actual[__pm][0], expected[__pm][0]) || !__codexNear(actual[__pm][1], expected[__pm][1])) return false;
+        }
+        return true;
+      }
+
+      function __codexGeometryMatches(actual, expected) {
+        if (!actual || !expected) return false;
+        return actual.closed === expected.closed &&
+          actual.vertexCount === expected.vertices.length &&
+          __codexPointListMatches(actual.vertices, expected.vertices) &&
+          __codexPointListMatches(actual.inTangents, expected.inTangents) &&
+          __codexPointListMatches(actual.outTangents, expected.outTangents);
+      }
+
+      function __codexKeyframesMatch(prop, expectedKeyframes) {
+        if (!expectedKeyframes) return true;
+        if (!prop || prop.numKeys < expectedKeyframes.length) return false;
+        for (var __ek = 0; __ek < expectedKeyframes.length; __ek++) {
+          var expected = expectedKeyframes[__ek];
+          var matched = false;
+          for (var __pk = 1; __pk <= prop.numKeys && !matched; __pk++) {
+            if (__codexNear(prop.keyTime(__pk), expected.time)) {
+              matched = __codexGeometryMatches(__codexShapeGeometryData(prop.keyValue(__pk), 80), expected.geometry);
+            }
+          }
+          if (!matched) return false;
+        }
+        return true;
+      }
+
+      function __codexResolvePathTarget() {
+        if (expectedLayerName && layer.name !== expectedLayerName) {
+          throw new Error("Layer name mismatch. Expected '" + expectedLayerName + "' but found '" + layer.name + "'.");
+        }
+        if (targetKind === "shape") {
+          var shapeProp = __codexResolveProperty(layer, propertyPath);
+          if (!shapeProp || shapeProp.matchName !== "ADBE Vector Shape") {
+            throw new Error("propertyPath must resolve to an ADBE Vector Shape path property.");
+          }
+          return { property: shapeProp, mask: null };
+        }
+        var maskGroup = layer.property("ADBE Mask Parade");
+        if (!maskGroup) throw new Error("Layer does not support masks.");
+        if (requestedMaskIndex < 1 || requestedMaskIndex > maskGroup.numProperties) throw new Error("maskIndex is outside the layer mask range.");
+        var mask = maskGroup.property(requestedMaskIndex);
+        if (!mask) throw new Error("Mask not found at maskIndex " + requestedMaskIndex + ".");
+        if (expectedMaskName && mask.name !== expectedMaskName) {
+          throw new Error("Mask name mismatch. Expected '" + expectedMaskName + "' but found '" + mask.name + "'.");
+        }
+        var maskShapeProp = __codexFindChildProperty(mask, "ADBE Mask Shape", "Mask Path");
+        if (!maskShapeProp) throw new Error("Mask shape property was not found.");
+        return { property: maskShapeProp, mask: mask };
+      }
+
+      var target = __codexResolvePathTarget();
+      var prop = target.property;
+      try {
+        if (prop.expressionEnabled === true) throw new Error("Path geometry property has an enabled expression; clear or review the expression before geometry mutation.");
+      } catch (__expressionProbeError) {
+        if (String(__expressionProbeError).indexOf("enabled expression") >= 0) throw __expressionProbeError;
+      }
+      var before = __codexPathGeometryInfo(prop, layer, true, 80);
+
+      var response = null;
+      app.beginUndoGroup("Codex Set Path Geometry");
+      try {
+        if (requestedKeyframes) {
+          if (clearExisting) {
+            for (var __removeKey = prop.numKeys; __removeKey >= 1; __removeKey--) prop.removeKey(__removeKey);
+          }
+          for (var __kf = 0; __kf < requestedKeyframes.length; __kf++) {
+            if (requestedKeyframes[__kf].time > comp.duration) {
+              throw new Error("keyframes[" + __kf + "].time exceeds comp duration.");
+            }
+            prop.setValueAtTime(requestedKeyframes[__kf].time, __codexBuildShapeFromGeometry(requestedKeyframes[__kf].geometry));
+          }
+        } else {
+          prop.setValue(__codexBuildShapeFromGeometry(requestedGeometry));
+        }
+        var after = __codexPathGeometryInfo(prop, layer, true, 80);
+        var geometryMatches = requestedGeometry ? __codexGeometryMatches(after.geometry, requestedGeometry) : true;
+        var keyframesMatch = requestedKeyframes ? __codexKeyframesMatch(prop, requestedKeyframes) : true;
+        var postVerification = {
+          ok: geometryMatches && keyframesMatch,
+          targetKind: targetKind,
+          propertyMatchName: prop.matchName || null,
+          geometryMatches: geometryMatches,
+          keyframesMatch: keyframesMatch,
+          requestedKeyframeCount: requestedKeyframes ? requestedKeyframes.length : 0,
+          afterKeyframeCount: after.numKeys || 0,
+          clearExisting: clearExisting
+        };
+        response = {
+          comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+          layer: __codexLayerInfo(layer),
+          targetKind: targetKind,
+          mask: target.mask ? { propertyIndex: target.mask.propertyIndex, name: target.mask.name, matchName: target.mask.matchName } : null,
+          before: before,
+          property: after,
+          pathGeometry: after,
+          geometry: after.geometry,
+          postVerification: postVerification
+        };
+      } finally {
+        app.endUndoGroup();
+      }
       return response;
     `);
     return toolResult(result.result);
@@ -15133,6 +18728,94 @@ async function callTool(name, args) {
         expression: prop.expression,
         expressionEnabled: prop.expressionEnabled,
         expressionError: prop.expressionError || ""
+      };
+      app.endUndoGroup();
+      return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "add_comp_marker") {
+    const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+    const compName = optionalString(args, "compName", "");
+    const time = optionalNumber(args, "time", null);
+    const hasExplicitComment = Object.prototype.hasOwnProperty.call(args, "comment") && args.comment !== undefined && args.comment !== null;
+    const comment = hasExplicitComment ? String(args.comment) : "";
+    const duration = optionalNumber(args, "duration", null);
+    const expectedMarkerCountBefore = optionalNumber(args, "expectedMarkerCountBefore", null);
+
+    if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for add_comp_marker.", true);
+    if (time === null) return toolResult("time is required.", true);
+    if (!hasExplicitComment) return toolResult("comment is required.", true);
+    if (time < 0) return toolResult("time must be 0 or greater.", true);
+    if (duration !== null && duration < 0) return toolResult("duration must be 0 or greater.", true);
+    if (expectedMarkerCountBefore !== null && (!Number.isInteger(expectedMarkerCountBefore) || expectedMarkerCountBefore < 0)) {
+      return toolResult("expectedMarkerCountBefore must be a non-negative integer.", true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var markerTime = ${time};
+      var markerComment = ${aeLiteral(comment)};
+      var markerDuration = ${duration === null ? "null" : duration};
+      var expectedMarkerCountBefore = ${expectedMarkerCountBefore === null ? "null" : expectedMarkerCountBefore};
+      if (markerTime > comp.duration) throw new Error("time is outside the composition duration.");
+      if (markerDuration !== null && markerTime + markerDuration > comp.duration) throw new Error("marker duration extends outside the composition duration.");
+      var markerProp = comp.markerProperty;
+      if (!markerProp) throw new Error("Composition markers are unavailable.");
+      var beforeMarkers = __codexCompMarkers(comp, 100);
+      if (expectedMarkerCountBefore !== null && beforeMarkers.count !== expectedMarkerCountBefore) {
+        throw new Error("expectedMarkerCountBefore does not match current composition marker count.");
+      }
+      for (var __existingCompMarker = 1; __existingCompMarker <= markerProp.numKeys; __existingCompMarker++) {
+        if (Math.abs(markerProp.keyTime(__existingCompMarker) - markerTime) <= 0.001) {
+          throw new Error("A composition marker already exists at the requested time.");
+        }
+      }
+
+      app.beginUndoGroup("Codex Add Composition Marker");
+      var markerValue = new MarkerValue(markerComment);
+      if (markerDuration !== null) markerValue.duration = markerDuration;
+      markerProp.setValueAtTime(markerTime, markerValue);
+      var markerInfo = null;
+      try {
+        var markerKeyIndex = markerProp.nearestKeyIndex(markerTime);
+        if (markerKeyIndex > 0 && Math.abs(markerProp.keyTime(markerKeyIndex) - markerTime) < 0.001) {
+          markerInfo = __codexMarkerInfo(markerProp, markerKeyIndex);
+        }
+      } catch (__markerReadBackError) {}
+      if (!markerInfo) {
+        markerInfo = {
+          keyIndex: null,
+          time: markerTime,
+          comment: markerComment,
+          duration: markerDuration || 0
+        };
+      }
+      var afterMarkers = __codexCompMarkers(comp, 100);
+      var response = {
+        comp: {
+          itemIndex: __codexProjectIndexForItem(comp),
+          name: comp.name,
+          duration: comp.duration,
+          frameRate: comp.frameRate,
+          workAreaStart: comp.workAreaStart,
+          workAreaDuration: comp.workAreaDuration
+        },
+        marker: markerInfo,
+        markersBefore: beforeMarkers,
+        markers: afterMarkers,
+        postVerification: {
+          ok: markerInfo !== null && afterMarkers.count === beforeMarkers.count + 1,
+          markerCountBefore: beforeMarkers.count,
+          markerCountAfter: afterMarkers.count,
+          expectedMarkerCountAfter: beforeMarkers.count + 1,
+          markerCountIncremented: afterMarkers.count === beforeMarkers.count + 1,
+          timeMatches: Math.abs((markerInfo.time || 0) - markerTime) <= 0.001,
+          commentMatches: markerInfo.comment === markerComment,
+          durationMatches: markerDuration === null || Math.abs((markerInfo.duration || 0) - markerDuration) <= 0.001
+        }
       };
       app.endUndoGroup();
       return response;

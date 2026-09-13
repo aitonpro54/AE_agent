@@ -45,6 +45,7 @@ const MERGE_PLAN_SCHEMA = "generic-repo-tool-importer.merge-plan.v1";
 const LIVE_QUEUE_PLAN_SCHEMA = "generic-repo-tool-importer.live-queue-plan.v1";
 const PROOF_ENVELOPE_SCHEMA = "generic-repo-tool-importer.proof-envelope.v1";
 const PARENT_OUTPUT_SCHEMA = "generic-repo-tool-importer.parent-compact-output.v1";
+const CHILD_RUNNER_DANGER_FALLBACK_ENV = "AE_AGENT_ALLOW_CHILD_RUNNER_DANGER_FULL_ACCESS_ON_WINDOWS_SANDBOX_FAILURE";
 const ANALYSIS_ARTIFACTS = Object.freeze([
   "analysis/repo-fingerprint.json",
   "analysis/risk-map.json",
@@ -113,6 +114,46 @@ const CHILD_RUN_MONOLITH_PATHS = new Set([
 const SECRET_PATTERN =
   /\b(?:[A-Z0-9]+[_-])*?(?:api[_-]?key|access[_-]?token|secret|password)\b\s*[:=]\s*["']?(?:sk-|xox|ghp_|[A-Za-z0-9_\-]{12,})/i;
 const NAMED_REPO_ASSUMPTION_PATTERN = /\bdakkshin\b/i;
+const OPERATIONAL_IDENTITY_FIELDS = new Set([
+  "actualWorktreePath",
+  "actualWorktreeRelativePath",
+  "allowedReadRoots",
+  "batchReport",
+  "batchResultPath",
+  "checkout",
+  "childRunIntentPath",
+  "childRunResultPath",
+  "command",
+  "cwd",
+  "deniedReadRoots",
+  "failureReason",
+  "importerRunId",
+  "latestTicket",
+  "ledgerPath",
+  "location",
+  "manifestPath",
+  "path",
+  "previousFailure",
+  "plannedWorktreePath",
+  "promptPath",
+  "recoveryIntent",
+  "reportPath",
+  "repo",
+  "resultSummaryPath",
+  "root",
+  "runId",
+  "runRoot",
+  "sourceRepo",
+  "sourcePath",
+  "sourceRoot",
+  "stderrPath",
+  "stdoutPath",
+  "targetRepo",
+  "targetRoot",
+  "ticketPath",
+  "worktreePath",
+  "worktreeRoot",
+]);
 
 const HELP = `
 Generic repository tool importer skeleton
@@ -339,10 +380,58 @@ function assertNoLocalOllamaProvider(value, label) {
 }
 
 function assertNoNamedRepoAssumptions(value, label) {
-  const text = typeof value === "string" ? value : stableStringify(value);
+  const redacted = typeof value === "string" ? value : redactOperationalIdentityFields(value);
+  const text = typeof redacted === "string" ? redacted : stableStringify(redacted);
   if (NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
-    throw new Error(`${label} must not contain named-repo assumptions`);
+    const paths = namedRepoAssumptionPaths(redacted);
+    const suffix = paths.length > 0 ? ` at ${paths.slice(0, 5).join(", ")}` : "";
+    throw new Error(`${label} must not contain named-repo assumptions${suffix}`);
   }
+}
+
+function namedRepoAssumptionPaths(value, prefix = "$", matches = []) {
+  if (matches.length >= 5) {
+    return matches;
+  }
+  if (typeof value === "string") {
+    if (NAMED_REPO_ASSUMPTION_PATTERN.test(value)) {
+      matches.push(prefix);
+    }
+    return matches;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => namedRepoAssumptionPaths(item, `${prefix}[${index}]`, matches));
+    return matches;
+  }
+  if (!value || typeof value !== "object") {
+    return matches;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    namedRepoAssumptionPaths(child, `${prefix}.${key}`, matches);
+    if (matches.length >= 5) {
+      break;
+    }
+  }
+  return matches;
+}
+
+function redactOperationalIdentityFields(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactOperationalIdentityFields(item));
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const redacted = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (OPERATIONAL_IDENTITY_FIELDS.has(key)) {
+      redacted[key] = "<operational-identity>";
+      continue;
+    }
+    redacted[key] = redactOperationalIdentityFields(child);
+  }
+  return redacted;
 }
 
 function resolveInside(cwd, candidate, label) {
@@ -388,6 +477,9 @@ function validateManifest(contract, manifest) {
   requireString(manifest.targetRepo.path, "manifest.targetRepo.path");
   requireArray(manifest.targetRepo.allowedWritePaths, "manifest.targetRepo.allowedWritePaths");
   requireArray(manifest.targetRepo.forbiddenWritePaths, "manifest.targetRepo.forbiddenWritePaths");
+  if (Object.prototype.hasOwnProperty.call(manifest.targetRepo, "allowedUnrelatedUntrackedPaths")) {
+    requireArray(manifest.targetRepo.allowedUnrelatedUntrackedPaths, "manifest.targetRepo.allowedUnrelatedUntrackedPaths");
+  }
   if (manifest.targetRepo.branchPolicy !== schema.targetRepo.branchPolicy) {
     throw new Error(`manifest.targetRepo.branchPolicy must be ${schema.targetRepo.branchPolicy}`);
   }
@@ -525,8 +617,28 @@ function statusEntryPath(entry) {
   return normalizeRepoPath(normalizedPath);
 }
 
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
 function gitStatusPaths(cwd) {
   return sortedNormalizedPaths(gitStatusEntries(cwd).map(statusEntryPath));
+}
+
+function isAllowedUnrelatedUntrackedEntry(entry, state) {
+  if (statusEntryCode(entry) !== "??") {
+    return false;
+  }
+  const allowed = new Set((state?.allowedUnrelatedUntrackedPaths || []).map(normalizeRepoPath));
+  return allowed.has(statusEntryPath(entry));
+}
+
+function gitStatusPathsExcludingAllowedUnrelated(cwd, state) {
+  return sortedNormalizedPaths(
+    gitStatusEntries(cwd)
+      .filter((entry) => !isAllowedUnrelatedUntrackedEntry(entry, state))
+      .map(statusEntryPath),
+  );
 }
 
 function assertGitTargetCleanOrOwned(cwd, state) {
@@ -538,6 +650,7 @@ function assertGitTargetCleanOrOwned(cwd, state) {
 
   const owned = new Set((state?.ownedDirtyPaths || []).map(normalizeRepoPath));
   const unowned = dirtyEntries
+    .filter((entry) => !isAllowedUnrelatedUntrackedEntry(entry, state))
     .map(statusEntryPath)
     .filter((entry) => !owned.has(entry));
   if (unowned.length > 0) {
@@ -1199,6 +1312,7 @@ function initializeRun({ manifest, normalizedManifest, manifestHash, manifestPat
     createdAt: now,
     updatedAt: now,
     resumeCount: 0,
+    allowedUnrelatedUntrackedPaths: sortedNormalizedPaths(manifest.targetRepo.allowedUnrelatedUntrackedPaths || []),
     ownedDirtyPaths: [],
     flags: {
       analysisStarted: false,
@@ -1392,10 +1506,6 @@ function collectSourceInventory(sourceRoot, manifest) {
       if (!secretMatch && SECRET_PATTERN.test(text)) {
         secretMatch = relative;
       }
-      if (NAMED_REPO_ASSUMPTION_PATTERN.test(relative) || NAMED_REPO_ASSUMPTION_PATTERN.test(text)) {
-        throw new Error(`named-repo-assumption-detected: ${relative}`);
-      }
-
       files.push({
         path: relative,
         size: stat.size,
@@ -1832,7 +1942,10 @@ function validateSharedPathOwnership(manifest, batches) {
 function buildPromptText(manifest, batch, candidates) {
   const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
   const candidateSummaries = batch.candidateIds.map((candidateIdValue) => {
-    const candidate = candidateById.get(candidateIdValue);
+    const candidate = candidateForRequestedId(candidateById, candidateIdValue);
+    if (!candidate) {
+      throw new Error(`implementation-batch-candidate-missing: ${candidateIdValue}`);
+    }
     return {
       id: candidate.id,
       kind: candidate.kind,
@@ -2523,20 +2636,22 @@ function buildChildRunPrompt(intent, contextPack) {
 }
 
 function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
+  const sandbox = childRunSandboxSelection();
   const codexArgs = [
     "exec",
     "--cd",
     worktreePath,
     "--sandbox",
-    "workspace-write",
+    sandbox.actual,
     "--ephemeral",
     "-c",
     "approval_policy=\"never\"",
-    "-c",
-    "sandbox_workspace_write.network_access=false",
     "--disable",
     "web_search",
   ];
+  if (sandbox.actual === "workspace-write") {
+    codexArgs.splice(8, 0, "-c", "sandbox_workspace_write.network_access=false");
+  }
   const model = childRunWriterModel(manifest, batch);
   if (model) {
     codexArgs.push("--model", model);
@@ -2552,6 +2667,7 @@ function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
       args: ["/d", "/s", "/c", "codex", ...codexArgs],
       displayCommand: "codex",
       displayArgs: codexArgs,
+      sandbox,
     };
   }
   return {
@@ -2559,6 +2675,30 @@ function buildCodexChildRunInvocation(manifest, batch, worktreePath) {
     args: codexArgs,
     displayCommand: "codex",
     displayArgs: codexArgs,
+    sandbox,
+  };
+}
+
+function envFlagEnabled(name) {
+  return /^(1|true|yes|on)$/i.test(String(process.env[name] || "").trim());
+}
+
+function childRunSandboxSelection() {
+  if (process.platform === "win32" && envFlagEnabled(CHILD_RUNNER_DANGER_FALLBACK_ENV)) {
+    return {
+      requested: "workspace-write",
+      actual: "danger-full-access",
+      fallback: true,
+      reason: "user_opt_in_windows_sandbox_unavailable",
+      env: CHILD_RUNNER_DANGER_FALLBACK_ENV,
+    };
+  }
+  return {
+    requested: "workspace-write",
+    actual: "workspace-write",
+    fallback: false,
+    reason: null,
+    env: null,
   };
 }
 
@@ -2695,6 +2835,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
       args: invocation.displayArgs,
       stdin: "compact child context pack wrapper",
     },
+    sandbox: invocation.sandbox,
     exitCode: result.status,
     signal: result.signal || null,
     error: result.error ? result.error.message : null,
@@ -2756,6 +2897,7 @@ function runImplementationChildBatch({ manifest, manifestHash, runRoot, runRootR
     exitCode: childRunResult.exitCode,
     signal: childRunResult.signal,
     error: childRunResult.error,
+    sandbox: childRunResult.sandbox,
     stdoutPath,
     stderrPath,
     stdout: stdoutSummary,
@@ -3014,7 +3156,7 @@ function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRep
   validateMergeSharedPathOwnership(manifest, worktreePlan);
   const { childRun, results } = readImplementationChildRunOutputs(runRoot, targetRepo, runRootRelative);
   assertNoNamedRepoAssumptions({ manifest, worktreePlan, childRun, results }, "controlled source merge inputs");
-  assertGitTargetCleanOrOwned(targetRepo, { ownedDirtyPaths: [] });
+  assertGitTargetCleanOrOwned(targetRepo, { ...state, ownedDirtyPaths: [] });
 
   const targetHeadBefore = gitCurrentHead(targetRepo);
   const targetBranch = gitCurrentBranch(targetRepo, { allowDetached: manifest.targetRepo.detachedAllowed === true });
@@ -3110,7 +3252,7 @@ function buildControlledSourceMergeArtifacts({ manifest, manifestHash, targetRep
     }
   }
 
-  const ownedDirtyPaths = gitStatusPaths(targetRepo);
+  const ownedDirtyPaths = gitStatusPathsExcludingAllowedUnrelated(targetRepo, state);
   const unownedDirtyPaths = ownedDirtyPaths.filter((dirtyPath) => !appliedPaths.includes(dirtyPath));
   if (unownedDirtyPaths.length > 0) {
     throw new Error(`controlled-merge-unowned-dirty-paths-after-apply: ${unownedDirtyPaths.join(", ")}`);
@@ -3208,7 +3350,7 @@ function verifyControlledSourceMergeOutputs(runRoot, targetRepo, state) {
   ) {
     throw new Error("controlled-merge-boundary-violated");
   }
-  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), state.ownedDirtyPaths)) {
     throw new Error("controlled-merge-owned-dirty-paths-drift");
   }
   return report;
@@ -3466,7 +3608,7 @@ function buildNonLiveValidationArtifacts({ manifest, manifestHash, targetRepo, r
   const mergeReport = verifyControlledSourceMergeOutputs(runRoot, targetRepo, state);
   const touchedPaths = sortedNormalizedPaths(mergeReport.ownedDirtyPaths || mergeReport.appliedPaths || []);
   assertGitTargetCleanOrOwned(targetRepo, state);
-  if (!sameStringSet(gitStatusPaths(targetRepo), touchedPaths)) {
+  if (!sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), touchedPaths)) {
     throw new Error("non-live-validation-target-dirty-paths-drift");
   }
 
@@ -3494,7 +3636,7 @@ function buildNonLiveValidationArtifacts({ manifest, manifestHash, targetRepo, r
   }
 
   const afterSnapshot = snapshotPaths(targetRepo, touchedPaths);
-  const dirtyPathsAfter = gitStatusPaths(targetRepo);
+  const dirtyPathsAfter = gitStatusPathsExcludingAllowedUnrelated(targetRepo, state);
   const snapshotUnchanged = sameSnapshots(beforeSnapshot, afterSnapshot);
   const commandsPassed = commandResults.every((command) => command.status === "passed" || command.status === "skipped");
   const dirtyPathsStable = sameStringSet(dirtyPathsAfter, touchedPaths);
@@ -3562,7 +3704,7 @@ function verifyNonLiveValidationOutputs(runRoot, targetRepo, state) {
     throw new Error("non-live-validation-boundary-violated");
   }
   assertGitTargetCleanOrOwned(targetRepo, state);
-  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPaths(targetRepo), state.ownedDirtyPaths)) {
+  if (state?.ownedDirtyPaths && !sameStringSet(gitStatusPathsExcludingAllowedUnrelated(targetRepo, state), state.ownedDirtyPaths)) {
     throw new Error("non-live-validation-owned-dirty-paths-drift");
   }
   return report;
@@ -5284,7 +5426,10 @@ export function runImporter(options, cwd = process.cwd()) {
   assertRunRootIgnored(targetRepo, manifest.run.runId, runRootBase);
 
   const existingState = loadState(runRoot);
-  assertGitTargetCleanOrOwned(targetRepo, existingState);
+  assertGitTargetCleanOrOwned(targetRepo, existingState || {
+    allowedUnrelatedUntrackedPaths: manifest.targetRepo.allowedUnrelatedUntrackedPaths || [],
+    ownedDirtyPaths: [],
+  });
 
   const { normalizedManifest, manifestHash } = createNormalizedManifest(manifest, manifestPath, contractPath);
   let state;

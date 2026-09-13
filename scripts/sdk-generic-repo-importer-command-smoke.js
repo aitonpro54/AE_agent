@@ -8,6 +8,7 @@ const { spawnSync } = require("child_process");
 
 const repo = path.resolve(__dirname, "..");
 const runner = path.join(repo, "orchestrator/run-generic-repo-tool-importer.mjs");
+const autoIntakeRunner = path.join(repo, "orchestrator/run-generic-repo-auto-intake.mjs");
 
 function sh(cwd, args) {
   const result = spawnSync(args[0], args.slice(1), {
@@ -21,6 +22,16 @@ function sh(cwd, args) {
 
 function run(args, cwd = repo, env = {}) {
   return spawnSync(process.execPath, [runner, ...args], {
+    cwd,
+    env: { ...process.env, ...env },
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 60000,
+  });
+}
+
+function runAutoIntake(args, cwd = repo, env = {}) {
+  return spawnSync(process.execPath, [autoIntakeRunner, ...args], {
     cwd,
     env: { ...process.env, ...env },
     encoding: "utf8",
@@ -623,6 +634,82 @@ function assertLicenseStopFixture() {
   }
 }
 
+function assertAutoIntakePersonalUseLicenseOverrideFixture() {
+  const fixture = createTempFixture("auto-license-override");
+  try {
+    fs.rmSync(path.join(fixture.source, "LICENSE"), { force: true });
+    fs.writeFileSync(
+      path.join(fixture.source, "commentUrlOnly.jsx"),
+      [
+        "/*",
+        "Website: http://example.invalid/",
+        "*/",
+        "function commentUrlOnly() { return true; }",
+        "commentUrlOnly();",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const baseArgs = [
+      "--repo",
+      fixture.source,
+      "--run-id",
+      "aux016-auto-license-override",
+      "--context-percent",
+      "0",
+      "--parallel-candidate-limit",
+      "2",
+      "--compact-json",
+    ];
+
+    const defaultOutput = parseJson(runAutoIntake(baseArgs, fixture.target));
+    assert.strictEqual(defaultOutput.source.license.status, "missing");
+    assert.strictEqual(defaultOutput.source.license.localPersonalUseOverride, false);
+    assert.strictEqual(defaultOutput.counts.queuedCandidates, 0);
+    assert(defaultOutput.counts.referenceOnlyCandidates > 0);
+    assert(defaultOutput.statusBuckets.reference_only > 0);
+
+    const overrideOutput = parseJson(
+      runAutoIntake([...baseArgs, "--allow-unlicensed-personal-use-intake"], fixture.target),
+    );
+    assert.strictEqual(overrideOutput.source.license.status, "missing");
+    assert.strictEqual(overrideOutput.source.license.localPersonalUseOverride, true);
+    assert.strictEqual(overrideOutput.source.license.overrideApplied, true);
+    assert.strictEqual(overrideOutput.source.license.userDecision, "local_personal_use_license_override=true");
+    assert.strictEqual(
+      overrideOutput.source.license.publicationBoundary,
+      "local-use-only-no-push-no-pr-no-remote-publication",
+    );
+    assert.strictEqual(overrideOutput.counts.referenceOnlyCandidates, 0);
+    assert(overrideOutput.counts.queuedCandidates > 0);
+    assert(overrideOutput.parallel.selectedCandidateIds.length > 0);
+
+    const ledger = readJson(path.resolve(fixture.target, overrideOutput.artifacts.ledger));
+    assert.strictEqual(ledger.licensePolicy.failClosedOnMissingOrUnrecognized, false);
+    assert.strictEqual(ledger.licensePolicy.localPersonalUseOverride, true);
+    assert.strictEqual(ledger.licensePolicy.overrideApplied, true);
+    assert.strictEqual(ledger.constraints.remotePublicationAllowed, false);
+    assert.strictEqual(ledger.constraints.noRawJsxCopiedIntoProduct, true);
+    const queued = ledger.entries.find((entry) => entry.status === "queued");
+    assert(queued, "expected at least one queued low-risk candidate");
+    assert.strictEqual(queued.license.localPersonalUseOverride, true);
+    assert.strictEqual(queued.license.userDecision, "local_personal_use_license_override=true");
+    assert.strictEqual(queued.implementation.rawJsxCopyAllowed, false);
+    const commentUrlOnly = ledger.entries.find((entry) => entry.id === "tool-commenturlonly");
+    assert(commentUrlOnly, "expected comment URL fixture candidate");
+    assert.strictEqual(commentUrlOnly.riskFlags.usesNetwork, false);
+    assert.strictEqual(commentUrlOnly.classification, "existing_typed_tools_recipe_only");
+    assert.strictEqual(commentUrlOnly.status, "queued");
+
+    const proof = readJson(path.resolve(fixture.target, overrideOutput.artifacts.proof));
+    assert.strictEqual(proof.assertions.localPersonalUseLicenseOverrideRecorded, true);
+    assert.strictEqual(proof.assertions.licenseOverrideDoesNotAllowPublication, true);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain"]), "");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
 function assertNamedRepoAssumptionFixture() {
   const fixture = createTempFixture("named-repo");
   try {
@@ -632,6 +719,23 @@ function assertNamedRepoAssumptionFixture() {
     const result = run(["--manifest", manifestPath, "--run-analysis", "--json"]);
     assert.notStrictEqual(result.status, 0);
     assert.match(result.stderr, /named-repo assumptions/);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertNamedRepoOperationalIdentityAllowedFixture() {
+  const fixture = createTempFixture("dakkshin-operational-identity");
+  try {
+    fs.writeFileSync(
+      path.join(fixture.source, "README.md"),
+      "Fixture source identity mentions Dakkshin, but the import goal stays generic.\n",
+      "utf8",
+    );
+    const manifest = validManifest(fixture, "aux016-dakkshin-operational");
+    const manifestPath = writeManifest(fixture.root, manifest);
+    const result = parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+    assert.strictEqual(result.status, "stopped_after_analysis");
   } finally {
     removeFixture(fixture.root);
   }
@@ -743,6 +847,45 @@ function assertSuccessfulImplementationPlanningFixture() {
     const output = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
     assert.strictEqual(output.resumed, true);
     assertImplementationPlanningArtifacts(output, fixture, "aux017-implementation-success");
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertImplementationBatchCandidateAliasFixture() {
+  const fixture = createTempFixture("implementation-candidate-alias");
+  try {
+    fs.writeFileSync(
+      path.join(fixture.source, "AR_AddFolders.jsx"),
+      "function addFolders() { return true; }\n",
+      "utf8",
+    );
+    const runId = "aux017-candidate-alias";
+    const manifest = validManifest(fixture, runId);
+    manifest.implementation.plannedPathsPerBatch = [
+      {
+        id: "underscore-alias",
+        candidateIds: ["tool-ar_addfolders"],
+        plannedPaths: ["scripts/imported-tools/ar-addfolders.js"],
+      },
+    ];
+    const manifestPath = writeManifest(fixture.root, manifest);
+    parseJson(run(["--manifest", manifestPath, "--run-analysis", "--json"]));
+
+    const output = parseJson(run(["--manifest", manifestPath, "--plan-implementation", "--json"]));
+    assert.strictEqual(output.status, "stopped_after_implementation_planning");
+    const promptPath = path.join(
+      fixture.target,
+      ".codex-runtime",
+      "sdk",
+      "generic-repo-importer",
+      runId,
+      "implementation",
+      "batch-prompts",
+      "underscore-alias.md",
+    );
+    const prompt = fs.readFileSync(promptPath, "utf8");
+    assert(prompt.includes("tool-ar-addfolders"), "prompt should resolve underscore queue id to importer candidate id");
   } finally {
     removeFixture(fixture.root);
   }
@@ -1139,6 +1282,7 @@ function assertImplementationChildRunArtifacts(output, fixture, runId) {
   assert.strictEqual(childResult.status, "child_run_completed");
   assert.strictEqual(childResult.model, "gpt-5.5");
   assert.strictEqual(childResult.reasoningEffort, "high");
+  assert.strictEqual(childResult.sandbox.requested, "workspace-write");
   assert.strictEqual(childResult.contextGuard.status, "passed");
   assert.deepStrictEqual(childResult.changedPaths, ["scripts/imported-tools/tool-tool.js"]);
   assert.deepStrictEqual(childResult.unplannedPaths, []);
@@ -1181,6 +1325,40 @@ function assertSuccessfulImplementationChildRunFixture() {
     );
     assert.strictEqual(output.resumed, true);
     assertImplementationChildRunArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertWindowsChildRunSandboxFallbackFixture() {
+  if (process.platform !== "win32") return;
+  const fixture = createTempFixture("implementation-child-sandbox-fallback");
+  try {
+    const runId = "aux021-child-sandbox-fallback";
+    const { manifestPath, runRoot } = prepareImplementationWorktreeFixture(fixture, runId);
+    const binDir = writeFakeCodex(fixture.root);
+    const output = parseJson(
+      run(
+        ["--manifest", manifestPath, "--run-implementation-child-runs", "--json"],
+        repo,
+        {
+          ...fakeCodexEnv(binDir, "success", "scripts/imported-tools/tool-tool.js"),
+          AE_AGENT_ALLOW_CHILD_RUNNER_DANGER_FULL_ACCESS_ON_WINDOWS_SANDBOX_FAILURE: "1",
+        },
+      ),
+    );
+    assert.strictEqual(output.resumed, true);
+    const childRun = readJson(path.join(runRoot, "implementation", "child-run-run.json"));
+    const firstBatch = childRun.batches[0];
+    const childResult = readJson(path.join(runRoot, firstBatch.childRunResultPath));
+    assert.strictEqual(childResult.status, "child_run_completed");
+    assert.strictEqual(childResult.sandbox.requested, "workspace-write");
+    assert.strictEqual(childResult.sandbox.actual, "danger-full-access");
+    assert.strictEqual(childResult.sandbox.fallback, true);
+    assert(childResult.command.args.includes("danger-full-access"));
+    assert(!childResult.command.args.includes("sandbox_workspace_write.network_access=false"));
+    assert.deepStrictEqual(childResult.unplannedPaths, []);
+    assert.strictEqual(sh(fixture.target, ["git", "status", "--porcelain", "--untracked-files=all"]), "");
   } finally {
     removeFixture(fixture.root);
   }
@@ -1483,6 +1661,19 @@ function assertSuccessfulControlledSourceMergeFixture() {
   const fixture = createTempFixture("controlled-merge-success");
   try {
     const runId = "aux022-controlled-merge-success";
+    const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
+    const output = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
+    assert.strictEqual(output.resumed, true);
+    assertControlledSourceMergeArtifacts(output, fixture, runId);
+  } finally {
+    removeFixture(fixture.root);
+  }
+}
+
+function assertControlledSourceMergeOperationalIdentityAllowedFixture() {
+  const fixture = createTempFixture("controlled-merge-dakkshin-operational");
+  try {
+    const runId = "aux022-controlled-merge-operational";
     const { manifestPath } = prepareImplementationChildRunFixture(fixture, runId);
     const output = parseJson(run(["--manifest", manifestPath, "--apply-controlled-merge", "--json"]));
     assert.strictEqual(output.resumed, true);
@@ -2256,9 +2447,12 @@ function main() {
   assertMissingOutputFailClosedFixture();
   assertUnsafeSecretFixture();
   assertLicenseStopFixture();
+  assertAutoIntakePersonalUseLicenseOverrideFixture();
   assertNamedRepoAssumptionFixture();
+  assertNamedRepoOperationalIdentityAllowedFixture();
   assertAnalysisResumeFixture();
   assertSuccessfulImplementationPlanningFixture();
+  assertImplementationBatchCandidateAliasFixture();
   assertImplementationMissingAnalysisArtifactFixture();
   assertImplementationForbiddenPathFixture();
   assertImplementationDependencyChangeFixture();
@@ -2270,6 +2464,7 @@ function main() {
   assertImplementationWorktreeRunOwnedPathFixture();
   assertImplementationWorktreeResumeFixture();
   assertSuccessfulImplementationChildRunFixture();
+  assertWindowsChildRunSandboxFallbackFixture();
   assertImplementationChildRunLargeOutputFixture();
   assertImplementationChildRunTokenGuardFixture();
   assertImplementationChildRunOutputGuardFixture();
@@ -2280,6 +2475,7 @@ function main() {
   assertImplementationChildRunProcessFailureFixture();
   assertImplementationChildRunResumeFixture();
   assertSuccessfulControlledSourceMergeFixture();
+  assertControlledSourceMergeOperationalIdentityAllowedFixture();
   assertControlledSourceMergeTrackedModifiedPathFixture();
   assertControlledSourceMergeMissingEvidenceFixture();
   assertControlledSourceMergeDirtyTargetFixture();

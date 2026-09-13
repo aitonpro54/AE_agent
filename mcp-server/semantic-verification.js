@@ -1,27 +1,45 @@
 "use strict";
 
+const { generatedFileEvidenceIssues } = require("./generated-safety-contracts");
+
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
   "create_test_comp",
   "create_solid_layer",
+  "create_adjustment_layer",
   "create_text_layer",
+  "create_shapes_from_text",
+  "import_footage",
   "create_camera_layer",
   "create_camera_with_controller",
   "toggle_onion_skinning",
   "add_project_item_to_comp",
+  "set_comp_current_time",
   "set_comp_work_area",
+  "refresh_comp_panel",
   "set_layer_time_range",
   "stagger_layers",
   "align_layers_to_time",
   "split_layers_at_time",
   "update_text_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
   "create_layer_mask",
+  "set_path_geometry",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
+  "set_puppet_pin_type",
+  "set_effect_enabled",
+  "add_property_to_essential_graphics",
   "fit_layer_to_comp",
   "set_property_value",
   "set_layer_metadata",
+  "set_layer_blending_mode",
+  "set_project_item_metadata",
+  "set_project_frames_count_type",
   "set_property_keyframes",
   "fill_in_keyframes",
   "keyframe_current_value_from_expression",
@@ -30,9 +48,12 @@ const MUTATING_TOOLS = new Set([
   "set_expression",
   "clear_expression",
   "separate_shape_size_dimensions",
+  "add_comp_marker",
   "duplicate_layer",
   "duplicate_layers",
   "set_layer_selection",
+  "set_layer_parent",
+  "set_layer_track_matte",
   "delete_layer",
   "set_comp_properties",
   "set_layer_mask",
@@ -52,6 +73,7 @@ const MUTATING_TOOLS = new Set([
 
 const READ_BACK_TOOLS = new Set([
   "get_bridge_status",
+  "get_project_info",
   "get_project_snapshot",
   "get_active_comp",
   "get_selected_layers",
@@ -61,6 +83,10 @@ const READ_BACK_TOOLS = new Set([
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_effect_details",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
+  "get_path_geometry",
   "get_render_queue_status"
 ]);
 
@@ -104,6 +130,23 @@ function colorChannelNearlyEqual(left, right) {
 
 function sameString(left, right) {
   return String(left || "") === String(right || "");
+}
+
+function normalizeTextJustification(value) {
+  if (value === undefined || value === null) return "";
+  const normalized = String(value).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["left", "left_justify", "left_justified"].includes(normalized)) return "left";
+  if (["center", "centre", "center_justify", "centered", "center_justified"].includes(normalized)) return "center";
+  if (["right", "right_justify", "right_justified"].includes(normalized)) return "right";
+  return normalized;
+}
+
+function textJustificationFromPayload(payload) {
+  const layerText = payload && payload.layer && payload.layer.text;
+  if (layerText && hasOwn(layerText, "justification")) return layerText.justification;
+  const text = payload && payload.text;
+  if (text && typeof text === "object" && hasOwn(text, "justification")) return text.justification;
+  return "";
 }
 
 function numberArrayValue(value) {
@@ -180,6 +223,23 @@ function boolValue(value) {
   return null;
 }
 
+function normalizeFramesCountTypeName(value) {
+  const normalized = String(value === undefined || value === null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+  if (["fcstart0", "startatzero", "start0", "zero", "0"].includes(normalized)) return "FC_START_0";
+  if (["fcstart1", "startatone", "start1", "one", "1"].includes(normalized)) return "FC_START_1";
+  return "";
+}
+
+function framesCountStartFrameForName(value) {
+  const name = normalizeFramesCountTypeName(value);
+  if (name === "FC_START_0") return 0;
+  if (name === "FC_START_1") return 1;
+  return null;
+}
+
 function addLayerEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
   const index = numberValue(value.index);
@@ -191,18 +251,45 @@ function addLayerEvidence(target, value, source) {
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
   };
-  for (const field of ["threeDLayer", "collapseTransformation", "motionBlur"]) {
+  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "enabled", "guideLayer"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
+  }
+  if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
+  if (hasOwn(value, "isTrackMatte")) layer.isTrackMatte = boolValue(value.isTrackMatte);
+  if (hasOwn(value, "trackMatteTypeName")) layer.trackMatteTypeName = compactText(value.trackMatteTypeName, 80);
+  if (hasOwn(value, "trackMatteLayer")) {
+    if (isPlainObject(value.trackMatteLayer)) {
+      layer.trackMatteLayer = {
+        index: numberValue(value.trackMatteLayer.index),
+        name: compactText(value.trackMatteLayer.name, 160),
+        id: value.trackMatteLayer.id === undefined || value.trackMatteLayer.id === null ? null : String(value.trackMatteLayer.id)
+      };
+    } else {
+      layer.trackMatteLayer = null;
+    }
   }
   if (hasOwn(value, "label")) layer.label = numberValue(value.label);
   if (hasOwn(value, "locked")) layer.locked = boolValue(value.locked);
   if (hasOwn(value, "comment")) layer.comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
+  if (hasOwn(value, "blendingModeName")) layer.blendingModeName = normalizedBlendingModeName(value.blendingModeName);
+  if (hasOwn(value, "blendingMode")) layer.blendingMode = normalizedBlendingModeName(value.blendingMode);
+  if (hasOwn(value, "parent")) {
+    if (isPlainObject(value.parent)) {
+      layer.parentIndex = numberValue(value.parent.index);
+      layer.parentName = compactText(value.parent.name, 160);
+      layer.parentId = value.parent.id === undefined || value.parent.id === null ? null : String(value.parent.id);
+    } else {
+      layer.parentIndex = null;
+      layer.parentName = "";
+      layer.parentId = null;
+    }
+  }
   target.layers.push(layer);
 }
 
 function addCompEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
-  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
   if (!hasCompField) return;
   target.comps.push({
     name: compactText(value.name, 160),
@@ -214,8 +301,26 @@ function addCompEvidence(target, value, source) {
     frameRate: numberValue(value.frameRate),
     bgColor: numberArrayValue(value.bgColor),
     displayStartTime: numberValue(value.displayStartTime),
+    displayStartFrame: numberValue(value.displayStartFrame),
+    preserveNestedFrameRate: value.preserveNestedFrameRate === undefined || value.preserveNestedFrameRate === null ? null : value.preserveNestedFrameRate === true,
+    time: numberValue(value.time),
+    workAreaStart: numberValue(value.workAreaStart),
+    workAreaDuration: numberValue(value.workAreaDuration),
+    motionBlur: value.motionBlur === undefined || value.motionBlur === null ? null : value.motionBlur === true,
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
     source: source || "observed comp"
+  });
+}
+
+function addProjectEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const framesCountType = normalizeFramesCountTypeName(value.framesCountType);
+  const framesCountStartFrame = numberValue(value.framesCountStartFrame);
+  if (!framesCountType && framesCountStartFrame === null) return;
+  target.projects.push({
+    framesCountType,
+    framesCountStartFrame: framesCountStartFrame === null ? framesCountStartFrameForName(framesCountType) : framesCountStartFrame,
+    source: source || "observed project"
   });
 }
 
@@ -230,7 +335,10 @@ function addMaskEvidence(target, value, source) {
     maskMode: value.maskMode === undefined || value.maskMode === null ? "" : String(value.maskMode),
     inverted: value.inverted === true,
     shape: {
-      vertices: Array.isArray(shape.vertices) ? shape.vertices : []
+      closed: shape.closed === true,
+      vertices: Array.isArray(shape.vertices) ? shape.vertices : [],
+      inTangents: Array.isArray(shape.inTangents) ? shape.inTangents : [],
+      outTangents: Array.isArray(shape.outTangents) ? shape.outTangents : []
     },
     opacity: numberValue(value.opacity),
     feather: numberArrayValue(value.feather),
@@ -273,7 +381,10 @@ function createEvidenceStore(readBackSteps) {
     masks: [],
     markers: [],
     markerSignatures: new Set(),
-    properties: []
+    projects: [],
+    projectItems: [],
+    properties: [],
+    essentialGraphicsControllers: []
   };
 }
 
@@ -331,11 +442,44 @@ function addPropertyEvidence(target, value, source) {
   target.properties.push({
     name: value.name || null,
     matchName: value.matchName || null,
+    propertyIndex: numberValue(value.propertyIndex),
     propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
     value: hasOwn(value, "value") ? value.value : undefined,
+    enabled: hasOwn(value, "enabled") ? boolValue(value.enabled) : null,
+    geometry: shapeGeometryFromValue(value.geometry || value.value),
     numKeys: numberValue(value.numKeys),
     keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
     source: source || "observed property"
+  });
+}
+
+function addProjectItemEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const itemIndex = numberValue(value.itemIndex);
+  if (itemIndex === null) return;
+  const hasProjectItemShape = hasOwn(value, "type") || hasOwn(value, "typeName") || hasOwn(value, "label") || hasOwn(value, "folderPath");
+  if (!hasProjectItemShape) return;
+  target.projectItems.push({
+    itemIndex,
+    name: typeof value.name === "string" ? value.name : "",
+    type: value.type || null,
+    typeName: value.typeName || null,
+    label: hasOwn(value, "label") ? numberValue(value.label) : null,
+    comment: hasOwn(value, "comment") ? String(value.comment || "") : "",
+    folderPath: typeof value.folderPath === "string" ? value.folderPath : "",
+    source: source || "observed project item"
+  });
+}
+
+function addEssentialGraphicsControllerEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const index = numberValue(value.index);
+  const name = compactText(value.name, 160);
+  if (index === null || index < 1 || !name) return;
+  target.essentialGraphicsControllers.push({
+    index,
+    name,
+    source: source || "observed Essential Graphics controller"
   });
 }
 
@@ -395,13 +539,27 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   if (!isPlainObject(payload)) return;
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
+  addProjectEvidence(evidence, payload, source);
   addLayerEvidence(evidence, payload, source);
   addCompEvidence(evidence, payload, source);
   addMaskEvidence(evidence, payload, source);
   addPropertyEvidence(evidence, payload, source);
+  addProjectItemEvidence(evidence, payload, source);
   if (isPlainObject(payload.property)) addPropertyEvidence(evidence, payload.property, source);
   if (Array.isArray(payload.properties)) {
     for (const property of payload.properties) addPropertyEvidence(evidence, property, source);
+  }
+  if (isPlainObject(payload.controller)) addEssentialGraphicsControllerEvidence(evidence, payload.controller, source);
+  if (Array.isArray(payload.controllers)) {
+    for (const controller of payload.controllers) addEssentialGraphicsControllerEvidence(evidence, controller, source);
+  }
+  if (isPlainObject(payload.item)) addProjectItemEvidence(evidence, payload.item, source);
+  if (isPlainObject(payload.project)) addProjectEvidence(evidence, payload.project, source);
+  if (Array.isArray(payload.items)) {
+    for (const item of payload.items) addProjectItemEvidence(evidence, item, source);
+  }
+  if (Array.isArray(payload.matches)) {
+    for (const item of payload.matches) addProjectItemEvidence(evidence, item, source);
   }
   if (typeof payload.before === "string") addName(evidence, payload.before, source);
   if (typeof payload.after === "string") addName(evidence, payload.after, source);
@@ -541,6 +699,7 @@ function compFieldMatches(comp, field, expected) {
       observedColor.length >= 3 &&
       expectedColor.every((value, index) => colorChannelNearlyEqual(value, observedColor[index]));
   }
+  if (typeof expected === "boolean") return comp[field] === expected;
   return nearlyEqual(comp[field], expected);
 }
 
@@ -571,6 +730,70 @@ function numberArrayMatches(observed, expected) {
   return expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index]));
 }
 
+function pointListsMatch(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length !== expected.length) return false;
+  return expected.every((point, index) => (
+    Array.isArray(point) &&
+    Array.isArray(observed[index]) &&
+    nearlyEqual(point[0], observed[index][0]) &&
+    nearlyEqual(point[1], observed[index][1])
+  ));
+}
+
+function shapeGeometryFromValue(value) {
+  const raw = isPlainObject(value) && isPlainObject(value.value) && value.value.kind === "Shape"
+    ? value.value
+    : value;
+  if (!isPlainObject(raw)) return null;
+  if (!Array.isArray(raw.vertices)) return null;
+  return {
+    closed: raw.closed === true,
+    vertexCount: numberValue(raw.vertexCount) || raw.vertices.length,
+    vertices: raw.vertices,
+    inTangents: Array.isArray(raw.inTangents) ? raw.inTangents : [],
+    outTangents: Array.isArray(raw.outTangents) ? raw.outTangents : []
+  };
+}
+
+function expectedPathGeometry(args) {
+  const geometry = isPlainObject(args.geometry) ? args.geometry : args;
+  if (!isPlainObject(geometry) || !Array.isArray(geometry.vertices)) return null;
+  return {
+    closed: geometry.closed === true,
+    vertices: geometry.vertices,
+    inTangents: Array.isArray(geometry.inTangents) ? geometry.inTangents : [],
+    outTangents: Array.isArray(geometry.outTangents) ? geometry.outTangents : []
+  };
+}
+
+function pathGeometryMatches(observed, expected) {
+  const actual = shapeGeometryFromValue(observed);
+  if (!actual || !expected) return false;
+  return actual.closed === expected.closed &&
+    actual.vertexCount === expected.vertices.length &&
+    pointListsMatch(actual.vertices, expected.vertices) &&
+    pointListsMatch(actual.inTangents, expected.inTangents) &&
+    pointListsMatch(actual.outTangents, expected.outTangents);
+}
+
+function expectedPathGeometryKeyframes(args) {
+  if (!Array.isArray(args.keyframes)) return [];
+  return args.keyframes.map((item) => ({
+    time: numberValue(item && item.time),
+    geometry: expectedPathGeometry(item && (item.geometry || item))
+  })).filter((item) => item.time !== null && item.geometry);
+}
+
+function pathGeometryKeyframesMatch(observedKeyframes, expectedKeyframes) {
+  if (!expectedKeyframes.length) return true;
+  if (!Array.isArray(observedKeyframes) || observedKeyframes.length < expectedKeyframes.length) return false;
+  return expectedKeyframes.every((expected) => observedKeyframes.some((observed) => (
+    nearlyEqual(observed && observed.time, expected.time) &&
+    pathGeometryMatches(observed && (observed.geometry || observed.value), expected.geometry)
+  )));
+}
+
 function maskMatchesArgs(mask, args) {
   if (!mask) return false;
   if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) return false;
@@ -593,6 +816,34 @@ function observedMaskEvidence(evidence, args, payloadMask) {
     if (index !== null && mask.propertyIndex !== null && !nearlyEqual(mask.propertyIndex, index)) continue;
     if (name && mask.name && mask.name !== name) continue;
     if (maskMatchesArgs(mask, args)) return mask.source || "observed mask";
+  }
+  return null;
+}
+
+function observedPathGeometryEvidence(evidence, args, payloadPath) {
+  if (!evidence) return null;
+  const expectedGeometry = expectedPathGeometry(args);
+  const expectedKeyframes = expectedPathGeometryKeyframes(args);
+  const payloadPropertyPath = payloadPath && Array.isArray(payloadPath.propertyPath) ? payloadPath.propertyPath : null;
+
+  for (const property of evidence.properties || []) {
+    const pathMatches = Array.isArray(args.propertyPath)
+      ? propertyPathMatches(property.propertyPath, args.propertyPath)
+      : payloadPropertyPath
+        ? propertyPathMatches(property.propertyPath, payloadPropertyPath)
+        : true;
+    if (!pathMatches) continue;
+    if (expectedGeometry && !pathGeometryMatches(property.geometry || property.value, expectedGeometry)) continue;
+    if (!pathGeometryKeyframesMatch(property.keyframes, expectedKeyframes)) continue;
+    return property.source || "observed path geometry property";
+  }
+
+  if (String(args.targetKind || "") === "mask" && expectedGeometry) {
+    for (const mask of evidence.masks || []) {
+      if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) continue;
+      if (hasOwn(args, "expectedMaskName") && args.expectedMaskName && !sameString(mask.name, args.expectedMaskName)) continue;
+      if (pathGeometryMatches(mask.shape, expectedGeometry)) return mask.source || "observed mask path geometry";
+    }
   }
   return null;
 }
@@ -645,6 +896,11 @@ function observedMarkerEvidence(evidence, args) {
     if (markerMatchesArgs(marker, args)) return marker.source || "observed marker";
   }
   return null;
+}
+
+function observedMarkerReadBackEvidence(evidence, args) {
+  return observedMarkerEvidence(evidence.readBack, args) ||
+    observedMarkerEvidence(evidence.allReadBack, args);
 }
 
 function markerText(marker) {
@@ -709,6 +965,35 @@ function checkNumberFields(checks, step, fields, payload, title) {
     passed: mismatches.length === 0,
     evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
   });
+}
+
+function workAreaPayloadValue(payload, field) {
+  if (hasOwn(payload, field)) return payload[field];
+  if (payload && hasOwn(payload.after, field)) return payload.after[field];
+  if (payload && hasOwn(payload.comp, field)) return payload.comp[field];
+  return null;
+}
+
+function checkSetCompWorkArea(checks, step, payload, evidence) {
+  const fields = [
+    { arg: "start", label: "workAreaStart" },
+    { arg: "duration", label: "workAreaDuration" }
+  ];
+  for (const field of fields) {
+    if (!hasOwn(step.args, field.arg)) continue;
+    const expected = step.args[field.arg];
+    const payloadValue = workAreaPayloadValue(payload, field.label);
+    const payloadMatches = nearlyEqual(payloadValue, expected);
+    const readBackEvidence = observedCompFieldEvidence(evidence.readBack, field.label, expected);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:${field.label}`,
+      title: `Comp ${field.label} matches request`,
+      expected,
+      observed: payloadValue === null ? (readBackEvidence ? "matched read-back" : "missing") : payloadValue,
+      passed: payloadMatches || Boolean(readBackEvidence),
+      evidence: payloadMatches ? stepLabel(step) : (readBackEvidence || `No post-run comp read-back matched ${field.label}.`)
+    });
+  }
 }
 
 function checkNumberArrayField(checks, step, arg, observedValue, evidence, title) {
@@ -805,6 +1090,8 @@ function layerMetadataFields(args) {
   if (hasOwn(args, "comment")) fields.push("comment");
   if (hasOwn(args, "label")) fields.push("label");
   if (hasOwn(args, "locked")) fields.push("locked");
+  if (hasOwn(args, "enabled")) fields.push("enabled");
+  if (hasOwn(args, "guideLayer")) fields.push("guideLayer");
   return fields;
 }
 
@@ -813,6 +1100,8 @@ function layerMetadataFieldMatches(layer, args, field) {
   if (field === "comment") return sameString(layer.comment, args.comment);
   if (field === "label") return nearlyEqual(layer.label, args.label);
   if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
+  if (field === "enabled") return boolValue(layer.enabled) === boolValue(args.enabled);
+  if (field === "guideLayer") return boolValue(layer.guideLayer) === boolValue(args.guideLayer);
   return false;
 }
 
@@ -863,6 +1152,465 @@ function checkSetLayerMetadata(checks, step, payload, evidence) {
     observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched metadata result",
     passed: resultMatches && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_metadata."
+  });
+}
+
+function normalizedBlendingModeName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function layerBlendingModeName(layer) {
+  if (!layer) return "";
+  if (hasOwn(layer, "blendingModeName")) return normalizedBlendingModeName(layer.blendingModeName);
+  return normalizedBlendingModeName(layer.blendingMode);
+}
+
+function layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName) {
+  if (!layer) return false;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedName && !sameString(layer.name, expectedName)) return false;
+  return layerBlendingModeName(layer) === normalizedBlendingModeName(args.blendingMode || args.requestedBlendingMode);
+}
+
+function observedLayerBlendingModeEvidence(evidence, args) {
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  if (!layerIndices.length || !args.blendingMode || !evidence || !Array.isArray(evidence.layers)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < layerIndices.length; index += 1) {
+    const layerIndex = layerIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.layers.find((layer) => layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `layer ${layerIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetLayerBlendingMode(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const targetMode = normalizedBlendingModeName(args.blendingMode || payload.requestedBlendingMode);
+  const resultMatches = targetMode &&
+    layerIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === layerIndices.length &&
+    layerIndices.every((layerIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return layerMatchesBlendingModeTarget(after, { ...args, blendingMode: targetMode }, layerIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedLayerBlendingModeEvidence(evidence.readBack, { ...args, blendingMode: targetMode });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:blending-mode`,
+    title: "Layer blending mode matches explicit request",
+    expected: `${layerIndices.length} layer(s); blendingMode: ${targetMode || "missing"}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched blending mode result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_blending_mode."
+  });
+}
+
+function layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) {
+  if (!layer) return false;
+  const observedParentIndex = hasOwn(layer, "parentIndex")
+    ? layer.parentIndex
+    : (isPlainObject(layer.parent) ? layer.parent.index : null);
+  const observedParentName = hasOwn(layer, "parentName")
+    ? layer.parentName
+    : (isPlainObject(layer.parent) ? layer.parent.name : "");
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (!nearlyEqual(observedParentIndex, parentLayerIndex)) return false;
+  if (expectedParentName && !sameString(observedParentName, expectedParentName)) return false;
+  return true;
+}
+
+function observedLayerParentEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  if (layerIndex === null || parentLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName)) {
+      return layer.source || `layer ${layerIndex} parent ${parentLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerParent(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  const layer = payload.layer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) &&
+    postVerification.ok === true &&
+    postVerification.parentMatches === true;
+  const readBackEvidence = observedLayerParentEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:parent`,
+    title: "Layer parent link matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> parent ${parentLayerIndex || "?"}${expectedParentName ? ` (${expectedParentName})` : ""}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${layer.parentName || layer.parent && layer.parent.name || "missing parent"}` : "missing or mismatched parent result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_parent."
+  });
+}
+
+function layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) {
+  if (!layer) return false;
+  const matteLayer = isPlainObject(layer.trackMatteLayer) ? layer.trackMatteLayer : null;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (layer.hasTrackMatte !== true) return false;
+  if (trackMatteType && !sameString(layer.trackMatteTypeName, trackMatteType)) return false;
+  if (!matteLayer || !nearlyEqual(matteLayer.index, matteLayerIndex)) return false;
+  if (expectedMatteLayerName && !sameString(matteLayer.name, expectedMatteLayerName)) return false;
+  return true;
+}
+
+function observedLayerTrackMatteEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  if (layerIndex === null || matteLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType)) {
+      return layer.source || `layer ${layerIndex} track matte ${matteLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerTrackMatte(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  const layer = payload.layer || {};
+  const matteLayer = payload.matteLayer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) &&
+    postVerification.ok === true &&
+    postVerification.matteLayerMatches === true &&
+    postVerification.trackMatteTypeMatches === true;
+  const readBackEvidence = observedLayerTrackMatteEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:track-matte`,
+    title: "Layer track matte matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> matte ${matteLayerIndex || "?"} ${trackMatteType || "unknown"}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${matteLayer.name || "matte"} ${layer.trackMatteTypeName || "unknown"}` : "missing or mismatched track matte result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_track_matte."
+  });
+}
+
+function projectItemMetadataFields(args, payload) {
+  const fields = [];
+  if (hasOwn(args, "label") || hasOwn(payload && payload.updates, "label")) fields.push("label");
+  return fields;
+}
+
+function projectItemMetadataArgs(args, payload) {
+  const updates = isPlainObject(payload && payload.updates) ? payload.updates : {};
+  return {
+    ...updates,
+    ...args
+  };
+}
+
+function projectItemIndicesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.itemIndices)) return args.itemIndices.map(Number);
+  if (Array.isArray(payload.requestedItemIndices)) return payload.requestedItemIndices.map(Number);
+  return [];
+}
+
+function projectItemNamesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.expectedItemNames)) return args.expectedItemNames.map(String);
+  if (Array.isArray(payload.expectedItemNames)) return payload.expectedItemNames.map(String);
+  return [];
+}
+
+function projectItemMetadataFieldMatches(item, args, field) {
+  if (!item || !hasOwn(item, field)) return false;
+  if (field === "label") return nearlyEqual(item.label, args.label);
+  return false;
+}
+
+function projectItemMatchesMetadataTarget(item, fields, args, itemIndex, expectedName) {
+  if (!item || !fields.length) return false;
+  if (!nearlyEqual(item.itemIndex, itemIndex)) return false;
+  if (expectedName && !sameString(item.name, expectedName)) return false;
+  return fields.every((field) => projectItemMetadataFieldMatches(item, args, field));
+}
+
+function observedProjectItemMetadataEvidence(evidence, args, payload) {
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  if (!itemIndices.length || !fields.length || !evidence || !Array.isArray(evidence.projectItems)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < itemIndices.length; index += 1) {
+    const itemIndex = itemIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.projectItems.find((item) => projectItemMatchesMetadataTarget(item, fields, normalizedArgs, itemIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `project item ${itemIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetProjectItemMetadata(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const resultMatches = fields.length > 0 &&
+    itemIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === itemIndices.length &&
+    itemIndices.every((itemIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return projectItemMatchesMetadataTarget(after, fields, normalizedArgs, itemIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedProjectItemMetadataEvidence(evidence.readBack, args, payload);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Project item metadata matches explicit request",
+    expected: `${itemIndices.length} project item(s); fields: ${fields.join(", ")}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} project item(s) updated` : "missing or mismatched project item metadata result",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run project-item read-back matched set_project_item_metadata."
+  });
+}
+
+function observedProjectFramesCountEvidence(evidence, expectedFramesCountType) {
+  const expected = normalizeFramesCountTypeName(expectedFramesCountType);
+  if (!expected || !evidence || !Array.isArray(evidence.projects)) return null;
+  const expectedStartFrame = framesCountStartFrameForName(expected);
+  for (const project of evidence.projects) {
+    const observed = normalizeFramesCountTypeName(project.framesCountType);
+    const observedStartFrame = numberValue(project.framesCountStartFrame);
+    if (observed === expected || (expectedStartFrame !== null && nearlyEqual(observedStartFrame, expectedStartFrame))) {
+      return project.source || "observed project framesCountType";
+    }
+  }
+  return null;
+}
+
+function checkSetProjectFramesCountType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizeFramesCountTypeName(
+    args.framesCountType ||
+    payload.framesCountType ||
+    (payload.updates && payload.updates.framesCountType) ||
+    (payload.project && payload.project.framesCountType)
+  );
+  const postVerification = payload.postVerification || {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.project || {};
+  const project = isPlainObject(payload.project) ? payload.project : {};
+  const observed = normalizeFramesCountTypeName(
+    after.framesCountType ||
+    after.name ||
+    project.framesCountType ||
+    payload.framesCountType
+  );
+  const readBackEvidence = observedProjectFramesCountEvidence(evidence.readBack, expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:frames-count-type`,
+    title: "Project frame count type matches explicit request",
+    expected: expected || "FC_START_0 or FC_START_1",
+    observed: observed || "missing project framesCountType",
+    passed: Boolean(expected) &&
+      observed === expected &&
+      postVerification.ok === true &&
+      postVerification.framesCountTypeMatches === true &&
+      postVerification.projectItemCountUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_project_info read-back matched set_project_frames_count_type."
+  });
+}
+
+function normalizePuppetPinTypeEvidence(value) {
+  const number = numberValue(value);
+  if (number === 1 || number === 4) return number;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "position") return 1;
+    if (normalized === "advanced") return 4;
+  }
+  return null;
+}
+
+function observedPuppetPinTypeEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (property.matchName !== "ADBE FreePin3 PosPin Type") continue;
+    if (Array.isArray(args.pinTypePropertyPath) && !propertyPathMatches(property.propertyPath, args.pinTypePropertyPath)) continue;
+    if (propertyValueMatches(expected, property.value, 0.001)) {
+      return property.source || `Read ADBE FreePin3 PosPin Type after set_puppet_pin_type.`;
+    }
+  }
+  return null;
+}
+
+function checkSetPuppetPinType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  const property = payload.property || {};
+  const effect = payload.effect || {};
+  const pinAtom = payload.pinAtom || {};
+  const valueMatches = expected !== null && (
+    propertyValueMatches(expected, property.value, 0.001) ||
+    nearlyEqual(payload.pinTypeAfter, expected)
+  );
+  const identityMatches = effect.matchName === "ADBE FreePin3" &&
+    pinAtom.matchName === "ADBE FreePin3 PosPin Atom" &&
+    property.matchName === "ADBE FreePin3 PosPin Type";
+  const readBackEvidence = observedPuppetPinTypeEvidence(evidence.readBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pin-type`,
+    title: "Puppet pin type matches explicit enum request",
+    expected: `ADBE FreePin3 PosPin Type = ${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${property.matchName || "missing"} = ${compactText(stableStringify(property.value), 80)}`
+      : "missing ADBE FreePin3/PosPin Atom/PosPin Type identity",
+    passed: identityMatches && valueMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details read-back matched set_puppet_pin_type."
+  });
+}
+
+function effectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effectIndex") && !nearlyEqual(effect.propertyIndex, args.effectIndex)) return false;
+  if (hasOwn(args, "effectMatchName") && args.effectMatchName && effect.matchName !== args.effectMatchName) return false;
+  if (hasOwn(args, "effectName") && args.effectName && effect.name !== args.effectName) return false;
+  return hasOwn(args, "effectIndex") || hasOwn(args, "effectMatchName") || hasOwn(args, "effectName");
+}
+
+function addEffectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effect") && args.effect && effect.matchName !== args.effect) return false;
+  if (hasOwn(args, "name") && args.name && effect.name !== args.name) return false;
+  return Boolean(args.effect || args.name);
+}
+
+function observedAddedEffectEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  for (const property of evidence.properties) {
+    if (addEffectMatchesArgs(property, args)) {
+      return property.source || `Read added effect ${property.name || property.matchName || args.effect}.`;
+    }
+  }
+  return null;
+}
+
+function checkAddEffect(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const effect = payload.effect || {};
+  const identityMatches = addEffectMatchesArgs(effect, args);
+  const readBackEvidence = observedAddedEffectEvidence(evidence.readBack, args) ||
+    observedAddedEffectEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect`,
+    title: "Added effect identity matches explicit request",
+    expected: `${args.name || args.effect || "effect"} / ${args.effect || "matchName"}`,
+    observed: identityMatches
+      ? `${effect.name || "effect"} / ${effect.matchName || "matchName"}`
+      : "missing matching effect identity",
+    passed: identityMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched add_effect."
+  });
+}
+
+function observedEffectEnabledEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = boolValue(args.enabled);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (!effectMatchesArgs(property, args)) continue;
+    if (property.enabled === expected) {
+      return property.source || `Read effect enabled:${expected} after set_effect_enabled.`;
+    }
+  }
+  return null;
+}
+
+function checkSetEffectEnabled(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = boolValue(args.enabled);
+  const effect = payload.effect || payload.after && payload.after.effect || {};
+  const postVerification = payload.postVerification || {};
+  const identityMatches = effectMatchesArgs(effect, args);
+  const resultMatches = expected !== null &&
+    (effect.enabled === expected || postVerification.enabledMatches === true);
+  const readBackEvidence = observedEffectEnabledEvidence(evidence.readBack, args) ||
+    observedEffectEnabledEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect-enabled`,
+    title: "Effect enabled state matches explicit request",
+    expected: `enabled:${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${effect.name || effect.matchName || "effect"} enabled:${effect.enabled}`
+      : "missing matching effect identity",
+    passed: identityMatches && resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched set_effect_enabled."
+  });
+}
+
+function observedEssentialGraphicsControllerEvidence(evidence, controllerName) {
+  if (!evidence || !Array.isArray(evidence.essentialGraphicsControllers) || !controllerName) return null;
+  const match = evidence.essentialGraphicsControllers.find((controller) => sameString(controller.name, controllerName));
+  return match ? match.source || `Read Essential Graphics controller ${controllerName}.` : null;
+}
+
+function checkAddPropertyToEssentialGraphics(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const controllerName = String(args.controllerName || payload.controllerName || "").trim();
+  const property = payload.property || {};
+  const postVerification = payload.postVerification || {};
+  const expectedMatchName = String(args.expectedPropertyMatchName || "");
+  const expectedPropertyName = String(args.expectedPropertyName || "");
+  const propertyIdentityMatches = (!expectedMatchName || property.matchName === expectedMatchName) &&
+    (!expectedPropertyName || property.name === expectedPropertyName);
+  const readBackEvidence = observedEssentialGraphicsControllerEvidence(evidence.readBack, controllerName);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:controller`,
+    title: "Essential Graphics controller was added and read back",
+    expected: controllerName || "reviewed controller name",
+    observed: payload.controller && payload.controller.name
+      ? `${payload.controller.name}; count ${payload.beforeControllers && payload.beforeControllers.count} -> ${payload.afterControllers && payload.afterControllers.count}`
+      : "missing Essential Graphics controller result",
+    passed: Boolean(controllerName) &&
+      payload.added === true &&
+      postVerification.ok === true &&
+      postVerification.controllerCountIncremented === true &&
+      propertyIdentityMatches &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_essential_graphics_controllers read-back matched add_property_to_essential_graphics."
   });
 }
 
@@ -1274,7 +2022,7 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   const args = step.args || {};
   const updates = isPlainObject(payload.updates) ? payload.updates : {};
   const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
-  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime"].filter((field) => hasOwn(args, field));
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"].filter((field) => hasOwn(args, field));
   if (!fields.length) {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:updates`,
@@ -1310,6 +2058,74 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   });
 }
 
+function checkRefreshCompPanel(checks, step, payload, evidence) {
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const before = isPlainObject(payload.before) ? payload.before : {};
+  const transient = isPlainObject(payload.transient) ? payload.transient : {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.comp || {};
+  const restoredValue = hasOwn(after, "motionBlur") ? after.motionBlur : before.motionBlur;
+  const readBackEvidence = observedCompFieldEvidence(evidence.readBack, "motionBlur", restoredValue);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:motionBlur-restored`,
+    title: "Composition motionBlur is restored after refresh toggle",
+    expected: `motionBlur restored to ${before.motionBlur}`,
+    observed: `before=${before.motionBlur}, transient=${transient.motionBlur}, after=${after.motionBlur}`,
+    passed: postVerification.ok === true &&
+      postVerification.motionBlurRestored === true &&
+      postVerification.transientToggled === true &&
+      before.motionBlur === after.motionBlur &&
+      transient.motionBlur !== before.motionBlur &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back proved restored comp.motionBlur."
+  });
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:bounds`,
+    title: "Composition refresh stays bounded to the explicit comp",
+    expected: "same comp identity, unchanged layer count and work area",
+    observed: `identity=${postVerification.compIdentityMatches === true}, layerCount=${postVerification.layerCountUnchanged === true}, workArea=${postVerification.workAreaUnchanged === true}`,
+    passed: postVerification.compIdentityMatches === true &&
+      postVerification.layerCountUnchanged === true &&
+      postVerification.workAreaUnchanged === true &&
+      evidence.readBack.count > 0,
+    evidence: evidence.readBack.count > 0 ? "Post-run comp read-back was present." : "No post-run comp read-back was present."
+  });
+}
+
+function expectedCompCurrentTime(args, payload) {
+  if (hasOwn(args, "time")) return numberValue(args.time);
+  if (hasOwn(args, "frame")) {
+    const frame = numberValue(args.frame);
+    const frameRate = numberValue(args.frameRate) ||
+      numberValue(payload && payload.requested && payload.requested.frameRate) ||
+      numberValue(payload && payload.after && payload.after.frameRate);
+    if (frame !== null && frameRate !== null && frameRate > 0) return frame / frameRate;
+  }
+  return numberValue(payload && (hasOwn(payload, "targetTime") ? payload.targetTime : payload.after && payload.after.time));
+}
+
+function checkSetCompCurrentTime(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = expectedCompCurrentTime(args, payload);
+  const after = payload.after || payload.comp || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = expected === null ? null : observedCompFieldEvidence(evidence.readBack, "time", expected);
+  const afterMatches = expected !== null && compFieldMatches(after, "time", expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:time`,
+    title: "Composition current time matches requested CTI target",
+    expected: expected === null ? "finite target time" : expected,
+    observed: hasOwn(after, "time") ? after.time : "missing after time",
+    passed: afterMatches &&
+      postVerification.ok === true &&
+      postVerification.compIdentityMatches === true &&
+      postVerification.structuralFieldsUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back matched set_comp_current_time."
+  });
+}
+
 function checkSetLayerMask(checks, step, payload, evidence) {
   const args = step.args || {};
   const mask = payload.afterMask || payload.mask || {};
@@ -1333,12 +2149,317 @@ function checkSetLayerMask(checks, step, payload, evidence) {
   });
 }
 
+function checkSetPathGeometry(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const pathGeometry = payload.pathGeometry || payload.property || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = observedPathGeometryEvidence(evidence.readBack, args, pathGeometry);
+  const requestedKeyframes = expectedPathGeometryKeyframes(args);
+  const expected = requestedKeyframes.length
+    ? `${requestedKeyframes.length} path geometry keyframe(s)`
+    : `${expectedPathGeometry(args) && expectedPathGeometry(args).vertices.length || 0} path vertices`;
+  const observed = pathGeometry && pathGeometry.geometry
+    ? `${pathGeometry.geometry.vertexCount || pathGeometry.geometry.vertices && pathGeometry.geometry.vertices.length || 0} vertices`
+    : `${postVerification.afterKeyframeCount || 0} keyframe(s)`;
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:geometry`,
+    title: "Path geometry matches read-back",
+    expected,
+    observed,
+    passed: postVerification.ok === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run path geometry read-back matched set_path_geometry."
+  });
+}
+
+function checkCreateLayerConnectionLine(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const connector = payload.connector || payload.layer || {};
+  const pathGeometry = payload.pathGeometry || payload.path || {};
+  const geometry = pathGeometry.geometry || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const expectedLocked = args.lockLayer !== false;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, connector.name) ||
+    observedNameEvidence(evidence.all, connector.name);
+
+  checkName(checks, step, args.name, connector.name, evidence, "Created connector layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:open-path`,
+    title: "Connector path is an open two-point shape path",
+    expected: "open path with 2 vertices",
+    observed: `closed:${geometry.closed === true}; vertices:${geometry.vertexCount || 0}`,
+    passed: postVerification.ok === true &&
+      postVerification.pathOpen === true &&
+      Number(postVerification.vertexCount || 0) === 2 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No connector layer read-back matched the generated open path."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:expression`,
+    title: "Connector path expression is enabled and error-free",
+    expected: "expressionEnabled:true without expressionError",
+    observed: `expressionEnabled:${payload.expressionEnabled === true}; expressionError:${payload.expressionError || ""}`,
+    passed: postVerification.expressionEnabled === true &&
+      postVerification.expressionMatches === true &&
+      !postVerification.expressionError,
+    evidence: stepLabel(step)
+  });
+  if (expectedLocked) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:locked`,
+      title: "Generated connector layer is locked after setup",
+      expected: "locked:true",
+      observed: `locked:${connector.locked === true}`,
+      passed: connector.locked === true && postVerification.locked === true,
+      evidence: readBackEvidence || stepLabel(step)
+    });
+  }
+}
+
+function checkCreateShapesFromText(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const shapeLayer = payload.shapeLayer || payload.layer || {};
+  const sourceLayer = payload.sourceLayerAfter || payload.sourceLayerBefore || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const outline = isPlainObject(payload.outline) ? payload.outline : {};
+  const expectedShapeName = args.shapeLayerName || shapeLayer.name;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, expectedShapeName) ||
+    observedNameEvidence(evidence.all, expectedShapeName);
+
+  checkName(checks, step, args.shapeLayerName, shapeLayer.name, evidence, "Created shape-outline layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:shape-layer`,
+    title: "Text conversion produced a shape layer",
+    expected: "shapeLayer:true with AE vector layer matchName",
+    observed: `shapeLayer:${shapeLayer.shapeLayer === true}; matchName:${shapeLayer.matchName || ""}`,
+    passed: postVerification.ok === true &&
+      postVerification.createdShapeLayer === true &&
+      (shapeLayer.shapeLayer === true || shapeLayer.matchName === "ADBE Vector Layer") &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched the generated shape layer."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:outline-groups`,
+    title: "Generated shape layer contains outline vector groups",
+    expected: "outline vectorGroupCount > 0",
+    observed: `outline vectorGroupCount:${outline.vectorGroupCount ?? postVerification.outlineGroupCount ?? 0}`,
+    passed: postVerification.ok === true &&
+      Number(postVerification.outlineGroupCount || outline.vectorGroupCount || 0) > 0 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No generated shape-outline layer read-back proved vector groups."
+  });
+  if (hasOwn(args, "expectedSourceText")) {
+    const observedText = payload.sourceLayerBefore && hasOwn(payload.sourceLayerBefore, "text")
+      ? payload.sourceLayerBefore.text
+      : sourceLayer.text && sourceLayer.text.text;
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-text-guard`,
+      title: "Source Text guard matched before conversion",
+      expected: args.expectedSourceText,
+      observed: observedText,
+      passed: sameString(observedText, args.expectedSourceText) && postVerification.sourceTextMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+  if (args.expectedLayerName) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-name-guard`,
+      title: "Source text layer name guard matched",
+      expected: args.expectedLayerName,
+      observed: sourceLayer.name || payload.sourceLayerBefore && payload.sourceLayerBefore.name,
+      passed: postVerification.sourceNameMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+}
+
+function exportPathPointsVertices(args) {
+  if (Array.isArray(args.vertices)) return args.vertices;
+  if (isPlainObject(args.geometry) && Array.isArray(args.geometry.vertices)) return args.geometry.vertices;
+  return [];
+}
+
+function roundExportCoordinate(value, decimalPlaces) {
+  return Number(Number(value).toFixed(decimalPlaces));
+}
+
+function expectedExportPathPoints(args) {
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(numberValue(hasOwn(args, "decimalPlaces") ? args.decimalPlaces : 2) || 0)));
+  const rotate = hasOwn(args, "rotateFirstPointToEnd") ? args.rotateFirstPointToEnd !== false : true;
+  const points = exportPathPointsVertices(args)
+    .filter((point) => Array.isArray(point) && point.length >= 2)
+    .map((point) => [
+      roundExportCoordinate(point[0], decimalPlaces),
+      roundExportCoordinate(point[1], decimalPlaces)
+    ]);
+  if (rotate && points.length > 1) points.push(points.shift());
+  return points;
+}
+
+function pathPointsMatch(expected, observed) {
+  return Array.isArray(expected) &&
+    Array.isArray(observed) &&
+    expected.length === observed.length &&
+    expected.every((point, index) => (
+      Array.isArray(point) &&
+      Array.isArray(observed[index]) &&
+      nearlyEqual(point[0], observed[index][0]) &&
+      nearlyEqual(point[1], observed[index][1])
+    ));
+}
+
+function checkExportPathPoints(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "points.txt";
+  const expectedPoints = expectedExportPathPoints(args);
+  const observedPoints = Array.isArray(payload.points) ? payload.points : [];
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const contentPreview = String(payload.contentPreview || "");
+  const variableName = args.variableName || "points";
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated path-points export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated export file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:points`,
+    title: "Exported points match rounded and rotated vertices",
+    expected: stableStringify(expectedPoints),
+    observed: stableStringify(observedPoints),
+    passed: expectedPoints.length > 0 && pathPointsMatch(expectedPoints, observedPoints),
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Export content uses the reviewed variable payload format",
+    expected: `var ${variableName} = ...;`,
+    observed: contentPreview,
+    passed: contentPreview.startsWith(`var ${variableName} = [`) && contentPreview.endsWith(";"),
+    evidence: stepLabel(step)
+  });
+}
+
+function sourceTextFromExportTextLayerEvidence(rawLayer) {
+  const raw = isPlainObject(rawLayer) ? rawLayer : {};
+  const layer = isPlainObject(raw.layer) ? raw.layer : raw;
+  const textPayload = isPlainObject(raw.text) ? raw.text : isPlainObject(layer.text) ? layer.text : null;
+  const sourceText = typeof raw.sourceText === "string"
+    ? raw.sourceText
+    : typeof layer.sourceText === "string"
+      ? layer.sourceText
+      : typeof raw.text === "string"
+        ? raw.text
+        : typeof layer.text === "string"
+          ? layer.text
+          : typeof (textPayload && textPayload.text) === "string"
+            ? textPayload.text
+            : null;
+  const textLayer = raw.textLayer === true ||
+    layer.textLayer === true ||
+    raw.layerKind === "text" ||
+    layer.layerKind === "text" ||
+    raw.type === "text" ||
+    layer.type === "text" ||
+    Boolean(textPayload && textPayload.kind === "TextDocument") ||
+    sourceText !== null;
+  return textLayer ? sourceText : "[Not a text layer]";
+}
+
+function expectedExportTextContent(args) {
+  const layers = Array.isArray(args.layers) ? args.layers : Array.isArray(args.layerEvidence) ? args.layerEvidence : [];
+  return layers.map((layer, index) => {
+    const text = sourceTextFromExportTextLayerEvidence(layer);
+    return `${index + 1}:\n${text === null ? "" : text}\n\n`;
+  }).join("");
+}
+
+function checkExportTextToFile(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "export.txt";
+  const expectedContent = expectedExportTextContent(args);
+  const observedContent = String(payload.exportedText || payload.contentPreview || "");
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+  const expectedLayerCount = Array.isArray(args.layers)
+    ? args.layers.length
+    : Array.isArray(args.layerEvidence)
+      ? args.layerEvidence.length
+      : 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated selected-text export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated text export file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Exported selected-layer text matches reviewed evidence",
+    expected: compactText(expectedContent, 220),
+    observed: compactText(observedContent, 220),
+    passed: expectedLayerCount > 0 && observedContent === expectedContent,
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSaveCompFramePng(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const comp = isPlainObject(payload.comp) ? payload.comp : {};
+  const frame = isPlainObject(payload.frame) ? payload.frame : {};
+  const resolutionFactor = isPlainObject(payload.resolutionFactor) ? payload.resolutionFactor : {};
+  const expectedFileName = args.outputFileName || "frame.png";
+  const expectedCompName = args.expectedCompName || args.compName || "";
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const byteLength = Number(file.byteLength || 0);
+  const requestedTime = hasOwn(args, "time") ? Number(args.time) : null;
+  const observedTime = Number(frame.time);
+  const timeMatches = requestedTime === null || (Number.isFinite(observedTime) && nearlyEqual(observedTime, requestedTime, 0.0001));
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated composition frame PNG was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${byteLength}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && byteLength > 0 && hashOk && String(file.mimeType || "") === "image/png" && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated PNG file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:resolution-factor`,
+    title: "Composition resolutionFactor was restored after frame export",
+    expected: stableStringify(resolutionFactor.before || []),
+    observed: stableStringify(resolutionFactor.after || []),
+    passed: resolutionFactor.restored === true,
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:target`,
+    title: "Saved frame target matches explicit composition and time",
+    expected: `${expectedCompName || "explicit comp"} at ${requestedTime === null ? "current time" : requestedTime}`,
+    observed: `${comp.name || "missing comp"} at ${Number.isFinite(observedTime) ? observedTime : "missing time"}`,
+    passed: (!expectedCompName || comp.name === expectedCompName) && timeMatches,
+    evidence: stepLabel(step)
+  });
+}
+
 function exactRenamesMatch(items, args) {
   if (!items.length) return false;
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index] || {};
     const expected = expectedRenameValue(item.before, args, index + 1, items.length);
-    if (!expected || item.after !== expected) return false;
+    if (typeof expected !== "string" || item.after !== expected) return false;
   }
   return true;
 }
@@ -1375,6 +2496,23 @@ function verifyStep(checks, step, evidence) {
         evidence: stepLabel(step)
       });
     }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Created text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "create_shapes_from_text") {
+    checkCreateShapesFromText(checks, step, payload, evidence);
     return;
   }
 
@@ -1398,11 +2536,13 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "set_comp_current_time") {
+    checkSetCompCurrentTime(checks, step, payload, evidence);
+    return;
+  }
+
   if (step.tool === "set_comp_work_area") {
-    checkNumberFields(checks, step, [
-      { arg: "start", label: "workAreaStart", read: (value) => value && value.workAreaStart },
-      { arg: "duration", label: "workAreaDuration", read: (value) => value && value.workAreaDuration }
-    ], payload, "Comp work area matches request");
+    checkSetCompWorkArea(checks, step, payload, evidence);
     return;
   }
 
@@ -1427,29 +2567,115 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "update_text_layer") {
-    if (!hasOwn(args, "text")) return;
-    const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text && payload.text.text;
-    pushCheck(checks, {
-      id: `${step.index || "step"}:${step.tool}:text`,
-      title: "Updated text content matches request",
-      expected: args.text,
-      observed,
-      passed: sameString(observed, args.text),
-      evidence: stepLabel(step)
-    });
+    if (hasOwn(args, "text")) {
+      const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text && payload.text.text;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:text`,
+        title: "Updated text content matches request",
+        expected: args.text,
+        observed,
+        passed: sameString(observed, args.text),
+        evidence: stepLabel(step)
+      });
+    }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Updated text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
     return;
   }
 
   if (step.tool === "create_shape_layer") {
+    const layerShapeContents = payload.layer && Array.isArray(payload.layer.shapeContents) ? payload.layer.shapeContents : [];
+    const requestedShapeType = args.shape || "rectangle";
+    const readBackShape = layerShapeContents.find((item) => item && item.type === requestedShapeType) || layerShapeContents[0] || {};
+    const shapeSummary = isPlainObject(payload.shape) ? payload.shape : {};
+    const observedShape = { ...readBackShape, ...shapeSummary };
     checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created shape layer name matches request");
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:shape`,
       title: "Created shape summary matches request",
-      expected: `${args.shape || "rectangle"} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
-      observed: payload.shape ? `${payload.shape.type || ""} ${Array.isArray(payload.shape.size) ? payload.shape.size.join("x") : ""}`.trim() : "missing shape summary",
-      passed: Boolean(payload.shape) && (!args.shape || payload.shape.type === args.shape),
+      expected: `${requestedShapeType} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
+      observed: observedShape.type ? `${observedShape.type || ""} ${Array.isArray(observedShape.size) ? observedShape.size.join("x") : ""}`.trim() : "missing shape summary",
+      passed: Boolean(observedShape.type) &&
+        observedShape.type === requestedShapeType &&
+        (!hasOwn(args, "size") || numberArrayMatches(observedShape.size, args.size)),
       evidence: stepLabel(step)
     });
+    if (requestedShapeType === "polygon" || requestedShapeType === "star") {
+      const expectedStarType = args.starType || requestedShapeType;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:star-type`,
+        title: "Created polystar type matches request",
+        expected: expectedStarType,
+        observed: observedShape.starType || observedShape.type || "missing starType",
+        passed: (observedShape.starType || observedShape.type) === expectedStarType,
+        evidence: stepLabel(step)
+      });
+      for (const key of ["points", "outerRadius"]) {
+        if (!hasOwn(args, key)) continue;
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:${key}`,
+          title: `Created polystar ${key} matches request`,
+          expected: args[key],
+          observed: observedShape[key],
+          passed: nearlyEqual(observedShape[key], args[key]),
+          evidence: stepLabel(step)
+        });
+      }
+      if (requestedShapeType === "star" && hasOwn(args, "innerRadius")) {
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:innerRadius`,
+          title: "Created star innerRadius matches request",
+          expected: args.innerRadius,
+          observed: observedShape.innerRadius,
+          passed: nearlyEqual(observedShape.innerRadius, args.innerRadius),
+          evidence: stepLabel(step)
+        });
+      }
+    }
+    return;
+  }
+
+  if (step.tool === "create_adjustment_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created adjustment layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:adjustment-layer`,
+      title: "Created layer is an adjustment layer",
+      expected: "adjustmentLayer:true",
+      observed: `adjustmentLayer:${payload.layer && payload.layer.adjustmentLayer === true}`,
+      passed: Boolean(payload.layer && payload.layer.adjustmentLayer === true),
+      evidence: stepLabel(step)
+    });
+    if (args.insertBeforeLayerIndex !== undefined && args.insertBeforeLayerIndex !== null) {
+      const beforeLayer = payload.placement && payload.placement.beforeLayerAfterMove;
+      const expectedName = compactText(args.expectedBeforeLayerName, 160);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:placement`,
+        title: "Created adjustment layer is immediately above the guarded layer",
+        expected: expectedName ? `immediately before ${expectedName}` : `immediately before layer ${args.insertBeforeLayerIndex}`,
+        observed: payload.placement
+          ? `immediatelyBefore:${payload.placement.immediatelyBefore === true}; layerIndex:${payload.layer && payload.layer.index}; beforeLayerIndex:${beforeLayer && beforeLayer.index}; beforeLayerName:${beforeLayer && beforeLayer.name}`
+          : "missing placement evidence",
+        passed: Boolean(payload.placement && payload.placement.immediatelyBefore === true &&
+          payload.layer && beforeLayer && payload.layer.index + 1 === beforeLayer.index &&
+          (!expectedName || beforeLayer.name === expectedName)),
+        evidence: stepLabel(step)
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "create_layer_connection_line") {
+    checkCreateLayerConnectionLine(checks, step, payload, evidence);
     return;
   }
 
@@ -1487,6 +2713,51 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_layer_metadata") {
     checkSetLayerMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_blending_mode") {
+    checkSetLayerBlendingMode(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_parent") {
+    checkSetLayerParent(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_track_matte") {
+    checkSetLayerTrackMatte(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_item_metadata") {
+    checkSetProjectItemMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_frames_count_type") {
+    checkSetProjectFramesCountType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_puppet_pin_type") {
+    checkSetPuppetPinType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_effect") {
+    checkAddEffect(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_effect_enabled") {
+    checkSetEffectEnabled(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_property_to_essential_graphics") {
+    checkAddPropertyToEssentialGraphics(checks, step, payload, evidence);
     return;
   }
 
@@ -1633,8 +2904,51 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "refresh_comp_panel") {
+    checkRefreshCompPanel(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_path_geometry") {
+    checkSetPathGeometry(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "export_path_points") {
+    checkExportPathPoints(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "export_text_to_file") {
+    checkExportTextToFile(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "save_comp_frame_png") {
+    checkSaveCompFramePng(checks, step, payload);
+    return;
+  }
+
   if (step.tool === "set_layer_mask") {
     checkSetLayerMask(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_comp_marker") {
+    const marker = payload.marker || {};
+    const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+    const readBackEvidence = observedMarkerReadBackEvidence(evidence, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Composition marker comment and timing match request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: markerMatchesArgs(marker, args) &&
+        postVerification.ok === true &&
+        postVerification.markerCountIncremented === true &&
+        Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching composition marker read-back after mutation."
+    });
     return;
   }
 

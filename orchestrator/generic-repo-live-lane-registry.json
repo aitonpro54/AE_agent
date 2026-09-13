@@ -122,7 +122,7 @@
         "node scripts/smoke-test.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
+      "scope": "generated-only explicit layer switch proof using set_property_value on whitelisted collapseTransformation and motionBlur layer attributes, explicit generated targets, exact before/after switch values, plus get_layer_details/get_comp_details read-back, semantic verification, and cleanup; camera parenting, controller setup, comp-wide motion blur, recursive/global traversal, onion skinning, version duplication, and arbitrary layer fields remain fail-closed"
     },
     {
       "id": "selection-generated-only",
@@ -131,7 +131,9 @@
       ],
       "allowedTools": [
         "get_active_comp",
-        "get_selected_layers"
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_selection"
       ],
       "candidateIds": [
         "tool-selection-layer-selection-set",
@@ -221,10 +223,280 @@
       "scope": "generated-only explicit composition version-token proof using rename_project_items findReplace on generated comps plus find_project_items/get_comp_details read-back; arbitrary version parsing, recursive/global traversal, source relinking, onion skinning, camera/controller parenting, and raw JSX semantics remain fail-closed"
     },
     {
+      "id": "composition-rename-to-file-name-generated-only",
+      "requiredTools": [
+        "get_project_info",
+        "rename_project_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "find_project_items",
+        "get_active_comp",
+        "get_comp_details",
+        "get_project_info",
+        "rename_project_items"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-compositions-rename-composition-to-file-name"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-rename-file-name-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-rename-to-file-name",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/rename-composition-to-file-name-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-rename-composition-to-file-name.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only project file basename composition rename proof using get_project_info.file read-only basename evidence, one explicit generated composition, rename_project_items mode:\"exact\" with type:\"comp\" and concrete itemIndices, find_project_items/get_comp_details read-back, semantic verification, and cleanup; unsaved project, basename collisions, project save/saveAs, arbitrary filesystem reads/writes, Project panel selection, source relinking, non-generated user assets, broad composition traversal, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "composition-save-frame-png-generated-only",
+      "requiredTools": [
+        "save_comp_frame_png"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "save_comp_frame_png"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo",
+        "usesSettings"
+      ],
+      "candidateIds": [
+        "tool-compositions-save-frame-as-png"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-save-frame-png-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-save-frame-png",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/save-frame-as-png-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-save-frame-as-png.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only saveFrameToPng proof using one explicit generated composition, get_comp_details read-back, save_comp_frame_png safe generated .png file output under logs/generated-exports with byte length/sha256/PNG evidence, resolutionFactor restoration proof, final get_comp_details read-back, semantic verification, and generated artifact cleanup; source-exact Folder.selectDialog, app.settings/app.preferences persistence, Shift-key branching, Desktop/arbitrary user paths, render queue start, project save/saveAs, non-generated user assets, broad composition traversal, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "project-export-text-to-file-generated-only",
+      "requiredTools": [
+        "get_selected_layers",
+        "get_layer_details",
+        "export_text_to_file"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "set_layer_selection",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "export_text_to_file"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-project-export-text-to-file"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-export-text-to-file-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "export-text-to-file",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_layers",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/generated-safety-contracts.js",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/export-text-to-file-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-export-text-to-file.md",
+        "registry/solutions.json",
+        "scripts/generated-safety-contracts-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/generated-safety-contracts.js",
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/generated-safety-contracts-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/generated-safety-contracts-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Export Text To File proof using explicit generated selected layers, get_selected_layers selected-layer evidence, get_layer_details Source Text read-back for every selected text layer, export_text_to_file safe generated .txt output under logs/generated-exports with byte length/sha256/content evidence, final selected-layer/read-back proof, semantic verification, and generated artifact cleanup; source-exact ~/Desktop/export.txt writes, arbitrary outputPath/user paths, file dialogs, source checkout execution, layer selection mutation outside generated proof setup, Source Text mutation, Project item mutation, render queue work, non-generated user assets, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "composition-work-area-transfer-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "set_comp_work_area"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "set_comp_work_area"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSettings"
+      ],
+      "candidateIds": [
+        "tool-compositions-transfer-composition-work-area"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-properties-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-work-area-transfer",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only composition work-area transfer proof using get_comp_details source/target evidence, set_comp_work_area, target read-back, semantic verification, and cleanup; persistent app.settings clipboard, Alt-key branching, marker-derived work areas, current-time inference, layer retiming, duration changes, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "lottie-layer-out-point-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "set_layer_time_range"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_time_range"
+      ],
+      "allowedUnsafeSignals": [
+        "thirdPartyAssumption"
+      ],
+      "candidateIds": [
+        "tool-lottie-prepare-layer-out-points-for-lottie"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "lottie-layer-out-point",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/prepare-layer-out-points-for-lottie-typed-plan.md",
+        "recipes/generic-repo-intake/tool-lottie-prepare-layer-out-points-for-lottie.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Lottie layer out-point proof using explicit generated comp/layer timing evidence, set_layer_time_range to duration plus one frameDuration, and get_comp_details/get_layer_details read-back; source-exact all-project traversal, user comp mutation, exporter hidden state, and raw JSX semantics remain fail-closed"
+    },
+    {
       "id": "render-queue-generated-only",
       "requiredTools": [
         "add_comp_to_render_queue",
-        "set_render_queue_output",
         "get_render_queue_status"
       ],
       "allowedTools": [
@@ -233,14 +505,21 @@
         "create_test_comp",
         "get_project_info",
         "get_render_queue_status",
-        "set_render_queue_output"
+        "set_render_queue_output",
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "find_project_items",
+        "list_project_folder_items",
+        "get_comp_details"
       ],
       "allowedUnsafeSignals": [
-        "usesRenderQueue"
+        "usesRenderQueue",
+        "usesFileIo"
       ],
       "candidateIds": [
         "tool-project-add-labeled-items-to-render-queue",
-        "tool-project-add-selected-compositions-to-render-queue"
+        "tool-project-add-selected-compositions-to-render-queue",
+        "tool-project-add-folder-to-render-queue"
       ],
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-render-queue-openai-cli-smoke",
       "providerPath": "openai-cli",
@@ -256,7 +535,11 @@
         "scripts/agent-scenario-fixtures.js",
         "scripts/agent-scenario-report-smoke.js",
         "scripts/cep-panel-cdp-smoke.js",
-        "scripts/sdk-generic-repo-full-intake-smoke.js"
+        "scripts/sdk-generic-repo-full-intake-smoke.js",
+        "recipes/add-folder-to-render-queue-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-add-folder-to-render-queue.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js"
       ],
       "nonLiveValidationCommands": [
         "node --check orchestrator/run-generic-repo-full-intake.mjs",
@@ -266,10 +549,11 @@
         "node --check scripts/sdk-generic-repo-full-intake-smoke.js",
         "node scripts/agent-scenario-report-smoke.js",
         "node scripts/semantic-verification-smoke.js",
-        "node scripts/sdk-generic-repo-full-intake-smoke.js"
+        "node scripts/sdk-generic-repo-full-intake-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
-      "scope": "generated-only render queue setup proof using add_comp_to_render_queue, set_render_queue_output, get_render_queue_status, semantic verification, and generated-prefix cleanup; no render start, non-generated comps, arbitrary output templates, user render queue mutation, or raw JSX/source semantics are covered"
+      "scope": "generated-only render queue setup proof using explicit generated Project folder content read-back, add_comp_to_render_queue, get_render_queue_status, semantic verification, and generated-prefix cleanup; no render start, output file generation, non-generated comps, Project panel selection, filesystem folder traversal, user render queue cleanup, or raw JSX/source semantics are covered"
     },
     {
       "id": "selected-property-keyframe-generated-only",
@@ -323,6 +607,105 @@
       "scope": "generated-only selected/generated property keyframe proof using get_selected_properties, set_property_keyframes, apply_keyframe_ease, get_layer_details, read-back, semantic verification, and cleanup; expression-derived sampling, spatial tangent editing, selected-key discovery without explicit reviewed keyframes, and source-exact keyframe algorithms remain fail-closed"
     },
     {
+      "id": "ar-selected-keyframe-timing-generated-only",
+      "requiredTools": [
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_properties",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-ar_alignkeyframes",
+        "tool-ar_distributekeyframesbystep",
+        "tool-ar_distributekeyframesevenly"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-ar-keyframe-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "ar-selected-keyframe-timing",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only AR selected-keyframe timing proof using explicit reviewed selected keyframe times, set_property_keyframes clearExisting:true to rewrite the complete generated scalar property keyframe sequence, get_selected_properties plus get_layer_details read-back confirming requested times/values and cleanup; source-exact native selected-key discovery, hidden UI selection order, interpolation/ease preservation beyond explicitly rewritten values, spatial tangent editing, and raw JSX algorithms remain fail-closed"
+    },
+    {
+      "id": "ar-selected-keyframe-boundary-distribution-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "get_selected_properties",
+        "set_property_keyframes"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_selected_properties",
+        "set_comp_work_area",
+        "set_layer_time_range",
+        "set_property_keyframes",
+        "get_layer_details"
+      ],
+      "candidateIds": [
+        "tool-ar_distributekeyframestocomp",
+        "tool-ar_distributekeyframestolayer",
+        "tool-ar_distributekeyframestoworkarea"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-ar-keyframe-boundary-timing-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "ar-selected-keyframe-boundary-distribution",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_selected_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only AR selected-keyframe boundary distribution proof using get_comp_details for reviewed comp duration/work-area and generated layer in/out evidence, explicit reviewed selected keyframe subset, set_property_keyframes clearExisting:true for the complete generated scalar property keyframe sequence, get_selected_properties plus get_layer_details read-back confirming boundary-derived times/values and cleanup; comp/layer/work-area mutation, source-exact native selected-key discovery, interpolation/ease preservation beyond explicitly rewritten values, arbitrary user layers, and raw JSX algorithms remain fail-closed"
+    },
+    {
       "id": "text-to-keys-generated-only",
       "requiredTools": [
         "get_selected_layers",
@@ -368,6 +751,62 @@
       "scope": "generated-only Source Text keyframe proof using an explicit generated text layer, set_property_keyframes on ADBE Text Properties.ADBE Text Document, get_layer_details keyframe value read-back, semantic verification, and generated-prefix cleanup; source-exact textToKeys.jsx behavior, selected-layer traversal, typo/no-call source repair, text animator ranges, raw ExtendScript, and real ae-scripting requeue remain fail-closed until candidate tool hints include the mutating/read-back contract and explicit scoped candidate ids are provided"
     },
     {
+      "id": "layer-empty-name-reset-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "rename_layers"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "rename_layers"
+      ],
+      "candidateIds": [
+        "tool-layers-reset-layer-names"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-name-reset-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-name-reset",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/reset-layer-names-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-reset-layer-names.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only empty layer-name reset proof using one explicit generated comp, get_comp_details layer inventory, one rename_layers mode:\"exact\" name:\"\" allowEmptyName:true call per reviewed layer with expectedLayerNames guards, post-run get_comp_details read-back, semantic verification, and cleanup; source-exact all-active-comp user-layer reset, broad selected-layer traversal, project item rename, source relinking, layer timing/order changes, effects, masks, parenting, expressions, render queue work, file I/O, source-checkout execution, and raw JSX remain fail-closed"
+    },
+    {
       "id": "layer-comment-label-lock-generated-only",
       "requiredTools": [
         "get_active_comp",
@@ -383,6 +822,11 @@
         "set_property_value"
       ],
       "candidateIds": [
+        "tool-layers-add-comment-to-selected-layers",
+        "tool-layers-lock-all-layers",
+        "tool-layers-reset-selected-layer-labels",
+        "tool-layers-set-all-layer-labels-to-none",
+        "tool-layers-unlock-all-layers",
         "tool-nullstoone"
       ],
       "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-metadata-openai-cli-smoke",
@@ -414,6 +858,1106 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only explicit layer metadata proof using set_layer_metadata for comment, label, and locked, plus get_layer_details read-back and semantic verification; scoped ae-scripting retry is limited to tool-nullstoone because importBoujouTracking has file I/O and prop2null has expression/controller semantics"
+    },
+    {
+      "id": "layer-enabled-hard-solo-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_metadata",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_shape_layer",
+        "create_text_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_metadata"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "layerVisibilityMutation"
+      ],
+      "candidateIds": [
+        "tool-layers-hard-solo-layers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-enabled-hard-solo-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-enabled-hard-solo",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_selected_layers",
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/hard-solo-layers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-hard-solo-layers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only hard-solo proof using explicit selected-layer evidence, complete generated layer inventory, exact before/after Layer.enabled values, set_layer_metadata enabled:true for selected targets, set_layer_metadata enabled:false for reviewed non-selected targets, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact layer.selected traversal, native solo switches, previous-enabled-state restoration, non-generated user assets, multi-comp scope, selection persistence, raw JSX, labels/comments/locks/blend modes/timing/source changes, and render queue work remain fail-closed"
+    },
+    {
+      "id": "layer-blending-mode-difference-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_blending_mode",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "create_text_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "set_layer_selection",
+        "set_layer_blending_mode",
+        "get_layer_details",
+        "cleanup_test_items"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "layerBlendingModeMutation"
+      ],
+      "candidateIds": [
+        "tool-layers-toggle-difference-blend-mode"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-difference-blend-mode-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-difference-blend-mode",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "recipes/difference-blend-mode-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-toggle-difference-blend-mode.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/solution-promotion-helper.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only Difference blending mode proof using explicit selected-layer evidence, complete generated layer inventory, exact before/after blending mode values, set_layer_blending_mode with blendingMode:\"difference\" and expected-name/current-mode guards, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, other blend mode enums, non-generated user assets, multi-comp scope, selection persistence, raw JSX, track matte edits, labels/comments/locks/enabled/timing/source changes, file I/O, and render queue work remain fail-closed"
+    },
+    {
+      "id": "adjustment-layer-placement-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "create_adjustment_layer"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "create_adjustment_layer"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection"
+      ],
+      "candidateIds": [
+        "tool-layers-add-3d-break"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-adjustment-layer-placement-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "adjustment-layer-placement",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/add-3d-break-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-add-3d-break.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only adjustment-layer placement proof using one explicit guarded layer index/name, create_adjustment_layer insertBeforeLayerIndex and expectedBeforeLayerName, get_comp_details/get_layer_details stack read-back, adjustmentLayer:true and immediatelyBefore:true semantic verification, and cleanup; generic layer reordering, moving existing layers, source-exact selected-layer traversal, effect/property copying, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "layer-connection-line-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "create_layer_connection_line"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "create_layer_connection_line",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-connect-two-layers-with-a-line"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-connection-line-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-connection-line",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/connect-two-layers-with-a-line-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-connect-two-layers-with-a-line.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only dynamic connector line proof using two explicit inspected layer indices/names, create_layer_connection_line with fromLayerIndex/toLayerIndex and expected-name guards, one locked connector layer generated for the proof, open two-point shape path expression read-back, stroke read-back, semantic verification, and cleanup; source-exact selected-layer traversal, shape contents beyond the connector path, thin rectangle substitution, generic open-path editing, arbitrary expressions, layer stack reordering, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "grid-rig-control-replacement-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "create_shape_layer",
+        "set_layer_metadata",
+        "add_effect",
+        "get_effect_details",
+        "delete_layer"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_null_layer",
+        "create_shape_layer",
+        "set_layer_metadata",
+        "add_effect",
+        "get_effect_details",
+        "delete_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-replace-grid-rig-control"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-grid-rig-control-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "grid-rig-control-replacement",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/replace-grid-rig-control-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-replace-grid-rig-control.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Grid Rig Control replacement proof using one explicit inspected old generated control layer, create_shape_layer replacement, set_layer_metadata preservation of label/enabled/guideLayer, two named ADBE Slider Control effects named Gutter and Matte Roundness, delete_layer for exactly one expected old layer, get_comp_details/get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact broad selected-layer traversal, non-generated destructive replacement, third-party Flex behavior beyond reviewed generated evidence, expression/property copying, parenting, track mattes, arbitrary effect copying, file I/O, render queue work, source-checkout execution, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "text-shapes-from-text-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_layer_details",
+        "create_shapes_from_text"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_text_layer",
+        "create_shapes_from_text",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-create-shapes-from-text"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-text-shapes-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "text-shapes-from-text",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/create-shapes-from-text-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-create-shapes-from-text.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only text-to-shape proof using one explicit generated text layer, create_shapes_from_text with expectedLayerName and expectedSourceText guards, AE native Create Shapes from Text command availability check, get_layer_details/get_comp_details read-back proving shapeLayer:true/vector outline groups, semantic verification, and cleanup; localized menu command absence, source-exact broad selected-layer traversal, arbitrary text-layer conversion, font-outline fidelity beyond AE native output, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "selected-layer-parent-opacity-expression-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "set_layer_parent",
+        "set_expression"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_layer_details",
+        "set_layer_parent",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation"
+      ],
+      "candidateIds": [
+        "tool-layers-parent-opacity"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-parent-opacity-expression-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-layer-parent-opacity-expression",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/plan-repair.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only parent-opacity expression proof using typed set_layer_parent fixture setup for one explicit generated child/parent pair, generated comp/layer indices, before/after stack read-back, current selected-layer-style parent evidence, parent relationship read-back, set_expression on child Transform > Opacity, expression read-back, semantic verification, and cleanup; arbitrary/bulk layer parenting, unparented-layer mutation, track matte edits, layer stack reordering, expression deletion, broad property scans, selection persistence, non-generated user assets, and raw JSX/source semantics remain fail-closed"
+    },
+    {
+      "id": "selected-layer-parent-below-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_parent"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_parent"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection"
+      ],
+      "candidateIds": [
+        "tool-layers-parent-selected-layers-to-layers-below"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-parent-below-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-layer-parent-below",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/parent-selected-layers-to-layers-below-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-parent-selected-layers-to-layers-below.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only layer-below parenting proof using explicit generated selected child layers, complete comp layer-order evidence, concrete child -> below-parent index pairs, set_layer_selection only for generated child evidence, set_layer_parent with expected child/parent names for each reviewed pair, get_layer_details/get_comp_details parent relationship read-back, semantic verification, and cleanup; bottom-layer/out-of-range targets, cycles, arbitrary/bulk user-layer parenting, source-exact selection side effects, layer stack reordering, track matte edits, non-generated user assets, and raw JSX/source semantics remain fail-closed"
+    },
+    {
+      "id": "selected-layer-parent-closest-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_parent"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_selection",
+        "set_layer_parent"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection"
+      ],
+      "candidateIds": [
+        "tool-layers-parent-closest-layers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-parent-closest-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "selected-layer-parent-closest",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/parent-closest-layers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-parent-closest-layers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only closest-layer parenting proof using explicit generated selected child layers, complete same-comp layer-order and 2D position evidence, deterministic no-tie nearest child -> parent pairs, set_layer_selection only for generated child evidence, set_layer_parent with expected child/parent names for each reviewed pair, get_layer_details/get_comp_details parent relationship read-back, semantic verification, and cleanup; equal-distance ties, missing transform evidence, cycles, arbitrary/bulk user-layer parenting, source-exact selection side effects, layer stack reordering, track matte edits, non-generated user assets, and raw JSX/source semantics remain fail-closed"
+    },
+    {
+      "id": "layer-track-matte-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_track_matte"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_layers",
+        "get_comp_details",
+        "get_layer_details",
+        "set_layer_track_matte",
+        "set_layer_metadata"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection"
+      ],
+      "candidateIds": [
+        "tool-layers-set-all-track-matte-labels",
+        "tool-layers-set-track-matte-to-above"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-track-matte-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "layer-track-matte",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/smoke-test.js",
+        "recipes/set-all-track-matte-labels-typed-plan.md",
+        "recipes/set-track-matte-to-above-typed-plan.md",
+        "registry/solutions.json",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract",
+      "scope": "generated-only track matte proof using explicit fill/matte layer indices, set_layer_track_matte with reviewed alpha/luma matte type, get_layer_details/get_comp_details read-back for hasTrackMatte, isTrackMatte, trackMatteLayer, and trackMatteTypeName, optional verified set_layer_metadata label:16 updates only on isTrackMatte:true matte layers, semantic verification, and cleanup; source-exact broad selected-layer traversal, all-layer matte scans without typed isTrackMatte evidence, parent-link substitution, layer reordering, label defaults, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "stick-effect-expression-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_effect_details",
+        "set_expression",
+        "get_layer_details"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_layers",
+        "get_selected_properties",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-stick-effect-to-layer"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-stick-effect-expression-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "stick-effect-expression",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/stick-effect-to-layer-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-stick-effect-to-layer.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only stick-effect expression proof using an explicit generated Ramp effect property, get_effect_details evidence, set_expression with toComp(anchorPoint + value);, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, automatic effect discovery, non-2D-spatial targets, existing-expression overwrite without review, selection persistence, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "estimate-path-length-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_selected_properties"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_properties",
+        "set_effect_property",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-estimate-path-length"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-estimate-path-length-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "estimate-path-length",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/estimate-path-length-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-estimate-path-length.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only estimate-path-length proof using an explicit generated parametric rectangle path, generated Path Samples and Path Length Slider Control effects, set_effect_property sample count, set_expression rectangle-perimeter sampling expression, get_layer_details/get_effect_details read-back with generated 240x120 sampled length target 716-718, semantic verification, and cleanup; source-exact comp.selectedProperties traversal, arbitrary Bezier pointOnPath geometry, mask paths, keyframed paths, existing slider reuse, selection persistence, file output, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "puppet-on-transparent-effect-property-generated-only",
+      "requiredTools": [
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_layer_details",
+        "set_effect_property"
+      ],
+      "allowedUnsafeSignals": [
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-toggle-puppet-on-transparent"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-on-transparent-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "puppet-on-transparent-effect-property",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/toggle-puppet-on-transparent-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, exact before/after boolean values, set_effect_property with a reviewed boolean value, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, user Puppet effects, untyped effect-specific toggles, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "layer-fill-color-cycle-generated-only",
+      "requiredTools": [
+        "add_effect",
+        "get_effect_details",
+        "set_effect_property"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_layers",
+        "set_effect_property"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "usesSettings"
+      ],
+      "candidateIds": [
+        "tool-layers-add-fill-with-color-cycle"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-property-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "effect-property",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/add-fill-with-color-cycle-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-add-fill-with-color-cycle.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only stateless Fill color-cycle proof using explicit generated layer/effect targets, ADBE Fill Color property evidence, one reviewed palette color, exact before/after value read-back, semantic verification, and cleanup; source-exact app.settings/app.preferences persistence, automatic cross-run next-color state, broad selected-layer traversal, non-generated user assets, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "effect-enabled-toggle-generated-only",
+      "requiredTools": [
+        "add_effect",
+        "get_effect_details",
+        "set_effect_enabled"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_effect_details",
+        "get_layer_details",
+        "get_selected_layers",
+        "list_effects",
+        "set_effect_enabled"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-layers-toggle-specific-effects"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-enabled-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "effect-enabled",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/toggle-specific-effects-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-toggle-specific-effects.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only effect enabled-state proof using an explicit generated ADBE Turbulent Displace effect, exact effectIndex/name/matchName identity, before/after effect.enabled values, set_effect_enabled with expectedCurrentEnabled guard, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, broad selected-layer scans, unreviewed user effects, third-party effect semantics, effect addition/removal/reordering, effect property edits, non-generated user assets, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "puppet-pin-type-generated-only",
+      "requiredTools": [
+        "get_effect_details",
+        "set_puppet_pin_type"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_layer_details",
+        "set_puppet_pin_type"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-toggle-puppet-pin-types"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-pin-type-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "puppet-pin-type",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_effect_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/toggle-puppet-pin-types-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Puppet pin type proof using explicit ADBE FreePin3 effect evidence, an ADBE FreePin3 PosPin Atom ancestor, one ADBE FreePin3 PosPin Type propertyPath, set_puppet_pin_type enum values 1/position or 4/advanced, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection persistence, raw JSX semantics, and missing generated pin atom evidence remain fail-closed"
+    },
+    {
+      "id": "puppet-pin-guide-layer-generated-only",
+      "requiredTools": [
+        "get_effect_details",
+        "get_layer_details",
+        "set_layer_metadata"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_effect_details",
+        "get_layer_details",
+        "get_project_info",
+        "list_effects",
+        "set_layer_metadata"
+      ],
+      "allowedUnsafeSignals": [
+        "propertyTraversal",
+        "thirdPartyAssumption"
+      ],
+      "candidateIds": [
+        "tool-layers-toggle-puppet-pins-as-guide-layers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-guide-layer-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "puppet-pin-guide-layer",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details",
+        "get_effect_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-layers-toggle-puppet-pins-as-guide-layers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Puppet pin host guide-layer proof using explicit generated ADBE FreePin3 effect evidence, one reviewed layer index/name, set_layer_metadata guideLayer:true or guideLayer:false with expectedLayerNames guards, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact all-project traversal, ScriptUI Alt-key branching, inferred Pseudo/Duik pin02 targets, user DuIK effect mutation, puppet pin atom edits, pin-size/property rename behavior, non-generated user assets, source-checkout execution, and raw JSX remain fail-closed"
+    },
+    {
+      "id": "parametric-anchor-expression-generated-only",
+      "requiredTools": [
+        "get_active_comp",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_selected_properties",
+        "get_layer_details",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "expressionMutation",
+        "propertyTraversal"
+      ],
+      "candidateIds": [
+        "tool-properties-move-parametric-anchor-point"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-parametric-anchor-expression-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "parametric-anchor-expression",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/move-parametric-anchor-point-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-move-parametric-anchor-point.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only parametric rectangle/ellipse Position expression proof using explicit generated shape layers, get_layer_details property evidence, set_expression with a reviewed anchor-position expression, expression read-back, semantic verification, and cleanup; source-exact ScriptUI chooser, silent comp.selectedProperties traversal, existing-expression overwrite without review, layer Transform Anchor Point edits, shape path edits, selection persistence, and raw JSX semantics remain fail-closed"
     },
     {
       "id": "selected-keyframe-layer-marker-generated-only",
@@ -818,6 +2362,819 @@
       ],
       "reclassifiedClassification": "existing_typed_tools_recipe_only",
       "scope": "generated-only shape size dimension-separation proof using separate_shape_size_dimensions against an explicit generated rectangle/ellipse size property plus read-back for X Size/Y Size sliders and size expression; arbitrary property traversal and non-shape properties remain fail-closed"
+    },
+    {
+      "id": "shape-mask-path-flip-generated-only",
+      "requiredTools": [
+        "get_path_geometry",
+        "set_path_geometry"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "get_active_comp",
+        "set_layer_mask",
+        "get_layer_details",
+        "get_path_geometry",
+        "get_selected_properties",
+        "set_path_geometry"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "expressionMutation",
+        "keyframeMutation"
+      ],
+      "candidateIds": [
+        "tool-properties-flip-path"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-flip-path-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "flip-path-geometry",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_path_geometry",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/flip-path-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-flip-path.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Flip Path proof using one explicit generated mask path, get_path_geometry read-back for vertices/inTangents/outTangents/closed/keyframes, reviewed horizontal or vertical flip geometry, set_path_geometry write, final get_path_geometry/get_layer_details read-back, semantic verification, and cleanup; source-exact ScriptUI direction dialog, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, shape Bezier creation gaps, file output, Essential Graphics, Puppet pins, third-party effects, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "shape-mask-path-export-points-generated-only",
+      "requiredTools": [
+        "get_path_geometry",
+        "export_path_points"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "get_active_comp",
+        "get_layer_details",
+        "get_path_geometry",
+        "get_selected_properties",
+        "set_layer_mask",
+        "set_path_geometry",
+        "export_path_points"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-properties-export-path-points"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-export-path-points-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "export-path-points",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_path_geometry",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        ".gitignore",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/export-path-points-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-export-path-points.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Export Path Points proof using one explicit generated mask path, get_path_geometry read-back for vertices/inTangents/outTangents/closed state, export_path_points safe generated .txt file output with sha256/content read-back, final get_path_geometry/get_layer_details read-back, semantic verification, and generated artifact cleanup; source-exact Desktop points.txt writes, comp.selectedProperties traversal, arbitrary outputPath/user paths, expression-driven or truncated paths, multi-target batches, file overwrite outside generated exports, path mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "essential-graphics-generated-only",
+      "requiredTools": [
+        "get_essential_graphics_controllers",
+        "add_property_to_essential_graphics"
+      ],
+      "allowedTools": [
+        "add_effect",
+        "add_property_to_essential_graphics",
+        "create_comp",
+        "create_shape_layer",
+        "get_active_comp",
+        "get_effect_details",
+        "get_essential_graphics_controllers",
+        "get_layer_details",
+        "get_layer_essential_properties",
+        "get_selected_properties",
+        "set_effect_property",
+        "set_expression"
+      ],
+      "allowedUnsafeSignals": [
+        "usesSelection",
+        "propertyTraversal",
+        "expressionMutation"
+      ],
+      "candidateIds": [
+        "tool-properties-add-properties-to-essential-graphics",
+        "tool-properties-expose-essential-properties"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-essential-graphics-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "essential-graphics",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_essential_graphics_controllers",
+        "get_layer_essential_properties",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/add-properties-to-essential-graphics-typed-plan.md",
+        "recipes/expose-essential-properties-typed-plan.md",
+        "recipes/generic-repo-intake/tool-properties-add-properties-to-essential-graphics.md",
+        "recipes/generic-repo-intake/tool-properties-expose-essential-properties.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Essential Graphics / Essential Properties proof using one explicit generated layer, get_essential_graphics_controllers and get_layer_essential_properties read-back, add_property_to_essential_graphics for one reviewed propertyPath/controllerName, semantic verification, and cleanup; source-exact selectedProperties traversal, broad layer.essentialProperty writes, MOGRT export, user-template mutation, controller rename/delete/reorder semantics, arbitrary property guessing, raw JSX semantics, and missing generated controller evidence remain fail-closed"
+    },
+    {
+      "id": "composition-panel-refresh-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "refresh_comp_panel"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_active_comp",
+        "get_comp_details",
+        "refresh_comp_panel"
+      ],
+      "candidateIds": [
+        "tool-compositions-force-composition-panel-refresh"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "comp-panel-refresh",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/force-composition-panel-refresh-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-force-composition-panel-refresh.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Composition panel refresh proof using one explicit generated comp, get_comp_details comp.motionBlur evidence, refresh_comp_panel double-toggle with expectedMotionBlur guard, final get_comp_details read-back proving restored motionBlur, semantic verification, and cleanup; source-exact active-viewer side effects, layer motionBlur switches, arbitrary comp fields, persistent settings, non-generated user assets, raw JSX, and broad project traversal remain fail-closed"
+    },
+    {
+      "id": "comp-current-time-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "set_comp_current_time"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_active_comp",
+        "get_comp_details",
+        "set_comp_current_time"
+      ],
+      "candidateIds": [
+        "tool-utilities-frame-navigator"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-current-time-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "comp-current-time",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/frame-navigator-typed-plan.md",
+        "recipes/generic-repo-intake/tool-utilities-frame-navigator.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only comp current-time proof using one explicit generated comp, get_comp_details current time/duration/frameRate evidence, set_comp_current_time with finite seconds or reviewed frame-derived target, final get_comp_details.time read-back, semantic verification, and cleanup; source-exact ScriptUI controls, display-start/timecode offsets, selected-comp ambiguity, layer timing, work-area edits, markers, keyframes, raw JSX, and broad project scans remain fail-closed"
+    },
+    {
+      "id": "project-item-label-generated-only",
+      "requiredTools": [
+        "find_project_items",
+        "set_project_item_metadata"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_project_info",
+        "get_project_snapshot",
+        "find_project_items",
+        "list_project_folder_items",
+        "set_project_item_metadata"
+      ],
+      "candidateIds": [
+        "tool-project-set-all-item-labels-to-none"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-item-metadata-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "project-item-label",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_project_snapshot",
+        "list_project_folder_items"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/set-project-item-labels-to-none-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-set-all-item-labels-to-none.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only Project item label proof using generated composition project items, find_project_items/get_project_snapshot evidence for concrete itemIndices, set_project_item_metadata label:0 with expectedItemNames guards, post-mutation project-item label read-back, semantic verification, and cleanup; source-exact Project panel selected item traversal, label defaults by item type, all-project scans without explicit evidence, item rename/move/delete, proxy state, render queue work, filesystem operations, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "project-preserve-nested-frame-rate-generated-only",
+      "requiredTools": [
+        "set_comp_properties"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "find_project_items",
+        "get_comp_details",
+        "set_comp_properties"
+      ],
+      "candidateIds": [
+        "tool-project-toggle-preserve-nested-frame-rate"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-preserve-nested-frame-rate-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "preserve-nested-frame-rate",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/preserve-nested-frame-rate-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-toggle-preserve-nested-frame-rate.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only preserveNestedFrameRate proof using explicit generated composition targets, get_comp_details read-back before and after mutation, set_comp_properties preserveNestedFrameRate:true with semantic verification and generated-prefix cleanup; source-exact all-project CompItem traversal, ALT-key disable behavior, Project panel selection, non-generated user comp batch mutation, render queue changes, footage interpretation, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "project-timecode-start-frame-generated-only",
+      "requiredTools": [
+        "set_project_frames_count_type",
+        "set_comp_properties"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_project_info",
+        "find_project_items",
+        "get_comp_details",
+        "set_project_frames_count_type",
+        "set_comp_properties"
+      ],
+      "candidateIds": [
+        "tool-project-toggle-timecode-and-start-frames"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-timecode-start-frames-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "project-timecode-start-frames",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_project_info",
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/project-timecode-start-frames-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-toggle-timecode-and-start-frames.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/smoke-test.js",
+        "scripts/manual-typed-tool-regression-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/smoke-test.js",
+        "node --check scripts/manual-typed-tool-regression-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only project frame numbering and native displayStartFrame proof using explicit generated composition targets, get_project_info and get_comp_details read-back before and after mutation, set_project_frames_count_type FC_START_0/FC_START_1, set_comp_properties displayStartFrame:0, semantic verification and generated-prefix cleanup; source-exact all-project CompItem traversal, ScriptUI Alt-key branching, Project panel selection, non-generated user comp batch mutation, displayStartTime fallback semantics, render queue changes, footage interpretation, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "reset-imported-item-names-generated-only",
+      "requiredTools": [
+        "save_comp_frame_png",
+        "import_footage",
+        "rename_project_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_shape_layer",
+        "save_comp_frame_png",
+        "import_footage",
+        "get_project_info",
+        "get_project_snapshot",
+        "find_project_items",
+        "rename_project_items"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "candidateIds": [
+        "tool-project-reset-imported-item-names"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-reset-imported-item-names-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "reset-imported-item-names",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "get_project_snapshot"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/semantic-verification.js",
+        "recipes/reset-imported-item-names-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-reset-imported-item-names.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/semantic-verification.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only imported footage name reset proof using a sandboxed PNG from save_comp_frame_png under logs/generated-exports, import_footage with a reviewed stale display name, explicit generated footage itemIndices from find_project_items/get_project_snapshot, rename_project_items type:\"footage\" mode:\"exact\" to the file display name, post-mutation project snapshot/read-back, semantic verification, generated PNG removal, and generated-prefix cleanup; source-exact Project panel selection reads, relinking, missing-footage repair, arbitrary user file paths, non-generated user assets, item delete/move, render queue work, broad project mutation, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "project-selection-folder-generated-only",
+      "requiredTools": [
+        "create_project_folder",
+        "move_project_items_to_folder",
+        "list_project_folder_items"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_project_info",
+        "get_project_snapshot",
+        "find_project_items",
+        "list_project_folder_items",
+        "create_project_folder",
+        "move_project_items_to_folder"
+      ],
+      "candidateIds": [
+        "tool-project-add-selection-to-new-folder"
+      ],
+      "allowedUnsafeSignals": [
+        "usesFileIo"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-selection-folder-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "project-selection-folder",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "find_project_items",
+        "list_project_folder_items",
+        "get_project_snapshot"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/add-selection-to-new-folder-typed-plan.md",
+        "recipes/generic-repo-intake/tool-project-add-selection-to-new-folder.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only Project item foldering proof using explicit generated itemIndices from current typed project evidence, create_project_folder for one reviewed generated destination, move_project_items_to_folder, list_project_folder_items/get_project_snapshot read-back, semantic verification, and generated-prefix cleanup; source-exact Project panel selection reads, empty-selection UI alerts, non-generated user assets, item rename/delete, source relinking, render queue work, filesystem access, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "composition-marker-read-generated-only",
+      "requiredTools": [
+        "get_comp_details"
+      ],
+      "allowedTools": [
+        "get_active_comp",
+        "get_comp_details"
+      ],
+      "candidateIds": [
+        "tool-compositions-set-work-area-to-markers",
+        "tool-markers-copy-composition-markers-to-layer",
+        "tool-markers-copy-layer-markers-to-composition"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-read-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-marker-read",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": false,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "chatgpt-connector/server.js",
+        "registry/solutions.json",
+        "recipes/read-composition-markers-typed-plan.md",
+        "scripts/solution-library-validation-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check chatgpt-connector/server.js",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/solution-registry-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "read-only composition marker contract using get_comp_details includeMarkers:true and markers.items ordered by comp.markerProperty.keyTime; nonempty generated marker setup, marker creation/update/delete, layer marker substitution, marker-derived work-area mutation, and raw JSX source semantics remain fail-closed"
+    },
+    {
+      "id": "composition-marker-work-area-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "add_comp_marker",
+        "set_comp_work_area"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "get_active_comp",
+        "get_comp_details",
+        "add_comp_marker",
+        "set_comp_work_area"
+      ],
+      "candidateIds": [
+        "tool-compositions-set-work-area-to-markers"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-work-area-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-marker-work-area",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/semantic-verification.js",
+        "recipes/set-work-area-to-markers-typed-plan.md",
+        "recipes/generic-repo-intake/tool-compositions-set-work-area-to-markers.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/solution-promotion-helper.js",
+        "scripts/semantic-verification-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "scripts/chatgpt-connector-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check mcp-server/bridge-daemon.js",
+        "node --check mcp-server/plan-repair.js",
+        "node --check mcp-server/semantic-verification.js",
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/solution-promotion-helper.js",
+        "node --check scripts/semantic-verification-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node --check scripts/chatgpt-connector-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js",
+        "node scripts/chatgpt-connector-smoke.js"
+      ],
+      "reclassifiedClassification": "new_typed_tool_contract_policy",
+      "scope": "generated-only composition marker work-area proof using one explicit generated comp, add_comp_marker setup for two reviewed comp.markerProperty marker times, get_comp_details includeMarkers:true read-back, set_comp_work_area with marker-derived start/duration, final get_comp_details work-area and marker read-back, semantic verification, and cleanup; source-exact active-comp UI traversal, marker creation/update/delete on user assets, layer marker substitution, audio-derived markers, persistent settings, render queue work, file I/O, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "composition-layer-marker-copy-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "get_layer_details",
+        "add_comp_marker",
+        "add_layer_marker"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "get_layer_details",
+        "add_comp_marker",
+        "add_layer_marker"
+      ],
+      "candidateIds": [
+        "tool-markers-copy-composition-markers-to-layer",
+        "tool-markers-copy-layer-markers-to-composition"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-layer-marker-copy-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-layer-marker-copy",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details",
+        "get_layer_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/copy-composition-markers-to-layer-typed-plan.md",
+        "recipes/copy-layer-markers-to-composition-typed-plan.md",
+        "recipes/generic-repo-intake/tool-markers-copy-composition-markers-to-layer.md",
+        "recipes/generic-repo-intake/tool-markers-copy-layer-markers-to-composition.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only composition/layer marker copy proof using one explicit generated comp and layer, get_comp_details includeMarkers:true composition marker evidence, add_layer_marker plus get_layer_details read-back for composition-to-layer copy, add_comp_marker plus get_comp_details read-back for layer-to-composition copy, semantic verification, and cleanup; source-exact active-comp traversal, selected-layer traversal, marker update/delete, audio-derived markers, work-area mutation, layer timing changes, persistent settings, render queue work, file I/O, and raw JSX semantics remain fail-closed"
+    },
+    {
+      "id": "composition-marker-add-generated-only",
+      "requiredTools": [
+        "get_comp_details",
+        "add_comp_marker"
+      ],
+      "allowedTools": [
+        "create_comp",
+        "create_solid_layer",
+        "get_active_comp",
+        "get_comp_details",
+        "add_comp_marker"
+      ],
+      "candidateIds": [
+        "tool-markers-add-markers-at-out-points",
+        "tool-markers-add-markers-at-work-area"
+      ],
+      "command": "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-add-openai-cli-smoke",
+      "providerPath": "openai-cli",
+      "proofLane": "composition-marker-add",
+      "productionTypedTools": true,
+      "readBackTools": [
+        "get_comp_details"
+      ],
+      "semanticVerification": true,
+      "plannedPaths": [
+        "recipes/add-composition-markers-at-out-points-typed-plan.md",
+        "recipes/add-composition-markers-at-work-area-typed-plan.md",
+        "recipes/generic-repo-intake/tool-markers-add-markers-at-out-points.md",
+        "recipes/generic-repo-intake/tool-markers-add-markers-at-work-area.md",
+        "registry/solutions.json",
+        "scripts/solution-library-validation-smoke.js",
+        "scripts/agent-scenario-fixtures.js",
+        "scripts/agent-scenario-report-smoke.js",
+        "scripts/cep-panel-cdp-smoke.js",
+        "orchestrator/generic-repo-live-lane-registry.json",
+        "orchestrator/run-generic-repo-full-intake.mjs"
+      ],
+      "nonLiveValidationCommands": [
+        "node --check orchestrator/run-generic-repo-full-intake.mjs",
+        "node --check scripts/solution-library-validation-smoke.js",
+        "node --check scripts/agent-scenario-fixtures.js",
+        "node --check scripts/agent-scenario-report-smoke.js",
+        "node --check scripts/cep-panel-cdp-smoke.js",
+        "node scripts/agent-scenario-report-smoke.js",
+        "node scripts/semantic-verification-smoke.js",
+        "node scripts/solution-library-validation-smoke.js"
+      ],
+      "reclassifiedClassification": "existing_typed_tools_recipe_only",
+      "scope": "generated-only composition marker add proof using one explicit generated comp, generated layer out-point evidence from get_comp_details, reviewed workAreaStart/workAreaDuration evidence, add_comp_marker for layer out-point and work-area boundary marker targets, final get_comp_details includeMarkers:true read-back, semantic verification, and cleanup; source-exact active-comp traversal, hidden layer traversal, marker update/delete, layer marker substitution, audio-derived markers, current-time inference, work-area mutation, layer timing changes, render queue work, file I/O, and raw JSX semantics remain fail-closed"
     }
   ]
 }

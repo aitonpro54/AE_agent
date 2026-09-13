@@ -70,6 +70,32 @@ function boundRequiredCount(validation) {
   return count;
 }
 
+function generatedSafetyCounts(validation) {
+  const direct = {
+    generatedFileIoCount: Number(validation && validation.generatedFileIoCount || 0),
+    generatedRenderOutputCount: Number(validation && validation.generatedRenderOutputCount || 0),
+    generatedCleanupDeleteCount: Number(validation && validation.generatedCleanupDeleteCount || 0)
+  };
+  if (direct.generatedFileIoCount || direct.generatedRenderOutputCount || direct.generatedCleanupDeleteCount) {
+    return {
+      ...direct,
+      total: direct.generatedFileIoCount + direct.generatedRenderOutputCount + direct.generatedCleanupDeleteCount
+    };
+  }
+
+  for (const step of safeArray(validation && validation.steps)) {
+    for (const contract of safeArray(step && step.safetyContracts)) {
+      if (contract && contract.kind === "generated-file-output") direct.generatedFileIoCount += 1;
+      if (contract && contract.kind === "generated-render-output") direct.generatedRenderOutputCount += 1;
+      if (contract && contract.kind === "generated-cleanup-delete") direct.generatedCleanupDeleteCount += 1;
+    }
+  }
+  return {
+    ...direct,
+    total: direct.generatedFileIoCount + direct.generatedRenderOutputCount + direct.generatedCleanupDeleteCount
+  };
+}
+
 function planRiskLevel(plan) {
   const risk = compactText(isPlainObject(plan) ? plan.risk : "", 120);
   if (!risk) return "none";
@@ -189,16 +215,23 @@ function classifyAgentPlan(plan, validation, context = {}) {
   const affectedTargets = affectedTargetsForValidation(safeValidation);
   const solution = solutionSignals(context.solutionHints);
   const memory = memorySignals(context.projectIntentMemory);
+  const generatedSafety = generatedSafetyCounts(safeValidation);
   const declaredRisk = planRiskLevel(sourcePlan);
 
   pushUnique(safetySignals, `Validation summary: ${stepCount} step${stepCount === 1 ? "" : "s"}, ${mutatingCount} mutating, ${executableCount} executable.`);
   if (affectedTargets.length) pushUnique(safetySignals, `Affected targets summarized: ${affectedTargets.join("; ")}.`);
   if (bindingCount > 0) pushUnique(safetySignals, `${bindingCount} runtime binding field${bindingCount === 1 ? "" : "s"} must resolve during execution.`);
+  if (generatedSafety.total > 0) {
+    pushUnique(safetySignals, `Generated safety contracts active: file IO=${generatedSafety.generatedFileIoCount}, render output=${generatedSafety.generatedRenderOutputCount}, cleanup/delete=${generatedSafety.generatedCleanupDeleteCount}.`);
+  }
   if (memory.returned > 0) {
     pushUnique(safetySignals, `Project intent memory hints available: ${memory.ids.join(", ") || memory.returned}.`);
   }
 
   if (mutatingCount > 0) pushUnique(riskSignals, `${mutatingCount} mutating step${mutatingCount === 1 ? "" : "s"} can change the AE project.`);
+  if (generatedSafety.generatedFileIoCount > 0) pushUnique(riskSignals, `${generatedSafety.generatedFileIoCount} generated-only file IO step${generatedSafety.generatedFileIoCount === 1 ? "" : "s"} require reviewed root, filename, extension, byte/hash evidence, and read-back.`);
+  if (generatedSafety.generatedRenderOutputCount > 0) pushUnique(riskSignals, `${generatedSafety.generatedRenderOutputCount} generated render-output setup step${generatedSafety.generatedRenderOutputCount === 1 ? "" : "s"} require generated render output root and queue read-back; render start stays blocked.`);
+  if (generatedSafety.generatedCleanupDeleteCount > 0) pushUnique(riskSignals, `${generatedSafety.generatedCleanupDeleteCount} generated-only cleanup/delete step${generatedSafety.generatedCleanupDeleteCount === 1 ? "" : "s"} require generated prefix, explicit limit, destructive gate, and post-cleanup read-back.`);
   if (safeValidation.requiresCheckpoint) pushUnique(riskSignals, "Checkpoint or protected edit-session expected before project changes.");
   if (rawCount > 0) pushUnique(riskSignals, `${rawCount} raw ExtendScript step${rawCount === 1 ? "" : "s"} planned.`);
   if (declaredRisk === "high" || declaredRisk === "medium") pushUnique(riskSignals, `Planner declared ${declaredRisk} risk.`);
@@ -292,6 +325,9 @@ function classifyAgentPlan(plan, validation, context = {}) {
       stepCount,
       executableCount,
       mutatingCount,
+      generatedFileIoCount: generatedSafety.generatedFileIoCount,
+      generatedRenderOutputCount: generatedSafety.generatedRenderOutputCount,
+      generatedCleanupDeleteCount: generatedSafety.generatedCleanupDeleteCount,
       unknownToolCount,
       invalidStepCount,
       requiresCheckpoint: Boolean(safeValidation.requiresCheckpoint)

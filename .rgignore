@@ -4,6 +4,7 @@
 # Use compact status/proof scripts or exact files instead of broad ripgrep.
 plans/archive/**
 .codex/sdk/logs/**
+.codex-autonomy/**
 .codex-runtime/**
 logs/**
 node_modules/**
