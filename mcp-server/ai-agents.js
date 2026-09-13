@@ -1350,6 +1350,7 @@ async function listAgents(args) {
 function normalizeMessages(args) {
   let messages = [];
   if (Array.isArray(args.messages)) {
+    if (args.messages.length > 40) throw new Error("Message history exceeds 40 messages. Compact it explicitly; no messages were silently discarded.");
     messages = args.messages
       .filter((message) => message && message.role && message.content !== undefined)
       .map((message) => ({
@@ -1357,13 +1358,15 @@ function normalizeMessages(args) {
         content: typeof message.content === "string" ? message.content : JSON.stringify(message.content)
       }));
   } else {
-    const prompt = compactString(args.prompt || args.message || "", 20000);
+    const prompt = String(args.prompt || args.message || "").trim();
+    if (prompt.length > 64000) throw new Error("Prompt exceeds 64000 characters. Split the request; it was not silently truncated.");
     if (!prompt) throw new Error("prompt or messages is required.");
     messages = [{ role: "user", content: prompt }];
   }
 
   const hasSystem = messages.some((message) => message.role === "system");
-  const explicitSystem = compactString(args.system || "", 12000);
+  const explicitSystem = String(args.system || "").trim();
+  if (explicitSystem.length > 12000) throw new Error("System prompt exceeds 12000 characters; it was not silently truncated.");
   if (explicitSystem && !hasSystem) {
     messages.unshift({ role: "system", content: explicitSystem });
   } else if (!hasSystem && args.useDefaultSystemPrompt !== false && args.useDefaultSystemPrompt !== "false") {
@@ -1374,7 +1377,10 @@ function normalizeMessages(args) {
     throw new Error("At least one user message is required.");
   }
 
-  return messages.slice(-40);
+  if (messages.reduce((total, message) => total + message.content.length, 0) > 256000) {
+    throw new Error("Message context exceeds 256000 characters. Compact it explicitly; no messages were silently discarded.");
+  }
+  return messages;
 }
 
 function maybeNumber(value, name) {

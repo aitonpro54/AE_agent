@@ -7,6 +7,10 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const aiAgents = require("./ai-agents");
+const { buildPlannerContext } = require("./planner-context");
+const solutionDiscovery = require("./solution-discovery");
+const reuseTelemetry = require("./reuse-telemetry");
+const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
@@ -25,7 +29,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "2.0.0";
+const SERVER_VERSION = "3.0.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -33,7 +37,7 @@ const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const LOG_DIR = path.join(PROJECT_ROOT, "logs");
+const LOG_DIR = process.env.AE_BRIDGE_LOG_DIR ? path.resolve(process.env.AE_BRIDGE_LOG_DIR) : path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
 const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
@@ -323,6 +327,8 @@ function sanitizeForLog(value) {
 
 function recordEvent(type, details) {
   const event = {
+    eventId: crypto.randomUUID(),
+    runtime: { port: PORT, pid: process.pid },
     at: new Date().toISOString(),
     type,
     details: sanitizeForLog(details || {})
@@ -350,6 +356,8 @@ function appendJsonl(file, event) {
 
 function appendAiChatEvent(type, details) {
   const event = {
+    eventId: crypto.randomUUID(),
+    runtime: { port: PORT, pid: process.pid },
     at: new Date().toISOString(),
     type,
     details: sanitizeForLog(details || {})
@@ -710,7 +718,7 @@ async function startPlanRunEditSession(run, validation) {
 }
 
 function finishPlanRunEditSession(run) {
-  const hasIssue = run.failedCount > 0 || run.steps.some((step) => step.status === "blocked" || step.status === "failed");
+  const hasIssue = run.failedCount > 0 || run.ok === false || run.steps.some((step) => step.status === "blocked" || step.status === "failed");
   const result = finishEditSession({
     outcome: hasIssue ? "needs-review" : "completed",
     summary: `AI plan run ${run.id} ${hasIssue ? "finished with issues" : "completed"}.`
@@ -1043,6 +1051,9 @@ function m100DirectEscapeHatchAllowed(source, args) {
 
 function m100DirectToolCallBlock(source, name, args) {
   if (!M100_DIRECT_TOOL_SOURCES.has(source)) return null;
+  // The runner never dispatches steps in explicit dry-run mode. Permit only
+  // this preview through legacy MCP adapters; real runs retain default-deny.
+  if (name === "run_ai_agent_plan" && args && args.dryRun === true) return null;
   const risk = classifyM100ToolRisk(name);
   if (risk.known && risk.riskLevel === "read_only") return null;
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
@@ -5468,7 +5479,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 2.0.0",
+      panelVersion: "AE Agent 3.0.0",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]
@@ -6244,6 +6255,10 @@ async function runValidatedAgentPlan(options) {
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildSemanticVerification(prepared.plan, run);
     }
+    if (!run.dryRun && run.solutionPlanReadBack === undefined) {
+      run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
+      if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") run.ok = false;
+    }
     if (!run.dryRun && run.ok === true && rawExtendscriptStepCount(validation) > 0) {
       try {
         const candidate = captureRawExtendscriptFallbackCandidate(run, prepared.plan, validation, options || {});
@@ -6314,6 +6329,10 @@ async function runValidatedAgentPlan(options) {
       });
     }
     attachM100PlanRunDiagnostic(run, options);
+    let eligibleSolutionIds = [];
+    try { eligibleSolutionIds = solutionDiscovery.reviewedIds(); } catch (_registryError) {}
+    run.solutionReuse = reuseTelemetry.summarizeRun(run, prepared.plan, eligibleSolutionIds);
+    recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse });
     return run;
   }
 
@@ -6409,6 +6428,7 @@ async function runValidatedAgentPlan(options) {
   }
 
   const executedSteps = [];
+  let solutionPreflightChecked = false;
   const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
   let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession;
   const steps = validation.steps.slice(0, maxSteps);
@@ -6491,6 +6511,17 @@ async function runValidatedAgentPlan(options) {
       continue;
     }
 
+    if (step.mutatesProject && !solutionPreflightChecked) {
+      run.solutionPlanPreflight = checkSolutionPlanPreflight(prepared.plan, run.steps);
+      solutionPreflightChecked = true;
+      if (run.solutionPlanPreflight && run.solutionPlanPreflight.status !== "passed") {
+        item.status = "blocked";
+        item.reason = "Solution plan evidence changed or is incomplete. Inspect the targets and rebuild the plan.";
+        run.steps.push(item);
+        run.skippedCount += 1;
+        break;
+      }
+    }
     try {
       const result = await callToolLogged("ai-plan-run", step.tool, bound.args);
       const payload = firstToolPayload(result);
@@ -6525,6 +6556,8 @@ async function runValidatedAgentPlan(options) {
   }
 
   if (autoStartedEditSession) {
+    run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
+    if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") run.ok = false;
     const finished = finishPlanRunEditSession(run);
     if (finished) {
       run.editSessionFinished = finished.session || null;
@@ -6535,108 +6568,11 @@ async function runValidatedAgentPlan(options) {
   return finishRun();
 }
 
-function buildAePlanPrompt(args, projectContextSnapshot, solutionHintSection, projectIntentMemorySection) {
-  const userPrompt = optionalString(args || {}, "prompt", optionalString(args || {}, "message", "")).trim();
-  if (!userPrompt) throw new Error("prompt or message is required for AE Plan mode.");
-  const contextText = projectContextSnapshot
-    ? JSON.stringify(projectContextSnapshot, null, 2)
-    : JSON.stringify({ available: false, reason: "Context snapshot was not captured." }, null, 2);
-
-  return [
-    "User request:",
-    userPrompt,
-    "",
-    "Return one JSON object with this shape:",
-    "{",
-    "  \"summary\": \"short user-facing summary\",",
-    "  \"risk\": \"low|medium|high\",",
-    "  \"requiresCheckpoint\": true,",
-    "  \"clarifyingQuestion\": null,",
-    "  \"steps\": [",
-    "    {",
-    "      \"title\": \"short step title\",",
-    "      \"intent\": \"what this step checks or changes\",",
-    "      \"tool\": \"MCP tool name or null\",",
-    "      \"args\": {},",
-    "      \"dependsOnStep\": null,",
-    "      \"resultBindings\": {},",
-    "      \"mutatesProject\": false,",
-    "      \"verifyAfter\": true,",
-    "      \"idempotencyKeyTemplate\": \"ae-plan-{requestId}-step-1\"",
-    "    }",
-    "  ]",
-    "}",
-    "",
-    "Available MCP tools. Use these names exactly; do not invent tool names.",
-    planningToolCatalog(),
-    "",
-    "Project intent memory hints. These are local project preferences, not execution shortcuts.",
-    projectIntentMemorySection || "No project intent memory hints were retrieved.",
-    "",
-    "Reviewed solution library hints. These are advisory recipes, not execution shortcuts.",
-    solutionHintSection || "No reviewed solution hints were retrieved.",
-    "",
-    "Current project context snapshot. Treat it as a compact planning hint, not as proof that a mutation is safe.",
-    contextText,
-    "",
-    "Human-first planning policy:",
-    "- The user may write like an AE artist, not like an engineer. Do not require them to name tools, schemas, flags, or exact MCP operations.",
-    "- Translate normal Russian or English requests into the safest validated tool sequence. Keep the plan summary and step titles user-facing; tool names belong only in the JSON tool field.",
-    "- If the request is underspecified but safe defaults are obvious from the active comp/project context, choose conservative defaults and verify them after mutation.",
-    "- Ask a clarifying question only when target identity, destructive scope, file/output choice, or irreversible intent is genuinely ambiguous.",
-    "",
-    "Typed-tool and ExtendScript policy:",
-    "- Prefer typed AE Agent tools whenever one fits. Use raw ExtendScript only as a narrow fallback when the listed typed tools cannot express this specific workflow.",
-    "- Before a raw ExtendScript fallback, inspect targets with typed read tools. The raw step must be scoped to the inspected/generated target and followed by typed read-back or semantic verification.",
-    "- Never use raw ExtendScript for broad project deletion, project save/saveAs, eval, shell execution, secrets, or hard-coded user/project paths.",
-    "- Successful raw ExtendScript fallbacks are captured as quarantine-only typed-tool candidates; do not treat them as trusted reusable tools inside the plan.",
-    "Treat Russian/Cyrillic user text as a normal request. If a Russian phrase is ambiguous, infer cautiously from the After Effects context before asking for clarification.",
-    optionalBoolean(args || {}, "hardcore", false) || optionalString(args || {}, "agentMode", "") === "hardcore" ? "Agent Hardcore mode is enabled: act as the autonomous project owner inside the existing AE Agent safety model, using very high reasoning. Plan inspection, dry-run/read-back evidence, protected execution, and verification steps explicitly. Ask clarifying questions only for risky irreversible ambiguity. If a TypedTool fails, mark the exact tool gap, preserve compact evidence for a Codex App dev prompt, and continue the AE task with another typed tool when possible. If no typed tool can finish the current workflow, plan one narrow raw ExtendScript fallback with inspection and read-back verification; raw execution still requires the bridge dry-run gate and successful raw fallback evidence remains quarantine-only until reviewed." : "",
-    optionalBoolean(args || {}, "promptOptimization", false) ? "Prompt Optimization is enabled: clarify the user's intent internally, choose conservative AE defaults, and do not expand the requested scope." : "",
-    "Use get_bridge_status or ping_ae for bridge health checks. Use get_project_snapshot, get_active_comp, get_comp_details, and get_layer_details before choosing project targets.",
-    "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
-    "You do not need to add a checkpoint_project step for every mutation because the plan runner can create a protected edit session, but set requiresCheckpoint=true for broad, destructive, or multi-step project changes.",
-    "When a creation tool can set a property directly, include that property in the creation tool args instead of adding a later step that needs an unknown layerIndex.",
-    "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
-    "For current time indicator or playhead navigation, use set_comp_current_time only on one explicit comp target with finite seconds or a reviewed frame/frameRate conversion, then read back get_comp_details.time. Do not substitute work-area, layer timing, keyframes, markers, or raw ExtendScript.",
-    "For timeline trims, work areas, sequencing, splitting, and offsets, use set_comp_work_area, set_layer_time_range, stagger_layers, or split_layers_at_time.",
-    "For composition marker inspection, use get_comp_details with includeMarkers=true and compare markers.items in comp.markerProperty.keyTime order; for generated composition marker setup, use add_comp_marker with an explicit comp target, reviewed time/comment, and post-mutation get_comp_details includeMarkers read-back; do not substitute layer marker tools for composition markers.",
-    "For precomp/source workflows, use precompose_layers, replace_layer_source, deep_duplicate_precomp_sources, rename_layers, and rename_project_items before considering raw ExtendScript.",
-    "For layer name reset workflows that intentionally set a layer name to an empty string, use rename_layers only with mode:\"exact\", name:\"\", allowEmptyName:true, exactly one explicit layerIndex per step, expectedLayerNames from current typed evidence, verifyAfter:true, and post-mutation get_comp_details read-back. Do not use empty-name reset on broad selected/user layers without generated or reviewed scope.",
-    "For explicit single-layer duplication, use duplicate_layer after inspecting the target comp/layer and pairing layerIndex with the sourceName in current AE stack order. AE inserts newly created and duplicated layers at layer index 1; do not assume creation order equals layer-index order.",
-    "For explicit layer selection changes, use set_layer_selection only with concrete layerIndices from current get_comp_details/list_layers/get_layer_details evidence and expectedLayerNames when possible; do not use raw ExtendScript to select layers.",
-    "For explicit generated layer parenting, use set_layer_parent only with one inspected child layer, one inspected parent layer, expectedLayerName, expectedParentName, and post-run get_layer_details read-back. Do not use it for recursive hierarchy edits, bulk parenting, source-exact selection side effects, or non-generated user assets without a separate reviewed contract.",
-    "For explicit generated track matte changes, use set_layer_track_matte only with one inspected fill layer, one inspected matte layer, expectedLayerName, expectedMatteLayerName, and post-run get_layer_details read-back showing hasTrackMatte, trackMatteTypeName, and trackMatteLayer. Do not use parent-link tools, layer reordering, broad layer scans, or raw ExtendScript as substitutes.",
-    "For explicit bulk layer duplication, use duplicate_layers with concrete layerIndices after inspecting the target comp/layers. Pair sourceNames with layerIndices in current AE stack order, or insert get_comp_details before duplication when source-layer order is ambiguous. For selected-layer duplication, inspect with get_selected_layers first and bind layerIndices from {{selectedLayerIndices}}; never use duplicate_layers for deletion, source/precomp relinking, mask/path edits, or audio workflows.",
-    "For destructive single-layer deletion, use delete_layer only after inspecting the explicit target comp/layer. Provide compItemIndex or compName, layerIndex, and expectedLayerName, then read back the comp/layer stack to prove the deleted layer is absent; never use selection-only, broad, multi-layer, or name-optional deletion.",
-    "For composition settings, use set_comp_properties only for width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate on one explicit comp, then read back the comp before reporting success. Do not route arbitrary comp fields, layers, effects, masks, or property paths through this tool.",
-    "For project frame numbering, use set_project_frames_count_type only with an explicit reviewed framesCountType of FC_START_0 or FC_START_1, then read back get_project_info. Do not scan or mutate all project comps through this project-level tool.",
-    "For Composition panel refresh side effects, use refresh_comp_panel only on one explicit inspected comp with optional expectedMotionBlur guard, then read back get_comp_details and prove comp.motionBlur returned to its original value. Do not use set_comp_properties, layer motionBlur, raw ExtendScript, or user comp mutation as a substitute.",
-    "For explicit generated layer metadata, use set_layer_metadata only with one explicit comp target, concrete layerIndices, and expectedLayerNames when available. It only supports comment, label, locked, enabled, and guideLayer, and must be followed by get_layer_details read-back for each target layer.",
-    "For explicit generated layer blending mode changes, use set_layer_blending_mode only with one explicit comp target, concrete layerIndices, expectedLayerNames when available, and reviewed blendingMode normal or difference. Follow with get_layer_details read-back for each target layer; do not infer targets from selection without typed evidence.",
-    "For explicit generated project item labels, use set_project_item_metadata only with concrete itemIndices from current get_project_snapshot/find_project_items/list_project_folder_items evidence and expectedItemNames when available. It only supports label and must be followed by project-item read-back.",
-    "For explicit layer switches, use set_property_value only with whitelisted layer attributes threeDLayer, collapseTransformation, or motionBlur on inspected layer indices, setAtTime:false, then read back with get_layer_details. Do not use it for parenting, selection changes, timeline switches, or arbitrary layer fields.",
-    "For explicit effect enabled-state changes, use set_effect_enabled only after list_effects or get_effect_details identifies one effect instance by effectIndex, effectName, or effectMatchName and current enabled state. Prefer explicit enabled:true/false over ambiguous toggle wording, and read back with get_effect_details/get_layer_details. Do not scan all project comps, mutate unreviewed user effects, edit effect properties, or use raw ExtendScript.",
-    "For timeline marker workflows, use add_layer_marker, update_layer_marker, or delete_layer_marker only with explicit layer/time/comment evidence; update/delete marker steps must target one existing marker by markerIndex or strict targetTime plus optional targetComment. Do not claim audio analysis, beat detection, or generated markers from audio unless a separate evidence tool proves it.",
-    "For camera, text, shape, mask, comp-frame export, and fitting workflows, use create_camera_layer, update_text_layer, create_shapes_from_text, create_shape_layer, create_layer_connection_line, create_layer_mask, set_layer_mask, get_path_geometry, set_path_geometry, export_path_points, export_text_to_file, save_comp_frame_png, and fit_layer_to_comp. Use create_shapes_from_text only for one explicit inspected text layer with expected layer name/source text guards when available; it uses AE's native Create Shapes from Text command and must fail closed if that command is unavailable. Use create_layer_connection_line only for one generated locked connector layer between two explicit inspected layer targets. Use set_layer_mask only after inspecting the target layer/mask and read it back after create/update. Use set_path_geometry only for one explicit Shape or Mask path property with reviewed vertices, inTangents, outTangents, closed state, and optional bounded keyframes, then read back with get_path_geometry. Use export_path_points only after get_path_geometry evidence and only for generated export files; never write Desktop or arbitrary user paths. Use export_text_to_file only after get_selected_layers plus get_layer_details Source Text evidence for each selected text layer and only for generated .txt files; never write Desktop or arbitrary user paths. Use save_comp_frame_png only for explicit generated compositions, reviewed frame time, and simple .png output names under the generated export root; never write Desktop or arbitrary user paths. Do not delete masks, target multiple masks/layers, run roto, or traverse arbitrary property trees.",
-    "For Puppet pin type changes, use set_puppet_pin_type only after get_effect_details shows one explicit ADBE FreePin3 effect, an ADBE FreePin3 PosPin Atom ancestor, and an ADBE FreePin3 PosPin Type propertyPath. Only pinType 1/position and 4/advanced are allowed; do not create or infer Puppet pins, scan the project, or mutate user Puppet effects without generated or explicitly reviewed evidence.",
-    "For Essential Graphics, first inspect the explicit layer/property with get_layer_details or get_layer_essential_properties and inspect existing controllers with get_essential_graphics_controllers. Use add_property_to_essential_graphics only for one explicit propertyPath, one reviewed controllerName, and post-run get_essential_graphics_controllers read-back; do not traverse selectedProperties, export MOGRTs, mutate user template membership, or edit Essential Properties unless separate evidence and confirmation are present.",
-    "For camera controller rigs, use create_camera_with_controller instead of raw ExtendScript or ad hoc parenting; read back both camera.parent and controller 3D/separated-position state with get_layer_details.",
-    "For onion skinning, use toggle_onion_skinning and read back the generated adjustment layer plus CC Wide Time effect; do not use broad property traversal.",
-    "For keyframes and expressions, use set_property_keyframes, apply_keyframe_ease, fill_in_keyframes, keyframe_current_value_from_expression, set_spatial_in_tangent, set_expression, and clear_expression. Use separate_shape_size_dimensions for generated rectangle/ellipse size slider separation.",
-    "For render queue setup, use add_comp_to_render_queue, set_render_queue_output, and get_render_queue_status. Do not start a render.",
-    "For requests about selected layers, inspect with get_active_comp or get_selected_layers first. A later layerIndex field may use {{selectedLayerIndices}} to target the selected layers.",
-    "For later steps that need the active comp, compItemIndex may use {{compItemIndex}} after get_active_comp, get_comp_details, or get_selected_layers.",
-    "For requests about selected precomp/source comp(s), inspect with get_active_comp or get_selected_layers first, then use {{selectedPrecompLayerIndex}} for the selected precomp layer, {{selectedPrecompItemIndex}} for one source comp, or {{selectedPrecompItemIndices}} in itemIndices for rename_project_items.",
-    "For deep duplicate of a selected precomp and its sources, prefer one deep_duplicate_precomp_sources step with layerIndex {{selectedPrecompLayerIndex}} and sourceCompItemIndex {{selectedPrecompItemIndex}} after inspection; do not use run_extendscript.",
-    "For read-back after deep_duplicate_precomp_sources, use get_comp_details with compItemIndex {{duplicatedRootCompItemIndex}} or {{rootCompItemIndex}}; the tool also returns createdItemIndices for project-item summaries.",
-    "To verify the parent layer after deep_duplicate_precomp_sources relinks it, use get_layer_details with compItemIndex steps.<deep-duplicate-step>.result.comp.itemIndex and layerIndex {{selectedPrecompLayerIndex}}; do not reuse generic {{compItemIndex}} after reading the duplicated source comp.",
-    "Use canonical schema field names such as itemIndices and layerIndices; do not use itemIndexes or layerIndexes.",
-    "If a later step depends on a previous tool result, set dependsOnStep and resultBindings instead of inventing indices.",
-    "If solution hints mention a typed-tool-candidate, prefer recommending a typed bridge tool implementation over repeating a workaround.",
-    "If solution hints mention a reviewed raw ExtendScript file, mark the plan risky, prefer typed tools first, and only plan run_extendscript_file when no typed tool fits.",
-    "Use mutating tools only as planned steps; do not execute them. Use run_extendscript only when no typed tool fits."
-  ].join("\n");
+function buildAePlanPrompt(args, projectContextSnapshot, solutionHints, projectIntentMemorySection) {
+  return buildPlannerContext({ args, snapshot: projectContextSnapshot, solutionHints,
+    memorySection: projectIntentMemorySection,
+    tools: tools.filter((tool) => PLANNING_TOOL_NAMES.includes(tool.name)),
+    mutatingNames: MUTATING_TOOL_NAMES });
 }
 
 async function repairAgentPlanJson(args, rawText) {
@@ -6660,6 +6596,7 @@ async function repairAgentPlanJson(args, rawText) {
   return {
     repaired,
     repairText: repairResult.text,
+    usage: reuseTelemetry.summarizeUsage(repairResult.usage),
     repairModel: repairResult.model || null
   };
 }
@@ -6761,7 +6698,8 @@ async function runAgentPlanLogged(source, args) {
     const solutionHints = buildSolutionHintsForPrompt(userPrompt, {
       availableToolNames: PLANNING_TOOL_NAMES
     });
-    const planPrompt = buildAePlanPrompt(args || {}, projectContextSnapshot, solutionHints.promptSection, projectIntentMemory.promptSection);
+    const plannerContext = buildAePlanPrompt(args || {}, projectContextSnapshot, solutionHints, projectIntentMemory.promptSection);
+    const planPrompt = plannerContext.text;
     const result = await aiAgents.chatWithAgent({
       ...(args || {}),
       messages: undefined,
@@ -6775,11 +6713,13 @@ async function runAgentPlanLogged(source, args) {
     let repaired = false;
     let repairError = null;
     let repairModel = null;
+    let repairUsage = null;
     if (!parsed.ok && optionalBoolean(args || {}, "repairPlan", true) !== false) {
       try {
         const repair = await repairAgentPlanJson(args || {}, result.text);
         repaired = repair.repaired.ok;
         repairModel = repair.repairModel;
+        repairUsage = repair.usage;
         if (repair.repaired.ok) {
           parsed = repair.repaired;
         } else {
@@ -6827,6 +6767,10 @@ async function runAgentPlanLogged(source, args) {
       projectIntentMemoryReturned: projectIntentMemory.retrieval && projectIntentMemory.retrieval.ok ? projectIntentMemory.retrieval.returned : 0,
       solutionHintsReturned: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.returned : 0,
       solutionToolMatches: solutionHints.retrieval && solutionHints.retrieval.ok ? solutionHints.retrieval.toolMatches.length : 0,
+      promptContext: plannerContext.metadata,
+      usage: reuseTelemetry.summarizeUsage(result.usage),
+      repairUsage,
+      solutionReuse: reuseTelemetry.summarizeReuse(parsed.plan, solutionHints.retrieval),
       logFile: AI_CHAT_LOG_FILE
     };
     appendAiChatEvent("plan_finished", metadata);
@@ -6851,6 +6795,8 @@ async function runAgentPlanLogged(source, args) {
       originalPlanValidation,
       planClassification: validation ? validation.classification : null,
       planContextSnapshot: projectContextSnapshot,
+      planPromptContext: plannerContext.metadata,
+      solutionReuse: metadata.solutionReuse,
       planProjectIntentMemory: projectIntentMemory.retrieval,
       planSolutionHints: solutionHints.retrieval,
       planRepairError: repairError,
@@ -7539,6 +7485,7 @@ function startHttpBridge() {
 }
 
 const tools = [
+  ...solutionDiscovery.discoveryTools,
   {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
@@ -7787,7 +7734,7 @@ const tools = [
   },
   {
     name: "run_ai_agent_plan",
-    description: "Dry-run or execute a validated AE MCP plan. Mutating/destructive/raw real execution requires a server-owned M100 action proposal, confirmation token, confirm:true, and allowMutations:true.",
+    description: "Preview a validated AE plan through MCP with dryRun:true. Actual execution uses the existing CEP workflow with a server-owned M100 proposal, confirmation token, confirm:true and allowMutations:true; direct MCP real runs remain blocked.",
     inputSchema: {
       type: "object",
       properties: {
@@ -11582,6 +11529,42 @@ async function callTool(name, args) {
 
   if (name === "get_bridge_status") {
     return toolResult(getBridgeStatus());
+  }
+
+  if (name === "search_solutions" || name === "get_solution") {
+    try {
+      const result = name === "search_solutions"
+        ? solutionDiscovery.searchSolutions(args || {}, exposedTools())
+        : solutionDiscovery.getSolution(args || {}, exposedTools());
+      recordEvent("solution_discovery", { operation: name,
+        solutionIds: result.results ? result.results.map((entry) => entry.id) : [result.solution.id],
+        resultChars: JSON.stringify(result).length });
+      return toolResult(result);
+    } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
+  }
+
+  if (name === "build_solution_plan") {
+    try {
+      solutionDiscovery.knownSolution(args.solutionId, tools);
+      const result = require("./solution-plan-builder").buildSolutionPlan(args.solutionId, args.inputs);
+      if (!result.ok) return toolResult(result, true);
+      const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+      recordEvent("solution_plan_built", { solutionId: args.solutionId, validationOk: prepared.validation.ok,
+        stepCount: result.plan.steps.length, providerCalled: false });
+      return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation,
+        next: "Review inputs and current evidence, then use propose_ai_agent_plan and run_ai_agent_plan dry-run before any confirmed execution." }, !prepared.validation.ok);
+    } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
+  }
+
+  if (name === "propose_ai_agent_plan") {
+    try {
+      const result = createM100AgentPlanProposalFromRequest(args || {});
+      const proposal = {...result.proposal, confirmation: {...result.proposal.confirmation}};
+      delete proposal.confirmation.confirmationToken;
+      return toolResult({ok: true, ...result, proposal,
+        next: "This redacted proposal supports MCP dry-run only. Confirm and execute through the existing CEP workflow."});
+    }
+    catch (error) { return toolResult({ ok: false, error: error.message, validation: error.validation || null }, true); }
   }
 
   if (name === "list_effect_presets") {
@@ -19220,7 +19203,9 @@ async function callToolLogged(source, name, args) {
       source,
       name,
       ok: !resultWithCheckpoint.isError,
-      durationMs
+      durationMs,
+      inputChars: JSON.stringify(args || {}).length,
+      outputChars: JSON.stringify(resultWithCheckpoint).length
     });
     return resultWithCheckpoint;
   } catch (error) {

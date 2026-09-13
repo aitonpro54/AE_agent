@@ -2,138 +2,108 @@
 
 ## Активный baseline
 
-AE Agent 2.0.0 - локальная CEP-панель After Effects с bridge daemon.
-Baseline содержит только текущий product runtime, typed tools, recipes,
-solution registry, provider layer и AE-specific Full Intaker/importer tooling.
-Runtime outputs остаются ignored/local.
+AE Agent 3.0.0: CEP-панель After Effects, bridge daemon, typed tools,
+reviewed recipes, registry, provider layer и AE-specific Full Intaker.
+Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 
 ## Текущий фокус
 
-- Run id: `full-intake-aturtur-after-effects-scripts`.
-- Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-- Последний completed candidate: `tool-ar_distributekeyframestolayer`.
-- Compact counts: `entries=46`, `completed=27`, `queued=0`,
-  `blocked_live_lane_required=18`, `blocked_policy=1`, `failed=0`.
-- Next: create the next feasible lane family for remaining
-  `blocked_live_lane_required` candidates.
-- Push текущей ветки разрешен после clean validation; PR/GitHub issue/PR
-  mutations и unrelated remote writes запрещены.
+Выпуск 3.0.0 опубликован 2026-09-13 в двух связанных PR. Пользователь 2026-09-12
+разрешил обновление версии панели, push, необходимые PR и подготовку handoff
+для следующего чата. Автоматический перенос в новый чат не запрошен.
+
+На старте выпуска `main` отстаёт от рабочей ветки на 319 коммитов. Публикация
+делится на baseline PR (`3bd69eb` → `main`) и PR текущего выпуска
+(`79f421a` и версия 3.0.0 → baseline). Это позволяет отдельно просмотреть
+накопленную историю и последний feature/release diff.
 
 ## Milestones
 
-- [x] Clean baseline/docs guard, runtime ignore policy, and compact plan guard.
-- [x] Aturtur intake hardening: init, local-use license opt-in, risk scan,
-  untracked guard, alias resolution, artifact guard.
-- [x] Child-runner resilience: quota/shell blockers classified; Windows
-  danger-full-access fallback scoped to approved child-runner failures.
-- [x] Advisory imports completed through
-  `tool-ar_workareatoselectedlayer` with parent-owned merge, validation,
-  ledger/docs/handoff, commit, and push gates.
-- [x] Missing-validation map grouped remaining live blockers into keyframe
-  timing, effects, file/SRT/render/project cleanup, shape/mask, and
-  tracked-light lane families.
-- [x] AR keyframe lane infrastructure: generated-only selected-keyframe timing
-  and boundary-distribution lanes for six candidates.
-- [x] Cleanup safety fix: generated cleanup M100 contract accepts existing
-  `AE_AGENT_QA_*` live-harness namespace while preserving prefix, confirm,
-  limit, proposal, checkpoint/edit-session, cleanup, and read-back gates.
-- [x] Requeue scoped AR keyframe candidates once lane proof succeeds:
-  `tool-ar_alignkeyframes`, `tool-ar_distributekeyframesbystep`,
-  `tool-ar_distributekeyframesevenly`,
-  `tool-ar_distributekeyframestocomp`,
-  `tool-ar_distributekeyframestolayer`,
-  `tool-ar_distributekeyframestoworkarea`.
-- [x] Serially accept `tool-ar_distributekeyframesbystep`.
-- [x] Serially accept `tool-ar_distributekeyframesevenly`.
-- [x] Serially accept AR boundary keyframe candidates:
-  `tool-ar_distributekeyframestoworkarea`,
-  `tool-ar_distributekeyframestocomp`.
-- [x] Serially accept remaining AR keyframe candidate:
-  `tool-ar_distributekeyframestolayer`.
-- [ ] Create next feasible lane families for remaining visual/effect,
-  file/SRT/render/project cleanup, shape/mask, and tracked-light blockers.
+- [x] Проверить фактическое применение базы и маршруты MCP/CEP.
+- [x] Исправить silent truncation; bounded planner context до 24 000 символов.
+- [x] Добавить MCP search/get и RU/EN retrieval.
+- [x] Добавить 4 локальных builders scalar linear keyframes и strict verification.
+- [x] Добавить usage/reuse telemetry и offline A/B reporter.
+- [x] Обновить рабочий AE-навык; активировать новый daemon и MCP preview.
+- [x] Согласовать версии panel/manifest/assets/package/bridge до 3.0.0.
+- [x] Обновить установленную панель и проверить scoped branding/reload.
+- [x] Push, baseline/release PR и handoff с точными ссылками.
 
 ## Decision Log
 
-- 2026-05-27: Generic full-intake orchestrator processed `AR_DistributeKeyframesToLayer.jsx` as `tool-ar_distributekeyframestolayer`, keeping shared merge/validation/live/doc/commit gates serial and recording blocked candidates without stopping the whole queue (full-intake:full-intake-aturtur-after-effects-scripts:tool-ar_distributekeyframestolayer).
-
-- Source license for aturtur is ignored only as a local personal-use blocker.
-  It does not permit raw JSX copy, remote publication, PRs, dependency changes,
-  or disabled validation/reducer gates.
-- Parent reducer remains the only central writer. Child worktrees are
-  proposal-only: no commit, branch, push, PR, central ledger/docs writes,
-  dependency changes, raw JSX copy, or live mutation.
-- Imported advisory recipes are typed-contract/guidance only. Source-exact UI
-  side effects, hidden AE selection order, raw JSX semantics, arbitrary
-  user-asset/file operations, and unsafe live mutation remain fail-closed unless
-  a narrow generated/reviewed lane proves them.
-- AR keyframe candidates must not use the older
-  `selected-property-keyframe-generated-only` lane; it proves creation/ease and
-  count, not exact timing rewrite or boundary redistribution.
-- New AR keyframe lanes prove full generated scalar opacity keyframe rewrites
-  with `set_property_keyframes clearExisting:true`, exact final times/values,
-  `get_selected_properties`, `get_layer_details`, and boundary
-  `get_comp_details` evidence where needed.
-- Detached generic-importer child-runs remain proposal-only for queued
-  candidates; they may draft recipe/registry/smoke metadata but must not claim
-  parent acceptance, source merge, live proof, validation, or commit.
-- 2026-07-08: Detached child-runs drafted typed-only AR selected-keyframe
-  distribution advisory recipes for by-step, evenly, work-area, and comp-bound
-  variants. Source JSX was not present or copied; parent importer owns review,
-  validation, acceptance, and source merge.
-- 2026-07-08: Detached child-run drafted typed-only advisory metadata for
-  `tool-ar_distributekeyframestolayer`. Source JSX was not present or copied;
-  parent importer owns review, validation, acceptance, and source merge.
-- 2026-07-08: Parent accepted `tool-ar_distributekeyframestolayer`
-  serially with the existing AR boundary keyframe live lane. A small
-  `mcp-server/solution-library.js` support diff was accepted separately to
-  preserve `distributeKeyframesToLayerSpec`, `layerDistributedKeyframes`,
-  `layerDistributionStartTime`, and `layerDistributionEndTime` in prompt
-  hints; it does not add execution capability or raw JSX behavior.
-- 2026-07-08: Parent accepted `tool-ar_distributekeyframesbystep`
-  serially with the existing AR keyframe timing live lane. A small
-  `mcp-server/solution-library.js` support diff was accepted separately to
-  preserve `distributionAnchorTime` and `distributionStep` in prompt hints; it
-  does not add execution capability or raw JSX behavior.
-- 2026-07-08: Parent accepted `tool-ar_distributekeyframesevenly`
-  after restoring the AE Agent CEP panel on CDP port 8870 and adding a small
-  runner recovery fix so failed live reruns can continue when unrelated
-  untracked local files are present.
-- The first scoped requeue attempt failed after main AR plans validated and ran:
-  cleanup M100 proposal rejected `AE_AGENT_QA_*` as an unreviewed generated
-  prefix. The fix adds that existing live-harness namespace to the cleanup
-  generated-safety contract without relaxing confirmation/read-back gates.
-- Live/mutating validation for this milestone used generated QA fixtures,
-  bridge-owned M100 proposals, dry-run first, protected edit sessions,
-  checkpoints under `backups/`, semantic verification, and cleanup.
+- Готовые решения ищутся локально; registry не загружается целиком в контекст.
+  Lookup/build не вызывает второй LLM, но ответы расходуют контекст Codex.
+- MCP разрешает proposal и явный `dryRun:true`; настоящая mutation сохраняет
+  существующий CEP confirmation/checkpoint/edit-session/read-back workflow.
+- Первые builders ограничены полной scalar linear последовательностью,
+  canonical descriptor paths глубиной до 5 и максимум 5 property targets.
+  До первой записи обязательна проверка свежих ключей; после — exact read-back.
+- Usage внешнего Codex MCP-серверу недоступен. Декларация solution IDs не
+  доказывает причинную связь; неизвестные токены остаются `null`.
+- Runtime metadata отделяет рабочий порт от mock-серверов в статистике.
+- Extension IDs и настройки сохраняются. Исторические testedAeContext в
+  registry не переименовываются под новый выпуск.
+- Новых production dependencies нет. Живые AE mutations и реальные provider
+  trials в текущем выпуске не выполняются. PR не означает автоматический merge.
 
 ## Progress
 
-- Full Intake completed all queued candidates through
-  `tool-ar_distributekeyframestolayer`.
-- AR keyframe timing/boundary lane family accepted six candidates with
-  generated-only live reruns passed and compact proof
-  `contractComplete=true`, `unplannedPathCount=0`.
-- Latest candidate commit:
-  `577cd6e17eedaf4c5f77b5fb062dd2451ecec4b9`
-  (`feat: import tool-ar_distributekeyframestolayer recipe`).
-- Current support diff preserves layer-bound distribution prompt terms in
-  `mcp-server/solution-library.js` after `smoke:solutions` exposed a retrieval
-  gap.
-- Remaining backlog: `blocked_live_lane_required=18`,
-  `blocked_policy=1`, `queued=0`, `failed=0`.
+- Feature commit `79f421a`: 119 MCP tools, 181 reviewed решения, четыре builders.
+- Release commit `7dcd36f`: согласованная версия 3.0.0 и release notes.
+- [PR #1](https://github.com/aitonpro54/AE_agent/pull/1): накопленная база
+  `codex/ae-3-baseline` → `main`, draft; требуется самостоятельный обзор истории.
+- [PR #2](https://github.com/aitonpro54/AE_agent/pull/2): reuse и выпуск
+  `codex/pro-review-longrun` → `codex/ae-3-baseline`, открыт для review.
+  Сначала интегрировать #1 через merge commit с сохранением ancestry, затем
+  перенаправить #2 на `main` и проверить diff. Merge не выполнялся.
+- Обе ветки отправлены в origin; продолжение описано в `.codex/handoff.md`.
+- 12/12 RU и EN контрольных запросов находят ожидаемое решение в top-3;
+  все 181 точных названий находятся. Это словарный поиск, не embeddings.
+- Стрессовый planner пример: 13 397 символов при бюджете 24 000, сохранён
+  обязательный конец prompt. Это не оценка биллинга Codex.
+- Рабочая MCP-цепочка builder → proposal → dry-run прошла: четыре ready steps,
+  ноль выполненных AE-команд; CEP online.
+- `docs/solution-reuse.md` описывает ограничения, telemetry и восемь A/B-сценариев.
+
+## Следующие продуктовые изменения
+
+1. Добавить удобный перенос готового MCP-плана в CEP preview/confirmation
+   без второго planner-вызова и без выдачи модели authority на confirmation.
+2. Подготовить воспроизводимые изолированные сцены для A/B; после отдельного
+   согласования real provider/live scope измерить tokens на успешную задачу.
+3. По трассам оптимизировать крупные inspection/tool responses; fresh evidence
+   переиспользовать только пока цель не изменилась.
+4. Расширять RU retrieval и builders по реально частым запросам и промахам,
+   включая tests на новые перефразировки и строгую проверку metadata.
+5. Проверять актуальность comp frame rate/work area/layer bounds перед записью
+   builder-плана; затем отдельно доказать поддержку Bezier/ease/vector keys.
+
+## Сохранённый Full Intake backlog
+
+Run: `full-intake-aturtur-after-effects-scripts`.
+Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
+Последний accepted candidate: `tool-ar_distributekeyframestolayer`, commit `577cd6e`.
+Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18,
+blocked_policy=1, failed=0. Шесть AR timing/boundary candidates ранее приняты
+через generated-only live lanes с contractComplete=true/unplannedPathCount=0.
+Оставшиеся family lanes: effects/visual, file/SRT/render/cleanup, shape/mask,
+tracked-light. Старый intake в этом выпуске не запускается.
+
+Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies,
+новые live/provider trials требуют отдельного scope. Parent сохраняет serial
+acceptance/reducer. Разрешение local-use source не означает публикацию raw JSX.
 
 ## Validation Notes
 
-Default guard remains `npm.cmd run check:rules`. Source edits require
-`node --check <touched-js-or-mjs>` and `git diff --check`. Full Intaker/importer
-changes require `smoke:solutions`, `smoke:planning`, and `smoke:full-intake`;
-bridge/tooling changes require provider/bridge smoke coverage.
+Reuse milestone: check:rules; syntax 21 JS; smoke:solutions, smoke:bridge,
+smoke:planning, smoke:provider-contract/API, smoke:full-intake — pass.
+Изолированный runner проверяет exact pass, stale preflight block и wrong-after
+failure; MCP — редактированный proposal и preview-only compatibility.
+Навык обновлён: YAML frontmatter сохранён; ручная проверка инструкций/ссылок.
+Стандартный quick_validate недоступен без PyYAML; зависимости не устанавливались.
 
-Latest validation in this cycle:
-`node --check mcp-server/solution-library.js`,
-`node --check scripts/solution-library-validation-smoke.js`,
-`npm.cmd run smoke:solutions`, `npm.cmd run smoke:planning`,
-`npm.cmd run smoke:full-intake`, and compact proof for
-`tool-ar_distributekeyframestolayer` with `contractComplete=true` and
-`unplannedPathCount=0`.
+Release milestone: обновлённые bridge/solution smokes, syntax, manifest/package
+согласованность и diff check — pass. Установленная CEP-панель и bridge 3.0.0;
+branding-smoke/reload-button-smoke прошли 2026-09-12 при online, pending/inflight=0.
+Повторный статус 2026-09-13: bridge отвечает 3.0.0, CEP-панель отключена.
+Для следующей live-проверки сначала подключить панель и прочитать свежий статус.

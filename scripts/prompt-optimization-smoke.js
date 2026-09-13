@@ -7,6 +7,9 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { PLANNER_USE } = require("../mcp-server/solution-library");
 const { PLANNER_USE: MEMORY_PLANNER_USE } = require("../mcp-server/project-intent-memory");
+const { buildPlannerContext, FINAL_POLICY, MAX_PLANNER_CHARS } = require("../mcp-server/planner-context");
+const { buildSolutionHintsForPrompt } = require("../mcp-server/solution-library");
+const assert = require("assert");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
@@ -458,6 +461,12 @@ async function main() {
     const chatSystem = messageText(captured[0], "system");
     const planUser = messageText(captured[1], "user");
     const onlinePlanUser = messageText(captured[2], "user");
+    for (const [text, response] of [[planUser, plan], [onlinePlanUser, onlinePlan]]) {
+      assert(text.endsWith(FINAL_POLICY), "Provider must receive the final execution contract without truncation.");
+      assert.strictEqual(text.length, response.body.result.planPromptContext.promptChars);
+      assert(text.length <= MAX_PLANNER_CHARS);
+      assert.strictEqual(response.body.result.planPromptContext.truncated, false);
+    }
     if (chatSystem.indexOf("Prompt Optimization is enabled") < 0) {
       throw new Error("Chat prompt optimization instruction was not sent to provider.");
     }
@@ -514,9 +523,47 @@ async function main() {
       throw new Error("Online project context snapshot was not compacted as expected.");
     }
 
+    const listing = await bridgeRequest("/tools", "GET");
+    const realTools = listing.body.tools;
+    const mutationNames = new Set(realTools.filter((tool) => tool.inputSchema.properties.autoCheckpoint).map((tool) => tool.name));
+    const built = buildPlannerContext({args: {prompt: "Duplicate selected layers"}, tools: realTools, mutatingNames: mutationNames,
+      solutionHints: buildSolutionHintsForPrompt("Duplicate selected layers"),
+      snapshot: {activeComp: {name: "Large comp", itemIndex: 1}, selectedLayers: Array.from({length: 500}, (_, i) => ({index: i + 1, name: "Layer ".repeat(50)}))}});
+    assert(built.text.includes("For explicit bulk layer duplication"), "Relevant operation rules must survive.");
+    assert(built.text.includes("For any project-changing request, plan inspection steps first"));
+    assert(built.text.endsWith(FINAL_POLICY));
+    assert(built.metadata.contextReduced);
+    assert(built.metadata.selectedToolCount < realTools.length);
+    assert.throws(() => buildPlannerContext({args: {prompt: "x".repeat(12001)}, tools: realTools, mutatingNames: mutationNames}), /exceeds/);
+    const longPrompt = "x".repeat(25000) + " TRANSPORT_SENTINEL";
+    const longChat = await bridgeRequest("/agents/chat", "POST", {agentId: "prompt-smoke", model, prompt: longPrompt});
+    assert.strictEqual(longChat.status, 200);
+    assert.strictEqual(messageText(captured[captured.length - 1], "user"), longPrompt);
+    const beforeOversize = captured.length;
+    const tooLarge = await bridgeRequest("/agents/chat", "POST", {agentId: "prompt-smoke", model, prompt: "x".repeat(64001)});
+    assert(tooLarge.status >= 400 || tooLarge.body.ok === false);
+    assert.strictEqual(captured.length, beforeOversize, "Oversized prompts must not reach the provider.");
+    for (const value of [true, "true", 1, "on"]) {
+      const mode = buildPlannerContext({args: {prompt: "Create a composition", hardcore: value, promptOptimization: value}, tools: realTools, mutatingNames: mutationNames});
+      assert(mode.text.includes("Agent Hardcore:"));
+      assert(mode.text.includes("Prompt Optimization is enabled"));
+    }
+    const history = Array.from({length: 40}, (_, i) => ({role: i % 2 ? "assistant" : "user", content: `Message ${i}`}));
+    const historyChat = await bridgeRequest("/agents/chat", "POST", {agentId: "prompt-smoke", model, messages: history});
+    assert.strictEqual(historyChat.status, 200);
+    assert.strictEqual(captured[captured.length - 1].messages.length, 41);
+    assert.strictEqual(captured[captured.length - 1].messages[0].role, "system");
+    const beforeHistoryOverflow = captured.length;
+    const historyOverflow = await bridgeRequest("/agents/chat", "POST", {agentId: "prompt-smoke", model, messages: [...history, history[0]]});
+    assert(historyOverflow.status >= 400 || historyOverflow.body.ok === false);
+    assert.strictEqual(captured.length, beforeHistoryOverflow);
+
     console.log(JSON.stringify({
       ok: true,
       captured: captured.length,
+      promptBudget: built.metadata,
+      finalPolicyReachedProvider: true,
+      longPromptPreserved: true,
       chat: {
         status: chat.status,
         text: chat.body.result.text,
