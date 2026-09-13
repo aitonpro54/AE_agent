@@ -28,13 +28,22 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] Согласовать версии panel/manifest/assets/package/bridge до 3.0.0.
 - [x] Обновить установленную панель и проверить scoped branding/reload.
 - [x] Push, baseline/release PR и handoff с точными ссылками.
+- [x] Настроить глобальные Codex model roles и AE workflow для любых проектов.
+- [x] Открыть через MCP read-only очередь карантинных JSX-candidates.
+- [x] Добавить временную CEP autonomous session для proposal-backed typed plans.
 
 ## Decision Log
 
 - Готовые решения ищутся локально; registry не загружается целиком в контекст.
   Lookup/build не вызывает второй LLM, но ответы расходуют контекст Codex.
-- MCP разрешает proposal и явный `dryRun:true`; настоящая mutation сохраняет
-  существующий CEP confirmation/checkpoint/edit-session/read-back workflow.
+- MCP разрешает proposal и явный `dryRun:true`. Включённая пользователем
+  20-минутная CEP autonomous session разрешает только proposal-backed typed
+  mutation; checkpoint/edit-session/idempotency/preflight/read-back сохраняются.
+  Direct tools, raw JSX, destructive plans и replay остаются закрытыми.
+- Raw JSX candidates доступны через компактную read-only MCP-очередь, но не
+  становятся planner-visible и не продвигаются автоматически.
+- Глобальный Codex default — Terra/Medium; роли `ae_scout`, `ae_specialist` и
+  `ae_architect` закрепляют Luna/Medium, Sol/High и Astra/High по сложности.
 - Первые builders ограничены полной scalar linear последовательностью,
   canonical descriptor paths глубиной до 5 и максимум 5 property targets.
   До первой записи обязательна проверка свежих ключей; после — exact read-back.
@@ -64,11 +73,15 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - Рабочая MCP-цепочка builder → proposal → dry-run прошла: четыре ready steps,
   ноль выполненных AE-команд; CEP online.
 - `docs/solution-reuse.md` описывает ограничения, telemetry и восемь A/B-сценариев.
+- Глобальные `config.toml`, `AGENTS.md`, AE skill и три agent profiles установлены
+  в пользовательский Codex home; новые чаты применят их после перезапуска Codex.
+- Изолированный MCP smoke выполнил typed plan при активном CEP lease и подтвердил
+  блокировку без lease, direct mutation, raw JSX, destructive direct call и replay.
 
 ## Следующие продуктовые изменения
 
-1. Добавить удобный перенос готового MCP-плана в CEP preview/confirmation
-   без второго planner-вызова и без выдачи модели authority на confirmation.
+1. Добавить review/promotion reducer для повторяющихся quarantine candidates:
+   parameter extraction, syntax/safety checks и генерация typed/builder proposal.
 2. Подготовить воспроизводимые изолированные сцены для A/B; после отдельного
    согласования real provider/live scope измерить tokens на успешную задачу.
 3. По трассам оптимизировать крупные inspection/tool responses; fresh evidence
@@ -107,3 +120,12 @@ Release milestone: обновлённые bridge/solution smokes, syntax, manife
 branding-smoke/reload-button-smoke прошли 2026-09-12 при online, pending/inflight=0.
 Повторный статус 2026-09-13: bridge отвечает 3.0.0, CEP-панель отключена.
 Для следующей live-проверки сначала подключить панель и прочитать свежий статус.
+
+Global autonomy/reuse milestone: добавлены read-only candidate queue и
+in-memory CEP autonomous lease. Unit и isolated daemon/MCP/fake-panel smokes
+проверяют expiry, revoke, restart, typed execution и запреты scope. Live AE
+mutation и реальные provider-вызовы не выполнялись. `check:rules`, syntax,
+`smoke:solutions`, `smoke:bridge`, `smoke:planning`, provider-contract и
+`git diff --check` прошли. В рабочей quarantine найдено 34 candidate и 2 группы
+точных повторов; очередь остаётся planner-invisible. Три CEP-файла установлены,
+SHA-256 совпадают с repo, scoped reload-button-smoke прошёл.

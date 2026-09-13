@@ -54,7 +54,8 @@ function daemonRequest(method, requestPath, payload, timeoutMs) {
       headers: {
         "content-type": "application/json",
         "content-length": Buffer.byteLength(body),
-        "x-ae-bridge-token": TOKEN
+        "x-ae-bridge-token": TOKEN,
+        "x-ae-mcp-adapter": "codex-stdio-v1"
       },
       timeout: timeoutMs || DAEMON_TIMEOUT_MS
     }, (res) => {
@@ -161,13 +162,7 @@ async function getTools() {
 
 async function callDaemonTool(name, args) {
   await ensureDaemonRunning();
-  // MCP previews plans; the existing CEP confirmation surface owns execution.
-  // Model-authored confirm:true is not independent user approval.
-  if (name === "run_ai_agent_plan") {
-    if (!args || args.dryRun !== true) return toolResult({ok: false, code: "mcp_plan_dry_run_only",
-      error: "MCP plan runs require dryRun:true. Confirm and execute mutations through the existing CEP plan workflow."}, true);
-  }
-  const response = await daemonRequest("POST", "/tools/call", {
+  const response = await daemonRequest("POST", "/mcp/tools/call", {
     name,
     arguments: args || {}
   });
@@ -190,7 +185,7 @@ async function handleRpc(message) {
         capabilities: {
           tools: {}
         },
-        instructions: "For AE tasks, use search_solutions first to find reviewed reusable workflows, then get_solution for the actual recipe and required tool contracts. Reuse current typed inspection evidence. Prefer deterministic build_solution_plan where supported. Use propose_ai_agent_plan and run_ai_agent_plan with dryRun:true for previews; actual mutation requires the existing CEP confirmation workflow. Use raw ExtendScript only for an identified typed-tool gap. Discovery and plan builders are local and do not call another model.",
+        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion.",
         serverInfo: {
           name: SERVER_NAME,
           version: SERVER_VERSION

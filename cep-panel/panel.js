@@ -38,6 +38,8 @@
   var disconnectButton = document.getElementById("disconnectButton");
   var diagnosticsButton = document.getElementById("diagnosticsButton");
   var reloadButton = document.getElementById("reloadButton");
+  var autonomousSessionButton = document.getElementById("autonomousSessionButton");
+  var autonomousSessionStatusEl = document.getElementById("autonomousSessionStatus");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
   var connectorStatusButton = document.getElementById("connectorStatusButton");
   var connectorEmergencyDisableButton = document.getElementById("connectorEmergencyDisableButton");
@@ -117,6 +119,8 @@
   var lastPollErrorMessage = "";
   var panelConnectionId = loadPanelConnectionId();
   var panelConnectionGeneration = 0;
+  var autonomousSessionState = null;
+  var autonomousSessionTimer = null;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
@@ -221,6 +225,72 @@
   function setBridgeConnected() {
     setStatus("Connected", true);
     setBridgeHelp("Bridge connected.", "online");
+  }
+
+  function stopAutonomousSessionTimer() {
+    if (autonomousSessionTimer) clearTimeout(autonomousSessionTimer);
+    autonomousSessionTimer = null;
+  }
+
+  function renderAutonomousSession() {
+    if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
+    stopAutonomousSessionTimer();
+    var state = autonomousSessionState || {};
+    var remainingMs = state.expiresAt ? Math.max(0, Date.parse(state.expiresAt) - Date.now()) : 0;
+    var active = state.active === true && remainingMs > 0;
+    autonomousSessionButton.setAttribute("aria-pressed", active ? "true" : "false");
+    autonomousSessionButton.disabled = !running;
+    if (active) {
+      var minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+      autonomousSessionStatusEl.textContent = "Активна · " + minutes + " мин";
+      autonomousSessionTimer = setTimeout(renderAutonomousSession, 1000);
+    } else {
+      autonomousSessionStatusEl.textContent = state.reason === "panel_not_connected" ? "Панель не подключена" : "Выключена";
+    }
+  }
+
+  function refreshAutonomousSession() {
+    if (!running) {
+      autonomousSessionState = null;
+      renderAutonomousSession();
+      return;
+    }
+    request("GET", "/autonomy/session", null, function (error, response) {
+      if (error) {
+        autonomousSessionState = null;
+        renderAutonomousSession();
+        return;
+      }
+      autonomousSessionState = response && response.session ? response.session : null;
+      renderAutonomousSession();
+    });
+  }
+
+  function setAutonomousSessionEnabled(enabled) {
+    if (!running || !panelConnectionGeneration) return;
+    autonomousSessionButton.disabled = true;
+    request("POST", "/autonomy/session", {
+      enabled: enabled === true,
+      panelConnectionId: panelConnectionId,
+      panelGeneration: String(panelConnectionGeneration)
+    }, function (error, response) {
+      autonomousSessionButton.disabled = false;
+      if (error) {
+        autonomousSessionState = null;
+        renderAutonomousSession();
+        log("Autonomous session failed: " + error.message);
+        return;
+      }
+      autonomousSessionState = response && response.session ? response.session : null;
+      renderAutonomousSession();
+      log(enabled ? "Autonomous Codex session enabled for 20 minutes" : "Autonomous Codex session disabled");
+    });
+  }
+
+  function toggleAutonomousSession() {
+    var state = autonomousSessionState || {};
+    var active = state.active === true && state.expiresAt && Date.parse(state.expiresAt) > Date.now();
+    setAutonomousSessionEnabled(!active);
   }
 
   function getBaseUrl() {
@@ -3453,6 +3523,7 @@
       setBridgeConnected();
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
+        refreshAutonomousSession();
       }
 
       if (response && response.command) {
@@ -3466,6 +3537,8 @@
   function connect() {
     running = true;
     panelConnectionGeneration = Date.now();
+    autonomousSessionState = null;
+    renderAutonomousSession();
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
@@ -3480,11 +3553,21 @@
   }
 
   function disconnect() {
+    if (running && autonomousSessionState && autonomousSessionState.active) {
+      request("POST", "/autonomy/session", {
+        enabled: false,
+        panelConnectionId: panelConnectionId,
+        panelGeneration: String(panelConnectionGeneration)
+      }, function () {});
+    }
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     stopSetupStatusPolling();
+    stopAutonomousSessionTimer();
+    autonomousSessionState = null;
+    renderAutonomousSession();
     if (pollTimer) clearTimeout(pollTimer);
     localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
@@ -3533,6 +3616,7 @@
   disconnectButton.addEventListener("click", disconnect);
   diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
+  if (autonomousSessionButton) autonomousSessionButton.addEventListener("click", toggleAutonomousSession);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
   if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
@@ -3607,6 +3691,7 @@
   updateProviderUi(null);
   renderProviderSelfTest();
   renderConnectorStatus();
+  renderAutonomousSession();
   setTimeout(refreshConnectorStatus, 300);
   restoreTranscriptHistory();
   setStatus("Disconnected", false);

@@ -446,6 +446,31 @@ textarea:focus {
   gap: 8px;
 }
 
+.autonomous-session-control {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#autonomousSessionButton[aria-pressed="true"] {
+  border-color: #37b26c;
+  color: #8ee5ad;
+}
+
+#autonomousSessionStatus {
+  color: #a8a8a8;
+  font-size: 11px;
+  min-width: 0;
+}
+
+.autonomous-session-help {
+  color: #8f8f8f;
+  font-size: 10px;
+  line-height: 1.35;
+  margin: 6px 0 0;
+}
+
 #agentStatus {
   color: #a8a8a8;
   font-size: 11px;

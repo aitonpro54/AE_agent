@@ -9,6 +9,8 @@ const { spawn } = require("child_process");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
+const solutionCandidateQueue = require("./solution-candidate-queue");
+const { createAutonomousSessionManager } = require("./autonomous-session");
 const reuseTelemetry = require("./reuse-telemetry");
 const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
@@ -298,6 +300,13 @@ function listEffectPresets(args) {
 let lastPanelSeenAt = 0;
 let lastPanelInfo = null;
 let lastPanelPollLoggedAt = 0;
+const autonomousSession = createAutonomousSessionManager({
+  panelState: () => ({
+    panelConnectionId: lastPanelInfo && lastPanelInfo.panelConnectionId || null,
+    panelGeneration: lastPanelInfo && lastPanelInfo.panelGeneration || null,
+    seenAt: lastPanelSeenAt
+  })
+});
 
 function log(message) {
   process.stderr.write(`[${SERVER_NAME}] ${message}\n`);
@@ -805,6 +814,7 @@ function getBridgeStatus() {
     uptimeMs: now - STARTED_AT,
     startedAt: new Date(STARTED_AT).toISOString(),
     panelConnected: now - lastPanelSeenAt < 15000,
+    autonomousSession: autonomousSession.publicStatus(),
     lastPanelSeenAt,
     lastPanelInfo,
     pendingCommands: countQueuedCommands(now),
@@ -965,7 +975,8 @@ const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
   "delete_layer"
 ]);
 const M100_DIRECT_TOOL_SOURCES = new Set([
-  "direct-tools-call"
+  "direct-tools-call",
+  "mcp-adapter"
 ]);
 const M100_LOCAL_ADMIN_TOOL_SOURCES = new Set([
   "dev-http"
@@ -1049,11 +1060,16 @@ function m100DirectEscapeHatchAllowed(source, args) {
   return Boolean(args && args[M100_DIRECT_ESCAPE_HATCH_ARG] === true);
 }
 
-function m100DirectToolCallBlock(source, name, args) {
+function m100DirectToolCallBlock(source, name, args, executionContext) {
   if (!M100_DIRECT_TOOL_SOURCES.has(source)) return null;
   // The runner never dispatches steps in explicit dry-run mode. Permit only
   // this preview through legacy MCP adapters; real runs retain default-deny.
   if (name === "run_ai_agent_plan" && args && args.dryRun === true) return null;
+  if (source === "mcp-adapter"
+    && name === "run_ai_agent_plan"
+    && args && args.dryRun === false
+    && executionContext && executionContext.autonomousSession
+    && executionContext.autonomousSession.authorized === true) return null;
   const risk = classifyM100ToolRisk(name);
   if (risk.known && risk.riskLevel === "read_only") return null;
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
@@ -1352,6 +1368,7 @@ function storeM100ActionProposal(proposal, payload) {
     confirmationSessionId: confirmation.sessionId || "",
     executionState: "pending",
     executionId: null,
+    dryRunCompletedAt: null,
     cancelledAt: null,
     proposal: m100StoredProposalCopy(proposal),
     payload,
@@ -1514,6 +1531,9 @@ function m100PlanRequiresConfirmation(validation) {
 
 function confirmM100ActionProposal(record, options, run) {
   const keys = m100PlanRunLookupKey(options || {});
+  const autonomous = options && options._m100AutonomousSession && options._m100AutonomousSession.authorized === true
+    ? options._m100AutonomousSession
+    : null;
   if (!record) {
     throw m100ProtocolError("m100_action_proposal_not_found", "M100 action proposal was not found. Create a fresh Agent proposal before running.");
   }
@@ -1557,25 +1577,27 @@ function confirmM100ActionProposal(record, options, run) {
       receivedRiskPolicyVersion: keys.riskPolicyVersion || null
     });
   }
-  if (!keys.confirmationToken || m100Protocol.hashConfirmationToken(keys.confirmationToken) !== record.confirmationTokenHash) {
-    throw m100ProtocolError("m100_confirmation_token_mismatch", "M100 confirmation token does not match the stored proposal.");
-  }
-  if (!keys.confirmedBySurface || keys.confirmedBySurface !== record.confirmationSurface) {
-    throw m100ProtocolError("m100_confirmation_surface_mismatch", "M100 confirmation surface does not match the stored proposal.", {
-      expectedSurface: record.confirmationSurface,
-      receivedSurface: keys.confirmedBySurface || null
-    });
-  }
-  if (record.confirmationSessionId && keys.confirmedBySession !== record.confirmationSessionId) {
-    throw m100ProtocolError("m100_confirmation_session_mismatch", "M100 confirmation session does not match the stored proposal.", {
-      expectedSession: record.confirmationSessionId,
-      receivedSession: keys.confirmedBySession || null
-    });
+  if (!autonomous) {
+    if (!keys.confirmationToken || m100Protocol.hashConfirmationToken(keys.confirmationToken) !== record.confirmationTokenHash) {
+      throw m100ProtocolError("m100_confirmation_token_mismatch", "M100 confirmation token does not match the stored proposal.");
+    }
+    if (!keys.confirmedBySurface || keys.confirmedBySurface !== record.confirmationSurface) {
+      throw m100ProtocolError("m100_confirmation_surface_mismatch", "M100 confirmation surface does not match the stored proposal.", {
+        expectedSurface: record.confirmationSurface,
+        receivedSurface: keys.confirmedBySurface || null
+      });
+    }
+    if (record.confirmationSessionId && keys.confirmedBySession !== record.confirmationSessionId) {
+      throw m100ProtocolError("m100_confirmation_session_mismatch", "M100 confirmation session does not match the stored proposal.", {
+        expectedSession: record.confirmationSessionId,
+        receivedSession: keys.confirmedBySession || null
+      });
+    }
   }
 
   record.confirmedAt = new Date().toISOString();
-  record.confirmedBySurface = keys.confirmedBySurface;
-  record.confirmedBySession = keys.confirmedBySession || "";
+  record.confirmedBySurface = autonomous ? "cep-autonomous-session" : keys.confirmedBySurface;
+  record.confirmedBySession = autonomous ? `session-${autonomous.sessionHash}` : (keys.confirmedBySession || "");
   record.executionState = "confirmed";
   record.executionId = run && run.id || null;
   recordEvent("m100_action_proposal_confirmed", {
@@ -6189,8 +6211,21 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
   return { ok: true, approval };
 }
 
-async function runValidatedAgentPlan(options) {
+async function runValidatedAgentPlan(options, executionContext) {
   options = resolveM100PlanRunOptions(options || {});
+  const autonomous = executionContext && executionContext.autonomousSession
+    && executionContext.autonomousSession.authorized === true
+    ? executionContext.autonomousSession
+    : null;
+  if (autonomous) {
+    options = {
+      ...options,
+      confirm: true,
+      allowMutations: true,
+      autoEditSession: true,
+      _m100AutonomousSession: autonomous
+    };
+  }
   const prepared = validateAgentPlanWithRepair(options.plan, options.requestId || null, {
     solutionHints: options.solutionHints || options.planSolutionHints || null,
     projectIntentMemory: options.projectIntentMemory || options.planProjectIntentMemory || null
@@ -6233,6 +6268,10 @@ async function runValidatedAgentPlan(options) {
       autoEditSession,
       allowWithoutCheckpoint,
       allowRawExtendscript,
+      autonomousSession: autonomous ? {
+        capability: autonomous.capability,
+        expiresAt: autonomous.expiresAt
+      } : null,
       protection: activeEditSessionAtStart
         ? "active_edit_session"
         : checkpointStepPresent
@@ -6298,6 +6337,9 @@ async function runValidatedAgentPlan(options) {
     }
     if (options._m100ActionProposal) {
       const actionRecord = options._m100ActionRecord || null;
+      if (actionRecord && run.dryRun && run.ok) {
+        actionRecord.dryRunCompletedAt = run.finishedAt;
+      }
       if (actionRecord && !run.dryRun && actionRecord.executionState === "executing") {
         actionRecord.executionState = run.ok ? "completed" : "failed";
         actionRecord.executionId = run.id;
@@ -6352,6 +6394,23 @@ async function runValidatedAgentPlan(options) {
       reason: "client-authored confirm:true is not an execution authority for mutating/destructive/raw plan steps"
     };
     return finishRun();
+  }
+  if (!dryRun && autonomous) {
+    const autonomousRisk = m100RiskForAgentPlan(prepared.plan, validation).level;
+    if (!options._m100ActionRecord || options._m100ActionRecord.riskLevel !== "mutating" || autonomousRisk !== "mutating") {
+      run.ok = false;
+      run.error = "Autonomous Codex sessions allow only proposal-backed typed mutating plans.";
+      run.errorCode = "autonomous_session_scope_blocked";
+      run.safety.status = "blocked_autonomous_session_scope";
+      return finishRun();
+    }
+    if (!options._m100ActionRecord.dryRunCompletedAt) {
+      run.ok = false;
+      run.error = "A successful dry run of this proposal is required before autonomous execution.";
+      run.errorCode = "autonomous_session_dry_run_required";
+      run.safety.status = "blocked_autonomous_session_dry_run_required";
+      return finishRun();
+    }
   }
   if (dryRun && validation.ok !== true && validation.classification && validation.classification.allowsDryRun === false) {
     run.ok = false;
@@ -6901,6 +6960,31 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname === "/autonomy/session" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      writeJson(res, 200, { ok: true, session: autonomousSession.publicStatus() });
+      return;
+    }
+
+    if (url.pathname === "/autonomy/session" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const enabled = body && body.enabled === true;
+        const session = enabled ? autonomousSession.activate(body) : autonomousSession.revoke(body);
+        recordEvent(enabled ? "autonomous_session_enabled" : "autonomous_session_revoked", {
+          capability: session.capability,
+          active: session.active,
+          expiresAt: session.expiresAt,
+          panelConnectionIdHash: crypto.createHash("sha256").update(String(body.panelConnectionId || "")).digest("hex").slice(0, 12)
+        });
+        writeJson(res, 200, { ok: true, session });
+      } catch (error) {
+        writeJson(res, 409, { ok: false, error: error.message || String(error) });
+      }
+      return;
+    }
+
     if (url.pathname === "/dev/status" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       writeJson(res, 200, getBridgeStatus());
@@ -7205,6 +7289,27 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname === "/mcp/tools/call" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      if (req.headers["x-ae-mcp-adapter"] !== "codex-stdio-v1") {
+        writeJson(res, 403, { ok: false, error: "Official MCP adapter marker is required." });
+        return;
+      }
+      try {
+        const body = await readJsonBody(req);
+        const name = String(body.name || "");
+        const args = body.arguments || {};
+        const authority = autonomousSession.authorization();
+        const result = await callToolLogged("mcp-adapter", name, args, {
+          autonomousSession: authority
+        });
+        writeJson(res, 200, { ok: true, tool: name, result });
+      } catch (error) {
+        writeJson(res, 500, m100HttpFailure(error, { fallbackPhase: "ae_execution" }));
+      }
+      return;
+    }
+
     if (url.pathname.startsWith("/dev/tool/") && (req.method === "GET" || req.method === "POST")) {
       if (!requireToken(req, res, url)) return;
 
@@ -7486,6 +7591,7 @@ function startHttpBridge() {
 
 const tools = [
   ...solutionDiscovery.discoveryTools,
+  ...solutionCandidateQueue.solutionCandidateQueueTools,
   {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
@@ -10692,7 +10798,7 @@ const tools = [
   }
 ];
 
-async function callTool(name, args) {
+async function callTool(name, args, executionContext) {
   args = args || {};
   const resolveCompScript = `
       function __codexProjectIndexForItem(target) {
@@ -11543,6 +11649,23 @@ async function callTool(name, args) {
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
   }
 
+  if (name === "list_solution_candidates" || name === "get_solution_candidate") {
+    try {
+      const result = name === "list_solution_candidates"
+        ? solutionCandidateQueue.listSolutionCandidates(args || {})
+        : solutionCandidateQueue.getSolutionCandidate(args || {});
+      recordEvent("solution_candidate_queue_read", {
+        operation: name,
+        candidateRef: result.candidateRef || null,
+        returnedCount: Array.isArray(result.candidates) ? result.candidates.length : 1,
+        total: Number.isInteger(result.total) ? result.total : null
+      });
+      return toolResult(result);
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message }, true);
+    }
+  }
+
   if (name === "build_solution_plan") {
     try {
       solutionDiscovery.knownSolution(args.solutionId, tools);
@@ -11562,7 +11685,7 @@ async function callTool(name, args) {
       const proposal = {...result.proposal, confirmation: {...result.proposal.confirmation}};
       delete proposal.confirmation.confirmationToken;
       return toolResult({ok: true, ...result, proposal,
-        next: "This redacted proposal supports MCP dry-run only. Confirm and execute through the existing CEP workflow."});
+        next: "Run a dry-run first. MCP can execute this proposal only while the user-enabled CEP Autonomous Codex session is active and the plan is typed and mutating; otherwise use the normal CEP confirmation flow."});
     }
     catch (error) { return toolResult({ ok: false, error: error.message, validation: error.validation || null }, true); }
   }
@@ -11658,7 +11781,7 @@ async function callTool(name, args) {
 
   if (name === "run_ai_agent_plan") {
     try {
-      const run = await runValidatedAgentPlan(args || {});
+      const run = await runValidatedAgentPlan(args || {}, executionContext || null);
       return toolResult(run, !run.ok);
     } catch (error) {
       return toolResult(error.message || String(error), true);
@@ -19122,7 +19245,7 @@ async function callTool(name, args) {
   return toolResult(`Unknown tool: ${name}`, true);
 }
 
-async function callToolLogged(source, name, args) {
+async function callToolLogged(source, name, args, executionContext) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
   const idContext = idempotencyContext(name, args || {});
@@ -19131,11 +19254,12 @@ async function callToolLogged(source, name, args) {
     source,
     name,
     args,
+    autonomousSession: Boolean(executionContext && executionContext.autonomousSession),
     idempotency: idContext ? { key: idContext.key, scope: idContext.scope } : null
   });
 
   try {
-    const m100Block = m100DirectToolCallBlock(source, name, args || {});
+    const m100Block = m100DirectToolCallBlock(source, name, args || {}, executionContext || null);
     if (m100Block) {
       const durationMs = Date.now() - startedAt;
       recordEvent("m100_direct_tool_blocked", {
@@ -19183,7 +19307,7 @@ async function callToolLogged(source, name, args) {
     }
 
     const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
-    const result = await callTool(name, args);
+    const result = await callTool(name, args, executionContext || null);
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     resultWithCheckpoint = await attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {});
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);

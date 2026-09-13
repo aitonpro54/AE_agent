@@ -77,7 +77,7 @@ function getSolution(args, tools) {
       nextOffset: offset + limit < content.length ? offset + limit : null, truncated: offset + limit < content.length },
     toolContracts: selected,
     planBuilder: offset === 0 ? getBuilderContract(entry.id) : undefined,
-    next: "Read every recipe page needed for the operation. MCP supports proposal and dry-run; actual execution uses the existing CEP confirmation workflow. This result authorizes no mutation." };
+    next: "Read every recipe page needed for the operation. Build a proposal and dry-run first. A temporary CEP Autonomous Codex session can authorize proposal-backed typed mutations; raw JSX and destructive plans retain manual confirmation. This result authorizes no mutation." };
 }
 
 const discoveryTools = [
@@ -87,7 +87,7 @@ const discoveryTools = [
     inputSchema: {type: "object", properties: {id: {type: "string"}, offset: {type: "integer", minimum: 0}, limit: {type: "integer", minimum: 500, maximum: 12000, default: 6000}, toolNames: {type: "array", maxItems: 4, items: {type: "string"}, description: "Preferred tool names whose full contracts are needed; omit to keep the response compact."}}, required: ["id"]} },
   { name: "build_solution_plan", description: "Build a deterministic reviewed AE keyframe-distribution plan from explicit complete inspected evidence. Local computation, no LLM or AE mutation. Returns normal plan for review/proposal, with scalar linear-only limits.",
     inputSchema: {type: "object", properties: {solutionId: {type: "string"}, inputs: {type: "object", description: "Explicit complete inspected evidence per the supported builder input contract returned by get_solution."}}, required: ["solutionId", "inputs"]} },
-  { name: "propose_ai_agent_plan", description: "Create a server-owned action proposal for an explicit AE plan without a provider call or AE mutation. Returns a redacted proposal for run_ai_agent_plan dryRun:true. Actual execution uses the existing CEP confirmation workflow.",
+  { name: "propose_ai_agent_plan", description: "Create a server-owned action proposal for an explicit AE plan without a provider call or AE mutation. Returns a redacted proposal for dry-run and, while the user-enabled CEP Autonomous Codex session is active, proposal-backed typed mutation. Raw JSX and destructive plans retain manual confirmation.",
     inputSchema: {type: "object", properties: {plan: {type: "object"}, requestId: {type: "string"}}, required: ["plan"]} }
 ];
 
