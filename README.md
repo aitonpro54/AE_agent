@@ -1,6 +1,6 @@
 # AE Agent
 
-AE Agent 2.0.0 is a local After Effects assistant: a CEP panel talks to a local
+AE Agent 3.0.0 is a local After Effects assistant: a CEP panel talks to a local
 bridge daemon, and the daemon owns all provider calls, plan validation, AE
 execution gates, checkpoints, logs, and verification.
 

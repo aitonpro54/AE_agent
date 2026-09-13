@@ -402,8 +402,8 @@ function buildPromotedSolution(report, review, options = {}) {
     },
     testedAeContext: review.testedAeContext || {
       aeVersion: null,
-      panelVersion: "AE Agent 2.0.0",
-      bridgeVersion: "2.0.0",
+      panelVersion: "AE Agent 3.0.0",
+      bridgeVersion: "3.0.0",
       projectKind: "unknown",
       notes: []
     },
@@ -509,8 +509,8 @@ function promotionReviewTemplate() {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 2.0.0",
-      bridgeVersion: "2.0.0",
+      panelVersion: "AE Agent 3.0.0",
+      bridgeVersion: "3.0.0",
       projectKind: "synthetic",
       notes: []
     },
