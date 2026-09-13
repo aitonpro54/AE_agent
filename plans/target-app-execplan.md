@@ -8,7 +8,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 
 ## Текущий фокус
 
-Выпуск 3.0.0 и публикация накопленных изменений. Пользователь 2026-09-12
+Выпуск 3.0.0 опубликован 2026-09-13 в двух связанных PR. Пользователь 2026-09-12
 разрешил обновление версии панели, push, необходимые PR и подготовку handoff
 для следующего чата. Автоматический перенос в новый чат не запрошен.
 
@@ -27,7 +27,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] Обновить рабочий AE-навык; активировать новый daemon и MCP preview.
 - [x] Согласовать версии panel/manifest/assets/package/bridge до 3.0.0.
 - [x] Обновить установленную панель и проверить scoped branding/reload.
-- [ ] Push, baseline/release PR и handoff с точными ссылками.
+- [x] Push, baseline/release PR и handoff с точными ссылками.
 
 ## Decision Log
 
@@ -49,6 +49,14 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 ## Progress
 
 - Feature commit `79f421a`: 119 MCP tools, 181 reviewed решения, четыре builders.
+- Release commit `7dcd36f`: согласованная версия 3.0.0 и release notes.
+- [PR #1](https://github.com/aitonpro54/AE_agent/pull/1): накопленная база
+  `codex/ae-3-baseline` → `main`, draft; требуется самостоятельный обзор истории.
+- [PR #2](https://github.com/aitonpro54/AE_agent/pull/2): reuse и выпуск
+  `codex/pro-review-longrun` → `codex/ae-3-baseline`, открыт для review.
+  Сначала интегрировать #1 через merge commit с сохранением ancestry, затем
+  перенаправить #2 на `main` и проверить diff. Merge не выполнялся.
+- Обе ветки отправлены в origin; продолжение описано в `.codex/handoff.md`.
 - 12/12 RU и EN контрольных запросов находят ожидаемое решение в top-3;
   все 181 точных названий находятся. Это словарный поиск, не embeddings.
 - Стрессовый planner пример: 13 397 символов при бюджете 24 000, сохранён
@@ -96,4 +104,6 @@ failure; MCP — редактированный proposal и preview-only compati
 
 Release milestone: обновлённые bridge/solution smokes, syntax, manifest/package
 согласованность и diff check — pass. Установленная CEP-панель и bridge 3.0.0;
-branding-smoke/reload-button-smoke прошли, статус online, pending/inflight=0.
+branding-smoke/reload-button-smoke прошли 2026-09-12 при online, pending/inflight=0.
+Повторный статус 2026-09-13: bridge отвечает 3.0.0, CEP-панель отключена.
+Для следующей live-проверки сначала подключить панель и прочитать свежий статус.
