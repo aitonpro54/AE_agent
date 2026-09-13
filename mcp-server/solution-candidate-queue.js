@@ -377,6 +377,7 @@ const solutionCandidateQueueTools = [
 module.exports = {
   MAX_FILE_BYTES,
   MAX_FILES,
+  loadCandidateQueue,
   getSolutionCandidate,
   listSolutionCandidates,
   solutionCandidateQueueTools

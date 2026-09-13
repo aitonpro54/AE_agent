@@ -63,6 +63,28 @@ review из любого проекта и считает точные повт�
 решений и планировании до отдельной проверки и promotion в typed tool,
 deterministic builder или reviewed recipe.
 
+### Reducer предложений для review
+
+`npm.cmd run review:candidates -- <review-input.json>` готовит локальный
+`solution-candidate-review-proposal.v1` без исполнения source и записи registry.
+Вход фиксирует candidateRef/fingerprint, явные параметры с уникальными source
+anchors, сравнение reviewed recipes и syntax/safety/reproduction/read-back
+criteria. Reducer заново читает группу, проверяет существование recipe/tool
+связей, anchors, полноту source и compile-only grammar. Safety scan даёт только
+лексические сигналы; assertions runOk не заменяют проверки результата.
+
+Выход всегда `plannerVisible:false`, `explicitReview:false`; criteria остаются
+pending-review. Схема намеренно отличается от approval для существующего
+promotion helper. Даже `proposal-prepared` означает готовность к review, не
+готовность к исполнению/регистрации. CLI не добавлен к planner/MCP каталогу.
+Результаты local/ignored; [review выбранной группы](proposals/repeated-composition-audit.md)
+и [вход с контрактом](proposals/repeated-composition-audit.review.json) проверяемы в git.
+
+Первый reducer ограничен 20 членами одной exact-repeat группы. Stale fingerprint,
+singleton, malformed queue records, redacted/truncated source, unsuccessful или
+dry-run члены и неоднозначные anchors блокируют дальнейшую приёмку. Хэш считается
+по stored sanitized JSX; совпадение не доказывает идентичность оригиналов.
+
 ## Ограничения локального генератора
 
 Поддерживаются следующие ID:

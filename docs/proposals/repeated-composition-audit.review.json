@@ -1,0 +1,98 @@
+{
+  "candidateRef": "2026-09-08T19-32-52.819Z-raw-extendscript-fallback-after-04-06-20260909.json",
+  "expectedFingerprint": "sha256:a8dde18b624f2ad55944133385293baca7f36133d5ce89f46e6e1fd70d6a87a0",
+  "proposal": {
+    "id": "bounded-composition-audit-builder",
+    "kind": "deterministic-builder",
+    "summary": "Подготовить ограниченный аудит явно выбранных композиций из typed inspection evidence. Возвращать структурированные данные в памяти, дедуплицировать вложенные композиции и явно отмечать поля, которые текущие typed tools не предоставляют.",
+    "parameters": [
+      {
+        "name": "targetNames",
+        "type": "array",
+        "sourceAnchor": "var targetNames=['CODX_R01_Block 01','CODX_R02_Block 02','CODX_R03_Block 03','CODX_R01_CONTROL','CODX_R02_CONTROL','CODX_R03_CONTROL','CODX_Resolve_3Blocks','Main Comp'];",
+        "constraints": ["1–20 уникальных точных имён из явного выбора пользователя; исходные имена не являются defaults.", "До построения сопоставить каждое имя ровно одному comp.id; отсутствие или неоднозначность блокирует аудит."]
+      },
+      {
+        "name": "recurseNestedComps",
+        "type": "boolean",
+        "sourceAnchor": "if(recurse && l.source instanceof CompItem)",
+        "constraints": ["Явное значение, без неявного обхода всего проекта.", "Обход по comp.id с visited set; повторная ссылка допустима, противоречивые данные одного ID блокируют результат."]
+      },
+      {
+        "name": "limits",
+        "type": "object",
+        "sourceAnchor": "function visit(c,recurse){if(seen[c.id])return;seen[c.id]=true;",
+        "constraints": ["Новый guard отсутствует в raw source: maxComps 1–20, maxLayersPerComp 1–100, maxPropertiesPerLayer 1–200, maxKeysPerProperty 0–80, maxDepth 1–5, maxOutputChars 1000–64000.", "Любое превышение даёт complete:false и конкретную причину; такой аудит нельзя использовать как successful verification evidence."]
+      },
+      {
+        "name": "includeValues",
+        "type": "boolean",
+        "sourceAnchor": "r.value=simple(p.valueAtTime(0,true));",
+        "constraints": ["Исходный sample time=0 и preExpression=true фиксируются как observed assumptions, а не переносятся молча.", "Значения допускаются только при подтверждённых sampleTime/preExpression в typed evidence; неподдерживаемое поле возвращается unavailable, без raw fallback."]
+      },
+      {
+        "name": "includeExpressions",
+        "type": "boolean",
+        "sourceAnchor": "if(p.canSetExpression){r.expression=p.expression;r.expressionEnabled=p.expressionEnabled;r.error=p.expressionError;}",
+        "constraints": ["Expression text — только данные, никогда не исполнять и не изменять.", "Отличать отсутствующее выражение от отсутствия поддержки поля в inspection contract."]
+      },
+      {
+        "name": "includeSource",
+        "type": "boolean",
+        "sourceAnchor": "source:l.source?{id:l.source.id,name:l.source.name,file:l.source.file?l.source.file.fsName:null}:null",
+        "constraints": ["Сохранять только разрешённые id/name/type из typed read-back.", "Project/footage filesystem paths исключить из нового builder; экспорт файла требует отдельного scope."]
+      }
+    ],
+    "comparisons": [
+      {
+        "solutionId": "listcompositions-typed-plan",
+        "tools": ["get_project_info", "get_project_snapshot", "find_project_items", "get_comp_details"],
+        "coverage": "Поиск project items и чтение композиционных metadata доступны через reviewed recipe.",
+        "gap": "Нет готового builder для точного набора roots, обхода nested comps, дедупликации и агрегированного completeness contract."
+      },
+      {
+        "solutionId": "getlayerinfo-typed-plan",
+        "tools": ["get_comp_details", "get_layer_details"],
+        "coverage": "Существующие typed инструменты дают composition/layer details для узких целей.",
+        "gap": "Полная сериализация произвольного property tree и всех keyframe interpolation/value fields не доказана; такие поля в первом builder будут unavailable."
+      },
+      {
+        "solutionId": "find-all-expressions-typed-plan",
+        "tools": ["list_layers", "get_layer_details", "get_selected_properties"],
+        "coverage": "Есть reviewed процедура инспекции выражений и выбранных свойств.",
+        "gap": "Не подтверждено полное покрытие всех вложенных свойств, parent/matte identities и blend enum contract; не выдавать частичную инспекцию за эквивалент raw audit."
+      }
+    ],
+    "algorithm": [
+      "Builder принимает явные targetNames, flags, limits и immutable typed inspection snapshot с captureId, comp/layer identities, pagination/completeness metadata. Он не вызывает AE, provider или filesystem.",
+      "Вызывающая сторона собирает узкие данные через перечисленные tools, завершает нужные страницы и проверяет свежесть. При изменении проекта между чтениями сбор начинается заново.",
+      "Проверить входы и exact target resolution; построить граф только из подтверждённых source comp IDs. Для отсутствующего nested evidence вернуть missingEvidence и complete:false.",
+      "Обойти roots в заданном порядке, слои по индексу, properties по canonical descriptor path. Shared nested comps посетить один раз. Цикл обозначить как cycleDetected и неполноту; не зависать.",
+      "Соблюдать лимиты до добавления каждого узла и перед выдачей JSON. Поля со скрытым truncation либо без контракта заменить явными unavailable records. Derived completeness требует полного покрытия выбранного scope.",
+      "Выдать versioned in-memory audit: roots, comps, identities, coverage, unavailable, complete, missingEvidence. Стабильный hash вычислять по canonical payload без transient capture timestamp; связывать provenance с captureId отдельно.",
+      "JSON export, абсолютные пути, blend enum discovery и raw JSX fallback не входят в первый builder. Добавление builder к discovery/registry возможно только отдельным reviewed promotion."
+    ],
+    "criteria": {
+      "syntax": [
+        "Исходный stored JSX проходит только V8 compile-only; redaction не позволяет считать это проверкой оригинала. Не запускать исходный candidate.",
+        "Будущая реализация builder: node --check, strict input/output schema validation, unknown fields и nonfinite numeric values отклоняются. Если понадобится JSX endpoint, ES3/AE compatibility проверяется отдельно."
+      ],
+      "safety": [
+        "Исходная внешняя File запись и пути исключены из replacement contract; проверить diff на отсутствие filesystem, eval, provider calls, selection и AE mutations.",
+        "Отсутствующие/неоднозначные roots блокируют вывод; stale, cyclic, contradictory, paginated или превышающие лимиты данные не дают complete:true.",
+        "Не использовать runOk повторов или compile-only как доказательство безопасности/воспроизводимости. Все критерии требуют отдельного review."
+      ],
+      "isolatedReproduction": [
+        "Будущий fixture: ROOT_A(id=10), ROOT_B(id=20), shared NESTED(id=30), отдельная посторонняя comp(id=40); 10→30 и 20→30 дают ровно три comp в результате, посторонняя отсутствует.",
+        "Два запуска на cloned immutable fixture с теми же параметрами дают byte-identical canonical payload/hash и неизменённый input; перестановка входных страниц не меняет canonical результат.",
+        "Отдельно проверить recursion=false, duplicate names, missing nested comp, cycle, conflicting identities, boundary/over-limit, unsupported fields, partial pages, changed captureId и sample-time mismatch.",
+        "Изолированный smoke reducer проверяет только reducer. Воспроизведение будущего audit builder и реальный AE host сейчас не выполнены."
+      ],
+      "readBack": [
+        "Для будущей host проверки сопоставить roots/comp IDs/counts и layer id/index/name/source через свежие get_project_snapshot, get_comp_details и get_layer_details в одной согласованной capture session.",
+        "По поддержанным properties сопоставить canonical path, value/sample time, key count/time/value/interpolation и expression flags. Unsupported/read errors дают unavailable, никогда пустой массив с complete:true.",
+        "Сверить отсутствие изменений композиции, выбранных элементов и пользовательских assets. AE read-back требует отдельно согласованной тестовой сцены; текущий milestone даёт критерии, не host acceptance."
+      ]
+    }
+  }
+}

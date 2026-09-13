@@ -8,6 +8,12 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 
 ## Текущий фокус
 
+2026-09-13 завершён один локальный milestone review/promotion reducer на
+`codex/ae-global-autonomy-routing` от `8fe053a`. Подготовлен proposal ограниченного
+аудита композиций; promotion исходного candidate заблокирован redaction и File I/O.
+Новый builder ещё не реализован и не зарегистрирован. Scope не включал live AE,
+provider trials, Full Intake, push или PR.
+
 Выпуск 3.0.0 опубликован 2026-09-13 в двух связанных PR. Пользователь 2026-09-12
 разрешил обновление версии панели, push, необходимые PR и подготовку handoff
 для следующего чата. Автоматический перенос в новый чат не запрошен.
@@ -31,6 +37,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] Настроить глобальные Codex model roles и AE workflow для любых проектов.
 - [x] Открыть через MCP read-only очередь карантинных JSX-candidates.
 - [x] Добавить временную CEP autonomous session для proposal-backed typed plans.
+- [x] Реализовать локальный reducer exact-repeat candidate review и проверяемый builder proposal.
 
 ## Decision Log
 
@@ -42,6 +49,13 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
   Direct tools, raw JSX, destructive plans и replay остаются закрытыми.
 - Raw JSX candidates доступны через компактную read-only MCP-очередь, но не
   становятся planner-visible и не продвигаются автоматически.
+- Review reducer работает отдельно от planner: свежая группа, expected fingerprint,
+  проверяемые source anchors, reviewed recipe/tool links и pending criteria.
+  Output не является approval для promotion helper. V8 compile-only и lexical
+  safety не доказывают ES3/AE compatibility либо безопасность.
+- Для четырёх повторов composition audit предложен pure bounded builder из typed
+  snapshots. Redacted source и external File I/O оставляют candidate в quarantine;
+  неподдержанные property/enum/path поля не объявляются покрытыми typed tools.
 - Глобальный Codex default — Terra/Medium; роли `ae_scout`, `ae_specialist` и
   `ae_architect` закрепляют Luna/Medium, Sol/High и Astra/High по сложности.
 - Первые builders ограничены полной scalar linear последовательностью,
@@ -77,11 +91,17 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
   в пользовательский Codex home; новые чаты применят их после перезапуска Codex.
 - Изолированный MCP smoke выполнил typed plan при активном CEP lease и подтвердил
   блокировку без lease, direct mutation, raw JSX, destructive direct call и replay.
+- Review milestone: `review:candidates` и `solution-candidate-review-proposal.v1`;
+  [контракт и review](../docs/proposals/repeated-composition-audit.md), шесть matched
+  parameters, четыре exact repeats, ноль registry writes. Изолированные fixtures
+  проверяют reducer; воспроизведение будущего audit builder остаётся pending.
 
 ## Следующие продуктовые изменения
 
-1. Добавить review/promotion reducer для повторяющихся quarantine candidates:
-   parameter extraction, syntax/safety checks и генерация typed/builder proposal.
+1. В следующем отдельном milestone реализовать pure bounded composition audit
+   builder по `docs/proposals/repeated-composition-audit.review.json`, проверить
+   inspection contracts и synthetic reproduction. Promotion требует review
+   реализации и доказательств; runtime candidate остаётся planner-invisible.
 2. Подготовить воспроизводимые изолированные сцены для A/B; после отдельного
    согласования real provider/live scope измерить tokens на успешную задачу.
 3. По трассам оптимизировать крупные inspection/tool responses; fresh evidence
@@ -107,6 +127,15 @@ Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies,
 acceptance/reducer. Разрешение local-use source не означает публикацию raw JSX.
 
 ## Validation Notes
+
+Candidate review milestone: `check:rules`, syntax четырёх touched JS,
+`smoke:solutions` (включая новый reducer smoke), `smoke:planning`, scoped
+`solution-discovery-smoke` и `git diff --check` — pass. Discovery: 121 tools,
+четыре dry-run steps, aeCommands=0. Reducer fixtures подтверждают deterministic
+output, stale/malformed/incomplete source и group guards, неизменность registry,
+quarantine и discovery, отказ promotion helper принять proposal как approval.
+Реальная выбранная группа: parse-only-pass, 6/6 anchors matched, status=blocked
+из-за source redaction и external I/O. Ни source, ни AE scene не исполнялись.
 
 Reuse milestone: check:rules; syntax 21 JS; smoke:solutions, smoke:bridge,
 smoke:planning, smoke:provider-contract/API, smoke:full-intake — pass.

@@ -6,7 +6,7 @@
     "check:rules": "node scripts/clean-current-check.js",
     "smoke:provider-contract": "node scripts/provider-contract-smoke.js",
     "smoke:provider-api": "node scripts/provider-api-smoke.js",
-    "smoke:solutions": "node scripts/solution-registry-smoke.js && node scripts/solution-candidate-report-smoke.js && node scripts/solution-candidate-queue-smoke.js && node scripts/solution-promotion-smoke.js && node scripts/solution-retrieval-smoke.js && node scripts/solution-library-validation-smoke.js && node scripts/solution-natural-language-smoke.js && node scripts/solution-plan-builder-smoke.js && node scripts/solution-plan-verification-smoke.js && node scripts/reuse-telemetry-smoke.js && node scripts/solution-ab-report-smoke.js",
+    "smoke:solutions": "node scripts/solution-registry-smoke.js && node scripts/solution-candidate-report-smoke.js && node scripts/solution-candidate-queue-smoke.js && node scripts/solution-candidate-review-smoke.js && node scripts/solution-promotion-smoke.js && node scripts/solution-retrieval-smoke.js && node scripts/solution-library-validation-smoke.js && node scripts/solution-natural-language-smoke.js && node scripts/solution-plan-builder-smoke.js && node scripts/solution-plan-verification-smoke.js && node scripts/reuse-telemetry-smoke.js && node scripts/solution-ab-report-smoke.js",
     "smoke:planning": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js && node scripts/generated-safety-contracts-smoke.js",
     "smoke:bridge": "node scripts/chatgpt-connector-smoke.js && node scripts/provider-api-smoke.js && node scripts/prompt-optimization-smoke.js && node scripts/bridge-only-smoke-test.js && node scripts/smoke-test.js && node scripts/solution-discovery-smoke.js && node scripts/autonomous-session-smoke.js && node scripts/autonomous-mcp-smoke.js && node scripts/solution-plan-run-smoke.js",
     "report:reuse": "node scripts/solution-usage-report.js",
@@ -22,6 +22,7 @@
     "generic-repo:full-intake": "node orchestrator/run-generic-repo-full-intake.mjs",
     "generic-repo:tool-importer": "node orchestrator/run-generic-repo-tool-importer.mjs",
     "generic-repo:importer-supervisor": "node orchestrator/run-generic-repo-importer-supervisor.mjs",
-    "generic-repo:queue-supervisor": "node orchestrator/run-generic-repo-queue-supervisor.mjs"
+    "generic-repo:queue-supervisor": "node orchestrator/run-generic-repo-queue-supervisor.mjs",
+    "review:candidates": "node scripts/solution-candidate-review.js"
   }
 }
