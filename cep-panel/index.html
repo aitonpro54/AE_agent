@@ -183,7 +183,8 @@
             <textarea id="chatPrompt" rows="4" placeholder="Describe what to create or do in After Effects..."></textarea>
             <button id="sendChatButton" title="Send">&gt;</button>
           </div>
-          <div class="plan-actions">
+            <div id="currentBridgePlan" class="bridge-help" aria-live="polite"></div>
+            <div class="plan-actions">
             <span id="planRunStatus" class="plan-run-status">No plan ready</span>
             <button id="recoverLastPlanButton" class="recover-plan-button">Подхватить последний план из чата</button>
             <button id="dryRunPlanButton">Dry run / Проверить</button>

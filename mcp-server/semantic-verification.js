@@ -6,6 +6,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "create_comp",
   "create_test_comp",
   "create_solid_layer",
   "create_adjustment_layer",
@@ -68,6 +69,16 @@ const MUTATING_TOOLS = new Set([
   "rename_project_items",
   "add_comp_to_render_queue",
   "set_render_queue_output",
+  "clone_slideshow_event_tree",
+  "extend_slideshow_cloned_tree",
+  "rewrite_slideshow_tree_expressions",
+  "apply_slideshow_event_text",
+  "replace_slideshow_media_leaf",
+  "copy_slideshow_event_pair",
+  "add_slideshow_event_overlays",
+  "copy_slideshow_control_layer",
+  "configure_slideshow_tree_audio",
+  "create_slideshow_master",
   "cleanup_test_items"
 ]);
 
@@ -87,7 +98,8 @@ const READ_BACK_TOOLS = new Set([
   "get_layer_essential_properties",
   "get_essential_graphics_controllers",
   "get_path_geometry",
-  "get_render_queue_status"
+  "get_render_queue_status",
+  "audit_slideshow_generated"
 ]);
 
 function isPlainObject(value) {
@@ -251,7 +263,7 @@ function addLayerEvidence(target, value, source) {
     id: value.id === undefined || value.id === null ? null : String(value.id),
     source: source || "observed layer"
   };
-  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "enabled", "guideLayer"]) {
+  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "audioEnabled", "enabled", "guideLayer"]) {
     if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
   }
   if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
@@ -308,6 +320,8 @@ function addCompEvidence(target, value, source) {
     workAreaDuration: numberValue(value.workAreaDuration),
     motionBlur: value.motionBlur === undefined || value.motionBlur === null ? null : value.motionBlur === true,
     numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
+    layers: Array.isArray(value.layers) ? value.layers.map(layer => ({index: layer.index, id: layer.id, name: layer.name,
+      sourceItem: layer.source, startTime: layer.startTime, inPoint: layer.inPoint, outPoint: layer.outPoint})) : [],
     source: source || "observed comp"
   });
 }
@@ -384,7 +398,8 @@ function createEvidenceStore(readBackSteps) {
     projects: [],
     projectItems: [],
     properties: [],
-    essentialGraphicsControllers: []
+    essentialGraphicsControllers: [],
+    slideshowAudits: []
   };
 }
 
@@ -537,6 +552,12 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
     return;
   }
   if (!isPlainObject(payload)) return;
+
+  if (payload.operation === "audit_generated" && isPlainObject(payload.root)) {
+    const sourceText = source || "slideshow audit";
+    const sourceIndex = Number.parseInt(String(sourceText), 10);
+    evidence.slideshowAudits.push({ ...payload, source: sourceText, stepIndex: Number.isFinite(sourceIndex) ? sourceIndex : null });
+  }
 
   if (typeof payload.name === "string") addName(evidence, payload.name, source);
   addProjectEvidence(evidence, payload, source);
@@ -1092,6 +1113,8 @@ function layerMetadataFields(args) {
   if (hasOwn(args, "locked")) fields.push("locked");
   if (hasOwn(args, "enabled")) fields.push("enabled");
   if (hasOwn(args, "guideLayer")) fields.push("guideLayer");
+  if (hasOwn(args, "motionBlur")) fields.push("motionBlur");
+  if (hasOwn(args, "audioEnabled")) fields.push("audioEnabled");
   return fields;
 }
 
@@ -1102,6 +1125,8 @@ function layerMetadataFieldMatches(layer, args, field) {
   if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
   if (field === "enabled") return boolValue(layer.enabled) === boolValue(args.enabled);
   if (field === "guideLayer") return boolValue(layer.guideLayer) === boolValue(args.guideLayer);
+  if (field === "motionBlur") return boolValue(layer.motionBlur) === boolValue(args.motionBlur);
+  if (field === "audioEnabled") return boolValue(layer.audioEnabled) === boolValue(args.audioEnabled);
   return false;
 }
 
@@ -2022,7 +2047,7 @@ function checkSetCompProperties(checks, step, payload, evidence) {
   const args = step.args || {};
   const updates = isPlainObject(payload.updates) ? payload.updates : {};
   const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
-  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate"].filter((field) => hasOwn(args, field));
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate", "motionBlur"].filter((field) => hasOwn(args, field));
   if (!fields.length) {
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:updates`,
@@ -2464,10 +2489,155 @@ function exactRenamesMatch(items, args) {
   return true;
 }
 
+const SLIDESHOW_MUTATING_TOOLS = new Set([
+  "clone_slideshow_event_tree", "extend_slideshow_cloned_tree", "rewrite_slideshow_tree_expressions",
+  "apply_slideshow_event_text", "replace_slideshow_media_leaf", "copy_slideshow_event_pair",
+  "add_slideshow_event_overlays", "copy_slideshow_control_layer", "configure_slideshow_tree_audio",
+  "create_slideshow_master"
+]);
+
+function checkSlideshowMutation(checks, step, evidence) {
+  const args = isPlainObject(step.args) ? step.args : {};
+  const audits = Array.isArray(evidence.readBack.slideshowAudits) ? evidence.readBack.slideshowAudits : [];
+  const expectedRoot = ["copy_slideshow_event_pair", "add_slideshow_event_overlays", "copy_slideshow_control_layer"].includes(step.tool)
+    ? args.expectedMasterCompName
+    : args.generatedRootName || args.expectedRootCompName || args.masterName;
+  const audit = audits.find((entry) => entry && entry.root && (!expectedRoot || entry.root.name === expectedRoot));
+  let operationMatches = Boolean(audit && audit.ok === true && Array.isArray(audit.issues) && audit.issues.length === 0);
+  let expected = `${expectedRoot || "generated slideshow target"} with clean independent audit`;
+  let observed = audit ? `${audit.root.name}; issues=${audit.issues.length}` : "missing audit_slideshow_generated read-back";
+
+  if (audit && step.tool === "clone_slideshow_event_tree") {
+    operationMatches = operationMatches && Array.isArray(audit.sourceFingerprints) && audit.sourceFingerprints.length > 0 && audit.sourceFingerprints.every((item) => item.unchanged === true);
+    expected += "; protected source fingerprint unchanged";
+  } else if (audit && step.tool === "extend_slideshow_cloned_tree") {
+    const priorAudits = Array.isArray(evidence.allReadBack.slideshowAudits) ? evidence.allReadBack.slideshowAudits.filter((entry) => entry && entry.root && entry.root.name === expectedRoot && Number(entry.stepIndex) < Number(step.index)) : [];
+    const beforeAudit = priorAudits.sort((left, right) => Number(right.stepIndex) - Number(left.stepIndex))[0];
+    const beforeKeys = beforeAudit && beforeAudit.details && Array.isArray(beforeAudit.details.keyMetadata) ? beforeAudit.details.keyMetadata : null;
+    const afterKeys = audit.details && Array.isArray(audit.details.keyMetadata) ? audit.details.keyMetadata : null;
+    let keysMatch = Boolean(beforeAudit && beforeKeys && afterKeys && beforeAudit.details.keyMetadataTruncated === false && audit.details.keyMetadataTruncated === false && Number(beforeAudit.stats && beforeAudit.stats.keyMetadataTotal) === beforeKeys.length && Number(audit.stats && audit.stats.keyMetadataTotal) === afterKeys.length && beforeKeys.length === afterKeys.length);
+    if (keysMatch) {
+      const used = new Set();
+      for (const before of beforeKeys) {
+        const originalCompDuration = Number(before.compDuration);
+        if (!Number.isFinite(originalCompDuration)) { keysMatch = false; break; }
+        const delta = Number(args.targetDuration) - originalCompDuration;
+        const threshold = Math.max(Number(args.introDuration) + 0.0001, originalCompDuration - 2.1);
+        const expectedTime = Number(before.time) >= threshold ? Number(before.time) + delta : Number(before.time);
+        const beforeMetadata = { ...before }; delete beforeMetadata.time; delete beforeMetadata.compDuration;
+        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, 0.001) && stableStringify((() => { const value={...after}; delete value.time; delete value.compDuration; return value; })()) === stableStringify(beforeMetadata));
+        if (matchIndex < 0) { keysMatch = false; break; }
+        used.add(matchIndex);
+      }
+    }
+    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.targetDuration, 0.051) && keysMatch;
+    expected += `; duration=${args.targetDuration}; complete before/after key times and temporal/spatial metadata match`;
+  } else if (audit && step.tool === "rewrite_slideshow_tree_expressions") {
+    const expressions = audit.details && Array.isArray(audit.details.expressions) ? audit.details.expressions : [];
+    operationMatches = operationMatches && expressions.every((item) => {
+      const expression = String(item.expression || "");
+      return !item.error && !expression.includes('comp("Final Comp")') && !expression.includes("comp('Final Comp')");
+    });
+    expected += "; expressions compile and no Final Comp reference remains";
+  } else if (audit && step.tool === "apply_slideshow_event_text") {
+    const texts = audit.details && Array.isArray(audit.details.texts) ? audit.details.texts : [];
+    const expectedTitle = String(args.title || "").replace(/\s+/g, " ").trim();
+    operationMatches = operationMatches && texts.some((item) => String(item.text || "").replace(/\s+/g, " ").trim() === expectedTitle && /Bold/i.test(String(item.font || "")) && item.rect && Number(item.rect.width) <= Number(item.compWidth) * 0.9 + 1 && Number(item.rect.height) <= Number(item.compHeight) * 0.86 + 1);
+    expected += "; requested title present in fitted Times text";
+  } else if (audit && step.tool === "replace_slideshow_media_leaf") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers.filter((item) => item.comp === args.generatedLeafName) : [];
+    operationMatches = operationMatches && Array.isArray(args.mediaItems) && args.mediaItems.length > 0 && args.mediaItems.every((spec, specIndex) => { const baseName=`${args.generatedPrefix}MEDIA_${specIndex+1}`; const matches=layers.filter((item)=>(item.name===baseName||String(item.name||"").startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.enabled===true&&item.audioEnabled===(spec.audio===true)&&nearlyEqual(item.stretch,100)).sort((a,b)=>Number(a.inPoint)-Number(b.inPoint)); if(!matches.length||!nearlyEqual(matches[0].inPoint,spec.start,.051))return false; let cursor=Number(matches[0].inPoint); for(const item of matches){if(!nearlyEqual(item.inPoint,cursor,.051)||!nearlyEqual(Number(item.inPoint)-Number(item.startTime),spec.sourceIn,.051))return false;cursor=Number(item.outPoint);} return cursor+.051>=spec.start+spec.duration; });
+    expected += "; exact generated leaf/path/range/audio has visible 1x coverage";
+  } else if (audit && step.tool === "copy_slideshow_event_pair") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+    const token=String(args.expectedRootCompName||"").replace(args.generatedPrefix||"","").replace(/[^A-Za-z0-9_-]/g,"_");
+    const intro=layers.find((item)=>item.name===`${args.generatedPrefix}EVENT_${token}_INTRO`),main=layers.find((item)=>item.name===`${args.generatedPrefix}EVENT_${token}_MAIN`);
+    operationMatches = operationMatches && Boolean(intro&&main) && nearlyEqual(intro.startTime,args.eventStart) && nearlyEqual(main.startTime,args.eventStart) && nearlyEqual(intro.inPoint,args.eventStart) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration) && nearlyEqual(main.inPoint,args.eventStart+args.introDuration) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration) && Number(intro.effects||0)>=Number(args.minimumCopiedEffects||0);
+    expected += "; independent intro/main timing coverage";
+  } else if (audit && step.tool === "add_slideshow_event_overlays") {
+    const details = audit.details || {};
+    const media = Array.isArray(details.layers) ? details.layers.filter((item)=>String(item.name||"").startsWith(`${args.generatedPrefix}AUDIO_${args.eventId}_`)) : [];
+    const texts = Array.isArray(details.texts) ? details.texts : [];
+    const audioSpecs=Array.isArray(args.audioItems)?args.audioItems:[],captions=Array.isArray(args.captions)?args.captions:[];
+    operationMatches = operationMatches && audioSpecs.every((spec,specIndex)=>{const baseName=`${args.generatedPrefix}AUDIO_${args.eventId}_${specIndex+1}`,matches=media.filter((item)=>(item.name===baseName||String(item.name||"").startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.enabled===false&&item.audioEnabled===true&&nearlyEqual(item.stretch,100)).sort((a,b)=>Number(a.inPoint)-Number(b.inPoint));if(!matches.length||!nearlyEqual(matches[0].inPoint,args.eventStart+spec.start,.051))return false;let cursor=Number(matches[0].inPoint);for(const item of matches){if(!nearlyEqual(item.inPoint,cursor,.051)||!nearlyEqual(Number(item.inPoint)-Number(item.startTime),spec.sourceIn,.051))return false;cursor=Number(item.outPoint);}return cursor+.051>=args.eventStart+spec.start+spec.duration;}) && captions.length===texts.filter((item)=>String(item.layer||"").startsWith(`${args.generatedPrefix}CAPTION_${args.eventId}_`)).length && captions.every((caption)=>texts.some((item)=>item.text===caption));
+    expected += "; audio visibility switch and captions match";
+  } else if (audit && step.tool === "copy_slideshow_control_layer") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+    operationMatches = operationMatches && layers.some((item) => item.name === "CONTROL" && item.enabled === false && item.audioEnabled === false && nearlyEqual(item.inPoint,0) && nearlyEqual(item.outPoint, args.duration) && String(item.comment||"").startsWith(`AE_AGENT_SLIDESHOW:${args.generatedPrefix}:`));
+    expected += "; CONTROL identity/range preserved";
+  } else if (audit && step.tool === "configure_slideshow_tree_audio") {
+    operationMatches = operationMatches && !audit.issues.some((item) => String(item).includes("duplicate_audible_path"));
+    expected += "; no duplicate audible precomp path";
+  } else if (audit && step.tool === "create_slideshow_master") {
+    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.duration, 0.001) && audit.stats && audit.stats.backgroundLayers === 1 && audit.details && audit.details.layers.some((item)=>item.comp===args.masterName&&item.name===`${args.generatedPrefix}BACKGROUND`);
+    expected += `; duration=${args.duration}; background present`;
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:slideshow-audit`,
+    title: "Generated slideshow mutation matches independent typed audit",
+    expected,
+    observed,
+    passed: operationMatches,
+    evidence: audit ? audit.source : "No audit_slideshow_generated step before the next mutation."
+  });
+}
+
 function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+
+  if (SLIDESHOW_MUTATING_TOOLS.has(step.tool)) {
+    checkSlideshowMutation(checks, step, evidence);
+    return;
+  }
+
+  if (step.tool === "add_project_item_to_comp") {
+    const targetName = args.compName || payload.comp && payload.comp.name;
+    const targetIndex = args.compItemIndex;
+    const added = payload.layer || {};
+    const comp = evidence.readBack.comps.find(item => item.name === targetName && (!targetIndex || item.itemIndex === targetIndex));
+    const matches = comp ? comp.layers.filter(layer => layer.name === (args.name || added.name) &&
+      (added.id ? String(layer.id) === String(added.id) : layer.index === added.index)) : [];
+    const layer = matches.length === 1 ? matches[0] : null;
+    const sourceName = args.itemName || payload.sourceItem && payload.sourceItem.name;
+    const sourceMatches = layer && layer.sourceItem && layer.sourceItem.name === sourceName &&
+      (!args.itemIndex || layer.sourceItem.itemIndex === args.itemIndex);
+    const timingMatches = layer && (!hasOwn(args, "startTime") || nearlyEqual(layer.startTime, args.startTime)) &&
+      (!hasOwn(args, "duration") || nearlyEqual(layer.outPoint - layer.inPoint, args.duration));
+    pushCheck(checks, {id: `${step.index}:add_project_item_to_comp:source-and-range`,
+      title: "Added layer source, identity and timing match independent composition read-back",
+      expected: `${targetName}: ${args.name || added.name}, source ${sourceName}`,
+      observed: layer ? `${layer.name}: ${layer.sourceItem && layer.sourceItem.name}; ${layer.inPoint}..${layer.outPoint}` : "missing exact layer",
+      passed: Boolean(sourceMatches && timingMatches), evidence: comp ? comp.source : "Missing independent composition layers read-back"});
+    return;
+  }
+
+  if (step.tool === "create_comp") {
+    const created = payload.comp || payload;
+    const itemIndex = numberValue(created.itemIndex);
+    const candidates = evidence.subsequentReadBack.comps.filter((comp) => itemIndex !== null && comp.itemIndex === itemIndex);
+    const automatic = payload.verification && payload.verification.ok === true && payload.verification.comp;
+    const observed = automatic && automatic.itemIndex === itemIndex ? {...automatic, source: "Independent verifyAfter composition inspection"} : candidates.length ? candidates[0] : null;
+    const expected = {
+      width: hasOwn(args, "width") ? args.width : 1920,
+      height: hasOwn(args, "height") ? args.height : 1080,
+      pixelAspect: hasOwn(args, "pixelAspect") ? args.pixelAspect : 1,
+      duration: hasOwn(args, "duration") ? args.duration : 5,
+      frameRate: hasOwn(args, "frameRate") ? args.frameRate : 30,
+      bgColor: hasOwn(args, "bgColor") ? args.bgColor : [0, 0, 0]
+    };
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:identity-and-settings`,
+      title: "Created composition identity and settings match independent read-back",
+      expected: { name: args.name, itemIndex, ...expected },
+      observed,
+      passed: Boolean(observed) && observed.name === args.name && Object.keys(expected).every((field) => compFieldMatches(observed, field, expected[field])),
+      evidence: observed ? observed.source : "Missing exact get_comp_details read-back after creation."
+    });
+    return;
+  }
 
   if (step.tool === "create_test_comp") {
     checkName(checks, step, args.name, payload.name || payload.comp && payload.comp.name, evidence, "Created comp is visible in read-back");
@@ -3107,6 +3277,7 @@ function buildSemanticVerification(plan, run) {
   const steps = Array.isArray(run && run.steps) ? run.steps : [];
   const mutatingSteps = steps.filter(isMutatingStep);
   const checks = [];
+  const unverifiedMutationSteps = [];
   const warnings = [];
   const mutatingOrders = mutatingSteps.map((step, index) => stepOrder(step, index + 1));
   const firstMutatingOrder = mutatingOrders.reduce((min, order) => Math.min(min, order), Number.POSITIVE_INFINITY);
@@ -3169,7 +3340,9 @@ function buildSemanticVerification(plan, run) {
       ? stepOrder(mutatingSteps[index + 1], index + 2)
       : null;
     const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
-    verifyStep(checks, step, { readBack: stepReadBackEvidence, all: allEvidence, allReadBack: readBackEvidence });
+    const priorCheckCount = checks.length;
+    verifyStep(checks, step, { readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: readBackEvidence });
+    if (checks.length === priorCheckCount) unverifiedMutationSteps.push({index: step.index, tool: step.tool});
   }
 
   const failedChecks = checks.filter((check) => check.status === "failed").length;
@@ -3187,6 +3360,8 @@ function buildSemanticVerification(plan, run) {
     readBackCount: readBackEvidence.count,
     readBackSteps: readBackEvidence.steps,
     mutationVerificationCount,
+    unverifiedMutationCount: unverifiedMutationSteps.length,
+    unverifiedMutationSteps,
     passedChecks,
     failedChecks,
     checks,

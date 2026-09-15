@@ -175,9 +175,13 @@ function fakeMutationResult(step, state) {
   const compName = args.compName || args.name || state.lastCompName || "Fixture Comp";
   if (step.tool === "create_test_comp" || step.tool === "create_comp") {
     state.lastCompName = args.name;
-    state.projectItems.push({ itemIndex: state.nextItemIndex++, name: args.name, type: "comp" });
-    return withVerification({
-      itemIndex: state.nextItemIndex,
+    const itemIndex = state.nextItemIndex++;
+    state.projectItems.push({ itemIndex, name: args.name, type: "comp" });
+    state.compProperties = {...state.compProperties, itemIndex, width: args.width || 1920, height: args.height || 1080,
+      pixelAspect: args.pixelAspect || 1, duration: args.duration || 5, frameRate: args.frameRate || 30, bgColor: args.bgColor || [0, 0, 0]};
+    state.compPropertiesByName[args.name] = state.compProperties;
+    const result = withVerification({
+      itemIndex,
       name: args.name,
       width: args.width,
       height: args.height,
@@ -185,6 +189,8 @@ function fakeMutationResult(step, state) {
       frameRate: args.frameRate,
       numLayers: 0
     }, args.name);
+    result.verification.comp = {...state.compProperties, name: args.name};
+    return result;
   }
   if (step.tool === "create_solid_layer") {
     const layer = insertLayerAtTop(state, layerInfo(args.name, {
@@ -1681,6 +1687,7 @@ function fakeReadBackResult(step, state) {
     const layers = state.layers.slice();
     return {
       comp: {
+        itemIndex: state.compProperties.itemIndex,
         name: step.args && step.args.compName || state.lastCompName || "Fixture Comp",
         numLayers: layers.length,
         width: state.compProperties.width,
@@ -1717,6 +1724,7 @@ function fakeRunForPlan(plan) {
     nextLayerIndex: 1,
     nextRenderQueueIndex: 1,
     lastCompName: "",
+    compPropertiesByName: {},
     projectItems: [],
     layers: [],
     selectedLayers: [],
@@ -1753,8 +1761,11 @@ function fakeRunForPlan(plan) {
     }
   };
   const steps = (plan.steps || []).map((step, index) => {
+    const namedComp = step.args && step.args.compName;
+    if (namedComp && state.compPropertiesByName[namedComp]) state.compProperties = state.compPropertiesByName[namedComp];
     const mutatesProject = AGENT_SCENARIO_MUTATING_TOOLS.has(step.tool) || LOCAL_MUTATING_TOOLS.has(step.tool);
     const result = mutatesProject ? fakeMutationResult(step, state) : fakeReadBackResult(step, state);
+    if (namedComp && state.compPropertiesByName[namedComp]) state.compPropertiesByName[namedComp] = state.compProperties;
     return {
       index: index + 1,
       title: step.title,

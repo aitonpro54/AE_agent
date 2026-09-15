@@ -81,6 +81,7 @@ function getSolution(args, tools) {
 }
 
 const discoveryTools = [
+  {name: "get_current_ai_agent_plan", description: "Read the daemon's current canonical proposal, project, revision, expiry, dry-run and last run state. No execution authority or confirmation token is returned.", inputSchema: {type: "object", properties: {}, additionalProperties: false}},
   { name: "search_solutions", description: "Search reviewed AE solutions in Russian or English before writing custom JSX. Local lookup, no model call or AE mutation; returns compact ids and preferred typed tools. Follow with get_solution.",
     inputSchema: {type: "object", properties: {query: {type: "string", description: "Natural user task, RU or EN."}, limit: {type: "integer", minimum: 1, maximum: 8, default: 3}}, required: ["query"]} },
   { name: "get_solution", description: "Read a reviewed AE recipe by id, including its actual algorithm, inputs, safety gates, and optional preferred-tool JSON schemas. Local paginated lookup; no execution or provider call.",
@@ -88,7 +89,7 @@ const discoveryTools = [
   { name: "build_solution_plan", description: "Build a deterministic reviewed AE keyframe-distribution plan from explicit complete inspected evidence. Local computation, no LLM or AE mutation. Returns normal plan for review/proposal, with scalar linear-only limits.",
     inputSchema: {type: "object", properties: {solutionId: {type: "string"}, inputs: {type: "object", description: "Explicit complete inspected evidence per the supported builder input contract returned by get_solution."}}, required: ["solutionId", "inputs"]} },
   { name: "propose_ai_agent_plan", description: "Create a server-owned action proposal for an explicit AE plan without a provider call or AE mutation. Returns a redacted proposal for dry-run and, while the user-enabled CEP Autonomous Codex session is active, proposal-backed typed mutation. Raw JSX and destructive plans retain manual confirmation.",
-    inputSchema: {type: "object", properties: {plan: {type: "object"}, requestId: {type: "string"}}, required: ["plan"]} }
+    inputSchema: {type: "object", properties: {plan: {type: "object"}, requestId: {type: "string"}, parentActionId: {type: "string", description: "Failed proposal eligible for at most two inspected setter corrections. Creation/import/JSX and unknown outcomes cannot be retried this way."}}, required: ["plan"]} }
 ];
 
 function reviewedIds() {

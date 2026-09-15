@@ -6,6 +6,7 @@ const path = require("path");
 const readline = require("readline");
 const { spawn } = require("child_process");
 const { getBuilderContract } = require("../mcp-server/solution-plan-builder");
+const {withProjectPanel} = require("./fake-project-panel");
 const ROOT = path.resolve(__dirname, "..");
 const port = String(18000 + Math.floor(Math.random() * 10000));
 const env = {...process.env, AE_BRIDGE_PORT: port, AE_BRIDGE_TOKEN: "discovery-smoke", AE_DAEMON_AUTO_START: "0"};
@@ -83,10 +84,10 @@ async function main() {
     assert(recipe.planBuilder.inputSchema);
     const built = await call("build_solution_plan", {solutionId, inputs: getBuilderContract(solutionId).example});
     assert.strictEqual(built.validation.ok, true);
-    const proposed = await call("propose_ai_agent_plan", {plan: built.plan});
+    const proposed = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("propose_ai_agent_plan", {plan: built.plan}));
     assert(proposed.proposal.actionId);
     assert.strictEqual(proposed.proposal.confirmation.confirmationToken, undefined);
-    const preview = await call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true});
+    const preview = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true}));
     assert(preview.ok);
     assert.strictEqual(preview.executedCount, 0);
     assert.deepStrictEqual(preview.solutionReuse.declaredSolutionIds, [solutionId]);
@@ -103,7 +104,7 @@ async function main() {
     }
     const status = await call("get_bridge_status", {});
     assert.strictEqual(status.pendingCommands, 0, "Discovery/build/dry-run must enqueue no AE commands.");
-    assert.strictEqual(status.panelConnected, false);
+    assert.strictEqual(status.panelConnected, true);
     console.log(JSON.stringify({ok: true, tools: listed.tools.length, russianDiscovery: true, paginatedRecipe: true,
       builderValidation: built.validation.ok, dryRunSteps: preview.steps.length, unconfirmedExecutionBlocked: true, aeCommands: 0}));
   } finally {

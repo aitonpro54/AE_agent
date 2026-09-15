@@ -8,6 +8,7 @@ const path = require("path");
 const http = require("http");
 const {spawn} = require("child_process");
 const {buildSolutionPlan, getBuilderContract} = require("../mcp-server/solution-plan-builder");
+const {withProjectPanel, isProjectInfo, PROJECT_FILE} = require("./fake-project-panel");
 const root = path.resolve(__dirname, "..");
 const port = 28000 + Math.floor(Math.random() * 10000);
 const token = "isolated-solution-run-test";
@@ -44,10 +45,10 @@ async function main() {
     for (const mode of ["exact", "stale", "wrong-after"]) {
       const built = buildSolutionPlan(id, getBuilderContract(id).example);
       assert(built.ok);
-      const proposalResult = await request("/agents/plan/propose", {plan: built.plan});
+      const proposalResult = await withProjectPanel(port, token, () => request("/agents/plan/propose", {plan: built.plan}));
       const proposal = proposalResult.proposal;
       assert(proposal, JSON.stringify(proposalResult));
-      const preview = await request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true});
+      const preview = await withProjectPanel(port, token, () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true}));
       assert(preview.run.ok);
       let completed = false;
       let keyWrites = 0;
@@ -66,7 +67,9 @@ async function main() {
         const {command} = await request("/bridge/next");
         if (!command) continue;
         let result;
-        if (command.script.includes("sameNameLayerCount: sameNameLayers.length")) {
+        if (isProjectInfo(command)) {
+          result = {file: PROJECT_FILE};
+        } else if (command.script.includes("sameNameLayerCount: sameNameLayers.length")) {
           result = {comp: {itemIndex: 7, name: "Main", frameRate: 24, duration: 8},
             layer: {index: 2, name: "Card"}, sameNameLayerCount: 1, sameNameLayers: [{index: 2, name: "Card"}]};
         } else if (command.script.includes("propertyTreeTruncated: propertyState")) {
@@ -79,7 +82,7 @@ async function main() {
             propertyTree: [{propertyPath: expected.propertyPath, expressionEnabled: false,
               numKeys: keys.length, keyframes: keys, keyframesTruncated: false}]};
         } else if (command.script.includes("setValueAtTime")) {
-          keyWrites++; result = {keyframesSet: 3, clearExisting: true, propertyPath: [2, 11]};
+          keyWrites++; result = {keyframeCount: 3, clearExisting: true, propertyPath: [2, 11]};
         } else if (command.script.includes("setInterpolationTypeAtKey")) {
           keyWrites++; result = {keyIndices: [1, 2, 3], interpolation: "linear"};
         } else throw new Error(`Unexpected synthetic panel command: ${command.script.slice(-1600)}`);

@@ -168,7 +168,9 @@ async function callDaemonTool(name, args) {
   });
 
   if (response.status !== 200 || !response.body.ok || !response.body.result) {
-    throw new Error(response.body.error || `Bridge daemon tool call failed with HTTP ${response.status}`);
+    return toolResult({ok: false, code: response.body.code || "bridge_http_rejected",
+      phase: response.body.phase || "protocol_validation",
+      error: response.body.error || `Bridge daemon tool call failed with HTTP ${response.status}`}, true);
   }
 
   return response.body.result;
@@ -185,7 +187,7 @@ async function handleRpc(message) {
         capabilities: {
           tools: {}
         },
-        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion.",
+        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Use get_current_ai_agent_plan to reconcile the current project, revision, expiry and run. A new proposal supersedes the pending one. On failure inspect repairDirective and the affected targets; at most two eligible setter corrections may be proposed with parentActionId, followed by a fresh dry-run and read-back. Never retry creation, imports or an unknown outcome automatically. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion.",
         serverInfo: {
           name: SERVER_NAME,
           version: SERVER_VERSION
@@ -204,7 +206,7 @@ async function handleRpc(message) {
       try {
         ok(id, await callDaemonTool(params.name, params.arguments || {}));
       } catch (error) {
-        ok(id, toolResult(`Bridge daemon is not reachable or rejected the tool call: ${error.message}`, true));
+        ok(id, toolResult({ok: false, code: "bridge_unreachable", phase: "bridge_offline", error: error.message}, true));
       }
       return;
     }

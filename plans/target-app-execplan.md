@@ -8,20 +8,38 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 
 ## Текущий фокус
 
-2026-09-13 завершён один локальный milestone review/promotion reducer на
-`codex/ae-global-autonomy-routing` от `8fe053a`. Подготовлен proposal ограниченного
-аудита композиций; promotion исходного candidate заблокирован redaction и File I/O.
-Новый builder ещё не реализован и не зарегистрирован. Scope не включал live AE,
-provider trials, Full Intake, push или PR.
+2026-09-15: автономный монтаж MCP/CEP для сборки 133. Live разрешён только на
+отдельной generated композиции в пользовательской сессии, без изменения исходного монтажа.
 
-Выпуск 3.0.0 опубликован 2026-09-13 в двух связанных PR. Пользователь 2026-09-12
-разрешил обновление версии панели, push, необходимые PR и подготовку handoff
-для следующего чата. Автоматический перенос в новый чат не запрошен.
+### Progress
 
-На старте выпуска `main` отстаёт от рабочей ветки на 319 коммитов. Публикация
-делится на baseline PR (`3bd69eb` → `main`) и PR текущего выпуска
-(`79f421a` и версия 3.0.0 → baseline). Это позволяет отдельно просмотреть
-накопленную историю и последний feature/release diff.
+- [x] Прочитаны диагностика и сборщик; добавлены comp/layer motionBlur и audioEnabled.
+- [x] Текущий proposal: revision/instanceId, project binding, supersession, dry-run receipt.
+- [x] MCP regression: scope/replay, гонки adopt/run, подмена полномочий, чужой checkpoint,
+  смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
+- [x] 11 узких slideshow tools, строгий manifest и staged builder; 133: 10 этапов, <=50 шагов.
+- [ ] Установка CEP/daemon, generated-only acceptance и итоговый review.
+
+### Decision Log
+
+- Один pending proposal заменяет предыдущий; confirmed/executing имеют одного owner.
+- Proposal привязан к сохранённому проекту; offline planner выдаёт только draft.
+- GET не выдаёт токен; CEP adoption требует CAS и нового dry-run, сохраняет repair budget.
+- Исправление: максимум два новых proposal setters на тех же целях и проекте после
+  инспекции. Raw JSX, создание/import и неизвестный исход не повторяются.
+- Статистика по allowlist без аргументов, текста, путей и секретов.
+
+### Validation
+
+Проходят planning, solutions, bridge, provider-contract/API (mock), autonomy и slideshow.
+CEP/MCP dry-run синхронизирован; stale-кнопки отключаются. Placeholder/index сдвиг исправлен.
+R2 source: 21 шаг в AE; сохранённый read-back после исправления comparator: 15/15, uncovered=0.
+Daemon обновлён; templates/operations (20+20) ждут повторного включения lease в CEP.
+
+2026-09-13 завершён review/promotion reducer от `8fe053a`; исходный audit candidate
+не promoted из-за redaction/File I/O. Выпуск 3.0.0 опубликован двумя связанными PR:
+baseline `3bd69eb` → `main` и текущий выпуск от `79f421a` → baseline.
+Прежнее разрешение выпуска не распространяется на push/PR текущего milestone.
 
 ## Milestones
 
