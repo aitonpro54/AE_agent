@@ -9,11 +9,22 @@ const { buildSemanticVerification } = require("../mcp-server/semantic-verificati
 
 const {manifest,articles,inventory}=require("./slideshow-synthetic-fixture");
 
+const manifestBefore=JSON.stringify(manifest),articlesBefore=JSON.stringify(articles),inventoryBefore=JSON.stringify(inventory);
 const normalized=normalizeManifest(manifest,articles);
+assert.strictEqual(JSON.stringify(manifest),manifestBefore,"manifest normalization must not mutate caller input");
+assert.strictEqual(JSON.stringify(articles),articlesBefore,"article normalization must not mutate caller input");
 assert.strictEqual(normalized.manifest.events.length,10);
+assert.strictEqual(normalized.manifest.audioRouting,"master-only");
 assert.deepStrictEqual(normalized.manifest.events.slice(0,10).map((event)=>event.scene),[1,2,5,4,7,6,9,8,10,3]);
 assert.throws(()=>normalizeManifest({...manifest,jsx:"alert(1)"},articles),/forbidden|not supported/);
 assert.throws(()=>normalizeManifest({...manifest,unknown:true},articles),/not supported/);
+assert.throws(()=>normalizeManifest({...manifest,schema:"ae-agent-slideshow.v1"},articles),/ae-agent-slideshow.v2/);
+assert.throws(()=>normalizeManifest({...manifest,audioRouting:"preserve"},articles),/master-only/);
+{
+  const tooMany=JSON.parse(JSON.stringify(manifest));
+  tooMany.events[0].audioOnly=Array.from({length:24},(_,index)=>({path:`C:\\fixture\\audio-${index}.wav`,start:0,duration:5,sourceIn:0,audio:true}));
+  assert.throws(()=>normalizeManifest(tooMany,articles),/more than 24 unique master audio routes/);
+}
 
 const definitions=createToolDefinitions({idempotencyKey:{type:"string"}});
 assert.strictEqual(definitions.length,TOOL_NAMES.length);
@@ -35,7 +46,7 @@ const media=validateToolInput("replace_slideshow_media_leaf",{expectedProjectFil
 assert(media.script.includes("layer.enabled=true"));
 assert(media.script.includes("sourceIn_exceeds_media"));
 assert(!media.script.includes(".remove()"));
-const pair=validateToolInput("copy_slideshow_event_pair",{expectedProjectFile:project,generatedPrefix:prefix,finalCompItemIndex:1,expectedFinalCompName:"Final Comp",masterCompItemIndex:2,expectedMasterCompName:"CODX_133_MASTER",rootCompItemIndex:3,expectedRootCompName:"CODX_133_E01_ROOT",sourceSceneName:"Scene 1",sceneNumber:1,eventStart:0,eventDuration:5,introDuration:2,rootHasAudio:true});
+const pair=validateToolInput("copy_slideshow_event_pair",{expectedProjectFile:project,generatedPrefix:prefix,finalCompItemIndex:1,expectedFinalCompName:"Final Comp",masterCompItemIndex:2,expectedMasterCompName:"CODX_133_MASTER",rootCompItemIndex:3,expectedRootCompName:"CODX_133_E01_ROOT",sourceSceneName:"Scene 1",sceneNumber:1,eventStart:0,eventDuration:5,introDuration:2,rootHasAudio:true,introEffectCount:0,mainEffectCount:0});
 assert(pair.script.includes("copy.startTime=__d.eventStart"));
 assert(pair.script.includes("scene1_single_source_required"));
 assert(pair.script.includes("__zeroShutter(copy)"));
@@ -48,19 +59,37 @@ assert.throws(()=>validateToolInput("apply_slideshow_event_text",{expectedProjec
 const emittedBodies=[clone,extend,media,pair,text,
   validateToolInput("rewrite_slideshow_tree_expressions",{expectedProjectFile:project,generatedPrefix:prefix,rootCompItemIndex:3,expectedRootCompName:"CODX_133_E01_ROOT",masterCompName:"CODX_133_MASTER",replacements:[]}),
   validateToolInput("add_slideshow_event_overlays",{expectedProjectFile:project,generatedPrefix:prefix,masterCompItemIndex:2,expectedMasterCompName:"CODX_133_MASTER",eventId:"01",eventStart:0,eventDuration:8,audioItems:[],captions:[]}),
-  validateToolInput("copy_slideshow_control_layer",{expectedProjectFile:project,generatedPrefix:prefix,sourceCompItemIndex:1,expectedSourceCompName:"Final Comp",sourceLayerName:"CONTROL",masterCompItemIndex:2,expectedMasterCompName:"CODX_133_MASTER",duration:8}),
+  validateToolInput("copy_slideshow_control_layer",{expectedProjectFile:project,generatedPrefix:prefix,sourceCompItemIndex:1,expectedSourceCompName:"Final Comp",sourceLayerName:"CONTROL",targetLayerName:"CONTROL",expectedEffectCount:0,masterCompItemIndex:2,expectedMasterCompName:"CODX_133_MASTER",duration:8}),
   validateToolInput("audit_slideshow_generated",{expectedProjectFile:project,generatedPrefix:prefix,rootCompItemIndex:2,expectedRootCompName:"CODX_133_MASTER",expectedDuration:8,sourceFingerprints:[]}),
   validateToolInput("configure_slideshow_tree_audio",{expectedProjectFile:project,generatedPrefix:prefix,rootCompItemIndex:3,expectedRootCompName:"CODX_133_E01_ROOT"}),
   validateToolInput("create_slideshow_master",{expectedProjectFile:project,generatedPrefix:prefix,masterName:"CODX_133_MASTER",width:1280,height:720,pixelAspect:1,duration:8,frameRate:30,backgroundColor:[.9,.9,.9]})];
 emittedBodies.forEach((prepared,index)=>assert.doesNotThrow(()=>new Function(prepared.script),`emitted JSX body ${index+1} must parse`));
 
 const plan=buildSlideshowPlan(manifest,articles,inventory);
+assert.strictEqual(JSON.stringify(inventory),inventoryBefore,"plan builder must not mutate inventory input");
+assert.strictEqual(JSON.stringify(manifest),manifestBefore,"plan builder must not mutate manifest input");
 for(const stage of plan.stages)for(const item of stage.steps)for(const field of Object.keys(item.resultBindings||{}))assert(!Object.prototype.hasOwnProperty.call(item.args,field),`${item.tool}.${field}: a literal must not shadow its runtime binding`);
 assert.strictEqual(plan.manifest.duration,50);
+assert.strictEqual(plan.audioRouting,"master-only");
 assert(plan.stages.length>1);
 assert(plan.stages.every((stage)=>stage.steps.length<=MAX_STAGE_STEPS));
 assert(plan.stages.every((stage)=>stage.targetProject.file===manifest.projectPath));
 for(const stage of plan.stages){for(let i=0;i<stage.steps.length;i+=1){const current=stage.steps[i];if(TOOL_NAMES.includes(current.tool)&&current.tool!=="audit_slideshow_generated"){assert(stage.steps[i+1],`${current.tool} must have following audit`);assert.strictEqual(stage.steps[i+1].tool,"audit_slideshow_generated",`${current.tool} must be independently audited before next mutation`);}}}
+const plannedSteps=plan.stages.flatMap((stage)=>stage.steps);
+assert(!plannedSteps.some((item)=>item.tool==="configure_slideshow_tree_audio"));
+assert(plannedSteps.filter((item)=>item.tool==="copy_slideshow_control_layer").some((item)=>item.args.targetLayerName==="CONTROL"&&item.args.expectedEffectCount===2));
+assert(plannedSteps.filter((item)=>item.tool==="copy_slideshow_control_layer").some((item)=>item.args.targetLayerName==="COLOR"&&item.args.expectedEffectCount===7));
+assert(plannedSteps.filter((item)=>item.tool==="clone_slideshow_event_tree").every((item)=>item.args.audioMode==="mute"));
+assert(plannedSteps.filter((item)=>item.tool==="copy_slideshow_event_pair").every((item)=>item.args.rootHasAudio===false&&!Object.prototype.hasOwnProperty.call(item,"resultBindings")));
+const scene1Pair=plannedSteps.find((item)=>item.tool==="copy_slideshow_event_pair"&&item.args.sceneNumber===1);assert.strictEqual(scene1Pair.args.introEffectCount,0);assert.strictEqual(scene1Pair.args.mainEffectCount,0);
+const visual=plannedSteps.find((item)=>item.tool==="replace_slideshow_media_leaf");assert(visual.args.mediaItems.every((item)=>item.audio===false));
+const overlay=plannedSteps.find((item)=>item.tool==="add_slideshow_event_overlays"&&item.args.eventId==="01");assert.deepStrictEqual(overlay.args.audioItems.map((item)=>item.path),["C:\\fixture\\generated.mp4","C:\\fixture\\voice.wav"]);
+for(const item of plannedSteps)if(TOOL_NAMES.includes(item.tool))assert.doesNotThrow(()=>validateToolInput(item.tool,item.args),`${item.tool} planned args must validate`);
+{
+  const missingColor=JSON.parse(JSON.stringify(inventory));delete missingColor.finalComp.controlLayers.COLOR;assert.throws(()=>buildSlideshowPlan(manifest,articles,missingColor),/COLOR/);
+  const missingControl=JSON.parse(JSON.stringify(inventory));delete missingControl.finalComp.controlLayers.CONTROL;assert.throws(()=>buildSlideshowPlan(manifest,articles,missingControl),/CONTROL/);
+  const collision=JSON.parse(JSON.stringify(inventory));collision.finalComp.controlLayers.COLOR.sourceLayerName="CONTROL";assert.throws(()=>buildSlideshowPlan(manifest,articles,collision),/distinct source layers/);
+}
 
 const mediaPath="C:\\fixture.png",audioPath="C:\\fixture.wav";
 const semanticCases=[
@@ -68,14 +97,18 @@ const semanticCases=[
   ["rewrite_slideshow_tree_expressions",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT"}],
   ["apply_slideshow_event_text",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT",title:"FULL TITLE"}],
   ["replace_slideshow_media_leaf",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT",generatedLeafName:"CODX_133_E01_MEDIA_1",mediaItems:[{path:mediaPath,start:0,duration:4,sourceIn:0,audio:false}]}],
-  ["copy_slideshow_event_pair",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT",expectedMasterCompName:"CODX_133_MASTER",eventStart:0,eventDuration:8,introDuration:2,minimumCopiedEffects:1}],
+  ["copy_slideshow_event_pair",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT",expectedMasterCompName:"CODX_133_MASTER",eventStart:0,eventDuration:8,introDuration:2,rootHasAudio:false,introEffectCount:1,mainEffectCount:0}],
   ["add_slideshow_event_overlays",{generatedPrefix:prefix,expectedMasterCompName:"CODX_133_MASTER",eventId:"01",eventStart:0,audioItems:[{path:audioPath,start:0,duration:4,sourceIn:0,audio:true}],captions:["CAP"]}],
-  ["copy_slideshow_control_layer",{generatedPrefix:prefix,expectedMasterCompName:"CODX_133_MASTER",duration:8}],
+  ["copy_slideshow_control_layer",{generatedPrefix:prefix,expectedMasterCompName:"CODX_133_MASTER",targetLayerName:"CONTROL",expectedEffectCount:0,duration:8}],
   ["configure_slideshow_tree_audio",{generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT"}],
   ["create_slideshow_master",{generatedPrefix:prefix,masterName:"CODX_133_MASTER",duration:8}]
 ];
-function auditFor(args){const rootName=args.expectedMasterCompName||args.masterName||args.generatedRootName||args.expectedRootCompName,token="E01_ROOT";return{ok:true,operation:"audit_generated",root:{name:rootName,duration:args.duration||args.targetDuration||8,itemIndex:2},issues:[],stats:{videoLayers:1,keyframes:0,keyMetadataTotal:0,backgroundLayers:1},sourceFingerprints:[{unchanged:true}],details:{keyMetadata:[],keyMetadataTruncated:false,expressions:[{expression:'comp("CODX_133_MASTER")',error:""}],texts:[{layer:`${prefix}TITLE`,text:args.title||"FULL TITLE",font:"TimesNewRomanPS-BoldMT",rect:{width:400,height:100},compWidth:1280,compHeight:720},{layer:`${prefix}CAPTION_01_1`,text:"CAP",font:"TimesNewRomanPSMT",rect:{width:100,height:30},compWidth:1280,compHeight:720}],layers:[{comp:args.generatedLeafName||rootName,name:`${prefix}MEDIA_1`,sourcePath:mediaPath,enabled:true,audioEnabled:false,stretch:100,startTime:0,inPoint:0,outPoint:4},{comp:rootName,name:`${prefix}AUDIO_01_1`,sourcePath:audioPath,enabled:false,audioEnabled:true,stretch:100,startTime:0,inPoint:0,outPoint:4},{comp:rootName,name:`${prefix}EVENT_${token}_INTRO`,startTime:0,inPoint:0,outPoint:2,effects:1},{comp:rootName,name:`${prefix}EVENT_${token}_MAIN`,startTime:0,inPoint:2,outPoint:8,effects:0},{comp:rootName,name:"CONTROL",comment:`AE_AGENT_SLIDESHOW:${prefix}:${rootName}:CONTROL`,enabled:false,audioEnabled:false,inPoint:0,outPoint:8},{comp:rootName,name:`${prefix}BACKGROUND`,enabled:true,audioEnabled:false,inPoint:0,outPoint:8}]}};}
+function auditFor(args){const rootName=args.expectedMasterCompName||args.masterName||args.generatedRootName||args.expectedRootCompName,token="E01_ROOT",targetLayerName=args.targetLayerName||"CONTROL";return{ok:true,operation:"audit_generated",root:{name:rootName,duration:args.duration||args.targetDuration||8,itemIndex:2},issues:[],stats:{videoLayers:1,keyframes:0,keyMetadataTotal:0,backgroundLayers:1},sourceFingerprints:[{unchanged:true}],details:{keyMetadata:[],keyMetadataTruncated:false,expressions:[{expression:'comp("CODX_133_MASTER")',error:""}],texts:[{layer:`${prefix}TITLE`,text:args.title||"FULL TITLE",font:"TimesNewRomanPS-BoldMT",rect:{width:400,height:100},compWidth:1280,compHeight:720},{layer:`${prefix}CAPTION_01_1`,text:"CAP",font:"TimesNewRomanPSMT",rect:{width:100,height:30},compWidth:1280,compHeight:720}],layers:[{comp:args.generatedLeafName||rootName,name:`${prefix}MEDIA_1`,sourcePath:mediaPath,enabled:true,audioEnabled:false,stretch:100,startTime:0,inPoint:0,outPoint:4},{comp:rootName,name:`${prefix}AUDIO_01_1`,sourcePath:audioPath,enabled:false,audioEnabled:true,stretch:100,startTime:0,inPoint:0,outPoint:4},{comp:rootName,name:`${prefix}EVENT_${token}_INTRO`,startTime:0,inPoint:0,outPoint:2,audioEnabled:false,effects:args.introEffectCount===undefined?1:args.introEffectCount},{comp:rootName,name:`${prefix}EVENT_${token}_MAIN`,startTime:0,inPoint:2,outPoint:8,audioEnabled:false,effects:args.mainEffectCount===undefined?0:args.mainEffectCount},{comp:rootName,name:targetLayerName,comment:`AE_AGENT_SLIDESHOW:${prefix}:${rootName}:${targetLayerName}`,enabled:false,audioEnabled:false,inPoint:0,outPoint:8,effects:args.expectedEffectCount===undefined?0:args.expectedEffectCount},{comp:rootName,name:`${prefix}BACKGROUND`,enabled:true,audioEnabled:false,inPoint:0,outPoint:8}]}};}
 for(const [tool,args] of semanticCases){const audit=auditFor(args),steps=[{index:1,title:tool,tool,args,mutatesProject:true,status:"completed",result:{ok:true}},{index:2,title:"independent audit",tool:"audit_slideshow_generated",args:{},mutatesProject:false,status:"completed",result:audit}],verification=buildSemanticVerification({summary:tool,steps},{ok:true,dryRun:false,steps});assert.strictEqual(verification.unverifiedMutationCount,0,`${tool} must have semantic checks`);assert.strictEqual(verification.status,"passed",`${tool} semantic audit must pass: ${JSON.stringify(verification.checks)}`);}
+{
+  const args={generatedPrefix:prefix,generatedRootName:"CODX_133_E01_ROOT",audioMode:"mute"},audit=auditFor(args);audit.details.layers.forEach((layer)=>{layer.audioEnabled=false;});assert.strictEqual(verifyAudit("clone_slideshow_event_tree",args,audit).status,"passed");audit.details.layers[0].audioEnabled=true;assert.strictEqual(verifyAudit("clone_slideshow_event_tree",args,audit).status,"needs_review");
+  const colorArgs={generatedPrefix:prefix,expectedMasterCompName:"CODX_133_MASTER",targetLayerName:"COLOR",expectedEffectCount:7,duration:8},colorAudit=auditFor(colorArgs);assert.strictEqual(verifyAudit("copy_slideshow_control_layer",colorArgs,colorAudit).status,"passed");
+}
 
 const beforeKey={comp:"CODX_133_E01_ROOT",layer:"Animated",property:"ADBE Position",time:3,inType:"BEZIER",outType:"BEZIER",inEase:[{speed:1,influence:40}],outEase:[{speed:2,influence:50}],temporalContinuous:true,temporalAutoBezier:false,spatial:true,inSpatial:[-1,0],outSpatial:[1,0],roving:false,spatialContinuous:true,spatialAutoBezier:false};
 beforeKey.compDuration=4;
@@ -131,6 +164,9 @@ const negativeAudits=[
   ["replace_slideshow_media_leaf","changed speed",a=>{a.details.layers[0].stretch=150;}],
   ["copy_slideshow_event_pair","gap at intro/main",a=>{a.details.layers[3].inPoint=2.5;}],
   ["copy_slideshow_event_pair","lost entrance effect",a=>{a.details.layers[2].effects=0;}],
+  ["copy_slideshow_event_pair","unexpected main effect",a=>{a.details.layers[3].effects=1;}],
+  ["copy_slideshow_event_pair","duplicate intro",a=>{a.details.layers.push({...a.details.layers[2]});}],
+  ["copy_slideshow_event_pair","intro outside exact master",a=>{a.details.layers[2].comp="OTHER_MASTER";}],
   ["add_slideshow_event_overlays","audio visible",a=>{a.details.layers[1].enabled=true;}],
   ["add_slideshow_event_overlays","audio muted",a=>{a.details.layers[1].audioEnabled=false;}],
   ["add_slideshow_event_overlays","wrong audio",a=>{a.details.layers[1].sourcePath="C:\\wrong.wav";}],
@@ -138,6 +174,9 @@ const negativeAudits=[
   ["add_slideshow_event_overlays","wrong caption",a=>{a.details.texts[1].text="OTHER";}],
   ["copy_slideshow_control_layer","unowned control",a=>{a.details.layers[4].comment="";}],
   ["copy_slideshow_control_layer","short control",a=>{a.details.layers[4].outPoint=7;}],
+  ["copy_slideshow_control_layer","wrong control effects",a=>{a.details.layers[4].effects=1;}],
+  ["copy_slideshow_control_layer","duplicate control",a=>{a.details.layers.push({...a.details.layers[4]});}],
+  ["copy_slideshow_control_layer","control outside exact master",a=>{a.details.layers[4].comp="OTHER_MASTER";}],
   ["configure_slideshow_tree_audio","duplicate audible path",a=>{a.issues=["duplicate_audible_path"];a.ok=false;}],
   ["create_slideshow_master","missing background",a=>{a.details.layers.pop();}],
   ["create_slideshow_master","wrong duration",a=>{a.root.duration=7;}]

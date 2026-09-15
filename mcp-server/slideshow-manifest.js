@@ -1,9 +1,10 @@
 "use strict";
 
-const DEFAULT_SCHEMA = "ae-agent-slideshow.v1";
+const DEFAULT_SCHEMA = "ae-agent-slideshow.v2";
 const MAX_EVENTS = 60;
 const MAX_MEDIA_GROUPS = 8;
 const MAX_MEDIA_ITEMS = 24;
+const MAX_MASTER_AUDIO_ITEMS = 24;
 const MAX_CAPTIONS = 8;
 const EPSILON = 0.051;
 
@@ -111,6 +112,14 @@ function normalizeEvent(value, index, introDuration) {
   if (!Array.isArray(audioOnly) || audioOnly.length > MAX_MEDIA_ITEMS) fail("INVALID_AUDIO_ITEMS", `${path}.audioOnly must contain at most ${MAX_MEDIA_ITEMS} entries.`, `${path}.audioOnly`);
   const captions = event.captions === undefined ? [] : event.captions;
   if (!Array.isArray(captions) || captions.length > MAX_CAPTIONS) fail("INVALID_CAPTIONS", `${path}.captions must contain at most ${MAX_CAPTIONS} strings.`, `${path}.captions`);
+  const normalizedImages = images.map((group, groupIndex) => normalizeImageGroup(group, `${path}.images[${groupIndex}]`, duration));
+  const normalizedAudioOnly = audioOnly.map((item, itemIndex) => normalizeMediaItem(item, `${path}.audioOnly[${itemIndex}]`, duration, true));
+  const routedAudioKeys = new Set();
+  for (const item of [...normalizedImages.flatMap((group) => group.items), ...normalizedAudioOnly]) {
+    if (item.audio !== true) continue;
+    routedAudioKeys.add(JSON.stringify([item.path, item.start, item.duration, item.sourceIn]));
+  }
+  if (routedAudioKeys.size > MAX_MASTER_AUDIO_ITEMS) fail("INVALID_MASTER_AUDIO_ITEMS", `${path} has more than ${MAX_MASTER_AUDIO_ITEMS} unique master audio routes.`, path);
   return {
     id,
     scene,
@@ -119,8 +128,8 @@ function normalizeEvent(value, index, introDuration) {
     title,
     titleWrap,
     hero,
-    images: images.map((group, groupIndex) => normalizeImageGroup(group, `${path}.images[${groupIndex}]`, duration)),
-    audioOnly: audioOnly.map((item, itemIndex) => normalizeMediaItem(item, `${path}.audioOnly[${itemIndex}]`, duration, true)),
+    images: normalizedImages,
+    audioOnly: normalizedAudioOnly,
     captions: captions.map((caption, captionIndex) => string(caption, `${path}.captions[${captionIndex}]`, 400))
   };
 }
@@ -141,12 +150,12 @@ function normalizeArticles(value) {
 function normalizeManifest(value, articlesValue) {
   const manifest = object(value, "manifest");
   rejectCodeLikeKeys(manifest, "manifest");
-  allowKeys(manifest, ["schema", "action", "projectPath", "duration", "frameRate", "width", "height", "pixelAspect", "prefix", "masterName", "finalComp", "introDuration", "events"], "manifest");
+  allowKeys(manifest, ["schema", "action", "projectPath", "duration", "frameRate", "width", "height", "pixelAspect", "prefix", "masterName", "finalComp", "introDuration", "audioRouting", "events"], "manifest");
   if (manifest.action !== undefined && manifest.action !== "build") {
     fail("UNSUPPORTED_ACTION", "manifest.action must be build when supplied.", "manifest.action");
   }
-  const schema = manifest.schema === "codx-133-build.v1" ? DEFAULT_SCHEMA : string(manifest.schema || DEFAULT_SCHEMA, "manifest.schema", 100);
-  if (schema !== DEFAULT_SCHEMA) fail("UNSUPPORTED_SCHEMA", `manifest.schema must be ${DEFAULT_SCHEMA} or codx-133-build.v1.`, "manifest.schema");
+  const schema = manifest.schema === "codx-133-build.v2" ? DEFAULT_SCHEMA : string(manifest.schema || DEFAULT_SCHEMA, "manifest.schema", 100);
+  if (schema !== DEFAULT_SCHEMA) fail("UNSUPPORTED_SCHEMA", `manifest.schema must be ${DEFAULT_SCHEMA} or codx-133-build.v2.`, "manifest.schema");
   const projectPath = string(manifest.projectPath, "manifest.projectPath", 2048);
   const duration = positive(manifest.duration, "manifest.duration");
   const frameRate = positive(manifest.frameRate, "manifest.frameRate");
@@ -159,6 +168,8 @@ function normalizeManifest(value, articlesValue) {
   const masterName = string(manifest.masterName, "manifest.masterName", 180);
   if (!masterName.startsWith(prefix)) fail("UNSAFE_MASTER_NAME", "manifest.masterName must start with manifest.prefix.", "manifest.masterName");
   const introDuration = manifest.introDuration === undefined ? 2 : positive(manifest.introDuration, "manifest.introDuration");
+  const audioRouting = string(manifest.audioRouting, "manifest.audioRouting", 40);
+  if (audioRouting !== "master-only") fail("UNSUPPORTED_AUDIO_ROUTING", "manifest.audioRouting must be master-only.", "manifest.audioRouting");
   const finalComp = manifest.finalComp === undefined ? { name: "Final Comp" } : object(manifest.finalComp, "manifest.finalComp");
   allowKeys(finalComp, ["itemIndex", "name"], "manifest.finalComp");
   const normalizedFinalComp = { name: string(finalComp.name || "Final Comp", "manifest.finalComp.name", 180) };
@@ -190,12 +201,13 @@ function normalizeManifest(value, articlesValue) {
       fail("UNKNOWN_HERO", `Unknown hero ${events[index].hero}.`, `manifest.events[${index}].hero`);
     }
   }
-  return { manifest: { schema, projectPath, duration, frameRate, width, height, pixelAspect, prefix, masterName, finalComp: normalizedFinalComp, introDuration, events }, articles };
+  return { manifest: { schema, projectPath, duration, frameRate, width, height, pixelAspect, prefix, masterName, finalComp: normalizedFinalComp, introDuration, audioRouting, events }, articles };
 }
 
 module.exports = {
   DEFAULT_SCHEMA,
   MAX_EVENTS,
+  MAX_MASTER_AUDIO_ITEMS,
   SlideshowInputError,
   normalizeManifest
 };

@@ -2522,6 +2522,11 @@ function checkSlideshowMutation(checks, step, evidence) {
 
   if (audit && step.tool === "clone_slideshow_event_tree") {
     operationMatches = operationMatches && Array.isArray(audit.sourceFingerprints) && audit.sourceFingerprints.length > 0 && audit.sourceFingerprints.every((item) => item.unchanged === true);
+    if (args.audioMode === "mute") {
+      const clonedLayers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+      operationMatches = operationMatches && clonedLayers.length > 0 && clonedLayers.every((item) => item.audioEnabled === false);
+      expected += "; all cloned-tree audio switches muted";
+    }
     expected += "; protected source fingerprint unchanged";
   } else if (audit && step.tool === "extend_slideshow_cloned_tree") {
     const priorAudits = Array.isArray(evidence.allReadBack.slideshowAudits) ? evidence.allReadBack.slideshowAudits.filter((entry) => entry && entry.root && entry.root.name === expectedRoot && Number(entry.stepIndex) < Number(step.index)) : [];
@@ -2565,9 +2570,9 @@ function checkSlideshowMutation(checks, step, evidence) {
   } else if (audit && step.tool === "copy_slideshow_event_pair") {
     const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
     const token=String(args.expectedRootCompName||"").replace(args.generatedPrefix||"","").replace(/[^A-Za-z0-9_-]/g,"_");
-    const intro=layers.find((item)=>item.name===`${args.generatedPrefix}EVENT_${token}_INTRO`),main=layers.find((item)=>item.name===`${args.generatedPrefix}EVENT_${token}_MAIN`);
-    operationMatches = operationMatches && Boolean(intro&&main) && nearlyEqual(intro.startTime,args.eventStart) && nearlyEqual(main.startTime,args.eventStart) && nearlyEqual(intro.inPoint,args.eventStart) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration) && nearlyEqual(main.inPoint,args.eventStart+args.introDuration) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration) && Number(intro.effects||0)>=Number(args.minimumCopiedEffects||0);
-    expected += "; independent intro/main timing coverage";
+    const introMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===`${args.generatedPrefix}EVENT_${token}_INTRO`),mainMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===`${args.generatedPrefix}EVENT_${token}_MAIN`),intro=introMatches[0],main=mainMatches[0];
+    operationMatches = operationMatches && introMatches.length===1 && mainMatches.length===1 && nearlyEqual(intro.startTime,args.eventStart) && nearlyEqual(main.startTime,args.eventStart) && nearlyEqual(intro.inPoint,args.eventStart) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration) && nearlyEqual(main.inPoint,args.eventStart+args.introDuration) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration) && Number(intro.effects||0)===Number(args.introEffectCount) && Number(main.effects||0)===Number(args.mainEffectCount) && (args.rootHasAudio!==false||(intro.audioEnabled===false&&main.audioEnabled===false));
+    expected += "; unique master intro/main timing, exact effects, and requested audio switches";
   } else if (audit && step.tool === "add_slideshow_event_overlays") {
     const details = audit.details || {};
     const media = Array.isArray(details.layers) ? details.layers.filter((item)=>String(item.name||"").startsWith(`${args.generatedPrefix}AUDIO_${args.eventId}_`)) : [];
@@ -2577,8 +2582,9 @@ function checkSlideshowMutation(checks, step, evidence) {
     expected += "; audio visibility switch and captions match";
   } else if (audit && step.tool === "copy_slideshow_control_layer") {
     const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
-    operationMatches = operationMatches && layers.some((item) => item.name === "CONTROL" && item.enabled === false && item.audioEnabled === false && nearlyEqual(item.inPoint,0) && nearlyEqual(item.outPoint, args.duration) && String(item.comment||"").startsWith(`AE_AGENT_SLIDESHOW:${args.generatedPrefix}:`));
-    expected += "; CONTROL identity/range preserved";
+    const targetLayerName=args.targetLayerName||"CONTROL",matches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===targetLayerName);
+    operationMatches = operationMatches && matches.length===1 && matches[0].enabled === false && matches[0].audioEnabled === false && nearlyEqual(matches[0].inPoint,0) && nearlyEqual(matches[0].outPoint, args.duration) && Number(matches[0].effects||0)===Number(args.expectedEffectCount) && String(matches[0].comment||"").startsWith(`AE_AGENT_SLIDESHOW:${args.generatedPrefix}:`) && String(matches[0].comment||"").endsWith(`:${targetLayerName}`);
+    expected += `; unique ${targetLayerName} identity/range/effects preserved in exact master`;
   } else if (audit && step.tool === "configure_slideshow_tree_audio") {
     operationMatches = operationMatches && !audit.issues.some((item) => String(item).includes("duplicate_audible_path"));
     expected += "; no duplicate audible precomp path";

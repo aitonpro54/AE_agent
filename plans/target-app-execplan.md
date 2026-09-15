@@ -7,7 +7,7 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
-2026-09-15: автономный монтаж MCP/CEP; QA завершён, сборка 133 разрешена пользователем.
+2026-09-15: QA завершён; production остановлен пользователем, scope уточнён до 10 сцен.
 
 ### Progress
 
@@ -18,7 +18,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] 11 узких slideshow tools, строгий manifest и staged builder; 133: 10 этапов, <=50 шагов.
 - [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
 - [x] Реальный AE: сокращение без переноса ключей, сохранение соседних ключей при продлении.
-- [ ] Завершить отдельный CODX_133_MASTER, проверить все события, звук и контрольные кадры.
+- [ ] Production остановлен: первые 10 собраны, аудиохвост 13 мс и визуальная приёмка не завершены.
 
 ### Decision Log
 
@@ -35,7 +35,7 @@ CEP/MCP синхронизированы; stale-кнопки отключают�
 С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
 Read-back выявил и помог исправить порядок восстановления interpolation и выбор
 скопированного слоя по Layer.id. Исходные 41 слой/133.2667 с и SHA-256 AEP не изменились.
-133 manifest: 10 этапов проверены через MCP; production выполняется отдельными proposals.
+Production stop: lease off, очередь пуста; в master уже 14 пар, исходник не изменён.
 Копия Scene 1 прошла live read-back после исправления погрешности касательных AE;
 planning/slideshow smokes, syntax, check:rules и diff check прошли.
 Подробности: `docs/autonomous-editing.md`.

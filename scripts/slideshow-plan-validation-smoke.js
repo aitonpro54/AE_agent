@@ -29,10 +29,10 @@ async function main() {
     const project = "C:\\Fixture\\test.aep";
     const fixture = buildGeneratedFixturePlan(project, "C:\\Fixture\\test.png", "C:\\Fixture\\tone.wav", "VALIDATE");
     const prefix = "CODX_PLAN_VALIDATION_";
-    const production = buildSlideshowPlan({schema: "ae-agent-slideshow.v1", projectPath: project, duration: 8, frameRate: 30, width: 1280, height: 720,
-      prefix, masterName: prefix + "MASTER", events: [{id: "01", scene: 1, start: 0, duration: 8, title: "Fixture title", hero: "both", images: [], audioOnly: [], captions: []}]},
+    const production = buildSlideshowPlan({schema: "ae-agent-slideshow.v2", projectPath: project, duration: 8, frameRate: 30, width: 1280, height: 720,
+      prefix, masterName: prefix + "MASTER", audioRouting: "master-only", events: [{id: "01", scene: 1, start: 0, duration: 8, title: "Fixture title", hero: "both", images: [], audioOnly: [], captions: []}]},
     {suhanov: ["Synthetic article."], kurnikov: ["Synthetic article."], both: ["Synthetic article."]},
-    {finalComp: {itemIndex: 1, name: "Final Comp", duration: 10, numLayers: 2, controlLayerName: "CONTROL"}, scenes: [{scene: 1, itemIndex: 2, name: "Scene 1", duration: 4, numLayers: 2}]});
+    {finalComp: {itemIndex: 1, name: "Final Comp", duration: 10, numLayers: 2, controlLayers: {CONTROL: {sourceLayerName: "CONTROL", effectCount: 0}, COLOR: {sourceLayerName: "COLOR", effectCount: 0}}}, scenes: [{scene: 1, itemIndex: 2, name: "Scene 1", duration: 4, numLayers: 2, introEffectCount: 0, mainEffectCount: 0}]});
     const results = [];
     for (const stage of [...fixture.stages, ...production.stages]) {
       const validated = await client.call("validate_ai_agent_plan", {plan: stage, repairPlan: false});
