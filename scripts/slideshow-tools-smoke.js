@@ -29,7 +29,7 @@ assert(!clone.script.includes("c.duration=__d.targetDuration"));
 const extend=validateToolInput("extend_slideshow_cloned_tree",{expectedProjectFile:project,generatedPrefix:prefix,rootCompItemIndex:2,expectedRootCompName:"CODX_133_E01_ROOT",targetDuration:8,introDuration:2});
 assert(extend.script.includes("setTemporalEaseAtKey"));
 assert(extend.script.includes("setSpatialTangentsAtKey"));
-assert(extend.script.includes("var nt=t+delta"));
+assert(extend.script.includes("nt=willMove?t+delta:t"));
 assert(!extend.script.includes("/(Math.max"));
 const media=validateToolInput("replace_slideshow_media_leaf",{expectedProjectFile:project,generatedPrefix:prefix,rootCompItemIndex:2,expectedRootCompName:"CODX_133_E01_ROOT",leafName:"Image 01",generatedLeafName:"CODX_133_E01_MEDIA_1",duration:8,mediaItems:[{path:"C:\\fixture.png",start:0,duration:8,sourceIn:0,audio:true}]});
 assert(media.script.includes("layer.enabled=true"));
@@ -79,6 +79,8 @@ for(const [tool,args] of semanticCases){const audit=auditFor(args),steps=[{index
 
 const beforeKey={comp:"CODX_133_E01_ROOT",layer:"Animated",property:"ADBE Position",time:3,inType:"BEZIER",outType:"BEZIER",inEase:[{speed:1,influence:40}],outEase:[{speed:2,influence:50}],temporalContinuous:true,temporalAutoBezier:false,spatial:true,inSpatial:[-1,0],outSpatial:[1,0],roving:false,spatialContinuous:true,spatialAutoBezier:false};
 beforeKey.compDuration=4;
+beforeKey.compFrameDuration=1/30;
+beforeKey.translationEligible=true;
 const afterKey={...beforeKey,time:5,compDuration:6},cloneArgs={generatedPrefix:prefix,generatedRootName:"CODX_133_E01_ROOT"},extendArgs={generatedPrefix:prefix,expectedRootCompName:"CODX_133_E01_ROOT",targetDuration:6,introDuration:2};
 const beforeAudit=auditFor(cloneArgs);beforeAudit.root.duration=4;beforeAudit.stats.keyframes=1;beforeAudit.stats.keyMetadataTotal=1;beforeAudit.details.keyMetadata=[beforeKey];const afterAudit=auditFor(extendArgs);afterAudit.root.duration=6;afterAudit.stats.keyframes=1;afterAudit.stats.keyMetadataTotal=1;afterAudit.details.keyMetadata=[afterKey];
 const extendSteps=[{index:1,title:"clone",tool:"clone_slideshow_event_tree",args:cloneArgs,mutatesProject:true,status:"completed",result:{ok:true}},{index:2,title:"before",tool:"audit_slideshow_generated",status:"completed",result:beforeAudit},{index:3,title:"extend",tool:"extend_slideshow_cloned_tree",args:extendArgs,mutatesProject:true,status:"completed",result:{ok:true}},{index:4,title:"after",tool:"audit_slideshow_generated",status:"completed",result:afterAudit}],extendVerification=buildSemanticVerification({summary:"extend",steps:extendSteps},{ok:true,dryRun:false,steps:extendSteps});assert.strictEqual(extendVerification.status,"passed",JSON.stringify(extendVerification.checks));
@@ -86,6 +88,31 @@ const extendSteps=[{index:1,title:"clone",tool:"clone_slideshow_event_tree",args
 for(const tool of ["apply_slideshow_event_text","replace_slideshow_media_leaf","add_slideshow_event_overlays"]){const args=semanticCases.find((entry)=>entry[0]===tool)[1],audit=auditFor(args);audit.details.texts=[];audit.details.layers=[];const steps=[{index:1,title:tool,tool,args,mutatesProject:true,status:"completed",result:{ok:true}},{index:2,title:"empty audit",tool:"audit_slideshow_generated",status:"completed",result:audit}],verification=buildSemanticVerification({summary:"negative",steps},{ok:true,dryRun:false,steps});assert.strictEqual(verification.status,"needs_review",`${tool} no-op audit must fail`);}
 
 function verifyAudit(tool,args,audit){const steps=[{index:1,title:tool,tool,args,mutatesProject:true,status:"completed",result:{ok:true}},{index:2,title:"independent audit",tool:"audit_slideshow_generated",status:"completed",result:audit}];return buildSemanticVerification({summary:tool,steps},{ok:true,dryRun:false,steps});}
+for (const sample of [
+  {label:"shortening preserves key time",duration:3,time:3,eligible:true,status:"passed"},
+  {label:"shortening must not translate outro",duration:3,time:2,eligible:true,status:"needs_review"},
+  {label:"sub-frame margin preserves key time",duration:4.05,time:3,eligible:true,status:"passed"},
+  {label:"expression property preserves key time",duration:6,time:3,eligible:false,status:"passed"},
+  {label:"expression property must not translate",duration:6,time:5,eligible:false,status:"needs_review"}
+]) {
+  const steps=JSON.parse(JSON.stringify(extendSteps));
+  steps[1].result.details.keyMetadata[0].translationEligible=sample.eligible;
+  steps[2].args.targetDuration=sample.duration;
+  steps[3].result.root.duration=sample.duration;
+  Object.assign(steps[3].result.details.keyMetadata[0],{compDuration:sample.duration,time:sample.time,translationEligible:sample.eligible});
+  const verification=buildSemanticVerification({summary:sample.label,steps},{ok:true,dryRun:false,steps});
+  assert.strictEqual(verification.status,sample.status,sample.label);
+}
+for (const [delta,expected] of [[0.0000058,"passed"],[0.0001001,"needs_review"],[0.01,"needs_review"]]) {
+  const steps=JSON.parse(JSON.stringify(extendSteps));
+  steps[3].result.details.keyMetadata[0].inSpatial[0]+=delta;
+  const verification=buildSemanticVerification({summary:"AE spatial float precision",steps},{ok:true,dryRun:false,steps});
+  assert.strictEqual(verification.status,expected,`Spatial tangent delta ${delta}`);
+}
+{
+  const steps=JSON.parse(JSON.stringify(extendSteps));steps[3].result.details.keyMetadata[0].inSpatial.push(0);
+  assert.strictEqual(buildSemanticVerification({summary:"Spatial dimensions mismatch",steps},{ok:true,dryRun:false,steps}).status,"needs_review");
+}
 const negativeAudits=[
   ["clone_slideshow_event_tree","source changed",a=>{a.sourceFingerprints[0].unchanged=false;}],
   ["clone_slideshow_event_tree","source evidence missing",a=>{a.sourceFingerprints=[];}],

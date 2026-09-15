@@ -2496,6 +2496,19 @@ const SLIDESHOW_MUTATING_TOOLS = new Set([
   "create_slideshow_master"
 ]);
 
+function sameSlideshowKeyMetadata(before, after) {
+  // AE stores spatial tangents with float precision; setting them can round a few millionths of a pixel.
+  for (const field of ["inSpatial", "outSpatial"]) {
+    const left = before[field], right = after[field];
+    if (Array.isArray(left) || Array.isArray(right)) {
+      if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length || !left.every((value, index) => typeof value === "number" && Number.isFinite(value) && typeof right[index] === "number" && Number.isFinite(right[index]) && Math.abs(value - right[index]) <= 0.0001)) return false;
+    } else if (left !== right) return false;
+  }
+  const left = {...before}, right = {...after};
+  for (const field of ["time", "compDuration", "inSpatial", "outSpatial"]) { delete left[field]; delete right[field]; }
+  return stableStringify(left) === stableStringify(right);
+}
+
 function checkSlideshowMutation(checks, step, evidence) {
   const args = isPlainObject(step.args) ? step.args : {};
   const audits = Array.isArray(evidence.readBack.slideshowAudits) ? evidence.readBack.slideshowAudits : [];
@@ -2520,12 +2533,13 @@ function checkSlideshowMutation(checks, step, evidence) {
       const used = new Set();
       for (const before of beforeKeys) {
         const originalCompDuration = Number(before.compDuration);
-        if (!Number.isFinite(originalCompDuration)) { keysMatch = false; break; }
+        const frameDuration = Number(before.compFrameDuration);
+        if (!Number.isFinite(originalCompDuration) || !Number.isFinite(frameDuration) || frameDuration <= 0 || typeof before.translationEligible !== "boolean") { keysMatch = false; break; }
         const delta = Number(args.targetDuration) - originalCompDuration;
         const threshold = Math.max(Number(args.introDuration) + 0.0001, originalCompDuration - 2.1);
-        const expectedTime = Number(before.time) >= threshold ? Number(before.time) + delta : Number(before.time);
-        const beforeMetadata = { ...before }; delete beforeMetadata.time; delete beforeMetadata.compDuration;
-        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, 0.001) && stableStringify((() => { const value={...after}; delete value.time; delete value.compDuration; return value; })()) === stableStringify(beforeMetadata));
+        const extend = delta > Math.max(frameDuration * 2, 0.07);
+        const expectedTime = extend && before.translationEligible && Number(before.time) >= threshold ? Number(before.time) + delta : Number(before.time);
+        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, 0.001) && sameSlideshowKeyMetadata(before, after));
         if (matchIndex < 0) { keysMatch = false; break; }
         used.add(matchIndex);
       }

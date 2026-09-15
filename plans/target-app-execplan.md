@@ -5,10 +5,9 @@
 AE Agent 3.0.0: CEP-панель After Effects, bridge daemon, typed tools,
 reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
-
 ## Текущий фокус
 
-2026-09-15: автономный монтаж MCP/CEP для сборки 133; live только на generated QA.
+2026-09-15: автономный монтаж MCP/CEP; QA завершён, сборка 133 разрешена пользователем.
 
 ### Progress
 
@@ -18,6 +17,8 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
   смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
 - [x] 11 узких slideshow tools, строгий manifest и staged builder; 133: 10 этапов, <=50 шагов.
 - [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
+- [x] Реальный AE: сокращение без переноса ключей, сохранение соседних ключей при продлении.
+- [ ] Завершить отдельный CODX_133_MASTER, проверить все события, звук и контрольные кадры.
 
 ### Decision Log
 
@@ -34,7 +35,9 @@ CEP/MCP синхронизированы; stale-кнопки отключают�
 С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
 Read-back выявил и помог исправить порядок восстановления interpolation и выбор
 скопированного слоя по Layer.id. Исходные 41 слой/133.2667 с и SHA-256 AEP не изменились.
-133 manifest: 10 этапов проверены через MCP; производственный монтаж не запускался.
+133 manifest: 10 этапов проверены через MCP; production выполняется отдельными proposals.
+Копия Scene 1 прошла live read-back после исправления погрешности касательных AE;
+planning/slideshow smokes, syntax, check:rules и diff check прошли.
 Подробности: `docs/autonomous-editing.md`.
 
 2026-09-13 завершён review/promotion reducer от `8fe053a`; исходный audit candidate
@@ -163,11 +166,8 @@ failure; MCP — редактированный proposal и preview-only compati
 Навык обновлён: YAML frontmatter сохранён; ручная проверка инструкций/ссылок.
 Стандартный quick_validate недоступен без PyYAML; зависимости не устанавливались.
 
-Release milestone: обновлённые bridge/solution smokes, syntax, manifest/package
-согласованность и diff check — pass. Установленная CEP-панель и bridge 3.0.0;
-branding-smoke/reload-button-smoke прошли 2026-09-12 при online, pending/inflight=0.
-Повторный статус 2026-09-13: bridge отвечает 3.0.0, CEP-панель отключена.
-Для следующей live-проверки сначала подключить панель и прочитать свежий статус.
+Release milestone: bridge/solution smokes, syntax, manifest/package и diff — pass.
+Установлены CEP/bridge 3.0.0; scoped branding/reload прошли 2026-09-12.
 
 Global autonomy/reuse milestone: добавлены read-only candidate queue и
 in-memory CEP autonomous lease. Unit и isolated daemon/MCP/fake-panel smokes
