@@ -340,6 +340,17 @@ async function main() {
     assert.equal(invalidRun.ok, false);
     assert.match(invalidRun.error, /compItemIndex must be a positive/);
     assert.equal((await request("/agents/plan/current")).body.current.lastRun.error, invalidRun.error);
+    const unresolved = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: {
+      summary: "Fail closed on missing bound value", targetProject: {file: PROJECT_FILE}, steps: [
+        {tool: "set_comp_properties", args: {compName: "CODX_UNRESOLVED"}, resultBindings: {motionBlur: "{{steps.99.result.motionBlur}}"}}
+      ]
+    }}))).value.proposal;
+    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: unresolved.actionId, dryRun: true}));
+    const unresolvedRun = (await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: unresolved.actionId,
+      payloadHash: unresolved.action.payloadHash, previewHash: unresolved.action.previewHash, riskLevel: unresolved.risk.level,
+      riskPolicyVersion: unresolved.confirmation.riskPolicyVersion, dryRun: false}))).value;
+    assert.equal(unresolvedRun.errorCode, "runtime_binding_unresolved");
+    assert.match(unresolvedRun.error, /motionBlur/);
     const telemetry = fs.readFileSync(path.join(runtime, "autonomy-obstacles.jsonl"), "utf8");
     assert(!telemetry.includes(PROJECT_FILE)); assert(!telemetry.includes("confirmationToken"));
 
@@ -350,7 +361,7 @@ async function main() {
       authorityNotExposed: true, revoked: true, currentPlanSynchronized: true, obsoletePreviewBlocked: true,
       wrongProjectBlocked: true, stepLimitFailClosed: true, revokeBetweenMutations: true, telemetryRedacted: true,
       internalAuthorityRejected: true, staleAdoptRaceBlocked: true, checkpointProjectMatched: true, concurrentExecutionPreserved: concurrentChecked,
-      slideshowReadBackStopsNextMutation: true, exactRuntimeRefusalPreserved: true}, null, 2));
+      slideshowReadBackStopsNextMutation: true, exactRuntimeRefusalPreserved: true, unresolvedBindingReasonPreserved: true}, null, 2));
   } finally {
     if (adapter) adapter.kill();
     daemon.kill();

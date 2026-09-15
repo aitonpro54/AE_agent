@@ -2383,6 +2383,13 @@ function inferVerificationTarget(toolName, args, payload) {
   if (!target.itemIndex && hasArg(rawArgs, "itemIndex")) target.itemIndex = Number(rawArgs.itemIndex) || null;
   if (!target.itemName && hasArg(rawArgs, "itemName")) target.itemName = String(rawArgs.itemName || "");
 
+  if (slideshowTools.TOOL_NAMES.includes(toolName)) {
+    target.compName = rawArgs.expectedMasterCompName || rawArgs.masterName || rawArgs.generatedRootName || rawArgs.expectedRootCompName || "";
+    target.compItemIndex = null;
+    target.itemIndex = null;
+    target.requireExactComp = true;
+  }
+
   return target;
 }
 
@@ -2600,6 +2607,15 @@ async function verifyMutationResult(toolName, args, payload) {
 
       function __codexResolveComp() {
         var item = null;
+        if (target.requireExactComp) {
+          var exact = null, count = 0;
+          for (var ei = 1; ei <= app.project.numItems; ei++) {
+            item = app.project.item(ei);
+            if (item instanceof CompItem && item.name === target.compName) { exact = item; count++; }
+          }
+          if (count !== 1) throw new Error("verification_target_identity_mismatch:" + target.compName);
+          return exact;
+        }
         if (target.compItemIndex) {
           try { item = app.project.item(target.compItemIndex); } catch (__indexError) {}
           if (item instanceof CompItem) return item;
@@ -6696,6 +6712,9 @@ async function runValidatedAgentPlan(options, executionContext) {
       }
       item.status = "blocked";
       item.reason = `Unresolved runtime bindings: ${formatUnresolvedRuntimeBindings(bound)}`;
+      item.errorCode = "runtime_binding_unresolved";
+      run.errorCode = item.errorCode;
+      run.error = item.reason;
       item.unresolved = bound.unresolved;
       run.skippedCount += 1;
       run.steps.push(item);
@@ -18757,11 +18776,11 @@ async function callTool(name, args, executionContext) {
       for (var __i = 0; __i < keys.length; __i++) {
         var keyIndex = Math.floor(Number(keys[__i]));
         if (keyIndex < 1 || keyIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + keyIndex);
+        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
         if (interpolation) {
           var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
           prop.setInterpolationTypeAtKey(keyIndex, interpolationType, interpolationType);
         }
-        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
         changedKeys.push(keyIndex);
       }
       var response = {

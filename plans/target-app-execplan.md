@@ -8,8 +8,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 
 ## Текущий фокус
 
-2026-09-15: автономный монтаж MCP/CEP для сборки 133. Live разрешён только на
-отдельной generated композиции в пользовательской сессии, без изменения исходного монтажа.
+2026-09-15: автономный монтаж MCP/CEP для сборки 133; live только на generated QA.
 
 ### Progress
 
@@ -18,7 +17,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] MCP regression: scope/replay, гонки adopt/run, подмена полномочий, чужой checkpoint,
   смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
 - [x] 11 узких slideshow tools, строгий manifest и staged builder; 133: 10 этапов, <=50 шагов.
-- [ ] Установка CEP/daemon, generated-only acceptance и итоговый review.
+- [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
 
 ### Decision Log
 
@@ -28,13 +27,15 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - Исправление: максимум два новых proposal setters на тех же целях и проекте после
   инспекции. Raw JSX, создание/import и неизвестный исход не повторяются.
 - Статистика по allowlist без аргументов, текста, путей и секретов.
-
 ### Validation
 
 Проходят planning, solutions, bridge, provider-contract/API (mock), autonomy и slideshow.
-CEP/MCP dry-run синхронизирован; stale-кнопки отключаются. Placeholder/index сдвиг исправлен.
-R2 source: 21 шаг в AE; сохранённый read-back после исправления comparator: 15/15, uncovered=0.
-Daemon обновлён; templates/operations (20+20) ждут повторного включения lease в CEP.
+CEP/MCP синхронизированы; stale-кнопки отключаются. Live R3: 21+20+20 шагов,
+С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
+Read-back выявил и помог исправить порядок восстановления interpolation и выбор
+скопированного слоя по Layer.id. Исходные 41 слой/133.2667 с и SHA-256 AEP не изменились.
+133 manifest: 10 этапов проверены через MCP; производственный монтаж не запускался.
+Подробности: `docs/autonomous-editing.md`.
 
 2026-09-13 завершён review/promotion reducer от `8fe053a`; исходный audit candidate
 не promoted из-за redaction/File I/O. Выпуск 3.0.0 опубликован двумя связанными PR:
