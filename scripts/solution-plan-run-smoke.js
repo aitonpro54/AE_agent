@@ -8,6 +8,7 @@ const path = require("path");
 const http = require("http");
 const {spawn} = require("child_process");
 const {buildSolutionPlan, getBuilderContract} = require("../mcp-server/solution-plan-builder");
+const {withProjectPanel, isProjectInfo, PROJECT_FILE} = require("./fake-project-panel");
 const root = path.resolve(__dirname, "..");
 const port = 28000 + Math.floor(Math.random() * 10000);
 const token = "isolated-solution-run-test";
@@ -44,10 +45,10 @@ async function main() {
     for (const mode of ["exact", "stale", "wrong-after"]) {
       const built = buildSolutionPlan(id, getBuilderContract(id).example);
       assert(built.ok);
-      const proposalResult = await request("/agents/plan/propose", {plan: built.plan});
+      const proposalResult = await withProjectPanel(port, token, () => request("/agents/plan/propose", {plan: built.plan}));
       const proposal = proposalResult.proposal;
       assert(proposal, JSON.stringify(proposalResult));
-      const preview = await request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true});
+      const preview = await withProjectPanel(port, token, () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true}));
       assert(preview.run.ok);
       let completed = false;
       let keyWrites = 0;
@@ -66,7 +67,9 @@ async function main() {
         const {command} = await request("/bridge/next");
         if (!command) continue;
         let result;
-        if (command.script.includes("sameNameLayerCount: sameNameLayers.length")) {
+        if (isProjectInfo(command)) {
+          result = {file: PROJECT_FILE};
+        } else if (command.script.includes("sameNameLayerCount: sameNameLayers.length")) {
           result = {comp: {itemIndex: 7, name: "Main", frameRate: 24, duration: 8},
             layer: {index: 2, name: "Card"}, sameNameLayerCount: 1, sameNameLayers: [{index: 2, name: "Card"}]};
         } else if (command.script.includes("propertyTreeTruncated: propertyState")) {
@@ -79,7 +82,7 @@ async function main() {
             propertyTree: [{propertyPath: expected.propertyPath, expressionEnabled: false,
               numKeys: keys.length, keyframes: keys, keyframesTruncated: false}]};
         } else if (command.script.includes("setValueAtTime")) {
-          keyWrites++; result = {keyframesSet: 3, clearExisting: true, propertyPath: [2, 11]};
+          keyWrites++; result = {keyframeCount: 3, clearExisting: true, propertyPath: [2, 11]};
         } else if (command.script.includes("setInterpolationTypeAtKey")) {
           keyWrites++; result = {keyIndices: [1, 2, 3], interpolation: "linear"};
         } else throw new Error(`Unexpected synthetic panel command: ${command.script.slice(-1600)}`);
@@ -87,6 +90,12 @@ async function main() {
       }
       const {run} = await running;
       assert(run, "Missing run result");
+      assert.strictEqual(run.provenance.actionId, proposal.actionId);
+      assert(Number.isInteger(run.provenance.proposalRevision));
+      assert.match(run.provenance.planSha256, /^[a-f0-9]{64}$/);
+      assert.match(run.provenance.runtime.sourceSha256, /^[a-f0-9]{64}$/);
+      assert.strictEqual(run.provenance.projectRevision, null, "An unobserved in-memory revision must stay unknown");
+      assert.strictEqual(run.outcome.acceptance.status, "not_requested");
       assert.strictEqual(run.ok, mode === "exact", JSON.stringify({mode, error: run.error, preflight: run.solutionPlanPreflight, readBack: run.solutionPlanReadBack}));
       if (mode === "stale") {
         assert.strictEqual(keyWrites, 0);
@@ -94,9 +103,23 @@ async function main() {
       } else {
         assert.strictEqual(keyWrites, 2);
         assert.strictEqual(run.solutionPlanReadBack.status, mode === "exact" ? "passed" : "failed");
+        assert.strictEqual(run.outcome.verification.status, mode === "exact" ? "passed" : "failed");
       }
+      const events=fs.readFileSync(path.join(runtime,"bridge-events.jsonl"),"utf8").trim().split(/\r?\n/).map(JSON.parse);
+      const slice=require("../mcp-server/review-evidence").linkedEventSlice(events,{runIds:[run.id]});
+      assert(slice.some(event=>event.type==="tool_call_finished"));
+      assert(slice.some(event=>event.type==="ae_command_result"));
+      assert(slice.some(event=>event.type==="plan_step_evidence" && event.details.auditSha256));
+      for(const event of slice.filter(event=>event.type==="plan_step_evidence"&&event.details.evidenceRunId===run.id)){
+        const artifact=fs.readFileSync(event.details.artifactFile),record=JSON.parse(artifact);
+        assert.strictEqual(require("../mcp-server/review-evidence").sha256(artifact),event.details.sha256);
+        assert.strictEqual(record.runId,run.id);assert.strictEqual(record.stepIndex,event.details.stepIndex);
+        assert.strictEqual(require("../mcp-server/review-evidence").sha256(record.result),event.details.auditSha256);
+      }
+      assert(slice.filter(event=>event.type==="plan_step_evidence").every(event=>event.details.verificationSubjectRunId===run.id));
+      assert(!slice.some(event=>event.details.runId && event.details.runId!==run.id && event.details.actionId!==proposal.actionId));
     }
-    console.log(JSON.stringify({ok: true, isolatedRunner: true, exactPass: true, staleBlockedBeforeWrite: true, wrongAfterFails: true}));
+    console.log(JSON.stringify({ok: true, isolatedRunner: true, exactPass: true, staleBlockedBeforeWrite: true, wrongAfterFails: true, linkedEvidence:true, outcomeAxes:true, liveAeCommands:0}));
   } finally {daemon.kill();}
 }
 main().catch((error) => {console.error(error.stack); process.exitCode = 1;});

@@ -1,0 +1,486 @@
+{
+  "schema": "ae-agent-review-remediation.v1",
+  "date": "2026-09-18",
+  "baseline": {
+    "branch": "codex/ae-global-autonomy-routing",
+    "head": "434f3b5fe3b9634f0c5c8dd70dcbf47b792f4f20",
+    "dirtyTrackedFiles": 9,
+    "untrackedFiles": 15,
+    "scopePatchSha256": "913747C719DD2A9F8C15E6158EFBD9F51CF8F1DEA8DEC1CAF1CCA855C54BF7E5",
+    "reverseApply": "passed",
+    "reverseApplyScope": "Milestone 0 pre-remediation tree",
+    "finalTreeReverseApply": "not_applicable_after_overlapping_M1-M5_hunks",
+    "snapshot": ".codex/remediation-2026-09-18/preflight.json"
+  },
+  "constraints": {
+    "offlineOnly": false,
+    "clientAcceptance": "unknown",
+    "historicalEvidenceRewritten": false,
+    "syntheticLiveAe": true,
+    "clientProjectMutated": false
+  },
+  "findings": [
+    {
+      "id": "F01",
+      "kind": "historical_evidence",
+      "assessment": "confirmed",
+      "status": "not_a_product_defect",
+      "contract": "Раздельные subject/repair/evidence run и acceptance; audit hash, step, project/revision binding.",
+      "modules": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "Синтетическая post-repair recomposition не меняет failed subject run.",
+      "dependencies": [
+        "F05",
+        "F13"
+      ],
+      "live": "Исторический клиентский результат неизвестен.",
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F02",
+      "kind": "client_result_unknown",
+      "assessment": "confirmed_requirement_mismatch",
+      "status": "not_a_product_defect",
+      "contract": "Несовпадение согласованного source requirement и manifest требует явного override; неизвестное согласование не восстанавливается.",
+      "modules": [
+        "mcp-server/slideshow-manifest.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "Synthetic requirement mismatch и explicit revision-bound override.",
+      "dependencies": [
+        "F01"
+      ],
+      "live": "Клиентское согласование и фактический конечный источник.",
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F03",
+      "kind": "historical_evidence",
+      "assessment": "observed_gap_cause_unknown",
+      "status": "not_a_product_defect",
+      "contract": "Раздельные interval/frame/sample evidence; gap не доказывает причину или слышимость.",
+      "modules": [
+        "mcp-server/semantic-verification.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "Synthetic subframe audio gap обнаруживается без выдуманной причины.",
+      "dependencies": [
+        "F11",
+        "F13"
+      ],
+      "live": "Рендер, waveform, прослушивание, пользовательский verdict.",
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F04",
+      "kind": "historical_provenance",
+      "assessment": "v1_rejected_as_designed",
+      "status": "not_a_product_defect",
+      "contract": "Схемы manifest/plan, runtime revision и hashes записываются явно; v1 не становится v2 задним числом.",
+      "modules": [
+        "mcp-server/slideshow-manifest.js",
+        "mcp-server/slideshow-plan-builder.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "v1 rejection, v2 acceptance, missing provenance safe failure.",
+      "dependencies": [
+        "F01",
+        "F14"
+      ],
+      "live": null,
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F05",
+      "kind": "evidence_pipeline",
+      "assessment": "confirmed",
+      "status": "fixed_offline",
+      "contract": "Минимальный linked slice request/action/run/step/command/session/checkpoint/artifact, включая результаты.",
+      "modules": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "Связанный синтетический граф и исключение несвязанных событий.",
+      "dependencies": [
+        "F16"
+      ],
+      "live": null,
+      "regressionFiles": "scripts/review-evidence-smoke.js + scripts/solution-plan-run-smoke.js"
+    },
+    {
+      "id": "F06",
+      "kind": "product",
+      "assessment": "confirmed_current_audioScript",
+      "status": "fixed_offline",
+      "contract": "Дедупликация реальных пересекающихся audible paths без потери последовательных интервалов и разных sourceIn.",
+      "modules": [
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Sequential, overlap, sourceIn, nested paths; positive audio coverage.",
+      "dependencies": [
+        "F08",
+        "F11"
+      ],
+      "live": "passed: последовательные audible routes сохранены; полностью перекрывающийся duplicate muted только при полном покрытии.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F07",
+      "kind": "product",
+      "assessment": "confirmed_current_audit",
+      "status": "fixed_offline",
+      "contract": "Key values и полная stable property identity в before/after; неподдержанные значения fail closed.",
+      "modules": [
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Правильный перенос, value-only corruption, identity change, unsupported values.",
+      "dependencies": [
+        "F08"
+      ],
+      "live": "passed: реальные vector values/property identities сохранены; AE-derived LINEAR ease speed нормализован, BEZIER остаётся exact.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F08",
+      "kind": "product",
+      "assessment": "existing_patch_verified_9_cases",
+      "status": "already_fixed_verified",
+      "contract": "Exact-owner preflight полного mutation tree до первой записи; foreign/legacy отказ, external read-only.",
+      "modules": [
+        "mcp-server/slideshow-tools.js"
+      ],
+      "regression": "scripts/slideshow-scope-safety-smoke.js",
+      "dependencies": [],
+      "live": "passed: foreign exact-owner отказал до записи, external dependency осталась read-only.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F09",
+      "kind": "product",
+      "assessment": "existing_patch_verified_additional_binding_gap",
+      "status": "fixed_offline",
+      "contract": "Полный structural v1 baseline; stale отказ; принятая B сохраняется; semantic proof связан с baseline конкретного step.",
+      "modules": [
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/slideshow-plan-builder.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/bridge-daemon.js"
+      ],
+      "regression": "Scope 9 cases + подмена baseline при том же количестве proof entries.",
+      "dependencies": [
+        "F08"
+      ],
+      "live": "passed: stale baseline A отказал до записи; принятая manual revision B стала новым baseline и прошла без восстановления A.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F10",
+      "kind": "product",
+      "assessment": "confirmed_current_pair_verifier",
+      "status": "fixed_offline",
+      "contract": "Exact source identity, enabled video, положительная и отрицательная audio policy.",
+      "modules": [
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Независимые source/video/audio violations.",
+      "dependencies": [
+        "F09"
+      ],
+      "live": "passed: stable root source identity, enabled video и обе audio policies подтверждены независимым audit.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F11",
+      "kind": "product",
+      "assessment": "confirmed_current_051_tolerance",
+      "status": "fixed_offline",
+      "contract": "Точное интервальное покрытие; video frame timebase, audio epsilon 1e-7 с. Физический sample rate неизвестен, sample acceptance отдельно.",
+      "modules": [
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "40ms, subframe gap, overlap, excess, wrong sourceIn и positive exact coverage.",
+      "dependencies": [],
+      "live": "partial_pass: два реальных AE audio слоя точно покрыли 0..4 с без gap/overlap; audit не экспонирует sample-rate, render/прослушивание не выполнялись.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F12",
+      "kind": "product",
+      "assessment": "confirmed_current_expression_verifier",
+      "status": "fixed_offline",
+      "contract": "Каждая explicit/derived replacement доказывается независимым property read-back; missing evidence безопасно отклоняется.",
+      "modules": [
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Правильные explicit/derived mappings, оставшийся source, пропавшая property, неполный audit.",
+      "dependencies": [
+        "F08"
+      ],
+      "live": "passed: обе requested replacements скомпилировались и совпали по stable property read-back; render acceptance не заявляется.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F13",
+      "kind": "product_status",
+      "assessment": "confirmed_axes_missing",
+      "status": "fixed_offline",
+      "contract": "Execution, semantic verification и acceptance независимы, scope/reasonCode обязательны; success не означает visual accepted.",
+      "modules": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Матрица dry-run/failure/semantic gap/export/accepted evidence.",
+      "dependencies": [
+        "F01"
+      ],
+      "live": "Пользовательская visual acceptance.",
+      "regressionFiles": "scripts/review-evidence-smoke.js + scripts/solution-plan-run-smoke.js"
+    },
+    {
+      "id": "F14",
+      "kind": "product_telemetry",
+      "assessment": "observed_events_need_builder_provenance",
+      "status": "fixed_offline",
+      "contract": "Observed tools, builder/version, declared recipes и provenance; неизвестные tokens null, процентов экономии нет.",
+      "modules": [
+        "mcp-server/reuse-telemetry.js",
+        "mcp-server/slideshow-plan-builder.js"
+      ],
+      "regression": "Missing solutionIds не обнуляет observed typed/builder reuse.",
+      "dependencies": [
+        "F04"
+      ],
+      "live": null,
+      "regressionFiles": "scripts/reuse-telemetry-smoke.js + scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F15",
+      "kind": "specialized_contract",
+      "assessment": "confirmed_implicit_template_assumptions",
+      "status": "fixed_offline",
+      "contract": "Явный supported newspaper template preset и timing policy; unsupported variants отклоняются без общего framework.",
+      "modules": [
+        "mcp-server/slideshow-manifest.js",
+        "mcp-server/slideshow-plan-builder.js"
+      ],
+      "regression": "Supported contract passes; variant/roles/timing policy mismatch fails.",
+      "dependencies": [
+        "F07",
+        "F12"
+      ],
+      "live": "passed: supported synthetic template изменён и прочитан; вариант с двумя title slots отказал до записи. Общая переносимость не заявляется.",
+      "regressionFiles": "scripts/slideshow-template-contract-smoke.js + scripts/review-remediation-live-smoke.js"
+    },
+    {
+      "id": "F16",
+      "kind": "evidence_pipeline",
+      "assessment": "confirmed_historical_leak",
+      "status": "fixed_offline",
+      "contract": "Allowlist упаковки, recursive decoded string sanitation, paths/users/fragments/secrets leak scan; архив неизменен.",
+      "modules": [
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
+      "regression": "Synthetic path, username, residual fragment, secret, embedded JSON/code fixtures.",
+      "dependencies": [
+        "F05"
+      ],
+      "live": null,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
+    },
+    {
+      "id": "F17",
+      "kind": "typed_tool_gap",
+      "assessment": "confirmed_copy_saved_is_not_persist_memory_live_verified",
+      "status": "fixed_offline",
+      "contract": "Typed persist named current project в exact target с checkpoint/manual confirmation/file/read-back proof; raw candidate не promoted.",
+      "modules": [
+        "mcp-server/project-save.js",
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/semantic-verification.js"
+      ],
+      "regression": "Unnamed/wrong/ambiguous target, missing checkpoint, plan gates, file proof failure и positive mocked save.",
+      "dependencies": [
+        "F13"
+      ],
+      "live": "passed: typed destructive save после fresh dry-run и CEP-bound confirmation изменил file hash; отдельный reopen сохранил известный marker.",
+      "regressionFiles": "scripts/project-save-smoke.js + scripts/project-save-plan-smoke.js + scripts/review-remediation-live-smoke.js"
+    }
+  ],
+  "validation": [
+    {
+      "milestone": 0,
+      "commands": [
+        "git apply --check --reverse docs/scope-safety-fix-2026-09-18.patch",
+        "node scripts/slideshow-scope-safety-smoke.js",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run check:rules"
+      ],
+      "result": "passed"
+    },
+    {
+      "milestone": 1,
+      "commands": [
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run check:rules"
+      ],
+      "result": "passed",
+      "redEvidence": [
+        "runtime-tools-red.txt",
+        "runtime-verifier-red.txt",
+        "runtime-dag-red.txt"
+      ]
+    },
+    {
+      "milestone": 2,
+      "commands": [
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run check:rules"
+      ],
+      "result": "passed",
+      "aeCommands": 0,
+      "redEvidence": [
+        "telemetry-red.txt",
+        "raw-status-red.txt"
+      ]
+    },
+    {
+      "milestone": 3,
+      "commands": [
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:evidence"
+      ],
+      "result": "passed",
+      "aeCommands": 0,
+      "fakeSaveCommands": 1,
+      "redEvidence": [
+        "template-red.txt",
+        "template-write-red.txt",
+        "save-dryrun-red.txt"
+      ]
+    },
+    {
+      "milestone": 4,
+      "commands": [
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run smoke:provider-contract",
+        "npm.cmd run smoke:provider-api (local mocks)",
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run check:rules",
+        "node --check (24 modified JS)",
+        "git diff --check"
+      ],
+      "result": "passed",
+      "liveAeCommands": 0,
+      "liveAE": false
+    },
+    {
+      "milestone": 5,
+      "commands": [
+        "synthetic AE exact-owner/stale-baseline/key/expression/audio/pair/text live scenarios",
+        "typed save_current_named_project with fresh dry-run and CEP-bound destructive confirmation",
+        "synthetic AEP close/reopen marker read-back",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run smoke:provider-contract",
+        "npm.cmd run smoke:provider-api (local mocks)",
+        "npm.cmd run smoke:full-intake",
+        "npm.cmd run check:rules",
+        "node --check (4 M5 JavaScript files)",
+        "git diff --check"
+      ],
+      "result": "passed",
+      "syntheticLiveRunIds": {
+        "scopeOwnerFailure": "ceffcd11-6fd6-499d-8541-96ebd069d410",
+        "keysExpressions": "f53ff421-df8c-4e5c-88e0-faf241ff9f8c",
+        "staleBaselineFailure": "b63aa296-1092-4729-ba6a-d3870100c949",
+        "acceptedBaselineB": "81556886-10d3-46d6-8ccf-ff6ed4543bcc",
+        "audioSequential": "8f92d304-e616-4a93-bd12-5832a9acdcfe",
+        "audioOverlap": "ab37c6e5-34fe-48bb-bc43-b0e1ca78a3e9",
+        "pairNegativeAudio": "1a9a9dc5-04ac-47ca-8a50-bf6138017cd8",
+        "pairPositiveAudio": "d29e6ece-2694-4cb2-a8b0-4f7adea217bf",
+        "intervalCoverage": "a717ee6a-8ec7-4113-82ba-68ffbfab7457",
+        "supportedText": "49aaf97d-cda7-4351-9bde-e791ff35a900",
+        "unsupportedTextFailure": "7ebca371-c817-44af-9052-36032c0800ac",
+        "saveMarker": "d079a338-3b85-4693-a729-01bf1221e7dd",
+        "typedSave": "0c737161-3a06-478e-91ba-08690ca68340"
+      },
+      "clientProjectWrites": 0,
+      "clientProjectRestored": true,
+      "clientProjectReadBack": {
+        "dirty": false,
+        "projectItems": 1413,
+        "activeComp": "CODX_133_MASTER"
+      },
+      "clientAcceptance": "unknown"
+    }
+  ],
+  "commits": [
+    {
+      "milestone": 1,
+      "id": "417e4656777e011d66a7568805c1dda89c854eb9"
+    },
+    {
+      "milestone": 2,
+      "id": "4c0c2f1d0ec4e4544bbe552e46b0e35d94f219d5"
+    },
+    {
+      "milestone": 3,
+      "id": "8175c1f5e015faa8c21dda57b921a053df820e1d"
+    },
+    {
+      "milestone": 5,
+      "id": "0bc1171"
+    }
+  ],
+  "summary": {
+    "fixed_offline": 12,
+    "already_fixed_verified": 1,
+    "not_a_product_defect": 4,
+    "live_validation_pending": 0,
+    "not_reproduced": 0
+  },
+  "preservation": {
+    "initialUntrackedFiles": 15,
+    "unchangedSha256": 14,
+    "authorizedChangedFixture": "scripts/slideshow-scope-safety-smoke.js",
+    "reservedUserEntriesUnchanged": true
+  },
+  "artifacts": {
+    "report": "docs/all-review-remediation-2026-09-18.md",
+    "patch": "docs/all-review-remediation-2026-09-18.patch",
+    "sha256": "docs/all-review-remediation-2026-09-18.patch.sha256",
+    "newFiles": "docs/all-review-new-files-2026-09-18.json"
+  }
+}

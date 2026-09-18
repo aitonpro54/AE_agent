@@ -6,6 +6,7 @@ const path = require("path");
 const readline = require("readline");
 const { spawn } = require("child_process");
 const { getBuilderContract } = require("../mcp-server/solution-plan-builder");
+const {withProjectPanel} = require("./fake-project-panel");
 const ROOT = path.resolve(__dirname, "..");
 const port = String(18000 + Math.floor(Math.random() * 10000));
 const env = {...process.env, AE_BRIDGE_PORT: port, AE_BRIDGE_TOKEN: "discovery-smoke", AE_DAEMON_AUTO_START: "0"};
@@ -62,7 +63,7 @@ async function main() {
     const initialized = await rpc("initialize", {});
     assert(initialized.instructions.includes("search_solutions"));
     const listed = await rpc("tools/list", {});
-    for (const name of ["search_solutions", "get_solution", "build_solution_plan", "propose_ai_agent_plan"]) assert(listed.tools.some((tool) => tool.name === name));
+    for (const name of ["search_solutions", "get_solution", "build_solution_plan", "propose_ai_agent_plan", "list_solution_candidates", "get_solution_candidate"]) assert(listed.tools.some((tool) => tool.name === name));
     const found = await call("search_solutions", {query: "Создай камеру с контроллером"});
     assert(found.results.length > 0);
     const camera = await call("get_solution", {id: found.results[0].id, limit: 500, toolNames: ["create_camera_with_controller"]});
@@ -83,19 +84,19 @@ async function main() {
     assert(recipe.planBuilder.inputSchema);
     const built = await call("build_solution_plan", {solutionId, inputs: getBuilderContract(solutionId).example});
     assert.strictEqual(built.validation.ok, true);
-    const proposed = await call("propose_ai_agent_plan", {plan: built.plan});
+    const proposed = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("propose_ai_agent_plan", {plan: built.plan}));
     assert(proposed.proposal.actionId);
     assert.strictEqual(proposed.proposal.confirmation.confirmationToken, undefined);
-    const preview = await call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true});
+    const preview = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true}));
     assert(preview.ok);
     assert.strictEqual(preview.executedCount, 0);
     assert.deepStrictEqual(preview.solutionReuse.declaredSolutionIds, [solutionId]);
     const unconfirmed = await call("run_ai_agent_plan", {plan: built.plan, dryRun: false, confirm: true, allowMutations: true}, true);
     assert.strictEqual(unconfirmed.ok, false);
-    assert.strictEqual(unconfirmed.code, "mcp_plan_dry_run_only");
+    assert.strictEqual(unconfirmed.code, "proposal_required");
     const forgedConfirmation = await call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: false, confirm: true,
       allowMutations: true, confirmationToken: "pretend-user-token", confirmedBySurface: "cep-panel"}, true);
-    assert.strictEqual(forgedConfirmation.code, "mcp_plan_dry_run_only");
+    assert.strictEqual(forgedConfirmation.code, "proposal_required");
     for (const dryRun of [false, "true", undefined]) {
       const legacy = await legacyDirectCall({actionId: proposed.proposal.actionId, dryRun, confirm: true, allowMutations: true});
       assert(legacy.result.isError, "Legacy direct route must require the literal dryRun:true.");
@@ -103,7 +104,7 @@ async function main() {
     }
     const status = await call("get_bridge_status", {});
     assert.strictEqual(status.pendingCommands, 0, "Discovery/build/dry-run must enqueue no AE commands.");
-    assert.strictEqual(status.panelConnected, false);
+    assert.strictEqual(status.panelConnected, true);
     console.log(JSON.stringify({ok: true, tools: listed.tools.length, russianDiscovery: true, paginatedRecipe: true,
       builderValidation: built.validation.ok, dryRunSteps: preview.steps.length, unconfirmedExecutionBlocked: true, aeCommands: 0}));
   } finally {

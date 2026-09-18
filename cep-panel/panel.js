@@ -38,6 +38,8 @@
   var disconnectButton = document.getElementById("disconnectButton");
   var diagnosticsButton = document.getElementById("diagnosticsButton");
   var reloadButton = document.getElementById("reloadButton");
+  var autonomousSessionButton = document.getElementById("autonomousSessionButton");
+  var autonomousSessionStatusEl = document.getElementById("autonomousSessionStatus");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
   var connectorStatusButton = document.getElementById("connectorStatusButton");
   var connectorEmergencyDisableButton = document.getElementById("connectorEmergencyDisableButton");
@@ -108,6 +110,10 @@
   var agentsLoadInFlight = false;
   var agentDataVersion = 0;
   var lastPlanResult = null;
+  var currentBridgePlanEl = document.getElementById("currentBridgePlan");
+  var currentBridgePlan = null;
+  var currentPlanSyncAt = 0;
+  var currentPlanSyncInFlight = false;
   var lastPlanRunResult = null;
   var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
@@ -117,6 +123,8 @@
   var lastPollErrorMessage = "";
   var panelConnectionId = loadPanelConnectionId();
   var panelConnectionGeneration = 0;
+  var autonomousSessionState = null;
+  var autonomousSessionTimer = null;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
@@ -221,6 +229,72 @@
   function setBridgeConnected() {
     setStatus("Connected", true);
     setBridgeHelp("Bridge connected.", "online");
+  }
+
+  function stopAutonomousSessionTimer() {
+    if (autonomousSessionTimer) clearTimeout(autonomousSessionTimer);
+    autonomousSessionTimer = null;
+  }
+
+  function renderAutonomousSession() {
+    if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
+    stopAutonomousSessionTimer();
+    var state = autonomousSessionState || {};
+    var remainingMs = state.expiresAt ? Math.max(0, Date.parse(state.expiresAt) - Date.now()) : 0;
+    var active = state.active === true && remainingMs > 0;
+    autonomousSessionButton.setAttribute("aria-pressed", active ? "true" : "false");
+    autonomousSessionButton.disabled = !running;
+    if (active) {
+      var minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+      autonomousSessionStatusEl.textContent = "Активна · " + minutes + " мин";
+      autonomousSessionTimer = setTimeout(renderAutonomousSession, 1000);
+    } else {
+      autonomousSessionStatusEl.textContent = state.reason === "panel_not_connected" ? "Панель не подключена" : "Выключена";
+    }
+  }
+
+  function refreshAutonomousSession() {
+    if (!running) {
+      autonomousSessionState = null;
+      renderAutonomousSession();
+      return;
+    }
+    request("GET", "/autonomy/session", null, function (error, response) {
+      if (error) {
+        autonomousSessionState = null;
+        renderAutonomousSession();
+        return;
+      }
+      autonomousSessionState = response && response.session ? response.session : null;
+      renderAutonomousSession();
+    });
+  }
+
+  function setAutonomousSessionEnabled(enabled) {
+    if (!running || !panelConnectionGeneration) return;
+    autonomousSessionButton.disabled = true;
+    request("POST", "/autonomy/session", {
+      enabled: enabled === true,
+      panelConnectionId: panelConnectionId,
+      panelGeneration: String(panelConnectionGeneration)
+    }, function (error, response) {
+      autonomousSessionButton.disabled = false;
+      if (error) {
+        autonomousSessionState = null;
+        renderAutonomousSession();
+        log("Autonomous session failed: " + error.message);
+        return;
+      }
+      autonomousSessionState = response && response.session ? response.session : null;
+      renderAutonomousSession();
+      log(enabled ? "Autonomous Codex session enabled for 20 minutes" : "Autonomous Codex session disabled");
+    });
+  }
+
+  function toggleAutonomousSession() {
+    var state = autonomousSessionState || {};
+    var active = state.active === true && state.expiresAt && Date.parse(state.expiresAt) > Date.now();
+    setAutonomousSessionEnabled(!active);
   }
 
   function getBaseUrl() {
@@ -1466,7 +1540,7 @@
     if (!isPlainObject(value.confirmation)) return null;
     if (value.confirmation.required !== true || value.confirmation.state !== "pending") return null;
     if (value.confirmation.riskPolicyVersion !== M100_RISK_POLICY_VERSION) return null;
-    if (!m100ConfirmationTokenLooksValid(value.confirmation.confirmationToken)) return null;
+    if (value.confirmation.confirmationToken && !m100ConfirmationTokenLooksValid(value.confirmation.confirmationToken)) return null;
     if (!value.confirmation.surface) return null;
     if (!value.confirmation.proposalExpiresAt || isNaN(Date.parse(value.confirmation.proposalExpiresAt))) return null;
     return value;
@@ -1481,7 +1555,76 @@
   }
 
   function hasRunnableM100ActionProposal(result) {
-    return !!(result && result.plan && m100ActionProposalForResult(result));
+    var proposal = m100ActionProposalForResult(result);
+    return !!(result && result.plan && proposal && !currentProposalBlockReason(proposal));
+  }
+
+  function currentProposalBlockReason(proposal) {
+    if (!proposal) return "Нет текущего proposal";
+    if (Date.parse(proposal.confirmation.proposalExpiresAt) <= Date.now()) return "Срок действия плана истёк";
+    if (!currentBridgePlan || currentBridgePlan.actionId !== proposal.actionId) return "План не подтверждён сервером как текущий";
+    if (/^(executing|completed|failed|expired|superseded|cancelled)$/.test(currentBridgePlan.state)) return "План: " + currentBridgePlan.state;
+    if (currentBridgePlan.lastRun && currentBridgePlan.lastRun.errorCode === "project_target_mismatch") return "Открыт другой проект";
+    return "";
+  }
+
+  function renderCurrentBridgePlan() {
+    if (!currentBridgePlanEl) return;
+    var state = currentBridgePlan;
+    if (!state) { currentBridgePlanEl.textContent = "Текущий план Bridge отсутствует"; return; }
+    var project = state.project || {};
+    var parts = ["Проект: " + (project.expectedFile || "будет привязан при dry-run"),
+      "План v" + state.revision + " · " + state.actionId,
+      "Действует до: " + state.expiresAt, "Состояние: " + state.state];
+    var steps = state.plan && state.plan.steps || [];
+    for (var s = 0; s < steps.length; s++) {
+      if (steps[s].tool === "run_extendscript_file") parts.push("JSX: " + (steps[s].args && steps[s].args.filePath || "путь отсутствует"));
+    }
+    if (project.actualFile && project.actualFile !== project.expectedFile) parts.push("Открыт: " + project.actualFile);
+    if (state.dryRunCompletedAt) parts.push("Dry-run: " + state.dryRunCompletedAt);
+    if (state.lastRun) {
+      parts.push("Запуск: " + state.lastRun.id + " · " + state.lastRun.errorCode);
+      if (state.lastRun.error) parts.push(state.lastRun.error);
+      if (state.lastRun.verification) parts.push("Проверка: " + state.lastRun.verification);
+    }
+    currentBridgePlanEl.textContent = parts.join("\n");
+    currentBridgePlanEl.style.whiteSpace = "pre-wrap";
+    currentBridgePlanEl.style.overflowWrap = "anywhere";
+  }
+
+  function refreshCurrentBridgePlan(onDone) {
+    if (currentPlanSyncInFlight) { if (onDone) onDone(new Error("Обновление плана ещё выполняется")); return; }
+    currentPlanSyncInFlight = true;
+    currentPlanSyncAt = Date.now();
+    request("GET", "/agents/plan/current", null, function (error, response) {
+      currentPlanSyncInFlight = false;
+      if (error) {
+        currentBridgePlan = null;
+      } else {
+        var incoming = response && response.current || null;
+        if (!incoming || !currentBridgePlan || incoming.instanceId !== currentBridgePlan.instanceId || incoming.revision >= currentBridgePlan.revision) {
+          var replaced = incoming && (!currentBridgePlan || incoming.actionId !== currentBridgePlan.actionId);
+          currentBridgePlan = incoming;
+          if (incoming) {
+            var oldProposal = m100ActionProposalForResult(lastPlanResult);
+            var localToken = oldProposal && oldProposal.actionId === incoming.actionId ? oldProposal.confirmation.confirmationToken : null;
+            if (localToken) incoming.proposal.confirmation.confirmationToken = localToken;
+            lastPlanResult = {plan: incoming.plan, planValidation: incoming.validation,
+              requestId: incoming.proposal.requestId, m100ActionProposal: incoming.proposal};
+            if (replaced) {
+              lastAcceptedDryRun = null;
+              appendChatMessage("assistant", "Текущий план Bridge v" + incoming.revision + ": " + (incoming.plan.summary || incoming.actionId),
+                {actionProposal: incoming.proposal, planResult: lastPlanResult});
+            }
+          } else {
+            lastPlanResult = null; lastAcceptedDryRun = null;
+          }
+        }
+      }
+      renderCurrentBridgePlan();
+      updateChatAvailability();
+      if (onDone) onDone(error);
+    });
   }
 
   function appendChatMessage(role, text, options) {
@@ -1623,6 +1766,7 @@
 
     var row = document.createElement("div");
     row.className = "inline-plan-actions";
+    row.setAttribute("data-action-id", proposal.actionId);
 
     var status = document.createElement("span");
     status.className = "inline-plan-action-status";
@@ -1650,10 +1794,10 @@
     };
 
     dryRunButton.addEventListener("click", function () {
-      if (!dryRunButton.disabled) runLastPlan(true);
+      if (!dryRunButton.disabled && currentBridgePlan && entry.actionProposal.actionId === currentBridgePlan.actionId) runLastPlan(true);
     });
     runButton.addEventListener("click", function () {
-      if (!runButton.disabled) runLastPlan(false);
+      if (!runButton.disabled && currentBridgePlan && entry.actionProposal.actionId === currentBridgePlan.actionId) runLastPlan(false);
     });
 
     inlinePlanActionRows.push(entry);
@@ -2085,7 +2229,7 @@
       }
 
       var activeProposal = m100ActionProposalForResult(lastPlanResult);
-      var isCurrentPlan = !!(lastPlanResult && activeProposal && entry.actionProposal && entry.actionProposal.actionId === activeProposal.actionId);
+      var isCurrentPlan = !!(lastPlanResult && activeProposal && entry.actionProposal && entry.actionProposal.actionId === activeProposal.actionId && !currentProposalBlockReason(activeProposal));
       var validation = isCurrentPlan && lastPlanResult ? lastPlanResult.planValidation || null : null;
       var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
       var validationOk = !!(validation && validation.ok);
@@ -2105,7 +2249,8 @@
       entry.runButton.disabled = runDisabled;
 
       if (!isCurrentPlan) {
-        entry.status.textContent = "Replaced by a newer plan";
+        entry.status.textContent = currentBridgePlan && entry.actionProposal.actionId === currentBridgePlan.actionId
+          ? currentProposalBlockReason(entry.actionProposal) : "Заменён более новым планом";
         entry.row.className = "inline-plan-actions blocked";
       } else if (chatInFlight) {
         entry.status.textContent = "Working...";
@@ -3177,10 +3322,38 @@
     });
   }
 
-  function runLastPlan(dryRun) {
+  function runLastPlan(dryRun, fresh) {
+    if (!fresh) {
+      var clicked = m100ActionProposalForResult(lastPlanResult);
+      if (!clicked) return;
+      refreshCurrentBridgePlan(function (error) {
+        if (error || !currentBridgePlan || currentBridgePlan.actionId !== clicked.actionId) {
+          setPlanRunStatus("План изменился. Просмотрите актуальную версию.", "blocked"); return;
+        }
+        runLastPlan(dryRun, true);
+      });
+      return;
+    }
     var proposal = m100ActionProposalForResult(lastPlanResult);
     if (chatInFlight || !lastPlanResult || !lastPlanResult.plan || !proposal) {
       setPlanRunStatus("No backend action proposal ready", "blocked");
+      return;
+    }
+    var blockReason = currentProposalBlockReason(proposal);
+    if (blockReason) { setPlanRunStatus(blockReason, "blocked"); return; }
+    if (!proposal.confirmation.confirmationToken) {
+      request("POST", "/agents/plan/adopt", {actionId: proposal.actionId, revision: currentBridgePlan.revision,
+        panelConnectionId: panelConnectionId, panelGeneration: String(panelConnectionGeneration),
+        confirmationSessionId: m100ConfirmationSessionId()}, function (error, response) {
+        if (error) { setPlanRunStatus(error.message, "blocked"); return; }
+        lastPlanResult = {plan: response.plan, planValidation: response.validation,
+          requestId: response.proposal.requestId, m100ActionProposal: response.proposal};
+        lastAcceptedDryRun = null;
+        refreshCurrentBridgePlan(function (syncError) {
+          if (syncError) return;
+          runLastPlan(true, true);
+        });
+      });
       return;
     }
     var validation = lastPlanResult.planValidation || {};
@@ -3218,6 +3391,7 @@
     request("POST", "/agents/plan/run", body, function (error, response) {
       planRunInFlightMode = "";
       setChatBusy(false);
+      currentPlanSyncAt = 0;
       if (error) {
         var errorRun = error.body && error.body.run ? error.body.run : null;
         if (errorRun) {
@@ -3451,8 +3625,10 @@
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
       lastPollErrorMessage = "";
       setBridgeConnected();
+      if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) refreshCurrentBridgePlan();
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
+        refreshAutonomousSession();
       }
 
       if (response && response.command) {
@@ -3466,6 +3642,8 @@
   function connect() {
     running = true;
     panelConnectionGeneration = Date.now();
+    autonomousSessionState = null;
+    renderAutonomousSession();
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     localStorage.setItem("codexAeBridgeUrl", urlEl.value);
@@ -3480,11 +3658,21 @@
   }
 
   function disconnect() {
+    if (running && autonomousSessionState && autonomousSessionState.active) {
+      request("POST", "/autonomy/session", {
+        enabled: false,
+        panelConnectionId: panelConnectionId,
+        panelGeneration: String(panelConnectionGeneration)
+      }, function () {});
+    }
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     stopSetupStatusPolling();
+    stopAutonomousSessionTimer();
+    autonomousSessionState = null;
+    renderAutonomousSession();
     if (pollTimer) clearTimeout(pollTimer);
     localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
@@ -3533,6 +3721,7 @@
   disconnectButton.addEventListener("click", disconnect);
   diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
+  if (autonomousSessionButton) autonomousSessionButton.addEventListener("click", toggleAutonomousSession);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
   if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
@@ -3607,6 +3796,7 @@
   updateProviderUi(null);
   renderProviderSelfTest();
   renderConnectorStatus();
+  renderAutonomousSession();
   setTimeout(refreshConnectorStatus, 300);
   restoreTranscriptHistory();
   setStatus("Disconnected", false);

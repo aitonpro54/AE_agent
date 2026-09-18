@@ -1,4 +1,7 @@
 node_modules/
+logs/
+Adobe After Effects Auto-Save/
+/test_comp.aep
 snapshots/*.zip
 logs/*.jsonl
 logs/*.log
@@ -9,6 +12,7 @@ logs/dev-requests/
 logs/generated-exports/
 logs/hardcore-sessions/
 logs/solution-candidates/
+logs/verification-evidence/
 pro-review-bundles/
 backups/*.aep
 backups/*.aepx

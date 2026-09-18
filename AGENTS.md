@@ -40,6 +40,12 @@ Maintain AE Agent 3.0.0 in this clean repository. The product target is
 - Для поддерживаемых операций предпочитай `build_solution_plan`, затем
   `propose_ai_agent_plan` и обычные dry-run/confirmation/read-back gates.
   Raw JSX допустим только при конкретном пробеле typed tools.
+- Если пользователь включил в CEP `Автономную сессию Codex`, после успешного
+  dry-run можно выполнить через MCP только server-proposed typed mutating plan.
+  Direct mutations, raw JSX и destructive plans остаются в ручном CEP flow.
+- Если пользователь включил в CEP `Автономную сессию Codex`, после успешного
+  dry-run можно выполнить через MCP только server-proposed typed mutating plan.
+  Direct mutations, raw JSX и destructive plans остаются в ручном CEP flow.
 - Расход и ограничения измерений описаны в `docs/solution-reuse.md`;
   `npm.cmd run report:reuse` показывает наблюдаемые события, не процент экономии.
 

@@ -9,6 +9,7 @@ function summarizeEvents(events) {
     observedInputTokens: null, observedOutputTokens: null, observedCachedInputTokens: null,
     observedRepairInputTokens: null, observedRepairOutputTokens: null,
     realRuns: 0, successfulRuns: 0, realRunsWithDeclaredReuse: 0, rawExecutedSteps: 0,
+    observedTypedExecutedSteps: 0, runsWithBuilderDeclaration: 0, runsWithMatchingBuilderContent: 0,
     toolOutputChars: 0, toolCallsWithSize: 0,
     limitation: "Observed counters only. Missing usage is unknown, declared reuse is not causal attribution, and no A/B token-saving percentage can be inferred." };
   const seen = new Set();
@@ -22,7 +23,7 @@ function summarizeEvents(events) {
       if (d.operation === "search_solutions") report.discoveryCalls++;
       if (d.operation === "get_solution") report.recipeReads++;
     }
-    if (event.type === "solution_plan_built" && d.validationOk) report.localPlansBuilt++;
+    if (["solution_plan_built","slideshow_plan_built"].includes(event.type) && d.validationOk) report.localPlansBuilt++;
     if (event.type === "plan_finished") {
       report.plannerCalls++;
       if (d.solutionHintsReturned > 0) report.plannerCallsWithHints++;
@@ -40,6 +41,9 @@ function summarizeEvents(events) {
       if (d.ok) report.successfulRuns++;
       if (d.declaredSolutionIds && d.declaredSolutionIds.length) report.realRunsWithDeclaredReuse++;
       add("rawExecutedSteps", d.rawStepCount);
+      add("observedTypedExecutedSteps", d.typedExecutedStepCount);
+      if (d.builderProvenance) report.runsWithBuilderDeclaration++;
+      if (d.builderProvenance && d.builderProvenance.contentMatches === true) report.runsWithMatchingBuilderContent++;
     }
     if (event.type === "tool_call_finished" && typeof d.outputChars === "number") { report.toolCallsWithSize++; add("toolOutputChars", d.outputChars); }
   }

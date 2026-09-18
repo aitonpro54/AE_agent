@@ -6,9 +6,19 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const { AsyncLocalStorage } = require("async_hooks");
+const autonomousCommandContext = new AsyncLocalStorage();
+const evidenceContext = new AsyncLocalStorage();
+const reviewEvidence = require("./review-evidence");
+const { buildRunOutcome } = require("./run-outcome");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
+const solutionCandidateQueue = require("./solution-candidate-queue");
+const { createAutonomousSessionManager } = require("./autonomous-session");
+const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstacleEvent } = require("./proposal-state");
+const currentProposalState = createProposalState();
+const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
 const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
@@ -17,6 +27,9 @@ const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
 const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
+const slideshowTools = require("./slideshow-tools");
+const slideshowPlanBuilder = require("./slideshow-plan-builder");
+const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -37,8 +50,14 @@ const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
+const RUNTIME_IDENTITY = reviewEvidence.runtimeIdentity(PROJECT_ROOT);
 const LOG_DIR = process.env.AE_BRIDGE_LOG_DIR ? path.resolve(process.env.AE_BRIDGE_LOG_DIR) : path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
+function recordAutonomyObstacle(input) {
+  const event = obstacleEvent(input);
+  try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(event) + "\n", "utf8"); return true; }
+  catch (_error) { return false; }
+}
 const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
 const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
@@ -59,6 +78,16 @@ const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const projectSaveExecutor = projectSave.createProjectSaveExecutor({runExtendScriptBody:(body)=>runExtendScriptBody(body),
+  createCheckpoint: async (request) => {
+    ensureDir(BACKUP_DIR);
+    const base = sanitizeFilenamePart(path.basename(request.sourceFile, ".aep"));
+    const checkpointFile=path.join(BACKUP_DIR, `${base}-checkpoint-${sanitizeFilenamePart(request.label)}-${timestampForFilename(new Date())}.aep`);
+    fs.copyFileSync(request.sourceFile,checkpointFile,fs.constants.COPYFILE_EXCL);
+    const receipt={checkpointFile,sourceFile:request.sourceFile,label:request.label,snapshotScope:request.snapshotScope};
+    recordEvent("project_save_checkpoint_created",receipt);
+    return receipt;
+  }});
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
@@ -298,6 +327,13 @@ function listEffectPresets(args) {
 let lastPanelSeenAt = 0;
 let lastPanelInfo = null;
 let lastPanelPollLoggedAt = 0;
+const autonomousSession = createAutonomousSessionManager({
+  panelState: () => ({
+    panelConnectionId: lastPanelInfo && lastPanelInfo.panelConnectionId || null,
+    panelGeneration: lastPanelInfo && lastPanelInfo.panelGeneration || null,
+    seenAt: lastPanelSeenAt
+  })
+});
 
 function log(message) {
   process.stderr.write(`[${SERVER_NAME}] ${message}\n`);
@@ -326,12 +362,16 @@ function sanitizeForLog(value) {
 }
 
 function recordEvent(type, details) {
+  const context = evidenceContext.getStore() || {};
+  const linked = {...context, ...(details || {})};
+  if (/^ae_command_/.test(type) && linked.id) linked.commandId = linked.id;
+  if (/^tool_call_/.test(type) && linked.id) linked.toolCallId = linked.id;
   const event = {
     eventId: crypto.randomUUID(),
-    runtime: { port: PORT, pid: process.pid },
+    runtime: { port: PORT, pid: process.pid, gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256 },
     at: new Date().toISOString(),
     type,
-    details: sanitizeForLog(details || {})
+    details: sanitizeForLog(linked)
   };
 
   recentEvents.push(event);
@@ -805,6 +845,7 @@ function getBridgeStatus() {
     uptimeMs: now - STARTED_AT,
     startedAt: new Date(STARTED_AT).toISOString(),
     panelConnected: now - lastPanelSeenAt < 15000,
+    autonomousSession: autonomousSession.publicStatus(),
     lastPanelSeenAt,
     lastPanelInfo,
     pendingCommands: countQueuedCommands(now),
@@ -872,6 +913,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  projectSave.TOOL_NAME,
   "run_extendscript",
   "run_extendscript_file",
   "create_comp",
@@ -944,7 +986,8 @@ const MUTATING_TOOL_NAMES = new Set([
   "update_layer_marker",
   "delete_layer_marker",
   "create_test_comp",
-  "cleanup_test_items"
+  "cleanup_test_items",
+  ...slideshowTools.TOOL_NAMES.filter((toolName) => toolName !== "audit_slideshow_generated")
 ]);
 
 const MUTATION_SUMMARY_TOOL_NAMES = new Set([
@@ -960,12 +1003,14 @@ const M100_RAW_JSX_TOOL_NAMES = new Set([
   "run_extendscript_file"
 ]);
 const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
+  projectSave.TOOL_NAME,
   "cleanup_test_items",
   "delete_project_checkpoint",
   "delete_layer"
 ]);
 const M100_DIRECT_TOOL_SOURCES = new Set([
-  "direct-tools-call"
+  "direct-tools-call",
+  "mcp-adapter"
 ]);
 const M100_LOCAL_ADMIN_TOOL_SOURCES = new Set([
   "dev-http"
@@ -1049,11 +1094,16 @@ function m100DirectEscapeHatchAllowed(source, args) {
   return Boolean(args && args[M100_DIRECT_ESCAPE_HATCH_ARG] === true);
 }
 
-function m100DirectToolCallBlock(source, name, args) {
+function m100DirectToolCallBlock(source, name, args, executionContext) {
   if (!M100_DIRECT_TOOL_SOURCES.has(source)) return null;
   // The runner never dispatches steps in explicit dry-run mode. Permit only
   // this preview through legacy MCP adapters; real runs retain default-deny.
   if (name === "run_ai_agent_plan" && args && args.dryRun === true) return null;
+  if (source === "mcp-adapter"
+    && name === "run_ai_agent_plan"
+    && args && args.dryRun === false
+    && executionContext && executionContext.autonomousSession
+    && executionContext.autonomousSession.authorized === true) return null;
   const risk = classifyM100ToolRisk(name);
   if (risk.known && risk.riskLevel === "read_only") return null;
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
@@ -1323,7 +1373,7 @@ function m100ActionRecordState(record) {
   return record.confirmedAt ? "confirmed" : "pending";
 }
 
-function storeM100ActionProposal(proposal, payload) {
+function storeM100ActionProposal(proposal, payload, options = {}) {
   const validation = m100Protocol.validateActionProposalEnvelope(proposal);
   if (!validation.ok) {
     recordEvent("m100_action_proposal_rejected", {
@@ -1352,11 +1402,17 @@ function storeM100ActionProposal(proposal, payload) {
     confirmationSessionId: confirmation.sessionId || "",
     executionState: "pending",
     executionId: null,
+    dryRunCompletedAt: null,
     cancelledAt: null,
     proposal: m100StoredProposalCopy(proposal),
     payload,
     createdAt: new Date().toISOString()
   };
+  if (options.beforeRegister) options.beforeRegister(payload.plan);
+  if (options.lineage) Object.assign(record, options.lineage);
+  currentProposalState.register(record, options.expectedCurrent);
+  proposal.revision = record.revision;
+  record.proposal.revision = record.revision;
   m100ActionProposalStore.set(record.actionId, record);
   m100ActionProposalStore.set(record.payloadRef, record);
   recordEvent("m100_action_proposal_created", {
@@ -1371,9 +1427,19 @@ function storeM100ActionProposal(proposal, payload) {
   return proposal;
 }
 
-function createM100AgentPlanProposal(planResult, options = {}) {
+async function createM100AgentPlanProposal(planResult, options = {}) {
   if (!planResult || !planResult.plan || !planResult.planValidation || planResult.planValidation.ok !== true) {
     return null;
+  }
+  if (planResult.planValidation.mutatingCount > 0) {
+    if (Date.now() - lastPanelSeenAt >= 15000) return null; // Offline planner drafts carry no execution authority.
+    const projectInfo = firstToolPayload(await callToolLogged("proposal-project-capture", "get_project_info", {}));
+    if (!projectInfo || !projectInfo.file) throw m100ProtocolError("project_save_required", "Сохраните целевой проект перед созданием proposal.");
+    const specifiedProject = planResult.plan.targetProject && planResult.plan.targetProject.file;
+    if (specifiedProject && require("./proposal-state").normalizeProject(specifiedProject) !== require("./proposal-state").normalizeProject(projectInfo.file)) {
+      throw m100ProtocolError("project_target_mismatch", "Proposal предназначен другому проекту.", {project: {expectedFile: specifiedProject, actualFile: projectInfo.file}});
+    }
+    planResult.plan = {...planResult.plan, targetProject: {file: projectInfo.file}};
   }
   const payload = {
     kind: "agent_plan",
@@ -1409,12 +1475,14 @@ function createM100AgentPlanProposal(planResult, options = {}) {
       }
     ]
   });
-  return storeM100ActionProposal(proposal, payload);
+  return storeM100ActionProposal(proposal, payload, options);
 }
 
-function createM100AgentPlanProposalFromRequest(body) {
+async function createM100AgentPlanProposalFromRequest(body, internalOptions = {}) {
   const args = body || {};
   const plan = args.plan || args;
+  const repairParent = args.parentActionId ? m100ActionProposalStore.get(String(args.parentActionId)) : null;
+  const repairLineage = args.parentActionId ? autonomousRepair.validateRepair(repairParent, plan) : null;
   const requestId = optionalString(args, "requestId", "") || crypto.randomUUID();
   const prepared = validateAgentPlanWithRepair(plan, requestId, {
     solutionHints: args.solutionHints || args.planSolutionHints || null,
@@ -1437,16 +1505,28 @@ function createM100AgentPlanProposalFromRequest(body) {
     m100ConfirmationSurface: optionalString(args, "m100ConfirmationSurface", optionalString(args, "confirmationSurface", optionalString(args, "confirmedBySurface", "cep-panel"))),
     m100ConfirmationSessionId: optionalString(args, "m100ConfirmationSessionId", optionalString(args, "confirmationSessionId", optionalString(args, "confirmedBySession", "")))
   };
-  const proposal = createM100AgentPlanProposal(planResult);
+  const proposal = await createM100AgentPlanProposal(planResult, {
+    ...internalOptions,
+    expectedCurrent: repairParent || internalOptions.expectedCurrent,
+    lineage: repairLineage || internalOptions.lineage,
+    beforeRegister: (canonicalPlan) => {
+      if (internalOptions.beforeRegister) internalOptions.beforeRegister(canonicalPlan);
+      if (repairParent) autonomousRepair.validateRepair(repairParent, canonicalPlan);
+    }
+  });
   if (!proposal) {
-    throw m100ProtocolError("m100_action_proposal_create_failed", "Backend could not create an M100 action proposal for this plan.");
+    throw m100ProtocolError("panel_connection_required", "Подключите CEP-панель для проверки целевого проекта перед proposal.");
+  }
+  if (repairLineage) {
+    Object.assign(m100ActionProposalStore.get(proposal.actionId), repairLineage);
+    repairParent.repairChildActionId = proposal.actionId;
   }
   return {
     proposal,
     validation,
     planRepair: prepared.repair || null,
     repairedPlan: prepared.repair && prepared.repair.applied ? prepared.plan : null,
-    plan: prepared.plan
+    plan: planResult.plan
   };
 }
 
@@ -1466,12 +1546,19 @@ function m100PlanRunLookupKey(options) {
 }
 
 function resolveM100PlanRunOptions(options) {
+  if (Object.keys(options || {}).some((key) => key.startsWith("_m100"))) {
+    throw m100ProtocolError("internal_authority_fields_forbidden", "Внутренние полномочия выполнения нельзя передавать в запросе.");
+  }
   const keys = m100PlanRunLookupKey(options);
   if (!keys.actionId && !keys.payloadRef) return options || {};
   pruneM100ActionProposalStore();
   const record = m100ActionProposalStore.get(keys.payloadRef) || m100ActionProposalStore.get(keys.actionId);
   if (!record || record.payload && record.payload.kind !== "agent_plan") {
     throw m100ProtocolError("m100_action_proposal_not_found", "M100 action proposal was not found. Create a fresh Agent proposal before running.");
+  }
+  currentProposalState.assertCurrent(record);
+  if (["confirmed", "executing", "completed", "failed", "cancelled"].includes(record.executionState)) {
+    throw m100ProtocolError("m100_confirmation_replayed", "План уже запущен или завершён. Повторное выполнение запрещено.");
   }
   if (keys.actionId && keys.actionId !== record.actionId) {
     throw m100ProtocolError("m100_action_id_mismatch", "M100 actionId does not match the stored proposal.");
@@ -1514,6 +1601,9 @@ function m100PlanRequiresConfirmation(validation) {
 
 function confirmM100ActionProposal(record, options, run) {
   const keys = m100PlanRunLookupKey(options || {});
+  const autonomous = options && options._m100AutonomousSession && options._m100AutonomousSession.authorized === true
+    ? options._m100AutonomousSession
+    : null;
   if (!record) {
     throw m100ProtocolError("m100_action_proposal_not_found", "M100 action proposal was not found. Create a fresh Agent proposal before running.");
   }
@@ -1557,25 +1647,28 @@ function confirmM100ActionProposal(record, options, run) {
       receivedRiskPolicyVersion: keys.riskPolicyVersion || null
     });
   }
-  if (!keys.confirmationToken || m100Protocol.hashConfirmationToken(keys.confirmationToken) !== record.confirmationTokenHash) {
-    throw m100ProtocolError("m100_confirmation_token_mismatch", "M100 confirmation token does not match the stored proposal.");
+  if (!autonomous) {
+    if (!keys.confirmationToken || m100Protocol.hashConfirmationToken(keys.confirmationToken) !== record.confirmationTokenHash) {
+      throw m100ProtocolError("m100_confirmation_token_mismatch", "M100 confirmation token does not match the stored proposal.");
+    }
+    if (!keys.confirmedBySurface || keys.confirmedBySurface !== record.confirmationSurface) {
+      throw m100ProtocolError("m100_confirmation_surface_mismatch", "M100 confirmation surface does not match the stored proposal.", {
+        expectedSurface: record.confirmationSurface,
+        receivedSurface: keys.confirmedBySurface || null
+      });
+    }
+    if (record.confirmationSessionId && keys.confirmedBySession !== record.confirmationSessionId) {
+      throw m100ProtocolError("m100_confirmation_session_mismatch", "M100 confirmation session does not match the stored proposal.", {
+        expectedSession: record.confirmationSessionId,
+        receivedSession: keys.confirmedBySession || null
+      });
+    }
   }
-  if (!keys.confirmedBySurface || keys.confirmedBySurface !== record.confirmationSurface) {
-    throw m100ProtocolError("m100_confirmation_surface_mismatch", "M100 confirmation surface does not match the stored proposal.", {
-      expectedSurface: record.confirmationSurface,
-      receivedSurface: keys.confirmedBySurface || null
-    });
-  }
-  if (record.confirmationSessionId && keys.confirmedBySession !== record.confirmationSessionId) {
-    throw m100ProtocolError("m100_confirmation_session_mismatch", "M100 confirmation session does not match the stored proposal.", {
-      expectedSession: record.confirmationSessionId,
-      receivedSession: keys.confirmedBySession || null
-    });
-  }
+  currentProposalState.assertCurrent(record);
 
   record.confirmedAt = new Date().toISOString();
-  record.confirmedBySurface = keys.confirmedBySurface;
-  record.confirmedBySession = keys.confirmedBySession || "";
+  record.confirmedBySurface = autonomous ? "cep-autonomous-session" : keys.confirmedBySurface;
+  record.confirmedBySession = autonomous ? `session-${autonomous.sessionHash}` : (keys.confirmedBySession || "");
   record.executionState = "confirmed";
   record.executionId = run && run.id || null;
   recordEvent("m100_action_proposal_confirmed", {
@@ -2311,10 +2404,21 @@ function inferVerificationTarget(toolName, args, payload) {
   if (!target.itemIndex && hasArg(rawArgs, "itemIndex")) target.itemIndex = Number(rawArgs.itemIndex) || null;
   if (!target.itemName && hasArg(rawArgs, "itemName")) target.itemName = String(rawArgs.itemName || "");
 
+  if (slideshowTools.TOOL_NAMES.includes(toolName)) {
+    target.compName = rawArgs.expectedMasterCompName || rawArgs.masterName || rawArgs.generatedRootName || rawArgs.expectedRootCompName || "";
+    target.compItemIndex = null;
+    target.itemIndex = null;
+    target.requireExactComp = true;
+  }
+
   return target;
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if(toolName===projectSave.TOOL_NAME){
+    projectSave.verifyReceipt(payload && payload.saveReceipt,args);
+    return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
+  }
   if (toolName === "export_path_points" || toolName === "export_text_to_file" || toolName === "save_comp_frame_png") {
     const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
     const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
@@ -2509,13 +2613,17 @@ async function verifyMutationResult(toolName, args, payload) {
 
       function __codexCompInfo(comp) {
         if (!comp) return null;
+        var projectIndex = null;
+        for (var ci = 1; ci <= app.project.numItems; ci++) { if (app.project.item(ci) === comp) { projectIndex = ci; break; } }
         return {
-          itemIndex: comp.itemIndex || null,
+          itemIndex: projectIndex,
           id: comp.id || null,
           name: comp.name || "",
           typeName: comp.typeName || null,
           width: comp.width,
           height: comp.height,
+          pixelAspect: comp.pixelAspect,
+          bgColor: comp.bgColor,
           duration: comp.duration,
           frameRate: comp.frameRate,
           numLayers: comp.numLayers
@@ -2524,6 +2632,15 @@ async function verifyMutationResult(toolName, args, payload) {
 
       function __codexResolveComp() {
         var item = null;
+        if (target.requireExactComp) {
+          var exact = null, count = 0;
+          for (var ei = 1; ei <= app.project.numItems; ei++) {
+            item = app.project.item(ei);
+            if (item instanceof CompItem && item.name === target.compName) { exact = item; count++; }
+          }
+          if (count !== 1) throw new Error("verification_target_identity_mismatch:" + target.compName);
+          return exact;
+        }
         if (target.compItemIndex) {
           try { item = app.project.item(target.compItemIndex); } catch (__indexError) {}
           if (item instanceof CompItem) return item;
@@ -3190,6 +3307,7 @@ function enqueueAeCommand(script, timeoutMs) {
       phase: null,
       settled: false
     };
+    command.autonomousGuard = autonomousCommandContext.getStore() || null;
     command.timeout = setTimeout(() => {
       timeoutAeCommand(id);
     }, timeoutMs);
@@ -3385,6 +3503,27 @@ function parseStrictAeWrapperResult(command, raw) {
   return parsed;
 }
 
+function rejectRevokedAutonomousCommand(command) {
+  if (!command || !command.autonomousGuard || command.state === "submitted") return false;
+  const authority = autonomousSession.authorization();
+  let code = "autonomous_session_expired_or_revoked";
+  let error = "Автономная сессия отозвана или истекла до передачи команды AE.";
+  if (authority && authority.sessionHash === command.autonomousGuard.sessionHash) {
+    try { currentProposalState.assertExecution(command.autonomousGuard); return false; }
+    catch (failure) { code = failure.code || "plan_execution_owner_changed"; error = failure.message; }
+  }
+  removePendingCommand(command.id);
+  clearTimeout(command.timeout);
+  command.state = "expired_before_delivery";
+  command.completedAt = Date.now();
+  inflightCommands.delete(command.id);
+  command.errorCode = code;
+  command.error = error;
+  retainCommandResult(command.id, {ok: false, error, code, lifecycleState: command.state}, command);
+  settleCommandFailure(command, code, error);
+  return true;
+}
+
 function leaseNextQueuedCommand(req, url) {
   expireQueuedCommands(Date.now(), "bridge_next");
   const leaseOwner = panelLeaseOwner(req, url);
@@ -3395,6 +3534,7 @@ function leaseNextQueuedCommand(req, url) {
     const id = pendingCommands.shift();
     const command = inflightCommands.get(id);
     if (!command || command.state !== "queued") continue;
+    if (rejectRevokedAutonomousCommand(command)) continue;
     if (Date.now() >= command.expiresAt) {
       expireQueuedCommand(command, "bridge_next");
       continue;
@@ -3482,6 +3622,10 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  const guard = autonomousCommandContext.getStore();
+  if (guard && guard.projectFile) {
+    body = `if (!app.project || !app.project.file || String(app.project.file.fsName).replace(/\\\\/g, "/").toLowerCase() !== ${aeLiteral(guard.projectFile.replace(/\\/g, "/").toLowerCase())}) throw new Error("project_target_mismatch");\n` + body;
+  }
   return enqueueAeCommand(wrapExtendScriptBody(body), timeoutMs || COMMAND_TIMEOUT_MS);
 }
 
@@ -3659,6 +3803,10 @@ function validateAgentPlanObject(plan, requestId, context) {
       projectRoot: PROJECT_ROOT,
       generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
     }) : [];
+    if(toolName===projectSave.TOOL_NAME){
+      try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
+      if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
+    }
     for (const contract of safetyContracts) {
       if (contract.kind === "generated-file-output") generatedFileIoCount += 1;
       if (contract.kind === "generated-render-output") generatedRenderOutputCount += 1;
@@ -3713,17 +3861,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (safeArgs.verifyAfter !== true) {
+      if (toolName !== projectSave.TOOL_NAME && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (!safeArgs.idempotencyKey) {
+      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (!safeArgs.idempotencyScope) {
+      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -4620,6 +4768,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  projectSave.TOOL_NAME,
   "get_bridge_status",
   "ping_ae",
   "get_project_snapshot",
@@ -4715,7 +4864,9 @@ const PLANNING_TOOL_NAMES = [
   "create_test_comp",
   "cleanup_test_items",
   "run_extendscript",
-  "run_extendscript_file"
+  "run_extendscript_file",
+  "build_slideshow_plan",
+  ...slideshowTools.TOOL_NAMES
 ];
 
 function compactPromptText(text, limit) {
@@ -5684,7 +5835,7 @@ async function runAgentHardcoreSession(source, args) {
       if (!attempt.planResult.m100ActionProposal) {
         attempt.planResult.m100ConfirmationSurface = "agent-hardcore";
         attempt.planResult.m100ConfirmationSessionId = session.sessionId;
-        attempt.planResult.m100ActionProposal = createM100AgentPlanProposal(attempt.planResult);
+        attempt.planResult.m100ActionProposal = await createM100AgentPlanProposal(attempt.planResult);
       }
       const attemptM100Proposal = attempt.planResult.m100ActionProposal || null;
       const rawStepCount = rawExtendscriptStepCount(attempt.planResult.planValidation);
@@ -6189,13 +6340,31 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
   return { ok: true, approval };
 }
 
-async function runValidatedAgentPlan(options) {
+async function runValidatedAgentPlan(options, executionContext) {
+  return evidenceContext.run({runId: crypto.randomUUID(), requestId: options && options.requestId || null},
+    () => runValidatedAgentPlanWithEvidence(options, executionContext));
+}
+
+async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   options = resolveM100PlanRunOptions(options || {});
+  const autonomous = executionContext && executionContext.autonomousSession
+    && executionContext.autonomousSession.authorized === true
+    ? executionContext.autonomousSession
+    : null;
+  if (autonomous) {
+    options = {
+      ...options,
+      confirm: true,
+      allowMutations: true,
+      autoEditSession: true,
+      _m100AutonomousSession: autonomous
+    };
+  }
   const prepared = validateAgentPlanWithRepair(options.plan, options.requestId || null, {
     solutionHints: options.solutionHints || options.planSolutionHints || null,
     projectIntentMemory: options.projectIntentMemory || options.planProjectIntentMemory || null
   }, {
-    repairPlan: options.repairPlan
+    repairPlan: options._m100ActionRecord ? false : options.repairPlan
   });
   const validation = prepared.validation;
   const dryRun = optionalBoolean(options, "dryRun", true);
@@ -6203,17 +6372,27 @@ async function runValidatedAgentPlan(options) {
   const allowMutations = optionalBoolean(options, "allowMutations", false);
   const autoEditSession = optionalBoolean(options, "autoEditSession", false);
   const allowRuntimeBindings = optionalBoolean(options, "allowRuntimeBindings", true);
-  const allowWithoutCheckpoint = optionalBoolean(options, "allowWithoutCheckpoint", false);
+  const allowWithoutCheckpoint = autonomous ? false : optionalBoolean(options, "allowWithoutCheckpoint", false);
   const allowRawExtendscript = optionalBoolean(options, "allowRawExtendscript", false);
   const rawExtendscriptDryRunId = optionalString(options, "rawExtendscriptDryRunId", "");
-  const stopOnError = optionalBoolean(options, "stopOnError", true);
+  const stopOnError = autonomous ? true : optionalBoolean(options, "stopOnError", true);
   const maxSteps = Math.max(1, Math.min(50, Math.floor(optionalNumber(options, "maxSteps", 20))));
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
   const checkpointStepPresent = hasCheckpointStep(validation);
   const activeEditSessionAtStart = Boolean(activeEditSession);
 
+  const actionBinding = options._m100ActionRecord;
+  const expectedProject = actionBinding && actionBinding.project.expectedFile || prepared.plan.targetProject && prepared.plan.targetProject.file || null;
+  const provenance = {schema: "ae-agent-run-provenance.v1", actionId: actionBinding && actionBinding.actionId || null,
+    proposalRevision: actionBinding && actionBinding.revision || null,
+    projectId: expectedProject ? reviewEvidence.sha256(require("./proposal-state").normalizeProject(expectedProject)) : null,
+    projectRevision: null, projectRevisionReason: "in_memory_revision_not_observed",
+    planSha256: reviewEvidence.sha256(prepared.plan), runtime: RUNTIME_IDENTITY};
+  Object.assign(evidenceContext.getStore(), {actionId: provenance.actionId, proposalRevision: provenance.proposalRevision,
+    projectId: provenance.projectId, planSha256: provenance.planSha256});
   const run = {
-    id: crypto.randomUUID(),
+    id: evidenceContext.getStore().runId,
+    provenance,
     startedAt: new Date().toISOString(),
     dryRun,
     confirm,
@@ -6233,6 +6412,10 @@ async function runValidatedAgentPlan(options) {
       autoEditSession,
       allowWithoutCheckpoint,
       allowRawExtendscript,
+      autonomousSession: autonomous ? {
+        capability: autonomous.capability,
+        expiresAt: autonomous.expiresAt
+      } : null,
       protection: activeEditSessionAtStart
         ? "active_edit_session"
         : checkpointStepPresent
@@ -6240,6 +6423,9 @@ async function runValidatedAgentPlan(options) {
           : null
     }
   };
+  if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
+    run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
+  }
   if (activeEditSessionAtStart) {
     run.editSession = compactEditSession(activeEditSession);
   }
@@ -6254,6 +6440,12 @@ async function runValidatedAgentPlan(options) {
     }
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildSemanticVerification(prepared.plan, run);
+    }
+    if (autonomous && !run.dryRun && run.ok && (!run.semanticVerification || run.semanticVerification.status !== "passed" || run.semanticVerification.unverifiedMutationCount > 0)) {
+      run.ok = false;
+      run.errorCode = "verification_required";
+      run.error = "Автономное выполнение требует подтверждённого read-back каждой операции.";
+      if (run.semanticVerification) run.semanticVerification = {...run.semanticVerification, status: "needs_review", ok: false};
     }
     if (!run.dryRun && run.solutionPlanReadBack === undefined) {
       run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
@@ -6298,7 +6490,12 @@ async function runValidatedAgentPlan(options) {
     }
     if (options._m100ActionProposal) {
       const actionRecord = options._m100ActionRecord || null;
-      if (actionRecord && !run.dryRun && actionRecord.executionState === "executing") {
+      if (actionRecord && run.dryRun && run.ok && actionRecord === currentProposalState.current && actionRecord.executionState === "pending") {
+        actionRecord.dryRunCompletedAt = run.finishedAt;
+        actionRecord.dryRunReceipt = {payloadHash: actionRecord.payloadHash, contractVersion: AUTONOMY_CONTRACT_VERSION,
+          stepCount: validation.steps.length, projectFile: actionRecord.project.expectedFile};
+      }
+      if (actionRecord && !run.dryRun && actionRecord.executionState === "executing" && actionRecord.executionId === run.id) {
         actionRecord.executionState = run.ok ? "completed" : "failed";
         actionRecord.executionId = run.id;
         actionRecord.finishedAt = run.finishedAt;
@@ -6329,10 +6526,28 @@ async function runValidatedAgentPlan(options) {
       });
     }
     attachM100PlanRunDiagnostic(run, options);
+    run.outcome = buildRunOutcome(run, prepared.plan);
     let eligibleSolutionIds = [];
     try { eligibleSolutionIds = solutionDiscovery.reviewedIds(); } catch (_registryError) {}
     run.solutionReuse = reuseTelemetry.summarizeRun(run, prepared.plan, eligibleSolutionIds);
-    recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse });
+    recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse, outcome: run.outcome,
+      provenance: {...provenance, runtime: {gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256}} });
+    const diagnostic = obstacleEvent({operation: "run_ai_agent_plan", proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
+      runId: run.id, code: run.errorCode || (run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
+      durationMs: Date.parse(run.finishedAt) - Date.parse(run.startedAt), successfulSteps: run.executedCount,
+      failedSteps: run.failedCount, verification: run.solutionPlanReadBack && run.solutionPlanReadBack.status || run.semanticVerification && run.semanticVerification.status});
+    try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); }
+    catch (_telemetryError) { run.telemetryWarning = "autonomy_obstacle_log_unavailable"; }
+    const ownsRecord = options._m100ActionRecord && (!options._m100ActionRecord.executionId || options._m100ActionRecord.executionId === run.id);
+    if (ownsRecord) {
+      run.repairDirective = autonomousRepair.directive(options._m100ActionRecord, run);
+      options._m100ActionRecord.repairDirective = run.repairDirective;
+    }
+    if (ownsRecord) options._m100ActionRecord.lastRun = {
+      id: run.id, ok: run.ok, dryRun: run.dryRun, errorCode: diagnostic.code,
+      error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
+      failedCount: run.failedCount, verification: diagnostic.verification
+    };
     return run;
   }
 
@@ -6352,6 +6567,57 @@ async function runValidatedAgentPlan(options) {
       reason: "client-authored confirm:true is not an execution authority for mutating/destructive/raw plan steps"
     };
     return finishRun();
+  }
+  if (validation.steps.length > maxSteps) {
+    run.ok = false; run.errorCode = "plan_step_limit_exceeded";
+    run.error = `План содержит ${validation.steps.length} шагов при лимите ${maxSteps}; разделите его на проверяемые этапы.`;
+    return finishRun();
+  }
+  if (options._m100ActionRecord && validation.mutatingCount > 0) {
+    try {
+      const projectResult = firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
+      currentProposalState.assertCurrent(options._m100ActionRecord);
+      currentProposalState.bindProject(options._m100ActionRecord, projectResult && projectResult.file);
+      run.project = {...options._m100ActionRecord.project};
+    } catch (error) {
+      run.ok = false; run.errorCode = error.code || "project_inspection_failed";
+      run.error = error.message; run.project = error.project || null;
+      return finishRun();
+    }
+  }
+  if(!dryRun&&validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)){
+    try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
+    catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
+  }
+  if (!dryRun && autonomous) {
+    if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
+      require("./proposal-state").normalizeProject(options._m100ActionRecord && options._m100ActionRecord.project.expectedFile)) {
+      run.ok = false; run.errorCode = "edit_session_project_mismatch";
+      run.error = "Активная edit session защищает другой проект. Завершите её перед новой сборкой.";
+      return finishRun();
+    }
+    const autonomousRisk = m100RiskForAgentPlan(prepared.plan, validation).level;
+    if (!options._m100ActionRecord || options._m100ActionRecord.riskLevel !== "mutating" || autonomousRisk !== "mutating") {
+      run.ok = false;
+      run.error = "Autonomous Codex sessions allow only proposal-backed typed mutating plans.";
+      run.errorCode = "autonomous_session_scope_blocked";
+      run.safety.status = "blocked_autonomous_session_scope";
+      return finishRun();
+    }
+    if (!options._m100ActionRecord.dryRunCompletedAt) {
+      run.ok = false;
+      run.error = "A successful dry run of this proposal is required before autonomous execution.";
+      run.errorCode = "autonomous_session_dry_run_required";
+      run.safety.status = "blocked_autonomous_session_dry_run_required";
+      return finishRun();
+    }
+    const receipt = options._m100ActionRecord.dryRunReceipt;
+    if (!receipt || receipt.payloadHash !== options._m100ActionRecord.payloadHash || receipt.contractVersion !== AUTONOMY_CONTRACT_VERSION
+      || receipt.stepCount !== validation.steps.length || receipt.projectFile !== options._m100ActionRecord.project.expectedFile) {
+      run.ok = false; run.errorCode = "autonomous_session_dry_run_stale";
+      run.error = "Повторите dry-run текущей версии плана для целевого проекта.";
+      return finishRun();
+    }
   }
   if (dryRun && validation.ok !== true && validation.classification && validation.classification.allowsDryRun === false) {
     run.ok = false;
@@ -6410,7 +6676,9 @@ async function runValidatedAgentPlan(options) {
       return finishRun();
     }
 
-    const started = await startPlanRunEditSession(run, validation);
+    const guard = autonomous ? {sessionHash: autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
+      actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
+    const started = await autonomousCommandContext.run(guard, () => startPlanRunEditSession(run, validation));
     if (!started.ok) {
       run.ok = false;
       run.error = started.error;
@@ -6431,7 +6699,7 @@ async function runValidatedAgentPlan(options) {
   let solutionPreflightChecked = false;
   const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
   let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession;
-  const steps = validation.steps.slice(0, maxSteps);
+  const steps = validation.steps;
   for (const step of steps) {
     const item = {
       index: step.index,
@@ -6498,6 +6766,9 @@ async function runValidatedAgentPlan(options) {
       }
       item.status = "blocked";
       item.reason = `Unresolved runtime bindings: ${formatUnresolvedRuntimeBindings(bound)}`;
+      item.errorCode = "runtime_binding_unresolved";
+      run.errorCode = item.errorCode;
+      run.error = item.reason;
       item.unresolved = bound.unresolved;
       run.skippedCount += 1;
       run.steps.push(item);
@@ -6511,6 +6782,27 @@ async function runValidatedAgentPlan(options) {
       continue;
     }
 
+    if (autonomous && step.mutatesProject) {
+      const freshAuthority = autonomousSession.authorization();
+      if (!freshAuthority || freshAuthority.sessionHash !== autonomous.sessionHash) {
+        item.status = "blocked"; item.reason = "Автономная сессия истекла или отозвана.";
+        run.errorCode = "autonomous_session_expired_or_revoked"; run.error = item.reason;
+        run.steps.push(item); run.skippedCount += 1; break;
+      }
+      try {
+        const projectNow = firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
+        currentProposalState.assertCurrent(options._m100ActionRecord);
+        currentProposalState.bindProject(options._m100ActionRecord, projectNow && projectNow.file);
+        if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
+          require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile)) {
+          throw m100ProtocolError("edit_session_project_mismatch", "Checkpoint активной edit session относится к другому проекту.");
+        }
+      } catch (error) {
+        item.status = "blocked"; item.reason = error.message; run.errorCode = error.code || "project_inspection_failed";
+        run.error = item.reason; run.steps.push(item); run.skippedCount += 1; break;
+      }
+    }
+
     if (step.mutatesProject && !solutionPreflightChecked) {
       run.solutionPlanPreflight = checkSolutionPlanPreflight(prepared.plan, run.steps);
       solutionPreflightChecked = true;
@@ -6522,12 +6814,39 @@ async function runValidatedAgentPlan(options) {
         break;
       }
     }
+    const stepStartedAt = Date.now();
     try {
-      const result = await callToolLogged("ai-plan-run", step.tool, bound.args);
+      const guard = autonomous && step.mutatesProject ? {sessionHash: autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
+        actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
+      const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+        sessionId: activeEditSession && activeEditSession.id || null},
+      () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
+        step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)));
       const payload = firstToolPayload(result);
+      const observedAt = new Date().toISOString();
+      const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
+        actionId:provenance.actionId,proposalRevision:provenance.proposalRevision,projectId:provenance.projectId,
+        projectRevision:null,observedAt,tool:step.tool,argsSha256:reviewEvidence.sha256(bound.args),
+        result:payload === undefined ? null : payload});
+      item.evidenceArtifact = evidenceArtifact;
+      recordEvent("plan_step_evidence", {...evidenceArtifact,stepIndex: step.index, tool: step.tool, evidenceKind: "direct-tool-result",
+        evidenceRunId: run.id, verificationSubjectRunId: run.id, auditSha256: reviewEvidence.sha256(payload === undefined ? null : payload),
+        observedAt, ok: !result.isError, acceptance: "not_established"});
       item.status = result.isError ? "failed" : "completed";
       item.result = payload;
       item.isError = Boolean(result.isError);
+      if (result.isError) {
+        item.errorCode = payload && (payload.errorCode || payload.code) || "ae_step_failed";
+        item.error = typeof payload === "string" ? payload : payload && payload.error || `Шаг ${step.tool} завершился отказом.`;
+        run.errorCode = item.errorCode;
+        run.error = item.error;
+      }
+      item.durationMs = Date.now() - stepStartedAt;
+      recordAutonomyObstacle({operation: step.tool, proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
+        runId: run.id, code: result.isError ? item.errorCode : "ok", phase: "step", durationMs: item.durationMs,
+        successfulSteps: result.isError ? 0 : 1, failedSteps: result.isError ? 1 : 0,
+        verification: payload && payload.postVerification && payload.postVerification.ok === true ? "passed" : "pending_readback"});
       executedSteps.push({ step, payload });
       run.executedCount += result.isError ? 0 : 1;
       if (result.isError) run.failedCount += 1;
@@ -6545,9 +6864,27 @@ async function runValidatedAgentPlan(options) {
       }
       run.steps.push(item);
       if (result.isError && stopOnError) break;
+      if (autonomous && step.tool === "audit_slideshow_generated") {
+        const checked = buildSemanticVerification(prepared.plan, {...run, ok: true});
+        if (checked.failedChecks > 0 || checked.unverifiedMutationCount > 0) {
+          run.errorCode = "slideshow_verification_failed";
+          run.error = "Read-back этапа слайд-шоу не совпал с планом; следующие изменения остановлены.";
+          run.failedCount += 1;
+          run.intermediateVerification = checked;
+          recordAutonomyObstacle({operation: step.tool, proposalId: options._m100ActionRecord.actionId,
+            runId: run.id, code: run.errorCode, phase: "verification", failedSteps: 1, verification: "failed"});
+          break;
+        }
+      }
     } catch (error) {
       item.status = "failed";
       item.error = error.message || String(error);
+      item.errorCode = error.code || "ae_execution_failed";
+      item.durationMs = Date.now() - stepStartedAt;
+      recordAutonomyObstacle({operation: step.tool, proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
+        runId: run.id, code: item.errorCode, phase: "step", durationMs: item.durationMs, failedSteps: 1, verification: "not_verified"});
+      run.errorCode = item.errorCode;
+      run.error = item.error;
       item.line = error.line || null;
       run.failedCount += 1;
       run.steps.push(item);
@@ -6804,7 +7141,7 @@ async function runAgentPlanLogged(source, args) {
       m100ConfirmationSurface: optionalString(args || {}, "m100ConfirmationSurface", optionalString(args || {}, "confirmationSurface", "cep-panel")),
       m100ConfirmationSessionId: optionalString(args || {}, "m100ConfirmationSessionId", optionalString(args || {}, "confirmationSessionId", ""))
     };
-    const actionProposal = createM100AgentPlanProposal(planResponse);
+    const actionProposal = await createM100AgentPlanProposal(planResponse);
     if (actionProposal) {
       planResponse.m100ActionProposal = actionProposal;
       planResponse.m100Message = actionProposal;
@@ -6898,6 +7235,31 @@ function startHttpBridge() {
         lastPanelInfo: status.lastPanelInfo,
         m100RiskPolicy: status.m100RiskPolicy
       });
+      return;
+    }
+
+    if (url.pathname === "/autonomy/session" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      writeJson(res, 200, { ok: true, session: autonomousSession.publicStatus() });
+      return;
+    }
+
+    if (url.pathname === "/autonomy/session" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const enabled = body && body.enabled === true;
+        const session = enabled ? autonomousSession.activate(body) : autonomousSession.revoke(body);
+        recordEvent(enabled ? "autonomous_session_enabled" : "autonomous_session_revoked", {
+          capability: session.capability,
+          active: session.active,
+          expiresAt: session.expiresAt,
+          panelConnectionIdHash: crypto.createHash("sha256").update(String(body.panelConnectionId || "")).digest("hex").slice(0, 12)
+        });
+        writeJson(res, 200, { ok: true, session });
+      } catch (error) {
+        writeJson(res, 409, { ok: false, error: error.message || String(error) });
+      }
       return;
     }
 
@@ -7065,11 +7427,51 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname === "/agents/plan/current" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      const current = currentProposalState.snapshot();
+      if (current) current.validation = validateAgentPlanWithRepair(current.plan, current.proposal.requestId, {}, {repairPlan: false}).validation;
+      writeJson(res, 200, {ok: true, current});
+      return;
+    }
+
+    if (url.pathname === "/agents/plan/adopt" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      const requestedAt = Date.now();
+      let adoptionBody;
+      try {
+        const body = await readJsonBody(req);
+        adoptionBody = body;
+        const record = currentProposalState.current;
+        currentProposalState.assertCurrent(record);
+        if (body.actionId !== record.actionId || body.revision !== record.revision) throw m100ProtocolError("plan_superseded", "Выбранный план уже заменён.");
+        if (["executing", "completed", "failed", "cancelled"].includes(record.executionState)) throw m100ProtocolError("plan_not_pending", "План уже запущен или завершён; повтор запрещён.");
+        const panel = lastPanelInfo || {};
+        if (body.panelConnectionId !== panel.panelConnectionId || String(body.panelGeneration) !== String(panel.panelGeneration)
+          || Date.now() - lastPanelSeenAt >= 15000) throw m100ProtocolError("panel_identity_mismatch", "Подтверждение доступно только подключённой CEP-панели.");
+        const proposed = await createM100AgentPlanProposalFromRequest({plan: record.payload.plan,
+          confirmationSessionId: String(body.confirmationSessionId || ""), confirmationSurface: "cep-panel", repairPlan: false}, {
+          expectedCurrent: record,
+          lineage: {rootActionId: record.rootActionId, parentActionId: record.parentActionId, repairAttempt: record.repairAttempt || 0},
+          beforeRegister: () => {
+            currentProposalState.assertCurrent(record);
+            if (record.executionState !== "pending") throw m100ProtocolError("plan_not_pending", "Состояние плана изменилось во время подготовки.");
+          }
+        });
+        writeJson(res, 200, {ok: true, ...proposed, revision: proposed.proposal.revision});
+      } catch (error) {
+        recordAutonomyObstacle({operation: "adopt_ai_agent_plan", proposalId: adoptionBody && adoptionBody.actionId,
+          code: error.code || "adoption_failed", phase: "proposal", durationMs: Date.now() - requestedAt, failedSteps: 1});
+        writeJson(res, 400, m100HttpFailure(error, {fallbackPhase: "confirmation_validation"}));
+      }
+      return;
+    }
+
     if ((url.pathname === "/agents/plan/propose" || url.pathname === "/dev/agents/plan/propose") && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       try {
         const body = await readJsonBody(req);
-        const proposed = createM100AgentPlanProposalFromRequest(body || {});
+        const proposed = await createM100AgentPlanProposalFromRequest(body || {});
         writeJson(res, 200, {
           ok: true,
           proposal: proposed.proposal,
@@ -7118,8 +7520,11 @@ function startHttpBridge() {
 
     if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run") && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
+      const requestedAt = Date.now();
+      let runBody;
       try {
         const body = await readJsonBody(req);
+        runBody = body;
         const run = await runValidatedAgentPlan(body || {});
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,
@@ -7130,6 +7535,8 @@ function startHttpBridge() {
           phase: run.diagnostic && run.diagnostic.phase || null
         });
       } catch (error) {
+        recordAutonomyObstacle({operation: "run_ai_agent_plan", proposalId: runBody && runBody.actionId,
+          code: error.code || "plan_run_rejected", phase: "execution", durationMs: Date.now() - requestedAt, failedSteps: 1});
         writeJson(res, 400, m100HttpFailure(error, {
           fallbackPhase: m100PhaseForError(error, "protocol_validation")
         }));
@@ -7201,6 +7608,27 @@ function startHttpBridge() {
         writeJson(res, 500, m100HttpFailure(error, {
           fallbackPhase: "ae_execution"
         }));
+      }
+      return;
+    }
+
+    if (url.pathname === "/mcp/tools/call" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      if (req.headers["x-ae-mcp-adapter"] !== "codex-stdio-v1") {
+        writeJson(res, 403, { ok: false, error: "Official MCP adapter marker is required." });
+        return;
+      }
+      try {
+        const body = await readJsonBody(req);
+        const name = String(body.name || "");
+        const args = body.arguments || {};
+        const authority = autonomousSession.authorization();
+        const result = await callToolLogged("mcp-adapter", name, args, {
+          autonomousSession: authority
+        });
+        writeJson(res, 200, { ok: true, tool: name, result });
+      } catch (error) {
+        writeJson(res, 500, m100HttpFailure(error, { fallbackPhase: "ae_execution" }));
       }
       return;
     }
@@ -7315,6 +7743,11 @@ function startHttpBridge() {
           return;
         }
         writeJson(res, 404, { ok: false, error: "Unknown command id" });
+        return;
+      }
+
+      if (rejectRevokedAutonomousCommand(command)) {
+        writeJson(res, 409, {ok: false, code: command.errorCode, error: command.error});
         return;
       }
 
@@ -7486,6 +7919,7 @@ function startHttpBridge() {
 
 const tools = [
   ...solutionDiscovery.discoveryTools,
+  ...solutionCandidateQueue.solutionCandidateQueueTools,
   {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
@@ -7734,7 +8168,7 @@ const tools = [
   },
   {
     name: "run_ai_agent_plan",
-    description: "Preview a validated AE plan through MCP with dryRun:true. Actual execution uses the existing CEP workflow with a server-owned M100 proposal, confirmation token, confirm:true and allowMutations:true; direct MCP real runs remain blocked.",
+    description: "Dry-run a current server proposal, then execute typed mutations while the user-enabled CEP Autonomous Codex session is active. Enforces project binding, fresh dry-run, checkpoint, idempotency, expiry, lease and read-back. Raw JSX and destructive plans retain manual CEP confirmation. Inspect repairDirective on failure; never replay unknown outcomes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9648,7 +10082,7 @@ const tools = [
   },
   {
     name: "set_layer_metadata",
-    description: "Update only comment, label, locked, enabled, and guideLayer on explicit layer indices in one explicit composition, with optional expected layer-name guards and required read-back.",
+    description: "Update only comment, label, locked, enabled, guideLayer, motionBlur, and audioEnabled on explicit layer indices in one explicit composition, with optional composition/layer identity guards and required read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9659,6 +10093,10 @@ const tools = [
         compName: {
           type: "string",
           description: "Required when compItemIndex is omitted. Exact generated target composition name."
+        },
+        expectedCompName: {
+          type: "string",
+          description: "Optional exact composition-name guard, especially when compItemIndex is used. A mismatch fails before mutation."
         },
         layerIndices: {
           type: "array",
@@ -9689,6 +10127,14 @@ const tools = [
         guideLayer: {
           type: "boolean",
           description: "Optional AE guide-layer state to set on explicit generated or reviewed layers."
+        },
+        motionBlur: {
+          type: "boolean",
+          description: "Optional per-layer motion blur switch. Must be a JSON boolean."
+        },
+        audioEnabled: {
+          type: "boolean",
+          description: "Optional per-layer audio switch, independent from the layer visibility enabled switch. Must be a JSON boolean."
         }
       },
       required: ["layerIndices"]
@@ -9904,7 +10350,7 @@ const tools = [
   },
   {
     name: "set_comp_properties",
-    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, and preserveNestedFrameRate only.",
+    description: "Update a narrow approved set of properties on one explicit composition: width, height, pixelAspect, duration, frameRate, bgColor, displayStartTime, native displayStartFrame, preserveNestedFrameRate, and motionBlur only.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9915,6 +10361,10 @@ const tools = [
         compName: {
           type: "string",
           description: "Required when compItemIndex is omitted. Exact target composition name."
+        },
+        expectedCompName: {
+          type: "string",
+          description: "Optional exact composition-name guard, especially when compItemIndex is used. A mismatch fails before mutation."
         },
         width: { type: "number", description: "Optional composition width in pixels. Must be a positive integer." },
         height: { type: "number", description: "Optional composition height in pixels. Must be a positive integer." },
@@ -9928,7 +10378,8 @@ const tools = [
         },
         displayStartTime: { type: "number", description: "Optional display start time in seconds." },
         displayStartFrame: { type: "number", description: "Optional native integer display start frame. Requires AE support for CompItem.displayStartFrame." },
-        preserveNestedFrameRate: { type: "boolean", description: "Optional Preserve frame rate when nested or in render queue setting." }
+        preserveNestedFrameRate: { type: "boolean", description: "Optional Preserve frame rate when nested or in render queue setting." },
+        motionBlur: { type: "boolean", description: "Optional composition motion blur switch. Must be a JSON boolean." }
       }
     }
   },
@@ -10689,11 +11140,46 @@ const tools = [
       },
       required: ["confirm"]
     }
-  }
+  },
+  {
+    name: "build_slideshow_plan",
+    description: "Validate a strict data-only slideshow manifest and fresh source inventory, then build local typed stages of at most 50 steps. This tool does not contact After Effects or mutate a project.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        manifest: { type: "object", description: "Strict ae-agent-slideshow.v2 or codx-133-build.v2 data manifest; v1, unknown and code-like fields are rejected." },
+        articles: { type: "object", description: "Strict newspaper article source object." },
+        inventory: { type: "object", description: "Fresh exact Final Comp and Scene composition fingerprints." }
+      },
+      required: ["manifest", "articles", "inventory"]
+    }
+  },
+  ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
+  ...projectSave.createToolDefinitions()
 ];
 
-async function callTool(name, args) {
+async function callTool(name, args, executionContext) {
   args = args || {};
+  if(name===projectSave.TOOL_NAME){
+    try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
+      return toolResult({ok:true,saveReceipt});
+    }catch(error){return toolResult({ok:false,error:error.message,code:error.code||"PROJECT_SAVE_FAILED"},true);}
+  }
+  if (name === "build_slideshow_plan") {
+    try { const result=slideshowPlanBuilder.buildSlideshowPlan(args.manifest, args.articles, args.inventory);
+      recordEvent("slideshow_plan_built", {builderProvenance:result.builderProvenance,stageCount:result.stageCount,validationOk:result.ok});
+      return toolResult(result); }
+    catch (error) { return toolResult({ ok: false, error: error.message, code: error.code || "SLIDESHOW_PLAN_ERROR" }, true); }
+  }
+  if (slideshowTools.TOOL_NAMES.includes(name)) {
+    try {
+      const result = await slideshowTools.execute(name, args, runExtendScriptBody);
+      if (result && result.ok === false && !result.code) result.code = "slideshow_audit_failed";
+      return toolResult(result, !result || result.ok === false);
+    }
+    catch (error) { return toolResult({ ok: false, error: error.message, code: error.code || "SLIDESHOW_TOOL_ERROR" }, true); }
+  }
   const resolveCompScript = `
       function __codexProjectIndexForItem(target) {
         for (var __i = 1; __i <= app.project.numItems; __i++) {
@@ -10859,6 +11345,7 @@ async function callTool(name, args) {
           type: __codexItemType(item),
           typeName: item.typeName || null
         };
+        try { info.itemId = item.id; } catch (__itemIdError) {}
         try { info.label = item.label; } catch (__itemLabelError) {}
         try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
         try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
@@ -11004,7 +11491,14 @@ async function callTool(name, args) {
           solo: layer.solo,
           startTime: layer.startTime,
           inPoint: layer.inPoint,
-          outPoint: layer.outPoint
+          outPoint: layer.outPoint,
+          guideLayer: false,
+          adjustmentLayer: false,
+          threeDLayer: false,
+          collapseTransformation: false,
+          audioEnabled: false,
+          stretch: 100,
+          timeRemapEnabled: false
         };
 
         try { info.label = layer.label; } catch (__labelError) {}
@@ -11017,6 +11511,9 @@ async function callTool(name, args) {
         try { info.threeDLayer = !!layer.threeDLayer; } catch (__threeDError) {}
         try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
         try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
+        try { info.audioEnabled = !!layer.audioEnabled; } catch (__audioEnabledError) {}
+        try { info.stretch = layer instanceof AVLayer ? Number(layer.stretch) : 100; } catch (__stretchError) {}
+        try { info.timeRemapEnabled = layer instanceof AVLayer ? !!layer.timeRemapEnabled : false; } catch (__timeRemapEnabledError) {}
         try {
           info.blendingMode = layer.blendingMode;
           info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
@@ -11528,7 +12025,13 @@ async function callTool(name, args) {
   `;
 
   if (name === "get_bridge_status") {
-    return toolResult(getBridgeStatus());
+    return toolResult({...getBridgeStatus(), autonomyContractVersion: AUTONOMY_CONTRACT_VERSION});
+  }
+
+  if (name === "get_current_ai_agent_plan") {
+    const current = currentProposalState.snapshot();
+    if (current) current.validation = validateAgentPlanWithRepair(current.plan, current.proposal.requestId, {}, {repairPlan: false}).validation;
+    return toolResult({ok: true, current});
   }
 
   if (name === "search_solutions" || name === "get_solution") {
@@ -11541,6 +12044,23 @@ async function callTool(name, args) {
         resultChars: JSON.stringify(result).length });
       return toolResult(result);
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
+  }
+
+  if (name === "list_solution_candidates" || name === "get_solution_candidate") {
+    try {
+      const result = name === "list_solution_candidates"
+        ? solutionCandidateQueue.listSolutionCandidates(args || {})
+        : solutionCandidateQueue.getSolutionCandidate(args || {});
+      recordEvent("solution_candidate_queue_read", {
+        operation: name,
+        candidateRef: result.candidateRef || null,
+        returnedCount: Array.isArray(result.candidates) ? result.candidates.length : 1,
+        total: Number.isInteger(result.total) ? result.total : null
+      });
+      return toolResult(result);
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message }, true);
+    }
   }
 
   if (name === "build_solution_plan") {
@@ -11558,13 +12078,17 @@ async function callTool(name, args) {
 
   if (name === "propose_ai_agent_plan") {
     try {
-      const result = createM100AgentPlanProposalFromRequest(args || {});
+      const result = await createM100AgentPlanProposalFromRequest(args || {});
       const proposal = {...result.proposal, confirmation: {...result.proposal.confirmation}};
       delete proposal.confirmation.confirmationToken;
       return toolResult({ok: true, ...result, proposal,
-        next: "This redacted proposal supports MCP dry-run only. Confirm and execute through the existing CEP workflow."});
+        next: "Run a dry-run first. MCP can execute this proposal only while the user-enabled CEP Autonomous Codex session is active and the plan is typed and mutating; otherwise use the normal CEP confirmation flow."});
     }
-    catch (error) { return toolResult({ ok: false, error: error.message, validation: error.validation || null }, true); }
+    catch (error) {
+      const code = error.code || "m100_action_proposal_create_failed";
+      recordAutonomyObstacle({operation: "propose_ai_agent_plan", code, phase: "proposal", failedSteps: 1});
+      return toolResult({ok: false, code, errorCode: code, error: error.message, project: error.project || null, validation: error.validation || null}, true);
+    }
   }
 
   if (name === "list_effect_presets") {
@@ -11658,10 +12182,12 @@ async function callTool(name, args) {
 
   if (name === "run_ai_agent_plan") {
     try {
-      const run = await runValidatedAgentPlan(args || {});
+      const run = await runValidatedAgentPlan(args || {}, executionContext || null);
       return toolResult(run, !run.ok);
     } catch (error) {
-      return toolResult(error.message || String(error), true);
+      const diagnostic = obstacleEvent({operation: name, proposalId: args.actionId, code: error.code || "plan_run_rejected", phase: "preflight"});
+      try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); } catch (_logError) {}
+      return toolResult({ok: false, code: diagnostic.code, errorCode: diagnostic.code, error: error.message || String(error), project: error.project || null}, true);
     }
   }
 
@@ -12596,6 +13122,7 @@ async function callTool(name, args) {
 
       return {
         itemIndex: __codexProjectIndexForItem(comp),
+        itemId: comp.id,
         name: comp.name,
         type: "comp",
         width: comp.width,
@@ -15829,11 +16356,13 @@ async function callTool(name, args) {
   if (name === "set_layer_metadata") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompName = optionalString(args, "expectedCompName", "");
     if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required for set_layer_metadata.", true);
 
     const allowedKeys = new Set([
       "compItemIndex",
       "compName",
+      "expectedCompName",
       "layerIndices",
       "expectedLayerNames",
       "comment",
@@ -15841,6 +16370,8 @@ async function callTool(name, args) {
       "locked",
       "enabled",
       "guideLayer",
+      "motionBlur",
+      "audioEnabled",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -15891,13 +16422,25 @@ async function callTool(name, args) {
     if (hasArg(args, "guideLayer")) {
       requested.guideLayer = optionalBoolean(args, "guideLayer", false);
     }
+    if (hasArg(args, "motionBlur")) {
+      if (typeof args.motionBlur !== "boolean") return toolResult("motionBlur must be a boolean.", true);
+      requested.motionBlur = args.motionBlur;
+    }
+    if (hasArg(args, "audioEnabled")) {
+      if (typeof args.audioEnabled !== "boolean") return toolResult("audioEnabled must be a boolean.", true);
+      requested.audioEnabled = args.audioEnabled;
+    }
 
     const requestedKeys = Object.keys(requested);
-    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, enabled, or guideLayer.", true);
+    if (!requestedKeys.length) return toolResult("At least one approved layer metadata update is required: comment, label, locked, enabled, guideLayer, motionBlur, or audioEnabled.", true);
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var expectedCompName = ${aeLiteral(expectedCompName)};
+      if (expectedCompName && comp.name !== expectedCompName) {
+        throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
+      }
       var layerIndices = ${aeLiteral(layerIndices)};
       var expectedLayerNames = ${expectedLayerNames ? aeLiteral(expectedLayerNames) : "null"};
       var requested = ${aeLiteral(requested)};
@@ -15909,6 +16452,8 @@ async function callTool(name, args) {
         if (field === "locked") return after.locked === requested.locked;
         if (field === "enabled") return after.enabled === requested.enabled;
         if (field === "guideLayer") return after.guideLayer === requested.guideLayer;
+        if (field === "motionBlur") return after.motionBlur === requested.motionBlur;
+        if (field === "audioEnabled") return after.audioEnabled === requested.audioEnabled;
         return false;
       }
 
@@ -15924,8 +16469,10 @@ async function callTool(name, args) {
         }
 
         var before = __codexLayerInfo(layer);
-        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined || requested.guideLayer !== undefined) && requested.locked !== false) {
-          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, enabled, or guideLayer.");
+        if (requested.motionBlur !== undefined && before.motionBlur === undefined) throw new Error("Layer does not support motionBlur: " + layer.name + ".");
+        if (requested.audioEnabled !== undefined && before.audioEnabled === undefined) throw new Error("Layer does not support audioEnabled: " + layer.name + ".");
+        if (before.locked && (requested.comment !== undefined || requested.label !== undefined || requested.enabled !== undefined || requested.guideLayer !== undefined || requested.motionBlur !== undefined || requested.audioEnabled !== undefined) && requested.locked !== false) {
+          throw new Error("Layer is locked: " + layer.name + ". Unlock explicitly before setting comment, label, enabled, guideLayer, motionBlur, or audioEnabled.");
         }
 
         if (requested.locked === false) layer.locked = false;
@@ -15933,6 +16480,8 @@ async function callTool(name, args) {
         if (requested.label !== undefined) layer.label = Number(requested.label);
         if (requested.enabled !== undefined) layer.enabled = requested.enabled;
         if (requested.guideLayer !== undefined) layer.guideLayer = requested.guideLayer;
+        if (requested.motionBlur !== undefined) layer.motionBlur = requested.motionBlur;
+        if (requested.audioEnabled !== undefined) layer.audioEnabled = requested.audioEnabled;
         if (requested.locked === true) layer.locked = true;
 
         var after = __codexLayerInfo(layer);
@@ -16357,11 +16906,13 @@ async function callTool(name, args) {
   if (name === "set_comp_properties") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompName = optionalString(args, "expectedCompName", "");
     if (compItemIndex === null && !compName) return toolResult("compItemIndex or compName is required.", true);
 
     const allowedKeys = new Set([
       "compItemIndex",
       "compName",
+      "expectedCompName",
       "width",
       "height",
       "pixelAspect",
@@ -16371,6 +16922,7 @@ async function callTool(name, args) {
       "displayStartTime",
       "displayStartFrame",
       "preserveNestedFrameRate",
+      "motionBlur",
       "autoCheckpoint",
       "checkpointLabel",
       "idempotencyKey",
@@ -16419,6 +16971,10 @@ async function callTool(name, args) {
       requested.preserveNestedFrameRate = optionalBoolean(args, "preserveNestedFrameRate", null);
       if (requested.preserveNestedFrameRate === null) return toolResult("preserveNestedFrameRate must be a boolean.", true);
     }
+    if (hasArg(args, "motionBlur")) {
+      if (typeof args.motionBlur !== "boolean") return toolResult("motionBlur must be a boolean.", true);
+      requested.motionBlur = args.motionBlur;
+    }
     if (hasArg(args, "bgColor")) {
       const bgColor = optionalNumberArray(args, "bgColor", null, 3, 3);
       if (bgColor.some((value) => value < 0 || value > 1)) return toolResult("bgColor values must be between 0 and 1.", true);
@@ -16430,6 +16986,10 @@ async function callTool(name, args) {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var expectedCompName = ${aeLiteral(expectedCompName)};
+      if (expectedCompName && comp.name !== expectedCompName) {
+        throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
+      }
       var requested = ${aeLiteral(requested)};
       var requestedKeys = ${aeLiteral(requestedKeys)};
 
@@ -16455,6 +17015,7 @@ async function callTool(name, args) {
           displayStartFrame: displayStartFrame,
           displayStartFrameSupported: displayStartFrameSupported,
           preserveNestedFrameRate: !!comp.preserveNestedFrameRate,
+          motionBlur: !!comp.motionBlur,
           numLayers: comp.numLayers
         };
       }
@@ -16496,6 +17057,7 @@ async function callTool(name, args) {
       if (requested.displayStartTime !== undefined) comp.displayStartTime = requested.displayStartTime;
       if (requested.displayStartFrame !== undefined) __codexSetDisplayStartFrame(comp, requested.displayStartFrame);
       if (requested.preserveNestedFrameRate !== undefined) comp.preserveNestedFrameRate = requested.preserveNestedFrameRate;
+      if (requested.motionBlur !== undefined) comp.motionBlur = requested.motionBlur;
       var after = __codexCompProperties(comp);
       var fieldMatches = {};
       var allMatch = true;
@@ -18300,11 +18862,11 @@ async function callTool(name, args) {
       for (var __i = 0; __i < keys.length; __i++) {
         var keyIndex = Math.floor(Number(keys[__i]));
         if (keyIndex < 1 || keyIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + keyIndex);
+        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
         if (interpolation) {
           var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
           prop.setInterpolationTypeAtKey(keyIndex, interpolationType, interpolationType);
         }
-        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
         changedKeys.push(keyIndex);
       }
       var response = {
@@ -19122,20 +19684,22 @@ async function callTool(name, args) {
   return toolResult(`Unknown tool: ${name}`, true);
 }
 
-async function callToolLogged(source, name, args) {
+async function callToolLogged(source, name, args, executionContext) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
-  const idContext = idempotencyContext(name, args || {});
+  if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
+  const idContext = name===projectSave.TOOL_NAME ? null : idempotencyContext(name, args || {});
   recordEvent("tool_call_started", {
     id: eventId,
     source,
     name,
     args,
+    autonomousSession: Boolean(executionContext && executionContext.autonomousSession),
     idempotency: idContext ? { key: idContext.key, scope: idContext.scope } : null
   });
 
   try {
-    const m100Block = m100DirectToolCallBlock(source, name, args || {});
+    const m100Block = m100DirectToolCallBlock(source, name, args || {}, executionContext || null);
     if (m100Block) {
       const durationMs = Date.now() - startedAt;
       recordEvent("m100_direct_tool_blocked", {
@@ -19148,6 +19712,8 @@ async function callToolLogged(source, name, args) {
         knownTool: m100Block.knownTool,
         ignoredClientConfirmation: m100Block.ignoredClientConfirmation
       });
+      recordAutonomyObstacle({operation: name, code: m100Block.code, phase: "direct_gate", durationMs,
+        proposalId: args && args.actionId, verification: "not_run"});
       return m100BlockedToolResult(m100Block);
     }
 
@@ -19182,10 +19748,11 @@ async function callToolLogged(source, name, args) {
       }
     }
 
-    const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
-    const result = await callTool(name, args);
+    const checkpoint = name===projectSave.TOOL_NAME ? null : await maybeCreateMutationCheckpoint(args || {}, name);
+    const result = await callTool(name, args, executionContext || null);
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
-    resultWithCheckpoint = await attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {});
+    // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
+    resultWithCheckpoint = await autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {}));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
     resultWithCheckpoint = attachStoredIdempotencyMetadata(resultWithCheckpoint, idContext, idempotencyRecord);
     const durationMs = Date.now() - startedAt;

@@ -63,6 +63,9 @@ Important boundaries:
   applicable, and post-run read-back.
 - Broad or risky mutations require checkpoint/edit-session protection.
 - Raw ExtendScript remains an escape hatch behind bridge-owned gates.
+- The CEP panel can grant a non-persistent 20-minute Autonomous Codex session
+  for proposal-backed typed mutating plans. Direct mutations, raw JSX, and
+  destructive plans remain outside that grant.
 - Dev-request bundles are local handoffs for separate Codex App development
   work; the panel must not imply it created a Codex thread automatically.
 

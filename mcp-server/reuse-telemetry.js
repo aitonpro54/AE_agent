@@ -1,4 +1,16 @@
 "use strict";
+const {sha256} = require("./review-evidence");
+
+function builderProvenance(plan) {
+  const declared = plan && plan.builderProvenance;
+  if (!declared || typeof declared !== "object") return null;
+  const content = {...plan}; delete content.builderProvenance;
+  return {builderId: typeof declared.builderId === "string" ? declared.builderId : null,
+    builderVersion: typeof declared.builderVersion === "string" ? declared.builderVersion : null,
+    manifestSha256: declared.manifestSha256 || null, builderSourceSha256: declared.builderSourceSha256 || null,
+    contentMatches: declared.planContentSha256 === sha256(content),
+    origin: "plan-declared; matching content hash does not authenticate the producer"};
+}
 
 function finiteCount(value) { return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null; }
 function firstCount(...values) { for (const value of values) { const count = finiteCount(value); if (count !== null) return count; } return null; }
@@ -30,6 +42,8 @@ function retrievalIds(retrieval) {
 function summarizeReuse(plan, retrieval) {
   const surfacedSolutionIds = retrievalIds(retrieval);
   return { version: "solution-reuse-v1", surfacedSolutionIds,
+    declaredRecipeField: Object.prototype.hasOwnProperty.call(plan || {}, "solutionIds") ? "present" : "absent",
+    builderProvenance: builderProvenance(plan),
     declaredSolutionIds: solutionIds(plan, surfacedSolutionIds),
     attribution: "model-declared; not proof that a recipe caused success" };
 }
@@ -37,6 +51,9 @@ function summarizeReuse(plan, retrieval) {
 function summarizeRun(run, plan, allowedIds) {
   const completed = (run.steps || []).filter((step) => step.status === "completed");
   return { version: "solution-reuse-v1", runId: run.id, dryRun: run.dryRun, ok: run.ok,
+    declaredRecipeField: Object.prototype.hasOwnProperty.call(plan || {}, "solutionIds") ? "present" : "absent",
+    builderProvenance: builderProvenance(plan),
+    typedExecutedStepCount: completed.filter((step) => step.tool && !/^run_extendscript(?:_file)?$/.test(step.tool)).length,
     declaredSolutionIds: solutionIds(plan, allowedIds),
     executedTools: completed.map((step) => step.tool).filter(Boolean),
     executedCount: run.executedCount, failedCount: run.failedCount,

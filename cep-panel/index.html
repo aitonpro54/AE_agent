@@ -53,6 +53,11 @@
               <button id="reloadButton">Reload</button>
             </div>
           </div>
+          <div class="autonomous-session-control">
+            <button id="autonomousSessionButton" aria-pressed="false">Автономная сессия Codex · 20 мин</button>
+            <span id="autonomousSessionStatus" aria-live="polite">Выключена</span>
+          </div>
+          <p class="autonomous-session-help">Разрешает MCP выполнять готовые typed-планы с защитой и проверкой. Raw JSX и удаление требуют обычного подтверждения.</p>
           <p id="bridgeHelp" class="bridge-help">Waiting for the local bridge.</p>
         </section>
 
@@ -178,7 +183,8 @@
             <textarea id="chatPrompt" rows="4" placeholder="Describe what to create or do in After Effects..."></textarea>
             <button id="sendChatButton" title="Send">&gt;</button>
           </div>
-          <div class="plan-actions">
+            <div id="currentBridgePlan" class="bridge-help" aria-live="polite"></div>
+            <div class="plan-actions">
             <span id="planRunStatus" class="plan-run-status">No plan ready</span>
             <button id="recoverLastPlanButton" class="recover-plan-button">Подхватить последний план из чата</button>
             <button id="dryRunPlanButton">Dry run / Проверить</button>
