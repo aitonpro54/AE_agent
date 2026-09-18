@@ -7,6 +7,10 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
+2026-09-19: пользователь разрешил публикацию рабочей версии и интеграцию PR #1–#3 в main.
+До интеграции origin/main отставал от 549ad3e на 334 коммита без расхождения.
+История сохраняется; старые отдельные ветки, незакоммиченные материалы и AEP не удаляются.
+Проверка: offline smoke groups, check:rules и diff check; код продукта и live AE не меняются.
 2026-09-19: F01–F17 завершён; M1–M5 `417e465`, `4c0c2f1`, `8175c1f`, `ca6922d`, `0bc1171`.
 Offline/synthetic live зелёные; client AEP восстановлен clean; acceptance pending.
 
@@ -103,13 +107,7 @@ baseline `3bd69eb` → `main` и текущий выпуск от `79f421a` → 
 
 - Feature commit `79f421a`: 119 MCP tools, 181 reviewed решения, четыре builders.
 - Release commit `7dcd36f`: согласованная версия 3.0.0 и release notes.
-- [PR #1](https://github.com/aitonpro54/AE_agent/pull/1): накопленная база
-  `codex/ae-3-baseline` → `main`, draft; требуется самостоятельный обзор истории.
-- [PR #2](https://github.com/aitonpro54/AE_agent/pull/2): reuse и выпуск
-  `codex/pro-review-longrun` → `codex/ae-3-baseline`, открыт для review.
-  Сначала интегрировать #1 через merge commit с сохранением ancestry, затем
-  перенаправить #2 на `main` и проверить diff. Merge не выполнялся.
-- Обе ветки отправлены в origin; продолжение описано в `.codex/handoff.md`.
+- PR #1–#3: последовательная интеграция накопленной базы, выпуска и remediation в main.
 - 12/12 RU и EN контрольных запросов находят ожидаемое решение в top-3;
   все 181 точных названий находятся. Это словарный поиск, не embeddings.
 - Стрессовый planner пример: 13 397 символов при бюджете 24 000, сохранён

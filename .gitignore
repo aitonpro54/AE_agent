@@ -1,4 +1,7 @@
 node_modules/
+logs/
+Adobe After Effects Auto-Save/
+/test_comp.aep
 snapshots/*.zip
 logs/*.jsonl
 logs/*.log
