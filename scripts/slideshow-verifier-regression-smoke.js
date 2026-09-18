@@ -275,7 +275,7 @@ function audioOverlayCase(overrides = {}) {
     layer: "Expression layer",
     layerId: 6001,
     property: "ADBE Opacity",
-    propertyIdentity: "comp:102/layer:6001/property:1:ADBE Opacity:Opacity",
+    propertyIdentity: "comp:102/layer:6001/property:1:ADBE%20Opacity:Opacity",
     propertyPath: [{propertyIndex: 1, matchName: "ADBE Opacity", name: "Opacity"}],
     expression: 'comp("OriginalOther").layer(1).transform.opacity',
     error: ""
@@ -295,7 +295,7 @@ function audioOverlayCase(overrides = {}) {
   const propertyPath = [{propertyIndex: 1, matchName: "ADBE Opacity", name: "Opacity"}];
   const before = 'comp("OriginalOther").layer(1).transform.opacity';
   const after = `comp("${destination}").layer(1).transform.opacity`;
-  const identity = {comp: rootName, compItemId: 102, layer: "Expression layer", layerId: 6001, property: "ADBE Opacity", propertyIdentity: "comp:102/layer:6001/property:1:ADBE Opacity:Opacity", propertyPath};
+  const identity = {comp: rootName, compItemId: 102, layer: "Expression layer", layerId: 6001, property: "ADBE Opacity", propertyIdentity: "comp:102/layer:6001/property:1:ADBE%20Opacity:Opacity", propertyPath};
   const audit = baseAudit();
   audit.details.expressionProvenance = [{comp: rootName, compItemId: 102, sourceName: "Scene 1"}];
   audit.details.expressions = [{...identity, expression: after, error: ""}];
@@ -314,10 +314,29 @@ function audioOverlayCase(overrides = {}) {
   expectNeedsReview("F12 stale source reference must fail", "rewrite_slideshow_tree_expressions", args, staleReadBack, result);
 }
 
+// An explicit request may duplicate the mandatory Final Comp -> master map.
+// The tool emits one de-duplicated requested row, which is complete proof.
+{
+  const args = {generatedPrefix: prefix, expectedRootCompName: rootName, masterCompName: masterName, replacements: [{from: "Final Comp", to: masterName}]};
+  const propertyPath = [{propertyIndex: 1, matchName: "ADBE Opacity", name: "Opacity"}];
+  const identity = {comp: rootName, compItemId: 102, layer: "Master expression", layerId: 6051, property: "ADBE Opacity", propertyIdentity: "comp:102/layer:6051/property:1:ADBE%20Opacity:Opacity", propertyPath};
+  const before = 'comp("Final Comp").layer(1).transform.opacity';
+  const after = `comp("${masterName}").layer(1).transform.opacity`;
+  const changed = {...identity, before, after, sourceOccurrencesBefore: 1, sourceOccurrencesAfter: 0, destinationOccurrencesBefore: 0, destinationOccurrencesAfter: 1};
+  const audit = baseAudit();
+  audit.details.expressionProvenance = [{comp: rootName, compItemId: 102, sourceName: "Scene 1"}];
+  audit.details.expressions = [{...identity, expression: after, error: ""}];
+  const result = {ok: true, changed: 1, expressionReplacements: [
+    {kind: "requested", from: "Final Comp", to: masterName, status: "replaced", occurrencesBefore: 1, occurrencesAfter: 0, changedProperties: [changed]},
+    {kind: "derived", from: "Scene 1", to: rootName, status: "not_referenced", occurrencesBefore: 0, occurrencesAfter: 0, changedProperties: []}
+  ], postVerification: {ok: true, expressionCount: 1, replacementsProven: true}};
+  expectPassed("F12 de-duplicated requested master mapping positive control", "rewrite_slideshow_tree_expressions", args, audit, result);
+}
+
 {
   const args = {generatedPrefix: prefix, expectedRootCompName: rootName, masterCompName: masterName, replacements: []};
   const propertyPath = [{propertyIndex: 1, matchName: "ADBE Opacity", name: "Opacity"}];
-  const identity = {comp: rootName, compItemId: 102, layer: "Derived expression", layerId: 6101, property: "ADBE Opacity", propertyIdentity: "comp:102/layer:6101/property:1:ADBE Opacity:Opacity", propertyPath};
+  const identity = {comp: rootName, compItemId: 102, layer: "Derived expression", layerId: 6101, property: "ADBE Opacity", propertyIdentity: "comp:102/layer:6101/property:1:ADBE%20Opacity:Opacity", propertyPath};
   const before = 'comp("Scene 1").layer(1).transform.opacity';
   const after = `comp("${rootName}").layer(1).transform.opacity`;
   const audit = baseAudit();
@@ -359,6 +378,22 @@ function audioOverlayCase(overrides = {}) {
   ];
   const result = buildSemanticVerification({summary: "key preservation", steps}, {ok: true, dryRun: false, steps});
   assert.strictEqual(result.status, "needs_review", "F07 legacy key evidence without value/property identity must fail");
+}
+
+// AE recomputes temporal speed for LINEAR segments when one key moves. That
+// derived speed may change, while values, identity, influence and all explicit
+// metadata stay preserved. BEZIER speed remains an exact contract.
+{
+  const key=(overrides={})=>({comp:rootName,compItemId:102,compDuration:4,compFrameDuration:1/30,translationEligible:true,layer:"Animated",layerId:2001,property:"ADBE Position",propertyIdentity:"comp:102/layer:2001/property:1:ADBE%20Transform%20Group:Transform/property:2:ADBE%20Position:Position",propertyPath:[{propertyIndex:1,matchName:"ADBE Transform Group",name:"Transform"},{propertyIndex:2,matchName:"ADBE Position",name:"Position"}],keyIndex:1,time:3,value:{type:"vector",value:[10,20]},inType:"LINEAR",outType:"6612",inEase:[{speed:20,influence:16.666666667}],outEase:[{speed:20,influence:16.666666667}],temporalContinuous:false,temporalAutoBezier:false,spatial:true,inSpatial:[0,0],outSpatial:[0,0],roving:false,spatialContinuous:false,spatialAutoBezier:false,...overrides});
+  const before=baseAudit(),after=baseAudit();before.root.duration=4;after.root.duration=6;
+  before.details.keyMetadata=[key()];before.stats.keyframes=before.stats.keyMetadataTotal=1;
+  after.details.keyMetadata=[key({compDuration:6,time:5,inEase:[{speed:10,influence:16.666666667}],outEase:[{speed:10,influence:16.666666667}]})];after.stats.keyframes=after.stats.keyMetadataTotal=1;
+  const args={generatedPrefix:prefix,expectedRootCompName:rootName,targetDuration:6,introDuration:1};
+  const steps=[{index:1,tool:"audit_slideshow_generated",status:"completed",result:before},{index:2,tool:"extend_slideshow_cloned_tree",args,mutatesProject:true,status:"completed",result:{ok:true}},{index:3,tool:"audit_slideshow_generated",status:"completed",result:after}];
+  const linearResult=buildSemanticVerification({summary:"linear speed",steps},{ok:true,dryRun:false,steps});
+  assert.strictEqual(linearResult.status,"passed",`derived LINEAR speed change must pass: ${JSON.stringify(linearResult.checks)}`);
+  before.details.keyMetadata[0].inType="BEZIER";after.details.keyMetadata[0].inType="BEZIER";
+  assert.strictEqual(buildSemanticVerification({summary:"bezier speed",steps},{ok:true,dryRun:false,steps}).status,"needs_review","BEZIER speed change must fail");
 }
 
 // F06: absence of a duplicate issue is not proof that all previously audible

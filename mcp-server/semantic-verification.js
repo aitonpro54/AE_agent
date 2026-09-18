@@ -2509,6 +2509,16 @@ function sameSlideshowKeyMetadata(before, after) {
   }
   const left = {...before}, right = {...after};
   for (const field of ["time", "compDuration", "inSpatial", "outSpatial"]) { delete left[field]; delete right[field]; }
+  const linear = (value) => String(value).toUpperCase() === "LINEAR" || String(value) === "6612";
+  // AE derives temporal speed for LINEAR segments from value distance and the
+  // translated key times. Preserve ease arity/influence, while accepting the
+  // corresponding derived speed change. BEZIER/HOLD metadata remains exact.
+  for (const [typeField, easeField] of [["inType", "inEase"], ["outType", "outEase"]]) {
+    if (linear(left[typeField]) && linear(right[typeField]) && Array.isArray(left[easeField]) && Array.isArray(right[easeField])) {
+      left[easeField] = left[easeField].map((ease) => ({...ease, speed: "<derived-linear-speed>"}));
+      right[easeField] = right[easeField].map((ease) => ({...ease, speed: "<derived-linear-speed>"}));
+    }
+  }
   return stableStringify(left) === stableStringify(right);
 }
 
@@ -2611,7 +2621,7 @@ function completeSlideshowPropertyIdentity(item) {
     !Array.isArray(item.propertyPath) || !item.propertyPath.length ||
     item.propertyPath.some((part) => !isPlainObject(part) || !Number.isInteger(Number(part.propertyIndex)) || Number(part.propertyIndex) < 1 || typeof part.matchName !== "string" || typeof part.name !== "string")) return false;
   const expected = [`comp:${Number(item.compItemId)}`, `layer:${Number(item.layerId)}`]
-    .concat(item.propertyPath.map((part) => `property:${Number(part.propertyIndex)}:${part.matchName}:${part.name}`))
+    .concat(item.propertyPath.map((part) => `property:${Number(part.propertyIndex)}:${encodeURIComponent(part.matchName)}:${encodeURIComponent(part.name)}`))
     .join("/");
   return item.propertyIdentity === expected;
 }
@@ -2680,7 +2690,10 @@ function expressionReplacementProofMatches(step, payload, audit) {
     const row = proof.find((item) => item && item.kind === "requested" && item.from === replacement.from && item.to === replacement.to);
     if (!row || Number(row.occurrencesBefore) <= 0 || Number(row.occurrencesAfter) !== 0 || !Array.isArray(row.changedProperties) || !row.changedProperties.length) return false;
   }
-  const masterRows = proof.filter((item) => item && item.kind === "master" && item.from === "Final Comp" && item.to === args.masterCompName);
+  // The tool de-duplicates identical mappings. When the caller explicitly
+  // requests Final Comp -> masterCompName, the single proof row is classified
+  // as requested rather than master; it still proves the same required map.
+  const masterRows = proof.filter((item) => item && ["master", "requested"].includes(item.kind) && item.from === "Final Comp" && item.to === args.masterCompName);
   if (masterRows.length !== 1) return false;
   const expectedDerived = provenance.map((item) => ({from: item.sourceName, to: item.comp}));
   const derivedRows = proof.filter((item) => item && item.kind === "derived");
@@ -3651,7 +3664,7 @@ function buildSemanticVerification(plan, run) {
       : null;
     const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
     const priorCheckCount = checks.length;
-    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: readBackEvidence });
+    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: allEvidence });
     if (checks.length === priorCheckCount) unverifiedMutationSteps.push({index: step.index, tool: step.tool});
   }
 
