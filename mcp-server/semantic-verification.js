@@ -2509,6 +2509,256 @@ function sameSlideshowKeyMetadata(before, after) {
   return stableStringify(left) === stableStringify(right);
 }
 
+const SLIDESHOW_STRUCTURE_SCHEMA = "ae-agent-comp-structure.v1";
+const SLIDESHOW_NUMERIC_EPSILON = 0.0001;
+
+function slideshowStructure(value) {
+  if (!isPlainObject(value) || !Number.isInteger(Number(value.itemId)) || Number(value.itemId) < 1 ||
+    typeof value.name !== "string" || !value.name || !Number.isFinite(Number(value.duration)) ||
+    !Number.isInteger(Number(value.numLayers)) || Number(value.numLayers) < 0 ||
+    value.structureSchema !== SLIDESHOW_STRUCTURE_SCHEMA || !Array.isArray(value.layers) ||
+    value.layers.length !== Number(value.numLayers)) return null;
+  const layers = [];
+  for (const rawLayer of value.layers) {
+    if (!isPlainObject(rawLayer)) return null;
+    const sourceType = rawLayer.sourceType;
+    const sourceItemId = rawLayer.sourceItemId === null ? null : Number(rawLayer.sourceItemId);
+    const sourceName = rawLayer.sourceName === null ? null : rawLayer.sourceName;
+    if (!Number.isInteger(Number(rawLayer.layerId)) || Number(rawLayer.layerId) < 1 ||
+      typeof rawLayer.name !== "string" || !["comp", "footage", "none"].includes(sourceType) ||
+      (sourceType === "none" && (sourceItemId !== null || sourceName !== null)) ||
+      (sourceType !== "none" && (!Number.isInteger(sourceItemId) || sourceItemId < 1 || typeof sourceName !== "string" || !sourceName)) ||
+      ![rawLayer.startTime, rawLayer.inPoint, rawLayer.outPoint, rawLayer.stretch].every((item) => Number.isFinite(Number(item))) ||
+      !["enabled", "audioEnabled", "timeRemapEnabled", "guideLayer", "adjustmentLayer", "threeDLayer", "collapseTransformation"].every((field) => typeof rawLayer[field] === "boolean")) return null;
+    layers.push({
+      layerId: Number(rawLayer.layerId),
+      name: rawLayer.name,
+      sourceType,
+      sourceItemId,
+      sourceName,
+      startTime: Number(rawLayer.startTime),
+      inPoint: Number(rawLayer.inPoint),
+      outPoint: Number(rawLayer.outPoint),
+      stretch: Number(rawLayer.stretch),
+      enabled: rawLayer.enabled,
+      audioEnabled: rawLayer.audioEnabled,
+      timeRemapEnabled: rawLayer.timeRemapEnabled,
+      guideLayer: rawLayer.guideLayer,
+      adjustmentLayer: rawLayer.adjustmentLayer,
+      threeDLayer: rawLayer.threeDLayer,
+      collapseTransformation: rawLayer.collapseTransformation
+    });
+  }
+  if (new Set(layers.map((item) => item.layerId)).size !== layers.length) return null;
+  return {
+    itemId: Number(value.itemId),
+    name: value.name,
+    duration: Number(value.duration),
+    numLayers: Number(value.numLayers),
+    structureSchema: value.structureSchema,
+    layers
+  };
+}
+
+function slideshowStructureDigest(value) {
+  const structure = slideshowStructure(value);
+  if (!structure) return null;
+  const text = JSON.stringify(structure);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (`00000000${(hash >>> 0).toString(16)}`).slice(-8);
+}
+
+function fingerprintSummaryMatches(summary, structure, digest) {
+  return isPlainObject(summary) && Number(summary.itemId) === structure.itemId &&
+    summary.name === structure.name && nearlyEqual(summary.duration, structure.duration, SLIDESHOW_NUMERIC_EPSILON) &&
+    Number(summary.numLayers) === structure.numLayers && summary.structureSchema === structure.structureSchema &&
+    summary.digest === digest;
+}
+
+function completeSlideshowSourceProof(items, protectedSources) {
+  if (!Array.isArray(items) || !Array.isArray(protectedSources) || items.length !== protectedSources.length) return false;
+  const unused = new Set(items.map((_, index) => index));
+  for (const rawSource of protectedSources) {
+    const structure = slideshowStructure(rawSource);
+    const digest = slideshowStructureDigest(rawSource);
+    if (!structure || !digest) return false;
+    const matchIndex = items.findIndex((item, index) => unused.has(index) && item && item.unchanged === true &&
+      item.reason === null && fingerprintSummaryMatches(item.expected, structure, digest) &&
+      fingerprintSummaryMatches(item.actual, structure, digest));
+    if (matchIndex < 0) return false;
+    unused.delete(matchIndex);
+  }
+  return unused.size === 0;
+}
+
+function finiteTypedSlideshowKeyValue(value) {
+  if (!isPlainObject(value) || !["scalar", "vector"].includes(value.type)) return false;
+  if (value.type === "scalar") return typeof value.value === "number" && Number.isFinite(value.value);
+  return Array.isArray(value.value) && value.value.length >= 1 && value.value.length <= 4 &&
+    value.value.every((item) => typeof item === "number" && Number.isFinite(item));
+}
+
+function completeSlideshowPropertyIdentity(item) {
+  if (!isPlainObject(item) || !Number.isInteger(Number(item.compItemId)) || Number(item.compItemId) < 1 ||
+    !Number.isInteger(Number(item.layerId)) || Number(item.layerId) < 1 || typeof item.propertyIdentity !== "string" ||
+    !Array.isArray(item.propertyPath) || !item.propertyPath.length ||
+    item.propertyPath.some((part) => !isPlainObject(part) || !Number.isInteger(Number(part.propertyIndex)) || Number(part.propertyIndex) < 1 || typeof part.matchName !== "string" || typeof part.name !== "string")) return false;
+  const expected = [`comp:${Number(item.compItemId)}`, `layer:${Number(item.layerId)}`]
+    .concat(item.propertyPath.map((part) => `property:${Number(part.propertyIndex)}:${part.matchName}:${part.name}`))
+    .join("/");
+  return item.propertyIdentity === expected;
+}
+
+function completeSlideshowKeyEvidence(item) {
+  return completeSlideshowPropertyIdentity(item) && Number.isInteger(Number(item.keyIndex)) && Number(item.keyIndex) > 0 && finiteTypedSlideshowKeyValue(item.value);
+}
+
+function slideshowLayerName(item) {
+  return String(item && (item.layer || item.name) || "");
+}
+
+function validStableLayerIdentity(item) {
+  return isPlainObject(item) && Number.isInteger(Number(item.compItemId)) && Number(item.compItemId) > 0 &&
+    Number.isInteger(Number(item.layerId)) && Number(item.layerId) > 0;
+}
+
+function intervalTolerance(layer, kind) {
+  // Interval proof, not a claim of a measured source sample rate. Do not hide a sample-sized gap.
+  if (kind === "audio") return 0.0000001;
+  const frameDuration = Number(layer && layer.compFrameDuration);
+  if (!Number.isFinite(frameDuration) || frameDuration <= 0) return null;
+  return Math.min(SLIDESHOW_NUMERIC_EPSILON, frameDuration / 1000);
+}
+
+function exactSlideshowCoverage(matches, spec, expectedStart, kind) {
+  if (!matches.length) return false;
+  const sorted = matches.slice().sort((left, right) => Number(left.inPoint) - Number(right.inPoint));
+  const expectedEnd = Number(expectedStart) + Number(spec.duration);
+  let cursor = Number(expectedStart);
+  for (const item of sorted) {
+    const tolerance = intervalTolerance(item, kind);
+    const sourceIn = Number(item.sourceIn);
+    if (tolerance === null || !Number.isFinite(Number(item.inPoint)) || !Number.isFinite(Number(item.outPoint)) ||
+      Number(item.outPoint) <= Number(item.inPoint) || !nearlyEqual(item.inPoint, cursor, tolerance) ||
+      !Number.isFinite(sourceIn) || !nearlyEqual(sourceIn, spec.sourceIn, tolerance) ||
+      !nearlyEqual(Number(item.inPoint) - Number(item.startTime), spec.sourceIn, tolerance)) return false;
+    cursor = Number(item.outPoint);
+  }
+  const tolerance = intervalTolerance(sorted[sorted.length - 1], kind);
+  return tolerance !== null && nearlyEqual(sorted[0].inPoint, expectedStart, tolerance) && nearlyEqual(cursor, expectedEnd, tolerance);
+}
+
+function expressionReferencesComp(expression, name) {
+  const source = String(expression || "");
+  const doubleQuoted = `comp(${JSON.stringify(String(name))})`;
+  const singleValue = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return source.includes(doubleQuoted) || source.includes(`comp('${singleValue}')`);
+}
+
+function completeExpressionIdentity(item) {
+  return completeSlideshowPropertyIdentity(item);
+}
+
+function expressionReplacementProofMatches(step, payload, audit) {
+  const args = step.args || {};
+  const proof = Array.isArray(payload.expressionReplacements) ? payload.expressionReplacements : null;
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const expressions = audit && audit.details && Array.isArray(audit.details.expressions) ? audit.details.expressions : null;
+  const provenance = audit && audit.details && Array.isArray(audit.details.expressionProvenance) ? audit.details.expressionProvenance : null;
+  if (!proof || !expressions || postVerification.ok !== true || postVerification.replacementsProven !== true ||
+    !provenance || !provenance.length || expressions.some((item) => !completeExpressionIdentity(item) || item.error) ||
+    provenance.some((item) => !isPlainObject(item) || typeof item.comp !== "string" || !item.comp || !Number.isInteger(Number(item.compItemId)) || Number(item.compItemId) < 1 || typeof item.sourceName !== "string" || !item.sourceName)) return false;
+  const requested = Array.isArray(args.replacements) ? args.replacements : [];
+  for (const replacement of requested) {
+    const row = proof.find((item) => item && item.kind === "requested" && item.from === replacement.from && item.to === replacement.to);
+    if (!row || Number(row.occurrencesBefore) <= 0 || Number(row.occurrencesAfter) !== 0 || !Array.isArray(row.changedProperties) || !row.changedProperties.length) return false;
+  }
+  const masterRows = proof.filter((item) => item && item.kind === "master" && item.from === "Final Comp" && item.to === args.masterCompName);
+  if (masterRows.length !== 1) return false;
+  const expectedDerived = provenance.map((item) => ({from: item.sourceName, to: item.comp}));
+  const derivedRows = proof.filter((item) => item && item.kind === "derived");
+  if (expectedDerived.some((expected) => !proof.some((item) => item.from === expected.from && item.to === expected.to)) ||
+    derivedRows.some((item) => !expectedDerived.some((expected) => item.from === expected.from && item.to === expected.to))) return false;
+  if (proof.some((item) => !item || typeof item.from !== "string" || typeof item.to !== "string" || Number(item.occurrencesAfter) !== 0 ||
+    !["requested", "derived", "master"].includes(item.kind) || !["replaced", "not_referenced"].includes(item.status) ||
+    (item.status === "replaced" && (Number(item.occurrencesBefore) <= 0 || !Array.isArray(item.changedProperties) || !item.changedProperties.length)) ||
+    (item.status === "not_referenced" && (Number(item.occurrencesBefore) !== 0 || !Array.isArray(item.changedProperties) || item.changedProperties.length !== 0)))) return false;
+  for (const row of proof) {
+    for (const changed of row.changedProperties) {
+      if (!completeExpressionIdentity(changed) || typeof changed.before !== "string" || typeof changed.after !== "string" ||
+        Number(changed.sourceOccurrencesBefore) <= 0 || Number(changed.sourceOccurrencesAfter) !== 0 ||
+        Number(changed.destinationOccurrencesAfter) <= Number(changed.destinationOccurrencesBefore || 0)) return false;
+      const readBack = expressions.find((item) => item.propertyIdentity === changed.propertyIdentity && Number(item.compItemId) === Number(changed.compItemId) && Number(item.layerId) === Number(changed.layerId) && stableStringify(item.propertyPath) === stableStringify(changed.propertyPath));
+      if (!readBack || readBack.expression !== changed.after || expressionReferencesComp(readBack.expression, row.from) || !expressionReferencesComp(readBack.expression, row.to)) return false;
+    }
+  }
+  return proof.every((item) => !expressions.some((entry) => expressionReferencesComp(entry.expression, item.from)));
+}
+
+function completeAudioRouteProof(payload, audit) {
+  const routes = Array.isArray(payload.audioRoutes) ? payload.audioRoutes : null;
+  const layers = audit && audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : null;
+  if (!routes || !routes.length || !layers || Number(payload.audioRouteCountBefore) !== routes.length) return false;
+  const relevantLayers = layers.filter((item) => item && item.sourceType === "comp");
+  if (relevantLayers.length !== routes.length) return false;
+  const matchedLayerIds = new Set();
+  for (const route of routes) {
+    if (!validStableLayerIdentity(route) || !Number.isInteger(Number(route.sourceItemId)) || Number(route.sourceItemId) < 1 ||
+      ![route.inPoint, route.outPoint, route.sourceIn].every((item) => Number.isFinite(Number(item))) || Number(route.outPoint) <= Number(route.inPoint) ||
+      typeof route.audioEnabledBefore !== "boolean" || typeof route.audioEnabledAfter !== "boolean" ||
+      !["preserve_audible", "preserve_muted", "preserve_no_audible_source", "mute_duplicate"].includes(route.action) ||
+      !["unique_audible_route", "muted_before", "source_has_no_audible_path", "fully_covered_duplicate"].includes(route.reason) ||
+      !Array.isArray(route.audiblePaths) || route.audiblePaths.some((path) => !isPlainObject(path) || !Number.isInteger(Number(path.sourceItemId)) || Number(path.sourceItemId) < 1 ||
+        ![path.inPoint, path.outPoint, path.sourceIn].every((item) => Number.isFinite(Number(item))) || Number(path.outPoint) <= Number(path.inPoint))) return false;
+    const layer = relevantLayers.find((item) => Number(item.compItemId) === Number(route.compItemId) && Number(item.layerId) === Number(route.layerId) && Number(item.sourceItemId) === Number(route.sourceItemId));
+    if (!layer || matchedLayerIds.has(`${route.compItemId}:${route.layerId}`) || layer.audioEnabled !== route.audioEnabledAfter ||
+      !nearlyEqual(layer.inPoint, route.inPoint, SLIDESHOW_NUMERIC_EPSILON) || !nearlyEqual(layer.outPoint, route.outPoint, SLIDESHOW_NUMERIC_EPSILON) ||
+      !nearlyEqual(layer.sourceIn, route.sourceIn, SLIDESHOW_NUMERIC_EPSILON)) return false;
+    matchedLayerIds.add(`${route.compItemId}:${route.layerId}`);
+    if ((route.action === "preserve_audible" && (route.reason !== "unique_audible_route" || !route.audioEnabledBefore || !route.audioEnabledAfter || route.audiblePaths.length === 0)) ||
+      (route.action === "preserve_muted" && (route.reason !== "muted_before" || route.audioEnabledBefore || route.audioEnabledAfter)) ||
+      (route.action === "preserve_no_audible_source" && (route.reason !== "source_has_no_audible_path" || !route.audioEnabledBefore || !route.audioEnabledAfter || route.audiblePaths.length !== 0)) ||
+      (route.action === "mute_duplicate" && (route.reason !== "fully_covered_duplicate" || !route.audioEnabledBefore || route.audioEnabledAfter))) return false;
+    if (route.audioEnabledBefore && !route.audioEnabledAfter) {
+      if (route.action !== "mute_duplicate") return false;
+      if (!route.audiblePaths.length) return false;
+      const survivorPaths = [];
+      for (const survivor of routes) {
+        if (survivor !== route && Number(survivor.compItemId) === Number(route.compItemId) && survivor.audioEnabledAfter === true && Array.isArray(survivor.audiblePaths)) survivorPaths.push(...survivor.audiblePaths);
+      }
+      for (const layer of layers) {
+        if (Number(layer.compItemId) === Number(route.compItemId) && layer.sourceType === "footage" && layer.hasAudio === true && layer.audioEnabled === true &&
+          Number.isInteger(Number(layer.sourceItemId)) && Number(layer.sourceItemId) > 0 && [layer.inPoint, layer.outPoint, layer.sourceIn].every((item) => Number.isFinite(Number(item)))) {
+          survivorPaths.push({sourceItemId: Number(layer.sourceItemId), inPoint: Number(layer.inPoint), outPoint: Number(layer.outPoint), sourceIn: Number(layer.sourceIn)});
+        }
+      }
+      for (const mutedPath of route.audiblePaths) {
+        const spans = [];
+        for (const survivorPath of survivorPaths) {
+          if (Number(survivorPath.sourceItemId) !== Number(mutedPath.sourceItemId) ||
+            !nearlyEqual(Number(survivorPath.sourceIn) - Number(survivorPath.inPoint), Number(mutedPath.sourceIn) - Number(mutedPath.inPoint), SLIDESHOW_NUMERIC_EPSILON)) continue;
+          const start = Math.max(Number(mutedPath.inPoint), Number(survivorPath.inPoint));
+          const end = Math.min(Number(mutedPath.outPoint), Number(survivorPath.outPoint));
+          if (end > start + SLIDESHOW_NUMERIC_EPSILON) spans.push({start, end});
+        }
+        spans.sort((left, right) => left.start - right.start || right.end - left.end);
+        let cursor = Number(mutedPath.inPoint);
+        for (const span of spans) {
+          if (span.start > cursor + SLIDESHOW_NUMERIC_EPSILON) break;
+          cursor = Math.max(cursor, span.end);
+          if (cursor >= Number(mutedPath.outPoint) - SLIDESHOW_NUMERIC_EPSILON) break;
+        }
+        if (cursor < Number(mutedPath.outPoint) - SLIDESHOW_NUMERIC_EPSILON) return false;
+      }
+    } else if (route.audioEnabledBefore !== route.audioEnabledAfter) return false;
+  }
+  return matchedLayerIds.size === relevantLayers.length;
+}
+
 function checkSlideshowMutation(checks, step, evidence) {
   const args = isPlainObject(step.args) ? step.args : {};
   const audits = Array.isArray(evidence.readBack.slideshowAudits) ? evidence.readBack.slideshowAudits : [];
@@ -2519,9 +2769,19 @@ function checkSlideshowMutation(checks, step, evidence) {
   let operationMatches = Boolean(audit && audit.ok === true && Array.isArray(audit.issues) && audit.issues.length === 0);
   let expected = `${expectedRoot || "generated slideshow target"} with clean independent audit`;
   let observed = audit ? `${audit.root.name}; issues=${audit.issues.length}` : "missing audit_slideshow_generated read-back";
+  const protectedSources = Array.isArray(args.protectedSourceFingerprints) ? args.protectedSourceFingerprints : [];
+  const sourceBaselineRequired = ["clone_slideshow_event_tree", "copy_slideshow_event_pair", "copy_slideshow_control_layer"].includes(step.tool);
+  if (sourceBaselineRequired && protectedSources.length === 0) {
+    operationMatches = false;
+    expected += "; complete protected source baseline required";
+  }
+  if (protectedSources.length) {
+    operationMatches = operationMatches && completeSlideshowSourceProof(audit && audit.sourceFingerprints, protectedSources);
+    expected += `; ${protectedSources.length} protected source structural baseline(s) match v1 read-back`;
+  }
 
   if (audit && step.tool === "clone_slideshow_event_tree") {
-    operationMatches = operationMatches && Array.isArray(audit.sourceFingerprints) && audit.sourceFingerprints.length > 0 && audit.sourceFingerprints.every((item) => item.unchanged === true);
+    operationMatches = operationMatches && protectedSources.length > 0;
     if (args.audioMode === "mute") {
       const clonedLayers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
       operationMatches = operationMatches && clonedLayers.length > 0 && clonedLayers.every((item) => item.audioEnabled === false);
@@ -2533,7 +2793,7 @@ function checkSlideshowMutation(checks, step, evidence) {
     const beforeAudit = priorAudits.sort((left, right) => Number(right.stepIndex) - Number(left.stepIndex))[0];
     const beforeKeys = beforeAudit && beforeAudit.details && Array.isArray(beforeAudit.details.keyMetadata) ? beforeAudit.details.keyMetadata : null;
     const afterKeys = audit.details && Array.isArray(audit.details.keyMetadata) ? audit.details.keyMetadata : null;
-    let keysMatch = Boolean(beforeAudit && beforeKeys && afterKeys && beforeAudit.details.keyMetadataTruncated === false && audit.details.keyMetadataTruncated === false && Number(beforeAudit.stats && beforeAudit.stats.keyMetadataTotal) === beforeKeys.length && Number(audit.stats && audit.stats.keyMetadataTotal) === afterKeys.length && beforeKeys.length === afterKeys.length);
+    let keysMatch = Boolean(beforeAudit && beforeKeys && afterKeys && beforeAudit.details.keyMetadataTruncated === false && audit.details.keyMetadataTruncated === false && Number(beforeAudit.stats && beforeAudit.stats.keyMetadataTotal) === beforeKeys.length && Number(audit.stats && audit.stats.keyMetadataTotal) === afterKeys.length && beforeKeys.length === afterKeys.length && beforeKeys.every(completeSlideshowKeyEvidence) && afterKeys.every(completeSlideshowKeyEvidence));
     if (keysMatch) {
       const used = new Set();
       for (const before of beforeKeys) {
@@ -2544,20 +2804,20 @@ function checkSlideshowMutation(checks, step, evidence) {
         const threshold = Math.max(Number(args.introDuration) + 0.0001, originalCompDuration - 2.1);
         const extend = delta > Math.max(frameDuration * 2, 0.07);
         const expectedTime = extend && before.translationEligible && Number(before.time) >= threshold ? Number(before.time) + delta : Number(before.time);
-        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, 0.001) && sameSlideshowKeyMetadata(before, after));
+        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(after.compDuration, args.targetDuration, SLIDESHOW_NUMERIC_EPSILON) && sameSlideshowKeyMetadata(before, after));
         if (matchIndex < 0) { keysMatch = false; break; }
         used.add(matchIndex);
       }
     }
-    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.targetDuration, 0.051) && keysMatch;
-    expected += `; duration=${args.targetDuration}; complete before/after key times and temporal/spatial metadata match`;
+    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.targetDuration, SLIDESHOW_NUMERIC_EPSILON) && keysMatch;
+    expected += `; duration=${args.targetDuration}; complete property identity, finite typed key values, times, and temporal/spatial metadata match`;
   } else if (audit && step.tool === "rewrite_slideshow_tree_expressions") {
     const expressions = audit.details && Array.isArray(audit.details.expressions) ? audit.details.expressions : [];
-    operationMatches = operationMatches && expressions.every((item) => {
+    operationMatches = operationMatches && expressionReplacementProofMatches(step, payloadForStep(step), audit) && expressions.every((item) => {
       const expression = String(item.expression || "");
       return !item.error && !expression.includes('comp("Final Comp")') && !expression.includes("comp('Final Comp')");
     });
-    expected += "; expressions compile and no Final Comp reference remains";
+    expected += "; every requested/derived expression mapping has stable-property before/after proof and clean independent read-back";
   } else if (audit && step.tool === "apply_slideshow_event_text") {
     const texts = audit.details && Array.isArray(audit.details.texts) ? audit.details.texts : [];
     const expectedTitle = String(args.title || "").replace(/\s+/g, " ").trim();
@@ -2565,29 +2825,45 @@ function checkSlideshowMutation(checks, step, evidence) {
     expected += "; requested title present in fitted Times text";
   } else if (audit && step.tool === "replace_slideshow_media_leaf") {
     const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers.filter((item) => item.comp === args.generatedLeafName) : [];
-    operationMatches = operationMatches && Array.isArray(args.mediaItems) && args.mediaItems.length > 0 && args.mediaItems.every((spec, specIndex) => { const baseName=`${args.generatedPrefix}MEDIA_${specIndex+1}`; const matches=layers.filter((item)=>(item.name===baseName||String(item.name||"").startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.enabled===true&&item.audioEnabled===(spec.audio===true)&&nearlyEqual(item.stretch,100)).sort((a,b)=>Number(a.inPoint)-Number(b.inPoint)); if(!matches.length||!nearlyEqual(matches[0].inPoint,spec.start,.051))return false; let cursor=Number(matches[0].inPoint); for(const item of matches){if(!nearlyEqual(item.inPoint,cursor,.051)||!nearlyEqual(Number(item.inPoint)-Number(item.startTime),spec.sourceIn,.051))return false;cursor=Number(item.outPoint);} return cursor+.051>=spec.start+spec.duration; });
-    expected += "; exact generated leaf/path/range/audio has visible 1x coverage";
+    operationMatches = operationMatches && Array.isArray(args.mediaItems) && args.mediaItems.length > 0 && args.mediaItems.every((spec, specIndex) => {
+      const baseName = `${args.generatedPrefix}MEDIA_${specIndex + 1}`;
+      const matches = layers.filter((item) => (slideshowLayerName(item) === baseName || slideshowLayerName(item).startsWith(`${baseName}_PART_`)) &&
+        normalizeSlashes(item.sourcePath).toLowerCase() === normalizeSlashes(spec.path).toLowerCase() && item.sourceType === "footage" &&
+        Number.isInteger(Number(item.sourceItemId)) && Number(item.sourceItemId) > 0 && item.hasVideo === true && item.enabled === true &&
+        item.audioEnabled === (spec.audio === true) && nearlyEqual(item.stretch, 100, SLIDESHOW_NUMERIC_EPSILON));
+      return exactSlideshowCoverage(matches, spec, spec.start, spec.audio === true ? "audio" : "video");
+    });
+    expected += "; exact generated leaf/path/range/source offset/audio has frame-derived video tolerance and strict audio interval coverage";
   } else if (audit && step.tool === "copy_slideshow_event_pair") {
     const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
     const token=String(args.expectedRootCompName||"").replace(args.generatedPrefix||"","").replace(/[^A-Za-z0-9_-]/g,"_");
-    const introMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===`${args.generatedPrefix}EVENT_${token}_INTRO`),mainMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===`${args.generatedPrefix}EVENT_${token}_MAIN`),intro=introMatches[0],main=mainMatches[0];
-    operationMatches = operationMatches && introMatches.length===1 && mainMatches.length===1 && nearlyEqual(intro.startTime,args.eventStart) && nearlyEqual(main.startTime,args.eventStart) && nearlyEqual(intro.inPoint,args.eventStart) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration) && nearlyEqual(main.inPoint,args.eventStart+args.introDuration) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration) && Number(intro.effects||0)===Number(args.introEffectCount) && Number(main.effects||0)===Number(args.mainEffectCount) && (args.rootHasAudio!==false||(intro.audioEnabled===false&&main.audioEnabled===false));
-    expected += "; unique master intro/main timing, exact effects, and requested audio switches";
+    const introMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&slideshowLayerName(item)===`${args.generatedPrefix}EVENT_${token}_INTRO`),mainMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&slideshowLayerName(item)===`${args.generatedPrefix}EVENT_${token}_MAIN`),intro=introMatches[0],main=mainMatches[0];
+    const exactRootSource = (item) => validStableLayerIdentity(item) && Number.isInteger(Number(args.rootCompItemIndex)) && Number(args.rootCompItemIndex) > 0 &&
+      item.sourceType === "comp" && item.sourceName === args.expectedRootCompName && Number.isInteger(Number(item.sourceItemId)) && Number(item.sourceItemId) > 0 &&
+      Number(item.sourceItemIndex) === Number(args.rootCompItemIndex) && item.hasVideo === true && item.enabled === true &&
+      item.audioEnabled === (args.rootHasAudio === true) && (args.rootHasAudio !== true || item.hasAudio === true);
+    operationMatches = operationMatches && introMatches.length===1 && mainMatches.length===1 && exactRootSource(intro) && exactRootSource(main) && Number(intro.sourceItemId) === Number(main.sourceItemId) &&
+      nearlyEqual(intro.startTime,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.startTime,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(intro.inPoint,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(main.inPoint,args.eventStart+args.introDuration,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(intro.sourceIn,0,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.sourceIn,args.introDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      Number(intro.effects||0)===Number(args.introEffectCount) && Number(main.effects||0)===Number(args.mainEffectCount);
+    expected += "; unique stable root source identity, enabled video, exact pair timing/effects, and positive or negative audio policy";
   } else if (audit && step.tool === "add_slideshow_event_overlays") {
     const details = audit.details || {};
     const media = Array.isArray(details.layers) ? details.layers.filter((item)=>String(item.name||"").startsWith(`${args.generatedPrefix}AUDIO_${args.eventId}_`)) : [];
     const texts = Array.isArray(details.texts) ? details.texts : [];
     const audioSpecs=Array.isArray(args.audioItems)?args.audioItems:[],captions=Array.isArray(args.captions)?args.captions:[];
-    operationMatches = operationMatches && audioSpecs.every((spec,specIndex)=>{const baseName=`${args.generatedPrefix}AUDIO_${args.eventId}_${specIndex+1}`,matches=media.filter((item)=>(item.name===baseName||String(item.name||"").startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.enabled===false&&item.audioEnabled===true&&nearlyEqual(item.stretch,100)).sort((a,b)=>Number(a.inPoint)-Number(b.inPoint));if(!matches.length||!nearlyEqual(matches[0].inPoint,args.eventStart+spec.start,.051))return false;let cursor=Number(matches[0].inPoint);for(const item of matches){if(!nearlyEqual(item.inPoint,cursor,.051)||!nearlyEqual(Number(item.inPoint)-Number(item.startTime),spec.sourceIn,.051))return false;cursor=Number(item.outPoint);}return cursor+.051>=args.eventStart+spec.start+spec.duration;}) && captions.length===texts.filter((item)=>String(item.layer||"").startsWith(`${args.generatedPrefix}CAPTION_${args.eventId}_`)).length && captions.every((caption)=>texts.some((item)=>item.text===caption));
-    expected += "; audio visibility switch and captions match";
+    operationMatches = operationMatches && audioSpecs.every((spec,specIndex)=>{const baseName=`${args.generatedPrefix}AUDIO_${args.eventId}_${specIndex+1}`,matches=media.filter((item)=>(slideshowLayerName(item)===baseName||slideshowLayerName(item).startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.sourceType==="footage"&&Number.isInteger(Number(item.sourceItemId))&&Number(item.sourceItemId)>0&&item.hasAudio===true&&item.enabled===false&&item.audioEnabled===true&&nearlyEqual(item.stretch,100,SLIDESHOW_NUMERIC_EPSILON));return exactSlideshowCoverage(matches,spec,Number(args.eventStart)+Number(spec.start),"audio");}) && captions.length===texts.filter((item)=>String(item.layer||"").startsWith(`${args.generatedPrefix}CAPTION_${args.eventId}_`)).length && captions.every((caption)=>texts.some((item)=>item.text===caption));
+    expected += "; exact strict audio interval/source offset/visibility and captions match";
   } else if (audit && step.tool === "copy_slideshow_control_layer") {
     const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
     const targetLayerName=args.targetLayerName||"CONTROL",matches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===targetLayerName);
     operationMatches = operationMatches && matches.length===1 && matches[0].enabled === false && matches[0].audioEnabled === false && nearlyEqual(matches[0].inPoint,0) && nearlyEqual(matches[0].outPoint, args.duration) && Number(matches[0].effects||0)===Number(args.expectedEffectCount) && String(matches[0].comment||"").startsWith(`AE_AGENT_SLIDESHOW:${args.generatedPrefix}:`) && String(matches[0].comment||"").endsWith(`:${targetLayerName}`);
     expected += `; unique ${targetLayerName} identity/range/effects preserved in exact master`;
   } else if (audit && step.tool === "configure_slideshow_tree_audio") {
-    operationMatches = operationMatches && !audit.issues.some((item) => String(item).includes("duplicate_audible_path"));
-    expected += "; no duplicate audible precomp path";
+    operationMatches = operationMatches && completeAudioRouteProof(payloadForStep(step), audit) && !audit.issues.some((item) => String(item).includes("duplicate_audible_path"));
+    expected += "; complete before/after audible route evidence preserves every requested interval and only mutes fully covered duplicates";
   } else if (audit && step.tool === "create_slideshow_master") {
     operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.duration, 0.001) && audit.stats && audit.stats.backgroundLayers === 1 && audit.details && audit.details.layers.some((item)=>item.comp===args.masterName&&item.name===`${args.generatedPrefix}BACKGROUND`);
     expected += `; duration=${args.duration}; background present`;

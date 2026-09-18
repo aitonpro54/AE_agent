@@ -11270,6 +11270,7 @@ async function callTool(name, args, executionContext) {
           type: __codexItemType(item),
           typeName: item.typeName || null
         };
+        try { info.itemId = item.id; } catch (__itemIdError) {}
         try { info.label = item.label; } catch (__itemLabelError) {}
         try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
         try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
@@ -11415,7 +11416,14 @@ async function callTool(name, args, executionContext) {
           solo: layer.solo,
           startTime: layer.startTime,
           inPoint: layer.inPoint,
-          outPoint: layer.outPoint
+          outPoint: layer.outPoint,
+          guideLayer: false,
+          adjustmentLayer: false,
+          threeDLayer: false,
+          collapseTransformation: false,
+          audioEnabled: false,
+          stretch: 100,
+          timeRemapEnabled: false
         };
 
         try { info.label = layer.label; } catch (__labelError) {}
@@ -11429,6 +11437,8 @@ async function callTool(name, args, executionContext) {
         try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
         try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
         try { info.audioEnabled = !!layer.audioEnabled; } catch (__audioEnabledError) {}
+        try { info.stretch = layer instanceof AVLayer ? Number(layer.stretch) : 100; } catch (__stretchError) {}
+        try { info.timeRemapEnabled = layer instanceof AVLayer ? !!layer.timeRemapEnabled : false; } catch (__timeRemapEnabledError) {}
         try {
           info.blendingMode = layer.blendingMode;
           info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
@@ -13037,6 +13047,7 @@ async function callTool(name, args, executionContext) {
 
       return {
         itemIndex: __codexProjectIndexForItem(comp),
+        itemId: comp.id,
         name: comp.name,
         type: "comp",
         width: comp.width,

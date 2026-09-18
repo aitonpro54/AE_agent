@@ -10,6 +10,7 @@ const {buildGeneratedFixturePlan} = require("./slideshow-fixture-plan");
 const {buildSlideshowPlan} = require("../mcp-server/slideshow-plan-builder");
 const {withProjectPanel} = require("./fake-project-panel");
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function structuralLayer(layerId,name,duration){return{layerId,name,sourceType:"none",sourceItemId:null,sourceName:null,startTime:0,inPoint:0,outPoint:duration,stretch:100,enabled:true,audioEnabled:false,timeRemapEnabled:false,guideLayer:false,adjustmentLayer:false,threeDLayer:false,collapseTransformation:false};}
 async function main() {
   const port = 41000 + Math.floor(Math.random() * 7000);
   process.env.AE_BRIDGE_PORT = String(port);
@@ -32,7 +33,7 @@ async function main() {
     const production = buildSlideshowPlan({schema: "ae-agent-slideshow.v2", projectPath: project, duration: 8, frameRate: 30, width: 1280, height: 720,
       prefix, masterName: prefix + "MASTER", audioRouting: "master-only", events: [{id: "01", scene: 1, start: 0, duration: 8, title: "Fixture title", hero: "both", images: [], audioOnly: [], captions: []}]},
     {suhanov: ["Synthetic article."], kurnikov: ["Synthetic article."], both: ["Synthetic article."]},
-    {finalComp: {itemIndex: 1, name: "Final Comp", duration: 10, numLayers: 2, controlLayers: {CONTROL: {sourceLayerName: "CONTROL", effectCount: 0}, COLOR: {sourceLayerName: "COLOR", effectCount: 0}}}, scenes: [{scene: 1, itemIndex: 2, name: "Scene 1", duration: 4, numLayers: 2, introEffectCount: 0, mainEffectCount: 0}]});
+    {finalComp: {itemIndex: 1,itemId:101,name: "Final Comp", duration: 10, numLayers: 2,structureSchema:"ae-agent-comp-structure.v1",layers:[structuralLayer(1001,"CONTROL",10),structuralLayer(1002,"COLOR",10)], controlLayers: {CONTROL: {sourceLayerName: "CONTROL", effectCount: 0}, COLOR: {sourceLayerName: "COLOR", effectCount: 0}}}, scenes: [{scene: 1, itemIndex: 2,itemId:102,name: "Scene 1", duration: 4, numLayers: 2,structureSchema:"ae-agent-comp-structure.v1",layers:[structuralLayer(1003,"Scene top",4),structuralLayer(1004,"Scene bottom",4)], introEffectCount: 0, mainEffectCount: 0}]});
     const results = [];
     for (const stage of [...fixture.stages, ...production.stages]) {
       const validated = await client.call("validate_ai_agent_plan", {plan: stage, repairPlan: false});

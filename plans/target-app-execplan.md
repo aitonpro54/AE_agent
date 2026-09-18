@@ -7,7 +7,10 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
-2026-09-15: QA завершён; production остановлен пользователем, scope уточнён до 10 сцен.
+2026-09-18: длинный offline remediation F01–F17. M0 принят; M1 runtime
+интегрируется поверх исходного F08/F09 patch; затем evidence/status и typed save.
+Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
+`docs/all-review-remediation-2026-09-18.md`. Работа продолжается в текущей задаче.
 
 ### Progress
 
@@ -15,22 +18,26 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 - [x] Текущий proposal: revision/instanceId, project binding, supersession, dry-run receipt.
 - [x] MCP regression: scope/replay, гонки adopt/run, подмена полномочий, чужой checkpoint,
   смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
-- [x] 11 узких slideshow tools, строгий manifest и staged builder; 133: 10 этапов, <=50 шагов.
+- [x] 11 slideshow tools; F08 exact-owner preflight и F09 structural v1 baseline/read-back.
 - [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
 - [x] Реальный AE: сокращение без переноса ключей, сохранение соседних ключей при продлении.
 - [ ] Production остановлен: первые 10 собраны, аудиохвост 13 мс и визуальная приёмка не завершены.
 
 ### Decision Log
 
+- Remediation: historical bundles неизменны; accepted manual B — baseline,
+  client acceptance неизвестна. Scope F08 сохраняется; F09 proof связывается
+  с baseline шага. Новые regression импортируют только текущие modules.
+
 - Один pending proposal заменяет предыдущий; confirmed/executing имеют одного owner.
 - Proposal привязан к сохранённому проекту; offline planner выдаёт только draft.
 - GET не выдаёт токен; CEP adoption требует CAS и нового dry-run, сохраняет repair budget.
 - Исправление: максимум два новых proposal setters на тех же целях и проекте после
   инспекции. Raw JSX, создание/import и неизвестный исход не повторяются.
-- Статистика по allowlist без аргументов, текста, путей и секретов.
+- Статистика без секретов; входящая ревизия — baseline, неполный snapshot не даёт `passed`.
 ### Validation
 
-Проходят planning, solutions, bridge, provider-contract/API (mock), autonomy и slideshow.
+Проходят planning, solutions, bridge, autonomy и slideshow; F08/F09 scope-safety 9/9, live synthetic AEP отложен (`docs/scope-safety-fix-2026-09-18.md`).
 CEP/MCP синхронизированы; stale-кнопки отключаются. Live R3: 21+20+20 шагов,
 С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
 Read-back выявил и помог исправить порядок восстановления interpolation и выбор
@@ -120,18 +127,10 @@ baseline `3bd69eb` → `main` и текущий выпуск от `79f421a` → 
 
 ## Следующие продуктовые изменения
 
-1. В следующем отдельном milestone реализовать pure bounded composition audit
-   builder по `docs/proposals/repeated-composition-audit.review.json`, проверить
-   inspection contracts и synthetic reproduction. Promotion требует review
-   реализации и доказательств; runtime candidate остаётся planner-invisible.
-2. Подготовить воспроизводимые изолированные сцены для A/B; после отдельного
-   согласования real provider/live scope измерить tokens на успешную задачу.
-3. По трассам оптимизировать крупные inspection/tool responses; fresh evidence
-   переиспользовать только пока цель не изменилась.
-4. Расширять RU retrieval и builders по реально частым запросам и промахам,
-   включая tests на новые перефразировки и строгую проверку metadata.
-5. Проверять актуальность comp frame rate/work area/layer bounds перед записью
-   builder-плана; затем отдельно доказать поддержку Bezier/ease/vector keys.
+После F01–F17 остаются отдельные backlog: bounded composition audit builder
+(`docs/proposals/repeated-composition-audit.review.json`), synthetic A/B,
+оптимизация fresh inspection и RU retrieval. Promotion и реальные provider/live
+trials сохраняют отдельные границы. Текущая задача их не запускает.
 
 ## Сохранённый Full Intake backlog
 
