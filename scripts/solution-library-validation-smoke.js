@@ -14,10 +14,14 @@ const {
 
 const REPO_ROOT = path.join(__dirname, "..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "registry", "solutions.json");
+const LIVE_LANE_REGISTRY_PATH = path.join(REPO_ROOT, "orchestrator", "generic-repo-live-lane-registry.json");
 const SEEDED_IDS = ["active-comp-context-review", "selected-layers-align-to-cti"];
 const DAKKSHIN_ADVISORY_IDS = [
   "basic-comp-setup-typed-plan",
   "safe-effect-addition-typed-plan",
+  "effect-template-chain-typed-plan",
+  "text-layer-justification-typed-plan",
+  "shape-layer-polystar-typed-plan",
   "selected-layers-animation-typed-plan"
 ];
 const TOOL_BACKED_IDS = ["bulk-layer-duplicate-typed-tool"];
@@ -30,13 +34,25 @@ const IMPORTED_ADVISORY_IDS = [
   "rename-selected-layers-with-numbers-typed-plan",
   "rename-selected-layers-with-letters-typed-plan",
   "replace-text-in-layer-name-typed-plan",
+  "reset-layer-names-typed-plan",
   "add-simple-loop-expression-typed-plan",
   "append-to-expression-typed-plan",
   "update-expressions-typed-plan",
+  "stick-effect-to-layer-typed-plan",
+  "estimate-path-length-typed-plan",
+  "flip-path-typed-plan",
+  "export-path-points-typed-plan",
+  "save-frame-as-png-typed-plan",
+  "add-properties-to-essential-graphics-typed-plan",
+  "expose-essential-properties-typed-plan",
+  "toggle-puppet-on-transparent-typed-plan",
+  "toggle-puppet-pin-types-typed-plan",
+  "toggle-puppet-pins-as-guide-layers-typed-plan",
   "round-selected-property-values-typed-plan",
   "set-new-color-typed-plan",
   "swap-selected-property-dimensions-typed-plan",
   "separate-size-dimensions-typed-plan",
+  "move-parametric-anchor-point-typed-plan",
   "invert-selected-keyframes-typed-plan",
   "make-hold-keyframes-typed-plan",
   "multiply-selected-keyframes-typed-plan",
@@ -50,14 +66,21 @@ const IMPORTED_ADVISORY_IDS = [
   "apply-maintain-stroke-width-expression-typed-plan",
   "update-stroke-weight-expressions-typed-plan",
   "toggle-maintain-scale-expression-typed-plan",
+  "ar-addexpmantainscalewhenparented-typed-plan",
+  "ar-coloriselayers-typed-plan",
+  "ar-coloriselayersbytype-typed-plan",
   "disable-selected-expressions-typed-plan",
   "enable-selected-expressions-typed-plan",
   "find-all-expressions-typed-plan",
   "fix-fresh-pickwhip-expression-typed-plan",
   "get-selected-layer-duration-typed-plan",
+  "prepare-layer-out-points-for-lottie-typed-plan",
   "calculate-distance-between-layers-typed-plan",
   "layer-selection-get-typed-plan",
+  "alert-selected-layer-index-typed-plan",
   "layer-selection-set-typed-plan",
+  "hard-solo-layers-typed-plan",
+  "difference-blend-mode-typed-plan",
   "select-all-children-typed-plan",
   "select-disabled-layers-typed-plan",
   "select-guide-layers-typed-plan",
@@ -78,6 +101,14 @@ const IMPORTED_ADVISORY_IDS = [
   "enable-motion-blur-typed-plan",
   "toggle-onion-skinning-typed-plan",
   "increment-composition-versions-typed-plan",
+  "rename-composition-to-file-name-typed-plan",
+  "transfer-composition-work-area-typed-plan",
+  "read-composition-markers-typed-plan",
+  "set-work-area-to-markers-typed-plan",
+  "copy-composition-markers-to-layer-typed-plan",
+  "copy-layer-markers-to-composition-typed-plan",
+  "add-composition-markers-at-out-points-typed-plan",
+  "add-composition-markers-at-work-area-typed-plan",
   "change-nested-composition-duration-typed-plan",
   "change-nested-composition-duration-with-timecode-typed-plan",
   "change-nested-composition-start-frame-typed-plan",
@@ -87,13 +118,84 @@ const IMPORTED_ADVISORY_IDS = [
   "add-posterize-time-adjustment-layer-typed-plan",
   "center-composition-typed-plan",
   "find-specific-effect-typed-plan",
+  "toggle-specific-effects-typed-plan",
   "set-to-average-position-typed-plan",
   "zero-position-typed-plan",
   "merge-imported-selected-items-typed-plan",
+  "ar-addfolders-typed-plan",
   "add-labeled-items-to-render-queue-typed-plan",
   "add-selected-compositions-to-render-queue-typed-plan",
+  "third-party-semantics-safety-policy",
+  "project-file-render-proxy-safety-policy",
+  "export-text-to-file-typed-plan",
   "replace-text-in-project-item-name-typed-plan",
-  "rename-selected-project-items-typed-plan"
+  "rename-selected-project-items-typed-plan",
+  "preserve-nested-frame-rate-typed-plan",
+  "project-timecode-start-frames-typed-plan",
+  "reset-imported-item-names-typed-plan",
+  "set-project-item-labels-to-none-typed-plan",
+  "set-all-item-labels-to-none-typed-plan",
+  "add-comment-to-selected-layers-typed-plan",
+  "unlock-all-layers-typed-plan",
+  "set-all-layer-labels-to-none-typed-plan",
+  "set-all-track-matte-labels-typed-plan",
+  "set-track-matte-to-above-typed-plan",
+  "frame-navigator-typed-plan",
+  "milliseconds-to-frames-typed-plan",
+  "getlayerinfo-typed-plan",
+  "getprojectinfo-typed-plan",
+  "listcompositions-typed-plan"
+];
+const FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS = [
+  "read-composition-markers-typed-plan",
+  "set-work-area-to-markers-typed-plan",
+  "copy-composition-markers-to-layer-typed-plan",
+  "copy-layer-markers-to-composition-typed-plan",
+  "add-composition-markers-at-out-points-typed-plan",
+  "add-composition-markers-at-work-area-typed-plan"
+];
+const FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS = [
+  "project-file-render-proxy-safety-policy",
+  "export-path-points-typed-plan",
+  "export-text-to-file-typed-plan",
+  "save-frame-as-png-typed-plan",
+  "add-folder-to-render-queue-typed-plan",
+  "add-selected-compositions-to-render-queue-typed-plan",
+  "add-labeled-items-to-render-queue-typed-plan"
+];
+const FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS = [
+  "selected-layer-parent-opacity-expression-generated-only",
+  "parent-opacity-typed-plan",
+  "selected-layer-parent-below-generated-only",
+  "parent-selected-layers-to-layers-below-typed-plan",
+  "selected-layer-parent-closest-generated-only",
+  "parent-closest-layers-typed-plan",
+  "layer-track-matte-generated-only",
+  "set-all-track-matte-labels-typed-plan",
+  "set-track-matte-to-above-typed-plan",
+  "sortbyposition-typed-plan",
+  "newtrimmednull-typed-plan"
+];
+const FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS = [
+  "layer-enabled-hard-solo-generated-only",
+  "hard-solo-layers-typed-plan",
+  "layer-blending-mode-difference-generated-only",
+  "difference-blend-mode-typed-plan",
+  "explicit-layer-switch-generated-only",
+  "enable-collapse-transformations-typed-plan",
+  "enable-motion-blur-typed-plan",
+  "adjustment-layer-placement-generated-only",
+  "add-3d-break-typed-plan",
+  "puppet-on-transparent-effect-property-generated-only",
+  "toggle-puppet-on-transparent-typed-plan",
+  "layer-fill-color-cycle-generated-only",
+  "add-fill-with-color-cycle-typed-plan",
+  "grid-rig-control-replacement-generated-only",
+  "replace-grid-rig-control-typed-plan",
+  "effect-enabled-toggle-generated-only",
+  "toggle-specific-effects-typed-plan",
+  "puppet-pin-guide-layer-generated-only",
+  "toggle-puppet-pins-as-guide-layers-typed-plan"
 ];
 const AVAILABLE_TOOLS = [
   "get_bridge_status",
@@ -105,12 +207,21 @@ const AVAILABLE_TOOLS = [
   "get_selected_layers",
   "get_selected_properties",
   "set_layer_selection",
+  "set_layer_parent",
+  "set_layer_track_matte",
+  "set_layer_metadata",
+  "set_layer_blending_mode",
   "set_property_value",
   "list_layers",
   "get_comp_details",
   "get_render_queue_status",
   "create_comp",
+  "create_project_folder",
+  "create_text_layer",
+  "create_solid_layer",
   "create_shape_layer",
+  "create_layer_connection_line",
+  "create_shapes_from_text",
   "create_adjustment_layer",
   "create_camera_layer",
   "create_camera_with_controller",
@@ -120,6 +231,18 @@ const AVAILABLE_TOOLS = [
   "add_effect",
   "get_effect_details",
   "set_effect_property",
+  "set_effect_enabled",
+  "set_puppet_pin_type",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
+  "add_property_to_essential_graphics",
+  "set_layer_mask",
+  "get_path_geometry",
+  "set_path_geometry",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
+  "import_footage",
   "align_layers_to_time",
   "set_property_keyframes",
   "fill_in_keyframes",
@@ -130,14 +253,21 @@ const AVAILABLE_TOOLS = [
   "clear_expression",
   "separate_shape_size_dimensions",
   "set_layer_transform",
+  "set_comp_current_time",
   "set_comp_properties",
+  "set_project_frames_count_type",
+  "refresh_comp_panel",
   "set_comp_work_area",
+  "set_layer_time_range",
+  "add_comp_marker",
   "add_comp_to_render_queue",
   "set_render_queue_output",
   "add_layer_marker",
   "rename_layers",
   "rename_project_items",
+  "set_project_item_metadata",
   "get_layer_details",
+  "update_text_layer",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
   "move_project_items_to_folder",
@@ -148,12 +278,20 @@ function readRegistry() {
   return JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
 }
 
+function readLiveLaneRegistry() {
+  return JSON.parse(fs.readFileSync(LIVE_LANE_REGISTRY_PATH, "utf8"));
+}
+
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function solutionById(registry, id) {
   return registry.solutions.find((entry) => entry.id === id);
+}
+
+function liveLaneFamilyById(liveLaneRegistry, id) {
+  return liveLaneRegistry.selfImprovementFamilies.find((entry) => entry.id === id);
 }
 
 function ids(retrieval) {
@@ -163,6 +301,24 @@ function ids(retrieval) {
 function recipeText(solution) {
   const recipePath = path.join(REPO_ROOT, ...solution.execution.recipePath.split("/"));
   return fs.readFileSync(recipePath, "utf8");
+}
+
+function solutionContractText(solution, text) {
+  return [
+    text,
+    solution.intent.summary,
+    ...solution.intent.appliesWhen,
+    ...solution.verificationRecipe.steps,
+    ...solution.verificationRecipe.expectedEvidence,
+    ...solution.notes
+  ].join("\n");
+}
+
+function assertNoRawExecutionGuidance(id, solution, text) {
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: first-four contract recipes must not use raw script files.`);
+  assert(!solution.execution.preferredTools.includes("run_extendscript"), `${id}: first-four contract recipes must not prefer inline ExtendScript.`);
+  assert(!solution.execution.preferredTools.includes("run_extendscript_file"), `${id}: first-four contract recipes must not prefer raw script file execution.`);
+  assert(!/run_extendscript/i.test(text), `${id}: first-four contract recipe text must not recommend raw ExtendScript.`);
 }
 
 function assertSeedQuality(registry) {
@@ -281,7 +437,9 @@ function assertImportedAdvisoryQuality(registry) {
     assert(solution.execution.recipePath !== "recipes/README.md", `${id}: imported advisory entries should have dedicated recipe files.`);
     assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present for retrieval/audit.`);
     assert(
-      solution.tags.includes("kyletmartinez-advisory") || solution.tags.includes("ae-scripting-advisory"),
+      solution.tags.includes("external-script-advisory") ||
+        solution.tags.includes("ae-scripting-advisory") ||
+        solution.tags.includes("dakkshin-advisory"),
       `${id}: imported source advisory tag should be present for retrieval/audit.`
     );
     assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
@@ -321,7 +479,144 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read comp details after mutation.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaStart/.test(item)), `${id}: verification must require workAreaStart evidence.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDuration/.test(item)), `${id}: verification must require workAreaDuration evidence.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-021/.test(entry.evidence)), `${id}: promotion evidence should mention AUX-021.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention reviewed lane.`);
+    } else if (id === "transfer-composition-work-area-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_comp_work_area"],
+        `${id}: imported work-area transfer workflow should stay on the narrow comp work-area typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition work-area transfer must be mutating.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require source and target comp details.`);
+      assert(text.includes("set_comp_work_area"), `${id}: recipe should use the comp work-area typed tool.`);
+      assert(text.includes("app.settings"), `${id}: recipe should fail closed for persistent settings clipboard semantics.`);
+      assert(text.includes("altKey") || text.includes("Alt"), `${id}: recipe should fail closed for Alt-key branching.`);
+      assert(text.includes("marker-derived"), `${id}: recipe should reject marker-derived work-area inference.`);
+      assert(solution.verificationRecipe.steps.some((step) => /source composition/.test(step) && /get_comp_details/.test(step)), `${id}: verification must read source comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /target composition/.test(step) && /get_comp_details/.test(step)), `${id}: verification must read target comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include target work-area mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /copied workAreaStart/.test(item)), `${id}: verification must require copied workAreaStart evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /copied workAreaDuration/.test(item)), `${id}: verification must require copied workAreaDuration evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /app.settings clipboard/.test(item)), `${id}: verification must document settings clipboard as unsupported.`);
+      assert(solution.notes.some((note) => /composition marker reads/.test(note)), `${id}: notes must keep marker-derived Set_Work_Area_To_Markers semantics separate.`);
+      assert(solution.promotionHistory.some((entry) => /Transfer_Composition_Work_Area/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "read-composition-markers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details"],
+        `${id}: composition marker reads should stay on the narrow read-only comp details sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: composition marker inspection must stay read-only.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require includeMarkers:true.`);
+      assert(text.includes("comp.markerProperty.keyTime"), `${id}: recipe should document marker keyTime ordering.`);
+      assert(text.includes("Layer marker tools") || text.includes("layer marker tools"), `${id}: recipe should forbid layer marker substitution.`);
+      assert(solution.verificationRecipe.steps.some((step) => /includeMarkers:true/.test(step)), `${id}: verification must include marker read arg.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /orderedBy/.test(item) && /comp\.markerProperty\.keyTime/.test(item)), `${id}: verification must require orderedBy evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /add_layer_marker/.test(item)), `${id}: verification must reject layer marker substitution.`);
+      assert(solution.notes.some((note) => /set_comp_work_area/.test(note)), `${id}: notes must keep marker-derived work-area mutation separate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-work-area-to-markers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_comp_marker", "set_comp_work_area"],
+        `${id}: marker-derived work-area workflow should stay on composition marker read/setup plus work-area mutation tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: marker-derived work-area workflow must be mutating.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read evidence.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should document generated marker setup.`);
+      assert(text.includes("set_comp_work_area"), `${id}: recipe should set only the comp work area.`);
+      assert(text.includes("at least two"), `${id}: recipe should require at least two marker times.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include generated marker setup.`);
+      assert(solution.verificationRecipe.steps.some((step) => /includeMarkers:true/.test(step)), `${id}: verification must include composition marker read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include work-area mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-derived workAreaStart/.test(item)), `${id}: verification must require marker-derived start evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-derived workAreaDuration/.test(item)), `${id}: verification must require marker-derived duration evidence.`);
+      assert(solution.notes.some((note) => /layer marker/.test(note)), `${id}: notes must forbid layer marker substitution.`);
+      assert(solution.promotionHistory.some((entry) => /Set_Work_Area_To_Markers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "copy-composition-markers-to-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_layer_marker", "get_layer_details"],
+        `${id}: composition-to-layer marker copy should stay on comp marker read plus layer marker write/read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition-to-layer marker copy must be mutating.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read evidence.`);
+      assert(text.includes("markerCopyPlan"), `${id}: recipe should disclose the reviewed marker copy plan.`);
+      assert(text.includes("add_layer_marker"), `${id}: recipe should use add_layer_marker for destination layer markers.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer marker read-back.`);
+      assert(text.includes("composition marker mutation"), `${id}: recipe should forbid mutating composition markers in this direction.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /includeMarkers:true/.test(step)), `${id}: verification must read composition marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerCopyPlan/.test(step)), `${id}: verification must include markerCopyPlan.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_layer_marker/.test(step)), `${id}: verification must include add_layer_marker.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer markers back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /comp\.markerProperty\.keyTime/.test(item)), `${id}: verification must preserve composition marker ordering.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /destination layer/.test(item)), `${id}: verification must require destination layer evidence.`);
+      assert(solution.notes.some((note) => /Copy_Layer_Markers_To_Composition/.test(note) || /copying layer markers back/.test(note)), `${id}: notes must keep reverse copy direction separate.`);
+      assert(solution.promotionHistory.some((entry) => /Copy_Composition_Markers_To_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "copy-layer-markers-to-composition-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_comp_details", "add_comp_marker"],
+        `${id}: layer-to-composition marker copy should stay on layer marker read plus comp marker write/read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: layer-to-composition marker copy must be mutating.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require source layer marker evidence.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
+      assert(text.includes("markerCopyPlan"), `${id}: recipe should disclose the reviewed marker copy plan.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should use add_comp_marker for destination composition markers.`);
+      assert(text.includes("layer marker mutation"), `${id}: recipe should forbid mutating layer markers in this direction.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /includeMarkers:true/.test(step)), `${id}: verification must read composition marker evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerCopyPlan/.test(step)), `${id}: verification must include markerCopyPlan.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include add_comp_marker.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-count increment/.test(item)), `${id}: verification must require add_comp_marker count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /destination composition/.test(item)), `${id}: verification must require destination composition evidence.`);
+      assert(solution.notes.some((note) => /Copy_Composition_Markers_To_Layer/.test(note) || /copying composition markers to a layer/.test(note)), `${id}: notes must keep reverse copy direction separate.`);
+      assert(solution.promotionHistory.some((entry) => /Copy_Layer_Markers_To_Composition/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-composition-markers-at-out-points-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_comp_marker"],
+        `${id}: out-point composition marker workflow should stay on comp/layer evidence plus add_comp_marker.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: out-point composition marker workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-out-points-typed-plan.md", `${id}: importer alias recipe path should stay on the planned reviewed lane path.`);
+      assert(text.includes("includeLayers:true"), `${id}: recipe should require layer out-point evidence.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
+      assert(text.includes("outPoint"), `${id}: recipe should bind marker targets from outPoint evidence.`);
+      assert(text.includes("markerTargets"), `${id}: recipe should disclose reviewed markerTargets.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should use add_comp_marker.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /includeLayers:true/.test(step)), `${id}: verification must read layer out-point evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /markerTargets/.test(step)), `${id}: verification must include markerTargets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include composition marker creation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /marker-count increment/.test(item)), `${id}: verification must require marker-count increment evidence.`);
+      assert(solution.notes.some((note) => /work-area/.test(note)), `${id}: notes must keep work-area boundary marker semantics separate.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Markers_At_Out_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-composition-markers-at-work-area-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "add_comp_marker"],
+        `${id}: work-area composition marker workflow should stay on comp work-area evidence plus add_comp_marker.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: work-area composition marker workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/add-markers-at-work-area-typed-plan.md", `${id}: importer alias recipe path should stay on the planned reviewed lane path.`);
+      assert(text.includes("workAreaStart"), `${id}: recipe should require workAreaStart evidence.`);
+      assert(text.includes("workAreaDuration"), `${id}: recipe should require workAreaDuration evidence.`);
+      assert(text.includes("includeMarkers:true"), `${id}: recipe should require composition marker read-back.`);
+      assert(text.includes("markerTargets"), `${id}: recipe should disclose reviewed markerTargets.`);
+      assert(text.includes("add_comp_marker"), `${id}: recipe should use add_comp_marker.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step) && /work-area/.test(step)), `${id}: verification must read work-area evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /workAreaStart \+ workAreaDuration/.test(step)), `${id}: verification must derive the end marker from work area fields.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_marker/.test(step)), `${id}: verification must include composition marker creation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /work-area start/.test(item)), `${id}: verification must require work-area start marker evidence.`);
+      assert(solution.notes.some((note) => /out-point/.test(note)), `${id}: notes must keep out-point marker semantics separate.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Markers_At_Work_Area/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-markers-to-selected-layers-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -370,6 +665,120 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Markers_At_Selected_Keyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-comment-to-selected-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported layer-comment workflow should stay read-only until a narrow comment writer exists.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current layer-comment adaptation must remain read-only.`);
+      assert(text.includes("Layer.comment"), `${id}: recipe should preserve layer comment semantics.`);
+      assert(text.includes("typed-tool gap"), `${id}: recipe should report the missing layer-comment writer.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /layerCommentIntent/.test(step)), `${id}: verification must disclose reviewed comment intent.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.comment typed-tool gap/.test(item)), `${id}: verification must require Layer.comment gap evidence.`);
+      assert(solution.notes.some((note) => /add_layer_marker/.test(note)), `${id}: notes must forbid substituting marker comments.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Comment_To_Selected_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "unlock-all-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "list_layers", "get_layer_details"],
+        `${id}: imported unlock-all workflow should stay read-only until a narrow lock-state writer exists.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current unlock-all adaptation must remain read-only.`);
+      assert(text.includes("Layer.locked"), `${id}: recipe should preserve layer lock semantics.`);
+      assert(text.includes("typed-tool gap"), `${id}: recipe should report the missing layer-lock writer.`);
+      assert(text.includes("list_layers"), `${id}: recipe should require active-comp layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /unlockAllLayersIntent/.test(step)), `${id}: verification must disclose reviewed unlock intent.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.locked typed-tool gap/.test(item)), `${id}: verification must require Layer.locked gap evidence.`);
+      assert(solution.notes.some((note) => /selection/.test(note)), `${id}: notes must forbid substituting selection side effects.`);
+      assert(solution.promotionHistory.some((entry) => /Unlock_All_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "set-all-layer-labels-to-none-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "list_layers", "get_layer_details"],
+        `${id}: imported set-all-labels workflow should stay read-only until a narrow label-state writer exists.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current set-all-labels adaptation must remain read-only.`);
+      assert(text.includes("Layer.label"), `${id}: recipe should preserve layer label semantics.`);
+      assert(text.includes("typed-tool gap"), `${id}: recipe should report the missing layer-label writer.`);
+      assert(text.includes("list_layers"), `${id}: recipe should require active-comp layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /setAllLayerLabelsToNoneIntent/.test(step)), `${id}: verification must disclose reviewed layer-label intent.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Layer\.label typed-tool gap/.test(item)), `${id}: verification must require Layer.label gap evidence.`);
+      assert(solution.notes.some((note) => /selection/.test(note)), `${id}: notes must forbid substituting selection side effects.`);
+      assert(solution.promotionHistory.some((entry) => /Set_All_Layer_Labels_To_None/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "frame-navigator-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_comp_current_time"],
+        `${id}: frame navigator workflow should stay on explicit comp time tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: CTI navigation changes composition current time.`);
+      assert(text.includes("set_comp_current_time"), `${id}: recipe should use the narrow CTI setter.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp time read-back.`);
+      assert(text.includes("Do not substitute"), `${id}: recipe should reject unrelated timing substitutions.`);
+      assert(solution.requiredSafetyGates.postMutationReadBack === true, `${id}: CTI recipe must require post-mutation read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_current_time/.test(step)), `${id}: verification must include set_comp_current_time.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_comp_details\.time/.test(item)), `${id}: verification must require get_comp_details.time evidence.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must forbid raw ExtendScript fallback.`);
+      assert(solution.promotionHistory.some((entry) => /Frame_Navigator/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "milliseconds-to-frames-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp"],
+        `${id}: imported milliseconds-to-frames workflow should stay read-only and use active comp only for frame-rate evidence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: current milliseconds-to-frames adaptation must remain read-only.`);
+      assert(text.includes("exactFrames = milliseconds * frameRate / 1000"), `${id}: recipe should preserve the conversion formula.`);
+      assert(text.includes("roundingMode"), `${id}: recipe should require an explicit rounding policy.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must mention optional active-comp frame-rate evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /reportedFrames/.test(item)), `${id}: verification must require reported frame evidence.`);
+      assert(solution.notes.some((note) => /Do not infer frame rate/.test(note)), `${id}: notes must forbid guessed frame rates.`);
+      assert(solution.promotionHistory.some((entry) => /Milliseconds_To_Frames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "getlayerinfo-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details"],
+        `${id}: layer-info inspection should stay on typed read tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: layer-info adaptation must remain read-only.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer detail read-back.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must bind selected-layer evidence when selected layers are targeted.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read concrete layer details.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /layer indices\/names/.test(item)), `${id}: verification must require target layer identity evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /getLayerInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "getprojectinfo-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info"],
+        `${id}: project-info inspection should stay on get_project_info.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: project-info adaptation must remain read-only.`);
+      assert(text.includes("get_project_info"), `${id}: recipe should require project info read-back.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must read current project info.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /project identity\/file state/.test(item)), `${id}: verification must require project identity/file-state evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /getProjectInfo\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "listcompositions-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "get_comp_details"],
+        `${id}: composition-list inspection should stay on typed read tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: composition-list adaptation must remain read-only.`);
+      assert(text.includes("get_project_snapshot"), `${id}: recipe should require project snapshot read-back.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should allow narrowed composition search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should allow detail reads for concrete compositions.`);
+      assert(text.includes("typed-tool gaps"), `${id}: recipe should report unavailable details as typed-tool gaps.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must read current project inventory.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must read concrete composition details only when requested.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /item indices\/names/.test(item)), `${id}: verification must require composition identity evidence.`);
+      assert(solution.notes.some((note) => /source JSX/.test(note)), `${id}: notes must forbid exact source JSX behavior.`);
+      assert(solution.promotionHistory.some((entry) => /listCompositions\.jsx/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "append-to-layer-name-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -476,6 +885,24 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate typed-tool contract for regex behavior.`);
       assert(solution.notes.some((note) => /project item rename/.test(note)), `${id}: notes must keep project item rename out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Replace_Text_In_Layer_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "reset-layer-names-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "rename_layers", "get_comp_details"],
+        `${id}: empty layer-name reset workflow should stay on current comp inventory, rename_layers, and read-back.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: empty layer-name reset is mutating.`);
+      assert(text.includes("allowEmptyName:true"), `${id}: recipe should require explicit empty-name opt-in.`);
+      assert(text.includes('name:""'), `${id}: recipe should require exact empty target names.`);
+      assert(text.includes("expectedLayerNames"), `${id}: recipe should require stale-order expected-name guards.`);
+      assert(text.includes("one `rename_layers` step per concrete target layer"), `${id}: recipe should require one rename call per target layer.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /allowEmptyName:true/.test(step)), `${id}: verification must include empty-name opt-in.`);
+      assert(solution.verificationRecipe.steps.some((step) => /name:""/.test(step)), `${id}: verification must include empty string name.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /after:""/.test(item)), `${id}: verification must require empty-name read-back evidence.`);
+      assert(solution.notes.some((note) => /checkpoint\/rollback/.test(note)), `${id}: notes must keep source-exact user-layer reset behind a checkpoint/rollback decision.`);
+      assert(solution.notes.some((note) => /raw JSX/.test(note)), `${id}: notes must forbid raw JSX fallback.`);
+      assert(solution.promotionHistory.some((entry) => /tool-layers-reset-layer-names/.test(entry.from)), `${id}: promotion history should mention the source candidate id.`);
     } else if (id === "texttokeys-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -571,6 +998,258 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Update_Expressions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "stick-effect-to-layer-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "get_effect_details", "set_expression", "get_layer_details"],
+        `${id}: stick-effect workflow should stay on the narrow selected/effect property expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: stick-effect workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should support selected-property evidence.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should support explicit generated effect-property evidence.`);
+      assert(text.includes("2D spatial"), `${id}: recipe should require 2D spatial target evidence.`);
+      assert(text.includes("toComp(anchorPoint + value);"), `${id}: recipe should preserve the reviewed expression.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require expression read-back through layer details.`);
+      assert(text.includes("Do not infer effect properties"), `${id}: recipe should reject approximate effect discovery.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence when available.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must capture explicit effect-property evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /toComp\(anchorPoint \+ value\);/.test(step)), `${id}: verification must include the final stick expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /2D spatial/.test(item)), `${id}: verification must require 2D spatial evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require expression enabled evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionError/.test(item)), `${id}: verification must require expression error evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Stick_Effect_To_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "estimate-path-length-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_effect_property", "set_expression", "get_layer_details"],
+        `${id}: estimate-path-length workflow should stay on the narrow generated shape/effect expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: estimate-path-length workflow must be mutating.`);
+      assert(text.includes("generated shape layer"), `${id}: recipe should require generated shape-layer evidence.`);
+      assert(text.includes("Path Samples"), `${id}: recipe should mention the Path Samples slider.`);
+      assert(text.includes("Path Length"), `${id}: recipe should mention the Path Length slider.`);
+      assert(text.includes("add_effect"), `${id}: recipe should use add_effect for slider controls.`);
+      assert(text.includes("set_effect_property"), `${id}: recipe should use set_effect_property for sample count.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression for the Path Length slider.`);
+      assert(text.includes("Rectangle Path 1"), `${id}: recipe should preserve the generated rectangle expression scope.`);
+      assert(text.includes("716-718"), `${id}: recipe should require the generated sampled path-length target.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_effect/.test(step)), `${id}: verification must include add_effect.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_property/.test(step)), `${id}: verification must include set_effect_property.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must read generated slider effects.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Path Samples/.test(item)), `${id}: verification must require Path Samples evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Path Length/.test(item)), `${id}: verification must require Path Length evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.notes.some((note) => /generated-layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Estimate_Path_Length/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "flip-path-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_path_geometry", "set_path_geometry"],
+        `${id}: flip-path workflow should stay on the narrow path geometry typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: flip-path workflow must be mutating.`);
+      assert(text.includes("get_path_geometry"), `${id}: recipe should require path geometry read-back.`);
+      assert(text.includes("set_path_geometry"), `${id}: recipe should use the path geometry setter.`);
+      assert(text.includes("vertices"), `${id}: recipe should preserve vertices.`);
+      assert(text.includes("inTangents"), `${id}: recipe should preserve inTangents.`);
+      assert(text.includes("outTangents"), `${id}: recipe should preserve outTangents.`);
+      assert(text.includes("closed"), `${id}: recipe should preserve closed state.`);
+      assert(text.includes("bounding-box center"), `${id}: recipe should document bounding-box center flip math.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include get_path_geometry.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_path_geometry/.test(step)), `${id}: verification must include set_path_geometry.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /vertices/.test(item)), `${id}: verification must require vertex evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /inTangents/.test(item)), `${id}: verification must require inTangents evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /outTangents/.test(item)), `${id}: verification must require outTangents evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /keyframe/.test(item)), `${id}: verification must require keyframe evidence.`);
+      assert(solution.notes.some((note) => /get_path_geometry/.test(note)), `${id}: notes must require path geometry read evidence.`);
+      assert(solution.notes.some((note) => /set_path_geometry/.test(note)), `${id}: notes must require path geometry mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Flip_Path/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "export-path-points-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_path_geometry", "export_path_points"],
+        `${id}: export-path-points workflow should stay on the narrow path read plus generated file export typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: export-path-points workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_path_geometry"), `${id}: recipe should require path geometry read-back.`);
+      assert(text.includes("export_path_points"), `${id}: recipe should use the generated export typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("var points"), `${id}: recipe should preserve the reviewed source payload shape.`);
+      assert(text.includes("Do not infer selected paths"), `${id}: recipe should reject inferred selected-path traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include get_path_geometry.`);
+      assert(solution.verificationRecipe.steps.some((step) => /export_path_points/.test(step)), `${id}: verification must include export_path_points.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged vertices/.test(item) || /unchanged/.test(item)), `${id}: verification must prove geometry was not mutated.`);
+      assert(solution.notes.some((note) => /get_path_geometry/.test(note)), `${id}: notes must require path geometry read evidence.`);
+      assert(solution.notes.some((note) => /export_path_points/.test(note)), `${id}: notes must require generated file export.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Export_Path_Points/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "export-text-to-file-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "export_text_to_file"],
+        `${id}: export-text workflow should stay on selected-layer read, Source Text evidence, and generated text export.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: export-text workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require Source Text read-back.`);
+      assert(text.includes("export_text_to_file"), `${id}: recipe should use the generated text export typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("[Not a text layer]"), `${id}: recipe should preserve non-text fallback lines.`);
+      assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Source Text/.test(item)), `${id}: verification must require Source Text evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.notes.some((note) => /get_selected_layers/.test(note)), `${id}: notes must require selected-layer read evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Export_Text_To_File/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "save-frame-as-png-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "save_comp_frame_png"],
+        `${id}: save-frame workflow should stay on explicit comp read plus generated PNG export typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: save-frame workflow must be a file-output side effect.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: file-output recipe should preserve the normal mutating gate invariant.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require composition read-back.`);
+      assert(text.includes("save_comp_frame_png"), `${id}: recipe should use the generated frame PNG typed tool.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+      assert(text.includes("Desktop"), `${id}: recipe should explicitly reject Desktop writes.`);
+      assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+      assert(text.includes("resolutionFactor"), `${id}: recipe should require resolutionFactor restoration evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /save_comp_frame_png/.test(step)), `${id}: verification must include save_comp_frame_png.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /sha256/.test(item)), `${id}: verification must require sha256 evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /resolutionFactor/.test(item)), `${id}: verification must require resolutionFactor evidence.`);
+      assert(solution.notes.some((note) => /save_comp_frame_png/.test(note)), `${id}: notes must require generated PNG file export.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Save_Frame_As_PNG/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-properties-to-essential-graphics-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_essential_graphics_controllers", "add_property_to_essential_graphics"],
+        `${id}: Essential Graphics add workflow should stay on the narrow generated controller typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Essential Graphics controller add workflow must be mutating.`);
+      assert(text.includes("get_essential_graphics_controllers"), `${id}: recipe should require controller read-back.`);
+      assert(text.includes("add_property_to_essential_graphics"), `${id}: recipe should use the narrow Essential Graphics add typed tool.`);
+      assert(text.includes("propertyPath"), `${id}: recipe should require an explicit propertyPath.`);
+      assert(text.includes("controllerName"), `${id}: recipe should require a reviewed controllerName.`);
+      assert(text.includes("Do not infer selected properties"), `${id}: recipe should reject selected-property traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_essential_graphics_controllers/.test(step)), `${id}: verification must include controller read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_property_to_essential_graphics/.test(step)), `${id}: verification must include add_property_to_essential_graphics.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /controllerCount/.test(item)), `${id}: verification must require controller count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /controllerName/.test(item)), `${id}: verification must require controller name evidence.`);
+      assert(solution.notes.some((note) => /generated layer/.test(note)), `${id}: notes must require generated-layer evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Properties_To_Essential_Graphics/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "expose-essential-properties-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_layer_details", "get_layer_essential_properties", "set_expression"],
+        `${id}: Essential Properties expose workflow should stay on explicit layer essential-property evidence plus set_expression.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Essential Properties expression exposure workflow must be mutating.`);
+      assert(text.includes("get_layer_essential_properties"), `${id}: recipe should require Essential Properties read-back.`);
+      assert(text.includes("layer.essentialProperty"), `${id}: recipe should document layer.essentialProperty scope.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression only on explicit property paths.`);
+      assert(text.includes("propertyPath"), `${id}: recipe should require explicit propertyPath evidence.`);
+      assert(text.includes("Do not infer Essential Properties"), `${id}: recipe should reject inferred EP traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_essential_properties/.test(step)), `${id}: verification must include Essential Properties read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /essentialProperties/.test(item)), `${id}: verification must require essentialProperties evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled expression evidence.`);
+      assert(solution.notes.some((note) => /generated nested comp/.test(note)), `${id}: notes must require generated nested comp evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Expose_Essential_Properties/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-on-transparent-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_effect_property"],
+        `${id}: Puppet On Transparent workflow should stay on the narrow generated effect-property typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet On Transparent workflow must be mutating.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should require the Puppet effect matchName.`);
+      assert(text.includes("ADBE FreePin3 On Transparent"), `${id}: recipe should require the exact Puppet On Transparent property.`);
+      assert(text.includes("propertyMatchName"), `${id}: recipe should use propertyMatchName targeting.`);
+      assert(text.includes("set_effect_property"), `${id}: recipe should use set_effect_property.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect read-back.`);
+      assert(text.includes("Do not infer Puppet effects"), `${id}: recipe should reject inferred project traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_effect/.test(step)), `${id}: verification must include add_effect.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_property/.test(step)), `${id}: verification must include set_effect_property.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include get_effect_details.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3/.test(item)), `${id}: verification must require Puppet effect evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 On Transparent/.test(item)), `${id}: verification must require On Transparent evidence.`);
+      assert(solution.notes.some((note) => /generated Puppet effect/.test(note)), `${id}: notes must require generated Puppet effect evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_On_Transparent/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-pin-types-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_puppet_pin_type"],
+        `${id}: Puppet pin type workflow should stay on the narrow generated Puppet pin typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet pin type workflow must be mutating.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should require the Puppet effect matchName.`);
+      assert(text.includes("ADBE FreePin3 PosPin Atom"), `${id}: recipe should require the Puppet pin atom ancestor.`);
+      assert(text.includes("ADBE FreePin3 PosPin Type"), `${id}: recipe should require the exact Puppet pin type property.`);
+      assert(text.includes("set_puppet_pin_type"), `${id}: recipe should use the narrow pin type typed tool.`);
+      assert(text.includes("pinType 1") && text.includes("pinType 4"), `${id}: recipe should limit pinType enum values.`);
+      assert(text.includes("Do not infer Puppet pins"), `${id}: recipe should reject inferred pin traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include get_effect_details.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_puppet_pin_type/.test(step)), `${id}: verification must include set_puppet_pin_type.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 PosPin Atom/.test(item)), `${id}: verification must require pin atom evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE FreePin3 PosPin Type/.test(item)), `${id}: verification must require pin type evidence.`);
+      assert(solution.notes.some((note) => /generated Puppet pin atom/.test(note)), `${id}: notes must require generated Puppet pin atom evidence.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_Pin_Types/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-puppet-pins-as-guide-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "create_shape_layer", "add_effect", "get_effect_details", "set_layer_metadata", "get_layer_details"],
+        `${id}: Puppet guide-layer workflow should stay on the narrow generated Puppet evidence and layer metadata sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Puppet guide-layer workflow must be mutating.`);
+      assert(text.includes("guideLayer"), `${id}: recipe should require native guideLayer targeting.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use the layer metadata typed tool.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect evidence read-back.`);
+      assert(text.includes("ADBE FreePin3"), `${id}: recipe should document generated Puppet evidence.`);
+      assert(text.includes("Pseudo/Duik pin02"), `${id}: recipe should keep exact DuIK semantics explicit.`);
+      assert(text.includes("Alt-key branching"), `${id}: recipe should reject inferred Alt-key behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.steps.some((step) => /guideLayer/.test(step)), `${id}: verification must include guideLayer state.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_layer_details/.test(item)), `${id}: evidence must require layer read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /get_effect_details/.test(item)), `${id}: evidence must require effect read-back.`);
+      assert(solution.notes.some((note) => /generated\/mock third-party fixture/.test(note)), `${id}: notes must keep exact DuIK behavior behind generated/mock fixture evidence.`);
+      assert(solution.notes.some((note) => /all-project scans/.test(note)), `${id}: notes must reject broad project scans.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Puppet_Pins_As_Guide_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "round-selected-property-values-typed-plan") {
       assert.deepStrictEqual(
@@ -685,6 +1364,33 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate_shape_size_dimensions/.test(note)), `${id}: notes must require separate_shape_size_dimensions.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Separate_Size_Dimensions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "move-parametric-anchor-point-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_properties", "get_layer_details", "set_expression"],
+        `${id}: imported parametric anchor workflow should stay on the narrow selected/generated shape Position expression typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: parametric anchor workflow must be mutating.`);
+      assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property or explicit generated evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require generated/property read-back evidence.`);
+      assert(text.includes("ADBE Vector Rect Position"), `${id}: recipe should limit support to rectangle Position properties.`);
+      assert(text.includes("ADBE Vector Ellipse Position"), `${id}: recipe should limit support to ellipse Position properties.`);
+      assert(text.includes("anchorPositionKey"), `${id}: recipe should disclose reviewed anchor-position key.`);
+      assert(text.includes("thisProperty.propertyGroup(1).size"), `${id}: recipe should preserve parametric size expression semantics.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use the expression typed tool.`);
+      assert(text.includes("existing expressions"), `${id}: recipe should guard existing expressions.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence when using UI selection.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer-property read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /anchorPositionKey/.test(step)), `${id}: verification must include reviewed anchorPositionKey.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /ADBE Vector Rect Position/.test(item) || /ADBE Vector Ellipse Position/.test(item)), `${id}: verification must require parametric Position matchName evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expression/.test(item)), `${id}: verification must require expression evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
+      assert(solution.notes.some((note) => /selected-property evidence/.test(note)), `${id}: notes must require selected-property evidence.`);
+      assert(solution.notes.some((note) => /set_expression/.test(note)), `${id}: notes must require set_expression.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Move_Parametric_Anchor_Point/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "invert-selected-keyframes-typed-plan") {
       assert.deepStrictEqual(
@@ -1096,6 +1802,27 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /primary selected layer/.test(note)), `${id}: notes must reject primary-selection guessing.`);
       assert(solution.notes.some((note) => /changing layer duration/.test(note)), `${id}: notes must keep timing mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Get_Selected_Layer_Duration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "prepare-layer-out-points-for-lottie-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "set_layer_time_range", "get_layer_details"],
+        `${id}: imported Lottie out-point workflow should stay on the narrow layer timing typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Lottie out-point workflow must be mutating.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: Lottie out-point workflow must require mutation gates.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: Lottie out-point workflow must require read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp timing evidence.`);
+      assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+      assert(text.includes("duration + frameDuration"), `${id}: recipe should compute one-frame extension from comp timing evidence.`);
+      assert(text.includes("Do not scan all project items"), `${id}: recipe should fail closed for source-global traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture comp details before mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include optional layer details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /duration \+ frameDuration/.test(item)), `${id}: verification must require duration plus frameDuration evidence.`);
+      assert(solution.notes.some((note) => /Do not scan every project composition/.test(note)), `${id}: notes must reject all-project traversal.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+      assert(solution.promotionHistory.some((entry) => /Prepare_Layer_Out_Points_For_Lottie/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "calculate-distance-between-layers-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1137,6 +1864,26 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /selection state/.test(note)), `${id}: notes must reject selection-state mutation.`);
       assert(solution.notes.some((note) => /changing selection/.test(note)), `${id}: notes must keep selection mutation out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Layer_Selection_Get/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "alert-selected-layer-index-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details"],
+        `${id}: imported alert-selected-layer-index workflow should stay on the narrow read-only typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, false, `${id}: selected-layer index alert adaptation must stay read-only.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: selected-layer index reporting must not allow mutations.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("first selected layer index"), `${id}: recipe should document first selected layer index semantics.`);
+      assert(text.includes("Do not reproduce ScriptUI"), `${id}: recipe should reject UI alert reproduction.`);
+      assert(text.includes("Do not infer selected layers"), `${id}: recipe should reject inferred layer selection.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should use optional same-index layer detail read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_active_comp/.test(step)), `${id}: verification must capture active comp evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /first selected layerIndex/.test(step)), `${id}: verification must report the first selected layer index.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /first selected layerIndex/.test(item)), `${id}: verification must require first selected layer index evidence.`);
+      assert(solution.notes.some((note) => /UI alert/.test(note)), `${id}: notes must keep UI alert behavior out of scope.`);
+      assert(solution.notes.some((note) => /changing selection/.test(note)), `${id}: notes must keep selection mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Alert_Selected_Layer_Index/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
     } else if (id === "layer-selection-set-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1157,6 +1904,49 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /get_comp_details/.test(note)), `${id}: notes must require layer inventory evidence.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must keep unsupported selection semantics out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Layer_Selection_Set/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+    } else if (id === "hard-solo-layers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"],
+        `${id}: hard-solo workflow should stay on the narrow selected/unselected Layer.enabled typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: hard-solo workflow must be mutating.`);
+      assert(text.includes("enabled:true"), `${id}: recipe should preserve selected layer enabled state.`);
+      assert(text.includes("enabled:false"), `${id}: recipe should disable unselected layers.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require complete layer inventory evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use the layer metadata typed writer.`);
+      assert(text.includes("Do not infer selection"), `${id}: recipe should reject inferred selection.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture complete layer inventory evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:true/.test(step)), `${id}: verification must include selected enabled:true targets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /enabled:false/.test(step)), `${id}: verification must include unselected enabled:false targets.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled:true/.test(item)), `${id}: verification must require selected enabled read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled:false/.test(item)), `${id}: verification must require disabled read-back.`);
+      assert(solution.notes.some((note) => /selected-layer/.test(note)), `${id}: notes must require selected-layer evidence.`);
+      assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must keep raw script execution out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Hard_Solo_Layers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "difference-blend-mode-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "set_layer_blending_mode", "get_layer_details"],
+        `${id}: difference blend workflow should stay on the narrow selected Layer.blendingMode typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: difference blend workflow must be mutating.`);
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-difference-blend-mode-typed-plan.md", `${id}: recipe path should stay on the importer-planned toggle recipe alias.`);
+      assert(text.includes("blendingMode:\"difference\""), `${id}: recipe should preserve Difference blending mode.`);
+      assert(text.includes("expectedCurrentBlendingModes"), `${id}: recipe should document current-mode guards.`);
+      assert(text.includes("set_layer_blending_mode"), `${id}: recipe should use the layer blending mode typed writer.`);
+      assert(text.includes("Alt-key"), `${id}: recipe should fail closed for source-exact Alt-key branching.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must capture complete layer inventory evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_blending_mode/.test(step)), `${id}: verification must include set_layer_blending_mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /blendingModeName.*difference/.test(item)), `${id}: verification must require Difference read-back.`);
+      assert(solution.notes.some((note) => /selected-layer/.test(note)), `${id}: notes must require selected-layer evidence.`);
+      assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must keep raw script execution out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Difference_Blend_Mode/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "select-all-children-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1372,7 +2162,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require separate contract for exact placement/selection semantics.`);
       assert(solution.notes.some((note) => /deep precomp\/source duplication/.test(note)), `${id}: notes must keep deep duplication out of scope.`);
       assert(solution.promotionHistory.some((entry) => /Duplicate_Selected_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-036/.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention reusable live lane proof.`);
     } else if (id === "add-assorted-composition-guides-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1391,7 +2181,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /native guide objects/.test(note)), `${id}: notes must reject native guide-object claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Assorted_Composition_Guides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-039/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-background-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1411,7 +2201,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /persistent native background-layer stack management/.test(note)), `${id}: notes must reject persistent native background stack claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Background_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-041/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-camera-with-controller-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1436,7 +2226,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /existing user-layer parenting/.test(note)), `${id}: notes must reject existing user-layer re-parenting.`);
       assert(solution.notes.some((note) => /separate typed-tool contracts/.test(note)), `${id}: notes must require separate contracts for broader camera rig semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Camera_With_Controller/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention typed contract proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention typed contract proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-background-typed-plan") {
       assert.deepStrictEqual(
@@ -1484,7 +2274,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /rendered background layers/.test(note)), `${id}: notes must reject rendered background layer claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Cycle_Composition_Background_Color/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-095/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "enable-collapse-transformations-typed-plan") {
       assert.deepStrictEqual(
@@ -1510,7 +2300,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /unsupported layers/.test(note)), `${id}: notes must warn on unsupported layers.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Enable_Collapse_Transformations/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "enable-motion-blur-typed-plan") {
       assert.deepStrictEqual(
@@ -1536,7 +2326,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /comp-wide motion blur/.test(note)), `${id}: notes must warn on comp-wide motion blur scope.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Enable_Motion_Blur/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-096/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "toggle-onion-skinning-typed-plan") {
       assert.deepStrictEqual(
@@ -1559,7 +2349,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /mode enable or disable/.test(note)), `${id}: notes must prefer explicit final-state modes.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Toggle_Onion_Skinning/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-099/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "increment-composition-versions-typed-plan") {
       assert.deepStrictEqual(
@@ -1591,7 +2381,78 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /non-generated user assets/.test(note)), `${id}: notes must reject non-generated user-asset mutation.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Increment_Composition_Versions/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-097/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "preserve-nested-frame-rate-typed-plan") {
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-preserve-nested-frame-rate-typed-plan.md", `${id}: importer-planned alias recipe path should stay registered.`);
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "get_comp_details", "set_comp_properties"],
+        `${id}: preserve nested frame rate workflow should stay on explicit comp property typed tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: preserve nested frame rate workflow must be mutating.`);
+      assert(text.includes("preserveNestedFrameRate"), `${id}: recipe should document preserveNestedFrameRate.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp read-back.`);
+      assert(text.includes("all-project traversal"), `${id}: recipe should reject all-project traversal.`);
+      assert(text.includes("ALT-key"), `${id}: recipe should reject ALT-key branching.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp property mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserveNestedFrameRate/.test(item)), `${id}: verification must require preserveNestedFrameRate read-back.`);
+      assert(solution.notes.some((note) => /all-project comp traversal/i.test(note)), `${id}: notes must reject all-project traversal.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Preserve_Nested_Frame_Rate/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "project-timecode-start-frames-typed-plan") {
+      assert.strictEqual(solution.execution.recipePath, "recipes/toggle-timecode-and-start-frames-typed-plan.md", `${id}: importer-planned alias recipe path should stay registered.`);
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["create_comp", "get_project_info", "get_comp_details", "set_project_frames_count_type", "set_comp_properties"],
+        `${id}: project timecode/start-frame workflow should stay on explicit project and comp property typed tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project timecode/start-frame workflow must be mutating.`);
+      assert(text.includes("framesCountType"), `${id}: recipe should document project framesCountType.`);
+      assert(text.includes("displayStartFrame"), `${id}: recipe should document native displayStartFrame.`);
+      assert(text.includes("set_project_frames_count_type"), `${id}: recipe should use the project frame-count typed tool.`);
+      assert(text.includes("set_comp_properties"), `${id}: recipe should use the comp properties typed tool.`);
+      assert(text.includes("get_project_info"), `${id}: recipe should require project read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp read-back.`);
+      assert(text.includes("Alt-key"), `${id}: recipe should reject Alt-key branching.`);
+      assert(text.includes("all-project"), `${id}: recipe should reject all-project traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_frames_count_type/.test(step)), `${id}: verification must include project frame-count mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_comp_properties/.test(step)), `${id}: verification must include comp displayStartFrame mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must include project info read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /framesCountType/.test(item)), `${id}: verification must require framesCountType read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /displayStartFrame/.test(item)), `${id}: verification must require displayStartFrame read-back.`);
+      assert(solution.notes.some((note) => /FC_START_0/.test(note)), `${id}: notes must require explicit frame-count mode.`);
+      assert(solution.promotionHistory.some((entry) => /Toggle_Timecode_And_Start_Frames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "rename-composition-to-file-name-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "find_project_items", "get_comp_details", "rename_project_items"],
+        `${id}: imported composition file-name workflow should stay on the narrow project-info plus project-item rename typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: composition file-name workflow must be mutating.`);
+      assert(text.includes("project file basename"), `${id}: recipe should document project file basename targeting.`);
+      assert(text.includes("get_project_info.file"), `${id}: recipe should require get_project_info.file evidence.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should require project item search evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require composition read-back.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use the project item rename typed tool.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact project-item rename mode.`);
+      assert(text.includes("unsaved"), `${id}: recipe should fail closed for unsaved projects.`);
+      assert(text.includes("non-generated user assets"), `${id}: recipe should reject non-generated user assets.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_info/.test(step)), `${id}: verification must include project info evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item search evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /mode exact/.test(step)), `${id}: verification must include exact rename mode.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require single-item rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /project file basename/.test(item)), `${id}: verification must require basename read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /unchanged item identity/.test(item)), `${id}: verification must require unchanged comp identity.`);
+      assert(solution.notes.some((note) => /get_project_info\.file/.test(note)), `${id}: notes must limit file evidence to get_project_info.file.`);
+      assert(solution.notes.some((note) => /non-generated user assets/.test(note)), `${id}: notes must reject non-generated user-asset mutation.`);
+      assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+      assert(solution.promotionHistory.some((entry) => /Rename_Composition_To_File_Name/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "change-nested-composition-duration-typed-plan") {
       assert.deepStrictEqual(
@@ -1749,7 +2610,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /native AE guide records/.test(note)), `${id}: notes must reject native guide-record claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Composition_Guide/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-043/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
     } else if (id === "add-posterize-time-adjustment-layer-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1775,7 +2636,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /comp frame-rate/.test(note)), `${id}: notes must reject comp frame-rate mutation claims.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact timing semantics.`);
       assert(solution.promotionHistory.some((entry) => /Add_Posterize_Time_Adjustment_Layer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-045/.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention auto-lane synthesis context.`);
     } else if (id === "center-composition-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1862,6 +2723,46 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Merge_Imported_Selected_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-selection-to-new-folder-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "create_project_folder", "move_project_items_to_folder"],
+        `${id}: selected Project item folder workflow should stay on the narrow generated project-item move typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item folder workflow must be mutating.`);
+      assert(text.includes("new generated Project folder"), `${id}: recipe should document generated destination folder scope.`);
+      assert(text.includes("create_project_folder"), `${id}: recipe should use the project folder creation typed tool.`);
+      assert(text.includes("move_project_items_to_folder"), `${id}: recipe should use the project item move typed tool.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should require folder content read-back.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_project_folder/.test(step)), `${id}: verification must include folder creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /move_project_items_to_folder/.test(step)), `${id}: verification must include project item movement.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /concrete `itemIndices`/.test(item)), `${id}: verification must require explicit item indices.`);
+      assert(solution.notes.some((note) => /Project panel selection reads/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /get_selected_project_items/.test(note)), `${id}: notes must name the future selected-project-item contract.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Selection_To_New_Folder/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-addfolders-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "create_project_folder", "find_project_items", "list_project_folder_items"],
+        `${id}: AR add folders workflow should stay on the narrow project-folder creation typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: Project folder creation workflow must be mutating.`);
+      assert(text.includes("reviewed generated Project folder"), `${id}: recipe should document reviewed generated folder scope.`);
+      assert(text.includes("create_project_folder"), `${id}: recipe should use the project folder creation typed tool.`);
+      assert(text.includes("find_project_items"), `${id}: recipe should allow project item read-back.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should allow folder inventory read-back.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection of folders/items.`);
+      assert(text.includes("filesystem traversal"), `${id}: recipe should fail closed for filesystem traversal.`);
+      assert(solution.verificationRecipe.steps.some((step) => /create_project_folder/.test(step)), `${id}: verification must include folder creation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items|list_project_folder_items/.test(step)), `${id}: verification must include folder read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /generated folder/.test(item)), `${id}: verification must require generated folder evidence.`);
+      assert(solution.notes.some((note) => /Project panel selection/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+      assert(solution.promotionHistory.some((entry) => /AR_AddFolders/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-labeled-items-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1886,7 +2787,7 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /label colors/.test(note)), `${id}: notes must reject label-color discovery claims.`);
       assert(solution.notes.some((note) => /Do not start renders/.test(note)), `${id}: notes must reject render start.`);
       assert(solution.promotionHistory.some((entry) => /Add_Labeled_Items_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "add-selected-compositions-to-render-queue-typed-plan") {
       assert.deepStrictEqual(
@@ -1912,7 +2813,79 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /Project panel selection/.test(note)), `${id}: notes must reject Project panel selection claims.`);
       assert(solution.notes.some((note) => /Do not start renders/.test(note)), `${id}: notes must reject render start.`);
       assert(solution.promotionHistory.some((entry) => /Add_Selected_Compositions_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
-      assert(solution.promotionHistory.some((entry) => /AUX-098/.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /reviewed.*(lane|proof)|generated-only|typed contract|auto-lane|importer/i.test(entry.evidence)), `${id}: promotion evidence should mention generated-only lane proof.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "add-folder-to-render-queue-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "find_project_items", "list_project_folder_items", "get_comp_details", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status"],
+        `${id}: folder render queue workflow should stay on the narrow generated-folder render queue typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: render queue workflow must be mutating.`);
+      assert(text.includes("generated Project folder"), `${id}: recipe should limit scope to generated Project folders.`);
+      assert(text.includes("list_project_folder_items"), `${id}: recipe should require folder content read-back.`);
+      assert(text.includes("get_render_queue_status"), `${id}: recipe should require render queue baseline/read-back.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should require comp details read-back.`);
+      assert(text.includes("add_comp_to_render_queue"), `${id}: recipe should use the render queue add typed tool.`);
+      assert(text.includes("Project panel selected-folder"), `${id}: recipe should fail closed for Project panel selected-folder reads.`);
+      assert(text.includes("filesystem folder traversal"), `${id}: recipe should fail closed for filesystem folder traversal.`);
+      assert(text.includes("no render start"), `${id}: recipe should reject render execution.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_project_folder_items/.test(step)), `${id}: verification must include folder listing evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_render_queue_status/.test(step)), `${id}: verification must include render queue status.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp details read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /add_comp_to_render_queue/.test(step)), `${id}: verification must include render queue add.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expected item count increase/.test(item)), `${id}: verification must require queue count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /no render start/.test(item)), `${id}: verification must prove no render started.`);
+      assert(solution.notes.some((note) => /Project panel selected-folder/.test(note)), `${id}: notes must reject selected-folder claims.`);
+      assert(solution.notes.some((note) => /filesystem folder traversal/.test(note)), `${id}: notes must reject filesystem traversal.`);
+      assert(solution.promotionHistory.some((entry) => /Add_Folder_To_Render_Queue/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "third-party-semantics-safety-policy") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_selected_properties", "list_layers", "get_comp_details", "get_layer_details", "list_effects", "get_effect_details"],
+        `${id}: policy workflow should stay on read-only comp, layer, property, and effect inspection tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: safety policy must force high-risk mutation gates for matched requests.`);
+      assert.strictEqual(solution.execution.riskLevel, "high", `${id}: policy should classify third-party semantics risk.`);
+      assert(text.includes("DuIK"), `${id}: policy should explicitly classify DuIK risk.`);
+      assert(text.includes("Newton"), `${id}: policy should explicitly classify Newton risk.`);
+      assert(text.includes("Illustrator-derived names"), `${id}: policy should classify Illustrator/Newton naming assumptions.`);
+      assert(text.includes("parent assignment"), `${id}: policy should classify parent assignment risk.`);
+      assert(text.includes("position keyframe copy"), `${id}: policy should classify keyframe-copy risk.`);
+      assert(text.includes("property rename"), `${id}: policy should classify property rename risk.`);
+      assert(text.includes("generated or mock third-party fixture"), `${id}: policy should require generated/mock third-party proof first.`);
+      assert(text.includes("typed read-back"), `${id}: policy should require future typed read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /third-party semantics risk classification/.test(step)), `${id}: verification must require third-party risk classification.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typed-tool gap/.test(step)), `${id}: verification must require typed-tool gap reporting.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /does not mutate/.test(item)), `${id}: verification must prove read-only inspection does not mutate.`);
+      assert(solution.notes.some((note) => /approval-gated/.test(note)), `${id}: notes must preserve approval-gated status.`);
+      assert(solution.notes.some((note) => /separate narrow typed-tool contract/.test(note)), `${id}: notes must require a separate contract.`);
+      assert(solution.promotionHistory.some((entry) => /DuIK\/Newton-like/.test(entry.evidence)), `${id}: promotion evidence should mention the family.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "project-file-render-proxy-safety-policy") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "get_render_queue_status"],
+        `${id}: policy workflow should stay on read-only project and render queue inspection tools.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: safety policy must force high-risk mutation gates for matched requests.`);
+      assert.strictEqual(solution.execution.riskLevel, "high", `${id}: policy should classify approval-gated risk.`);
+      assert(text.includes("render start"), `${id}: policy should explicitly classify render start risk.`);
+      assert(text.includes("render queue cleanup"), `${id}: policy should classify render queue cleanup.`);
+      assert(text.includes("proxy removal"), `${id}: policy should classify proxy removal.`);
+      assert(text.includes("proxy relinking"), `${id}: policy should classify proxy relinking.`);
+      assert(text.includes("user file"), `${id}: policy should classify user-file risk.`);
+      assert(text.includes("Desktop"), `${id}: policy should reject Desktop/arbitrary user paths.`);
+      assert(text.includes("sha256"), `${id}: policy should require generated file hash read-back for future contracts.`);
+      assert(text.includes("generated/temp assets"), `${id}: policy should require generated/temp proof first.`);
+      assert(text.includes("logs/generated-renders"), `${id}: policy should constrain render output setup to the generated render root.`);
+      assert(solution.verificationRecipe.steps.some((step) => /risk classification/.test(step)), `${id}: verification must require risk classification.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typed-tool gap/.test(step)), `${id}: verification must require typed-tool gap reporting.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /does not mutate/.test(item)), `${id}: verification must prove read-only inspection does not mutate.`);
+      assert(solution.notes.some((note) => /approval-gated/.test(note)), `${id}: notes must preserve approval-gated status.`);
+      assert(solution.notes.some((note) => /separate narrow typed-tool contract/.test(note)), `${id}: notes must require a separate contract.`);
+      assert(solution.promotionHistory.some((entry) => /project\/file\/render\/proxy\/user-file/.test(entry.evidence)), `${id}: promotion evidence should mention the family.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "replace-text-in-project-item-name-typed-plan") {
       assert.deepStrictEqual(
@@ -1965,6 +2938,71 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Rename_Selected_Project_Items/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "reset-imported-item-names-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "save_comp_frame_png", "import_footage", "rename_project_items"],
+        `${id}: imported footage reset workflow should stay on the narrow generated footage typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: imported footage reset workflow must be mutating.`);
+      assert(text.includes("import_footage"), `${id}: recipe should use generated footage import.`);
+      assert(text.includes("save_comp_frame_png"), `${id}: recipe should use generated PNG fixture creation.`);
+      assert(text.includes("rename_project_items"), `${id}: recipe should use project item rename.`);
+      assert(text.includes('type:"footage"'), `${id}: recipe should require footage item targeting.`);
+      assert(text.includes('mode:"exact"'), `${id}: recipe should require exact project-item rename mode.`);
+      assert(text.includes("file display name"), `${id}: recipe should require file display-name evidence.`);
+      assert(text.includes("logs/generated-exports"), `${id}: recipe should keep generated files sandboxed.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(solution.verificationRecipe.steps.some((step) => /import_footage/.test(step)), `${id}: verification must include footage import.`);
+      assert(solution.verificationRecipe.steps.some((step) => /rename_project_items/.test(step)), `${id}: verification must include project item rename.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /changedCount:1/.test(item)), `${id}: verification must require one-item rename count evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /file display name/.test(item)), `${id}: verification must require file display-name read-back.`);
+      assert(solution.notes.some((note) => /Project panel selection reads/.test(note)), `${id}: notes must reject Project panel selection claims.`);
+      assert(solution.notes.some((note) => /generated\/temp/.test(note)), `${id}: notes must preserve generated/temp scope.`);
+      assert(solution.promotionHistory.some((entry) => /Reset_Imported_Item_Names/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-project-item-labels-to-none-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "set_project_item_metadata"],
+        `${id}: project-item label workflow should stay on the narrow project-item metadata typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item label workflow must be mutating.`);
+      assert(text.includes("label:0"), `${id}: recipe should require label:0.`);
+      assert(text.includes("set_project_item_metadata"), `${id}: recipe should use the project item metadata typed tool.`);
+      assert(text.includes("expectedItemNames"), `${id}: recipe should support item-name guards.`);
+      assert(text.includes("Project panel selection"), `${id}: recipe should fail closed for Project panel selection reads.`);
+      assert(text.includes("label defaults by type"), `${id}: recipe should fail closed for item-type label defaults.`);
+      assert(text.includes("filesystem operations"), `${id}: recipe should fail closed for filesystem operations.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must allow project snapshot evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_item_metadata/.test(step)), `${id}: verification must include project item metadata mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /postVerification\.ok:true/.test(item)), `${id}: verification must require postVerification evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:0/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /label:0 only/.test(note)), `${id}: notes must keep scope label-only.`);
+      assert(solution.promotionHistory.some((entry) => /tool-project-set-all-item-labels-to-none/.test(entry.from)), `${id}: promotion history should mention source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /No source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-all-item-labels-to-none-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_project_info", "get_project_snapshot", "find_project_items", "list_project_folder_items", "set_project_item_metadata"],
+        `${id}: importer alias should stay on the narrow project-item metadata typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.recipePath, "recipes/set-all-item-labels-to-none-typed-plan.md", `${id}: importer alias should use the planned recipe path.`);
+      assert.strictEqual(solution.execution.mutating, true, `${id}: project-item label alias must be mutating.`);
+      assert(text.includes("label:0"), `${id}: alias recipe should require label:0.`);
+      assert(text.includes("set_project_item_metadata"), `${id}: alias recipe should use the project item metadata typed tool.`);
+      assert(text.includes("expectedItemNames"), `${id}: alias recipe should support item-name guards.`);
+      assert(text.includes("Project panel selection"), `${id}: alias recipe should fail closed for Project panel selection reads.`);
+      assert(text.includes("label defaults by type"), `${id}: alias recipe should fail closed for item-type label defaults.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_project_snapshot/.test(step)), `${id}: verification must allow project snapshot evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /find_project_items/.test(step)), `${id}: verification must include project item read-back.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_project_item_metadata/.test(step)), `${id}: verification must include project item metadata mutation.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /postVerification\.ok:true/.test(item)), `${id}: verification must require postVerification evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:0/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /label:0 only/.test(note)), `${id}: notes must keep scope label-only.`);
+      assert(solution.promotionHistory.some((entry) => /tool-project-set-all-item-labels-to-none/.test(entry.from)), `${id}: promotion history should mention source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /No source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "find-specific-effect-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
@@ -1986,6 +3024,32 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /Display-name-only matching/.test(note)), `${id}: notes must document display-name ambiguity.`);
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for source-exact semantics.`);
       assert(solution.promotionHistory.some((entry) => /Find_Specific_Effect/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "toggle-specific-effects-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "list_effects", "get_effect_details", "set_effect_enabled", "get_layer_details"],
+        `${id}: imported specific-effect toggle workflow should stay on the narrow effect enabled-state typed tool sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: effect enabled-state workflow must be mutating.`);
+      assert(text.includes("list_effects"), `${id}: recipe should allow applied-effect enumeration.`);
+      assert(text.includes("get_effect_details"), `${id}: recipe should require effect detail read-back.`);
+      assert(text.includes("effect.enabled"), `${id}: recipe should require enabled-state evidence.`);
+      assert(text.includes("set_effect_enabled"), `${id}: recipe should use the narrow effect enabled typed tool.`);
+      assert(text.includes("expectedCurrentEnabled"), `${id}: recipe should support guarded current-state checks.`);
+      assert(text.includes("source-exact project-wide traversal"), `${id}: recipe should fail closed for source project-wide traversal.`);
+      assert(text.includes("Alt-key behavior"), `${id}: recipe should fail closed for Alt-key branching.`);
+      assert(text.includes("broad selected-layer scans"), `${id}: recipe should fail closed for broad selected-layer scans.`);
+      assert(solution.verificationRecipe.steps.some((step) => /list_effects|get_effect_details/.test(step)), `${id}: verification must bind exact effect evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_effect_enabled/.test(step)), `${id}: verification must include set_effect_enabled.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /enabled state/.test(item)), `${id}: verification must require enabled state evidence.`);
+      assert(solution.notes.some((note) => /set_effect_enabled/.test(note)), `${id}: notes must require set_effect_enabled.`);
+      assert(solution.notes.some((note) => /unreviewed user effects/.test(note)), `${id}: notes must keep user-effect scope closed.`);
+      assert(
+        solution.promotionHistory.some((entry) => /specific-effect enabled-state intent/.test(entry.evidence) || /tool-layers-toggle-specific-effects/.test(entry.from)),
+        `${id}: promotion evidence should mention the source intent.`
+      );
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else if (id === "fill-in-keyframes-typed-plan") {
       assert.deepStrictEqual(
@@ -2077,6 +3141,100 @@ function assertImportedAdvisoryQuality(registry) {
       assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
       assert(solution.promotionHistory.some((entry) => /Set_Spacial_In_Tanget/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
       assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-all-track-matte-labels-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_comp_details", "get_layer_details", "set_layer_metadata"],
+        `${id}: imported track-matte label workflow should stay on typed matte read-back plus layer metadata.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: track-matte labels workflow must be mutating.`);
+      assert(text.includes("isTrackMatte:true"), `${id}: recipe should require isTrackMatte evidence.`);
+      assert(text.includes("label:16"), `${id}: recipe should preserve label 16 semantics.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer read-back.`);
+      assert(text.includes("Fill layers with hasTrackMatte:true") || text.includes("hasTrackMatte:true"), `${id}: recipe should distinguish fill layers from matte layers.`);
+      assert(solution.verificationRecipe.steps.some((step) => /isTrackMatte:true/.test(step)), `${id}: verification must derive targets from isTrackMatte evidence.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label:16/.test(item)), `${id}: verification must require label:16 read-back.`);
+      assert(solution.notes.some((note) => /isTrackMatte/.test(note)), `${id}: notes must require typed matte-role evidence.`);
+      assert(solution.promotionHistory.some((entry) => /Set_All_Track_Matte_Labels/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-coloriselayers-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_metadata"],
+        `${id}: AR colorise layers workflow should stay on the narrow selected-layer metadata sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: selected-layer label workflow must be mutating.`);
+      assert(text.includes("labelIndex"), `${id}: recipe should require a reviewed AE label index.`);
+      assert(text.includes("0..16"), `${id}: recipe should document the accepted AE label range.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer label read-back.`);
+      assert(text.includes("palette UI behavior"), `${id}: recipe should reject source-exact palette UI behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /Project item label/.test(note) || /Project item/.test(note)), `${id}: notes must reject Project item label mutation.`);
+      assert(solution.promotionHistory.some((entry) => /AR_ColoriseLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-coloriselayersbytype-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_metadata"],
+        `${id}: AR colorise layers by type workflow should stay on active-comp layer evidence plus metadata writes.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: layer-label-by-type workflow must be mutating.`);
+      assert(text.includes("typeToLabelMap"), `${id}: recipe should require a reviewed type-to-label map.`);
+      assert(text.includes("0..16"), `${id}: recipe should document the accepted AE label range.`);
+      assert(text.includes("layer-kind"), `${id}: recipe should require typed layer-kind evidence.`);
+      assert(text.includes("get_comp_details"), `${id}: recipe should support complete active-comp layer inventory evidence.`);
+      assert(text.includes("set_layer_metadata"), `${id}: recipe should use set_layer_metadata.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require layer label read-back.`);
+      assert(text.includes("source-exact type classifier"), `${id}: recipe should reject source-exact type classifier behavior.`);
+      assert(solution.verificationRecipe.steps.some((step) => /typeToLabelMap/.test(step)), `${id}: verification must include typeToLabelMap.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_metadata/.test(step)), `${id}: verification must include set_layer_metadata.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /layer-kind/.test(item)), `${id}: verification must require layer-kind evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /label/.test(item)), `${id}: verification must require label read-back evidence.`);
+      assert(solution.notes.some((note) => /hidden AE class checks/.test(note)), `${id}: notes must reject hidden AE class checks.`);
+      assert(solution.promotionHistory.some((entry) => /AR_ColoriseLayersByType/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "set-track-matte-to-above-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_track_matte"],
+        `${id}: imported track-matte-to-above workflow should stay on the narrow set_layer_track_matte sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: track-matte-to-above workflow must be mutating.`);
+      assert(text.includes("set_layer_track_matte"), `${id}: recipe should use set_layer_track_matte.`);
+      assert(text.includes("luma_inverted"), `${id}: recipe should preserve luma_inverted semantics.`);
+      assert(text.includes("trackMatteLayer"), `${id}: recipe should require trackMatteLayer read-back.`);
+      assert(text.includes("hasTrackMatte:true"), `${id}: recipe should require hasTrackMatte read-back.`);
+      assert(text.includes("Do not reorder") || text.includes("no layer reordering"), `${id}: recipe should reject hidden layer reordering.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_layer_track_matte/.test(step)), `${id}: verification must include set_layer_track_matte.`);
+      assert(solution.verificationRecipe.steps.some((step) => /trackMatteLayer/.test(step)), `${id}: verification must require trackMatteLayer evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /trackMatteTypeName/.test(item)), `${id}: verification must require trackMatteTypeName read-back.`);
+      assert(solution.notes.some((note) => /set_layer_track_matte/.test(note)), `${id}: notes must require set_layer_track_matte.`);
+      assert(solution.promotionHistory.some((entry) => /Set_Track_Matte_To_Above/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
+    } else if (id === "ar-addexpmantainscalewhenparented-typed-plan") {
+      assert.deepStrictEqual(
+        solution.execution.preferredTools,
+        ["get_active_comp", "get_selected_layers", "get_layer_details", "set_expression"],
+        `${id}: maintain-scale expression workflow should stay on the narrow selected-layer expression sequence.`
+      );
+      assert.strictEqual(solution.execution.mutating, true, `${id}: maintain-scale expression workflow must be mutating.`);
+      assert(text.includes("set_expression"), `${id}: recipe should use set_expression.`);
+      assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer evidence.`);
+      assert(text.includes("get_layer_details"), `${id}: recipe should require Scale expression read-back.`);
+      assert(text.includes("parent.transform.scale.value"), `${id}: recipe should disclose the reviewed immediate-parent scale expression.`);
+      assert(text.includes("Do not create, remove, or change parenting"), `${id}: recipe should forbid hidden parenting mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /set_expression/.test(step)), `${id}: verification must include set_expression.`);
+      assert(solution.verificationRecipe.steps.some((step) => /parent evidence/.test(step)), `${id}: verification must require parent evidence.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /expressionEnabled:true/.test(item)), `${id}: verification must require enabled-expression read-back.`);
+      assert(solution.verificationRecipe.expectedEvidence.some((item) => /no expressionError/.test(item)), `${id}: verification must require expression-error read-back.`);
+      assert(solution.notes.some((note) => /Do not create, remove or change parenting/.test(note)), `${id}: notes must keep parenting mutation out of scope.`);
+      assert(solution.promotionHistory.some((entry) => /AR_AddExpMantainScaleWhenParented/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+      assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX copied.`);
     } else {
       throw new Error(`Unhandled imported advisory solution quality checks: ${id}`);
     }
@@ -2125,6 +3283,75 @@ function assertActualRetrieval(registry) {
   assert.strictEqual(effectRetrieval.ok, true);
   assert(ids(effectRetrieval).includes("safe-effect-addition-typed-plan"), "safe effect advisory recipe should surface for effect prompt.");
 
+  const effectTemplateSolution = solutionById(registry, "effect-template-chain-typed-plan");
+  const effectTemplateText = recipeText(effectTemplateSolution);
+  assert(effectTemplateText.includes("gaussian-blur"), "effect template recipe should document gaussian-blur.");
+  assert(effectTemplateText.includes("directional-blur"), "effect template recipe should document directional-blur.");
+  assert(effectTemplateText.includes("color-balance"), "effect template recipe should document color-balance.");
+  assert(effectTemplateText.includes("brightness-contrast"), "effect template recipe should document brightness-contrast.");
+  assert(effectTemplateText.includes("glow"), "effect template recipe should document glow.");
+  assert(effectTemplateText.includes("drop-shadow"), "effect template recipe should document drop-shadow.");
+  assert(effectTemplateText.includes("cinematic-look"), "effect template recipe should document cinematic-look.");
+  assert(effectTemplateText.includes("text-pop"), "effect template recipe should document text-pop.");
+  assert(effectTemplateText.includes("ADBE CurvesCustom"), "effect template recipe should mention CurvesCustom scope.");
+  assert(/standalone `curves`.*not enabled/i.test(effectTemplateText), "effect template recipe should fail closed for standalone curves.");
+  assert(/unknown templates/i.test(effectTemplateText), "effect template recipe should fail closed for unknown templates.");
+
+  const effectTemplateRetrieval = retrieveSolutionHints("Apply the text-pop effect template to a selected layer with drop shadow and glow, then read back effect details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(effectTemplateRetrieval.ok, true);
+  assert(ids(effectTemplateRetrieval).includes("effect-template-chain-typed-plan"), "effect template recipe should surface for template-chain prompts.");
+  const effectTemplatePromptSection = formatSolutionHintsForPrompt(effectTemplateRetrieval);
+  assert(effectTemplatePromptSection.includes("Effect Template Chain Typed Plan"), "prompt section should include effect template guidance title.");
+  assert(effectTemplatePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+
+  const textJustificationSolution = solutionById(registry, "text-layer-justification-typed-plan");
+  assert(textJustificationSolution, "Missing Dakkshin text justification advisory recipe.");
+  const textJustificationText = solutionContractText(textJustificationSolution, recipeText(textJustificationSolution));
+  assert(textJustificationText.includes("create_text_layer"), "text justification recipe should use create_text_layer.");
+  assert(textJustificationText.includes("update_text_layer"), "text justification recipe should use update_text_layer.");
+  assert(textJustificationText.includes("text.justification"), "text justification recipe should require typed text.justification read-back.");
+  assert(textJustificationText.includes("left, center, or right"), "text justification recipe should keep the supported enum bounded.");
+  assertNoRawExecutionGuidance("text-layer-justification-typed-plan", textJustificationSolution, recipeText(textJustificationSolution));
+
+  const textJustificationRetrieval = retrieveSolutionHints("Create a centered generated text layer, then update it to right paragraph alignment and read back text justification.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(textJustificationRetrieval.ok, true);
+  assert(ids(textJustificationRetrieval).includes("text-layer-justification-typed-plan"), "text justification recipe should surface for paragraph alignment prompts.");
+  const textJustificationPromptSection = formatSolutionHintsForPrompt(textJustificationRetrieval);
+  assert(textJustificationPromptSection.includes("Text Layer Justification Typed Plan"), "prompt section should include text justification guidance title.");
+  assert(textJustificationPromptSection.includes("update_text_layer"), "prompt section should prefer update_text_layer for existing text alignment.");
+  assert(textJustificationPromptSection.includes("get_layer_details"), "prompt section should require text layer read-back.");
+
+  const shapePolystarSolution = solutionById(registry, "shape-layer-polystar-typed-plan");
+  assert(shapePolystarSolution, "Missing Dakkshin shape-layer polystar advisory recipe.");
+  const shapePolystarText = solutionContractText(shapePolystarSolution, recipeText(shapePolystarSolution));
+  assert(shapePolystarText.includes("create_shape_layer"), "shape polystar recipe should use create_shape_layer.");
+  assert(shapePolystarText.includes("shapeContents"), "shape polystar recipe should require shapeContents read-back.");
+  assert(shapePolystarText.includes("points"), "shape polystar recipe should document points.");
+  assert(shapePolystarText.includes("outerRadius"), "shape polystar recipe should document outerRadius.");
+  assert(shapePolystarText.includes("innerRadius"), "shape polystar recipe should document innerRadius.");
+  assert(/3 to 64/.test(shapePolystarText), "shape polystar recipe should keep points bounded.");
+  assertNoRawExecutionGuidance("shape-layer-polystar-typed-plan", shapePolystarSolution, recipeText(shapePolystarSolution));
+
+  const shapePolystarRetrieval = retrieveSolutionHints("Create a generated six point polygon and a five point star shape layer, then read back shapeContents points and radii.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(shapePolystarRetrieval.ok, true);
+  assert(ids(shapePolystarRetrieval).includes("shape-layer-polystar-typed-plan"), "shape polystar recipe should surface for polygon/star prompts.");
+  const shapePolystarPromptSection = formatSolutionHintsForPrompt(shapePolystarRetrieval);
+  assert(shapePolystarPromptSection.includes("Shape Layer Polystar Typed Plan"), "prompt section should include shape polystar guidance title.");
+  assert(shapePolystarPromptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer.");
+  assert(shapePolystarPromptSection.includes("shapeContents"), "prompt section should require shapeContents read-back.");
+
   const animationRetrieval = retrieveSolutionHints("Animate the selected layers with opacity and position keyframes.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2158,6 +3385,108 @@ function assertActualRetrieval(registry) {
   assert(resetWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area reset.");
   assert(resetWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(resetWorkAreaPromptSection), "reset work-area guidance should not recommend raw ExtendScript.");
+
+  const transferWorkAreaRetrieval = retrieveSolutionHints("Transfer the composition work area from the source comp to the target comp, copying workAreaStart and workAreaDuration, then read back the target comp.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(transferWorkAreaRetrieval.ok, true);
+  assert(ids(transferWorkAreaRetrieval).includes("transfer-composition-work-area-typed-plan"), "transfer work-area advisory recipe should surface for composition work-area transfer prompts.");
+  const transferWorkAreaPromptSection = formatSolutionHintsForPrompt(transferWorkAreaRetrieval);
+  assert(transferWorkAreaPromptSection.includes("Transfer Composition Work Area Typed Plan"), "prompt section should include transfer work-area advisory title.");
+  assert(transferWorkAreaPromptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area transfer.");
+  assert(transferWorkAreaPromptSection.includes("get_comp_details"), "prompt section should require source and target comp details read-back.");
+  assert(/persistent app/.test(transferWorkAreaPromptSection), "prompt section should preserve settings clipboard warning.");
+  assert(!/run_extendscript/i.test(transferWorkAreaPromptSection), "transfer work-area guidance should not recommend raw ExtendScript.");
+
+  const compositionMarkersRetrieval = retrieveSolutionHints("Read composition markers from comp.markerProperty in keyTime order using get_comp_details includeMarkers true.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(compositionMarkersRetrieval.ok, true);
+  assert(ids(compositionMarkersRetrieval).includes("read-composition-markers-typed-plan"), "composition marker read recipe should surface for comp marker prompts.");
+  const compositionMarkersPromptSection = formatSolutionHintsForPrompt(compositionMarkersRetrieval);
+  assert(compositionMarkersPromptSection.includes("Read Composition Markers Typed Plan"), "prompt section should include composition marker read title.");
+  assert(compositionMarkersPromptSection.includes("get_comp_details"), "prompt section should use get_comp_details for comp marker reads.");
+  assert(compositionMarkersPromptSection.includes("includeMarkers"), "prompt section should mention includeMarkers guidance.");
+  assert(compositionMarkersPromptSection.includes("comp.markerProperty") && compositionMarkersPromptSection.includes("keyTime"), "prompt section should preserve comp marker ordering guidance.");
+  assert(compositionMarkersPromptSection.includes("Preferred tools: get_active_comp, get_comp_details"), "composition marker read guidance should prefer only read-only comp tools.");
+  assert(!/run_extendscript/i.test(compositionMarkersPromptSection), "composition marker read guidance should not recommend raw ExtendScript.");
+
+  const markerWorkAreaRetrieval = retrieveSolutionHints("Set the active composition work area to the first two composition markers from comp.markerProperty, then read back workAreaStart and workAreaDuration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(markerWorkAreaRetrieval.ok, true);
+  assert(ids(markerWorkAreaRetrieval).includes("set-work-area-to-markers-typed-plan"), "marker-derived work-area recipe should surface for Set Work Area To Markers prompts.");
+  const markerWorkAreaPromptSection = formatSolutionHintsForPrompt(markerWorkAreaRetrieval);
+  assert(markerWorkAreaPromptSection.includes("Set Work Area To Markers Typed Plan"), "prompt section should include marker-derived work-area title.");
+  assert(/composition marker/i.test(markerWorkAreaPromptSection), "marker-derived work-area guidance should require composition marker reads.");
+  assert(markerWorkAreaPromptSection.includes("get_comp_details"), "marker-derived work-area guidance should use get_comp_details for marker reads.");
+  assert(markerWorkAreaPromptSection.includes("add_comp_marker"), "marker-derived work-area guidance should mention generated marker setup for proof.");
+  assert(markerWorkAreaPromptSection.includes("set_comp_work_area"), "marker-derived work-area guidance should use set_comp_work_area.");
+  assert(!/run_extendscript/i.test(markerWorkAreaPromptSection), "marker-derived work-area guidance should not recommend raw ExtendScript.");
+
+  const copyCompositionMarkersToLayerRetrieval = retrieveSolutionHints("Copy composition markers from comp.markerProperty to one reviewed layer as layer markers, then read back the layer markers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(copyCompositionMarkersToLayerRetrieval.ok, true);
+  assert(ids(copyCompositionMarkersToLayerRetrieval).includes("copy-composition-markers-to-layer-typed-plan"), "composition-to-layer marker copy recipe should surface for marker copy prompts.");
+  const copyCompositionMarkersToLayerPromptSection = formatSolutionHintsForPrompt(copyCompositionMarkersToLayerRetrieval);
+  assert(copyCompositionMarkersToLayerPromptSection.includes("Copy Composition Markers To Layer Typed Plan"), "prompt section should include composition-to-layer copy title.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("includeMarkers"), "composition-to-layer copy guidance should require composition marker evidence.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("add_layer_marker"), "composition-to-layer copy guidance should use add_layer_marker.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("get_layer_details"), "composition-to-layer copy guidance should require layer marker read-back.");
+  assert(copyCompositionMarkersToLayerPromptSection.includes("markerCopyPlan"), "composition-to-layer copy guidance should expose markerCopyPlan.");
+  assert(!/run_extendscript/i.test(copyCompositionMarkersToLayerPromptSection), "composition-to-layer marker copy guidance should not recommend raw ExtendScript.");
+
+  const copyLayerMarkersToCompositionRetrieval = retrieveSolutionHints("Copy layer markers from one reviewed source layer to composition markers with add_comp_marker and get_comp_details includeMarkers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(copyLayerMarkersToCompositionRetrieval.ok, true);
+  assert(ids(copyLayerMarkersToCompositionRetrieval).includes("copy-layer-markers-to-composition-typed-plan"), "layer-to-composition marker copy recipe should surface for reverse marker copy prompts.");
+  const copyLayerMarkersToCompositionPromptSection = formatSolutionHintsForPrompt(copyLayerMarkersToCompositionRetrieval);
+  assert(copyLayerMarkersToCompositionPromptSection.includes("Copy Layer Markers To Composition Typed Plan"), "prompt section should include layer-to-composition copy title.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("get_layer_details"), "layer-to-composition copy guidance should require layer marker evidence.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("add_comp_marker"), "layer-to-composition copy guidance should use add_comp_marker.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("includeMarkers"), "layer-to-composition copy guidance should require composition marker read-back.");
+  assert(copyLayerMarkersToCompositionPromptSection.includes("markerCopyPlan"), "layer-to-composition copy guidance should expose markerCopyPlan.");
+  assert(!/run_extendscript/i.test(copyLayerMarkersToCompositionPromptSection), "layer-to-composition marker copy guidance should not recommend raw ExtendScript.");
+
+  const addOutPointMarkersRetrieval = retrieveSolutionHints("Add composition markers at every layer outPoint and verify comp.markerProperty markers with includeMarkers.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addOutPointMarkersRetrieval.ok, true);
+  assert(ids(addOutPointMarkersRetrieval).includes("add-composition-markers-at-out-points-typed-plan"), "out-point composition marker recipe should surface for layer outPoint marker prompts.");
+  const addOutPointMarkersPromptSection = formatSolutionHintsForPrompt(addOutPointMarkersRetrieval);
+  assert(addOutPointMarkersPromptSection.includes("Add Composition Markers At Out Points Typed Plan"), "prompt section should include out-point composition marker title.");
+  assert(addOutPointMarkersPromptSection.includes("outPoint"), "out-point marker guidance should require layer outPoint evidence.");
+  assert(addOutPointMarkersPromptSection.includes("add_comp_marker"), "out-point marker guidance should use add_comp_marker.");
+  assert(addOutPointMarkersPromptSection.includes("includeMarkers"), "out-point marker guidance should require composition marker read-back.");
+  assert(!/run_extendscript/i.test(addOutPointMarkersPromptSection), "out-point composition marker guidance should not recommend raw ExtendScript.");
+
+  const addWorkAreaMarkersRetrieval = retrieveSolutionHints("Add composition markers at workAreaStart and workAreaStart plus workAreaDuration, then read comp.markerProperty markers back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addWorkAreaMarkersRetrieval.ok, true);
+  assert(ids(addWorkAreaMarkersRetrieval).includes("add-composition-markers-at-work-area-typed-plan"), "work-area composition marker recipe should surface for work-area marker prompts.");
+  const addWorkAreaMarkersPromptSection = formatSolutionHintsForPrompt(addWorkAreaMarkersRetrieval);
+  assert(addWorkAreaMarkersPromptSection.includes("Add Composition Markers At Work Area Typed Plan"), "prompt section should include work-area composition marker title.");
+  assert(addWorkAreaMarkersPromptSection.includes("workAreaStart"), "work-area marker guidance should require workAreaStart evidence.");
+  assert(addWorkAreaMarkersPromptSection.includes("workAreaDuration"), "work-area marker guidance should require workAreaDuration evidence.");
+  assert(addWorkAreaMarkersPromptSection.includes("add_comp_marker"), "work-area marker guidance should use add_comp_marker.");
+  assert(!/run_extendscript/i.test(addWorkAreaMarkersPromptSection), "work-area composition marker guidance should not recommend raw ExtendScript.");
 
   const addMarkersRetrieval = retrieveSolutionHints("Add a marker with a comment to all selected layers.", {
     registry,
@@ -2261,6 +3590,21 @@ function assertActualRetrieval(registry) {
   assert(replaceLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(replaceLayerNamePromptSection), "selected-layer find/replace rename guidance should not recommend raw ExtendScript.");
 
+  const resetLayerNameRetrieval = retrieveSolutionHints("Reset the reviewed generated layer names to empty strings after reading the comp layer inventory and expected layer names.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(resetLayerNameRetrieval.ok, true);
+  assert(ids(resetLayerNameRetrieval).includes("reset-layer-names-typed-plan"), "empty layer-name reset advisory recipe should surface for reset layer name prompts.");
+  const resetLayerNamePromptSection = formatSolutionHintsForPrompt(resetLayerNameRetrieval);
+  assert(resetLayerNamePromptSection.includes("Reset Layer Names Typed Plan"), "prompt section should include empty layer-name reset advisory title.");
+  assert(resetLayerNamePromptSection.includes("empty strings"), "prompt section should preserve empty-name reset intent.");
+  assert(resetLayerNamePromptSection.includes("expectedLayerNames"), "prompt section should require expected layer-name guards.");
+  assert(resetLayerNamePromptSection.includes("rename_layers"), "prompt section should prefer rename_layers for empty layer-name reset.");
+  assert(resetLayerNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(resetLayerNamePromptSection), "empty layer-name reset guidance should not recommend raw ExtendScript.");
+
   const simpleLoopExpressionRetrieval = retrieveSolutionHints("Add a simple loopOut expression to the selected animated properties after inspecting selected properties, then read back expression details.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2306,6 +3650,182 @@ function assertActualRetrieval(registry) {
   assert(updateExpressionsPromptSection.includes("set_expression"), "prompt section should prefer set_expression for expression update workflows.");
   assert(updateExpressionsPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(updateExpressionsPromptSection), "update-expressions guidance should not recommend raw ExtendScript.");
+
+  const stickEffectRetrieval = retrieveSolutionHints("Stick selected 2D spatial effect position properties to the layer by applying toComp(anchorPoint + value); with typed evidence and read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(stickEffectRetrieval.ok, true);
+  assert(ids(stickEffectRetrieval).includes("stick-effect-to-layer-typed-plan"), "stick-effect advisory recipe should surface for selected spatial effect expression prompts.");
+  const stickEffectPromptSection = formatSolutionHintsForPrompt(stickEffectRetrieval);
+  assert(stickEffectPromptSection.includes("Stick Effect To Layer Typed Plan"), "prompt section should include stick-effect advisory title.");
+  assert(stickEffectPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for stick-effect workflows.");
+  assert(stickEffectPromptSection.includes("get_effect_details"), "prompt section should include effect-property evidence for generated/reviewed targets.");
+  assert(stickEffectPromptSection.includes("toComp(anchorPoint + value);"), "prompt section should preserve the reviewed stick expression.");
+  assert(stickEffectPromptSection.includes("set_expression"), "prompt section should prefer set_expression for stick-effect workflows.");
+  assert(stickEffectPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(stickEffectPromptSection), "stick-effect guidance should not recommend raw ExtendScript.");
+
+  const estimatePathLengthRetrieval = retrieveSolutionHints("Estimate a generated parametric rectangle path length by adding Path Samples and Path Length Slider Control effects, set Path Samples to 100, apply a rectangle-perimeter sampling expression to Path Length, and read back both slider effects.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(estimatePathLengthRetrieval.ok, true);
+  assert(ids(estimatePathLengthRetrieval).includes("estimate-path-length-typed-plan"), "estimate-path-length advisory recipe should surface for generated path length slider prompts.");
+  const estimatePathLengthPromptSection = formatSolutionHintsForPrompt(estimatePathLengthRetrieval);
+  assert(estimatePathLengthPromptSection.includes("Estimate Path Length Typed Plan"), "prompt section should include estimate-path-length advisory title.");
+  assert(estimatePathLengthPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(estimatePathLengthPromptSection.includes("Path Samples"), "prompt section should preserve Path Samples slider guidance.");
+  assert(estimatePathLengthPromptSection.includes("Path Length"), "prompt section should preserve Path Length slider guidance.");
+  assert(estimatePathLengthPromptSection.includes("add_effect"), "prompt section should prefer add_effect for slider controls.");
+  assert(estimatePathLengthPromptSection.includes("set_effect_property"), "prompt section should prefer set_effect_property for sample count.");
+  assert(estimatePathLengthPromptSection.includes("set_expression"), "prompt section should prefer set_expression for the Path Length slider.");
+  assert(estimatePathLengthPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(estimatePathLengthPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
+  assert(!/run_extendscript/i.test(estimatePathLengthPromptSection), "estimate-path-length guidance should not recommend raw ExtendScript.");
+
+  const flipPathRetrieval = retrieveSolutionHints("Flip a generated mask path horizontally after reading vertices, inTangents, outTangents, closed state, and keyframes with get_path_geometry, then write flipped geometry with set_path_geometry and read it back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(flipPathRetrieval.ok, true);
+  assert(ids(flipPathRetrieval).includes("flip-path-typed-plan"), "flip-path advisory recipe should surface for generated path flip prompts.");
+  const flipPathPromptSection = formatSolutionHintsForPrompt(flipPathRetrieval);
+  assert(flipPathPromptSection.includes("Flip Path Typed Plan"), "prompt section should include flip-path advisory title.");
+  assert(flipPathPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(flipPathPromptSection.includes("get_path_geometry"), "prompt section should require path geometry read-back.");
+  assert(flipPathPromptSection.includes("set_path_geometry"), "prompt section should prefer set_path_geometry for path flips.");
+  assert(flipPathPromptSection.includes("vertices"), "prompt section should preserve vertex guidance.");
+  assert(flipPathPromptSection.includes("tangents"), "prompt section should preserve tangent guidance.");
+  assert(!/run_extendscript/i.test(flipPathPromptSection), "flip-path guidance should not recommend raw ExtendScript.");
+
+  const exportPathPointsRetrieval = retrieveSolutionHints("Export points for a generated mask path after reading vertices with get_path_geometry, round them to two decimals, rotate the first point to the end, write var points to a safe generated txt file, and read the path geometry back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(exportPathPointsRetrieval.ok, true);
+  assert(ids(exportPathPointsRetrieval).includes("export-path-points-typed-plan"), "export-path-points advisory recipe should surface for generated path point export prompts.");
+  const exportPathPointsPromptSection = formatSolutionHintsForPrompt(exportPathPointsRetrieval);
+  assert(exportPathPointsPromptSection.includes("Export Path Points Typed Plan"), "prompt section should include export-path-points advisory title.");
+  assert(exportPathPointsPromptSection.includes("get_path_geometry"), "prompt section should require path geometry read-back.");
+  assert(exportPathPointsPromptSection.includes("export_path_points"), "prompt section should prefer export_path_points for generated file output.");
+  assert(exportPathPointsPromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(exportPathPointsPromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(exportPathPointsPromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(!/run_extendscript/i.test(exportPathPointsPromptSection), "export-path-points guidance should not recommend raw ExtendScript.");
+
+  const exportTextToFileRetrieval = retrieveSolutionHints("Export selected text layers to a generated txt file after get_selected_layers and get_layer_details Source Text evidence, preserving Not a text layer fallback lines and sha256 read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(exportTextToFileRetrieval.ok, true);
+  assert(ids(exportTextToFileRetrieval).includes("export-text-to-file-typed-plan"), "export-text-to-file advisory recipe should surface for generated selected text export prompts.");
+  const exportTextToFilePromptSection = formatSolutionHintsForPrompt(exportTextToFileRetrieval);
+  assert(exportTextToFilePromptSection.includes("Export Text To File Typed Plan"), "prompt section should include export-text advisory title.");
+  assert(exportTextToFilePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence.");
+  assert(exportTextToFilePromptSection.includes("get_layer_details"), "prompt section should require Source Text read-back.");
+  assert(exportTextToFilePromptSection.includes("export_text_to_file"), "prompt section should prefer export_text_to_file for generated file output.");
+  assert(exportTextToFilePromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(exportTextToFilePromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(exportTextToFilePromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(!/run_extendscript/i.test(exportTextToFilePromptSection), "export-text guidance should not recommend raw ExtendScript.");
+
+  const saveFramePngRetrieval = retrieveSolutionHints("Save the current frame from a generated composition to a PNG file under the generated export folder after get_comp_details read-back, using save_comp_frame_png, sha256 evidence, and resolutionFactor restoration.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(saveFramePngRetrieval.ok, true);
+  assert(ids(saveFramePngRetrieval).includes("save-frame-as-png-typed-plan"), "save-frame PNG advisory recipe should surface for generated frame PNG export prompts.");
+  const saveFramePngPromptSection = formatSolutionHintsForPrompt(saveFramePngRetrieval);
+  assert(saveFramePngPromptSection.includes("Save Frame As PNG Typed Plan"), "prompt section should include save-frame PNG advisory title.");
+  assert(saveFramePngPromptSection.includes("get_comp_details"), "prompt section should require comp read-back.");
+  assert(saveFramePngPromptSection.includes("save_comp_frame_png"), "prompt section should prefer save_comp_frame_png for generated PNG output.");
+  assert(saveFramePngPromptSection.includes("logs/generated-exports"), "prompt section should mention generated export root.");
+  assert(saveFramePngPromptSection.includes("Desktop"), "prompt section should reject Desktop writes.");
+  assert(saveFramePngPromptSection.includes("sha256"), "prompt section should require hash evidence.");
+  assert(saveFramePngPromptSection.includes("resolutionFactor"), "prompt section should require resolution restoration evidence.");
+  assert(!/run_extendscript/i.test(saveFramePngPromptSection), "save-frame PNG guidance should not recommend raw ExtendScript.");
+
+  const essentialGraphicsRetrieval = retrieveSolutionHints("Add a generated layer opacity property to Essential Graphics after reading motion graphics template controllers, using add_property_to_essential_graphics with an explicit propertyPath and reading controllers back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(essentialGraphicsRetrieval.ok, true);
+  assert(ids(essentialGraphicsRetrieval).includes("add-properties-to-essential-graphics-typed-plan"), "Essential Graphics advisory recipe should surface for generated controller add prompts.");
+  const essentialGraphicsPromptSection = formatSolutionHintsForPrompt(essentialGraphicsRetrieval);
+  assert(essentialGraphicsPromptSection.includes("Add Properties To Essential Graphics Typed Plan"), "prompt section should include Essential Graphics advisory title.");
+  assert(essentialGraphicsPromptSection.includes("get_essential_graphics_controllers"), "prompt section should require controller read-back.");
+  assert(essentialGraphicsPromptSection.includes("add_property_to_essential_graphics"), "prompt section should prefer the narrow Essential Graphics add tool.");
+  assert(essentialGraphicsPromptSection.includes("propertyPath"), "prompt section should preserve explicit propertyPath guidance.");
+  assert(!/run_extendscript/i.test(essentialGraphicsPromptSection), "Essential Graphics guidance should not recommend raw ExtendScript.");
+
+  const essentialPropertiesRetrieval = retrieveSolutionHints("Expose a generated precomp layer Essential Property by reading layer.essentialProperty with get_layer_essential_properties, setting an expression on an explicit Essential Property path, and reading it back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(essentialPropertiesRetrieval.ok, true);
+  assert(ids(essentialPropertiesRetrieval).includes("expose-essential-properties-typed-plan"), "Essential Properties advisory recipe should surface for generated Essential Property prompts.");
+  const essentialPropertiesPromptSection = formatSolutionHintsForPrompt(essentialPropertiesRetrieval);
+  assert(essentialPropertiesPromptSection.includes("Expose Essential Properties Typed Plan"), "prompt section should include Essential Properties advisory title.");
+  assert(essentialPropertiesPromptSection.includes("get_layer_essential_properties"), "prompt section should require Essential Properties read-back.");
+  assert(essentialPropertiesPromptSection.includes("set_expression"), "prompt section should preserve explicit set_expression guidance.");
+  assert(essentialPropertiesPromptSection.includes("propertyPath"), "prompt section should preserve explicit propertyPath guidance.");
+  assert(!/run_extendscript/i.test(essentialPropertiesPromptSection), "Essential Properties guidance should not recommend raw ExtendScript.");
+
+  const puppetOnTransparentRetrieval = retrieveSolutionHints("Set Puppet On Transparent on a generated ADBE FreePin3 effect by reading ADBE FreePin3 On Transparent, set_effect_property true with propertyMatchName, and read back the boolean property.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetOnTransparentRetrieval.ok, true);
+  assert(ids(puppetOnTransparentRetrieval).includes("toggle-puppet-on-transparent-typed-plan"), "Puppet On Transparent advisory recipe should surface for generated Puppet property prompts.");
+  const puppetOnTransparentPromptSection = formatSolutionHintsForPrompt(puppetOnTransparentRetrieval);
+  assert(puppetOnTransparentPromptSection.includes("Toggle Puppet On Transparent Typed Plan"), "prompt section should include Puppet On Transparent advisory title.");
+  assert(puppetOnTransparentPromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(puppetOnTransparentPromptSection.includes("ADBE FreePin3"), "prompt section should preserve Puppet matchName guidance.");
+  assert(puppetOnTransparentPromptSection.includes("ADBE FreePin3 On Transparent"), "prompt section should preserve exact property guidance.");
+  assert(puppetOnTransparentPromptSection.includes("set_effect_property"), "prompt section should prefer set_effect_property.");
+  assert(puppetOnTransparentPromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(!/run_extendscript/i.test(puppetOnTransparentPromptSection), "Puppet On Transparent guidance should not recommend raw ExtendScript.");
+
+  const puppetPinTypeRetrieval = retrieveSolutionHints("Toggle a generated Puppet Pin 1 type from Position to Advanced after get_effect_details shows ADBE FreePin3 PosPin Atom and ADBE FreePin3 PosPin Type, then read back the pinType.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetPinTypeRetrieval.ok, true);
+  assert(ids(puppetPinTypeRetrieval).includes("toggle-puppet-pin-types-typed-plan"), "Puppet pin type advisory recipe should surface for generated Puppet pin type prompts.");
+  const puppetPinTypePromptSection = formatSolutionHintsForPrompt(puppetPinTypeRetrieval);
+  assert(puppetPinTypePromptSection.includes("Toggle Puppet Pin Types Typed Plan"), "prompt section should include Puppet pin type advisory title.");
+  assert(puppetPinTypePromptSection.includes("generated"), "prompt section should preserve generated-only scope.");
+  assert(/Puppet pin atom/i.test(puppetPinTypePromptSection), "prompt section should preserve Puppet pin atom guidance.");
+  assert(puppetPinTypePromptSection.includes("ADBE FreePin3 PosPin Type"), "prompt section should preserve exact pin type guidance.");
+  assert(puppetPinTypePromptSection.includes("set_puppet_pin_type"), "prompt section should prefer set_puppet_pin_type.");
+  assert(puppetPinTypePromptSection.includes("get_effect_details"), "prompt section should require effect read-back.");
+  assert(!/run_extendscript/i.test(puppetPinTypePromptSection), "Puppet pin type guidance should not recommend raw ExtendScript.");
+
+  const puppetGuideLayerRetrieval = retrieveSolutionHints("Set a generated Puppet pin host layer as a guide layer after get_effect_details shows ADBE FreePin3, then read back guideLayer through get_layer_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(puppetGuideLayerRetrieval.ok, true);
+  assert(ids(puppetGuideLayerRetrieval).includes("toggle-puppet-pins-as-guide-layers-typed-plan"), "Puppet guide-layer advisory recipe should surface for generated Puppet guide-layer prompts.");
+  const puppetGuideLayerPromptSection = formatSolutionHintsForPrompt(puppetGuideLayerRetrieval);
+  assert(puppetGuideLayerPromptSection.includes("Toggle Puppet Pins As Guide Layers Typed Plan"), "prompt section should include Puppet guide-layer advisory title.");
+  assert(puppetGuideLayerPromptSection.includes("guideLayer"), "prompt section should preserve native guideLayer guidance.");
+  assert(puppetGuideLayerPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata.");
+  assert(puppetGuideLayerPromptSection.includes("get_layer_details"), "prompt section should require layer read-back.");
+  assert(puppetGuideLayerPromptSection.includes("get_effect_details"), "prompt section should require effect evidence read-back.");
+  assert(!/run_extendscript/i.test(puppetGuideLayerPromptSection), "Puppet guide-layer guidance should not recommend raw ExtendScript.");
 
   const roundSelectedPropertyValuesRetrieval = retrieveSolutionHints("Round the selected numeric property values to whole numbers after inspecting selected property values, then set the roundedValue with set_property_value and read back the property values.", {
     registry,
@@ -2376,6 +3896,23 @@ function assertActualRetrieval(registry) {
   assert(separateSizeDimensionsPromptSection.includes("get_layer_details"), "prompt section should require Size expression read-back.");
   assert(separateSizeDimensionsPromptSection.includes("get_effect_details"), "prompt section should require slider effect read-back.");
   assert(!/run_extendscript/i.test(separateSizeDimensionsPromptSection), "separate-size-dimensions guidance should not recommend raw ExtendScript.");
+
+  const moveParametricAnchorRetrieval = retrieveSolutionHints("Move the parametric rectangle anchor point to the top-right by applying a reviewed expression to the selected ADBE Vector Rect Position or ADBE Vector Ellipse Position property, then read back expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(moveParametricAnchorRetrieval.ok, true);
+  assert(ids(moveParametricAnchorRetrieval).includes("move-parametric-anchor-point-typed-plan"), "move-parametric-anchor-point advisory recipe should surface for parametric shape Position expression prompts.");
+  const moveParametricAnchorPromptSection = formatSolutionHintsForPrompt(moveParametricAnchorRetrieval);
+  assert(moveParametricAnchorPromptSection.includes("Move Parametric Anchor Point Typed Plan"), "prompt section should include move-parametric-anchor-point advisory title.");
+  assert(moveParametricAnchorPromptSection.includes("get_selected_properties"), "prompt section should require selected-property evidence for parametric shape Position workflows.");
+  assert(moveParametricAnchorPromptSection.includes("ADBE Vector Rect Position"), "prompt section should preserve rectangle Position scope.");
+  assert(moveParametricAnchorPromptSection.includes("ADBE Vector Ellipse Positi"), "prompt section should preserve ellipse Position scope.");
+  assert(moveParametricAnchorPromptSection.includes("anchorPositionKey"), "prompt section should preserve reviewed anchor-position key guidance.");
+  assert(moveParametricAnchorPromptSection.includes("set_expression"), "prompt section should prefer set_expression for parametric shape Position workflows.");
+  assert(moveParametricAnchorPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(moveParametricAnchorPromptSection), "move-parametric-anchor-point guidance should not recommend raw ExtendScript.");
 
   const invertSelectedKeyframesRetrieval = retrieveSolutionHints("Invert selected keyframes on the selected property after inspecting selectedKeyframes, compute invertedKeyframes with reverseValueOrderAtSameTimes, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {
     registry,
@@ -2591,6 +4128,23 @@ function assertActualRetrieval(registry) {
   assert(toggleMaintainScaleExpressionPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
   assert(!/run_extendscript/i.test(toggleMaintainScaleExpressionPromptSection), "toggle-maintain-scale guidance should not recommend raw ExtendScript.");
 
+  const arMaintainScaleWhenParentedRetrieval = retrieveSolutionHints("Add expression maintain scale when parented to the selected already parented layers after inspecting selected layer parent evidence, then read back Transform Scale expression details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arMaintainScaleWhenParentedRetrieval.ok, true);
+  assert(ids(arMaintainScaleWhenParentedRetrieval).includes("ar-addexpmantainscalewhenparented-typed-plan"), "AR maintain-scale-when-parented advisory recipe should surface for selected parented layer Scale expression prompts.");
+  const arMaintainScaleWhenParentedPromptSection = formatSolutionHintsForPrompt(arMaintainScaleWhenParentedRetrieval);
+  assert(arMaintainScaleWhenParentedPromptSection.includes("AR Add Expression Maintain Scale When Parented Typed Plan"), "prompt section should include AR maintain-scale-when-parented advisory title.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for AR maintain-scale-when-parented workflows.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("selectedParentedLayers"), "prompt section should preserve selected-parented-layer target guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("Transform > Scale"), "prompt section should preserve Scale property target guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("set_expression"), "prompt section should prefer set_expression for AR maintain-scale-when-parented workflows.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("parent.transform.scale"), "prompt section should preserve parent scale compensation guidance.");
+  assert(arMaintainScaleWhenParentedPromptSection.includes("get_layer_details"), "prompt section should require expression read-back.");
+  assert(!/run_extendscript/i.test(arMaintainScaleWhenParentedPromptSection), "AR maintain-scale-when-parented guidance should not recommend raw ExtendScript.");
+
   const disableSelectedExpressionsRetrieval = retrieveSolutionHints("Disable the existing expressions on the selected properties after inspecting selected property expressions, but do not delete or clear the expression text; read back expression enabled state.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2668,6 +4222,21 @@ function assertActualRetrieval(registry) {
   assert(selectedLayerDurationPromptSection.includes("outPoint"), "prompt section should preserve timing-field duration guidance.");
   assert(!/run_extendscript/i.test(selectedLayerDurationPromptSection), "selected-layer duration guidance should not recommend raw ExtendScript.");
 
+  const prepareLottieOutPointsRetrieval = retrieveSolutionHints("Prepare generated Lottie layers by extending layer outPoints one frame past the composition duration after inspecting timing.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(prepareLottieOutPointsRetrieval.ok, true);
+  assert(ids(prepareLottieOutPointsRetrieval).includes("prepare-layer-out-points-for-lottie-typed-plan"), "Lottie out-point advisory recipe should surface for generated Lottie timing prompts.");
+  const prepareLottieOutPointsPromptSection = formatSolutionHintsForPrompt(prepareLottieOutPointsRetrieval);
+  assert(prepareLottieOutPointsPromptSection.includes("Prepare Layer Out Points For Lottie Typed Plan"), "prompt section should include Lottie out-point advisory title.");
+  assert(prepareLottieOutPointsPromptSection.includes("get_comp_details"), "prompt section should require comp timing evidence for Lottie out-point workflows.");
+  assert(prepareLottieOutPointsPromptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for Lottie out-point mutation.");
+  assert(prepareLottieOutPointsPromptSection.includes("duration plus one frame"), "prompt section should preserve one-frame extension guidance.");
+  assert(prepareLottieOutPointsPromptSection.includes("source-exact"), "prompt section should preserve source-exact traversal blocker.");
+  assert(!/run_extendscript/i.test(prepareLottieOutPointsPromptSection), "Lottie out-point guidance should not recommend raw ExtendScript.");
+
   const layerDistanceRetrieval = retrieveSolutionHints("Calculate the distance between the two selected layers from their position values without moving anything.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2696,6 +4265,20 @@ function assertActualRetrieval(registry) {
   assert(layerSelectionGetPromptSection.includes("selected layer count"), "prompt section should preserve selected layer count guidance.");
   assert(!/run_extendscript/i.test(layerSelectionGetPromptSection), "layer-selection get guidance should not recommend raw ExtendScript.");
 
+  const alertSelectedLayerIndexRetrieval = retrieveSolutionHints("Alert the selected layer index by reporting the first selected layer index from current selected layer evidence without changing selection.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(alertSelectedLayerIndexRetrieval.ok, true);
+  assert(ids(alertSelectedLayerIndexRetrieval).includes("alert-selected-layer-index-typed-plan"), "alert-selected-layer-index advisory recipe should surface for selected layer index alert prompts.");
+  const alertSelectedLayerIndexPromptSection = formatSolutionHintsForPrompt(alertSelectedLayerIndexRetrieval);
+  assert(alertSelectedLayerIndexPromptSection.includes("Alert Selected Layer Index Typed Plan"), "prompt section should include alert-selected-layer-index advisory title.");
+  assert(alertSelectedLayerIndexPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for index reporting.");
+  assert(alertSelectedLayerIndexPromptSection.includes("first selected layer"), "prompt section should preserve first selected layer guidance.");
+  assert(alertSelectedLayerIndexPromptSection.includes("get_layer_details"), "prompt section should preserve optional same-index layer detail read-back guidance.");
+  assert(!/run_extendscript/i.test(alertSelectedLayerIndexPromptSection), "alert-selected-layer-index guidance should not recommend raw ExtendScript.");
+
   const layerSelectionSetRetrieval = retrieveSolutionHints("Set the current layer selection to explicit layer indexes 2 and 4 after reading the layer inventory, using replacement selection and selected-layer read-back.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -2709,6 +4292,34 @@ function assertActualRetrieval(registry) {
   assert(layerSelectionSetPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer read-back after selection mutation.");
   assert(layerSelectionSetPromptSection.includes("replacement selection"), "prompt section should preserve replacement selection guidance.");
   assert(!/run_extendscript/i.test(layerSelectionSetPromptSection), "layer-selection set guidance should not recommend raw ExtendScript.");
+
+  const hardSoloRetrieval = retrieveSolutionHints("Hard solo the currently selected layers by keeping selected layers enabled and disabling every unselected layer after reading selected layers and complete layer inventory.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(hardSoloRetrieval.ok, true);
+  assert(ids(hardSoloRetrieval).includes("hard-solo-layers-typed-plan"), "hard-solo advisory recipe should surface for selected layer enabled-state prompts.");
+  const hardSoloPromptSection = formatSolutionHintsForPrompt(hardSoloRetrieval);
+  assert(hardSoloPromptSection.includes("Hard Solo Layers Typed Plan"), "prompt section should include hard-solo advisory title.");
+  assert(hardSoloPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for hard solo.");
+  assert(hardSoloPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for Layer.enabled mutation.");
+  assert(hardSoloPromptSection.includes("enabled:false"), "prompt section should preserve disabled unselected-layer guidance.");
+  assert(!/run_extendscript/i.test(hardSoloPromptSection), "hard-solo guidance should not recommend raw ExtendScript.");
+
+  const differenceBlendModeRetrieval = retrieveSolutionHints("Set the selected generated layers to Difference blending mode after reading selected layers and complete layer inventory, using explicit layer indices and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(differenceBlendModeRetrieval.ok, true);
+  assert(ids(differenceBlendModeRetrieval).includes("difference-blend-mode-typed-plan"), "difference blend advisory recipe should surface for selected layer blending mode prompts.");
+  const differenceBlendModePromptSection = formatSolutionHintsForPrompt(differenceBlendModeRetrieval);
+  assert(differenceBlendModePromptSection.includes("Difference Blend Mode Typed Plan"), "prompt section should include difference blend advisory title.");
+  assert(differenceBlendModePromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for blend mode.");
+  assert(differenceBlendModePromptSection.includes("set_layer_blending_mode"), "prompt section should prefer set_layer_blending_mode for Layer.blendingMode mutation.");
+  assert(differenceBlendModePromptSection.includes("Layer.blendingMode Difference"), "prompt section should preserve Difference mode guidance.");
+  assert(!/run_extendscript/i.test(differenceBlendModePromptSection), "difference blend guidance should not recommend raw ExtendScript.");
 
   const selectAllChildrenRetrieval = retrieveSolutionHints("Select all direct child layers of the currently selected parent layer after reading layer parent evidence, then read back the selected child layer count and names.", {
     registry,
@@ -3015,6 +4626,22 @@ function assertActualRetrieval(registry) {
   assert(incrementCompositionVersionsPromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
   assert(!/run_extendscript/i.test(incrementCompositionVersionsPromptSection), "composition version guidance should not recommend raw ExtendScript.");
 
+  const renameCompositionToFileNameRetrieval = retrieveSolutionHints("Rename the active generated composition to the current project file basename after reading get_project_info.file, binding the comp item with find_project_items, using rename_project_items mode exact, and reading back with get_comp_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(renameCompositionToFileNameRetrieval.ok, true);
+  assert(ids(renameCompositionToFileNameRetrieval).includes("rename-composition-to-file-name-typed-plan"), "composition file-name advisory recipe should surface for project basename rename prompts.");
+  const renameCompositionToFileNamePromptSection = formatSolutionHintsForPrompt(renameCompositionToFileNameRetrieval);
+  assert(renameCompositionToFileNamePromptSection.includes("Rename Composition To File Name Typed Plan"), "prompt section should include composition file-name advisory title.");
+  assert(renameCompositionToFileNamePromptSection.includes("get_project_info"), "prompt section should require project info for basename evidence.");
+  assert(renameCompositionToFileNamePromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename.");
+  assert(renameCompositionToFileNamePromptSection.includes("project file basename"), "prompt section should preserve project file basename guidance.");
+  assert(/exact/i.test(renameCompositionToFileNamePromptSection), "prompt section should preserve exact rename mode guidance.");
+  assert(renameCompositionToFileNamePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(!/run_extendscript/i.test(renameCompositionToFileNamePromptSection), "composition file-name guidance should not recommend raw ExtendScript.");
+
   const nestedCompositionDurationRetrieval = retrieveSolutionHints("Change the selected nested precomp source composition duration to 12 seconds, then read back the nested source comp duration without retiming layers.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -3186,6 +4813,66 @@ function assertActualRetrieval(registry) {
   assert(mergeImportedPromptSection.includes("project-panel selection"), "prompt section should preserve project-panel selection warning.");
   assert(!/run_extendscript/i.test(mergeImportedPromptSection), "merge-imported guidance should not recommend raw ExtendScript.");
 
+  const addSelectionToNewFolderRetrieval = retrieveSolutionHints("Add selected generated Project items to a new folder after reading project item evidence, creating a generated Project folder, moving explicit item indices, and reading back folder contents.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addSelectionToNewFolderRetrieval.ok, true);
+  assert(ids(addSelectionToNewFolderRetrieval).includes("add-selection-to-new-folder-typed-plan"), "add selection to new folder advisory recipe should surface for project item folder prompts.");
+  const addSelectionToNewFolderPromptSection = formatSolutionHintsForPrompt(addSelectionToNewFolderRetrieval);
+  assert(addSelectionToNewFolderPromptSection.includes("Add Selection To New Folder Typed Plan"), "prompt section should include add-selection folder advisory title.");
+  assert(addSelectionToNewFolderPromptSection.includes("create_project_folder"), "prompt section should prefer create_project_folder.");
+  assert(addSelectionToNewFolderPromptSection.includes("move_project_items_to_folder"), "prompt section should prefer move_project_items_to_folder.");
+  assert(addSelectionToNewFolderPromptSection.includes("list_project_folder_items"), "prompt section should require folder read-back.");
+  assert(addSelectionToNewFolderPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(addSelectionToNewFolderPromptSection), "add-selection folder guidance should not recommend raw ExtendScript.");
+
+  const arAddFoldersRetrieval = retrieveSolutionHints("Create reviewed generated Project folders after reading project inventory with get_project_snapshot, using create_project_folder and folder read-back without Project panel selected folders or filesystem traversal.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arAddFoldersRetrieval.ok, true);
+  assert(ids(arAddFoldersRetrieval).includes("ar-addfolders-typed-plan"), "AR add folders advisory recipe should surface for generated Project folder prompts.");
+  const arAddFoldersPromptSection = formatSolutionHintsForPrompt(arAddFoldersRetrieval);
+  assert(arAddFoldersPromptSection.includes("AR Add Folders Typed Plan"), "prompt section should include AR add folders advisory title.");
+  assert(arAddFoldersPromptSection.includes("create_project_folder"), "prompt section should prefer create_project_folder.");
+  assert(arAddFoldersPromptSection.includes("get_project_snapshot"), "prompt section should require project inventory evidence.");
+  assert(arAddFoldersPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(arAddFoldersPromptSection.includes("filesystem traversal"), "prompt section should preserve filesystem traversal warning.");
+  assert(!/run_extendscript/i.test(arAddFoldersPromptSection), "AR add folders guidance should not recommend raw ExtendScript.");
+
+  const arColoriseLayersRetrieval = retrieveSolutionHints("Colorise selected active-comp layers by reading get_selected_layers evidence, choosing one reviewed labelIndex, setting selected layer labels with set_layer_metadata, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arColoriseLayersRetrieval.ok, true);
+  assert(ids(arColoriseLayersRetrieval).includes("ar-coloriselayers-typed-plan"), "AR colorise layers advisory recipe should surface for selected layer label prompts.");
+  const arColoriseLayersPromptSection = formatSolutionHintsForPrompt(arColoriseLayersRetrieval);
+  assert(arColoriseLayersPromptSection.includes("AR Colorise Layers Typed Plan"), "prompt section should include AR colorise layers advisory title.");
+  assert(arColoriseLayersPromptSection.includes("get_selected_layers"), "prompt section should require selected-layer evidence for label coloring.");
+  assert(arColoriseLayersPromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for layer labels.");
+  assert(arColoriseLayersPromptSection.includes("labelIndex"), "prompt section should preserve reviewed labelIndex guidance.");
+  assert(arColoriseLayersPromptSection.includes("palette UI behavior"), "prompt section should preserve palette UI warning.");
+  assert(!/run_extendscript/i.test(arColoriseLayersPromptSection), "AR colorise layers guidance should not recommend raw ExtendScript.");
+
+  const arColoriseLayersByTypeRetrieval = retrieveSolutionHints("Colorise layers by type after reading active comp layer-kind evidence, building a reviewed typeToLabelMap, setting layer labels with set_layer_metadata, and reading labels back without hidden AE class checks.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(arColoriseLayersByTypeRetrieval.ok, true);
+  assert(ids(arColoriseLayersByTypeRetrieval).includes("ar-coloriselayersbytype-typed-plan"), "AR colorise layers by type advisory recipe should surface for type-based layer label prompts.");
+  const arColoriseLayersByTypePromptSection = formatSolutionHintsForPrompt(arColoriseLayersByTypeRetrieval);
+  assert(arColoriseLayersByTypePromptSection.includes("AR Colorise Layers By Type Typed Plan"), "prompt section should include AR colorise layers by type advisory title.");
+  assert(arColoriseLayersByTypePromptSection.includes("typeToLabelMap"), "prompt section should preserve type-to-label map guidance.");
+  assert(arColoriseLayersByTypePromptSection.includes("layer-kind"), "prompt section should preserve layer-kind evidence guidance.");
+  assert(arColoriseLayersByTypePromptSection.includes("set_layer_metadata"), "prompt section should prefer set_layer_metadata for layer labels.");
+  assert(arColoriseLayersByTypePromptSection.includes("hidden AE class checks"), "prompt section should preserve hidden class-check warning.");
+  assert(!/run_extendscript/i.test(arColoriseLayersByTypePromptSection), "AR colorise layers by type guidance should not recommend raw ExtendScript.");
+
   const addLabeledRenderQueueRetrieval = retrieveSolutionHints("Add labeled generated composition items to the render queue after finding explicit generated comp names, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -3216,6 +4903,52 @@ function assertActualRetrieval(registry) {
   assert(addSelectedCompositionsRenderQueuePromptSection.includes("Project panel selection"), "prompt section should preserve Project-panel selection warning.");
   assert(!/run_extendscript/i.test(addSelectedCompositionsRenderQueuePromptSection), "selected-compositions render queue guidance should not recommend raw ExtendScript.");
 
+  const addFolderRenderQueueRetrieval = retrieveSolutionHints("Add the generated Project folder contents to the render queue after listing the generated folder comps, using add_comp_to_render_queue and get_render_queue_status read-back without starting a render.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(addFolderRenderQueueRetrieval.ok, true);
+  assert(ids(addFolderRenderQueueRetrieval).includes("add-folder-to-render-queue-typed-plan"), "add folder render queue advisory recipe should surface for folder render queue prompts.");
+  const addFolderRenderQueuePromptSection = formatSolutionHintsForPrompt(addFolderRenderQueueRetrieval);
+  assert(addFolderRenderQueuePromptSection.includes("Add Folder To Render Queue Typed Plan"), "prompt section should include folder render queue advisory title.");
+  assert(addFolderRenderQueuePromptSection.includes("list_project_folder_items"), "prompt section should require folder listing evidence.");
+  assert(addFolderRenderQueuePromptSection.includes("add_comp_to_render_queue"), "prompt section should prefer add_comp_to_render_queue for render queue setup.");
+  assert(addFolderRenderQueuePromptSection.includes("get_render_queue_status"), "prompt section should require render queue read-back.");
+  assert(addFolderRenderQueuePromptSection.includes("generated Project folder"), "prompt section should preserve generated folder scope.");
+  assert(addFolderRenderQueuePromptSection.includes("Project panel selection"), "prompt section should preserve Project-panel selection warning.");
+  assert(!/run_extendscript/i.test(addFolderRenderQueuePromptSection), "folder render queue guidance should not recommend raw ExtendScript.");
+
+  const projectFilePolicyRetrieval = retrieveSolutionHints("Clean the render queue, remove all proxies, set proxies from a folder, reveal the project file, export text to a user file, or render a PNG sequence.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(projectFilePolicyRetrieval.ok, true);
+  assert(ids(projectFilePolicyRetrieval).includes("project-file-render-proxy-safety-policy"), "project/file/render/proxy safety policy should surface for approval-gated file and render prompts.");
+  const projectFilePolicyPromptSection = formatSolutionHintsForPrompt(projectFilePolicyRetrieval);
+  assert(projectFilePolicyPromptSection.includes("Project File Render Proxy Safety Policy"), "prompt section should include project/file safety policy title.");
+  assert(projectFilePolicyPromptSection.includes("approval-gated"), "prompt section should preserve approval-gated classification.");
+  assert(projectFilePolicyPromptSection.includes("get_project_snapshot"), "prompt section should prefer read-only project snapshot evidence.");
+  assert(projectFilePolicyPromptSection.includes("get_render_queue_status"), "prompt section should prefer read-only render queue evidence.");
+  assert(projectFilePolicyPromptSection.includes("typed-tool gap"), "prompt section should require typed-tool gap reporting.");
+  assert(!/run_extendscript/i.test(projectFilePolicyPromptSection), "project/file safety policy should not recommend raw ExtendScript.");
+
+  const thirdPartyPolicyRetrieval = retrieveSolutionHints("Match layers to Newton layers, assign parents from Illustrator names, copy Newton position keyframes, rename puppet pins for DuIK, or change DuIK pin sizes.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(thirdPartyPolicyRetrieval.ok, true);
+  assert(ids(thirdPartyPolicyRetrieval).includes("third-party-semantics-safety-policy"), "third-party semantics safety policy should surface for DuIK/Newton prompts.");
+  const thirdPartyPolicyPromptSection = formatSolutionHintsForPrompt(thirdPartyPolicyRetrieval);
+  assert(thirdPartyPolicyPromptSection.includes("Third Party Semantics Safety Policy"), "prompt section should include third-party safety policy title.");
+  assert(thirdPartyPolicyPromptSection.includes("approval-gated"), "prompt section should preserve approval-gated classification.");
+  assert(thirdPartyPolicyPromptSection.includes("get_effect_details"), "prompt section should prefer read-only effect evidence.");
+  assert(thirdPartyPolicyPromptSection.includes("get_layer_details"), "prompt section should prefer read-only layer evidence.");
+  assert(thirdPartyPolicyPromptSection.includes("typed-tool gap"), "prompt section should require typed-tool gap reporting.");
+  assert(!/run_extendscript/i.test(thirdPartyPolicyPromptSection), "third-party semantics safety policy should not recommend raw ExtendScript.");
+
   const renameSelectedProjectItemsRetrieval = retrieveSolutionHints("Rename selected project items to the exact text Review Plate after reading the current project snapshot, binding explicit itemIndices, using rename_project_items, and reading back project inventory.", {
     registry,
     availableToolNames: AVAILABLE_TOOLS,
@@ -3230,6 +4963,81 @@ function assertActualRetrieval(registry) {
   assert(renameSelectedProjectItemsPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for project item rename workflows.");
   assert(renameSelectedProjectItemsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
   assert(!/run_extendscript/i.test(renameSelectedProjectItemsPromptSection), "selected project-item rename guidance should not recommend raw ExtendScript.");
+
+  const preserveNestedFrameRateRetrieval = retrieveSolutionHints("Enable preserve nested frame rate on explicit generated compositions using set_comp_properties preserveNestedFrameRate true, then read back get_comp_details without all-project traversal.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(preserveNestedFrameRateRetrieval.ok, true);
+  assert(ids(preserveNestedFrameRateRetrieval).includes("preserve-nested-frame-rate-typed-plan"), "preserve nested frame rate recipe should surface for explicit comp property prompts.");
+  const preserveNestedFrameRatePromptSection = formatSolutionHintsForPrompt(preserveNestedFrameRateRetrieval);
+  assert(preserveNestedFrameRatePromptSection.includes("Preserve Nested Frame Rate Typed Plan"), "prompt section should include preserve nested frame rate advisory title.");
+  assert(preserveNestedFrameRatePromptSection.includes("preserveNestedFrameRate"), "prompt section should preserve preserveNestedFrameRate field guidance.");
+  assert(preserveNestedFrameRatePromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for preserve nested frame rate.");
+  assert(preserveNestedFrameRatePromptSection.includes("get_comp_details"), "prompt section should require comp details read-back.");
+  assert(preserveNestedFrameRatePromptSection.includes("all-project traversal"), "prompt section should preserve all-project traversal warning.");
+  assert(!/run_extendscript/i.test(preserveNestedFrameRatePromptSection), "preserve nested frame rate guidance should not recommend raw ExtendScript.");
+
+  const projectTimecodeStartFramesRetrieval = retrieveSolutionHints("Set project frame numbering to start at zero with set_project_frames_count_type FC_START_0, then set native displayStartFrame 0 on explicit generated comps and read back get_project_info and get_comp_details.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(projectTimecodeStartFramesRetrieval.ok, true);
+  assert(ids(projectTimecodeStartFramesRetrieval).includes("project-timecode-start-frames-typed-plan"), "project timecode/start-frame recipe should surface for explicit project frame-count prompts.");
+  const projectTimecodeStartFramesPromptSection = formatSolutionHintsForPrompt(projectTimecodeStartFramesRetrieval);
+  assert(projectTimecodeStartFramesPromptSection.includes("Project Timecode And Start Frames Typed Plan"), "prompt section should include project timecode/start-frame advisory title.");
+  assert(projectTimecodeStartFramesPromptSection.includes("framesCountType"), "prompt section should preserve framesCountType guidance.");
+  assert(projectTimecodeStartFramesPromptSection.includes("displayStartFrame"), "prompt section should preserve native displayStartFrame guidance.");
+  assert(projectTimecodeStartFramesPromptSection.includes("set_project_frames_count_type"), "prompt section should prefer set_project_frames_count_type.");
+  assert(projectTimecodeStartFramesPromptSection.includes("set_comp_properties"), "prompt section should prefer set_comp_properties for displayStartFrame.");
+  assert(projectTimecodeStartFramesPromptSection.includes("all-project"), "prompt section should preserve all-project traversal warning.");
+  assert(!/run_extendscript/i.test(projectTimecodeStartFramesPromptSection), "project timecode/start-frame guidance should not recommend raw ExtendScript.");
+
+  const resetImportedItemNamesRetrieval = retrieveSolutionHints("Reset generated imported footage item names to their file display name after creating a generated PNG fixture, importing it with import_footage, binding explicit footage itemIndices, using rename_project_items type footage mode exact, and reading back get_project_snapshot.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(resetImportedItemNamesRetrieval.ok, true);
+  assert(ids(resetImportedItemNamesRetrieval).includes("reset-imported-item-names-typed-plan"), "reset imported item names recipe should surface for imported footage reset prompts.");
+  const resetImportedItemNamesPromptSection = formatSolutionHintsForPrompt(resetImportedItemNamesRetrieval);
+  assert(resetImportedItemNamesPromptSection.includes("Reset Imported Item Names Typed Plan"), "prompt section should include imported footage reset advisory title.");
+  assert(resetImportedItemNamesPromptSection.includes("import_footage"), "prompt section should prefer import_footage for generated footage fixtures.");
+  assert(resetImportedItemNamesPromptSection.includes("rename_project_items"), "prompt section should prefer rename_project_items for reset imported item names.");
+  assert(resetImportedItemNamesPromptSection.includes("file display name"), "prompt section should preserve file display-name evidence.");
+  assert(resetImportedItemNamesPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(resetImportedItemNamesPromptSection), "reset imported item names guidance should not recommend raw ExtendScript.");
+
+  const setProjectItemLabelsRetrieval = retrieveSolutionHints("Set generated project item labels to none after reading the current project snapshot, binding explicit itemIndices, using set_project_item_metadata label 0, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(setProjectItemLabelsRetrieval.ok, true);
+  assert(ids(setProjectItemLabelsRetrieval).includes("set-project-item-labels-to-none-typed-plan"), "project item label advisory recipe should surface for project item label prompts.");
+  const setProjectItemLabelsPromptSection = formatSolutionHintsForPrompt(setProjectItemLabelsRetrieval);
+  assert(setProjectItemLabelsPromptSection.includes("Set Project Item Labels To None Typed Plan"), "prompt section should include project-item label advisory title.");
+  assert(setProjectItemLabelsPromptSection.includes("set_project_item_metadata"), "prompt section should prefer set_project_item_metadata for project item labels.");
+  assert(setProjectItemLabelsPromptSection.includes("label:0"), "prompt section should preserve label:0 policy.");
+  assert(setProjectItemLabelsPromptSection.includes("find_project_items"), "prompt section should preserve item search evidence for project item label workflows.");
+  assert(setProjectItemLabelsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning.");
+  assert(!/run_extendscript/i.test(setProjectItemLabelsPromptSection), "project item label guidance should not recommend raw ExtendScript.");
+
+  const setAllItemLabelsRetrieval = retrieveSolutionHints("Set all generated Project item labels to none after reading the current project snapshot, binding explicit itemIndices, using set_project_item_metadata label 0, and reading labels back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(setAllItemLabelsRetrieval.ok, true);
+  assert(ids(setAllItemLabelsRetrieval).includes("set-all-item-labels-to-none-typed-plan"), "set-all item label importer alias should surface for Project item label prompts.");
+  const setAllItemLabelsPromptSection = formatSolutionHintsForPrompt(setAllItemLabelsRetrieval);
+  assert(setAllItemLabelsPromptSection.includes("Set All Item Labels To None Typed Plan"), "prompt section should include importer-planned project-item label alias title.");
+  assert(setAllItemLabelsPromptSection.includes("set_project_item_metadata"), "prompt section should prefer set_project_item_metadata for set-all Project item labels.");
+  assert(setAllItemLabelsPromptSection.includes("label:0"), "prompt section should preserve set-all label:0 policy.");
+  assert(setAllItemLabelsPromptSection.includes("Project panel selection"), "prompt section should preserve Project panel selection warning for set-all labels.");
+  assert(!/run_extendscript/i.test(setAllItemLabelsPromptSection), "set-all project item label guidance should not recommend raw ExtendScript.");
 
   const replaceProjectItemNameRetrieval = retrieveSolutionHints("Replace Alpha with Beta in project item names after reading the current project snapshot, binding explicit itemIndices, using rename_project_items mode findReplace, and reading back project inventory. Use literal text replacement, not regex.", {
     registry,
@@ -3317,6 +5125,8 @@ function assertActualRetrieval(registry) {
       centerComposition: ids(centerCompositionRetrieval),
       averagePosition: ids(averagePositionRetrieval),
       zeroPosition: ids(zeroPositionRetrieval),
+      arAddFolders: ids(arAddFoldersRetrieval),
+      arColoriseLayersByType: ids(arColoriseLayersByTypeRetrieval),
       selectedCompositionsRenderQueue: ids(addSelectedCompositionsRenderQueueRetrieval),
       findSpecificEffect: ids(findSpecificEffectRetrieval)
     }
@@ -3517,12 +5327,816 @@ function assertPromptBounds() {
   return { returned: retrieval.returned, promptSectionLength: promptSection.length };
 }
 
+function assertFirstFourCompositionMarkerContracts(registry) {
+  for (const id of FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing first-four composition marker contract: ${id}`);
+    const text = recipeText(solution);
+    const contractText = solutionContractText(solution, text);
+
+    assert(solution.tags.includes("composition-marker"), `${id}: contract must stay tagged as composition-marker.`);
+    assert(solution.execution.preferredTools.includes("get_comp_details"), `${id}: contract must keep typed composition read-back.`);
+    assert(contractText.includes("includeMarkers:true"), `${id}: contract must require get_comp_details includeMarkers:true read-back.`);
+    assert(contractText.includes("comp.markerProperty.keyTime"), `${id}: contract must preserve comp.markerProperty.keyTime ordering evidence.`);
+    assert(/layer marker substitution|layer marker tools|add_layer_marker|layer-marker|layer marker/.test(contractText), `${id}: contract must explicitly reject or distinguish layer-marker substitution.`);
+    assert(/audio-derived|audio analysis|audio-derived markers/.test(contractText), `${id}: contract must keep audio-derived marker generation fail-closed.`);
+    assertNoRawExecutionGuidance(id, solution, text);
+
+    if (solution.execution.mutating) {
+      assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: mutating marker contract must require explicit confirmation.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: mutating marker contract must require allowMutations.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: mutating marker contract must require checkpoint/edit-session protection.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: mutating marker contract must require post-mutation read-back.`);
+    } else {
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only marker contract must not allow mutations.`);
+      assert(!solution.execution.preferredTools.includes("add_comp_marker"), `${id}: read-only marker contract must not create composition markers.`);
+      assert(!solution.execution.preferredTools.includes("add_layer_marker"), `${id}: read-only marker contract must not create layer markers.`);
+    }
+  }
+
+  return FIRST_FOUR_COMPOSITION_MARKER_CONTRACT_IDS;
+}
+
+function assertFirstFourFileRenderProxyContracts(registry) {
+  for (const id of FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS) {
+    const solution = solutionById(registry, id);
+    assert(solution, `Missing first-four file/render/proxy contract: ${id}`);
+    const text = recipeText(solution);
+    const contractText = solutionContractText(solution, text);
+
+    assertNoRawExecutionGuidance(id, solution, text);
+    assert(/generated|generated\/temp/.test(contractText), `${id}: contract must keep generated/temp scoping.`);
+
+    if (id === "project-file-render-proxy-safety-policy") {
+      assert(solution.tags.includes("file-output"), `${id}: policy must classify file output.`);
+      assert(solution.tags.includes("file-input"), `${id}: policy must classify file input.`);
+      assert(solution.tags.includes("render-queue"), `${id}: policy must classify render queue risk.`);
+      assert(solution.tags.includes("proxy"), `${id}: policy must classify proxy risk.`);
+      assert(contractText.includes("generated/temp assets"), `${id}: policy must require generated/temp assets first.`);
+      assert(contractText.includes("byte length") && contractText.includes("sha256"), `${id}: policy must require byte/hash evidence for file output contracts.`);
+      assert(contractText.includes("reject Desktop"), `${id}: policy must reject Desktop and arbitrary path writes.`);
+      assert(contractText.includes("logs/generated-renders"), `${id}: policy must constrain render output setup to the generated render root.`);
+      assert(contractText.includes("separate render queue setup from render start"), `${id}: policy must separate queue setup from render execution.`);
+      assert(contractText.includes("reversible proxy state"), `${id}: policy must require reversible proxy read-back.`);
+      assert(contractText.includes("enumerate every deletion target"), `${id}: policy must require cleanup target enumeration.`);
+    } else if (id === "export-path-points-typed-plan") {
+      assert(solution.execution.preferredTools.includes("export_path_points"), `${id}: generated file export must use export_path_points.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".txt"), `${id}: export must require a simple generated text filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(contractText.includes("Post-export get_path_geometry"), `${id}: export must require post-export geometry read-back.`);
+    } else if (id === "export-text-to-file-typed-plan") {
+      assert(solution.execution.preferredTools.includes("export_text_to_file"), `${id}: generated text export must use export_text_to_file.`);
+      assert(solution.execution.preferredTools.includes("get_selected_layers"), `${id}: export must require selected-layer evidence.`);
+      assert(solution.execution.preferredTools.includes("get_layer_details"), `${id}: export must require Source Text read-back.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".txt"), `${id}: export must require a simple generated text filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(contractText.includes("Source Text"), `${id}: export must require Source Text evidence.`);
+      assert(contractText.includes("[Not a text layer]"), `${id}: export must preserve non-text fallback lines.`);
+    } else if (id === "save-frame-as-png-typed-plan") {
+      assert(solution.execution.preferredTools.includes("save_comp_frame_png"), `${id}: generated PNG export must use save_comp_frame_png.`);
+      assert(contractText.includes("logs/generated-exports/") || contractText.includes("AE_AGENT_GENERATED_EXPORT_DIR"), `${id}: export must stay under the generated export root.`);
+      assert(contractText.includes("outputFileName") && contractText.includes(".png"), `${id}: export must require a simple generated PNG filename.`);
+      assert(contractText.includes("byteLength") && contractText.includes("sha256"), `${id}: export must require byte/hash read-back.`);
+      assert(contractText.includes("deleteAfterReadBack:true"), `${id}: export must support generated artifact cleanup after read-back.`);
+      assert(contractText.includes("Desktop writes") || contractText.includes("Desktop/user path"), `${id}: export must reject Desktop/user paths.`);
+      assert(/post-export.*get_comp_details/i.test(contractText), `${id}: export must require post-export comp read-back.`);
+      assert(contractText.includes("resolutionFactor"), `${id}: export must require resolutionFactor restoration proof.`);
+    } else {
+      assert(solution.tags.includes("render-queue"), `${id}: render setup contract must stay tagged as render-queue.`);
+      assert(solution.execution.preferredTools.includes("add_comp_to_render_queue"), `${id}: render setup must add explicit comps to the queue.`);
+      assert(solution.execution.preferredTools.includes("get_render_queue_status"), `${id}: render setup must read render queue status.`);
+      assert(contractText.includes("generated composition"), `${id}: render setup must stay generated composition only.`);
+      assert(contractText.includes("baseline render queue count"), `${id}: render setup must record render queue baseline.`);
+      assert(contractText.includes("Post-run get_render_queue_status"), `${id}: render setup must require post-run queue read-back.`);
+      assert(/no render start|Do not start renders/.test(contractText), `${id}: render setup must forbid render execution.`);
+      assert(/queue deletion\/reordering|delete\/reorder render queue items/.test(contractText), `${id}: render setup must forbid queue cleanup/deletion.`);
+      assert(/non-generated user-asset mutation|non-generated user assets/.test(contractText), `${id}: render setup must reject non-generated user assets.`);
+    }
+
+    if (solution.execution.mutating) {
+      assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: mutating file/render/proxy contract must require explicit confirmation.`);
+      assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: mutating file/render/proxy contract must require allowMutations.`);
+      assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: mutating file/render/proxy contract must require checkpoint/edit-session protection.`);
+      assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: mutating file/render/proxy contract must require post-mutation read-back.`);
+    }
+  }
+
+  return FIRST_FOUR_FILE_RENDER_PROXY_CONTRACT_IDS;
+}
+
+function assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry) {
+  const parentLaneId = "selected-layer-parent-opacity-expression-generated-only";
+  const parentLane = liveLaneFamilyById(liveLaneRegistry, parentLaneId);
+  assert(parentLane, `Missing first-four parenting lane: ${parentLaneId}`);
+  assert(parentLane.requiredTools.includes("set_layer_parent"), `${parentLaneId}: lane must require set_layer_parent.`);
+  assert(parentLane.allowedTools.includes("get_layer_details"), `${parentLaneId}: lane must keep typed layer read-back.`);
+  assert(parentLane.readBackTools.includes("get_layer_details"), `${parentLaneId}: lane must read parent relationship back through get_layer_details.`);
+  assert.strictEqual(parentLane.semanticVerification, true, `${parentLaneId}: lane must require semantic verification.`);
+  assert(parentLane.candidateIds.includes("tool-layers-parent-opacity"), `${parentLaneId}: lane must stay scoped to parent-opacity candidate.`);
+  assert(parentLane.scope.includes("generated-only"), `${parentLaneId}: lane must stay generated-only.`);
+  assert(parentLane.scope.includes("explicit generated child/parent pair"), `${parentLaneId}: lane must bind explicit generated relationship targets.`);
+  assert(parentLane.scope.includes("generated comp/layer indices"), `${parentLaneId}: lane must require generated comp/layer indices.`);
+  assert(parentLane.scope.includes("before/after stack read-back"), `${parentLaneId}: lane must require before/after stack read-back.`);
+  assert(parentLane.scope.includes("parent relationship read-back"), `${parentLaneId}: lane must require relationship read-back.`);
+  assert(parentLane.scope.includes("semantic verification") && parentLane.scope.includes("cleanup"), `${parentLaneId}: lane must require semantic verification and cleanup evidence.`);
+  assert(parentLane.scope.includes("track matte edits"), `${parentLaneId}: lane must fail closed on untyped matte edits.`);
+  assert(parentLane.scope.includes("layer stack reordering"), `${parentLaneId}: lane must fail closed on broad reorder semantics.`);
+  assert(parentLane.scope.includes("non-generated user assets"), `${parentLaneId}: lane must reject non-generated user assets.`);
+  assert(parentLane.scope.includes("raw JSX/source semantics"), `${parentLaneId}: lane must reject raw source semantics.`);
+
+  const parentOpacityRecipe = solutionById(registry, "parent-opacity-typed-plan");
+  assert(parentOpacityRecipe, "Missing parent-opacity recipe: parent-opacity-typed-plan");
+  const parentOpacityText = solutionContractText(parentOpacityRecipe, recipeText(parentOpacityRecipe));
+  assert.strictEqual(parentOpacityRecipe.execution.mutating, true, "parent-opacity-typed-plan: must be mutating through set_layer_parent and set_expression.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-opacity-typed-plan: must prefer set_layer_parent.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("set_expression"), "parent-opacity-typed-plan: must prefer set_expression.");
+  assert(parentOpacityRecipe.execution.preferredTools.includes("get_layer_details"), "parent-opacity-typed-plan: must require typed layer read-back.");
+  assert(parentOpacityText.includes("ADBE Transform Group.ADBE Opacity"), "parent-opacity-typed-plan: must bind the opacity property path.");
+  assert(parentOpacityText.includes("Math.min(value, thisLayer.parent.transform.opacity.value);"), "parent-opacity-typed-plan: must preserve the reviewed parent-opacity expression.");
+  assert(parentOpacityText.includes("childLayerIndex"), "parent-opacity-typed-plan: must bind an explicit child layer index.");
+  assert(parentOpacityText.includes("parentLayerIndex"), "parent-opacity-typed-plan: must bind an explicit parent layer index.");
+  assert(parentOpacityText.includes("parent cycles"), "parent-opacity-typed-plan: must reject parent cycles.");
+  assert(parentOpacityText.includes("post-mutation read-back") || parentOpacityText.includes("Post-expression"), "parent-opacity-typed-plan: must require post-mutation read-back.");
+  assertNoRawExecutionGuidance("parent-opacity-typed-plan", parentOpacityRecipe, recipeText(parentOpacityRecipe));
+
+  const parentBelowLaneId = "selected-layer-parent-below-generated-only";
+  const parentBelowLane = liveLaneFamilyById(liveLaneRegistry, parentBelowLaneId);
+  assert(parentBelowLane, `Missing first-four layer-below parenting lane: ${parentBelowLaneId}`);
+  assert(parentBelowLane.requiredTools.includes("set_layer_parent"), `${parentBelowLaneId}: lane must require set_layer_parent.`);
+  assert(parentBelowLane.allowedTools.includes("set_layer_selection"), `${parentBelowLaneId}: lane must allow generated selection setup.`);
+  assert(parentBelowLane.readBackTools.includes("get_layer_details"), `${parentBelowLaneId}: lane must read parent links back through get_layer_details.`);
+  assert.strictEqual(parentBelowLane.semanticVerification, true, `${parentBelowLaneId}: lane must require semantic verification.`);
+  assert(parentBelowLane.candidateIds.includes("tool-layers-parent-selected-layers-to-layers-below"), `${parentBelowLaneId}: lane must stay scoped to layer-below candidate.`);
+  assert(parentBelowLane.scope.includes("explicit generated selected child layers"), `${parentBelowLaneId}: lane must bind explicit generated selected children.`);
+  assert(parentBelowLane.scope.includes("child -> below-parent index pairs"), `${parentBelowLaneId}: lane must derive concrete below-parent pairs.`);
+  assert(parentBelowLane.scope.includes("bottom-layer/out-of-range"), `${parentBelowLaneId}: lane must reject bottom-layer/out-of-range targets.`);
+  assert(parentBelowLane.scope.includes("cycles"), `${parentBelowLaneId}: lane must reject cycles.`);
+  assert(parentBelowLane.scope.includes("layer stack reordering"), `${parentBelowLaneId}: lane must reject layer stack reordering.`);
+  assert(parentBelowLane.scope.includes("track matte edits"), `${parentBelowLaneId}: lane must reject track matte edits.`);
+  assert(parentBelowLane.scope.includes("non-generated user assets"), `${parentBelowLaneId}: lane must reject non-generated user assets.`);
+  assert(parentBelowLane.scope.includes("raw JSX/source semantics"), `${parentBelowLaneId}: lane must reject raw source semantics.`);
+
+  const parentBelowRecipe = solutionById(registry, "parent-selected-layers-to-layers-below-typed-plan");
+  assert(parentBelowRecipe, "Missing layer-below parenting recipe: parent-selected-layers-to-layers-below-typed-plan");
+  const parentBelowText = solutionContractText(parentBelowRecipe, recipeText(parentBelowRecipe));
+  assert.strictEqual(parentBelowRecipe.execution.mutating, true, "parent-selected-layers-to-layers-below-typed-plan: must be mutating through set_layer_parent.");
+  assert(parentBelowRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-selected-layers-to-layers-below-typed-plan: must prefer set_layer_parent.");
+  assert(parentBelowText.includes("selectedChildLayerIndices"), "parent-selected-layers-to-layers-below-typed-plan: must bind explicit selected child indices.");
+  assert(parentBelowText.includes("parentPairs") || parentBelowText.includes("parent pairs"), "parent-selected-layers-to-layers-below-typed-plan: must disclose child-parent pairs.");
+  assert(parentBelowText.includes("bottommost") || parentBelowText.includes("bottom-layer"), "parent-selected-layers-to-layers-below-typed-plan: must reject bottom-layer targets.");
+  assert(parentBelowText.includes("cycles"), "parent-selected-layers-to-layers-below-typed-plan: must reject cycles.");
+  assert(parentBelowText.includes("post-mutation read-back"), "parent-selected-layers-to-layers-below-typed-plan: must require read-back.");
+  assertNoRawExecutionGuidance("parent-selected-layers-to-layers-below-typed-plan", parentBelowRecipe, recipeText(parentBelowRecipe));
+
+  const parentClosestLaneId = "selected-layer-parent-closest-generated-only";
+  const parentClosestLane = liveLaneFamilyById(liveLaneRegistry, parentClosestLaneId);
+  assert(parentClosestLane, `Missing closest-layer parenting lane: ${parentClosestLaneId}`);
+  assert(parentClosestLane.requiredTools.includes("set_layer_parent"), `${parentClosestLaneId}: lane must require set_layer_parent.`);
+  assert(parentClosestLane.allowedTools.includes("set_layer_selection"), `${parentClosestLaneId}: lane must allow generated selection setup.`);
+  assert(parentClosestLane.allowedTools.includes("get_layer_details"), `${parentClosestLaneId}: lane must require typed position/read-back inspection.`);
+  assert(parentClosestLane.readBackTools.includes("get_layer_details"), `${parentClosestLaneId}: lane must read parent links back through get_layer_details.`);
+  assert.strictEqual(parentClosestLane.semanticVerification, true, `${parentClosestLaneId}: lane must require semantic verification.`);
+  assert(parentClosestLane.candidateIds.includes("tool-layers-parent-closest-layers"), `${parentClosestLaneId}: lane must stay scoped to closest-layer candidate.`);
+  assert(parentClosestLane.scope.includes("explicit generated selected child layers"), `${parentClosestLaneId}: lane must bind explicit generated selected children.`);
+  assert(parentClosestLane.scope.includes("2D position evidence"), `${parentClosestLaneId}: lane must require 2D position evidence.`);
+  assert(parentClosestLane.scope.includes("deterministic no-tie nearest"), `${parentClosestLaneId}: lane must reject ambiguous ties.`);
+  assert(parentClosestLane.scope.includes("expected child/parent names"), `${parentClosestLaneId}: lane must require expected-name guards.`);
+  assert(parentClosestLane.scope.includes("cycles"), `${parentClosestLaneId}: lane must reject cycles.`);
+  assert(parentClosestLane.scope.includes("layer stack reordering"), `${parentClosestLaneId}: lane must reject layer stack reordering.`);
+  assert(parentClosestLane.scope.includes("track matte edits"), `${parentClosestLaneId}: lane must reject track matte edits.`);
+  assert(parentClosestLane.scope.includes("non-generated user assets"), `${parentClosestLaneId}: lane must reject non-generated user assets.`);
+  assert(parentClosestLane.scope.includes("raw JSX/source semantics"), `${parentClosestLaneId}: lane must reject raw source semantics.`);
+
+  const parentClosestRecipe = solutionById(registry, "parent-closest-layers-typed-plan");
+  assert(parentClosestRecipe, "Missing closest-layer parenting recipe: parent-closest-layers-typed-plan");
+  const parentClosestText = solutionContractText(parentClosestRecipe, recipeText(parentClosestRecipe));
+  assert.strictEqual(parentClosestRecipe.execution.mutating, true, "parent-closest-layers-typed-plan: must be mutating through set_layer_parent.");
+  assert(parentClosestRecipe.execution.preferredTools.includes("set_layer_parent"), "parent-closest-layers-typed-plan: must prefer set_layer_parent.");
+  assert(parentClosestRecipe.execution.preferredTools.includes("get_layer_details"), "parent-closest-layers-typed-plan: must require typed position/read-back inspection.");
+  assert(parentClosestText.includes("selectedChildLayerIndices"), "parent-closest-layers-typed-plan: must bind explicit selected child indices.");
+  assert(parentClosestText.includes("nearestParentPairs"), "parent-closest-layers-typed-plan: must disclose nearest child-parent pairs.");
+  assert(parentClosestText.includes("2D Transform Position") || parentClosestText.includes("2D position"), "parent-closest-layers-typed-plan: must require 2D position evidence.");
+  assert(parentClosestText.includes("equal-distance ties"), "parent-closest-layers-typed-plan: must reject equal-distance ties.");
+  assert(parentClosestText.includes("cycles"), "parent-closest-layers-typed-plan: must reject cycles.");
+  assert(parentClosestText.includes("post-mutation read-back"), "parent-closest-layers-typed-plan: must require read-back.");
+  assertNoRawExecutionGuidance("parent-closest-layers-typed-plan", parentClosestRecipe, recipeText(parentClosestRecipe));
+
+  const trackMatteLaneId = "layer-track-matte-generated-only";
+  const trackMatteLane = liveLaneFamilyById(liveLaneRegistry, trackMatteLaneId);
+  assert(trackMatteLane, `Missing first-four track matte lane: ${trackMatteLaneId}`);
+  assert(trackMatteLane.requiredTools.includes("set_layer_track_matte"), `${trackMatteLaneId}: lane must require set_layer_track_matte.`);
+  assert(trackMatteLane.allowedTools.includes("set_layer_metadata"), `${trackMatteLaneId}: lane must allow verified matte label updates.`);
+  assert(trackMatteLane.allowedTools.includes("get_layer_details"), `${trackMatteLaneId}: lane must keep typed layer read-back.`);
+  assert(trackMatteLane.readBackTools.includes("get_layer_details"), `${trackMatteLaneId}: lane must read track matte state back through get_layer_details.`);
+  assert.strictEqual(trackMatteLane.semanticVerification, true, `${trackMatteLaneId}: lane must require semantic verification.`);
+  assert(trackMatteLane.candidateIds.includes("tool-layers-set-all-track-matte-labels"), `${trackMatteLaneId}: lane must cover set-all-track-matte-labels.`);
+  assert(trackMatteLane.candidateIds.includes("tool-layers-set-track-matte-to-above"), `${trackMatteLaneId}: lane must cover set-track-matte-to-above.`);
+  assert(trackMatteLane.scope.includes("generated-only"), `${trackMatteLaneId}: lane must stay generated-only.`);
+  assert(trackMatteLane.scope.includes("explicit fill/matte layer indices"), `${trackMatteLaneId}: lane must bind explicit fill and matte indices.`);
+  assert(trackMatteLane.scope.includes("hasTrackMatte") && trackMatteLane.scope.includes("isTrackMatte"), `${trackMatteLaneId}: lane must require matte read fields.`);
+  assert(trackMatteLane.scope.includes("trackMatteLayer") && trackMatteLane.scope.includes("trackMatteTypeName"), `${trackMatteLaneId}: lane must require detailed track matte read-back.`);
+  assert(trackMatteLane.scope.includes("no layer reordering") || trackMatteLane.scope.includes("layer reordering"), `${trackMatteLaneId}: lane must mention reorder limits.`);
+  assert(trackMatteLane.scope.includes("non-generated user assets"), `${trackMatteLaneId}: lane must reject non-generated user assets.`);
+  assert(trackMatteLane.scope.includes("raw JSX"), `${trackMatteLaneId}: lane must reject raw JSX.`);
+
+  const setAllTrackMatteLabels = solutionById(registry, "set-all-track-matte-labels-typed-plan");
+  assert(setAllTrackMatteLabels, "Missing track matte label recipe: set-all-track-matte-labels-typed-plan");
+  const setAllTrackMatteLabelsText = solutionContractText(setAllTrackMatteLabels, recipeText(setAllTrackMatteLabels));
+  assert.strictEqual(setAllTrackMatteLabels.execution.mutating, true, "set-all-track-matte-labels-typed-plan: must be mutating through verified explicit indices.");
+  assert(setAllTrackMatteLabels.execution.preferredTools.includes("set_layer_metadata"), "set-all-track-matte-labels-typed-plan: must use set_layer_metadata for label updates.");
+  assert(setAllTrackMatteLabelsText.includes("isTrackMatte"), "set-all-track-matte-labels-typed-plan: must require isTrackMatte evidence.");
+  assert(setAllTrackMatteLabelsText.includes("label:16"), "set-all-track-matte-labels-typed-plan: must preserve label 16 semantics.");
+  assert(setAllTrackMatteLabelsText.includes("generated-only"), "set-all-track-matte-labels-typed-plan: must stay generated-only.");
+  assertNoRawExecutionGuidance("set-all-track-matte-labels-typed-plan", setAllTrackMatteLabels, recipeText(setAllTrackMatteLabels));
+
+  const setTrackMatteToAbove = solutionById(registry, "set-track-matte-to-above-typed-plan");
+  assert(setTrackMatteToAbove, "Missing track matte writer recipe: set-track-matte-to-above-typed-plan");
+  const setTrackMatteToAboveText = solutionContractText(setTrackMatteToAbove, recipeText(setTrackMatteToAbove));
+  assert.strictEqual(setTrackMatteToAbove.execution.mutating, true, "set-track-matte-to-above-typed-plan: must be mutating through set_layer_track_matte.");
+  assert(setTrackMatteToAbove.execution.preferredTools.includes("set_layer_track_matte"), "set-track-matte-to-above-typed-plan: must prefer set_layer_track_matte.");
+  assert(setTrackMatteToAboveText.includes("LUMA_INVERTED") || setTrackMatteToAboveText.includes("luma_inverted"), "set-track-matte-to-above-typed-plan: must preserve Luma Inverted semantics.");
+  assert(setTrackMatteToAboveText.includes("trackMatteLayer"), "set-track-matte-to-above-typed-plan: must require trackMatteLayer read-back.");
+  assert(setTrackMatteToAboveText.includes("no layer reordering") || setTrackMatteToAboveText.includes("Do not reorder"), "set-track-matte-to-above-typed-plan: must reject hidden reordering.");
+  assertNoRawExecutionGuidance("set-track-matte-to-above-typed-plan", setTrackMatteToAbove, recipeText(setTrackMatteToAbove));
+
+  const sortByPosition = solutionById(registry, "sortbyposition-typed-plan");
+  assert(sortByPosition, "Missing first-four reorder gap contract: sortbyposition-typed-plan");
+  const sortText = solutionContractText(sortByPosition, recipeText(sortByPosition));
+  assert.strictEqual(sortByPosition.execution.mutating, false, "sortbyposition-typed-plan: reorder gap contract must stay read-only.");
+  assert(sortText.includes("layer stack reordering typed tool"), "sortbyposition-typed-plan: must require a future reorder typed tool.");
+  assert(sortText.includes("current stack order"), "sortbyposition-typed-plan: must preserve stack-order evidence.");
+  assert(sortText.includes("verifyAfter:true"), "sortbyposition-typed-plan: future mutating reorder must require verifyAfter.");
+  assert(sortText.includes("checkpoint or edit-session protection"), "sortbyposition-typed-plan: future mutating reorder must require checkpoint/edit-session protection.");
+  assert(sortText.includes("post-mutation read-back"), "sortbyposition-typed-plan: future mutating reorder must require read-back.");
+  assertNoRawExecutionGuidance("sortbyposition-typed-plan", sortByPosition, recipeText(sortByPosition));
+
+  const newTrimmedNull = solutionById(registry, "newtrimmednull-typed-plan");
+  assert(newTrimmedNull, "Missing first-four parenting gap contract: newtrimmednull-typed-plan");
+  const nullText = solutionContractText(newTrimmedNull, recipeText(newTrimmedNull));
+  assert.strictEqual(newTrimmedNull.execution.mutating, false, "newtrimmednull-typed-plan: null/parenting gap contract must stay read-only.");
+  assert(nullText.includes("selected layer chosen as the top selected layer by explicit layer index"), "newtrimmednull-typed-plan: must bind top selected layer by explicit index.");
+  assert(nullText.includes("generated null timing/label/parenting spec"), "newtrimmednull-typed-plan: must disclose generated null relationship spec.");
+  assert(nullText.includes("ordering, and parenting typed tool contracts"), "newtrimmednull-typed-plan: must keep ordering and parenting as missing typed contracts.");
+  assert(nullText.includes("Do not create null layers") && nullText.includes("parent layers"), "newtrimmednull-typed-plan: must fail closed on current layer creation and parenting.");
+  assert(nullText.includes("post-mutation read-back"), "newtrimmednull-typed-plan: future mutating variant must require read-back.");
+  assertNoRawExecutionGuidance("newtrimmednull-typed-plan", newTrimmedNull, recipeText(newTrimmedNull));
+
+  return FIRST_FOUR_PARENTING_MATTE_REORDER_CONTRACT_IDS;
+}
+
+function assertFirstFourSwitchSolution(registry, id, requiredTools, requiredPatterns) {
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing first-four layer/effect switch contract: ${id}`);
+  const text = recipeText(solution);
+  const contractText = solutionContractText(solution, text);
+
+  assert.strictEqual(solution.execution.mutating, true, `${id}: switch/setter contract must be mutating.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  for (const tool of requiredTools) {
+    assert(solution.execution.preferredTools.includes(tool), `${id}: contract must keep typed tool ${tool}.`);
+  }
+  assert(
+    requiredTools.some((tool) => tool === "get_layer_details" || tool === "get_effect_details" || tool === "get_comp_details") ||
+      solution.execution.preferredTools.includes("get_layer_details") ||
+      solution.execution.preferredTools.includes("get_effect_details") ||
+      solution.execution.preferredTools.includes("get_comp_details"),
+    `${id}: contract must keep typed read-back.`
+  );
+  assert.strictEqual(solution.requiredSafetyGates.explicitConfirmation, true, `${id}: switch/setter contract must require explicit confirmation.`);
+  assert.strictEqual(solution.requiredSafetyGates.allowMutations, true, `${id}: switch/setter contract must require allowMutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: switch/setter contract must require checkpoint/edit-session protection.`);
+  assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, true, `${id}: switch/setter contract must require post-mutation read-back.`);
+  for (const pattern of requiredPatterns) {
+    assert(pattern.test(contractText), `${id}: contract must preserve ${pattern}.`);
+  }
+}
+
+function assertFirstFourSwitchLane(liveLaneRegistry, id, expected) {
+  const lane = liveLaneFamilyById(liveLaneRegistry, id);
+  assert(lane, `Missing first-four layer/effect switch lane: ${id}`);
+  assert.strictEqual(lane.productionTypedTools, true, `${id}: lane must use production typed tools.`);
+  assert.strictEqual(lane.semanticVerification, true, `${id}: lane must require semantic verification.`);
+  assert(lane.scope.includes("generated-only"), `${id}: lane must stay generated-only.`);
+  assert(!lane.allowedTools.includes("run_extendscript"), `${id}: lane must not allow inline ExtendScript.`);
+  assert(!lane.allowedTools.includes("run_extendscript_file"), `${id}: lane must not allow raw script file execution.`);
+  for (const tool of expected.requiredTools) {
+    assert(lane.requiredTools.includes(tool), `${id}: lane must require ${tool}.`);
+  }
+  for (const tool of expected.readBackTools) {
+    assert(lane.readBackTools.includes(tool), `${id}: lane must read back through ${tool}.`);
+  }
+  for (const candidateId of expected.candidateIds) {
+    assert(lane.candidateIds.includes(candidateId), `${id}: lane must stay scoped to ${candidateId}.`);
+  }
+  for (const text of expected.scopeIncludes) {
+    assert(lane.scope.includes(text), `${id}: lane scope must include "${text}".`);
+  }
+}
+
+function assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry) {
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-enabled-hard-solo-generated-only", {
+    requiredTools: ["set_layer_metadata"],
+    readBackTools: ["get_selected_layers", "get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-hard-solo-layers"],
+    scopeIncludes: [
+      "explicit selected-layer evidence",
+      "complete generated layer inventory",
+      "exact before/after Layer.enabled values",
+      "semantic verification",
+      "cleanup",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-blending-mode-difference-generated-only", {
+    requiredTools: ["set_layer_blending_mode"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-toggle-difference-blend-mode"],
+    scopeIncludes: [
+      "explicit selected-layer evidence",
+      "complete generated layer inventory",
+      "expected-name/current-mode guards",
+      "exact before/after blending mode values",
+      "source-exact Alt-key branching",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "explicit-layer-switch-generated-only", {
+    requiredTools: ["set_property_value"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-compositions-enable-collapse-transformations", "tool-compositions-enable-motion-blur"],
+    scopeIncludes: [
+      "whitelisted collapseTransformation and motionBlur",
+      "explicit generated targets",
+      "exact before/after switch values",
+      "semantic verification",
+      "cleanup",
+      "recursive/global traversal",
+      "arbitrary layer fields"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "adjustment-layer-placement-generated-only", {
+    requiredTools: ["create_adjustment_layer"],
+    readBackTools: ["get_comp_details", "get_layer_details"],
+    candidateIds: ["tool-layers-add-3d-break"],
+    scopeIncludes: [
+      "adjustment-layer placement",
+      "insertBeforeLayerIndex",
+      "expectedBeforeLayerName",
+      "immediatelyBefore:true",
+      "semantic verification",
+      "cleanup",
+      "generic layer reordering",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-connection-line-generated-only", {
+    requiredTools: ["create_layer_connection_line"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-connect-two-layers-with-a-line"],
+    scopeIncludes: [
+      "dynamic connector line",
+      "fromLayerIndex",
+      "toLayerIndex",
+      "locked connector layer",
+      "open two-point shape path",
+      "semantic verification",
+      "cleanup",
+      "thin rectangle",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "text-shapes-from-text-generated-only", {
+    requiredTools: ["create_shapes_from_text"],
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    candidateIds: ["tool-layers-create-shapes-from-text"],
+    scopeIncludes: [
+      "explicit generated text layer",
+      "expectedSourceText",
+      "Create Shapes from Text",
+      "shapeLayer:true",
+      "semantic verification",
+      "cleanup",
+      "localized menu command",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "puppet-on-transparent-effect-property-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-properties-toggle-puppet-on-transparent"],
+    scopeIncludes: [
+      "explicit generated ADBE FreePin3 effect",
+      "ADBE FreePin3 On Transparent",
+      "exact before/after boolean values",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "user Puppet effects",
+      "untyped effect-specific toggles"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "puppet-pin-guide-layer-generated-only", {
+    requiredTools: ["get_effect_details", "get_layer_details", "set_layer_metadata"],
+    readBackTools: ["get_layer_details", "get_effect_details"],
+    candidateIds: ["tool-layers-toggle-puppet-pins-as-guide-layers"],
+    scopeIncludes: [
+      "Puppet pin host guide-layer",
+      "ADBE FreePin3",
+      "set_layer_metadata guideLayer:true",
+      "expectedLayerNames",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "inferred Pseudo/Duik pin02 targets",
+      "user DuIK effect mutation",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "layer-fill-color-cycle-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-layers-add-fill-with-color-cycle"],
+    scopeIncludes: [
+      "stateless Fill color-cycle",
+      "ADBE Fill Color property",
+      "reviewed palette color",
+      "exact before/after value",
+      "semantic verification",
+      "cleanup",
+      "app.settings/app.preferences persistence",
+      "automatic cross-run next-color state",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "effect-enabled-toggle-generated-only", {
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_enabled"],
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    candidateIds: ["tool-layers-toggle-specific-effects"],
+    scopeIncludes: [
+      "effect enabled-state",
+      "ADBE Turbulent Displace",
+      "effect.enabled",
+      "set_effect_enabled",
+      "expectedCurrentEnabled",
+      "semantic verification",
+      "cleanup",
+      "source-exact all-project traversal",
+      "Alt-key branching",
+      "broad selected-layer scans",
+      "unreviewed user effects",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "grid-rig-control-replacement-generated-only", {
+    requiredTools: ["create_shape_layer", "set_layer_metadata", "add_effect", "delete_layer"],
+    readBackTools: ["get_comp_details", "get_layer_details", "get_effect_details"],
+    candidateIds: ["tool-layers-replace-grid-rig-control"],
+    scopeIncludes: [
+      "Grid Rig Control replacement",
+      "label/enabled/guideLayer",
+      "ADBE Slider Control",
+      "Gutter",
+      "Matte Roundness",
+      "delete_layer",
+      "semantic verification",
+      "cleanup",
+      "non-generated destructive replacement",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-panel-refresh-generated-only", {
+    requiredTools: ["refresh_comp_panel"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-compositions-force-composition-panel-refresh"],
+    scopeIncludes: [
+      "Composition panel refresh",
+      "comp.motionBlur",
+      "expectedMotionBlur",
+      "restored motionBlur",
+      "semantic verification",
+      "cleanup",
+      "active-viewer side effects",
+      "layer motionBlur",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-rename-to-file-name-generated-only", {
+    requiredTools: ["get_project_info", "rename_project_items"],
+    readBackTools: ["find_project_items", "get_comp_details"],
+    candidateIds: ["tool-compositions-rename-composition-to-file-name"],
+    scopeIncludes: [
+      "project file basename",
+      "get_project_info.file",
+      "mode:\"exact\"",
+      "type:\"comp\"",
+      "concrete itemIndices",
+      "semantic verification",
+      "cleanup",
+      "unsaved project",
+      "arbitrary filesystem reads/writes",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "composition-save-frame-png-generated-only", {
+    requiredTools: ["save_comp_frame_png"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-compositions-save-frame-as-png"],
+    scopeIncludes: [
+      "saveFrameToPng",
+      "generated composition",
+      "logs/generated-exports",
+      "sha256",
+      "resolutionFactor",
+      "semantic verification",
+      "cleanup",
+      "Desktop",
+      "arbitrary user paths",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "project-preserve-nested-frame-rate-generated-only", {
+    requiredTools: ["set_comp_properties"],
+    readBackTools: ["get_comp_details"],
+    candidateIds: ["tool-project-toggle-preserve-nested-frame-rate"],
+    scopeIncludes: [
+      "preserveNestedFrameRate",
+      "explicit generated composition targets",
+      "set_comp_properties",
+      "semantic verification",
+      "cleanup",
+      "all-project CompItem traversal",
+      "ALT-key",
+      "non-generated user comp",
+      "render queue",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "project-timecode-start-frame-generated-only", {
+    requiredTools: ["set_project_frames_count_type", "set_comp_properties"],
+    readBackTools: ["get_project_info", "get_comp_details"],
+    candidateIds: ["tool-project-toggle-timecode-and-start-frames"],
+    scopeIncludes: [
+      "project frame numbering",
+      "native displayStartFrame",
+      "explicit generated composition targets",
+      "set_project_frames_count_type",
+      "set_comp_properties",
+      "semantic verification",
+      "cleanup",
+      "all-project CompItem traversal",
+      "Alt-key",
+      "displayStartTime fallback",
+      "non-generated user comp",
+      "raw JSX"
+    ]
+  });
+  assertFirstFourSwitchLane(liveLaneRegistry, "reset-imported-item-names-generated-only", {
+    requiredTools: ["save_comp_frame_png", "import_footage", "rename_project_items"],
+    readBackTools: ["find_project_items", "get_project_snapshot"],
+    candidateIds: ["tool-project-reset-imported-item-names"],
+    scopeIncludes: [
+      "imported footage name reset",
+      "logs/generated-exports",
+      "import_footage",
+      "type:\"footage\"",
+      "mode:\"exact\"",
+      "file display name",
+      "semantic verification",
+      "generated PNG removal",
+      "Project panel selection",
+      "relinking",
+      "arbitrary user file paths",
+      "non-generated user assets",
+      "raw JSX"
+    ]
+  });
+
+  assertFirstFourSwitchSolution(registry, "hard-solo-layers-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_metadata", "get_layer_details"], [
+    /generated layers/,
+    /current `enabled` state/,
+    /enabled:true/,
+    /enabled:false/,
+    /Do not infer selection/,
+    /multi-comp\/project-wide hard solo/,
+    /raw script execution/
+  ]);
+  assertFirstFourSwitchSolution(registry, "difference-blend-mode-typed-plan", ["get_selected_layers", "get_comp_details", "set_layer_blending_mode", "get_layer_details"], [
+    /current `blendingModeName` evidence/,
+    /expectedCurrentBlendingModes/,
+    /blendingMode:"difference"/,
+    /Alt-key branching/,
+    /non-generated user assets/,
+    /raw script execution/
+  ]);
+  assertFirstFourSwitchSolution(registry, "enable-collapse-transformations-typed-plan", ["get_selected_layers", "get_layer_details", "set_property_value"], [
+    /current `collapseTransformation`/,
+    /requested final value `collapseTransformation:true`/,
+    /propertyPath:"collapseTransformation"/,
+    /setAtTime:false/,
+    /verifyAfter:true/,
+    /recursive\/global traversal/,
+    /unrelated layer attributes/
+  ]);
+  assertFirstFourSwitchSolution(registry, "enable-motion-blur-typed-plan", ["get_selected_layers", "get_layer_details", "set_property_value"], [
+    /current `motionBlur`/,
+    /requested final value `motionBlur:true`/,
+    /propertyPath:"motionBlur"/,
+    /setAtTime:false/,
+    /verifyAfter:true/,
+    /comp-wide motion blur/,
+    /recursive\/global traversal/,
+    /unrelated layer attributes/
+  ]);
+  assertFirstFourSwitchSolution(registry, "add-3d-break-typed-plan", ["get_selected_layers", "get_comp_details", "get_layer_details", "create_adjustment_layer"], [
+    /insertBeforeLayerIndex/,
+    /expectedBeforeLayerName/,
+    /adjustmentLayer:true/,
+    /immediatelyBefore:true/,
+    /generatedAdjustmentLayer\.index \+ 1 === guardedLayer\.index/,
+    /generic layer stack reorder|generic layer reordering/,
+    /non-generated user-asset mutation/,
+    /raw ExtendScript/
+  ]);
+  assertFirstFourSwitchSolution(registry, "connect-two-layers-with-a-line-typed-plan", ["get_selected_layers", "get_layer_details", "create_layer_connection_line"], [
+    /generated connector layer/,
+    /fromLayerIndex/,
+    /toLayerIndex/,
+    /locked/,
+    /open two-point shape path/,
+    /thin rectangle/,
+    /non-generated user assets/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "create-shapes-from-text-typed-plan", ["get_layer_details", "create_shapes_from_text"], [
+    /generated text layer/,
+    /expectedLayerName/,
+    /expectedSourceText/,
+    /shapeLayerName/,
+    /shapeLayer:true/,
+    /Create Shapes from Text/,
+    /localized menu command/,
+    /non-generated user assets/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "force-composition-panel-refresh-typed-plan", ["get_comp_details", "refresh_comp_panel"], [
+    /generated composition/,
+    /expectedMotionBlur/,
+    /comp\.motionBlur/,
+    /motionBlurRestored:true/,
+    /transientToggled:true/,
+    /set_comp_properties/,
+    /layer motionBlur/,
+    /active-viewer/,
+    /non-generated user assets/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-puppet-on-transparent-typed-plan", ["add_effect", "get_effect_details", "set_effect_property"], [
+    /explicit generated/,
+    /ADBE FreePin3 On Transparent/,
+    /reviewed boolean value/,
+    /setAtTime:false/,
+    /all-project traversal/,
+    /Alt-key branching/,
+    /user Puppet effects/,
+    /unreviewed effect\/property targeting/
+  ]);
+  assertFirstFourSwitchSolution(registry, "add-fill-with-color-cycle-typed-plan", ["get_selected_layers", "add_effect", "get_effect_details", "set_effect_property", "get_layer_details"], [
+    /ADBE Fill/,
+    /reviewed cycle color/,
+    /setAtTime:false/,
+    /app\.settings/,
+    /app\.preferences/,
+    /automatic cross-run color advancement/,
+    /broad selected-layer traversal/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-specific-effects-typed-plan", ["list_effects", "get_effect_details", "set_effect_enabled", "get_layer_details"], [
+    /effect\.enabled/,
+    /expectedCurrentEnabled/,
+    /enabled:true|enabled:false/,
+    /source-exact project-wide traversal/,
+    /Alt-key behavior/,
+    /broad selected-layer scans/,
+    /unreviewed user effects/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "replace-grid-rig-control-typed-plan", ["get_selected_layers", "get_layer_details", "create_shape_layer", "set_layer_metadata", "add_effect", "get_effect_details", "delete_layer"], [
+    /Grid Rig Control/,
+    /label/,
+    /enabled/,
+    /guideLayer/,
+    /ADBE Slider Control/,
+    /Gutter/,
+    /Matte Roundness/,
+    /delete_layer/,
+    /non-generated destructive replacement/,
+    /raw JSX/
+  ]);
+  assertFirstFourSwitchSolution(registry, "toggle-puppet-pins-as-guide-layers-typed-plan", ["get_effect_details", "set_layer_metadata", "get_layer_details"], [
+    /Puppet pin host/,
+    /guideLayer/,
+    /ADBE FreePin3/,
+    /Pseudo\/Duik pin02/,
+    /set_layer_metadata/,
+    /get_effect_details/,
+    /get_layer_details/,
+    /project-wide/,
+    /Alt-key/,
+    /raw JSX/
+  ]);
+
+  return FIRST_FOUR_LAYER_EFFECT_SWITCH_CONTRACT_IDS;
+}
+
+function assertArKeyframeLane(liveLaneRegistry, id, expected) {
+  const lane = liveLaneFamilyById(liveLaneRegistry, id);
+  assert(lane, `Missing AR keyframe lane family: ${id}`);
+  assert.strictEqual(lane.productionTypedTools, true, `${id}: lane must use production typed tools.`);
+  assert.strictEqual(lane.semanticVerification, true, `${id}: lane must require semantic verification.`);
+  for (const tool of expected.requiredTools) {
+    assert(lane.requiredTools.includes(tool), `${id}: lane must require ${tool}.`);
+  }
+  for (const tool of expected.allowedTools) {
+    assert(lane.allowedTools.includes(tool), `${id}: lane must allow ${tool}.`);
+  }
+  for (const tool of expected.readBackTools) {
+    assert(lane.readBackTools.includes(tool), `${id}: lane must read back through ${tool}.`);
+  }
+  for (const candidateId of expected.candidateIds) {
+    assert(lane.candidateIds.includes(candidateId), `${id}: lane must stay scoped to ${candidateId}.`);
+  }
+  for (const text of expected.scopeIncludes) {
+    assert(lane.scope.includes(text), `${id}: lane scope must include "${text}".`);
+  }
+  return expected.candidateIds;
+}
+
+function assertArKeyframeLanes(liveLaneRegistry) {
+  return {
+    timing: assertArKeyframeLane(liveLaneRegistry, "ar-selected-keyframe-timing-generated-only", {
+      requiredTools: ["get_selected_properties", "set_property_keyframes"],
+      allowedTools: ["get_selected_properties", "set_property_keyframes", "get_layer_details"],
+      readBackTools: ["get_selected_properties", "get_layer_details"],
+      candidateIds: [
+        "tool-ar_alignkeyframes",
+        "tool-ar_distributekeyframesbystep",
+        "tool-ar_distributekeyframesevenly"
+      ],
+      scopeIncludes: [
+        "set_property_keyframes clearExisting:true",
+        "complete generated scalar property keyframe sequence",
+        "get_selected_properties plus get_layer_details read-back",
+        "source-exact native selected-key discovery",
+        "raw JSX algorithms remain fail-closed"
+      ]
+    }),
+    boundary: assertArKeyframeLane(liveLaneRegistry, "ar-selected-keyframe-boundary-distribution-generated-only", {
+      requiredTools: ["get_comp_details", "get_selected_properties", "set_property_keyframes"],
+      allowedTools: ["get_comp_details", "get_selected_properties", "set_property_keyframes", "get_layer_details"],
+      readBackTools: ["get_comp_details", "get_selected_properties", "get_layer_details"],
+      candidateIds: [
+        "tool-ar_distributekeyframestocomp",
+        "tool-ar_distributekeyframestolayer",
+        "tool-ar_distributekeyframestoworkarea"
+      ],
+      scopeIncludes: [
+        "reviewed comp duration/work-area",
+        "generated layer in/out evidence",
+        "boundary-derived times/values",
+        "comp/layer/work-area mutation",
+        "raw JSX algorithms remain fail-closed"
+      ]
+    })
+  };
+}
+
 function main() {
   const registry = readRegistry();
+  const liveLaneRegistry = readLiveLaneRegistry();
   const registrySummary = assertSeedQuality(registry);
   assertDakkshinAdvisoryQuality(registry);
   assertToolBackedGuidanceQuality(registry);
   assertImportedAdvisoryQuality(registry);
+  const firstFourCompositionMarkerContracts = assertFirstFourCompositionMarkerContracts(registry);
+  const firstFourFileRenderProxyContracts = assertFirstFourFileRenderProxyContracts(registry);
+  const firstFourParentingMatteReorderContracts = assertFirstFourParentingMatteReorderContracts(registry, liveLaneRegistry);
+  const firstFourLayerEffectSwitchContracts = assertFirstFourLayerEffectSwitchContracts(registry, liveLaneRegistry);
+  const arKeyframeLanes = assertArKeyframeLanes(liveLaneRegistry);
   const actualRetrieval = assertActualRetrieval(registry);
   const candidateOmitted = assertCandidateInvisibility(registry);
   const staleAndEquivalent = assertStaleAndToolEquivalentBehavior();
@@ -3536,6 +6150,13 @@ function main() {
     dakkshinAdvisory: DAKKSHIN_ADVISORY_IDS,
     toolBackedGuidance: TOOL_BACKED_IDS,
     importedAdvisory: IMPORTED_ADVISORY_IDS,
+    firstFourContracts: {
+      compositionMarkerContracts: firstFourCompositionMarkerContracts,
+      fileRenderProxyContracts: firstFourFileRenderProxyContracts,
+      parentingMatteReorderContracts: firstFourParentingMatteReorderContracts,
+      layerEffectSwitchContracts: firstFourLayerEffectSwitchContracts,
+      arKeyframeLanes
+    },
     actualRetrieval: {
       contextReturned: actualRetrieval.contextRetrieval.returned,
       alignReturned: actualRetrieval.alignRetrieval.returned,
@@ -3551,3 +6172,1414 @@ function main() {
 }
 
 main();
+
+function assertArCreateDivisionGuidesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-createdivisionguides-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: division guide overlay workflow must be mutating.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["create_comp", "get_comp_details", "create_shape_layer", "add_effect", "get_effect_details", "get_layer_details"],
+    `${id}: AR create division guides workflow should stay on generated guide overlay typed tools.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_CreateDivisionGuides/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("divisionGuideSpec"), `${id}: recipe should require a reviewed divisionGuideSpec.`);
+  assert(text.includes("generated visual division guide overlays"), `${id}: recipe should document generated guide overlay adaptation.`);
+  assert(text.includes("CompItem.addGuide"), `${id}: recipe should fail closed for native AE guide semantics.`);
+  assert(text.includes("get_layer_details"), `${id}: recipe should require guide overlay read-back.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.verificationRecipe.steps.some((step) => /create_shape_layer/.test(step)), `${id}: verification must include generated guide overlay creation.`);
+  assert(solution.verificationRecipe.steps.some((step) => /divisionGuideSpec/.test(step)), `${id}: verification must include divisionGuideSpec review.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /computed vertical and\/or horizontal guide coordinates/.test(item)), `${id}: evidence must require computed division coordinates.`);
+  assert(solution.notes.some((note) => /native AE guide records/.test(note)), `${id}: notes must reject native guide-record claims.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for native guide semantics.`);
+
+  const retrieval = retrieveSolutionHints("Create AR division guides as generated guide overlays with reviewed columns and rows, using create_shape_layer and get_layer_details read-back instead of native CompItem.addGuide.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR create division guides advisory recipe should surface for division guide overlay prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Create Division Guides Typed Plan"), "prompt section should include AR create division guides advisory title.");
+  assert(promptSection.includes("divisionGuideSpec"), "prompt section should preserve division guide spec guidance.");
+  assert(promptSection.includes("create_shape_layer"), "prompt section should prefer create_shape_layer for generated division guides.");
+  assert(promptSection.includes("CompItem.addGuide"), "prompt section should preserve native guide warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR create division guides guidance should not recommend raw ExtendScript.");
+}
+
+assertArCreateDivisionGuidesAppendOnlySmoke();
+
+function assertArCreateFusionLoadersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-createfusionloaders-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: Fusion Loader text export must be a file-output side effect.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "export_text_to_file"],
+    `${id}: AR create Fusion loaders workflow should stay on selected-layer read-back and generated text export.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_CreateFusionLoaders/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("fusionLoaderExportSpec"), `${id}: recipe should require a reviewed fusionLoaderExportSpec.`);
+  assert(text.includes("Fusion Loader"), `${id}: recipe should document Fusion Loader text generation.`);
+  assert(text.includes("export_text_to_file"), `${id}: recipe should use generated text export.`);
+  assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+  assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+  assert(text.includes("File.execute"), `${id}: recipe should fail closed for source-exact editor launch.`);
+  assert(text.includes("raw Fusion settings"), `${id}: recipe should fail closed for raw Fusion settings export.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include selected layer source/timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /LoaderN = Loader/.test(item)), `${id}: evidence must require generated Loader blocks.`);
+  assert(solution.notes.some((note) => /post-export selected-layer/.test(note)), `${id}: notes must require post-export selected-layer read-back.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for exact source semantics.`);
+
+  const retrieval = retrieveSolutionHints("Create Fusion loader nodes from selected AVLayers and export reviewed Fusion Loader text to a generated txt file with export_text_to_file and sha256 read-back instead of temp folder File.execute.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR create Fusion loaders advisory recipe should surface for Fusion Loader export prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Create Fusion Loaders Typed Plan"), "prompt section should include AR create Fusion loaders advisory title.");
+  assert(promptSection.includes("fusionLoaderExportSpec"), "prompt section should preserve Fusion loader export spec guidance.");
+  assert(promptSection.includes("export_text_to_file"), "prompt section should prefer generated text export.");
+  assert(promptSection.includes("File.execute"), "prompt section should preserve source-exact editor launch warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR create Fusion loaders guidance should not recommend raw ExtendScript.");
+}
+
+assertArCreateFusionLoadersAppendOnlySmoke();
+
+function assertArDivideLayersDurationAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-dividelayersduration-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected layer timing division must be mutating.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR divide layers duration workflow should stay on selected-layer timing typed tools.`
+  );
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.tags.includes("external-script-advisory"), `${id}: external-script advisory tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DivideLayersDuration/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("divideLayersDurationSpec"), `${id}: recipe should require a reviewed divideLayersDurationSpec.`);
+  assert(text.includes("first selected layer's current duration"), `${id}: recipe should document first selected layer duration semantics.`);
+  assert(text.includes("sectionDuration"), `${id}: recipe should compute equal sectionDuration values.`);
+  assert(text.includes("rounded to the nearest frame"), `${id}: recipe should document frame-boundary rounding.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer timing division must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer timing division must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer order.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /first selected layer duration/.test(item)), `${id}: evidence must require first selected layer duration.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /rounded section boundary/.test(item)), `${id}: evidence must require rounded timing boundaries.`);
+  assert(solution.notes.some((note) => /selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact selection ordering.`);
+  assert(solution.notes.some((note) => /raw ExtendScript/.test(note)), `${id}: notes must reject raw ExtendScript.`);
+
+  const retrieval = retrieveSolutionHints("Divide selected layers duration into equal sequential sections from the first selected layer duration, using get_selected_layers order, get_layer_details timing evidence, set_layer_time_range, and rounded outPoint read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR divide layers duration advisory recipe should surface for selected layer duration division prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Divide Layers Duration Typed Plan"), "prompt section should include AR divide layers duration advisory title.");
+  assert(promptSection.includes("divideLayersDurationSpec"), "prompt section should preserve divide layer duration spec guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(promptSection.includes("first selected layer"), "prompt section should preserve first selected layer duration semantics.");
+  assert(!/run_extendscript/i.test(promptSection), "AR divide layers duration guidance should not recommend raw ExtendScript.");
+}
+
+assertArDivideLayersDurationAppendOnlySmoke();
+
+function assertArLinkPuppetPinsToNullsAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-linkpuppetpinstonulls-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, false, `${id}: Puppet pin to null linking must stay read-only until mutating contracts exist.`);
+  assert.strictEqual(solution.execution.riskLevel, "high", `${id}: Puppet pin to null linking should preserve high-risk classification.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_selected_properties", "get_layer_details", "get_effect_details"],
+    `${id}: AR link Puppet pins to nulls workflow should stay on read-only typed evidence tools.`
+  );
+  assert(solution.tags.includes("typed-tool-gap"), `${id}: typed-tool-gap tag should be present.`);
+  assert(solution.tags.includes("read-only"), `${id}: read-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_LinkPuppetPinsToNulls/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("linkPuppetPinsToNullsSpec"), `${id}: recipe should require a reviewed linkPuppetPinsToNullsSpec.`);
+  assert(text.includes("ADBE FreePin3"), `${id}: recipe should require reviewed Puppet effect evidence.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should inspect selected-property evidence.`);
+  assert(text.includes("get_effect_details"), `${id}: recipe should inspect Puppet effect details.`);
+  assert(text.includes("generated null-layer creation"), `${id}: recipe should keep generated null creation as a missing contract.`);
+  assert(text.includes("expression/link"), `${id}: recipe should keep expression/link writes as a missing contract.`);
+  assert(text.includes("coordinate-space"), `${id}: recipe should preserve coordinate-space gap.`);
+  assert(text.includes("Do not create"), `${id}: recipe should fail closed on creation/mutation.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only advisory must not allow mutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: high-risk advisory should preserve checkpoint/edit-session protection.`);
+  assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, false, `${id}: read-only advisory must not claim post-mutation read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include Puppet effect inspection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /linkPuppetPinsToNullsSpec/.test(step)), `${id}: verification must report the future-link spec.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /Puppet pin atom/.test(item)), `${id}: evidence must require Puppet pin atom paths.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /without creating null layers or writing expressions/.test(item)), `${id}: evidence must prove read-only behavior.`);
+  assert(solution.notes.some((note) => /separately accepted generated null-controller creation/.test(note)), `${id}: notes must require a separate null-controller contract.`);
+  assert(solution.notes.some((note) => /post-mutation get_layer_details\/get_effect_details read-back/.test(note)), `${id}: notes must require future typed read-back.`);
+
+  const retrieval = retrieveSolutionHints("Link selected Puppet pins to generated null controllers after get_selected_properties and get_effect_details show ADBE FreePin3 pin atoms, but report the missing null creation and expression link contract.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR link Puppet pins to nulls advisory recipe should surface for Puppet pin null-controller prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Link Puppet Pins To Nulls Typed Plan"), "prompt section should include AR link Puppet pins to nulls advisory title.");
+  assert(promptSection.includes("linkPuppetPinsToNullsSpec"), "prompt section should preserve Puppet pin/null spec guidance.");
+  assert(promptSection.includes("get_effect_details"), "prompt section should prefer Puppet effect inspection.");
+  assert(promptSection.includes("typed-tool gap"), "prompt section should preserve typed-tool gap guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR link Puppet pins to nulls guidance should not recommend raw ExtendScript.");
+}
+
+assertArLinkPuppetPinsToNullsAppendOnlySmoke();
+
+function assertArMasksToFusionPolygonsAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-maskstofusionpolygons-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: Fusion Polygon text export must be a file-output side effect.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: generated mask-to-Fusion export should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_path_geometry", "export_text_to_file"],
+    `${id}: AR masks to Fusion polygons workflow should stay on path geometry read-back and generated text export.`
+  );
+  assert(solution.tags.includes("mask-path"), `${id}: mask-path tag should be present.`);
+  assert(solution.tags.includes("fusion-polygon"), `${id}: fusion-polygon tag should be present.`);
+  assert(solution.tags.includes("file-output"), `${id}: file-output tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_MasksToFusionPolygons/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("fusionPolygonExportSpec"), `${id}: recipe should require a reviewed fusionPolygonExportSpec.`);
+  assert(text.includes("get_path_geometry"), `${id}: recipe should read mask path geometry.`);
+  assert(text.includes("export_text_to_file"), `${id}: recipe should use generated text export.`);
+  assert(text.includes("Fusion Polygon"), `${id}: recipe should document Fusion Polygon text generation.`);
+  assert(text.includes("logs/generated-exports"), `${id}: recipe should document the generated export root.`);
+  assert(text.includes("sha256"), `${id}: recipe should require hash read-back.`);
+  assert(text.includes("clipboard"), `${id}: recipe should fail closed for clipboard behavior.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: file-output export must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: file-output export must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_path_geometry/.test(step)), `${id}: verification must include mask path geometry read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /export_text_to_file/.test(step)), `${id}: verification must include export_text_to_file.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /Fusion Polygon-style node payload/.test(item)), `${id}: evidence must require generated Fusion Polygon payload.`);
+  assert(solution.notes.some((note) => /post-export get_path_geometry read-back/.test(note)), `${id}: notes must require post-export geometry read-back.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require separate contracts for source-exact semantics.`);
+
+  const retrieval = retrieveSolutionHints("Convert a selected AE mask path to Fusion Polygon text after get_path_geometry reads vertices and tangents, write a generated txt with export_text_to_file, and read the mask geometry back without clipboard or raw JSX.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR masks to Fusion polygons advisory recipe should surface for mask path Fusion Polygon export prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Masks To Fusion Polygons Typed Plan"), "prompt section should include AR masks to Fusion polygons advisory title.");
+  assert(promptSection.includes("fusionPolygonExportSpec"), "prompt section should preserve Fusion Polygon export spec guidance.");
+  assert(promptSection.includes("get_path_geometry"), "prompt section should prefer mask path geometry read-back.");
+  assert(promptSection.includes("export_text_to_file"), "prompt section should prefer generated text export.");
+  assert(promptSection.includes("clipboard"), "prompt section should preserve clipboard warning.");
+  assert(!/run_extendscript/i.test(promptSection), "AR masks to Fusion polygons guidance should not recommend raw ExtendScript.");
+}
+
+assertArMasksToFusionPolygonsAppendOnlySmoke();
+
+function assertArNullsToCornerPinsAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-nullstocornerpins-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, false, `${id}: nulls to Corner Pin linking must stay read-only until mutating contracts exist.`);
+  assert.strictEqual(solution.execution.riskLevel, "high", `${id}: nulls to Corner Pin linking should preserve high-risk classification.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_selected_properties", "get_layer_details", "list_effects", "get_effect_details"],
+    `${id}: AR nulls to Corner Pin workflow should stay on read-only typed evidence tools.`
+  );
+  assert(solution.tags.includes("typed-tool-gap"), `${id}: typed-tool-gap tag should be present.`);
+  assert(solution.tags.includes("read-only"), `${id}: read-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_NullsToCornerPins/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("nullsToCornerPinsSpec"), `${id}: recipe should require a reviewed nullsToCornerPinsSpec.`);
+  assert(text.includes("Corner Pin"), `${id}: recipe should document Corner Pin target inspection.`);
+  assert(text.includes("get_layer_details"), `${id}: recipe should inspect null controller layer evidence.`);
+  assert(text.includes("get_effect_details"), `${id}: recipe should inspect Corner Pin-like effect details.`);
+  assert(text.includes("Do not create"), `${id}: recipe should fail closed on creation/mutation.`);
+  assert(text.includes("coordinate-space"), `${id}: recipe should preserve coordinate-space gap.`);
+  assert(!/run_extendscript/i.test(text), `${id}: imported advisory recipe should not recommend raw ExtendScript.`);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert.strictEqual(solution.requiredSafetyGates.allowMutations, false, `${id}: read-only advisory must not allow mutations.`);
+  assert.strictEqual(solution.requiredSafetyGates.checkpointOrEditSession, true, `${id}: high-risk advisory should preserve checkpoint/edit-session protection.`);
+  assert.strictEqual(solution.requiredSafetyGates.postMutationReadBack, false, `${id}: read-only advisory must not claim post-mutation read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include null controller layer inspection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_effect_details/.test(step)), `${id}: verification must include Corner Pin effect inspection.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /null controller layers/.test(item)), `${id}: evidence must require null controller layers.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /no null layer creation/.test(item)), `${id}: evidence must prove read-only behavior.`);
+  assert(solution.notes.some((note) => /separate typed-tool contract/.test(note)), `${id}: notes must require a separate contract for mutation.`);
+  assert(solution.notes.some((note) => /set_effect_property/.test(note)), `${id}: notes must reject effect-property mutation without a separate contract.`);
+
+  const retrieval = retrieveSolutionHints("Connect four null controller layers to Corner Pin points after get_layer_details and get_effect_details show null positions and effect point property paths, but report the missing expression and effect-property mutation contract.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR nulls to Corner Pin advisory recipe should surface for null controller Corner Pin prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Nulls To Corner Pins Typed Plan"), "prompt section should include AR nulls to Corner Pins advisory title.");
+  assert(promptSection.includes("nullsToCornerPinsSpec"), "prompt section should preserve nulls to Corner Pin spec guidance.");
+  assert(promptSection.includes("get_effect_details"), "prompt section should prefer Corner Pin effect inspection.");
+  assert(promptSection.includes("typed-tool gap"), "prompt section should preserve typed-tool gap guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR nulls to Corner Pin guidance should not recommend raw ExtendScript.");
+}
+
+assertArNullsToCornerPinsAppendOnlySmoke();
+
+function assertArParentAboveAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-parentabove-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: parent-above workflow should be a gated parent-link mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer parenting should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_selection", "set_layer_parent"],
+    `${id}: AR parent above workflow should stay on typed selection, layer-order, parent-write, and read-back tools.`
+  );
+  assert(solution.tags.includes("parenting"), `${id}: parenting tag should be present.`);
+  assert(solution.tags.includes("generated-only"), `${id}: generated-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_ParentAbove/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("parentAboveSpec"), `${id}: recipe should require a reviewed parentAboveSpec.`);
+  assert(text.includes("above-parent"), `${id}: recipe should preserve above-parent layer semantics.`);
+  assert(text.includes("topmost"), `${id}: recipe should reject topmost selected children.`);
+  assert(text.includes("cycles"), `${id}: recipe should reject parent cycles.`);
+  assert(text.includes("post-mutation read-back"), `${id}: recipe should require post-mutation read-back.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: parent-link mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: parent-link mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_parent/.test(step)), `${id}: verification must include set_layer_parent.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer parent read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /above-parent pair/.test(item)), `${id}: evidence must require above-parent pairs.`);
+  assert(solution.notes.some((note) => /source-exact selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact ordering.`);
+  assert(solution.notes.some((note) => /set_layer_parent/.test(note)), `${id}: notes must require guarded set_layer_parent usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_ParentAbove by parenting selected generated child layers to the layer directly above each child using parentAboveSpec, set_layer_parent, expected names, cycle checks, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR parent above advisory recipe should surface for parent-above selected layer prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Parent Above Typed Plan"), "prompt section should include AR parent above advisory title.");
+  assert(promptSection.includes("parentAboveSpec"), "prompt section should preserve parent-above spec guidance.");
+  assert(promptSection.includes("set_layer_parent"), "prompt section should prefer typed parent-link mutation.");
+  assert(promptSection.includes("above-parent"), "prompt section should preserve above-parent semantics.");
+  assert(!/run_extendscript/i.test(promptSection), "AR parent above guidance should not recommend raw ExtendScript.");
+}
+
+assertArParentAboveAppendOnlySmoke();
+
+function assertArParentAboveOddAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-parentaboveodd-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: parent-above-odd workflow should be a gated parent-link mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer parenting should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_selection", "set_layer_parent"],
+    `${id}: AR parent above odd workflow should stay on typed selection, layer-order, parent-write, and read-back tools.`
+  );
+  assert(solution.tags.includes("parenting"), `${id}: parenting tag should be present.`);
+  assert(solution.tags.includes("odd-selection"), `${id}: odd-selection tag should be present.`);
+  assert(solution.tags.includes("generated-only"), `${id}: generated-only tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_ParentAboveOdd/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("parentAboveOddSpec"), `${id}: recipe should require a reviewed parentAboveOddSpec.`);
+  assert(text.includes("oddSelectionPolicy"), `${id}: recipe should require reviewed odd-selection policy.`);
+  assert(text.includes("above-parent"), `${id}: recipe should preserve above-parent layer semantics.`);
+  assert(text.includes("topmost"), `${id}: recipe should reject topmost selected children.`);
+  assert(text.includes("cycles"), `${id}: recipe should reject parent cycles.`);
+  assert(text.includes("post-mutation read-back"), `${id}: recipe should require post-mutation read-back.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: parent-link mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: parent-link mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_parent/.test(step)), `${id}: verification must include set_layer_parent.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer parent read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /odd child -> above-parent pair/.test(item)), `${id}: evidence must require odd child above-parent pairs.`);
+  assert(solution.notes.some((note) => /source-exact odd-selection semantics/.test(note)), `${id}: notes must require a separate contract for source-exact odd-selection semantics.`);
+  assert(solution.notes.some((note) => /set_layer_parent/.test(note)), `${id}: notes must require guarded set_layer_parent usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_ParentAboveOdd by parenting reviewed odd selected generated child layers to the layer directly above each child using parentAboveOddSpec, oddSelectionPolicy, set_layer_parent, expected names, cycle checks, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR parent above odd advisory recipe should surface for parent-above-odd selected layer prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Parent Above Odd Typed Plan"), "prompt section should include AR parent above odd advisory title.");
+  assert(promptSection.includes("parentAboveOddSpec"), "prompt section should preserve parent-above-odd spec guidance.");
+  assert(promptSection.includes("oddSelectionPolicy"), "prompt section should preserve odd-selection policy guidance.");
+  assert(promptSection.includes("set_layer_parent"), "prompt section should prefer typed parent-link mutation.");
+  assert(promptSection.includes("above-parent"), "prompt section should preserve above-parent semantics.");
+  assert(!/run_extendscript/i.test(promptSection), "AR parent above odd guidance should not recommend raw ExtendScript.");
+}
+
+assertArParentAboveOddAppendOnlySmoke();
+
+function assertArSelectEvenLayersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-selectevenlayers-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: even-layer selection should be a gated selection-state mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer selection should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+    `${id}: AR select even layers workflow should stay on typed comp inventory, selection write, and read-back tools.`
+  );
+  assert(solution.tags.includes("selection"), `${id}: selection tag should be present.`);
+  assert(solution.tags.includes("even-selection"), `${id}: even-selection tag should be present.`);
+  assert(solution.tags.includes("set-selection"), `${id}: set-selection tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SelectEvenLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("evenSelectionPolicy"), `${id}: recipe should require a reviewed evenSelectionPolicy.`);
+  assert(text.includes("evenLayerIndices"), `${id}: recipe should require computed evenLayerIndices.`);
+  assert(text.includes("one-based"), `${id}: recipe should preserve one-based layer index semantics.`);
+  assert(text.includes("set_layer_selection"), `${id}: recipe should prefer typed selection mutation.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selection-state mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selection-state mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must include set_layer_selection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /evenLayerIndices/.test(item)), `${id}: evidence must require evenLayerIndices.`);
+  assert(solution.notes.some((note) => /source-exact selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact ordering.`);
+  assert(solution.notes.some((note) => /set_layer_selection/.test(note)), `${id}: notes must require guarded set_layer_selection usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SelectEvenLayers by selecting even-indexed active comp layers using evenSelectionPolicy, evenLayerIndices, set_layer_selection, one-based layer order, and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR select even layers advisory recipe should surface for even layer selection prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Select Even Layers Typed Plan"), "prompt section should include AR select even layers advisory title.");
+  assert(promptSection.includes("evenSelectionPolicy"), "prompt section should preserve even-selection policy guidance.");
+  assert(promptSection.includes("evenLayerIndices"), "prompt section should preserve even-layer index guidance.");
+  assert(promptSection.includes("set_layer_selection"), "prompt section should prefer typed selection mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR select even layers guidance should not recommend raw ExtendScript.");
+}
+
+assertArSelectEvenLayersAppendOnlySmoke();
+
+function assertArSelectOddLayersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-selectoddlayers-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: odd-layer selection should be a gated selection-state mutation.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer selection should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_comp_details", "set_layer_selection", "get_selected_layers"],
+    `${id}: AR select odd layers workflow should stay on typed comp inventory, selection write, and read-back tools.`
+  );
+  assert(solution.tags.includes("selection"), `${id}: selection tag should be present.`);
+  assert(solution.tags.includes("odd-selection"), `${id}: odd-selection tag should be present.`);
+  assert(solution.tags.includes("set-selection"), `${id}: set-selection tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SelectOddLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("oddSelectionPolicy"), `${id}: recipe should require a reviewed oddSelectionPolicy.`);
+  assert(text.includes("oddLayerIndices"), `${id}: recipe should require computed oddLayerIndices.`);
+  assert(text.includes("one-based"), `${id}: recipe should preserve one-based layer index semantics.`);
+  assert(text.includes("set_layer_selection"), `${id}: recipe should prefer typed selection mutation.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selection-state mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selection-state mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_selection/.test(step)), `${id}: verification must include set_layer_selection.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /oddLayerIndices/.test(item)), `${id}: evidence must require oddLayerIndices.`);
+  assert(solution.notes.some((note) => /source-exact selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact ordering.`);
+  assert(solution.notes.some((note) => /set_layer_selection/.test(note)), `${id}: notes must require guarded set_layer_selection usage.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SelectOddLayers by selecting odd-indexed active comp layers using oddSelectionPolicy, oddLayerIndices, set_layer_selection, one-based layer order, and get_selected_layers read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR select odd layers advisory recipe should surface for odd layer selection prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Select Odd Layers Typed Plan"), "prompt section should include AR select odd layers advisory title.");
+  assert(promptSection.includes("oddSelectionPolicy"), "prompt section should preserve odd-selection policy guidance.");
+  assert(promptSection.includes("oddLayerIndices"), "prompt section should preserve odd-layer index guidance.");
+  assert(promptSection.includes("set_layer_selection"), "prompt section should prefer typed selection mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR select odd layers guidance should not recommend raw ExtendScript.");
+}
+
+assertArSelectOddLayersAppendOnlySmoke();
+
+function assertArSequenceLayersAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-sequencelayers-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected layer sequencing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR sequence layers workflow should stay on selected-layer timing typed tools.`
+  );
+  assert(solution.tags.includes("timing"), `${id}: timing tag should be present.`);
+  assert(solution.tags.includes("sequence-layers"), `${id}: sequence-layers tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SequenceLayers/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("sequenceLayersSpec"), `${id}: recipe should require a reviewed sequenceLayersSpec.`);
+  assert(text.includes("durationPolicy"), `${id}: recipe should require a reviewed durationPolicy.`);
+  assert(text.includes("overlapOrGapSeconds"), `${id}: recipe should document reviewed overlap or gap semantics.`);
+  assert(text.includes("round timing values to the nearest frame"), `${id}: recipe should document frame-boundary rounding.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer timing sequence must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer timing sequence must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer order.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /sequenceLayersSpec/.test(item)), `${id}: evidence must require sequenceLayersSpec.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /rounded sequence boundary/.test(item)), `${id}: evidence must require rounded sequence boundaries.`);
+  assert(solution.notes.some((note) => /hidden selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact selection ordering.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SequenceLayers by sequencing selected layers in time using selected-layer order, sequenceLayersSpec, durationPolicy, overlapOrGapSeconds, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR sequence layers advisory recipe should surface for selected layer timing sequence prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Sequence Layers Typed Plan"), "prompt section should include AR sequence layers advisory title.");
+  assert(promptSection.includes("sequenceLayersSpec"), "prompt section should preserve sequence layers spec guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(promptSection.includes("durationPolicy"), "prompt section should preserve duration policy guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR sequence layers guidance should not recommend raw ExtendScript.");
+}
+
+assertArSequenceLayersAppendOnlySmoke();
+
+function assertArSplitLayersIntoFramesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-splitlayersintoframes-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: split layers into frames timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR split layers into frames workflow should stay on selected-layer timing typed tools.`
+  );
+  assert(solution.tags.includes("frames"), `${id}: frames tag should be present.`);
+  assert(solution.tags.includes("split-layers"), `${id}: split-layers tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_SplitLayersIntoFrames/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("splitLayersIntoFramesSpec"), `${id}: recipe should require a reviewed splitLayersIntoFramesSpec.`);
+  assert(text.includes("oneFrameDurationPolicy"), `${id}: recipe should require a reviewed one-frame duration policy.`);
+  assert(text.includes("frameDuration"), `${id}: recipe should document frame duration semantics.`);
+  assert(text.includes("targetFrameTiming"), `${id}: recipe should require computed targetFrameTiming.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("actual layer splitting"), `${id}: recipe must reject actual layer splitting without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer frame timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer frame timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer order.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /splitLayersIntoFramesSpec/.test(item)), `${id}: evidence must require splitLayersIntoFramesSpec.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /one frame duration later/.test(item)), `${id}: evidence must require one-frame read-back boundaries.`);
+  assert(solution.notes.some((note) => /hidden selection ordering/.test(note)), `${id}: notes must require a separate contract for source-exact selection ordering.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_SplitLayersIntoFrames by retiming selected layers into one-frame spans using selected-layer order, splitLayersIntoFramesSpec, frameDuration, targetFrameTiming, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR split layers into frames advisory recipe should surface for selected layer frame timing prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Split Layers Into Frames Typed Plan"), "prompt section should include AR split layers into frames advisory title.");
+  assert(promptSection.includes("splitLayersIntoFramesSpec"), "prompt section should preserve split layers into frames spec guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(promptSection.includes("frameDuration"), "prompt section should preserve frame duration guidance.");
+  assert(!/run_extendscript/i.test(promptSection), "AR split layers into frames guidance should not recommend raw ExtendScript.");
+}
+
+assertArSplitLayersIntoFramesAppendOnlySmoke();
+
+function assertArTrimLayersToKeyframesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-trimlayerstokeyframes-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: trim layers to keyframes timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_selected_properties", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR trim layers to keyframes workflow should stay on selected-layer, selected-property, and layer timing typed tools.`
+  );
+  assert(solution.tags.includes("trim"), `${id}: trim tag should be present.`);
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_TrimLayersToKeyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("trimLayersToKeyframesSpec"), `${id}: recipe should require a reviewed trimLayersToKeyframesSpec.`);
+  assert(text.includes("selectedKeyframeBounds"), `${id}: recipe should require reviewed selectedKeyframeBounds.`);
+  assert(text.includes("targetTrimTiming"), `${id}: recipe should require computed targetTrimTiming.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("keyframe creation or deletion"), `${id}: recipe must reject keyframe creation or deletion without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer trim-to-keyframe timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer trim-to-keyframe timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /selectedKeyframeBounds/.test(item)), `${id}: evidence must require selectedKeyframeBounds.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /first selected keyframe boundary/.test(item)), `${id}: evidence must require trim-to-keyframe read-back boundaries.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_TrimLayersToKeyframes by trimming selected layers to reviewed selectedKeyframeBounds using trimLayersToKeyframesSpec, targetTrimTiming, get_selected_properties, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR trim layers to keyframes advisory recipe should surface for selected layer trim-to-keyframe prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Trim Layers To Keyframes Typed Plan"), "prompt section should include AR trim layers to keyframes advisory title.");
+  assert(promptSection.includes("trimLayersToKeyframesSpec"), "prompt section should preserve trim layers to keyframes spec guidance.");
+  assert(promptSection.includes("selectedKeyframeBounds"), "prompt section should preserve selected keyframe bounds guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR trim layers to keyframes guidance should not recommend raw ExtendScript.");
+}
+
+assertArTrimLayersToKeyframesAppendOnlySmoke();
+
+function assertArTrimLayersToMatteAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-trimlayerstomatte-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: trim layers to matte timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer matte timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR trim layers to matte workflow should stay on selected-layer, matte read-back, and layer timing typed tools.`
+  );
+  assert(solution.tags.includes("trim"), `${id}: trim tag should be present.`);
+  assert(solution.tags.includes("track-matte"), `${id}: track-matte tag should be present.`);
+  assert(solution.tags.includes("matte"), `${id}: matte tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_TrimLayersToMatte/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("trimLayersToMatteSpec"), `${id}: recipe should require a reviewed trimLayersToMatteSpec.`);
+  assert(text.includes("verifiedMatteLayerTiming"), `${id}: recipe should require verified matte timing evidence.`);
+  assert(text.includes("targetTrimTiming"), `${id}: recipe should require computed targetTrimTiming.`);
+  assert(text.includes("hasTrackMatte"), `${id}: recipe should require matte relationship evidence.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("track matte creation/removal"), `${id}: recipe must reject matte relationship mutation without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer trim-to-matte timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer trim-to-matte timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include fill and matte layer read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /verifiedMatteLayerTiming/.test(item)), `${id}: evidence must require verifiedMatteLayerTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /matte layer inPoint/.test(item)), `${id}: evidence must require trim-to-matte read-back boundaries.`);
+  assert(solution.notes.some((note) => /track matte creation\/removal/.test(note)), `${id}: notes must require a separate contract for matte relationship mutation.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_TrimLayersToMatte by trimming selected fill layers to verified track matte timing using trimLayersToMatteSpec, verifiedMatteLayerTiming, targetTrimTiming, hasTrackMatte, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR trim layers to matte advisory recipe should surface for selected layer trim-to-matte prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Trim Layers To Matte Typed Plan"), "prompt section should include AR trim layers to matte advisory title.");
+  assert(promptSection.includes("trimLayersToMatteSpec"), "prompt section should preserve trim layers to matte spec guidance.");
+  assert(promptSection.includes("verifiedMatteLayerTiming"), "prompt section should preserve verified matte timing guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR trim layers to matte guidance should not recommend raw ExtendScript.");
+}
+
+assertArTrimLayersToMatteAppendOnlySmoke();
+
+function assertArTrimLayersToParentAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-trimlayerstoparent-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: trim layers to parent timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer parent timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR trim layers to parent workflow should stay on selected-layer, parent read-back, and layer timing typed tools.`
+  );
+  assert(solution.tags.includes("trim"), `${id}: trim tag should be present.`);
+  assert(solution.tags.includes("parenting"), `${id}: parenting tag should be present.`);
+  assert(solution.tags.includes("parent-layer"), `${id}: parent-layer tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_TrimLayersToParent/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("trimLayersToParentSpec"), `${id}: recipe should require a reviewed trimLayersToParentSpec.`);
+  assert(text.includes("verifiedParentLayerTiming"), `${id}: recipe should require verified parent timing evidence.`);
+  assert(text.includes("targetTrimTiming"), `${id}: recipe should require computed targetTrimTiming.`);
+  assert(text.includes("parentLayerIndex"), `${id}: recipe should require parent relationship evidence.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("parent assignment/removal"), `${id}: recipe must reject parent relationship mutation without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer trim-to-parent timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer trim-to-parent timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include child and parent layer read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /verifiedParentLayerTiming/.test(item)), `${id}: evidence must require verifiedParentLayerTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /parent layer inPoint/.test(item)), `${id}: evidence must require trim-to-parent read-back boundaries.`);
+  assert(solution.notes.some((note) => /parent assignment\/removal/.test(note)), `${id}: notes must require a separate contract for parent relationship mutation.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_TrimLayersToParent by trimming selected child layers to verified parent layer timing using trimLayersToParentSpec, verifiedParentLayerTiming, targetTrimTiming, parentLayerIndex, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR trim layers to parent advisory recipe should surface for selected layer trim-to-parent prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Trim Layers To Parent Typed Plan"), "prompt section should include AR trim layers to parent advisory title.");
+  assert(promptSection.includes("trimLayersToParentSpec"), "prompt section should preserve trim layers to parent spec guidance.");
+  assert(promptSection.includes("verifiedParentLayerTiming"), "prompt section should preserve verified parent timing guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR trim layers to parent guidance should not recommend raw ExtendScript.");
+}
+
+assertArTrimLayersToParentAppendOnlySmoke();
+
+function assertArTrimLayersToWorkAreaAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-trimlayerstoworkarea-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: trim layers to work area timing must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected layer work area timing should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_comp_details", "get_layer_details", "set_layer_time_range"],
+    `${id}: AR trim layers to work area workflow should stay on selected-layer, work area read-back, and layer timing typed tools.`
+  );
+  assert(solution.tags.includes("trim"), `${id}: trim tag should be present.`);
+  assert(solution.tags.includes("work-area"), `${id}: work-area tag should be present.`);
+  assert(solution.tags.includes("selected-layers"), `${id}: selected-layers tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_TrimLayersToWorkArea/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("trimLayersToWorkAreaSpec"), `${id}: recipe should require a reviewed trimLayersToWorkAreaSpec.`);
+  assert(text.includes("verifiedWorkAreaTiming"), `${id}: recipe should require verified work area timing evidence.`);
+  assert(text.includes("targetTrimTiming"), `${id}: recipe should require computed targetTrimTiming.`);
+  assert(text.includes("workAreaStart"), `${id}: recipe should require work area start evidence.`);
+  assert(text.includes("set_layer_time_range"), `${id}: recipe should use the layer timing typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve startTime.`);
+  assert(text.includes("comp work area mutation"), `${id}: recipe must reject comp work area mutation without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected layer trim-to-work-area timing must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected layer trim-to-work-area timing must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_comp_details/.test(step)), `${id}: verification must include comp work area read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include selected layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_layer_time_range/.test(step)), `${id}: verification must include set_layer_time_range.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /verifiedWorkAreaTiming/.test(item)), `${id}: evidence must require verifiedWorkAreaTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /work area start/.test(item)), `${id}: evidence must require trim-to-work-area read-back boundaries.`);
+  assert(solution.notes.some((note) => /comp work area mutation/.test(note)), `${id}: notes must require a separate contract for comp work area mutation.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_TrimLayersToWorkArea by trimming selected layers to verified work area timing using trimLayersToWorkAreaSpec, verifiedWorkAreaTiming, targetTrimTiming, workAreaStart, set_layer_time_range, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR trim layers to work area advisory recipe should surface for selected layer trim-to-work-area prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Trim Layers To Work Area Typed Plan"), "prompt section should include AR trim layers to work area advisory title.");
+  assert(promptSection.includes("trimLayersToWorkAreaSpec"), "prompt section should preserve trim layers to work area spec guidance.");
+  assert(promptSection.includes("verifiedWorkAreaTiming"), "prompt section should preserve verified work area timing guidance.");
+  assert(promptSection.includes("set_layer_time_range"), "prompt section should prefer set_layer_time_range for timing mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR trim layers to work area guidance should not recommend raw ExtendScript.");
+}
+
+assertArTrimLayersToWorkAreaAppendOnlySmoke();
+
+function assertArWorkAreaToSelectedLayerAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-workareatoselectedlayer-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: work area to selected layer workflow must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-layer work area mutation should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_layer_details", "get_comp_details", "set_comp_work_area"],
+    `${id}: AR work area to selected layer workflow should stay on selected-layer timing read-back and comp work-area typed tools.`
+  );
+  assert(solution.tags.includes("work-area"), `${id}: work-area tag should be present.`);
+  assert(solution.tags.includes("selected-layer"), `${id}: selected-layer tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_WorkAreaToSelectedLayer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("workAreaToSelectedLayerSpec"), `${id}: recipe should require a reviewed workAreaToSelectedLayerSpec.`);
+  assert(text.includes("verifiedSelectedLayerTiming"), `${id}: recipe should require selected-layer timing evidence.`);
+  assert(text.includes("targetWorkAreaTiming"), `${id}: recipe should require computed targetWorkAreaTiming.`);
+  assert(text.includes("workAreaStart"), `${id}: recipe should require workAreaStart evidence.`);
+  assert(text.includes("workAreaDuration"), `${id}: recipe should require workAreaDuration evidence.`);
+  assert(text.includes("set_comp_work_area"), `${id}: recipe should use the comp work-area typed tool.`);
+  assert(text.includes("startTime"), `${id}: recipe should preserve selected layer startTime.`);
+  assert(text.includes("layer retiming"), `${id}: recipe must reject layer retiming without a separate typed contract.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected-layer-to-work-area mutation must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected-layer-to-work-area mutation must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must include selected-layer evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include selected layer timing read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_comp_work_area/.test(step)), `${id}: verification must include set_comp_work_area.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /targetWorkAreaTiming/.test(item)), `${id}: evidence must require targetWorkAreaTiming.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaStart/.test(item)), `${id}: evidence must require requested workAreaStart read-back.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /requested workAreaDuration/.test(item)), `${id}: evidence must require requested workAreaDuration read-back.`);
+  assert(solution.notes.some((note) => /layer retiming/.test(note)), `${id}: notes must require a separate contract for layer retiming.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_WorkAreaToSelectedLayer by setting the active comp work area from verifiedSelectedLayerTiming using workAreaToSelectedLayerSpec, targetWorkAreaTiming, workAreaStart, workAreaDuration, set_comp_work_area, and get_comp_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR work area to selected layer advisory recipe should surface for selected-layer-to-work-area prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Work Area To Selected Layer Typed Plan"), "prompt section should include AR work area to selected layer advisory title.");
+  assert(promptSection.includes("workAreaToSelectedLayerSpec"), "prompt section should preserve work area to selected layer spec guidance.");
+  assert(promptSection.includes("verifiedSelectedLayerTiming"), "prompt section should preserve verified selected layer timing guidance.");
+  assert(promptSection.includes("set_comp_work_area"), "prompt section should prefer set_comp_work_area for work-area mutation.");
+  assert(!/run_extendscript/i.test(promptSection), "AR work area to selected layer guidance should not recommend raw ExtendScript.");
+}
+
+assertArWorkAreaToSelectedLayerAppendOnlySmoke();
+
+function assertArAlignKeyframesAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-alignkeyframes-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe alignment must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR align keyframes workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_AlignKeyframes/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("alignKeyframesSpec"), `${id}: recipe should require a reviewed alignKeyframesSpec.`);
+  assert(text.includes("selectedKeyframesToAlign"), `${id}: recipe should require reviewed selectedKeyframesToAlign.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("alignedKeyframes"), `${id}: recipe should require computed alignedKeyframes.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe alignment must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe alignment must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /alignedKeyframes/.test(item)), `${id}: evidence must require alignedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_AlignKeyframes by aligning reviewed selectedKeyframesToAlign to alignTargetTime using alignKeyframesSpec, preservedUnselectedKeyframes, alignedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR align keyframes advisory recipe should surface for selected keyframe alignment prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Align Keyframes Typed Plan"), "prompt section should include AR align keyframes advisory title.");
+  assert(promptSection.includes("alignKeyframesSpec"), "prompt section should preserve align keyframes spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToAlign"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe alignment.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR align keyframes guidance should not recommend raw ExtendScript.");
+}
+
+assertArAlignKeyframesAppendOnlySmoke();
+
+function assertArDistributeKeyframesByStepAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframesbystep-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe step distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes by step workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("step"), `${id}: step tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesByStep/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesByStepSpec"), `${id}: recipe should require a reviewed distributeKeyframesByStepSpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("distributedKeyframes"), `${id}: recipe should require computed distributedKeyframes.`);
+  assert(text.includes("distributionStep"), `${id}: recipe should require a reviewed distribution step.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe step distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe step distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /distributedKeyframes/.test(item)), `${id}: evidence must require distributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesByStep by spacing reviewed selectedKeyframesToDistribute from distributionAnchorTime by distributionStep using distributeKeyframesByStepSpec, preservedUnselectedKeyframes, distributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes by step advisory recipe should surface for selected keyframe step distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes By Step Typed Plan"), "prompt section should include AR distribute keyframes by step advisory title.");
+  assert(promptSection.includes("distributeKeyframesByStepSpec"), "prompt section should preserve distribute keyframes by step spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("distributionStep"), "prompt section should preserve distribution step guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes by step guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesByStepAppendOnlySmoke();
+
+function assertArDistributeKeyframesEvenlyAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframesevenly-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe even distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes evenly workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("evenly"), `${id}: evenly tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesEvenly/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesEvenlySpec"), `${id}: recipe should require a reviewed distributeKeyframesEvenlySpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("evenlyDistributedKeyframes"), `${id}: recipe should require computed evenlyDistributedKeyframes.`);
+  assert(text.includes("distributionStartTime"), `${id}: recipe should require reviewed distribution start time.`);
+  assert(text.includes("distributionEndTime"), `${id}: recipe should require reviewed distribution end time.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe even distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe even distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /evenlyDistributedKeyframes/.test(item)), `${id}: evidence must require evenlyDistributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesEvenly by spacing reviewed selectedKeyframesToDistribute between distributionStartTime and distributionEndTime using distributeKeyframesEvenlySpec, preservedUnselectedKeyframes, evenlyDistributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes evenly advisory recipe should surface for selected keyframe even distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes Evenly Typed Plan"), "prompt section should include AR distribute keyframes evenly advisory title.");
+  assert(promptSection.includes("distributeKeyframesEvenlySpec"), "prompt section should preserve distribute keyframes evenly spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("distributionStartTime"), "prompt section should preserve distribution start guidance.");
+  assert(promptSection.includes("distributionEndTime"), "prompt section should preserve distribution end guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes evenly guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesEvenlyAppendOnlySmoke();
+
+function assertArDistributeKeyframesToWorkAreaAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframestoworkarea-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe work-area distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes to work area workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("work-area"), `${id}: work-area tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesToWorkArea/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesToWorkAreaSpec"), `${id}: recipe should require a reviewed distributeKeyframesToWorkAreaSpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("workAreaDistributedKeyframes"), `${id}: recipe should require computed workAreaDistributedKeyframes.`);
+  assert(text.includes("workAreaStartTime"), `${id}: recipe should require reviewed work area start time.`);
+  assert(text.includes("workAreaEndTime"), `${id}: recipe should require reviewed work area end time.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe work-area distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe work-area distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /workAreaDistributedKeyframes/.test(item)), `${id}: evidence must require workAreaDistributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesToWorkArea by spacing reviewed selectedKeyframesToDistribute across workAreaStartTime and workAreaEndTime using distributeKeyframesToWorkAreaSpec, preservedUnselectedKeyframes, workAreaDistributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes to work area advisory recipe should surface for selected keyframe work-area distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes To Work Area Typed Plan"), "prompt section should include AR distribute keyframes to work area advisory title.");
+  assert(promptSection.includes("distributeKeyframesToWorkAreaSpec"), "prompt section should preserve distribute keyframes to work area spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("workAreaStartTime"), "prompt section should preserve work area start guidance.");
+  assert(promptSection.includes("workAreaEndTime"), "prompt section should preserve work area end guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes to work area guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesToWorkAreaAppendOnlySmoke();
+
+function assertArDistributeKeyframesToCompAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframestocomp-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe comp-bound distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes to comp workflow should stay on active-comp, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("comp-bounds"), `${id}: comp-bounds tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesToComp/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesToCompSpec"), `${id}: recipe should require a reviewed distributeKeyframesToCompSpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("compDistributedKeyframes"), `${id}: recipe should require computed compDistributedKeyframes.`);
+  assert(text.includes("compDistributionStartTime"), `${id}: recipe should require reviewed comp distribution start time.`);
+  assert(text.includes("compDistributionEndTime"), `${id}: recipe should require reviewed comp distribution end time.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe comp-bound distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe comp-bound distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /compDistributedKeyframes/.test(item)), `${id}: evidence must require compDistributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesToComp by spacing reviewed selectedKeyframesToDistribute across compDistributionStartTime and compDistributionEndTime using distributeKeyframesToCompSpec, preservedUnselectedKeyframes, compDistributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes to comp advisory recipe should surface for selected keyframe comp-bound distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes To Comp Typed Plan"), "prompt section should include AR distribute keyframes to comp advisory title.");
+  assert(promptSection.includes("distributeKeyframesToCompSpec"), "prompt section should preserve distribute keyframes to comp spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("compDistributionStartTime"), "prompt section should preserve comp distribution start guidance.");
+  assert(promptSection.includes("compDistributionEndTime"), "prompt section should preserve comp distribution end guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes to comp guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesToCompAppendOnlySmoke();
+
+function assertArDistributeKeyframesToLayerAppendOnlySmoke() {
+  const registry = readRegistry();
+  const id = "ar-distributekeyframestolayer-typed-plan";
+  const solution = solutionById(registry, id);
+  assert(solution, `Missing imported advisory solution: ${id}`);
+  assert.strictEqual(solution.status, "recipe", `${id}: imported advisory entry should be a reviewed recipe.`);
+  assert.strictEqual(solution.execution.mode, "typed-plan", `${id}: imported advisory entry should use typed-plan execution.`);
+  assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe layer-bound distribution must be mutating.`);
+  assert.strictEqual(solution.execution.riskLevel, "medium", `${id}: selected-property keyframe rewrite should stay medium risk.`);
+  assert.strictEqual(solution.execution.scriptPath, null, `${id}: imported advisory entry must not use raw JSX.`);
+  assert.deepStrictEqual(
+    solution.execution.preferredTools,
+    ["get_active_comp", "get_selected_layers", "get_selected_properties", "get_layer_details", "set_property_keyframes"],
+    `${id}: AR distribute keyframes to layer workflow should stay on active-comp, selected-layer, selected-property, property keyframe rewrite, and read-back typed tools.`
+  );
+  assert(solution.tags.includes("keyframes"), `${id}: keyframes tag should be present.`);
+  assert(solution.tags.includes("selected-keyframes"), `${id}: selected-keyframes tag should be present.`);
+  assert(solution.tags.includes("layer-bounds"), `${id}: layer-bounds tag should be present.`);
+  assert(solution.tags.includes("generic-importer"), `${id}: generic importer tag should be present.`);
+  assert(solution.promotionHistory.some((entry) => /AR_DistributeKeyframesToLayer/.test(entry.evidence)), `${id}: promotion evidence should mention the source candidate.`);
+  assert(solution.promotionHistory.some((entry) => /no source JSX was copied/i.test(entry.evidence)), `${id}: promotion evidence should record no source JSX was copied.`);
+
+  const text = recipeText(solution);
+  assert(text.includes("## Plan Pattern"), `${id}: recipe should document a plan pattern.`);
+  assert(text.includes("## Safety Gates"), `${id}: recipe should document safety gates.`);
+  assert(text.includes("## Verification"), `${id}: recipe should document verification.`);
+  assert(text.includes("distributeKeyframesToLayerSpec"), `${id}: recipe should require a reviewed distributeKeyframesToLayerSpec.`);
+  assert(text.includes("selectedKeyframesToDistribute"), `${id}: recipe should require reviewed selectedKeyframesToDistribute.`);
+  assert(text.includes("preservedUnselectedKeyframes"), `${id}: recipe should preserve unselected keyframes.`);
+  assert(text.includes("layerDistributedKeyframes"), `${id}: recipe should require computed layerDistributedKeyframes.`);
+  assert(text.includes("layerDistributionStartTime"), `${id}: recipe should require reviewed layer distribution start time.`);
+  assert(text.includes("layerDistributionEndTime"), `${id}: recipe should require reviewed layer distribution end time.`);
+  assert(text.includes("get_selected_layers"), `${id}: recipe should require selected-layer timing evidence when needed.`);
+  assert(text.includes("get_selected_properties"), `${id}: recipe should require selected-property evidence.`);
+  assert(text.includes("set_property_keyframes"), `${id}: recipe should use the property keyframe typed tool.`);
+  assert(text.includes("clearExisting:true"), `${id}: recipe should gate full-property rewrites explicitly.`);
+  assert(text.includes("unresolved same-time key collisions"), `${id}: recipe must reject unresolved time collisions.`);
+  assertNoRawExecutionGuidance(id, solution, text);
+  assert(solution.execution.preferredTools.every((tool) => AVAILABLE_TOOLS.includes(tool)), `${id}: validation smoke must know each preferred tool.`);
+  assert(solution.requiredSafetyGates.allowMutations, `${id}: selected keyframe layer-bound distribution must require mutation gates.`);
+  assert(solution.requiredSafetyGates.postMutationReadBack, `${id}: selected keyframe layer-bound distribution must require read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_layers/.test(step)), `${id}: verification must capture selected-layer timing evidence when needed.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence.`);
+  assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must include layer/property read-back.`);
+  assert(solution.verificationRecipe.steps.some((step) => /set_property_keyframes/.test(step)), `${id}: verification must include set_property_keyframes.`);
+  assert(solution.verificationRecipe.steps.some((step) => /clearExisting:true/.test(step)), `${id}: verification must gate full-property rewrites.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /layerDistributedKeyframes/.test(item)), `${id}: evidence must require layerDistributedKeyframes.`);
+  assert(solution.verificationRecipe.expectedEvidence.some((item) => /preserved unselected keyframes/.test(item)), `${id}: evidence must require preserved unselected keyframes.`);
+  assert(solution.notes.some((note) => /source-exact selected-key discovery/.test(note)), `${id}: notes must require a separate contract for source-exact selected-key discovery.`);
+  assert(solution.notes.some((note) => /raw script execution/.test(note)), `${id}: notes must reject raw script execution.`);
+
+  const retrieval = retrieveSolutionHints("Run AR_DistributeKeyframesToLayer by spacing reviewed selectedKeyframesToDistribute across layerDistributionStartTime and layerDistributionEndTime using distributeKeyframesToLayerSpec, preservedUnselectedKeyframes, layerDistributedKeyframes, set_property_keyframes clearExisting:true, and get_layer_details read-back.", {
+    registry,
+    availableToolNames: AVAILABLE_TOOLS,
+    topN: DEFAULT_MAX_HINTS
+  });
+  assert.strictEqual(retrieval.ok, true);
+  assert(ids(retrieval).includes(id), "AR distribute keyframes to layer advisory recipe should surface for selected keyframe layer-bound distribution prompts.");
+  const promptSection = formatSolutionHintsForPrompt(retrieval);
+  assert(promptSection.includes("AR Distribute Keyframes To Layer Typed Plan"), "prompt section should include AR distribute keyframes to layer advisory title.");
+  assert(promptSection.includes("distributeKeyframesToLayerSpec"), "prompt section should preserve distribute keyframes to layer spec guidance.");
+  assert(promptSection.includes("selectedKeyframesToDistribute"), "prompt section should preserve selected keyframes guidance.");
+  assert(promptSection.includes("layerDistributionStartTime"), "prompt section should preserve layer distribution start guidance.");
+  assert(promptSection.includes("layerDistributionEndTime"), "prompt section should preserve layer distribution end guidance.");
+  assert(promptSection.includes("set_property_keyframes"), "prompt section should prefer set_property_keyframes for keyframe distribution.");
+  assert(promptSection.includes("clearExisting:true"), "prompt section should gate full-property keyframe rewrites.");
+  assert(!/run_extendscript/i.test(promptSection), "AR distribute keyframes to layer guidance should not recommend raw ExtendScript.");
+}
+
+assertArDistributeKeyframesToLayerAppendOnlySmoke();

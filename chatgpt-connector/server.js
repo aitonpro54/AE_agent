@@ -75,8 +75,11 @@ const READ_ONLY_BRIDGE_TOOLS = [
     description: "Return detailed information for a composition, optionally including its layers.",
     inputSchema: objectSchema({
       compItemIndex: numberField("Optional 1-based project item index for the composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
       includeLayers: booleanField("Whether to include layer summaries. Defaults to true."),
-      layerLimit: numberField("Maximum number of layers to include. Defaults to 200, maximum 1000.")
+      layerLimit: numberField("Maximum number of layers to include. Defaults to 200, maximum 1000."),
+      includeMarkers: booleanField("Whether to include composition marker read-back from comp.markerProperty. Defaults to false."),
+      markerLimit: numberField("Maximum number of composition markers to include. Defaults to 50, maximum 1000.")
     })
   },
   {
@@ -93,6 +96,45 @@ const READ_ONLY_BRIDGE_TOOLS = [
       includeValues: booleanField("Whether to include compact value previews for properties. Defaults to false."),
       includeExpressions: booleanField("Whether to include expression text where available. Defaults to true.")
     }, ["layerIndex"])
+  },
+  {
+    name: "get_layer_essential_properties",
+    title: "Get layer essential properties",
+    description: "Read Essential Properties exposed on one explicit precomp layer, including source evidence and expression state.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
+      layerIndex: numberField("1-based layer index in the target composition."),
+      includeValues: booleanField("Whether to include compact value previews. Defaults to true."),
+      includeExpressions: booleanField("Whether to include expression text and expression state. Defaults to true."),
+      propertyLimit: numberField("Maximum Essential Properties to return. Defaults to 80, maximum 200.")
+    }, ["layerIndex"])
+  },
+  {
+    name: "get_essential_graphics_controllers",
+    title: "Get Essential Graphics controllers",
+    description: "Read the Essential Graphics / Motion Graphics Template controller list for one explicit composition.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided.")
+    })
+  },
+  {
+    name: "get_path_geometry",
+    title: "Get path geometry",
+    description: "Read one explicit Shape or Mask path geometry from one layer, including vertices, inTangents, outTangents, closed state, and optional keyframes.",
+    inputSchema: objectSchema({
+      compItemIndex: numberField("Optional 1-based project item index for the target composition. Defaults to active comp."),
+      compName: stringField("Optional exact composition name to target when compItemIndex is not provided."),
+      layerIndex: numberField("Required 1-based layer index in the target composition."),
+      targetKind: stringField("Path target kind: shape or mask."),
+      propertyPath: stringField("Required for targetKind=shape. Exact property path to an ADBE Vector Shape path property."),
+      maskIndex: numberField("Required for targetKind=mask. 1-based mask index in the layer mask group."),
+      expectedLayerName: stringField("Optional exact layer name guard."),
+      expectedMaskName: stringField("Optional exact mask name guard for targetKind=mask."),
+      includeKeyframes: booleanField("Whether to include up to keyframeLimit Shape keyframes. Defaults to true."),
+      keyframeLimit: numberField("Maximum keyframes to include. Defaults to 80, maximum 80.")
+    }, ["layerIndex", "targetKind"])
   },
   {
     name: "list_effect_presets",

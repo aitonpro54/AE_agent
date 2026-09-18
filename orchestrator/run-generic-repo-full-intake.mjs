@@ -103,6 +103,8 @@ const TERMINAL_ITEM_STATUSES = new Set([
   "blocked_live_lane_validation_failed",
   "blocked_live_preflight_failed",
   "blocked_live_proof_failed",
+  "blocked_child_runner_shell_unavailable",
+  "blocked_child_runner_usage_limit",
   "blocked_policy",
   "completed",
   "failed_import",
@@ -119,7 +121,17 @@ const CHILD_TIMEOUT_REASONS = Object.freeze([
   "implementation-child-run-timeout",
 ]);
 const IMPORT_RETRY_REASONS = Object.freeze([
+  "controlled source merge inputs must not contain named-repo assumptions",
+  "manifest must not contain named-repo assumptions",
   "resume-manifest-hash-mismatch",
+]);
+const CHILD_USAGE_LIMIT_REASONS = Object.freeze([
+  "You've hit your usage limit",
+  "hit your usage limit",
+]);
+const CHILD_SHELL_LAUNCH_REASONS = Object.freeze([
+  "CreateProcessWithLogonW failed",
+  "windows sandbox",
 ]);
 const LEGACY_REASONING_EFFORT_CLI_ERROR = "unexpected argument '--reasoning-effort'";
 const SHARED_OWNER_PATHS = Object.freeze([
@@ -211,6 +223,54 @@ const AUTO_LANE_FAMILIES = Object.freeze([
       "generated-only selected-layer rename family proof using get_selected_layers, rename_layers, and get_comp_details; candidate-specific naming conventions must be explicit in the recipe",
   },
   {
+    id: "layer-empty-name-reset-generated-only",
+    requiredTools: ["get_comp_details", "rename_layers"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "create_text_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "rename_layers",
+    ],
+    candidateIds: ["tool-layers-reset-layer-names"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-name-reset-openai-cli-smoke",
+    proofLane: "layer-name-reset",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/reset-layer-names-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-reset-layer-names.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only empty layer-name reset proof using one explicit generated comp, get_comp_details layer inventory, one rename_layers mode:\"exact\" name:\"\" allowEmptyName:true call per reviewed layer with expectedLayerNames guards, post-run get_comp_details read-back, semantic verification, and cleanup; source-exact all-active-comp user-layer reset, broad selected-layer traversal, project item rename, source relinking, layer timing/order changes, effects, masks, parenting, expressions, render queue work, file I/O, source-checkout execution, and raw JSX remain fail-closed",
+  },
+  {
     id: "selected-layer-duplicate",
     requiredTools: ["get_selected_layers", "duplicate_layers"],
     allowedTools: [
@@ -242,6 +302,374 @@ const AUTO_LANE_FAMILIES = Object.freeze([
     semanticVerification: true,
     scope:
       "generated-only layer timing family proof using set_layer_time_range, stagger_layers, get_comp_details, and get_layer_details; random, below-layer, and selection-specific timing semantics remain explicit recipe constraints",
+  },
+  {
+    id: "layer-blending-mode-difference-generated-only",
+    requiredTools: ["get_selected_layers", "get_comp_details", "set_layer_blending_mode"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "create_text_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "get_selected_layers",
+      "set_layer_blending_mode",
+      "set_layer_selection",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "layerBlendingModeMutation"],
+    candidateIds: ["tool-layers-toggle-difference-blend-mode"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-difference-blend-mode-openai-cli-smoke",
+    proofLane: "layer-difference-blend-mode",
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/difference-blend-mode-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-toggle-difference-blend-mode.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "scripts/smoke-test.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node --check scripts/smoke-test.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Difference blending mode proof using explicit selected-layer evidence, complete generated layer inventory, set_layer_blending_mode with blendingMode:\"difference\" and expected-name/current-mode guards, get_layer_details/get_comp_details read-back, semantic verification, and cleanup; source-exact Alt-key branching, toggle restoration, broad selected-layer traversal, other blend mode enums, non-generated user assets, multi-comp scope, selection persistence, raw JSX, track matte edits, labels/comments/locks/enabled/timing/source changes, file I/O, and render queue work remain fail-closed",
+  },
+  {
+    id: "adjustment-layer-placement-generated-only",
+    requiredTools: ["get_active_comp", "get_comp_details", "get_layer_details", "create_adjustment_layer"],
+    allowedTools: [
+      "create_adjustment_layer",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "get_selected_layers",
+    ],
+    allowedUnsafeSignals: ["usesSelection"],
+    candidateIds: ["tool-layers-add-3d-break"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-adjustment-layer-placement-openai-cli-smoke",
+    proofLane: "adjustment-layer-placement",
+    readBackTools: ["get_comp_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/add-3d-break-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-add-3d-break.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only adjustment-layer placement proof using one explicit guarded layer index/name, create_adjustment_layer insertBeforeLayerIndex and expectedBeforeLayerName, get_comp_details/get_layer_details stack read-back, adjustmentLayer:true and immediatelyBefore:true semantic verification, and cleanup; generic layer reordering, moving existing layers, source-exact selected-layer traversal, effect/property copying, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "layer-connection-line-generated-only",
+    requiredTools: ["get_active_comp", "get_selected_layers", "get_layer_details", "create_layer_connection_line"],
+    allowedTools: [
+      "create_comp",
+      "create_shape_layer",
+      "create_layer_connection_line",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "get_selected_layers",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "expressionMutation", "propertyTraversal"],
+    candidateIds: ["tool-layers-connect-two-layers-with-a-line"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-connection-line-openai-cli-smoke",
+    proofLane: "layer-connection-line",
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/connect-two-layers-with-a-line-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-connect-two-layers-with-a-line.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only dynamic connector line proof using two explicit inspected layer indices/names, create_layer_connection_line with fromLayerIndex/toLayerIndex and expected-name guards, one locked connector layer generated for the proof, open two-point shape path expression read-back, stroke read-back, semantic verification, and cleanup; source-exact selected-layer traversal, shape contents beyond the connector path, thin rectangle substitution, generic open-path editing, arbitrary expressions, layer stack reordering, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed",
+  },
+  {
+    id: "grid-rig-control-replacement-generated-only",
+    requiredTools: ["get_active_comp", "get_selected_layers", "get_layer_details", "create_shape_layer", "set_layer_metadata", "add_effect", "get_effect_details", "delete_layer"],
+    allowedTools: [
+      "create_comp",
+      "create_null_layer",
+      "create_shape_layer",
+      "set_layer_metadata",
+      "add_effect",
+      "get_effect_details",
+      "delete_layer",
+      "get_active_comp",
+      "get_selected_layers",
+      "get_comp_details",
+      "get_layer_details",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal"],
+    candidateIds: ["tool-layers-replace-grid-rig-control"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-grid-rig-control-openai-cli-smoke",
+    proofLane: "grid-rig-control-replacement",
+    readBackTools: ["get_comp_details", "get_layer_details", "get_effect_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/replace-grid-rig-control-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-replace-grid-rig-control.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Grid Rig Control replacement proof using one explicit inspected old generated control layer, create_shape_layer replacement, set_layer_metadata preservation of label/enabled/guideLayer, two named ADBE Slider Control effects named Gutter and Matte Roundness, delete_layer for exactly one expected old layer, get_comp_details/get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact broad selected-layer traversal, non-generated destructive replacement, third-party Flex behavior beyond reviewed generated evidence, expression/property copying, parenting, track mattes, arbitrary effect copying, file I/O, render queue work, source-checkout execution, and raw JSX remain fail-closed",
+  },
+  {
+    id: "text-shapes-from-text-generated-only",
+    requiredTools: ["get_active_comp", "get_layer_details", "create_shapes_from_text"],
+    allowedTools: [
+      "create_comp",
+      "create_text_layer",
+      "create_shapes_from_text",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "get_selected_layers",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal"],
+    candidateIds: ["tool-layers-create-shapes-from-text"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-text-shapes-openai-cli-smoke",
+    proofLane: "text-shapes-from-text",
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/create-shapes-from-text-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-create-shapes-from-text.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only text-to-shape proof using one explicit generated text layer, create_shapes_from_text with expectedLayerName and expectedSourceText guards, AE native Create Shapes from Text command availability check, get_layer_details/get_comp_details read-back proving shapeLayer:true/vector outline groups, semantic verification, and cleanup; localized menu command absence, source-exact broad selected-layer traversal, arbitrary text-layer conversion, font-outline fidelity beyond AE native output, selection persistence, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed",
+  },
+  {
+    id: "selected-layer-parent-closest-generated-only",
+    requiredTools: [
+      "get_active_comp",
+      "get_selected_layers",
+      "get_comp_details",
+      "get_layer_details",
+      "set_layer_selection",
+      "set_layer_parent",
+    ],
+    allowedTools: [
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_selected_layers",
+      "get_comp_details",
+      "get_layer_details",
+      "set_layer_selection",
+      "set_layer_parent",
+    ],
+    allowedUnsafeSignals: ["usesSelection"],
+    candidateIds: ["tool-layers-parent-closest-layers"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-parent-closest-openai-cli-smoke",
+    proofLane: "selected-layer-parent-closest",
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/parent-closest-layers-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-parent-closest-layers.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract",
+    scope:
+      "generated-only closest-layer parenting proof using explicit generated selected child layers, complete same-comp layer-order and 2D position evidence, deterministic no-tie nearest child -> parent pairs, set_layer_selection only for generated child evidence, set_layer_parent with expected child/parent names for each reviewed pair, get_layer_details/get_comp_details parent relationship read-back, semantic verification, and cleanup; equal-distance ties, missing transform evidence, cycles, arbitrary/bulk user-layer parenting, source-exact selection side effects, layer stack reordering, track matte edits, non-generated user assets, and raw JSX/source semantics remain fail-closed",
+  },
+  {
+    id: "layer-track-matte-generated-only",
+    requiredTools: ["get_comp_details", "get_layer_details", "set_layer_track_matte"],
+    allowedTools: [
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "get_selected_layers",
+      "set_layer_metadata",
+      "set_layer_track_matte",
+    ],
+    allowedUnsafeSignals: ["usesSelection"],
+    candidateIds: [
+      "tool-layers-set-all-track-matte-labels",
+      "tool-layers-set-track-matte-to-above",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-layer-track-matte-openai-cli-smoke",
+    proofLane: "layer-track-matte",
+    readBackTools: ["get_layer_details", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/set-all-track-matte-labels-typed-plan.md",
+      "recipes/set-track-matte-to-above-typed-plan.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/smoke-test.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/smoke-test.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only track matte proof using explicit fill/matte layer indices, set_layer_track_matte with reviewed alpha/luma matte type, get_layer_details/get_comp_details read-back for hasTrackMatte, isTrackMatte, trackMatteLayer, and trackMatteTypeName, optional verified set_layer_metadata label:16 updates only on isTrackMatte:true matte layers, semantic verification, and cleanup; source-exact broad selected-layer traversal, all-layer matte scans without typed isTrackMatte evidence, parent-link substitution, layer reordering, label defaults, non-generated user assets, file I/O, render queue work, and raw JSX remain fail-closed",
   },
   {
     id: "layer-transform-fit-generated-only",
@@ -278,6 +706,159 @@ const AUTO_LANE_FAMILIES = Object.freeze([
       "generated-only project-item rename/source family proof using create_project_folder, move_project_items_to_folder, replace_layer_source, rename_project_items, and read-back; imported/user footage and file I/O remain fail-closed",
   },
   {
+    id: "composition-rename-to-file-name-generated-only",
+    requiredTools: ["get_project_info", "rename_project_items"],
+    allowedTools: [
+      "create_comp",
+      "find_project_items",
+      "get_active_comp",
+      "get_comp_details",
+      "get_project_info",
+      "rename_project_items",
+    ],
+    allowedUnsafeSignals: ["usesFileIo"],
+    candidateIds: ["tool-compositions-rename-composition-to-file-name"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-rename-file-name-openai-cli-smoke",
+    proofLane: "composition-rename-to-file-name",
+    readBackTools: ["find_project_items", "get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/rename-composition-to-file-name-typed-plan.md",
+      "recipes/generic-repo-intake/tool-compositions-rename-composition-to-file-name.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only project file basename composition rename proof using get_project_info.file read-only basename evidence, one explicit generated composition, rename_project_items mode:\"exact\" with type:\"comp\" and concrete itemIndices, find_project_items/get_comp_details read-back, semantic verification, and cleanup; unsaved project, basename collisions, project save/saveAs, arbitrary filesystem reads/writes, Project panel selection, source relinking, non-generated user assets, broad composition traversal, and raw JSX remain fail-closed",
+  },
+  {
+    id: "composition-save-frame-png-generated-only",
+    requiredTools: ["save_comp_frame_png"],
+    allowedTools: [
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "save_comp_frame_png",
+    ],
+    allowedUnsafeSignals: ["usesFileIo", "usesSettings"],
+    candidateIds: ["tool-compositions-save-frame-as-png"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-save-frame-png-openai-cli-smoke",
+    proofLane: "composition-save-frame-png",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/save-frame-as-png-typed-plan.md",
+      "recipes/generic-repo-intake/tool-compositions-save-frame-as-png.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only saveFrameToPng proof using one explicit generated composition, get_comp_details read-back, save_comp_frame_png safe generated .png file output under logs/generated-exports with byte length/sha256/PNG evidence, resolutionFactor restoration proof, final get_comp_details read-back, semantic verification, and generated artifact cleanup; source-exact Folder.selectDialog, app.settings/app.preferences persistence, Shift-key branching, Desktop/arbitrary user paths, render queue start, project save/saveAs, non-generated user assets, broad composition traversal, and raw JSX remain fail-closed",
+  },
+  {
+    id: "project-export-text-to-file-generated-only",
+    requiredTools: ["get_selected_layers", "get_layer_details", "export_text_to_file"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "create_text_layer",
+      "set_layer_selection",
+      "get_active_comp",
+      "get_selected_layers",
+      "get_layer_details",
+      "export_text_to_file",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "usesFileIo"],
+    candidateIds: ["tool-project-export-text-to-file"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-export-text-to-file-openai-cli-smoke",
+    proofLane: "export-text-to-file",
+    productionTypedTools: true,
+    readBackTools: ["get_selected_layers", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/generated-safety-contracts.js",
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/export-text-to-file-typed-plan.md",
+      "recipes/generic-repo-intake/tool-project-export-text-to-file.md",
+      "registry/solutions.json",
+      "scripts/generated-safety-contracts-smoke.js",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/generated-safety-contracts.js",
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/generated-safety-contracts-smoke.js",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/generated-safety-contracts-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Export Text To File proof using explicit generated selected layers, get_selected_layers selected-layer evidence, get_layer_details Source Text read-back for every selected text layer, export_text_to_file safe generated .txt output under logs/generated-exports with byte length/sha256/content evidence, final selected-layer/read-back proof, semantic verification, and generated artifact cleanup; source-exact ~/Desktop/export.txt writes, arbitrary outputPath/user paths, file dialogs, source checkout execution, layer selection mutation outside generated proof setup, Source Text mutation, Project item mutation, render queue work, non-generated user assets, and raw JSX semantics remain fail-closed",
+  },
+  {
     id: "effect-property-generated-only",
     requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
     allowedTools: [
@@ -293,6 +874,406 @@ const AUTO_LANE_FAMILIES = Object.freeze([
     semanticVerification: true,
     scope:
       "generated-only effect property family proof using add_effect, get_effect_details, set_effect_property, and read-back; expression-rig semantics and locale-specific property assumptions remain explicit recipe constraints",
+  },
+  {
+    id: "layer-fill-color-cycle-generated-only",
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "get_selected_layers",
+      "set_effect_property",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal", "usesSettings"],
+    candidateIds: ["tool-layers-add-fill-with-color-cycle"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-property-openai-cli-smoke",
+    proofLane: "effect-property",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/add-fill-with-color-cycle-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-add-fill-with-color-cycle.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only stateless Fill color-cycle proof using explicit generated layer/effect targets, ADBE Fill Color property evidence, one reviewed palette color, set_effect_property with exact before/after read-back, semantic verification, and cleanup; source-exact app.settings/app.preferences persistence, automatic cross-run next-color state, broad selected-layer traversal, non-generated user assets, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "effect-enabled-toggle-generated-only",
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_enabled"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "get_selected_layers",
+      "list_effects",
+      "set_effect_enabled",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal"],
+    candidateIds: ["tool-layers-toggle-specific-effects"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-effect-enabled-openai-cli-smoke",
+    proofLane: "effect-enabled",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/toggle-specific-effects-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-toggle-specific-effects.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only effect enabled-state proof using an explicit generated ADBE Turbulent Displace effect, exact effectIndex/name/matchName identity, before/after effect.enabled values, set_effect_enabled with expectedCurrentEnabled guard, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact all-project traversal, Alt-key branching, broad selected-layer scans, unreviewed user effects, third-party effect semantics, effect addition/removal/reordering, effect property edits, non-generated user assets, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "puppet-on-transparent-effect-property-generated-only",
+    requiredTools: ["add_effect", "get_effect_details", "set_effect_property"],
+    allowedTools: [
+      "add_effect",
+      "get_active_comp",
+      "get_effect_details",
+      "get_layer_details",
+      "get_selected_properties",
+      "set_effect_property",
+    ],
+    allowedUnsafeSignals: ["propertyTraversal"],
+    candidateIds: ["tool-properties-toggle-puppet-on-transparent"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-on-transparent-openai-cli-smoke",
+    proofLane: "puppet-on-transparent-effect-property",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/toggle-puppet-on-transparent-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-toggle-puppet-on-transparent.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only Puppet On Transparent proof using an explicit generated ADBE FreePin3 effect, get_effect_details evidence for ADBE FreePin3 On Transparent, set_effect_property with a reviewed boolean value, and get_effect_details/get_layer_details read-back; source-exact all-project traversal, Alt-key branching, user Puppet effects, puppet pin atom mutation, third-party DuIK behavior, selection persistence, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "puppet-pin-type-generated-only",
+    requiredTools: ["get_effect_details", "set_puppet_pin_type"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_effect_details",
+      "get_layer_details",
+      "set_puppet_pin_type",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal"],
+    candidateIds: ["tool-properties-toggle-puppet-pin-types"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-pin-type-openai-cli-smoke",
+    proofLane: "puppet-pin-type",
+    readBackTools: ["get_effect_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/toggle-puppet-pin-types-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-toggle-puppet-pin-types.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Puppet pin type proof using explicit ADBE FreePin3 effect evidence, an ADBE FreePin3 PosPin Atom ancestor, one ADBE FreePin3 PosPin Type propertyPath, set_puppet_pin_type enum values 1/position or 4/advanced, get_effect_details/get_layer_details read-back, semantic verification, and cleanup; source-exact selected Puppet pin traversal, automatic pin creation, user Puppet effects, project-wide scans, DuIK behavior, selection persistence, raw JSX semantics, and missing generated pin atom evidence remain fail-closed",
+  },
+  {
+    id: "puppet-pin-guide-layer-generated-only",
+    requiredTools: ["get_effect_details", "get_layer_details", "set_layer_metadata"],
+    allowedTools: [
+      "add_effect",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_effect_details",
+      "get_layer_details",
+      "get_project_info",
+      "list_effects",
+      "set_layer_metadata",
+    ],
+    allowedUnsafeSignals: ["propertyTraversal", "thirdPartyAssumption"],
+    candidateIds: ["tool-layers-toggle-puppet-pins-as-guide-layers"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-puppet-guide-layer-openai-cli-smoke",
+    proofLane: "puppet-pin-guide-layer",
+    productionTypedTools: true,
+    readBackTools: ["get_layer_details", "get_effect_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/toggle-puppet-pins-as-guide-layers-typed-plan.md",
+      "recipes/generic-repo-intake/tool-layers-toggle-puppet-pins-as-guide-layers.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Puppet pin host guide-layer proof using explicit generated ADBE FreePin3 effect evidence, one reviewed layer index/name, set_layer_metadata guideLayer:true or guideLayer:false with expectedLayerNames guards, get_layer_details/get_effect_details read-back, semantic verification, and cleanup; source-exact all-project traversal, ScriptUI Alt-key branching, inferred Pseudo/Duik pin02 targets, user DuIK effect mutation, puppet pin atom edits, pin-size/property rename behavior, non-generated user assets, source-checkout execution, and raw JSX remain fail-closed",
+  },
+  {
+    id: "shape-mask-path-flip-generated-only",
+    requiredTools: ["get_path_geometry", "set_path_geometry"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "get_active_comp",
+      "get_layer_details",
+      "get_path_geometry",
+      "get_selected_properties",
+      "set_layer_mask",
+      "set_path_geometry",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal", "expressionMutation", "keyframeMutation"],
+    candidateIds: ["tool-properties-flip-path"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-flip-path-openai-cli-smoke",
+    proofLane: "flip-path-geometry",
+    readBackTools: ["get_path_geometry", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/flip-path-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-flip-path.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only Flip Path proof using one explicit generated mask path, get_path_geometry read-back for vertices/inTangents/outTangents/closed/keyframes, reviewed horizontal or vertical flip geometry, set_path_geometry write, final get_path_geometry/get_layer_details read-back, semantic verification, and cleanup; source-exact ScriptUI direction dialog, broad comp.selectedProperties traversal, arbitrary user paths, expression-driven paths, shape Bezier creation gaps, file output, Essential Graphics, Puppet pins, third-party effects, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "shape-mask-path-export-points-generated-only",
+    requiredTools: ["get_path_geometry", "export_path_points"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "get_active_comp",
+      "get_layer_details",
+      "get_path_geometry",
+      "get_selected_properties",
+      "set_layer_mask",
+      "set_path_geometry",
+      "export_path_points",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal", "usesFileIo"],
+    candidateIds: ["tool-properties-export-path-points"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-export-path-points-openai-cli-smoke",
+    proofLane: "export-path-points",
+    readBackTools: ["get_path_geometry", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      ".gitignore",
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/export-path-points-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-export-path-points.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Export Path Points proof using one explicit generated mask path, get_path_geometry read-back for vertices/inTangents/outTangents/closed state, export_path_points safe generated .txt file output with sha256/content read-back, final get_path_geometry/get_layer_details read-back, semantic verification, and generated artifact cleanup; source-exact Desktop points.txt writes, comp.selectedProperties traversal, arbitrary outputPath/user paths, expression-driven or truncated paths, multi-target batches, file overwrite outside generated exports, path mutation, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "essential-graphics-generated-only",
+    requiredTools: ["get_essential_graphics_controllers", "add_property_to_essential_graphics"],
+    allowedTools: [
+      "add_effect",
+      "add_property_to_essential_graphics",
+      "create_comp",
+      "create_shape_layer",
+      "get_active_comp",
+      "get_effect_details",
+      "get_essential_graphics_controllers",
+      "get_layer_details",
+      "get_layer_essential_properties",
+      "get_selected_properties",
+      "set_effect_property",
+      "set_expression",
+    ],
+    allowedUnsafeSignals: ["usesSelection", "propertyTraversal", "expressionMutation"],
+    candidateIds: [
+      "tool-properties-add-properties-to-essential-graphics",
+      "tool-properties-expose-essential-properties",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-essential-graphics-openai-cli-smoke",
+    proofLane: "essential-graphics",
+    readBackTools: ["get_essential_graphics_controllers", "get_layer_essential_properties", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/add-properties-to-essential-graphics-typed-plan.md",
+      "recipes/expose-essential-properties-typed-plan.md",
+      "recipes/generic-repo-intake/tool-properties-add-properties-to-essential-graphics.md",
+      "recipes/generic-repo-intake/tool-properties-expose-essential-properties.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Essential Graphics / Essential Properties proof using one explicit generated layer, get_essential_graphics_controllers and get_layer_essential_properties read-back, add_property_to_essential_graphics for one reviewed propertyPath/controllerName, semantic verification, and cleanup; source-exact selectedProperties traversal, broad layer.essentialProperty writes, MOGRT export, user-template mutation, controller rename/delete/reorder semantics, arbitrary property guessing, raw JSX semantics, and missing generated controller evidence remain fail-closed",
   },
   {
     id: "selected-property-expression-generated-only",
@@ -348,6 +1329,342 @@ const AUTO_LANE_FAMILIES = Object.freeze([
     scope:
       "generated-only explicit composition properties/work-area proof using set_comp_properties, set_comp_work_area, get_comp_details, read-back, semantic verification, and cleanup; recursive nested-comp traversal, layer switches, and broad composition workflows remain fail-closed",
   },
+  {
+    id: "composition-panel-refresh-generated-only",
+    requiredTools: ["get_comp_details", "refresh_comp_panel"],
+    allowedTools: [
+      "create_comp",
+      "get_active_comp",
+      "get_comp_details",
+      "refresh_comp_panel",
+    ],
+    candidateIds: ["tool-compositions-force-composition-panel-refresh"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-refresh-openai-cli-smoke",
+    proofLane: "comp-panel-refresh",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/force-composition-panel-refresh-typed-plan.md",
+      "recipes/generic-repo-intake/tool-compositions-force-composition-panel-refresh.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Composition panel refresh proof using one explicit generated comp, get_comp_details comp.motionBlur evidence, refresh_comp_panel double-toggle with expectedMotionBlur guard, final get_comp_details read-back proving restored motionBlur, semantic verification, and cleanup; source-exact active-viewer side effects, layer motionBlur switches, arbitrary comp fields, persistent settings, non-generated user assets, raw JSX, and broad project traversal remain fail-closed",
+  },
+  {
+    id: "comp-current-time-generated-only",
+    requiredTools: ["get_comp_details", "set_comp_current_time"],
+    allowedTools: [
+      "create_comp",
+      "get_active_comp",
+      "get_comp_details",
+      "set_comp_current_time",
+    ],
+    candidateIds: ["tool-utilities-frame-navigator"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-comp-current-time-openai-cli-smoke",
+    proofLane: "comp-current-time",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/frame-navigator-typed-plan.md",
+      "recipes/generic-repo-intake/tool-utilities-frame-navigator.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only comp current-time proof using one explicit generated comp, get_comp_details current time/duration/frameRate evidence, set_comp_current_time with finite seconds or reviewed frame-derived target, final get_comp_details.time read-back, semantic verification, and cleanup; source-exact ScriptUI controls, display-start/timecode offsets, selected-comp ambiguity, layer timing, work-area edits, markers, keyframes, raw JSX, and broad project scans remain fail-closed",
+  },
+  {
+    id: "composition-marker-work-area-generated-only",
+    requiredTools: ["get_comp_details", "add_comp_marker", "set_comp_work_area"],
+    allowedTools: [
+      "create_comp",
+      "get_active_comp",
+      "get_comp_details",
+      "add_comp_marker",
+      "set_comp_work_area",
+    ],
+    candidateIds: ["tool-compositions-set-work-area-to-markers"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-work-area-openai-cli-smoke",
+    proofLane: "composition-marker-work-area",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/set-work-area-to-markers-typed-plan.md",
+      "recipes/generic-repo-intake/tool-compositions-set-work-area-to-markers.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/solution-promotion-helper.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/solution-promotion-helper.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only composition marker work-area proof using one explicit generated comp, add_comp_marker setup for two reviewed comp.markerProperty marker times, get_comp_details includeMarkers:true read-back, set_comp_work_area with marker-derived start/duration, final get_comp_details work-area and marker read-back, semantic verification, and cleanup; source-exact active-comp UI traversal, marker creation/update/delete on user assets, layer marker substitution, audio-derived markers, persistent settings, render queue work, file I/O, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "composition-layer-marker-copy-generated-only",
+    requiredTools: ["get_comp_details", "get_layer_details", "add_comp_marker", "add_layer_marker"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "get_layer_details",
+      "add_comp_marker",
+      "add_layer_marker",
+    ],
+    candidateIds: [
+      "tool-markers-copy-composition-markers-to-layer",
+      "tool-markers-copy-layer-markers-to-composition",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-layer-marker-copy-openai-cli-smoke",
+    proofLane: "composition-layer-marker-copy",
+    readBackTools: ["get_comp_details", "get_layer_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/copy-composition-markers-to-layer-typed-plan.md",
+      "recipes/copy-layer-markers-to-composition-typed-plan.md",
+      "recipes/generic-repo-intake/tool-markers-copy-composition-markers-to-layer.md",
+      "recipes/generic-repo-intake/tool-markers-copy-layer-markers-to-composition.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only composition/layer marker copy proof using one explicit generated comp and layer, get_comp_details includeMarkers:true composition marker evidence, add_layer_marker plus get_layer_details read-back for composition-to-layer copy, add_comp_marker plus get_comp_details read-back for layer-to-composition copy, semantic verification, and cleanup; source-exact active-comp traversal, selected-layer traversal, marker update/delete, audio-derived markers, work-area mutation, layer timing changes, persistent settings, render queue work, file I/O, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "composition-marker-add-generated-only",
+    requiredTools: ["get_comp_details", "add_comp_marker"],
+    allowedTools: [
+      "create_comp",
+      "create_solid_layer",
+      "get_active_comp",
+      "get_comp_details",
+      "add_comp_marker",
+    ],
+    candidateIds: [
+      "tool-markers-add-markers-at-out-points",
+      "tool-markers-add-markers-at-work-area",
+    ],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-composition-marker-add-openai-cli-smoke",
+    proofLane: "composition-marker-add",
+    readBackTools: ["get_comp_details"],
+    semanticVerification: true,
+    plannedPaths: [
+      "recipes/add-composition-markers-at-out-points-typed-plan.md",
+      "recipes/add-composition-markers-at-work-area-typed-plan.md",
+      "recipes/generic-repo-intake/tool-markers-add-markers-at-out-points.md",
+      "recipes/generic-repo-intake/tool-markers-add-markers-at-work-area.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+    ],
+    reclassifiedClassification: "existing_typed_tools_recipe_only",
+    scope:
+      "generated-only composition marker add proof using one explicit generated comp, generated layer out-point evidence from get_comp_details, reviewed workAreaStart/workAreaDuration evidence, add_comp_marker for layer out-point and work-area boundary marker targets, final get_comp_details includeMarkers:true read-back, semantic verification, and cleanup; source-exact active-comp traversal, hidden layer traversal, marker update/delete, layer marker substitution, audio-derived markers, current-time inference, work-area mutation, layer timing changes, render queue work, file I/O, and raw JSX semantics remain fail-closed",
+  },
+  {
+    id: "project-item-label-generated-only",
+    requiredTools: ["find_project_items", "set_project_item_metadata"],
+    allowedTools: [
+      "create_comp",
+      "get_project_info",
+      "get_project_snapshot",
+      "find_project_items",
+      "list_project_folder_items",
+      "set_project_item_metadata",
+    ],
+    candidateIds: ["tool-project-set-all-item-labels-to-none"],
+    command: "node scripts/cep-panel-cdp-smoke.js full-ui-agent-project-item-metadata-openai-cli-smoke",
+    proofLane: "project-item-label",
+    readBackTools: ["find_project_items", "get_project_snapshot", "list_project_folder_items"],
+    semanticVerification: true,
+    plannedPaths: [
+      "mcp-server/bridge-daemon.js",
+      "mcp-server/plan-repair.js",
+      "mcp-server/semantic-verification.js",
+      "recipes/set-project-item-labels-to-none-typed-plan.md",
+      "recipes/generic-repo-intake/tool-project-set-all-item-labels-to-none.md",
+      "registry/solutions.json",
+      "scripts/solution-library-validation-smoke.js",
+      "scripts/semantic-verification-smoke.js",
+      "scripts/agent-scenario-fixtures.js",
+      "scripts/agent-scenario-report-smoke.js",
+      "scripts/cep-panel-cdp-smoke.js",
+      "scripts/chatgpt-connector-smoke.js",
+      "orchestrator/generic-repo-live-lane-registry.json",
+      "orchestrator/run-generic-repo-full-intake.mjs",
+    ],
+    nonLiveValidationCommands: [
+      "node --check mcp-server/bridge-daemon.js",
+      "node --check mcp-server/plan-repair.js",
+      "node --check mcp-server/semantic-verification.js",
+      "node --check orchestrator/run-generic-repo-full-intake.mjs",
+      "node --check scripts/solution-library-validation-smoke.js",
+      "node --check scripts/semantic-verification-smoke.js",
+      "node --check scripts/agent-scenario-fixtures.js",
+      "node --check scripts/agent-scenario-report-smoke.js",
+      "node --check scripts/cep-panel-cdp-smoke.js",
+      "node --check scripts/chatgpt-connector-smoke.js",
+      "node scripts/agent-scenario-report-smoke.js",
+      "node scripts/semantic-verification-smoke.js",
+      "node scripts/solution-library-validation-smoke.js",
+      "node scripts/chatgpt-connector-smoke.js",
+    ],
+    reclassifiedClassification: "new_typed_tool_contract_policy",
+    scope:
+      "generated-only Project item label proof using generated composition project items, find_project_items/get_project_snapshot evidence for concrete itemIndices, set_project_item_metadata label:0 with expectedItemNames guards, post-mutation project-item label read-back, semantic verification, and cleanup; source-exact Project panel selected item traversal, label defaults by item type, all-project scans without explicit evidence, item rename/move/delete, proxy state, render queue work, filesystem operations, and raw JSX semantics remain fail-closed",
+  },
+]);
+
+const POLICY_RESOLUTION_FAMILIES = Object.freeze([
+  {
+    id: "puppet-pin-atom-generated-only-readiness-policy",
+    reason: "missing_generated_puppet_pin_atom_evidence",
+    candidateIds: ["tool-properties-toggle-puppet-pin-types"],
+    policyPath: "recipes/toggle-puppet-pin-types-typed-plan.md",
+    solutionId: "toggle-puppet-pin-types-typed-plan",
+    blockers: [
+      "typed-tool-gap:generated_puppet_pin_atom_creation_or_fixture_missing",
+      "live-proof-gap:ADBE_FreePin3_PosPin_Atom_readback_missing",
+      "raw-jsx-copy-forbidden",
+    ],
+    unblockCondition:
+      "Keep set_puppet_pin_type limited to explicit ADBE FreePin3 PosPin Type evidence. To complete this candidate, add a generated-only or explicitly reviewed Puppet pin atom fixture/creation contract, prove ADBE FreePin3 PosPin Atom and ADBE FreePin3 PosPin Type read-back through get_effect_details, then rerun the generated-only live lane with CEP/panel bridge connectivity.",
+    scope:
+      "policy-only terminal mapping for the existing Puppet pin type typed contract when generated Puppet pin atom evidence is unavailable; no live CEP proof, raw JSX, selected-property traversal, or user Puppet effect mutation is authorized",
+  },
+  {
+    id: "third-party-semantics-safety-policy",
+    reason: "third_party_semantics_policy_required",
+    candidateIds: [
+      "tool-properties-increase-all-pin-sizes",
+      "tool-layers-rename-puppet-pins-for-duik",
+    ],
+    policyPath: "recipes/third-party-semantics-safety-policy.md",
+    solutionId: "third-party-semantics-safety-policy",
+    blockers: [
+      "unsafe-safety-signal:thirdPartyAssumption",
+      "scope-risk:project_wide_comp_layer_effect_traversal",
+      "typed-tool-gap:generated_or_mock_duik_fixture_missing",
+      "semantic-verification-gap:third_party_effect_property_readback_missing",
+      "raw-jsx-copy-forbidden",
+    ],
+    unblockCondition:
+      "Add a parent-approved generated-only or mock third-party contract that proves the exact DuIK pseudo-effect/property identity, scopes mutation to explicit generated targets, records checkpoint/rollback and cleanup policy, and verifies typed read-back before any DuIK pin-size, guide-layer, or puppet-pin rename mutation.",
+    scope:
+      "policy-only terminal mapping for Puppet-related DuIK/third-party semantics; it records the existing safety policy and does not authorize mutation, project-wide scans, raw JSX, or live CEP proof",
+  },
 ]);
 
 const HELP = `
@@ -374,9 +1691,24 @@ Options:
   --allow-batch-mode           Explicitly approve parent-facing max-items > 1.
   --allow-self-improvement-lane-synthesis
                               Allow bounded live-lane synthesis. Default is disabled.
+  --allow-unrelated-untracked-central-tree
+                              Permit unrelated untracked central worktree
+                              files that do not overlap planned
+                              candidate/shared paths. Tracked dirty paths and
+                              overlapping untracked paths still fail closed.
   --resolution-candidate-ids <ids>
                               Optional comma-separated candidate ids for scoped
                               live-lane/import-failure resolution processing.
+  --resolve-child-runner-usage-limit-reset <ids>
+                              Explicitly confirm a user-reported child-runner
+                              usage-limit reset and requeue only the scoped
+                              blocked candidate ids. Requires matching
+                              --resolution-candidate-ids.
+  --resolve-child-runner-shell-unavailable-reset <ids>
+                              Explicitly confirm the child-runner shell
+                              environment is fixed and requeue only the scoped
+                              shell-blocked candidate ids. Requires matching
+                              --resolution-candidate-ids.
   --resolve-live-lanes-before-parallel
                               In opt-in parallel mode, run scoped parent-owned
                               live-lane resolution before scheduling child worktrees.
@@ -424,6 +1756,8 @@ const VALUE_OPTIONS = new Set([
   "parallel-candidate-ids",
   "parallel-candidate-limit",
   "report-dir",
+  "resolve-child-runner-shell-unavailable-reset",
+  "resolve-child-runner-usage-limit-reset",
   "resolution-candidate-ids",
   "run-id",
   "soft-stop-percent",
@@ -432,6 +1766,7 @@ const VALUE_OPTIONS = new Set([
 const BOOLEAN_OPTIONS = new Set([
   "allow-batch-mode",
   "allow-full-json-for-debug",
+  "allow-unrelated-untracked-central-tree",
   "allow-self-improvement-lane-synthesis",
   "compact-json",
   "help",
@@ -643,8 +1978,22 @@ function gitStatusEntries(cwd) {
   return output ? output.split(/\r?\n/).filter(Boolean) : [];
 }
 
+function statusEntryCode(entry) {
+  return String(entry || "").slice(0, 2);
+}
+
+function gitChangedEntries(cwd) {
+  return gitStatusEntries(cwd)
+    .map((entry) => ({
+      path: statusEntryPath(entry),
+      status: statusEntryCode(entry),
+    }))
+    .filter((entry) => entry.path)
+    .sort((left, right) => left.path.localeCompare(right.path));
+}
+
 function gitChangedPaths(cwd) {
-  return gitStatusEntries(cwd).map(statusEntryPath).filter(Boolean).sort();
+  return gitChangedEntries(cwd).map((entry) => entry.path);
 }
 
 function gitStatusSha256(cwd) {
@@ -675,6 +2024,30 @@ function gitPathIsTracked(cwd, repoPath) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   return result.status === 0;
+}
+
+function dirtyTargetPathsForOptions(cwd, candidates, options = {}) {
+  const changed = gitChangedEntries(cwd).filter((entry) => !gitPathIsIgnored(cwd, entry.path));
+  if (options.allowUnrelatedUntrackedCentralTree !== true) {
+    return changed.map((entry) => entry.path);
+  }
+  const plannedPaths = new Set(
+    (candidates || [])
+      .flatMap((candidate) => candidatePlannedPaths(candidate))
+      .map(normalizeRepoPath),
+  );
+  const overlapsPlannedPath = (repoPath) => {
+    const normalized = normalizeRepoPath(repoPath);
+    return Array.from(plannedPaths).some(
+      (plannedPath) =>
+        normalized === plannedPath ||
+        normalized.startsWith(`${plannedPath}/`) ||
+        plannedPath.startsWith(`${normalized}/`),
+    );
+  };
+  return changed
+    .filter((entry) => entry.status !== "??" || overlapsPlannedPath(entry.path))
+    .map((entry) => entry.path);
 }
 
 function isDependencyPath(repoPath) {
@@ -1062,6 +2435,16 @@ function familyRequirementMatches(family, tools) {
   return family.requiredTools.every((tool) => toolSet.has(tool));
 }
 
+function familyRequirementMatchesForCandidate(family, candidate, tools) {
+  if (familyRequirementMatches(family, tools)) return true;
+  const exactProductionCandidateFamily =
+    familyExplicitlyScopesCandidate(family, candidate) &&
+    family.productionTypedTools === true;
+  if (!exactProductionCandidateFamily) return false;
+  const allowedTools = new Set(Array.isArray(family.allowedTools) ? family.allowedTools : []);
+  return family.requiredTools.every((tool) => allowedTools.has(tool));
+}
+
 function familyAllowsAllTools(family, tools) {
   const allowed = new Set(family.allowedTools);
   return tools.every((tool) => allowed.has(tool));
@@ -1072,6 +2455,15 @@ function familyAppliesToCandidate(family, candidate) {
     return true;
   }
   return family.candidateIds.includes(candidate.id);
+}
+
+function familyExplicitlyScopesCandidate(family, candidate) {
+  return Array.isArray(family.candidateIds) && family.candidateIds.includes(candidate.id);
+}
+
+function familyAllowsUnsafeSignals(family, unsafeSignals) {
+  const allowedSignals = new Set(Array.isArray(family.allowedUnsafeSignals) ? family.allowedUnsafeSignals : []);
+  return unsafeSignals.every((signal) => allowedSignals.has(signal));
 }
 
 function failClosedSynthesisReport({ candidate, reason, runId, status, tools, extra = {} }) {
@@ -1102,25 +2494,6 @@ function failClosedSynthesisReport({ candidate, reason, runId, status, tools, ex
 function synthesizeLiveLaneTemplate(candidate, runId) {
   const tools = candidateTools(candidate);
   const unsafeSignals = unsafeSynthesisSignals(candidate);
-  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(candidate.classification)) {
-    return failClosedSynthesisReport({
-      candidate,
-      reason: `classification_not_allowed:${candidate.classification}`,
-      runId,
-      status: "blocked_live_lane_synthesis_unsafe",
-      tools,
-    });
-  }
-  if (unsafeSignals.length > 0) {
-    return failClosedSynthesisReport({
-      candidate,
-      extra: { unsafeSignals },
-      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
-      runId,
-      status: "blocked_live_lane_synthesis_unsafe",
-      tools,
-    });
-  }
   if (tools.length === 0) {
     return failClosedSynthesisReport({
       candidate,
@@ -1131,9 +2504,37 @@ function synthesizeLiveLaneTemplate(candidate, runId) {
     });
   }
 
-  const requirementMatches = AUTO_LANE_FAMILIES
-    .filter((family) => familyAppliesToCandidate(family, candidate))
-    .filter((family) => familyRequirementMatches(family, tools));
+  const explicitCandidateMatches = AUTO_LANE_FAMILIES
+    .filter((family) => familyExplicitlyScopesCandidate(family, candidate))
+    .filter((family) => familyRequirementMatchesForCandidate(family, candidate, tools))
+    .filter((family) => familyAllowsAllTools(family, tools))
+    .filter((family) => familyAllowsUnsafeSignals(family, unsafeSignals));
+  const hasExplicitUnsafeCandidateMatch = explicitCandidateMatches.length > 0;
+
+  if (!SYNTHESIZABLE_CLASSIFICATIONS.has(candidate.classification) && !hasExplicitUnsafeCandidateMatch) {
+    return failClosedSynthesisReport({
+      candidate,
+      reason: `classification_not_allowed:${candidate.classification}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  if (unsafeSignals.length > 0 && !hasExplicitUnsafeCandidateMatch) {
+    return failClosedSynthesisReport({
+      candidate,
+      extra: { unsafeSignals },
+      reason: `unsafe_safety_signals:${unsafeSignals.join(",")}`,
+      runId,
+      status: "blocked_live_lane_synthesis_unsafe",
+      tools,
+    });
+  }
+  const requirementMatches = hasExplicitUnsafeCandidateMatch
+    ? explicitCandidateMatches
+    : AUTO_LANE_FAMILIES
+      .filter((family) => familyAppliesToCandidate(family, candidate))
+      .filter((family) => familyRequirementMatchesForCandidate(family, candidate, tools));
   const exactMatches = requirementMatches.filter((family) => familyAllowsAllTools(family, tools));
   if (exactMatches.length > 1) {
     return failClosedSynthesisReport({
@@ -1266,14 +2667,20 @@ function selfImprovementWorkPacket({ entries, groupId, reason, runId, tools }) {
 
 function selfImprovementFamilyMatches(family, candidate, tools) {
   if (!family || typeof family !== "object") return false;
+  if (family.semanticVerification !== true || !Array.isArray(family.readBackTools) || family.readBackTools.length === 0) {
+    return false;
+  }
+  const candidateScoped = familyExplicitlyScopesCandidate(family, candidate);
   if (Array.isArray(family.candidateIds) && family.candidateIds.length > 0 && !family.candidateIds.includes(candidate.id)) {
     return false;
   }
-  if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
+  const exactProductionCandidateFamily = candidateScoped && family.productionTypedTools === true;
+  if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools) && !exactProductionCandidateFamily) {
     return false;
   }
-  if (Array.isArray(family.allowedTools) && !familyAllowsAllTools(family, tools)) {
-    return false;
+  if (Array.isArray(family.requiredTools) && !familyRequirementMatches(family, tools)) {
+    const allowedTools = new Set(Array.isArray(family.allowedTools) ? family.allowedTools : []);
+    return exactProductionCandidateFamily && family.requiredTools.every((tool) => allowedTools.has(tool));
   }
   return true;
 }
@@ -1851,6 +3258,51 @@ function isScopedUnsafeSkipToolGapEntry(entry) {
     entry.classification === "unsafe_skip_tool_gap";
 }
 
+function policyResolutionFamilyFor(entry) {
+  if (!isScopedUnsafeSkipToolGapEntry(entry)) return null;
+  return POLICY_RESOLUTION_FAMILIES.find((family) => (
+    Array.isArray(family.candidateIds) && family.candidateIds.includes(entry.id)
+  )) || null;
+}
+
+function policyResolutionEvidence(family, entries) {
+  return {
+    familyId: family.id,
+    policyPath: family.policyPath,
+    solutionId: family.solutionId,
+    blockerCodes: Array.isArray(family.blockers) ? family.blockers.slice() : [],
+    unblockCondition: family.unblockCondition,
+    scope: family.scope,
+    candidateIds: entries.map((entry) => entry.id).sort(),
+    candidateEvidence: entries.map((entry) => ({
+      id: entry.id,
+      sourcePath: entry.sourcePath,
+      classification: entry.classification,
+      suggestedTools: candidateTools(entry),
+      safetySignals: normalizedSafetySignalSummary(entry),
+    })),
+    liveProofRun: false,
+    requeueAllowed: false,
+  };
+}
+
+function attachPolicyResolutionReference(entry, ticket, family) {
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    policyResolution: {
+      familyId: family.id,
+      policyPath: family.policyPath,
+      solutionId: family.solutionId,
+      ticketPath: ticket.isolation.ticketPath,
+      reason: family.reason,
+      unblockCondition: family.unblockCondition,
+      updatedAt: new Date().toISOString(),
+    },
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+}
+
 function childTimeoutRecoveryExhausted(entry) {
   if (entry.implementation?.childTimeoutRecoveryExhausted === true) return true;
   if (/child-timeout-recovery-exhausted|child-timeout-recovery-failed/i.test(entry.failClosed?.reason || "")) return true;
@@ -1992,6 +3444,206 @@ function requeueEntryAfterResolution(entry, ticket, extraImplementation = {}) {
   attachResolutionReference(entry, ticket, "resolved_requeued");
 }
 
+function blockEntryForChildRunnerUsageLimit(entry, ticket, evidence) {
+  const now = new Date().toISOString();
+  const reason = childUsageLimitItemReason(evidence);
+  if (entry.failClosed) {
+    entry.previousFailClosed = entry.failClosed;
+  }
+  entry.status = "blocked_child_runner_usage_limit";
+  entry.blockedAt = now;
+  entry.nextAction = evidence.retryAfterText
+    ? `retry_after_child_runner_usage_limit_reset_${safeId(evidence.retryAfterText)}`
+    : "retry_after_child_runner_usage_limit_reset";
+  entry.failClosed = {
+    schema: "generic-repo-full-intake.fail-closed.v1",
+    runId: ticket.runId,
+    candidateId: entry.id,
+    sourcePath: entry.sourcePath,
+    status: entry.status,
+    reason,
+    blockers: [
+      {
+        code: "child_runner_usage_limit",
+        retryAfterText: evidence.retryAfterText || null,
+      },
+    ],
+    liveLaneStatus: entry.liveGate?.status || null,
+    liveLaneReport: entry.liveGate?.failClosedEvidence || null,
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerUsageLimit: evidence,
+    safetyPolicy: {
+      broadCepSmokeAllowed: false,
+      dependencyPackageChangesAllowed: false,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationOutsideGeneratedOnlyLaneAllowed: false,
+    },
+    createdAt: now,
+  };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerUsageLimit: evidence,
+    failureReason: reason,
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+}
+
+function blockEntryForChildRunnerShellUnavailable(entry, ticket, evidence) {
+  const now = new Date().toISOString();
+  const reason = childShellLaunchItemReason(evidence);
+  if (entry.failClosed) {
+    entry.previousFailClosed = entry.failClosed;
+  }
+  entry.status = "blocked_child_runner_shell_unavailable";
+  entry.blockedAt = now;
+  entry.nextAction = "fix_child_runner_shell_environment_before_retry";
+  entry.failClosed = {
+    schema: "generic-repo-full-intake.fail-closed.v1",
+    runId: ticket.runId,
+    candidateId: entry.id,
+    sourcePath: entry.sourcePath,
+    status: entry.status,
+    reason,
+    blockers: [
+      {
+        code: "child_runner_shell_unavailable",
+        shellErrorText: evidence.shellErrorText || null,
+      },
+    ],
+    liveLaneStatus: entry.liveGate?.status || null,
+    liveLaneReport: entry.liveGate?.failClosedEvidence || null,
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerShellFailure: evidence,
+    safetyPolicy: {
+      broadCepSmokeAllowed: false,
+      dependencyPackageChangesAllowed: false,
+      fallbackProviderAllowed: false,
+      localOllamaAllowed: false,
+      rawJsxCopyAllowed: false,
+      sourceRepoWritesAllowed: false,
+      userAssetMutationOutsideGeneratedOnlyLaneAllowed: false,
+    },
+    createdAt: now,
+  };
+  entry.implementation = {
+    ...(entry.implementation || {}),
+    batchReport: evidence.batchReport || entry.implementation?.batchReport || null,
+    childRunnerShellFailure: evidence,
+    failureReason: reason,
+    resolutionTicket: ticket.isolation.ticketPath,
+  };
+  attachResolutionReference(entry, ticket, "terminal_unresolved");
+}
+
+function markItemForChildRunnerShellUnavailable(item, ticket, evidence) {
+  item.status = "blocked_child_runner_shell_unavailable";
+  item.reason = childShellLaunchItemReason(evidence);
+  item.blockers = [
+    {
+      code: "child_runner_shell_unavailable",
+      shellErrorText: evidence.shellErrorText || null,
+    },
+  ];
+  item.batchReport = evidence.batchReport || item.batchReport || null;
+  item.childRunnerShellFailure = evidence;
+  item.resolutionTicket = ticket.isolation.ticketPath;
+  item.resolutionStatus = "terminal_unresolved";
+  item.completedAt = new Date().toISOString();
+}
+
+function childRunnerUsageLimitResetMatchesEvidence(entry, evidence) {
+  const reset = entry.implementation?.childRunnerUsageLimitReset;
+  if (!reset || reset.userConfirmedReset !== true) return false;
+  const previousBatchReport = normalizeRepoPath(reset.previousBatchReport || "");
+  const evidenceBatchReport = normalizeRepoPath(evidence?.batchReport || "");
+  return previousBatchReport !== "" && previousBatchReport === evidenceBatchReport;
+}
+
+function resetChildRunnerUsageLimitEntry(entry, ticket, evidence) {
+  const resetAt = new Date().toISOString();
+  const previousFailureReason = entry.failClosed?.reason || entry.implementation?.failureReason || childUsageLimitItemReason(evidence);
+  const previousResolutionTicket = entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null;
+  const resetRecord = {
+    schema: "generic-repo-full-intake.child-runner-usage-limit-reset.v1",
+    userConfirmedReset: true,
+    confirmationSource: "explicit_cli_option",
+    option: "--resolve-child-runner-usage-limit-reset",
+    previousBatchReport: evidence.batchReport || entry.failClosed?.batchReport || entry.implementation?.batchReport || null,
+    previousFailureReason,
+    previousResolutionTicket,
+    previousRetryAfterText: evidence.retryAfterText || null,
+    resetAt,
+    resetCandidateScope: [entry.id],
+    safeguards: {
+      artifactGateBypassed: false,
+      duplicateChecksBypassed: false,
+      pathPolicyBypassed: false,
+      reducerRulesBypassed: false,
+      validationBypassed: false,
+    },
+  };
+  requeueEntryAfterResolution(entry, ticket, {
+    batchReport: null,
+    childRunnerUsageLimitReset: resetRecord,
+    previousFailureReason,
+    recoveryIntent: {
+      mode: "retry_after_child_runner_usage_limit_reset",
+      previousBatchReport: resetRecord.previousBatchReport,
+      previousRetryAfterText: resetRecord.previousRetryAfterText,
+      ticketPath: ticket.isolation.ticketPath,
+    },
+    retryNonce: ticket.evidence.retryNonce,
+  });
+  if (entry.implementation) {
+    delete entry.implementation.failureReason;
+  }
+}
+
+function resetChildRunnerShellUnavailableEntry(entry, ticket, evidence) {
+  const resetAt = new Date().toISOString();
+  const previousFailureReason = entry.failClosed?.reason || entry.implementation?.failureReason || childShellLaunchItemReason(evidence);
+  const previousResolutionTicket = entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null;
+  const resetRecord = {
+    schema: "generic-repo-full-intake.child-runner-shell-unavailable-reset.v1",
+    userConfirmedEnvironmentReady: true,
+    confirmationSource: "explicit_cli_option",
+    option: "--resolve-child-runner-shell-unavailable-reset",
+    previousBatchReport: evidence.batchReport || entry.failClosed?.batchReport || entry.implementation?.batchReport || null,
+    previousFailureReason,
+    previousResolutionTicket,
+    previousShellErrorText: evidence.shellErrorText || null,
+    resetAt,
+    resetCandidateScope: [entry.id],
+    safeguards: {
+      artifactGateBypassed: false,
+      duplicateChecksBypassed: false,
+      pathPolicyBypassed: false,
+      reducerRulesBypassed: false,
+      validationBypassed: false,
+    },
+  };
+  requeueEntryAfterResolution(entry, ticket, {
+    batchReport: null,
+    childRunnerShellUnavailableReset: resetRecord,
+    previousFailureReason,
+    recoveryIntent: {
+      mode: "retry_after_child_runner_shell_environment_reset",
+      previousBatchReport: resetRecord.previousBatchReport,
+      previousShellErrorText: resetRecord.previousShellErrorText,
+      ticketPath: ticket.isolation.ticketPath,
+    },
+    retryNonce: ticket.evidence.retryNonce,
+  });
+  if (entry.implementation) {
+    delete entry.implementation.failureReason;
+  }
+}
+
 function nextQueueRankAllocator(ledger) {
   let nextRank = ledger.entries.reduce((max, entry) => (
     Number.isInteger(entry.queueRank) ? Math.max(max, entry.queueRank) : max
@@ -2003,12 +3655,19 @@ function nextQueueRankAllocator(ledger) {
   };
 }
 
+function reclassifiedClassificationForTemplate(template) {
+  const requested = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
+  return SYNTHESIZABLE_CLASSIFICATIONS.has(requested)
+    ? requested
+    : "existing_typed_tools_recipe_only";
+}
+
 function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQueueRank) {
   const previousClassification = entry.classification;
   requeueEntryAfterResolution(entry, ticket);
   if (SELF_IMPROVEMENT_RECLASSIFIABLE_CLASSIFICATIONS.has(previousClassification)) {
     entry.previousClassification = previousClassification;
-    entry.classification = template.reclassifiedClassification || "existing_typed_tools_recipe_only";
+    entry.classification = reclassifiedClassificationForTemplate(template);
   }
   if (!Number.isInteger(entry.queueRank)) {
     entry.queueRank = allocateQueueRank();
@@ -2039,6 +3698,7 @@ function applyFamilyProofToEntry(entry, ticket, liveReport, template, allocateQu
       from: previousClassification,
       to: entry.classification,
       familyId: template.synthesis?.familyId || ticket.evidence.familyId || null,
+      requestedClassification: template.reclassifiedClassification || null,
       queueRank: entry.queueRank,
       ticketPath: ticket.isolation.ticketPath,
       updatedAt: new Date().toISOString(),
@@ -2070,6 +3730,20 @@ function processLiveLaneResolutionTickets({
   const allocateQueueRank = nextQueueRankAllocator(ledger);
   const buckets = new Map();
   for (const entry of recoverable) {
+    const policyFamily = policyResolutionFamilyFor(entry);
+    if (policyFamily) {
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: policyFamily.id,
+        reason: policyFamily.reason,
+        type: "policy-resolution",
+      });
+      if (!buckets.has(groupId)) {
+        buckets.set(groupId, { entries: [], familyId: policyFamily.id, policyFamily });
+      }
+      buckets.get(groupId).entries.push(entry);
+      continue;
+    }
     const synthesis = synthesizeLiveLaneTemplate(entry, runId);
     const familyId = synthesis.ok ? synthesis.familyId : synthesis.familyId || synthesis.extra?.familyId || null;
     const groupId = resolutionGroupId({
@@ -2088,6 +3762,24 @@ function processLiveLaneResolutionTickets({
   const requeuedCandidateIds = [];
   for (const [groupId, bucket] of buckets) {
     const representative = bucket.entries[0];
+    if (bucket.policyFamily) {
+      const ticket = recordResolutionTicket({
+        affected: bucket.entries,
+        evidence: policyResolutionEvidence(bucket.policyFamily, bucket.entries),
+        groupId,
+        reason: bucket.policyFamily.reason,
+        runId,
+        runRoot,
+        status: "terminal_unresolved",
+        targetRepo,
+        type: "policy-resolution",
+      });
+      for (const entry of bucket.entries) {
+        attachPolicyResolutionReference(entry, ticket, bucket.policyFamily);
+      }
+      tickets.push(ticket);
+      continue;
+    }
     if (!bucket.synthesis.ok) {
       if (!allowSelfImprovementLaneSynthesis) {
         const ticket = recordResolutionTicket({
@@ -2254,7 +3946,14 @@ function processLiveLaneResolutionTickets({
   return { requeuedCandidateIds, tickets };
 }
 
-function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds = null, runId, runRoot, targetRepo }) {
+function processImportFailureResolutionTickets({
+  childRunnerUsageLimitResetIds = null,
+  ledger,
+  resolutionCandidateIds = null,
+  runId,
+  runRoot,
+  targetRepo,
+}) {
   const tickets = [];
   const requeuedCandidateIds = [];
   const buckets = new Map();
@@ -2274,6 +3973,84 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
     });
     if (discoveredBatchReport) {
       batchReportByCandidateId.set(entry.id, discoveredBatchReport);
+    }
+    const usageLimitEvidence = discoveredBatchReport
+      ? childUsageLimitFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
+      : null;
+    const resetRequested = childRunnerUsageLimitResetIds instanceof Set && childRunnerUsageLimitResetIds.has(entry.id);
+    if (resetRequested && entry.status === "blocked_child_runner_usage_limit" && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+      const previousEvidence = {
+        ...(entry.implementation?.childRunnerUsageLimit || {}),
+        ...(entry.failClosed?.childRunnerUsageLimit || {}),
+        ...(usageLimitEvidence || {}),
+        batchReport:
+          usageLimitEvidence?.batchReport ||
+          discoveredBatchReport ||
+          entry.failClosed?.batchReport ||
+          entry.implementation?.batchReport ||
+          null,
+      };
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: "user_confirmed_child_runner_usage_limit_reset",
+        type: "child-runner-usage-limit-reset",
+      });
+      const retryNonce = safeId(`${groupId}-${sha256Text(`${entry.id}:${runId}:${previousEvidence.batchReport || ""}`).slice(0, 8)}`);
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...previousEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+          retryNonce,
+          userDecision: {
+            childRunnerUsageLimitResetConfirmed: true,
+            confirmationSource: "explicit_cli_option",
+            option: "--resolve-child-runner-usage-limit-reset",
+            scopedCandidateIds: [entry.id],
+          },
+        },
+        groupId,
+        reason: "user_confirmed_child_runner_usage_limit_reset_requeued",
+        runId,
+        runRoot,
+        status: "resolved_requeued",
+        targetRepo,
+        type: "child-runner-usage-limit-reset",
+      });
+      resetChildRunnerUsageLimitEntry(entry, ticket, previousEvidence);
+      requeuedCandidateIds.push(entry.id);
+      tickets.push(ticket);
+      continue;
+    }
+    if (
+      usageLimitEvidence &&
+      !childRunnerUsageLimitResetMatchesEvidence(entry, usageLimitEvidence) &&
+      SAFE_CLASSIFICATIONS.has(entry.classification)
+    ) {
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: usageLimitEvidence.reason,
+        type: "child-runner-usage-limit",
+      });
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...usageLimitEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+        },
+        groupId,
+        reason: "child_runner_usage_limit_wait_required",
+        runId,
+        runRoot,
+        status: "terminal_unresolved",
+        targetRepo,
+        type: "child-runner-usage-limit",
+      });
+      blockEntryForChildRunnerUsageLimit(entry, ticket, usageLimitEvidence);
+      tickets.push(ticket);
+      continue;
     }
     let kind = recoverableImportFailureKind(entry);
     if (
@@ -2355,6 +4132,113 @@ function processImportFailureResolutionTickets({ ledger, resolutionCandidateIds 
   return { requeuedCandidateIds, tickets };
 }
 
+function processChildRunnerShellFailureResolutionTickets({
+  childRunnerShellUnavailableResetIds = null,
+  ledger,
+  resolutionCandidateIds = null,
+  runId,
+  runRoot,
+  targetRepo,
+}) {
+  const requeuedCandidateIds = [];
+  const tickets = [];
+  for (const entry of ledger.entries) {
+    if (!candidateAllowedByResolutionScope(entry, resolutionCandidateIds)) {
+      continue;
+    }
+    const knownBatchReport = entry.failClosed?.batchReport || entry.implementation?.batchReport || null;
+    const verifiedKnownBatchReport = knownBatchReport && existsSync(absoluteReportPath(targetRepo, knownBatchReport))
+      ? knownBatchReport
+      : null;
+    const discoveredBatchReport = verifiedKnownBatchReport || discoverCandidateBatchReportPath({
+      candidateId: entry.id,
+      runRoot,
+      targetRepo,
+    });
+    const shellFailureEvidence = discoveredBatchReport
+      ? childShellLaunchFailureEvidence({ batchReportPath: discoveredBatchReport, targetRepo })
+      : null;
+    const resetRequested = childRunnerShellUnavailableResetIds instanceof Set && childRunnerShellUnavailableResetIds.has(entry.id);
+    if (resetRequested && entry.status === "blocked_child_runner_shell_unavailable" && SAFE_CLASSIFICATIONS.has(entry.classification)) {
+      const previousEvidence = {
+        ...(entry.implementation?.childRunnerShellFailure || {}),
+        ...(entry.failClosed?.childRunnerShellFailure || {}),
+        ...(shellFailureEvidence || {}),
+        batchReport:
+          shellFailureEvidence?.batchReport ||
+          discoveredBatchReport ||
+          entry.failClosed?.batchReport ||
+          entry.implementation?.batchReport ||
+          null,
+      };
+      const groupId = resolutionGroupId({
+        candidate: entry,
+        familyId: entry.liveGate?.synthesisFamily || null,
+        reason: "user_confirmed_child_runner_shell_environment_reset",
+        type: "child-runner-shell-unavailable-reset",
+      });
+      const retryNonce = safeId(`${groupId}-${sha256Text(`${entry.id}:${runId}:${previousEvidence.batchReport || ""}`).slice(0, 8)}`);
+      const ticket = recordResolutionTicket({
+        affected: [entry],
+        evidence: {
+          ...previousEvidence,
+          familyId: entry.liveGate?.synthesisFamily || null,
+          retryNonce,
+          userDecision: {
+            childRunnerShellEnvironmentResetConfirmed: true,
+            confirmationSource: "explicit_cli_option",
+            option: "--resolve-child-runner-shell-unavailable-reset",
+            scopedCandidateIds: [entry.id],
+          },
+        },
+        groupId,
+        reason: "user_confirmed_child_runner_shell_environment_reset_requeued",
+        runId,
+        runRoot,
+        status: "resolved_requeued",
+        targetRepo,
+        type: "child-runner-shell-unavailable-reset",
+      });
+      resetChildRunnerShellUnavailableEntry(entry, ticket, previousEvidence);
+      requeuedCandidateIds.push(entry.id);
+      tickets.push(ticket);
+      continue;
+    }
+    if (entry.status === "blocked_child_runner_shell_unavailable") {
+      continue;
+    }
+    if (entry.status !== "blocked_no_candidate_artifact" && entry.failClosed?.status !== "blocked_no_candidate_artifact") {
+      continue;
+    }
+    if (!shellFailureEvidence) {
+      continue;
+    }
+    const groupId = resolutionGroupId({
+      candidate: entry,
+      familyId: entry.liveGate?.synthesisFamily || null,
+      reason: shellFailureEvidence.reason,
+      type: "child-runner-shell-unavailable",
+    });
+    const ticket = recordResolutionTicket({
+      affected: [entry],
+      evidence: {
+        ...shellFailureEvidence,
+        familyId: entry.liveGate?.synthesisFamily || null,
+      },
+      groupId,
+      reason: "child_runner_shell_environment_required",
+      runId,
+      runRoot,
+      status: "terminal_unresolved",
+      targetRepo,
+      type: "child-runner-shell-unavailable",
+    });
+    blockEntryForChildRunnerShellUnavailable(entry, ticket, shellFailureEvidence);
+    tickets.push(ticket);
+  }
+  return { requeuedCandidateIds, tickets };
+}
+
 function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRepo }) {
   const ticketsRoot = path.join(runRoot, "resolution-tickets");
   if (!existsSync(ticketsRoot)) {
@@ -2412,6 +4296,8 @@ function closeStaleRunningChildTimeoutTickets({ ledger, runId, runRoot, targetRe
 
 function processResolutionTickets({
   allowSelfImprovementLaneSynthesis = false,
+  childRunnerShellUnavailableResetIds = null,
+  childRunnerUsageLimitResetIds = null,
   includeBlockedLiveLaneRequired = false,
   includeImportFailureTickets = true,
   includeStaleChildTimeoutTickets = true,
@@ -2440,9 +4326,26 @@ function processResolutionTickets({
     timeoutMs,
   });
   const imports = includeImportFailureTickets
-    ? processImportFailureResolutionTickets({ ledger, resolutionCandidateIds, runId, runRoot, targetRepo })
+    ? processImportFailureResolutionTickets({
+        childRunnerUsageLimitResetIds,
+        ledger,
+        resolutionCandidateIds,
+        runId,
+        runRoot,
+        targetRepo,
+      })
     : { requeuedCandidateIds: [], tickets: [] };
-  if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0) {
+  const shell = includeImportFailureTickets
+    ? processChildRunnerShellFailureResolutionTickets({
+        childRunnerShellUnavailableResetIds,
+        ledger,
+        resolutionCandidateIds,
+        runId,
+        runRoot,
+        targetRepo,
+      })
+    : { requeuedCandidateIds: [], tickets: [] };
+  if (closed.tickets.length > 0 || live.tickets.length > 0 || imports.tickets.length > 0 || shell.tickets.length > 0) {
     updateLedgerNextCandidate(ledger, null);
     writeJson(ledgerPath, ledger);
   }
@@ -2450,15 +4353,15 @@ function processResolutionTickets({
     schema: "generic-repo-full-intake.resolution-queue.v1",
     runId,
     status: "terminal",
-    tickets: [...closed.tickets, ...live.tickets, ...imports.tickets].map((ticket) => ({
+    tickets: [...closed.tickets, ...live.tickets, ...imports.tickets, ...shell.tickets].map((ticket) => ({
       groupId: ticket.groupId,
       path: ticket.isolation.ticketPath,
       status: ticket.status,
       type: ticket.type,
       affectedCandidateIds: ticket.affectedCandidateIds,
     })),
-    requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds]),
-    terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length,
+    requeuedCandidateIds: sortedUnique([...live.requeuedCandidateIds, ...imports.requeuedCandidateIds, ...shell.requeuedCandidateIds]),
+    terminalTicketCount: closed.tickets.length + live.tickets.length + imports.tickets.length + shell.tickets.length,
     closedCandidateIds: closed.closedCandidateIds,
     openTicketCount: 0,
   };
@@ -2958,7 +4861,7 @@ function createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo })
   return ledgerPath;
 }
 
-function runCandidateImport({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImport({ allowUnrelatedUntrackedCentralTree = false, candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -2976,6 +4879,7 @@ function runCandidateImport({ candidate, contextPercent, ledger, runId, runRoot,
         reportDir,
         runId: batchRunId,
         targetRepo,
+        ...(allowUnrelatedUntrackedCentralTree ? { allowUnrelatedUntrackedCentralTree: true } : {}),
       },
       REPO_ROOT,
     );
@@ -3063,6 +4967,142 @@ function isLegacyReasoningEffortCliFailure({ batchReportPath, targetRepo }) {
     summary.unplannedPaths.length === 0 &&
     String(summary.stderr?.tail || "").includes(LEGACY_REASONING_EFFORT_CLI_ERROR)
   ));
+}
+
+function childSummaryText(summary) {
+  return [
+    summary?.stderr?.tail,
+    summary?.stderrTail,
+    summary?.error,
+    summary?.reason,
+  ].filter(Boolean).join("\n");
+}
+
+function childUsageLimitRetryAfterText(text) {
+  const match = /try again at\s+([^\.\n]+)/i.exec(String(text || ""));
+  return match ? match[1].trim() : null;
+}
+
+function isChildUsageLimitSummary(summary) {
+  const text = childSummaryText(summary);
+  return (
+    summary?.status === "failed_process" &&
+    Number(summary.exitCode) !== 0 &&
+    Array.isArray(summary.changedPaths) &&
+    summary.changedPaths.length === 0 &&
+    Array.isArray(summary.unplannedPaths) &&
+    summary.unplannedPaths.length === 0 &&
+    CHILD_USAGE_LIMIT_REASONS.some((fragment) => text.includes(fragment))
+  );
+}
+
+function isChildShellLaunchFailureSummary(summary) {
+  const text = childSummaryText(summary);
+  return (
+    Array.isArray(summary?.changedPaths) &&
+    summary.changedPaths.length === 0 &&
+    Array.isArray(summary?.unplannedPaths) &&
+    summary.unplannedPaths.length === 0 &&
+    CHILD_SHELL_LAUNCH_REASONS.some((fragment) => text.includes(fragment))
+  );
+}
+
+function childUsageLimitFailureEvidence({ batchReportPath, targetRepo }) {
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "child-usage-limit-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
+  const importerRunId = report?.importer?.runId || report?.items?.[0]?.importerRunId || null;
+  if (!importerRunId) return null;
+  let summaries = [];
+  try {
+    summaries = childRunSummariesForImporter(targetRepo, importerRunId);
+  } catch (_error) {
+    return null;
+  }
+  const summary = summaries.find(isChildUsageLimitSummary) || null;
+  if (!summary) return null;
+  const text = childSummaryText(summary);
+  return {
+    batchId: summary.batchId || null,
+    batchReport: batchReportPath || null,
+    importerRunId,
+    reason: "codex_child_runner_usage_limit",
+    retryAfterText: childUsageLimitRetryAfterText(text),
+    stderrTailContainsUsageLimit: true,
+  };
+}
+
+function childShellLaunchFailureEvidence({ batchReportPath, targetRepo }) {
+  const report = readCompactJsonIfExists(
+    absoluteReportPath(targetRepo, batchReportPath),
+    "child-shell-launch-batch-report",
+    BATCH_REPORT_SUMMARY_MAX_BYTES,
+  );
+  const importerRunId = report?.importer?.runId || report?.items?.[0]?.importerRunId || null;
+  if (!importerRunId) return null;
+  let summaries = [];
+  try {
+    summaries = childRunSummariesForImporter(targetRepo, importerRunId);
+  } catch (_error) {
+    return null;
+  }
+  const summary = summaries.find(isChildShellLaunchFailureSummary) || null;
+  if (!summary) return null;
+  const text = childSummaryText(summary);
+  const matchedReason = CHILD_SHELL_LAUNCH_REASONS.find((fragment) => text.includes(fragment)) || "child_shell_launch_failed";
+  return {
+    batchId: summary.batchId || null,
+    batchReport: batchReportPath || null,
+    childRunStatus: summary.status || null,
+    importerRunId,
+    reason: "codex_child_runner_shell_unavailable",
+    shellErrorText: matchedReason,
+    stderrTailContainsShellFailure: true,
+  };
+}
+
+function childUsageLimitItemReason(evidence) {
+  return evidence?.retryAfterText
+    ? `codex_child_runner_usage_limit_retry_after:${evidence.retryAfterText}`
+    : "codex_child_runner_usage_limit";
+}
+
+function childShellLaunchItemReason(evidence) {
+  return evidence?.shellErrorText
+    ? `codex_child_runner_shell_unavailable:${safeId(evidence.shellErrorText)}`
+    : "codex_child_runner_shell_unavailable";
+}
+
+function pendingChildRunnerUsageLimitBlocker(ledger) {
+  const entry = (ledger.entries || []).find((candidate) => candidate.status === "blocked_child_runner_usage_limit");
+  if (!entry) return null;
+  const evidence = entry.implementation?.childRunnerUsageLimit || entry.failClosed?.childRunnerUsageLimit || {};
+  return {
+    code: "child-runner-usage-limit",
+    candidateId: entry.id,
+    reason: entry.failClosed?.reason || entry.implementation?.failureReason || "codex_child_runner_usage_limit",
+    retryAfterText: evidence.retryAfterText || null,
+    resolutionTicket: entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null,
+  };
+}
+
+function pendingChildRunnerShellUnavailableBlocker(ledger) {
+  const entry = (ledger.entries || []).find((candidate) => candidate.status === "blocked_child_runner_shell_unavailable");
+  if (!entry) return null;
+  const hasQueuedRankedCandidate = (ledger.entries || []).some((candidate) => (
+    candidate.status === "queued" && Number.isInteger(candidate.queueRank)
+  ));
+  if (hasQueuedRankedCandidate) return null;
+  const evidence = entry.implementation?.childRunnerShellFailure || entry.failClosed?.childRunnerShellFailure || {};
+  return {
+    code: "child-runner-shell-unavailable",
+    candidateId: entry.id,
+    reason: entry.failClosed?.reason || entry.implementation?.failureReason || "codex_child_runner_shell_unavailable",
+    shellErrorText: evidence.shellErrorText || null,
+    resolutionTicket: entry.resolution?.latestTicket || entry.implementation?.resolutionTicket || null,
+  };
 }
 
 function resolveChildTimeoutEvidence({ candidate, targetRepo, batchReportPath }) {
@@ -3591,12 +5631,24 @@ function updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targe
     },
     createdAt: now,
   };
+  if (item.childRunnerUsageLimit) {
+    entry.failClosed.childRunnerUsageLimit = item.childRunnerUsageLimit;
+  }
+  if (item.childRunnerShellFailure) {
+    entry.failClosed.childRunnerShellFailure = item.childRunnerShellFailure;
+  }
   entry.implementation = {
     ...(entry.implementation || {}),
     failureReason: item.reason || null,
     batchReport: item.batchReport || entry.implementation?.batchReport || null,
     plannedPaths: Array.isArray(entry.implementation?.plannedPaths) ? entry.implementation.plannedPaths : [],
   };
+  if (item.childRunnerUsageLimit) {
+    entry.implementation.childRunnerUsageLimit = item.childRunnerUsageLimit;
+  }
+  if (item.childRunnerShellFailure) {
+    entry.implementation.childRunnerShellFailure = item.childRunnerShellFailure;
+  }
   if (item.resolutionTicket) {
     const ticket = readResolutionTicket(targetRepo, item.resolutionTicket);
     if (ticket) {
@@ -3739,9 +5791,13 @@ function writeHandoff({ candidate, commitId, item, state, targetRepo }) {
   return normalizeRepoPath(path.relative(targetRepo, handoffPath));
 }
 
-function stageAndCommitReviewableChanges(targetRepo, message) {
+function stageAndCommitReviewableChanges(targetRepo, message, allowedPaths = null) {
+  const allowed = Array.isArray(allowedPaths)
+    ? new Set(allowedPaths.map(normalizeRepoPath).filter(Boolean))
+    : null;
   const paths = gitChangedPaths(targetRepo)
     .filter((repoPath) => !gitPathIsIgnored(targetRepo, repoPath))
+    .filter((repoPath) => !allowed || allowed.has(normalizeRepoPath(repoPath)))
     .filter((repoPath) => gitPathIsTracked(targetRepo, repoPath) || existsSync(path.join(targetRepo, repoPath)));
   if (paths.length === 0) {
     return null;
@@ -3789,6 +5845,29 @@ function stageAndCommitReviewableChanges(targetRepo, message) {
     throw new Error(`git-commit-failed: ${commitResult.stderr || commitResult.stdout}`);
   }
   return gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
+}
+
+function commitAllowedPathsForCandidate({ batch, candidate, item }) {
+  const importedItem = (batch?.report?.items || []).find((entry) => entry.candidateId === candidate.id) || null;
+  return compactPathArray([
+    ...candidatePlannedPaths(candidate),
+    ...(Array.isArray(item?.plannedPaths) ? item.plannedPaths : []),
+    ...(Array.isArray(importedItem?.plannedPaths) ? importedItem.plannedPaths : []),
+    item?.planPath,
+    item?.handoffPath,
+    "plans/target-app-execplan.md",
+    ".codex/handoff.md",
+  ], 128);
+}
+
+function candidateArtifactPaths(candidate) {
+  const parentOnly = new Set([".codex/handoff.md", "plans/target-app-execplan.md"]);
+  return candidatePlannedPaths(candidate).filter((repoPath) => !parentOnly.has(normalizeRepoPath(repoPath)));
+}
+
+function candidateArtifactDirtyPaths({ candidate, targetRepo }) {
+  const artifactPaths = new Set(candidateArtifactPaths(candidate));
+  return gitChangedPaths(targetRepo).filter((repoPath) => artifactPaths.has(normalizeRepoPath(repoPath)));
 }
 
 function pushItem(state, item) {
@@ -3855,7 +5934,7 @@ function loadBatchFromItem({ item, targetRepo }) {
   };
 }
 
-function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, runId, state, targetRepo }) {
+function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, options = {}, runId, state, targetRepo }) {
   if (!dirtyPaths.length || state.activeTransaction) return null;
   const failedItem = (state.items || [])
     .slice()
@@ -3863,7 +5942,18 @@ function findRecoverableFailedLiveRerunTransaction({ dirtyPaths, ledger, runId, 
     .find((entry) => entry?.status === "failed_live_rerun" && Array.isArray(entry.plannedPaths) && entry.plannedPaths.length > 0);
   if (!failedItem) return null;
   const plannedSet = new Set(failedItem.plannedPaths.map(normalizeRepoPath));
-  const dirtyIsPlanned = dirtyPaths.every((repoPath) => plannedSet.has(normalizeRepoPath(repoPath)) || SHARED_OWNER_PATHS.includes(normalizeRepoPath(repoPath)));
+  const dirtyPathsForRecovery = options.allowUnrelatedUntrackedCentralTree === true
+    ? gitChangedEntries(targetRepo)
+      .filter((entry) => !gitPathIsIgnored(targetRepo, entry.path))
+      .filter((entry) => {
+        if (entry.status !== "??") return true;
+        const normalized = normalizeRepoPath(entry.path);
+        return plannedSet.has(normalized) || SHARED_OWNER_PATHS.includes(normalized);
+      })
+      .map((entry) => entry.path)
+    : dirtyPaths;
+  if (!dirtyPathsForRecovery.length) return null;
+  const dirtyIsPlanned = dirtyPathsForRecovery.every((repoPath) => plannedSet.has(normalizeRepoPath(repoPath)) || SHARED_OWNER_PATHS.includes(normalizeRepoPath(repoPath)));
   if (!dirtyIsPlanned) return null;
   const candidate = (ledger.entries || []).find((entry) => entry.id === failedItem.candidateId);
   if (!candidate || candidate.status !== "failed_live_rerun") return null;
@@ -4022,7 +6112,7 @@ function importerManifestPathFromBatch(targetRepo, batch) {
   return pathFromTarget(targetRepo, manifestPath);
 }
 
-function runCandidateImporterPhase({ candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
+function runCandidateImporterPhase({ allowUnrelatedUntrackedCentralTree = false, candidate, contextPercent, ledger, runId, runRoot, targetRepo }) {
   const singleLedgerPath = createSingleCandidateLedger({ candidate, ledger, runRoot, targetRepo });
   const retryNonce = candidate.implementation?.retryNonce || candidate.implementation?.recoveryIntent?.retryNonce || "";
   const batchRunId = safeId(
@@ -4039,6 +6129,7 @@ function runCandidateImporterPhase({ candidate, contextPercent, ledger, runId, r
       reportDir,
       runId: batchRunId,
       targetRepo,
+      ...(allowUnrelatedUntrackedCentralTree ? { allowUnrelatedUntrackedCentralTree: true } : {}),
     },
     REPO_ROOT,
   );
@@ -4261,6 +6352,7 @@ function runStrictOnePhase({
     const recovery = findRecoverableFailedLiveRerunTransaction({
       dirtyPaths: dirtyBefore,
       ledger: initialLedger,
+      options,
       runId,
       state,
       targetRepo,
@@ -4282,27 +6374,6 @@ function runStrictOnePhase({
   }
 
   if (completedPhase === "select_candidate") {
-    const dirtyBefore = gitChangedPaths(targetRepo);
-    if (dirtyBefore.length > 0) {
-      report.status = "blocked_target_dirty";
-      report.ok = false;
-      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
-      return finishStrictPhaseReport({
-        batch,
-        candidate,
-        gitHeadBefore,
-        item,
-        ledgerPath,
-        ledgerSha256Before,
-        liveRerun,
-        registryPath,
-        report,
-        runRoot,
-        state,
-        targetRepo,
-      });
-    }
-
     const processedIds = terminalProcessedIds(state, initialLedger);
     candidate = selectNextQueuedRankedCandidate(initialLedger, processedIds);
     if (!candidate) {
@@ -4316,6 +6387,27 @@ function runStrictOnePhase({
         ledgerPath,
         ledgerSha256Before,
         liveRerun: null,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
+    const dirtyBefore = dirtyTargetPathsForOptions(targetRepo, [candidate], options);
+    if (dirtyBefore.length > 0) {
+      report.status = "blocked_target_dirty";
+      report.ok = false;
+      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
         registryPath,
         report,
         runRoot,
@@ -4579,6 +6671,7 @@ function runStrictOnePhase({
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
         batch = runCandidateImporterPhase({
+          allowUnrelatedUntrackedCentralTree: options.allowUnrelatedUntrackedCentralTree === true,
           candidate,
           contextPercent: nestedBatchContextPercent(contextBudget),
           ledger,
@@ -4644,6 +6737,68 @@ function runStrictOnePhase({
           event: "candidate_recovery_pending_semantic_review",
           runId,
           status: item.status,
+        });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      const usageLimitEvidence = childUsageLimitFailureEvidence({
+        batchReportPath: error?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (usageLimitEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: usageLimitEvidence.reason,
+          type: "child-runner-usage-limit",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...usageLimitEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_usage_limit_wait_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-usage-limit",
+        });
+        item.status = "blocked_child_runner_usage_limit";
+        item.reason = childUsageLimitItemReason(usageLimitEvidence);
+        item.blockers = [
+          {
+            code: "child_runner_usage_limit",
+            retryAfterText: usageLimitEvidence.retryAfterText || null,
+          },
+        ];
+        item.batchReport = usageLimitEvidence.batchReport || error?.report?.reportPath || null;
+        item.childRunnerUsageLimit = usageLimitEvidence;
+        item.resolutionTicket = ticket.isolation.ticketPath;
+        item.resolutionStatus = "terminal_unresolved";
+        item.completedAt = new Date().toISOString();
+        updateLedgerTerminalStatus({ candidate, item, ledger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_usage_limit",
+          reason: item.reason,
+          runId,
         });
         return finishStrictPhaseReport({
           batch,
@@ -4959,6 +7114,91 @@ function runStrictOnePhase({
   }
 
   if (completedPhase === "ledger_docs_handoff_commit_finalization") {
+    const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
+    if (artifactDirtyPaths.length === 0) {
+      const shellFailureEvidence = childShellLaunchFailureEvidence({
+        batchReportPath: item.batchReport || batch?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (shellFailureEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: shellFailureEvidence.reason,
+          type: "child-runner-shell-unavailable",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...shellFailureEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_shell_environment_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-shell-unavailable",
+        });
+        markItemForChildRunnerShellUnavailable(item, ticket, shellFailureEvidence);
+        const blockedLedger = readJson(ledgerPath, "queue-ledger");
+        updateLedgerTerminalStatus({ candidate, item, ledger: blockedLedger, ledgerPath, targetRepo });
+        state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+        report.items.push(item);
+        report.status = "blocked_child_runner_shell_unavailable";
+        report.ok = true;
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_shell_unavailable",
+          reason: item.reason,
+          runId,
+        });
+        return finishStrictPhaseReport({
+          batch,
+          candidate,
+          gitHeadBefore,
+          item,
+          ledgerPath,
+          ledgerSha256Before,
+          liveRerun,
+          registryPath,
+          report,
+          runRoot,
+          state,
+          targetRepo,
+        });
+      }
+      item.status = "blocked_no_candidate_artifact";
+      item.reason = "controlled_merge_produced_no_candidate_artifact";
+      item.completedAt = new Date().toISOString();
+      const blockedLedger = readJson(ledgerPath, "queue-ledger");
+      updateLedgerTerminalStatus({ candidate, item, ledger: blockedLedger, ledgerPath, targetRepo });
+      state = clearStrictTransaction({ runRoot, state: pushItem(state, item) });
+      report.items.push(item);
+      report.status = "completed_with_blocked_candidates";
+      report.ok = true;
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_blocked_no_candidate_artifact",
+        runId,
+      });
+      return finishStrictPhaseReport({
+        batch,
+        candidate,
+        gitHeadBefore,
+        item,
+        ledgerPath,
+        ledgerSha256Before,
+        liveRerun,
+        registryPath,
+        report,
+        runRoot,
+        state,
+        targetRepo,
+      });
+    }
+
     const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
     report.contextBudget.lastDecision = docsDecision;
     if (docsDecision.action !== "continue") {
@@ -5021,7 +7261,11 @@ function runStrictOnePhase({
     const commitId =
       options.noCommit === true
         ? null
-        : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
+        : stageAndCommitReviewableChanges(
+            targetRepo,
+            `feat: import ${safeId(candidate.id)} recipe`,
+            commitAllowedPathsForCandidate({ batch, candidate, item }),
+          );
     item.commitId = commitId;
     item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
     if (commitId) {
@@ -5081,6 +7325,26 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   const registryPath = resolveOptionalPath(cwd, options.liveLaneRegistry, DEFAULT_LIVE_LANE_REGISTRY);
   const registry = readLiveLaneRegistry(registryPath);
   const resolutionCandidateIds = parseCsvSet(options.resolutionCandidateIds);
+  const childRunnerShellUnavailableResetIds = parseCsvSet(options.resolveChildRunnerShellUnavailableReset);
+  const childRunnerUsageLimitResetIds = parseCsvSet(options.resolveChildRunnerUsageLimitReset);
+  if (childRunnerShellUnavailableResetIds instanceof Set && childRunnerShellUnavailableResetIds.size > 0) {
+    if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
+      throw new Error("--resolve-child-runner-shell-unavailable-reset requires matching --resolution-candidate-ids");
+    }
+    const missingScopeIds = Array.from(childRunnerShellUnavailableResetIds).filter((id) => !resolutionCandidateIds.has(id));
+    if (missingScopeIds.length > 0) {
+      throw new Error(`--resolve-child-runner-shell-unavailable-reset ids must be included in --resolution-candidate-ids: ${missingScopeIds.join(",")}`);
+    }
+  }
+  if (childRunnerUsageLimitResetIds instanceof Set && childRunnerUsageLimitResetIds.size > 0) {
+    if (!(resolutionCandidateIds instanceof Set) || resolutionCandidateIds.size === 0) {
+      throw new Error("--resolve-child-runner-usage-limit-reset requires matching --resolution-candidate-ids");
+    }
+    const missingScopeIds = Array.from(childRunnerUsageLimitResetIds).filter((id) => !resolutionCandidateIds.has(id));
+    if (missingScopeIds.length > 0) {
+      throw new Error(`--resolve-child-runner-usage-limit-reset ids must be included in --resolution-candidate-ids: ${missingScopeIds.join(",")}`);
+    }
+  }
   const { resumed, state: loadedState } = loadOrCreateState({ ledgerPath, maxItems, runId, runRoot, targetRepo });
   let state = loadedState;
   const gitHeadBefore = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
@@ -5250,6 +7514,8 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
       preResolutionQueue = processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerShellUnavailableResetIds,
+        childRunnerUsageLimitResetIds,
         includeBlockedLiveLaneRequired: true,
         includeImportFailureTickets: false,
         includeStaleChildTimeoutTickets: false,
@@ -5308,6 +7574,8 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       }
     : processResolutionTickets({
         allowSelfImprovementLaneSynthesis: options.allowSelfImprovementLaneSynthesis === true,
+        childRunnerShellUnavailableResetIds,
+        childRunnerUsageLimitResetIds,
         ledger: initialLedger,
         ledgerPath,
         registry,
@@ -5334,6 +7602,90 @@ export async function runFullIntake(options, cwd = process.cwd()) {
     });
     initialLedger = readJson(ledgerPath, "queue-ledger");
     assertRequiredLedgerShape(initialLedger);
+  }
+
+  const childRunnerUsageLimitBlocker = pendingChildRunnerUsageLimitBlocker(initialLedger);
+  if (childRunnerUsageLimitBlocker) {
+    report.status = "blocked_child_runner_usage_limit";
+    report.ok = true;
+    report.blockers.push(childRunnerUsageLimitBlocker);
+    state.status = report.status;
+    state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
+    appendEvent(runRoot, { event: "child_runner_usage_limit_global_stop", runId, ...childRunnerUsageLimitBlocker });
+    writeJson(path.join(runRoot, "run-report.json"), report);
+    return report;
+  }
+
+  const childRunnerShellUnavailableBlocker = pendingChildRunnerShellUnavailableBlocker(initialLedger);
+  if (childRunnerShellUnavailableBlocker) {
+    report.status = "blocked_child_runner_shell_unavailable";
+    report.ok = true;
+    report.blockers.push(childRunnerShellUnavailableBlocker);
+    state.status = report.status;
+    state = saveState(runRoot, state);
+    const proof = writeProofEnvelope({
+      batch: null,
+      candidate: null,
+      gitHeadAfter: gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head"),
+      gitHeadBefore,
+      item: null,
+      ledgerSha256Before,
+      liveRerun: null,
+      registryPath,
+      report,
+      runRoot,
+      state,
+      targetRepo,
+    });
+    report.proofEnvelopePath = proof.path;
+    report.proofEnvelopeSha256 = proof.sha256;
+    report.proofEnvelopeContractComplete = proof.envelope.contractComplete;
+    const resume = writeResumeCard({
+      blockers: report.blockers,
+      candidate: null,
+      item: null,
+      ledgerPath,
+      proof,
+      queuePath: ledgerPath,
+      report,
+      runRoot,
+      targetRepo,
+    });
+    report.resumeCardPath = resume.path;
+    report.resumeCardSha256 = resume.sha256;
+    appendEvent(runRoot, { event: "child_runner_shell_unavailable_global_stop", runId, ...childRunnerShellUnavailableBlocker });
+    writeJson(path.join(runRoot, "run-report.json"), report);
+    return report;
   }
 
   if (strictOnePhase) {
@@ -5363,14 +7715,6 @@ export async function runFullIntake(options, cwd = process.cwd()) {
   let lastLiveRerun = null;
 
   while (considered < maxItems) {
-    const dirtyBefore = gitChangedPaths(targetRepo);
-    if (dirtyBefore.length > 0) {
-      report.status = "blocked_target_dirty";
-      report.ok = false;
-      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
-      break;
-    }
-
     const ledger = readJson(ledgerPath, "queue-ledger");
     assertRequiredLedgerShape(ledger);
     let activeLedger = ledger;
@@ -5379,6 +7723,15 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       report.status = considered === 0 ? "completed_no_candidates" : "completed";
       break;
     }
+
+    const dirtyBefore = dirtyTargetPathsForOptions(targetRepo, [candidate], options);
+    if (dirtyBefore.length > 0) {
+      report.status = "blocked_target_dirty";
+      report.ok = false;
+      report.blockers.push({ code: "target-repo-dirty", changedPaths: dirtyBefore });
+      break;
+    }
+
     considered += 1;
 
     const item = itemFromCandidate(candidate, runId);
@@ -5497,6 +7850,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         batch = recoverChildTimeoutPatch({ candidate, runId, runRoot, targetRepo, timeoutMs });
       } else {
         batch = runCandidateImport({
+          allowUnrelatedUntrackedCentralTree: options.allowUnrelatedUntrackedCentralTree === true,
           candidate,
           contextPercent: nestedBatchContextPercent(contextBudget),
           ledger: activeLedger,
@@ -5568,6 +7922,56 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         });
         break;
       } else {
+        const usageLimitEvidence = childUsageLimitFailureEvidence({
+          batchReportPath: error?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+          targetRepo,
+        });
+        if (usageLimitEvidence) {
+          const groupId = resolutionGroupId({
+            candidate,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+            reason: usageLimitEvidence.reason,
+            type: "child-runner-usage-limit",
+          });
+          const ticket = recordResolutionTicket({
+            affected: [candidate],
+            evidence: {
+              ...usageLimitEvidence,
+              familyId: candidate.liveGate?.synthesisFamily || null,
+            },
+            groupId,
+            reason: "child_runner_usage_limit_wait_required",
+            runId,
+            runRoot,
+            status: "terminal_unresolved",
+            targetRepo,
+            type: "child-runner-usage-limit",
+          });
+          item.status = "blocked_child_runner_usage_limit";
+          item.reason = childUsageLimitItemReason(usageLimitEvidence);
+          item.blockers = [
+            {
+              code: "child_runner_usage_limit",
+              retryAfterText: usageLimitEvidence.retryAfterText || null,
+            },
+          ];
+          item.batchReport = usageLimitEvidence.batchReport || error?.report?.reportPath || null;
+          item.childRunnerUsageLimit = usageLimitEvidence;
+          item.resolutionTicket = ticket.isolation.ticketPath;
+          item.resolutionStatus = "terminal_unresolved";
+          item.completedAt = new Date().toISOString();
+          processedIds.add(candidate.id);
+          updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+          state = saveState(runRoot, pushItem(state, item));
+          report.items.push(item);
+          appendEvent(runRoot, {
+            candidateId: candidate.id,
+            event: "candidate_blocked_child_runner_usage_limit",
+            reason: item.reason,
+            runId,
+          });
+          continue;
+        }
         const finalError = recoveryError || error;
         item.status = "failed_import";
         item.reason = finalError.message;
@@ -5585,7 +7989,7 @@ export async function runFullIntake(options, cwd = process.cwd()) {
         state = saveState(runRoot, pushItem(state, item));
         report.items.push(item);
         appendEvent(runRoot, { candidateId: candidate.id, event: "candidate_import_failed", reason: finalError.message, runId });
-        if (gitChangedPaths(targetRepo).length > 0) {
+        if (dirtyTargetPathsForOptions(targetRepo, [candidate], options).length > 0) {
           report.status = "stopped_after_failed_import_dirty_target";
           report.ok = false;
           break;
@@ -5655,6 +8059,63 @@ export async function runFullIntake(options, cwd = process.cwd()) {
       item.liveRerunStatus = "not_required";
     }
 
+    const artifactDirtyPaths = candidateArtifactDirtyPaths({ candidate, targetRepo });
+    if (artifactDirtyPaths.length === 0) {
+      const shellFailureEvidence = childShellLaunchFailureEvidence({
+        batchReportPath: item.batchReport || batch?.report?.reportPath || discoverCandidateBatchReportPath({ candidateId: candidate.id, runRoot, targetRepo }),
+        targetRepo,
+      });
+      if (shellFailureEvidence) {
+        const groupId = resolutionGroupId({
+          candidate,
+          familyId: candidate.liveGate?.synthesisFamily || null,
+          reason: shellFailureEvidence.reason,
+          type: "child-runner-shell-unavailable",
+        });
+        const ticket = recordResolutionTicket({
+          affected: [candidate],
+          evidence: {
+            ...shellFailureEvidence,
+            familyId: candidate.liveGate?.synthesisFamily || null,
+          },
+          groupId,
+          reason: "child_runner_shell_environment_required",
+          runId,
+          runRoot,
+          status: "terminal_unresolved",
+          targetRepo,
+          type: "child-runner-shell-unavailable",
+        });
+        markItemForChildRunnerShellUnavailable(item, ticket, shellFailureEvidence);
+        processedIds.add(candidate.id);
+        updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+        state = saveState(runRoot, pushItem(state, item));
+        report.items.push(item);
+        report.status = "blocked_child_runner_shell_unavailable";
+        appendEvent(runRoot, {
+          candidateId: candidate.id,
+          event: "candidate_blocked_child_runner_shell_unavailable",
+          reason: item.reason,
+          runId,
+        });
+        continue;
+      }
+      item.status = "blocked_no_candidate_artifact";
+      item.reason = "controlled_merge_produced_no_candidate_artifact";
+      item.completedAt = new Date().toISOString();
+      processedIds.add(candidate.id);
+      updateLedgerTerminalStatus({ candidate, item, ledger: activeLedger, ledgerPath, targetRepo });
+      state = saveState(runRoot, pushItem(state, item));
+      report.items.push(item);
+      report.status = "completed_with_blocked_candidates";
+      appendEvent(runRoot, {
+        candidateId: candidate.id,
+        event: "candidate_blocked_no_candidate_artifact",
+        runId,
+      });
+      continue;
+    }
+
     const docsDecision = checkContextBudget(contextBudget, "docsHandoffWrite", CONTEXT_STEP_COST.docsHandoffWrite);
     report.contextBudget.lastDecision = docsDecision;
     if (docsDecision.action !== "continue") {
@@ -5687,7 +8148,11 @@ export async function runFullIntake(options, cwd = process.cwd()) {
     const commitId =
       options.noCommit === true
         ? null
-        : stageAndCommitReviewableChanges(targetRepo, `feat: import ${safeId(candidate.id)} recipe`);
+        : stageAndCommitReviewableChanges(
+            targetRepo,
+            `feat: import ${safeId(candidate.id)} recipe`,
+            commitAllowedPathsForCandidate({ batch, candidate, item }),
+          );
     item.commitId = commitId;
     item.gitHeadAfter = gitOutput(targetRepo, ["rev-parse", "HEAD"], "rev-parse-head");
     if (commitId) {

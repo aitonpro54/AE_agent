@@ -150,7 +150,7 @@ async function main() {
       requiresCheckpoint: true,
       steps: [
         { title: "Create text", tool: "create_text_layer", args: { text: "Repair Smoke", fontSize: 24 } },
-        { title: "Update text", tool: "update_text", args: { content: "Repair Smoke Updated", fontSize: 32 } }
+        { title: "Update text", tool: "update_text", args: { content: "Repair Smoke Updated", fontSize: 32, alignment: "center" } }
       ]
     }, {
       applied: true,
@@ -160,6 +160,26 @@ async function main() {
       actionTypes: ["tool-alias", "arg-alias", "missing-required-binding"]
     });
     assert.strictEqual(textRepair.repairedPlan.steps[1].resultBindings.layerIndex, "{{layerIndex}}");
+    assert.strictEqual(textRepair.repairedPlan.steps[1].args.justification, "center");
+
+    const shapeRepair = await validatePlan("shape-polystar-alias", {
+      summary: "Create a generated star shape with source-style shapeType args.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Add star", tool: "createShapeLayer", args: { compName: "Repair Smoke Comp", name: "Repair Smoke Star", shapeType: "star", pointCount: 5, outer_radius: 120, inner_radius: 48 } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["create_shape_layer"],
+      actionTypes: ["tool-alias", "arg-alias"]
+    });
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.shape, "star");
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.points, 5);
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.outerRadius, 120);
+    assert.strictEqual(shapeRepair.repairedPlan.steps[0].args.innerRadius, 48);
 
     await validatePlan("camera-layer-alias", {
       summary: "Create a simple generated camera.",
@@ -502,6 +522,24 @@ async function main() {
       actionTypes: ["arg-alias"]
     });
     assert.strictEqual(folderTargetRepair.repairedPlan.steps[2].args.targetFolderItemIndex, "{{folderItemIndex}}");
+
+    const folderMoveSearchBindingRepair = await validatePlan("folder-move-search-binding", {
+      summary: "Move explicit generated project search results into a generated folder.",
+      risk: "medium",
+      requiresCheckpoint: true,
+      steps: [
+        { title: "Find generated comps", tool: "find_project_items", args: { query: "Repair Smoke Move", type: "comp", limit: 2 } },
+        { title: "Create folder", tool: "create_project_folder", args: { name: "Repair Smoke Move Folder" } },
+        { title: "Move found comps", tool: "move_project_items_to_folder", args: { targetFolderName: "Repair Smoke Move Folder" } }
+      ]
+    }, {
+      applied: true,
+      validationOk: true,
+      category: "risky",
+      toolSequence: ["find_project_items", "create_project_folder", "move_project_items_to_folder"],
+      actionTypes: ["missing-required-binding"]
+    });
+    assert.strictEqual(folderMoveSearchBindingRepair.repairedPlan.steps[2].resultBindings.itemIndices, "{{steps.1.result}}");
 
     const markerCompAliasRepair = await validatePlan("marker-comp-binding-alias", {
       summary: "Create a comp, add a layer, and add a marker using a marker comp alias.",
