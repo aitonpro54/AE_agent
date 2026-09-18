@@ -2,6 +2,11 @@
 
 const fs = require("fs");
 const path = require("path");
+const {
+  analyzeSearchIntent,
+  expandSearchTokens,
+  isExactTitleQuery
+} = require("./solution-search-language");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const REGISTRY_SCHEMA = "ae-solution-registry.v1";
@@ -11,6 +16,7 @@ const PLANNER_USE = "advisory-retrieval-enabled";
 const DEFAULT_MAX_HINTS = 3;
 const MIN_RELEVANCE_SCORE = 5;
 const MIN_TOOL_MATCH_SCORE = 60;
+const LANGUAGE_ACTION_TOKENS = new Set(["add", "center", "convert", "create", "distribute", "duplicate", "rename"]);
 const GENERIC_TAGS = new Set(["typed-tool", "reviewed-jsx", "fixture", "smoke", "candidate"]);
 const MARKER_TAGS = new Set(["marker", "markers", "layer-marker"]);
 const MARKER_PROMPT_TOKENS = new Set(["marker", "markers", "mark", "marks", "marked"]);
@@ -222,18 +228,10 @@ function hasPromptToken(promptTokens, expectedTokens) {
   return false;
 }
 
-function promptRequestsReadOnlyPreference(userPrompt) {
-  const text = String(userPrompt || "").toLowerCase();
-  return (
-    /\bwithout\s+(changing|moving|mutating|modifying)\b/.test(text) ||
-    /\bdo\s+not\s+(change|move|mutate|modify)\b/.test(text) ||
-    /\bno\s+(?:selection\s+)?mutation\b/.test(text)
-  );
-}
-
-function scoreSolution(solution, promptTokens, userPrompt = "") {
+function scoreSolution(solution, promptTokens, userPrompt = "", useLanguageExpansion = false, promptRequestsReadOnly = false) {
   if (!solution || promptTokens.size === 0) return 0;
   if (isMarkerSolution(solution) && !promptHasMarkerIntent(promptTokens)) return 0;
+  const searchTokens = useLanguageExpansion ? expandSearchTokens : tokenSet;
   let score = 0;
   const tags = solutionTags(solution);
   for (const tag of tags) {
@@ -242,26 +240,38 @@ function scoreSolution(solution, promptTokens, userPrompt = "") {
     if (tagOverlap > 0) score += 8 + tagOverlap;
   }
 
-  const titleTokens = tokenSet(solution.title || "");
+  const titleTokens = searchTokens(solution.title || "");
   score += overlapCount(titleTokens, promptTokens) * 4;
+  if (isExactTitleQuery(solution.title, userPrompt)) score += 1000;
 
   const intent = isPlainObject(solution.intent) ? solution.intent : {};
-  score += overlapCount(tokenSet(intent.summary || ""), promptTokens) * 3;
-  score += overlapCount(tokenSet(intent.appliesWhen || []), promptTokens) * 2;
+  score += overlapCount(searchTokens(intent.summary || ""), promptTokens) * 3;
+  score += overlapCount(searchTokens(intent.appliesWhen || []), promptTokens) * 2;
 
   const execution = isPlainObject(solution.execution) ? solution.execution : {};
-  score += overlapCount(tokenSet(execution.preferredTools || []), promptTokens) * 3;
-  score += overlapCount(tokenSet(solution.inputs || []), promptTokens);
-  score += overlapCount(tokenSet(solution.targetAssumptions || []), promptTokens);
+  score += overlapCount(searchTokens(execution.preferredTools || []), promptTokens) * 3;
+  score += overlapCount(searchTokens(solution.inputs || []), promptTokens);
+  score += overlapCount(searchTokens(solution.targetAssumptions || []), promptTokens);
+
+  if (useLanguageExpansion) {
+    const solutionTokens = expandSearchTokens(collectStrings(solution));
+    const actionMatches = Array.from(promptTokens).filter((token) => LANGUAGE_ACTION_TOKENS.has(token) && solutionTokens.has(token)).length;
+    const objectMatches = Array.from(promptTokens).filter((token) => !LANGUAGE_ACTION_TOKENS.has(token) && solutionTokens.has(token)).length;
+    if (actionMatches > 0 && objectMatches >= 2) score += actionMatches * 12;
+  }
 
   if (execution.riskLevel === "high") score -= 2;
-  if (promptRequestsReadOnlyPreference(userPrompt) && execution.mutating === true) score -= 28;
+  if (promptRequestsReadOnly && execution.mutating === false) {
+    score += 8;
+    if (tags.includes("read-only")) score += 24;
+  }
   if (isRawExtendscriptSolution(solution)) score -= 1;
   return score;
 }
 
 function shouldIncludeToolMatch(solution, score, promptTokens) {
   if (score < MIN_TOOL_MATCH_SCORE) return false;
+  if (promptHasMarkerIntent(promptTokens) && !isMarkerSolution(solution)) return false;
   const requiredPromptTokens = TOOL_MATCH_REQUIRED_PROMPT_TOKENS.get(solution && solution.id);
   if (requiredPromptTokens && !hasPromptToken(promptTokens, requiredPromptTokens)) return false;
   return true;
@@ -341,7 +351,9 @@ function summarizeRegistry(registry) {
 
 function retrieveSolutionHints(userPrompt, options = {}) {
   const topN = Math.max(0, Math.min(8, Math.floor(Number(options.topN || DEFAULT_MAX_HINTS))));
-  const promptTokens = tokenSet(userPrompt || "");
+  const promptIntent = analyzeSearchIntent(userPrompt || "");
+  const useLanguageExpansion = /[а-яё]/i.test(String(userPrompt || ""));
+  const promptTokens = useLanguageExpansion ? promptIntent.tokens : tokenSet(userPrompt || "");
   const tools = availableToolSet(options);
   const result = {
     ok: true,
@@ -356,6 +368,7 @@ function retrieveSolutionHints(userPrompt, options = {}) {
       untrackedStatus: 0,
       stale: 0,
       irrelevant: 0,
+      readOnlyConflict: 0,
       toolStatus: 0,
       typedToolEquivalent: 0
     }
@@ -406,7 +419,13 @@ function retrieveSolutionHints(userPrompt, options = {}) {
       continue;
     }
 
-    const score = scoreSolution(solution, promptTokens, userPrompt);
+    const execution = isPlainObject(solution.execution) ? solution.execution : {};
+    if (promptIntent.readOnlyRequested && !promptIntent.explicitlyMixedIntent && execution.mutating === true) {
+      result.omitted.readOnlyConflict += 1;
+      continue;
+    }
+
+    const score = scoreSolution(solution, promptTokens, userPrompt, useLanguageExpansion, promptIntent.readOnlyRequested);
     if (score < MIN_RELEVANCE_SCORE) {
       result.omitted.irrelevant += 1;
       continue;
