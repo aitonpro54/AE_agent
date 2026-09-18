@@ -7,10 +7,8 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
-2026-09-18: offline remediation F01–F17 завершён. M1 `417e465`, M2 `4c0c2f1`,
-M3 `8175c1f`: все релевантные offline проверки зелёные; F17 live reopen pending.
-Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
-`docs/all-review-remediation-2026-09-18.md`. Клиентская приёмка не заявляется.
+2026-09-19: F01–F17 завершён; M1–M5 `417e465`, `4c0c2f1`, `8175c1f`, `ca6922d`, `0bc1171`.
+Offline/synthetic live зелёные; ledger/report в `docs/all-review-*`; client acceptance pending.
 
 ### Progress
 
@@ -19,6 +17,7 @@ Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
 - [x] MCP regression: scope/replay, гонки adopt/run, подмена полномочий, чужой checkpoint,
   смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
 - [x] 11 slideshow tools; F08 exact-owner preflight и F09 structural v1 baseline/read-back.
+- [x] Synthetic live: F06–F12/F15/F17, включая stale A, accepted B и save/reopen marker.
 - [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
 - [x] Реальный AE: сокращение без переноса ключей, сохранение соседних ключей при продлении.
 - [ ] Production остановлен: первые 10 собраны, аудиохвост 13 мс и визуальная приёмка не завершены.
@@ -28,6 +27,7 @@ Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
 - Remediation: historical bundles неизменны; accepted manual B — baseline,
   client acceptance неизвестна. Scope F08 сохраняется; F09 proof связывается
   с baseline шага. Новые regression импортируют только текущие modules.
+- Live использует ignored synthetic AEP; client writes=0, acceptance pending.
 
 - Один pending proposal заменяет предыдущий; confirmed/executing имеют одного owner.
 - Proposal привязан к сохранённому проекту; offline planner выдаёт только draft.
@@ -37,7 +37,8 @@ Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
 - Статистика без секретов; входящая ревизия — baseline, неполный snapshot не даёт `passed`.
 ### Validation
 
-Проходят planning, solutions, bridge, autonomy и slideshow; F08/F09 scope-safety 9/9, live synthetic AEP отложен (`docs/scope-safety-fix-2026-09-18.md`).
+Offline suite с full-intake — pass; synthetic live подтвердил scope/keys/stale-B/
+audio/pair/expression/template/save-reopen. Sample/render/listening/acceptance pending.
 CEP/MCP синхронизированы; stale-кнопки отключаются. Live R3: 21+20+20 шагов,
 С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
 Read-back выявил и помог исправить порядок восстановления interpolation и выбор

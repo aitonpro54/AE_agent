@@ -8,12 +8,16 @@
     "untrackedFiles": 15,
     "scopePatchSha256": "913747C719DD2A9F8C15E6158EFBD9F51CF8F1DEA8DEC1CAF1CCA855C54BF7E5",
     "reverseApply": "passed",
+    "reverseApplyScope": "Milestone 0 pre-remediation tree",
+    "finalTreeReverseApply": "not_applicable_after_overlapping_M1-M5_hunks",
     "snapshot": ".codex/remediation-2026-09-18/preflight.json"
   },
   "constraints": {
-    "offlineOnly": true,
+    "offlineOnly": false,
     "clientAcceptance": "unknown",
-    "historicalEvidenceRewritten": false
+    "historicalEvidenceRewritten": false,
+    "syntheticLiveAe": true,
+    "clientProjectMutated": false
   },
   "findings": [
     {
@@ -129,8 +133,8 @@
         "F08",
         "F11"
       ],
-      "live": "Проверка реального AE audio routing.",
-      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
+      "live": "passed: последовательные audible routes сохранены; полностью перекрывающийся duplicate muted только при полном покрытии.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F07",
@@ -146,8 +150,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "AE serialization и interpolation на синтетическом AEP.",
-      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
+      "live": "passed: реальные vector values/property identities сохранены; AE-derived LINEAR ease speed нормализован, BEZIER остаётся exact.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F08",
@@ -160,8 +164,8 @@
       ],
       "regression": "scripts/slideshow-scope-safety-smoke.js",
       "dependencies": [],
-      "live": "Реальные AE owner graph и fail-before-write.",
-      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js"
+      "live": "passed: foreign exact-owner отказал до записи, external dependency осталась read-only.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F09",
@@ -179,8 +183,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "Реальные item/layer IDs, switches, reopen.",
-      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
+      "live": "passed: stale baseline A отказал до записи; принятая manual revision B стала новым baseline и прошла без восстановления A.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F10",
@@ -196,8 +200,8 @@
       "dependencies": [
         "F09"
       ],
-      "live": "Реальное поведение AE source/audio/video switches.",
-      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js"
+      "live": "passed: stable root source identity, enabled video и обе audio policies подтверждены независимым audit.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F11",
@@ -210,8 +214,8 @@
       ],
       "regression": "40ms, subframe gap, overlap, excess, wrong sourceIn и positive exact coverage.",
       "dependencies": [],
-      "live": "Реальный render/sample boundary proof.",
-      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js"
+      "live": "partial_pass: два реальных AE audio слоя точно покрыли 0..4 с без gap/overlap; audit не экспонирует sample-rate, render/прослушивание не выполнялись.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F12",
@@ -227,8 +231,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "Expression compilation/render в AE.",
-      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
+      "live": "passed: обе requested replacements скомпилировались и совпали по stable property read-back; render acceptance не заявляется.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F13",
@@ -279,8 +283,8 @@
         "F07",
         "F12"
       ],
-      "live": "Переносимость на другой синтетический шаблон не заявляется.",
-      "regressionFiles": "scripts/slideshow-template-contract-smoke.js"
+      "live": "passed: supported synthetic template изменён и прочитан; вариант с двумя title slots отказал до записи. Общая переносимость не заявляется.",
+      "regressionFiles": "scripts/slideshow-template-contract-smoke.js + scripts/review-remediation-live-smoke.js"
     },
     {
       "id": "F16",
@@ -302,8 +306,8 @@
     {
       "id": "F17",
       "kind": "typed_tool_gap",
-      "assessment": "confirmed_copy_saved_is_not_persist_memory",
-      "status": "live_validation_pending",
+      "assessment": "confirmed_copy_saved_is_not_persist_memory_live_verified",
+      "status": "fixed_offline",
       "contract": "Typed persist named current project в exact target с checkpoint/manual confirmation/file/read-back proof; raw candidate не promoted.",
       "modules": [
         "mcp-server/project-save.js",
@@ -314,8 +318,8 @@
       "dependencies": [
         "F13"
       ],
-      "live": "Сохранение и reopen отдельного синтетического AEP.",
-      "regressionFiles": "scripts/project-save-smoke.js + scripts/project-save-plan-smoke.js"
+      "live": "passed: typed destructive save после fresh dry-run и CEP-bound confirmation изменил file hash; отдельный reopen сохранил известный marker.",
+      "regressionFiles": "scripts/project-save-smoke.js + scripts/project-save-plan-smoke.js + scripts/review-remediation-live-smoke.js"
     }
   ],
   "validation": [
@@ -396,6 +400,44 @@
       "result": "passed",
       "liveAeCommands": 0,
       "liveAE": false
+    },
+    {
+      "milestone": 5,
+      "commands": [
+        "synthetic AE exact-owner/stale-baseline/key/expression/audio/pair/text live scenarios",
+        "typed save_current_named_project with fresh dry-run and CEP-bound destructive confirmation",
+        "synthetic AEP close/reopen marker read-back",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run smoke:provider-contract",
+        "npm.cmd run smoke:provider-api (local mocks)",
+        "npm.cmd run smoke:full-intake",
+        "npm.cmd run check:rules",
+        "node --check (4 M5 JavaScript files)",
+        "git diff --check"
+      ],
+      "result": "passed",
+      "syntheticLiveRunIds": {
+        "scopeOwnerFailure": "ceffcd11-6fd6-499d-8541-96ebd069d410",
+        "keysExpressions": "f53ff421-df8c-4e5c-88e0-faf241ff9f8c",
+        "staleBaselineFailure": "b63aa296-1092-4729-ba6a-d3870100c949",
+        "acceptedBaselineB": "81556886-10d3-46d6-8ccf-ff6ed4543bcc",
+        "audioSequential": "8f92d304-e616-4a93-bd12-5832a9acdcfe",
+        "audioOverlap": "ab37c6e5-34fe-48bb-bc43-b0e1ca78a3e9",
+        "pairNegativeAudio": "1a9a9dc5-04ac-47ca-8a50-bf6138017cd8",
+        "pairPositiveAudio": "d29e6ece-2694-4cb2-a8b0-4f7adea217bf",
+        "intervalCoverage": "a717ee6a-8ec7-4113-82ba-68ffbfab7457",
+        "supportedText": "49aaf97d-cda7-4351-9bde-e791ff35a900",
+        "unsupportedTextFailure": "7ebca371-c817-44af-9052-36032c0800ac",
+        "saveMarker": "d079a338-3b85-4693-a729-01bf1221e7dd",
+        "typedSave": "0c737161-3a06-478e-91ba-08690ca68340"
+      },
+      "clientProjectWrites": 0,
+      "clientAcceptance": "unknown"
     }
   ],
   "commits": [
@@ -410,13 +452,17 @@
     {
       "milestone": 3,
       "id": "8175c1f5e015faa8c21dda57b921a053df820e1d"
+    },
+    {
+      "milestone": 5,
+      "id": "0bc1171"
     }
   ],
   "summary": {
-    "fixed_offline": 11,
+    "fixed_offline": 12,
     "already_fixed_verified": 1,
     "not_a_product_defect": 4,
-    "live_validation_pending": 1,
+    "live_validation_pending": 0,
     "not_reproduced": 0
   },
   "preservation": {

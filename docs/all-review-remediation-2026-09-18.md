@@ -1,7 +1,8 @@
-# Исправление F01–F17: offline implementation
+# Исправление F01–F17: offline implementation и synthetic live validation
 
-Offline implementation завершён в исходной задаче. Этот отчёт фиксирует
-продуктовые исправления, а не клиентскую или визуальную приёмку. Машинный ledger:
+Offline implementation и разрешённая отдельная synthetic live validation завершены
+в исходной задаче. Этот отчёт фиксирует продуктовые исправления и проверенные
+свойства synthetic AEP, а не клиентскую или визуальную приёмку. Машинный ledger:
 `docs/all-review-findings-2026-09-18.json`.
 
 ## Исходное состояние и сохранность
@@ -14,10 +15,11 @@ untracked и полный tracked diff сохранены локально в
 
 Исходный F08/F09 patch имеет ожидаемый SHA-256
 `913747C719DD2A9F8C15E6158EFBD9F51CF8F1DEA8DEC1CAF1CCA855C54BF7E5`;
-`git apply --check --reverse docs/scope-safety-fix-2026-09-18.patch` прошёл до
-новых изменений. Сам исторический patch не переписывается. Новые изменения
-строятся поверх него; reverse-check старого patch после усиления тех же строк
-не является проверкой итогового нового patch.
+`git apply --check --reverse docs/scope-safety-fix-2026-09-18.patch` прошёл в
+Milestone 0 до новых изменений. Сам исторический patch не переписывается. Его
+SHA-256 после всех milestones по-прежнему совпадает. Последующие M1–M5 меняли
+часть тех же hunks, поэтому reverse-check старой копии на финальном дереве уже
+не применим; финальный tracked-only patch имеет собственный reverse-check.
 
 Прочитаны относящиеся к F01–F17 разделы двух review-документов в `docs/`,
 `review.md`, `findings.json`, `codex-next-step.md`, scope-safety prompt/report/
@@ -65,12 +67,13 @@ structural proof не был связан с baseline конкретного ш�
 
 ## Остаточные ограничения
 
-AE, клиентский AEP и реальный CEP не открываются. Проверки используют VM и
-изолированные daemon/fake-panel. Это не доказывает корректный финальный render,
-слышимую непрерывность, реальную сериализацию AE key values или save/reopen.
-Исторические source discrepancy, причина audio gap, поздние ручные ревизии и
-пользовательское согласование остаются неизвестными. Выполнение команды и
-semantic `passed` не являются пользовательской/визуальной приёмкой.
+Offline regressions используют настоящие текущие modules, VM и изолированные
+daemon/fake-panel. Дополнительно открыт только новый synthetic AEP без клиентских
+медиа; на нём выполнены typed mutations, audits и save/reopen. Это не доказывает
+корректный финальный клиентский render, слышимую непрерывность или визуальную
+приёмку. Исторические source discrepancy, причина audio gap, поздние ручные
+ревизии и пользовательское согласование остаются неизвестными. Выполнение
+команды и semantic `passed` не являются пользовательской/визуальной приёмкой.
 
 ## Milestone 2 — evidence, provenance, статусы
 
@@ -163,6 +166,52 @@ Parent принял результаты specialist только после пр
 metadata/timeout adapter. Все эти failures были исправлены, а не списаны на
 unrelated baseline.
 
+## Milestone 5 — synthetic live validation
+
+На отдельном ignored synthetic AEP реальный AE/CEP подтвердил F06–F12, F15 и
+F17. F08 foreign owner отказал до первой записи; F09 stale baseline A отказал,
+root остался 4 с, а принятая manual revision B стала baseline нового успешного
+плана. F07 сохранил vector key values, stable property identities и metadata;
+AE закономерно пересчитал только derived LINEAR ease speed после переноса ключа.
+Verifier теперь нормализует этот derived speed, но сохраняет exact BEZIER/HOLD,
+value, influence, identity и spatial/temporal contract.
+
+F12 live-run выявил две интеграционные дыры verifier: audit возвращает
+URL-encoded property identity, а before-audit должен быть доступен через полный
+read-back set. После исправления combined extend/rewrite run
+`f53ff421-df8c-4e5c-88e0-faf241ff9f8c` прошёл 2/2 semantic checks. Отдельная
+регрессия покрывает de-duplicated requested `Final Comp -> master` mapping.
+
+F06 сохранил два последовательных audible route и отключил один из двух
+полностью перекрывающихся routes, доказав полный survivor coverage. F10 прошёл
+для silent и audible roots: source item ID/index точны, video enabled, audio
+policy соответствует `rootHasAudio`. F11 создал два реальных AE audio слоя,
+которые точно покрывают 0..4 с и имеют правильный sourceIn. Audit пока не
+экспонирует physical sample rate, поэтому waveform/render/listening не заявлены.
+
+F15 изменил поддерживаемый synthetic newspaper layout и прочитал fitted title;
+вариант с двумя title slots отказал `unsupported_template_title_layout:1:2` до
+изменения исходного текста. Это подтверждает узкий supported contract, но не
+общую переносимость.
+
+F17 получил известную in-memory правку-маркер, fresh dry-run и новый CEP-bound
+confirmation token для destructive proposal. Typed save run
+`0c737161-3a06-478e-91ba-08690ca68340` создал обязательный disk checkpoint,
+изменил SHA-256 synthetic AEP, подтвердил exact project path и прошёл semantic
+proof. После закрытия и повторного открытия AEP маркер сохранился, поэтому
+`reopenVerification` завершён отдельным независимым read-back.
+
+Исходный клиентский project был clean до fixture switch и не получал mutations
+или save. Попытка вернуть его через `app.open()` зависла на CEP callback; после
+закрытия AE автоматический approval review отклонил повторный запуск прямо на
+клиентском AEP. Исходный файл и checkpoint сохранены, но окно AE осталось
+закрытым. Это операционное ограничение восстановления сессии, а не потеря файла.
+При первом перезапуске AE также обнаружил повреждённый user `Workspaces.xml`
+(`Error code = 13`); файл не удалён, а переименован рядом в timestamped backup,
+после чего AE создал рабочую настройку.
+
+M5 code/test commit: `0bc1171`.
+
 ## Итог по findings
 
 | Findings | Статус | Граница вывода |
@@ -171,10 +220,10 @@ unrelated baseline.
 | F05–F07 | `fixed_offline` | Linked slice, реальная интервальная аудиодедупликация, key values/identity. |
 | F08 | `already_fixed_verified` | Исходный exact-owner patch проверен настоящими modules и сохранён. |
 | F09–F16 | `fixed_offline` | Baseline binding, source/video/audio, interval coverage, expressions, статусы, telemetry, preset, packaging. |
-| F17 | `live_validation_pending` | Полный typed offline contract реализован; persist/reopen известной in-memory правки требует синтетического AE. |
+| F17 | `fixed_offline` | Полный typed contract и offline regressions дополнены успешным synthetic save/reopen известной in-memory правки. |
 
-`not_reproduced` не использован. Всего 11 `fixed_offline`, 1
-`already_fixed_verified`, 4 `not_a_product_defect`, 1 `live_validation_pending`.
+`not_reproduced` не использован. Всего 12 `fixed_offline`, 1
+`already_fixed_verified`, 4 `not_a_product_defect`, 0 `live_validation_pending`.
 
 ## Совместимость и проверки
 
@@ -187,10 +236,11 @@ revision и tokens не заменяются выдуманными значен
 Новые штатные группы: `npm.cmd run smoke:evidence`, `npm.cmd run smoke:project-save`.
 `smoke:slideshow` включает runtime, verifier и template regressions. Полный
 offline прогон: slideshow, planning, solutions, isolated bridge, provider-contract,
-provider-api (только локальные mocks), evidence, project-save, check:rules,
-`node --check` всех изменённых JS и `git diff --check`. Full Intaker/importer не
-менялся, поэтому его smoke не требовался. Broad/default CEP и real providers
-не запускались. Fake-panel commands в тестах — симуляция; реальные `aeCommands=0`.
+provider-api (только локальные mocks), evidence, project-save, full-intake,
+check:rules, `node --check` всех изменённых JS и `git diff --check`. Broad/default
+CEP и real providers не запускались. Fake-panel commands в штатных тестах —
+симуляция (`aeCommands=0`); отдельно перечисленные M5 runs выполнены в real AE
+только на synthetic fixture.
 
 Подробные stdout/red baselines остаются ignored в `.codex/remediation-2026-09-18/`.
 Frozen bundles и исторические отчёты не переписывались. Новые тестовые fixtures
@@ -198,22 +248,22 @@ Frozen bundles и исторические отчёты не переписыв�
 preset сохранены его прежние literal role labels; новый patch не заявляется
 анонимизированной копией всего репозитория.
 
-## Точные live-only остатки
+## Оставшиеся acceptance-вопросы
 
-1. Новый синтетический AEP: stable item/layer IDs, switches, shared dependencies,
-   stale baseline и exact-owner fail-before-write; независимый reopen/read-back.
-2. Реальные finite key values, interpolation/ease и property serialization в AE.
-3. Реальный audio routing, render/frame/sample coverage и прослушивание.
-   Интервальная проверка не устанавливает физический sample rate исходника.
-4. Compilation/render expressions после explicit/derived replacements и
-   визуальная typography/layout приёмка только supported preset.
-5. F17: внести известную in-memory правку в отдельный synthetic AEP, typed save,
-   независимо reopen и проверить именно эту правку. Hash файла недостаточен.
-6. Исторический клиентский verdict, согласование source override, причина
-   audio gap и авторство поздних ручных правок по-прежнему не установлены.
+1. F11: physical sample-rate metadata отсутствует в typed audit. Exact interval
+   coverage реального 48 kHz synthetic WAV доказан, но waveform/render/listening
+   и слышимость sample-boundary дефекта не проверялись.
+2. F12/F15: expressions скомпилировались, а title geometry прошла typed audit;
+   финальный render и визуальная typography/layout приёмка не выполнялись.
+3. Исторический клиентский verdict, согласование source override, причина audio
+   gap и авторство поздних ручных правок по-прежнему не установлены.
+4. Исходный клиентский AEP не мутировался и не сохранялся. Read-only restore
+   callback завис; повторное прямое открытие отклонено автоматическим approval
+   review, поэтому прежнее окно AE не восстановлено в этом run.
 
-Полной клиентской приёмкой это объявить нельзя: в этом run не было открытия AE,
-клиентского AEP, финального рендера, прослушивания или пользовательского verdict.
+Полной клиентской приёмкой это объявить нельзя: synthetic live proof покрывает
+контракты tools/verifier/save, но не финальный клиентский render, прослушивание
+или пользовательский verdict.
 
 M2 commit: `4c0c2f1d0ec4e4544bbe552e46b0e35d94f219d5`.
 
@@ -222,7 +272,8 @@ SHA-256; единственный намеренно обновлённый фа
 `scripts/slideshow-scope-safety-smoke.js` (декларация template contract).
 Все семь перечисленных пользователем entries, Auto-Save/AEP и исторические
 scope-safety report/results/patch сохранены. Исходные 9 tracked изменений
-интегрированы поверх baseline, а не отменены. Syntax: 24 изменённых JS — pass.
+интегрированы поверх baseline, а не отменены. Syntax всех изменённых JS,
+включая четыре M5 файла, — pass.
 
 M3 commit: `8175c1f5e015faa8c21dda57b921a053df820e1d`.
 
@@ -247,6 +298,7 @@ M3 commit: `8175c1f5e015faa8c21dda57b921a053df820e1d`.
 - `scripts/project-save-smoke.js`
 - `scripts/reuse-telemetry-smoke.js`
 - `scripts/review-evidence-smoke.js`
+- `scripts/review-remediation-live-smoke.js`
 - `scripts/slideshow-plan-validation-smoke.js`
 - `scripts/slideshow-runtime-regression-smoke.js`
 - `scripts/slideshow-scope-safety-smoke.js`
@@ -262,5 +314,6 @@ M3 commit: `8175c1f5e015faa8c21dda57b921a053df820e1d`.
 SHA-256 хранится рядом в `.patch.sha256`; reverse apply проверяется после
 формирования. Отдельный список новых файлов: `docs/all-review-new-files-2026-09-18.json`.
 Patch и эти локальные delivery-файлы не включаются в собственный diff.
-Финальный M4 commit фиксирует только report/ledger/execplan; его ID указан
-в итоговом сообщении и `.codex/handoff.md`. Push и PR не выполнялись.
+M4 зафиксировал исходный offline report/ledger (`ca6922d`), M5 — live verifier
+и harness (`0bc1171`); финальное обновление report/ledger/execplan/handoff
+фиксируется отдельным delivery commit. Push и PR не выполнялись.
