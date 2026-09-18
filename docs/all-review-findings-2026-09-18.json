@@ -23,7 +23,9 @@
       "status": "not_a_product_defect",
       "contract": "Раздельные subject/repair/evidence run и acceptance; audit hash, step, project/revision binding.",
       "modules": [
-        "mcp-server/bridge-daemon.js"
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
       ],
       "regression": "Синтетическая post-repair recomposition не меняет failed subject run.",
       "dependencies": [
@@ -31,7 +33,8 @@
         "F13"
       ],
       "live": "Исторический клиентский результат неизвестен.",
-      "evidencePipelineFixed": true
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
     },
     {
       "id": "F02",
@@ -40,14 +43,17 @@
       "status": "not_a_product_defect",
       "contract": "Несовпадение согласованного source requirement и manifest требует явного override; неизвестное согласование не восстанавливается.",
       "modules": [
-        "mcp-server/slideshow-manifest.js"
+        "mcp-server/slideshow-manifest.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
       ],
       "regression": "Synthetic requirement mismatch и explicit revision-bound override.",
       "dependencies": [
         "F01"
       ],
       "live": "Клиентское согласование и фактический конечный источник.",
-      "evidencePipelineFixed": true
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
     },
     {
       "id": "F03",
@@ -56,7 +62,9 @@
       "status": "not_a_product_defect",
       "contract": "Раздельные interval/frame/sample evidence; gap не доказывает причину или слышимость.",
       "modules": [
-        "mcp-server/semantic-verification.js"
+        "mcp-server/semantic-verification.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
       ],
       "regression": "Synthetic subframe audio gap обнаруживается без выдуманной причины.",
       "dependencies": [
@@ -64,7 +72,8 @@
         "F13"
       ],
       "live": "Рендер, waveform, прослушивание, пользовательский verdict.",
-      "evidencePipelineFixed": true
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
     },
     {
       "id": "F04",
@@ -74,7 +83,9 @@
       "contract": "Схемы manifest/plan, runtime revision и hashes записываются явно; v1 не становится v2 задним числом.",
       "modules": [
         "mcp-server/slideshow-manifest.js",
-        "mcp-server/slideshow-plan-builder.js"
+        "mcp-server/slideshow-plan-builder.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
       ],
       "regression": "v1 rejection, v2 acceptance, missing provenance safe failure.",
       "dependencies": [
@@ -82,7 +93,8 @@
         "F14"
       ],
       "live": null,
-      "evidencePipelineFixed": true
+      "evidencePipelineFixed": true,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
     },
     {
       "id": "F05",
@@ -91,13 +103,16 @@
       "status": "fixed_offline",
       "contract": "Минимальный linked slice request/action/run/step/command/session/checkpoint/artifact, включая результаты.",
       "modules": [
-        "mcp-server/bridge-daemon.js"
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
       ],
       "regression": "Связанный синтетический граф и исключение несвязанных событий.",
       "dependencies": [
         "F16"
       ],
-      "live": null
+      "live": null,
+      "regressionFiles": "scripts/review-evidence-smoke.js + scripts/solution-plan-run-smoke.js"
     },
     {
       "id": "F06",
@@ -114,7 +129,8 @@
         "F08",
         "F11"
       ],
-      "live": "Проверка реального AE audio routing."
+      "live": "Проверка реального AE audio routing.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F07",
@@ -130,7 +146,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "AE serialization и interpolation на синтетическом AEP."
+      "live": "AE serialization и interpolation на синтетическом AEP.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F08",
@@ -143,7 +160,8 @@
       ],
       "regression": "scripts/slideshow-scope-safety-smoke.js",
       "dependencies": [],
-      "live": "Реальные AE owner graph и fail-before-write."
+      "live": "Реальные AE owner graph и fail-before-write.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js"
     },
     {
       "id": "F09",
@@ -161,7 +179,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "Реальные item/layer IDs, switches, reopen."
+      "live": "Реальные item/layer IDs, switches, reopen.",
+      "regressionFiles": "scripts/slideshow-scope-safety-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F10",
@@ -177,20 +196,22 @@
       "dependencies": [
         "F09"
       ],
-      "live": "Реальное поведение AE source/audio/video switches."
+      "live": "Реальное поведение AE source/audio/video switches.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F11",
       "kind": "product",
       "assessment": "confirmed_current_051_tolerance",
       "status": "fixed_offline",
-      "contract": "Operation-specific interval/frame/sample coverage; holes, undercoverage, overrun не проходят.",
+      "contract": "Точное интервальное покрытие; video frame timebase, audio epsilon 1e-7 с. Физический sample rate неизвестен, sample acceptance отдельно.",
       "modules": [
         "mcp-server/semantic-verification.js"
       ],
       "regression": "40ms, subframe gap, overlap, excess, wrong sourceIn и positive exact coverage.",
       "dependencies": [],
-      "live": "Реальный render/sample boundary proof."
+      "live": "Реальный render/sample boundary proof.",
+      "regressionFiles": "scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F12",
@@ -206,7 +227,8 @@
       "dependencies": [
         "F08"
       ],
-      "live": "Expression compilation/render в AE."
+      "live": "Expression compilation/render в AE.",
+      "regressionFiles": "scripts/slideshow-runtime-regression-smoke.js + scripts/slideshow-verifier-regression-smoke.js"
     },
     {
       "id": "F13",
@@ -222,7 +244,8 @@
       "dependencies": [
         "F01"
       ],
-      "live": "Пользовательская visual acceptance."
+      "live": "Пользовательская visual acceptance.",
+      "regressionFiles": "scripts/review-evidence-smoke.js + scripts/solution-plan-run-smoke.js"
     },
     {
       "id": "F14",
@@ -238,7 +261,8 @@
       "dependencies": [
         "F04"
       ],
-      "live": null
+      "live": null,
+      "regressionFiles": "scripts/reuse-telemetry-smoke.js + scripts/review-evidence-smoke.js"
     },
     {
       "id": "F15",
@@ -255,7 +279,8 @@
         "F07",
         "F12"
       ],
-      "live": "Переносимость на другой синтетический шаблон не заявляется."
+      "live": "Переносимость на другой синтетический шаблон не заявляется.",
+      "regressionFiles": "scripts/slideshow-template-contract-smoke.js"
     },
     {
       "id": "F16",
@@ -263,12 +288,16 @@
       "assessment": "confirmed_historical_leak",
       "status": "fixed_offline",
       "contract": "Allowlist упаковки, recursive decoded string sanitation, paths/users/fragments/secrets leak scan; архив неизменен.",
-      "modules": [],
+      "modules": [
+        "mcp-server/review-evidence.js",
+        "scripts/package-review-evidence.js"
+      ],
       "regression": "Synthetic path, username, residual fragment, secret, embedded JSON/code fixtures.",
       "dependencies": [
         "F05"
       ],
-      "live": null
+      "live": null,
+      "regressionFiles": "scripts/review-evidence-smoke.js"
     },
     {
       "id": "F17",
@@ -285,7 +314,8 @@
       "dependencies": [
         "F13"
       ],
-      "live": "Сохранение и reopen отдельного синтетического AEP."
+      "live": "Сохранение и reopen отдельного синтетического AEP.",
+      "regressionFiles": "scripts/project-save-smoke.js + scripts/project-save-plan-smoke.js"
     }
   ],
   "validation": [
@@ -347,6 +377,25 @@
         "template-write-red.txt",
         "save-dryrun-red.txt"
       ]
+    },
+    {
+      "milestone": 4,
+      "commands": [
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run smoke:provider-contract",
+        "npm.cmd run smoke:provider-api (local mocks)",
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run check:rules",
+        "node --check (24 modified JS)",
+        "git diff --check"
+      ],
+      "result": "passed",
+      "liveAeCommands": 0,
+      "liveAE": false
     }
   ],
   "commits": [
@@ -357,6 +406,29 @@
     {
       "milestone": 2,
       "id": "4c0c2f1d0ec4e4544bbe552e46b0e35d94f219d5"
+    },
+    {
+      "milestone": 3,
+      "id": "8175c1f5e015faa8c21dda57b921a053df820e1d"
     }
-  ]
+  ],
+  "summary": {
+    "fixed_offline": 11,
+    "already_fixed_verified": 1,
+    "not_a_product_defect": 4,
+    "live_validation_pending": 1,
+    "not_reproduced": 0
+  },
+  "preservation": {
+    "initialUntrackedFiles": 15,
+    "unchangedSha256": 14,
+    "authorizedChangedFixture": "scripts/slideshow-scope-safety-smoke.js",
+    "reservedUserEntriesUnchanged": true
+  },
+  "artifacts": {
+    "report": "docs/all-review-remediation-2026-09-18.md",
+    "patch": "docs/all-review-remediation-2026-09-18.patch",
+    "sha256": "docs/all-review-remediation-2026-09-18.patch.sha256",
+    "newFiles": "docs/all-review-new-files-2026-09-18.json"
+  }
 }

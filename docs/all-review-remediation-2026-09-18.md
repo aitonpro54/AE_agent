@@ -223,3 +223,44 @@ SHA-256; единственный намеренно обновлённый фа
 Все семь перечисленных пользователем entries, Auto-Save/AEP и исторические
 scope-safety report/results/patch сохранены. Исходные 9 tracked изменений
 интегрированы поверх baseline, а не отменены. Syntax: 24 изменённых JS — pass.
+
+M3 commit: `8175c1f5e015faa8c21dda57b921a053df820e1d`.
+
+## Изменённые tracked файлы и локальные артефакты
+
+- `.gitignore`
+- `docs/all-review-findings-2026-09-18.json`
+- `docs/all-review-remediation-2026-09-18.md`
+- `mcp-server/bridge-daemon.js`
+- `mcp-server/project-save.js`
+- `mcp-server/reuse-telemetry.js`
+- `mcp-server/review-evidence.js`
+- `mcp-server/run-outcome.js`
+- `mcp-server/semantic-verification.js`
+- `mcp-server/slideshow-manifest.js`
+- `mcp-server/slideshow-plan-builder.js`
+- `mcp-server/slideshow-tools.js`
+- `package.json`
+- `plans/target-app-execplan.md`
+- `scripts/package-review-evidence.js`
+- `scripts/project-save-plan-smoke.js`
+- `scripts/project-save-smoke.js`
+- `scripts/reuse-telemetry-smoke.js`
+- `scripts/review-evidence-smoke.js`
+- `scripts/slideshow-plan-validation-smoke.js`
+- `scripts/slideshow-runtime-regression-smoke.js`
+- `scripts/slideshow-scope-safety-smoke.js`
+- `scripts/slideshow-synthetic-fixture.js`
+- `scripts/slideshow-template-contract-smoke.js`
+- `scripts/slideshow-tools-smoke.js`
+- `scripts/slideshow-verifier-regression-smoke.js`
+- `scripts/slideshow-vm-fixture.js`
+- `scripts/solution-plan-run-smoke.js`
+- `scripts/solution-usage-report.js`
+
+Итоговый tracked-only patch: `docs/all-review-remediation-2026-09-18.patch`.
+SHA-256 хранится рядом в `.patch.sha256`; reverse apply проверяется после
+формирования. Отдельный список новых файлов: `docs/all-review-new-files-2026-09-18.json`.
+Patch и эти локальные delivery-файлы не включаются в собственный diff.
+Финальный M4 commit фиксирует только report/ledger/execplan; его ID указан
+в итоговом сообщении и `.codex/handoff.md`. Push и PR не выполнялись.
