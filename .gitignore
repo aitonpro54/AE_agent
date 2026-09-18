@@ -9,6 +9,7 @@ logs/dev-requests/
 logs/generated-exports/
 logs/hardcore-sessions/
 logs/solution-candidates/
+logs/verification-evidence/
 pro-review-bundles/
 backups/*.aep
 backups/*.aepx

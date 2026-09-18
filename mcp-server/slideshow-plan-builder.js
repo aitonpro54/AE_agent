@@ -1,6 +1,8 @@
 "use strict";
 
 const { normalizeManifest } = require("./slideshow-manifest");
+const {sha256} = require("./review-evidence");
+const fs = require("fs");
 
 const MAX_STAGE_STEPS = 50;
 const STRUCTURE_SCHEMA = "ae-agent-comp-structure.v1";
@@ -95,6 +97,9 @@ function appendEvent(steps,data,inventory,event){
 
 function eventStages(data,inventory){const stages=[];let cursor=0;while(cursor<data.manifest.events.length){const steps=[];add(steps,step("Read and guard the exact saved project","get_project_info",{},false));add(steps,step("Resolve generated master by exact name","get_comp_details",{compName:data.manifest.masterName,includeLayers:false},false));const ids=[];while(cursor<data.manifest.events.length){const before=steps.length;appendEvent(steps,data,inventory,data.manifest.events[cursor]);if(steps.length>MAX_STAGE_STEPS){steps.splice(before);break;}ids.push(data.manifest.events[cursor].id);cursor++;}if(!ids.length)throw new Error(`Event ${data.manifest.events[cursor].id} exceeds the stage limit.`);stages.push(makeStage(`slideshow-events-${ids[0]}-${ids[ids.length-1]}`,data.manifest.projectPath,steps,ids));}return stages;}
 
-function buildSlideshowPlan(manifest,articles,inventory){const data=normalizeManifest(manifest,articles),checked=normalizeInventory(inventory,data.manifest),stages=[setupStage(data,checked),...eventStages(data,checked)];return {ok:true,schema:"ae-agent-slideshow-plan.v2",previewLocal:true,mutatesProject:false,requiresFreshEvidenceReview:true,audioRouting:data.manifest.audioRouting,targetProject:{file:data.manifest.projectPath},manifest:data.manifest,stageCount:stages.length,maxStepsPerStage:Math.max(...stages.map((stage)=>stage.steps.length)),stages};}
+function buildSlideshowPlan(manifest,articles,inventory){const data=normalizeManifest(manifest,articles),checked=normalizeInventory(inventory,data.manifest),stages=[setupStage(data,checked),...eventStages(data,checked)];
+  const provenance={builderId:"slideshow-newspaper",builderVersion:"2",manifestSchema:data.manifest.schema,manifestSha256:sha256(data.manifest),articlesSha256:sha256(data.articles),inventorySha256:sha256(inventory),builderSourceSha256:sha256(fs.readFileSync(__filename))};
+  for(const stage of stages)stage.builderProvenance={...provenance,planContentSha256:sha256(stage)};
+  return {ok:true,schema:"ae-agent-slideshow-plan.v2",builderProvenance:provenance,previewLocal:true,mutatesProject:false,requiresFreshEvidenceReview:true,audioRouting:data.manifest.audioRouting,targetProject:{file:data.manifest.projectPath},manifest:data.manifest,stageCount:stages.length,maxStepsPerStage:Math.max(...stages.map((stage)=>stage.steps.length)),stages};}
 
 module.exports={MAX_STAGE_STEPS,buildSlideshowPlan,normalizeInventory};

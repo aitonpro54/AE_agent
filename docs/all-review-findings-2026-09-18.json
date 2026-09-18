@@ -20,7 +20,7 @@
       "id": "F01",
       "kind": "historical_evidence",
       "assessment": "confirmed",
-      "status": null,
+      "status": "not_a_product_defect",
       "contract": "Раздельные subject/repair/evidence run и acceptance; audit hash, step, project/revision binding.",
       "modules": [
         "mcp-server/bridge-daemon.js"
@@ -30,13 +30,14 @@
         "F05",
         "F13"
       ],
-      "live": "Исторический клиентский результат неизвестен."
+      "live": "Исторический клиентский результат неизвестен.",
+      "evidencePipelineFixed": true
     },
     {
       "id": "F02",
       "kind": "client_result_unknown",
       "assessment": "confirmed_requirement_mismatch",
-      "status": null,
+      "status": "not_a_product_defect",
       "contract": "Несовпадение согласованного source requirement и manifest требует явного override; неизвестное согласование не восстанавливается.",
       "modules": [
         "mcp-server/slideshow-manifest.js"
@@ -45,13 +46,14 @@
       "dependencies": [
         "F01"
       ],
-      "live": "Клиентское согласование и фактический конечный источник."
+      "live": "Клиентское согласование и фактический конечный источник.",
+      "evidencePipelineFixed": true
     },
     {
       "id": "F03",
       "kind": "historical_evidence",
       "assessment": "observed_gap_cause_unknown",
-      "status": null,
+      "status": "not_a_product_defect",
       "contract": "Раздельные interval/frame/sample evidence; gap не доказывает причину или слышимость.",
       "modules": [
         "mcp-server/semantic-verification.js"
@@ -61,13 +63,14 @@
         "F11",
         "F13"
       ],
-      "live": "Рендер, waveform, прослушивание, пользовательский verdict."
+      "live": "Рендер, waveform, прослушивание, пользовательский verdict.",
+      "evidencePipelineFixed": true
     },
     {
       "id": "F04",
       "kind": "historical_provenance",
       "assessment": "v1_rejected_as_designed",
-      "status": null,
+      "status": "not_a_product_defect",
       "contract": "Схемы manifest/plan, runtime revision и hashes записываются явно; v1 не становится v2 задним числом.",
       "modules": [
         "mcp-server/slideshow-manifest.js",
@@ -78,13 +81,14 @@
         "F01",
         "F14"
       ],
-      "live": null
+      "live": null,
+      "evidencePipelineFixed": true
     },
     {
       "id": "F05",
       "kind": "evidence_pipeline",
       "assessment": "confirmed",
-      "status": null,
+      "status": "fixed_offline",
       "contract": "Минимальный linked slice request/action/run/step/command/session/checkpoint/artifact, включая результаты.",
       "modules": [
         "mcp-server/bridge-daemon.js"
@@ -208,7 +212,7 @@
       "id": "F13",
       "kind": "product_status",
       "assessment": "confirmed_axes_missing",
-      "status": null,
+      "status": "fixed_offline",
       "contract": "Execution, semantic verification и acceptance независимы, scope/reasonCode обязательны; success не означает visual accepted.",
       "modules": [
         "mcp-server/bridge-daemon.js",
@@ -224,7 +228,7 @@
       "id": "F14",
       "kind": "product_telemetry",
       "assessment": "observed_events_need_builder_provenance",
-      "status": null,
+      "status": "fixed_offline",
       "contract": "Observed tools, builder/version, declared recipes и provenance; неизвестные tokens null, процентов экономии нет.",
       "modules": [
         "mcp-server/reuse-telemetry.js",
@@ -257,7 +261,7 @@
       "id": "F16",
       "kind": "evidence_pipeline",
       "assessment": "confirmed_historical_leak",
-      "status": null,
+      "status": "fixed_offline",
       "contract": "Allowlist упаковки, recursive decoded string sanitation, paths/users/fragments/secrets leak scan; архив неизменен.",
       "modules": [],
       "regression": "Synthetic path, username, residual fragment, secret, embedded JSON/code fixtures.",
@@ -309,7 +313,29 @@
         "runtime-verifier-red.txt",
         "runtime-dag-red.txt"
       ]
+    },
+    {
+      "milestone": 2,
+      "commands": [
+        "npm.cmd run smoke:evidence",
+        "npm.cmd run smoke:planning",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:solutions",
+        "npm.cmd run smoke:bridge (isolated fake-panel)",
+        "npm.cmd run check:rules"
+      ],
+      "result": "passed",
+      "aeCommands": 0,
+      "redEvidence": [
+        "telemetry-red.txt",
+        "raw-status-red.txt"
+      ]
     }
   ],
-  "commits": []
+  "commits": [
+    {
+      "milestone": 1,
+      "id": "417e4656777e011d66a7568805c1dda89c854eb9"
+    }
+  ]
 }

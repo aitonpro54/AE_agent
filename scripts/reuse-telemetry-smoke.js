@@ -17,6 +17,10 @@ assert.deepStrictEqual(reuse.declaredSolutionIds, ["known"]);
 const run = summarizeRun({id: "test", dryRun: false, ok: true, executedCount: 2, failedCount: 0,
   steps: [{tool: "get_active_comp", status: "completed"}, {tool: "run_extendscript", status: "completed"}, {tool: "run_extendscript", status: "failed"}]}, {solutionIds: ["known"]}, ["known"]);
 assert.strictEqual(run.rawStepCount, 1);
+assert.strictEqual(run.typedExecutedStepCount, 1);
+assert.strictEqual(run.declaredRecipeField, "present");
+assert.strictEqual(summarizeRun({steps:[]},{},[]).declaredRecipeField, "absent");
+assert.strictEqual(summarizeRun({steps:[]},{builderProvenance:{builderId:"slideshow-newspaper",builderVersion:"2",planContentSha256:"a".repeat(64)}},[]).builderProvenance.contentMatches, false);
 const events = [
   {type: "plan_finished", at: "1", details: {requestId: "p1", solutionHintsReturned: 3, solutionReuse: reuse, usage: summarizeUsage({input_tokens: 100, output_tokens: 20}), repairUsage: summarizeUsage({input_tokens: 5, output_tokens: 2})}},
   {type: "plan_finished", at: "2", details: {requestId: "p2", solutionHintsReturned: 3}},

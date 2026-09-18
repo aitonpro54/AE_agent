@@ -3643,7 +3643,8 @@ function buildSemanticVerification(plan, run) {
 
   const failedChecks = checks.filter((check) => check.status === "failed").length;
   const passedChecks = checks.filter((check) => check.status === "passed").length;
-  const status = failedChecks === 0 && readBackEvidence.count > 0 && (run.ok === true)
+  const unprovedRaw = unverifiedMutationSteps.some((step) => /^run_extendscript(?:_file)?$/.test(step.tool));
+  const status = failedChecks === 0 && !unprovedRaw && readBackEvidence.count > 0 && (run.ok === true)
     ? "passed"
     : "needs_review";
 
@@ -3653,6 +3654,9 @@ function buildSemanticVerification(plan, run) {
     ok: status === "passed",
     summary: buildSummary(status, checks, readBackEvidence, mutationVerificationCount),
     requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
+    verificationScope: "implemented_semantic_checks_only",
+    coverageStatus: unverifiedMutationSteps.length ? "incomplete" : "complete",
+    acceptance: "not_established",
     readBackCount: readBackEvidence.count,
     readBackSteps: readBackEvidence.steps,
     mutationVerificationCount,

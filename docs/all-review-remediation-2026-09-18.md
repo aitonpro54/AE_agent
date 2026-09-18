@@ -71,3 +71,50 @@ AE, клиентский AEP и реальный CEP не открываются
 Исторические source discrepancy, причина audio gap, поздние ручные ревизии и
 пользовательское согласование остаются неизвестными. Выполнение команды и
 semantic `passed` не являются пользовательской/визуальной приёмкой.
+
+## Milestone 2 — evidence, provenance, статусы
+
+F01–F04 относятся к историческим evidence/requirements и неизвестному итоговому
+клиентскому состоянию: `not_a_product_defect`. Это не отменяет выявленных
+расхождений. Новый `review-evidence.js` проверяет раздельные subject/repair/
+evidence runs, proposal/step/project/revision binding, audit hash, явное принятие
+ручной B, source requirements и revision-bound overrides. F03 fixture измеряет
+interval/sample gap при заданном timebase, оставляя cause/audibleImpact неизвестными.
+F04 regression отвергает v1 и принимает v2; описание builder schema исправлено.
+
+F05/F16 исправлены новым tracked pipeline вместо изменения `.codex`-архива:
+linked slice включает command results, sessions/checkpoint/artifact receipts,
+но не втягивает соседние runs через общий session. Bridge пишет immutable
+step-evidence с полным локальным payload, hash и binding. Экспортный
+`scripts/package-review-evidence.js` допускает только четыре вида machine
+metadata, хэширует идентификаторы, отбрасывает произвольные файлы/текст/медиа и
+запрещает существующий output directory. Recursive sanitizer проверяет decoded
+JSON, embedded code, Windows/UNC/POSIX paths, credentials, username fields и
+явно заданные sensitive fragments. Произвольное человеческое имя вне известного
+поля невозможно надёжно распознать по строке: такие free-form поля не входят в
+allowlist. Package явно не заявляет полную клиентскую приёмку.
+
+F13: `run.outcome` разделяет execution, verification и acceptance с scope и
+reasonCode. PNG/render означает pending acceptance; semantic gap не становится
+visual acceptance. Legacy semantic checks описывают только implemented scope;
+непокрытые mutations делают новую verification axis insufficient. Raw save
+self-report с generic project read-back больше не получает semantic passed.
+Полная строгость для всех прежних typed checks не вводилась: это выявило бы
+отдельные пробелы вне F01–F17 и сломало бы поддерживаемые legacy fixtures.
+Fail-closed автономного runner с unverified mutations сохранён.
+
+F14: telemetry различает absent/declared recipe IDs, observed typed calls,
+builder/version/input hashes и совпадение хэша plan content. Declaration не
+выдаётся за аутентифицированное происхождение. Runtime фиксирует Git SHA и
+хэш явно перечисленных фактически находящихся на диске modules при старте;
+Git HEAD сам по себе не доказывает исполнение исторического кейса. Неизвестная
+in-memory revision остаётся null. Процентов экономии и выдуманных tokens нет.
+
+Штатная группа `smoke:evidence` включает новые pure regressions и настоящий
+isolated daemon/fake-panel runner. Зелёные: evidence, planning, slideshow,
+solutions, bridge (isolated), check:rules, syntax и diff. Дополнительные красные
+запуски: `telemetry-red.txt`, `raw-status-red.txt`, `audio-sample-red.txt`,
+`expression-grammar-red.txt`. После исправления sample fixture положительный
+контроль прошёл; затем был воспроизведён и исправлен именно sample-sized gap.
+
+Принятый M1 commit: `417e4656777e011d66a7568805c1dda89c854eb9`.

@@ -7,8 +7,8 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
-2026-09-18: длинный offline remediation F01–F17. M0 принят; M1 runtime
-интегрируется поверх исходного F08/F09 patch; затем evidence/status и typed save.
+2026-09-18: offline remediation F01–F17. M0/M1 приняты (`417e465`), M2
+evidence/status/provenance зелёный; далее M3 template contract и typed save.
 Ledger: `docs/all-review-findings-2026-09-18.json`; отчёт:
 `docs/all-review-remediation-2026-09-18.md`. Работа продолжается в текущей задаче.
 

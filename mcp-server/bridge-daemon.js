@@ -8,6 +8,9 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
 const autonomousCommandContext = new AsyncLocalStorage();
+const evidenceContext = new AsyncLocalStorage();
+const reviewEvidence = require("./review-evidence");
+const { buildRunOutcome } = require("./run-outcome");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
@@ -46,6 +49,7 @@ const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
+const RUNTIME_IDENTITY = reviewEvidence.runtimeIdentity(PROJECT_ROOT);
 const LOG_DIR = process.env.AE_BRIDGE_LOG_DIR ? path.resolve(process.env.AE_BRIDGE_LOG_DIR) : path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
 function recordAutonomyObstacle(input) {
@@ -347,12 +351,16 @@ function sanitizeForLog(value) {
 }
 
 function recordEvent(type, details) {
+  const context = evidenceContext.getStore() || {};
+  const linked = {...context, ...(details || {})};
+  if (/^ae_command_/.test(type) && linked.id) linked.commandId = linked.id;
+  if (/^tool_call_/.test(type) && linked.id) linked.toolCallId = linked.id;
   const event = {
     eventId: crypto.randomUUID(),
-    runtime: { port: PORT, pid: process.pid },
+    runtime: { port: PORT, pid: process.pid, gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256 },
     at: new Date().toISOString(),
     type,
-    details: sanitizeForLog(details || {})
+    details: sanitizeForLog(linked)
   };
 
   recentEvents.push(event);
@@ -6311,6 +6319,11 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
 }
 
 async function runValidatedAgentPlan(options, executionContext) {
+  return evidenceContext.run({runId: crypto.randomUUID(), requestId: options && options.requestId || null},
+    () => runValidatedAgentPlanWithEvidence(options, executionContext));
+}
+
+async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   options = resolveM100PlanRunOptions(options || {});
   const autonomous = executionContext && executionContext.autonomousSession
     && executionContext.autonomousSession.authorized === true
@@ -6346,8 +6359,18 @@ async function runValidatedAgentPlan(options, executionContext) {
   const checkpointStepPresent = hasCheckpointStep(validation);
   const activeEditSessionAtStart = Boolean(activeEditSession);
 
+  const actionBinding = options._m100ActionRecord;
+  const expectedProject = actionBinding && actionBinding.project.expectedFile || prepared.plan.targetProject && prepared.plan.targetProject.file || null;
+  const provenance = {schema: "ae-agent-run-provenance.v1", actionId: actionBinding && actionBinding.actionId || null,
+    proposalRevision: actionBinding && actionBinding.revision || null,
+    projectId: expectedProject ? reviewEvidence.sha256(require("./proposal-state").normalizeProject(expectedProject)) : null,
+    projectRevision: null, projectRevisionReason: "in_memory_revision_not_observed",
+    planSha256: reviewEvidence.sha256(prepared.plan), runtime: RUNTIME_IDENTITY};
+  Object.assign(evidenceContext.getStore(), {actionId: provenance.actionId, proposalRevision: provenance.proposalRevision,
+    projectId: provenance.projectId, planSha256: provenance.planSha256});
   const run = {
-    id: crypto.randomUUID(),
+    id: evidenceContext.getStore().runId,
+    provenance,
     startedAt: new Date().toISOString(),
     dryRun,
     confirm,
@@ -6478,10 +6501,12 @@ async function runValidatedAgentPlan(options, executionContext) {
       });
     }
     attachM100PlanRunDiagnostic(run, options);
+    run.outcome = buildRunOutcome(run, prepared.plan);
     let eligibleSolutionIds = [];
     try { eligibleSolutionIds = solutionDiscovery.reviewedIds(); } catch (_registryError) {}
     run.solutionReuse = reuseTelemetry.summarizeRun(run, prepared.plan, eligibleSolutionIds);
-    recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse });
+    recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse, outcome: run.outcome,
+      provenance: {...provenance, runtime: {gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256}} });
     const diagnostic = obstacleEvent({operation: "run_ai_agent_plan", proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
       runId: run.id, code: run.errorCode || (run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
       durationMs: Date.parse(run.finishedAt) - Date.parse(run.startedAt), successfulSteps: run.executedCount,
@@ -6764,8 +6789,19 @@ async function runValidatedAgentPlan(options, executionContext) {
     try {
       const guard = autonomous && step.mutatesProject ? {sessionHash: autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
-      const result = await autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args));
+      const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+        sessionId: activeEditSession && activeEditSession.id || null},
+      () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args)));
       const payload = firstToolPayload(result);
+      const observedAt = new Date().toISOString();
+      const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
+        actionId:provenance.actionId,proposalRevision:provenance.proposalRevision,projectId:provenance.projectId,
+        projectRevision:null,observedAt,tool:step.tool,argsSha256:reviewEvidence.sha256(bound.args),
+        result:payload === undefined ? null : payload});
+      item.evidenceArtifact = evidenceArtifact;
+      recordEvent("plan_step_evidence", {...evidenceArtifact,stepIndex: step.index, tool: step.tool, evidenceKind: "direct-tool-result",
+        evidenceRunId: run.id, verificationSubjectRunId: run.id, auditSha256: reviewEvidence.sha256(payload === undefined ? null : payload),
+        observedAt, ok: !result.isError, acceptance: "not_established"});
       item.status = result.isError ? "failed" : "completed";
       item.result = payload;
       item.isError = Boolean(result.isError);
@@ -11081,7 +11117,7 @@ const tools = [
       type: "object",
       additionalProperties: false,
       properties: {
-        manifest: { type: "object", description: "Strict ae-agent-slideshow.v1 or codx-133-build.v1 data manifest; unknown and code-like fields are rejected." },
+        manifest: { type: "object", description: "Strict ae-agent-slideshow.v2 or codx-133-build.v2 data manifest; v1, unknown and code-like fields are rejected." },
         articles: { type: "object", description: "Strict newspaper article source object." },
         inventory: { type: "object", description: "Fresh exact Final Comp and Scene composition fingerprints." }
       },
@@ -11094,7 +11130,9 @@ const tools = [
 async function callTool(name, args, executionContext) {
   args = args || {};
   if (name === "build_slideshow_plan") {
-    try { return toolResult(slideshowPlanBuilder.buildSlideshowPlan(args.manifest, args.articles, args.inventory)); }
+    try { const result=slideshowPlanBuilder.buildSlideshowPlan(args.manifest, args.articles, args.inventory);
+      recordEvent("slideshow_plan_built", {builderProvenance:result.builderProvenance,stageCount:result.stageCount,validationOk:result.ok});
+      return toolResult(result); }
     catch (error) { return toolResult({ ok: false, error: error.message, code: error.code || "SLIDESHOW_PLAN_ERROR" }, true); }
   }
   if (slideshowTools.TOOL_NAMES.includes(name)) {

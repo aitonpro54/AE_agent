@@ -90,6 +90,12 @@ async function main() {
       }
       const {run} = await running;
       assert(run, "Missing run result");
+      assert.strictEqual(run.provenance.actionId, proposal.actionId);
+      assert(Number.isInteger(run.provenance.proposalRevision));
+      assert.match(run.provenance.planSha256, /^[a-f0-9]{64}$/);
+      assert.match(run.provenance.runtime.sourceSha256, /^[a-f0-9]{64}$/);
+      assert.strictEqual(run.provenance.projectRevision, null, "An unobserved in-memory revision must stay unknown");
+      assert.strictEqual(run.outcome.acceptance.status, "not_requested");
       assert.strictEqual(run.ok, mode === "exact", JSON.stringify({mode, error: run.error, preflight: run.solutionPlanPreflight, readBack: run.solutionPlanReadBack}));
       if (mode === "stale") {
         assert.strictEqual(keyWrites, 0);
@@ -97,9 +103,23 @@ async function main() {
       } else {
         assert.strictEqual(keyWrites, 2);
         assert.strictEqual(run.solutionPlanReadBack.status, mode === "exact" ? "passed" : "failed");
+        assert.strictEqual(run.outcome.verification.status, mode === "exact" ? "passed" : "failed");
       }
+      const events=fs.readFileSync(path.join(runtime,"bridge-events.jsonl"),"utf8").trim().split(/\r?\n/).map(JSON.parse);
+      const slice=require("../mcp-server/review-evidence").linkedEventSlice(events,{runIds:[run.id]});
+      assert(slice.some(event=>event.type==="tool_call_finished"));
+      assert(slice.some(event=>event.type==="ae_command_result"));
+      assert(slice.some(event=>event.type==="plan_step_evidence" && event.details.auditSha256));
+      for(const event of slice.filter(event=>event.type==="plan_step_evidence"&&event.details.evidenceRunId===run.id)){
+        const artifact=fs.readFileSync(event.details.artifactFile),record=JSON.parse(artifact);
+        assert.strictEqual(require("../mcp-server/review-evidence").sha256(artifact),event.details.sha256);
+        assert.strictEqual(record.runId,run.id);assert.strictEqual(record.stepIndex,event.details.stepIndex);
+        assert.strictEqual(require("../mcp-server/review-evidence").sha256(record.result),event.details.auditSha256);
+      }
+      assert(slice.filter(event=>event.type==="plan_step_evidence").every(event=>event.details.verificationSubjectRunId===run.id));
+      assert(!slice.some(event=>event.details.runId && event.details.runId!==run.id && event.details.actionId!==proposal.actionId));
     }
-    console.log(JSON.stringify({ok: true, isolatedRunner: true, exactPass: true, staleBlockedBeforeWrite: true, wrongAfterFails: true}));
+    console.log(JSON.stringify({ok: true, isolatedRunner: true, exactPass: true, staleBlockedBeforeWrite: true, wrongAfterFails: true, linkedEvidence:true, outcomeAxes:true, liveAeCommands:0}));
   } finally {daemon.kill();}
 }
 main().catch((error) => {console.error(error.stack); process.exitCode = 1;});

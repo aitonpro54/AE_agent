@@ -5,6 +5,7 @@
   "scripts": {
     "check:rules": "node scripts/clean-current-check.js",
     "smoke:provider-contract": "node scripts/provider-contract-smoke.js",
+    "smoke:evidence": "node scripts/review-evidence-smoke.js && node scripts/reuse-telemetry-smoke.js && node scripts/solution-plan-run-smoke.js",
     "smoke:provider-api": "node scripts/provider-api-smoke.js",
     "smoke:solutions": "node scripts/solution-registry-smoke.js && node scripts/solution-candidate-report-smoke.js && node scripts/solution-candidate-queue-smoke.js && node scripts/solution-candidate-review-smoke.js && node scripts/solution-promotion-smoke.js && node scripts/solution-retrieval-smoke.js && node scripts/solution-library-validation-smoke.js && node scripts/solution-natural-language-smoke.js && node scripts/solution-plan-builder-smoke.js && node scripts/solution-plan-verification-smoke.js && node scripts/reuse-telemetry-smoke.js && node scripts/solution-ab-report-smoke.js",
     "smoke:planning": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js && node scripts/generated-safety-contracts-smoke.js",
