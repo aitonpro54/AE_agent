@@ -437,6 +437,12 @@
         "typedSave": "0c737161-3a06-478e-91ba-08690ca68340"
       },
       "clientProjectWrites": 0,
+      "clientProjectRestored": true,
+      "clientProjectReadBack": {
+        "dirty": false,
+        "projectItems": 1413,
+        "activeComp": "CODX_133_MASTER"
+      },
       "clientAcceptance": "unknown"
     }
   ],

@@ -8,7 +8,7 @@ Product target: `specs/target-app.md`. Runtime outputs остаются local/ig
 ## Текущий фокус
 
 2026-09-19: F01–F17 завершён; M1–M5 `417e465`, `4c0c2f1`, `8175c1f`, `ca6922d`, `0bc1171`.
-Offline/synthetic live зелёные; ledger/report в `docs/all-review-*`; client acceptance pending.
+Offline/synthetic live зелёные; client AEP восстановлен clean; acceptance pending.
 
 ### Progress
 
