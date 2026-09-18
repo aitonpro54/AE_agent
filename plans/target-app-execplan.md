@@ -7,10 +7,10 @@ reviewed recipes, registry, provider layer и AE-specific Full Intaker.
 Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
 ## Текущий фокус
 
-2026-09-19: пользователь разрешил публикацию рабочей версии и интеграцию PR #1–#3 в main.
+2026-09-19: PR #1–#3 объединены в main (5768147); локальная ветка синхронизирована с GitHub.
 До интеграции origin/main отставал от 549ad3e на 334 коммита без расхождения.
 История сохраняется; старые отдельные ветки, незакоммиченные материалы и AEP не удаляются.
-Проверка: offline smoke groups, check:rules и diff check; код продукта и live AE не меняются.
+Validation: 9 offline smoke groups, check:rules и diff check — pass; дерево совпало с e3140dd.
 2026-09-19: F01–F17 завершён; M1–M5 `417e465`, `4c0c2f1`, `8175c1f`, `ca6922d`, `0bc1171`.
 Offline/synthetic live зелёные; client AEP восстановлен clean; acceptance pending.
 
