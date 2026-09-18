@@ -12,9 +12,9 @@ function buildRunOutcome(run = {}, plan = {}) {
   const checks = semantic && Array.isArray(semantic.checks) ? semantic.checks : [];
   const unsafeEmptyPass = completed.some((step) => /^run_extendscript(?:_file)?$/.test(step.tool)) && !checks.length;
   let verification = "not_required";
-  if (!run.dryRun && executed) {
+  if (!run.dryRun && (executed || semantic)) {
     verification = !semantic || unsafeEmptyPass || Number(semantic.unverifiedMutationCount || 0) > 0 ? "insufficient" : semantic.status === "passed" ? "passed" :
-      semantic.status === "failed" || checks.some((check) => check.passed === false) ? "failed" : "insufficient";
+      semantic.status === "failed" || checks.some((check) => check.passed === false || check.status === "failed") ? "failed" : "insufficient";
     if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") verification = run.solutionPlanReadBack.status === "failed" ? "failed" : "insufficient";
   }
   const visual = [...planned, ...completed].some((step) => step.tool === "save_comp_frame_png" || step.tool === "add_comp_to_render_queue");

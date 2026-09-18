@@ -30,7 +30,7 @@ async function main() {
     const project = "C:\\Fixture\\test.aep";
     const fixture = buildGeneratedFixturePlan(project, "C:\\Fixture\\test.png", "C:\\Fixture\\tone.wav", "VALIDATE");
     const prefix = "CODX_PLAN_VALIDATION_";
-    const production = buildSlideshowPlan({schema: "ae-agent-slideshow.v2", projectPath: project, duration: 8, frameRate: 30, width: 1280, height: 720,
+    const production = buildSlideshowPlan({schema: "ae-agent-slideshow.v2",templateContract:require("../mcp-server/slideshow-manifest").TEMPLATE_CONTRACT, projectPath: project, duration: 8, frameRate: 30, width: 1280, height: 720,
       prefix, masterName: prefix + "MASTER", audioRouting: "master-only", events: [{id: "01", scene: 1, start: 0, duration: 8, title: "Fixture title", hero: "both", images: [], audioOnly: [], captions: []}]},
     {suhanov: ["Synthetic article."], kurnikov: ["Synthetic article."], both: ["Synthetic article."]},
     {finalComp: {itemIndex: 1,itemId:101,name: "Final Comp", duration: 10, numLayers: 2,structureSchema:"ae-agent-comp-structure.v1",layers:[structuralLayer(1001,"CONTROL",10),structuralLayer(1002,"COLOR",10)], controlLayers: {CONTROL: {sourceLayerName: "CONTROL", effectCount: 0}, COLOR: {sourceLayerName: "COLOR", effectCount: 0}}}, scenes: [{scene: 1, itemIndex: 2,itemId:102,name: "Scene 1", duration: 4, numLayers: 2,structureSchema:"ae-agent-comp-structure.v1",layers:[structuralLayer(1003,"Scene top",4),structuralLayer(1004,"Scene bottom",4)], introEffectCount: 0, mainEffectCount: 0}]});

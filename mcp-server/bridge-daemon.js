@@ -29,6 +29,7 @@ const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
 const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
+const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -77,6 +78,16 @@ const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
 const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const projectSaveExecutor = projectSave.createProjectSaveExecutor({runExtendScriptBody:(body)=>runExtendScriptBody(body),
+  createCheckpoint: async (request) => {
+    ensureDir(BACKUP_DIR);
+    const base = sanitizeFilenamePart(path.basename(request.sourceFile, ".aep"));
+    const checkpointFile=path.join(BACKUP_DIR, `${base}-checkpoint-${sanitizeFilenamePart(request.label)}-${timestampForFilename(new Date())}.aep`);
+    fs.copyFileSync(request.sourceFile,checkpointFile,fs.constants.COPYFILE_EXCL);
+    const receipt={checkpointFile,sourceFile:request.sourceFile,label:request.label,snapshotScope:request.snapshotScope};
+    recordEvent("project_save_checkpoint_created",receipt);
+    return receipt;
+  }});
 const CHECKPOINT_SUFFIX = "-checkpoint";
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
@@ -902,6 +913,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  projectSave.TOOL_NAME,
   "run_extendscript",
   "run_extendscript_file",
   "create_comp",
@@ -991,6 +1003,7 @@ const M100_RAW_JSX_TOOL_NAMES = new Set([
   "run_extendscript_file"
 ]);
 const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
+  projectSave.TOOL_NAME,
   "cleanup_test_items",
   "delete_project_checkpoint",
   "delete_layer"
@@ -2402,6 +2415,10 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if(toolName===projectSave.TOOL_NAME){
+    projectSave.verifyReceipt(payload && payload.saveReceipt,args);
+    return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
+  }
   if (toolName === "export_path_points" || toolName === "export_text_to_file" || toolName === "save_comp_frame_png") {
     const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
     const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
@@ -3786,6 +3803,10 @@ function validateAgentPlanObject(plan, requestId, context) {
       projectRoot: PROJECT_ROOT,
       generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
     }) : [];
+    if(toolName===projectSave.TOOL_NAME){
+      try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
+      if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
+    }
     for (const contract of safetyContracts) {
       if (contract.kind === "generated-file-output") generatedFileIoCount += 1;
       if (contract.kind === "generated-render-output") generatedRenderOutputCount += 1;
@@ -3840,17 +3861,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (safeArgs.verifyAfter !== true) {
+      if (toolName !== projectSave.TOOL_NAME && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (!safeArgs.idempotencyKey) {
+      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (!safeArgs.idempotencyScope) {
+      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -4747,6 +4768,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  projectSave.TOOL_NAME,
   "get_bridge_status",
   "ping_ae",
   "get_project_snapshot",
@@ -6401,6 +6423,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
           : null
     }
   };
+  if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
+    run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
+  }
   if (activeEditSessionAtStart) {
     run.editSession = compactEditSession(activeEditSession);
   }
@@ -6559,6 +6584,10 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       run.error = error.message; run.project = error.project || null;
       return finishRun();
     }
+  }
+  if(!dryRun&&validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)){
+    try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
+    catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
   }
   if (!dryRun && autonomous) {
     if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
@@ -6791,7 +6820,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
-      () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args)));
+      () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
+        step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -11124,11 +11155,17 @@ const tools = [
       required: ["manifest", "articles", "inventory"]
     }
   },
-  ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES)
+  ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
+  ...projectSave.createToolDefinitions()
 ];
 
 async function callTool(name, args, executionContext) {
   args = args || {};
+  if(name===projectSave.TOOL_NAME){
+    try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
+      return toolResult({ok:true,saveReceipt});
+    }catch(error){return toolResult({ok:false,error:error.message,code:error.code||"PROJECT_SAVE_FAILED"},true);}
+  }
   if (name === "build_slideshow_plan") {
     try { const result=slideshowPlanBuilder.buildSlideshowPlan(args.manifest, args.articles, args.inventory);
       recordEvent("slideshow_plan_built", {builderProvenance:result.builderProvenance,stageCount:result.stageCount,validationOk:result.ok});
@@ -19650,7 +19687,8 @@ async function callTool(name, args, executionContext) {
 async function callToolLogged(source, name, args, executionContext) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
-  const idContext = idempotencyContext(name, args || {});
+  if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
+  const idContext = name===projectSave.TOOL_NAME ? null : idempotencyContext(name, args || {});
   recordEvent("tool_call_started", {
     id: eventId,
     source,
@@ -19710,7 +19748,7 @@ async function callToolLogged(source, name, args, executionContext) {
       }
     }
 
-    const checkpoint = await maybeCreateMutationCheckpoint(args || {}, name);
+    const checkpoint = name===projectSave.TOOL_NAME ? null : await maybeCreateMutationCheckpoint(args || {}, name);
     const result = await callTool(name, args, executionContext || null);
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.

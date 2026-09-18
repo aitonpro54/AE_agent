@@ -244,7 +244,7 @@
       "id": "F15",
       "kind": "specialized_contract",
       "assessment": "confirmed_implicit_template_assumptions",
-      "status": null,
+      "status": "fixed_offline",
       "contract": "Явный supported newspaper template preset и timing policy; unsupported variants отклоняются без общего framework.",
       "modules": [
         "mcp-server/slideshow-manifest.js",
@@ -274,11 +274,12 @@
       "id": "F17",
       "kind": "typed_tool_gap",
       "assessment": "confirmed_copy_saved_is_not_persist_memory",
-      "status": null,
+      "status": "live_validation_pending",
       "contract": "Typed persist named current project в exact target с checkpoint/manual confirmation/file/read-back proof; raw candidate не promoted.",
       "modules": [
+        "mcp-server/project-save.js",
         "mcp-server/bridge-daemon.js",
-        "mcp-server/plan-risk-classifier.js"
+        "mcp-server/semantic-verification.js"
       ],
       "regression": "Unnamed/wrong/ambiguous target, missing checkpoint, plan gates, file proof failure и positive mocked save.",
       "dependencies": [
@@ -330,12 +331,32 @@
         "telemetry-red.txt",
         "raw-status-red.txt"
       ]
+    },
+    {
+      "milestone": 3,
+      "commands": [
+        "npm.cmd run smoke:project-save",
+        "npm.cmd run smoke:slideshow",
+        "npm.cmd run smoke:evidence"
+      ],
+      "result": "passed",
+      "aeCommands": 0,
+      "fakeSaveCommands": 1,
+      "redEvidence": [
+        "template-red.txt",
+        "template-write-red.txt",
+        "save-dryrun-red.txt"
+      ]
     }
   ],
   "commits": [
     {
       "milestone": 1,
       "id": "417e4656777e011d66a7568805c1dda89c854eb9"
+    },
+    {
+      "milestone": 2,
+      "id": "4c0c2f1d0ec4e4544bbe552e46b0e35d94f219d5"
     }
   ]
 }

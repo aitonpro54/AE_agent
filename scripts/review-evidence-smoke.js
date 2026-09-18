@@ -72,6 +72,7 @@ const passed=buildRunOutcome({executedCount:1,failedCount:0,steps:[{tool:"save_c
 assert.strictEqual(passed.execution.status,"completed");assert.strictEqual(passed.acceptance.status,"pending");assert.notStrictEqual(passed.acceptance.status,"accepted");
 const gap=buildRunOutcome({executedCount:1,steps:[{tool:"set_effect_property",status:"completed"}],semanticVerification:{status:"needs_review"}});
 assert.strictEqual(gap.verification.status,"insufficient");assert.strictEqual(gap.acceptance.status,"not_requested");
+assert.strictEqual(buildRunOutcome({executedCount:1,semanticVerification:{status:"needs_review",checks:[{status:"failed"}]}}).verification.status,"failed");
 assert.strictEqual(buildRunOutcome({executedCount:1,steps:[{tool:"run_extendscript",status:"completed"}],semanticVerification:{status:"passed",checks:[]}}).verification.status,"insufficient");
 const identity=runtimeIdentity(require("path").resolve(__dirname,".."));assert.match(identity.sourceSha256,/^[a-f0-9]{64}$/);assert(!JSON.stringify(identity).includes("Users"));
 const rawSteps=[{index:1,tool:"run_extendscript",args:{script:"saved=true"},mutatesProject:true,status:"completed",result:{saved:true,verification:{ok:true}}},{index:2,tool:"get_project_info",status:"completed",result:{file:"synthetic.aep",numItems:2}}];

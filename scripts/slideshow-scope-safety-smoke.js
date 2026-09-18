@@ -171,7 +171,7 @@ const cases=[];
 // The production builder must preserve complete baseline evidence in preflights and audits.
 {
   const {project,source}=sourceFixture(),scene=fingerprint(project,source),final=project.addComp("Final Comp",10); final.addLayer(new AVLayer("CONTROL",null)); final.addLayer(new AVLayer("COLOR",null)); const finalFingerprint={...fingerprint(project,final),controlLayers:{CONTROL:{sourceLayerName:"CONTROL",effectCount:0},COLOR:{sourceLayerName:"COLOR",effectCount:0}}};
-  const manifest={schema:"ae-agent-slideshow.v2",projectPath:file,duration:8,frameRate:30,width:1280,height:720,pixelAspect:1,prefix,masterName:`${prefix}MASTER`,finalComp:{name:"Final Comp"},introDuration:2,audioRouting:"master-only",events:[{id:"01",scene:1,start:0,duration:8,title:"Fixture",hero:"both",images:[],audioOnly:[],captions:[]}]};
+  const manifest={schema: "ae-agent-slideshow.v2",templateContract:require("../mcp-server/slideshow-manifest").TEMPLATE_CONTRACT,projectPath:file,duration:8,frameRate:30,width:1280,height:720,pixelAspect:1,prefix,masterName:`${prefix}MASTER`,finalComp:{name:"Final Comp"},introDuration:2,audioRouting:"master-only",events:[{id:"01",scene:1,start:0,duration:8,title:"Fixture",hero:"both",images:[],audioOnly:[],captions:[]}]};
   const articles={suhanov:["Text"],kurnikov:["Text"],both:["Text"]};
   const inventory={finalComp:finalFingerprint,scenes:[{...scene,scene:1,introEffectCount:0,mainEffectCount:0}]},plan=buildSlideshowPlan(manifest,articles,inventory),incomplete=JSON.parse(JSON.stringify(inventory)); delete incomplete.scenes[0].layers;
   assert.throws(()=>buildSlideshowPlan(manifest,articles,incomplete),/layers must be an array/);

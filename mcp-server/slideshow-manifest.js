@@ -1,6 +1,7 @@
 "use strict";
 
 const DEFAULT_SCHEMA = "ae-agent-slideshow.v2";
+const TEMPLATE_CONTRACT = Object.freeze({id:"ae-agent-newspaper-template.v1",extensionPolicy:"translate-outro-tile-1x",expressionPolicy:"literal-comp-calls"});
 const MAX_EVENTS = 60;
 const MAX_MEDIA_GROUPS = 8;
 const MAX_MEDIA_ITEMS = 24;
@@ -150,12 +151,15 @@ function normalizeArticles(value) {
 function normalizeManifest(value, articlesValue) {
   const manifest = object(value, "manifest");
   rejectCodeLikeKeys(manifest, "manifest");
-  allowKeys(manifest, ["schema", "action", "projectPath", "duration", "frameRate", "width", "height", "pixelAspect", "prefix", "masterName", "finalComp", "introDuration", "audioRouting", "events"], "manifest");
+  allowKeys(manifest, ["schema", "templateContract", "action", "projectPath", "duration", "frameRate", "width", "height", "pixelAspect", "prefix", "masterName", "finalComp", "introDuration", "audioRouting", "events"], "manifest");
   if (manifest.action !== undefined && manifest.action !== "build") {
     fail("UNSUPPORTED_ACTION", "manifest.action must be build when supplied.", "manifest.action");
   }
   const schema = manifest.schema === "codx-133-build.v2" ? DEFAULT_SCHEMA : string(manifest.schema || DEFAULT_SCHEMA, "manifest.schema", 100);
   if (schema !== DEFAULT_SCHEMA) fail("UNSUPPORTED_SCHEMA", `manifest.schema must be ${DEFAULT_SCHEMA} or codx-133-build.v2.`, "manifest.schema");
+  const templateContract=object(manifest.templateContract,"manifest.templateContract");
+  allowKeys(templateContract,Object.keys(TEMPLATE_CONTRACT),"manifest.templateContract");
+  if(Object.keys(TEMPLATE_CONTRACT).some(key=>templateContract[key]!==TEMPLATE_CONTRACT[key]))fail("UNSUPPORTED_TEMPLATE_CONTRACT","manifest.templateContract must declare the supported newspaper template contract and timing/expression policies.","manifest.templateContract");
   const projectPath = string(manifest.projectPath, "manifest.projectPath", 2048);
   const duration = positive(manifest.duration, "manifest.duration");
   const frameRate = positive(manifest.frameRate, "manifest.frameRate");
@@ -173,6 +177,7 @@ function normalizeManifest(value, articlesValue) {
   const finalComp = manifest.finalComp === undefined ? { name: "Final Comp" } : object(manifest.finalComp, "manifest.finalComp");
   allowKeys(finalComp, ["itemIndex", "name"], "manifest.finalComp");
   const normalizedFinalComp = { name: string(finalComp.name || "Final Comp", "manifest.finalComp.name", 180) };
+  if(normalizedFinalComp.name!=="Final Comp")fail("UNSUPPORTED_TEMPLATE_CONTRACT","The newspaper template contract requires Final Comp.","manifest.finalComp.name");
   if (finalComp.itemIndex !== undefined) normalizedFinalComp.itemIndex = integer(finalComp.itemIndex, "manifest.finalComp.itemIndex", 1, 1000000);
   if (!Array.isArray(manifest.events) || manifest.events.length < 1 || manifest.events.length > MAX_EVENTS) {
     fail("INVALID_EVENTS", `manifest.events must contain 1-${MAX_EVENTS} entries.`, "manifest.events");
@@ -201,11 +206,12 @@ function normalizeManifest(value, articlesValue) {
       fail("UNKNOWN_HERO", `Unknown hero ${events[index].hero}.`, `manifest.events[${index}].hero`);
     }
   }
-  return { manifest: { schema, projectPath, duration, frameRate, width, height, pixelAspect, prefix, masterName, finalComp: normalizedFinalComp, introDuration, audioRouting, events }, articles };
+  return { manifest: { schema, templateContract:{...TEMPLATE_CONTRACT}, projectPath, duration, frameRate, width, height, pixelAspect, prefix, masterName, finalComp: normalizedFinalComp, introDuration, audioRouting, events }, articles };
 }
 
 module.exports = {
   DEFAULT_SCHEMA,
+  TEMPLATE_CONTRACT,
   MAX_EVENTS,
   MAX_MASTER_AUDIO_ITEMS,
   SlideshowInputError,

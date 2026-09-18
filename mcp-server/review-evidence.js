@@ -134,7 +134,7 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 function runtimeIdentity(root) {
-  const files=["mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js"];
+  const files=["mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js"];
   const modules=files.map(name=>({name,sha256:sha256(fs.readFileSync(path.join(root,name)))}));
   let gitCommit=null;try{gitCommit=execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8",windowsHide:true,stdio:["ignore","pipe","ignore"]}).trim();}catch(_){}
   return {schema:"ae-agent-runtime-identity.v1",gitCommit,sourceSha256:sha256(modules),modules};

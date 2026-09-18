@@ -1,11 +1,13 @@
 "use strict";
 
 const { generatedFileEvidenceIssues } = require("./generated-safety-contracts");
+const projectSave = require("./project-save");
 
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  projectSave.TOOL_NAME,
   "create_comp",
   "create_test_comp",
   "create_solid_layer",
@@ -330,8 +332,9 @@ function addProjectEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
   const framesCountType = normalizeFramesCountTypeName(value.framesCountType);
   const framesCountStartFrame = numberValue(value.framesCountStartFrame);
-  if (!framesCountType && framesCountStartFrame === null) return;
+  if (!framesCountType && framesCountStartFrame === null && typeof value.file !== "string") return;
   target.projects.push({
+    file: typeof value.file === "string" ? value.file : null,
     framesCountType,
     framesCountStartFrame: framesCountStartFrame === null ? framesCountStartFrameForName(framesCountType) : framesCountStartFrame,
     source: source || "observed project"
@@ -2883,6 +2886,17 @@ function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+  if(step.tool===projectSave.TOOL_NAME){
+    let valid=false,reason="missing typed save receipt";
+    try{projectSave.verifyReceipt(payload.saveReceipt,args);
+      const receipt=payload.saveReceipt,run=evidence.run;
+      valid=Boolean(run && receipt.authorization.runId===run.id && run.provenance && receipt.authorization.proposalId===run.provenance.actionId &&
+        evidence.readBack.projects.some((project)=>normalizeSlashes(project.file).toLowerCase()===normalizeSlashes(args.expectedProjectFile).toLowerCase()));
+      reason=valid?"file hash, checkpoint, bound save receipt and independent project path match; reopen pending":"missing run binding or independent project path";
+    }catch(error){reason=error.message;}
+    pushCheck(checks,{id:`${step.index}:save_current_named_project:file-proof`,title:"Typed named-project persistence proof",expected:"bound file/checkpoint/project read-back; live reopen separate",observed:reason,passed:valid,evidence:reason});
+    return;
+  }
 
   if (SLIDESHOW_MUTATING_TOOLS.has(step.tool)) {
     checkSlideshowMutation(checks, step, evidence);
@@ -3637,7 +3651,7 @@ function buildSemanticVerification(plan, run) {
       : null;
     const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
     const priorCheckCount = checks.length;
-    verifyStep(checks, step, { readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: readBackEvidence });
+    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: readBackEvidence });
     if (checks.length === priorCheckCount) unverifiedMutationSteps.push({index: step.index, tool: step.tool});
   }
 
