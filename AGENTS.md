@@ -2,7 +2,7 @@
 
 ## Project goal
 
-Maintain AE Agent 3.0.0 in this clean repository. The product target is
+Maintain AE Agent 3.1.0 in this clean repository. The product target is
 `specs/target-app.md`; the active execution plan is
 `plans/target-app-execplan.md`.
 
@@ -58,6 +58,12 @@ Maintain AE Agent 3.0.0 in this clean repository. The product target is
 
 ## SDK and Full Intaker boundary
 
+- Intaker/importer/supervisors frozen: exact boundary is
+  `config/frozen-intake-manifest.json`; `check:rules` checks its locked hashes.
+  No routine search/refactor or full-intake execution inside that boundary.
+  The active exception `orchestrator/bounded-process-result.cjs` stays supported.
+  Thaw/baseline changes require a separate reviewed scope; normal checks never update it.
+
 - Keep AE Agent-specific Full Intaker/importer tooling in this repo.
 - Do not rebuild broad generic SDK orchestration history here. Move reusable
   generic SDK behavior toward the sibling `codex-sdk-orchestrator-tool` only in
@@ -97,3 +103,11 @@ broad/default CEP smoke unless the current milestone explicitly approves it.
 ## Windows PowerShell encoding
 
 Read Russian/UTF-8 Markdown files with `Get-Content -Encoding UTF8`.
+## Shared AE MCP routing
+
+- Для массового read-only поиска, инвентаризации и первичной классификации используй ae_scout (Luna / medium), не более двух параллельных анализов.
+- Используй ae_specialist (Sol / high), когда готового решения нет, нужна параметризация raw JSX или две попытки исправления не прошли проверку.
+- Используй ae_architect (Astra / high) только для повторяющихся системных сбоев, изменения нескольких подсистем bridge/registry/promotion или архитектурного решения с высокой ценой ошибки.
+- После protected raw ExtendScript запуска проверь quarantine candidate: найди точные повторы через list_solution_candidates, затем читай только выбранный через get_solution_candidate.
+- Candidate не становится доверенным автоматически: перед продвижением проверь параметры, воспроизводимость, синтаксис, safety gates и read-back.
+- Не делегируй готовый простой план: эскалация модели оправдана анализом или разработкой, а не самой AE-мутацией.

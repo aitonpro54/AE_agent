@@ -1,6 +1,6 @@
 # AE Agent
 
-AE Agent 3.0.0 is a local After Effects assistant: a CEP panel talks to a local
+AE Agent 3.1.0 is a local After Effects assistant: a CEP panel talks to a local
 bridge daemon, and the daemon owns all provider calls, plan validation, AE
 execution gates, checkpoints, logs, and verification.
 
@@ -18,8 +18,9 @@ The product target is in `specs/target-app.md`. The active work plan is
 - `chatgpt-connector/`: local connector used by the panel.
 - `recipes/` and `registry/`: reviewed typed-tool planning patterns and the
   solution library.
-- `orchestrator/` and related smoke scripts: current AE-specific Full
-  Intaker/importer tooling.
+- `orchestrator/` and four related scripts: manifest-pinned, frozen opt-in
+  legacy Intaker/importer/orchestration tooling. The one active exception is
+  `orchestrator/bounded-process-result.cjs`, used by the provider runtime.
 - `specs/`, `docs/`, `plans/`: compact current product and project docs.
 
 Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`,
@@ -31,17 +32,58 @@ Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`,
 Start the local bridge daemon:
 
 ```powershell
+$env:AE_BRIDGE_TOKEN = "<random automation credential>"
+$env:AE_BRIDGE_PANEL_TOKEN = "<different random panel credential>"
 node mcp-server/bridge-daemon.js
 ```
 
 The daemon serves the CEP panel and MCP tools. It is also the safety boundary
-for mutating AE actions.
+for mutating AE actions. `AE_BRIDGE_TOKEN` authenticates normal MCP/CLI
+automation but never grants manual confirmation or autonomy enablement.
+`AE_BRIDGE_PANEL_TOKEN` is entered in the CEP **Panel token** field and is the
+only credential accepted for proposal adoption, manual execution, and the
+persistent autonomy toggle. There is no shared fallback and credentials are not
+accepted in URLs. The daemon rejects startup when any enabled automation,
+panel, or dev-admin credentials are equal.
+
+Local development can additionally set `AE_BRIDGE_DEV_ADMIN=1` together with a
+third, distinct `AE_BRIDGE_ADMIN_TOKEN`. This opt-in credential can use POST
+`/dev/tool/*`; ordinary automation still passes the normal proposal policy and
+GET remains read-only. The dev-admin path does not authorize
+`save_current_named_project`, whose panel confirmation and save proof stay
+separate.
+
+Agent Hardcore is not an ordinary automation endpoint: HTTP entry requires the
+panel credential and an active CEP Autonomous Codex session. Its
+mutating attempts still use the same typed-only autonomous runner policy;
+raw/destructive plans and the special save contract are not widened.
+
+Browser requests are checked against loopback/explicit Origin and Host policy.
+CEP opaque `Origin: null`/`file://` is supported with a valid credential; CLI
+clients without an `Origin` header remain supported. Add exceptional browser
+origins explicitly with `AE_BRIDGE_ALLOWED_ORIGINS` rather than disabling CORS.
 
 ## Install The CEP Panel
 
 Use `cep-panel/` as the extension source during local development. The panel
 expects the bridge daemon to be running locally. If the panel appears offline,
 start the daemon first and then reload the CEP panel.
+
+### Обновление с общего токена на раздельные роли
+
+Копирования `panel.js` и `index.html` недостаточно: в конфигурации запуска bridge
+должны присутствовать разные `AE_BRIDGE_TOKEN` и `AE_BRIDGE_PANEL_TOKEN`.
+Если bridge запускается MCP adapter, добавьте panel token в ту же секцию `.env`
+его локальной конфигурации. В CEP поле **Panel token** должно содержать именно
+`AE_BRIDGE_PANEL_TOKEN`; прежний automation token не подходит для `/bridge/next`.
+Не передавайте токены в URL, отчётах или командной строке.
+
+После изменения окружения перезапустите свободный daemon (нет pending/inflight
+commands и активного edit session); уже работающий процесс не перечитывает `.env`.
+Перезапустите MCP adapter перед его следующим автоматическим запуском daemon,
+чтобы он унаследовал новое окружение. Проверьте `Connected`, затем реальный
+`get_project_info` и повторное подключение после Reload. `connector-status-smoke`
+проверяет UI на подставных ответах и сам по себе не доказывает live connectivity.
 
 ## Provider Paths
 
@@ -63,18 +105,41 @@ Important boundaries:
   applicable, and post-run read-back.
 - Broad or risky mutations require checkpoint/edit-session protection.
 - Raw ExtendScript remains an escape hatch behind bridge-owned gates.
-- The CEP panel can grant a non-persistent 20-minute Autonomous Codex session
-  for proposal-backed typed mutating plans. Direct mutations, raw JSX, and
-  destructive plans remain outside that grant.
+- Переключатель **Автономная сессия Codex** сохраняет `desiredEnabled` до явного
+  выключения. Reload панели и restart bridge сохраняют настройку; готовность
+  восстанавливается только после подключения доверенной панели. Разрешение
+  конкретного proposal, checkpoint, freshness и read-back проверяются отдельно.
+  Direct mutations, raw JSX, destructive и специальный named save остаются
+  за отдельной ручной границей.
 - Dev-request bundles are local handoffs for separate Codex App development
   work; the panel must not imply it created a Codex thread automatically.
 
-## Full Intaker Boundary
+Настройка хранится в `autonomy-preference.json` внутри `AE_BRIDGE_STATE_DIR`
+(по умолчанию local ignored log directory). Новый, повреждённый или старый temporary
+state даёт off. Ошибка записи показывается явно: off немедленно отзывает право
+в текущем процессе, но при ошибке диска сохранение off после restart не гарантируется.
+Отсутствующая панель означает ожидание соединения при сохранённом enabled.
+Heartbeat поддерживает готовность во время долгого JSX и не получает команды.
 
-Keep AE Agent-specific Full Intaker/importer tooling here. Do not rebuild the
-broad generic SDK orchestrator history in this repo. Reusable generic SDK
-orchestration belongs in the sibling `codex-sdk-orchestrator-tool` through a
-separate reviewed migration.
+Panel/bridge используют command contract v2: execution, lease, owner и generation
+сверяются до принятия результата. Старую панель нужно обновлять вместе с bridge;
+ослабленного fallback нет. Уже submitted/unknown шаг после reconnect не повторяется.
+Off не прерывает синхронный JSX: его результат/read-back принимается, следующая
+mutation блокируется.
+
+## Frozen Full Intaker Boundary
+
+The exact frozen paths and normalized SHA-256 values are recorded in
+`config/frozen-intake-manifest.json`; its companion lock detects unexplained
+manifest edits. `npm run check:rules` verifies the boundary but never refreshes
+it. Default search excludes the frozen paths. Existing `full-intake:*`,
+`generic-repo:*`, and `smoke:full-intake` commands remain explicit legacy
+entrypoints and are not part of normal startup or default product tests.
+
+Product tools, recipes, registry entries, discovery, plan builders, semantic
+verification, and their regressions remain active even when they originated
+through intake. Reusable generic orchestration belongs in the sibling
+`codex-sdk-orchestrator-tool` through a separate reviewed migration.
 
 Approval-gated by default:
 
@@ -107,11 +172,20 @@ npm.cmd run smoke:provider-api
 npm.cmd run smoke:solutions
 npm.cmd run smoke:planning
 npm.cmd run smoke:bridge
-npm.cmd run smoke:full-intake
+npm.cmd run smoke:network-boundary
+npm.cmd run smoke:frozen-intake
 ```
 
+M7 remediation проверяется actual-module/VM и isolated loopback fixtures, а
+generated-only subset дополнительно прошёл в реальном AE/CEP: exact duplicate
+identity, negative preflight, restart/reload/off и protected save/reopen.
+Матрица критериев, actual IDs/hashes и честное разделение live/offline evidence
+находятся в [отчёте M7](docs/m7-integration-acceptance-2026-09-19.md).
+Клиентская визуальная приёмка не входит в release gate 3.1.0.
+
 Run only the groups relevant to the touched surface unless a milestone calls
-for a broader pass.
+for a broader pass. Frozen `smoke:full-intake` requires an explicit reviewed
+thaw and is not part of the default product suite.
 
 ## Handoff
 

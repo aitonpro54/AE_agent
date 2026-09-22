@@ -1,5 +1,24 @@
 # AE Agent Releases
 
+## v3.1.0 — 2026-09-22
+
+M7 закрывает точную composite identity для duplicate properties/effects, preflight
+всех bulk-целей, M100 command receipts v2, project/checkpoint guards и persistent
+autonomy с доверенным CEP reconnect. Raw JSX, destructive operations и named save
+по-прежнему не входят в autonomous grant.
+
+Generated-only live acceptance выполнена на `CODX_REMEDIATION_LIVE.aep`: точное
+изменение второго одноимённого Fill, отрицательные stale/conflicting/fractional и
+bulk cases, независимый neighbour read-back, marker + typed save с checkpoint/hash,
+close/reopen и повторный read-back. Реальный CEP Reload сохранил autonomy, explicit
+off заблокировал следующую mutation до исполнения. Клиентские AEP и media не менялись.
+
+Релиз также добавляет frozen-intake integrity guard, bounded network/auth contracts,
+separate panel credential diagnostics, usage telemetry boundaries и согласованную
+проверку версии package/daemon/adapter/CEP. Все обязательные offline smoke groups,
+syntax и diff checks прошли без `smoke:full-intake`, provider network calls или
+Local/Ollama.
+
 ## v3.0.0 — 2026-09-13
 
 Панель и bridge получили согласованную версию 3.0.0. Обновлены native CEP

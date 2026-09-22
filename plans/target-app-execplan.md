@@ -2,176 +2,106 @@
 
 ## Активный baseline
 
-AE Agent 3.0.0: CEP-панель After Effects, bridge daemon, typed tools,
-reviewed recipes, registry, provider layer и AE-specific Full Intaker.
-Product target: `specs/target-app.md`. Runtime outputs остаются local/ignored.
-## Текущий фокус
+AE Agent 3.1.0: CEP, bridge, typed tools, reviewed recipes/registry, provider layer.
+Product target: specs/target-app.md. Текущий HEAD: b2cdd432c99f1c0dfac2f0cf2a888e09b6778c5a.
+Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
+единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
-2026-09-19: PR #1–#3 объединены в main (5768147); локальная ветка синхронизирована с GitHub.
-До интеграции origin/main отставал от 549ad3e на 334 коммита без расхождения.
-История сохраняется; старые отдельные ветки, незакоммиченные материалы и AEP не удаляются.
-Validation: 9 offline smoke groups, check:rules и diff check — pass; дерево совпало с e3140dd.
-2026-09-19: F01–F17 завершён; M1–M5 `417e465`, `4c0c2f1`, `8175c1f`, `ca6922d`, `0bc1171`.
-Offline/synthetic live зелёные; client AEP восстановлен clean; acceptance pending.
+## Текущий milestone — M7 завершён, release 3.1.0
+
+2026-09-22: credential blocker устранён отдельным `AE_BRIDGE_PANEL_TOKEN` без
+ослабления auth/Origin/Host gates. Generated fixture
+`.codex-runtime/review-remediation-live/CODX_REMEDIATION_LIVE.aep` подтверждён
+по path/session evidence; клиентские AEP и media не использовались.
+
+Live acceptance: второй из двух одноимённых Fill изменён по composite identity;
+fractional/conflicting/stale descriptors и плохая bulk target отказали до записи;
+соседние/out-of-scope объекты сохранены. Persistent autonomy пережила daemon restart
+и реальный CEP Reload с новой generation. Explicit off заблокировал следующий
+proposal-backed mutating run до исполнения. Typed save прошёл через CEP confirmation:
+checkpoint сохранил исходный SHA-256, marker записан, новый hash подтверждён, проект
+закрыт, повторно открыт и независимо прочитан. Точные IDs/hashes — в M7 report.
+
+Остальные A/B, owner/stage/generation, terminal duplicate, unknown/replay, corrupt/
+legacy state и heartbeat cases закрыты actual-module/isolated-daemon regressions.
+Они честно отделены от live AE proof. Обязательная offline-матрица зелёная; после
+этого канонические package/daemon/adapter/CEP поверхности подняты до 3.1.0.
 
 ### Progress
 
-- [x] Прочитаны диагностика и сборщик; добавлены comp/layer motionBlur и audioEnabled.
-- [x] Текущий proposal: revision/instanceId, project binding, supersession, dry-run receipt.
-- [x] MCP regression: scope/replay, гонки adopt/run, подмена полномочий, чужой checkpoint,
-  смена проекта, старый dry-run, лимит шагов и отзыв сессии между mutations.
-- [x] 11 slideshow tools; F08 exact-owner preflight и F09 structural v1 baseline/read-back.
-- [x] Synthetic live: F06–F12/F15/F17, включая stale A, accepted B и save/reopen marker.
-- [x] Установка CEP/daemon, generated-only acceptance и итоговый review.
-- [x] Реальный AE: сокращение без переноса ключей, сохранение соседних ключей при продлении.
-- [ ] Production остановлен: первые 10 собраны, аудиохвост 13 мс и визуальная приёмка не завершены.
+- [x] FZ: manifest/lock/guard, temp edit/delete/rename/addition/lock/CRLF regressions.
+- [x] ID/R06: exact indexed candidate + name/matchName validation, strict identity numbers,
+  preflight bulk targets; actual generated JSX и независимый fixture read-back.
+- [x] NET/R01–R03: роли automation/panel/dev-admin, GET read-only, bounded JSON,
+  async route boundary, connector auth/Origin/Host, nested credential sanitation.
+- [x] RUN/R04/R05/R07: project/checkpoint parity, delivery+JSX checks, receipt v2,
+  exact duplicate idempotency, unknown no replay, failed + separate coverage.
+- [x] AUT: durable desiredEnabled, trusted reconnect, explicit off, corrupt/legacy off,
+  persistence errors, heartbeat без leasing, submitted result/read-back continuity.
+- [x] Hardcore grant pinned: off/off-on между draft/dry-run/run не даёт manual fallback.
+- [x] M6 usage сохранён: USG01–USG17 synthetic/fake tests pass, quota отдельно.
+- [x] Все обязательные offline группы, syntax и diff check выполнены; см. actual exits в отчёте.
+- [x] Установленная CEP: role migration, reload/reconnect и live read-only v2 proof.
+- [x] Пять AE/CEP-скиллов пересобраны после диагностики без их применения.
+- [x] Generated-only live identity, negative preflight, restart/reload/off и save/reopen proof.
+- [x] Version 3.1.0 + canonical consistency gate; release branch `codex/release-3.1.0`.
 
 ### Decision Log
 
-- Remediation: historical bundles неизменны; accepted manual B — baseline,
-  client acceptance неизвестна. Scope F08 сохраняется; F09 proof связывается
-  с baseline шага. Новые regression импортируют только текущие modules.
-- Live использует ignored synthetic AEP; client writes=0, acceptance pending.
+- Ошибка панели вызвана пропущенной миграцией launch env; причинная связь со скиллами
+  не подтверждена. Токены раздельны, security gates не ослаблены. Локальная config
+  применяется к новым adapter-процессам; уже запущенный adapter имеет старый env.
+- 68 acceptance IDs закрыты указанным offline evidence; live subset помечен отдельно.
+- ID07: непосредственно проверены пять handlers; остальные resolver consumers не
+  объявляются автоматически поддержанными.
+- Persistent on не хранит вечный proposal token и не расширяет raw/destructive/save scope.
+- Off не прерывает уже submitted JSX; следующая mutation запрещена. Unknown требует сверки.
+- При ошибке сохранения off процессный grant отзывается, durability после restart неизвестна.
+- Post-bump файлы установленной CEP и daemon 3.1.0 проверены по hash/runtime. После
+  долгого AE startup native menu и панель показали `AE Agent 3.1.0`; панель Connected,
+  autonomy off, queue/inflight пусты, точный generated AEP повторно прочитан через MCP.
+- Legacy handler assertions идут через безопасный actual-module capture без admin grant.
+- Manifest baseline не обновляется обычными проверками; thaw — отдельный reviewed scope.
+- Native exact и overlapping CodeBurn aggregates не суммируются; unknown=null,
+  model×project не выводится из отдельных агрегатов, dollars не превращаются в quota.
+- Новых production dependencies и frozen-baseline изменений нет; merge не разрешён.
 
-- Один pending proposal заменяет предыдущий; confirmed/executing имеют одного owner.
-- Proposal привязан к сохранённому проекту; offline planner выдаёт только draft.
-- GET не выдаёт токен; CEP adoption требует CAS и нового dry-run, сохраняет repair budget.
-- Исправление: максимум два новых proposal setters на тех же целях и проекте после
-  инспекции. Raw JSX, создание/import и неизвестный исход не повторяются.
-- Статистика без секретов; входящая ревизия — baseline, неполный snapshot не даёт `passed`.
 ### Validation
 
-Offline suite с full-intake — pass; synthetic live подтвердил scope/keys/stale-B/
-audio/pair/expression/template/save-reopen. Sample/render/listening/acceptance pending.
-CEP/MCP синхронизированы; stale-кнопки отключаются. Live R3: 21+20+20 шагов,
-С учётом switches и финальных Layer.id/index: 75 шагов, 42/42 checks, uncovered=0.
-Read-back выявил и помог исправить порядок восстановления interpolation и выбор
-скопированного слоя по Layer.id. Исходные 41 слой/133.2667 с и SHA-256 AEP не изменились.
-Production stop: lease off, очередь пуста; в master уже 14 пар, исходник не изменён.
-Копия Scene 1 прошла live read-back после исправления погрешности касательных AE;
-planning/slideshow smokes, syntax, check:rules и diff check прошли.
-Подробности: `docs/autonomous-editing.md`.
+check:rules; smoke:frozen-intake/network-boundary/project-save/planning/solutions/evidence;
+smoke:autonomy-bridge/autonomy/slideshow/usage/provider-contract/provider-api/bridge/
+panel-auth — pass. Node syntax и diff checks — pass. Generated AE/CEP live — pass в
+явно перечисленном scope. Providers/CodeBurn network/quota, Local/Ollama, client AEP,
+full-intake и broad CEP smoke не запускались. Installed CEP release files совпали с repo
+по SHA-256; daemon после безопасного restart сообщил version 3.1.0, PID 7616, autonomy off.
+Точные команды, transient failures и scope каждого proof — в отчёте M7.
 
-2026-09-13 завершён review/promotion reducer от `8fe053a`; исходный audit candidate
-не promoted из-за redaction/File I/O. Выпуск 3.0.0 опубликован двумя связанными PR:
-baseline `3bd69eb` → `main` и текущий выпуск от `79f421a` → baseline.
-Прежнее разрешение выпуска не распространяется на push/PR текущего milestone.
+## Исторический контекст, не доказательство M7
 
-## Milestones
+- PR #1–#3 объединены в main 2026-09-19; история и старые ветки сохранены.
+- F01–F17: прежние commits 417e465, 4c0c2f1, 8175c1f, ca6922d, 0bc1171;
+  отдельный synthetic live scope проверял keys/scope/stale B/save-reopen.
+- Прежний client AEP восстановлен clean; клиентская/визуальная приёмка неизвестна.
+- Production stop: первые 10 собраны; аудиохвост 13 мс и визуальная приёмка не завершены.
+  В master 14 пар; источник не изменён. Подробности: docs/autonomous-editing.md.
+- M6 2026-09-19: native usage + optional CodeBurn 0.9.24; quota без windows = partial.
+  Исторический read-only report не считается новым M7 network запуском.
+- Старый temporary 20-minute grant заменён M7 persistent contract; прежние live/runtime
+  observations не доказывают работу нового варианта в установленной панели.
 
-- [x] Проверить фактическое применение базы и маршруты MCP/CEP.
-- [x] Исправить silent truncation; bounded planner context до 24 000 символов.
-- [x] Добавить MCP search/get и RU/EN retrieval.
-- [x] Добавить 4 локальных builders scalar linear keyframes и strict verification.
-- [x] Добавить usage/reuse telemetry и offline A/B reporter.
-- [x] Обновить рабочий AE-навык; активировать новый daemon и MCP preview.
-- [x] Согласовать версии panel/manifest/assets/package/bridge до 3.0.0.
-- [x] Обновить установленную панель и проверить scoped branding/reload.
-- [x] Push, baseline/release PR и handoff с точными ссылками.
-- [x] Настроить глобальные Codex model roles и AE workflow для любых проектов.
-- [x] Открыть через MCP read-only очередь карантинных JSX-candidates.
-- [x] Добавить временную CEP autonomous session для proposal-backed typed plans.
-- [x] Реализовать локальный reducer exact-repeat candidate review и проверяемый builder proposal.
+## Следующие отдельные scope
 
-## Decision Log
+M7 release не требует дальнейшей generated-only работы. Отдельно остаются client visual
+acceptance, public connector deployment и MCP comparison по готовому benchmark protocol.
+Backlog: bounded composition audit builder (docs/proposals/repeated-composition-audit.review.json),
+synthetic A/B и RU retrieval. Candidate source остаётся quarantine; promotion отдельно.
 
-- Готовые решения ищутся локально; registry не загружается целиком в контекст.
-  Lookup/build не вызывает второй LLM, но ответы расходуют контекст Codex.
-- MCP разрешает proposal и явный `dryRun:true`. Включённая пользователем
-  20-минутная CEP autonomous session разрешает только proposal-backed typed
-  mutation; checkpoint/edit-session/idempotency/preflight/read-back сохраняются.
-  Direct tools, raw JSX, destructive plans и replay остаются закрытыми.
-- Raw JSX candidates доступны через компактную read-only MCP-очередь, но не
-  становятся planner-visible и не продвигаются автоматически.
-- Review reducer работает отдельно от planner: свежая группа, expected fingerprint,
-  проверяемые source anchors, reviewed recipe/tool links и pending criteria.
-  Output не является approval для promotion helper. V8 compile-only и lexical
-  safety не доказывают ES3/AE compatibility либо безопасность.
-- Для четырёх повторов composition audit предложен pure bounded builder из typed
-  snapshots. Redacted source и external File I/O оставляют candidate в quarantine;
-  неподдержанные property/enum/path поля не объявляются покрытыми typed tools.
-- Глобальный Codex default — Terra/Medium; роли `ae_scout`, `ae_specialist` и
-  `ae_architect` закрепляют Luna/Medium, Sol/High и Astra/High по сложности.
-- Первые builders ограничены полной scalar linear последовательностью,
-  canonical descriptor paths глубиной до 5 и максимум 5 property targets.
-  До первой записи обязательна проверка свежих ключей; после — exact read-back.
-- Usage внешнего Codex MCP-серверу недоступен. Декларация solution IDs не
-  доказывает причинную связь; неизвестные токены остаются `null`.
-- Runtime metadata отделяет рабочий порт от mock-серверов в статистике.
-- Extension IDs и настройки сохраняются. Исторические testedAeContext в
-  registry не переименовываются под новый выпуск.
-- Новых production dependencies нет. Живые AE mutations и реальные provider
-  trials в текущем выпуске не выполняются. PR не означает автоматический merge.
+## Frozen Full Intake backlog (историческая справка)
 
-## Progress
-
-- Feature commit `79f421a`: 119 MCP tools, 181 reviewed решения, четыре builders.
-- Release commit `7dcd36f`: согласованная версия 3.0.0 и release notes.
-- PR #1–#3: последовательная интеграция накопленной базы, выпуска и remediation в main.
-- 12/12 RU и EN контрольных запросов находят ожидаемое решение в top-3;
-  все 181 точных названий находятся. Это словарный поиск, не embeddings.
-- Стрессовый planner пример: 13 397 символов при бюджете 24 000, сохранён
-  обязательный конец prompt. Это не оценка биллинга Codex.
-- Рабочая MCP-цепочка builder → proposal → dry-run прошла: четыре ready steps,
-  ноль выполненных AE-команд; CEP online.
-- `docs/solution-reuse.md` описывает ограничения, telemetry и восемь A/B-сценариев.
-- Глобальные `config.toml`, `AGENTS.md`, AE skill и три agent profiles установлены
-  в пользовательский Codex home; новые чаты применят их после перезапуска Codex.
-- Изолированный MCP smoke выполнил typed plan при активном CEP lease и подтвердил
-  блокировку без lease, direct mutation, raw JSX, destructive direct call и replay.
-- Review milestone: `review:candidates` и `solution-candidate-review-proposal.v1`;
-  [контракт и review](../docs/proposals/repeated-composition-audit.md), шесть matched
-  parameters, четыре exact repeats, ноль registry writes. Изолированные fixtures
-  проверяют reducer; воспроизведение будущего audit builder остаётся pending.
-
-## Следующие продуктовые изменения
-
-После F01–F17 остаются отдельные backlog: bounded composition audit builder
-(`docs/proposals/repeated-composition-audit.review.json`), synthetic A/B,
-оптимизация fresh inspection и RU retrieval. Promotion и реальные provider/live
-trials сохраняют отдельные границы. Текущая задача их не запускает.
-
-## Сохранённый Full Intake backlog
-
-Run: `full-intake-aturtur-after-effects-scripts`.
-Ledger: `.codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json`.
-Последний accepted candidate: `tool-ar_distributekeyframestolayer`, commit `577cd6e`.
+Run: full-intake-aturtur-after-effects-scripts.
+Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json.
+Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e.
 Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18,
-blocked_policy=1, failed=0. Шесть AR timing/boundary candidates ранее приняты
-через generated-only live lanes с contractComplete=true/unplannedPathCount=0.
-Оставшиеся family lanes: effects/visual, file/SRT/render/cleanup, shape/mask,
-tracked-light. Старый intake в этом выпуске не запускается.
-
-Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies,
-новые live/provider trials требуют отдельного scope. Parent сохраняет serial
-acceptance/reducer. Разрешение local-use source не означает публикацию raw JSX.
-
-## Validation Notes
-
-Candidate review milestone: `check:rules`, syntax четырёх touched JS,
-`smoke:solutions` (включая новый reducer smoke), `smoke:planning`, scoped
-`solution-discovery-smoke` и `git diff --check` — pass. Discovery: 121 tools,
-четыре dry-run steps, aeCommands=0. Reducer fixtures подтверждают deterministic
-output, stale/malformed/incomplete source и group guards, неизменность registry,
-quarantine и discovery, отказ promotion helper принять proposal как approval.
-Реальная выбранная группа: parse-only-pass, 6/6 anchors matched, status=blocked
-из-за source redaction и external I/O. Ни source, ни AE scene не исполнялись.
-
-Reuse milestone: check:rules; syntax 21 JS; smoke:solutions, smoke:bridge,
-smoke:planning, smoke:provider-contract/API, smoke:full-intake — pass.
-Изолированный runner проверяет exact pass, stale preflight block и wrong-after
-failure; MCP — редактированный proposal и preview-only compatibility.
-Навык обновлён: YAML frontmatter сохранён; ручная проверка инструкций/ссылок.
-Стандартный quick_validate недоступен без PyYAML; зависимости не устанавливались.
-
-Release milestone: bridge/solution smokes, syntax, manifest/package и diff — pass.
-Установлены CEP/bridge 3.0.0; scoped branding/reload прошли 2026-09-12.
-
-Global autonomy/reuse milestone: добавлены read-only candidate queue и
-in-memory CEP autonomous lease. Unit и isolated daemon/MCP/fake-panel smokes
-проверяют expiry, revoke, restart, typed execution и запреты scope. Live AE
-mutation и реальные provider-вызовы не выполнялись. `check:rules`, syntax,
-`smoke:solutions`, `smoke:bridge`, `smoke:planning`, provider-contract и
-`git diff --check` прошли. В рабочей quarantine найдено 34 candidate и 2 группы
-точных повторов; очередь остаётся planner-invisible. Три CEP-файла установлены,
-SHA-256 совпадают с repo, scoped reload-button-smoke прошёл.
+blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась.
+Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые
+live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
