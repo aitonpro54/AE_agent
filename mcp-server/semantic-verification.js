@@ -39,6 +39,7 @@ const MUTATING_TOOLS = new Set([
   "add_property_to_essential_graphics",
   "fit_layer_to_comp",
   "set_property_value",
+  "set_effect_property",
   "set_layer_metadata",
   "set_layer_blending_mode",
   "set_project_item_metadata",
@@ -94,6 +95,7 @@ const READ_BACK_TOOLS = new Set([
   "find_project_items",
   "list_comps",
   "list_layers",
+  "list_effects",
   "get_comp_details",
   "get_layer_details",
   "get_effect_details",
@@ -1106,6 +1108,53 @@ function checkSetPropertyValue(checks, step, payload, evidence) {
       : "missing or mismatched property value",
     passed: Boolean(resultMatch) && Boolean(readBackEvidence),
     evidence: readBackEvidence || "No post-run layer/property read-back matched set_property_value."
+  });
+}
+
+function propertyPathContainsEffectIdentity(propertyPath, args) {
+  if (!Array.isArray(propertyPath) || !args) return false;
+  return propertyPath.some((segment) => {
+    if (!isPlainObject(segment)) return false;
+    if (hasOwn(args, "effectIndex") && !nearlyEqual(segment.propertyIndex, args.effectIndex)) return false;
+    if (hasOwn(args, "effectMatchName") && args.effectMatchName && segment.matchName !== args.effectMatchName) return false;
+    if (hasOwn(args, "effectName") && args.effectName && segment.name !== args.effectName) return false;
+    return hasOwn(args, "effectIndex") || Boolean(args.effectMatchName) || Boolean(args.effectName);
+  });
+}
+
+function effectPropertyMatchesArgs(property, args) {
+  return Boolean(property) &&
+    propertyPathContainsEffectIdentity(property.propertyPath, args) &&
+    propertyPathMatches(property.propertyPath, args.propertyPath) &&
+    propertyValueMatches(args.value, property.value, 0.01);
+}
+
+function observedEffectPropertyValueEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  for (const property of evidence.properties) {
+    if (effectPropertyMatchesArgs(property, args)) {
+      return property.source || `Read ${propertyPathText(args.propertyPath)} on the exact effect instance after set_effect_property.`;
+    }
+  }
+  return null;
+}
+
+function checkSetEffectProperty(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const effect = payload.effect || {};
+  const property = payload.property || {};
+  const resultMatches = effectMatchesArgs(effect, args) && effectPropertyMatchesArgs(property, args);
+  const readBackEvidence = observedEffectPropertyValueEvidence(evidence.readBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:value`,
+    title: "Exact effect property value matches request",
+    expected: `${args.effectIndex || "?"}:${args.effectName || args.effectMatchName || "effect"} ${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
+    observed: resultMatches
+      ? `${effect.propertyIndex}:${effect.name || effect.matchName || "effect"} ${propertyPathText(property.propertyPath)} = ${compactText(stableStringify(property.value), 80)}`
+      : "missing or mismatched effect/property identity or value",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details read-back matched the exact set_effect_property target."
   });
 }
 
@@ -3201,6 +3250,11 @@ function verifyStep(checks, step, evidence) {
 
   if (step.tool === "set_property_value") {
     checkSetPropertyValue(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_effect_property") {
+    checkSetEffectProperty(checks, step, payload, evidence);
     return;
   }
 

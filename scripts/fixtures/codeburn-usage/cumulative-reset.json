@@ -1,0 +1,7 @@
+{
+  "snapshots": [
+    { "snapshotId": "synthetic-cumulative-before", "counterSemantics": "cumulative", "overview": { "inputTokens": 100, "outputTokens": 10 } },
+    { "snapshotId": "synthetic-cumulative-repeat", "counterSemantics": "cumulative", "overview": { "inputTokens": 100, "outputTokens": 10 } },
+    { "snapshotId": "synthetic-session-restarted", "counterSemantics": "reset_or_restarted_session", "overview": { "inputTokens": 12, "outputTokens": 2 } }
+  ]
+}

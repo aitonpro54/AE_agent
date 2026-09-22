@@ -1,0 +1,43 @@
+{
+  "schema": "ae-agent.frozen-intake.v1",
+  "baseCommit": "b2cdd432c99f1c0dfac2f0cf2a888e09b6778c5a",
+  "normalization": "UTF-8 CRLF to LF",
+  "roots": [
+    "orchestrator",
+    "scripts/full-intake-runtime-cleanup.js",
+    "scripts/sdk-generic-repo-full-intake-smoke.js",
+    "scripts/sdk-generic-repo-importer-command-smoke.js",
+    "scripts/sdk-generic-repo-queue-supervisor-smoke.js"
+  ],
+  "exceptions": [
+    "orchestrator/bounded-process-result.cjs"
+  ],
+  "files": {
+    "orchestrator/README.md": "9249993d1c6b7f8a5673d48c49c966a16437acc1886d17c246890bd14788285f",
+    "orchestrator/adapters/ae-agent-policy.example.json": "db1fd4526ca16a75f064c8c399c4116713b07ad486557aba0a1ad2fc38fff48f",
+    "orchestrator/contracts/generic-repo-importer-contract.json": "0c1945887e7b57df08a7003c7914b65dbdecfa0c6f6f3932914bca5442878cf8",
+    "orchestrator/contracts/generic-repo-importer-supervisor-plan.json": "a0ab45494b859a084a3a5d2203d77e420d55c179864683c7045b370ba72e422b",
+    "orchestrator/core/failure-diagnostics.mjs": "3e3aa51db146619ecc59f138bf1a0a5a7783c86e1706314675f94433cb20ee07",
+    "orchestrator/core/git-snapshot.mjs": "23ceaf1ee25ad76211d4f7920a7d2a313a8c5dabdc69eb123b2660998be90806",
+    "orchestrator/core/operation-envelope.mjs": "24b9ae8e3f417a2e1928c665aa0e2f4acadff69e2d8e58a6a4124f196b388e01",
+    "orchestrator/core/path-policy.mjs": "b9657a217d5fc2211822ef1814a47efcae404badc84fd30efc3509bc106014a6",
+    "orchestrator/core/post-run-contract.mjs": "16e430a95f5d3a9473d4f704996c70786f2e8d9eca6368e69440643e38cc51d4",
+    "orchestrator/core/runtime-store.mjs": "4fcc69fa7bfd5c1ddfbbad5cb2a0e0e706b13a253f5d3e87855eb3540ecd593d",
+    "orchestrator/full-intake-diagnose.mjs": "f6c700119c538d3798c2fa765d2c346ac0f06f231d631eebb1938e470075adcc",
+    "orchestrator/full-intake-ledger-summary.mjs": "c02519836219b2500145fa09165694faf6e5fdfa8d32912fd3c006037c049b88",
+    "orchestrator/full-intake-proof.mjs": "2fedbb180c5c09353a5385d4d04fa1f34a56768d8e3b5bff13b30a6e48291b7b",
+    "orchestrator/full-intake-status.mjs": "3301ccfa4bec5c4cecc05663c07c92266a5fb0857b1855a25c283286f2fc56bf",
+    "orchestrator/generic-repo-live-lane-registry.json": "2c37d2f60192ccfacb50560676a1dcda44efdc77cac65396a05b7990deb040f0",
+    "orchestrator/parallel-candidate-worktrees.mjs": "7446a8fc52873eb412a3d49c117e4d0c6a499dee820b8ab0b534b93fd9892be9",
+    "orchestrator/parent-proof-contract.mjs": "1e50da6f75e65f240a870b0ea1375b368e02feb3f2248d7e24d8159eeeb5b922",
+    "orchestrator/run-generic-repo-auto-intake.mjs": "5e41f441a2fd8e1c3d1dfe3eb5acafffb7d7921e4283c89af9e8f10f95575e7a",
+    "orchestrator/run-generic-repo-full-intake.mjs": "206e009fe93c9817249f9803a41896e963434794f717b29546fb183190cd67dd",
+    "orchestrator/run-generic-repo-importer-supervisor.mjs": "74209cedc6b7b8200b98fbd654ab950bcb959cca90bc97764a5916eb73623f61",
+    "orchestrator/run-generic-repo-queue-supervisor.mjs": "f2fb7b4c398ffd4fd164b0e652bbb7e264059288e72c9f4bb27a882d7555ee6b",
+    "orchestrator/run-generic-repo-tool-importer.mjs": "da02bea533b8fbe22bd629ee909aee0e0a6947fb7e1c46dc4c34a7c2af7b60da",
+    "scripts/full-intake-runtime-cleanup.js": "51f1a8dc22a17587ae89f7c6675519c3a4c0de7874913872fd0ff2fb85528ce5",
+    "scripts/sdk-generic-repo-full-intake-smoke.js": "322ac57d383bbe8ef35bf7c79dd023fbe711413e597335d6fed866b567e90bcd",
+    "scripts/sdk-generic-repo-importer-command-smoke.js": "5cc9f2507569428a513f57dcfa9b99bcd5b08a7ed6e62349cdf9a1e4e6f32213",
+    "scripts/sdk-generic-repo-queue-supervisor-smoke.js": "2d171521f25508e799ace63d06f9d6c23db3ab9fe57e985f680458612ffe8d00"
+  }
+}

@@ -1,15 +1,19 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
 const http = require("http");
+const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
 const { classifyAgentPlan } = require("../mcp-server/plan-risk-classifier");
+const { isolatedEnvironment } = require("./network-test-fixture");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
 const port = String(4650 + Math.floor(Math.random() * 1000));
 const token = "plan-classification-smoke-token";
+const panelToken = `${token}-panel`;
 const REQUEST_TIMEOUT_MS = 10000;
 
 function requestJsonWithOptions(options, payload) {
@@ -178,12 +182,9 @@ function assertContextSignals() {
 async function main() {
   assertContextSignals();
 
+  const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-plan-classification-"));
   const child = spawn(nodePath, [daemonPath], {
-    env: {
-      ...process.env,
-      AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token
-    },
+    env: isolatedEnvironment(runtime, {port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: REQUEST_TIMEOUT_MS}),
     stdio: ["ignore", "pipe", "pipe"]
   });
   const stderr = [];
@@ -278,7 +279,7 @@ async function main() {
           tool: "add_comp_to_render_queue",
           args: {
             compName: "Codex Classification Smoke",
-            outputPath: "logs/generated-renders/classification-smoke.mov"
+            outputPath: "classification-smoke.mov"
           }
         }
       ]

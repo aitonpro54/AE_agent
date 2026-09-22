@@ -9,11 +9,14 @@ const path = require("path");
 const readline = require("readline");
 const {spawn} = require("child_process");
 const {buildSolutionPlan, getBuilderContract} = require("../mcp-server/solution-plan-builder");
-const {withProjectPanel, isProjectInfo, PROJECT_FILE} = require("./fake-project-panel");
+const {withProjectPanel, isProjectInfo, PROJECT_FILE, panelRoute: makePanelRoute,
+  submitCommand, postCommandResult} = require("./fake-project-panel");
+const {isolatedEnvironment} = require("./network-test-fixture");
 
 const root = path.resolve(__dirname, "..");
 const port = 38000 + Math.floor(Math.random() * 10000);
 const token = "autonomous-mcp-smoke";
+const panelToken = `${token}-panel`;
 const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-autonomous-mcp-"));
 fs.writeFileSync(path.join(runtime, "edit-session-active.json"), JSON.stringify({
   id: "synt-active-session",
@@ -22,13 +25,14 @@ fs.writeFileSync(path.join(runtime, "edit-session-active.json"), JSON.stringify(
   checkpoint: {sourceFile: PROJECT_FILE},
   operations: []
 }));
-const env = {...process.env, AE_BRIDGE_PORT: String(port), AE_BRIDGE_TOKEN: token, AE_BRIDGE_LOG_DIR: runtime, AE_DAEMON_AUTO_START: "0"};
+const env = isolatedEnvironment(runtime, {port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: 10000});
+Object.assign(env, {AE_BRIDGE_LOG_DIR: runtime, AE_BRIDGE_STATE_DIR: runtime});
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function request(route, payload, headers) {
+function request(route, payload, headers, authToken = token) {
   return new Promise((resolve, reject) => {
     const req = http.request({hostname: "127.0.0.1", port, path: route, method: payload ? "POST" : "GET",
-      headers: {"content-type": "application/json", "x-ae-bridge-token": token, ...(headers || {})}, timeout: 10000}, (res) => {
+      headers: {"content-type": "application/json", "x-ae-bridge-token": authToken, ...(headers || {})}, timeout: 10000}, (res) => {
       let text = "";
       res.setEncoding("utf8");
       res.on("data", (chunk) => { text += chunk; });
@@ -88,7 +92,7 @@ async function main() {
     const solutionId = "ar-distributekeyframesevenly-typed-plan";
     const built = buildSolutionPlan(solutionId, getBuilderContract(solutionId).example);
     assert(built.ok);
-    const proposed = await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: built.plan}));
+    const proposed = await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: built.plan}));
     assert.strictEqual(proposed.isError, false);
     const proposal = proposed.value.proposal;
     assert(proposal.actionId);
@@ -98,7 +102,7 @@ async function main() {
     assert.equal(current.project.expectedFile, PROJECT_FILE);
     assert.equal(current.proposal.confirmation.confirmationToken, undefined);
     const forged = await request("/agents/plan/run", {plan: built.plan, dryRun: false, confirm: true, allowMutations: true,
-      _m100ActionRecord: {...current, executionState: "pending"}, _m100AutonomousSession: {authorized: true}});
+      _m100ActionRecord: {...current, executionState: "pending"}, _m100AutonomousSession: {authorized: true}}, undefined, panelToken);
     assert.equal(forged.body.errorCode || forged.body.code, "internal_authority_fields_forbidden");
 
     const runArgs = {
@@ -113,21 +117,21 @@ async function main() {
     assert.strictEqual(withoutLease.isError, true);
     assert.strictEqual(withoutLease.value.code, "proposal_required");
 
-    const panelRoute = "/bridge/next?panelConnectionId=panel-smoke&panelGeneration=1";
-    await request(panelRoute);
+    const panelPollRoute = makePanelRoute("panel-smoke", PROJECT_FILE);
+    await request(panelPollRoute, undefined, undefined, panelToken);
     const activated = await request("/autonomy/session", {
       enabled: true,
       panelConnectionId: "panel-smoke",
       panelGeneration: "1"
-    });
+    }, undefined, panelToken);
     assert.strictEqual(activated.status, 200);
     assert.strictEqual(activated.body.session.active, true);
     assert.strictEqual(JSON.stringify(activated.body).includes("sessionHash"), false);
 
-    const activeWithoutDryRun = await withProjectPanel(port, token, () => call("run_ai_agent_plan", runArgs));
+    const activeWithoutDryRun = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", runArgs));
     assert.strictEqual(activeWithoutDryRun.isError, true);
     assert.strictEqual(activeWithoutDryRun.value.errorCode, "autonomous_session_dry_run_required");
-    const preview = await withProjectPanel(port, token, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}));
+    const preview = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}));
     assert.strictEqual(preview.isError, false);
     assert.strictEqual(preview.value.ok, true);
     assert.strictEqual(preview.value.executedCount, 0);
@@ -140,7 +144,7 @@ async function main() {
     const destructiveDirect = await call("cleanup_test_items", {namePrefix: "AE_AGENT_QA_", confirm: true});
     assert.strictEqual(destructiveDirect.isError, true, "Autonomy must not allow direct destructive tools.");
 
-    const rawProposalResult = await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: {
+    const rawProposalResult = await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: {
       summary: "Raw JSX must remain outside autonomous scope.",
       steps: [{
         title: "Run raw JSX",
@@ -153,7 +157,7 @@ async function main() {
     }}));
     assert.strictEqual(rawProposalResult.isError, false, JSON.stringify(rawProposalResult.value));
     const rawProposal = rawProposalResult.value.proposal;
-    const rawPlanRun = await withProjectPanel(port, token, () => call("run_ai_agent_plan", {
+    const rawPlanRun = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {
       actionId: rawProposal.actionId,
       payloadHash: rawProposal.action.payloadHash,
       previewHash: rawProposal.action.previewHash,
@@ -168,49 +172,51 @@ async function main() {
 
     // Adopt удерживает capture; новый read-only proposal побеждает до register старого payload.
     const adopting = request("/agents/plan/adopt", {actionId: rawProposal.actionId, revision: rawProposal.revision,
-      panelConnectionId: "panel-smoke", panelGeneration: "1", confirmationSessionId: "qa-panel"});
+      panelConnectionId: "panel-smoke", panelGeneration: "1", confirmationSessionId: "qa-panel"}, undefined, panelToken);
     let heldCapture;
     for (let tries = 0; tries < 200 && !heldCapture; tries++) {
-      heldCapture = (await request(panelRoute)).body.command;
+      heldCapture = (await request(panelPollRoute, undefined, undefined, panelToken)).body.command;
       if (!heldCapture) await pause(10);
     }
     assert(isProjectInfo(heldCapture));
+    const heldIdentity = await submitCommand(port, panelToken, heldCapture);
     const readOnlyReplacement = await call("propose_ai_agent_plan", {plan: {summary: "Read-only current plan", steps: [{tool: "get_project_info", args: {}}]}});
     assert(!readOnlyReplacement.isError);
-    await request("/bridge/result", {id: heldCapture.id, ok: true, result: JSON.stringify({ok: true, result: {file: PROJECT_FILE}})});
+    await postCommandResult(port, panelToken, heldCapture, {file: PROJECT_FILE}, heldIdentity);
     const staleAdopt = await adopting;
     assert.equal(staleAdopt.body.errorCode || staleAdopt.body.code, "plan_superseded");
     assert.equal((await request("/agents/plan/current")).body.current.actionId, readOnlyReplacement.value.proposal.actionId);
 
     const otherFile = "C:\\Synthetic\\Other.aep";
-    const otherProposal = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: {...built.plan, targetProject: {file: otherFile}}}), "panel-smoke", otherFile)).value.proposal;
+    const otherProposal = (await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: {...built.plan, targetProject: {file: otherFile}}}), "panel-smoke", otherFile)).value.proposal;
     const otherArgs = {actionId: otherProposal.actionId, payloadHash: otherProposal.action.payloadHash, previewHash: otherProposal.action.previewHash,
       riskLevel: otherProposal.risk.level, riskPolicyVersion: otherProposal.confirmation.riskPolicyVersion};
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {...otherArgs, dryRun: true}), "panel-smoke", otherFile);
-    const wrongCheckpoint = await withProjectPanel(port, token, () => call("run_ai_agent_plan", {...otherArgs, dryRun: false}), "panel-smoke", otherFile);
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {...otherArgs, dryRun: true}), "panel-smoke", otherFile);
+    const wrongCheckpoint = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {...otherArgs, dryRun: false}), "panel-smoke", otherFile);
     assert.equal(wrongCheckpoint.value.errorCode, "edit_session_project_mismatch");
     assert.equal(wrongCheckpoint.value.executedCount, 0);
 
     // Новая single-lane версия заменяет pending proposal; повторно предложить typed payload.
-    const replacement = await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: built.plan}));
+    const replacement = await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: built.plan}));
     const activeProposal = replacement.value.proposal;
     Object.assign(runArgs, {actionId: activeProposal.actionId, payloadHash: activeProposal.action.payloadHash, previewHash: activeProposal.action.previewHash});
     const limited = await call("run_ai_agent_plan", {...runArgs, dryRun: true, maxSteps: 1});
     assert.equal(limited.value.errorCode, "plan_step_limit_exceeded");
     assert.equal(limited.value.executedCount, 0);
-    const wrongProject = await withProjectPanel(port, token, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}), "panel-smoke", "C:\\Synthetic\\Other.aep");
+    const wrongProject = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}), "panel-smoke", "C:\\Synthetic\\Other.aep");
     assert.equal(wrongProject.value.errorCode, "project_target_mismatch");
     assert.equal(wrongProject.value.executedCount, 0);
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}));
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {...runArgs, dryRun: true}));
     let completed = false;
     const running = call("run_ai_agent_plan", runArgs).finally(() => { completed = true; });
     running.catch(() => {});
     let reads = 0;
     let concurrentChecked = false;
     while (!completed) {
-      const next = await request(panelRoute);
+      const next = await request(panelPollRoute, undefined, undefined, panelToken);
       const command = next.body.command;
       if (!command) { await pause(10); continue; }
+      const commandIdentity = await submitCommand(port, panelToken, command);
       let result;
       if (isProjectInfo(command)) {
         result = {file: PROJECT_FILE};
@@ -242,7 +248,7 @@ async function main() {
       } else {
         throw new Error(`Unexpected synthetic panel command: ${command.script.slice(-1600)}`);
       }
-      await request("/bridge/result", {id: command.id, ok: true, result: JSON.stringify({ok: true, result}), error: null});
+      await postCommandResult(port, panelToken, command, result, commandIdentity);
     }
     const completedRun = await running;
     assert.strictEqual(completedRun.isError, false, JSON.stringify({
@@ -258,22 +264,23 @@ async function main() {
     assert.strictEqual(completedRun.value.safety.autonomousSession.capability, "typed_mutating_plan");
     assert.strictEqual(JSON.stringify(completedRun.value).includes("confirmationToken"), false);
 
-    const replay = await withProjectPanel(port, token, () => call("run_ai_agent_plan", runArgs));
+    const replay = await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", runArgs));
     assert.strictEqual(replay.isError, true);
     assert.strictEqual(replay.value.errorCode, "m100_confirmation_replayed");
 
     const freshPlan = JSON.parse(JSON.stringify(built.plan));
     freshPlan.steps.forEach((step) => {delete step.args.idempotencyKey; delete step.args.idempotencyScope;});
-    const revokeProposal = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: freshPlan}))).value.proposal;
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: revokeProposal.actionId, dryRun: true}));
+    const revokeProposal = (await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: freshPlan}))).value.proposal;
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: revokeProposal.actionId, dryRun: true}));
     let revokeDone = false;
     let mutationCommands = 0;
     const revokeRun = call("run_ai_agent_plan", {...runArgs, actionId: revokeProposal.actionId,
       payloadHash: revokeProposal.action.payloadHash, previewHash: revokeProposal.action.previewHash, dryRun: false}).finally(() => {revokeDone = true;});
     revokeRun.catch(() => {});
     while (!revokeDone) {
-      const command = (await request(panelRoute)).body.command;
+      const command = (await request(panelPollRoute, undefined, undefined, panelToken)).body.command;
       if (!command) {await pause(10); continue;}
+      const commandIdentity = await submitCommand(port, panelToken, command);
       let result;
       if (isProjectInfo(command)) result = {file: PROJECT_FILE};
       else if (command.script.includes("sameNameLayerCount: sameNameLayers.length")) result = {comp: {itemIndex: 7, name: "Main"}, layer: {index: 2, name: "Card"}, sameNameLayerCount: 1, sameNameLayers: [{index: 2, name: "Card"}]};
@@ -286,9 +293,9 @@ async function main() {
         mutationCommands++;
         // Отзыв после выполнения первой команды; следующая мутация не должна выдаваться.
         result = {keyframeCount: 3, propertyPath: [2, 11]};
-        await request("/autonomy/session", {enabled: false, panelConnectionId: "panel-smoke", panelGeneration: "1"});
+        await request("/autonomy/session", {enabled: false, panelConnectionId: "panel-smoke", panelGeneration: "1"}, undefined, panelToken);
       } else throw new Error("Unexpected command after revoke: " + command.script.slice(-200));
-      await request("/bridge/result", {id: command.id, ok: true, result: JSON.stringify({ok: true, result})});
+      await postCommandResult(port, panelToken, command, result, commandIdentity);
     }
     const stopped = (await revokeRun).value;
     assert.equal(stopped.ok, false);
@@ -297,7 +304,7 @@ async function main() {
     assert.equal(stopped.repairDirective.disposition, "inspect_and_stop");
 
     // Успешный transport с неверным audit не разрешает следующую mutation.
-    await request("/autonomy/session", {enabled: true, panelConnectionId: "panel-smoke", panelGeneration: "1"});
+    await request("/autonomy/session", {enabled: true, panelConnectionId: "panel-smoke", panelGeneration: "1"}, undefined, panelToken);
     const qaPrefix = "CODX_AUDIT_STOP_", qaMaster = qaPrefix + "MASTER";
     const auditPlan = {summary: "Stop on semantically incorrect typed audit", targetProject: {file: PROJECT_FILE}, requiresCheckpoint: true, steps: [
       {tool: "create_slideshow_master", args: {expectedProjectFile: PROJECT_FILE, generatedPrefix: qaPrefix, masterName: qaMaster,
@@ -306,16 +313,17 @@ async function main() {
         rootCompItemIndex: 99, expectedRootCompName: qaMaster, expectedDuration: 8, sourceFingerprints: []}},
       {tool: "set_comp_properties", args: {compItemIndex: 99, expectedCompName: qaMaster, motionBlur: true}}
     ]};
-    const auditProposal = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: auditPlan}))).value.proposal;
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: auditProposal.actionId, dryRun: true}));
+    const auditProposal = (await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: auditPlan}))).value.proposal;
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: auditProposal.actionId, dryRun: true}));
     let auditDone = false, auditMutations = 0;
     const auditRun = call("run_ai_agent_plan", {actionId: auditProposal.actionId, payloadHash: auditProposal.action.payloadHash,
       previewHash: auditProposal.action.previewHash, riskLevel: auditProposal.risk.level, riskPolicyVersion: auditProposal.confirmation.riskPolicyVersion,
       dryRun: false, stopOnError: false}).finally(() => {auditDone = true;});
     auditRun.catch(() => {});
     while (!auditDone) {
-      const command = (await request(panelRoute)).body.command;
+      const command = (await request(panelPollRoute, undefined, undefined, panelToken)).body.command;
       if (!command) {await pause(10); continue;}
+      const commandIdentity = await submitCommand(port, panelToken, command);
       let result;
       if (isProjectInfo(command)) result = {file: PROJECT_FILE};
       else if (command.script.includes('operation:"create_master"')) {auditMutations++; result = {ok: true, masterCompItemIndex: 99, masterCompName: qaMaster};}
@@ -323,30 +331,30 @@ async function main() {
       else if (command.script.includes('operation:"audit_generated"')) result = {ok: true, root: {itemIndex: 99, name: qaMaster, duration: 8},
         issues: [], stats: {backgroundLayers: 0}, details: {layers: [], keyMetadata: []}, sourceFingerprints: []};
       else throw new Error("Mutation after failed slideshow audit: " + command.script.slice(-200));
-      await request("/bridge/result", {id: command.id, ok: true, result: JSON.stringify({ok: true, result})});
+      await postCommandResult(port, panelToken, command, result, commandIdentity);
     }
     const auditStopped = (await auditRun).value;
     assert.equal(auditStopped.errorCode, "slideshow_verification_failed", JSON.stringify({error:auditStopped.error,steps:auditStopped.steps}));
     assert.equal(auditMutations, 1);
-    const invalidTarget = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: {
+    const invalidTarget = (await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: {
       summary: "Keep exact runtime refusal", targetProject: {file: PROJECT_FILE}, steps: [
         {tool: "create_text_layer", args: {compItemIndex: 0, name: "CODX_INVALID", text: "fixture"}}
       ]
     }}))).value.proposal;
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: invalidTarget.actionId, dryRun: true}));
-    const invalidRun = (await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: invalidTarget.actionId,
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: invalidTarget.actionId, dryRun: true}));
+    const invalidRun = (await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: invalidTarget.actionId,
       payloadHash: invalidTarget.action.payloadHash, previewHash: invalidTarget.action.previewHash, riskLevel: invalidTarget.risk.level,
       riskPolicyVersion: invalidTarget.confirmation.riskPolicyVersion, dryRun: false}))).value;
     assert.equal(invalidRun.ok, false);
     assert.match(invalidRun.error, /compItemIndex must be a positive/);
     assert.equal((await request("/agents/plan/current")).body.current.lastRun.error, invalidRun.error);
-    const unresolved = (await withProjectPanel(port, token, () => call("propose_ai_agent_plan", {plan: {
+    const unresolved = (await withProjectPanel(port, panelToken, () => call("propose_ai_agent_plan", {plan: {
       summary: "Fail closed on missing bound value", targetProject: {file: PROJECT_FILE}, steps: [
         {tool: "set_comp_properties", args: {compName: "CODX_UNRESOLVED"}, resultBindings: {motionBlur: "{{steps.99.result.motionBlur}}"}}
       ]
     }}))).value.proposal;
-    await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: unresolved.actionId, dryRun: true}));
-    const unresolvedRun = (await withProjectPanel(port, token, () => call("run_ai_agent_plan", {actionId: unresolved.actionId,
+    await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: unresolved.actionId, dryRun: true}));
+    const unresolvedRun = (await withProjectPanel(port, panelToken, () => call("run_ai_agent_plan", {actionId: unresolved.actionId,
       payloadHash: unresolved.action.payloadHash, previewHash: unresolved.action.previewHash, riskLevel: unresolved.risk.level,
       riskPolicyVersion: unresolved.confirmation.riskPolicyVersion, dryRun: false}))).value;
     assert.equal(unresolvedRun.errorCode, "runtime_binding_unresolved");
@@ -354,7 +362,7 @@ async function main() {
     const telemetry = fs.readFileSync(path.join(runtime, "autonomy-obstacles.jsonl"), "utf8");
     assert(!telemetry.includes(PROJECT_FILE)); assert(!telemetry.includes("confirmationToken"));
 
-    const revoked = await request("/autonomy/session", {enabled: false, panelConnectionId: "panel-smoke", panelGeneration: "1"});
+    const revoked = await request("/autonomy/session", {enabled: false, panelConnectionId: "panel-smoke", panelGeneration: "1"}, undefined, panelToken);
     assert.strictEqual(revoked.body.session.active, false);
     console.log(JSON.stringify({ok: true, noLeaseBlocked: true, dryRunRequired: true, typedPlanExecuted: true, directMutationBlocked: true,
       rawDirectBlocked: true, rawPlanBlocked: true, destructiveDirectBlocked: true, replayBlocked: true,

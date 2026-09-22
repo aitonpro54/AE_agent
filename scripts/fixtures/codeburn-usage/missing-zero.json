@@ -1,0 +1,6 @@
+{
+  "currency": "USD",
+  "overview": { "inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0, "reasoningTokens": 0 },
+  "models": [ { "name": "zero-model", "inputTokens": 0, "outputTokens": 0 }, { "name": "missing-model" } ],
+  "projects": []
+}

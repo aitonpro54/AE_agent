@@ -4051,6 +4051,145 @@ function assertShapeLayerPolystarPasses() {
   assert(mismatch.checks.some((check) => check.id.indexOf("create_shape_layer:outerRadius") >= 0 && check.status === "failed"), "mismatched outerRadius should fail.");
 }
 
+function assertListEffectsCountsAsReadBack() {
+  const plan = {
+    summary: "Add one exact effect and read the layer effects back.",
+    steps: [
+      {
+        tool: "add_effect",
+        args: {
+          compName: "Effect Read Back Fixture",
+          layerIndex: 1,
+          effect: "ADBE Fill",
+          name: "Duplicate Fill"
+        }
+      },
+      {
+        tool: "list_effects",
+        args: {
+          compName: "Effect Read Back Fixture",
+          layerIndex: 1,
+          includeProperties: true,
+          includeValues: true
+        }
+      }
+    ]
+  };
+  const effect = {
+    propertyIndex: 1,
+    name: "Duplicate Fill",
+    matchName: "ADBE Fill",
+    enabled: true
+  };
+  const run = {
+    dryRun: false,
+    ok: true,
+    steps: [
+      {
+        index: 1,
+        tool: "add_effect",
+        status: "completed",
+        mutatesProject: true,
+        args: plan.steps[0].args,
+        result: {
+          effect,
+          verification: { ok: true }
+        }
+      },
+      {
+        index: 2,
+        tool: "list_effects",
+        status: "completed",
+        mutatesProject: false,
+        args: plan.steps[1].args,
+        result: {
+          effectCount: 1,
+          effects: [effect]
+        }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `list_effects must satisfy the explicit post-mutation read-back gate: ${semantic.summary}`);
+  assert.strictEqual(semantic.readBackCount, 1);
+  assert.strictEqual(semantic.readBackSteps[0].tool, "list_effects");
+}
+
+function effectColorProperty(effectIndex, value) {
+  return {
+    propertyIndex: 3,
+    name: "Color",
+    matchName: "ADBE Fill-0002",
+    propertyPath: [
+      { propertyIndex: 3, name: "Animated", matchName: "ADBE AV Layer" },
+      { propertyIndex: 1, name: "Effects", matchName: "ADBE Effect Parade" },
+      { propertyIndex: effectIndex, name: "Duplicate Fill", matchName: "ADBE Fill" },
+      { propertyIndex: 3, name: "Color", matchName: "ADBE Fill-0002" }
+    ],
+    value
+  };
+}
+
+function assertSetEffectPropertyUsesExactCompositeIdentity() {
+  const args = {
+    compName: "Effect Property Fixture",
+    layerIndex: 1,
+    effectIndex: 2,
+    effectName: "Duplicate Fill",
+    effectMatchName: "ADBE Fill",
+    propertyPath: [{ propertyIndex: 3, name: "Color", matchName: "ADBE Fill-0002" }],
+    value: [0, 1, 0, 1]
+  };
+  const plan = {
+    summary: "Set only the second same-name effect and read both instances back.",
+    steps: [
+      { tool: "set_effect_property", args },
+      { tool: "get_effect_details", args: { compName: args.compName, layerIndex: 1, effectIndex: 1, effectName: args.effectName, effectMatchName: args.effectMatchName } },
+      { tool: "get_effect_details", args: { compName: args.compName, layerIndex: 1, effectIndex: 2, effectName: args.effectName, effectMatchName: args.effectMatchName } }
+    ]
+  };
+  const effect = (propertyIndex) => ({ propertyIndex, name: args.effectName, matchName: args.effectMatchName, enabled: true });
+  const run = {
+    dryRun: false,
+    ok: true,
+    steps: [
+      {
+        index: 1,
+        tool: "set_effect_property",
+        status: "completed",
+        mutatesProject: true,
+        args,
+        result: { effect: effect(2), property: effectColorProperty(2, args.value) }
+      },
+      {
+        index: 2,
+        tool: "get_effect_details",
+        status: "completed",
+        mutatesProject: false,
+        args: plan.steps[1].args,
+        result: { effect: effect(1), properties: [effectColorProperty(1, [1, 0, 0, 1])] }
+      },
+      {
+        index: 3,
+        tool: "get_effect_details",
+        status: "completed",
+        mutatesProject: false,
+        args: plan.steps[2].args,
+        result: { effect: effect(2), properties: [effectColorProperty(2, args.value)] }
+      }
+    ]
+  };
+  const semantic = buildSemanticVerification(plan, run);
+  assert.strictEqual(semantic.status, "passed", `set_effect_property exact composite identity should pass: ${semantic.summary}`);
+  assert(semantic.checks.some((check) => check.id.indexOf("set_effect_property:value") >= 0 && check.status === "passed"), "exact effect property check should pass.");
+
+  const wrongInstanceRun = clone(run);
+  wrongInstanceRun.steps[2].result.properties = [effectColorProperty(1, args.value)];
+  const wrongInstanceSemantic = buildSemanticVerification(plan, wrongInstanceRun);
+  assert.strictEqual(wrongInstanceSemantic.status, "needs_review", "a neighboring same-name effect must not satisfy exact effect property read-back.");
+  assert(wrongInstanceSemantic.checks.some((check) => check.id.indexOf("set_effect_property:value") >= 0 && check.status === "failed"), "wrong effect instance read-back should fail closed.");
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -4124,6 +4263,8 @@ function main() {
   assertLayerNameResetScenarioPasses();
   assertTextJustificationPasses();
   assertShapeLayerPolystarPasses();
+  assertListEffectsCountsAsReadBack();
+  assertSetEffectPropertyUsesExactCompositeIdentity();
 
   console.log(JSON.stringify({
     ok: true,

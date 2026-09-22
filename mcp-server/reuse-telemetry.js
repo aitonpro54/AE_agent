@@ -59,6 +59,8 @@ function summarizeRun(run, plan, allowedIds) {
     executedCount: run.executedCount, failedCount: run.failedCount,
     rawStepCount: completed.filter((step) => /^run_extendscript(?:_file)?$/.test(step.tool)).length,
     semanticStatus: run.semanticVerification && run.semanticVerification.status || null,
+    verificationStatus: run.outcome && run.outcome.verification.status || null,
+    coverageStatus: run.outcome && run.outcome.coverage && run.outcome.coverage.status || null,
     solutionVerificationStatus: run.solutionPlanReadBack && run.solutionPlanReadBack.status || null,
     attribution: "declared ids plus observed execution; no causal token-saving estimate" };
 }

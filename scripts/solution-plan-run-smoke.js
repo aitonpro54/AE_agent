@@ -8,19 +8,22 @@ const path = require("path");
 const http = require("http");
 const {spawn} = require("child_process");
 const {buildSolutionPlan, getBuilderContract} = require("../mcp-server/solution-plan-builder");
-const {withProjectPanel, isProjectInfo, PROJECT_FILE} = require("./fake-project-panel");
+const {withProjectPanel, isProjectInfo, PROJECT_FILE, panelRoute, completeCommand} = require("./fake-project-panel");
+const {isolatedEnvironment} = require("./network-test-fixture");
 const root = path.resolve(__dirname, "..");
 const port = 28000 + Math.floor(Math.random() * 10000);
 const token = "isolated-solution-run-test";
+const panelToken = `${token}-panel`;
 const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-solution-run-"));
 fs.writeFileSync(path.join(runtime, "edit-session-active.json"), JSON.stringify({
-  id: "synthetic-active-session", status: "active", startedAt: new Date().toISOString(), operations: []
+  id: "synthetic-active-session", status: "active", startedAt: new Date().toISOString(),
+  checkpoint: {sourceFile: PROJECT_FILE}, operations: []
 }));
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-function request(route, payload) {
+function request(route, payload, authToken = token) {
   return new Promise((resolve, reject) => {
     const req = http.request({hostname: "127.0.0.1", port, path: route, method: payload ? "POST" : "GET",
-      headers: {"content-type": "application/json", "x-ae-bridge-token": token}, timeout: 10000}, (res) => {
+      headers: {"content-type": "application/json", "x-ae-bridge-token": authToken}, timeout: 10000}, (res) => {
       let text = ""; res.setEncoding("utf8"); res.on("data", (chunk) => {text += chunk;});
       res.on("end", () => {try {resolve(JSON.parse(text));} catch (e) {reject(e);}});
     });
@@ -29,8 +32,10 @@ function request(route, payload) {
   });
 }
 async function main() {
+  const env = isolatedEnvironment(runtime, {port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: 10000});
+  Object.assign(env, {AE_BRIDGE_LOG_DIR: runtime, AE_BRIDGE_STATE_DIR: runtime});
   const daemon = spawn(process.execPath, [path.join(root, "mcp-server/bridge-daemon.js")], {
-    env: {...process.env, AE_BRIDGE_PORT: String(port), AE_BRIDGE_TOKEN: token, AE_BRIDGE_LOG_DIR: runtime},
+    env,
     windowsHide: true, stdio: ["ignore", "ignore", "pipe"]
   });
   let stderr = ""; daemon.stderr.on("data", (chunk) => {stderr += chunk;});
@@ -45,10 +50,12 @@ async function main() {
     for (const mode of ["exact", "stale", "wrong-after"]) {
       const built = buildSolutionPlan(id, getBuilderContract(id).example);
       assert(built.ok);
-      const proposalResult = await withProjectPanel(port, token, () => request("/agents/plan/propose", {plan: built.plan}));
+      const proposalResult = await withProjectPanel(port, panelToken,
+        () => request("/agents/plan/propose", {plan: built.plan}, panelToken));
       const proposal = proposalResult.proposal;
       assert(proposal, JSON.stringify(proposalResult));
-      const preview = await withProjectPanel(port, token, () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true}));
+      const preview = await withProjectPanel(port, panelToken,
+        () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true}, panelToken));
       assert(preview.run.ok);
       let completed = false;
       let keyWrites = 0;
@@ -58,13 +65,13 @@ async function main() {
         riskLevel: proposal.risk.level, riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
         confirmationToken: proposal.confirmation.confirmationToken, confirmedBySurface: proposal.confirmation.surface,
         dryRun: false, confirm: true, allowMutations: true
-      }).finally(() => {completed = true;});
+      }, panelToken).finally(() => {completed = true;});
       running.catch(() => {}); // A failing panel assertion kills this isolated daemon in finally.
       while (!completed) {
         // Check the isolated queue before polling, so a blocked run needs no long-poll timeout.
         const health = await request("/health");
         if (!health.pending) {await pause(10); continue;}
-        const {command} = await request("/bridge/next");
+        const {command} = await request(panelRoute("panel-smoke", PROJECT_FILE), undefined, panelToken);
         if (!command) continue;
         let result;
         if (isProjectInfo(command)) {
@@ -86,7 +93,7 @@ async function main() {
         } else if (command.script.includes("setInterpolationTypeAtKey")) {
           keyWrites++; result = {keyIndices: [1, 2, 3], interpolation: "linear"};
         } else throw new Error(`Unexpected synthetic panel command: ${command.script.slice(-1600)}`);
-        await request("/bridge/result", {id: command.id, ok: true, result: JSON.stringify({ok: true, result})});
+        await completeCommand(port, panelToken, command, result);
       }
       const {run} = await running;
       assert(run, "Missing run result");

@@ -4,12 +4,17 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
+const bridgeDaemon = require("../mcp-server/bridge-daemon");
+const {panelRoute, completeCommand, failCommand, isProjectInfo} = require("./fake-project-panel");
+const {isolatedEnvironment, reserveLoopbackPort} = require("./network-test-fixture");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const adapterPath = path.join(__dirname, "..", "mcp-server", "mcp-adapter.js");
 const nodePath = process.execPath;
-const port = String(3457 + Math.floor(Math.random() * 1000));
+let port = 0;
 const token = "smoke-test-token";
+const panelToken = `${token}-panel`;
+const smokeProjectFile = "C:\\Synthetic\\Autonomy.aep";
 const repoRoot = path.join(__dirname, "..");
 
 function escapeRegExp(value) {
@@ -98,17 +103,17 @@ function waitForResponse(stdout, id, timeoutMs) {
   });
 }
 
-async function waitForPendingCommand(port, token, timeoutMs) {
+async function waitForPendingCommand(port, _legacyToken, timeoutMs) {
   const startedAt = Date.now();
   let next = null;
   while (Date.now() - startedAt < timeoutMs) {
     next = await requestJsonWithOptions({
       hostname: "127.0.0.1",
       port,
-      path: "/bridge/next",
+      path: panelRoute("legacy-smoke-panel", smokeProjectFile),
       method: "GET",
       headers: {
-        "x-ae-bridge-token": token
+        "x-ae-bridge-token": panelToken
       }
     });
     if (next.body.command && next.body.command.id && next.body.command.script) return next;
@@ -117,125 +122,151 @@ async function waitForPendingCommand(port, token, timeoutMs) {
   return next;
 }
 
-async function callQueuedDevTool(port, token, toolName, payload, scriptSnippets, fakeResult) {
-  const promise = requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/" + toolName,
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, payload || {});
-  const command = await waitForPendingCommand(port, token, 5000);
-  if (!command.body.command || !command.body.command.id || !command.body.command.script) {
-    throw new Error("Expected queued AE command for " + toolName);
-  }
+async function prepareTypedTool(port, _legacyToken, toolName, payload, scriptSnippets, fakeResult) {
+  const fixtureResult = fakeResult === undefined ? {ok: true, tool: toolName} : fakeResult;
+  const prepared = await bridgeDaemon.prepareToolScript(toolName, payload || {}, fixtureResult);
+  const command = {body: {command: {script: prepared.script}}};
+  if (!prepared.script) throw new Error("Expected prepared AE script for " + toolName);
   for (const snippet of scriptSnippets || []) {
     if (command.body.command.script.indexOf(snippet) < 0) {
       throw new Error("Expected " + toolName + " script to include: " + snippet);
     }
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: command.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: fakeResult || { ok: true, tool: toolName }
-    })
-  });
-  const response = await promise;
-  if (response.status !== 200 || !response.body.ok) {
-    throw new Error("Unexpected " + toolName + " response");
+  if (!prepared.result || prepared.result.isError) {
+    throw new Error("Unexpected prepared " + toolName + " result");
   }
+  const resultText = prepared.result.content && prepared.result.content[0]
+    ? prepared.result.content[0].text : "";
+  let result = resultText;
+  try { result = JSON.parse(resultText); } catch (_error) {}
+  const response = {status: 200, body: {ok: true, result}};
   return { response, command };
 }
 
-async function callRejectedDevToolWithoutQueuedCommand(port, token, toolName, payload, expectedMessage) {
-  const promise = requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/" + toolName,
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
+async function callRejectedDevToolWithoutQueuedCommand(port, _legacyToken, toolName, payload, expectedMessage) {
+  if (!expectedMessage) throw new Error("Expected an exact rejection message for " + toolName);
+  let prepared = null;
+  let text = "";
+  try {
+    prepared = await bridgeDaemon.prepareToolScript(toolName, payload || {});
+    if (prepared.script) throw new Error(toolName + " prepared AE work before rejecting invalid input");
+    if (!prepared.result || !prepared.result.isError) {
+      throw new Error(toolName + " did not return an error result for invalid input");
     }
-  }, payload || {});
-
-  await wait(150);
-
-  const next = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/next",
-    method: "GET",
-    headers: {
-      "x-ae-bridge-token": token
-    }
-  });
-
-  if (next.body.command && next.body.command.id) {
-    await requestJsonWithOptions({
-      hostname: "127.0.0.1",
-      port,
-      path: "/bridge/result",
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-ae-bridge-token": token
-      }
-    }, {
-      id: next.body.command.id,
-      ok: false,
-      error: "Unexpected queued command for rejected " + toolName
-    });
-    await promise.catch(() => null);
-    throw new Error(toolName + " queued AE work before rejecting invalid input");
+    text = prepared.result && prepared.result.content && prepared.result.content[0]
+      ? prepared.result.content[0].text : "";
+  } catch (error) {
+    text = error.message || String(error);
   }
-
-  const response = await Promise.race([
-    promise,
-    wait(2000).then(() => null)
-  ]);
-
-  if (!response) {
-    throw new Error(toolName + " rejection did not return");
-  }
-  if (
-    response.status !== 500 ||
-    response.body.ok !== false ||
-    String(response.body.result || "").indexOf(expectedMessage) < 0
-  ) {
-    throw new Error("Unexpected rejected " + toolName + " response");
+  const response = {status: 500, body: {ok: false, result: text}};
+  if (text !== expectedMessage) {
+    throw new Error("Unexpected rejected " + toolName + " response: " + JSON.stringify(text));
   }
   return response;
 }
 
+async function assertHardcoreAttemptBlockedWithoutMutationCommands(port, label, plan, expected) {
+  let settled = false;
+  let response = null;
+  let requestError = null;
+  const inspectionCommands = [];
+  const mutationCommands = [];
+  const pending = requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/agents/hardcore/run",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": panelToken
+    }
+  }, {
+    prompt: `Reject ${label} Agent Hardcore attempt.`,
+    maxAttempts: 1,
+    projectOwner: true,
+    allowMutations: true,
+    autoEditSession: true,
+    allowRawFallback: true,
+    autoPromoteKnowledge: false,
+    attemptPlans: [plan]
+  }).then((value) => { response = value; }, (error) => { requestError = error; }).finally(() => { settled = true; });
+
+  const deadline = Date.now() + 5000;
+  while (!settled && Date.now() < deadline) {
+    const next = await requestJsonWithOptions({
+      hostname: "127.0.0.1",
+      port,
+      path: panelRoute("legacy-smoke-panel", smokeProjectFile),
+      method: "GET",
+      headers: {"x-ae-bridge-token": panelToken}
+    });
+    if (next.body.command) {
+      if (isProjectInfo(next.body.command)) {
+        inspectionCommands.push(next.body.command);
+        await completeCommand(port, panelToken, next.body.command, {
+          file: smokeProjectFile,
+          numItems: 1,
+          activeItemName: "Smoke Comp"
+        });
+      } else {
+        mutationCommands.push(next.body.command);
+        await failCommand(port, panelToken, next.body.command, `${label} negative fixture rejects mutation commands`);
+      }
+    } else {
+      await wait(10);
+    }
+  }
+  await pending;
+  if (requestError) throw requestError;
+  if (!settled || !response) throw new Error(`${label} Agent Hardcore rejection did not return`);
+  const attempt = response.body && response.body.session && response.body.session.attempts
+    ? response.body.session.attempts[0] : null;
+  const run = attempt && (attempt.run || attempt.dryRun);
+  const classification = attempt && attempt.planResult && attempt.planResult.planValidation
+    ? attempt.planResult.planValidation.classification : null;
+  if (
+    response.status !== 200 || response.body.ok !== false || !attempt || !run ||
+    attempt.status !== expected.attemptStatus || run.errorCode !== expected.errorCode ||
+    !classification || classification.rawExtendscriptStepCount !== expected.rawExtendscriptStepCount
+  ) {
+    throw new Error(`Unexpected ${label} Agent Hardcore scope response: ` + JSON.stringify({
+      status: response.status,
+      ok: response.body && response.body.ok,
+      attemptStatus: attempt && attempt.status,
+      blocker: attempt && attempt.blocker,
+      runErrorCode: run && run.errorCode,
+      runError: run && run.error,
+      rawExtendscriptStepCount: classification && classification.rawExtendscriptStepCount
+    }));
+  }
+  if (mutationCommands.length) {
+    throw new Error(`${label} Agent Hardcore scope check queued ${mutationCommands.length} mutation command(s): ` + JSON.stringify(
+      mutationCommands.map((command) => String(command.script || "").slice(-180))
+    ));
+  }
+  return {errorCode: run.errorCode, inspectionCommands: inspectionCommands.length};
+}
+
 async function main() {
+  port = await reserveLoopbackPort();
   const smokeDir = smokeArtifactDir();
   const smokeStores = writeSmokeRegistryAndMemory(smokeDir);
+  const daemonEnv = isolatedEnvironment(smokeDir, {
+    port,
+    automationToken: token,
+    panelToken,
+    devAdmin: false,
+    commandTimeoutMs: 10000
+  });
+  Object.assign(daemonEnv, {
+    AE_AGENT_HARDCORE_SESSION_DIR: smokeDir,
+    AE_AGENT_DEV_REQUEST_DIR: path.join(smokeDir, "dev-requests"),
+    AE_SOLUTION_CANDIDATE_DIR: path.join(smokeDir, "solution-candidates"),
+    AE_SOLUTION_REGISTRY_PATH: smokeStores.registryPath,
+    AE_PROJECT_INTENT_MEMORY_PATH: smokeStores.memoryPath
+  });
   const daemon = spawn(nodePath, [daemonPath], {
-    env: {
-      ...process.env,
-      AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token,
-      AE_AGENT_HARDCORE_SESSION_DIR: smokeDir,
-      AE_AGENT_DEV_REQUEST_DIR: path.join(smokeDir, "dev-requests"),
-      AE_SOLUTION_CANDIDATE_DIR: path.join(smokeDir, "solution-candidates"),
-      AE_SOLUTION_REGISTRY_PATH: smokeStores.registryPath,
-      AE_PROJECT_INTENT_MEMORY_PATH: smokeStores.memoryPath
-    },
+    env: daemonEnv,
     stdio: ["ignore", "pipe", "pipe"]
   });
 
@@ -243,14 +274,23 @@ async function main() {
   daemon.stderr.setEncoding("utf8");
   daemon.stderr.on("data", (chunk) => daemonStderr.push(chunk));
 
-  await wait(500);
+  let daemonReady = false;
+  const daemonReadyDeadline = Date.now() + 5000;
+  while (!daemonReady && Date.now() < daemonReadyDeadline) {
+    if (daemon.exitCode !== null) {
+      throw new Error("Bridge daemon exited during smoke startup: " + daemonStderr.join("").trim());
+    }
+    try {
+      const startupHealth = await requestJson(`http://127.0.0.1:${port}/health`);
+      daemonReady = startupHealth.body && startupHealth.body.ok === true;
+    } catch (_error) {
+      await wait(50);
+    }
+  }
+  if (!daemonReady) throw new Error("Bridge daemon did not become ready: " + daemonStderr.join("").trim());
 
   const adapter = spawn(nodePath, [adapterPath], {
-    env: {
-      ...process.env,
-      AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token
-    },
+    env: daemonEnv,
     stdio: ["pipe", "pipe", "pipe"]
   });
 
@@ -298,63 +338,17 @@ async function main() {
     throw new Error("Expected pending AE command from bridge");
   }
 
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: next.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: [{ itemIndex: 1, name: "Smoke Comp", width: 1920, height: 1080 }]
-    })
-  });
+  await completeCommand(port, panelToken, next.body.command,
+    [{ itemIndex: 1, name: "Smoke Comp", width: 1920, height: 1080 }]);
 
   await waitForResponse(stdout, 3, 2000);
 
-  const layerAttributeSetPromise = requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/set_property_value",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  const layerAttributeSet = (await prepareTypedTool(port, token, "set_property_value", {
     layerIndex: [1, 2],
     propertyPath: "threeDLayer",
     value: true,
     verifyAfter: false
-  });
-  const layerAttributeCommand = await waitForPendingCommand(port, token, 5000);
-  if (!layerAttributeCommand.body.command || layerAttributeCommand.body.command.script.indexOf("var layerIndices = [1,2]") < 0) {
-    throw new Error("Expected set_property_value to accept multiple layer indexes.");
-  }
-  if (layerAttributeCommand.body.command.script.indexOf("layerAttributeSetters") < 0) {
-    throw new Error("Expected set_property_value to handle whitelisted layer attributes.");
-  }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: layerAttributeCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  }, ["var layerIndices = [1,2]", "layerAttributeSetters"], {
         comp: { itemIndex: 1, name: "Smoke Comp" },
         layer: null,
         layers: [
@@ -366,48 +360,14 @@ async function main() {
           { name: "threeDLayer", propertyPath: [{ name: "threeDLayer", matchName: "threeDLayer" }], value: true },
           { name: "threeDLayer", propertyPath: [{ name: "threeDLayer", matchName: "threeDLayer" }], value: true }
         ]
-      }
-    })
-  });
-  const layerAttributeSet = await layerAttributeSetPromise;
+      })).response;
 
-  const alignLayersPromise = requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/align_layers_to_time",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  const alignLayers = (await prepareTypedTool(port, token, "align_layers_to_time", {
     layerIndices: [1, 2],
     targetTime: 3,
     align: "inPoint",
     verifyAfter: false
-  });
-  const alignLayersCommand = await waitForPendingCommand(port, token, 5000);
-  if (!alignLayersCommand.body.command || alignLayersCommand.body.command.script.indexOf("Codex Align Layers To Time") < 0) {
-    throw new Error("Expected align_layers_to_time to queue a narrow layer timing command.");
-  }
-  if (alignLayersCommand.body.command.script.indexOf("targetTime - layer.inPoint") < 0) {
-    throw new Error("Expected align_layers_to_time to align visible inPoint by default.");
-  }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: alignLayersCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  }, ["Codex Align Layers To Time", "targetTime - layer.inPoint"], {
         comp: { itemIndex: 1, name: "Smoke Comp", time: 3 },
         targetTime: 3,
         align: "inPoint",
@@ -416,13 +376,10 @@ async function main() {
           { index: 1, name: "Smoke Layer 1", inPoint: 3 },
           { index: 2, name: "Smoke Layer 2", inPoint: 3 }
         ]
-      }
-    })
-  });
-  const alignLayers = await alignLayersPromise;
+      })).response;
 
-  const queuedToolResponses = [];
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_comp_properties", {
+  const preparedToolResponses = [];
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_comp_properties", {
     compName: "Smoke Comp",
     width: 1280,
     height: 720,
@@ -460,7 +417,7 @@ async function main() {
       }
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_comp_work_area", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_comp_work_area", {
     duration: 2,
     verifyAfter: false
   }, ["Codex Set Comp Work Area", "comp.workAreaStart"], {
@@ -468,7 +425,7 @@ async function main() {
     workAreaStart: 0,
     workAreaDuration: 2
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_comp_details", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "get_comp_details", {
     compItemIndex: 1,
     includeLayers: false
   }, ["workAreaStart: comp.workAreaStart", "workAreaDuration: comp.workAreaDuration"], {
@@ -479,7 +436,7 @@ async function main() {
     workAreaDuration: 2,
     layersReturned: 0
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_layer_time_range", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_layer_time_range", {
     layerIndices: [1, 2],
     inPoint: 0.5,
     duration: 1.5,
@@ -488,7 +445,7 @@ async function main() {
     changedCount: 2,
     layers: [{ index: 1, name: "Layer 1" }, { index: 2, name: "Layer 2" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "stagger_layers", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "stagger_layers", {
     layerIndices: [1, 2],
     startTime: 0,
     gap: 0.25,
@@ -497,7 +454,7 @@ async function main() {
     changedCount: 2,
     layers: [{ index: 1, name: "Layer 1" }, { index: 2, name: "Layer 2" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "split_layers_at_time", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "split_layers_at_time", {
     layerIndices: [1],
     time: 1,
     verifyAfter: false
@@ -505,7 +462,7 @@ async function main() {
     changedCount: 1,
     split: [{ original: { index: 2, name: "Layer 1" }, newLayer: { index: 1, name: "Layer 1" } }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "precompose_layers", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "precompose_layers", {
     layerIndices: [1, 2],
     newCompName: "Smoke Precomp",
     openInViewer: false,
@@ -514,7 +471,7 @@ async function main() {
     comp: { itemIndex: 3, name: "Smoke Precomp" },
     layerIndices: [1, 2]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "replace_layer_source", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "replace_layer_source", {
     layerIndices: [1],
     sourceItemIndex: 2,
     verifyAfter: false
@@ -523,7 +480,7 @@ async function main() {
     changedCount: 1,
     layers: [{ index: 1, name: "Layer 1" }]
   }));
-  const deepDuplicateQueuedResponse = await callQueuedDevTool(port, token, "deep_duplicate_precomp_sources", {
+  const deepDuplicatePreparedResponse = await prepareTypedTool(port, token, "deep_duplicate_precomp_sources", {
     layerIndex: 1,
     sourceCompItemIndex: 3,
     nameSuffix: " Smoke Copy",
@@ -544,8 +501,8 @@ async function main() {
       { source: { itemIndex: 5, name: "Smoke Solid" }, duplicate: { itemIndex: 6, name: "Smoke Solid Smoke Copy" } }
     ]
   });
-  queuedToolResponses.push(deepDuplicateQueuedResponse);
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_layers", {
+  preparedToolResponses.push(deepDuplicatePreparedResponse);
+  preparedToolResponses.push(await prepareTypedTool(port, token, "rename_layers", {
     layerIndices: [1, 2],
     mode: "prefix",
     prefix: "Smoke ",
@@ -554,7 +511,7 @@ async function main() {
     changedCount: 2,
     renamed: [{ index: 1, before: "A", after: "Smoke A" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "rename_project_items", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "rename_project_items", {
     itemIndices: [1],
     mode: "suffix",
     suffix: " Smoke",
@@ -563,7 +520,7 @@ async function main() {
     changedCount: 1,
     renamed: [{ itemIndex: 1, before: "Comp", after: "Comp Smoke" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "update_text_layer", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "update_text_layer", {
     layerIndex: 1,
     text: "Smoke",
     fontSize: 42,
@@ -572,7 +529,7 @@ async function main() {
     layer: { index: 1, name: "Text" },
     text: { kind: "TextDocument", text: "Smoke" }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "create_shape_layer", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "create_shape_layer", {
     shape: "rectangle",
     name: "Smoke Shape",
     size: [320, 180],
@@ -581,7 +538,7 @@ async function main() {
     layer: { index: 1, name: "Smoke Shape" },
     shape: { type: "rectangle", size: [320, 180] }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "create_camera_layer", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "create_camera_layer", {
     name: "Smoke Camera",
     pointOfInterest: [320, 180, 0],
     position: [320, 180, -900],
@@ -591,7 +548,7 @@ async function main() {
     layer: { index: 1, name: "Smoke Camera" },
     camera: { pointOfInterest: [320, 180, 0], position: [320, 180, -900], zoom: 600 }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "create_layer_mask", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "create_layer_mask", {
     layerIndex: 1,
     name: "Smoke Mask",
     vertices: [[120, 80], [520, 80], [520, 280], [120, 280]],
@@ -606,7 +563,7 @@ async function main() {
       shape: { vertexCount: 4, vertices: [[120, 80], [520, 80], [520, 280], [120, 280]] }
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_layer_mask", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_layer_mask", {
     compName: "Smoke Comp",
     layerIndex: 1,
     operation: "update",
@@ -667,7 +624,7 @@ async function main() {
     "ADBE Vectors Group",
     "ADBE Vector Shape"
   ];
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_path_geometry", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "get_path_geometry", {
     compName: "Smoke Comp",
     layerIndex: 1,
     targetKind: "shape",
@@ -686,7 +643,7 @@ async function main() {
       keyframes: []
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_path_geometry", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_path_geometry", {
     compName: "Smoke Comp",
     layerIndex: 1,
     targetKind: "shape",
@@ -716,7 +673,7 @@ async function main() {
       clearExisting: false
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "duplicate_layer", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "duplicate_layer", {
     compName: "Smoke Comp",
     layerIndex: 1,
     sourceName: "Smoke Source",
@@ -729,7 +686,7 @@ async function main() {
     duplicate: { index: 1, name: "Smoke Source Copy" },
     layer: { index: 1, name: "Smoke Source Copy" }
   }));
-  const duplicateLayersQueuedResponse = await callQueuedDevTool(port, token, "duplicate_layers", {
+  const duplicateLayersPreparedResponse = await prepareTypedTool(port, token, "duplicate_layers", {
     compName: "Smoke Comp",
     layerIndices: [1, 2],
     sourceNames: ["Smoke Source A", "Smoke Source B"],
@@ -771,8 +728,8 @@ async function main() {
       pairNameMatches: true
     }
   });
-  queuedToolResponses.push(duplicateLayersQueuedResponse);
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "delete_layer", {
+  preparedToolResponses.push(duplicateLayersPreparedResponse);
+  preparedToolResponses.push(await prepareTypedTool(port, token, "delete_layer", {
     compName: "Smoke Comp",
     layerIndex: 3,
     expectedLayerName: "Smoke Delete Target",
@@ -801,7 +758,7 @@ async function main() {
       deletedLayerNameAbsentAtOriginalIndex: true
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_comp_marker", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "add_comp_marker", {
     compName: "Smoke Comp",
     time: 1.1,
     comment: "Smoke Comp Marker",
@@ -836,7 +793,7 @@ async function main() {
       durationMatches: true
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "add_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
     time: 1.25,
@@ -854,7 +811,7 @@ async function main() {
       items: [{ keyIndex: 1, time: 1.25, comment: "Smoke Marker", duration: 0.5 }]
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_layer_marker", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "add_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
     time: 1.75,
@@ -875,7 +832,7 @@ async function main() {
       ]
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "update_layer_marker", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "update_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
     markerIndex: 1,
@@ -896,7 +853,7 @@ async function main() {
       items: [{ keyIndex: 1, time: 1.5, comment: "Smoke Marker Updated", duration: 0.75 }]
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "delete_layer_marker", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "delete_layer_marker", {
     compName: "Smoke Comp",
     layerIndex: 1,
     markerIndex: 1,
@@ -913,7 +870,7 @@ async function main() {
       items: []
     }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "fit_layer_to_comp", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "fit_layer_to_comp", {
     layerIndices: [1],
     mode: "contain",
     verifyAfter: false
@@ -921,7 +878,7 @@ async function main() {
     changedCount: 1,
     layers: [{ index: 1, name: "Layer 1" }]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_property_keyframes", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_property_keyframes", {
     layerIndex: 1,
     propertyPath: "ADBE Transform Group.ADBE Opacity",
     keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }],
@@ -930,7 +887,7 @@ async function main() {
     layer: { index: 1, name: "Layer 1" },
     keyframeCount: 2
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "apply_keyframe_ease", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "apply_keyframe_ease", {
     layerIndex: 1,
     propertyPath: "ADBE Transform Group.ADBE Opacity",
     keyIndices: [1, 2],
@@ -940,7 +897,7 @@ async function main() {
     layer: { index: 1, name: "Layer 1" },
     keyIndices: [1, 2]
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_expression", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_expression", {
     layerIndex: 1,
     propertyPath: "ADBE Transform Group.ADBE Opacity",
     expression: "value",
@@ -949,7 +906,7 @@ async function main() {
     layer: { index: 1, name: "Layer 1" },
     expression: "value"
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "clear_expression", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "clear_expression", {
     layerIndex: 1,
     propertyPath: "ADBE Transform Group.ADBE Opacity",
     verifyAfter: false
@@ -957,7 +914,7 @@ async function main() {
     layer: { index: 1, name: "Layer 1" },
     expression: ""
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "add_comp_to_render_queue", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "add_comp_to_render_queue", {
     compItemIndex: 1,
     outputPath: "smoke-output.mov",
     verifyAfter: false
@@ -965,14 +922,14 @@ async function main() {
     comp: { itemIndex: 1, name: "Smoke Comp" },
     renderQueueItem: { index: 1, comp: { itemIndex: 1, name: "Smoke Comp" } }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "set_render_queue_output", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "set_render_queue_output", {
     renderQueueItemIndex: 1,
     outputPath: "smoke-output.mov",
     verifyAfter: false
   }, ["Codex Set Render Queue Output", "outputModule.file"], {
     renderQueueItem: { index: 1, outputModules: [{ index: 1, file: "smoke-output.mov" }] }
   }));
-  queuedToolResponses.push(await callQueuedDevTool(port, token, "get_render_queue_status", {
+  preparedToolResponses.push(await prepareTypedTool(port, token, "get_render_queue_status", {
     limit: 5
   }, ["app.project.renderQueue", "__codexRenderQueueItemInfo"], {
     totalItems: 1,
@@ -1024,7 +981,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     agentId: "openrouter",
@@ -1037,7 +994,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: true,
@@ -1062,7 +1019,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: true,
@@ -1176,7 +1133,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: true,
@@ -1199,6 +1156,23 @@ async function main() {
       ]
     }
   });
+  const hardcoreAutonomy = await requestJsonWithOptions({
+    hostname: "127.0.0.1",
+    port,
+    path: "/autonomy/session",
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-ae-bridge-token": panelToken
+    }
+  }, {
+    enabled: true,
+    panelConnectionId: "legacy-smoke-panel",
+    panelGeneration: "1"
+  });
+  if (hardcoreAutonomy.status !== 200 || !hardcoreAutonomy.body.session || hardcoreAutonomy.body.session.active !== true) {
+    throw new Error("Expected explicit autonomous session for Agent Hardcore smoke");
+  }
   const hardcoreSession = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -1206,7 +1180,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     prompt: "Smoke-test Agent Hardcore retry loop and knowledge capture.",
@@ -1263,6 +1237,39 @@ async function main() {
       }
     ]
   });
+  const hardcoreDestructiveBlocked = await assertHardcoreAttemptBlockedWithoutMutationCommands(port, "destructive", {
+    summary: "Reject destructive execution in autonomous Agent Hardcore.",
+    risk: "high",
+    requiresCheckpoint: true,
+    steps: [{
+      title: "Attempt destructive layer deletion",
+      tool: "delete_layer",
+      args: {
+        compName: "Smoke Comp",
+        layerIndex: 1,
+        expectedLayerName: "Smoke Layer",
+        confirm: true
+      }
+    }]
+  }, {
+    attemptStatus: "run-needs-review",
+    errorCode: "autonomous_session_scope_blocked",
+    rawExtendscriptStepCount: 0
+  });
+  const hardcoreRawBlocked = await assertHardcoreAttemptBlockedWithoutMutationCommands(port, "raw", {
+    summary: "Reject raw ExtendScript in autonomous Agent Hardcore.",
+    risk: "high",
+    requiresCheckpoint: false,
+    steps: [{
+      title: "Attempt raw ExtendScript",
+      tool: "run_extendscript",
+      args: {script: "return {ok:true};"}
+    }]
+  }, {
+    attemptStatus: "dry-run-needs-review",
+    errorCode: "plan_step_blocked",
+    rawExtendscriptStepCount: 1
+  });
   const memoryToolPlanValidation = await requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -1296,7 +1303,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1325,7 +1332,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1358,7 +1365,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1391,7 +1398,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1424,7 +1431,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1484,21 +1491,7 @@ async function main() {
   if (!activeCompBindingCommand.body.command || activeCompBindingCommand.body.command.script.indexOf("app.project.activeItem") < 0) {
     throw new Error("Expected get_active_comp command for named binding smoke.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: activeCompBindingCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, activeCompBindingCommand.body.command, {
         itemIndex: 1,
         name: "Smoke Active Comp",
         width: 1920,
@@ -1519,52 +1512,20 @@ async function main() {
             }
           }
         ]
-      }
-    })
-  });
+      });
   const activeCompListCommand = await waitForPendingCommand(port, token, 5000);
   if (!activeCompListCommand.body.command || activeCompListCommand.body.command.script.indexOf("app.project.item(1)") < 0) {
     throw new Error("Expected named {{compItemIndex}} binding to resolve to active comp item 1.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: activeCompListCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, activeCompListCommand.body.command, {
         comp: { itemIndex: 1, name: "Smoke Active Comp", numLayers: 1 },
         layers: [{ index: 1, name: "Smoke Precomp Layer" }]
-      }
-    })
-  });
+      });
   const selectedPrecompLayerBindingCommand = await waitForPendingCommand(port, token, 5000);
   if (!selectedPrecompLayerBindingCommand.body.command || selectedPrecompLayerBindingCommand.body.command.script.indexOf("comp.layer(1)") < 0) {
     throw new Error("Expected {{selectedPrecompLayerIndex}} binding to resolve to selected layer index 1.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: selectedPrecompLayerBindingCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, selectedPrecompLayerBindingCommand.body.command, {
         layer: {
           index: 1,
           name: "Smoke Precomp Layer",
@@ -1575,28 +1536,12 @@ async function main() {
             typeName: "Composition"
           }
         }
-      }
-    })
-  });
+      });
   const itemIndexesBindingCommand = await waitForPendingCommand(port, token, 5000);
   if (!itemIndexesBindingCommand.body.command || itemIndexesBindingCommand.body.command.script.indexOf("__codexResolveComp(7") < 0) {
     throw new Error("Expected {{itemIndexes}} binding to resolve to selected source comp item 7.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: itemIndexesBindingCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, itemIndexesBindingCommand.body.command, {
         itemIndex: 7,
         name: "Smoke Source Precomp",
         type: "comp",
@@ -1607,28 +1552,12 @@ async function main() {
         numLayers: 0,
         layersReturned: 0,
         layers: []
-      }
-    })
-  });
+      });
   const wrappedStepBindingCommand = await waitForPendingCommand(port, token, 5000);
   if (!wrappedStepBindingCommand.body.command || wrappedStepBindingCommand.body.command.script.indexOf("__codexResolveComp(1") < 0) {
     throw new Error("Expected wrapped {{steps.1.result}} binding to resolve to active comp item 1.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: wrappedStepBindingCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, wrappedStepBindingCommand.body.command, {
         itemIndex: 1,
         name: "Smoke Active Comp",
         type: "comp",
@@ -1640,33 +1569,15 @@ async function main() {
         selectedLayerIndices: [1],
         layersReturned: 0,
         layers: []
-      }
-    })
-  });
+      });
   const selectedPrecompBindingCommand = await waitForPendingCommand(port, token, 5000);
   if (!selectedPrecompBindingCommand.body.command || selectedPrecompBindingCommand.body.command.script.indexOf("app.project.item(7)") < 0) {
     throw new Error("Expected {{selectedPrecompItemIndex}} binding to resolve to selected source comp item 7.");
   }
-  await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/bridge/result",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
-    id: selectedPrecompBindingCommand.body.command.id,
-    ok: true,
-    result: JSON.stringify({
-      ok: true,
-      result: {
+  await completeCommand(port, panelToken, selectedPrecompBindingCommand.body.command, {
         comp: { itemIndex: 7, name: "Smoke Source Precomp", numLayers: 0 },
         layers: []
-      }
-    })
-  });
+      });
   const namedCompBindingRun = await namedCompBindingRunPromise;
   const mutatingPlan = {
     summary: "Smoke-test mutating plan safety.",
@@ -1694,7 +1605,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: true,
@@ -1708,7 +1619,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1736,55 +1647,28 @@ async function main() {
     }
   });
   const directUnsafeDeletePayload = JSON.parse(directUnsafeDeleteLayer.body.result.content[0].text);
-  const invalidSetCompProperties = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/set_comp_properties",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  const invalidSetCompProperties = await callRejectedDevToolWithoutQueuedCommand(port, token, "set_comp_properties", {
     compName: "Smoke Comp",
     opacity: 50,
     verifyAfter: false
-  });
-  const emptySetCompProperties = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/set_comp_properties",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  }, "Unsupported set_comp_properties fields: opacity");
+  const emptySetCompProperties = await callRejectedDevToolWithoutQueuedCommand(port, token, "set_comp_properties", {
     compName: "Smoke Comp",
     verifyAfter: false
-  });
-  const invalidSetLayerMask = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/set_layer_mask",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  }, "At least one approved comp property update is required.");
+  const invalidSetLayerMask = await callRejectedDevToolWithoutQueuedCommand(port, token, "set_layer_mask", {
     layerIndex: 1,
     operation: "delete",
     maskIndex: 1,
     verifyAfter: false
-  });
+  }, "compItemIndex or compName is required for set_layer_mask.");
   const missingCompSetLayerMask = await callRejectedDevToolWithoutQueuedCommand(port, token, "set_layer_mask", {
     layerIndex: 1,
     operation: "update",
     maskIndex: 1,
     opacity: 50,
     verifyAfter: false
-  }, "compItemIndex or compName is required for set_layer_mask");
+  }, "compItemIndex or compName is required for set_layer_mask.");
   const rawExtendscriptPlan = {
     summary: "Smoke-test raw ExtendScript execution gate.",
     risk: "medium",
@@ -1806,7 +1690,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: true,
@@ -1820,7 +1704,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1838,7 +1722,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": panelToken
     }
   }, {
     dryRun: false,
@@ -1901,45 +1785,18 @@ async function main() {
   const devEvidenceText = devEvidenceFile && fs.existsSync(devEvidenceFile) ? fs.readFileSync(devEvidenceFile, "utf8") : "";
   const devStartPromptText = devStartPromptFile && fs.existsSync(devStartPromptFile) ? fs.readFileSync(devStartPromptFile, "utf8") : "";
   const devCandidateText = devCandidateFile && fs.existsSync(devCandidateFile) ? fs.readFileSync(devCandidateFile, "utf8") : "";
-  const duplicateLayersEmptyRejection = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/duplicate_layers",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  const duplicateLayersEmptyRejection = await callRejectedDevToolWithoutQueuedCommand(port, token, "duplicate_layers", {
     layerIndices: [],
     verifyAfter: false
-  });
-  const duplicateLayersDuplicateRejection = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/duplicate_layers",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  }, "layerIndices must be a non-empty array of positive 1-based integers.");
+  const duplicateLayersDuplicateRejection = await callRejectedDevToolWithoutQueuedCommand(port, token, "duplicate_layers", {
     layerIndices: [1, 1],
     verifyAfter: false
-  });
-  const duplicateLayersNonPositiveRejection = await requestJsonWithOptions({
-    hostname: "127.0.0.1",
-    port,
-    path: "/dev/tool/duplicate_layers",
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ae-bridge-token": token
-    }
-  }, {
+  }, "layerIndices must not contain duplicate layer indexes.");
+  const duplicateLayersNonPositiveRejection = await callRejectedDevToolWithoutQueuedCommand(port, token, "duplicate_layers", {
     layerIndices: [1, 0],
     verifyAfter: false
-  });
+  }, "layerIndices must contain only positive 1-based integers.");
   adapter.kill();
   daemon.kill();
 
@@ -1949,7 +1806,7 @@ async function main() {
     throw new Error("Expected initialize, tools/list, and tool call responses");
   }
 
-  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "3.0.0") {
+  if (!health.body.ok || health.body.server !== "codex-ae-mcp-bridge" || health.body.version !== "3.1.0") {
     throw new Error("Unexpected health response");
   }
   if (!agents.body.ok || !Array.isArray(agents.body.agents) || !agents.body.agents.length) {
@@ -1961,46 +1818,46 @@ async function main() {
   if (alignLayers.status !== 200 || !alignLayers.body.ok || alignLayers.body.result.changedCount !== 2) {
     throw new Error("Expected align_layers_to_time to align multiple layer timings");
   }
-  if (queuedToolResponses.length !== 34 || queuedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
+  if (preparedToolResponses.length !== 34 || preparedToolResponses.some((item) => item.response.status !== 200 || !item.response.body.ok)) {
     throw new Error("Expected all new typed tool queue smokes to pass");
   }
-  const deepDuplicateQueuedPayload = deepDuplicateQueuedResponse.response.body.result || {};
+  const deepDuplicatePreparedPayload = deepDuplicatePreparedResponse.response.body.result || {};
   if (
-    deepDuplicateQueuedPayload.rootCompItemIndex !== 4 ||
-    deepDuplicateQueuedPayload.duplicatedRootCompItemIndex !== 4 ||
-    !Array.isArray(deepDuplicateQueuedPayload.createdItemIndices) ||
-    deepDuplicateQueuedPayload.createdItemIndices.join(",") !== "4,6" ||
-    !Array.isArray(deepDuplicateQueuedPayload.duplicatedProjectItemIndices) ||
-    deepDuplicateQueuedPayload.duplicatedProjectItemIndices.join(",") !== "4,6"
+    deepDuplicatePreparedPayload.rootCompItemIndex !== 4 ||
+    deepDuplicatePreparedPayload.duplicatedRootCompItemIndex !== 4 ||
+    !Array.isArray(deepDuplicatePreparedPayload.createdItemIndices) ||
+    deepDuplicatePreparedPayload.createdItemIndices.join(",") !== "4,6" ||
+    !Array.isArray(deepDuplicatePreparedPayload.duplicatedProjectItemIndices) ||
+    deepDuplicatePreparedPayload.duplicatedProjectItemIndices.join(",") !== "4,6"
   ) {
     throw new Error("Deep duplicate result aliases did not expose read-back binding fields");
   }
-  const duplicateLayersQueuedPayload = duplicateLayersQueuedResponse.response.body.result || {};
+  const duplicateLayersPreparedPayload = duplicateLayersPreparedResponse.response.body.result || {};
   if (
-    duplicateLayersQueuedPayload.layerCountBefore !== 2 ||
-    duplicateLayersQueuedPayload.layerCountAfter !== 4 ||
-    duplicateLayersQueuedPayload.duplicateCount !== 2 ||
-    duplicateLayersQueuedPayload.layerCountAfter - duplicateLayersQueuedPayload.layerCountBefore !== 2 ||
-    !Array.isArray(duplicateLayersQueuedPayload.pairs) ||
-    duplicateLayersQueuedPayload.pairs.length !== 2 ||
-    !duplicateLayersQueuedPayload.pairs[0].source ||
-    !duplicateLayersQueuedPayload.pairs[0].duplicate ||
-    duplicateLayersQueuedPayload.pairs[0].source.name !== "Smoke Source A" ||
-    duplicateLayersQueuedPayload.pairs[0].duplicate.name !== "Smoke Source A Copy" ||
-    duplicateLayersQueuedPayload.pairs[1].source.name !== "Smoke Source B" ||
-    duplicateLayersQueuedPayload.pairs[1].duplicate.name !== "Smoke Source B Copy" ||
-    !duplicateLayersQueuedPayload.postVerification ||
-    duplicateLayersQueuedPayload.postVerification.ok !== true ||
-    duplicateLayersQueuedPayload.postVerification.beforeLayerCount !== 2 ||
-    duplicateLayersQueuedPayload.postVerification.afterLayerCount !== 4 ||
-    duplicateLayersQueuedPayload.postVerification.requestedCount !== 2 ||
-    duplicateLayersQueuedPayload.postVerification.duplicateCount !== 2 ||
-    duplicateLayersQueuedPayload.postVerification.layerCountDelta !== 2 ||
-    duplicateLayersQueuedPayload.postVerification.layerCountMatches !== true ||
-    duplicateLayersQueuedPayload.postVerification.pairCountMatches !== true ||
-    duplicateLayersQueuedPayload.postVerification.sourceNameMatches !== true ||
-    duplicateLayersQueuedPayload.postVerification.duplicateNameMatches !== true ||
-    duplicateLayersQueuedPayload.postVerification.pairNameMatches !== true
+    duplicateLayersPreparedPayload.layerCountBefore !== 2 ||
+    duplicateLayersPreparedPayload.layerCountAfter !== 4 ||
+    duplicateLayersPreparedPayload.duplicateCount !== 2 ||
+    duplicateLayersPreparedPayload.layerCountAfter - duplicateLayersPreparedPayload.layerCountBefore !== 2 ||
+    !Array.isArray(duplicateLayersPreparedPayload.pairs) ||
+    duplicateLayersPreparedPayload.pairs.length !== 2 ||
+    !duplicateLayersPreparedPayload.pairs[0].source ||
+    !duplicateLayersPreparedPayload.pairs[0].duplicate ||
+    duplicateLayersPreparedPayload.pairs[0].source.name !== "Smoke Source A" ||
+    duplicateLayersPreparedPayload.pairs[0].duplicate.name !== "Smoke Source A Copy" ||
+    duplicateLayersPreparedPayload.pairs[1].source.name !== "Smoke Source B" ||
+    duplicateLayersPreparedPayload.pairs[1].duplicate.name !== "Smoke Source B Copy" ||
+    !duplicateLayersPreparedPayload.postVerification ||
+    duplicateLayersPreparedPayload.postVerification.ok !== true ||
+    duplicateLayersPreparedPayload.postVerification.beforeLayerCount !== 2 ||
+    duplicateLayersPreparedPayload.postVerification.afterLayerCount !== 4 ||
+    duplicateLayersPreparedPayload.postVerification.requestedCount !== 2 ||
+    duplicateLayersPreparedPayload.postVerification.duplicateCount !== 2 ||
+    duplicateLayersPreparedPayload.postVerification.layerCountDelta !== 2 ||
+    duplicateLayersPreparedPayload.postVerification.layerCountMatches !== true ||
+    duplicateLayersPreparedPayload.postVerification.pairCountMatches !== true ||
+    duplicateLayersPreparedPayload.postVerification.sourceNameMatches !== true ||
+    duplicateLayersPreparedPayload.postVerification.duplicateNameMatches !== true ||
+    duplicateLayersPreparedPayload.postVerification.pairNameMatches !== true
   ) {
     throw new Error("duplicate_layers result did not expose deterministic one-duplicate-per-source read-back and post-verification fields");
   }
@@ -2421,7 +2278,7 @@ async function main() {
     agents: agents.body.agents.map((agent) => agent.id),
     layerAttributeSet: layerAttributeSet.body.result.layers.length,
     alignLayers: alignLayers.body.result.changedCount,
-    queuedTypedTools: queuedToolResponses.length,
+    preparedTypedTools: preparedToolResponses.length,
     readiness: readiness.body.readiness.status,
     planRun: planRun.body.run.steps[0].status,
     targetSummary: targetSummaryValidation.body.result.steps[0].targetSummary,
@@ -2435,7 +2292,9 @@ async function main() {
       status: hardcoreSession.body.session.status,
       attempts: hardcoreSession.body.session.attempts.length,
       typedToolFailure: hardcoreSession.body.session.typedToolFailures[0].tool,
-      candidate: hardcoreSession.body.session.artifacts.candidate.path
+      candidate: hardcoreSession.body.session.artifacts.candidate.path,
+      rawBlocked: hardcoreRawBlocked,
+      destructiveBlocked: hardcoreDestructiveBlocked
     },
     ignoredBindingRun: ignoredBindingRun.body.run.steps[0].status,
     unresolvedSelectedPrecompLayerBinding: unresolvedSelectedPrecompLayerRun.body.run.steps[1].reason,

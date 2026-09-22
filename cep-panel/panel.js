@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "3.0.0";
+  var APP_VERSION = "3.1.0";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -68,6 +68,8 @@
   var saveAgentKeyButton = document.getElementById("saveAgentKeyButton");
   var providerSelfTestButton = document.getElementById("providerSelfTestButton");
   var providerSelfTestListEl = document.getElementById("providerSelfTestList");
+  var usageRefreshButton = document.getElementById("usageRefreshButton");
+  var usageStatusListEl = document.getElementById("usageStatusList");
   var chatTranscriptEl = document.getElementById("chatTranscript");
   var chatPromptEl = document.getElementById("chatPrompt");
   var sendChatButton = document.getElementById("sendChatButton");
@@ -105,6 +107,8 @@
   var providerSelfTestResults = {};
   var connectorStatusInFlight = false;
   var connectorStatus = null;
+  var usageRefreshInFlight = false;
+  var usageSnapshot = null;
   var renderedAgentId = "";
   var agentsLoadSeq = 0;
   var agentsLoadInFlight = false;
@@ -124,7 +128,7 @@
   var panelConnectionId = loadPanelConnectionId();
   var panelConnectionGeneration = 0;
   var autonomousSessionState = null;
-  var autonomousSessionTimer = null;
+  var panelHeartbeatAt = 0;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
   var BRIDGE_OFFLINE_MESSAGE = "Bridge offline. Start the local bridge from Codex, then click Connect.";
@@ -215,13 +219,16 @@
   }
 
   function friendlyErrorMessage(error) {
+    if (error && error.status === 401) {
+      return "Panel authentication failed. Set a separate AE_BRIDGE_PANEL_TOKEN in the bridge launch configuration, restart the bridge, and enter that value in Panel token. AE_BRIDGE_TOKEN is for MCP only.";
+    }
     if (isBridgeOfflineError(error)) return BRIDGE_OFFLINE_MESSAGE;
     return error && error.message ? error.message : "Unknown error";
   }
 
   function setBridgeOffline(error) {
     var message = friendlyErrorMessage(error);
-    setStatus("Bridge offline", false);
+    setStatus(error && error.status === 401 ? "Panel authentication failed" : "Bridge offline", false);
     setBridgeHelp(message, "warning");
     return message;
   }
@@ -231,26 +238,14 @@
     setBridgeHelp("Bridge connected.", "online");
   }
 
-  function stopAutonomousSessionTimer() {
-    if (autonomousSessionTimer) clearTimeout(autonomousSessionTimer);
-    autonomousSessionTimer = null;
-  }
-
   function renderAutonomousSession() {
     if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
-    stopAutonomousSessionTimer();
     var state = autonomousSessionState || {};
-    var remainingMs = state.expiresAt ? Math.max(0, Date.parse(state.expiresAt) - Date.now()) : 0;
-    var active = state.active === true && remainingMs > 0;
-    autonomousSessionButton.setAttribute("aria-pressed", active ? "true" : "false");
+    autonomousSessionButton.setAttribute("aria-pressed", state.desiredEnabled ? "true" : "false");
     autonomousSessionButton.disabled = !running;
-    if (active) {
-      var minutes = Math.max(1, Math.ceil(remainingMs / 60000));
-      autonomousSessionStatusEl.textContent = "Активна · " + minutes + " мин";
-      autonomousSessionTimer = setTimeout(renderAutonomousSession, 1000);
-    } else {
-      autonomousSessionStatusEl.textContent = state.reason === "panel_not_connected" ? "Панель не подключена" : "Выключена";
-    }
+    autonomousSessionStatusEl.textContent = state.persistenceError ? "Ошибка сохранения настройки: " + state.persistenceError
+      : !autonomousSessionState ? "Состояние недоступно"
+      : state.desiredEnabled ? (state.connectionReady ? "Включена до явного выключения" : "Включена · ожидание панели") : "Выключена";
   }
 
   function refreshAutonomousSession() {
@@ -280,21 +275,21 @@
     }, function (error, response) {
       autonomousSessionButton.disabled = false;
       if (error) {
-        autonomousSessionState = null;
+        autonomousSessionState = {persistenceError: error.message};
         renderAutonomousSession();
         log("Autonomous session failed: " + error.message);
+        refreshAutonomousSession();
         return;
       }
       autonomousSessionState = response && response.session ? response.session : null;
       renderAutonomousSession();
-      log(enabled ? "Autonomous Codex session enabled for 20 minutes" : "Autonomous Codex session disabled");
+      log(enabled ? "Автономная сессия Codex включена до явного выключения" : "Автономная сессия Codex выключена");
     });
   }
 
   function toggleAutonomousSession() {
     var state = autonomousSessionState || {};
-    var active = state.active === true && state.expiresAt && Date.parse(state.expiresAt) > Date.now();
-    setAutonomousSessionEnabled(!active);
+    setAutonomousSessionEnabled(!state.desiredEnabled);
   }
 
   function getBaseUrl() {
@@ -317,14 +312,10 @@
     return created;
   }
 
-  function bridgeNextPath() {
+  function bridgeNextPath(projectFile) {
     return "/bridge/next?panelConnectionId=" + encodeURIComponent(panelConnectionId)
-      + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0));
-  }
-
-  function appendToken(path) {
-    var separator = path.indexOf("?") === -1 ? "?" : "&";
-    return path + separator + "token=" + encodeURIComponent(getToken());
+      + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0))
+      + "&projectFile=" + encodeURIComponent(projectFile || "");
   }
 
   function compactPanelDiagnosticText(value, limit) {
@@ -368,8 +359,11 @@
   function request(method, path, body, onDone) {
     var completed = false;
     var xhr = new XMLHttpRequest();
-    xhr.open(method, getBaseUrl() + appendToken(path), true);
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 ? 120000 : 10000;
+    xhr.open(method, getBaseUrl() + path, true);
+    xhr.setRequestHeader("x-ae-bridge-token", getToken());
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0
+      ? 120000
+      : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -622,6 +616,164 @@
       }
       connectorStatus = response && response.status ? response.status : connectorStatus;
       renderConnectorStatus();
+    });
+  }
+
+  function setUsageRows(rows) {
+    if (!usageStatusListEl) return;
+    clearElement(usageStatusListEl);
+    for (var i = 0; i < rows.length; i++) {
+      var row = document.createElement("div");
+      row.className = "connector-status-row" + (rows[i].tone ? " " + rows[i].tone : "");
+      row.setAttribute("data-usage-status", rows[i].key);
+      var label = document.createElement("span");
+      label.className = "connector-status-label";
+      label.textContent = rows[i].label;
+      var value = document.createElement("span");
+      value.className = "connector-status-value";
+      value.textContent = rows[i].value;
+      row.appendChild(label);
+      row.appendChild(value);
+      usageStatusListEl.appendChild(row);
+    }
+  }
+
+  function usageTokenText(tokens) {
+    tokens = tokens || {};
+    function value(name) {
+      var item = tokens[name];
+      if (item && typeof item === "object" && Object.prototype.hasOwnProperty.call(item, "value")) item = item.value;
+      return typeof item === "number" && isFinite(item) ? compactNumber(item) : "unknown";
+    }
+    return "in " + value("inputTokens") + ", out " + value("outputTokens") +
+      ", cache " + value("cacheReadTokens") + ", reasoning " + value("reasoningTokens");
+  }
+
+  function nativeUsageTokenText(nativeSnapshot) {
+    var total = nativeSnapshot && nativeSnapshot.summary && nativeSnapshot.summary.tokens
+      ? nativeSnapshot.summary.tokens.total : null;
+    if (!total || total.value === null || total.value === undefined) return "No observed bridge usage";
+    return compactNumber(total.value) + " total tokens" + (total.complete ? "" : " (partial fields)");
+  }
+
+  function nativeModelTokenText(tokens) {
+    tokens = tokens || {};
+    function value(name) {
+      var item = tokens[name];
+      return item && typeof item.value === "number" ? compactNumber(item.value) : "unknown";
+    }
+    return "in " + value("input") + ", out " + value("output") +
+      ", cache " + value("cachedInput") + ", reasoning " + value("reasoning");
+  }
+
+  function projectAggregateText(project) {
+    project = project || {};
+    var parts = ["project aggregate"];
+    if (typeof project.sessions === "number") parts.push(compactNumber(project.sessions) + " sessions");
+    if (typeof project.calls === "number") parts.push(compactNumber(project.calls) + " calls");
+    if (project.apiEquivalentEstimate) {
+      parts.push(String(project.apiEquivalentEstimate.amount) + " " + (project.apiEquivalentEstimate.currency || "") + " API equiv.");
+    }
+    return parts.join(" · ");
+  }
+
+  function renderUsageSnapshot() {
+    if (!usageSnapshot) {
+      setUsageRows([
+        { key: "native", label: "Native", value: "Not loaded", tone: "" },
+        { key: "codeburn", label: "CodeBurn", value: "Not refreshed", tone: "" },
+        { key: "quota", label: "Quota", value: "Not refreshed", tone: "" }
+      ]);
+      return;
+    }
+    var sources = usageSnapshot.sources || {};
+    var nativeSnapshot = sources.native || {};
+    var codeburn = sources.codeburn || {};
+    var report = codeburn.report || {};
+    var rows = [
+      { key: "native", label: "Native", value: nativeUsageTokenText(nativeSnapshot) + " · exact bridge calls", tone: nativeSnapshot.status === "available" ? "ready" : "warning" },
+      { key: "codeburn", label: "CodeBurn", value: (codeburn.status || "unavailable") + (report.period ? " · " + report.period : "") + (codeburn.stale ? " · stale" : "") + (codeburn.observedAt ? " · " + codeburn.observedAt : ""), tone: codeburn.status === "ok" ? "ready" : "warning" }
+    ];
+    var nativeModels = nativeSnapshot.summary && nativeSnapshot.summary.models || [];
+    for (var n = 0; n < nativeModels.length && n < 6; n++) {
+      rows.push({
+        key: "native-model-" + n,
+        label: "Native model",
+        value: (nativeModels[n].modelId || "unknown model") + " · " + nativeModelTokenText(nativeModels[n].tokens),
+        tone: ""
+      });
+    }
+    var models = report.models || [];
+    for (var i = 0; i < models.length && i < 6; i++) {
+      rows.push({
+        key: "model-" + i,
+        label: "Model",
+        value: (models[i].rawModelId || "unknown model") + " · " + usageTokenText(models[i].tokens),
+        tone: models[i].apiEquivalentEstimate === null ? "warning" : ""
+      });
+    }
+    var projects = report.projects || [];
+    for (var j = 0; j < projects.length && j < 4; j++) {
+      rows.push({
+        key: "project-" + j,
+        label: "Project",
+        value: (projects[j].projectIdentity || "redacted/unattributed") + " · " + projectAggregateText(projects[j]),
+        tone: projects[j].projectIdentity ? "" : "warning"
+      });
+    }
+    var estimate = report.overview && report.overview.apiEquivalentEstimate;
+    if (estimate) {
+      rows.push({
+        key: "api-estimate",
+        label: "API equiv.",
+        value: String(estimate.amount) + " " + (estimate.currency || "currency unknown") + " · estimate, not subscription billing",
+        tone: ""
+      });
+    }
+    var quota = usageSnapshot.quota || {};
+    var windows = quota.quota && quota.quota.windows || [];
+    if (!windows.length) {
+      rows.push({ key: "quota", label: "Quota", value: quota.status || "unavailable", tone: "warning" });
+    } else {
+      for (var q = 0; q < windows.length && q < 4; q++) {
+        var remaining = typeof windows[q].remainingPercent === "number"
+          ? windows[q].remainingPercent + "% remaining"
+          : typeof windows[q].usedPercent === "number" ? windows[q].usedPercent + "% used" : "remaining unknown";
+        rows.push({ key: "quota-" + q, label: "Quota", value: (windows[q].provider || "provider") + " · " + remaining + (windows[q].resetAt ? " · reset " + windows[q].resetAt : ""), tone: windows[q].status === "ok" ? "ready" : "warning" });
+      }
+    }
+    rows.push({ key: "granularity", label: "Granularity", value: "Models and projects are independent aggregates; no model × project inference.", tone: "" });
+    setUsageRows(rows);
+  }
+
+  function loadUsageSnapshot() {
+    request("GET", "/usage", null, function (error, response) {
+      if (error) return;
+      usageSnapshot = response && response.usage || null;
+      renderUsageSnapshot();
+    });
+  }
+
+  function refreshUsage() {
+    if (usageRefreshInFlight) return;
+    usageRefreshInFlight = true;
+    if (usageRefreshButton) {
+      usageRefreshButton.disabled = true;
+      usageRefreshButton.textContent = "Refreshing...";
+    }
+    request("POST", "/usage/refresh", { period: "week", includeQuota: true }, function (error, response) {
+      usageRefreshInFlight = false;
+      if (usageRefreshButton) {
+        usageRefreshButton.disabled = false;
+        usageRefreshButton.textContent = "Refresh";
+      }
+      if (error) {
+        log("Usage refresh failed: " + error.message);
+        loadUsageSnapshot();
+        return;
+      }
+      usageSnapshot = response && response.usage || null;
+      renderUsageSnapshot();
     });
   }
 
@@ -3096,6 +3248,10 @@
     var runSteps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
     var runMutatingCount = runValidation ? Number(runValidation.mutatingCount || 0) : 0;
     lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
+    if (run.outcome) {
+      lines.push("Проверка: " + run.outcome.verification.status);
+      if (run.outcome.coverage) lines.push("Охват доказательств: " + run.outcome.coverage.status);
+    }
     if (!run.ok && diagnosticFromBody({ run: run })) {
       lines.push(formatM100DiagnosticBody({ run: run }, run.error || "Run failed."));
     }
@@ -3536,9 +3692,15 @@
     }
   }
 
-  function postResult(id, ok, result, error, onDone) {
+  function postResult(command, ok, result, error, onDone) {
+    var owner = commandLeaseOwner(command);
     request("POST", "/bridge/result", {
-      id: id,
+      id: command.id,
+      executionId: command.executionId,
+      leaseId: command.leaseId,
+      contractVersion: 2,
+      panelConnectionId: owner.panelConnectionId,
+      panelGeneration: owner.panelGeneration,
       ok: ok,
       result: result,
       error: error
@@ -3562,6 +3724,9 @@
     var owner = commandLeaseOwner(command);
     request("POST", "/bridge/submitted", {
       id: command.id,
+      executionId: command.executionId,
+      leaseId: command.leaseId,
+      contractVersion: 2,
       panelConnectionId: owner.panelConnectionId,
       panelGeneration: owner.panelGeneration
     }, function (error) {
@@ -3575,6 +3740,9 @@
   }
 
   function executeCommand(command) {
+    if (command.contractVersion !== 2 || !command.executionId || !command.leaseId) {
+      log("Bridge execution contract mismatch: update the bridge and panel together."); return;
+    }
     if (activeEvalScriptCommandId) {
       log("Skipping command " + command.id + " while command " + activeEvalScriptCommandId + " is still active");
       return;
@@ -3588,12 +3756,12 @@
       }
       cs.evalScript(command.script, function (result) {
         if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
-          postResult(command.id, false, null, result, function () {
+          postResult(command, false, null, result, function () {
             clearActiveEvalScriptCommand(command.id);
           });
           return;
         }
-        postResult(command.id, true, result, null, function () {
+        postResult(command, true, result, null, function () {
           clearActiveEvalScriptCommand(command.id);
         });
       });
@@ -3604,11 +3772,21 @@
     if (!running) return;
     if (pollInFlight) return;
     if (activeEvalScriptCommandId) {
-      pollTimer = setTimeout(poll, 50);
+      if (Date.now() - panelHeartbeatAt >= 5000) {
+        panelHeartbeatAt = Date.now();
+        request("GET", bridgeNextPath().replace("/bridge/next?", "/bridge/heartbeat?"), null, function (error, response) {
+          if (error) { log("Panel heartbeat failed: " + error.message); return; }
+          autonomousSessionState = response && response.session;
+          renderAutonomousSession();
+        });
+      }
+      pollTimer = setTimeout(poll, 500);
       return;
     }
     pollInFlight = true;
-    request("GET", bridgeNextPath(), null, function (error, response) {
+    cs.evalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
+    if (!running) { pollInFlight = false; return; }
+    request("GET", bridgeNextPath(projectFile), null, function (error, response) {
       pollInFlight = false;
       if (!running) return;
 
@@ -3625,7 +3803,7 @@
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
       lastPollErrorMessage = "";
       setBridgeConnected();
-      if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) refreshCurrentBridgePlan();
+      if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
         refreshAutonomousSession();
@@ -3636,6 +3814,7 @@
       }
 
       pollTimer = setTimeout(poll, 50);
+    });
     });
   }
 
@@ -3653,24 +3832,17 @@
     setBridgeHelp("Connecting to the local bridge...", "");
     refreshAppTitle();
     loadAgents();
+    loadUsageSnapshot();
     log("Connecting to " + getBaseUrl());
     poll();
   }
 
   function disconnect() {
-    if (running && autonomousSessionState && autonomousSessionState.active) {
-      request("POST", "/autonomy/session", {
-        enabled: false,
-        panelConnectionId: panelConnectionId,
-        panelGeneration: String(panelConnectionGeneration)
-      }, function () {});
-    }
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
     stopSetupStatusPolling();
-    stopAutonomousSessionTimer();
     autonomousSessionState = null;
     renderAutonomousSession();
     if (pollTimer) clearTimeout(pollTimer);
@@ -3725,6 +3897,7 @@
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
   if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
+  if (usageRefreshButton) usageRefreshButton.addEventListener("click", refreshUsage);
   forEachNode(providerTabEls, function (button) {
     button.addEventListener("click", function () {
       selectProviderGroup(getData(button, "provider-group"));
@@ -3796,6 +3969,7 @@
   updateProviderUi(null);
   renderProviderSelfTest();
   renderConnectorStatus();
+  renderUsageSnapshot();
   renderAutonomousSession();
   setTimeout(refreshConnectorStatus, 300);
   restoreTranscriptHistory();

@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const repo = path.resolve(__dirname, "..");
+const PRODUCT_VERSION = "3.1.0";
 const auditLiteral = [".codex", "audit"].join("-");
 const oldPlanRoot = ["plans", "archive"].join("/");
 const oldPlanHistory = ["target-app-execplan", "history"].join("-");
@@ -178,6 +179,29 @@ function assertPackageSurface() {
   assert(!packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0, "clean repo should not carry unused SDK dependency.");
 }
 
+function assertVersionSurfaces() {
+  const packageJson = JSON.parse(readText("package.json"));
+  const packageLock = JSON.parse(readText("package-lock.json"));
+  const productTitle = `AE Agent ${PRODUCT_VERSION}`;
+  const expected = [
+    ["package.json", packageJson.version === PRODUCT_VERSION],
+    ["package-lock.json root", packageLock.version === PRODUCT_VERSION],
+    ["package-lock.json package", packageLock.packages && packageLock.packages[""] && packageLock.packages[""].version === PRODUCT_VERSION],
+    ["mcp-server/bridge-daemon.js", readText("mcp-server/bridge-daemon.js").includes(`const SERVER_VERSION = "${PRODUCT_VERSION}";`)],
+    ["mcp-server/mcp-adapter.js", readText("mcp-server/mcp-adapter.js").includes(`const SERVER_VERSION = "${PRODUCT_VERSION}";`)],
+    ["cep-panel/panel.js", readText("cep-panel/panel.js").includes(`var APP_VERSION = "${PRODUCT_VERSION}";`)],
+    ["cep-panel/index.html title", readText("cep-panel/index.html").includes(`<title>${productTitle}</title>`)],
+    ["cep-panel/index.html assets", readText("cep-panel/index.html").includes(`|| "${PRODUCT_VERSION}";`)],
+    ["cep-panel/CSXS/manifest.xml bundle", readText("cep-panel/CSXS/manifest.xml").includes(`ExtensionBundleVersion="${PRODUCT_VERSION}"`)],
+    ["cep-panel/CSXS/manifest.xml extension", readText("cep-panel/CSXS/manifest.xml").includes(`Version="${PRODUCT_VERSION}" />`)],
+    ["cep-panel/CSXS/manifest.xml menu", readText("cep-panel/CSXS/manifest.xml").includes(`<Menu>${productTitle}</Menu>`)],
+    ["README.md", readText("README.md").includes(productTitle)],
+    ["specs/target-app.md", readText("specs/target-app.md").includes(productTitle)],
+  ];
+  const mismatches = expected.filter(([, ok]) => !ok).map(([surface]) => surface);
+  assert.deepStrictEqual(mismatches, [], `Product version ${PRODUCT_VERSION} must match every canonical surface.`);
+}
+
 function assertRuntimeRootsUntracked() {
   const tracked = new Set(gitLsFiles());
   const violations = [];
@@ -230,9 +254,11 @@ function assertCopiedCore() {
 }
 
 function main() {
+  require("./frozen-intake-guard").verify(repo);
   assertNoOldReferences();
   assertNoLegacyMarkersOutsideImporterProtocol();
   assertPackageSurface();
+  assertVersionSurfaces();
   assertCopiedCore();
   assertRuntimeRootsUntracked();
   assertIgnoreSurface();

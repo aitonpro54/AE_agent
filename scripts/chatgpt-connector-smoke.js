@@ -391,8 +391,10 @@ async function main() {
     assert(health.body.mode === "read-only-bridge-with-gated-jsx-lab", "Expected gated JSX Lab health mode.");
     assert(health.body.writeActionsEnabled === false, "Expected gated AE write actions disabled by default.");
 
-    const httpStatus = await requestJson(port, "/status?checkBridge=0");
-    assert(httpStatus.status === 200 && httpStatus.body.ok === true, "Expected public connector status endpoint.");
+    const unauthorizedStatus = await requestJson(port, "/status?checkBridge=0");
+    assert(unauthorizedStatus.status === 401, "Connector status requires authentication.");
+    const httpStatus = await requestJson(port, "/status?checkBridge=0", undefined, headers);
+    assert(httpStatus.status === 200 && httpStatus.body.ok === true, "Expected authenticated connector status endpoint.");
     assert(httpStatus.body.status.connector.publicUrlConfigured === false, "Expected local-only status by default.");
     assert(httpStatus.body.status.connector.writeActionsEnabled === false, "Expected write actions disabled in status.");
     assert(httpStatus.body.status.connector.exposedToolsSnapshot.some((tool) => tool.name === "run_extendscript_candidate"), "Expected status tools snapshot.");

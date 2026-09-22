@@ -10,11 +10,14 @@ const { PLANNER_USE: MEMORY_PLANNER_USE } = require("../mcp-server/project-inten
 const { buildPlannerContext, FINAL_POLICY, MAX_PLANNER_CHARS } = require("../mcp-server/planner-context");
 const { buildSolutionHintsForPrompt } = require("../mcp-server/solution-library");
 const assert = require("assert");
+const { isolatedEnvironment } = require("./network-test-fixture");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
 const bridgePort = String(4300 + Math.floor(Math.random() * 1000));
 const bridgeToken = "prompt-optimization-smoke-token";
+const panelToken = `${bridgeToken}-panel`;
+const panelRoute = "/bridge/next?panelConnectionId=prompt-optimization-panel&panelGeneration=1&projectFile=C%3A%5CSynthetic%5CAutonomy.aep";
 const model = "capture-model";
 const captured = [];
 
@@ -218,6 +221,7 @@ function messageText(request, role) {
 }
 
 async function bridgeRequest(pathname, method, payload) {
+  const authToken = pathname.startsWith("/bridge/") ? panelToken : bridgeToken;
   return requestJson({
     hostname: "127.0.0.1",
     port: bridgePort,
@@ -225,7 +229,7 @@ async function bridgeRequest(pathname, method, payload) {
     method,
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": bridgeToken
+      "x-ae-bridge-token": authToken
     }
   }, payload);
 }
@@ -234,7 +238,7 @@ async function waitForBridgeCommand(label) {
   const startedAt = Date.now();
   let response = null;
   while (Date.now() - startedAt < 8000) {
-    response = await bridgeRequest("/bridge/next", "GET");
+    response = await bridgeRequest(panelRoute, "GET");
     if (response.body && response.body.command && response.body.command.id) return response.body.command;
     await delay(100);
   }
@@ -242,8 +246,20 @@ async function waitForBridgeCommand(label) {
 }
 
 async function postBridgeCommandResult(command, result) {
-  const response = await bridgeRequest("/bridge/result", "POST", {
+  const identity = {
     id: command.id,
+    executionId: command.executionId,
+    leaseId: command.leaseId,
+    panelConnectionId: command.leaseOwner.panelConnectionId,
+    panelGeneration: command.leaseOwner.panelGeneration,
+    contractVersion: command.contractVersion
+  };
+  const submitted = await bridgeRequest("/bridge/submitted", "POST", identity);
+  if (submitted.status !== 200 || !submitted.body || submitted.body.ok !== true) {
+    throw new Error(`Could not submit command ${command.id}.`);
+  }
+  const response = await bridgeRequest("/bridge/result", "POST", {
+    ...identity,
     ok: true,
     result: JSON.stringify({
       ok: true,
@@ -369,26 +385,31 @@ async function main() {
   });
 
   const providerPort = await listen(provider);
+  const env = isolatedEnvironment(tempDir, {
+    port: bridgePort,
+    automationToken: bridgeToken,
+    panelToken,
+    devAdmin: false,
+    commandTimeoutMs: 10000
+  });
+  Object.assign(env, {
+    AE_AGENT_PROVIDERS_JSON: JSON.stringify([
+      {
+        id: "prompt-smoke",
+        label: "Prompt Smoke",
+        provider: "prompt-smoke",
+        apiStyle: "openai",
+        baseUrl: `http://127.0.0.1:${providerPort}`,
+        model,
+        models: [model],
+        requiresApiKey: false
+      }
+    ]),
+    AE_SOLUTION_REGISTRY_PATH: solutionRegistryPath,
+    AE_PROJECT_INTENT_MEMORY_PATH: projectIntentMemoryPath
+  });
   const daemon = spawn(nodePath, [daemonPath], {
-    env: {
-      ...process.env,
-      AE_BRIDGE_PORT: bridgePort,
-      AE_BRIDGE_TOKEN: bridgeToken,
-      AE_AGENT_PROVIDERS_JSON: JSON.stringify([
-        {
-          id: "prompt-smoke",
-          label: "Prompt Smoke",
-          provider: "prompt-smoke",
-          apiStyle: "openai",
-          baseUrl: `http://127.0.0.1:${providerPort}`,
-          model,
-          models: [model],
-          requiresApiKey: false
-        }
-      ]),
-      AE_SOLUTION_REGISTRY_PATH: solutionRegistryPath,
-      AE_PROJECT_INTENT_MEMORY_PATH: projectIntentMemoryPath
-    },
+    env,
     stdio: ["ignore", "pipe", "pipe"]
   });
 
@@ -429,7 +450,7 @@ async function main() {
       promptOptimization: true
     });
 
-    await bridgeRequest("/bridge/next", "GET");
+    await bridgeRequest(panelRoute, "GET");
     const onlinePlanPromise = requestJson({
       hostname: "127.0.0.1",
       port: bridgePort,
