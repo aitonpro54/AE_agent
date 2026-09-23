@@ -56,6 +56,32 @@ async function main() {
   assert.deepStrictEqual(commands[0].args, ["report", "--provider", "codex", "--period", "week", "--format", "json", "--refresh", "0"]);
   assert.strictEqual(adapter.getCachedReport().stale, false);
 
+  const realShape = createCodeburnUsageAdapter({ runner: async (command) => {
+    const period = command.args[command.args.indexOf("--period") + 1];
+    return { exitCode: 0, stdout: JSON.stringify({ period: period === "week" ? "Last 7 Days" : "September 2026",
+      periodKey: period, overview: {} }), stderr: "" };
+  } });
+  const realWeek = await realShape.refreshReport("week");
+  const realMonth = await realShape.refreshReport("month");
+  assert.strictEqual(realWeek.status, "ok", "CodeBurn week label must not fail enum validation");
+  assert.strictEqual(realWeek.report.period, "week");
+  assert.strictEqual(realMonth.status, "ok", "CodeBurn month label must not fail enum validation");
+  assert.strictEqual(realMonth.report.period, "month");
+  assert.strictEqual(realShape.getCachedReport("week").report.period, "week");
+  assert.strictEqual(realShape.getCachedReport("month").report.period, "month");
+  const legacy = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0,
+    stdout: JSON.stringify({ period: "week", overview: {} }), stderr: "" }) });
+  assert.strictEqual((await legacy.refreshReport("week")).status, "ok");
+  const labelOnly = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0,
+    stdout: JSON.stringify({ period: "Last 7 Days", overview: {} }), stderr: "" }) });
+  assert.strictEqual((await labelOnly.refreshReport("week")).error, "codeburn_period_unverified");
+  const emptyKey = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0,
+    stdout: JSON.stringify({ period: "week", periodKey: "", overview: {} }), stderr: "" }) });
+  assert.strictEqual((await emptyKey.refreshReport("week")).error, "codeburn_period_unverified");
+  const conflicting = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0,
+    stdout: JSON.stringify({ period: "week", periodKey: "month", overview: {} }), stderr: "" }) });
+  assert.strictEqual((await conflicting.refreshReport("week")).error, "codeburn_period_mismatch");
+
   const invalid = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0, stdout: fixture("invalid.json"), stderr: "" }) });
   assert.strictEqual((await invalid.refreshReport("week")).status, "invalid");
   const unavailable = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 2, stdout: "", stderr: "synthetic unavailable" }) });

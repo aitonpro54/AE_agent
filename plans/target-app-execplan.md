@@ -33,6 +33,19 @@ black-box, адресные offline smokes, `check:rules`, syntax и diff checks
 Штатные составные `smoke:planning` и `smoke:usage` не запускались, поскольку включают
 bridge daemon; точные команды и exit codes сохранены в `verification-results.json`.
 
+### Follow-up независимого ревью
+
+- Progress: CodeBurn v0.9.24 передаёт читаемую метку в `period`, enum в `periodKey`;
+  CB-03 теперь проверяет `periodKey`, а legacy `period` принимает только как точный enum.
+  Fixture `set_effect_property` использует относительный входной путь при полном
+  composite path в результате и read-back; semantic production code не менялся.
+- Decision Log: actual-shaped CodeBurn fixture сначала дала exit 1 на прежнем коде;
+  настоящий CodeBurn и live AE/CEP остаются вне текущего offline scope. Уже отделившийся
+  Windows descendant после выхода launcher — отдельный остаточный риск.
+- Validation: адресные CodeBurn, semantic, usage offline smokes, `check:rules`, syntax
+  и diff checks выполнены после исправления; точные exit codes — в локальном
+  `.codex-runtime/review-fix-cb03-2026-09-23/`.
+
 ## Текущий milestone — M7 завершён, release 3.1.0
 
 2026-09-22: credential blocker устранён отдельным `AE_BRIDGE_PANEL_TOKEN` без

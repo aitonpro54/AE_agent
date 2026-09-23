@@ -10,22 +10,28 @@ const { createNativeUsageStore } = require("../mcp-server/native-usage");
 
 async function main() {
   const calls = [];
+  const periodLabel = (period) => period === "week" ? "Last 7 Days" : "September 2026";
   const keyed = createCodeburnUsageAdapter({ runner: async (command) => {
     const period = command.args[command.args.indexOf("--period") + 1];
     calls.push(period);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    return { exitCode: 0, stdout: JSON.stringify({ period, overview: { totalTokens: 1 } }), stderr: "" };
+    return { exitCode: 0, stdout: JSON.stringify({ period: periodLabel(period), periodKey: period,
+      overview: { totalTokens: 1 } }), stderr: "" };
   } });
   const [week, month] = await Promise.all([keyed.refreshReport("week"), keyed.refreshReport("month")]);
   assert.deepEqual(calls.sort(), ["month", "week"], "different periods need separate commands");
   assert.equal(week.report.period, "week");
   assert.equal(month.report.period, "month");
+  assert.equal(week.report.periodLabel, "Last 7 Days");
+  assert.equal(week.report.periodKey, "week");
+  assert.equal(month.report.periodLabel, "September 2026");
+  assert.equal(month.report.periodKey, "month");
   const service = createUsageService({ nativeStore: createNativeUsageStore(), codeburnAdapter: keyed });
   const monthView = await service.refresh({ period: "month", includeQuota: false });
   assert.equal(monthView.sources.codeburn.report.period, "month", "month refresh must return month data");
 
   const mismatch = createCodeburnUsageAdapter({ runner: async () => ({ exitCode: 0,
-    stdout: JSON.stringify({ period: "week", overview: {} }), stderr: "" }) });
+    stdout: JSON.stringify({ period: "Last 7 Days", periodKey: "week", overview: {} }), stderr: "" }) });
   const wrongPeriod = await mismatch.refreshReport("month");
   assert.equal(wrongPeriod.status, "invalid", "month request cannot claim a week report");
 

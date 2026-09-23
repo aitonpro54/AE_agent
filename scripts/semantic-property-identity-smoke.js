@@ -73,7 +73,8 @@ const results = [
 
 function effectScenario(label, readComp, readLayer, readPath, expected) {
   const args = { compItemIndex: 7, compName: "TargetComp", layerIndex: 3,
-    effectIndex: 2, effectName: "Fill", effectMatchName: "ADBE Fill", propertyPath: pathFor(), value };
+    effectIndex: 2, effectName: "Fill", effectMatchName: "ADBE Fill",
+    propertyPath: [{ propertyIndex: 2, name: "Color", matchName: "ADBE Fill-0002" }], value };
   const effect = { propertyIndex: 2, name: "Fill", matchName: "ADBE Fill" };
   const steps = [
     { index: 1, tool: "set_effect_property", args, status: "completed", mutatesProject: true,

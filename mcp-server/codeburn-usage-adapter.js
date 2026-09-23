@@ -98,6 +98,10 @@ function normalizeProject(row, currency) {
 
 function normalizeReport(payload, observedAt) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const periodLabel = firstString(payload, ["period"]);
+  const periodKey = firstString(payload, ["periodKey"]);
+  const legacyPeriod = !Object.prototype.hasOwnProperty.call(payload, "periodKey") && PERIODS.has(periodLabel)
+    ? periodLabel : null;
   const overview = payload.overview && typeof payload.overview === "object" ? payload.overview : {};
   const currency = typeof payload.currency === "string" ? payload.currency : null;
   const models = Array.isArray(payload.models) ? payload.models.map((row) => normalizeModel(row || {}, currency)) : [];
@@ -118,7 +122,9 @@ function normalizeReport(payload, observedAt) {
     report: {
       provider: "codex",
       generatedAt: normalizedTimestamp(payload.generated),
-      period: firstString(payload, ["period", "periodKey"]),
+      period: periodKey || legacyPeriod,
+      periodLabel,
+      periodKey,
       timezone: firstString(payload, ["timezone"]),
       currency,
       overview: {
