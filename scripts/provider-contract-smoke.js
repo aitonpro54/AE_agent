@@ -402,6 +402,7 @@ async function main() {
         const captured = JSON.parse(fs.readFileSync(capturePath, "utf8"));
         assert.strictEqual(captured.args[0], "exec");
         assert.strictEqual(captured.args[captured.args.length - 1], "-");
+        assert(captured.args.includes("--ephemeral"), "Expected Codex CLI to preserve ephemeral mode.");
         assert(captured.args.includes("--json"), "Expected Codex CLI JSONL mode.");
         assert(captured.args.includes("--sandbox"), "Expected Codex CLI sandbox flag.");
         assert(!captured.args.includes(longPrompt), "OpenAI CLI prompt must not be passed as an argv value.");

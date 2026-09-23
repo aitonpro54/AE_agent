@@ -1,113 +1,97 @@
 "use strict";
-
 const crypto = require("crypto");
-
-const DEFAULT_TTL_MS = 20 * 60 * 1000;
+const fs = require("fs");
+const path = require("path");
 const PANEL_FRESHNESS_MS = 15000;
 const CAPABILITY = "typed_mutating_plan";
+const SCHEMA = "ae-agent.autonomy-preference.v2";
 
-function requiredText(value, label) {
-  const text = String(value || "").trim();
-  if (!text) throw new Error(`${label} is required.`);
-  return text;
-}
-
-function createAutonomousSessionManager(options) {
-  const config = options || {};
-  const now = typeof config.now === "function" ? config.now : Date.now;
-  const randomBytes = typeof config.randomBytes === "function" ? config.randomBytes : crypto.randomBytes;
-  const ttlMs = Number.isFinite(config.ttlMs) && config.ttlMs > 0 ? Math.floor(config.ttlMs) : DEFAULT_TTL_MS;
-  const panelFreshnessMs = Number.isFinite(config.panelFreshnessMs) && config.panelFreshnessMs > 0
-    ? Math.floor(config.panelFreshnessMs)
-    : PANEL_FRESHNESS_MS;
-  const panelState = typeof config.panelState === "function" ? config.panelState : () => null;
-  let session = null;
-
-  function clearExpired(at) {
-    if (session && session.expiresAtMs <= at) session = null;
+function createAutonomousSessionManager(options = {}) {
+  const now = options.now || Date.now;
+  const panelState = options.panelState || (() => null);
+  const statePath = options.statePath;
+  const freshness = options.panelFreshnessMs || PANEL_FRESHNESS_MS;
+  let desiredEnabled = false, trustedPanel = null, trustedGeneration = null;
+  let connected = null, persistenceError = null;
+  let sessionHash = crypto.randomBytes(24).toString("hex");
+  function validGeneration(value) { return typeof value === "string" && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)); }
+  if (statePath && fs.existsSync(statePath)) {
+    try {
+      const stored = JSON.parse(fs.readFileSync(statePath, "utf8"));
+      if (stored.schema !== SCHEMA || typeof stored.desiredEnabled !== "boolean" || stored.desiredEnabled &&
+          (typeof stored.panelConnectionId !== "string" || !stored.panelConnectionId || !validGeneration(stored.panelGeneration))) throw new Error("invalid_or_legacy_state");
+      desiredEnabled = stored.desiredEnabled;
+      trustedPanel = stored.panelConnectionId || null;
+      trustedGeneration = stored.panelGeneration || null;
+    } catch (_) { persistenceError = "invalid_or_legacy_state"; }
   }
-
-  function currentPanelMatches(at) {
-    const panel = panelState() || {};
-    return Boolean(session
-      && panel.panelConnectionId === session.panelConnectionId
-      && String(panel.panelGeneration || "") === session.panelGeneration
-      && Number(panel.seenAt || 0) > 0
-      && at - Number(panel.seenAt) < panelFreshnessMs);
+  function persist(enabled, identity) {
+    const value = {schema: SCHEMA, desiredEnabled: enabled, panelConnectionId: identity && identity.panelConnectionId || null,
+      panelGeneration: identity && identity.panelGeneration || null};
+    try {
+      if (!statePath) throw new Error("state_path_required");
+      if (options.writeState) options.writeState(statePath, value);
+      else {
+        fs.mkdirSync(path.dirname(statePath), {recursive:true});
+        const temporary = statePath + "." + crypto.randomUUID() + ".tmp";
+        try { fs.writeFileSync(temporary, JSON.stringify(value) + "\n", {encoding:"utf8",mode:0o600}); fs.renameSync(temporary, statePath); }
+        finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+      }
+      persistenceError = null;
+      return true;
+    } catch (_) { persistenceError = "autonomy_persistence_failed"; return false; }
   }
-
-  function publicStatus() {
-    const at = now();
-    clearExpired(at);
-    if (!session) {
-      return {
-        active: false,
-        capability: CAPABILITY,
-        expiresAt: null,
-        remainingMs: 0,
-        reason: "not_enabled"
-      };
+  function validateIdentity(input) {
+    if (!input || typeof input.panelConnectionId !== "string" || !input.panelConnectionId || !validGeneration(input.panelGeneration)) throw new Error("Panel identity/generation is invalid.");
+    if (connected && connected.panelConnectionId === input.panelConnectionId && Number(input.panelGeneration) < Number(connected.panelGeneration)) throw new Error("Stale panel generation.");
+  }
+  // Called only by the panel-authenticated bridge route, never by automation.
+  function observePanel(input) {
+    validateIdentity(input);
+    if (desiredEnabled && trustedPanel !== input.panelConnectionId) throw new Error("Trusted panel identity mismatch.");
+    if (desiredEnabled && Number(input.panelGeneration) < Number(trustedGeneration)) throw new Error("Stale panel generation.");
+    if (desiredEnabled && input.panelGeneration !== trustedGeneration && !persist(true, input)) {
+      connected = null; throw new Error("Cannot persist trusted panel generation.");
     }
-    const panelMatches = currentPanelMatches(at);
-    return {
-      active: panelMatches,
-      capability: CAPABILITY,
-      expiresAt: new Date(session.expiresAtMs).toISOString(),
-      remainingMs: Math.max(0, session.expiresAtMs - at),
-      reason: panelMatches ? "active" : "panel_not_connected"
-    };
-  }
-
-  function activate(input) {
-    const at = now();
-    const panelConnectionId = requiredText(input && input.panelConnectionId, "panelConnectionId");
-    const panelGeneration = requiredText(input && input.panelGeneration, "panelGeneration");
-    const panel = panelState() || {};
-    if (panel.panelConnectionId !== panelConnectionId
-      || String(panel.panelGeneration || "") !== panelGeneration
-      || !Number(panel.seenAt)
-      || at - Number(panel.seenAt) >= panelFreshnessMs) {
-      throw new Error("The requesting CEP panel is not the active bridge panel.");
-    }
-    const secret = randomBytes(24).toString("hex");
-    session = {
-      secret,
-      sessionHash: crypto.createHash("sha256").update(secret).digest("hex").slice(0, 12),
-      panelConnectionId,
-      panelGeneration,
-      issuedAtMs: at,
-      expiresAtMs: at + ttlMs
-    };
+    connected = {panelConnectionId:input.panelConnectionId,panelGeneration:input.panelGeneration};
+    if (desiredEnabled) trustedGeneration = input.panelGeneration;
     return publicStatus();
   }
-
+  function connectionReady() {
+    const panel = panelState() || {};
+    return Boolean(connected && panel.panelConnectionId === connected.panelConnectionId && String(panel.panelGeneration) === connected.panelGeneration
+      && Number(panel.seenAt) > 0 && now() - Number(panel.seenAt) >= 0 && now() - Number(panel.seenAt) < freshness
+      && (!desiredEnabled || trustedPanel === connected.panelConnectionId));
+  }
+  function publicStatus() {
+    const ready = connectionReady();
+    return {desiredEnabled,connectionReady:ready,active:desiredEnabled && ready && !persistenceError,
+      capability:CAPABILITY,persistenceError,reason:persistenceError ? "persistence_error" : !desiredEnabled ? "not_enabled" : ready ? "active" : "panel_not_connected"};
+  }
+  function assertActivePanel(input) {
+    validateIdentity(input);
+    const panel = panelState() || {};
+    if (panel.panelConnectionId !== input.panelConnectionId || String(panel.panelGeneration) !== input.panelGeneration
+        || !Number(panel.seenAt) || now() - Number(panel.seenAt) >= freshness) throw new Error("The requesting CEP panel is not the active bridge panel.");
+  }
+  function activate(input) {
+    assertActivePanel(input);
+    if (!persist(true, input)) { desiredEnabled = false; throw new Error("Cannot persist autonomous setting."); }
+    desiredEnabled = true; trustedPanel = input.panelConnectionId; trustedGeneration = input.panelGeneration;
+    connected = {panelConnectionId:trustedPanel,panelGeneration:trustedGeneration};
+    sessionHash = crypto.randomBytes(24).toString("hex");
+    return publicStatus();
+  }
   function revoke(input) {
-    const panelConnectionId = requiredText(input && input.panelConnectionId, "panelConnectionId");
-    const panelGeneration = requiredText(input && input.panelGeneration, "panelGeneration");
-    const revoked = Boolean(session
-      && session.panelConnectionId === panelConnectionId
-      && session.panelGeneration === panelGeneration);
-    if (revoked) session = null;
-    return { ...publicStatus(), revoked };
+    assertActivePanel(input);
+    const revoked = desiredEnabled;
+    desiredEnabled = false; sessionHash = crypto.randomBytes(24).toString("hex");
+    persist(false, input);
+    return {...publicStatus(), revoked};
   }
-
   function authorization() {
-    const status = publicStatus();
-    if (!status.active || !session) return null;
-    return {
-      authorized: true,
-      capability: CAPABILITY,
-      expiresAt: status.expiresAt,
-      sessionHash: session.sessionHash
-    };
+    return publicStatus().active ? {authorized:true,capability:CAPABILITY,sessionHash} : null;
   }
-
-  return { activate, authorization, publicStatus, revoke };
+  return {activate, revoke, observePanel, authorization, publicStatus};
 }
-
-module.exports = {
-  CAPABILITY,
-  DEFAULT_TTL_MS,
-  PANEL_FRESHNESS_MS,
-  createAutonomousSessionManager
-};
+module.exports = {CAPABILITY, PANEL_FRESHNESS_MS, SCHEMA, createAutonomousSessionManager};

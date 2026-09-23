@@ -7,11 +7,11 @@ const path = require("path");
 const { spawn } = require("child_process");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "3.0.0";
+const SERVER_VERSION = "3.1.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
-const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
+const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
 const DAEMON_START_TIMEOUT_MS = Number(process.env.AE_DAEMON_START_TIMEOUT_MS || 8000);
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";

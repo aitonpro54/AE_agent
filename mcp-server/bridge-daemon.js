@@ -9,6 +9,7 @@ const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
+const scriptPreparationContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const aiAgents = require("./ai-agents");
@@ -20,6 +21,9 @@ const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstac
 const currentProposalState = createProposalState();
 const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
+const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
+const { createCodeburnUsageAdapter } = require("./codeburn-usage-adapter");
+const { createUsageService } = require("./usage-service");
 const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
@@ -42,11 +46,17 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "3.0.0";
+const SERVER_VERSION = "3.1.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
-const TOKEN = process.env.AE_BRIDGE_TOKEN || "codex-ae-local";
+const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
+const { createBoundary, readJsonObject, sanitizeAutomationResponse } = require("./http-boundary");
+const httpBoundary = createBoundary({automation: TOKEN, panel: process.env.AE_BRIDGE_PANEL_TOKEN,
+  admin: process.env.AE_BRIDGE_ADMIN_TOKEN, adminEnabled: process.env.AE_BRIDGE_DEV_ADMIN === "1",
+  origins: (process.env.AE_BRIDGE_ALLOWED_ORIGINS || "").split(",").filter(Boolean)});
+const commandReceipt = require("./command-receipt");
+const HTTP_BODY_LIMIT = Math.min(1024 * 1024, Math.max(256, Number(process.env.AE_BRIDGE_BODY_LIMIT_BYTES) || 1024 * 1024));
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -59,6 +69,14 @@ function recordAutonomyObstacle(input) {
   catch (_error) { return false; }
 }
 const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
+const nativeUsageStore = createNativeUsageStore({ maxRecords: 200 });
+const codeburnUsageAdapter = createCodeburnUsageAdapter({
+  ...(process.env.CODEBURN_PATH ? { executable: process.env.CODEBURN_PATH } : {}),
+  timeoutMs: 8000,
+  cacheTtlMs: 60000,
+  maxOutputBytes: 512 * 1024
+});
+const usageService = createUsageService({ nativeStore: nativeUsageStore, codeburnAdapter: codeburnUsageAdapter });
 const EDIT_SESSION_ACTIVE_FILE = path.join(LOG_DIR, "edit-session-active.json");
 const EDIT_SESSION_LOG_FILE = path.join(LOG_DIR, "edit-sessions.jsonl");
 const IDEMPOTENCY_LOG_FILE = path.join(LOG_DIR, "idempotency-results.jsonl");
@@ -328,6 +346,7 @@ let lastPanelSeenAt = 0;
 let lastPanelInfo = null;
 let lastPanelPollLoggedAt = 0;
 const autonomousSession = createAutonomousSessionManager({
+  statePath: path.join(process.env.AE_BRIDGE_STATE_DIR || LOG_DIR, "autonomy-preference.json"),
   panelState: () => ({
     panelConnectionId: lastPanelInfo && lastPanelInfo.panelConnectionId || null,
     panelGeneration: lastPanelInfo && lastPanelInfo.panelGeneration || null,
@@ -1010,10 +1029,11 @@ const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
 ]);
 const M100_DIRECT_TOOL_SOURCES = new Set([
   "direct-tools-call",
+  "dev-http",
   "mcp-adapter"
 ]);
 const M100_LOCAL_ADMIN_TOOL_SOURCES = new Set([
-  "dev-http"
+  "dev-admin-http"
 ]);
 const M100_DIRECT_ESCAPE_HATCH_ENV = "AE_M100_ALLOW_DIRECT_TOOL_EXECUTION";
 const M100_DIRECT_ESCAPE_HATCH_ARG = "m100DirectExecutionEscapeHatch";
@@ -1089,9 +1109,7 @@ function classifyM100ToolRisk(name) {
 }
 
 function m100DirectEscapeHatchAllowed(source, args) {
-  if (M100_LOCAL_ADMIN_TOOL_SOURCES.has(source)) return true;
-  if (process.env[M100_DIRECT_ESCAPE_HATCH_ENV] !== "1") return false;
-  return Boolean(args && args[M100_DIRECT_ESCAPE_HATCH_ARG] === true);
+  return M100_LOCAL_ADMIN_TOOL_SOURCES.has(source);
 }
 
 function m100DirectToolCallBlock(source, name, args, executionContext) {
@@ -1727,11 +1745,11 @@ function optionalNumber(args, name, fallback) {
 }
 
 function requiredPositiveInteger(args, name) {
-  const value = Number(args[name]);
-  if (!Number.isFinite(value) || value < 1) {
+  const value = args[name];
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
     throw new Error(`${name} must be a positive 1-based integer.`);
   }
-  return Math.floor(value);
+  return value;
 }
 
 function requiredPositiveIntegerList(args, name) {
@@ -1745,11 +1763,11 @@ function requiredPositiveIntegerList(args, name) {
   const result = [];
   const seen = new Set();
   for (let index = 0; index < values.length; index += 1) {
-    const value = Number(values[index]);
-    if (!Number.isFinite(value) || value < 1) {
+    const value = values[index];
+    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
       throw new Error(`${name} must contain only positive 1-based integers.`);
     }
-    const normalized = Math.floor(value);
+    const normalized = value;
     if (!seen.has(normalized)) {
       seen.add(normalized);
       result.push(normalized);
@@ -1770,8 +1788,8 @@ function requiredExplicitPositiveIntegerList(args, name) {
   const result = [];
   const seen = new Set();
   for (let index = 0; index < raw.length; index += 1) {
-    const value = Number(raw[index]);
-    if (!Number.isInteger(value) || value < 1) {
+    const value = raw[index];
+    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
       throw new Error(`${name} must contain only positive 1-based integers.`);
     }
     if (seen.has(value)) {
@@ -1784,7 +1802,7 @@ function requiredExplicitPositiveIntegerList(args, name) {
 }
 
 function optionalPositiveInteger(args, name) {
-  if (!hasArg(args, name)) return null;
+  if (!Object.prototype.hasOwnProperty.call(args, name) || args[name] === undefined) return null;
   return requiredPositiveInteger(args, name);
 }
 
@@ -2125,6 +2143,7 @@ function compactCheckpoint(checkpoint) {
   if (!checkpoint) return null;
   return {
     label: checkpoint.label || null,
+    sourceFile: checkpoint.sourceFile || null,
     checkpointFile: checkpoint.checkpointFile || null,
     bytes: checkpoint.bytes || null,
     createdAt: checkpoint.createdAt || null
@@ -3099,45 +3118,30 @@ function getScriptLineContext(script, line, radius) {
   return context;
 }
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.setEncoding("utf8");
-    req.on("data", (chunk) => {
-      body += chunk;
-      if (body.length > 15 * 1024 * 1024) {
-        reject(new Error("Request body too large"));
-        req.destroy();
-      }
-    });
-    req.on("end", () => resolve(body));
-    req.on("error", reject);
-  });
-}
-
 function writeJson(res, status, payload) {
+  if (res.destroyed || res.writableEnded || res.headersSent) return;
+  const text = JSON.stringify(res.authRole === "panel" ? payload : sanitizeAutomationResponse(payload));
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*",
+    ...(res.allowedOrigin ? {"Access-Control-Allow-Origin": res.allowedOrigin, "Vary": "Origin"} : {}),
     "Access-Control-Allow-Headers": "content-type, x-ae-bridge-token",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
   });
-  res.end(JSON.stringify(payload));
+  res.end(text);
 }
 
 async function readJsonBody(req) {
-  const body = await readBody(req);
-  if (!body.trim()) return {};
-  return JSON.parse(body);
-}
-
-function getRequestToken(req, url) {
-  return req.headers["x-ae-bridge-token"] || url.searchParams.get("token") || "";
+  return req.parsedJsonBody || readJsonObject(req, HTTP_BODY_LIMIT);
 }
 
 function requireToken(req, res, url) {
-  if (getRequestToken(req, url) !== TOKEN) {
+  const role = httpBoundary.role(req);
+  const route = url.pathname.replace(/^\/dev\/agents\//, "/agents/");
+  const panelOnly = route.startsWith("/bridge/") || route === "/agents/plan/adopt" || route === "/agents/plan/run"
+    || route === "/agents/key" || route === "/agents/setup"
+    || route === "/agents/hardcore/run" || route === "/usage/refresh" || (route === "/autonomy/session" && req.method === "POST");
+  if (url.searchParams.has("token") || !role || (panelOnly && role !== "panel") || (role === "admin" && !route.startsWith("/dev/tool/"))) {
     writeJson(res, 401, { ok: false, error: "Bad bridge token" });
     return false;
   }
@@ -3160,6 +3164,8 @@ function compactAeCommand(command, now) {
   const at = now || Date.now();
   return {
     id: command.id,
+    executionId: command.executionId,
+    leaseId: command.leaseId,
     state: command.state,
     lifecycleState: command.state,
     ageMs: at - command.createdAt,
@@ -3178,6 +3184,9 @@ function compactAeCommand(command, now) {
 function commandForPanel(command) {
   return {
     id: command.id,
+    executionId: command.executionId,
+    leaseId: command.leaseId,
+    contractVersion: commandReceipt.CONTRACT_VERSION,
     script: command.script,
     lifecycleState: command.state,
     leaseOwner: command.leaseOwner || null
@@ -3221,6 +3230,7 @@ function settleCommandFailure(command, code, message) {
 function retainCommandResult(id, payload, command) {
   completedResults.set(id, {
     id,
+    receiptDigest: command.receiptDigest || null,
     ok: Boolean(payload.ok),
     result: payload.result,
     error: payload.error || null,
@@ -3290,6 +3300,8 @@ function enqueueAeCommand(script, timeoutMs) {
     const createdAt = Date.now();
     const command = {
       id,
+      executionId: autonomousCommandContext.getStore() && autonomousCommandContext.getStore().executionId || crypto.randomUUID(),
+      leaseId: null,
       script,
       state: "queued",
       resolve,
@@ -3425,7 +3437,7 @@ function leaseOwnerMatches(command, owner) {
 function findActiveEvalScriptCommandForOwner(owner) {
   if (!owner) return null;
   for (const command of inflightCommands.values()) {
-    if ((command.state === "leased" || command.state === "submitted") && leaseOwnerMatches(command, owner)) {
+    if (command.state === "leased" || command.state === "submitted") {
       return command;
     }
   }
@@ -3508,7 +3520,7 @@ function rejectRevokedAutonomousCommand(command) {
   const authority = autonomousSession.authorization();
   let code = "autonomous_session_expired_or_revoked";
   let error = "Автономная сессия отозвана или истекла до передачи команды AE.";
-  if (authority && authority.sessionHash === command.autonomousGuard.sessionHash) {
+  if (!command.autonomousGuard.sessionHash || authority && authority.sessionHash === command.autonomousGuard.sessionHash) {
     try { currentProposalState.assertExecution(command.autonomousGuard); return false; }
     catch (failure) { code = failure.code || "plan_execution_owner_changed"; error = failure.message; }
   }
@@ -3535,11 +3547,21 @@ function leaseNextQueuedCommand(req, url) {
     const command = inflightCommands.get(id);
     if (!command || command.state !== "queued") continue;
     if (rejectRevokedAutonomousCommand(command)) continue;
+    if (command.autonomousGuard && command.autonomousGuard.projectFile &&
+        require("./proposal-state").normalizeProject(url.searchParams.get("projectFile")) !== require("./proposal-state").normalizeProject(command.autonomousGuard.projectFile)) {
+      command.state = "expired_before_delivery";
+      command.errorCode = "project_target_mismatch";
+      clearTimeout(command.timeout); inflightCommands.delete(command.id);
+      retainCommandResult(command.id, {ok:false, error:"Panel project does not match the proposal before delivery.", code:command.errorCode, lifecycleState:command.state}, command);
+      settleCommandFailure(command, command.errorCode, "Panel project does not match the proposal before delivery.");
+      continue;
+    }
     if (Date.now() >= command.expiresAt) {
       expireQueuedCommand(command, "bridge_next");
       continue;
     }
     command.state = "leased";
+    command.leaseId = crypto.randomUUID();
     command.leasedAt = Date.now();
     command.leaseOwner = leaseOwner;
     recordEvent("ae_command_leased", {
@@ -3626,7 +3648,10 @@ async function runExtendScriptBody(body, timeoutMs) {
   if (guard && guard.projectFile) {
     body = `if (!app.project || !app.project.file || String(app.project.file.fsName).replace(/\\\\/g, "/").toLowerCase() !== ${aeLiteral(guard.projectFile.replace(/\\/g, "/").toLowerCase())}) throw new Error("project_target_mismatch");\n` + body;
   }
-  return enqueueAeCommand(wrapExtendScriptBody(body), timeoutMs || COMMAND_TIMEOUT_MS);
+  const script = wrapExtendScriptBody(body);
+  const preparation = scriptPreparationContext.getStore();
+  if (preparation) { preparation.script = script; return { result: preparation.fixtureResult }; }
+  return enqueueAeCommand(script, timeoutMs || COMMAND_TIMEOUT_MS);
 }
 
 function exposedTools() {
@@ -5630,7 +5655,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 3.0.0",
+      panelVersion: "AE Agent 3.1.0",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]
@@ -5764,6 +5789,15 @@ function persistHardcoreKnowledge(session, args) {
 }
 
 async function runAgentHardcoreSession(source, args) {
+  const initialAuthority = autonomousSession.authorization();
+  if (source !== "panel-http" || !initialAuthority) throw m100ProtocolError("autonomous_session_required", "Agent Hardcore requires the connected panel and an enabled autonomous session.");
+  function requireSessionAuthority() {
+    const current = autonomousSession.authorization();
+    if (!current || current.sessionHash !== initialAuthority.sessionHash) {
+      throw m100ProtocolError("autonomous_session_revoked", "Agent Hardcore authorization changed; the session cannot continue.");
+    }
+    return current;
+  }
   args = args || {};
   const prompt = optionalString(args, "prompt", optionalString(args, "message", "")).trim();
   if (!prompt && !args.plan && !Array.isArray(args.attemptPlans)) {
@@ -5820,6 +5854,7 @@ async function runAgentHardcoreSession(source, args) {
     session.attempts.push(attempt);
 
     try {
+      requireSessionAuthority();
       attempt.planResult = await draftHardcorePlan(source, args, attemptIndex, session);
       if (attempt.planResult && attempt.planResult.planRepair) {
         session.repairHistory.push({
@@ -5839,7 +5874,7 @@ async function runAgentHardcoreSession(source, args) {
       }
       const attemptM100Proposal = attempt.planResult.m100ActionProposal || null;
       const rawStepCount = rawExtendscriptStepCount(attempt.planResult.planValidation);
-      const rawFallbackAllowed = Boolean(session.allowRawFallback && session.typedToolFailures.length > 0 && rawStepCount > 0);
+      const rawFallbackAllowed = false;
 
       attempt.dryRun = await runValidatedAgentPlan({
         ...m100RunFieldsForProposal(attemptM100Proposal, false),
@@ -5848,7 +5883,7 @@ async function runAgentHardcoreSession(source, args) {
         dryRun: true,
         repairPlan: true,
         maxSteps: optionalNumber(args, "maxSteps", 30)
-      });
+      }, {autonomousSession: requireSessionAuthority(), hardcoreReadOnly: true});
       if (!attempt.dryRun.ok) {
         attempt.status = "dry-run-needs-review";
         attempt.blocker = attempt.dryRun.error || "Dry run failed.";
@@ -5870,13 +5905,21 @@ async function runAgentHardcoreSession(source, args) {
         rawExtendscriptDryRunId: rawDryRunId,
         repairPlan: true,
         maxSteps: optionalNumber(args, "maxSteps", 30)
-      });
+      }, {autonomousSession: requireSessionAuthority(), hardcoreReadOnly: true});
       if (rawFallbackAllowed) {
         attempt.rawFallback = {
           allowed: true,
           dryRunId: rawDryRunId || null
         };
         if (attempt.run && attempt.run.executedCount > 0) session.rawFallbackUsed = true;
+      }
+
+      const resultCodes = [attempt.run && attempt.run.errorCode].concat(
+        attempt.run && Array.isArray(attempt.run.steps) ? attempt.run.steps.map(step => step.errorCode) : []);
+      if (resultCodes.some(code => /unknown|timed.?out|timeout/i.test(String(code || "")))) {
+        attempt.status = "run-needs-reconciliation";
+        attempt.blocker = "Execution outcome is uncertain; inspect the project before creating another plan.";
+        break;
       }
 
       const executablePlanBlocker = hardcoreExecutablePlanBlocker(attempt);
@@ -5907,6 +5950,7 @@ async function runAgentHardcoreSession(source, args) {
     } catch (error) {
       attempt.status = "failed";
       attempt.blocker = error.message || String(error);
+      if (error.code === "autonomous_session_revoked") break;
       if (error.readiness || error.providerError) {
         attempt.providerError = error.providerError || null;
         attempt.readiness = error.readiness || null;
@@ -6372,10 +6416,16 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   const allowMutations = optionalBoolean(options, "allowMutations", false);
   const autoEditSession = optionalBoolean(options, "autoEditSession", false);
   const allowRuntimeBindings = optionalBoolean(options, "allowRuntimeBindings", true);
-  const allowWithoutCheckpoint = autonomous ? false : optionalBoolean(options, "allowWithoutCheckpoint", false);
+  const allowWithoutCheckpoint = optionalBoolean(options, "allowWithoutCheckpoint", false);
   const allowRawExtendscript = optionalBoolean(options, "allowRawExtendscript", false);
   const rawExtendscriptDryRunId = optionalString(options, "rawExtendscriptDryRunId", "");
   const stopOnError = autonomous ? true : optionalBoolean(options, "stopOnError", true);
+  // Trusted internal diagnostics, never derived from request options. The same
+  // predicate governs scope and whether mutation read-back is required.
+  const internalReadOnly = Boolean(autonomous && executionContext.hardcoreReadOnly === true
+    && m100RiskForAgentPlan(prepared.plan, validation).level === "read_only"
+    && validation.mutatingCount === 0 && rawExtendscriptStepCount(validation) === 0
+    && options._m100ActionRecord && options._m100ActionRecord.riskLevel === "read_only");
   const maxSteps = Math.max(1, Math.min(50, Math.floor(optionalNumber(options, "maxSteps", 20))));
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
   const checkpointStepPresent = hasCheckpointStep(validation);
@@ -6426,6 +6476,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
     run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
   }
+  if (mutatingExecution && allowWithoutCheckpoint) {
+    run.ok = false; run.errorCode = "checkpoint_bypass_forbidden"; run.error = "Mutating runs require a project-matched checkpoint."; return finishRun();
+  }
   if (activeEditSessionAtStart) {
     run.editSession = compactEditSession(activeEditSession);
   }
@@ -6441,7 +6494,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildSemanticVerification(prepared.plan, run);
     }
-    if (autonomous && !run.dryRun && run.ok && (!run.semanticVerification || run.semanticVerification.status !== "passed" || run.semanticVerification.unverifiedMutationCount > 0)) {
+    if (autonomous && !internalReadOnly && !run.dryRun && run.ok && (!run.semanticVerification || run.semanticVerification.status !== "passed" || run.semanticVerification.unverifiedMutationCount > 0)) {
       run.ok = false;
       run.errorCode = "verification_required";
       run.error = "Автономное выполнение требует подтверждённого read-back каждой операции.";
@@ -6589,15 +6642,17 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
     catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
   }
-  if (!dryRun && autonomous) {
+  if (!dryRun && validation.mutatingCount > 0) {
     if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
       require("./proposal-state").normalizeProject(options._m100ActionRecord && options._m100ActionRecord.project.expectedFile)) {
       run.ok = false; run.errorCode = "edit_session_project_mismatch";
       run.error = "Активная edit session защищает другой проект. Завершите её перед новой сборкой.";
       return finishRun();
     }
+  }
+  if (!dryRun && autonomous) {
     const autonomousRisk = m100RiskForAgentPlan(prepared.plan, validation).level;
-    if (!options._m100ActionRecord || options._m100ActionRecord.riskLevel !== "mutating" || autonomousRisk !== "mutating") {
+    if (!internalReadOnly && (!options._m100ActionRecord || options._m100ActionRecord.riskLevel !== "mutating" || autonomousRisk !== "mutating")) {
       run.ok = false;
       run.error = "Autonomous Codex sessions allow only proposal-backed typed mutating plans.";
       run.errorCode = "autonomous_session_scope_blocked";
@@ -6676,7 +6731,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       return finishRun();
     }
 
-    const guard = autonomous ? {sessionHash: autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
+    const guard = options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
       actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
     const started = await autonomousCommandContext.run(guard, () => startPlanRunEditSession(run, validation));
     if (!started.ok) {
@@ -6782,9 +6837,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       continue;
     }
 
-    if (autonomous && step.mutatesProject) {
+    if (step.mutatesProject) {
       const freshAuthority = autonomousSession.authorization();
-      if (!freshAuthority || freshAuthority.sessionHash !== autonomous.sessionHash) {
+      if (autonomous && (!freshAuthority || freshAuthority.sessionHash !== autonomous.sessionHash)) {
         item.status = "blocked"; item.reason = "Автономная сессия истекла или отозвана.";
         run.errorCode = "autonomous_session_expired_or_revoked"; run.error = item.reason;
         run.steps.push(item); run.skippedCount += 1; break;
@@ -6796,6 +6851,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
           require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile)) {
           throw m100ProtocolError("edit_session_project_mismatch", "Checkpoint активной edit session относится к другому проекту.");
+        }
+        if (!activeEditSession && (!run.checkpoint || require("./proposal-state").normalizeProject(run.checkpoint.sourceFile) !== require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile))) {
+          throw m100ProtocolError("checkpoint_project_mismatch", "Checkpoint не подтверждает целевой проект.");
         }
       } catch (error) {
         item.status = "blocked"; item.reason = error.message; run.errorCode = error.code || "project_inspection_failed";
@@ -6816,7 +6874,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     }
     const stepStartedAt = Date.now();
     try {
-      const guard = autonomous && step.mutatesProject ? {sessionHash: autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
+      const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
@@ -6912,6 +6970,10 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHints, projectI
     mutatingNames: MUTATING_TOOL_NAMES });
 }
 
+function recordNativeProviderUsage(input) {
+  return recordObservedProviderCall(nativeUsageStore, input);
+}
+
 async function repairAgentPlanJson(args, rawText) {
   const repairPrompt = [
     "The following response was intended to be one JSON object matching the AE MCP plan schema, but it was malformed.",
@@ -6933,8 +6995,11 @@ async function repairAgentPlanJson(args, rawText) {
   return {
     repaired,
     repairText: repairResult.text,
+    rawUsage: repairResult.usage,
     usage: reuseTelemetry.summarizeUsage(repairResult.usage),
-    repairModel: repairResult.model || null
+    repairModel: repairResult.model || null,
+    repairProvider: repairResult.agent ? repairResult.agent.id : args && (args.agentId || args.agent) || null,
+    repairSessionId: repairResult.codexThreadId || null
   };
 }
 
@@ -6969,9 +7034,22 @@ async function runAgentChatLogged(source, args) {
       durationMs: finishedAtMs - startedAtMs,
       agentId: result.agent ? result.agent.id : args.agentId || args.agent || null,
       model: result.model || args.model || null,
+      usage: reuseTelemetry.summarizeUsage(result.usage),
       textLength: result.text ? result.text.length : 0,
       logFile: AI_CHAT_LOG_FILE
     };
+    metadata.nativeUsage = recordNativeProviderUsage({
+      recordId: `chat:${requestId}`,
+      requestId,
+      startedAt,
+      finishedAt: metadata.finishedAt,
+      provider: metadata.agentId,
+      modelId: metadata.model,
+      reasoningEffort: args && (args.reasoning_effort || args.reasoningEffort) || null,
+      serviceTier: result.serviceTier || null,
+      sessionId: result.codexThreadId || null,
+      usage: result.usage
+    });
     appendAiChatEvent("chat_finished", metadata);
     return {
       ...result,
@@ -7007,6 +7085,15 @@ async function runAgentChatLogged(source, args) {
       providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
+    if (error.readiness && error.readiness.canChat === true) {
+      metadata.nativeUsage = recordNativeProviderUsage({
+        recordId: `chat:${requestId}`, requestId, startedAt, finishedAt: metadata.finishedAt,
+        provider: args && (args.agentId || args.agent) || null,
+        modelId: args && args.model || null,
+        reasoningEffort: args && (args.reasoning_effort || args.reasoningEffort) || null,
+        outcome: "failed_unknown", usage: null
+      });
+    }
     appendAiChatEvent("chat_failed", metadata);
     error.requestId = requestId;
     error.startedAt = startedAt;
@@ -7046,17 +7133,36 @@ async function runAgentPlanLogged(source, args) {
       ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
       maxTokens: hasArg(args || {}, "maxTokens") ? args.maxTokens : 2200
     });
+    const primaryNativeUsage = recordNativeProviderUsage({
+      recordId: `plan:${requestId}:primary`, requestId, startedAt,
+      finishedAt: new Date().toISOString(),
+      provider: result.agent ? result.agent.id : args.agentId || args.agent || null,
+      modelId: result.model || args.model || null,
+      reasoningEffort: reasoningEffort || null,
+      serviceTier: result.serviceTier || null,
+      sessionId: result.codexThreadId || null,
+      usage: result.usage
+    });
     let parsed = normalizeAgentPlan(result.text);
     let repaired = false;
     let repairError = null;
     let repairModel = null;
     let repairUsage = null;
+    let repairRawUsage = null;
+    let repairCallCompleted = false;
+    let repairFailedUsage = null;
+    let repairProvider = null;
+    let repairSessionId = null;
     if (!parsed.ok && optionalBoolean(args || {}, "repairPlan", true) !== false) {
       try {
         const repair = await repairAgentPlanJson(args || {}, result.text);
+        repairCallCompleted = true;
         repaired = repair.repaired.ok;
         repairModel = repair.repairModel;
         repairUsage = repair.usage;
+        repairRawUsage = repair.rawUsage;
+        repairProvider = repair.repairProvider;
+        repairSessionId = repair.repairSessionId;
         if (repair.repaired.ok) {
           parsed = repair.repaired;
         } else {
@@ -7064,6 +7170,17 @@ async function runAgentPlanLogged(source, args) {
         }
       } catch (error) {
         repairError = error.message || String(error);
+        if (error.readiness && error.readiness.canChat === true) {
+          repairFailedUsage = recordNativeProviderUsage({
+            recordId: `plan:${requestId}:repair`, requestId: `${requestId}:repair`,
+            parentRecordId: `plan:${requestId}:primary`, startedAt,
+            finishedAt: new Date().toISOString(),
+            provider: args && (args.agentId || args.agent) || null,
+            modelId: args && args.model || null,
+            reasoningEffort: reasoningEffort || null,
+            outcome: "failed_unknown", usage: null
+          });
+        }
       }
     }
     let validation = null;
@@ -7110,6 +7227,19 @@ async function runAgentPlanLogged(source, args) {
       solutionReuse: reuseTelemetry.summarizeReuse(parsed.plan, solutionHints.retrieval),
       logFile: AI_CHAT_LOG_FILE
     };
+    metadata.nativeUsage = primaryNativeUsage;
+    metadata.repairNativeUsage = repairCallCompleted ? recordNativeProviderUsage({
+      recordId: `plan:${requestId}:repair`,
+      requestId: `${requestId}:repair`,
+      parentRecordId: `plan:${requestId}:primary`,
+      startedAt,
+      finishedAt: metadata.finishedAt,
+      provider: repairProvider,
+      modelId: repairModel,
+      reasoningEffort: reasoningEffort || null,
+      sessionId: repairSessionId,
+      usage: repairRawUsage
+    }) : repairFailedUsage;
     appendAiChatEvent("plan_finished", metadata);
     const planResponse = {
       ...result,
@@ -7202,6 +7332,15 @@ async function runAgentPlanLogged(source, args) {
       providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
+    if (error.readiness && error.readiness.canChat === true) {
+      metadata.nativeUsage = recordNativeProviderUsage({
+        recordId: `plan:${requestId}:primary`, requestId, startedAt, finishedAt: metadata.finishedAt,
+        provider: args && (args.agentId || args.agent) || null,
+        modelId: args && args.model || null,
+        reasoningEffort: reasoningEffort || null,
+        outcome: "failed_unknown", usage: null
+      });
+    }
     appendAiChatEvent("plan_failed", metadata);
     error.requestId = requestId;
     error.startedAt = startedAt;
@@ -7212,8 +7351,13 @@ async function runAgentPlanLogged(source, args) {
 }
 
 function startHttpBridge() {
-  const server = http.createServer(async (req, res) => {
+  const server = http.createServer((req, res) => {
+    Promise.resolve().then(async () => {
+    httpBoundary.validate(req);
+    res.allowedOrigin = req.headers.origin || null;
+    res.authRole = httpBoundary.role(req);
     const url = new URL(req.url, `http://${HOST}:${PORT}`);
+    if (url.searchParams.has("token")) { writeJson(res, 401, {ok:false, error:"URL credentials are not accepted."}); return; }
 
     if (req.method === "OPTIONS") {
       writeJson(res, 204, {});
@@ -7232,11 +7376,11 @@ function startHttpBridge() {
         inflight: status.inflightCommands.length,
         panelConnected: status.panelConnected,
         lastPanelSeenAt: status.lastPanelSeenAt,
-        lastPanelInfo: status.lastPanelInfo,
         m100RiskPolicy: status.m100RiskPolicy
       });
       return;
     }
+    if (req.method === "POST" && res.authRole) req.parsedJsonBody = await readJsonObject(req, HTTP_BODY_LIMIT);
 
     if (url.pathname === "/autonomy/session" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
@@ -7248,6 +7392,7 @@ function startHttpBridge() {
       if (!requireToken(req, res, url)) return;
       try {
         const body = await readJsonBody(req);
+        if (typeof body.enabled !== "boolean") throw new Error("enabled must be boolean.");
         const enabled = body && body.enabled === true;
         const session = enabled ? autonomousSession.activate(body) : autonomousSession.revoke(body);
         recordEvent(enabled ? "autonomous_session_enabled" : "autonomous_session_revoked", {
@@ -7279,6 +7424,31 @@ function startHttpBridge() {
     if (url.pathname === "/dev/tools" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       writeJson(res, 200, { ok: true, tools: exposedTools() });
+      return;
+    }
+
+    if (url.pathname === "/usage" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      writeJson(res, 200, { ok: true, usage: usageService.snapshot() });
+      return;
+    }
+
+    if (url.pathname === "/usage/refresh" && req.method === "POST") {
+      if (!requireToken(req, res, url)) return;
+      try {
+        const body = await readJsonBody(req);
+        const usage = await usageService.refresh({
+          period: body && body.period,
+          includeQuota: !body || body.includeQuota !== false
+        });
+        writeJson(res, 200, { ok: true, usage });
+      } catch (error) {
+        writeJson(res, 200, {
+          ok: true,
+          usage: usageService.snapshot(),
+          refreshWarning: "Optional CodeBurn refresh failed; AE editing remains available."
+        });
+      }
       return;
     }
 
@@ -7637,6 +7807,10 @@ function startHttpBridge() {
       if (!requireToken(req, res, url)) return;
 
       const name = decodeURIComponent(url.pathname.slice("/dev/tool/".length));
+      if (req.method === "GET" && classifyM100ToolRisk(name).riskLevel !== "read_only") {
+        writeJson(res, 405, {ok:false, code:"get_mutation_forbidden"}); return;
+      }
+      if (name === projectSave.TOOL_NAME) { writeJson(res, 403, {ok:false, code:"project_save_manual_only"}); return; }
       const args = {};
 
       for (const [key, value] of url.searchParams.entries()) {
@@ -7648,7 +7822,7 @@ function startHttpBridge() {
       }
 
       try {
-        const result = await callToolLogged("dev-http", name, args);
+        const result = await callToolLogged(res.authRole === "admin" ? "dev-admin-http" : "dev-http", name, args);
         writeJson(res, result.isError ? 500 : 200, {
           ok: !result.isError,
           tool: name,
@@ -7698,8 +7872,22 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname === "/bridge/heartbeat" && req.method === "GET") {
+      if (!requireToken(req, res, url)) return;
+      const owner = panelLeaseOwner(req, url);
+      if (!lastPanelInfo || owner.panelConnectionId !== lastPanelInfo.panelConnectionId || owner.panelGeneration !== lastPanelInfo.panelGeneration) {
+        writeJson(res,409,{ok:false,code:"panel_identity_mismatch"}); return;
+      }
+      lastPanelSeenAt = Date.now();
+      writeJson(res,200,{ok:true,session:autonomousSession.publicStatus()}); return;
+    }
     if (url.pathname === "/bridge/next" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
+      const panelIdentity = url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"];
+      const panelGeneration = url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"];
+      if (!panelIdentity || !panelGeneration) { writeJson(res, 409, {ok:false, code:"panel_identity_required", error:"Panel identity and generation are required."}); return; }
+      try { autonomousSession.observePanel({panelConnectionId:panelIdentity,panelGeneration}); }
+      catch (error) { writeJson(res, 409, {ok:false,code:"panel_identity_mismatch",error:error.message}); return; }
       lastPanelSeenAt = Date.now();
       lastPanelInfo = {
         userAgent: req.headers["user-agent"] || null,
@@ -7750,6 +7938,8 @@ function startHttpBridge() {
         writeJson(res, 409, {ok: false, code: command.errorCode, error: command.error});
         return;
       }
+      if (Date.now() >= command.expiresAt) timeoutAeCommand(command.id);
+      if (!lastPanelInfo || !leaseOwnerMatches(command, lastPanelInfo)) { writeJson(res, 409, {ok:false, code:"panel_generation_mismatch"}); return; }
 
       const submittedOwner = {
         panelConnectionId: String(payload.panelConnectionId || "unknown-panel"),
@@ -7758,7 +7948,8 @@ function startHttpBridge() {
       };
 
       if (command.state === "submitted") {
-        writeJson(res, 200, { ok: true, lifecycleState: command.state });
+        const matches = commandReceipt.identityMatches(command, payload);
+        writeJson(res, matches ? 200 : 409, { ok: matches, lifecycleState: command.state, code: matches ? null : "command_identity_mismatch" });
         return;
       }
 
@@ -7766,12 +7957,13 @@ function startHttpBridge() {
         writeJson(res, 409, {
           ok: false,
           error: `Command cannot be marked submitted from state ${command.state}.`,
+          code: "command_stage_mismatch",
           lifecycleState: command.state
         });
         return;
       }
 
-      if (!leaseOwnerMatches(command, submittedOwner)) {
+      if (!commandReceipt.identityMatches(command, payload)) {
         recordEvent("ae_command_submit_owner_mismatch", {
           id,
           leaseOwner: command.leaseOwner,
@@ -7780,6 +7972,7 @@ function startHttpBridge() {
         writeJson(res, 409, {
           ok: false,
           error: "Command submit owner does not match the lease owner.",
+          code: "command_identity_mismatch",
           lifecycleState: command.state
         });
         return;
@@ -7799,31 +7992,28 @@ function startHttpBridge() {
 
     if (url.pathname === "/bridge/result" && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
-      const body = await readBody(req);
-      const payload = body ? JSON.parse(body) : {};
+      const payload = await readJsonBody(req);
       const command = inflightCommands.get(payload.id);
 
       if (!command) {
         const retained = completedResults.get(payload.id);
         if (retained) {
-          const staleResult = retainStaleCommandResult(payload.id, payload, retained);
-          recordEvent("ae_command_stale_result_ignored", {
-            id: payload.id,
-            previousLifecycleState: retained.lifecycleState || null,
-            ok: Boolean(payload.ok),
-            ageMs: retained.createdAt ? Date.now() - retained.createdAt : null
-          });
-          writeJson(res, 200, {
-            ok: true,
-            stale: true,
-            lifecycleState: staleResult.lifecycleState
-          });
+          const identical = commandReceipt.identityMatches(retained.command, payload) && retained.receiptDigest === commandReceipt.digest(payload);
+          writeJson(res, identical ? 200 : 409, {ok: identical, duplicate: identical, idempotent: identical,
+            code: identical ? null : "terminal_result_conflict", lifecycleState: retained.lifecycleState});
           return;
         }
         writeJson(res, 404, { ok: false, error: "Unknown command id" });
         return;
       }
 
+      if (Date.now() >= command.expiresAt) timeoutAeCommand(command.id);
+      const receiptError = commandReceipt.check(command, payload, "submitted");
+      const currentOwner = lastPanelInfo && leaseOwnerMatches(command, lastPanelInfo);
+      if (receiptError || !currentOwner) {
+        writeJson(res, 409, {ok:false, code: receiptError || "panel_generation_mismatch"}); return;
+      }
+      command.receiptDigest = commandReceipt.digest(payload);
       clearTimeout(command.timeout);
       inflightCommands.delete(payload.id);
       command.completedAt = Date.now();
@@ -7896,11 +8086,11 @@ function startHttpBridge() {
     }
 
     writeJson(res, 404, { ok: false, error: "Not found" });
+    }).catch((error) => { writeJson(res, error.status || 400, {ok:false, error: error.message || "Request failed."}); });
   });
 
   server.listen(PORT, HOST, () => {
     log(`HTTP bridge listening on http://${HOST}:${PORT}`);
-    log(`AE_BRIDGE_TOKEN=${TOKEN}`);
     recordEvent("server_started", {
       host: HOST,
       port: PORT,
@@ -11783,41 +11973,33 @@ async function callTool(name, args, executionContext) {
 
       function __codexResolveChildProperty(parent, segment) {
         if (parent === null || parent === undefined) return null;
-
-        if (typeof segment === "number") {
-          return parent.property(Math.floor(segment));
+        var descriptor = typeof segment === "number" ? {propertyIndex: segment} : segment;
+        if (!descriptor || (typeof descriptor !== "string" && typeof descriptor !== "object") || descriptor instanceof Array) throw new Error("Invalid property identity.");
+        var byString = typeof descriptor === "string";
+        var expectedName = byString ? undefined : descriptor.name;
+        var expectedMatchName = byString ? undefined : descriptor.matchName;
+        var hasIndex = !byString && (descriptor.propertyIndex !== undefined || descriptor.index !== undefined);
+        var expectedIndex = descriptor.propertyIndex !== undefined ? descriptor.propertyIndex : descriptor.index;
+        if (expectedName !== undefined && (typeof expectedName !== "string" || !expectedName)) throw new Error("Invalid property name.");
+        if (expectedMatchName !== undefined && (typeof expectedMatchName !== "string" || !expectedMatchName)) throw new Error("Invalid property matchName.");
+        if (hasIndex) {
+          if (typeof expectedIndex !== "number" || !isFinite(expectedIndex) || expectedIndex < 1 || Math.floor(expectedIndex) !== expectedIndex || expectedIndex > parent.numProperties) throw new Error("Property index must be an in-range integer.");
+          if (descriptor.propertyIndex !== undefined && descriptor.index !== undefined && descriptor.propertyIndex !== descriptor.index) throw new Error("Conflicting property indexes.");
+          var indexed = parent.property(expectedIndex);
+          if (!indexed || (expectedName && indexed.name !== expectedName) || (expectedMatchName && indexed.matchName !== expectedMatchName)) throw new Error("Property identity mismatch.");
+          return indexed;
         }
-
-        if (typeof segment === "string") {
-          return parent.property(segment);
+        var found = null;
+        if (!byString && !expectedName && !expectedMatchName) throw new Error("Property identity is empty.");
+        for (var __p = 1; __p <= parent.numProperties; __p++) {
+          var candidate = parent.property(__p);
+          if (!candidate) continue;
+          if (byString ? (candidate.name !== descriptor && candidate.matchName !== descriptor) : ((expectedName && candidate.name !== expectedName) || (expectedMatchName && candidate.matchName !== expectedMatchName))) continue;
+          if (found) throw new Error("Property selection is ambiguous.");
+          found = candidate;
         }
-
-        if (segment && typeof segment === "object") {
-          var expectedMatchName = segment.matchName || null;
-          var expectedName = segment.name || null;
-          var expectedIndex = segment.propertyIndex || segment.index || null;
-
-          if (expectedMatchName || expectedName) {
-            try {
-              for (var __p = 1; __p <= parent.numProperties; __p++) {
-                var candidate = parent.property(__p);
-                if (!candidate) continue;
-                if (expectedMatchName && candidate.matchName !== expectedMatchName) continue;
-                if (expectedName && candidate.name !== expectedName) continue;
-                return candidate;
-              }
-            } catch (__scanError) {}
-          }
-
-          if (expectedIndex !== null && expectedIndex !== undefined) {
-            return parent.property(Math.floor(Number(expectedIndex)));
-          }
-
-          if (expectedMatchName) return parent.property(expectedMatchName);
-          if (expectedName) return parent.property(expectedName);
-        }
-
-        return null;
+        if (!found) throw new Error("Property identity not found.");
+        return found;
       }
 
       function __codexResolveProperty(root, propertyPath) {
@@ -11872,9 +12054,7 @@ async function callTool(name, args, executionContext) {
         if (!effectGroup) throw new Error("Layer has no effect parade.");
 
         if (effectIndex !== null && effectIndex !== undefined) {
-          var indexedEffect = effectGroup.property(Math.floor(Number(effectIndex)));
-          if (!indexedEffect) throw new Error("Effect not found at index " + effectIndex + ".");
-          return indexedEffect;
+          return __codexResolveChildProperty(effectGroup, {propertyIndex: effectIndex, name: effectName || undefined, matchName: effectMatchName || undefined});
         }
 
         if (!effectName && !effectMatchName) {
@@ -11938,9 +12118,7 @@ async function callTool(name, args, executionContext) {
         }
 
         if (propertyIndex !== null && propertyIndex !== undefined) {
-          var indexedProperty = effect.property(Math.floor(Number(propertyIndex)));
-          if (!indexedProperty) throw new Error("Effect property not found at index " + propertyIndex + ".");
-          return indexedProperty;
+          return __codexResolveChildProperty(effect, {propertyIndex: propertyIndex, name: propertyName || undefined, matchName: propertyMatchName || undefined});
         }
 
         if (!propertyName && !propertyMatchName) {
@@ -12159,7 +12337,7 @@ async function callTool(name, args, executionContext) {
 
   if (name === "plan_with_ai_agent") {
     try {
-      return toolResult(await runAgentPlanLogged("mcp-tool", args || {}));
+      return toolResult(sanitizeAutomationResponse(await runAgentPlanLogged("mcp-tool", args || {})));
     } catch (error) {
       return toolResult({
         error: error.message || String(error),
@@ -16297,11 +16475,26 @@ async function callTool(name, args, executionContext) {
       };
       var isLayerAttribute = layerAttributeSetters[layerAttributeName] === true;
 
+      var preparedTargets = [];
+      for (var __pre = 0; __pre < layerIndices.length; __pre++) {
+        var preLayer = comp.layer(layerIndices[__pre]);
+        if (!preLayer || preLayer.locked) throw new Error("Layer missing or locked at index " + layerIndices[__pre]);
+        if (isLayerAttribute) {
+          if (shouldSetAtTime) throw new Error(layerAttributeName + " cannot be keyframed with setAtTime.");
+          if (layerAttributeName === "collapseTransformation" && preLayer.canSetCollapseTransformation === false) throw new Error("Layer cannot set collapseTransformation.");
+          preparedTargets.push({layer: preLayer});
+        } else {
+          var preProp = __codexResolveProperty(preLayer, propertyPath);
+          if (typeof preProp[shouldSetAtTime ? "setValueAtTime" : "setValue"] !== "function") throw new Error("Property is not writable.");
+          preparedTargets.push({layer: preLayer, prop: preProp, value: __codexPreparePropertyValue(preProp, requestedValue)});
+        }
+      }
       app.beginUndoGroup("Codex Set Property Value");
+      try {
       var layers = [];
       var properties = [];
       for (var __li = 0; __li < layerIndices.length; __li++) {
-        var layer = comp.layer(layerIndices[__li]);
+        var layer = preparedTargets[__li].layer;
         if (!layer) throw new Error("Layer not found at index " + layerIndices[__li] + ".");
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
 
@@ -16325,8 +16518,8 @@ async function callTool(name, args, executionContext) {
           continue;
         }
 
-        var prop = __codexResolveProperty(layer, propertyPath);
-        var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+        var prop = preparedTargets[__li].prop;
+        var preparedValue = preparedTargets[__li].value;
         if (shouldSetAtTime) {
           prop.setValueAtTime(targetTime, preparedValue);
         } else {
@@ -16347,8 +16540,8 @@ async function callTool(name, args, executionContext) {
         setAtTime: shouldSetAtTime,
         time: targetTime
       };
-      app.endUndoGroup();
       return response;
+      } finally { app.endUndoGroup(); }
     `);
     return toolResult(result.result);
   }
@@ -19798,13 +19991,26 @@ async function callToolLogged(source, name, args, executionContext) {
   }
 }
 
-activeEditSession = loadActiveEditSession();
-loadAgentSecrets();
-loadIdempotencyRecords();
-if (activeEditSession) {
-  recordEvent("edit_session_restored", {
-    session: compactEditSession(activeEditSession)
-  });
-}
+module.exports = {
+  async prepareToolScript(name, args, fixtureResult = null) {
+    if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details",
+      "set_comp_properties", "set_comp_work_area", "get_comp_details", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
+      "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
+      "create_shape_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "get_path_geometry", "set_path_geometry", "duplicate_layer",
+      "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp",
+      "apply_keyframe_ease", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status", "align_layers_to_time"
+    ].includes(name)) throw new Error("Script preparation unsupported for this tool.");
+    const prepared = { script: null, result: null, fixtureResult };
+    await scriptPreparationContext.run(prepared, async () => { prepared.result = await callTool(name, args); });
+    return prepared;
+  },
+  requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult
+};
 
-startHttpBridge();
+if (require.main === module) {
+  activeEditSession = loadActiveEditSession();
+  loadAgentSecrets();
+  loadIdempotencyRecords();
+  if (activeEditSession) recordEvent("edit_session_restored", { session: compactEditSession(activeEditSession) });
+  startHttpBridge();
+}

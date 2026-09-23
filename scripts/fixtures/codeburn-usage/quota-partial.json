@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "id": "codex",
+      "name": "Codex",
+      "available": true,
+      "windows": [
+        { "label": "five-hour", "usedPercent": 45, "remainingPercent": 55, "resetAt": "2026-09-20T00:00:00.000Z" }
+      ]
+    },
+    { "id": "other", "name": "Other", "available": false, "windows": null, "error": "synthetic unavailable" }
+  ]
+}

@@ -9,15 +9,20 @@ const {createMcpClient} = require("./autonomous-plan-client");
 const {buildGeneratedFixturePlan} = require("./slideshow-fixture-plan");
 const {buildSlideshowPlan} = require("../mcp-server/slideshow-plan-builder");
 const {withProjectPanel} = require("./fake-project-panel");
+const {isolatedEnvironment} = require("./network-test-fixture");
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function structuralLayer(layerId,name,duration){return{layerId,name,sourceType:"none",sourceItemId:null,sourceName:null,startTime:0,inPoint:0,outPoint:duration,stretch:100,enabled:true,audioEnabled:false,timeRemapEnabled:false,guideLayer:false,adjustmentLayer:false,threeDLayer:false,collapseTransformation:false};}
 async function main() {
   const port = 41000 + Math.floor(Math.random() * 7000);
-  process.env.AE_BRIDGE_PORT = String(port);
-  process.env.AE_BRIDGE_TOKEN = "isolated-slideshow-validation";
-  process.env.AE_BRIDGE_LOG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "slideshow-validation-"));
-  process.env.AE_DAEMON_AUTO_START = "0";
-  const daemon = spawn(process.execPath, [path.resolve(__dirname, "../mcp-server/bridge-daemon.js")], {env: process.env, windowsHide: true, stdio: "ignore"});
+  const token = "isolated-slideshow-validation";
+  const panelToken = `${token}-panel`;
+  const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "slideshow-validation-"));
+  const env = isolatedEnvironment(runtime, {port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: 10000});
+  for (const key of Object.keys(process.env)) {
+    if (!(key in env) && /^(AE_|CODEBURN|OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE|OPENROUTER|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY)/i.test(key)) delete process.env[key];
+  }
+  Object.assign(process.env, env);
+  const daemon = spawn(process.execPath, [path.resolve(__dirname, "../mcp-server/bridge-daemon.js")], {env, windowsHide: true, stdio: "ignore"});
   let client;
   try {
     let ready = false;
@@ -43,10 +48,10 @@ async function main() {
       assert.equal(validation.classification.rawExtendscriptStepCount, 0, "Narrow typed slideshow tools must not be classified as raw JSX");
       results.push({name: stage.name, steps: validation.steps.length, ok: true});
     }
-    const proposed = await withProjectPanel(port, process.env.AE_BRIDGE_TOKEN, () => client.call("propose_ai_agent_plan", {plan: production.stages[0]}), "slideshow-validation", project);
+    const proposed = await withProjectPanel(port, panelToken, () => client.call("propose_ai_agent_plan", {plan: production.stages[0]}), "slideshow-validation", project);
     assert(!proposed.isError, JSON.stringify(proposed.value));
     assert.equal(proposed.value.proposal.risk.level, "mutating");
-    const preview = await withProjectPanel(port, process.env.AE_BRIDGE_TOKEN, () => client.call("run_ai_agent_plan", {actionId: proposed.value.proposal.actionId, dryRun: true, maxSteps: 50}), "slideshow-validation", project);
+    const preview = await withProjectPanel(port, panelToken, () => client.call("run_ai_agent_plan", {actionId: proposed.value.proposal.actionId, dryRun: true, maxSteps: 50}), "slideshow-validation", project);
     assert(!preview.isError && preview.value.ok, JSON.stringify({error: preview.value.error, steps: preview.value.steps}));
     assert.equal(preview.value.executedCount, 0);
     console.log(JSON.stringify({ok: true, liveAeCalled: false, stages: results}));

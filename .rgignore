@@ -8,3 +8,10 @@ plans/archive/**
 .codex-runtime/**
 logs/**
 node_modules/**
+# Frozen legacy tooling; explicit paths remain readable for integrity checks.
+orchestrator/**
+!orchestrator/bounded-process-result.cjs
+scripts/full-intake-runtime-cleanup.js
+scripts/sdk-generic-repo-full-intake-smoke.js
+scripts/sdk-generic-repo-importer-command-smoke.js
+scripts/sdk-generic-repo-queue-supervisor-smoke.js

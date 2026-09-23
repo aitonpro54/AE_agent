@@ -1,14 +1,18 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
 const http = require("http");
+const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
+const { isolatedEnvironment } = require("./network-test-fixture");
 
 const daemonPath = path.join(__dirname, "..", "mcp-server", "bridge-daemon.js");
 const nodePath = process.execPath;
 const port = String(4750 + Math.floor(Math.random() * 1000));
 const token = "plan-repair-smoke-token";
+const panelToken = `${token}-panel`;
 const REQUEST_TIMEOUT_MS = 10000;
 
 function requestJsonWithOptions(options, payload) {
@@ -40,7 +44,7 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function bridgePost(pathname, payload) {
+function bridgePost(pathname, payload, authToken = token) {
   return requestJsonWithOptions({
     hostname: "127.0.0.1",
     port,
@@ -48,7 +52,7 @@ function bridgePost(pathname, payload) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-ae-bridge-token": token
+      "x-ae-bridge-token": authToken
     }
   }, payload);
 }
@@ -112,12 +116,9 @@ async function validatePlan(id, plan, expectations) {
 }
 
 async function main() {
+  const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-plan-repair-"));
   const child = spawn(nodePath, [daemonPath], {
-    env: {
-      ...process.env,
-      AE_BRIDGE_PORT: port,
-      AE_BRIDGE_TOKEN: token
-    },
+    env: isolatedEnvironment(runtime, {port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: REQUEST_TIMEOUT_MS}),
     stdio: ["ignore", "pipe", "pipe"]
   });
   const stderr = [];
@@ -732,7 +733,7 @@ async function main() {
           { title: "Precompose selected layers", tool: "precompose", args: { newName: "Codex Repair Dry Run" } }
         ]
       }
-    });
+    }, panelToken);
     assert.strictEqual(dryRunResponse.status, 200, "dry-run repaired endpoint status");
     assert.strictEqual(dryRunResponse.body.ok, true, "dry-run repaired ok");
     assert.strictEqual(dryRunResponse.body.run.planRepair.applied, true, "dry-run repair applied");
@@ -749,7 +750,7 @@ async function main() {
         requiresCheckpoint: false,
         steps: []
       }
-    });
+    }, panelToken);
     assert.strictEqual(emptyRunResponse.status, 400, "empty run endpoint status");
     assert.strictEqual(emptyRunResponse.body.ok, false, "empty run ok");
     assert.strictEqual(emptyRunResponse.body.run.ok, false, "empty run result ok");

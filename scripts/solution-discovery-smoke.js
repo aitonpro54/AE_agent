@@ -1,15 +1,20 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
 const http = require("http");
+const os = require("os");
 const path = require("path");
 const readline = require("readline");
 const { spawn } = require("child_process");
 const { getBuilderContract } = require("../mcp-server/solution-plan-builder");
 const {withProjectPanel} = require("./fake-project-panel");
+const {isolatedEnvironment} = require("./network-test-fixture");
 const ROOT = path.resolve(__dirname, "..");
 const port = String(18000 + Math.floor(Math.random() * 10000));
-const env = {...process.env, AE_BRIDGE_PORT: port, AE_BRIDGE_TOKEN: "discovery-smoke", AE_DAEMON_AUTO_START: "0"};
+const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-solution-discovery-"));
+const env = isolatedEnvironment(runtime, {port, automationToken: "discovery-smoke",
+  panelToken: "discovery-smoke-panel", devAdmin: false, commandTimeoutMs: 10000});
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function health() {
@@ -84,10 +89,10 @@ async function main() {
     assert(recipe.planBuilder.inputSchema);
     const built = await call("build_solution_plan", {solutionId, inputs: getBuilderContract(solutionId).example});
     assert.strictEqual(built.validation.ok, true);
-    const proposed = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("propose_ai_agent_plan", {plan: built.plan}));
+    const proposed = await withProjectPanel(port, env.AE_BRIDGE_PANEL_TOKEN, () => call("propose_ai_agent_plan", {plan: built.plan}));
     assert(proposed.proposal.actionId);
     assert.strictEqual(proposed.proposal.confirmation.confirmationToken, undefined);
-    const preview = await withProjectPanel(port, env.AE_BRIDGE_TOKEN, () => call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true}));
+    const preview = await withProjectPanel(port, env.AE_BRIDGE_PANEL_TOKEN, () => call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: true}));
     assert(preview.ok);
     assert.strictEqual(preview.executedCount, 0);
     assert.deepStrictEqual(preview.solutionReuse.declaredSolutionIds, [solutionId]);

@@ -3,6 +3,7 @@
 
 const http = require("http");
 const https = require("https");
+const { createBoundary } = require("../mcp-server/http-boundary");
 const {
   DEFAULT_CANDIDATE_DIR,
   DEFAULT_MAX_JSX_BYTES,
@@ -20,7 +21,7 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8787;
 const DEFAULT_BRIDGE_HOST = "127.0.0.1";
 const DEFAULT_BRIDGE_PORT = 3456;
-const DEFAULT_BRIDGE_TOKEN = "codex-ae-local";
+const DEFAULT_BRIDGE_TOKEN = "";
 const DEFAULT_TIMEOUT_MS = 10000;
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
 const CONNECTOR_MODE = "read-only-bridge-with-gated-jsx-lab";
@@ -458,11 +459,12 @@ function isWriteLikeLocalTool(tool) {
 }
 
 function jsonResponse(res, statusCode, body) {
+  if (res.destroyed || res.writableEnded || res.headersSent) return;
   const text = body === undefined ? "" : JSON.stringify(body);
   res.writeHead(statusCode, {
     "access-control-allow-headers": "authorization, content-type, mcp-session-id, x-ae-chatgpt-connector-token",
     "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-origin": "*",
+    ...(res.allowedOrigin ? {"access-control-allow-origin": res.allowedOrigin, "vary":"Origin"} : {}),
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(text)
   });
@@ -470,7 +472,7 @@ function jsonResponse(res, statusCode, body) {
 }
 
 function hasValidConnectorToken(req, config) {
-  if (!config.connectorToken) return true;
+  if (!config.connectorToken) return false;
   const authorization = String(req.headers.authorization || "");
   const headerToken = String(req.headers["x-ae-chatgpt-connector-token"] || "");
   return authorization === `Bearer ${config.connectorToken}` || headerToken === config.connectorToken;
@@ -480,29 +482,35 @@ function readJsonBody(req, limitBytes) {
   return new Promise((resolve, reject) => {
     let body = "";
     let size = 0;
+    let rejected = false;
 
     req.setEncoding("utf8");
     req.on("data", (chunk) => {
+      if (rejected) return;
       size += Buffer.byteLength(chunk);
       if (size > limitBytes) {
         reject(new Error(`Request body exceeds ${limitBytes} bytes.`));
-        req.destroy();
+        rejected = true; body = "";
         return;
       }
       body += chunk;
     });
     req.on("end", () => {
+      if (rejected) return;
       if (!body.trim()) {
         resolve({});
         return;
       }
       try {
-        resolve(JSON.parse(body));
+        const parsed = JSON.parse(body);
+        if (!parsed || typeof parsed !== "object") throw new Error("JSON-RPC object or batch required.");
+        resolve(parsed);
       } catch (error) {
         reject(new Error(`Invalid JSON body: ${error.message}`));
       }
     });
     req.on("error", reject);
+    req.on("aborted", () => reject(new Error("Request aborted.")));
   });
 }
 
@@ -944,14 +952,24 @@ async function handleRpcBody(config, state, body) {
 
 function createServer(options) {
   const config = getConfig(options || {});
+  const loopback = ["127.0.0.1", "localhost", "::1"];
+  if ((!loopback.includes(config.host) || config.publicUrl) && !config.connectorToken) throw new Error("Public/network connector requires authentication.");
+  const hosts = ["127.0.0.1", "localhost", "[::1]"];
+  if (!loopback.includes(config.host) && config.host !== "0.0.0.0" && config.host !== "::") hosts.push(config.host);
+  if (config.publicUrl) hosts.push(new URL(config.publicUrl).hostname);
+  const boundary = createBoundary({hosts, origins: (process.env.AE_CHATGPT_CONNECTOR_ALLOWED_ORIGINS || "").split(",").filter(Boolean)});
   const state = createRuntimeState(config);
-  return http.createServer(async (req, res) => {
+  return http.createServer((req, res) => {
+    Promise.resolve().then(async () => {
+    boundary.validate(req);
+    res.allowedOrigin = req.headers.origin || null;
     if (req.method === "OPTIONS") {
       jsonResponse(res, 204);
       return;
     }
 
     const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+    if (url.searchParams.has("token")) { jsonResponse(res, 401, {ok:false, error:"URL credentials are not accepted."}); return; }
 
     if (url.pathname === "/health" && req.method === "GET") {
       jsonResponse(res, 200, {
@@ -968,6 +986,7 @@ function createServer(options) {
     }
 
     if (url.pathname === "/status" && req.method === "GET") {
+      if (!hasValidConnectorToken(req, config)) { jsonResponse(res, 401, {ok:false, error:"Unauthorized"}); return; }
       const checkBridge = url.searchParams.get("checkBridge") !== "0";
       jsonResponse(res, 200, {
         ok: true,
@@ -1015,6 +1034,7 @@ function createServer(options) {
     } catch (error) {
       jsonResponse(res, 400, rpcError(null, -32700, error.message || String(error)));
     }
+    }).catch((error) => jsonResponse(res, error.status || 400, {ok:false,error:error.message || "Request failed."}));
   });
 }
 
