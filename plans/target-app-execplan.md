@@ -3,9 +3,35 @@
 ## Активный baseline
 
 AE Agent 3.1.0: CEP, bridge, typed tools, reviewed recipes/registry, provider layer.
-Product target: specs/target-app.md. Текущий HEAD: b2cdd432c99f1c0dfac2f0cf2a888e09b6778c5a.
+Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a2fe8ca271944745f7149085fa39077331.
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
+
+## Узкое исправление независимого ревью 2026-09-23
+
+### Progress
+
+- SV-01: black-box полный semantic module воспроизвёл три ложных `passed` до патча;
+  actual-module регрессии проверяют `set_property_value` и `set_effect_property`,
+  composite path, comp/layer, bulk и верный read-back.
+- USG-01: завершившийся provider call с `usage:null` остаётся записью с unknown метриками;
+  известная сумма остаётся subtotal, repair без вызова не создаёт запись.
+- CB-01/02/03: byte-capped UTF-8, ограниченный settle, period-specific coalescing/cache
+  и проверка периода ответа; Windows `.cmd` проверен только временным fake executable.
+
+### Decision Log
+
+- Reference `source/` из ZIP не применялись к production. Старые SEM excerpt-пробы не
+  засчитаны как проверка полного модуля. Результаты — `.codex-runtime/review-fix-2026-09-23/`.
+- Не менялись frozen boundary, автономный TTL, auth/receipt/save gates и зависимости.
+  Полный AE runner и live AE/CEP остаются непроверенными в этом scope.
+
+### Validation
+
+До исправления новые регрессии SV/USG/CB падали (exit 1); после исправления
+black-box, адресные offline smokes, `check:rules`, syntax и diff checks прошли.
+Штатные составные `smoke:planning` и `smoke:usage` не запускались, поскольку включают
+bridge daemon; точные команды и exit codes сохранены в `verification-results.json`.
 
 ## Текущий milestone — M7 завершён, release 3.1.0
 

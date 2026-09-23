@@ -22,9 +22,9 @@ function createUsageService(options) {
   const nativeStore = options.nativeStore;
   const codeburnAdapter = options.codeburnAdapter;
 
-  function snapshot() {
+  function snapshot(period) {
     const native = nativeStore.snapshot();
-    const codeburn = codeburnAdapter.getCachedReport() || unavailableCodeburn("report");
+    const codeburn = codeburnAdapter.getCachedReport(period) || unavailableCodeburn("report");
     const quota = codeburnAdapter.getCachedQuota() || unavailableCodeburn("quota");
     return {
       schema: CONTRACT,
@@ -66,7 +66,7 @@ function createUsageService(options) {
     const jobs = [codeburnAdapter.refreshReport(period)];
     if (includeQuota) jobs.push(codeburnAdapter.refreshQuota());
     await Promise.all(jobs);
-    return snapshot();
+    return snapshot(period);
   }
 
   return { snapshot, refresh };

@@ -192,8 +192,8 @@ function normalizeQuota(payload, observedAt) {
 function runProcess(executable, args, options) {
   const maxBytes = options.maxOutputBytes;
   return new Promise((resolve) => {
-    let stdout = "";
-    let stderr = "";
+    const stdoutChunks = [];
+    const stderrChunks = [];
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let done = false;
@@ -211,29 +211,46 @@ function runProcess(executable, args, options) {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"]
     });
-    const finish = (result) => { if (!done) { done = true; resolve(result); } };
+    let timer = null;
+    const decoded = (chunks) => Buffer.concat(chunks).toString("utf8");
+    const finish = (exitCode, error) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve({ exitCode, stdout: decoded(stdoutChunks), stderr: decoded(stderrChunks) + (error ? error.message : ""),
+        timedOut, outputExceeded });
+    };
+    const abort = () => {
+      if (done) return;
+      // Only the process and pipes created by this adapter are touched.
+      try { child.kill(); } catch (_error) {}
+      if (child.stdout) child.stdout.destroy();
+      if (child.stderr) child.stderr.destroy();
+      finish(null);
+    };
     const append = (key, chunk) => {
+      if (done) return;
       const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       const used = key === "stdout" ? stdoutBytes : stderrBytes;
       const remaining = Math.max(0, maxBytes - used);
       const accepted = bytes.subarray(0, remaining);
       if (key === "stdout") {
-        stdout += accepted.toString("utf8");
+        stdoutChunks.push(accepted);
         stdoutBytes += accepted.length;
       } else {
-        stderr += accepted.toString("utf8");
+        stderrChunks.push(accepted);
         stderrBytes += accepted.length;
       }
       if (accepted.length < bytes.length && !outputExceeded) {
         outputExceeded = true;
-        child.kill();
+        abort();
       }
     };
     child.stdout.on("data", (chunk) => append("stdout", chunk));
     child.stderr.on("data", (chunk) => append("stderr", chunk));
-    const timer = setTimeout(() => { timedOut = true; child.kill(); }, options.timeoutMs);
-    child.on("error", (error) => { clearTimeout(timer); finish({ exitCode: null, stdout, stderr: `${stderr}${error.message}`, timedOut, outputExceeded }); });
-    child.on("close", (exitCode) => { clearTimeout(timer); finish({ exitCode, stdout, stderr, timedOut, outputExceeded }); });
+    timer = setTimeout(() => { timedOut = true; abort(); }, options.timeoutMs);
+    child.on("error", (error) => finish(null, error));
+    child.on("close", (exitCode) => finish(exitCode));
   });
 }
 
@@ -245,13 +262,14 @@ function createCodeburnUsageAdapter(options) {
   const timeoutMs = Number.isFinite(settings.timeoutMs) ? Math.max(100, Math.min(settings.timeoutMs, DEFAULT_TIMEOUT_MS)) : DEFAULT_TIMEOUT_MS;
   const cacheTtlMs = Number.isFinite(settings.cacheTtlMs) ? Math.max(0, Math.min(settings.cacheTtlMs, 300_000)) : DEFAULT_CACHE_TTL_MS;
   const maxOutputBytes = Number.isFinite(settings.maxOutputBytes) ? Math.max(1024, Math.min(settings.maxOutputBytes, DEFAULT_MAX_OUTPUT_BYTES)) : DEFAULT_MAX_OUTPUT_BYTES;
-  const cache = { report: null, quota: null };
-  const inflight = { report: null, quota: null };
-  function stale(type) { return !cache[type] || Date.parse(clock()) - Date.parse(cache[type].observedAt) >= cacheTtlMs; }
+  const cache = { report: new Map(), quota: null };
+  const inflight = { report: new Map(), quota: null };
+  function stale(entry) { return !entry || Date.parse(clock()) - Date.parse(entry.observedAt) >= cacheTtlMs; }
   async function refresh(type, period) {
-    if (inflight[type]) return inflight[type];
+    if (type === "report" && inflight.report.has(period)) return inflight.report.get(period);
+    if (type === "quota" && inflight.quota) return inflight.quota;
     const args = type === "report" ? ["report", "--provider", "codex", "--period", period, "--format", "json", "--refresh", "0"] : ["quota", "--format", "json"];
-    inflight[type] = Promise.resolve().then(() => runner({ executable, args, timeoutMs, maxOutputBytes })).then((result) => {
+    const pending = Promise.resolve().then(() => runner({ executable, args, timeoutMs, maxOutputBytes })).then((result) => {
       const observedAt = clock();
       if (!result) return { contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt, error: "codeburn_runner_failed" };
       if (result.outputExceeded) return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt, error: "codeburn_output_limit" };
@@ -260,18 +278,28 @@ function createCodeburnUsageAdapter(options) {
       let payload;
       try { payload = JSON.parse(text(result.stdout, maxOutputBytes)); } catch (_) { return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt, error: "codeburn_invalid_json" }; }
       const normalized = type === "report" ? normalizeReport(payload, observedAt) : normalizeQuota(payload, observedAt);
+      if (type === "report" && normalized && normalized.report && normalized.report.period !== period) {
+        return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt,
+          error: normalized.report.period ? "codeburn_period_mismatch" : "codeburn_period_unverified" };
+      }
       return normalized || { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt, error: "codeburn_invalid_payload" };
     }).catch(() => ({ contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt: clock(), error: "codeburn_runner_failed" })).then((result) => {
-      cache[type] = result;
+      if (type === "report") cache.report.set(period, result);
+      else cache.quota = result;
       return result;
-    }).finally(() => { inflight[type] = null; });
-    return inflight[type];
+    }).finally(() => {
+      if (type === "report") inflight.report.delete(period);
+      else inflight.quota = null;
+    });
+    if (type === "report") inflight.report.set(period, pending);
+    else inflight.quota = pending;
+    return pending;
   }
   return {
     refreshReport(period) { return refresh("report", PERIODS.has(period) ? period : "week"); },
     refreshQuota() { return refresh("quota"); },
-    getCachedReport() { return cache.report ? { ...cache.report, stale: stale("report") } : null; },
-    getCachedQuota() { return cache.quota ? { ...cache.quota, stale: stale("quota") } : null; }
+    getCachedReport(period) { const entry = cache.report.get(PERIODS.has(period) ? period : "week"); return entry ? { ...entry, stale: stale(entry) } : null; },
+    getCachedQuota() { return cache.quota ? { ...cache.quota, stale: stale(cache.quota) } : null; }
   };
 }
 
