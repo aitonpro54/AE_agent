@@ -403,6 +403,8 @@ function createEvidenceStore(readBackSteps) {
     projects: [],
     projectItems: [],
     properties: [],
+    propertyReadbacks: [],
+    rawSteps: Array.isArray(readBackSteps) ? readBackSteps : [],
     essentialGraphicsControllers: [],
     slideshowAudits: []
   };
@@ -471,6 +473,101 @@ function addPropertyEvidence(target, value, source) {
     keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
     source: source || "observed property"
   });
+}
+
+function propertyPathIdentityMatches(actualPath, expectedPath) {
+  const actual = Array.isArray(actualPath) ? actualPath : [];
+  const expected = Array.isArray(expectedPath) ? expectedPath
+    : typeof expectedPath === "string" ? expectedPath.split(".").map((part) => part.trim()).filter(Boolean) : [];
+  if (!expected.length || actual.length !== expected.length) return false;
+  return expected.every((part, index) => {
+    const observed = actual[index];
+    if (!isPlainObject(observed)) return false;
+    if (isPlainObject(part)) {
+      const keys = ["propertyIndex", "name", "matchName"].filter((key) => hasOwn(part, key) && part[key] !== null && part[key] !== "");
+      return keys.length > 0 && keys.every((key) => key === "propertyIndex"
+        ? numberValue(observed[key]) !== null && numberValue(observed[key]) === numberValue(part[key])
+        : String(observed[key] || "") === String(part[key]));
+    }
+    const token = String(part).trim();
+    if (!token) return false;
+    if (/^[1-9]\d*$/.test(token)) return numberValue(observed.propertyIndex) === Number(token);
+    return observed.matchName === token || observed.name === token;
+  });
+}
+
+function propertyPathTailIdentityMatches(actualPath, expectedPath) {
+  const expected = Array.isArray(expectedPath) ? expectedPath : [];
+  return expected.length > 0 && Array.isArray(actualPath) && actualPath.length >= expected.length &&
+    propertyPathIdentityMatches(actualPath.slice(-expected.length), expected);
+}
+
+function positiveIdentityIndex(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const index = numberValue(value);
+  return index !== null && Number.isInteger(index) && index > 0 ? index : null;
+}
+
+function compMatchesRequest(comp, args) {
+  if (!isPlainObject(comp)) return false;
+  if (positiveIdentityIndex(args.compItemIndex) !== null && positiveIdentityIndex(comp.itemIndex) !== positiveIdentityIndex(args.compItemIndex)) return false;
+  if (args.compName && comp.name !== args.compName) return false;
+  return positiveIdentityIndex(comp.itemIndex) !== null || Boolean(comp.name);
+}
+
+function sameCompIdentity(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const leftIndex = positiveIdentityIndex(left.itemIndex);
+  const rightIndex = positiveIdentityIndex(right.itemIndex);
+  if ((leftIndex !== null || rightIndex !== null) &&
+    (leftIndex === null || rightIndex === null || leftIndex !== rightIndex)) return false;
+  if (left.name && right.name && left.name !== right.name) return false;
+  return leftIndex !== null || Boolean(left.name && right.name);
+}
+
+function compBinding(comp) {
+  return isPlainObject(comp) ? { itemIndex: positiveIdentityIndex(comp.itemIndex), name: comp.name || null } : null;
+}
+
+function layerBinding(layer) {
+  return isPlainObject(layer) ? { index: positiveIdentityIndex(layer.index), id: layer.id || null, name: layer.name || null } : null;
+}
+
+function readBackStepMatchesTarget(step, observedComp, args, layerIndex) {
+  const readArgs = step && step.args || {};
+  if (positiveIdentityIndex(readArgs.compItemIndex) !== null && positiveIdentityIndex(readArgs.compItemIndex) !== positiveIdentityIndex(observedComp && observedComp.itemIndex)) return false;
+  if (readArgs.compName && readArgs.compName !== (observedComp && observedComp.name)) return false;
+  if (positiveIdentityIndex(readArgs.layerIndex) !== null && positiveIdentityIndex(readArgs.layerIndex) !== layerIndex) return false;
+  const path = Array.isArray(args.propertyPath) ? args.propertyPath : [];
+  const effect = path.length > 1 && isPlainObject(path[0]) && path[0].matchName === "ADBE Effect Parade" ? path[1] : null;
+  if (effect && isPlainObject(effect)) {
+    if (positiveIdentityIndex(readArgs.effectIndex) !== null && positiveIdentityIndex(readArgs.effectIndex) !== positiveIdentityIndex(effect.propertyIndex)) return false;
+    if (readArgs.effectName && readArgs.effectName !== effect.name) return false;
+    if (readArgs.effectMatchName && readArgs.effectMatchName !== effect.matchName) return false;
+  }
+  if (positiveIdentityIndex(args.effectIndex) !== null && positiveIdentityIndex(readArgs.effectIndex) !== null &&
+    positiveIdentityIndex(args.effectIndex) !== positiveIdentityIndex(readArgs.effectIndex)) return false;
+  if (args.effectName && readArgs.effectName && args.effectName !== readArgs.effectName) return false;
+  if (args.effectMatchName && readArgs.effectMatchName && args.effectMatchName !== readArgs.effectMatchName) return false;
+  return true;
+}
+
+function collectPropertyReadbacks(step, evidence) {
+  const payload = payloadForStep(step);
+  if (!isPlainObject(payload)) return;
+  const add = (item, ownerLayer) => {
+    if (!isPlainObject(item)) return;
+    if (Array.isArray(item.propertyPath) && hasOwn(item, "value")) {
+      evidence.propertyReadbacks.push({ property: item, comp: payload.comp, layer: item.layer || ownerLayer,
+        stepIndex: step.index, stepTool: step.tool, stepStatus: step.status, stepArgs: step.args || {}, source: stepLabel(step) });
+    }
+    if (Array.isArray(item.children)) item.children.forEach((child) => add(child, ownerLayer));
+  };
+  if (isPlainObject(payload.property)) add(payload.property, payload.layer);
+  if (Array.isArray(payload.properties)) payload.properties.forEach((item) => add(item, payload.layer));
+  if (Array.isArray(payload.selectedProperties)) payload.selectedProperties.forEach((item) => add(item, item.layer));
+  if (Array.isArray(payload.propertyTree)) payload.propertyTree.forEach((item) => add(item, payload.layer));
+  if (Array.isArray(payload.effects)) payload.effects.forEach((item) => add(item, payload.layer));
 }
 
 function addProjectItemEvidence(target, value, source) {
@@ -625,6 +722,7 @@ function collectReadBackEvidence(steps, afterOrder, beforeOrder) {
 
   for (const step of readBackSteps) {
     collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
+    collectPropertyReadbacks(step, evidence);
   }
 
   return evidence;
@@ -946,14 +1044,16 @@ function expectedMarkerText(args) {
 
 function pushCheck(checks, fields) {
   const status = fields.status || (fields.passed ? "passed" : "failed");
-  checks.push({
+  const check = {
     id: fields.id,
     status,
     title: fields.title,
     expected: compactText(fields.expected, 220),
     observed: compactText(fields.observed, 220),
     evidence: compactText(fields.evidence, 220)
-  });
+  };
+  if (fields.binding) check.binding = fields.binding;
+  checks.push(check);
 }
 
 function checkName(checks, step, expectedName, observedName, evidence, title) {
@@ -1067,54 +1167,83 @@ function checkPointListField(checks, step, arg, observedValue, title) {
   });
 }
 
-function observedPropertyValueEvidence(evidence, args) {
-  for (const property of evidence.properties || []) {
-    if (propertyPathMatches(property.propertyPath, args.propertyPath) && propertyValueMatches(args.value, property.value, 0.01)) {
-      return property.source || `Read ${propertyPathText(args.propertyPath)} after set_property_value.`;
-    }
-  }
-  const path = propertyPathSegments(args.propertyPath);
-  const layerAttribute = path.length === 1 && ["threeDLayer", "collapseTransformation", "motionBlur"].includes(path[0])
-    ? path[0]
-    : null;
-  if (layerAttribute) {
-    for (const layer of evidence.layers || []) {
-      if (hasOwn(layer, layerAttribute) && propertyValueMatches(args.value, layer[layerAttribute], 0.01)) {
-        return layer.source || `Read ${layerAttribute} after set_property_value.`;
-      }
-    }
-  }
-  return null;
-}
-
 function checkSetPropertyValue(checks, step, payload, evidence) {
   const args = step.args || {};
-  const properties = Array.isArray(payload.properties)
-    ? payload.properties
-    : payload.property
-      ? [payload.property]
-      : [];
-  const resultMatch = properties.find((property) => (
-    propertyPathMatches(property.propertyPath, args.propertyPath) &&
-    propertyValueMatches(args.value, property.value, 0.01)
-  ));
-  const readBackEvidence = observedPropertyValueEvidence(evidence.readBack, args);
-  pushCheck(checks, {
-    id: `${step.index || "step"}:${step.tool}:value`,
-    title: "Layer property value matches request",
-    expected: `${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
-    observed: resultMatch
-      ? `${propertyPathText(resultMatch.propertyPath)} = ${compactText(stableStringify(resultMatch.value), 80)}`
-      : "missing or mismatched property value",
-    passed: Boolean(resultMatch) && Boolean(readBackEvidence),
-    evidence: readBackEvidence || "No post-run layer/property read-back matched set_property_value."
-  });
+  const targets = (Array.isArray(args.layerIndex) ? args.layerIndex : [args.layerIndex]).map(numberValue);
+  const resultLayers = Array.isArray(payload.layers) ? payload.layers : payload.layer ? [payload.layer] : [];
+  const resultProperties = Array.isArray(payload.properties) ? payload.properties : payload.property ? [payload.property] : [];
+  const resultShapeValid = targets.length > 0 && targets.every((index) => index !== null && index > 0) &&
+    new Set(targets).size === targets.length && resultLayers.length === targets.length && resultProperties.length === targets.length;
+  if (!targets.length) {
+    pushCheck(checks, { id: `${step.index || "step"}:${step.tool}:value`, title: "Layer property value matches request",
+      expected: "at least one explicit layer target", observed: "missing", passed: false,
+      evidence: "set_property_value has no layer target to verify." });
+    return;
+  }
+  const path = propertyPathSegments(args.propertyPath);
+  const layerAttribute = path.length === 1 && ["threeDLayer", "collapseTransformation", "motionBlur"].includes(path[0]) ? path[0] : null;
+  for (const [position, layerIndex] of targets.entries()) {
+    const resultLayer = resultLayers[position];
+    const resultProperty = resultProperties[position];
+    const resultMatch = resultShapeValid && compMatchesRequest(payload.comp, args) &&
+      positiveIdentityIndex(resultLayer && resultLayer.index) === layerIndex &&
+      isPlainObject(resultProperty) && (!resultProperty.layer || positiveIdentityIndex(resultProperty.layer.index) === layerIndex) &&
+      propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, args.propertyPath) &&
+      propertyValueMatches(args.value, resultProperty.value, 0.01);
+    let readBack = null;
+    for (const candidate of evidence.readBack.propertyReadbacks || []) {
+      if (!compMatchesRequest(candidate.comp, args) || !sameCompIdentity(payload.comp, candidate.comp) ||
+        positiveIdentityIndex(candidate.layer && candidate.layer.index) !== layerIndex ||
+        !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, args, layerIndex) ||
+        !propertyPathIdentityMatches(candidate.property.propertyPath, args.propertyPath) ||
+        !propertyPathIdentityMatches(candidate.property.propertyPath, resultProperty && resultProperty.propertyPath) ||
+        !propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, candidate.property.propertyPath) ||
+        !propertyValueMatches(args.value, candidate.property.value, 0.01)) continue;
+      if (resultLayer && resultLayer.id && candidate.layer.id && String(resultLayer.id) !== String(candidate.layer.id)) continue;
+      readBack = candidate;
+      break;
+    }
+    if (!readBack && layerAttribute) {
+      for (const readStep of evidence.readBack.rawSteps || []) {
+        const observed = payloadForStep(readStep);
+        if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, args) ||
+          !sameCompIdentity(payload.comp, observed.comp) ||
+          positiveIdentityIndex(observed.layer && observed.layer.index) !== layerIndex ||
+          !readBackStepMatchesTarget(readStep, observed.comp, args, layerIndex) ||
+          !hasOwn(observed.layer, layerAttribute) ||
+          !propertyValueMatches(args.value, observed.layer[layerAttribute], 0.01)) continue;
+        readBack = { stepIndex: readStep.index, stepTool: readStep.tool, stepStatus: readStep.status,
+          comp: observed.comp, layer: observed.layer, property: { propertyPath: resultProperty && resultProperty.propertyPath,
+            value: observed.layer[layerAttribute] }, source: stepLabel(readStep) };
+        break;
+      }
+    }
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:value${targets.length > 1 ? `:layer-${layerIndex}` : ""}`,
+      title: "Layer property value matches request",
+      expected: `${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
+      observed: resultMatch ? `${propertyPathText(resultProperty.propertyPath)} = ${compactText(stableStringify(resultProperty.value), 80)}`
+        : "missing or mismatched property target/value",
+      passed: Boolean(resultMatch && readBack),
+      evidence: readBack ? readBack.source : "No matching post-run property read-back for this comp, layer, path and value.",
+      binding: {
+        mutationStep: step.index, mutationStatus: step.status,
+        target: { compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+          layerIndex, propertyPath: args.propertyPath },
+        result: resultProperty ? { comp: compBinding(payload.comp), layer: layerBinding(resultLayer), propertyPath: resultProperty.propertyPath } : null,
+        readBack: readBack ? { stepIndex: readBack.stepIndex, tool: readBack.stepTool,
+          status: readBack.stepStatus, comp: compBinding(readBack.comp), layer: layerBinding(readBack.layer),
+          propertyPath: readBack.property.propertyPath } : null
+      }
+    });
+  }
 }
 
 function propertyPathContainsEffectIdentity(propertyPath, args) {
   if (!Array.isArray(propertyPath) || !args) return false;
-  return propertyPath.some((segment) => {
+  return propertyPath.some((segment, index) => {
     if (!isPlainObject(segment)) return false;
+    if (index < 1 || !isPlainObject(propertyPath[index - 1]) || propertyPath[index - 1].matchName !== "ADBE Effect Parade") return false;
     if (hasOwn(args, "effectIndex") && !nearlyEqual(segment.propertyIndex, args.effectIndex)) return false;
     if (hasOwn(args, "effectMatchName") && args.effectMatchName && segment.matchName !== args.effectMatchName) return false;
     if (hasOwn(args, "effectName") && args.effectName && segment.name !== args.effectName) return false;
@@ -1125,16 +1254,22 @@ function propertyPathContainsEffectIdentity(propertyPath, args) {
 function effectPropertyMatchesArgs(property, args) {
   return Boolean(property) &&
     propertyPathContainsEffectIdentity(property.propertyPath, args) &&
-    propertyPathMatches(property.propertyPath, args.propertyPath) &&
+    propertyPathTailIdentityMatches(property.propertyPath, args.propertyPath) &&
     propertyValueMatches(args.value, property.value, 0.01);
 }
 
-function observedEffectPropertyValueEvidence(evidence, args) {
-  if (!evidence || !Array.isArray(evidence.properties)) return null;
-  for (const property of evidence.properties) {
-    if (effectPropertyMatchesArgs(property, args)) {
-      return property.source || `Read ${propertyPathText(args.propertyPath)} on the exact effect instance after set_effect_property.`;
-    }
+function observedEffectPropertyValueEvidence(evidence, args, payload) {
+  if (!evidence || !Array.isArray(evidence.propertyReadbacks)) return null;
+  const layerIndex = positiveIdentityIndex(args.layerIndex);
+  for (const candidate of evidence.propertyReadbacks) {
+    if (!compMatchesRequest(candidate.comp, args) || !sameCompIdentity(payload.comp, candidate.comp) ||
+      positiveIdentityIndex(candidate.layer && candidate.layer.index) !== layerIndex ||
+      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, args, layerIndex) ||
+      !effectPropertyMatchesArgs(candidate.property, args) ||
+      !propertyPathIdentityMatches(candidate.property.propertyPath, payload.property && payload.property.propertyPath) ||
+      !propertyPathIdentityMatches(payload.property && payload.property.propertyPath, candidate.property.propertyPath)) continue;
+    if (payload.layer && payload.layer.id && candidate.layer.id && String(payload.layer.id) !== String(candidate.layer.id)) continue;
+    return candidate;
   }
   return null;
 }
@@ -1143,8 +1278,10 @@ function checkSetEffectProperty(checks, step, payload, evidence) {
   const args = step.args || {};
   const effect = payload.effect || {};
   const property = payload.property || {};
-  const resultMatches = effectMatchesArgs(effect, args) && effectPropertyMatchesArgs(property, args);
-  const readBackEvidence = observedEffectPropertyValueEvidence(evidence.readBack, args);
+  const resultMatches = compMatchesRequest(payload.comp, args) &&
+    positiveIdentityIndex(payload.layer && payload.layer.index) === positiveIdentityIndex(args.layerIndex) &&
+    effectMatchesArgs(effect, args) && effectPropertyMatchesArgs(property, args);
+  const readBackEvidence = observedEffectPropertyValueEvidence(evidence.readBack, args, payload);
 
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:value`,
@@ -1154,7 +1291,16 @@ function checkSetEffectProperty(checks, step, payload, evidence) {
       ? `${effect.propertyIndex}:${effect.name || effect.matchName || "effect"} ${propertyPathText(property.propertyPath)} = ${compactText(stableStringify(property.value), 80)}`
       : "missing or mismatched effect/property identity or value",
     passed: resultMatches && Boolean(readBackEvidence),
-    evidence: readBackEvidence || "No post-run get_effect_details read-back matched the exact set_effect_property target."
+    evidence: readBackEvidence ? readBackEvidence.source : "No post-run get_effect_details read-back matched the exact set_effect_property target.",
+    binding: {
+      mutationStep: step.index, mutationStatus: step.status,
+      target: { compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+        layerIndex: args.layerIndex, propertyPath: args.propertyPath },
+      result: { comp: compBinding(payload.comp), layer: layerBinding(payload.layer), propertyPath: property.propertyPath || null },
+      readBack: readBackEvidence ? { stepIndex: readBackEvidence.stepIndex, tool: readBackEvidence.stepTool,
+        status: readBackEvidence.stepStatus, comp: compBinding(readBackEvidence.comp),
+        layer: layerBinding(readBackEvidence.layer), propertyPath: readBackEvidence.property.propertyPath } : null
+    }
   });
 }
 

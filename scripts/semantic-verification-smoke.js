@@ -4149,6 +4149,7 @@ function assertSetEffectPropertyUsesExactCompositeIdentity() {
     ]
   };
   const effect = (propertyIndex) => ({ propertyIndex, name: args.effectName, matchName: args.effectMatchName, enabled: true });
+  // Actual set_effect_property/get_effect_details responses include both owning objects.
   const run = {
     dryRun: false,
     ok: true,
@@ -4159,7 +4160,8 @@ function assertSetEffectPropertyUsesExactCompositeIdentity() {
         status: "completed",
         mutatesProject: true,
         args,
-        result: { effect: effect(2), property: effectColorProperty(2, args.value) }
+        result: { comp: { name: args.compName }, layer: { index: 1, name: "Effect Layer" },
+          effect: effect(2), property: effectColorProperty(2, args.value) }
       },
       {
         index: 2,
@@ -4167,7 +4169,8 @@ function assertSetEffectPropertyUsesExactCompositeIdentity() {
         status: "completed",
         mutatesProject: false,
         args: plan.steps[1].args,
-        result: { effect: effect(1), properties: [effectColorProperty(1, [1, 0, 0, 1])] }
+        result: { comp: { name: args.compName }, layer: { index: 1, name: "Effect Layer" },
+          effect: effect(1), properties: [effectColorProperty(1, [1, 0, 0, 1])] }
       },
       {
         index: 3,
@@ -4175,7 +4178,8 @@ function assertSetEffectPropertyUsesExactCompositeIdentity() {
         status: "completed",
         mutatesProject: false,
         args: plan.steps[2].args,
-        result: { effect: effect(2), properties: [effectColorProperty(2, args.value)] }
+        result: { comp: { name: args.compName }, layer: { index: 1, name: "Effect Layer" },
+          effect: effect(2), properties: [effectColorProperty(2, args.value)] }
       }
     ]
   };

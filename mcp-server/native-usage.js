@@ -86,6 +86,7 @@ function normalizeUsageRecord(input) {
     aggregation,
     provider: compactString(input.provider, 120),
     modelId: compactString(input.modelId, 200),
+    outcome: input.outcome === "failed_unknown" || input.outcome === "completed" ? input.outcome : null,
     reasoningEffort: compactString(input.reasoningEffort, 40),
     serviceTier: compactString(input.serviceTier, 80),
     tokens: normalizeTokens(input.usage),
@@ -188,10 +189,32 @@ function createNativeUsageStore(options) {
   return { record, snapshot };
 }
 
+function recordObservedProviderCall(store, input) {
+  if (!store || typeof store.record !== "function" || !input) return null;
+  return store.record({
+    recordId: input.recordId,
+    requestId: input.requestId,
+    parentRecordId: input.parentRecordId,
+    startedAt: input.startedAt,
+    finishedAt: input.finishedAt,
+    observedAt: input.finishedAt,
+    provider: input.provider,
+    modelId: input.modelId,
+    outcome: input.outcome === "failed_unknown" ? "failed_unknown" : "completed",
+    reasoningEffort: input.reasoningEffort,
+    serviceTier: input.serviceTier,
+    sessionId: input.sessionId,
+    activityScope: "ae_execution",
+    attributionLevel: input.requestId ? "exact" : "unattributed",
+    usage: input.usage
+  });
+}
+
 module.exports = {
   RECORD_SCHEMA,
   SNAPSHOT_SCHEMA,
   createNativeUsageStore,
+  recordObservedProviderCall,
   normalizeTokens,
   normalizeUsageRecord,
   summarizeRecords

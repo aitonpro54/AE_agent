@@ -21,7 +21,7 @@ const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstac
 const currentProposalState = createProposalState();
 const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
-const { createNativeUsageStore } = require("./native-usage");
+const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
 const { createCodeburnUsageAdapter } = require("./codeburn-usage-adapter");
 const { createUsageService } = require("./usage-service");
 const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
@@ -6971,23 +6971,7 @@ function buildAePlanPrompt(args, projectContextSnapshot, solutionHints, projectI
 }
 
 function recordNativeProviderUsage(input) {
-  if (!input || !input.usage || typeof input.usage !== "object") return null;
-  return nativeUsageStore.record({
-    recordId: input.recordId,
-    requestId: input.requestId,
-    parentRecordId: input.parentRecordId,
-    startedAt: input.startedAt,
-    finishedAt: input.finishedAt,
-    observedAt: input.finishedAt,
-    provider: input.provider,
-    modelId: input.modelId,
-    reasoningEffort: input.reasoningEffort,
-    serviceTier: input.serviceTier,
-    sessionId: input.sessionId,
-    activityScope: "ae_execution",
-    attributionLevel: input.requestId ? "exact" : "unattributed",
-    usage: input.usage
-  });
+  return recordObservedProviderCall(nativeUsageStore, input);
 }
 
 async function repairAgentPlanJson(args, rawText) {
@@ -7101,6 +7085,15 @@ async function runAgentChatLogged(source, args) {
       providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
+    if (error.readiness && error.readiness.canChat === true) {
+      metadata.nativeUsage = recordNativeProviderUsage({
+        recordId: `chat:${requestId}`, requestId, startedAt, finishedAt: metadata.finishedAt,
+        provider: args && (args.agentId || args.agent) || null,
+        modelId: args && args.model || null,
+        reasoningEffort: args && (args.reasoning_effort || args.reasoningEffort) || null,
+        outcome: "failed_unknown", usage: null
+      });
+    }
     appendAiChatEvent("chat_failed", metadata);
     error.requestId = requestId;
     error.startedAt = startedAt;
@@ -7140,17 +7133,30 @@ async function runAgentPlanLogged(source, args) {
       ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
       maxTokens: hasArg(args || {}, "maxTokens") ? args.maxTokens : 2200
     });
+    const primaryNativeUsage = recordNativeProviderUsage({
+      recordId: `plan:${requestId}:primary`, requestId, startedAt,
+      finishedAt: new Date().toISOString(),
+      provider: result.agent ? result.agent.id : args.agentId || args.agent || null,
+      modelId: result.model || args.model || null,
+      reasoningEffort: reasoningEffort || null,
+      serviceTier: result.serviceTier || null,
+      sessionId: result.codexThreadId || null,
+      usage: result.usage
+    });
     let parsed = normalizeAgentPlan(result.text);
     let repaired = false;
     let repairError = null;
     let repairModel = null;
     let repairUsage = null;
     let repairRawUsage = null;
+    let repairCallCompleted = false;
+    let repairFailedUsage = null;
     let repairProvider = null;
     let repairSessionId = null;
     if (!parsed.ok && optionalBoolean(args || {}, "repairPlan", true) !== false) {
       try {
         const repair = await repairAgentPlanJson(args || {}, result.text);
+        repairCallCompleted = true;
         repaired = repair.repaired.ok;
         repairModel = repair.repairModel;
         repairUsage = repair.usage;
@@ -7164,6 +7170,17 @@ async function runAgentPlanLogged(source, args) {
         }
       } catch (error) {
         repairError = error.message || String(error);
+        if (error.readiness && error.readiness.canChat === true) {
+          repairFailedUsage = recordNativeProviderUsage({
+            recordId: `plan:${requestId}:repair`, requestId: `${requestId}:repair`,
+            parentRecordId: `plan:${requestId}:primary`, startedAt,
+            finishedAt: new Date().toISOString(),
+            provider: args && (args.agentId || args.agent) || null,
+            modelId: args && args.model || null,
+            reasoningEffort: reasoningEffort || null,
+            outcome: "failed_unknown", usage: null
+          });
+        }
       }
     }
     let validation = null;
@@ -7210,19 +7227,8 @@ async function runAgentPlanLogged(source, args) {
       solutionReuse: reuseTelemetry.summarizeReuse(parsed.plan, solutionHints.retrieval),
       logFile: AI_CHAT_LOG_FILE
     };
-    metadata.nativeUsage = recordNativeProviderUsage({
-      recordId: `plan:${requestId}:primary`,
-      requestId,
-      startedAt,
-      finishedAt: metadata.finishedAt,
-      provider: metadata.agentId,
-      modelId: metadata.model,
-      reasoningEffort: reasoningEffort || null,
-      serviceTier: result.serviceTier || null,
-      sessionId: result.codexThreadId || null,
-      usage: result.usage
-    });
-    metadata.repairNativeUsage = recordNativeProviderUsage({
+    metadata.nativeUsage = primaryNativeUsage;
+    metadata.repairNativeUsage = repairCallCompleted ? recordNativeProviderUsage({
       recordId: `plan:${requestId}:repair`,
       requestId: `${requestId}:repair`,
       parentRecordId: `plan:${requestId}:primary`,
@@ -7233,7 +7239,7 @@ async function runAgentPlanLogged(source, args) {
       reasoningEffort: reasoningEffort || null,
       sessionId: repairSessionId,
       usage: repairRawUsage
-    });
+    }) : repairFailedUsage;
     appendAiChatEvent("plan_finished", metadata);
     const planResponse = {
       ...result,
@@ -7326,6 +7332,15 @@ async function runAgentPlanLogged(source, args) {
       providerError: error.providerError || null,
       logFile: AI_CHAT_LOG_FILE
     };
+    if (error.readiness && error.readiness.canChat === true) {
+      metadata.nativeUsage = recordNativeProviderUsage({
+        recordId: `plan:${requestId}:primary`, requestId, startedAt, finishedAt: metadata.finishedAt,
+        provider: args && (args.agentId || args.agent) || null,
+        modelId: args && args.model || null,
+        reasoningEffort: reasoningEffort || null,
+        outcome: "failed_unknown", usage: null
+      });
+    }
     appendAiChatEvent("plan_failed", metadata);
     error.requestId = requestId;
     error.startedAt = startedAt;
