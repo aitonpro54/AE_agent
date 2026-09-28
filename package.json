@@ -21,6 +21,8 @@
     "smoke:placeholder-plan": "node scripts/placeholder-plan-builder-smoke.js && node scripts/placeholder-readback-smoke.js && node scripts/placeholder-evidence-smoke.js && node scripts/placeholder-plan-bridge-smoke.js",
     "report:ame-output": "node scripts/ame-passive-status.js",
     "smoke:ame-output": "node scripts/ame-passive-status-smoke.js",
+    "report:ame-media": "node scripts/ame-media-probe.js",
+    "smoke:ame-media": "node scripts/ame-media-probe-smoke.js",
     "smoke:quota": "node scripts/subscription-usage-smoke.js",
     "report:autonomy": "node scripts/autonomy-obstacle-report.js",
     "smoke:autonomy-bridge": "node scripts/typed-switches-smoke.js && node scripts/autonomy-state-smoke.js && node scripts/autonomous-client-smoke.js && node scripts/autonomous-mcp-smoke.js && node scripts/run-boundary-smoke.js && node scripts/persistent-autonomy-smoke.js && node scripts/persistent-autonomy-bridge-smoke.js && node scripts/autonomy-revocation-smoke.js && node scripts/panel-heartbeat-smoke.js",

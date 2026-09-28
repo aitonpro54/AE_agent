@@ -20,8 +20,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - Разобран чат заполнения `60p_slide_4`, CU-вызовы, три AGY-задания и usage ledger.
   Две ограниченные разведки выполнены ae_scout на runtime-подтверждённой Luna/high.
 - Отчёт и смета: `docs/placeholder-workflow-review-2026-09-28.md`.
-  Routing обновлён; внедрены AGY preflight, typed placeholder builder/read-back,
-  компактный evidence, 3 кадра и пассивный AME snapshot contract.
+  Routing обновлён; внедрены AGY preflight, typed placeholder builder/read-back, компактный evidence, 3 кадра и пассивный AME snapshot contract.
 
 ### Decision Log
 
@@ -36,11 +35,10 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - Usage рассчитан по уникальным response IDs, сумма сверена с thread ledger.
   Локальные evidence/подсчёт сохранены под ignored `.codex/`.
 - `npm.cmd run check:rules` — pass; `git diff --check` — pass.
-  Product/live smokes не запускались для документального изменения.
 - AGY input/terminal contract завершён в VideoScout `09d836e`/`6e6a8ec`:
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
-  сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME contract — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: media probe и AME adapter.
+  сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: AME adapter.
 
 ## Узкое исправление независимого ревью 2026-09-23
 

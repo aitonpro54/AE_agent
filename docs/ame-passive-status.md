@@ -15,6 +15,8 @@
   "preset": "точное имя preset",
   "outputPath": "C:\\path\\to\\output.mp4",
   "range": { "startSeconds": 0, "endSeconds": 60 },
+  "expectedVideoCodec": "h264",
+  "expectedContainer": "mp4",
   "submittedAt": "2026-09-28T10:00:00.000Z"
 }
 ```
@@ -34,6 +36,17 @@ npm.cmd run report:ame-output -- --job C:\path\to\job.json --observation C:\path
 Вывод JSON можно сохранить локально как `previous.json` для следующего вызова.
 `output_growing` означает только рост байтов между снимками; стабильный размер
 не означает завершение. Даже подтверждённое в AME `done` переводит в
-`needs_media_probe`: отдельно проверьте ffprobe, декодирование и диапазон.
-`completionVerified` всегда false в этом инструменте. Он не содержит адаптер
-статуса AME или автоматическую отправку, не следит в фоне и не запускает render.
+`needs_media_probe`: отдельно запустите:
+
+```powershell
+npm.cmd run report:ame-media -- --job C:\path\to\job.json --observation C:\path\to\ame-done.json
+```
+
+Проверка требует совпавшего `done` из AME, существующего файла, ожидаемого
+`expectedVideoCodec`, `expectedContainer`, длительности `endSeconds-startSeconds` (допуск по умолчанию
+0,25 с; `maxDurationErrorSeconds` в job может задать 0–1 с), успешного ffprobe
+и полного декодирования video/audio через ffmpeg. Тайм-ауты 30/120 с; при ошибке
+или отсутствии бинарников technical proof остаётся false. Даже при успешном
+`technicalMediaVerified:true` поле `completionVerified:false`: автоматического
+доверенного AME status adapter здесь нет, а визуальная приёмка отдельна.
+Команды не отправляют job, не следят в фоне и не запускают render.
