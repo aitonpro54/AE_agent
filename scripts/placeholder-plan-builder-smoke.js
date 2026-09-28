@@ -25,6 +25,18 @@ assert.equal(built.plan.steps[0].args.expectedSourceItemId, 60);
 assert.equal(built.plan.steps[1].args.expectedLayerId, 40);
 assert.equal(built.plan.steps[1].args.startTime, -196);
 assert.deepEqual([built.expectedReadBack.inPoint, built.expectedReadBack.outPoint], [4, 8]);
+assert.deepEqual(built.frameReview.map((entry) => entry.offsetFrame), [0, 59, 119]);
+assert.deepEqual(built.frameReview.map((entry) => entry.roles), [["first"], ["middle"], ["last"]]);
+assert.deepEqual([built.frameReview[0].rootTime, built.frameReview[0].targetTime, built.frameReview[0].sourceTime], [4, 4, 200]);
+assert.ok(Math.abs(built.frameReview[2].sourceTime - (203 + 29 / 30)) < 1e-9);
+const shifted = buildPlaceholderPlan({ ...input, route: [{ ...input.route[0], startTime: 2 }] });
+assert.equal(shifted.ok, true);
+assert.equal(shifted.frameReview[0].targetTime, 2);
+assert.equal(shifted.frameReview[0].sourceTime, 200);
+const oneFrame = buildPlaceholderPlan({ ...input, rootRange: [4, 4 + 1 / 30], sourceRange: [200, 200 + 1 / 30] });
+assert.equal(oneFrame.ok, true);
+assert.equal(oneFrame.frameReview.length, 1);
+assert.deepEqual(oneFrame.frameReview[0].roles, ["first", "middle", "last"]);
 
 const rejects = [
   [{ targetComp: { ...input.targetComp, itemId: 21 } }, "target_comp_mismatch"],
@@ -33,6 +45,7 @@ const rejects = [
   [{ targetLayer: { ...input.targetLayer, timeRemapEnabled: true } }, "unsupported_target_layer"],
   [{ rootRange: [4, 8], sourceRange: [200, 205] }, "source_duration_mismatch"],
   [{ rootRange: [4.01, 8] }, "off_frame_boundary"],
+  [{ rootRange: [4, 4.001], sourceRange: [200, 200.001] }, "empty_frame_range"],
   [{ sourceItem: { ...input.sourceItem, duration: 201 } }, "invalid_time_range"],
   [{ route: [] }, "target_comp_mismatch"]
 ];

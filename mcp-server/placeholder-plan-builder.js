@@ -62,6 +62,23 @@ function buildPlaceholderPlan(input) {
   if (currentCompId !== targetComp.itemId || localRange[0] < 0 || localRange[1] > targetComp.duration) return fail("target_comp_mismatch");
   if (!close(localRange[1] - localRange[0], sourceRange[1] - sourceRange[0], targetComp.frameRate)) return fail("source_duration_mismatch");
   const startTime = localRange[0] - sourceRange[0];
+  const frameCount = Math.round((rootRange[1] - rootRange[0]) * rootComp.frameRate);
+  if (frameCount < 1) return fail("empty_frame_range");
+  const frameSelections = [
+    { role: "first", offset: 0 },
+    { role: "middle", offset: Math.floor((frameCount - 1) / 2) },
+    { role: "last", offset: frameCount - 1 }
+  ];
+  const frameReview = [];
+  for (const selection of frameSelections) {
+    const existing = frameReview.find((entry) => entry.offsetFrame === selection.offset);
+    if (existing) { existing.roles.push(selection.role); continue; }
+    const offsetSeconds = selection.offset / rootComp.frameRate;
+    frameReview.push({ roles: [selection.role], offsetFrame: selection.offset,
+      rootTime: rootRange[0] + offsetSeconds,
+      targetTime: localRange[0] + offsetSeconds,
+      sourceTime: sourceRange[0] + offsetSeconds });
+  }
   const target = { compItemIndex: targetComp.itemIndex, compName: targetComp.name, layerIndices: [targetLayer.index] };
   const plan = {
     summary: `Fill reviewed placeholder ${targetLayer.name} in ${targetComp.name}.`,
@@ -81,7 +98,7 @@ function buildPlaceholderPlan(input) {
         compName: targetComp.name, layerIndex: targetLayer.index } }
     ]
   };
-  return { ok: true, plan, expectedReadBack: {
+  return { ok: true, plan, frameReview, expectedReadBack: {
     compItemIndex: targetComp.itemIndex, compItemId: targetComp.itemId, compName: targetComp.name,
     frameRate: targetComp.frameRate, layerIndex: targetLayer.index, layerId: targetLayer.id,
     layerName: targetLayer.name, sourceItemId: sourceItem.itemId, sourceName: sourceItem.name,
