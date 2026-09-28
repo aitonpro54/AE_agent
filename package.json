@@ -25,6 +25,7 @@
     "smoke:ame-media": "node scripts/ame-media-probe-smoke.js",
     "report:ame-submit-guard": "node scripts/ame-submit-guard.js",
     "smoke:ame-submit-guard": "node scripts/ame-submit-guard-smoke.js",
+    "benchmark:optimization-fixtures": "node scripts/optimization-fixture-benchmark.js",
     "smoke:quota": "node scripts/subscription-usage-smoke.js",
     "report:autonomy": "node scripts/autonomy-obstacle-report.js",
     "smoke:autonomy-bridge": "node scripts/typed-switches-smoke.js && node scripts/autonomy-state-smoke.js && node scripts/autonomous-client-smoke.js && node scripts/autonomous-mcp-smoke.js && node scripts/run-boundary-smoke.js && node scripts/persistent-autonomy-smoke.js && node scripts/persistent-autonomy-bridge-smoke.js && node scripts/autonomy-revocation-smoke.js && node scripts/panel-heartbeat-smoke.js",

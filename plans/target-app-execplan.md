@@ -37,6 +37,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
   сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: совместимый AME adapter после обновления host.
+- Ограниченные fixtures: `docs/optimization-fixtures.md` — 6 placeholder plans/18 кадров, AME passive/metadata; JSON bytes измерены, model usage и A/B экономия неизвестны. Реальный синтетический MP4 проверен отдельным `smoke:ame-media`.
 
 
 ## Узкое исправление независимого ревью 2026-09-23
