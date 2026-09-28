@@ -37,8 +37,8 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
   Product/live smokes не запускались для документального изменения.
 - AGY input/terminal contract завершён в VideoScout `09d836e`/`6e6a8ec`:
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
-  фиксирует IDs/timing; verifier сравнивает свежий read-back (`docs/placeholder-preflight.md`).
-  Builder/verifier/daemon smoke, syntax/rules/diff — pass; live AE не запускался. Далее компактные evidence/кадры и пассивное ожидание AME.
+  фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
+  сокращает MCP-ответ (`docs/placeholder-preflight.md`). Offline smokes/syntax/rules/diff — pass; live AE не запускался. Далее адресные кадры и пассивное ожидание AME.
 
 ## Узкое исправление независимого ревью 2026-09-23
 

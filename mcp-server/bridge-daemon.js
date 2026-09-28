@@ -35,6 +35,7 @@ const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
 const placeholderPlanBuilder = require("./placeholder-plan-builder");
 const placeholderReadBack = require("./placeholder-readback");
+const placeholderEvidence = require("./placeholder-evidence");
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -9010,7 +9011,7 @@ const tools = [
   },
   {
     name: "get_layer_details",
-    description: "Return detailed information for one layer, including source, transform, text, effects, masks, and optional property tree.",
+    description: "Return detailed information for one layer, including source, transform, text, effects, masks, and optional property tree. responseView=placeholder returns only target identity, source and timing fields for placeholder preflight/read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9025,6 +9026,11 @@ const tools = [
         layerIndex: {
           type: "number",
           description: "1-based layer index in the target composition."
+        },
+        responseView: {
+          type: "string",
+          enum: ["full", "placeholder"],
+          description: "Optional response projection. Defaults to full. placeholder omits transform/effects/masks/property tree without changing internal AE read-back."
         },
         includeProperties: {
           type: "boolean",
@@ -13373,6 +13379,10 @@ async function callTool(name, args, executionContext) {
     const propertyLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "propertyLimit", 120))));
     const includeValues = optionalBoolean(args, "includeValues", false);
     const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+    const responseView = optionalString(args, "responseView", "full");
+    if (responseView !== "full" && responseView !== "placeholder") {
+      throw new Error("responseView must be full or placeholder.");
+    }
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
@@ -13578,7 +13588,9 @@ async function callTool(name, args, executionContext) {
         propertyTreeTruncated: propertyState.count >= propertyState.max
       };
     `);
-    return toolResult(result.result);
+    return toolResult(responseView === "placeholder"
+      ? placeholderEvidence.projectPlaceholderLayerEvidence(result.result)
+      : result.result);
   }
 
   if (name === "get_layer_essential_properties") {

@@ -9,6 +9,11 @@
 В `targetLayer.sourceItemId` передаётся `get_layer_details.layer.source.itemId`;
 в route `childCompItemId` — `source.itemId` вложенного comp-слоя. Точный
 `find_project_items` даёт `itemId`, `duration` и `frameRate` нового source.
+Для адресного чтения можно указать `get_layer_details` с
+`responseView:"placeholder"`: ответ содержит только comp/layer/source identity,
+locked и timing. Это сокращает MCP-ответ, но AE-side чтение остаётся полным;
+обычный режим `full` и внутренние проверки не меняются. Для masks/effects/text
+используйте полный ответ и адресные инструменты.
 
 Ограниченный контракт: одна цель; максимум четыре уровня вложенности; частота
 кадров root/target одинакова; route и target layer имеют stretch=100, выключенный
@@ -24,7 +29,7 @@ time remap и явные in/out. Времена должны попадать н
 точные comp/source имена. Эти проверки откажут при изменившейся цели.
 `expectedReadBack` задаёт итоговые source ID, start/in/out и оба временных
 диапазона. После выполнения плана заново вызовите `get_layer_details` для той же
-цели и передайте его полный ответ как `observed`, а `expectedReadBack` как
+цели и передайте его ответ (`full` или `placeholder`) как `observed`, а `expectedReadBack` как
 `expected` в `verify_placeholder_read_back`. Локальный verifier требует совпадения
 comp/layer/source ID и имён, частоты кадров, stretch/time remap и времени с
 допуском ¼ кадра. `needs_review` блокирует признание результата успешным.

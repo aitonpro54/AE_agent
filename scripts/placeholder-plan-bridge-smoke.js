@@ -15,6 +15,9 @@ async function main() {
   try {
     const call = (name, args) => fixture.request({ path: "/tools/call", method: "POST", token: fixture.automationToken,
       body: { name, arguments: args } });
+    const invalidView = await call("get_layer_details", { compItemIndex: 2, layerIndex: 1, responseView: "summary" });
+    assert.equal(invalidView.status, 500);
+    assert.match(invalidView.body.error, /responseView must be full or placeholder/);
     const good = await call("build_placeholder_plan", { input });
     assert.equal(good.status, 200);
     assert.equal(good.body.ok, true, JSON.stringify(good.body).slice(0, 1500));
