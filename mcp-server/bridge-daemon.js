@@ -33,6 +33,7 @@ const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
 const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
+const placeholderPlanBuilder = require("./placeholder-plan-builder");
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -8111,6 +8112,11 @@ const tools = [
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
   {
+    name: "build_placeholder_plan",
+    description: "Build a local preview plan for one reviewed slideshow placeholder from exact comp, layer, source and root/source timing evidence. No AE call or model inference. Re-inspect before proposal, then use normal dry-run and confirmation gates.",
+    inputSchema: placeholderPlanBuilder.inputSchema
+  },
+  {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
     inputSchema: {
@@ -10603,6 +10609,9 @@ const tools = [
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        expectedCompItemId: { type: "integer", description: "Optional AE composition item ID guard from fresh inspection." },
+        expectedLayerId: { type: "integer", description: "Optional single-layer ID guard; requires exactly one target layer." },
+        expectedSourceItemId: { type: "integer", description: "Optional current layer source item ID guard." },
         startTime: { type: "number", description: "Optional layer start time in seconds." },
         inPoint: { type: "number", description: "Optional layer in-point in seconds." },
         outPoint: { type: "number", description: "Optional layer out-point in seconds." },
@@ -10667,6 +10676,10 @@ const tools = [
         sourceItemIndex: { type: "number", description: "1-based project item index for the replacement source." },
         sourceItemName: { type: "string", description: "Exact replacement source item name when sourceItemIndex is omitted." },
         sourceItemType: { type: "string", enum: ["comp", "footage"], description: "Optional source type filter." },
+        expectedCompItemId: { type: "integer", description: "Optional AE composition item ID guard from fresh inspection." },
+        expectedLayerId: { type: "integer", description: "Optional single-layer ID guard; requires exactly one target layer." },
+        expectedPreviousSourceItemId: { type: "integer", description: "Optional current layer source item ID guard." },
+        expectedSourceItemId: { type: "integer", description: "Optional replacement source item ID guard." },
         fixExpressions: { type: "boolean", description: "Whether After Effects should adjust expressions. Defaults to true." }
       }
     }
@@ -11539,6 +11552,10 @@ async function callTool(name, args, executionContext) {
         try { info.label = item.label; } catch (__itemLabelError) {}
         try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
         try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
+        if (item instanceof CompItem || item instanceof FootageItem) {
+          try { info.duration = item.duration; } catch (__itemDurationError) {}
+          try { info.frameRate = item.frameRate; } catch (__itemFrameRateError) {}
+        }
         return info;
       }
 
@@ -12252,6 +12269,14 @@ async function callTool(name, args, executionContext) {
       return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation,
         next: "Review inputs and current evidence, then use propose_ai_agent_plan and run_ai_agent_plan dry-run before any confirmed execution." }, !prepared.validation.ok);
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
+  }
+
+  if (name === "build_placeholder_plan") {
+    const result = placeholderPlanBuilder.buildPlaceholderPlan((args || {}).input);
+    if (!result.ok) return toolResult(result, true);
+    const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+    return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation,
+      previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true }, !prepared.validation.ok);
   }
 
   if (name === "propose_ai_agent_plan") {
@@ -17347,6 +17372,9 @@ async function callTool(name, args, executionContext) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const expectedCompItemId = optionalPositiveInteger(args, "expectedCompItemId");
+    const expectedLayerId = optionalPositiveInteger(args, "expectedLayerId");
+    const expectedSourceItemId = optionalPositiveInteger(args, "expectedSourceItemId");
     const startTime = optionalNumber(args, "startTime", null);
     const inPoint = optionalNumber(args, "inPoint", null);
     const outPoint = optionalNumber(args, "outPoint", null);
@@ -17366,6 +17394,10 @@ async function callTool(name, args, executionContext) {
       var requestedOutPoint = ${outPoint === null ? "null" : outPoint};
       var requestedDuration = ${duration === null ? "null" : duration};
       var layers = __codexResolveLayers(comp, requestedLayerIndices);
+      if (${compName ? "comp.name !== " + aeLiteral(compName) : "false"}) throw new Error("Composition name changed before timing edit.");
+      if (${expectedCompItemId === null ? "false" : `comp.id !== ${expectedCompItemId}`}) throw new Error("Composition identity changed before timing edit.");
+      if (${expectedLayerId === null ? "false" : "layers.length !== 1 || layers[0].id !== " + expectedLayerId}) throw new Error("Layer identity changed before timing edit.");
+      if (${expectedSourceItemId === null ? "false" : "layers.length !== 1 || !layers[0].source || layers[0].source.id !== " + expectedSourceItemId}) throw new Error("Layer source changed before timing edit.");
 
       app.beginUndoGroup("Codex Set Layer Time Range");
       var changed = [];
@@ -17544,6 +17576,10 @@ async function callTool(name, args, executionContext) {
     const sourceItemIndex = optionalPositiveInteger(args, "sourceItemIndex");
     const sourceItemName = optionalString(args, "sourceItemName", "");
     const sourceItemType = optionalString(args, "sourceItemType", "");
+    const expectedCompItemId = optionalPositiveInteger(args, "expectedCompItemId");
+    const expectedLayerId = optionalPositiveInteger(args, "expectedLayerId");
+    const expectedPreviousSourceItemId = optionalPositiveInteger(args, "expectedPreviousSourceItemId");
+    const expectedSourceItemId = optionalPositiveInteger(args, "expectedSourceItemId");
     const fixExpressions = optionalBoolean(args, "fixExpressions", true);
 
     if (!sourceItemIndex && !sourceItemName) return toolResult("Provide sourceItemIndex or sourceItemName.", true);
@@ -17557,6 +17593,12 @@ async function callTool(name, args, executionContext) {
       if (!(sourceItem instanceof FootageItem) && !(sourceItem instanceof CompItem)) {
         throw new Error("Replacement source must be footage or a composition.");
       }
+      if (${compName ? "comp.name !== " + aeLiteral(compName) : "false"}) throw new Error("Composition name changed before source replacement.");
+      if (${sourceItemName ? "sourceItem.name !== " + aeLiteral(sourceItemName) : "false"}) throw new Error("Replacement source name changed.");
+      if (${expectedCompItemId === null ? "false" : `comp.id !== ${expectedCompItemId}`}) throw new Error("Composition identity changed before source replacement.");
+      if (${expectedSourceItemId === null ? "false" : `sourceItem.id !== ${expectedSourceItemId}`}) throw new Error("Replacement source identity changed.");
+      if (${expectedLayerId === null ? "false" : "layers.length !== 1 || layers[0].id !== " + expectedLayerId}) throw new Error("Layer identity changed before source replacement.");
+      if (${expectedPreviousSourceItemId === null ? "false" : "layers.length !== 1 || !layers[0].source || layers[0].source.id !== " + expectedPreviousSourceItemId}) throw new Error("Previous layer source changed before replacement.");
       var fixExpressions = ${fixExpressions ? "true" : "false"};
 
       app.beginUndoGroup("Codex Replace Layer Source");

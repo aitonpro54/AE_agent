@@ -35,9 +35,10 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
   Локальные evidence/подсчёт сохранены под ignored `.codex/`.
 - `npm.cmd run check:rules` — pass; `git diff --check` — pass.
   Product/live smokes не запускались для документального изменения.
-- AGY input/terminal contract завершён в VideoScout `09d836e` (log `a5a5adc`):
-  134 offline tests pass, 1 skip; live AGY не запускался. Далее exact comp/time preflight,
-  placeholder recipe и offline-разбор semantic evidence.
+- AGY input/terminal contract завершён в VideoScout `09d836e`/`6e6a8ec`:
+  134 offline tests pass, 1 skip; live AGY не запускался. Локальный placeholder
+  preflight фиксирует comp/layer/source IDs и root/source time (`docs/placeholder-preflight.md`).
+  Далее адресный semantic read-back и компактные evidence/кадры.
 
 ## Узкое исправление независимого ревью 2026-09-23
 
