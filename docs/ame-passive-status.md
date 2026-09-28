@@ -71,3 +71,35 @@ read-back точного in/out диапазона; даже на совмест
 `get_render_queue_status` After Effects статусом AME. До появления совместимого
 host и точного job ID статус вводится из отдельного наблюдения; автоматический
 submit и retry не добавлены.
+
+## Offline guard от повторной отправки
+
+`report:ame-submit-guard` не общается с AME. Перед внешней отправкой он может
+атомарно сохранить локальную резервацию пути назначения. Состояние сразу
+`unknown_outcome`: даже если процесс отправки упадёт до получения ответа, guard
+не разрешит вторую попытку автоматически. Он хранит локальный attempt ID,
+но **не создаёт и не удостоверяет AME job ID**.
+
+Intent JSON версии `ae-agent-ame-submit-intent.v1` требует абсолютные
+`sourcePath`, `outputPath`, заявленные `sourceIdentity` и `preset`, а также
+`range.startSeconds`/`endSeconds`. Пример использования с уже подготовленным
+`intent.json`:
+
+```powershell
+npm.cmd run report:ame-submit-guard -- inspect --intent C:\path\to\intent.json
+npm.cmd run report:ame-submit-guard -- reserve --intent C:\path\to\intent.json
+```
+
+По умолчанию состояние хранится в ignored `.codex-runtime/ame-submit-guard/`;
+`--state-dir` принимает другой абсолютный локальный каталог. `reserve` создаёт
+файл атомарно (`wx` + `fsync`), повтор с тем же destination блокируется и при
+другом preset/source/range. Повреждённый файл также блокирует повтор. CLI exit
+code 0 означает только созданную локальную резервацию, 2 — запрет; это не
+результат AME. Утилита не имеет команды снятия резервации и не вызывает submit.
+
+Это проверяемый offline компонент, пока не интегрированный во все реальные
+маршруты отправки AME. Поэтому сам по себе он не гарантирует, что оператор/UI
+не отправит job повторно. Перед production-интеграцией нужны единый submit
+маршрут, подтверждённый AME job ID, read-only сверка очереди после unknown и
+отдельно проверенное правило освобождения destination. Текущий guard намеренно
+оставляет сомнительный исход заблокированным.

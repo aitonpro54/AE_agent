@@ -20,13 +20,13 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - Разобран чат заполнения `60p_slide_4`, CU-вызовы, три AGY-задания и usage ledger.
   Две ограниченные разведки выполнены ae_scout на runtime-подтверждённой Luna/high.
 - Отчёт и смета: `docs/placeholder-workflow-review-2026-09-28.md`.
-  Routing обновлён; внедрены AGY preflight, typed placeholder builder/read-back, компактный evidence, 3 кадра и пассивный AME snapshot contract.
+  Routing обновлён; внедрены AGY preflight, typed placeholder builder/read-back, компактный evidence, 3 кадра, пассивный AME snapshot и offline submit guard.
 
 ### Decision Log
 
 - Основная AE-сборка уже typed; оптимизировать адресные кадры, ожидание AME,
   размер evidence, ограничение AGY scope и выбор исполнителя. Gates не ослаблять.
-- A/B-экономия неизвестна; cache, usage и прогноз разделены. AME file growth и UI `done` не доказывают completion. Проверена AME 26.2.0.52: UXP getJob/getStatus с 27.0; нужен AME job ID из submit, точного range read-back в RenderJob нет. Adapter блокирован; live AE/AME и отправка job не проводились.
+- A/B-экономия неизвестна; cache, usage и прогноз разделены. AME file growth и UI `done` не доказывают completion. Проверена AME 26.2.0.52: UXP getJob/getStatus с 27.0; нужен AME job ID из submit, точного range read-back в RenderJob нет. Adapter блокирован. Offline guard атомарно блокирует повтор по destination после unknown, но пока не подключён к submit. Live AE/AME и отправка job не проводились.
 
 ### Validation
 
