@@ -50,3 +50,16 @@ npm.cmd run report:ame-media -- --job C:\path\to\job.json --observation C:\path\
 `technicalMediaVerified:true` поле `completionVerified:false`: автоматического
 доверенного AME status adapter здесь нет, а визуальная приёмка отдельна.
 Команды не отправляют job, не следят в фоне и не запускают render.
+
+## Граница AME status adapter
+
+Официальный [RenderJob API](https://developer.adobe.com/media-encoder/uxp/media-encoder-api/render-queue/render-job/)
+описывает `getStatus`, `getOutputFilePath` и `getPresetName` для UXP с AME
+27.0; [RenderQueue.getJob](https://developer.adobe.com/media-encoder/uxp/media-encoder-api/render-queue/)
+привязывает чтение к ID задания. Это beta API. Локально проверен установленный
+`Adobe Media Encoder.exe` 26.2.0.52, поэтому на этой машине UXP adapter не
+реализован и не проверен. По [официальному образцу панели](https://developer.adobe.com/media-encoder/uxp/get-started/samples/render-queue-panel/)
+минимум для примера — 26.5.0, что тоже выше текущей версии. Не подменяйте
+`get_render_queue_status` After Effects статусом AME. До появления совместимого
+host и точного job ID статус вводится из отдельного наблюдения; автоматический
+submit и retry не добавлены.

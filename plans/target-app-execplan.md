@@ -11,7 +11,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 
 - Progress: `report:quota` читает квоту и start/since; исправлены `usedPct` и известный shutdown crash. `report:task-usage` считает уникальные root/child responses; парные checkpoint и локальный empirical estimator добавлены.
 - Decision Log: account delta отдельно от task estimate; проценты задачи требуют 3 проверенных интервала, model/speed weights и подтверждённой изоляции. Пока данных нет — null. Ledger не домысливает детей и не суммирует cumulative snapshots; без polling/LLM.
-- Validation: quota=Codex (исторически 16%, сейчас 18% Weekly); CLI start/since и парный checkpoint. Offline smokes проверяют ledger и fail-closed калибровку; rules/syntax/diff checks. CEP/AE не менялись.
+- Validation: quota=Codex (20% Weekly на 11:21Z; +2 п.п. аккаунта от start, task estimate null); CLI start/since и парный checkpoint. Offline smokes проверяют ledger и fail-closed калибровку; rules/syntax/diff checks. CEP/AE не менялись.
 
 ## Ревью плейсхолдеров и делегации 2026-09-28
 
@@ -27,7 +27,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - Основная AE-сборка уже typed; оптимизировать адресные кадры, ожидание AME,
   размер evidence, ограничение AGY scope и выбор исполнителя. Gates не ослаблять.
 - A/B-экономия неизвестна; cache, фактический usage и прогноз разделены.
-  AME file growth и UI `done` без media probe не означают verified completion;
+  AME file growth и UI `done` без media probe не означают verified completion; локальная AME 26.2 ниже UXP RenderJob 27.0;
   live AE/AME и отправка job в эти offline milestones не входили.
 
 ### Validation
@@ -38,7 +38,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - AGY input/terminal contract завершён в VideoScout `09d836e`/`6e6a8ec`:
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
-  сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: AME adapter.
+  сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: совместимый AME adapter после обновления host.
 
 ## Узкое исправление независимого ревью 2026-09-23
 
