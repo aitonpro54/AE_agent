@@ -26,6 +26,8 @@
 `failed`, `canceled`) и `observedAt`. Нельзя записывать `done` на основании
 роста или появления файла. Снимок с другим job, preset, destination или range
 отклоняется; старое `queued/running` не считается актуальным состоянием.
+До доверенного AME adapter эти поля остаются заявленными во входных JSON:
+совпадение двух файлов защищает от смешения job, но не удостоверяет их источник.
 
 ```powershell
 npm.cmd run report:ame-output -- --job C:\path\to\job.json
