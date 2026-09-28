@@ -11,7 +11,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 
 - Progress: `report:quota` читает квоту и start/since; исправлены `usedPct` и известный shutdown crash. `report:task-usage` считает уникальные root/child responses; парные checkpoint и локальный empirical estimator добавлены.
 - Decision Log: account delta отдельно от task estimate; проценты задачи требуют 3 проверенных интервала, model/speed weights и подтверждённой изоляции. Пока данных нет — null. Ledger не домысливает детей и не суммирует cumulative snapshots; без polling/LLM.
-- Validation: quota=Codex (20% Weekly на 11:21Z; +2 п.п. аккаунта от start, task estimate null); CLI start/since и парный checkpoint. Offline smokes проверяют ledger и fail-closed калибровку; rules/syntax/diff checks. CEP/AE не менялись.
+- Validation: CodeBurn 21% Weekly used на 11:47:57Z (+3 п.п. аккаунта от start, attribution unknown, partial/shutdown warning); native Codex usage API также 21%. Парный ledger выбранных текущего и предыдущего root+child: 335 responses, input 40 022 398 (cached 39 157 248), output 146 598; task estimate null без 3 изолированных интервалов/весов. Offline smokes ledger/quota/estimate, rules/diff; CEP/AE не менялись.
 
 ## Ревью плейсхолдеров и делегации 2026-09-28
 
