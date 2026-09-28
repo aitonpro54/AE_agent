@@ -9,9 +9,9 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 
 ## Контроль подписки по этапам 2026-09-28
 
-- Progress: `report:quota` читает квоту и start/since; исправлены `usedPct` и известный shutdown crash. Локальный `report:task-usage` считает уникальные root/child responses по моделям и cache.
-- Decision Log: account delta отдельно от task attribution; tokens→% пока design в `docs/usage-telemetry.md`. Unknown=null; ledger не домысливает детей и не суммирует cumulative snapshots. Без polling и LLM.
-- Validation: quota=Codex (16% Weekly) и CLI start/since; новый offline smoke проверяет дедупликацию, child, cache и malformed. Текущий ledger прочитан без prompts; rules/syntax/diff checks. CEP/AE не менялись.
+- Progress: `report:quota` читает квоту и start/since; исправлены `usedPct` и известный shutdown crash. `report:task-usage` считает уникальные root/child responses; парные checkpoint и локальный empirical estimator добавлены.
+- Decision Log: account delta отдельно от task estimate; проценты задачи требуют 3 проверенных интервала, model/speed weights и подтверждённой изоляции. Пока данных нет — null. Ledger не домысливает детей и не суммирует cumulative snapshots; без polling/LLM.
+- Validation: quota=Codex (исторически 16%, сейчас 18% Weekly); CLI start/since и парный checkpoint. Offline smokes проверяют ledger и fail-closed калибровку; rules/syntax/diff checks. CEP/AE не менялись.
 
 ## Ревью плейсхолдеров и делегации 2026-09-28
 
