@@ -20,14 +20,16 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - Разобран чат заполнения `60p_slide_4`, CU-вызовы, три AGY-задания и usage ledger.
   Две ограниченные разведки выполнены ae_scout на runtime-подтверждённой Luna/high.
 - Отчёт и смета: `docs/placeholder-workflow-review-2026-09-28.md`.
-  Устаревшая маршрутизация в `docs/solution-reuse.md` приведена к текущей политике.
+  Routing обновлён; внедрены AGY preflight, typed placeholder builder/read-back,
+  компактный evidence, 3 кадра и пассивный AME snapshot contract.
 
 ### Decision Log
 
 - Основная AE-сборка уже typed; оптимизировать адресные кадры, ожидание AME,
   размер evidence, ограничение AGY scope и выбор исполнителя. Gates не ослаблять.
 - A/B-экономия неизвестна; cache, фактический usage и прогноз разделены.
-  Изменения runtime/product и новые live-прогоны не входят в это ревью.
+  AME file growth и UI `done` без media probe не означают verified completion;
+  live AE/AME и отправка job в эти offline milestones не входили.
 
 ### Validation
 
@@ -38,7 +40,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 - AGY input/terminal contract завершён в VideoScout `09d836e`/`6e6a8ec`:
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
-  сокращает MCP-ответ; `frameReview` даёт до 3 root/target/source точек (`docs/placeholder-preflight.md`). Offline smokes/syntax/rules/diff — pass; live AE не запускался. Далее пассивное ожидание AME.
+  сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME contract — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: media probe и AME adapter.
 
 ## Узкое исправление независимого ревью 2026-09-23
 
