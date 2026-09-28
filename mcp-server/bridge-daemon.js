@@ -34,6 +34,7 @@ const m100Protocol = require("./m100-protocol");
 const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
 const placeholderPlanBuilder = require("./placeholder-plan-builder");
+const placeholderReadBack = require("./placeholder-readback");
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -8117,6 +8118,11 @@ const tools = [
     inputSchema: placeholderPlanBuilder.inputSchema
   },
   {
+    name: "verify_placeholder_read_back",
+    description: "Compare the expected placeholder comp/layer/source/timing with a fresh independent get_layer_details result. Local only; no AE call or provider inference.",
+    inputSchema: placeholderReadBack.inputSchema
+  },
+  {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
     inputSchema: {
@@ -12279,6 +12285,11 @@ async function callTool(name, args, executionContext) {
       previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true }, !prepared.validation.ok);
   }
 
+  if (name === "verify_placeholder_read_back") {
+    const result = placeholderReadBack.verifyPlaceholderReadBack((args || {}).expected, (args || {}).observed);
+    return toolResult(result, !result.ok);
+  }
+
   if (name === "propose_ai_agent_plan") {
     try {
       const result = await createM100AgentPlanProposalFromRequest(args || {});
@@ -13550,7 +13561,9 @@ async function callTool(name, args, executionContext) {
       return {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
+          itemId: comp.id,
           name: comp.name,
+          frameRate: comp.frameRate,
           time: comp.time,
           numLayers: comp.numLayers
         },

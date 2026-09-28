@@ -82,7 +82,9 @@ function buildPlaceholderPlan(input) {
     ]
   };
   return { ok: true, plan, expectedReadBack: {
-    compItemId: targetComp.itemId, layerId: targetLayer.id, sourceItemId: sourceItem.itemId,
+    compItemIndex: targetComp.itemIndex, compItemId: targetComp.itemId, compName: targetComp.name,
+    frameRate: targetComp.frameRate, layerIndex: targetLayer.index, layerId: targetLayer.id,
+    layerName: targetLayer.name, sourceItemId: sourceItem.itemId, sourceName: sourceItem.name,
     startTime, inPoint: localRange[0], outPoint: localRange[1], rootRange, sourceRange
   } };
 }
