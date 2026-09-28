@@ -7,6 +7,14 @@ Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
+## Контроль подписки по этапам 2026-09-28
+
+- Progress: `report:quota` читает квоту, сохраняет start/since; исправлены `usedPct` и восстановление после известного shutdown crash.
+- Decision Log: account delta отдельно от task attribution; tokens→% пока design
+  в `docs/usage-telemetry.md`. Неизвестное=null; без фонового polling и LLM.
+- Validation: quota=Codex (16% Weekly), CLI start/since и адресные offline smokes;
+  rules/syntax/diff checks. CEP/daemon не перезагружались; AE-проект не менялся.
+
 ## Ревью плейсхолдеров и делегации 2026-09-28
 
 ### Progress

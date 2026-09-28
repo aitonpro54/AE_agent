@@ -14,6 +14,8 @@
     "smoke:planning": "node scripts/project-intent-memory-smoke.js && node scripts/plan-classification-smoke.js && node scripts/plan-repair-smoke.js && node scripts/semantic-verification-smoke.js && node scripts/generated-safety-contracts-smoke.js && node scripts/property-identity-smoke.js",
     "smoke:bridge": "node scripts/chatgpt-connector-smoke.js && node scripts/provider-api-smoke.js && node scripts/prompt-optimization-smoke.js && node scripts/bridge-only-smoke-test.js && node scripts/smoke-test.js && node scripts/solution-discovery-smoke.js && node scripts/autonomous-session-smoke.js && node scripts/autonomous-mcp-smoke.js && node scripts/solution-plan-run-smoke.js",
     "report:reuse": "node scripts/solution-usage-report.js",
+    "report:quota": "node scripts/subscription-usage-report.js",
+    "smoke:quota": "node scripts/subscription-usage-smoke.js",
     "report:autonomy": "node scripts/autonomy-obstacle-report.js",
     "smoke:autonomy-bridge": "node scripts/typed-switches-smoke.js && node scripts/autonomy-state-smoke.js && node scripts/autonomous-client-smoke.js && node scripts/autonomous-mcp-smoke.js && node scripts/run-boundary-smoke.js && node scripts/persistent-autonomy-smoke.js && node scripts/persistent-autonomy-bridge-smoke.js && node scripts/autonomy-revocation-smoke.js && node scripts/panel-heartbeat-smoke.js",
     "smoke:slideshow": "node scripts/slideshow-tools-smoke.js && node scripts/slideshow-jsx-vm-smoke.js && node scripts/slideshow-scope-safety-smoke.js && node scripts/slideshow-runtime-regression-smoke.js && node scripts/slideshow-verifier-regression-smoke.js && node scripts/slideshow-template-contract-smoke.js && node scripts/slideshow-plan-validation-smoke.js",

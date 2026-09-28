@@ -732,6 +732,9 @@
     }
     var quota = usageSnapshot.quota || {};
     var windows = quota.quota && quota.quota.windows || [];
+    if (quota.warning) {
+      rows.push({ key: "quota-warning", label: "Quota", value: "Quota snapshot received; CodeBurn failed during shutdown. Treat as partial.", tone: "warning" });
+    }
     if (!windows.length) {
       rows.push({ key: "quota", label: "Quota", value: quota.status || "unavailable", tone: "warning" });
     } else {
@@ -739,7 +742,7 @@
         var remaining = typeof windows[q].remainingPercent === "number"
           ? windows[q].remainingPercent + "% remaining"
           : typeof windows[q].usedPercent === "number" ? windows[q].usedPercent + "% used" : "remaining unknown";
-        rows.push({ key: "quota-" + q, label: "Quota", value: (windows[q].provider || "provider") + " · " + remaining + (windows[q].resetAt ? " · reset " + windows[q].resetAt : ""), tone: windows[q].status === "ok" ? "ready" : "warning" });
+        rows.push({ key: "quota-" + q, label: "Quota", value: (windows[q].provider || "provider") + " · " + remaining + (windows[q].resetAt ? " · reset " + windows[q].resetAt : ""), tone: windows[q].status === "ok" && !quota.warning ? "ready" : "warning" });
       }
     }
     rows.push({ key: "granularity", label: "Granularity", value: "Models and projects are independent aggregates; no model × project inference.", tone: "" });
