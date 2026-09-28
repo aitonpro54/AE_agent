@@ -58,10 +58,16 @@ npm.cmd run report:ame-media -- --job C:\path\to\job.json --observation C:\path\
 Официальный [RenderJob API](https://developer.adobe.com/media-encoder/uxp/media-encoder-api/render-queue/render-job/)
 описывает `getStatus`, `getOutputFilePath` и `getPresetName` для UXP с AME
 27.0; [RenderQueue.getJob](https://developer.adobe.com/media-encoder/uxp/media-encoder-api/render-queue/)
-привязывает чтение к ID задания. Это beta API. Локально проверен установленный
-`Adobe Media Encoder.exe` 26.2.0.52, поэтому на этой машине UXP adapter не
-реализован и не проверен. По [официальному образцу панели](https://developer.adobe.com/media-encoder/uxp/get-started/samples/render-queue-panel/)
-минимум для примера — 26.5.0, что тоже выше текущей версии. Не подменяйте
+ищет job по ID, который должен прийти из результата `enqueueFile`/`renderFile`, и
+возвращает `null`, если job не найден. Это beta API. Повторная локальная проверка
+28 сентября 2026: установленный `Adobe Media Encoder.exe` имеет file version
+26.2.0.52 (product version 26.2.0); совместимого AME 27.x на host не найдено.
+По [официальному образцу панели](https://developer.adobe.com/media-encoder/uxp/get-started/samples/render-queue-panel/)
+минимум для примера — 26.5.0, что тоже выше текущей версии. Поэтому на этом host
+UXP adapter не реализован и не проверен. Опубликованный `RenderJob` даёт read-only
+`getStatus`, `getPresetName`, `getOutputFilePath` и `batchItemID`, но не описывает
+read-back точного in/out диапазона; даже на совместимом host его нужно
+подтвердить отдельным проверенным контрактом. Не подменяйте
 `get_render_queue_status` After Effects статусом AME. До появления совместимого
 host и точного job ID статус вводится из отдельного наблюдения; автоматический
 submit и retry не добавлены.

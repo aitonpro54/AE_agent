@@ -26,9 +26,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 
 - Основная AE-сборка уже typed; оптимизировать адресные кадры, ожидание AME,
   размер evidence, ограничение AGY scope и выбор исполнителя. Gates не ослаблять.
-- A/B-экономия неизвестна; cache, фактический usage и прогноз разделены.
-  AME file growth и UI `done` без media probe не означают verified completion; локальная AME 26.2 ниже UXP RenderJob 27.0;
-  live AE/AME и отправка job в эти offline milestones не входили.
+- A/B-экономия неизвестна; cache, usage и прогноз разделены. AME file growth и UI `done` не доказывают completion. Проверена AME 26.2.0.52: UXP getJob/getStatus с 27.0; нужен AME job ID из submit, точного range read-back в RenderJob нет. Adapter блокирован; live AE/AME и отправка job не проводились.
 
 ### Validation
 
@@ -39,6 +37,7 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
   134 offline tests pass, 1 skip; live AGY не запускался. Placeholder preflight
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
   сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: совместимый AME adapter после обновления host.
+
 
 ## Узкое исправление независимого ревью 2026-09-23
 
