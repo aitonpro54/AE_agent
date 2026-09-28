@@ -7,6 +7,31 @@ Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
+## Ревью плейсхолдеров и делегации 2026-09-28
+
+### Progress
+
+- Разобран чат заполнения `60p_slide_4`, CU-вызовы, три AGY-задания и usage ledger.
+  Две ограниченные разведки выполнены ae_scout на runtime-подтверждённой Luna/high.
+- Отчёт и смета: `docs/placeholder-workflow-review-2026-09-28.md`.
+  Устаревшая маршрутизация в `docs/solution-reuse.md` приведена к текущей политике.
+
+### Decision Log
+
+- Основная AE-сборка уже typed; оптимизировать адресные кадры, ожидание AME,
+  размер evidence, ограничение AGY scope и выбор исполнителя. Gates не ослаблять.
+- A/B-экономия неизвестна; cache, фактический usage и прогноз разделены.
+  Изменения runtime/product и новые live-прогоны не входят в это ревью.
+
+### Validation
+
+- Usage рассчитан по уникальным response IDs, сумма сверена с thread ledger.
+  Локальные evidence/подсчёт сохранены под ignored `.codex/`.
+- `npm.cmd run check:rules` — pass; `git diff --check` — pass.
+  Product/live smokes не запускались для документального изменения.
+- Рекомендуемый следующий отдельный scope: AGY input preflight/terminal result
+  contract; затем placeholder recipe и offline-разбор semantic evidence.
+
 ## Узкое исправление независимого ревью 2026-09-23
 
 ### Progress
