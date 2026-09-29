@@ -104,6 +104,10 @@ async function main() {
     const forged = await request("/agents/plan/run", {plan: built.plan, dryRun: false, confirm: true, allowMutations: true,
       _m100ActionRecord: {...current, executionState: "pending"}, _m100AutonomousSession: {authorized: true}}, undefined, panelToken);
     assert.equal(forged.body.errorCode || forged.body.code, "internal_authority_fields_forbidden");
+    const initialOff = await request("/autonomy/session", {
+      enabled: false, panelConnectionId: "panel-smoke", panelGeneration: "1"
+    }, undefined, panelToken);
+    assert.strictEqual(initialOff.body.session.desiredEnabled, false, "explicit off blocks MCP execution");
 
     const runArgs = {
       actionId: proposal.actionId,

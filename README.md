@@ -106,7 +106,8 @@ Important boundaries:
 - Broad or risky mutations require checkpoint/edit-session protection.
 - Raw ExtendScript remains an escape hatch behind bridge-owned gates.
 - Переключатель **Автономная сессия Codex** сохраняет `desiredEnabled` до явного
-  выключения. Reload панели и restart bridge сохраняют настройку; готовность
+  выключения. При первом доверенном подключении панели без сохранённой настройки
+  он включается автоматически. Reload панели и restart bridge сохраняют настройку; готовность
   восстанавливается только после подключения доверенной панели. Разрешение
   конкретного proposal, checkpoint, freshness и read-back проверяются отдельно.
   Direct mutations, raw JSX, destructive и специальный named save остаются
@@ -115,11 +116,17 @@ Important boundaries:
   work; the panel must not imply it created a Codex thread automatically.
 
 Настройка хранится в `autonomy-preference.json` внутри `AE_BRIDGE_STATE_DIR`
-(по умолчанию local ignored log directory). Новый, повреждённый или старый temporary
-state даёт off. Ошибка записи показывается явно: off немедленно отзывает право
+(по умолчанию local ignored log directory). При отсутствии файла она включается
+после первого доверенного подключения CEP; явно сохранённое off остаётся off.
+Повреждённый или старый temporary state даёт off. Ошибка записи показывается явно: off немедленно отзывает право
 в текущем процессе, но при ошибке диска сохранение off после restart не гарантируется.
 Отсутствующая панель означает ожидание соединения при сохранённом enabled.
 Heartbeat поддерживает готовность во время долгого JSX и не получает команды.
+
+Этот переключатель меняет только право MCP выполнить уже предложенный typed-план.
+Поиск решений, регистрация карантинных кандидатов, проверяемое продвижение рецептов
+и отчётность работают независимо от него. Полный доступ Codex к файловой системе
+не заменяет разрешение bridge на изменение AE.
 
 Panel/bridge используют command contract v2: execution, lease, owner и generation
 сверяются до принятия результата. Старую панель нужно обновлять вместе с bridge;

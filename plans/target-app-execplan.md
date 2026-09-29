@@ -7,6 +7,17 @@ Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
+## Автономная сессия и правила AE-текста — 2026-09-29
+
+- Progress: новое предпочтение auto-on при первом доверенном подключении CEP;
+  off/повреждённый state остаются off. Правила афиш и частичного плана в `AGENTS.md`.
+  Четыре плашки остановлены без рендера по просьбе пользователя.
+- Decision Log: файловый доступ Codex не заменяет bridge permission; кнопка даёт
+  только MCP-исполнение typed plans, не поиск, capture, promotion или статистику.
+  Live bridge уже хранит on, но панель отключена; новый default вступит при restart.
+- Validation: `smoke:autonomy-bridge`, `check:rules`, syntax, diff — pass offline;
+  live первого подключения нового профиля не проверялось.
+
 ## Контроль подписки по этапам 2026-09-28
 
 - Progress: `report:quota` читает квоту и start/since; исправлены `usedPct` и известный shutdown crash. `report:task-usage` считает уникальные root/child responses; парные checkpoint и локальный empirical estimator добавлены.
@@ -147,19 +158,6 @@ panel-auth — pass. Node syntax и diff checks — pass. Generated AE/CEP live 
 full-intake и broad CEP smoke не запускались. Installed CEP release files совпали с repo
 по SHA-256; daemon после безопасного restart сообщил version 3.1.0, PID 7616, autonomy off.
 Точные команды, transient failures и scope каждого proof — в отчёте M7.
-
-## Исторический контекст, не доказательство M7
-
-- PR #1–#3 объединены в main 2026-09-19; история и старые ветки сохранены.
-- F01–F17: прежние commits 417e465, 4c0c2f1, 8175c1f, ca6922d, 0bc1171;
-  отдельный synthetic live scope проверял keys/scope/stale B/save-reopen.
-- Прежний client AEP восстановлен clean; клиентская/визуальная приёмка неизвестна.
-- Production stop: первые 10 собраны; аудиохвост 13 мс и визуальная приёмка не завершены.
-  В master 14 пар; источник не изменён. Подробности: docs/autonomous-editing.md.
-- M6 2026-09-19: native usage + optional CodeBurn 0.9.24; quota без windows = partial.
-  Исторический read-only report не считается новым M7 network запуском.
-- Старый temporary 20-minute grant заменён M7 persistent contract; прежние live/runtime
-  observations не доказывают работу нового варианта в установленной панели.
 
 ## Следующие отдельные scope
 
