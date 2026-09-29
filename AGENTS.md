@@ -70,9 +70,8 @@ not an unconditional instruction to abandon the task.
 
 ## AE references and text layout
 
-- When the user supplies event artwork and layout examples, take factual content
-  only from the event artwork. Use the examples to identify visual hierarchy,
-  typography, spacing, and alignment; never carry over their event details.
+- When the user supplies layout examples, use them to identify visual hierarchy,
+  typography, spacing, and alignment for the target frame.
 - Before editing, compare the relevant examples with the actual target frame:
   date as one visual group, event type versus event title, main performers versus
   supporting details such as cities and instruments. Record the intended hierarchy.
