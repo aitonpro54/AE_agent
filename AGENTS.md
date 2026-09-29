@@ -160,23 +160,38 @@ computer-use plus `ae-computer-use-workflow`, without modifying plugin cache.
 Read Russian/UTF-8 Markdown files with `Get-Content -Encoding UTF8`.
 ## AE model routing and shared runtime
 
-Load `ae-task-routing` only when routing/delegation is relevant. Preferred configured
-roles: `ae_scout` Luna/high (read-only); `ae_operator` Luna/high (bounded known work);
-`ae_specialist` Sol/high (implementation); `ae_reviewer` Sol/high (independent read-only
-review); `ae_architect` Astra/high (rare cross-system decisions). Exact IDs live in
-the installed role TOML files: gpt-6-luna, gpt-6-sol, gpt-6-astra. This table is policy,
-not proof that Codex switched models. Verify available roles and actual/effective
-model+effort; report unavailable runtime verification rather than guessing.
+Обычный новый сеанс: **GPT-6 Luna / high**, диспетчер. Не менять модель текущего
+чата автоматически. Приоритет: явный выбор пользователя → архитектурная/системная
+задача **Astra / high** (`ae_architect`) → узкий тяжёлый инженерный блокер
+**Sol / high** (`ae_specialist`) → остальные содержательные задачи целиком
+**Gemini 3.8 Flash / high** через существующий agy-мост (`antigravity-cli`).
+Точные ID: `gpt-6-luna`, `gpt-6-sol`, `gpt-6-astra`, `gemini-3.8-flash-high`.
 
-Do not select Terra in any active default, fallback, planner, reviewer or recovery
-route for these tasks. Do not silently switch providers or enable paid API usage.
-Unavailable role: use an allowed available non-Terra model sequentially, or report
-the exact blocker. Do not change the parent's user-selected model automatically.
-At most two children, no child-created grandchildren, no duplicate parent/child work.
-Parallelize only independent file work or immutable snapshots. One designated
-controller owns all live AE/CEP/UI access at a time. A read-only filesystem sandbox
-is not proof that inherited MCP/UI tools cannot mutate an application.
+Luna сохраняет запрос/ограничения, передаёт задачу и критерии приёмки, запускает
+готовые проверки и возвращает проверенный результат. Не дублирует аудит,
+планирование или реализацию Flash. Малые детерминированные действия выполняет сама.
+Flash самостоятельно читает материалы, планирует, реализует и исправляет результат.
+Нет обязательной цепочки моделей или полного ревью Sol/Astra после каждой задачи.
+Архитектура идёт прямо Astra; Sol xhigh — только адресная подтверждённая эскалация.
+`ae_scout`/`ae_operator` — вспомогательные Luna-роли, не основной исполнитель;
+`ae_reviewer` — только запрошенное ограниченное ревью.
 
-Do not require two failed live edits before escalation. Resolve auth, stale state and
-unknown submission outcomes before choosing whether more reasoning would help.
-Use the existing typed library first; candidate promotion is separate from capture.
+Диспетчер — единственный центр делегирования: максимум два вспомогательных
+исполнителя **включая AGY**, без рекурсивных агентов. Один writer на ресурс;
+один контроллер AE/CEP/UI. При timeout сначала проверить процесс, pending и
+read-back, не повторять мутацию вслепую и не передавать занятый ресурс.
+Ошибки auth/quota/network/MCP/permissions отделять от ошибок решения. Flash получает
+до двух содержательных исправлений одной ошибки проверки; неизвестный live outcome
+сначала сверяется. Каждая смена исполнителя имеет записанную причину. При
+недоступности Flash допустим только ограниченный явный Sol fallback по подписке
+после сверки предыдущего запуска, без постоянной скрытой смены маршрута.
+
+Terra, paid API, автоматическая покупка кредитов, max/ultra и автоматическое
+размножение агентов не входят в маршрут. Не менять провайдера Codex. Model/effort
+проверять по metadata, не по самоотчёту. MCP Antigravity проверять отдельно:
+доступы Codex не наследуются. Read-only намерение/sandbox не запрещает MCP writes.
+Программные AE tools и библиотека решений — основной путь; Computer Use только
+при необходимости с прежними gates. Транспорт SUCCESS не является приёмкой.
+
+Практический запуск, контракт, ограничения и откат: `docs/model-routing.md`.
+При делегации читать действующий `ae-task-routing`; не загружать полные логи в Luna.

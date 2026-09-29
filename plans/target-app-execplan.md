@@ -7,6 +7,11 @@ Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
+## Постоянная маршрутизация — 2026-09-29
+- Progress: проектный Luna/high → существующий AGY Flash 3.8/high; Sol/Astra роли сохранены.
+- Decision Log: текущая Astra/high и глобальный default не меняются; отдельный MCP AGY, без AE-write.
+- Validation: native Luna → AGY → Flash + validator, Sol/Astra metadata, MCP read, 141 offline tests (1 skip), rules/diff pass. Отчёт: docs/model-routing-report-2026-09-29.md; CLI sandbox/AE-write/credits — ограничения.
+
 ## Автономная сессия и правила AE-текста — 2026-09-29
 
 - Progress: новое предпочтение auto-on при первом доверенном подключении CEP;
@@ -49,7 +54,6 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
   фиксирует IDs/timing; verifier сравнивает свежий read-back; `responseView:placeholder`
   сокращает MCP-ответ; `frameReview` даёт до 3 точек (`docs/placeholder-preflight.md`). AME snapshot/media probe — `docs/ame-passive-status.md`; адресные offline smokes, syntax/rules/diff pass. Следующий scope: совместимый AME adapter после обновления host.
 - Ограниченные fixtures: `docs/optimization-fixtures.md` — 6 placeholder plans/18 кадров, AME passive/metadata; JSON bytes измерены, model usage и A/B экономия неизвестны. Реальный синтетический MP4 проверен отдельным `smoke:ame-media`.
-
 
 ## Узкое исправление независимого ревью 2026-09-23
 
@@ -168,10 +172,8 @@ synthetic A/B и RU retrieval. Candidate source остаётся quarantine; pro
 
 ## Frozen Full Intake backlog (историческая справка)
 
-Run: full-intake-aturtur-after-effects-scripts.
-Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json.
+Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json.
 Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e.
-Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18,
-blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась.
+Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18, blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась.
 Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые
 live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
