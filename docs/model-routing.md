@@ -31,15 +31,18 @@ Luna передаёт законченную задачу, не выполняя
 Auth, quota, сеть, MCP, permissions и неизвестный исход операции диагностируются
 отдельно. Смена исполнителя и её причина записываются в пакет задачи.
 
-## Существующий мост
+## Самостоятельный мост
 
-Используется `C:/Users/Ant/VideoScout/Code/scripts/agy_bridge.py`, без отдельного
-сервиса. Он поддерживает профиль AE Agent; исходный VideoScout остаётся совместимым.
+Общий код находится в отдельном Git-проекте
+`C:/Users/Ant/Documents/Codex/agy-bridge`, без отдельного сервиса.
+AE Agent обращается к нему напрямую; `config/agy-bridge.json` хранит workspace,
+state directory и model/effort. Относительные пути считаются от config файла.
+VideoScout использует совместимый запускатель и свою клиентскую конфигурацию.
 Python 3.12 доступен как `python`. Запуск из каталога AE Agent:
 
 ```powershell
-python -X utf8 C:\Users\Ant\VideoScout\Code\scripts\agy_bridge.py run .codex-runtime\my-task.json
-python -X utf8 C:\Users\Ant\VideoScout\Code\scripts\agy_bridge.py status my-task-01 --profile ae-agent
+python -X utf8 ..\agy-bridge\scripts\agy_bridge.py --config config\agy-bridge.json run .codex-runtime\my-task.json
+python -X utf8 ..\agy-bridge\scripts\agy_bridge.py --config config\agy-bridge.json status my-task-01 --profile ae-agent
 ```
 
 Пакет содержит `protocol_version: 1`, уникальный `task_id`, `profile: "ae-agent"`,
@@ -48,7 +51,10 @@ python -X utf8 C:\Users\Ant\VideoScout\Code\scripts\agy_bridge.py status my-task
 `required_commands`, `required_inputs`, `expected_artifacts`.
 Для файлов AE-профиля scope называется `workspace`; пути относительны AE Agent.
 Для edit нужен ожидаемый `changed` артефакт в разрешённой области. Полная схема
-и пример — в [документации существующего моста](C:/Users/Ant/VideoScout/Code/docs/AGY_BRIDGE.md).
+и пример — в [документации существующего моста](C:/Users/Ant/Documents/Codex/agy-bridge/docs/AGY_BRIDGE.md).
+Эта документация нужна диспетчеру для формирования пакета. Назначенный Flash
+исполнитель работает с переданными материалами своей задачи; ему не требуется
+читать внешний репозиторий моста или повторно выполнять маршрутизацию.
 Длинный исходный запрос храните дословно в файле и указывайте ссылку на него;
 не сокращайте обязательные ограничения. Пакет и критерии фиксируются до запуска.
 
@@ -87,7 +93,9 @@ Antigravity автоматически. AE-write этой настройкой �
 
 ## Проверки и откат
 
-Фактические результаты настройки, metadata запусков и ограничения:
+Перенос общего кода, проверки совместимости и его откат описаны в
+`docs/agy-bridge-extraction.md`. Старые state/conversation ID сохранены на местах.
+Исторические результаты первоначальной настройки, metadata запусков и ограничения:
 `docs/model-routing-report-2026-09-29.md`. Настройки лежат в файлах и сохраняются
 после завершения чата; полный перезапуск Desktop не требуется для CLI smoke.
 

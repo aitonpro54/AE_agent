@@ -7,10 +7,10 @@ Product target: specs/target-app.md. Начальный HEAD review-fix: 9f34a1a
 Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json;
 единственное активное исключение — orchestrator/bounded-process-result.cjs.
 
-## Постоянная маршрутизация — 2026-09-29
-- Progress: проектный Luna/high → существующий AGY Flash 3.8/high; Sol/Astra роли сохранены.
+## Постоянная маршрутизация и выделение моста — 2026-09-29
+- Progress: Luna/high → Flash 3.8/high; Sol/Astra сохранены. Core выделен в agy-bridge; клиентские config и совместимый VS-запускатель готовы.
 - Decision Log: текущая Astra/high и глобальный default не меняются; отдельный MCP AGY, без AE-write.
-- Validation: native Luna → AGY → Flash + validator, Sol/Astra metadata, MCP read, 141 offline tests (1 skip), rules/diff pass. Отчёт: docs/model-routing-report-2026-09-29.md; CLI sandbox/AE-write/credits — ограничения.
+- Validation: исходный native Luna/Flash и MCP read — docs/model-routing-report-2026-09-29.md; перенос: 27 core + 127 client (1 skip), оба live marker PASS, 58 state SHA сохранены, rules/diff PASS — docs/agy-bridge-extraction.md.
 
 ## Автономная сессия и правила AE-текста — 2026-09-29
 
