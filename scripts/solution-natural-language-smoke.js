@@ -63,6 +63,7 @@ function run() {
   assert(registry.solutions.length >= 181, "natural-language acceptance preserves the baseline library and tests every current recipe.");
 
   const pairs = [
+    ["Равномерный cover плейсхолдера без обрезания лиц и контактный лист для просмотра", "Inspect placeholder framing, full cover and live linked contact sheet", "placeholder-cover-visual-review-plan"],
     ["Заполни плейсхолдеры видео разных групп без повторяющихся фрагментов и сохрани ручные правки", "Track used source intervals, prevent duplicate fragments and preserve accepted placeholders", "placeholder-usage-protection-plan"],
     ["Восстановление отсутствующих исходников: поиск кандидатов и переподключение", "Recover missing footage sources with bounded candidate search and guarded relink", "placeholder-source-recovery-plan"],
     ["Создай композицию 1920 на 1080 длительностью 10 секунд", "Create a basic composition 1920 by 1080 with duration 10 seconds", "basic-comp-setup-typed-plan"],

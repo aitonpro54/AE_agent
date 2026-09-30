@@ -495,6 +495,7 @@ function updateProjectIntentMemory(args = {}, options = {}) {
 }
 
 const PROJECT_STATE_SCHEMA = "ae-project-intent-runtime.v1";
+const reviewService = require("./placeholder-review-service");
 function projectStatePath(options = {}) {
   return options.statePath ? path.resolve(options.statePath) : path.join(
     process.env.AE_BRIDGE_STATE_DIR || path.join(REPO_ROOT, ".codex-runtime", "project-intent"), "project-intent-state.json");
@@ -520,6 +521,16 @@ function validateProjectStateStore(store) {
       !Number.isSafeInteger(state.revision) || state.revision < 0 || !Array.isArray(state.acceptedPlaceholders) ||
       state.acceptedPlaceholders.length > 200 || !Array.isArray(state.groupMappings) || state.groupMappings.length > 500) throw new Error("invalid_project_state");
     const targets = new Set();
+    if(state.reviewArtifacts!==undefined) {
+      if(!isPlainObject(state.reviewArtifacts) || Object.keys(state.reviewArtifacts).length>8)throw new Error("invalid_review_artifact_store");
+      let reviewItems=0;
+      for(const [owner,record] of Object.entries(state.reviewArtifacts)) {
+        reviewService.validateReviewRecord(record);
+        if(owner!==record.owner || record.projectKey!==key)throw new Error("review_artifact_project_mismatch");
+        reviewItems+=record.receipt.items.length;
+      }
+      if(reviewItems>200)throw new Error("review_artifact_item_limit");
+    }
     for (const snapshot of state.acceptedPlaceholders) {
       placeholderProtection.validateSnapshot(snapshot);
       const target = placeholderProtection.targetKey(snapshot.target);
@@ -558,7 +569,7 @@ function readProjectState(projectFile, options = {}) {
   const store = loadProjectStateStore(options); // Corrupt never becomes an empty successful state.
   const key = projectStateKey(projectFile);
   return JSON.parse(JSON.stringify(store.projectState[key] || { projectFile: canonicalSavedProject(projectFile),
-    projectKey: key, revision: 0, acceptedPlaceholders: [], groupMappings: [], constraints: null }));
+    projectKey: key, revision: 0, acceptedPlaceholders: [], groupMappings: [], constraints: null, reviewArtifacts: {} }));
 }
 function atomicProjectStateWrite(store, options = {}) {
   validateProjectStateStore(store);
@@ -623,6 +634,28 @@ function createProjectStateController(options = {}) {
     },
     setConstraints(projectFile, constraints, expectedRevision) {
       return update(projectFile, expectedRevision, state => { state.constraints = JSON.parse(JSON.stringify(constraints)); });
+    },
+    registerReview(projectFile, record, expectedRevision) {
+      reviewService.validateReviewRecord(record);
+      return update(projectFile,expectedRevision,state=>{
+        if(record.projectKey!==state.projectKey)throw new Error("review_artifact_project_mismatch");
+        state.reviewArtifacts=state.reviewArtifacts || {};
+        if(state.reviewArtifacts[record.owner])throw new Error("review_owner_already_registered");
+        state.reviewArtifacts[record.owner]=JSON.parse(JSON.stringify(record));
+      });
+    },
+    addReviewImage(projectFile,owner,image,expectedRevision) {
+      return update(projectFile,expectedRevision,state=>{
+        const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
+        record.images=record.images.filter(value=>value.itemId!==image.itemId);record.images.push(JSON.parse(JSON.stringify(image)));
+      });
+    },
+    unregisterReview(projectFile,owner,absentIds,expectedRevision) {
+      return update(projectFile,expectedRevision,state=>{
+        const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
+        if(!Array.isArray(absentIds) || JSON.stringify([...absentIds].sort((a,b)=>a-b))!==JSON.stringify(record.receipt.items.map(item=>item.itemId).sort((a,b)=>a-b)))throw new Error("review_removal_proof_incomplete");
+        delete state.reviewArtifacts[owner];
+      });
     }
   };
 }

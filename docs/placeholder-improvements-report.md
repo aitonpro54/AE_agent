@@ -111,7 +111,87 @@ setter. Unsupported aliases отвергаются общим helper/gate/rebind
 до undo. Documented expected IDs и legitimate stable-ID rebind сохранены.
 Parent повторил protection group и planning после исправления: PASS; оба
 обхода дают 0 writes/undo, дополнительные time/property alias regressions PASS.
-Открытый AEP не затрагивался. Этап принят; далее cover и визуальная приёмка.
+Открытый AEP не затрагивался. Этап принят, commit `8964d98`.
+
+## Этап 3 — cover и визуальная приёмка
+
+В работе: Flash `placeholder-framing-20260930-06` владеет чистым helper для
+равномерного cover, наблюдаемых subject boxes и свободных альтернатив одного
+источника. Specialist интегрирует existing builder/read-back, свежую geometry,
+owned service comps и безопасную очистку. Контракт ограничен static 2D/PAR1;
+неизвестные flags не превращаются в geometric pass. Artistic review требует
+actual image-view evidence и наблюдений каждого выбранного кадра.
+Для multimodal regression подготовлены синтетические 2×3 кадра и контактный
+лист; это проверка механизма просмотра, без оценки реального AEP.
+
+Flash06 завершился с valid schema/artifact proof, effective model
+`gemini-3.8-flash-high`, configured high; effective effort отсутствует. Его
+79 assertions PASS. Parent boundary suite дала 3/25: nonfinite/пустой scale
+ложно covered, пропущенные sampling fields и source bounds, несовместимый
+формат authoritative usage, phantom/shared identity и tolerance overlap.
+Flash08 получает адресную коррекцию с этими actual regressions; предыдущий
+процесс завершён, session 27876 exit0, PID11768 отсутствует. Native integration
+имеет отдельный ownership и не меняет три Flash-файла.
+Recipe `placeholder-cover-visual-review-plan` подготовлен; RU/EN retrieval
+15 pairs/184 exact titles PASS. Финальная tool/JSX приёмка ещё выполняется.
+
+Flash08 завершился с valid terminal/artifact; shell calls0, tools только
+view_file/write_to_file/finish. Parent25/25 PASS; один старый smoke fixture
+не передавал source ID для alternatives — добавлен явный sourceItemId100.
+Root дополнил семь actual boundary regressions (26/32 до коррекции, 32/32
+после): shot point у конца, sampling target comp FPS, tiny edge hole,
+duplicate source IDs, source/media-key identity, tiny media overrun,
+computed Infinity. Исправлены строгие bounds/source index; source snapping
+и target sampling имеют разные частоты. Итог `smoke:placeholder-framing`
+83 assertions + 32 boundary cases PASS.
+
+Bounded helper review подтвердил ещё unknown unused-footage candidate и
+отрицательные sampleTimes для source120/target24 fps. Добавлены actual-map
+regressions и target-grid compatibility: до исправления 33/35, после 35/35.
+Canonical known-footage check использует существующий mediaKeyForSource;
+duration не меньше одного media/target frame, времена внутри half-open range.
+Alternatives начинаются на target frame grid для existing builder.
+
+Actual Flash inspect `placeholder-visual-inspect-20260930-07`: valid success,
+tools только view_file, семь PNG ACTIVE/DONE pairs плюс compact manifest.
+PNG DONE в реальном AGY не содержит output; текстовый input содержит summary.
+Шесть конкретных observations верно обнаружили B-1 head/top crop и B-2
+right/body crop, A-1/A-2/A-3/B-3 допустимы. Session41036 exit0/PID34976 gone.
+Никаких report writes; заключение вернулось текстом. Первый packet отказал
+до запуска из-за пустого allowed_scope, task state не создан; после исправления
+exact read-input scope запуск выполнен. Это synthetic mechanism proof.
+Production acceptance требует pinned manifest/image hashes в official inspect
+request; старый fixture07 не объявляется таким owner-linked acceptance.
+
+Для четырёх targets × три кадра provider budget требует batches. Новый pure
+`placeholder-visual-batches` повторно использует existing validator: chunks
+до10 target/root frames + sheet, distinct pin/IDs, полный owner coverage только
+после всех official runs. Actual production fixtures PASS для 12 кадров в
+двух batches, partial10/12, crop reject, duplicate/stale/extra runs, budgets.
+Single-batch pin совместим с исходным manifest. Pinned multimodal regression09
+завершён через production inspectionMaterial и existing agy-bridge: семь PNG
+ACTIVE/DONE pairs, шесть конкретных observations, два дефектных кадра B-1/B-2
+отклонены производственным verifier. Старый неприкреплённый запуск07, пропущенная
+пара просмотра и изменённый hash не дают приёмки. Tools только view_file, AE0;
+это проверка механизма на синтетических рисунках, не реального AE render.
+
+Core этапа 3 независимо проверен: `propose_placeholder_cover`,
+`verify_placeholder_coverage`, `build_placeholder_visual_review_plan`,
+`create_placeholder_review_comps`, `get_placeholder_review_manifest`,
+`verify_placeholder_visual_review`; расширены existing builder/read-back,
+native PNG export и `cleanup_test_items`. Новый recipe доступен в registry184.
+Review service использует server UUID, atomic existing reviewArtifacts,
+свежий receipt и fingerprint. Actual pre-undo JSX regressions отклоняют
+relink/missing/duration/fps drift без writes/undo; receipt другого проекта
+не проходит даже с пересчитанным hash. Не зарегистрированные partial objects
+возвращаются точными IDs и требуют диагностики, без повторной мутации.
+
+Validation PASS: framing83+boundary35, visual actual generated JSX VM,
+full ordinary confirmed isolated runner, four-target batches, planning,
+placeholder-plan/protection/recovery/usage36, solutions184, 21 JS syntax,
+rules/diff. Старый shape/contain fit fixture теперь честно needs_review:
+changedCount не является независимой проверкой геометрии; остальные checks
+сохранены. Live AE/установленная CEP-копия не проверялись.
 
 ## Предел доказательств
 

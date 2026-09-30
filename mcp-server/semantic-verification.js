@@ -3389,12 +3389,14 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "fit_layer_to_comp") {
+    const verification=payload.verification || {};
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:fit`,
-      title: "Layer fit produced transform read-back",
-      expected: args.mode || "contain",
-      observed: `${payload.mode || "unknown"}; changed=${arrayLength(payload.changed)}`,
-      passed: arrayLength(payload.changed) > 0 && (!args.mode || payload.mode === args.mode),
+      title: "Fresh independent rectangular cover coverage",
+      expected: "eligible static uniform cover; artistic review separate",
+      observed: verification.scope || "independent geometry not observed",
+      passed: (args.mode || "contain")==="cover" && verification.ok===true && verification.scope==="fresh_rectangular_footprint_only" &&
+        Array.isArray(verification.checks) && verification.checks.length>0 && verification.checks.every(check=>check.eligible===true && check.covered===true),
       evidence: stepLabel(step)
     });
     return;

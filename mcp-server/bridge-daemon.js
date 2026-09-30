@@ -41,6 +41,11 @@ const placeholderEvidence = require("./placeholder-evidence");
 const placeholderSourceRecovery = require("./placeholder-source-recovery");
 const placeholderProtection = require("./placeholder-protection");
 const placeholderUsage = require("./placeholder-usage");
+const placeholderGeometry = require("./placeholder-geometry");
+const placeholderReviewService = require("./placeholder-review-service");
+const placeholderVisualReview = require("./placeholder-visual-review");
+const placeholderReviewTools = require("./placeholder-review-tools");
+const placeholderVisualBatches = require("./placeholder-visual-batches");
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
@@ -942,6 +947,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
   "run_extendscript",
   "run_extendscript_file",
@@ -2446,6 +2452,23 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if(toolName==="create_placeholder_review_comps") {
+    const fresh=await requireFreshReviewRecord(payload && payload.owner);
+    return {ok:true,scope:"registered_live_link_service_receipt",owner:fresh.record.owner,itemIds:fresh.record.receipt.items.map(item=>item.itemId)};
+  }
+  if(toolName==="cleanup_test_items" && args && args.owner) return {ok:payload && payload.absenceVerified===true,scope:"exact_registered_ids_absent",owner:args.owner};
+  if(toolName==="fit_layer_to_comp") {
+    if(args.mode!=="cover")return {ok:false,scope:"fit_geometry",reason:"independent_noncover_verification_not_supported"};
+    const rows=payload && payload.changed;
+    if(!payload || !payload.comp || !Number.isSafeInteger(payload.comp.itemId) || !Array.isArray(rows) || !rows.length || rows.length>32)return {ok:false,reason:"fit_stable_identity_unavailable"};
+    const checks=[];
+    for(const row of rows){const id=row.after && row.after.id;
+      if(!Number.isSafeInteger(id))return {ok:false,reason:"fit_stable_identity_unavailable"};
+      const read=await readPlaceholderGeometry({compItemId:payload.comp.itemId,layerId:id});
+      checks.push({target:read.target,...require("./placeholder-framing").verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform})});
+    }
+    return {ok:checks.every(check=>check.covered===true && check.eligible===true),scope:"fresh_rectangular_footprint_only",checks,artisticAccepted:false};
+  }
   if(toolName===projectSave.TOOL_NAME){
     projectSave.verifyReceipt(payload && payload.saveReceipt,args);
     return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
@@ -3657,9 +3680,10 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 
 async function runExtendScriptBody(body, timeoutMs) {
   const protection = placeholderMutationContext.getStore();
-  if (protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline)) {
+  if (protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline || protection.geometryBaselines)) {
     body = placeholderProtection.aeGuardScript(protection.projectFile, protection.snapshots, protection.bindings) + "\n" + body;
     if (protection.inventoryBaseline) body = placeholderProtection.aeInventoryGuardScript(protection.inventoryBaseline) + "\n" + body;
+    if (protection.geometryBaselines) body=placeholderGeometry.geometryGuardScript(protection.geometryBaselines)+"\n"+body;
   }
   const guard = autonomousCommandContext.getStore();
   if (guard && guard.projectFile) {
@@ -4827,6 +4851,12 @@ const PLANNING_TOOL_NAMES = [
   "get_selected_layers",
   "get_selected_properties",
   "get_placeholder_protection",
+  "propose_placeholder_cover",
+  "verify_placeholder_coverage",
+  "build_placeholder_visual_review_plan",
+  "create_placeholder_review_comps",
+  "get_placeholder_review_manifest",
+  "verify_placeholder_visual_review",
   "get_placeholder_usage",
   "check_placeholder_assignments",
   "find_project_items",
@@ -7395,7 +7425,7 @@ async function readPlaceholderInventory(options = {}) {
       var item=app.project.item(i);
       if(item instanceof CompItem) {
         if(inventory.comps.length>=200) {inventory.complete=false;inventory.reason="comp_budget";break;}
-        var comp={itemId:item.id,itemIndex:i,name:item.name,duration:item.duration,frameRate:item.frameRate,layers:[]};
+        var comp={itemId:item.id,itemIndex:i,name:item.name,comment:item.comment,width:item.width,height:item.height,pixelAspect:item.pixelAspect,duration:item.duration,frameRate:item.frameRate,layers:[]};
         for(var j=1;j<=item.numLayers;j++) {
           if(++layerCount>5000) {inventory.complete=false;inventory.reason="layer_budget";break;}
           var layer=item.layer(j); var source=null; try{source=layer.source;}catch(e){}
@@ -7417,7 +7447,7 @@ async function readPlaceholderInventory(options = {}) {
         try {if(item.mainSource.isStill===true)sourceType="still";else if(item.hasVideo===false && item.hasAudio===true)sourceType="audio";}catch(e){}
         var file=item.file;
         inventory.sources.push({itemId:item.id,itemIndex:i,name:item.name,type:sourceType,file:file && file.fsName ? file.fsName : null,
-          duration:item.duration,width:item.width,height:item.height,frameRate:item.frameRate,footageMissing:item.footageMissing,
+          duration:item.duration,width:item.width,height:item.height,pixelAspect:item.pixelAspect,frameRate:item.frameRate,footageMissing:item.footageMissing,
           hasVideo:item.hasVideo,hasAudio:item.hasAudio});
       }
       if(!inventory.complete)break;
@@ -7457,7 +7487,18 @@ async function readPlaceholderInventory(options = {}) {
     }
     return inventory;
   `);
-  return result.result;
+  const inventory=result.result;
+  if(!inventory || !inventory.projectFile || scriptPreparationContext.getStore())return inventory;
+  const state=projectStateMemory.readProjectState(inventory.projectFile);
+  const excluded=[];
+  for(const record of Object.values(state.reviewArtifacts || {})) {
+    const read=await runExtendScriptBody(placeholderReviewService.readServiceScript(record.receipt.items.map(item=>item.itemId)));
+    if(read.result && placeholderSourceRecovery.pathsEqual(read.result.projectFile,inventory.projectFile) && placeholderReviewService.verifyServiceReceipt(record.spec,read.result.items,state.projectKey).ok)
+      excluded.push(...read.result.items.map(item=>item.itemId));
+  }
+  inventory.comps=inventory.comps.filter(comp=>!excluded.includes(comp.itemId));
+  inventory.excludedReviewItemIds=excluded;
+  return inventory;
 }
 
 function placeholderError(code, details) {
@@ -7481,7 +7522,9 @@ function placeholderRootsForTargets(inventory, targets) {
   return [...roots].map(compItemId => ({ compItemId }));
 }
 function freshPlaceholderUsage(inventory, roots, state) {
-  return placeholderUsage.buildSourceUsageMap({ inventory, roots, groupMappings: state.groupMappings });
+  const usage=placeholderUsage.buildSourceUsageMap({ inventory, roots, groupMappings: state.groupMappings });
+  usage.scope={...usage.scope,excludedReviewItemIds:inventory.excludedReviewItemIds || []};
+  return usage;
 }
 function normalizeFreshAssignments(assignments, inventory) {
   if (!Array.isArray(assignments) || !assignments.length || assignments.length > 32) throw placeholderError("placeholder_assignment_limit");
@@ -7500,7 +7543,7 @@ function checkFreshPlanAssignments(plan, state, inventory, mutations) {
   for (const step of mutations) {
     const tool = step.tool;
     const args = step.safeArgs || step.args || {};
-    if (tool === "set_layer_transform") continue;
+    if (tool === "set_layer_transform" || tool === "fit_layer_to_comp") continue;
     if (tool === "set_property_value") {
       let property;
       try { property = placeholderProtection.propertyPath(args.propertyPath); } catch (_error) { throw placeholderError("unknown_constrained_property_footprint"); }
@@ -7508,7 +7551,7 @@ function checkFreshPlanAssignments(plan, state, inventory, mutations) {
       continue;
     }
     if (!["replace_layer_source", "set_layer_time_range"].includes(tool)) {
-      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection"].includes(tool)) continue;
+      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection","create_placeholder_review_comps","save_comp_frame_png"].includes(tool) || tool==="cleanup_test_items" && step.verifiedReviewCleanup===true) continue;
       throw placeholderError("unknown_constrained_mutation_footprint", { tool });
     }
     const targets = placeholderProtection.resolveTargets(args, desired);
@@ -7555,13 +7598,29 @@ async function guardPlaceholderPlan(plan, options = {}) {
     .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
   for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
   const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
-  if (!mutations.length || !hasState && !plan.placeholderConstraints) return { ok: true, snapshots: [], bindings: [] };
+  if (!mutations.length || !hasState && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, snapshots: [], bindings: [] };
   const { projectFile, state } = await currentPlaceholderState();
-  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints) return { ok: true, projectFile, snapshots: [], bindings: [] };
+  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, projectFile, snapshots: [], bindings: [] };
   const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
     protectedProperties: snapshot.properties.map(prop => prop.path) })) });
   if (!inventory || inventory.complete !== true || !placeholderSourceRecovery.pathsEqual(projectFile, inventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
-  const protectedCheck = placeholderProtection.checkProtectedSteps({ accepted: state.acceptedPlaceholders, inventory, steps: mutations });
+  const verifiedReviewCleanupOwners=[];
+  const protectionSteps=[];
+  for(const step of mutations) {
+    delete step.verifiedReviewCleanup;
+    if(step.tool==="cleanup_test_items" && step.args.owner) {
+      await requireFreshReviewRecord(step.args.owner,step.args.itemIds);
+      verifiedReviewCleanupOwners.push(step.args.owner);step.verifiedReviewCleanup=true;
+    }
+    if(step.tool==="fit_layer_to_comp") {
+      for(const target of placeholderProtection.resolveTargets(step.args,inventory)) {
+        const read=await readPlaceholderGeometry({compItemId:target.compItemId,layerId:target.layerId});
+        const transform=calculateFitTransform(read,step.args);
+        protectionSteps.push({...step,tool:"set_layer_transform",args:{...step.args,layerIndex:target.layerIndex,expectedCompItemId:target.compItemId,expectedLayerId:target.layerId,...transform}});
+      }
+    }else protectionSteps.push(step);
+  }
+  const protectedCheck = placeholderProtection.checkProtectedSteps({ accepted: state.acceptedPlaceholders, inventory, steps: protectionSteps,verifiedReviewCleanupOwners });
   if (!protectedCheck.ok) throw placeholderError(protectedCheck.code, protectedCheck);
   const snapshots = state.acceptedPlaceholders.filter(snapshot => protectedCheck.affected.includes(placeholderProtection.targetKey(snapshot.target)));
   for (const snapshot of snapshots) {
@@ -7581,6 +7640,18 @@ async function guardPlaceholderPlan(plan, options = {}) {
   }
   const result = { ok: true, projectFile, revision: state.revision, snapshots, assignments,
     bindings, inventoryComplete: true };
+  if(plan.placeholderFraming) {
+    const framing=plan.placeholderFraming;
+    const read=await readPlaceholderGeometry(framing.target,framing.sourceItemId);
+    if(placeholderReviewService.hash(read.geometry)!==placeholderReviewService.hash(framing.geometry))throw placeholderError("placeholder_framing_geometry_changed");
+    calculateFitTransform(read,{mode:"cover"});
+    const coverage=require("./placeholder-framing").verifyPlaceholderCoverage({geometry:read.geometry,transform:framing.transform});
+    if(coverage.covered!==true || coverage.eligible!==true)throw placeholderError("placeholder_framing_transform_uncovered",coverage);
+    const setters=plan.steps.filter(step=>step.tool==="set_layer_transform" && step.args.expectedCompItemId===framing.target.compItemId && step.args.expectedLayerId===framing.target.layerId);
+    if(setters.length!==1 || !placeholderProtection.valueEqual(setters[0].args.position,framing.transform.position) || !placeholderProtection.valueEqual(setters[0].args.scale,framing.transform.scale))throw placeholderError("placeholder_framing_step_mismatch");
+    result.geometryBaselines=[framing];
+  }
+  if(projectStateMemory.readProjectState(projectFile).revision!==state.revision)throw placeholderError("project_state_revision_changed");
   Object.defineProperty(result, "_inventory", { value: inventory, enumerable: false });
   if (assignments.checks.length) Object.defineProperty(result, "inventoryBaseline", { value: inventory, enumerable: false });
   return result;
@@ -7600,14 +7671,68 @@ function rebindPlaceholderArgs(name, args, protection) {
     !args.expectedCompItemId || !args.expectedLayerId) return args;
   const targets = placeholderProtection.resolveTargets(args, protection._inventory);
   const next = { ...args, compItemIndex: targets[0].compItemIndex };
-  if (args.layerIndex !== undefined) next.layerIndex = targets[0].layerIndex;
-  if (args.layerIndices !== undefined) next.layerIndices = targets.map(value => value.layerIndex);
+  if (["set_layer_transform","set_property_value"].includes(name)) next.layerIndex = targets[0].layerIndex;
+  else next.layerIndices = targets.map(value => value.layerIndex);
   if (name === "replace_layer_source" && args.expectedSourceItemId) {
     const source = [...protection._inventory.sources, ...protection._inventory.comps].find(value => value.itemId === args.expectedSourceItemId);
     if (!source) throw placeholderError("replacement_source_identity_unavailable");
     next.sourceItemIndex = source.itemIndex;
   }
   return next;
+}
+async function readPlaceholderGeometry(target,sourceItemId=null) {
+  if(!target || !Number.isSafeInteger(target.compItemId) || target.compItemId<1 || !Number.isSafeInteger(target.layerId) || target.layerId<1)throw placeholderError("invalid_geometry_target");
+  const result=await runExtendScriptBody(placeholderGeometry.geometryReadScript(target,sourceItemId));
+  return result.result;
+}
+function calculateFitTransform(read,args={}) {
+  const geometry=read && read.geometry;
+  // Validate with the pure helper before using dimensions; no NaN/unknown pass.
+  const framing=require("./placeholder-framing");
+  const verification=framing.verifyPlaceholderCoverage({geometry,transform:read && read.transform});
+  if(!geometry || !geometry.layer || geometry.layer.transformStatic!==true || geometry.layer.threeDLayer!==false || geometry.layer.parentLayerId!==null || geometry.layer.rotation!==0 || geometry.layer.hasMasks!==false || geometry.layer.collapseTransformation!==false ||
+    ![geometry.comp,geometry.source].every(item=>item && Number.isFinite(item.width) && item.width>0 && Number.isFinite(item.height) && item.height>0 && item.pixelAspect===1) || !Array.isArray(geometry.layer.anchorPoint) || geometry.layer.anchorPoint.length!==2 || !geometry.layer.anchorPoint.every(Number.isFinite))throw placeholderError("unsupported_placeholder_cover_geometry",verification);
+  const c=geometry.comp,s=geometry.source,a=geometry.layer.anchorPoint;
+  const factor=args.mode==="contain" ? Math.min(c.width/s.width,c.height/s.height) : Math.max(c.width/s.width,c.height/s.height);
+  if(args.mode==="stretch")throw placeholderError("unsupported_protected_stretch_fit");
+  const x=args.alignX==="left" ? a[0]*factor : args.alignX==="right" ? c.width-(s.width-a[0])*factor : c.width/2+(a[0]-s.width/2)*factor;
+  const y=args.alignY==="top" ? a[1]*factor : args.alignY==="bottom" ? c.height-(s.height-a[1])*factor : c.height/2+(a[1]-s.height/2)*factor;
+  return {scale:[factor*100,factor*100],position:[x,y]};
+}
+async function requireFreshReviewRecord(owner,itemIds=null) {
+  if(!placeholderReviewService.OWNER.test(owner || ""))throw placeholderError("invalid_review_owner");
+  const {projectFile,state}=await currentPlaceholderState();
+  const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw placeholderError("review_owner_unregistered");
+  const ids=record.receipt.items.map(item=>item.itemId);
+  if(itemIds!==null && (!Array.isArray(itemIds) || new Set(itemIds).size!==itemIds.length || JSON.stringify([...itemIds].sort((a,b)=>a-b))!==JSON.stringify([...ids].sort((a,b)=>a-b))))throw placeholderError("review_cleanup_requires_exact_registered_ids");
+  const read=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+  const verified=placeholderReviewService.verifyServiceReceipt(record.spec,read.result && read.result.items,state.projectKey);
+  if(!read.result || !placeholderSourceRecovery.pathsEqual(read.result.projectFile,projectFile) || !verified.ok)throw placeholderError("review_artifact_drift",verified);
+  return {record,projectFile,state,items:read.result.items};
+}
+async function reviewContentFingerprint(record) {
+  const state=projectStateMemory.readProjectState(record.receipt.projectFile);
+  const targets=[];
+  for(const target of record.spec.targets){
+    const accepted=state.acceptedPlaceholders.find(value=>placeholderProtection.targetKey(value.target)===placeholderProtection.targetKey(target.target));
+    targets.push({target:target.target,protectedProperties:accepted ? accepted.properties.map(value=>value.path) : []});
+    for(const edge of target.route || [])targets.push({target:{compItemId:edge.compItemId,layerId:edge.id},protectedProperties:[],isRoute:true});
+  }
+  const inventory=await readPlaceholderInventory({targets});
+  if(!inventory.complete || !placeholderSourceRecovery.pathsEqual(inventory.projectFile,record.receipt.projectFile))throw placeholderError("review_content_inventory_incomplete");
+  const fresh=placeholderReviewService.resolveReviewTargets({targets:record.spec.targets.map(target=>({target:target.target,rootCompItemId:target.rootCompItemId,routeLayerIds:target.routeLayerIds,samples:target.samples,viewKinds:target.viewKinds}))},inventory);
+  if(fresh.some((target,index)=>target.sourceKey!==record.spec.targets[index].sourceKey || target.sourceItemId!==record.spec.targets[index].sourceItemId))throw placeholderError("review_source_changed");
+  const evidence=[];
+  for(const request of targets){const raw=inventory.evidence.find(row=>row.comp && row.layer && row.comp.itemId===request.target.compItemId && row.layer.id===request.target.layerId);
+    if(!raw)throw placeholderError("review_content_evidence_missing");
+    if(!Array.isArray(raw.unsupported) || raw.unsupported.some(reason=>!(request.isRoute && reason==="unsupported_selected_non_video_source")))throw placeholderError("unsupported_review_content_animation_or_properties");
+    const row=placeholderEvidence.projectPlaceholderLayerEvidence(raw);
+    row.properties=raw.properties;
+    delete row.comp.itemIndex;delete row.layer.index;
+    if(!row.transform || !["anchorPoint","position","scale","rotation"].every(field=>row.transform[field]!==undefined))throw placeholderError("review_content_transform_missing");
+    evidence.push(row);
+  }
+  return placeholderReviewService.hash({evidence,targets:fresh.map(target=>({target:target.target,route:target.route,root:target.root,comp:target.comp,source:target.source,sourceKey:target.sourceKey,samples:target.samples}))});
 }
 async function trustedPlaceholderAction(body) {
   if (body.snapshot !== undefined || body.acceptedPlaceholders !== undefined || body.allowProtectedChanges !== undefined || body.target !== undefined) throw placeholderError("client_acceptance_snapshot_forbidden");
@@ -8421,6 +8546,7 @@ function startHttpBridge() {
 const tools = [
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
+  ...placeholderReviewTools.tools,
   {
     name: "get_placeholder_protection",
     description: "Read authoritative accepted placeholder snapshots, confirmed group mappings, constraints and fresh drift diagnostics for the current saved project. Cannot accept/release or override protection.",
@@ -11839,6 +11965,8 @@ const tools = [
 
 // Persistent IDs supplement address hints on existing typed surfaces.
 for (const tool of tools) {
+  if(tool.name==="save_comp_frame_png")Object.assign(tool.inputSchema.properties,{reviewOwner:{type:"string",description:"Registered review owner; requires stable reviewItemId/full resolution/retained PNG."},reviewItemId:{type:"integer",minimum:1}});
+  if(tool.name==="cleanup_test_items")Object.assign(tool.inputSchema.properties,{owner:{type:"string",description:"Server-registered review UUID; requires the exact whole registered ID set."},itemIds:{type:"array",minItems:1,maxItems:25,items:{type:"integer",minimum:1}}});
   if (placeholderProtection.TARGET_SETTERS.has(tool.name)) {
     tool.inputSchema.properties.expectedCompItemId = { type: "integer", minimum: 1 };
     tool.inputSchema.properties.expectedLayerId = { type: "integer", minimum: 1 };
@@ -12807,7 +12935,13 @@ async function callTool(name, args, executionContext) {
     } catch (error) { return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true); }
   }
   if (name === "build_placeholder_plan") {
-    const result = placeholderPlanBuilder.buildPlaceholderPlan((args || {}).input);
+    let input=(args || {}).input;
+    if(input && input.framing) {
+      const read=await readPlaceholderGeometry({compItemId:input.targetComp.itemId,layerId:input.targetLayer.id},input.sourceItem.itemId);
+      calculateFitTransform(read,{mode:"cover"});
+      input={...input,framing:{...input.framing,geometry:read.geometry}};
+    }
+    const result = placeholderPlanBuilder.buildPlaceholderPlan(input);
     if (!result.ok) return toolResult(result, true);
     const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
     if (!prepared.validation.ok) return toolResult({ ...result, ok: false, validation: prepared.validation }, true);
@@ -12816,6 +12950,77 @@ async function callTool(name, args, executionContext) {
       return toolResult({ ...result, validation: prepared.validation, protection,
         previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true });
     } catch (error) { return toolResult({ ok: false, code: error.code || error.message, details: error.details, plan: null }, true); }
+  }
+
+  if(name==="propose_placeholder_cover" || name==="verify_placeholder_coverage") {
+    try {
+      let sourceId=args.sourceItemId;
+      if(name==="propose_placeholder_cover" && sourceId===undefined && args.useCurrentSource!==true)throw placeholderError("explicit_planned_source_or_current_choice_required");
+      const read=await readPlaceholderGeometry(args.target,sourceId===undefined ? null : sourceId);
+      const framing=require("./placeholder-framing");
+      let usage=null,sourceEvidence=null;
+      if(name==="propose_placeholder_cover"){
+        const inventory=await readPlaceholderInventory();
+        const state=inventory.projectFile ? projectStateMemory.readProjectState(inventory.projectFile) : {groupMappings:[]};
+        const roots=placeholderRootsForTargets(inventory,[read.target]);
+        usage=freshPlaceholderUsage(inventory,roots,state);
+        const source=inventory.sources.find(item=>item.itemId===read.sourceItemId);
+        if(source)sourceEvidence={itemId:source.itemId,itemIndex:source.itemIndex,name:source.name,type:source.type,duration:source.duration,frameRate:source.frameRate};
+      }
+      const result=name==="verify_placeholder_coverage" ? framing.verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform}) : framing.proposePlaceholderCover({...args,target:{...read.target,sourceItemId:read.sourceItemId},geometry:read.geometry,usage});
+      if(result.alternatives && result.alternatives.mediaKey){result.alternatives.sourceKey=placeholderReviewService.hash(result.alternatives.mediaKey);delete result.alternatives.mediaKey;result.alternatives.sourceItem=sourceEvidence;}
+      return toolResult({...result,target:read.target,sourceItemId:read.sourceItemId,authority:"fresh_stable_id_geometry",artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message},true);}
+  }
+  if(name==="build_placeholder_visual_review_plan" || name==="create_placeholder_review_comps") {
+    try {
+      const {projectFile,state}=await currentPlaceholderState();
+      const inventory=await readPlaceholderInventory();
+      if(!placeholderSourceRecovery.pathsEqual(projectFile,inventory.projectFile))throw placeholderError("review_project_changed");
+      const targets=placeholderReviewService.resolveReviewTargets(args,inventory);
+      const spec=placeholderReviewService.createServiceSpecification(targets,state.projectKey);
+      if(name==="build_placeholder_visual_review_plan") {
+        const steps=[{tool:"create_placeholder_review_comps",args:JSON.parse(JSON.stringify(args))}];
+        for(let index=0;index<=spec.controls.length;index++)steps.push({tool:"save_comp_frame_png",args:{reviewOwner:"{{steps.1.result.owner}}",reviewItemId:`{{steps.1.result.items.${index}.itemId}}`,time:0,resolutionFactor:[1,1],outputFileName:`review-${spec.owner}-${index}.png`}});
+        steps.push({tool:"get_placeholder_review_manifest",args:{owner:"{{steps.1.result.owner}}"}});
+        const plan={summary:"Создать отдельные контрольные кадры плейсхолдеров и контактный лист",risk:"high",requiresCheckpoint:true,steps};
+        const validation=validateAgentPlanWithRepair(plan,null,{}, {repairPlan:false}).validation;
+        return toolResult({ok:validation.ok,plan:validation.ok ? plan : null,validation,controlCount:spec.controls.length,mutatesProject:false,artisticAccepted:false},!validation.ok);
+      }
+      const created=await runExtendScriptBody(placeholderReviewService.createServiceScript(spec,projectFile));
+      const payload=created && created.result;
+      if(!created || created.ok===false || !payload || payload.ok!==true)return toolResult({ok:false,code:"review_creation_failed",details:payload || created,recovery:"Read reported createdItemIds before any further mutation; creation is never retried automatically."},true);
+      const ids=payload.createdItemIds;
+      const fresh=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+      const receipt=fresh && fresh.result;
+      if(!receipt || !placeholderSourceRecovery.pathsEqual(receipt.projectFile,projectFile) || !placeholderReviewService.verifyServiceReceipt(spec,receipt.items,state.projectKey).ok)return toolResult({ok:false,code:"review_creation_receipt_mismatch",owner:spec.owner,createdItemIds:ids},true);
+      const execution=evidenceContext.getStore() || {},guard=autonomousCommandContext.getStore() || {};
+      const record={schema:spec.schema,owner:spec.owner,projectKey:state.projectKey,spec,receipt,receiptHash:placeholderReviewService.hash(receipt),images:[],createdAt:new Date().toISOString(),
+        provenance:{runId:execution.runId || null,proposalId:guard.actionId || null,stepIndex:execution.stepIndex || null}};
+      try{projectStateController.registerReview(projectFile,record,state.revision);}catch(error){return toolResult({ok:false,code:"review_registration_failed",owner:spec.owner,createdItemIds:ids,error:error.message},true);}
+      return toolResult({ok:true,owner:spec.owner,items:receipt.items.map(item=>({itemId:item.itemId,itemIndex:item.itemIndex,name:item.name,outputFileName:`review-${spec.owner}-${item.itemId}.png`})),registered:true,mainCompositionModified:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
+  }
+  if(name==="get_placeholder_review_manifest" || name==="verify_placeholder_visual_review") {
+    try {
+      const fresh=await requireFreshReviewRecord(args.owner);
+      const contentHash=await reviewContentFingerprint(fresh.record);
+      if(fresh.record.images.some(image=>image.contentHash!==contentHash))throw placeholderError("review_content_changed_after_capture");
+      const manifest=placeholderVisualReview.buildManifest(fresh.record,GENERATED_EXPORT_DIR);
+      if(name==="verify_placeholder_visual_review") {
+        const config=JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT,"config","agy-bridge.json"),"utf8"));
+        const profile=config.profiles && config.profiles["ae-agent"];
+        if(!profile || profile.model!=="gemini-3.8-flash-high" || typeof profile.state_dir!=="string")throw placeholderError("inspection_profile_unconfigured");
+        const stateDirectory=path.resolve(PROJECT_ROOT,"config",profile.state_dir);
+        const runIds=args.inspectionRunIds || (args.inspectionRunId ? [args.inspectionRunId] : []);
+        if(!Array.isArray(runIds) || !runIds.length || runIds.length>8 || new Set(runIds).size!==runIds.length || args.inspectionRunId && args.inspectionRunIds)throw placeholderError("explicit_unique_inspection_runs_required");
+        const runs=runIds.map(id=>placeholderVisualReview.readInspectionRun(id,stateDirectory));
+        return toolResult(placeholderVisualBatches.verifyVisualReviewBatches(manifest,runs));
+      }
+      let inspectionMaterial=null,inspectionMaterials=[],inspectionReason=null;
+      try{const batches=placeholderVisualBatches.buildInspectionBatches(manifest);inspectionMaterials=batches.batches;inspectionMaterial=batches.batches.length===1 ? batches.batches[0].material : null;}catch(error){inspectionReason=error.code || error.message;}
+      return toolResult({ok:true,manifest,manifestSha256:placeholderReviewService.hash(manifest),inspectionMaterial,inspectionMaterials,inspectionReason,artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
   }
 
   if (name === "verify_placeholder_read_back") {
@@ -13953,7 +14158,7 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      ${placeholderProtection.aeSupportScript}
+      ${placeholderGeometry.aeGeometrySupport}
       var comp = ${compItemId === null ? `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})` : `__phFindComp(${compItemId})`};
       var layer = ${layerId === null ? `comp.layer(${layerIndex})` : `__phFindLayer(comp,${layerId})`};
       if (!layer) throw new Error("Layer not found.");
@@ -14167,6 +14372,7 @@ async function callTool(name, args, executionContext) {
         propertyTree: propertyTree,
         propertyTreeTruncated: propertyState.count >= propertyState.max,
         protectedProperties: protectedRows
+        ,geometry: __phGeometry(comp,layer,null).geometry
       };
     `);
     return toolResult(responseView === "placeholder"
@@ -14443,7 +14649,7 @@ async function callTool(name, args, executionContext) {
 
   if (name === "save_comp_frame_png") {
     try {
-      const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+      let compItemIndex = optionalPositiveInteger(args, "compItemIndex");
       const compName = optionalString(args, "compName", "");
       const expectedCompName = optionalString(args, "expectedCompName", "");
       const requestedTime = hasArg(args, "time") ? optionalNumber(args, "time", 0) : null;
@@ -14451,6 +14657,15 @@ async function callTool(name, args, executionContext) {
       const deleteAfterReadBack = optionalBoolean(args, "deleteAfterReadBack", false);
       const allowOverwrite = optionalBoolean(args, "allowOverwrite", false);
       const output = resolveGeneratedPngExportFile(optionalString(args, "outputFileName", "frame.png"));
+      let review=null;
+      let reviewContentHash=null;
+      if(args.reviewOwner!==undefined || args.reviewItemId!==undefined){
+        review=await requireFreshReviewRecord(args.reviewOwner);
+        const item=review.items.find(row=>row.itemId===args.reviewItemId);
+        if(!item || deleteAfterReadBack || allowOverwrite || requestedTime!==0 || resolutionFactor[0]!==1 || resolutionFactor[1]!==1)throw placeholderError("review_export_requires_exact_registered_native_frame");
+        compItemIndex=item.itemIndex;
+        reviewContentHash=await reviewContentFingerprint(review.record);
+      }
 
       if (requestedTime !== null && requestedTime < 0) {
         return toolResult("time must be greater than or equal to 0 seconds.", true);
@@ -14465,7 +14680,9 @@ async function callTool(name, args, executionContext) {
 
       const result = await runExtendScriptBody(`
         ${resolveCompScript}
-        var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+        ${review ? placeholderProtection.aeSupportScript : ""}
+        var comp = ${review ? `__phFindComp(${args.reviewItemId})` : `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})`};
+        ${review ? `if(comp.name!==${aeLiteral(review.items.find(row=>row.itemId===args.reviewItemId).name)} || comp.comment!==${aeLiteral(review.record.spec.comment)})throw new Error("review_export_owner_changed");` : ""}
         var expectedCompName = ${aeLiteral(expectedCompName)};
         if (expectedCompName && comp.name !== expectedCompName) {
           throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
@@ -14552,6 +14769,16 @@ async function callTool(name, args, executionContext) {
         deletedAfterReadBack: deleteAfterReadBack,
         mimeType: "image/png"
       };
+      if(review){
+        const image={itemId:args.reviewItemId,filePath:output.resolvedPath,sha256,byteLength:bytes.length,contentHash:reviewContentHash};
+        const dimensions=placeholderVisualReview.readImage(image,GENERATED_EXPORT_DIR);
+        const item=review.items.find(row=>row.itemId===args.reviewItemId);
+        if(dimensions.width!==item.width || dimensions.height!==item.height)throw placeholderError("review_native_export_dimensions_mismatch");
+        const after=await requireFreshReviewRecord(args.reviewOwner);
+        if(await reviewContentFingerprint(after.record)!==reviewContentHash)throw placeholderError("review_content_changed_during_capture");
+        projectStateController.addReviewImage(after.projectFile,args.reviewOwner,image,after.state.revision);
+        payload.reviewOwner=args.reviewOwner;payload.reviewItemId=args.reviewItemId;
+      }
       return toolResult(payload);
     } catch (error) {
       return toolResult(error.message || String(error), true);
@@ -19475,6 +19702,8 @@ async function callTool(name, args, executionContext) {
     const mode = optionalString(args, "mode", "contain");
     const alignX = optionalString(args, "alignX", "center");
     const alignY = optionalString(args, "alignY", "center");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
 
     if (!["contain", "cover", "stretch"].includes(mode)) return toolResult("mode must be one of: contain, cover, stretch.", true);
     if (!["left", "center", "right"].includes(alignX)) return toolResult("alignX must be one of: left, center, right.", true);
@@ -19482,19 +19711,21 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      ${placeholderGeometry.aeGeometrySupport}
+      ${setterIdentityGuard}
+      var comp = ${expectedCompItemId===null ? `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})` : `__phFindComp(${expectedCompItemId})`};
+      var layers = ${expectedLayerId===null ? `__codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"})` : `[__phFindLayer(comp,${expectedLayerId})]`};
       var mode = ${aeLiteral(mode)};
       var alignX = ${aeLiteral(alignX)};
       var alignY = ${aeLiteral(alignY)};
 
-      app.beginUndoGroup("Codex Fit Layer To Comp");
-      var changed = [];
+      var prepared=[];
       for (var __i = 0; __i < layers.length; __i++) {
         var layer = layers[__i];
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
         var before = __codexLayerInfo(layer);
         var size = __codexLayerSourceSize(layer, comp);
+        if(mode==="cover"){var geometry=__phGeometry(comp,layer,null);__phRequireCoverGeometry(geometry);size={width:geometry.geometry.source.width,height:geometry.geometry.source.height};}
         var scaleX = comp.width / size.width * 100;
         var scaleY = comp.height / size.height * 100;
         if (mode === "contain") {
@@ -19508,21 +19739,31 @@ async function callTool(name, args, executionContext) {
         }
         var fittedWidth = size.width * scaleX / 100;
         var fittedHeight = size.height * scaleY / 100;
-        var x = alignX === "left" ? fittedWidth / 2 : alignX === "right" ? comp.width - fittedWidth / 2 : comp.width / 2;
-        var y = alignY === "top" ? fittedHeight / 2 : alignY === "bottom" ? comp.height - fittedHeight / 2 : comp.height / 2;
         var transform = layer.property("ADBE Transform Group");
-        transform.property("ADBE Scale").setValue([scaleX, scaleY, 100]);
-        transform.property("ADBE Position").setValue([x, y]);
+        var anchor=transform.property("ADBE Anchor Point").value;
+        if(!(anchor instanceof Array) || anchor.length<2 || !isFinite(anchor[0]) || !isFinite(anchor[1]))throw new Error("unsupported_fit_anchor");
+        var x = alignX === "left" ? anchor[0]*scaleX/100 : alignX === "right" ? comp.width-(size.width-anchor[0])*scaleX/100 : comp.width/2+(anchor[0]-size.width/2)*scaleX/100;
+        var y = alignY === "top" ? anchor[1]*scaleY/100 : alignY === "bottom" ? comp.height-(size.height-anchor[1])*scaleY/100 : comp.height/2+(anchor[1]-size.height/2)*scaleY/100;
+        var scaleValue=transform.property("ADBE Scale").value.length===3 ? [scaleX,scaleY,100] : [scaleX,scaleY];
+        prepared.push({layer:layer,before:before,size:size,scale:scaleValue,position:[x,y]});
+      }
+      app.beginUndoGroup("Codex Fit Layer To Comp");
+      try {
+      var changed=[];
+      for(var __i=0;__i<prepared.length;__i++) {
+        var desired=prepared[__i];var layer=desired.layer;var transform=layer.property("ADBE Transform Group");
+        transform.property("ADBE Scale").setValue(desired.scale);
+        transform.property("ADBE Position").setValue(desired.position);
         changed.push({
-          before: before,
+          before: desired.before,
           after: __codexLayerInfo(layer),
-          sourceSize: size,
-          scale: [scaleX, scaleY, 100],
-          position: [x, y]
+          sourceSize: desired.size,
+          scale: transform.property("ADBE Scale").value,
+          position: transform.property("ADBE Position").value
         });
       }
       var response = {
-        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, width: comp.width, height: comp.height },
+        comp: { itemIndex: __codexProjectIndexForItem(comp), itemId:comp.id,name: comp.name, width: comp.width, height: comp.height },
         mode: mode,
         alignX: alignX,
         alignY: alignY,
@@ -19530,8 +19771,8 @@ async function callTool(name, args, executionContext) {
         layers: changed.map(function (item) { return item.after; }),
         changed: changed
       };
-      app.endUndoGroup();
       return response;
+      }finally{app.endUndoGroup();}
     `);
     return toolResult(result.result);
   }
@@ -20593,6 +20834,20 @@ async function callTool(name, args, executionContext) {
   if (name === "cleanup_test_items") {
     const confirm = optionalBoolean(args, "confirm", false);
     if (!confirm) return toolResult("confirm must be true to remove test items.", true);
+    if(args.owner!==undefined || args.itemIds!==undefined){
+      try{
+        const fresh=await requireFreshReviewRecord(args.owner,args.itemIds || []);
+        const result=await runExtendScriptBody(placeholderReviewService.cleanupServiceScript(fresh.record,fresh.projectFile));
+        const payload=result && result.result;
+        if(!payload || payload.ok!==true)return toolResult({ok:false,code:"review_cleanup_failed",details:payload || result,recovery:"Read remaining item IDs; do not repeat cleanup automatically."},true);
+        const ids=fresh.record.receipt.items.map(item=>item.itemId);
+        const absent=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+        if(!absent.result || !placeholderSourceRecovery.pathsEqual(absent.result.projectFile,fresh.projectFile) || absent.result.items.length)throw placeholderError("review_cleanup_absence_unproven");
+        const current=projectStateMemory.readProjectState(fresh.projectFile);
+        projectStateController.unregisterReview(fresh.projectFile,args.owner,ids,current.revision);
+        return toolResult({...payload,owner:args.owner,absenceVerified:true});
+      }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
+    }
 
     const namePrefix = optionalString(args, "namePrefix", "Codex Test");
     const maxItems = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "maxItems", 25))));
@@ -20605,7 +20860,10 @@ async function callTool(name, args, executionContext) {
       var maxItems = ${maxItems};
       var removed = [];
 
+      for(var p=1;p<=app.project.numItems;p++){var candidate=app.project.item(p);if(candidate && String(candidate.name).indexOf(namePrefix)===0 && String(candidate.name).indexOf("AE_AGENT_REVIEW_")===0)throw new Error("review_items_require_exact_registered_cleanup");}
+
       app.beginUndoGroup("Codex Cleanup Test Items");
+      try {
       for (var i = app.project.numItems; i >= 1 && removed.length < maxItems; i--) {
         var item = app.project.item(i);
         if (item && item.name && item.name.indexOf(namePrefix) === 0) {
@@ -20617,14 +20875,13 @@ async function callTool(name, args, executionContext) {
           item.remove();
         }
       }
-      app.endUndoGroup();
-
       return {
         namePrefix: namePrefix,
         removed: removed,
         removedCount: removed.length,
         hitLimit: removed.length >= maxItems
       };
+      }finally{app.endUndoGroup();}
     `);
     return toolResult(result.result);
   }

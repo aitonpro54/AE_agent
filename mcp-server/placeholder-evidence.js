@@ -45,8 +45,18 @@ function projectPlaceholderLayerEvidence(full) {
       stretch: layer.stretch, timeRemapEnabled: layer.timeRemapEnabled
     },
     ...(full.transform ? { transform } : {}),
+    ...(full.geometry ? {geometry: compactGeometry(full.geometry)} : {}),
     ...(full.protectedProperties ? { properties } : {})
   };
 }
 
-module.exports = { projectPlaceholderLayerEvidence };
+function compactGeometry(geometry){
+  const result={};
+  for(const [group,fields] of Object.entries({comp:["width","height","pixelAspect","frameRate"],source:["width","height","pixelAspect","duration","frameRate"],layer:["threeDLayer","parentLayerId","rotation","anchorPoint","transformStatic","hasMasks","collapseTransformation"]})){
+    result[group]={};for(const field of fields){const value=geometry[group] && geometry[group][field];
+      result[group][field]=typeof value==="boolean" || value===null || typeof value==="number" && Number.isFinite(value) ? value : Array.isArray(value) && value.length===2 && value.every(item=>typeof item==="number" && Number.isFinite(item)) ? [...value] : null;}
+  }
+  return result;
+}
+
+module.exports = { projectPlaceholderLayerEvidence,compactGeometry };

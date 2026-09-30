@@ -21035,6 +21035,116 @@
         "Лексический media key не доказывает symlink aliases.",
         "Визуальная приёмка проводится отдельным workflow."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-cover-visual-review-plan",
+      "title": "Cover и визуальная приёмка плейсхолдеров",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "cover",
+        "framing",
+        "contact-sheet",
+        "visual-review",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Равномерный cover плейсхолдера без искажения пропорций, смещение по значимым людям и лицам, другой свободный фрагмент при невозможном кадрировании и реальный просмотр owned live-link контрольных кадров. Uniform cover, significant people, safe framing and visual acceptance with a contact sheet.",
+        "appliesWhen": [
+          "Нужно заполнить рамку видео и проверить полное покрытие независимо от setter.",
+          "Нужны несколько временных точек и смены планов, контрольные кадры и контактный лист.",
+          "Inspect placeholder framing, full cover and live linked contact sheet; verify actual image views."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "target",
+          "type": "object",
+          "required": true,
+          "description": "Устойчивые compItemId/layerId цели, sourceItemId будущего источника при замене."
+        },
+        {
+          "name": "samples",
+          "type": "array",
+          "required": true,
+          "description": "Времена, наблюдения значимых subject boxes, image identities; известные shotBoundaries."
+        }
+      ],
+      "targetAssumptions": [
+        "Fresh supported static 2D geometry, PAR1, rotation0, no parent/masks/collapse; unknown не pass.",
+        "Геометрия прямоугольного footprint не доказывает alpha/effects или художественную корректность.",
+        "Artistic acceptance требует actual view_file evidence и конкретных наблюдений выбранных target/root frames.",
+        "Service comps отдельны, с server ownership и verified stable IDs; основной comp не меняется."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-cover-visual-review-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "propose_placeholder_cover",
+          "build_placeholder_plan",
+          "verify_placeholder_coverage",
+          "build_placeholder_visual_review_plan",
+          "create_placeholder_review_comps",
+          "get_placeholder_review_manifest",
+          "save_comp_frame_png",
+          "verify_placeholder_visual_review",
+          "cleanup_test_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Независимый geometric read-back по stable ID; отдельное actual image review по manifest/hash/NDJSON и exact owned cleanup.",
+        "steps": [
+          "Получить свежие usage/protection/geometry, наблюдать требуемые source frames.",
+          "Предложить uniform cover/offset или свободный same-source interval с новым sampling.",
+          "Выполнить existing placeholder plan/gates, прочитать actual transform и четыре границы.",
+          "Создать отдельные owned live-link service comps и экспортировать control/contact frames.",
+          "Передать compact manifest/images Flash, сверить actual views и конкретные observations.",
+          "Принять вручную через CEP; очистить exact owner/item IDs после dependency preflight."
+        ],
+        "expectedEvidence": [
+          "Uniform scale и полное покрытие рамки; unsupported geometry явно отклонена.",
+          "Наблюдения нескольких times/shots; geometry отдельно от artistic.",
+          "Каждое принятое изображение действительно просмотрено и связано с manifest/hash.",
+          "Service objects не попали в main comp; удалены только проверенные owned IDs."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Offline production/actual JSX VM/isolated daemon и отдельный synthetic Flash image review; live AEP и установленная CEP не являются этим proof."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Bounded cover/visual ownership regressions; финальная validation milestone в docs/placeholder-improvements-report.md.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Значимые boxes задаются наблюдениями; обязательная тяжёлая face-модель не устанавливается.",
+        "PNG/JSON/viewed=true/SUCCESS недостаточны для художественного passed.",
+        "При запрете записи отчёта вернуть текст; отказ view не обходить.",
+        "Предел художественного заключения — только фактически просмотренные кадры."
+      ]
     }
   ]
 }

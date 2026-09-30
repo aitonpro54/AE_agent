@@ -23,6 +23,8 @@
     "smoke:placeholder-usage": "node scripts/placeholder-usage-smoke.js",
     "smoke:placeholder-protection-panel": "node scripts/placeholder-protection-panel-smoke.js",
     "smoke:placeholder-protection": "node scripts/placeholder-protection-smoke.js && node scripts/placeholder-protection-bridge-smoke.js && node scripts/placeholder-protection-panel-smoke.js",
+    "smoke:placeholder-framing": "node scripts/placeholder-framing-smoke.js && node scripts/placeholder-framing-boundary-smoke.js",
+    "smoke:placeholder-visual": "node scripts/placeholder-visual-smoke.js && node scripts/placeholder-visual-batches-smoke.js && node scripts/placeholder-visual-bridge-smoke.js",
     "report:ame-output": "node scripts/ame-passive-status.js",
     "smoke:ame-output": "node scripts/ame-passive-status-smoke.js",
     "report:ame-media": "node scripts/ame-media-probe.js",

@@ -25,6 +25,7 @@ const inputSchema = { type: "object", required: ["input"], properties: { input: 
       properties: { itemId: { type: "integer" }, itemIndex: { type: "integer" }, name: { type: "string" },
         type: { type: "string", enum: ["footage", "comp"] }, duration: { type: "number" } } },
     rootRange: TIME_RANGE_SCHEMA, sourceRange: TIME_RANGE_SCHEMA,
+    framing: { type:"object",description:"Optional explicitly observed sample boxes; server replaces geometry with fresh planned-source geometry.",properties:{samples:{type:"array",maxItems:24},shotBoundaries:{type:"array",maxItems:12,items:{type:"number"}},marginPixels:{type:"number",minimum:0}} },
     usage: { type: "object", description: "Advisory usage preview; execution always reads a fresh server inventory." },
     constraints: { type: "object", properties: { distinctGroups: { type: "boolean" }, disallowSourceOverlap: { type: "boolean" },
       selectedTargets: { type: "array", minItems: 1, maxItems: 32, items: { type: "object", required: ["compItemId", "layerId"], properties: {
@@ -118,6 +119,18 @@ function buildPlaceholderPlan(input) {
     startTime, inPoint: localRange[0], outPoint: localRange[1], rootRange, sourceRange,
     ...(typeof sourceItem.file === "string" ? { sourceFile: sourceItem.file, footageMissing: false } : {})
   };
+  if(input.framing) {
+    const framing=require("./placeholder-framing");
+    const proposal=framing.proposePlaceholderCover({...input.framing,geometry:input.framing.geometry,sourceRange,
+      target:{compItemId:targetComp.itemId,layerId:targetLayer.id},usage:input.usage});
+    if(proposal.status!=="proposed" || proposal.eligible!==true || !proposal.proposal)return {...fail(proposal.reason || proposal.status || "placeholder_framing_unavailable"),framing:proposal};
+    const transform=proposal.proposal;
+    plan.steps.splice(2,0,{tool:"set_layer_transform",args:{compItemIndex:targetComp.itemIndex,compName:targetComp.name,layerIndex:targetLayer.index,
+      expectedCompItemId:targetComp.itemId,expectedLayerId:targetLayer.id,position:transform.position,scale:transform.scale}});
+    expectedReadBack.transform={anchorPoint:input.framing.geometry.layer.anchorPoint,position:transform.position,scale:transform.scale,rotation:0};
+    expectedReadBack.geometry=input.framing.geometry;
+    plan.placeholderFraming={target:{compItemId:targetComp.itemId,layerId:targetLayer.id},sourceItemId:sourceItem.itemId,geometry:input.framing.geometry,transform,artistic:"pending_image_review"};
+  }
   plan.expectedReadBack = expectedReadBack;
   plan.frameReview = frameReview;
   plan.placeholderAssignments = [{ target: { compItemId: targetComp.itemId, layerId: targetLayer.id },

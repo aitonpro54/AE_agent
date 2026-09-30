@@ -10,7 +10,7 @@ const finite = value => typeof value === "number" && Number.isFinite(value);
 const TRANSFORMS = { anchorPoint: "ADBE Anchor Point", position: "ADBE Position", scale: "ADBE Scale",
   rotation: "ADBE Rotate Z", opacity: "ADBE Opacity", orientation: "ADBE Orientation",
   xRotation: "ADBE Rotate X", yRotation: "ADBE Rotate Y" };
-const TARGET_SETTERS = new Set(["replace_layer_source", "set_layer_time_range", "set_layer_transform", "set_property_value"]);
+const TARGET_SETTERS = new Set(["replace_layer_source", "set_layer_time_range", "set_layer_transform", "set_property_value","fit_layer_to_comp"]);
 function unsupportedSetterIdentityAliases(tool, args = {}) {
   if (!TARGET_SETTERS.has(tool)) return [];
   return ["compItemId", "layerId", ...(tool === "replace_layer_source" ? ["sourceItemId"] : [])]
@@ -28,7 +28,7 @@ function aeSetterIdentityGuard(tool, args) {
   const aliases = unsupportedSetterIdentityAliases(tool, args);
   return aliases.length ? `throw new Error(${JSON.stringify("unsupported_setter_identity_alias:" + aliases.join(","))});` : "";
 }
-const SAFE_ADDITIONS = new Set(["create_comp", "create_test_comp", "create_solid_layer", "create_null_layer",
+const SAFE_ADDITIONS = new Set(["create_placeholder_review_comps","create_comp", "create_test_comp", "create_solid_layer", "create_null_layer",
   "create_text_layer", "create_adjustment_layer", "create_shape_layer", "create_camera_layer", "create_camera_with_controller",
   "duplicate_comp", "import_footage", "create_project_folder", "set_layer_selection", "set_comp_current_time",
   "set_comp_work_area", "refresh_comp_panel", "add_comp_to_render_queue", "set_render_queue_output", "save_comp_frame_png"]);
@@ -181,7 +181,7 @@ function sourceId(args, inventory) {
   const matches = all.filter(value => value.name === args.sourceItemName);
   return matches.length === 1 ? matches[0].itemId : null;
 }
-function checkProtectedSteps({ accepted = [], inventory, steps = [] }) {
+function checkProtectedSteps({ accepted = [], inventory, steps = [], verifiedReviewCleanupOwners=[] }) {
   const conflicts = [];
   const bindings = [];
   const affected = new Set();
@@ -198,6 +198,7 @@ function checkProtectedSteps({ accepted = [], inventory, steps = [] }) {
     if (unsupportedSetterIdentityAliases(tool,args).length) continue;
     if (args.allowProtectedChanges === true || step.allowProtectedChanges === true) { conflicts.push({ index, tool, reason: "protected_override_forbidden" }); continue; }
     if (SAFE_ADDITIONS.has(tool)) continue;
+    if(tool==="cleanup_test_items" && verifiedReviewCleanupOwners.includes(args.owner))continue;
     if (tool === "relink_footage_source") {
       for (const snapshot of accepted) if (snapshot.source.itemId === args.itemId) {
         affected.add(targetKey(snapshot.target));

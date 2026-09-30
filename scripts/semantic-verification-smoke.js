@@ -1790,8 +1790,18 @@ function assertScenarioPasses(scenario) {
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.schema, SEMANTIC_VERIFICATION_SCHEMA, `${scenario.id}: schema mismatch`);
-  assert.strictEqual(semantic.status, "passed", `${scenario.id}: semantic verification should pass: ${semantic.summary}`);
-  assert.strictEqual(semantic.failedChecks, 0, `${scenario.id}: expected no failed checks`);
+  const fits=run.steps.filter(step=>step.tool==="fit_layer_to_comp");
+  if(fits.length){
+    // Existing scenarios fit generated shape/text assets. The bounded video cover
+    // checker cannot prove these modes from changedCount or predicted transforms.
+    assert.strictEqual(semantic.status,"needs_review",`${scenario.id}: unsupported fit needs independent geometry review`);
+    const failed=semantic.checks.filter(check=>check.status!=="passed");
+    assert.strictEqual(failed.length,fits.length,`${scenario.id}: only unsupported fit checks may need review`);
+    assert(failed.every(check=>check.id.includes(":fit_layer_to_comp:fit")),`${scenario.id}: unrelated checks must still pass`);
+  }else{
+    assert.strictEqual(semantic.status, "passed", `${scenario.id}: semantic verification should pass: ${semantic.summary}`);
+    assert.strictEqual(semantic.failedChecks, 0, `${scenario.id}: expected no failed checks`);
+  }
   assert(semantic.passedChecks > 0, `${scenario.id}: expected semantic checks`);
   assert(semantic.readBackCount > 0, `${scenario.id}: expected read-back summaries`);
   return {

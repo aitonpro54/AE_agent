@@ -75,9 +75,16 @@ function verifyPlaceholderReadBack(expected, observed) {
     checks.push({ field: "protectedProperty", passed: Boolean(got) && valueEqual(wanted.value, got.value) && got.numKeys === 0 && got.expressionEnabled === false && got.dimensionsSeparated !== true,
       expected: wanted.value, observed: got && got.value });
   }
+  let coverage=null;
+  if(expected.geometry){
+    const equal=observed.geometry && Object.entries(expected.geometry).every(([group,fields])=>observed.geometry[group] && Object.entries(fields).every(([field,value])=>valueEqual(value,observed.geometry[group][field])));
+    checks.push({field:"geometry",passed:Boolean(equal),expected:expected.geometry,observed:observed.geometry || null});
+    coverage=require("./placeholder-framing").verifyPlaceholderCoverage({geometry:observed.geometry,transform:observed.transform});
+    checks.push({field:"rectangularCoverage",passed:coverage.eligible===true && coverage.covered===true,expected:true,observed:coverage.covered===true});
+  }
   const ok = checks.every((check) => check.passed);
   return { ok, status: ok ? "passed" : "needs_review", reason: ok ? null : "read_back_mismatch", checks,
-    addressDrift: { compItemIndex: comp.itemIndex !== expected.compItemIndex, layerIndex: layer.index !== expected.layerIndex } };
+    ...(coverage ? {coverage,artisticAccepted:false} : {}),addressDrift: { compItemIndex: comp.itemIndex !== expected.compItemIndex, layerIndex: layer.index !== expected.layerIndex } };
 }
 
 module.exports = { inputSchema, verifyPlaceholderReadBack };
