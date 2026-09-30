@@ -8,9 +8,9 @@ Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/f
 
 ## Маршрутизация и самостоятельный мост — 2026-09-30
 
-- Progress: диспетчер Sol 6.1/high; большинство средних задач Flash 3.8/high под его контролем. Узкие блокеры Sol 6.1/xhigh, архитектура Sol 6.1/ultra, Astra/high только после неудачи Ultra. Проектный config, глобальные правила, skills и TOML ролей синхронизированы; core остаётся в agy-bridge.
-- Decision Log: постоянное разрешение на Flash закреплено только для AE Agent; Luna убрана из маршрута. Ultra допускает ограниченного read-only помощника в общем лимите двух вместе с AGY. Уже загруженные роли требуют новой загрузки; текущая модель, provider и AE grants не переключались.
-- Validation: rules/diff, TOML ролей/config, сохранность MCP и scalar YAML/references skills — PASS. Desktop CLI 0.159.2 подтвердил Sol 6.1 high/xhigh/ultra; PATH CLI 0.156.1 пока не показывает его. quick_validate недоступен без PyYAML; новых LLM/live AE запусков не было. Подробности: .codex-runtime/routing-2026-09-30/validation.json; исторические smoke: docs/agy-bridge-extraction.md.
+- Progress: диспетчер Sol 6.1/high; простые самостоятельные поручения Luna/medium (scout/operator); большинство средних задач Flash 3.8/high под контролем Sol. Узкие блокеры Sol/xhigh, архитектура Sol/ultra, Astra/high после неудачи Ultra. Config, правила, skills и TOML ролей синхронизированы; core остаётся в agy-bridge.
+- Decision Log: постоянное разрешение на Flash только в AE Agent; Luna сохранена для простых поручений, один короткий вызов выполняет диспетчер. Ultra допускает read-only помощника в общем лимите двух вместе с AGY. Загруженные роли требуют новой загрузки; текущая модель, provider и AE grants не переключались.
+- Validation: rules/diff, TOML ролей/config, сохранность MCP и scalar YAML/references skills — PASS. Desktop подтвердил Sol 6.1 high/xhigh/ultra и Luna/medium; PATH CLI 0.156.1 пока не показывает Sol 6.1. quick_validate недоступен без PyYAML; LLM/live AE запусков не было. Подробности: .codex-runtime/routing-2026-09-30/{validation,luna-validation}.json; исторические smoke: docs/agy-bridge-extraction.md.
 
 ## Автономная сессия и правила AE-текста — 2026-09-29
 
