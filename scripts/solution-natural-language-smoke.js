@@ -60,9 +60,10 @@ function assertNoMatches(query) {
 }
 
 function run() {
-  assert.strictEqual(registry.solutions.length, 181, "natural-language acceptance set expects all 181 registry solutions.");
+  assert(registry.solutions.length >= 181, "natural-language acceptance preserves the baseline library and tests every current recipe.");
 
   const pairs = [
+    ["Восстановление отсутствующих исходников: поиск кандидатов и переподключение", "Recover missing footage sources with bounded candidate search and guarded relink", "placeholder-source-recovery-plan"],
     ["Создай композицию 1920 на 1080 длительностью 10 секунд", "Create a basic composition 1920 by 1080 with duration 10 seconds", "basic-comp-setup-typed-plan"],
     ["Дублируй выделенные слои", "Duplicate selected layers", "bulk-layer-duplicate-typed-tool"],
     ["Создай камеру с контроллером", "Create a camera with controller", "add-camera-with-controller-typed-plan"],

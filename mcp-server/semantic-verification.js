@@ -1,7 +1,9 @@
 "use strict";
 
+const path = require("path");
 const { generatedFileEvidenceIssues } = require("./generated-safety-contracts");
 const projectSave = require("./project-save");
+const sourceRecovery = require("./placeholder-source-recovery");
 
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
@@ -68,6 +70,7 @@ const MUTATING_TOOLS = new Set([
   "deep_duplicate_precomp_sources",
   "precompose_layers",
   "replace_layer_source",
+  "relink_footage_source",
   "rename_layers",
   "rename_project_items",
   "add_comp_to_render_queue",
@@ -574,16 +577,19 @@ function addProjectItemEvidence(target, value, source) {
   if (!isPlainObject(value)) return;
   const itemIndex = numberValue(value.itemIndex);
   if (itemIndex === null) return;
-  const hasProjectItemShape = hasOwn(value, "type") || hasOwn(value, "typeName") || hasOwn(value, "label") || hasOwn(value, "folderPath");
+  const hasProjectItemShape = hasOwn(value, "type") || hasOwn(value, "typeName") || hasOwn(value, "label") || hasOwn(value, "folderPath") || hasOwn(value, "itemId") || hasOwn(value, "file");
   if (!hasProjectItemShape) return;
   target.projectItems.push({
     itemIndex,
+    itemId: hasOwn(value, "itemId") ? numberValue(value.itemId) : (hasOwn(value, "id") ? numberValue(value.id) : null),
     name: typeof value.name === "string" ? value.name : "",
     type: value.type || null,
     typeName: value.typeName || null,
     label: hasOwn(value, "label") ? numberValue(value.label) : null,
     comment: hasOwn(value, "comment") ? String(value.comment || "") : "",
     folderPath: typeof value.folderPath === "string" ? value.folderPath : "",
+    file: hasOwn(value, "file") && typeof value.file === "string" ? value.file : null,
+    footageMissing: typeof value.footageMissing === "boolean" ? value.footageMissing : null,
     source: source || "observed project item"
   });
 }
@@ -3722,6 +3728,54 @@ function verifyStep(checks, step, evidence) {
       observed,
       passed: expected === undefined || expected === null || sameString(observed, expected) || Number(observed) === Number(expected),
       evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "relink_footage_source") {
+    const expectedFile = args.filePath || args.targetFilePath;
+    const targetItemId = Number.isSafeInteger(args.itemId) && args.itemId > 0 ? args.itemId : null;
+    const observedFile = payload.item && (payload.item.file || payload.item.filePath);
+    const observedItemId = payload.itemId !== undefined && payload.itemId !== null
+      ? numberValue(payload.itemId)
+      : (payload.item && payload.item.itemId !== undefined ? numberValue(payload.item.itemId) : null);
+    const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+    const fileMatches = sourceRecovery.pathsEqual(observedFile, expectedFile);
+    const itemIdMatches = targetItemId !== null && observedItemId === targetItemId &&
+      payload.item && payload.item.itemId === targetItemId;
+
+    // Use actual rows, not recursively collected project-item summaries (which can
+    // visit the same object twice). A final batch read may follow several relinks.
+    const subsequent = evidence.subsequentReadBack || evidence.readBack;
+    const reads = (subsequent && subsequent.rawSteps || []).filter(read => {
+      if (read.tool !== "find_project_items") return false;
+      const data = payloadForStep(read);
+      const rows = data && data.matches;
+      const readIds = read.args && read.args.itemIds;
+      return Array.isArray(readIds) ? readIds.includes(targetItemId) :
+        Array.isArray(rows) && rows.some(row => row && row.itemId === targetItemId);
+    });
+    const independentStep = reads[reads.length - 1];
+    const independent = sourceRecovery.verifySourceRecoveryReadBack([
+      { itemId: targetItemId, file: expectedFile, name: args.expectedName, footageMissing: false }
+    ], independentStep && payloadForStep(independentStep));
+
+    const passed = Boolean(
+      fileMatches &&
+      itemIdMatches &&
+      payload.item.footageMissing === false &&
+      postVerification.ok === true &&
+      postVerification.footageMissing === false &&
+      independent.ok
+    );
+
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:file`,
+      title: "Relinked footage source matches target file path and independent read-back",
+      expected: expectedFile,
+      observed: observedFile,
+      passed,
+      evidence: independentStep ? stepLabel(independentStep) : (stepLabel(step) + " (missing independent find_project_items read-back evidence)")
     });
     return;
   }

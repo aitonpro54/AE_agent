@@ -19,6 +19,7 @@
     "smoke:task-usage": "node scripts/codex-task-ledger-smoke.js",
     "smoke:task-estimate": "node scripts/task-subscription-estimate-smoke.js",
     "smoke:placeholder-plan": "node scripts/placeholder-plan-builder-smoke.js && node scripts/placeholder-readback-smoke.js && node scripts/placeholder-evidence-smoke.js && node scripts/placeholder-plan-bridge-smoke.js",
+    "smoke:placeholder-recovery": "node scripts/placeholder-source-recovery-smoke.js && node scripts/placeholder-source-recovery-jsx-smoke.js && node scripts/placeholder-source-recovery-bridge-smoke.js",
     "report:ame-output": "node scripts/ame-passive-status.js",
     "smoke:ame-output": "node scripts/ame-passive-status-smoke.js",
     "report:ame-media": "node scripts/ame-media-probe.js",

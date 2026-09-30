@@ -36,6 +36,7 @@ const slideshowPlanBuilder = require("./slideshow-plan-builder");
 const placeholderPlanBuilder = require("./placeholder-plan-builder");
 const placeholderReadBack = require("./placeholder-readback");
 const placeholderEvidence = require("./placeholder-evidence");
+const placeholderSourceRecovery = require("./placeholder-source-recovery");
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -944,6 +945,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_text_layer",
   "create_shapes_from_text",
   "import_footage",
+  "relink_footage_source",
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
@@ -4894,6 +4896,8 @@ const PLANNING_TOOL_NAMES = [
   "run_extendscript",
   "run_extendscript_file",
   "build_slideshow_plan",
+  "relink_footage_source",
+  "verify_source_recovery_read_back",
   ...slideshowTools.TOOL_NAMES
 ];
 
@@ -8124,6 +8128,137 @@ const tools = [
     inputSchema: placeholderReadBack.inputSchema
   },
   {
+    name: "find_missing_footage_candidates",
+    description: "Search within explicit roots for missing-footage replacements by original filename, extension and filesystem size. Media fields remain unknown unless optional bounded ffprobe reading is requested. Incomplete search cannot establish uniqueness.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        searchRoots: {
+          type: "array",
+          items: { type: "string" },
+          description: "Explicit local directory paths to search. Traversal is strictly bounded to these roots."
+        },
+        missingItems: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              itemId: { type: "number", description: "Persistent project item ID." },
+              itemIndex: { type: "number", description: "Optional current project item index." },
+              name: { type: "string", description: "Missing footage item name." },
+              originalPath: { type: "string", description: "Original file path; basename overrides a renamed item name." },
+              footageMissing: { type: "boolean", description: "Fresh inspected missing state, required by recovery builder." },
+              expectedSize: { type: "number", description: "Known original file size in bytes, when independently available." },
+              expectedMetadata: { type: "object", properties: {
+                width: { type: "number" }, height: { type: "number" }, duration: { type: "number" }, frameRate: { type: "number" }
+              }, description: "Known media fields from inspection; compared only with actually probed fields." }
+            },
+            required: ["itemId", "name"]
+          },
+          description: "List of missing footage items to find candidates for."
+        },
+        maxDepth: {
+          type: "number",
+          description: "Maximum directory traversal depth. Defaults to 5, maximum 10."
+        },
+        maxFiles: {
+          type: "number",
+          description: "Maximum collected files. Defaults to 2000, maximum 10000; traversal also has separate entry/directory budgets."
+        },
+        maxEntries: { type: "number", description: "All visited directory entries, including filtered files. Default 20000, maximum 50000." },
+        maxDirectories: { type: "number", description: "Visited directories. Default 2000, maximum 10000." },
+        probeMedia: { type: "boolean", description: "Explicitly read candidate media with existing ffprobe; default false, no installation." },
+        maxProbeFiles: { type: "number", description: "Maximum candidate probes. Default 10, maximum 25, aggregate budget 10 seconds." },
+        probeTimeoutMs: { type: "number", description: "Per-file probe timeout. Default 2000ms, maximum 5000ms; output limited to 256KiB." },
+        allowedExtensions: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional list of file extensions to include (e.g. ['.mp4', '.mov', '.png'])."
+        }
+      },
+      required: ["searchRoots", "missingItems"]
+    }
+  },
+  {
+    name: "build_source_recovery_plan",
+    description: "Build a typed recovery plan from fresh missing-item identity/path, the current candidate list and an explicit confirmed selected path. Retains expectedReadBack and addresses independent readback by persistent itemIds.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        requests: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              itemId: { type: "number", description: "Persistent project item ID." },
+              itemIndex: { type: "number", description: "Optional project item index hint." },
+              itemName: { type: "string", description: "Item name." },
+              currentFilePath: { type: "string", description: "Expected current/previous file path (stale guard)." },
+              targetFilePath: { type: "string", description: "Target replacement file path on disk." },
+              footageMissing: { type: "boolean", description: "Inspected state must be true before recovery." },
+              candidates: { type: "array", minItems: 1, items: { type: "object", properties: {
+                filePath: { type: "string" }
+              }, required: ["filePath"] }, description: "Candidate list returned by the current search for this item." },
+              isAmbiguous: { type: "boolean", description: "Whether multiple candidates existed." },
+              candidateSelectionConfirmed: { type: "boolean", description: "Must be true for the explicit selected path, including a single candidate." }
+            },
+            required: ["itemId", "itemName", "currentFilePath", "footageMissing", "candidates", "targetFilePath", "candidateSelectionConfirmed"]
+          },
+          description: "Array of relink requests."
+        }
+      },
+      required: ["requests"]
+    }
+  },
+  {
+    name: "relink_footage_source",
+    description: "Relink a footage item to a replacement media file on disk by persistent itemId with stale identity and file guards under an undo group.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemId: {
+          type: "number",
+          description: "Persistent project item ID of the footage item to relink."
+        },
+        itemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index hint."
+        },
+        expectedName: {
+          type: "string",
+          description: "Required fresh inspected footage item name guard."
+        },
+        expectedPreviousFilePath: {
+          type: "string",
+          description: "Required fresh inspected previous file path guard. Missing/unavailable current file path fails closed."
+        },
+        filePath: {
+          type: "string",
+          description: "Absolute path to the replacement media file on disk."
+        }
+      },
+      required: ["itemId", "expectedName", "expectedPreviousFilePath", "filePath"]
+    }
+  },
+  {
+    name: "verify_source_recovery_read_back",
+    description: "Compare expected footage item state (itemId, file, footageMissing: false) against fresh independent project read-back. Verifies by persistent itemId to tolerate project item index shifts.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        expected: {
+          type: "array",
+          description: "Expected read-back items from build_source_recovery_plan."
+        },
+        observed: {
+          type: ["object", "array"],
+          description: "Fresh independent find_project_items or get_project_snapshot result."
+        }
+      },
+      required: ["expected", "observed"]
+    }
+  },
+  {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
     inputSchema: {
@@ -8757,10 +8892,12 @@ const tools = [
   },
   {
     name: "find_project_items",
-    description: "Find project items by name substring, exact name, and optional item type.",
+    description: "Find project items by name/type or explicit persistent itemIds. Footage references include actual missing state, full file path and compact media fields.",
     inputSchema: {
       type: "object",
       properties: {
+        itemIds: { type: "array", minItems: 1, maxItems: 250, items: { type: "integer", minimum: 1 },
+          description: "Optional bounded persistent IDs; filter before limit, independent of current item indices." },
         query: {
           type: "string",
           description: "Name substring or exact name to search for. Empty query returns the first results."
@@ -11425,7 +11562,7 @@ async function callTool(name, args, executionContext) {
         return names.join("/");
       }
 
-      function __codexFindProjectItems(query, type, exactName, caseSensitive, limit) {
+      function __codexFindProjectItems(query, type, exactName, caseSensitive, limit, itemIds) {
         var matches = [];
         var needle = query || "";
         var normalizedNeedle = caseSensitive ? needle : needle.toLowerCase();
@@ -11433,6 +11570,13 @@ async function callTool(name, args, executionContext) {
 
         for (var __i = 1; __i <= app.project.numItems; __i++) {
           var item = app.project.item(__i);
+          if (itemIds && itemIds.length) {
+            var idMatched = false;
+            for (var __id = 0; __id < itemIds.length; __id++) {
+              if (item.id === itemIds[__id]) { idMatched = true; break; }
+            }
+            if (!idMatched) continue;
+          }
           if (!__codexMatchesItemType(item, type)) continue;
 
           var itemName = item.name || "";
@@ -11567,6 +11711,20 @@ async function callTool(name, args, executionContext) {
         if (item instanceof CompItem || item instanceof FootageItem) {
           try { info.duration = item.duration; } catch (__itemDurationError) {}
           try { info.frameRate = item.frameRate; } catch (__itemFrameRateError) {}
+        }
+        if (item instanceof FootageItem) {
+          try {
+            if (item.footageMissing === true || item.footageMissing === false) info.footageMissing = item.footageMissing;
+          } catch (__missingError) {}
+          try {
+            var curFile = item.file || (item.mainSource && item.mainSource.file ? item.mainSource.file : null);
+            info.file = curFile && curFile.fsName ? curFile.fsName : null;
+          } catch (__fileError) {}
+          try { info.width = item.width; } catch (__widthError) {}
+          try { info.height = item.height; } catch (__heightError) {}
+          try { info.pixelAspect = item.pixelAspect; } catch (__pixelAspectError) {}
+          try { info.hasVideo = item.hasVideo; } catch (__hasVideoError) {}
+          try { info.hasAudio = item.hasAudio; } catch (__hasAudioError) {}
         }
         return info;
       }
@@ -12296,6 +12454,34 @@ async function callTool(name, args, executionContext) {
     return toolResult(result, !result.ok);
   }
 
+  if (name === "find_missing_footage_candidates") {
+    try {
+      const result = placeholderSourceRecovery.findMissingFootageCandidates(args || {});
+      return toolResult(result);
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message }, true);
+    }
+  }
+
+  if (name === "build_source_recovery_plan") {
+    const result = placeholderSourceRecovery.buildSourceRecoveryPlan(args || {});
+    if (!result.ok) return toolResult(result, true);
+    const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+    return toolResult({
+      ...result,
+      ok: prepared.validation.ok,
+      validation: prepared.validation,
+      previewLocal: true,
+      mutatesProject: true,
+      requiresFreshEvidenceReview: true
+    }, !prepared.validation.ok);
+  }
+
+  if (name === "verify_source_recovery_read_back") {
+    const result = placeholderSourceRecovery.verifySourceRecoveryReadBack((args || {}).expected, (args || {}).observed);
+    return toolResult(result, !result.ok);
+  }
+
   if (name === "propose_ai_agent_plan") {
     try {
       const result = await createM100AgentPlanProposalFromRequest(args || {});
@@ -12869,11 +13055,19 @@ async function callTool(name, args, executionContext) {
   }
 
   if (name === "find_project_items") {
+    let itemIds = null;
+    if (args.itemIds !== undefined) {
+      if (!Array.isArray(args.itemIds) || args.itemIds.length < 1 || args.itemIds.length > 250 ||
+        args.itemIds.some(id => !Number.isSafeInteger(id) || id <= 0) || new Set(args.itemIds).size !== args.itemIds.length) {
+        return toolResult("itemIds must contain 1..250 unique positive integer IDs.", true);
+      }
+      itemIds = args.itemIds;
+    }
     const query = optionalString(args, "query", "");
     const type = optionalString(args, "type", "");
     const exactName = optionalBoolean(args, "exactName", false);
     const caseSensitive = optionalBoolean(args, "caseSensitive", false);
-    const limit = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "limit", 25))));
+    const limit = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "limit", itemIds ? itemIds.length : 25))));
 
     if (type && !["comp", "footage", "folder"].includes(type)) {
       return toolResult("type must be one of: comp, footage, folder.", true);
@@ -12886,7 +13080,8 @@ async function callTool(name, args, executionContext) {
         type: ${aeLiteral(type)},
         exactName: ${exactName ? "true" : "false"},
         caseSensitive: ${caseSensitive ? "true" : "false"},
-        matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit})
+        itemIds: ${aeLiteral(itemIds)},
+        matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit}, ${aeLiteral(itemIds)})
       };
     `);
     return toolResult(result.result);
@@ -14710,6 +14905,108 @@ async function callTool(name, args, executionContext) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "relink_footage_source") {
+    const itemId = requiredPositiveInteger(args, "itemId");
+    const itemIndex = optionalPositiveInteger(args, "itemIndex");
+    const expectedName = optionalString(args, "expectedName", "");
+    const expectedPreviousFilePath = optionalString(args, "expectedPreviousFilePath", "");
+    const filePath = optionalString(args, "filePath", "");
+    if (!expectedName) return toolResult("expectedName is required.", true);
+    if (!expectedPreviousFilePath) return toolResult("expectedPreviousFilePath is required.", true);
+    if (!filePath) return toolResult("filePath is required.", true);
+
+    let resolved;
+    try {
+      resolved = resolveExistingFile(filePath);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var targetItemId = ${itemId};
+      var itemIndexHint = ${itemIndex === null ? "null" : itemIndex};
+      var expectedName = ${aeLiteral(expectedName)};
+      var expectedPreviousFilePath = ${aeLiteral(expectedPreviousFilePath)};
+      var targetFilePath = ${aeLiteral(resolved.resolvedPath)};
+
+      var item = null;
+      if (itemIndexHint !== null && itemIndexHint >= 1 && itemIndexHint <= app.project.numItems) {
+        var candidate = app.project.item(itemIndexHint);
+        if (candidate && candidate.id === targetItemId) {
+          item = candidate;
+        }
+      }
+      if (!item) {
+        for (var __i = 1; __i <= app.project.numItems; __i++) {
+          var cur = app.project.item(__i);
+          if (cur && cur.id === targetItemId) {
+            item = cur;
+            break;
+          }
+        }
+      }
+      if (!item) throw new Error("Project item not found with id " + targetItemId + ".");
+      if (!(item instanceof FootageItem)) throw new Error("Project item is not a FootageItem.");
+      if (item.footageMissing !== true) throw new Error("Project item is not missing footage: expected footageMissing === true.");
+
+      if (expectedName && item.name !== expectedName) {
+        throw new Error("Footage item name mismatch. Expected '" + expectedName + "' but found '" + item.name + "'.");
+      }
+      var currentFile = item.file || (item.mainSource && item.mainSource.file ? item.mainSource.file : null);
+      if (expectedPreviousFilePath) {
+        if (!currentFile || !currentFile.fsName) {
+          throw new Error("Previous file path is unavailable on footage item to verify expectedPreviousFilePath.");
+        }
+        var prevNorm = String(currentFile.fsName).replace(/\\\\/g, "/").toLowerCase();
+        var expNorm = String(expectedPreviousFilePath).replace(/\\\\/g, "/").toLowerCase();
+        if (prevNorm !== expNorm) {
+          throw new Error("Previous file path mismatch. Expected '" + expectedPreviousFilePath + "' but found '" + currentFile.fsName + "'.");
+        }
+      }
+
+      var replacementFile = new File(targetFilePath);
+      if (!replacementFile.exists) {
+        throw new Error("Replacement file does not exist on disk: " + targetFilePath);
+      }
+
+      var beforeFile = currentFile && currentFile.fsName ? currentFile.fsName : (item.file ? item.file.fsName : null);
+      var beforeMissing = item.footageMissing;
+      var afterFile = null;
+      var afterMissing = true;
+
+      app.beginUndoGroup("Codex Relink Footage Source");
+      try {
+        item.replace(replacementFile);
+        afterFile = item.file ? item.file.fsName : null;
+        afterMissing = item.footageMissing;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var afterRef = __codexItemReference(item);
+      var afterNorm = afterFile ? String(afterFile).replace(/\\\\/g, "/").toLowerCase() : "";
+      var targetNorm = String(targetFilePath).replace(/\\\\/g, "/").toLowerCase();
+      var fileMatches = afterNorm === targetNorm;
+      var itemIdMatches = item.id === targetItemId;
+
+      return {
+        item: afterRef,
+        itemId: item.id,
+        itemIndex: __codexProjectIndexForItem(item),
+        before: { file: beforeFile, footageMissing: beforeMissing },
+        after: { file: afterFile, footageMissing: afterMissing },
+        postVerification: {
+          ok: afterMissing === false && fileMatches && itemIdMatches,
+          footageMissing: afterMissing,
+          fileMatches: fileMatches,
+          itemIdMatches: itemIdMatches
+        }
+      };
     `);
     return toolResult(result.result);
   }
@@ -20061,8 +20358,8 @@ async function callToolLogged(source, name, args, executionContext) {
 module.exports = {
   async prepareToolScript(name, args, fixtureResult = null) {
     if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details",
-      "set_comp_properties", "set_comp_work_area", "get_comp_details", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
-      "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
+      "set_comp_properties", "set_comp_work_area", "get_comp_details", "find_project_items", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
+      "precompose_layers", "replace_layer_source", "relink_footage_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
       "create_shape_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "get_path_geometry", "set_path_geometry", "duplicate_layer",
       "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp",
       "apply_keyframe_ease", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status", "align_layers_to_time"

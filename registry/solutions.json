@@ -20826,6 +20826,111 @@
         "Require a separate typed-tool contract for source-exact selected-key discovery, hidden UI ordering, native layer UI side effects, interpolation/ease or spatial tangent preservation without explicit payloads, same-time collision resolution beyond an explicit reviewed policy, selection mutation, native undo behavior, or exact source JSX semantics.",
         "Do not use this recipe for layer timing edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, comp work area changes, render queue work, project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-source-recovery-plan",
+      "title": "План восстановления отсутствующих исходников",
+      "status": "recipe",
+      "tags": [
+        "footage",
+        "missing-footage",
+        "relink",
+        "source-recovery",
+        "placeholder",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Поиск отсутствующих медиафайлов в заданных пользователем папках, разрешение неоднозначностей кандидатов без скрытого автовыбора, построение типизированного плана перепривязки с защитой по устойчивому itemId и read-back проверкой.",
+        "appliesWhen": [
+          "В проекте обнаружены отсутствующие элементы футажа (footageMissing: true).",
+          "Пользователь предоставил явные корневые каталоги для поиска заменяющих медиафайлов.",
+          "Требуется безопасная перепривязка по постоянному itemId с защитой от сдвига индексов и проверкой совпадения путей."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "searchRoots",
+          "type": "array",
+          "required": true,
+          "description": "Массив проверенных абсолютных путей к корневым каталогам на диске для поиска заменяющих файлов."
+        },
+        {
+          "name": "missingItems",
+          "type": "array",
+          "required": true,
+          "description": "Список отсутствующих элементов футажа с persistent itemId, ожидаемым именем и предыдущим путём."
+        }
+      ],
+      "targetAssumptions": [
+        "Операция применяется только к отсутствующим элементам проекта типа FootageItem.",
+        "Поиск ограничен явно переданными корневыми путями без рекурсивного сканирования всей файловой системы.",
+        "Неоднозначные совпадения кандидатов не выбираются автоматически и требуют подтверждения пользователя.",
+        "Перепривязка выполняется по устойчивому itemId, а не по volatile itemIndex."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-source-recovery-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "find_missing_footage_candidates",
+          "build_source_recovery_plan",
+          "find_project_items",
+          "relink_footage_source",
+          "verify_source_recovery_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Проверка снятия флага footageMissing и соответствия пути к файлу для каждого перепривязанного элемента через независимый вызов find_project_items по persistent itemId.",
+        "steps": [
+          "Выполнить find_missing_footage_candidates для явных searchRoots с ограничением глубины и количества файлов.",
+          "Показать список кандидатов и получить явный targetFilePath с candidateSelectionConfirmed: true; incomplete не доказывает единственность.",
+          "Построить типизированный план через build_source_recovery_plan с валидацией guards (itemId, expectedName, expectedPreviousFilePath).",
+          "Выполнить план под защитой checkpoint или сессии редактирования.",
+          "Прочитать ровно целевые itemIds через find_project_items после мутаций и проверить verify_source_recovery_read_back."
+        ],
+        "expectedEvidence": [
+          "Каждый перепривязанный элемент футажа имеет footageMissing: false.",
+          "Фактический путь file совпадает с выбранным целевым файлом на диске.",
+          "Проверка устойчива к сдвигу индексов project items за счёт сопоставления по устойчивому itemId."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Синтетические offline fixtures и VM исполняют production helper и подготовленный daemon JSX; live AE/CEP и реальные AEP не проверялись.",
+          "Версии AE/панели/bridge в живой среде не установлены; null означает отсутствие измерений. Медиа без явного ffprobe остаётся unknown."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Офлайн-проверка через scripts/placeholder-source-recovery-smoke.js и scripts/placeholder-source-recovery-jsx-smoke.js с защитой от неоднозначностей и сдвига индексов.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Не производить скрытый автовыбор при нескольких совпадениях кандидатов (isAmbiguous: true).",
+        "Перепривязка выполняется исключительно по устойчивому itemId с защитой от сдвига индексов при добавлении/удалении элементов.",
+        "ExtendScript оборачивает замену в beginUndoGroup/endUndoGroup с гарантированным завершением в блоке finally.",
+        "Семантическая верификация требует обязательного независимого шага чтения find_project_items после мутации."
+      ]
     }
   ]
 }
