@@ -20931,6 +20931,110 @@
         "ExtendScript оборачивает замену в beginUndoGroup/endUndoGroup с гарантированным завершением в блоке finally.",
         "Семантическая верификация требует обязательного независимого шага чтения find_project_items после мутации."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-usage-protection-plan",
+      "title": "Интервалы, группы и принятые плейсхолдеры",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "source-intervals",
+        "distinct-groups",
+        "manual-protection",
+        "nested-timing",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Заполнить плейсхолдеры без повторяющихся фрагментов с разными подтверждёнными группами или исполнителями и сохранить принятые ручные исправления. Track source intervals, distinct confirmed performers and accepted manual placeholder corrections.",
+        "appliesWhen": [
+          "Нужна карта исходник → интервалы → плейсхолдеры с учётом вложенности.",
+          "Нужно исключить пересечения фрагментов, разные группы исполнителей и защитить ручную правку.",
+          "Track used source intervals, prevent duplicate fragments, require distinct groups, preserve accepted placeholders."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "roots",
+          "type": "array",
+          "required": true,
+          "description": "Явные compItemId корневых композиций."
+        },
+        {
+          "name": "assignments",
+          "type": "array",
+          "required": true,
+          "description": "Устойчивые ID целей и исходников, sourceRange."
+        }
+      ],
+      "targetAssumptions": [
+        "Fresh server inventory complete; базовая поддержка stretch100/remapfalse.",
+        "Группы имеют явные метаданные или user-confirmed mapping; filename не authority.",
+        "Shared occurrence и неполное evidence не дают ложного успеха.",
+        "Accepted snapshot изменяется только доверенным действием CEP."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-usage-protection-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_placeholder_usage",
+          "check_placeholder_assignments",
+          "get_placeholder_protection",
+          "build_placeholder_plan",
+          "verify_placeholder_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Свежие source/occurrence indices и read-back по устойчивым ID; accepted snapshot сохраняется на всех mutation gates.",
+        "steps": [
+          "Прочитать authoritative usage/protection.",
+          "Подтвердить mapping групп в CEP.",
+          "Проверить весь набор assignments на overlap/distinct groups.",
+          "Построить placeholder plan и выполнить обычные gates.",
+          "Прочитать стабильные цели и проверить expectedReadBack."
+        ],
+        "expectedEvidence": [
+          "Нет существующих или внутрипакетных пересечений.",
+          "Группы набора подтверждены и различаются.",
+          "Принятые source/time/transform/properties сохранены либо явный конфликт.",
+          "Сдвиг индексов не меняет содержимое."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Offline production fixtures и изолированные проверки; live AEP/установленная CEP не проверяются этим рецептом."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Bounded interval/group/protection production fixtures; отдельная приёмка milestone в docs/placeholder-improvements-report.md.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Никакого автоматического replay или снятия защиты по model booleans.",
+        "Лексический media key не доказывает symlink aliases.",
+        "Визуальная приёмка проводится отдельным workflow."
+      ]
     }
   ]
 }

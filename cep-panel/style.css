@@ -471,6 +471,41 @@ textarea:focus {
   margin: 6px 0 0;
 }
 
+.placeholder-protection-control {
+  border-top: 1px solid #353535;
+  margin-top: 10px;
+  padding-top: 8px;
+}
+
+.placeholder-protection-control summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.placeholder-protection-control .action-group {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.placeholder-protection-control button {
+  font-size: 11px;
+  min-width: 0;
+  white-space: normal;
+}
+
+.placeholder-protection-control .placeholder-option {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  margin: 7px 0;
+}
+
+.placeholder-option input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: auto;
+}
+
 #agentStatus {
   color: #a8a8a8;
   font-size: 11px;

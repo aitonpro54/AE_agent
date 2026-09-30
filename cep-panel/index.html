@@ -59,6 +59,24 @@
           </div>
           <p class="autonomous-session-help">Разрешает MCP выполнять готовые typed-планы с защитой и проверкой. Raw JSX и удаление требуют обычного подтверждения.</p>
           <p id="bridgeHelp" class="bridge-help">Waiting for the local bridge.</p>
+          <details class="placeholder-protection-control">
+            <summary>Принятые плейсхолдеры</summary>
+            <p class="autonomous-session-help">Выделите один плейсхолдер в AE. Принятие защищает его источник, время и transform.</p>
+            <label class="placeholder-option"><input id="placeholderSelectedProperties" type="checkbox" /> Защитить выделенные свойства оформления</label>
+            <div class="action-group">
+              <button id="acceptPlaceholderButton">Принять выбранный плейсхолдер</button>
+              <button id="releasePlaceholderButton">Снять защиту</button>
+            </div>
+            <label>Группа / исполнитель<input id="placeholderGroupId" type="text" maxlength="120" placeholder="Подтверждённое название" /></label>
+            <div class="action-group">
+              <button id="mapPlaceholderGroupButton">Подтвердить группу исходника</button>
+              <button id="refreshPlaceholderProtectionButton">Обновить статус</button>
+            </div>
+            <label class="placeholder-option"><input id="placeholderDistinctGroups" type="checkbox" /> Разные группы у выделенных плейсхолдеров</label>
+            <label class="placeholder-option"><input id="placeholderDisallowOverlap" type="checkbox" /> Исключить повторение фрагментов</label>
+            <button id="applyPlaceholderConstraintsButton">Применить к выделенному набору</button>
+            <p id="placeholderProtectionStatus" class="autonomous-session-help" aria-live="polite">Подключите панель для чтения состояния.</p>
+          </details>
         </section>
 
         <section class="connector-section">

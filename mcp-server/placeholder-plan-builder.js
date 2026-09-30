@@ -24,7 +24,13 @@ const inputSchema = { type: "object", required: ["input"], properties: { input: 
     sourceItem: { type: "object", required: ["itemId", "itemIndex", "name", "type", "duration"],
       properties: { itemId: { type: "integer" }, itemIndex: { type: "integer" }, name: { type: "string" },
         type: { type: "string", enum: ["footage", "comp"] }, duration: { type: "number" } } },
-    rootRange: TIME_RANGE_SCHEMA, sourceRange: TIME_RANGE_SCHEMA
+    rootRange: TIME_RANGE_SCHEMA, sourceRange: TIME_RANGE_SCHEMA,
+    usage: { type: "object", description: "Advisory usage preview; execution always reads a fresh server inventory." },
+    constraints: { type: "object", properties: { distinctGroups: { type: "boolean" }, disallowSourceOverlap: { type: "boolean" },
+      selectedTargets: { type: "array", minItems: 1, maxItems: 32, items: { type: "object", required: ["compItemId", "layerId"], properties: {
+        compItemId: { type: "integer", minimum: 1 }, layerId: { type: "integer", minimum: 1 } } } } } },
+    manualProtection: { type: "array", maxItems: 200, description: "Advisory protected target identities; never authorizes changes or replaces server snapshots.",
+      items: { type: "object", required: ["compItemId", "layerId"], properties: { compItemId: { type: "integer", minimum: 1 }, layerId: { type: "integer", minimum: 1 } } } }
   }
 } } };
 
@@ -37,6 +43,12 @@ function validComp(comp) {
 function buildPlaceholderPlan(input) {
   if (!input || !validComp(input.rootComp) || !validComp(input.targetComp)) return fail("invalid_comp_identity");
   const { rootComp, targetComp, targetLayer, sourceItem, route, rootRange, sourceRange } = input;
+  if (input.constraints !== undefined && (!input.constraints ||
+    ["distinctGroups", "disallowSourceOverlap"].some(key => input.constraints[key] !== undefined && typeof input.constraints[key] !== "boolean") ||
+    input.constraints.selectedTargets !== undefined && (!Array.isArray(input.constraints.selectedTargets) || !input.constraints.selectedTargets.length || input.constraints.selectedTargets.length > 32 ||
+      input.constraints.selectedTargets.some(target => !target || !isId(target.compItemId) || !isId(target.layerId))))) return fail("invalid_placeholder_constraints");
+  if (input.manualProtection !== undefined && (!Array.isArray(input.manualProtection) || input.manualProtection.length > 200 ||
+    input.manualProtection.some(target => !target || !isId(target.compItemId) || !isId(target.layerId)))) return fail("invalid_manual_protection_preview");
   if (!Array.isArray(route) || route.length > 4) return fail("invalid_route");
   if (!targetLayer || !isId(targetLayer.id) || !isId(targetLayer.index) || !isId(targetLayer.sourceItemId)
     || !targetLayer.name || targetLayer.locked !== false || targetLayer.timeRemapEnabled !== false
@@ -81,7 +93,7 @@ function buildPlaceholderPlan(input) {
   }
   const target = { compItemIndex: targetComp.itemIndex, compName: targetComp.name, layerIndices: [targetLayer.index] };
   const plan = {
-    summary: `Fill reviewed placeholder ${targetLayer.name} in ${targetComp.name}.`,
+    summary: `Заполнить проверенный плейсхолдер ${targetLayer.name} в ${targetComp.name}.`,
     risk: "high", mutatesProject: true, requiresCheckpoint: true, requiresFreshEvidenceReview: true,
     steps: [
       { tool: "replace_layer_source", args: {
@@ -95,15 +107,25 @@ function buildPlaceholderPlan(input) {
         expectedSourceItemId: sourceItem.itemId
       } },
       { tool: "get_layer_details", args: { compItemIndex: targetComp.itemIndex,
-        compName: targetComp.name, layerIndex: targetLayer.index } }
+        compName: targetComp.name, layerIndex: targetLayer.index, compItemId: targetComp.itemId, layerId: targetLayer.id,
+        responseView: "placeholder" } }
     ]
   };
-  return { ok: true, plan, frameReview, expectedReadBack: {
+  const expectedReadBack = {
     compItemIndex: targetComp.itemIndex, compItemId: targetComp.itemId, compName: targetComp.name,
     frameRate: targetComp.frameRate, layerIndex: targetLayer.index, layerId: targetLayer.id,
     layerName: targetLayer.name, sourceItemId: sourceItem.itemId, sourceName: sourceItem.name,
-    startTime, inPoint: localRange[0], outPoint: localRange[1], rootRange, sourceRange
-  } };
+    startTime, inPoint: localRange[0], outPoint: localRange[1], rootRange, sourceRange,
+    ...(typeof sourceItem.file === "string" ? { sourceFile: sourceItem.file, footageMissing: false } : {})
+  };
+  plan.expectedReadBack = expectedReadBack;
+  plan.frameReview = frameReview;
+  plan.placeholderAssignments = [{ target: { compItemId: targetComp.itemId, layerId: targetLayer.id },
+    sourceItemId: sourceItem.itemId, sourceRange: [...sourceRange] }];
+  if (input.constraints) plan.placeholderConstraints = { ...input.constraints,
+    selectedTargets: input.constraints.selectedTargets || plan.placeholderAssignments.map(value => value.target) };
+  if (input.manualProtection) plan.manualProtectionPreview = input.manualProtection.map(value => ({ ...value }));
+  return { ok: true, plan, frameReview, expectedReadBack };
 }
 
 module.exports = { buildPlaceholderPlan, inputSchema };

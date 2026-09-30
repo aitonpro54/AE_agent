@@ -40,6 +40,16 @@
   var reloadButton = document.getElementById("reloadButton");
   var autonomousSessionButton = document.getElementById("autonomousSessionButton");
   var autonomousSessionStatusEl = document.getElementById("autonomousSessionStatus");
+  var acceptPlaceholderButton = document.getElementById("acceptPlaceholderButton");
+  var releasePlaceholderButton = document.getElementById("releasePlaceholderButton");
+  var mapPlaceholderGroupButton = document.getElementById("mapPlaceholderGroupButton");
+  var refreshPlaceholderProtectionButton = document.getElementById("refreshPlaceholderProtectionButton");
+  var applyPlaceholderConstraintsButton = document.getElementById("applyPlaceholderConstraintsButton");
+  var placeholderSelectedPropertiesEl = document.getElementById("placeholderSelectedProperties");
+  var placeholderGroupIdEl = document.getElementById("placeholderGroupId");
+  var placeholderDistinctGroupsEl = document.getElementById("placeholderDistinctGroups");
+  var placeholderDisallowOverlapEl = document.getElementById("placeholderDisallowOverlap");
+  var placeholderProtectionStatusEl = document.getElementById("placeholderProtectionStatus");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
   var connectorStatusButton = document.getElementById("connectorStatusButton");
   var connectorEmergencyDisableButton = document.getElementById("connectorEmergencyDisableButton");
@@ -128,6 +138,7 @@
   var panelConnectionId = loadPanelConnectionId();
   var panelConnectionGeneration = 0;
   var autonomousSessionState = null;
+  var placeholderProtectionInFlight = false;
   var panelHeartbeatAt = 0;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
@@ -239,6 +250,7 @@
   }
 
   function renderAutonomousSession() {
+    renderPlaceholderProtectionControls();
     if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
     var state = autonomousSessionState || {};
     autonomousSessionButton.setAttribute("aria-pressed", state.desiredEnabled ? "true" : "false");
@@ -290,6 +302,67 @@
   function toggleAutonomousSession() {
     var state = autonomousSessionState || {};
     setAutonomousSessionEnabled(!state.desiredEnabled);
+  }
+
+  function renderPlaceholderProtectionControls() {
+    var controls = [acceptPlaceholderButton, releasePlaceholderButton, mapPlaceholderGroupButton,
+      refreshPlaceholderProtectionButton, applyPlaceholderConstraintsButton,
+      placeholderSelectedPropertiesEl, placeholderGroupIdEl, placeholderDistinctGroupsEl, placeholderDisallowOverlapEl];
+    controls.forEach(function (control) {
+      if (control) control.disabled = !running || placeholderProtectionInFlight;
+    });
+    if (!running && placeholderProtectionStatusEl) {
+      placeholderProtectionStatusEl.textContent = "Подключите панель для чтения состояния.";
+    }
+  }
+
+  function placeholderProtectionResponse(error, response) {
+    placeholderProtectionInFlight = false;
+    renderPlaceholderProtectionControls();
+    if (!placeholderProtectionStatusEl || !running) return;
+    if (error || !response || response.ok !== true) {
+      placeholderProtectionStatusEl.textContent = "Ошибка: " + (error && error.message || response && (response.error || response.code) || "Состояние не получено");
+      return;
+    }
+    var accepted = Array.isArray(response.acceptedPlaceholders) ? response.acceptedPlaceholders.length : Number(response.acceptedCount || 0);
+    var groups = Array.isArray(response.groupMappings) ? response.groupMappings.length : 0;
+    var drift = Array.isArray(response.drift) ? response.drift.filter(function (item) { return item.ok !== true; }).length : 0;
+    placeholderProtectionStatusEl.textContent = "Защищено: " + accepted + ". Подтверждённых исходников: " + groups +
+      (drift ? ". Конфликтов текущего состояния: " + drift + "." : ".");
+    if (response.constraints) {
+      if (placeholderDistinctGroupsEl) placeholderDistinctGroupsEl.checked = response.constraints.distinctGroups === true;
+      if (placeholderDisallowOverlapEl) placeholderDisallowOverlapEl.checked = response.constraints.disallowSourceOverlap === true;
+    }
+  }
+
+  function refreshPlaceholderProtection() {
+    if (!running || placeholderProtectionInFlight) return;
+    placeholderProtectionInFlight = true;
+    renderPlaceholderProtectionControls();
+    request("GET", "/placeholder/protection", null, placeholderProtectionResponse);
+  }
+
+  function placeholderProtectionAction(action) {
+    if (!running || placeholderProtectionInFlight) return;
+    var body = { action: action };
+    if (action === "accept") body.useSelectedProperties = !!(placeholderSelectedPropertiesEl && placeholderSelectedPropertiesEl.checked);
+    if (action === "map_group") {
+      body.groupId = String(placeholderGroupIdEl && placeholderGroupIdEl.value || "").trim();
+      if (!body.groupId) {
+        if (placeholderProtectionStatusEl) placeholderProtectionStatusEl.textContent = "Введите подтверждённую группу или исполнителя.";
+        return;
+      }
+    }
+    if (action === "constraints") {
+      body.distinctGroups = !!(placeholderDistinctGroupsEl && placeholderDistinctGroupsEl.checked);
+      body.disallowSourceOverlap = !!(placeholderDisallowOverlapEl && placeholderDisallowOverlapEl.checked);
+    }
+    placeholderProtectionInFlight = true;
+    renderPlaceholderProtectionControls();
+    request("POST", "/placeholder/protection", body, function (error, response) {
+      placeholderProtectionResponse(error, response);
+      if (!error && response && response.ok === true) refreshPlaceholderProtection();
+    });
   }
 
   function getBaseUrl() {
@@ -3810,6 +3883,7 @@
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
         refreshAutonomousSession();
+        refreshPlaceholderProtection();
       }
 
       if (response && response.command) {
@@ -3897,6 +3971,11 @@
   diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
   if (autonomousSessionButton) autonomousSessionButton.addEventListener("click", toggleAutonomousSession);
+  if (acceptPlaceholderButton) acceptPlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("accept"); });
+  if (releasePlaceholderButton) releasePlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("release"); });
+  if (mapPlaceholderGroupButton) mapPlaceholderGroupButton.addEventListener("click", function () { placeholderProtectionAction("map_group"); });
+  if (applyPlaceholderConstraintsButton) applyPlaceholderConstraintsButton.addEventListener("click", function () { placeholderProtectionAction("constraints"); });
+  if (refreshPlaceholderProtectionButton) refreshPlaceholderProtectionButton.addEventListener("click", refreshPlaceholderProtection);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
   if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);

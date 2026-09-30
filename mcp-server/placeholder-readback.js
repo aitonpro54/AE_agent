@@ -1,4 +1,6 @@
 "use strict";
+const { pathsEqual } = require("./placeholder-source-recovery");
+const { valueEqual, propertyKey } = require("./placeholder-protection");
 
 const expectedFields = ["compItemIndex", "compItemId", "compName", "frameRate", "layerIndex", "layerId", "layerName",
   "sourceItemId", "sourceName", "startTime", "inPoint", "outPoint"];
@@ -45,11 +47,9 @@ function verifyPlaceholderReadBack(expected, observed) {
   if (typeof expected.frameRate !== "number" || !Number.isFinite(expected.frameRate) || expected.frameRate <= 0) {
     return { ok: false, status: "needs_review", reason: "invalid_expected_frame_rate", checks: [] };
   }
-  exact("comp.itemIndex", expected.compItemIndex, comp.itemIndex);
   exact("comp.itemId", expected.compItemId, comp.itemId);
   exact("comp.name", expected.compName, comp.name);
   exact("comp.frameRate", expected.frameRate, comp.frameRate);
-  exact("layer.index", expected.layerIndex, layer.index);
   exact("layer.id", expected.layerId, layer.id);
   exact("layer.name", expected.layerName, layer.name);
   exact("source.itemId", expected.sourceItemId, source.itemId);
@@ -59,8 +59,25 @@ function verifyPlaceholderReadBack(expected, observed) {
   time("layer.outPoint", expected.outPoint, layer.outPoint);
   exact("layer.stretch", 100, layer.stretch);
   exact("layer.timeRemapEnabled", false, layer.timeRemapEnabled);
+  if (expected.sourceFile !== undefined) checks.push({ field: "source.file", passed: pathsEqual(expected.sourceFile, source.file), expected: expected.sourceFile, observed: source.file ?? null });
+  if (expected.footageMissing !== undefined) exact("source.footageMissing", expected.footageMissing, source.footageMissing);
+  if (expected.transform) for (const [field, wanted] of Object.entries(expected.transform)) {
+    const preview = observed.transform && observed.transform[field];
+    const got = preview && typeof preview === "object" && !Array.isArray(preview) ? preview.value : preview;
+    checks.push({ field: "transform." + field, passed: valueEqual(wanted, got) &&
+      (!preview || typeof preview !== "object" || Array.isArray(preview) || preview.numKeys === 0 && preview.expressionEnabled === false && preview.dimensionsSeparated !== true),
+      expected: wanted, observed: got ?? null });
+  }
+  if (expected.properties) for (const wanted of expected.properties) {
+    let matches = [];
+    try { matches = (observed.properties || []).filter(value => propertyKey(value.path) === propertyKey(wanted.path)); } catch (_error) {}
+    const got = matches.length === 1 ? matches[0] : null;
+    checks.push({ field: "protectedProperty", passed: Boolean(got) && valueEqual(wanted.value, got.value) && got.numKeys === 0 && got.expressionEnabled === false && got.dimensionsSeparated !== true,
+      expected: wanted.value, observed: got && got.value });
+  }
   const ok = checks.every((check) => check.passed);
-  return { ok, status: ok ? "passed" : "needs_review", reason: ok ? null : "read_back_mismatch", checks };
+  return { ok, status: ok ? "passed" : "needs_review", reason: ok ? null : "read_back_mismatch", checks,
+    addressDrift: { compItemIndex: comp.itemIndex !== expected.compItemIndex, layerIndex: layer.index !== expected.layerIndex } };
 }
 
 module.exports = { inputSchema, verifyPlaceholderReadBack };

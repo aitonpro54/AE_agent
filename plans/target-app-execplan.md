@@ -8,13 +8,16 @@ AE Agent 3.1.0: CEP, bridge, typed tools, reviewed recipes/registry, provider la
 
 ### Progress
 - Этап 1 завершён: bounded candidates/optional FFprobe, подтверждённый выбор, guarded relink по ID, адресный независимый read-back, recipe. Далее интервалы/группы/ручные правки → cover/visual → статусы/recovery. Подробности: docs/placeholder-improvements-report.md.
+- Этап 2 завершён: source/occurrence map, явные группы, trusted CEP acceptance, persistent protection и stable-ID rebind. 36 usage fixtures, protection memory/actual JSX/isolated daemon и panel-handler VM PASS. Далее cover/visual → статусы/recovery.
 
 ### Decision Log
 - Расширять существующие tools/library; один writer. Offline fixtures/isolated daemon/JSX VM; AEP/save/reopen/revert, новые зависимости и изменение gates исключены.
 - Два Flash хода дали partial files + timeout; процессы и фактическое состояние сверены, затем ae_specialist закрыл инженерные defects. Последний MCP отказ — дублированный recipe ID, не отказ доступа. Повтор мутаций/live demo отсутствует.
+- Этап 2: после Flash-коррекций UNC canonicalization закрыта specialist; bounded review нашёл два ID/index обхода protection. Unsupported setter aliases теперь отвергаются helper/gate/actual JSX до undo; documented expected IDs разрешаются единообразно.
 
 ### Validation
 - Этап 1: smoke:placeholder-recovery (helper/actual JSX VM/isolated daemon AE0), placeholder-plan, semantic-verification, smoke:solutions, real FFprobe 2 MP4, 7 JS syntax/rules/diff — PASS. Offline proof не live/художественная приёмка.
+- Этап 2: usage 36/36, protection+CEP-role+panel VM, planning, placeholder-plan/recovery, solutions 183, 15 JS syntax/rules/diff — PASS. Два review regressions дают 0 writes/undo; preserving VM writes 2, live AE0.
 
 ## Маршрутизация и самостоятельный мост — 2026-09-30
 

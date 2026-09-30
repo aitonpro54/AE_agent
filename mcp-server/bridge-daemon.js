@@ -10,6 +10,8 @@ const { AsyncLocalStorage } = require("async_hooks");
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
+const placeholderMutationContext = new AsyncLocalStorage();
+const placeholderPlanContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const aiAgents = require("./ai-agents");
@@ -37,6 +39,10 @@ const placeholderPlanBuilder = require("./placeholder-plan-builder");
 const placeholderReadBack = require("./placeholder-readback");
 const placeholderEvidence = require("./placeholder-evidence");
 const placeholderSourceRecovery = require("./placeholder-source-recovery");
+const placeholderProtection = require("./placeholder-protection");
+const placeholderUsage = require("./placeholder-usage");
+const projectStateMemory = require("./project-intent-memory");
+const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -1463,6 +1469,7 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
       throw m100ProtocolError("project_target_mismatch", "Proposal предназначен другому проекту.", {project: {expectedFile: specifiedProject, actualFile: projectInfo.file}});
     }
     planResult.plan = {...planResult.plan, targetProject: {file: projectInfo.file}};
+    await guardPlaceholderPlan(planResult.plan);
   }
   const payload = {
     kind: "agent_plan",
@@ -3649,6 +3656,11 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  const protection = placeholderMutationContext.getStore();
+  if (protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline)) {
+    body = placeholderProtection.aeGuardScript(protection.projectFile, protection.snapshots, protection.bindings) + "\n" + body;
+    if (protection.inventoryBaseline) body = placeholderProtection.aeInventoryGuardScript(protection.inventoryBaseline) + "\n" + body;
+  }
   const guard = autonomousCommandContext.getStore();
   if (guard && guard.projectFile) {
     body = `if (!app.project || !app.project.file || String(app.project.file.fsName).replace(/\\\\/g, "/").toLowerCase() !== ${aeLiteral(guard.projectFile.replace(/\\/g, "/").toLowerCase())}) throw new Error("project_target_mismatch");\n` + body;
@@ -4814,6 +4826,9 @@ const PLANNING_TOOL_NAMES = [
   "get_path_geometry",
   "get_selected_layers",
   "get_selected_properties",
+  "get_placeholder_protection",
+  "get_placeholder_usage",
+  "check_placeholder_assignments",
   "find_project_items",
   "find_comps",
   "list_effect_presets",
@@ -6616,6 +6631,14 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     run.error = "Plan validation failed.";
     return finishRun();
   }
+  if (validation.mutatingCount > 0) {
+    try { run.placeholderPreflight = await guardPlaceholderPlan(prepared.plan); }
+    catch (error) {
+      run.ok = false; run.errorCode = error.code || "placeholder_preflight_failed";
+      run.error = error.message; run.placeholderPreflight = error.details || null;
+      return finishRun();
+    }
+  }
   if (!dryRun && m100PlanRequiresConfirmation(validation) && !options._m100ActionRecord) {
     run.ok = false;
     run.error = "A server-owned M100 action proposal is required to run mutating, destructive, or raw ExtendScript plan steps.";
@@ -6885,9 +6908,10 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
+      () => placeholderPlanContext.run({ plan: prepared.plan, remainingSteps: steps.filter(value => value.index >= step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -7357,6 +7381,275 @@ async function runAgentPlanLogged(source, args) {
   }
 }
 
+async function readPlaceholderInventory(options = {}) {
+  const targets = options.targets || [];
+  if (!Array.isArray(targets) || targets.length > 200) throw new Error("placeholder_read_target_limit");
+  const paths = placeholderProtection.normalizeProtectedPaths(options.protectedProperties || []);
+  const result = await runExtendScriptBody(`
+    // __codexPlaceholderInventory: bounded fresh project identities and timing.
+    ${placeholderProtection.aeSupportScript}
+    var inventory={complete:true,projectFile:app.project.file ? app.project.file.fsName : null,comps:[],sources:[],ignored:[],selectedTargets:[],evidence:[]};
+    var layerCount=0;
+    if(app.project.numItems>2000) { inventory.complete=false; inventory.reason="project_item_budget"; return inventory; }
+    for(var i=1;i<=app.project.numItems;i++) {
+      var item=app.project.item(i);
+      if(item instanceof CompItem) {
+        if(inventory.comps.length>=200) {inventory.complete=false;inventory.reason="comp_budget";break;}
+        var comp={itemId:item.id,itemIndex:i,name:item.name,duration:item.duration,frameRate:item.frameRate,layers:[]};
+        for(var j=1;j<=item.numLayers;j++) {
+          if(++layerCount>5000) {inventory.complete=false;inventory.reason="layer_budget";break;}
+          var layer=item.layer(j); var source=null; try{source=layer.source;}catch(e){}
+          var kind="media";
+          if(layer.matchName==="ADBE Text Layer")kind="text";
+          else if(layer.matchName==="ADBE Vector Layer")kind="shape";
+          else if(layer.matchName==="ADBE Camera Layer")kind="camera";
+          else if(layer.matchName==="ADBE Light Layer")kind="light";
+          else if(layer.adjustmentLayer===true)kind="adjustment";
+          var ref={id:layer.id,index:j,name:layer.name,enabled:layer.enabled,sourceItemId:source ? source.id : null,
+            startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,kind:kind};
+          comp.layers.push(ref);
+          if(kind!=="media")inventory.ignored.push({compItemId:item.id,layerId:layer.id,kind:kind});
+        }
+        inventory.comps.push(comp);
+      } else if(item instanceof FootageItem) {
+        if(inventory.sources.length>=1000) {inventory.complete=false;inventory.reason="source_budget";break;}
+        var sourceType="footage";
+        try {if(item.mainSource.isStill===true)sourceType="still";else if(item.hasVideo===false && item.hasAudio===true)sourceType="audio";}catch(e){}
+        var file=item.file;
+        inventory.sources.push({itemId:item.id,itemIndex:i,name:item.name,type:sourceType,file:file && file.fsName ? file.fsName : null,
+          duration:item.duration,width:item.width,height:item.height,frameRate:item.frameRate,footageMissing:item.footageMissing,
+          hasVideo:item.hasVideo,hasAudio:item.hasAudio});
+      }
+      if(!inventory.complete)break;
+    }
+    var active=app.project.activeItem;
+    if(active instanceof CompItem) {
+      inventory.activeCompItemId=active.id;
+      for(var s=0;s<active.selectedLayers.length && s<33;s++)inventory.selectedTargets.push({compItemId:active.id,layerId:active.selectedLayers[s].id});
+    }
+    var specs=${JSON.stringify(targets)};
+    if(${options.selected === true ? "true" : "false"}) {
+      if(inventory.selectedTargets.length<1 || inventory.selectedTargets.length>32)throw new Error("select_1_to_32_placeholder_layers");
+      specs=[];for(var s=0;s<inventory.selectedTargets.length;s++)specs.push({target:inventory.selectedTargets[s],protectedProperties:${JSON.stringify(paths)}});
+      if(${options.useSelectedProperties === true ? "true" : "false"}) {
+        if(inventory.selectedTargets.length!==1 || !active.selectedProperties || active.selectedProperties.length<1 || active.selectedProperties.length>12)throw new Error("select_1_to_12_properties_on_selected_placeholder");
+        var selectedLayer=__phFindLayer(active,inventory.selectedTargets[0].layerId);var selectedPaths=[];
+        for(var p=0;p<active.selectedProperties.length;p++) {
+          var property=active.selectedProperties[p];var current=property;var segments=[];
+          if(typeof property.numKeys!=="number")throw new Error("unsupported_selected_property_group");
+          for(var depth=0;current && current!==selectedLayer && depth<8;depth++) {
+            if(!current.matchName)throw new Error("selected_property_identity_unavailable");
+            segments.unshift({matchName:current.matchName,propertyIndex:current.propertyIndex});
+            current=current.propertyGroup(1);
+          }
+          if(current!==selectedLayer || !segments.length)throw new Error("selected_property_belongs_to_other_layer_or_depth");
+          selectedPaths.push(segments);
+        }
+        specs[0].protectedProperties=selectedPaths;
+        inventory.selectedProtectedProperties=selectedPaths;
+      }
+    }
+    for(var t=0;t<specs.length;t++) {
+      var spec=specs[t];
+      try {var comp=__phFindComp(spec.target.compItemId);var layer=__phFindLayer(comp,spec.target.layerId);
+        inventory.evidence.push(__phEvidence(comp,layer,spec.protectedProperties||[]));}
+      catch(e){inventory.evidence.push({target:spec.target,unsupported:[String(e)]});}
+    }
+    return inventory;
+  `);
+  return result.result;
+}
+
+function placeholderError(code, details) {
+  const reason = details && (details.conflicts && details.conflicts[0] && details.conflicts[0].reason ||
+    details.changes && details.changes[0] || details.reason);
+  const error = new Error("Плейсхолдеры: " + code + (reason ? " (" + reason + ")" : ""));
+  error.code = code;
+  error.details = details || null;
+  return error;
+}
+function placeholderRootsForTargets(inventory, targets) {
+  const roots = new Set();
+  function visit(id, branch) {
+    if (branch.includes(id) || branch.length > 16) throw placeholderError("unsupported_usage_dependency_cycle_or_depth");
+    const parents = inventory.comps.filter(comp => comp.layers.some(layer => layer.sourceItemId === id && layer.enabled === true));
+    if (!parents.length) roots.add(id);
+    for (const comp of parents) visit(comp.itemId, [...branch, id]);
+  }
+  for (const target of targets) visit(target.compItemId, []);
+  if (roots.size > 32) throw placeholderError("placeholder_root_limit");
+  return [...roots].map(compItemId => ({ compItemId }));
+}
+function freshPlaceholderUsage(inventory, roots, state) {
+  return placeholderUsage.buildSourceUsageMap({ inventory, roots, groupMappings: state.groupMappings });
+}
+function normalizeFreshAssignments(assignments, inventory) {
+  if (!Array.isArray(assignments) || !assignments.length || assignments.length > 32) throw placeholderError("placeholder_assignment_limit");
+  return assignments.map(assignment => {
+    const source = inventory.sources.find(value => value.itemId === assignment.sourceItemId);
+    if (!source || source.type !== "footage" || source.footageMissing !== false ||
+      source.hasVideo !== true || !Array.isArray(assignment.sourceRange) || assignment.sourceRange.length !== 2 ||
+      assignment.sourceRange[1] > source.duration) throw placeholderError("unsupported_assignment_video_source");
+    return { ...assignment, mediaKey: placeholderUsage.mediaKeyForSource(source), groupId: undefined };
+  });
+}
+function checkFreshPlanAssignments(plan, state, inventory, mutations) {
+  const policies = [state.constraints, plan.placeholderConstraints].filter(value => value && (value.distinctGroups || value.disallowSourceOverlap));
+  if (!policies.length) return { ok: true, checks: [] };
+  const desired = JSON.parse(JSON.stringify(inventory));
+  for (const step of mutations) {
+    const tool = step.tool;
+    const args = step.safeArgs || step.args || {};
+    if (tool === "set_layer_transform") continue;
+    if (tool === "set_property_value") {
+      let property;
+      try { property = placeholderProtection.propertyPath(args.propertyPath); } catch (_error) { throw placeholderError("unknown_constrained_property_footprint"); }
+      if (property[0].matchName !== "ADBE Transform Group") throw placeholderError("unknown_constrained_property_footprint");
+      continue;
+    }
+    if (!["replace_layer_source", "set_layer_time_range"].includes(tool)) {
+      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection"].includes(tool)) continue;
+      throw placeholderError("unknown_constrained_mutation_footprint", { tool });
+    }
+    const targets = placeholderProtection.resolveTargets(args, desired);
+    for (const target of targets) {
+      if (tool === "replace_layer_source") target.layer.sourceItemId = placeholderProtection.sourceId(args, desired);
+      else {
+        for (const field of ["startTime", "inPoint", "outPoint"]) if (args[field] !== undefined) target.layer[field] = args[field];
+        if (args.duration !== undefined) target.layer.outPoint = target.layer.inPoint + args.duration;
+      }
+    }
+  }
+  const checks = [];
+  for (const policy of policies) {
+    const targets = policy.selectedTargets || (plan.placeholderAssignments || []).map(value => value.target);
+    if (!Array.isArray(targets) || !targets.length || targets.length > 32) throw placeholderError("constrained_targets_required");
+    const roots = placeholderRootsForTargets(inventory, targets);
+    const baseline = freshPlaceholderUsage(inventory, roots, state);
+    const predicted = freshPlaceholderUsage(desired, roots, state);
+    if (!predicted.ok || !predicted.complete) throw placeholderError("incomplete_predicted_placeholder_usage", predicted);
+    const assignments = targets.map(target => {
+      const matches = predicted.entries.filter(entry => placeholderProtection.targetKey(entry.target) === placeholderProtection.targetKey(target));
+      if (matches.length !== 1) throw placeholderError(matches.length > 1 ? "unsupported_shared_placeholder" : "selected_placeholder_usage_unavailable", { target });
+      const entry = matches[0];
+      return { target, sourceItemId: entry.sourceItemId, mediaKey: entry.mediaKey, sourceRange: entry.sourceRange };
+    });
+    const result = placeholderUsage.checkPlaceholderAssignments({ usage: baseline,
+      assignments: normalizeFreshAssignments(assignments, desired),
+      constraints: { distinctGroups: policy.distinctGroups === true, disallowSourceOverlap: policy.disallowSourceOverlap === true,
+        selectedTargets: targets, groupMappings: state.groupMappings } });
+    checks.push(result);
+    if (!result.ok) throw placeholderError("placeholder_assignment_conflict", result);
+  }
+  return { ok: true, checks };
+}
+async function currentPlaceholderState() {
+  projectStateMemory.loadProjectStateStore();
+  const project = firstToolPayload(await callToolLogged("placeholder-state-read", "get_project_info", {}));
+  const state = projectStateMemory.readProjectState(project && project.file);
+  return { projectFile: project.file, state };
+}
+async function guardPlaceholderPlan(plan, options = {}) {
+  const store = projectStateMemory.loadProjectStateStore();
+  const mutations = (options.steps || plan.steps || []).filter(step => MUTATING_TOOL_NAMES.has(step.tool || step.toolName))
+    .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
+  for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
+  const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
+  if (!mutations.length || !hasState && !plan.placeholderConstraints) return { ok: true, snapshots: [], bindings: [] };
+  const { projectFile, state } = await currentPlaceholderState();
+  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints) return { ok: true, projectFile, snapshots: [], bindings: [] };
+  const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
+    protectedProperties: snapshot.properties.map(prop => prop.path) })) });
+  if (!inventory || inventory.complete !== true || !placeholderSourceRecovery.pathsEqual(projectFile, inventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
+  const protectedCheck = placeholderProtection.checkProtectedSteps({ accepted: state.acceptedPlaceholders, inventory, steps: mutations });
+  if (!protectedCheck.ok) throw placeholderError(protectedCheck.code, protectedCheck);
+  const snapshots = state.acceptedPlaceholders.filter(snapshot => protectedCheck.affected.includes(placeholderProtection.targetKey(snapshot.target)));
+  for (const snapshot of snapshots) {
+    const observed = inventory.evidence.find(value => value.comp && value.layer && value.comp.itemId === snapshot.target.compItemId && value.layer.id === snapshot.target.layerId);
+    const drift = placeholderProtection.compareSnapshot(snapshot, observed, inventory);
+    if (!drift.ok) throw placeholderError(drift.code, drift);
+  }
+  const assignments = checkFreshPlanAssignments(plan, state, inventory, mutations);
+  const after = projectStateMemory.readProjectState(projectFile);
+  if (after.revision !== state.revision) throw placeholderError("project_state_revision_changed");
+  let bindings = protectedCheck.bindings.flatMap(value => value.targets);
+  if (options.bindingStep) {
+    const step = options.bindingStep;
+    if (placeholderProtection.TARGET_SETTERS.has(step.tool)) bindings = placeholderProtection.resolveTargets(step.args, inventory)
+      .map(value => ({ compItemId: value.compItemId, layerId: value.layerId, compItemIndex: value.compItemIndex, layerIndex: value.layerIndex }));
+    else bindings = [];
+  }
+  const result = { ok: true, projectFile, revision: state.revision, snapshots, assignments,
+    bindings, inventoryComplete: true };
+  Object.defineProperty(result, "_inventory", { value: inventory, enumerable: false });
+  if (assignments.checks.length) Object.defineProperty(result, "inventoryBaseline", { value: inventory, enumerable: false });
+  return result;
+}
+async function getPlaceholderProtection() {
+  const { projectFile, state } = await currentPlaceholderState();
+  if (!state.acceptedPlaceholders.length) return { ok: true, projectFile, ...state, drift: [] };
+  const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
+    protectedProperties: snapshot.properties.map(prop => prop.path) })) });
+  const drift = state.acceptedPlaceholders.map(snapshot => placeholderProtection.compareSnapshot(snapshot,
+    inventory.evidence.find(value => value.comp && value.layer && value.comp.itemId === snapshot.target.compItemId && value.layer.id === snapshot.target.layerId), inventory));
+  return { ok: true, projectFile, ...state, drift, inventoryComplete: inventory.complete };
+}
+function rebindPlaceholderArgs(name, args, protection) {
+  if (protection && protection._inventory) placeholderProtection.assertSupportedSetterIdentity(name,args);
+  if (!protection || !protection._inventory || !placeholderProtection.TARGET_SETTERS.has(name) || !args ||
+    !args.expectedCompItemId || !args.expectedLayerId) return args;
+  const targets = placeholderProtection.resolveTargets(args, protection._inventory);
+  const next = { ...args, compItemIndex: targets[0].compItemIndex };
+  if (args.layerIndex !== undefined) next.layerIndex = targets[0].layerIndex;
+  if (args.layerIndices !== undefined) next.layerIndices = targets.map(value => value.layerIndex);
+  if (name === "replace_layer_source" && args.expectedSourceItemId) {
+    const source = [...protection._inventory.sources, ...protection._inventory.comps].find(value => value.itemId === args.expectedSourceItemId);
+    if (!source) throw placeholderError("replacement_source_identity_unavailable");
+    next.sourceItemIndex = source.itemIndex;
+  }
+  return next;
+}
+async function trustedPlaceholderAction(body) {
+  if (body.snapshot !== undefined || body.acceptedPlaceholders !== undefined || body.allowProtectedChanges !== undefined || body.target !== undefined) throw placeholderError("client_acceptance_snapshot_forbidden");
+  const actions = ["accept", "release", "map_group", "constraints"];
+  if (!actions.includes(body.action)) throw placeholderError("unknown_placeholder_panel_action");
+  projectStateMemory.loadProjectStateStore();
+  if (body.useSelectedProperties !== undefined && typeof body.useSelectedProperties !== "boolean") throw placeholderError("use_selected_properties_requires_boolean");
+  const inventory = await readPlaceholderInventory({ selected: true, protectedProperties: body.protectedProperties || [], useSelectedProperties: body.useSelectedProperties === true });
+  const projectFile = inventory.projectFile;
+  const state = projectStateController.read(projectFile);
+  if (!inventory.complete) throw placeholderError("incomplete_acceptance_inventory");
+  if (body.action !== "constraints" && inventory.selectedTargets.length !== 1) throw placeholderError("select_one_placeholder_layer");
+  const evidence = inventory.evidence[0];
+  const target = inventory.selectedTargets[0];
+  let next;
+  if (body.action === "release") next = projectStateController.release(projectFile, target, state.revision);
+  else if (body.action === "accept") {
+    const snapshot = placeholderProtection.snapshotFromEvidence(evidence, inventory, inventory.selectedProtectedProperties || body.protectedProperties || []);
+    next = projectStateController.accept(projectFile, snapshot, state.revision);
+  } else if (body.action === "map_group") {
+    if (typeof body.groupId !== "string" || !body.groupId.trim() || body.groupId.length > 120) throw placeholderError("explicit_group_id_required");
+    if (!evidence || !evidence.layer || !evidence.layer.source) throw placeholderError("selected_video_source_unavailable");
+    const source = inventory.sources.find(value => value.itemId === evidence.layer.source.itemId);
+    if (!source || source.type !== "footage" || source.hasVideo !== true || source.footageMissing !== false) throw placeholderError("unsupported_selected_non_video_source");
+    const mediaKey = placeholderUsage.mediaKeyForSource(source);
+    if (mediaKey === "unknown") throw placeholderError("source_media_identity_unavailable");
+    next = projectStateController.mapGroup(projectFile, { mediaKey, groupId: body.groupId.trim() }, state.revision);
+  } else {
+    if (typeof body.distinctGroups !== "boolean" || typeof body.disallowSourceOverlap !== "boolean") throw placeholderError("explicit_assignment_constraints_required");
+    for (const value of inventory.evidence) {
+      const source = value.layer && value.layer.source && inventory.sources.find(item => item.itemId === value.layer.source.itemId);
+      if (!source || source.type !== "footage" || source.hasVideo !== true || source.footageMissing !== false ||
+        value.layer.stretch !== 100 || value.layer.timeRemapEnabled !== false) throw placeholderError("unsupported_selected_video_timing");
+    }
+    next = projectStateController.setConstraints(projectFile, { distinctGroups: body.distinctGroups, disallowSourceOverlap: body.disallowSourceOverlap,
+      selectedTargets: inventory.selectedTargets }, state.revision);
+  }
+  recordEvent("placeholder_trusted_panel_action", { action: body.action, projectKey: next.projectKey, revision: next.revision, target });
+  return { ok: true, projectKey: next.projectKey, revision: next.revision, acceptedCount: next.acceptedPlaceholders.length,
+    groupMappings: next.groupMappings, constraints: next.constraints, target };
+}
+
 function startHttpBridge() {
   const server = http.createServer((req, res) => {
     Promise.resolve().then(async () => {
@@ -7388,6 +7681,17 @@ function startHttpBridge() {
       return;
     }
     if (req.method === "POST" && res.authRole) req.parsedJsonBody = await readJsonObject(req, HTTP_BODY_LIMIT);
+
+    if (url.pathname === "/placeholder/protection") {
+      if (!requireToken(req, res, url)) return;
+      if (res.authRole !== "panel") { writeJson(res, 403, { ok: false, code: "placeholder_panel_role_required" }); return; }
+      try {
+        if (req.method === "GET") writeJson(res, 200, await getPlaceholderProtection());
+        else if (req.method === "POST") writeJson(res, 200, await trustedPlaceholderAction(await readJsonBody(req)));
+        else writeJson(res, 405, { ok: false, code: "method_not_allowed" });
+      } catch (error) { writeJson(res, 409, { ok: false, code: error.code || error.message, error: error.message, details: error.details }); }
+      return;
+    }
 
     if (url.pathname === "/autonomy/session" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
@@ -8117,6 +8421,28 @@ function startHttpBridge() {
 const tools = [
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
+  {
+    name: "get_placeholder_protection",
+    description: "Read authoritative accepted placeholder snapshots, confirmed group mappings, constraints and fresh drift diagnostics for the current saved project. Cannot accept/release or override protection.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false }
+  },
+  {
+    name: "get_placeholder_usage",
+    description: "Read a fresh bounded video source-interval map for explicit comp IDs. Resolves nested timing and confirmed groups from server Project Intent state; incomplete/unsupported evidence never passes.",
+    inputSchema: { type: "object", properties: { roots: { type: "array", minItems: 1, maxItems: 32,
+      items: { type: "object", properties: { compItemId: { type: "integer", minimum: 1 }, range: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } } }, required: ["compItemId"] } } }, required: ["roots"] }
+  },
+  {
+    name: "check_placeholder_assignments",
+    description: "Check proposed video source intervals/groups against a fresh server inventory and authoritative confirmed group mappings. Client usage/group claims are not authority; no AE mutation.",
+    inputSchema: { type: "object", properties: {
+      assignments: { type: "array", minItems: 1, maxItems: 32, items: { type: "object", properties: {
+        target: { type: "object", properties: { compItemId: { type: "integer", minimum: 1 }, layerId: { type: "integer", minimum: 1 } }, required: ["compItemId", "layerId"] },
+        sourceItemId: { type: "integer", minimum: 1 }, sourceRange: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } }
+      }, required: ["target", "sourceItemId", "sourceRange"] } },
+      constraints: { type: "object", properties: { distinctGroups: { type: "boolean" }, disallowSourceOverlap: { type: "boolean" } } }
+    }, required: ["assignments"] }
+  },
   {
     name: "build_placeholder_plan",
     description: "Build a local preview plan for one reviewed slideshow placeholder from exact comp, layer, source and root/source timing evidence. No AE call or model inference. Re-inspect before proposal, then use normal dry-run and confirmation gates.",
@@ -11511,7 +11837,21 @@ const tools = [
   ...projectSave.createToolDefinitions()
 ];
 
+// Persistent IDs supplement address hints on existing typed surfaces.
+for (const tool of tools) {
+  if (placeholderProtection.TARGET_SETTERS.has(tool.name)) {
+    tool.inputSchema.properties.expectedCompItemId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.expectedLayerId = { type: "integer", minimum: 1 };
+  }
+  if (tool.name === "get_layer_details") {
+    tool.inputSchema.properties.compItemId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.layerId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.protectedProperties = { type: "array", maxItems: 12, items: { type: "array", minItems: 1, maxItems: 8, items: { type: ["string", "object"] } } };
+  }
+}
+
 async function callTool(name, args, executionContext) {
+  const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
   if(name===projectSave.TOOL_NAME){
     try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
@@ -12441,12 +12781,41 @@ async function callTool(name, args, executionContext) {
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
   }
 
+  if (name === "get_placeholder_protection") {
+    try { return toolResult(await getPlaceholderProtection()); }
+    catch (error) { return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true); }
+  }
+  if (name === "get_placeholder_usage" || name === "check_placeholder_assignments") {
+    try {
+      projectStateMemory.loadProjectStateStore();
+      const inventory = await readPlaceholderInventory();
+      const state = inventory.projectFile ? projectStateMemory.readProjectState(inventory.projectFile) : { groupMappings: [] };
+      if (name === "get_placeholder_usage") {
+        if (!Array.isArray(args.roots) || !args.roots.length || args.roots.length > 32) throw placeholderError("explicit_usage_roots_required");
+        const usage = freshPlaceholderUsage(inventory, args.roots, state);
+        return toolResult(usage, !usage.ok);
+      }
+      const assignments = normalizeFreshAssignments(args.assignments, inventory);
+      const selectedTargets = assignments.map(value => value.target);
+      const roots = placeholderRootsForTargets(inventory, selectedTargets);
+      const usage = freshPlaceholderUsage(inventory, roots, state);
+      const check = placeholderUsage.checkPlaceholderAssignments({ usage, assignments,
+        constraints: { distinctGroups: args.constraints && args.constraints.distinctGroups !== false,
+          disallowSourceOverlap: args.constraints && args.constraints.disallowSourceOverlap !== false,
+          selectedTargets, groupMappings: state.groupMappings } });
+      return toolResult({ ...check, authority: "fresh-server-inventory", usageScope: usage.scope }, !check.ok);
+    } catch (error) { return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true); }
+  }
   if (name === "build_placeholder_plan") {
     const result = placeholderPlanBuilder.buildPlaceholderPlan((args || {}).input);
     if (!result.ok) return toolResult(result, true);
     const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
-    return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation,
-      previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true }, !prepared.validation.ok);
+    if (!prepared.validation.ok) return toolResult({ ...result, ok: false, validation: prepared.validation }, true);
+    try {
+      const protection = await guardPlaceholderPlan(result.plan);
+      return toolResult({ ...result, validation: prepared.validation, protection,
+        previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true });
+    } catch (error) { return toolResult({ ok: false, code: error.code || error.message, details: error.details, plan: null }, true); }
   }
 
   if (name === "verify_placeholder_read_back") {
@@ -13569,6 +13938,9 @@ async function callTool(name, args, executionContext) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const compItemId = optionalPositiveInteger(args, "compItemId");
+    const layerId = optionalPositiveInteger(args, "layerId");
+    const protectedProperties = placeholderProtection.normalizeProtectedPaths(args.protectedProperties || []);
     const includeProperties = optionalBoolean(args, "includeProperties", false);
     const propertyDepth = Math.max(0, Math.min(5, Math.floor(optionalNumber(args, "propertyDepth", 1))));
     const propertyLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "propertyLimit", 120))));
@@ -13581,8 +13953,9 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      ${placeholderProtection.aeSupportScript}
+      var comp = ${compItemId === null ? `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})` : `__phFindComp(${compItemId})`};
+      var layer = ${layerId === null ? `comp.layer(${layerIndex})` : `__phFindLayer(comp,${layerId})`};
       if (!layer) throw new Error("Layer not found.");
       var includeProperties = ${includeProperties ? "true" : "false"};
       var includeValues = ${includeValues ? "true" : "false"};
@@ -13594,7 +13967,12 @@ async function callTool(name, args, executionContext) {
         try {
           var prop = group.property(matchName);
           if (!prop) return null;
-          return __codexValuePreview(prop);
+          var preview=__codexValuePreview(prop);
+          preview.numKeys=prop.numKeys;
+          preview.expressionEnabled=prop.expressionEnabled;
+          preview.dimensionsSeparated=prop.dimensionsSeparated===true;
+          preview.isSeparationFollower=prop.isSeparationFollower===true;
+          return preview;
         } catch (__readPropertyError) {
           return null;
         }
@@ -13763,6 +14141,13 @@ async function callTool(name, args, executionContext) {
         } catch (__propertyTreeError) {}
       }
 
+      var protectedPaths=${JSON.stringify(protectedProperties)};
+      var protectedRows=[];
+      for(var pr=0;pr<protectedPaths.length;pr++) {
+        var protectedProperty=__phProperty(layer,protectedPaths[pr]);
+        protectedRows.push({path:protectedPaths[pr],value:__phReadValue(protectedProperty),numKeys:protectedProperty.numKeys,
+          expressionEnabled:protectedProperty.expressionEnabled,dimensionsSeparated:protectedProperty.dimensionsSeparated===true});
+      }
       return {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
@@ -13780,7 +14165,8 @@ async function callTool(name, args, executionContext) {
         masks: masks,
         markers: markers,
         propertyTree: propertyTree,
-        propertyTreeTruncated: propertyState.count >= propertyState.max
+        propertyTreeTruncated: propertyState.count >= propertyState.max,
+        protectedProperties: protectedRows
       };
     `);
     return toolResult(responseView === "placeholder"
@@ -16812,6 +17198,7 @@ async function callTool(name, args, executionContext) {
       var layerIndices = ${aeLiteral(layerIndices)};
       var propertyPath = ${aeLiteral(propertyPath)};
       var requestedValue = ${aeLiteral(value)};
+      ${setterIdentityGuard}
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
       var layerAttributeName = propertyPath.length === 1 ? String(propertyPath[0]) : "";
@@ -17712,6 +18099,7 @@ async function callTool(name, args, executionContext) {
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
+      ${setterIdentityGuard}
       var requestedInPoint = ${inPoint === null ? "null" : inPoint};
       var requestedOutPoint = ${outPoint === null ? "null" : outPoint};
       var requestedDuration = ${duration === null ? "null" : duration};
@@ -17911,6 +18299,7 @@ async function callTool(name, args, executionContext) {
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      ${setterIdentityGuard}
       var sourceItem = __codexResolveProjectItem(${sourceItemIndex === null ? "null" : sourceItemIndex}, ${aeLiteral(sourceItemName)}, ${aeLiteral(sourceItemType)});
       if (!(sourceItem instanceof FootageItem) && !(sourceItem instanceof CompItem)) {
         throw new Error("Replacement source must be footage or a composition.");
@@ -19749,12 +20138,14 @@ async function callTool(name, args, executionContext) {
       if (layer.locked) throw new Error("Layer is locked.");
 
       var positionValue = ${position ? aeLiteral(position) : "null"};
+      ${setterIdentityGuard}
       var scaleValue = ${scale ? aeLiteral(scale) : "null"};
       var anchorPointValue = ${anchorPoint ? aeLiteral(anchorPoint) : "null"};
       var rotationValue = ${rotation === null ? "null" : rotation};
       var opacityValue = ${opacity === null ? "null" : opacity};
 
       app.beginUndoGroup("Codex Set Layer Transform");
+      try {
       var transform = layer.property("ADBE Transform Group");
       if (positionValue !== null) transform.property("ADBE Position").setValue(positionValue);
       if (scaleValue !== null) transform.property("ADBE Scale").setValue(scaleValue);
@@ -19775,8 +20166,8 @@ async function callTool(name, args, executionContext) {
           opacity: transform.property("ADBE Opacity").value
         }
       };
-      app.endUndoGroup();
       return response;
+      } finally { app.endUndoGroup(); }
     `);
     return toolResult(result.result);
   }
@@ -20305,8 +20696,18 @@ async function callToolLogged(source, name, args, executionContext) {
       }
     }
 
+    let placeholderGuard = null;
+    if (MUTATING_TOOL_NAMES.has(name)) {
+      const context = placeholderPlanContext.getStore();
+      const plan = context && context.plan || { steps: [{ tool: name, args: args || {} }] };
+      placeholderGuard = await guardPlaceholderPlan(plan, { steps: context && context.remainingSteps || plan.steps,
+        bindingStep: { tool: name, args: args || {} } });
+      // Resolve explicit persistent identities to current address hints. An index
+      // shift alone is not a content conflict; AE still rechecks the binding.
+      args = rebindPlaceholderArgs(name, args, placeholderGuard);
+    }
     const checkpoint = name===projectSave.TOOL_NAME ? null : await maybeCreateMutationCheckpoint(args || {}, name);
-    const result = await callTool(name, args, executionContext || null);
+    const result = await placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null));
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
     resultWithCheckpoint = await autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {}));
@@ -20356,16 +20757,23 @@ async function callToolLogged(source, name, args, executionContext) {
 }
 
 module.exports = {
-  async prepareToolScript(name, args, fixtureResult = null) {
+  async preparePlaceholderInventoryScript(options = {}) {
+    const prepared = { script: null, fixtureResult: null };
+    await scriptPreparationContext.run(prepared, () => readPlaceholderInventory(options));
+    return prepared;
+  },
+  async prepareToolScript(name, args, fixtureResult = null, protection = null) {
     if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details",
       "set_comp_properties", "set_comp_work_area", "get_comp_details", "find_project_items", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
       "precompose_layers", "replace_layer_source", "relink_footage_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
       "create_shape_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "get_path_geometry", "set_path_geometry", "duplicate_layer",
-      "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp",
+      "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp", "set_layer_transform",
       "apply_keyframe_ease", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status", "align_layers_to_time"
     ].includes(name)) throw new Error("Script preparation unsupported for this tool.");
     const prepared = { script: null, result: null, fixtureResult };
-    await scriptPreparationContext.run(prepared, async () => { prepared.result = await callTool(name, args); });
+    args = rebindPlaceholderArgs(name, args, protection);
+    await scriptPreparationContext.run(prepared, () => placeholderMutationContext.run(protection,
+      async () => { prepared.result = await callTool(name, args); }));
     return prepared;
   },
   requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult
