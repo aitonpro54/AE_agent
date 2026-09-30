@@ -56,8 +56,9 @@ raw JSX, destructive plans, `Agent Hardcore` и replay прежнего proposal
 
 Уточнение маршрутизации от 30 сентября 2026 года: действующая политика описана
 в `AGENTS.md`, [маршруте](model-routing.md) и установленном `ae-task-routing`.
-Диспетчер — Sol 6.1/high; большинство средних задач — Flash 3.8/high под его
-контролем. `ae_specialist` — Sol 6.1/xhigh; `ae_architect` — Sol 6.1/ultra;
+Модель/effort чата свободно выбирает пользователь; Sol 6.1/high рекомендован
+для диспетчеризации. Средние задачи — Flash 3.8/high под контролем модели чата.
+`ae_specialist` — Sol 6.1/xhigh; `ae_architect` — Sol 6.1/ultra;
 `ae_escalation` — Astra/high только после неудачи Sol/ultra. Scout/operator —
 Luna/medium для простых самостоятельных поручений; reviewer — Sol 6.1/high.
 Для одного короткого вызова отдельный агент не нужен. Terra исключена из маршрута.
