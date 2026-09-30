@@ -87,6 +87,7 @@
   var recoverLastPlanButton = document.getElementById("recoverLastPlanButton");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
+  var reconcilePlanRunButton = document.getElementById("reconcilePlanRunButton");
   var prepareDevRequestButton = document.getElementById("prepareDevRequestButton");
   var chatHistorySelect = document.getElementById("chatHistorySelect");
   var newChatButton = document.getElementById("newChatButton");
@@ -129,6 +130,7 @@
   var currentPlanSyncAt = 0;
   var currentPlanSyncInFlight = false;
   var lastPlanRunResult = null;
+  var planReconcileInFlight = false;
   var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
@@ -434,7 +436,7 @@
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
     if (body !== null && body !== undefined) {
@@ -2715,6 +2717,7 @@
   }
 
   function updateChatAvailability() {
+    renderPlanReconciliationControl();
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     var hardcoreMode = chatModeEl.value === CHAT_MODE_HARDCORE;
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
@@ -3288,11 +3291,12 @@
       if (!lastAcceptedDryRun.runId || !lastAcceptedDryRun.planKey) lastAcceptedDryRun = null;
     }
     window.__aeAgentLastAcceptedDryRun = lastAcceptedDryRun;
+    renderPlanReconciliationControl();
   }
 
   function showPlanRunFinishedStatus(dryRun, run, failed) {
     var label = dryRun ? "Dry run" : "Run";
-    var ok = run && run.ok && !failed;
+    var ok = run && !planRunNeedsReview(run) && !failed;
     var validation = lastPlanResult && lastPlanResult.planValidation ? lastPlanResult.planValidation : null;
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var tone = ok ? (mutatingCount > 0 ? "mutating" : "read-only") : "blocked";
@@ -3317,16 +3321,72 @@
     return parts.join("\n");
   }
 
+  function planRunNeedsReview(run) {
+    if (!run || !run.ok) return true;
+    var outcome = run.outcome;
+    return Boolean(outcome && (outcome.mutation && (outcome.mutation.status === "unknown" || outcome.mutation.status === "failed") || outcome.verification && outcome.verification.status !== "passed" && outcome.verification.status !== "not_required"));
+  }
+
+  function formatRunOutcome(outcome) {
+    if (!outcome) return "";
+    var execution = { not_started: "не началось", completed: "завершено", failed: "завершилось ошибкой", unknown: "результат неизвестен" };
+    var mutation = { not_started: "не начались", applied: "выполнены", unknown: "результат неизвестен — требуется сверка", failed: "завершились ошибкой", not_requested: "не планировались" };
+    var verification = { not_required: "не требовалась", pending: "не завершена", passed: "пройдена", failed: "не прошла", insufficient: "не хватает доказательств" };
+    var lines = [];
+    if (outcome.execution) lines.push("Выполнение: " + (execution[outcome.execution.status] || outcome.execution.status));
+    if (outcome.mutation) {
+      var counts = outcome.mutation.counts;
+      var noMutations = counts && !Number(counts.applied || 0) && !Number(counts.unknown || 0) && !Number(counts.failed || 0) && !Number(counts.not_started || 0);
+      lines.push("Изменения: " + (noMutations ? "не планировались" : mutation[outcome.mutation.status] || outcome.mutation.status));
+    }
+    if (outcome.verification) lines.push("Проверка: " + (verification[outcome.verification.status] || outcome.verification.status));
+    if (outcome.coverage) lines.push("Охват доказательств: " + ({complete:"полный",incomplete:"неполный",not_required:"не требовался"}[outcome.coverage.status] || outcome.coverage.status));
+    var original = outcome.execution && outcome.execution.originalError;
+    if (original) lines.push("Исходная ошибка: " + (original.code || "") + (original.message ? " — " + original.message : ""));
+    return lines.join("\n");
+  }
+
+  function renderPlanReconciliationControl() {
+    if (!reconcilePlanRunButton) return;
+    var run = lastPlanRunResult;
+    reconcilePlanRunButton.disabled = !running || chatInFlight || planReconcileInFlight || !run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0);
+    reconcilePlanRunButton.textContent = planReconcileInFlight ? "Сверяю..." : "Сверить результат";
+  }
+
+  function reconcileLastPlanRun() {
+    var run = lastPlanRunResult;
+    if (!running || chatInFlight || planReconcileInFlight || !run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0)) return;
+    var runId = run.id;
+    planReconcileInFlight = true;
+    chatInFlight = true;
+    updateChatAvailability();
+    request("POST", "/tools/call", {name:"reconcile_plan_run",arguments:{runId:runId}}, function (error, response) {
+      planReconcileInFlight = false;
+      chatInFlight = false;
+      updateChatAvailability();
+      if (!running) return;
+      var result = null;
+      try { if (response && response.result && !response.result.isError) result = JSON.parse(response.result.content[0].text); } catch (_parseError) {}
+      if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); return; }
+      var lines = ["Сверка запуска " + runId + ": " + (result.status === "reconciled" ? "завершена" : "не завершена")];
+      var names = {applied:"ожидаемые значения подтверждены",not_applied:"изменение не применено",unknown:"результат неизвестен"};
+      (result.steps || []).forEach(function (step) { lines.push("Шаг " + step.index + " (" + step.tool + "): " + (names[step.mutationStatus] || step.mutationStatus)); });
+      if (result.reasonCode) lines.push("Причина: " + result.reasonCode);
+      lines.push("Сверка выполнена без повторных изменений. Исходный результат запуска сохранён.");
+      if (lastPlanRunResult && lastPlanRunResult.id === runId) lastPlanRunResult.reconciliation = result;
+      appendChatMessage("assistant", lines.join("\n"));
+    });
+  }
+
   function formatPlanRun(run) {
     if (!run) return "No run result.";
     var lines = [];
     var runValidation = run.validation || null;
     var runSteps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
     var runMutatingCount = runValidation ? Number(runValidation.mutatingCount || 0) : 0;
-    lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
+    lines.push((run.dryRun ? "Проверка плана" : "Результат запуска") + ": " + (planRunNeedsReview(run) ? "требуется проверка" : "готов"));
     if (run.outcome) {
-      lines.push("Проверка: " + run.outcome.verification.status);
-      if (run.outcome.coverage) lines.push("Охват доказательств: " + run.outcome.coverage.status);
+      lines.push(formatRunOutcome(run.outcome));
     }
     if (!run.ok && diagnosticFromBody({ run: run })) {
       lines.push(formatM100DiagnosticBody({ run: run }, run.error || "Run failed."));
@@ -4026,6 +4086,7 @@
   runPlanButton.addEventListener("click", function () {
     runLastPlan(false);
   });
+  if (reconcilePlanRunButton) reconcilePlanRunButton.addEventListener("click", reconcileLastPlanRun);
   if (prepareDevRequestButton) prepareDevRequestButton.addEventListener("click", prepareDevRequest);
   newChatButton.addEventListener("click", startNewChat);
   clearChatButton.addEventListener("click", clearActiveChat);

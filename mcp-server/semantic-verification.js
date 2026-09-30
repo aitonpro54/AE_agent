@@ -40,6 +40,7 @@ const MUTATING_TOOLS = new Set([
   "set_effect_enabled",
   "add_property_to_essential_graphics",
   "fit_layer_to_comp",
+  "set_layer_transform",
   "set_property_value",
   "set_effect_property",
   "set_layer_metadata",
@@ -101,6 +102,7 @@ const READ_BACK_TOOLS = new Set([
   "list_effects",
   "get_comp_details",
   "get_layer_details",
+  "get_property_value",
   "get_effect_details",
   "get_layer_essential_properties",
   "get_essential_graphics_controllers",
@@ -196,7 +198,7 @@ function payloadForStep(step) {
 }
 
 function isMutatingStep(step) {
-  return Boolean(step && (step.mutatesProject === true || MUTATING_TOOLS.has(step.tool)));
+  return Boolean(step && (step.mutating === true || step.mutatesProject === true || MUTATING_TOOLS.has(step.tool) || /^run_extendscript(?:_file)?$/.test(step.tool)));
 }
 
 function isReadBackStep(step) {
@@ -507,12 +509,22 @@ function propertyPathTailIdentityMatches(actualPath, expectedPath) {
 
 function positiveIdentityIndex(value) {
   if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "number" && !(typeof value === "string" && /^[1-9]\d*$/.test(value))) return null;
   const index = numberValue(value);
-  return index !== null && Number.isInteger(index) && index > 0 ? index : null;
+  return index !== null && Number.isSafeInteger(index) && index > 0 ? index : null;
+}
+
+function persistentId(value, first, second) {
+  if (!isPlainObject(value)) return null;
+  const fields = [first, second].filter(key => hasOwn(value, key));
+  const ids = fields.map(key => positiveIdentityIndex(value[key]));
+  return fields.length && ids.every(id => id !== null && id === ids[0]) ? ids[0] : null;
 }
 
 function compMatchesRequest(comp, args) {
   if (!isPlainObject(comp)) return false;
+  const expectedId = persistentId(args, "expectedCompItemId", "compItemId");
+  if (hasOwn(args, "expectedCompItemId") || hasOwn(args, "compItemId")) return expectedId !== null && persistentId(comp, "itemId", "id") === expectedId;
   if (positiveIdentityIndex(args.compItemIndex) !== null && positiveIdentityIndex(comp.itemIndex) !== positiveIdentityIndex(args.compItemIndex)) return false;
   if (args.compName && comp.name !== args.compName) return false;
   return positiveIdentityIndex(comp.itemIndex) !== null || Boolean(comp.name);
@@ -520,6 +532,8 @@ function compMatchesRequest(comp, args) {
 
 function sameCompIdentity(left, right) {
   if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const leftId = persistentId(left, "itemId", "id"), rightId = persistentId(right, "itemId", "id");
+  if ([left, right].some(value => hasOwn(value, "itemId") || hasOwn(value, "id"))) return leftId !== null && rightId !== null && leftId === rightId;
   const leftIndex = positiveIdentityIndex(left.itemIndex);
   const rightIndex = positiveIdentityIndex(right.itemIndex);
   if ((leftIndex !== null || rightIndex !== null) &&
@@ -529,18 +543,56 @@ function sameCompIdentity(left, right) {
 }
 
 function compBinding(comp) {
-  return isPlainObject(comp) ? { itemIndex: positiveIdentityIndex(comp.itemIndex), name: comp.name || null } : null;
+  return isPlainObject(comp) ? { itemId: persistentId(comp, "itemId", "id"), itemIndex: positiveIdentityIndex(comp.itemIndex), name: comp.name || null } : null;
 }
 
 function layerBinding(layer) {
   return isPlainObject(layer) ? { index: positiveIdentityIndex(layer.index), id: layer.id || null, name: layer.name || null } : null;
 }
 
-function readBackStepMatchesTarget(step, observedComp, args, layerIndex) {
+function expectedLayerIdentity(args, position = 0) {
+  if (Array.isArray(args.expectedLayerIds)) return positiveIdentityIndex(args.expectedLayerIds[position]);
+  return persistentId(args, "expectedLayerId", "layerId");
+}
+
+function layerMatchesRequest(layer, args, layerIndex, position = 0) {
+  if (!isPlainObject(layer)) return false;
+  const expectedId = expectedLayerIdentity(args, position);
+  return hasOwn(args, "expectedLayerId") || hasOwn(args, "layerId") || hasOwn(args, "expectedLayerIds")
+    ? expectedId !== null && positiveIdentityIndex(layer.id) === expectedId : positiveIdentityIndex(layer.index) === layerIndex;
+}
+
+function sameLayerIdentity(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const leftId = positiveIdentityIndex(left.id), rightId = positiveIdentityIndex(right.id);
+  if (leftId !== null || rightId !== null) return leftId !== null && rightId !== null && leftId === rightId;
+  return positiveIdentityIndex(left.index) !== null && positiveIdentityIndex(left.index) === positiveIdentityIndex(right.index);
+}
+
+function readTargetFromResult(args, comp, layer, position = 0) {
+  const target = {...args};
+  const compId = persistentId(comp, "itemId", "id"), layerId = positiveIdentityIndex(layer && layer.id);
+  if (!hasOwn(args, "expectedCompItemId") && !hasOwn(args, "compItemId") && compId !== null) target.expectedCompItemId = compId;
+  if (!hasOwn(args, "expectedLayerId") && !hasOwn(args, "layerId") && !hasOwn(args, "expectedLayerIds") && layerId !== null) target.expectedLayerId = layerId;
+  return target;
+}
+
+function readBackStepMatchesTarget(step, observedComp, args, layerIndex, observedLayer) {
   const readArgs = step && step.args || {};
-  if (positiveIdentityIndex(readArgs.compItemIndex) !== null && positiveIdentityIndex(readArgs.compItemIndex) !== positiveIdentityIndex(observedComp && observedComp.itemIndex)) return false;
-  if (readArgs.compName && readArgs.compName !== (observedComp && observedComp.name)) return false;
-  if (positiveIdentityIndex(readArgs.layerIndex) !== null && positiveIdentityIndex(readArgs.layerIndex) !== layerIndex) return false;
+  if (hasOwn(args, "time") && (!hasOwn(readArgs, "time") || typeof readArgs.time !== "number" || !Number.isFinite(readArgs.time) ||
+    typeof args.time !== "number" || !Number.isFinite(args.time) || !nearlyEqual(readArgs.time, args.time))) return false;
+  const readCompId = positiveIdentityIndex(readArgs.compItemId || readArgs.expectedCompItemId);
+  if (readCompId !== null && !compMatchesRequest(observedComp, {expectedCompItemId: readCompId})) return false;
+  // Persistent IDs make project/layer indices address hints; property indices
+  // below remain part of the exact composite property identity.
+  if (readCompId === null && positiveIdentityIndex(args.expectedCompItemId || args.compItemId) === null) {
+    if (positiveIdentityIndex(readArgs.compItemIndex) !== null && positiveIdentityIndex(readArgs.compItemIndex) !== positiveIdentityIndex(observedComp && observedComp.itemIndex)) return false;
+    if (readArgs.compName && readArgs.compName !== (observedComp && observedComp.name)) return false;
+  }
+  const readLayerId = positiveIdentityIndex(readArgs.layerId || readArgs.expectedLayerId);
+  if (readLayerId !== null && positiveIdentityIndex(observedLayer && observedLayer.id) !== readLayerId) return false;
+  if (readLayerId === null && positiveIdentityIndex(args.expectedLayerId || args.layerId) === null && !Array.isArray(args.expectedLayerIds) &&
+    positiveIdentityIndex(readArgs.layerIndex) !== null && positiveIdentityIndex(readArgs.layerIndex) !== layerIndex) return false;
   const path = Array.isArray(args.propertyPath) ? args.propertyPath : [];
   const effect = path.length > 1 && isPlainObject(path[0]) && path[0].matchName === "ADBE Effect Parade" ? path[1] : null;
   if (effect && isPlainObject(effect)) {
@@ -709,6 +761,28 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
 function stepOrder(step, fallback) {
   const number = Number(step && step.index);
   return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function withServerIndependentReads(steps) {
+  const expanded = [], maxReads = 200;
+  let readCount = 0;
+  for (const [position, step] of steps.entries()) {
+    expanded.push(step);
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property"].includes(step.tool)) continue;
+    const reads = Array.isArray(step.independentReadBack) ? step.independentReadBack : [];
+    if (reads.length > 50 || readCount + reads.length > maxReads) continue;
+    const order = stepOrder(step, position + 1);
+    for (const [readPosition, read] of reads.entries()) {
+      // This is runner metadata, separate from payload.verification supplied by
+      // AE. Only the server can populate it from an actual typed read operation.
+      if (!isPlainObject(read) || read.source !== "server_typed_readback" || read.status !== "completed" ||
+        !Number.isFinite(Date.parse(read.observedAt)) || !READ_BACK_TOOLS.has(read.tool) || isMutatingStep(read) ||
+        !isPlainObject(read.args) || !isPlainObject(read.result)) continue;
+      expanded.push({...read, index: order + (readPosition + 1) / (reads.length + 1), title: `Independent ${read.tool} after ${step.tool}`});
+      readCount++;
+    }
+  }
+  return expanded;
 }
 
 function collectReadBackEvidence(steps, afterOrder, beforeOrder) {
@@ -1191,31 +1265,32 @@ function checkSetPropertyValue(checks, step, payload, evidence) {
   for (const [position, layerIndex] of targets.entries()) {
     const resultLayer = resultLayers[position];
     const resultProperty = resultProperties[position];
-    const resultMatch = resultShapeValid && compMatchesRequest(payload.comp, args) &&
-      positiveIdentityIndex(resultLayer && resultLayer.index) === layerIndex &&
-      isPlainObject(resultProperty) && (!resultProperty.layer || positiveIdentityIndex(resultProperty.layer.index) === layerIndex) &&
-      propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, args.propertyPath) &&
-      propertyValueMatches(args.value, resultProperty.value, 0.01);
+    const readTargetArgs = readTargetFromResult(args, payload.comp, resultLayer, position);
+    const resultIdentity = resultShapeValid && compMatchesRequest(payload.comp, args) &&
+      layerMatchesRequest(resultLayer, args, layerIndex, position) &&
+      isPlainObject(resultProperty) && (!resultProperty.layer || sameLayerIdentity(resultLayer, resultProperty.layer)) &&
+      propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, args.propertyPath);
+    const resultMatch = resultIdentity && propertyValueMatches(args.value, resultProperty.value, 0.01);
     let readBack = null;
+    let knownMismatch = resultIdentity && !resultMatch;
     for (const candidate of evidence.readBack.propertyReadbacks || []) {
-      if (!compMatchesRequest(candidate.comp, args) || !sameCompIdentity(payload.comp, candidate.comp) ||
-        positiveIdentityIndex(candidate.layer && candidate.layer.index) !== layerIndex ||
-        !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, args, layerIndex) ||
+      if (!compMatchesRequest(candidate.comp, readTargetArgs) || !sameCompIdentity(payload.comp, candidate.comp) ||
+        !layerMatchesRequest(candidate.layer, readTargetArgs, layerIndex, position) || !sameLayerIdentity(resultLayer, candidate.layer) ||
+        !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, readTargetArgs, layerIndex, candidate.layer) ||
         !propertyPathIdentityMatches(candidate.property.propertyPath, args.propertyPath) ||
         !propertyPathIdentityMatches(candidate.property.propertyPath, resultProperty && resultProperty.propertyPath) ||
-        !propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, candidate.property.propertyPath) ||
-        !propertyValueMatches(args.value, candidate.property.value, 0.01)) continue;
-      if (resultLayer && resultLayer.id && candidate.layer.id && String(resultLayer.id) !== String(candidate.layer.id)) continue;
+        !propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, candidate.property.propertyPath)) continue;
+      if (!propertyValueMatches(args.value, candidate.property.value, 0.01)) { knownMismatch = true; continue; }
       readBack = candidate;
       break;
     }
     if (!readBack && layerAttribute) {
       for (const readStep of evidence.readBack.rawSteps || []) {
         const observed = payloadForStep(readStep);
-        if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, args) ||
+        if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, readTargetArgs) ||
           !sameCompIdentity(payload.comp, observed.comp) ||
-          positiveIdentityIndex(observed.layer && observed.layer.index) !== layerIndex ||
-          !readBackStepMatchesTarget(readStep, observed.comp, args, layerIndex) ||
+          !layerMatchesRequest(observed.layer, readTargetArgs, layerIndex, position) || !sameLayerIdentity(resultLayer, observed.layer) ||
+          !readBackStepMatchesTarget(readStep, observed.comp, readTargetArgs, layerIndex, observed.layer) ||
           !hasOwn(observed.layer, layerAttribute) ||
           !propertyValueMatches(args.value, observed.layer[layerAttribute], 0.01)) continue;
         readBack = { stepIndex: readStep.index, stepTool: readStep.tool, stepStatus: readStep.status,
@@ -1231,11 +1306,12 @@ function checkSetPropertyValue(checks, step, payload, evidence) {
       observed: resultMatch ? `${propertyPathText(resultProperty.propertyPath)} = ${compactText(stableStringify(resultProperty.value), 80)}`
         : "missing or mismatched property target/value",
       passed: Boolean(resultMatch && readBack),
+      status: resultMatch && readBack ? "passed" : knownMismatch ? "failed" : "needs_review",
       evidence: readBack ? readBack.source : "No matching post-run property read-back for this comp, layer, path and value.",
       binding: {
         mutationStep: step.index, mutationStatus: step.status,
-        target: { compItemIndex: args.compItemIndex || null, compName: args.compName || null,
-          layerIndex, propertyPath: args.propertyPath },
+        target: { compItemId: args.expectedCompItemId || args.compItemId || null, compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+          layerId: expectedLayerIdentity(args, position), layerIndex, propertyPath: args.propertyPath },
         result: resultProperty ? { comp: compBinding(payload.comp), layer: layerBinding(resultLayer), propertyPath: resultProperty.propertyPath } : null,
         readBack: readBack ? { stepIndex: readBack.stepIndex, tool: readBack.stepTool,
           status: readBack.stepStatus, comp: compBinding(readBack.comp), layer: layerBinding(readBack.layer),
@@ -1257,24 +1333,27 @@ function propertyPathContainsEffectIdentity(propertyPath, args) {
   });
 }
 
-function effectPropertyMatchesArgs(property, args) {
+function effectPropertyIdentityMatches(property, args) {
   return Boolean(property) &&
     propertyPathContainsEffectIdentity(property.propertyPath, args) &&
-    propertyPathTailIdentityMatches(property.propertyPath, args.propertyPath) &&
-    propertyValueMatches(args.value, property.value, 0.01);
+    propertyPathTailIdentityMatches(property.propertyPath, args.propertyPath);
 }
 
-function observedEffectPropertyValueEvidence(evidence, args, payload) {
+function effectPropertyMatchesArgs(property, args) {
+  return effectPropertyIdentityMatches(property, args) && propertyValueMatches(args.value, property.value, 0.01);
+}
+
+function observedEffectPropertyValueEvidence(evidence, args, payload, requireValue = true) {
   if (!evidence || !Array.isArray(evidence.propertyReadbacks)) return null;
   const layerIndex = positiveIdentityIndex(args.layerIndex);
+  const readTargetArgs = readTargetFromResult(args, payload.comp, payload.layer);
   for (const candidate of evidence.propertyReadbacks) {
-    if (!compMatchesRequest(candidate.comp, args) || !sameCompIdentity(payload.comp, candidate.comp) ||
-      positiveIdentityIndex(candidate.layer && candidate.layer.index) !== layerIndex ||
-      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, args, layerIndex) ||
-      !effectPropertyMatchesArgs(candidate.property, args) ||
+    if (!compMatchesRequest(candidate.comp, readTargetArgs) || !sameCompIdentity(payload.comp, candidate.comp) ||
+      !layerMatchesRequest(candidate.layer, readTargetArgs, layerIndex) || !sameLayerIdentity(payload.layer, candidate.layer) ||
+      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, readTargetArgs, layerIndex, candidate.layer) ||
+      !(requireValue ? effectPropertyMatchesArgs(candidate.property, args) : effectPropertyIdentityMatches(candidate.property, args)) ||
       !propertyPathIdentityMatches(candidate.property.propertyPath, payload.property && payload.property.propertyPath) ||
       !propertyPathIdentityMatches(payload.property && payload.property.propertyPath, candidate.property.propertyPath)) continue;
-    if (payload.layer && payload.layer.id && candidate.layer.id && String(payload.layer.id) !== String(candidate.layer.id)) continue;
     return candidate;
   }
   return null;
@@ -1284,10 +1363,13 @@ function checkSetEffectProperty(checks, step, payload, evidence) {
   const args = step.args || {};
   const effect = payload.effect || {};
   const property = payload.property || {};
-  const resultMatches = compMatchesRequest(payload.comp, args) &&
-    positiveIdentityIndex(payload.layer && payload.layer.index) === positiveIdentityIndex(args.layerIndex) &&
-    effectMatchesArgs(effect, args) && effectPropertyMatchesArgs(property, args);
+  const resultIdentity = compMatchesRequest(payload.comp, args) &&
+    layerMatchesRequest(payload.layer, args, positiveIdentityIndex(args.layerIndex)) &&
+    effectMatchesArgs(effect, args) && effectPropertyIdentityMatches(property, args);
+  const resultMatches = resultIdentity && propertyValueMatches(args.value, property.value, 0.01);
   const readBackEvidence = observedEffectPropertyValueEvidence(evidence.readBack, args, payload);
+  const identityReadBack = observedEffectPropertyValueEvidence(evidence.readBack, args, payload, false);
+  const knownMismatch = resultIdentity && (!resultMatches || identityReadBack && !propertyValueMatches(args.value, identityReadBack.property.value, 0.01));
 
   pushCheck(checks, {
     id: `${step.index || "step"}:${step.tool}:value`,
@@ -1297,17 +1379,68 @@ function checkSetEffectProperty(checks, step, payload, evidence) {
       ? `${effect.propertyIndex}:${effect.name || effect.matchName || "effect"} ${propertyPathText(property.propertyPath)} = ${compactText(stableStringify(property.value), 80)}`
       : "missing or mismatched effect/property identity or value",
     passed: resultMatches && Boolean(readBackEvidence),
+    status: resultMatches && readBackEvidence ? "passed" : knownMismatch ? "failed" : "needs_review",
     evidence: readBackEvidence ? readBackEvidence.source : "No post-run get_effect_details read-back matched the exact set_effect_property target.",
     binding: {
       mutationStep: step.index, mutationStatus: step.status,
-      target: { compItemIndex: args.compItemIndex || null, compName: args.compName || null,
-        layerIndex: args.layerIndex, propertyPath: args.propertyPath },
+      target: { compItemId: args.expectedCompItemId || args.compItemId || null, compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+        layerId: expectedLayerIdentity(args), layerIndex: args.layerIndex, propertyPath: args.propertyPath },
       result: { comp: compBinding(payload.comp), layer: layerBinding(payload.layer), propertyPath: property.propertyPath || null },
       readBack: readBackEvidence ? { stepIndex: readBackEvidence.stepIndex, tool: readBackEvidence.stepTool,
         status: readBackEvidence.stepStatus, comp: compBinding(readBackEvidence.comp),
         layer: layerBinding(readBackEvidence.layer), propertyPath: readBackEvidence.property.propertyPath } : null
     }
   });
+}
+
+const TRANSFORM_FIELDS = ["position", "scale", "anchorPoint", "rotation", "opacity"];
+
+function finiteTransformValue(value, field) {
+  if (isPlainObject(value)) {
+    if (!hasOwn(value, "value") || value.truncated === true || value.kind && !["number", "array"].includes(value.kind)) return null;
+    value = value.value;
+  }
+  if (["position", "scale", "anchorPoint"].includes(field)) {
+    return Array.isArray(value) && [2, 3].includes(value.length) && value.every(n => typeof n === "number" && Number.isFinite(n)) ? value : null;
+  }
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function transformValuesMatch(expected, observed, field) {
+  const a = finiteTransformValue(expected, field), b = finiteTransformValue(observed, field);
+  if (a === null || b === null) return false;
+  return Array.isArray(a) ? Array.isArray(b) && a.length === b.length && a.every((n, i) => nearlyEqual(n, b[i])) : nearlyEqual(a, b);
+}
+
+function checkSetLayerTransform(checks, step, payload, evidence) {
+  const args = step.args || {}, fields = TRANSFORM_FIELDS.filter(field => hasOwn(args, field));
+  const resultComp = payload.comp, resultLayer = payload.layer;
+  const resultIdentity = compMatchesRequest(resultComp, args) && layerMatchesRequest(resultLayer, args, positiveIdentityIndex(args.layerIndex)) &&
+    positiveIdentityIndex(resultComp && (resultComp.itemId === undefined ? resultComp.id : resultComp.itemId)) !== null && positiveIdentityIndex(resultLayer && resultLayer.id) !== null;
+  const reads = (evidence.readBack.rawSteps || []).filter(read => {
+    if (read.tool !== "get_layer_details") return false;
+    const observed = payloadForStep(read);
+    return observed && compMatchesRequest(observed.comp, args) && sameCompIdentity(resultComp, observed.comp) &&
+      layerMatchesRequest(observed.layer, args, positiveIdentityIndex(args.layerIndex)) && sameLayerIdentity(resultLayer, observed.layer) &&
+      readBackStepMatchesTarget(read, observed.comp, args, positiveIdentityIndex(args.layerIndex), observed.layer);
+  });
+  const independent = reads.length === 1 ? payloadForStep(reads[0]) : null;
+  if (!fields.length) {
+    pushCheck(checks, {id: `${step.index}:${step.tool}:requested-fields`, title: "Requested transform fields are explicit", expected: "at least one finite field", observed: "no transform fields", status: "needs_review", evidence: "No requested transform postcondition can be verified."});
+  }
+  for (const field of fields) {
+    const resultValue = payload.transform && payload.transform[field];
+    const observedValue = independent && (independent.transform || independent.layer && independent.layer.transform || {})[field];
+    const complete = resultIdentity && independent && finiteTransformValue(args[field], field) !== null &&
+      finiteTransformValue(resultValue, field) !== null && finiteTransformValue(observedValue, field) !== null;
+    const matches = complete && transformValuesMatch(args[field], resultValue, field) && transformValuesMatch(args[field], observedValue, field);
+    pushCheck(checks, {id: `${step.index}:${step.tool}:${field}`, title: `Transform ${field} matches the requested value and independent read-back`,
+      expected: stableStringify(args[field]), observed: observedValue === undefined ? "missing" : stableStringify(observedValue),
+      passed: Boolean(matches), status: matches ? "passed" : complete ? "failed" : "needs_review",
+      evidence: reads.length !== 1 ? "Missing or ambiguous post-run get_layer_details for the exact stable target." : stepLabel(reads[0]),
+      binding: {target: {compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args)}, result: {comp: compBinding(resultComp), layer: layerBinding(resultLayer)},
+        readBack: independent ? {comp: compBinding(independent.comp), layer: layerBinding(independent.layer)} : null}});
+  }
 }
 
 function layerMetadataFields(args) {
@@ -3407,6 +3540,11 @@ function verifyStep(checks, step, evidence) {
     return;
   }
 
+  if (step.tool === "set_layer_transform") {
+    checkSetLayerTransform(checks, step, payload, evidence);
+    return;
+  }
+
   if (step.tool === "set_effect_property") {
     checkSetEffectProperty(checks, step, payload, evidence);
     return;
@@ -3853,7 +3991,7 @@ function buildSummary(status, checks, readBackEvidence, mutationVerificationCoun
 }
 
 function buildSemanticVerification(plan, run) {
-  const steps = Array.isArray(run && run.steps) ? run.steps : [];
+  const steps = withServerIndependentReads(Array.isArray(run && run.steps) ? run.steps : []);
   const mutatingSteps = steps.filter(isMutatingStep);
   const checks = [];
   const unverifiedMutationSteps = [];
@@ -3910,6 +4048,7 @@ function buildSemanticVerification(plan, run) {
         expected: "completed",
         observed: step.status || "unknown",
         passed: false,
+        status: "needs_review",
         evidence: step.error || step.reason || stepLabel(step)
       });
       continue;
@@ -3926,8 +4065,8 @@ function buildSemanticVerification(plan, run) {
 
   const failedChecks = checks.filter((check) => check.status === "failed").length;
   const passedChecks = checks.filter((check) => check.status === "passed").length;
-  const unprovedRaw = unverifiedMutationSteps.some((step) => /^run_extendscript(?:_file)?$/.test(step.tool));
-  const status = failedChecks === 0 && !unprovedRaw && readBackEvidence.count > 0 && (run.ok === true)
+  const needsReviewChecks = checks.filter(check => check.status === "needs_review").length;
+  const status = failedChecks === 0 && needsReviewChecks === 0 && unverifiedMutationSteps.length === 0 && readBackEvidence.count > 0 && (run.ok === true)
     ? "passed"
     : "needs_review";
 
@@ -3938,7 +4077,7 @@ function buildSemanticVerification(plan, run) {
     summary: buildSummary(status, checks, readBackEvidence, mutationVerificationCount),
     requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
     verificationScope: "implemented_semantic_checks_only",
-    coverageStatus: unverifiedMutationSteps.length ? "incomplete" : "complete",
+    coverageStatus: unverifiedMutationSteps.length || needsReviewChecks ? "incomplete" : "complete",
     acceptance: "not_established",
     readBackCount: readBackEvidence.count,
     readBackSteps: readBackEvidence.steps,
@@ -3947,6 +4086,7 @@ function buildSemanticVerification(plan, run) {
     unverifiedMutationSteps,
     passedChecks,
     failedChecks,
+    needsReviewChecks,
     checks,
     warnings
   };
@@ -3954,5 +4094,11 @@ function buildSemanticVerification(plan, run) {
 
 module.exports = {
   SEMANTIC_VERIFICATION_SCHEMA,
-  buildSemanticVerification
+  buildSemanticVerification,
+  isMutatingStep,
+  propertyPathIdentityMatches,
+  propertyPathTailIdentityMatches,
+  effectPropertyIdentityMatches,
+  finiteTransformValue,
+  transformValuesMatch
 };

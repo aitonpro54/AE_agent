@@ -7,20 +7,23 @@ AE Agent 3.1.0: CEP, bridge, typed tools, reviewed recipes/registry, provider la
 ## Улучшения плейсхолдеров — 2026-09-30
 
 ### Progress
-- Этап 1 завершён: bounded candidates/optional FFprobe, подтверждённый выбор, guarded relink по ID, адресный независимый read-back, recipe. Далее интервалы/группы/ручные правки → cover/visual → статусы/recovery. Подробности: docs/placeholder-improvements-report.md.
+- Этап 1 завершён, commit `debb562`: bounded candidates/optional FFprobe, подтверждённый выбор, guarded relink по ID, адресный независимый read-back, recipe. Подробности: docs/placeholder-improvements-report.md.
 - Этап 2 завершён, commit `8964d98`: source/occurrence map, явные группы, trusted CEP acceptance, persistent protection и stable-ID rebind. 36 usage fixtures, protection memory/actual JSX/isolated daemon и panel-handler VM PASS.
-- Этап 3 завершён: cover/subject-box/free-interval helper интегрирован в builder/read-back; owned live-link controls/contact sheet, pinned Flash review batches и exact cleanup. Далее статусы/recovery.
+- Этап 3 завершён, commit `edbc9bc`: cover/subject-box/free-interval helper интегрирован в builder/read-back; owned live-link controls/contact sheet, pinned Flash review batches и exact cleanup.
+- Этап 4 завершён: outcome v2, сохранённые server run records/read-only reconcile, semantic проверки transform/property по ID, запрет repair/Hardcore replay и CEP «Сверить результат». Итоговые bridge/planning/recovery/autonomy и статические проверки пройдены; изменения оформлены отдельным commit.
 
 ### Decision Log
 - Расширять существующие tools/library; один writer. Offline fixtures/isolated daemon/JSX VM; AEP/save/reopen/revert, новые зависимости и изменение gates исключены.
 - Два Flash хода дали partial files + timeout; процессы и фактическое состояние сверены, затем ae_specialist закрыл инженерные defects. Последний MCP отказ — дублированный recipe ID, не отказ доступа. Повтор мутаций/live demo отсутствует.
 - Этап 2: после Flash-коррекций UNC canonicalization закрыта specialist; bounded review нашёл два ID/index обхода protection. Unsupported setter aliases теперь отвергаются helper/gate/actual JSX до undo; documented expected IDs разрешаются единообразно.
 - Этап 3: static 2D/PAR1 geometry отдельно от sampled artistic review. Только actual official image views, hash/pin и конкретные observations дают доказательство; partial/stale batches — incomplete. Ownership проверяется по server UUID/ID/project/receipt, prefix недостаточен. Source drift останавливает создание до undo.
+- Этап 4: execution/mutation/verification независимы; submitted timeout — unknown, readback timeout после receipt — applied/pending. Сверка подтверждает текущие postconditions, не выдумывает потерянный historical receipt. Mismatch не доказывает not_applied. Strict property identity сохраняется; отсутствующий checker — needs_review. MCP autonomy принимает только полный proposal identity tuple; exact pins/current/replay проверяет existing runner.
 
 ### Validation
 - Этап 1: smoke:placeholder-recovery (helper/actual JSX VM/isolated daemon AE0), placeholder-plan, semantic-verification, smoke:solutions, real FFprobe 2 MP4, 7 JS syntax/rules/diff — PASS. Offline proof не live/художественная приёмка.
 - Этап 2: usage 36/36, protection+CEP-role+panel VM, planning, placeholder-plan/recovery, solutions 183, 15 JS syntax/rules/diff — PASS. Два review regressions дают 0 writes/undo; preserving VM writes 2, live AE0.
 - Этап 3: framing 83 assertions + 35 boundary cases; visual actual JSX VM/full ordinary isolated runner/batches; planning, plan/protection/recovery/usage, solutions 184, 21 JS syntax/rules/diff — PASS. Actual Flash09: 7 PNG views/6 observations/2 cuts rejected; synthetic drawings, не AE render/клиентская приёмка.
+- Этап 4: outcome20/reconciliation39/semantic41 границы, actual JSX/panel VM и ordinary isolated runner — PASS. Planning, solutions185/RU-EN16, шесть placeholder groups, evidence, полный bridge/autonomy — PASS. Отсутствующие proposal pins дают ранний отказ с AE0; timeout/index/manual drift не повторяют запись. Rules, JS syntax и diff — PASS. Native Node shutdown transient повторно проверен успешным полным autonomy suite; live AE/установленная CEP не менялись.
 
 ## Маршрутизация и самостоятельный мост — 2026-09-30
 

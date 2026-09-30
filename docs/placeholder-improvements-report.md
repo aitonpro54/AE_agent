@@ -4,6 +4,9 @@
 сохранение принятых ручных правок, cover и визуальная приёмка, точный recovery.
 Проверки ограничены offline fixtures, production modules и изолированными daemon/JSX VM.
 Открытый пользовательский AEP не изменяется, не сохраняется и не переоткрывается.
+Все четыре этапа завершены и независимо проверены в поддерживаемом контракте.
+Художественная приёмка настоящего монтажа и развёртывание установленной CEP
+остаются отдельной работой; synthetic proof не выдаётся за live AE-проверку.
 
 ## Этап 1 — восстановление исходников
 
@@ -41,7 +44,7 @@ actual generated JSX VM, isolated daemon/catalog/schema/recipe/plan с AE0),
 разница отражена в comparisons/score, неоднозначность сохранена. Локальное evidence:
 `.codex-runtime/placeholder-improvements/probe-result.json` и `stage1-solutions.log`.
 
-## Следующие этапы
+## Планирование следующих этапов на старте
 
 - Интервалы, подтверждённые группы, защита ручных правок: подготовлен read-only
   архитектурный контракт с интеграцией в существующую память и runner.
@@ -52,7 +55,7 @@ actual generated JSX VM, isolated daemon/catalog/schema/recipe/plan с AE0),
 ## Этап 2 — интервалы, группы и принятые правки
 
 Завершён после commit этапа 1 `debb562`. Flash получил только чистый usage/group
-helper и его fixtures; ae_specialist реализует сложный enforcement в существующей
+helper и его fixtures; ae_specialist реализовал сложный enforcement в существующей
 памяти, builder/runner и доверенном CEP flow. Общие файлы имеют одного writer.
 Group identity требует явных метаданных или подтверждённого сопоставления.
 Persistent acceptance связывается с saved-project identity и устойчивыми ID;
@@ -115,9 +118,9 @@ Parent повторил protection group и planning после исправле
 
 ## Этап 3 — cover и визуальная приёмка
 
-В работе: Flash `placeholder-framing-20260930-06` владеет чистым helper для
+Завершён: Flash `placeholder-framing-20260930-06` реализовал чистый helper для
 равномерного cover, наблюдаемых subject boxes и свободных альтернатив одного
-источника. Specialist интегрирует existing builder/read-back, свежую geometry,
+источника. Specialist интегрировал existing builder/read-back, свежую geometry,
 owned service comps и безопасную очистку. Контракт ограничен static 2D/PAR1;
 неизвестные flags не превращаются в geometric pass. Artistic review требует
 actual image-view evidence и наблюдений каждого выбранного кадра.
@@ -192,6 +195,88 @@ placeholder-plan/protection/recovery/usage36, solutions184, 21 JS syntax,
 rules/diff. Старый shape/contain fit fixture теперь честно needs_review:
 changedCount не является независимой проверкой геометрии; остальные checks
 сохранены. Live AE/установленная CEP-копия не проверялись.
+
+## Этап 4 — статусы, восстановление и интеграция
+
+Реализованы `reconcile_plan_run` и `get_property_value`, outcome schema v2
+с отдельными execution/mutation/verification/coverage. Обычный runner сохраняет
+plan/project/bound args/results/errors и command lifecycle до доставки команды
+рядом с существующим step evidence; role mutation/readback/checkpoint раздельны.
+Сверка читает server record и actual проект до/после target reads, не исполняет
+мутации, сохраняет исходную ошибку. Typed receipt до проверки позволяет правильно
+показать applied/pending при timeout read-back. Submitted timeout, partial error,
+missing/corrupt evidence, неподдержанные операции и manual drift не превращаются
+в not_applied. Stable IDs переживают index drift. Дублирующие чтения одной цели
+объединены; несколько setter одного плейсхолдера проверены в actual isolated run.
+
+Semantic verification проверяет все requested transform fields и строгую связь
+request/result/independent readback по comp/layer IDs. Для property/effect
+project/layer indices диагностические, composite propertyIndex/name/matchName
+остаются строгими. Только server-owned independentReadBack metadata принимается;
+AE payload с поддельным verification.readBack игнорируется. Actual JSX setter
+transform/property/effect разрешает ID до undo; effect finally сохраняет undo
+при исключении. Bulk property protection и actual тело используют одинаковые
+expectedLayerIds. Missing field/checker не даёт aggregate passed; старые
+unchecked create_null_layer fixtures теперь честно needs_review.
+
+Autonomous repair требует сверки, не допускает stable target подмену и applied
+replay. Hardcore прекращает retry после применённой/неизвестной мутации с
+неуспешной либо недостаточной проверкой. Доказанный pre-execution отказ сохраняет
+обычный blocked flow. CEP показывает отдельные статусы и исходную ошибку;
+«Сверить результат» отправляет только run ID, работает read-only, блокирует
+повтор/конкурирующее исполнение и не делает automatic retry. Новый recipe
+`placeholder-run-recovery` доступен через existing library (registry185).
+
+Parent PASS: outcome20, reconciliation39, semantic41 новые границы, actual JSX VM,
+actual panel handlers, ordinary confirmed isolated daemon (submitted timeout
+после записи, queued cancellation, mutation success/readback timeout, partial
+setter/finally, index/manual/project drift, missing/corrupt records, restart,
+multi-setter read reuse, отсутствие повторной записи). Planning/solutions и
+все шесть placeholder groups, evidence — PASS. Bounded integration review не
+нашёл оставшихся P1. Один parallel autonomy suite получил native Node shutdown
+exit -1073740791 после PASS restart fixture; тот же fixture и оставшиеся
+revocation/heartbeat отдельно прошли exit0; затем полный autonomy suite — exit0.
+Итоговые `smoke:bridge`, `smoke:planning`, `smoke:plan-run-recovery`, rules,
+syntax 17 изменённых JavaScript и `git diff --check` — PASS. Full bridge
+воспроизвёл старый ранний gate-контракт: active MCP session без proposal pins
+доходила до позднего confirmation refusal. Exemption теперь требует полный
+непустой identity tuple; runner сохраняет exact pins/current/expiry/replay
+diagnostics. Пять missing-pin regressions дают ранний `proposal_required` и AE0;
+полный autonomous MCP suite подтверждает разрешённый typed run.
+Итоговые локальные logs: `stage4-{bridge,planning,recovery,autonomy}-final.log`.
+
+## Добавленные поверхности и границы поддержки
+
+- Восстановление: `find_missing_footage_candidates`, `build_source_recovery_plan`,
+  `relink_footage_source`, `verify_source_recovery_read_back`.
+- Интервалы/защита: `get_placeholder_usage`, `check_placeholder_assignments`,
+  `get_placeholder_protection`; trusted CEP принятие/снятие защиты, группы,
+  ограничения и выбранные свойства оформления.
+- Cover/visual: `propose_placeholder_cover`, `verify_placeholder_coverage`,
+  `build_placeholder_visual_review_plan`, `create_placeholder_review_comps`,
+  `get_placeholder_review_manifest`, `verify_placeholder_visual_review`.
+- Recovery: `get_property_value`, `reconcile_plan_run`; отдельные статусы
+  execution/mutation/verification/coverage и кнопка «Сверить результат».
+- Четыре recipes: `placeholder-source-recovery-plan`,
+  `placeholder-usage-protection-plan`, `placeholder-cover-visual-review-plan`,
+  `placeholder-run-recovery`. Registry185, 16 RU/EN retrieval pairs — PASS.
+
+Полностью реализованы базовые workflows шести требований: проверяемое
+восстановление, вложенные интервалы/явные группы, cover со смещением и свободными
+альтернативами, принятые ручные правки, owned sampled visual review/cleanup,
+раздельные статусы и read-only recovery без automatic mutation replay.
+Существующие builder/read-back/typed reads/cleanup расширены; параллельного runner
+или обязательной новой модели детекции нет.
+
+Поддержка cover ограничена static 2D/PAR1, известной прямоугольной геометрией;
+анимация/expressions/parent/rotation/masks/collapse дают явное ограничение.
+Учёт времени поддерживает stretch100 без time-remap; unsupported timing не
+рассчитывается приблизительно. People boxes и known shot boundaries требуют
+наблюдений; автоматическая детекция лиц и непрерывная художественная оценка
+могут быть отдельным расширением. Lexical file identity не доказывает inode/symlink
+aliases. Не зарегистрированные partial service objects возвращают известные IDs
+для диагностики; повтор создания/произвольная очистка не разрешаются. Missing
+checker, raw/create/import, неполное evidence остаются needs_review/unknown.
 
 ## Предел доказательств
 

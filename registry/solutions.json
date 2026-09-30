@@ -21145,6 +21145,99 @@
         "При запрете записи отчёта вернуть текст; отказ view не обходить.",
         "Предел художественного заключения — только фактически просмотренные кадры."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-run-recovery",
+      "title": "Сверка плейсхолдеров после сбоя запуска",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "timeout",
+        "recovery",
+        "reconciliation",
+        "read-back",
+        "stable-identity"
+      ],
+      "intent": {
+        "summary": "После timeout, verification_required или частичной ошибки сначала прочитать фактическое состояние плейсхолдеров по сохранённому run ID. Не повторять применённые или неизвестные мутации. Reconcile placeholder run after timeout or verification_required without replaying mutations.",
+        "appliesWhen": [
+          "Ответ setter потерян после возможной записи, проверка не завершена либо не прошла.",
+          "Нужна сверка устойчивых ID и точных свойств при изменившихся индексах.",
+          "Reconcile placeholder run after timeout; inspect applied steps before any new proposal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "runId",
+          "type": "string",
+          "required": true,
+          "description": "ID исходного server-owned ordinary plan run; plan/targets берутся из сохранённого evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "Saved same project and server run record required; missing/corrupt evidence stays unknown.",
+        "Stable comp/layer IDs are authoritative; property composite identity remains strict.",
+        "Mismatching current values alone cannot prove not_applied."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/placeholder-run-recovery.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "reconcile_plan_run",
+          "get_property_value",
+          "get_layer_details",
+          "verify_placeholder_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Fresh before/after project identity, exact stable targets and current requested postconditions; original execution error preserved.",
+        "steps": [
+          "Read immutable run evidence and fresh project.",
+          "Read requested target/property state by stable IDs.",
+          "Report applied/not_applied/unknown per step without mutation replay."
+        ],
+        "expectedEvidence": [
+          "Submitted timeout remains unknown until fresh state confirms postconditions.",
+          "Authoritative pre-submit cancellation allows not_applied.",
+          "No writes during reconcile; manual drift and unsupported evidence remain unknown."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Actual generated JSX VM, isolated ordinary daemon/fake panel and actual panel handlers; no live AEP."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-01",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Offline timeout-after-applied, queued cancellation, partial setter, independent reads and no replay regressions.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Reconciliation confirms current state; lost historical execution receipt is not fabricated.",
+        "New corrective work requires a separate reviewed proposal and existing gates.",
+        "Visual acceptance remains separate."
+      ]
     }
   ]
 }

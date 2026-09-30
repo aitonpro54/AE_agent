@@ -9,11 +9,13 @@ const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
+const planCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
 const placeholderMutationContext = new AsyncLocalStorage();
 const placeholderPlanContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
+const planRunRecords = require("./plan-run-records");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
@@ -1138,7 +1140,13 @@ function m100DirectToolCallBlock(source, name, args, executionContext) {
     && name === "run_ai_agent_plan"
     && args && args.dryRun === false
     && executionContext && executionContext.autonomousSession
-    && executionContext.autonomousSession.authorized === true) return null;
+    && executionContext.autonomousSession.authorized === true) {
+    // Autonomy authorizes a proposal-backed run, not a client-authored plan.
+    // Exact pins and current server record are checked by the runner.
+    const keys = m100PlanRunLookupKey(args);
+    if ((keys.actionId || keys.payloadRef) && keys.payloadHash && keys.previewHash
+      && keys.riskLevel && keys.riskPolicyVersion) return null;
+  }
   const risk = classifyM100ToolRisk(name);
   if (risk.known && risk.riskLevel === "read_only") return null;
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
@@ -2452,6 +2460,28 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if(["set_layer_transform","set_property_value","set_effect_property"].includes(toolName)) {
+    const compId=payload && payload.comp && payload.comp.itemId;
+    const layers=payload && (payload.layers || (payload.layer ? [payload.layer] : []));
+    if(!Number.isSafeInteger(compId) || !Array.isArray(layers) || !layers.length) return {ok:false,scope:"independent_requested_values",reason:"stable_target_evidence_missing"};
+    const reads=[];
+    for(const layer of layers) {
+      if(!Number.isSafeInteger(layer.id)) return {ok:false,reason:"stable_target_evidence_missing"};
+      let tool="get_layer_details",readArgs={compItemId:compId,layerId:layer.id};
+      if(toolName==="set_property_value") {tool="get_property_value";readArgs.propertyPath=args.propertyPath; if(typeof readArgs.propertyPath==="string") readArgs.propertyPath=readArgs.propertyPath.trim().startsWith("[") ? JSON.parse(readArgs.propertyPath) : readArgs.propertyPath.split(".");if(args.setAtTime===true || args.time!==undefined)readArgs.time=args.time;}
+      if(toolName==="set_effect_property") {tool="get_effect_details";for(const field of ["effectIndex","effectName","effectMatchName"])if(args[field]!==undefined)readArgs[field]=args[field];readArgs.includeValues=true;readArgs.includeProperties=true;}
+      const read=await callTool(tool,readArgs);
+      reads.push({index:reads.length+2,tool,args:readArgs,status:read.isError?"failed":"completed",result:firstToolPayload(read)});
+    }
+    const context=planCommandContext.getStore();
+    if(context && context.item) {
+      context.item.independentReadBack=reads.map(read=>({...read,source:"server_typed_readback",observedAt:new Date().toISOString()}));
+      context.persist();
+    }
+    const mutation={index:1,tool:toolName,args,status:"completed",mutatesProject:true,result:payload};
+    const semantic=buildSemanticVerification({steps:[{tool:toolName,args},...reads.map(read=>({tool:read.tool,args:read.args}))]}, {steps:[mutation,...reads],ok:true});
+    return {ok:semantic.status==="passed" && semantic.unverifiedMutationCount===0,scope:"independent_requested_values",status:semantic.status,checks:semantic.checks,readBack:reads.map(read=>({tool:read.tool,args:read.args,result:read.result}))};
+  }
   if(toolName==="create_placeholder_review_comps") {
     const fresh=await requireFreshReviewRecord(payload && payload.owner);
     return {ok:true,scope:"registered_live_link_service_receipt",owner:fresh.record.owner,itemIds:fresh.record.receipt.items.map(item=>item.itemId)};
@@ -2772,6 +2802,10 @@ async function attachMutationVerificationToToolResult(result, toolName, args) {
     return attachPayloadMetadataToToolResult(result, "verification", {
       ok: false,
       error: error.message || String(error),
+      errorCode:error.code || "verification_incomplete",
+      commandId:error.commandId || null,
+      lifecycleState:error.lifecycleState || null,
+      timedOutFrom:error.timedOutFrom || null,
       line: error.line || null
     });
   }
@@ -3262,7 +3296,28 @@ function settleCommandFailure(command, code, message) {
   command.reject(createCommandLifecycleError(command, code, message));
 }
 
+function capturePlanCommand(command, payload, required = false) {
+  const context = command.planContext;
+  if (!context || !context.item) return;
+  const item = context.item;
+  item.commands = item.commands || [];
+  let row = item.commands.find(value => value.id === command.id);
+  if (!row) { row = {id:command.id,role:context.role || "readback",history:[]}; item.commands.push(row); }
+  Object.assign(row, compactAeCommand(command));
+  row.neverSubmitted = command.state === "expired_before_delivery" && !command.submittedAt;
+  if (payload) { row.ok = Boolean(payload.ok); row.result = payload.result === undefined ? null : payload.result; row.error = payload.error || null; }
+  if (row.history[row.history.length - 1] !== command.state) row.history.push(command.state);
+  try { context.persist(); }
+  catch (error) { item.recordWarning="run_record_update_failed"; if(required) throw error; }
+}
+
+function withPlanCommandRole(role, fn) {
+  const context = planCommandContext.getStore();
+  return context ? planCommandContext.run({...context,role},fn) : fn();
+}
+
 function retainCommandResult(id, payload, command) {
+  capturePlanCommand(command, payload);
   completedResults.set(id, {
     id,
     receiptDigest: command.receiptDigest || null,
@@ -3355,6 +3410,9 @@ function enqueueAeCommand(script, timeoutMs) {
       settled: false
     };
     command.autonomousGuard = autonomousCommandContext.getStore() || null;
+    command.planContext = planCommandContext.getStore() || null;
+    try { capturePlanCommand(command, null, true); }
+    catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
     command.timeout = setTimeout(() => {
       timeoutAeCommand(id);
     }, timeoutMs);
@@ -3596,6 +3654,7 @@ function leaseNextQueuedCommand(req, url) {
       continue;
     }
     command.state = "leased";
+    capturePlanCommand(command);
     command.leaseId = crypto.randomUUID();
     command.leasedAt = Date.now();
     command.leaseOwner = leaseOwner;
@@ -4845,6 +4904,8 @@ const PLANNING_TOOL_NAMES = [
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_property_value",
+  "reconcile_plan_run",
   "get_layer_essential_properties",
   "get_essential_graphics_controllers",
   "get_path_geometry",
@@ -5968,6 +6029,11 @@ async function runAgentHardcoreSession(source, args) {
 
       const resultCodes = [attempt.run && attempt.run.errorCode].concat(
         attempt.run && Array.isArray(attempt.run.steps) ? attempt.run.steps.map(step => step.errorCode) : []);
+      if(hardcoreRunNeedsReconciliation(attempt.run)) {
+        attempt.status="run-needs-reconciliation";
+        attempt.blocker="Read-only reconcile_plan_run is required; applied or uncertain mutations must not be replayed automatically.";
+        break;
+      }
       if (resultCodes.some(code => /unknown|timed.?out|timeout/i.test(String(code || "")))) {
         attempt.status = "run-needs-reconciliation";
         attempt.blocker = "Execution outcome is uncertain; inspect the project before creating another plan.";
@@ -6436,6 +6502,13 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
   return { ok: true, approval };
 }
 
+function hardcoreRunNeedsReconciliation(run) {
+  if(!run || run.dryRun) return false;
+  if(run.outcome && run.outcome.mutation && run.outcome.mutation.status==="not_started") return false;
+  const mutating=run.validation && run.validation.mutatingCount>0 || (run.steps || []).some(step=>step.mutatesProject);
+  return Boolean(mutating && (!run.ok || !run.semanticVerification || run.semanticVerification.status!=="passed" || run.semanticVerification.unverifiedMutationCount>0));
+}
+
 async function runValidatedAgentPlan(options, executionContext) {
   return evidenceContext.run({runId: crypto.randomUUID(), requestId: options && options.requestId || null},
     () => runValidatedAgentPlanWithEvidence(options, executionContext));
@@ -6524,6 +6597,14 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
           ? "planned_checkpoint_step"
           : null
     }
+  };
+  const runRecord = {schema:"ae-agent-plan-run-record.v1",runId:run.id,createdAt:run.startedAt,
+    plan:prepared.plan,project:{file:expectedProject},run};
+  const persistRun = (item) => {
+    if (run.dryRun || validation.mutatingCount === 0) return;
+    runRecord.project = {file:run.project && (run.project.expectedFile || run.project.actualFile) || expectedProject};
+    runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
+    planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
     run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
@@ -6653,6 +6734,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
       failedCount: run.failedCount, verification: diagnostic.verification
     };
+    try { persistRun(); } catch (_error) { run.recordWarning="run_record_update_failed"; }
     return run;
   }
 
@@ -6936,12 +7018,13 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try {
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
-      const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+      persistRun(item);
+      const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
       () => placeholderPlanContext.run({ plan: prepared.plan, remainingSteps: steps.filter(value => value.index >= step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined))));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -6999,6 +7082,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       item.status = "failed";
       item.error = error.message || String(error);
       item.errorCode = error.code || "ae_execution_failed";
+      for (const field of ["commandId","lifecycleState","timedOutFrom","phase"]) item[field]=error[field] || null;
       item.durationMs = Date.now() - stepStartedAt;
       recordAutonomyObstacle({operation: step.tool, proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
         runId: run.id, code: item.errorCode, phase: "step", durationMs: item.durationMs, failedSteps: 1, verification: "not_verified"});
@@ -7668,10 +7752,11 @@ async function getPlaceholderProtection() {
 function rebindPlaceholderArgs(name, args, protection) {
   if (protection && protection._inventory) placeholderProtection.assertSupportedSetterIdentity(name,args);
   if (!protection || !protection._inventory || !placeholderProtection.TARGET_SETTERS.has(name) || !args ||
-    !args.expectedCompItemId || !args.expectedLayerId) return args;
+    !args.expectedCompItemId || (!args.expectedLayerId && !args.expectedLayerIds)) return args;
   const targets = placeholderProtection.resolveTargets(args, protection._inventory);
   const next = { ...args, compItemIndex: targets[0].compItemIndex };
-  if (["set_layer_transform","set_property_value"].includes(name)) next.layerIndex = targets[0].layerIndex;
+  if (name==="set_property_value" && targets.length>1) {next.layerIndex=targets.map(value=>value.layerIndex);delete next.layerIndices;}
+  else if (["set_layer_transform","set_property_value"].includes(name)) next.layerIndex = targets[0].layerIndex;
   else next.layerIndices = targets.map(value => value.layerIndex);
   if (name === "replace_layer_source" && args.expectedSourceItemId) {
     const source = [...protection._inventory.sources, ...protection._inventory.comps].find(value => value.itemId === args.expectedSourceItemId);
@@ -8415,6 +8500,7 @@ function startHttpBridge() {
       }
 
       command.state = "submitted";
+      capturePlanCommand(command);
       command.submittedAt = Date.now();
       recordEvent("ae_command_submitted", {
         id,
@@ -11963,13 +12049,23 @@ const tools = [
   ...projectSave.createToolDefinitions()
 ];
 
+tools.push({name:"get_property_value",description:"Read one exact property by stable comp/layer IDs and composite propertyPath; optional time includes the exact key sample. No mutation.",inputSchema:{type:"object",additionalProperties:false,properties:{compItemId:{type:"integer",minimum:1},layerId:{type:"integer",minimum:1},propertyPath:{type:"array",minItems:1,maxItems:12,items:{type:["string","number","object"]}},time:{type:"number"}},required:["compItemId","layerId","propertyPath"]}});
+tools.push({name:"reconcile_plan_run",description:"Read actual state for a server-stored failed/uncertain plan run. Returns applied/not_applied/unknown per step and preserves the execution error. Never replays mutations.",inputSchema:{type:"object",additionalProperties:false,properties:{runId:{type:"string"},stepIndices:{type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}}},required:["runId"]}});
+
 // Persistent IDs supplement address hints on existing typed surfaces.
 for (const tool of tools) {
   if(tool.name==="save_comp_frame_png")Object.assign(tool.inputSchema.properties,{reviewOwner:{type:"string",description:"Registered review owner; requires stable reviewItemId/full resolution/retained PNG."},reviewItemId:{type:"integer",minimum:1}});
   if(tool.name==="cleanup_test_items")Object.assign(tool.inputSchema.properties,{owner:{type:"string",description:"Server-registered review UUID; requires the exact whole registered ID set."},itemIds:{type:"array",minItems:1,maxItems:25,items:{type:"integer",minimum:1}}});
-  if (placeholderProtection.TARGET_SETTERS.has(tool.name)) {
+  if (placeholderProtection.TARGET_SETTERS.has(tool.name) || tool.name === "set_effect_property") {
     tool.inputSchema.properties.expectedCompItemId = { type: "integer", minimum: 1 };
     tool.inputSchema.properties.expectedLayerId = { type: "integer", minimum: 1 };
+  }
+  if(tool.name === "set_property_value") tool.inputSchema.properties.expectedLayerIds={type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}};
+  if(["get_comp_details","get_effect_details"].includes(tool.name)) tool.inputSchema.properties.compItemId={type:"integer",minimum:1};
+  if(["get_layer_details","get_effect_details"].includes(tool.name)) {
+    tool.inputSchema.properties.layerId={type:"integer",minimum:1};
+    tool.inputSchema.required=(tool.inputSchema.required || []).filter(field=>field!=="layerIndex");
+    tool.inputSchema.anyOf=[{required:["layerIndex"]},{required:["layerId"]}];
   }
   if (tool.name === "get_layer_details") {
     tool.inputSchema.properties.compItemId = { type: "integer", minimum: 1 };
@@ -11981,6 +12077,42 @@ for (const tool of tools) {
 async function callTool(name, args, executionContext) {
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
+  if(name === "reconcile_plan_run") {
+    if(Object.keys(args).some(key=>!["runId","stepIndices"].includes(key))) throw new Error("reconciliation_client_evidence_forbidden");
+    const runId=optionalString(args,"runId","");
+    const record=planRunRecords.readRecord(LOG_DIR,runId);
+    if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
+    const selected=args.stepIndices;
+    if(selected!==undefined && (!Array.isArray(selected) || !selected.length || selected.length>50 || new Set(selected).size!==selected.length || selected.some(index=>!Number.isSafeInteger(index) || index<1 || !record.plan.steps[index-1]))) throw new Error("reconciliation_step_indices_invalid");
+    const helper=require("./plan-run-reconciliation");
+    const freshReadSteps=[];
+    const deadline=Date.now()+60000;
+    const read=async(request)=>{
+      try { const value=await callToolLogged("plan-reconciliation-read",request.tool,request.args);freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
+      catch(error){freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:"failed",error:error.message,errorCode:error.code});}
+    };
+    await read({tool:"get_project_info",args:{}});
+    const actual=firstToolPayload(toolResult(freshReadSteps[0].result));
+    const expected=require("./proposal-state").normalizeProject(record.project && record.project.file);
+    if(expected && require("./proposal-state").normalizeProject(actual && (actual.file || actual.project && actual.project.file))===expected) {
+      const readKeys=new Set();
+      for(const request of helper.reconciliationReadRequests(record)) {
+        if(Date.now()>deadline) break;
+        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details"].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
+        const key=reviewEvidence.sha256({tool:request.tool,args:request.args});
+        if((!selected || selected.includes(request.stepIndex)) && !readKeys.has(key)) {readKeys.add(key);await read(request);}
+      }
+      await read({tool:"get_project_info",args:{}});
+    }
+    const commandStates=(record.run.steps || []).flatMap(step=>(step.commands || []).map(row=>{
+      const current=inflightCommands.get(row.id),retained=completedResults.get(row.id);
+      return current ? {...row,...compactAeCommand(current)} : retained ? {...row,...retained.command,ok:retained.ok,result:retained.result,error:retained.error} : row;
+    }));
+    const result=helper.reconcilePlanRun({record,freshReadSteps,commandStates,project:{file:actual && actual.file}});
+    if(selected) result.steps=result.steps.filter(step=>selected.includes(step.index));
+    result.runId=runId;
+    return toolResult(result);
+  }
   if(name===projectSave.TOOL_NAME){
     try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
       return toolResult({ok:true,saveReceipt});
@@ -12142,8 +12274,17 @@ async function callTool(name, args, executionContext) {
         return false;
       }
 
-      function __codexResolveComp(index, name) {
+      function __codexResolveComp(index, name, itemId) {
         var item = null;
+        if (itemId !== null && itemId !== undefined) {
+          var found=null, count=0;
+          for(var __id=1;__id<=app.project.numItems;__id++) {
+            item=app.project.item(__id);
+            if(item instanceof CompItem && item.id===itemId){found=item;count++;}
+          }
+          if(count!==1) throw new Error("stable_comp_identity_missing_or_ambiguous");
+          return found;
+        }
         if (index !== null && index !== undefined) {
           item = app.project.item(index);
         } else if (name) {
@@ -12155,6 +12296,16 @@ async function callTool(name, args, executionContext) {
           throw new Error(index || name ? "Project item is not a composition." : "Active item is not a composition.");
         }
         return item;
+      }
+
+      function __codexResolveLayer(comp, index, layerId) {
+        if(layerId===null || layerId===undefined) return comp.layer(index);
+        var found=null,count=0;
+        for(var __id=1;__id<=comp.numLayers;__id++) {
+          var item=comp.layer(__id);if(item.id===layerId){found=item;count++;}
+        }
+        if(count!==1) throw new Error("stable_layer_identity_missing_or_ambiguous");
+        return found;
       }
 
       function __codexItemType(item) {
@@ -14077,6 +14228,7 @@ async function callTool(name, args, executionContext) {
   if (name === "get_comp_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const compItemId = optionalPositiveInteger(args,"compItemId");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
     const includeMarkers = optionalBoolean(args, "includeMarkers", false);
@@ -14084,7 +14236,7 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
       var includeLayers = ${includeLayers ? "true" : "false"};
       var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
@@ -14139,10 +14291,40 @@ async function callTool(name, args, executionContext) {
     return toolResult(result.result);
   }
 
+  if (name === "get_property_value") {
+    if(Object.keys(args).some(key=>!["compItemId","layerId","propertyPath","time"].includes(key))) throw new Error("property_read_args_invalid");
+    const compItemId=requiredPositiveInteger(args,"compItemId"),layerId=requiredPositiveInteger(args,"layerId");
+    const propertyPath=args.propertyPath,time=optionalNumber(args,"time",null);
+    if(!Array.isArray(propertyPath) || !propertyPath.length || propertyPath.length>12) throw new Error("property_path_invalid");
+    const result=await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp=__codexResolveComp(null,"",${compItemId});
+      var layer=__codexResolveLayer(comp,null,${layerId});
+      var propertyPath=${aeLiteral(propertyPath)};
+      if(propertyPath.length===1 && typeof propertyPath[0]==="string" && ["threeDLayer","collapseTransformation","motionBlur"].indexOf(propertyPath[0])>=0) {
+        var attribute=propertyPath[0];
+        if(typeof layer[attribute]!=="boolean") throw new Error("layer_attribute_evidence_unavailable");
+        return {comp:{itemId:comp.id,itemIndex:__codexProjectIndexForItem(comp),name:comp.name},layer:__codexLayerInfo(layer),property:{name:attribute,matchName:attribute,propertyPath:[{name:attribute,matchName:attribute}],value:!!layer[attribute],numKeys:0,expressionEnabled:false}};
+      }
+      var prop=__codexResolveProperty(layer,propertyPath);
+      var info=__codexPropertyInfo(prop,layer,true,true);
+      var sampleTime=${time===null ? "null" : time};
+      if(sampleTime!==null) {
+        info.observedTime=sampleTime;
+        info.value=__codexValueData(prop.valueAtTime(sampleTime,false));
+        info.keyframes=[];
+        if(prop.numKeys>0) {var key=prop.nearestKeyIndex(sampleTime);if(Math.abs(prop.keyTime(key)-sampleTime)<=0.0000001) info.keyframes.push(__codexKeyframeInfo(prop,key));}
+        info.keyframesTruncated=false;
+      }
+      return {comp:{itemId:comp.id,itemIndex:__codexProjectIndexForItem(comp),name:comp.name},layer:__codexLayerInfo(layer),property:info};
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "get_layer_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const layerIndex = args.layerId === undefined ? requiredPositiveInteger(args,"layerIndex") : optionalPositiveInteger(args,"layerIndex");
     const compItemId = optionalPositiveInteger(args, "compItemId");
     const layerId = optionalPositiveInteger(args, "layerId");
     const protectedProperties = placeholderProtection.normalizeProtectedPaths(args.protectedProperties || []);
@@ -16897,7 +17079,9 @@ async function callTool(name, args, executionContext) {
   if (name === "get_effect_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const compItemId = optionalPositiveInteger(args,"compItemId");
+    const layerId=optionalPositiveInteger(args,"layerId");
+    const layerIndex=layerId===null ? requiredPositiveInteger(args,"layerIndex") : optionalPositiveInteger(args,"layerIndex");
     const effectIndex = optionalPositiveInteger(args, "effectIndex");
     const effectName = optionalString(args, "effectName", "");
     const effectMatchName = optionalString(args, "effectMatchName", "");
@@ -16913,8 +17097,8 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex === null ? "null" : layerIndex}, ${layerId === null ? "null" : layerId});
       if (!layer) throw new Error("Layer not found.");
       var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
       var includeProperties = ${includeProperties ? "true" : "false"};
@@ -16936,6 +17120,7 @@ async function callTool(name, args, executionContext) {
 
       return {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -16992,6 +17177,9 @@ async function callTool(name, args, executionContext) {
   if (name === "set_effect_property") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    if(args.compItemId!==undefined || args.layerId!==undefined) throw new Error("unsupported_setter_identity_alias");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const effectIndex = optionalPositiveInteger(args, "effectIndex");
     const effectName = optionalString(args, "effectName", "");
@@ -17024,8 +17212,8 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex}, ${expectedLayerId === null ? "null" : expectedLayerId});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
 
@@ -17036,8 +17224,9 @@ async function callTool(name, args, executionContext) {
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
 
-      app.beginUndoGroup("Codex Set Effect Property");
       var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+      app.beginUndoGroup("Codex Set Effect Property");
+      try {
       if (shouldSetAtTime) {
         prop.setValueAtTime(targetTime, preparedValue);
       } else {
@@ -17045,6 +17234,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -17054,8 +17244,8 @@ async function callTool(name, args, executionContext) {
         setAtTime: shouldSetAtTime,
         time: targetTime
       };
-      app.endUndoGroup();
       return response;
+      } finally { app.endUndoGroup(); }
     `);
     return toolResult(result.result);
   }
@@ -17398,7 +17588,12 @@ async function callTool(name, args, executionContext) {
   if (name === "set_property_value") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
+    const expectedLayerIds=args.expectedLayerIds===undefined ? null : requiredPositiveIntegerList({expectedLayerId:args.expectedLayerIds},"expectedLayerId");
     const layerIndices = requiredPositiveIntegerList(args, "layerIndex");
+    if(expectedLayerId!==null && layerIndices.length!==1) throw new Error("single_expected_layer_id_requires_one_target");
+    if(expectedLayerIds && (expectedLayerIds.length!==layerIndices.length || expectedLayerId!==null || new Set(expectedLayerIds).size!==expectedLayerIds.length)) throw new Error("expected_layer_ids_invalid");
     const time = optionalNumber(args, "time", null);
     const setAtTime = optionalBoolean(args, "setAtTime", time !== null);
 
@@ -17421,8 +17616,9 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
       var layerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerIds=${aeLiteral(expectedLayerIds || (expectedLayerId===null ? [] : [expectedLayerId]))};
       var propertyPath = ${aeLiteral(propertyPath)};
       var requestedValue = ${aeLiteral(value)};
       ${setterIdentityGuard}
@@ -17438,7 +17634,7 @@ async function callTool(name, args, executionContext) {
 
       var preparedTargets = [];
       for (var __pre = 0; __pre < layerIndices.length; __pre++) {
-        var preLayer = comp.layer(layerIndices[__pre]);
+        var preLayer = __codexResolveLayer(comp, layerIndices[__pre], expectedLayerIds[__pre]);
         if (!preLayer || preLayer.locked) throw new Error("Layer missing or locked at index " + layerIndices[__pre]);
         if (isLayerAttribute) {
           if (shouldSetAtTime) throw new Error(layerAttributeName + " cannot be keyframed with setAtTime.");
@@ -17491,6 +17687,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -17660,6 +17857,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -20357,6 +20555,8 @@ async function callTool(name, args, executionContext) {
   if (name === "set_layer_transform") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const scale = optionalNumberArray(args, "scale", null, 2, 3);
@@ -20373,8 +20573,8 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex}, ${expectedLayerId === null ? "null" : expectedLayerId});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
 
@@ -20395,6 +20595,7 @@ async function callTool(name, args, executionContext) {
       if (opacityValue !== null) transform.property("ADBE Opacity").setValue(opacityValue);
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -20963,11 +21164,19 @@ async function callToolLogged(source, name, args, executionContext) {
       // shift alone is not a content conflict; AE still rechecks the binding.
       args = rebindPlaceholderArgs(name, args, placeholderGuard);
     }
-    const checkpoint = name===projectSave.TOOL_NAME ? null : await maybeCreateMutationCheckpoint(args || {}, name);
-    const result = await placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null));
+    const commandContext = planCommandContext.getStore();
+    if(commandContext && commandContext.item) commandContext.item.args=args;
+    const checkpoint = name===projectSave.TOOL_NAME ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
+      () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
+    if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
+      commandContext.item.mutationResult=firstToolPayload(result);
+      commandContext.item.mutationResultIsError=Boolean(result.isError);
+      commandContext.persist();
+    }
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
-    resultWithCheckpoint = await autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {}));
+    resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
     resultWithCheckpoint = attachStoredIdempotencyMetadata(resultWithCheckpoint, idContext, idempotencyRecord);
     const durationMs = Date.now() - startedAt;
@@ -21014,13 +21223,14 @@ async function callToolLogged(source, name, args, executionContext) {
 }
 
 module.exports = {
+  hardcoreRunNeedsReconciliation,
   async preparePlaceholderInventoryScript(options = {}) {
     const prepared = { script: null, fixtureResult: null };
     await scriptPreparationContext.run(prepared, () => readPlaceholderInventory(options));
     return prepared;
   },
   async prepareToolScript(name, args, fixtureResult = null, protection = null) {
-    if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details",
+    if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details", "get_property_value",
       "set_comp_properties", "set_comp_work_area", "get_comp_details", "find_project_items", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
       "precompose_layers", "replace_layer_source", "relink_footage_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
       "create_shape_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "get_path_geometry", "set_path_geometry", "duplicate_layer",

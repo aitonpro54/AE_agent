@@ -2116,7 +2116,11 @@ function assertGridRigControlReplacementPasses() {
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
   const failed = semantic.checks.filter((check) => check.status !== "passed");
-  assert.strictEqual(semantic.status, "passed", `grid-rig control replacement semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failed)}`);
+  // This older fixture contains create_null_layer, which has no implemented
+  // checker. Existing checked outcomes pass; that gap must not become success.
+  assert.strictEqual(semantic.status, "needs_review");
+  assert.deepStrictEqual(semantic.unverifiedMutationSteps, [{index: 2, tool: "create_null_layer"}]);
+  assert.deepStrictEqual(failed, [], "existing grid-rig checks still pass");
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_metadata:metadata") >= 0 && check.status === "passed"), "grid-rig fixture should verify guideLayer/enabled metadata.");
   assert(semantic.checks.some((check) => check.id.indexOf("delete_layer:absence") >= 0 && check.status === "passed"), "grid-rig fixture should verify old layer deletion.");
   assert(semantic.checks.some((check) => check.id.indexOf("add_effect:effect") >= 0 && check.status === "passed"), "grid-rig fixture should verify added slider effects.");
@@ -3889,11 +3893,19 @@ function assertSourceTextKeyframeMismatchNeedsReview() {
   assert(semantic.checks.some((check) => check.id.indexOf("set_property_keyframes:keyframe-values") >= 0 && check.status === "failed"), "mismatched Source Text keyframe values should fail.");
 }
 
+function assertCheckedFixtureWithNullGap(semantic, run) {
+  const unchecked = run.steps.filter(step => step.tool === "create_null_layer").map(step => ({index: step.index, tool: step.tool}));
+  assert.deepStrictEqual(semantic.unverifiedMutationSteps, unchecked);
+  assert.equal(semantic.status, unchecked.length ? "needs_review" : "passed");
+  assert.equal(semantic.failedChecks, 0);
+  assert.equal(semantic.needsReviewChecks, 0);
+}
+
 function assertParentOpacityExpressionScenarioPasses() {
   const [scenario] = agentParentOpacityExpressionScenarioPlans("Codex Semantic Parent Fixture");
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
-  assert.strictEqual(semantic.status, "passed", `parent-opacity expression semantic verification should pass: ${semantic.summary}`);
+  assertCheckedFixtureWithNullGap(semantic, run);
   assert(semantic.checks.some((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_layer_parent.");
   assert(semantic.checks.some((check) => check.id.indexOf("set_expression:expression") >= 0 && check.status === "passed"), "parent-opacity scenario should verify set_expression.");
 }
@@ -3903,7 +3915,8 @@ function assertLayerParentBelowScenarioPasses() {
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
   const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
-  assert.strictEqual(semantic.status, "passed", `layer-below parenting semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assertCheckedFixtureWithNullGap(semantic, run);
+  assert.deepStrictEqual(failedChecks, []);
   const parentChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed");
   assert(parentChecks.length >= 2, "layer-below parenting scenario should verify both set_layer_parent read-backs.");
 }
@@ -3913,7 +3926,8 @@ function assertLayerParentClosestScenarioPasses() {
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
   const failedChecks = semantic.checks.filter((check) => check.status !== "passed");
-  assert.strictEqual(semantic.status, "passed", `closest-layer parenting semantic verification should pass: ${semantic.summary}; failed=${JSON.stringify(failedChecks)}`);
+  assertCheckedFixtureWithNullGap(semantic, run);
+  assert.deepStrictEqual(failedChecks, []);
   const parentChecks = semantic.checks.filter((check) => check.id.indexOf("set_layer_parent:parent") >= 0 && check.status === "passed");
   assert(parentChecks.length >= 2, "closest-layer parenting scenario should verify both set_layer_parent read-backs.");
 }
@@ -4201,7 +4215,83 @@ function assertSetEffectPropertyUsesExactCompositeIdentity() {
   wrongInstanceRun.steps[2].result.properties = [effectColorProperty(1, args.value)];
   const wrongInstanceSemantic = buildSemanticVerification(plan, wrongInstanceRun);
   assert.strictEqual(wrongInstanceSemantic.status, "needs_review", "a neighboring same-name effect must not satisfy exact effect property read-back.");
-  assert(wrongInstanceSemantic.checks.some((check) => check.id.indexOf("set_effect_property:value") >= 0 && check.status === "failed"), "wrong effect instance read-back should fail closed.");
+  assert(wrongInstanceSemantic.checks.some((check) => check.id.indexOf("set_effect_property:value") >= 0 && check.status === "needs_review"), "wrong effect instance leaves the requested property unverified.");
+}
+
+function assertRecoveryIdentityAndTransformBoundaries() {
+  let cases = 0;
+  const path = [{propertyIndex: 1, name: "Opacity", matchName: "ADBE Opacity"}];
+  const target = {compItemIndex: 1, layerIndex: 1, expectedCompItemId: 10, expectedLayerId: 11};
+  const comp = {itemId: 10, itemIndex: 2, name: "Comp moved"}, layer = {id: 11, index: 2, name: "Layer moved"};
+  function verify(run, expected, checkStatus) {
+    const semantic = buildSemanticVerification({steps: run.steps}, run);
+    assert.equal(semantic.status, expected);
+    if (checkStatus) assert(semantic.checks.some(check => check.status === checkStatus));
+    cases++; return semantic;
+  }
+  const transform = {position: [100, 200], scale: [120, 120], anchorPoint: [50, 50], rotation: 5, opacity: 70};
+  const transformRun = {ok: true, steps: [
+    {index: 1, tool: "set_layer_transform", status: "completed", args: {...target, ...transform}, result: {comp, layer, transform}},
+    {index: 2, tool: "get_layer_details", status: "completed", args: {compItemId: 10, layerId: 11}, result: {comp: {...comp, itemIndex: 3}, layer: {...layer, index: 3}, transform: Object.fromEntries(Object.entries(transform).map(([key, value]) => [key, {kind: Array.isArray(value) ? "array" : "number", value}]))}}
+  ]};
+  const passedTransform = verify(transformRun, "passed"); assert.equal(passedTransform.checks.length, 5);
+  for (const field of Object.keys(transform)) {
+    const changed = clone(transformRun); changed.steps[1].result.transform[field].value = Array.isArray(transform[field]) ? transform[field].map(n => n + 1) : transform[field] + 1;
+    verify(changed, "needs_review", "failed");
+  }
+  const noField = clone(transformRun); delete noField.steps[1].result.transform.position; assert.equal(verify(noField, "needs_review", "needs_review").coverageStatus, "incomplete");
+  const missingId = clone(transformRun); delete missingId.steps[1].result.comp.itemId; verify(missingId, "needs_review", "needs_review");
+  const wrongTransformId = clone(transformRun); wrongTransformId.steps[1].result.layer.id = 99; verify(wrongTransformId, "needs_review", "needs_review");
+  const nonfinite = clone(transformRun); nonfinite.steps[1].result.transform.rotation.value = Infinity; verify(nonfinite, "needs_review", "needs_review");
+  const emptyVector = clone(transformRun); emptyVector.steps[1].result.transform.scale.value = []; verify(emptyVector, "needs_review", "needs_review");
+  const duplicate = clone(transformRun); duplicate.steps.push({...clone(duplicate.steps[1]), index: 3}); verify(duplicate, "needs_review", "needs_review");
+  const noRequested = clone(transformRun); noRequested.steps[0].args = target; verify(noRequested, "needs_review", "needs_review");
+  const noRead = clone(transformRun); noRead.steps.length = 1; verify(noRead, "needs_review", "needs_review");
+  const beforeRead = clone(transformRun); beforeRead.steps[0].index = 2; beforeRead.steps[1].index = 1; verify(beforeRead, "needs_review", "needs_review");
+  const attached = clone(transformRun); attached.steps[0].independentReadBack = [{...attached.steps[1], source: "server_typed_readback", observedAt: "2026-10-01T00:00:00.000Z"}]; attached.steps.length = 1;
+  verify(attached, "passed");
+  const payloadSpoof = clone(transformRun); payloadSpoof.steps[0].result.verification = {ok: true, readBack: [payloadSpoof.steps[1]]}; payloadSpoof.steps.length = 1; verify(payloadSpoof, "needs_review", "needs_review");
+  const badSource = clone(attached); badSource.steps[0].independentReadBack[0].source = "client"; verify(badSource, "needs_review", "needs_review");
+  const failedAttached = clone(attached); failedAttached.steps[0].independentReadBack[0].status = "failed"; verify(failedAttached, "needs_review", "needs_review");
+
+  const propertyRun = {ok: true, steps: [
+    {index: 1, tool: "set_property_value", status: "completed", args: {...target, propertyPath: path, value: 40}, result: {comp, layer, property: {propertyPath: path, value: 40}}},
+    {index: 2, tool: "get_property_value", status: "completed", args: {compItemId: 10, layerId: 11, propertyPath: path}, result: {comp: {...comp, itemIndex: 3}, layer: {...layer, index: 3}, property: {propertyPath: path, value: {kind: "number", value: 40}}}}
+  ]};
+  verify(propertyRun, "passed");
+  const timedProperty = clone(propertyRun); timedProperty.steps[0].args.time = 2; timedProperty.steps[1].args.time = 2; verify(timedProperty, "passed");
+  const wrongReadTime = clone(timedProperty); wrongReadTime.steps[1].args.time = 3; verify(wrongReadTime, "needs_review", "needs_review");
+  for (const [position, field] of [[0, "comp"], [1, "comp"], [0, "layer"], [1, "layer"]]) {
+    const wrong = clone(propertyRun); wrong.steps[position].result[field][field === "comp" ? "itemId" : "id"] = 99; verify(wrong, "needs_review", "needs_review");
+  }
+  const missingPropertyId = clone(propertyRun); delete missingPropertyId.steps[1].result.layer.id; verify(missingPropertyId, "needs_review", "needs_review");
+  const wrongPath = clone(propertyRun); wrongPath.steps[1].result.property.propertyPath[0].propertyIndex = 2; verify(wrongPath, "needs_review", "needs_review");
+  const wrongValue = clone(propertyRun); wrongValue.steps[1].result.property.value.value = 41; verify(wrongValue, "needs_review", "failed");
+  const conflictingCompAliases = clone(propertyRun); conflictingCompAliases.steps[1].result.comp.id = 99; verify(conflictingCompAliases, "needs_review", "needs_review");
+  const conflictingRequestComp = clone(propertyRun); conflictingRequestComp.steps[0].args.compItemId = 99; verify(conflictingRequestComp, "needs_review", "needs_review");
+  const bulk = clone(propertyRun);
+  bulk.steps[0].args.layerIndex = [1, 2]; delete bulk.steps[0].args.expectedLayerId; bulk.steps[0].args.expectedLayerIds = [11, 12];
+  bulk.steps[0].result.layers = [layer, {...layer, id: 12, index: 3}]; delete bulk.steps[0].result.layer;
+  bulk.steps[0].result.properties = [{propertyPath: path, value: 40}, {propertyPath: path, value: 40}]; delete bulk.steps[0].result.property;
+  bulk.steps.push({...clone(bulk.steps[1]), index: 3, args: {compItemId: 10, layerId: 12, propertyPath: path}, result: {...clone(bulk.steps[1].result), layer: {...layer, id: 12, index: 4}}});
+  verify(bulk, "passed");
+  const duplicateBulk = clone(bulk); duplicateBulk.steps[0].result.layers[1].id = 11; verify(duplicateBulk, "needs_review", "needs_review");
+
+  const effectPath = [{propertyIndex: 1, name: "Effects", matchName: "ADBE Effect Parade"}, {propertyIndex: 2, name: "Slider", matchName: "ADBE Slider Control"}, {propertyIndex: 1, name: "Slider", matchName: "ADBE Slider Control-0001"}];
+  const effectArgs = {...target, effectIndex: 2, effectName: "Slider", effectMatchName: "ADBE Slider Control", propertyPath: [effectPath[2]], value: 40};
+  const effectRun = {ok: true, steps: [
+    {index: 1, tool: "set_effect_property", status: "completed", args: effectArgs, result: {comp, layer, effect: effectPath[1], property: {propertyPath: effectPath, value: 40}}},
+    {index: 2, tool: "get_effect_details", status: "completed", args: {compItemId: 10, layerId: 11, effectIndex: 2}, result: {comp: {...comp, itemIndex: 3}, layer: {...layer, index: 3}, properties: [{propertyPath: effectPath, value: 40}]}}
+  ]};
+  verify(effectRun, "passed");
+  for (const [position, field] of [[0, "comp"], [1, "comp"], [0, "layer"], [1, "layer"]]) {
+    const wrong = clone(effectRun); wrong.steps[position].result[field][field === "comp" ? "itemId" : "id"] = 99; verify(wrong, "needs_review", "needs_review");
+  }
+  const wrongEffectProperty = clone(effectRun); wrongEffectProperty.steps[1].result.properties[0].propertyPath[1].propertyIndex = 1; verify(wrongEffectProperty, "needs_review", "needs_review");
+  const wrongEffectValue = clone(effectRun); wrongEffectValue.steps[1].result.properties[0].value = 41; verify(wrongEffectValue, "needs_review", "failed");
+  const unknown = {ok: true, steps: [{index: 1, tool: "unknown_setter", mutating: true, status: "completed", result: {ok: true}}, {index: 2, tool: "get_project_info", status: "completed", result: {file: "synthetic.aep"}}]};
+  assert.equal(verify(unknown, "needs_review").unverifiedMutationCount, 1);
+  return cases;
 }
 
 function main() {
@@ -4279,10 +4369,12 @@ function main() {
   assertShapeLayerPolystarPasses();
   assertListEffectsCountsAsReadBack();
   assertSetEffectPropertyUsesExactCompositeIdentity();
+  const recoveryBoundaryCases = assertRecoveryIdentityAndTransformBoundaries();
 
   console.log(JSON.stringify({
     ok: true,
     schema: SEMANTIC_VERIFICATION_SCHEMA,
+    recoveryBoundaryCases,
     scenarios: results
   }, null, 2));
 }

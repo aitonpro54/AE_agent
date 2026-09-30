@@ -164,9 +164,13 @@ function resolveTargets(args, inventory) {
   }
   if (!comp) throw new Error("mutation_comp_identity_unavailable");
   let layers;
-  if (ID(args.expectedLayerId)) layers = (comp.layers || []).filter(value => value.id === args.expectedLayerId);
+  if(args.expectedLayerIds!==undefined) {
+    if(!Array.isArray(args.expectedLayerIds) || !args.expectedLayerIds.length || !args.expectedLayerIds.every(ID) || new Set(args.expectedLayerIds).size!==args.expectedLayerIds.length || args.expectedLayerId!==undefined) throw new Error("mutation_layer_identity_unavailable");
+    layers=args.expectedLayerIds.map(id=>{const matches=(comp.layers || []).filter(value=>value.id===id);return matches.length===1 ? matches[0] : null;});
+  }
+  else if (ID(args.expectedLayerId)) layers = (comp.layers || []).filter(value => value.id === args.expectedLayerId);
   else {
-    const indices = args.layerIndices !== undefined ? (Array.isArray(args.layerIndices) ? args.layerIndices : [args.layerIndices]) : [args.layerIndex];
+    const indices = args.layerIndices !== undefined ? (Array.isArray(args.layerIndices) ? args.layerIndices : [args.layerIndices]) : [].concat(args.layerIndex);
     if (!indices.length || !indices.every(ID)) throw new Error("mutation_layer_identity_unavailable");
     layers = indices.map(index => (comp.layers || []).find(value => value.index === index));
   }

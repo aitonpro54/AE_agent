@@ -33,22 +33,36 @@ const safe = obstacleEvent({operation: "run_ai_agent_plan", proposalId: "act_123
   durationMs: 12, successfulSteps: 2, failedSteps: 1, verification: "failed", args: secret, error: secret, path: "C:\\private", token: secret});
 assert(!JSON.stringify(safe).includes(secret)); assert(!JSON.stringify(safe).includes("private"));
 const p = record("act_repair"); p.executionState = "failed";
-p.payload.plan.steps = [{tool: "set_comp_properties", args: {compItemIndex: 1, motionBlur: false}}];
+p.payload.plan.steps = [{tool: "set_comp_properties", args: {compItemIndex: 1, expectedCompItemId: 10, motionBlur: false}}];
 p.repairDirective = directive(p, {ok: false, errorCode: "verification_required"});
+assert(!p.repairDirective.eligible);
+assert.equal(p.repairDirective.automaticReplayAllowed, false);
+p.lastRun = {id: "run-repair"};
+p.reconciliation = {schema: "ae-agent-plan-reconciliation.v1", runId: "run-repair", status: "reconciled", sameProject: true, steps: [{index: 1, tool: "set_comp_properties", mutationStatus: "not_applied"}]};
+p.repairDirective = directive(p, {id: "run-repair", ok: false, errorCode: "setter_rejected"});
 assert(p.repairDirective.eligible);
-const correction = {targetProject: p.payload.plan.targetProject, steps: [{tool: "get_comp_details", args: {compItemIndex: 1}}, ...p.payload.plan.steps,
-  {tool: "get_comp_details", args: {compItemIndex: 1}}]};
+const correction = {targetProject: p.payload.plan.targetProject, steps: [{tool: "get_comp_details", args: {compItemId: 10}}, ...p.payload.plan.steps,
+  {tool: "get_comp_details", args: {compItemId: 10}}]};
 assert.equal(validateRepair(p, correction).repairAttempt, 1);
+const movedAddressCorrection = JSON.parse(JSON.stringify(correction)); movedAddressCorrection.steps[1].args.compItemIndex = 9;
+assert.equal(validateRepair(p, movedAddressCorrection).repairAttempt, 1, "stable target permits a refreshed address hint");
+const wrongStableCorrection = JSON.parse(JSON.stringify(correction)); wrongStableCorrection.steps[1].args.expectedCompItemId = 99;
+assert.throws(() => validateRepair(p, wrongStableCorrection), e => e.code === "repair_scope_changed");
 assert.throws(() => validateRepair(p, {...correction, targetProject: {file: "C:\\test\\B.aep"}}), (e) => e.code === "repair_project_changed");
 assert.throws(() => validateRepair(p, {...correction, steps: [{tool: "create_test_comp", args: {name: "CODX_"}}]}), (e) => e.code === "repair_scope_changed");
 assert(!directive(p, {ok: false, errorCode: "timed_out_after_submit"}).eligible);
+p.reconciliation.steps[0].mutationStatus = "applied";
+assert(!directive(p, {id: "run-repair", ok: false, errorCode: "setter_rejected"}).eligible);
+assert.throws(() => validateRepair(p, correction), e => e.code === "repair_scope_changed", "even a stale eligible directive cannot replay an applied step");
+p.reconciliation.steps[0].mutationStatus = "not_applied";
 p.repairAttempt = 2; assert(!directive(p, {ok: false}).eligible);
 p.repairAttempt = 0;
-p.payload.plan.steps = [{tool: "set_layer_metadata", args: {compItemIndex: 1, layerIndices: [1, 2], audioEnabled: false}}];
-p.repairDirective = directive(p, {ok: false, errorCode: "verification_required"});
+p.payload.plan.steps = [{tool: "set_layer_metadata", args: {compItemIndex: 1, expectedCompItemId: 10, layerIndices: [1, 2], expectedLayerIds: [11, 12], audioEnabled: false}}];
+p.reconciliation.steps = [{index: 1, tool: "set_layer_metadata", mutationStatus: "not_applied"}];
+p.repairDirective = directive(p, {id: "run-repair", ok: false, errorCode: "setter_rejected"});
 assert.throws(() => validateRepair(p, {targetProject: p.payload.plan.targetProject, steps: [
-  {tool: "get_layer_details", args: {compItemIndex: 1, layerIndex: 1}}, ...p.payload.plan.steps,
-  {tool: "get_layer_details", args: {compItemIndex: 1, layerIndex: 1}}
+  {tool: "get_layer_details", args: {compItemId: 10, layerId: 11}}, ...p.payload.plan.steps,
+  {tool: "get_layer_details", args: {compItemId: 10, layerId: 11}}
 ]}), (e) => e.code === "repair_inspection_required");
 p.payload.plan.steps = [{tool: "set_layer_time_range", args: {compItemIndex: 1}}];
 assert(!directive(p, {ok: false, errorCode: "verification_required"}).eligible);
@@ -56,5 +70,7 @@ const uncovered = buildSemanticVerification({}, {ok: true, dryRun: false, steps:
   {index: 1, tool: "set_layer_transform", status: "completed", mutatesProject: true, result: {ok: true}},
   {index: 2, tool: "get_project_info", status: "completed", result: {file: "test.aep"}}
 ]});
-assert.equal(uncovered.unverifiedMutationCount, 1);
+assert.equal(uncovered.status, "needs_review");
+assert.equal(uncovered.unverifiedMutationCount, 0);
+assert(uncovered.checks.some(check => check.status === "needs_review"));
 console.log("autonomy state smoke passed: supersession, project, expiry, telemetry, repair budget, semantic coverage");
