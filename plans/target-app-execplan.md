@@ -153,15 +153,14 @@ M7 release не требует дальнейшей generated-only работы.
 
 Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json. Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e. Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18, blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась. Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
 
-## Live клиентский AEP — 1 октября 2026, продолжается
+## Live клиентский AEP — 1–2 октября 2026, расстановка завершена
 
 ### Progress
 
-- CEP/bridge3.2.0 Connected. Screens5139–5142/6layers, shared5143–5146/7layers, Final5147–5151/5layers и Scene9 5152–5156/8layers установлены и независимо прочитаны. Основная задача ещё не завершена.
-- Source acceptance:18activeclips/overlap0; оригиналы неизменны, silent1280×720/25fps/101frames/PAR1. Source21 четыре shared revisions установлены5157–5160/7layers,32actualPNG/nativehash совпадают;F8/F9 crop остаётся.
-- Scene9 scale197.22→98.61 принят16actualPNG/3native transforms. Flash19c quota до mutations; Sol создал keys. Native proof установил chainedconditional→LINEAR; explicit if/else исправлен: run7283ed96 Queen2/Metal3 HOLD6614/2checksPASS, times/values/samples приняты. PNG19d/F8/F9 crop продолжаются.
-- Product20 принят: stable PNG/IEND/disk proof и corroborated read-back. Runtime7dc36c9 проверен6nativePNG; historical prefixes не повышены.
-- Product23: независимый exact-ID import read-back, строгий path/type/media proof. Flash23b исправил основные замечания; root закрыл null/optional границы и убрал swallowed history assertion. Offline acceptance PASS; live4imports/12checks +rootnative receipt/diskhash audit PASS.
+- CEP3.2.0 Connected; 26 видеослоёв используют 18 проверенных клипов из новой папки. Итоговое независимое чтение: 51 цель, 205 native/source/timing checks PASS. Источники silent1280×720/25fps/101frames/PAR1, hashes сохранены, исходные отрезки не пересекаются.
+- В обычных сценах разные группы: Scene3 — 4, Scene7-7 — 2, Scene7 — 4, Scene9 — 5. Смены планов рассчитаны по заданным видимым интервалам сцен. Финал: 16 экземпляров/13 плейсхолдеров/7 групп, шесть групп по два раза +Led1, разные исходные фрагменты.
+- Scene9 Queen/Metal и shared F8/F9 кадрирование принято: 16 ключей HOLD6614, независимые samples, 12+20 новых actualPNG просмотрены; полные hashes/bytes/dimensions/CRC/IEND совпали. Все 16 final parent/matte/timing baselines сохранены; изменения project itemIndex после импортов не считаются сменой stable ID.
+- Product20: stable PNG/disk proof и corroborated read-back. Product23: независимый exact-ID import path/type/media proof, live4imports/12checks PASS. HOLD: выявлен chained conditional→LINEAR в native исполнении; explicit if/else исправлен и проверен runs7283ed96/d388f259. Recipes/registry/native regression обновлены.
 
 ### Decision Log
 
@@ -171,7 +170,8 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 - Native MAIN remap:12.64→.64,13.68→1.68,15→3,16.4/25.64→4. Shared revisions cuts.24/.48/1.68/3.00 покрывают короткие сцены и playing часть финала; inherited hold сохраняется.
 - SHA в отчёте19b отличается11/16 от actualdisk; отчёт также имеет invalid JSON escape.16файлов complete и реально просмотрены. Текстовые SHA отклонены; экспорты не повторять.
 - Flash19c недоступен по quota, процесс завершён; public tools показывают только reads. Допустим Sol6.1/high fallback в том же scope после idle сверки.
+- Группы определены по именам исходных треков; исполнители независимо не идентифицированы. Europe содержит космическое видео. Титр перекрывает часть финала; причина отдельных тёмных карточек не доказана. Все 13 известных targets заполнены, но видимость каждого маленького экземпляра не гарантируется.
 
 ### Validation
 
-Product23: rules/semantic(65local cases,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/node3/diff PASS. Число import cases включает optional local receipt; portablefixtures от него не зависят. Product20: rules/semantic/propertyidentity/generatedsafety/node5/diff/portablePNG PASS;6livePNG hashes/bytes/IEND independently match. Source18/21: rootactualviews/fullprobes/freshoriginal+outputhash/persistentcopy PASS. Scene3 fourgroups/2cuts и Final5 crop независимо приняты; timing stretch/remap учтены. HOLD/sourceproof patch:36offline regressions +retained suites/node4/diff PASS; nativeHOLD proof иScene9/F8/F9crop остаются. AEPunsaved.
+Rules/semantic(65local import,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/library/plan-builder/node/diff PASS. HOLD regression40portable/41local PASS, actual native16keys/samples PASS. Source18/21 actualviews/fullprobes/original+outputhash/persistentcopy PASS. Final51reads/205checks и16parent comparisons PASS. AEP test_live.aep/421items оставлен открытым без save/reopen; export/render queue не запускались. Runtime PID4012/code81f25d8, SHA b8adbf319d4d9d6f393f76268236a70a2ea7ba24a1fe6ef1d9406e09bd704408; pending0/inflight[]/editnull. Исторические false/partial receipts не повышены.
