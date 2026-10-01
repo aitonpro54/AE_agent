@@ -80,6 +80,25 @@ function checkSemantic(label, run, expected = "needs_review") {
 }
 
 async function main() {
+  const readPrepared = await prepareToolScript("get_property_value", { compItemId: 3810, layerId: 4852, propertyPath: args.propertyPath });
+  for (const aliased of [false, true]) {
+    const readContext=vm.createContext({noOp:false});
+    vm.runInContext(fixture + (aliased ? "KeyframeInterpolationType.HOLD=KeyframeInterpolationType.LINEAR;" : ""), readContext);
+    const read=JSON.parse(vm.runInContext(readPrepared.script, readContext, {timeout:2000}));
+    assert.equal(read.ok,true);
+    assert.deepEqual(Array.from(readContext.writes),[],"Interpolation diagnostics must remain read-only.");
+    const diagnostic=read.result.property.interpolationDiagnostics;
+    assert.equal(diagnostic.schema,"ae-agent-keyframe-interpolation-diagnostic.v1");
+    assert.equal(diagnostic.constants.linear.numeric,6612);
+    assert.equal(diagnostic.constants.bezier.numeric,6613);
+    assert.equal(diagnostic.constants.hold.numeric,aliased ? 6612 : 6614);
+    assert.equal(diagnostic.holdConditionalProbe.request.type,"string");
+    assert.equal(diagnostic.holdConditionalProbe.request.text,"hold");
+    assert.equal(diagnostic.holdConditionalProbe.selected.numeric,diagnostic.constants.hold.numeric);
+    assert.equal(diagnostic.holdDirect.numeric,diagnostic.constants.hold.numeric);
+    assert.equal(diagnostic.holdEqualsLinear,aliased);
+    results.push({label:aliased ? "typed read surfaces aliased HOLD constant without writing" : "typed read exposes native enum constants and HOLD conditional probe without writing",status:"passed"});
+  }
   const nativeModel = await execute(args);
   assert.equal(nativeModel.result.ok, true);
   const payload = nativeModel.result.result;

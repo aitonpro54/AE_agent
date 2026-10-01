@@ -17,6 +17,11 @@ Live run19c ранее сообщил HOLD при фактическом LINEAR.
 остаётся гипотезой. VM regression проверяет actual generated JSX и no-op,
 но не заменяет AE proof. Команда: `npm.cmd run smoke:keyframe-ease`.
 
+Повторная live-проверка безопасно отказала: запрос HOLD выбрал numeric enum
+6612, а ключи остались LINEAR. Keyed `get_property_value` теперь возвращает
+`interpolationDiagnostics`: native constants, типы/строки, direct HOLD и
+conditional probe. Это только чтение для установления причины до следующей записи.
+
 `replace_layer_source` также проверяет native source index/ID/name/type/path и
 независимое чтение слоя. Индекс источника не сравнивается с его именем. Старые
 receipts без stable comp ID не получают PASS из self-reported verification;

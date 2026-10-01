@@ -159,7 +159,7 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 
 - CEP/bridge3.2.0 Connected. Screens5139–5142/6layers, shared5143–5146/7layers, Final5147–5151/5layers и Scene9 5152–5156/8layers установлены и независимо прочитаны. Основная задача ещё не завершена.
 - Source acceptance:18activeclips/overlap0; оригиналы неизменны, silent1280×720/25fps/101frames/PAR1. Source21 четыре shared revisions установлены5157–5160/7layers,32actualPNG/nativehash совпадают;F8/F9 crop остаётся.
-- Scene9 старый scale197.22 исправлен на98.61. Root16actualPNG и3native transforms; Queen/Metal требуют адресного position crop.19c Flash quota до mutations; Sol создал keys, HOLD ошибочно LINEAR. Новый native proof patch offline принят; live proof/crop остаются.
+- Scene9 scale197.22→98.61 принят16actualPNG/3native transforms. Queen/Metal требуют position crop. Flash19c quota до mutations; Sol создал keys. Новый checker честно отказал HOLD: selected enum6612/LINEAR; typed read-only enum diagnostic готов, причина/live crop остаются.
 - Product20 принят: stable PNG/IEND/disk proof и corroborated read-back. Runtime7dc36c9 проверен6nativePNG; historical prefixes не повышены.
 - Product23: независимый exact-ID import read-back, строгий path/type/media proof. Flash23b исправил основные замечания; root закрыл null/optional границы и убрал swallowed history assertion. Offline acceptance PASS; live4imports/12checks +rootnative receipt/diskhash audit PASS.
 

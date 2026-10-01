@@ -12891,6 +12891,27 @@ async function callTool(name, args, executionContext) {
         return String(value);
       }
 
+      function __codexInterpolationDiagnostics() {
+        function describe(value) {
+          var result = { type: typeof value, numeric: null, text: null };
+          try { result.numeric = Number(value); } catch (__enumNumberError) {}
+          try { result.text = String(value); } catch (__enumStringError) {}
+          return result;
+        }
+        var result = { schema: "ae-agent-keyframe-interpolation-diagnostic.v1" };
+        try {
+          result.constants = { linear: describe(KeyframeInterpolationType.LINEAR),
+            bezier: describe(KeyframeInterpolationType.BEZIER), hold: describe(KeyframeInterpolationType.HOLD) };
+          var probeName = "hold";
+          var conditionalType = probeName === "hold" ? KeyframeInterpolationType.HOLD : probeName === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
+          result.holdConditionalProbe = { request: describe(probeName), selected: describe(conditionalType) };
+          result.holdDirect = describe(KeyframeInterpolationType.HOLD);
+          result.holdEqualsLinear = KeyframeInterpolationType.HOLD === KeyframeInterpolationType.LINEAR;
+          result.holdEqualsBezier = KeyframeInterpolationType.HOLD === KeyframeInterpolationType.BEZIER;
+        } catch (__enumDiagnosticError) { result.error = String(__enumDiagnosticError); }
+        return result;
+      }
+
       function __codexArrayCopy(value) {
         if (!(value instanceof Array)) return null;
         var copy = [];
@@ -13160,6 +13181,7 @@ async function callTool(name, args, executionContext) {
         } catch (__selectedKeysError) {}
         try {
           if (includeValue && info.numKeys > 0) {
+            info.interpolationDiagnostics = __codexInterpolationDiagnostics();
             info.keyframes = [];
             var maxKeyframes = Math.min(info.numKeys, 80);
             for (var __ki = 1; __ki <= maxKeyframes; __ki++) {
