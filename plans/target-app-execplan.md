@@ -159,7 +159,7 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 Progress: CEP/bridge3.2.0 Connected; четыре Screens заменены на принятые постоянные клипы, crop200 исправлен.
 Native2D/TextLayer/Float32 contracts исправлены Flash с узкой Sol/xhigh коррекцией; 10 review comps unregistered, recovery не реализован.
 Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
-Hash-verified копии в `AE_agent_media_2016` импортированы5139–5142; все6 video layers Screens покрывают0..4.04. Flash готовит Footage8–11. Вся расстановка ещё не завершена.
+Hash-verified копии в `AE_agent_media_2016` импортированы5139–5142; все6 video layers Screens покрывают0..4.04. Источники Footage8–11 приняты после1 Flash visual correction и copied; Flash15 устанавливает их, Flash16 source-only готовит final5. Вся расстановка ещё не завершена.
 
 Decision Log:169 exact project-only grants Antigravity; global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
 Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
@@ -170,3 +170,4 @@ Validation:76 native регрессий и scoped framing/visual/plan/protection
 Source: fresh original hashes, four MP4 probes/count_frames,20 decoded PNG,15 negative guards и end-to-end no-overwrite PASS.
 Диспетчер независимо проверил6 live layers/source/timing/fit и9 native PNG (Screens/Scene3/final); AEP403items, pending0/inflight[]. Scene3:4 разные группы,3 плана/2 гарантированных cuts(.84/1.68); точное число внутренних переходов не заявлено.
 Task13 transport failed из-за неверного пути tool, actual writes приняты по read-back; не replay. Final частично заполнен, остаются Footage1–3/6–16; AEP не сохранён, review recovery отдельно.
+Footage8–11 source: root24encodedPNG/fullprobes/freshhashes/copies PASS; darkStairway/blurScorp заменены новымиrev1 безoverwrite. Europe космический видеоряд номера, artistidentity не подтверждена; cuts.24/.48 быстрые. NestedFootage11start-.6 учесть без измененияparent.
