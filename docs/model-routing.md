@@ -137,10 +137,13 @@ API keys, paid API, покупка кредитов и Terra не включаю
 
 MCP Antigravity настроен отдельно через `agy mcp add after-effects` на существующий
 адаптер AE Agent. Конфигурация MCP agy общая для аккаунта; отдельный проект
-`AE_agent` имеет только точные read grants для `search_solutions`, `get_solution`,
-`get_bridge_status`, `get_project_info`. Другие инструменты требуют собственных
-действующих grants. Общая защита не отключалась; существующие широкие пользовательские
-настройки Antigravity не ужесточались и не расширялись этой настройкой.
+`AE_agent` с 1 октября 2026 года по прямому поручению пользователя имеет постоянные
+точные grants для чтения, typed tools, builders, proposal/runner и read-back из
+текущего каталога. Они действуют и в следующих задачах этого workspace.
+Headless-отказ нового `get_placeholder_protection` устранён и проверен реальным
+вызовом Flash. Grants разрешают транспорт, а scope конкретной задачи и gates
+bridge определяют допустимое исполнение. Глобальные настройки не менялись.
+Границы, расширение каталога и откат: `docs/antigravity-ae-access.md`.
 
 Один контроллер AE. Используйте typed library и прежние plan/dry-run/confirmation/
 read-back gates. Не передавайте panel credential внешнему исполнителю. CU — только
