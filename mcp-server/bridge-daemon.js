@@ -7776,8 +7776,15 @@ function calculateFitTransform(read,args={}) {
   const framing=require("./placeholder-framing");
   const verification=framing.verifyPlaceholderCoverage({geometry,transform:read && read.transform});
   if(!geometry || !geometry.layer || geometry.layer.transformStatic!==true || geometry.layer.threeDLayer!==false || geometry.layer.parentLayerId!==null || geometry.layer.rotation!==0 || geometry.layer.hasMasks!==false || geometry.layer.collapseTransformation!==false ||
-    ![geometry.comp,geometry.source].every(item=>item && Number.isFinite(item.width) && item.width>0 && Number.isFinite(item.height) && item.height>0 && item.pixelAspect===1) || !Array.isArray(geometry.layer.anchorPoint) || geometry.layer.anchorPoint.length!==2 || !geometry.layer.anchorPoint.every(Number.isFinite))throw placeholderError("unsupported_placeholder_cover_geometry",verification);
-  const c=geometry.comp,s=geometry.source,a=geometry.layer.anchorPoint;
+    ![geometry.comp,geometry.source].every(item=>item && Number.isFinite(item.width) && item.width>0 && Number.isFinite(item.height) && item.height>0 && item.pixelAspect===1))throw placeholderError("unsupported_placeholder_cover_geometry",verification);
+  const aRaw=geometry.layer.anchorPoint;
+  let a;
+  if(Array.isArray(aRaw)) {
+    if(aRaw.length===2 && Number.isFinite(aRaw[0]) && Number.isFinite(aRaw[1])) a=[aRaw[0],aRaw[1]];
+    else if(geometry.layer.threeDLayer===false && aRaw.length===3 && Number.isFinite(aRaw[0]) && Number.isFinite(aRaw[1]) && aRaw[2]===0) a=[aRaw[0],aRaw[1]];
+  }
+  if(!a)throw placeholderError("unsupported_placeholder_cover_geometry",verification);
+  const c=geometry.comp,s=geometry.source;
   const factor=args.mode==="contain" ? Math.min(c.width/s.width,c.height/s.height) : Math.max(c.width/s.width,c.height/s.height);
   if(args.mode==="stretch")throw placeholderError("unsupported_protected_stretch_fit");
   const x=args.alignX==="left" ? a[0]*factor : args.alignX==="right" ? c.width-(s.width-a[0])*factor : c.width/2+(a[0]-s.width/2)*factor;
@@ -13144,7 +13151,21 @@ async function callTool(name, args, executionContext) {
       const ids=payload.createdItemIds;
       const fresh=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
       const receipt=fresh && fresh.result;
-      if(!receipt || !placeholderSourceRecovery.pathsEqual(receipt.projectFile,projectFile) || !placeholderReviewService.verifyServiceReceipt(spec,receipt.items,state.projectKey).ok)return toolResult({ok:false,code:"review_creation_receipt_mismatch",owner:spec.owner,createdItemIds:ids},true);
+      const pathMatch=receipt && placeholderSourceRecovery.pathsEqual(receipt.projectFile,projectFile);
+      const verification=receipt && pathMatch ? placeholderReviewService.verifyServiceReceipt(spec,receipt.items,state.projectKey) : null;
+      if(!receipt || !pathMatch || !verification || !verification.ok) {
+        const failures = verification ? verification.failures.slice(0, 32) : (!receipt ? ["review_receipt_read_failed"] : ["review_receipt_project_mismatch"]);
+        return toolResult({
+          ok: false,
+          code: "review_creation_receipt_mismatch",
+          owner: spec.owner,
+          createdItemIds: ids,
+          failures,
+          status: "uncertain",
+          uncertain: true,
+          recovery: "Items were created in After Effects but receipt verification failed; do not replay creation or delete unregistered comps automatically."
+        }, true);
+      }
       const execution=evidenceContext.getStore() || {},guard=autonomousCommandContext.getStore() || {};
       const record={schema:spec.schema,owner:spec.owner,projectKey:state.projectKey,spec,receipt,receiptHash:placeholderReviewService.hash(receipt),images:[],createdAt:new Date().toISOString(),
         provenance:{runId:execution.runId || null,proposalId:guard.actionId || null,stepIndex:execution.stepIndex || null}};

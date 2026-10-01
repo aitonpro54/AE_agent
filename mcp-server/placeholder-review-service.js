@@ -1,6 +1,6 @@
 "use strict";
 const crypto = require("crypto");
-const { aeSupportScript, valueEqual } = require("./placeholder-protection");
+const { aeSupportScript, valueEqual, transformValueEqual } = require("./placeholder-protection");
 const { mediaKeyForSource } = require("./placeholder-usage");
 const ID = value => Number.isSafeInteger(value) && value > 0;
 const finite = value => typeof value === "number" && Number.isFinite(value);
@@ -89,11 +89,16 @@ function __phReadService(item) {
  if(item.numLayers>48)throw new Error("review_layer_read_budget");
  var row={itemId:item.id,itemIndex:__phProjectIndex(item),name:item.name,comment:item.comment,width:item.width,height:item.height,frameRate:item.frameRate,duration:item.duration,pixelAspect:item.pixelAspect,layers:[]};
  for(var j=1;j<=item.numLayers;j++){var layer=item.layer(j);var group=layer.property("ADBE Transform Group");var unsupported=[];
-  var value={id:layer.id,index:j,sourceItemId:layer.source ? layer.source.id : null,startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,enabled:layer.enabled,
+  var value={id:layer.id,index:j,name:layer.name,matchName:layer.matchName,sourceItemId:layer.source ? layer.source.id : null,startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,enabled:layer.enabled,
    anchorPoint:__phReadValue(group.property("ADBE Anchor Point"),unsupported),position:__phReadValue(group.property("ADBE Position"),unsupported),scale:__phReadValue(group.property("ADBE Scale"),unsupported),
    rotation:__phReadValue(group.property("ADBE Rotate Z"),unsupported),opacity:__phReadValue(group.property("ADBE Opacity"),unsupported),threeDLayer:layer.threeDLayer,parentLayerId:layer.parent ? layer.parent.id : null,collapseTransformation:layer.collapseTransformation,
    hasMasks:layer.property("ADBE Mask Parade") ? layer.property("ADBE Mask Parade").numProperties>0 : null,unsupported:unsupported};
-  if(!layer.source){var text=layer.property("ADBE Text Properties");if(text){var property=text.property("ADBE Text Document");value.text=property.value.text;value.fontSize=property.value.fontSize;if(property.numKeys!==0 || property.expressionEnabled!==false)unsupported.push("review_label_animation");}}
+  if(!layer.source){var text=layer.property("ADBE Text Properties");if(text){var property=text.property("ADBE Text Document");
+   if(text.matchName==="ADBE Text Properties" && property && property.matchName==="ADBE Text Document") {
+    value.text=property.value.text;value.fontSize=property.value.fontSize;value.layerKind="text";
+    value.textDocument={matchName:property.matchName,numKeys:property.numKeys,expressionEnabled:property.expressionEnabled};
+    if(property.numKeys!==0 || property.expressionEnabled!==false)unsupported.push("review_label_animation");
+   }else unsupported.push("review_label_text_evidence_missing");}}
   row.layers.push(value);
  }return row;
 }
@@ -135,7 +140,8 @@ function readServiceScript(itemIds) {
 }
 function verifyServiceReceipt(spec, rows, projectKey) {
   const failures=[];
-  if(projectKey!==spec.projectKey || !Array.isArray(rows) || rows.length!==spec.controls.length+1 || new Set(rows.map(row=>row.itemId)).size!==rows.length) return {ok:false,failures:["review_identity_or_count_mismatch"]};
+  if(projectKey!==spec.projectKey || !Array.isArray(rows) || rows.length!==spec.controls.length+1 ||
+    rows.some(row=>!row || !ID(row.itemId) || !Array.isArray(row.layers)) || new Set(rows.map(row=>row.itemId)).size!==rows.length) return {ok:false,failures:["review_identity_or_count_mismatch"]};
   const desired=[...spec.controls,spec.sheet];
   const controlIds=spec.controls.map(control=>(rows.find(row=>row.name===control.name)||{}).itemId);
   for(const expected of desired) {
@@ -143,11 +149,41 @@ function verifyServiceReceipt(spec, rows, projectKey) {
     if(!row || !ID(row.itemId) || row.comment!==spec.comment || !["width","height","frameRate","duration"].every(key=>valueEqual(row[key],expected[key])) || row.pixelAspect!==1 || row.layers.length!==expected.layers.length){failures.push("review_comp_mismatch:"+expected.name);continue;}
     const actual=[...row.layers].reverse(); // AE adds new layers at the top.
     for(const [index,layer] of expected.layers.entries()) {
-      const current=actual[index];if(!current || current.unsupported.length || current.rotation!==0 || current.opacity!==100 || current.threeDLayer!==false || current.parentLayerId!==null || current.collapseTransformation!==false || current.hasMasks!==false){failures.push("review_layer_unsupported");continue;}
-      if(layer.role==="label") {if(current.text!==layer.text || current.fontSize!==20 || !valueEqual(current.position,layer.position) || !valueEqual(current.anchorPoint,[0,0]) || !valueEqual(current.scale,[100,100]) || current.startTime!==0 || current.inPoint!==0 || !valueEqual(current.outPoint,expected.duration) || current.enabled!==true || current.stretch!==100 || current.timeRemapEnabled!==false)failures.push("review_label_mismatch");continue;}
+      const current=actual[index];
+      if(!current || !Array.isArray(current.unsupported) || current.unsupported.length || current.rotation!==0 || current.opacity!==100 || current.threeDLayer!==false || current.parentLayerId!==null || current.hasMasks!==false){failures.push("review_layer_unsupported");continue;}
+      if(layer.role==="label") {
+        const textDocument = current.textDocument;
+        const isProvenText = current.sourceItemId===null && typeof current.text==="string" &&
+          current.matchName==="ADBE Text Layer" && current.layerKind==="text" && textDocument &&
+          textDocument.matchName==="ADBE Text Document" && textDocument.numKeys===0 && textDocument.expressionEnabled===false;
+        if(!isProvenText || (current.collapseTransformation!==true && current.collapseTransformation!==false)) {
+          failures.push("review_layer_unsupported");
+          continue;
+        }
+        if(current.text!==layer.text || current.fontSize!==20 ||
+          !transformValueEqual(current.position,layer.position,"position",false) ||
+          !transformValueEqual(current.anchorPoint,[0,0],"anchorPoint",false) ||
+          !transformValueEqual(current.scale,[100,100],"scale",false) ||
+          current.startTime!==0 || current.inPoint!==0 || !valueEqual(current.outPoint,expected.duration) ||
+          current.enabled!==true || current.stretch!==100 || current.timeRemapEnabled!==false) {
+          failures.push("review_label_mismatch");
+        }
+        continue;
+      }
+      if(current.collapseTransformation!==false) {
+        failures.push("review_layer_unsupported");
+        continue;
+      }
       const sourceId=layer.role==="cell" ? controlIds[layer.controlIndex] : layer.sourceItemId;
       if(current.sourceItemId!==sourceId || current.stretch!==100 || current.timeRemapEnabled!==false || current.enabled!==true ||
-        ["startTime","inPoint","outPoint","anchorPoint","position","scale"].some(key=>!valueEqual(current[key],layer[key])))failures.push("review_reference_mismatch");
+        !valueEqual(current.startTime, layer.startTime) ||
+        !valueEqual(current.inPoint, layer.inPoint) ||
+        !valueEqual(current.outPoint, layer.outPoint) ||
+        !transformValueEqual(current.anchorPoint, layer.anchorPoint, "anchorPoint", false) ||
+        !transformValueEqual(current.position, layer.position, "position", false) ||
+        !transformValueEqual(current.scale, layer.scale, "scale", false)) {
+        failures.push("review_reference_mismatch");
+      }
     }
   }
   return {ok:!failures.length,failures};

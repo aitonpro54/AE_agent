@@ -13,11 +13,11 @@ function createVisualProject(){
  var nextItemId=500,nextLayerId=5000;
  child.width=root.width=320;child.height=root.height=180;child.pixelAspect=root.pixelAspect=1;child.comment=root.comment="";
  for(var i=0;i<items.length;i++)if(items[i] instanceof CompItem)items[i].resolutionFactor=[2,2];
- function makeStatic(layer){layer.threeDLayer=false;layer.parent=null;layer.collapseTransformation=false;layer.groups.push(new Group("ADBE Mask Parade",3,layer));}
+ function makeStatic(layer){layer.threeDLayer=false;layer.parent=null;layer.collapseTransformation=(layer.matchName==="ADBE Text Layer" || layer.groups.some(function(g){return g.matchName==="ADBE Text Properties";})) ? true : false;layer.groups.push(new Group("ADBE Mask Parade",3,layer));}
  makeStatic(target);makeStatic(other);makeStatic(route);
  function refresh(comp){for(var i=0;i<comp._layers.length;i++){comp._layers[i].index=i+1;comp._layers[i].containingComp=comp;}}
  CompItem.prototype.__insert=function(layer){makeStatic(layer);this._layers.unshift(layer);refresh(this);return layer;};
- Object.defineProperty(CompItem.prototype,"layers",{get:function(){var comp=this;return {add:function(source){return comp.__insert(new AVLayer(nextLayerId++,source.name,source));},addText:function(text){var layer=new AVLayer(nextLayerId++,text,null);var group=new Group("ADBE Text Properties",4,layer);group.add("ADBE Text Document",{text:text,fontSize:20});layer.groups.push(group);return comp.__insert(layer);}};}});
+ Object.defineProperty(CompItem.prototype,"layers",{get:function(){var comp=this;return {add:function(source){return comp.__insert(new AVLayer(nextLayerId++,source.name,source));},addText:function(text){var layer=new AVLayer(nextLayerId++,text,null);layer.matchName="ADBE Text Layer";var group=new Group("ADBE Text Properties",4,layer);group.add("ADBE Text Document",{text:text,fontSize:20});layer.groups.push(group);return comp.__insert(layer);}};}});
  app.project.items={addComp:function(name,width,height,pixelAspect,duration,frameRate){var comp=new CompItem(nextItemId++,name);comp.width=width;comp.height=height;comp.pixelAspect=pixelAspect;comp.duration=duration;comp.frameRate=frameRate;comp.comment="";comp.resolutionFactor=[2,2];items.push(comp);if(failComment)Object.defineProperty(comp,"comment",{get:function(){return "";},set:function(){}});return comp;}};
  Object.defineProperty(CompItem.prototype,"usedIn",{get:function(){var source=this;return items.filter(function(item){return item instanceof CompItem && item._layers.some(function(layer){return layer.source===source;});});}});
  CompItem.prototype.remove=function(){if(this.failRemove)throw new Error("synthetic remove failure");items.splice(items.indexOf(this),1);};

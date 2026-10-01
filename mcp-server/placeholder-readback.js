@@ -1,6 +1,6 @@
 "use strict";
 const { pathsEqual } = require("./placeholder-source-recovery");
-const { valueEqual, propertyKey } = require("./placeholder-protection");
+const { valueEqual, propertyKey, transformValueEqual } = require("./placeholder-protection");
 
 const expectedFields = ["compItemIndex", "compItemId", "compName", "frameRate", "layerIndex", "layerId", "layerName",
   "sourceItemId", "sourceName", "startTime", "inPoint", "outPoint"];
@@ -61,10 +61,16 @@ function verifyPlaceholderReadBack(expected, observed) {
   exact("layer.timeRemapEnabled", false, layer.timeRemapEnabled);
   if (expected.sourceFile !== undefined) checks.push({ field: "source.file", passed: pathsEqual(expected.sourceFile, source.file), expected: expected.sourceFile, observed: source.file ?? null });
   if (expected.footageMissing !== undefined) exact("source.footageMissing", expected.footageMissing, source.footageMissing);
+  const geometryLayer = observed.geometry && observed.geometry.layer;
+  const geometryMode = geometryLayer && geometryLayer.threeDLayer;
+  const dimensionEvidenceContradictory = typeof layer.threeDLayer === "boolean" && typeof geometryMode === "boolean" &&
+    layer.threeDLayer !== geometryMode;
+  const provenDimensionMode = typeof layer.threeDLayer === "boolean" &&
+    (observed.geometry === undefined || geometryMode === layer.threeDLayer) ? layer.threeDLayer : null;
   if (expected.transform) for (const [field, wanted] of Object.entries(expected.transform)) {
     const preview = observed.transform && observed.transform[field];
     const got = preview && typeof preview === "object" && !Array.isArray(preview) ? preview.value : preview;
-    checks.push({ field: "transform." + field, passed: valueEqual(wanted, got) &&
+    checks.push({ field: "transform." + field, passed: !dimensionEvidenceContradictory && transformValueEqual(wanted, got, field, provenDimensionMode) &&
       (!preview || typeof preview !== "object" || Array.isArray(preview) || preview.numKeys === 0 && preview.expressionEnabled === false && preview.dimensionsSeparated !== true),
       expected: wanted, observed: got ?? null });
   }
@@ -77,7 +83,11 @@ function verifyPlaceholderReadBack(expected, observed) {
   }
   let coverage=null;
   if(expected.geometry){
-    const equal=observed.geometry && Object.entries(expected.geometry).every(([group,fields])=>observed.geometry[group] && Object.entries(fields).every(([field,value])=>valueEqual(value,observed.geometry[group][field])));
+    const proven2D = layer.threeDLayer === false && geometryLayer && geometryLayer.threeDLayer === false;
+    const equal=proven2D && Object.entries(expected.geometry).every(([group,fields])=>observed.geometry[group] && Object.entries(fields).every(([field,value])=>{
+      if(group==="layer" && field==="anchorPoint") return transformValueEqual(value, observed.geometry[group][field], "anchorPoint", false);
+      return valueEqual(value,observed.geometry[group][field]);
+    }));
     checks.push({field:"geometry",passed:Boolean(equal),expected:expected.geometry,observed:observed.geometry || null});
     coverage=require("./placeholder-framing").verifyPlaceholderCoverage({geometry:observed.geometry,transform:observed.transform});
     checks.push({field:"rectangularCoverage",passed:coverage.eligible===true && coverage.covered===true,expected:true,observed:coverage.covered===true});

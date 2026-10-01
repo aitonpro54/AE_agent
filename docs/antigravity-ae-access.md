@@ -11,8 +11,10 @@
 `mcp(after-effects/<tool>)` из актуального каталога: чтение, typed tools,
 builders, proposal, dry-run/runner, независимые проверки и контрольные кадры.
 141 MCP rule и прежний отдельный read grant документации моста. Для текущего
-media workflow также разрешены две точные команды: bounded offline helper и
-read-only `git grep` примера контракта; всего 144 rules. Helper ограничен новой
+media workflow также разрешены три точные команды: bounded offline helper,
+read-only `git grep` примера контракта и `git ls-files "*typed-plan-contract*"`;
+на этом этапе было 145 rules (текущий итог после offline проверок — 169).
+Helper ограничен новой
 папкой видео и runtime outputs, не обращается к AE. Он не является общим shell grant.
 
 Это постоянная настройка проекта Antigravity. Новый AEP в том же workspace
@@ -35,6 +37,29 @@ provider/planner/Hardcore lanes. Их отсутствие не запрещае
 Чтение внешних видео, запись отчётов и shell имеют отдельные права и область
 конкретной задачи. Модель не подтверждает группы или accepted snapshots вместо
 пользователя и не обращается к panel-only API с automation credential.
+
+## Практический порядок для будущих live задач
+
+После успешного builder сохранять полный `result.plan`, включая
+`expectedReadBack`, `placeholderAssignments`, `frameReview` и framing metadata.
+Следующий шаг — server proposal, dry-run и выполнение с его текущими pins;
+не пересобирать plan только из steps и не искать другой runner. Адресные setters
+используют documented hints и guards, а stable IDs для чтения не являются
+универсальными setter aliases. Затем читать изменённые targets независимо.
+
+При `state.constraints=null` и отсутствии accepted snapshots обычный typed
+replace/time не требует global group mappings. `check_placeholder_assignments`
+по умолчанию включает group constraints; это отдельная проверка с authoritative
+подтверждёнными mappings. Вывод модели о группе не заменяет trusted confirmation.
+PAR, перекрывающиеся старые видеослои и shared usages проверяются до записи:
+cover-helper поддерживает только square pixels; один заменённый нижний слой
+не доказывает заполнение экрана, если сверху остаётся другое видео.
+
+Экспорт PNG тоже проходит proposal/gates. Registered visual review строится
+через текущий typed review builder с реальным owner, item IDs и manifest;
+картинки необходимо фактически просмотреть. Чтение metadata и geometric coverage
+не подтверждают содержание кадра или число смен плана. Участки исходника и
+контрольные кадры рассчитываются по видимому local range заданной сцены.
 
 ## Проверка и откат
 
@@ -60,3 +85,25 @@ Backup внешнего проекта может содержать локал�
 Для отката завершить исполнителя, сверить последующие изменения и удалить
 только добавленные rules. Не заменять весь project JSON старой копией поверх
 более поздних пользовательских изменений. Git revert не откатывает внешний JSON.
+
+
+## Offline проверки при исправлении live дефектов
+
+По постоянному поручению пользователя 1 октября добавлены 21 точное command
+разрешение для scoped placeholder smokes, syntax проверок перечисленных JS и
+`git diff --check`. Всего 166 rules, включая 141 MCP. Эти команды не запускают
+настоящий AE, provider или frozen intake. Другие поля проекта Antigravity
+сохранены. Новые команды добавлять по конкретному scope, без wildcard shell.
+Backup и полный список: `.codex-runtime/live-bohemian2016/offline-check-grants-08.json`
+и `antigravity-project-before-offline-check-grants.json` (не публиковать backup).
+После production projector-коррекции добавлены ещё три exact проверки
+`placeholder-evidence.js`/его smoke: текущий итог169. Other fields unchanged;
+список и backup находятся в runtime `evidence-check-grants.json` и
+`antigravity-project-before-evidence-check-grants.json`.
+
+Live испытание обнаружило native контрактные дефекты геометрии и review receipts.
+Замена source может фактически примениться даже при ошибке записи run evidence;
+в этом случае требуются fresh read-back и продолжение только оставшихся шагов.
+`review_creation_receipt_mismatch` после создания объектов запрещает повтор create:
+сохранять owner/IDs, сверять фактический receipt и не считать owner зарегистрированным.
+Просмотр PNG отдельно не восстанавливает registration и не доказывает число склеек.

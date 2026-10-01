@@ -44,7 +44,7 @@ AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, pro
 
 - Progress 2026-10-01: по прямому поручению добавлен постоянный project-only доступ Flash к 141 AE MCP tool; прежний headless отказ `get_placeholder_protection` устранён реальным вызовом Flash. Панель/bridge установлены 3.2.0, Connected и чтение AEP подтверждены.
 - Decision Log 2026-10-01: точные grants текущего каталога сохраняются для будущих задач; global bypass/credentials и server gates не менялись. Raw/delete/restore/save/provider direct grants не добавлялись. Контракт: docs/antigravity-ae-access.md. Основная live задача продолжается по уже заданным сценам.
-- Validation 2026-10-01: backup/read-back144 grants (141 MCP, docs read, bounded media helper, точный read-only git grep), сохранность остальных project JSON полей и actual Flash model/MCP read PASS. Native импорт8 sources и независимое чтение IDs4984–4991 подтверждены. Run04 оборвался из-за сети после записи отчёта; imports не повторяются. Это проверка доступа/импорта, не художественная приёмка плейсхолдеров; основной live run05 продолжается.
+- Validation 2026-10-01: backup/read-back145 grants (141 MCP, docs read, bounded media helper, точные read-only git grep/ls-files), сохранность остальных project JSON полей и actual Flash model/MCP read PASS. Native импорт8 sources и независимое чтение IDs4984–4991 подтверждены. Run04/05 прерваны сетью;05 также содержит denied незаявленной команды. Imports не повторяются, fresh05 observations сохранены. Это проверка доступа/импорта, не художественная приёмка плейсхолдеров; live продолжение06 ограничено Scene3.
 
 - Progress: модель/effort чата свободно выбирает пользователь; Sol 6.1/high рекомендован. Проектные model/effort и default_subagent overrides удалены. Делегирование: простые поручения Luna/medium, средние Flash/high, блокеры Sol/xhigh, архитектура Sol/ultra, Astra/high после неудачи Ultra; контроль выбранной моделью чата.
 - Decision Log: маршрут относится к делегированию и не ограничивает UI/CLI выбор. Постоянное разрешение на Flash только в AE Agent; один короткий вызов выполняет диспетчер. Два помощника суммарно включая AGY/Ultra. Загруженные роли требуют новой загрузки; provider и AE grants не переключались.
@@ -152,3 +152,28 @@ M7 release не требует дальнейшей generated-only работы.
 ## Frozen Full Intake backlog (историческая справка)
 
 Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json. Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e. Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18, blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась. Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
+
+
+## Live клиентский AEP — 1 октября 2026, продолжается
+
+Progress: CEP/bridge 3.2.0 Connected; 8 новых источников импортированы по typed gates.
+Один слот Screen4 заменён, но crop не принят. Native2D/TextLayer/Float32 contracts
+исправлены Flash с узкой Sol/xhigh guard/projector коррекцией и принятой проверкой.
+76 native регрессий и scoped framing/visual/plan/protection smoke прошли;
+10 созданных review comps остаются unregistered, recovery не реализован.
+Основная расстановка всех включённых сцен, разнообразие групп и 2–3 смены плана
+в видимых интервалах ещё не завершены.
+
+Decision Log: 169 точечных project-only grants Antigravity; global/auth unchanged.
+Unknown/partial writes не повторять; created review объекты сохранить до строго
+проверяемого recovery. Не менять заданные границы сцен и отключённые варианты.
+Пользователь разрешил в финальной сцене неизбежные повторы групп с разными
+фрагментами: 13 разных плейсхолдеров против 7 групп. Scene8 не содержит
+плейсхолдеров; её служебные пререндеры сохраняются. Shared Screens/Footage
+должны покрывать видимые интервалы всех своих сцен.
+
+Validation: fresh bridge pending0/inflight[], independent Screen4 source/time
+read-back и actual PNG просмотрены; это не artistic acceptance. Production native
+JSX VM/negative guards PASS; старый captured receipt намеренно отклонён из-за
+неполного type/static proof. Real native labels matchName/TextLayer/collapse
+подтверждены read-only; новый runtime/coverage/live montage proof следующий.

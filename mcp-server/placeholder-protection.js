@@ -39,6 +39,35 @@ function valueEqual(a, b) {
   if (finite(a) && finite(b)) return Math.abs(a - b) <= 1e-7;
   return a === b;
 }
+function transformNumberEqual(a, b) {
+  if (!finite(a) || !finite(b)) return false;
+  return Math.abs(a - b) <= 1e-7 || Math.abs(a - Math.fround(b)) <= 1e-7 || Math.abs(Math.fround(a) - b) <= 1e-7;
+}
+function canonicalize2DVector(value, kind, threeDLayer) {
+  if (threeDLayer !== false || !["anchorPoint", "position", "scale"].includes(kind) ||
+    !Array.isArray(value) || ![2, 3].includes(value.length) || !Array.from(value).every(finite)) return null;
+  if (value.length === 2 || value[2] === (kind === "scale" ? 100 : 0)) return value.slice(0, 2);
+  return null;
+}
+function transformValueEqual(a, b, kind = null, threeDLayer = null) {
+  if (["anchorPoint", "position", "scale"].includes(kind)) {
+    if (threeDLayer === false) {
+      const canA = canonicalize2DVector(a, kind, false), canB = canonicalize2DVector(b, kind, false);
+      return Boolean(canA && canB && canA.every((v, i) => transformNumberEqual(v, canB[i])));
+    }
+    // Historical 2D reads retain strict equality; only explicit native evidence
+    // can authorize dimensional conversion or Float32 representation tolerance.
+    const length = threeDLayer === true ? 3 : 2;
+    return Array.isArray(a) && Array.isArray(b) && a.length === length && b.length === length &&
+      Array.from(a).every(finite) && Array.from(b).every(finite) && valueEqual(a, b);
+  }
+  if (kind === "orientation") {
+    return Array.isArray(a) && Array.isArray(b) && a.length === 3 && b.length === 3 &&
+      Array.from(a).every(finite) && Array.from(b).every(finite) && valueEqual(a, b);
+  }
+  if (["rotation", "opacity", "xRotation", "yRotation"].includes(kind)) return transformNumberEqual(a, b);
+  return false;
+}
 function validValue(value) {
   return finite(value) || typeof value === "boolean" || typeof value === "string" && value.length <= 4000 ||
     Array.isArray(value) && value.length > 0 && value.length <= 4 && value.every(finite);
@@ -366,7 +395,7 @@ for(var c=0;c<__phInventory.length;c++) {var expected=__phInventory[c];var comp=
 `;
 }
 
-module.exports = { TRANSFORMS, TARGET_SETTERS, targetKey, valueEqual, validValue, validTransform, propertyPath, propertyKey,
+module.exports = { TRANSFORMS, TARGET_SETTERS, targetKey, valueEqual, transformNumberEqual, canonicalize2DVector, transformValueEqual, validValue, validTransform, propertyPath, propertyKey,
   assertSupportedSetterIdentity, aeSetterIdentityGuard,
   normalizeProtectedPaths, validateSnapshot, snapshotFromEvidence, compareSnapshot, dependencyClosure,
   resolveTargets, sourceId, checkProtectedSteps, aeSupportScript, aeGuardScript, aeInventoryGuardScript };

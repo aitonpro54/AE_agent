@@ -39,6 +39,7 @@ function projectPlaceholderLayerEvidence(full) {
     },
     layer: {
       index: layer.index, id: layer.id, name: layer.name, locked: layer.locked,
+      ...(typeof layer.threeDLayer === "boolean" ? { threeDLayer: layer.threeDLayer } : {}),
       source: source ? { itemId: source.itemId, name: source.name,
         file: source.file, footageMissing: source.footageMissing, duration: source.duration, frameRate: source.frameRate } : null,
       startTime: layer.startTime, inPoint: layer.inPoint, outPoint: layer.outPoint,
@@ -54,7 +55,8 @@ function compactGeometry(geometry){
   const result={};
   for(const [group,fields] of Object.entries({comp:["width","height","pixelAspect","frameRate"],source:["width","height","pixelAspect","duration","frameRate"],layer:["threeDLayer","parentLayerId","rotation","anchorPoint","transformStatic","hasMasks","collapseTransformation"]})){
     result[group]={};for(const field of fields){const value=geometry[group] && geometry[group][field];
-      result[group][field]=typeof value==="boolean" || value===null || typeof value==="number" && Number.isFinite(value) ? value : Array.isArray(value) && value.length===2 && value.every(item=>typeof item==="number" && Number.isFinite(item)) ? [...value] : null;}
+      result[group][field]=typeof value==="boolean" || value===null || typeof value==="number" && Number.isFinite(value) ? value :
+        group==="layer" && field==="anchorPoint" && Array.isArray(value) && [2,3].includes(value.length) && Array.from(value).every(Number.isFinite) ? [...value] : null;}
   }
   return result;
 }

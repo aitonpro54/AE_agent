@@ -112,12 +112,22 @@ function validateGeometry(geometry) {
     if (layer.collapseTransformation !== false) {
       reasons.push('layer.collapseTransformation must be strictly false');
     }
-    if (
-      !Array.isArray(layer.anchorPoint) ||
-      layer.anchorPoint.length !== 2 ||
-      !Number.isFinite(layer.anchorPoint[0]) ||
-      !Number.isFinite(layer.anchorPoint[1])
-    ) {
+    let validAnchor = false;
+    if (Array.isArray(layer.anchorPoint)) {
+      if (layer.anchorPoint.length === 2 && Number.isFinite(layer.anchorPoint[0]) && Number.isFinite(layer.anchorPoint[1])) {
+        validAnchor = true;
+      } else if (
+        layer.threeDLayer === false &&
+        layer.anchorPoint.length === 3 &&
+        Number.isFinite(layer.anchorPoint[0]) &&
+        Number.isFinite(layer.anchorPoint[1]) &&
+        Number.isFinite(layer.anchorPoint[2]) &&
+        layer.anchorPoint[2] === 0
+      ) {
+        validAnchor = true;
+      }
+    }
+    if (!validAnchor) {
       reasons.push('layer.anchorPoint must be a 2D array of finite numbers [ax, ay]');
     }
   }
@@ -621,6 +631,17 @@ function verifyPlaceholderCoverage({ geometry, transform }) {
     ) {
       sx = rawScale[0];
       sy = rawScale[1];
+    } else if (
+      geometry && geometry.layer && geometry.layer.threeDLayer === false &&
+      Array.isArray(rawScale) &&
+      rawScale.length === 3 &&
+      Number.isFinite(rawScale[0]) &&
+      Number.isFinite(rawScale[1]) &&
+      Number.isFinite(rawScale[2]) &&
+      rawScale[2] === 100
+    ) {
+      sx = rawScale[0];
+      sy = rawScale[1];
     } else if (typeof rawScale === 'number' && Number.isFinite(rawScale)) {
       sx = rawScale;
       sy = rawScale;
@@ -652,6 +673,17 @@ function verifyPlaceholderCoverage({ geometry, transform }) {
     ) {
       px = rawPosition[0];
       py = rawPosition[1];
+    } else if (
+      geometry && geometry.layer && geometry.layer.threeDLayer === false &&
+      Array.isArray(rawPosition) &&
+      rawPosition.length === 3 &&
+      Number.isFinite(rawPosition[0]) &&
+      Number.isFinite(rawPosition[1]) &&
+      Number.isFinite(rawPosition[2]) &&
+      rawPosition[2] === 0
+    ) {
+      px = rawPosition[0];
+      py = rawPosition[1];
     } else {
       reasons.push('transform.position must be an array of 2 finite numbers [px, py]');
     }
@@ -668,6 +700,17 @@ function verifyPlaceholderCoverage({ geometry, transform }) {
       rawAnchor.length === 2 &&
       Number.isFinite(rawAnchor[0]) &&
       Number.isFinite(rawAnchor[1])
+    ) {
+      ax = rawAnchor[0];
+      ay = rawAnchor[1];
+    } else if (
+      geometry && geometry.layer && geometry.layer.threeDLayer === false &&
+      Array.isArray(rawAnchor) &&
+      rawAnchor.length === 3 &&
+      Number.isFinite(rawAnchor[0]) &&
+      Number.isFinite(rawAnchor[1]) &&
+      Number.isFinite(rawAnchor[2]) &&
+      rawAnchor[2] === 0
     ) {
       ax = rawAnchor[0];
       ay = rawAnchor[1];
@@ -1116,6 +1159,7 @@ function proposeAlternativeSourceIntervals({
 }
 
 module.exports = {
+  validateGeometry,
   proposePlaceholderCover,
   verifyPlaceholderCoverage,
   proposeAlternativeSourceIntervals,
