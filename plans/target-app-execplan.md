@@ -156,24 +156,16 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 
 ## Live клиентский AEP — 1 октября 2026, продолжается
 
-Progress: CEP/bridge 3.2.0 Connected; 8 новых источников импортированы по typed gates.
-Один слот Screen4 заменён, но crop не принят. Native2D/TextLayer/Float32 contracts
-исправлены Flash с узкой Sol/xhigh guard/projector коррекцией и принятой проверкой.
-76 native регрессий и scoped framing/visual/plan/protection smoke прошли;
-10 созданных review comps остаются unregistered, recovery не реализован.
-Основная расстановка всех включённых сцен, разнообразие групп и 2–3 смены плана
-в видимых интервалах ещё не завершены.
+Progress: CEP/bridge3.2.0 Connected; 8 исходников импортированы, Screen4 заменён, crop не принят.
+Native2D/TextLayer/Float32 contracts исправлены Flash с узкой Sol/xhigh коррекцией; 10 review comps unregistered, recovery не реализован.
+Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
+Hash-verified копии сохранены в `AE_agent_media_2016` рядом с AEP; Flash выполняет четыре Screens. Вся расстановка ещё не завершена.
 
-Decision Log: 169 точечных project-only grants Antigravity; global/auth unchanged.
-Unknown/partial writes не повторять; created review объекты сохранить до строго
-проверяемого recovery. Не менять заданные границы сцен и отключённые варианты.
-Пользователь разрешил в финальной сцене неизбежные повторы групп с разными
-фрагментами: 13 разных плейсхолдеров против 7 групп. Scene8 не содержит
-плейсхолдеров; её служебные пререндеры сохраняются. Shared Screens/Footage
-должны покрывать видимые интервалы всех своих сцен.
+Decision Log:169 exact project-only grants Antigravity; global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
+Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
+Shared targets покрывают видимые интервалы всех сцен. Source helper после двух неполных Flash попыток исправлен Sol/xhigh: FFprobe/type/count/audio, frames/PTS/SAR/no-overwrite.
+Оригиналы не изменены; встроенные полосы, мягкость и внутренние переходы сохранены. Source acceptance не равна AEP artistic acceptance.
 
-Validation: fresh bridge pending0/inflight[], independent Screen4 source/time
-read-back и actual PNG просмотрены; это не artistic acceptance. Production native
-JSX VM/negative guards PASS; старый captured receipt намеренно отклонён из-за
-неполного type/static proof. Real native labels matchName/TextLayer/collapse
-подтверждены read-only; новый runtime/coverage/live montage proof следующий.
+Validation:76 native регрессий и scoped framing/visual/plan/protection PASS; original receipt rejected за missing type/static proof; native labels read-only подтверждены.
+Source: fresh original hashes, four MP4 probes/count_frames,20 decoded PNG,15 negative guards и end-to-end no-overwrite PASS.
+Диспетчер независимо просмотрел планы/lastframes, повторил probes/hashes и проверил постоянные копии. Перед live этапом AEP399items, pending0/inflight[].
