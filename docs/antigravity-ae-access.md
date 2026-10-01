@@ -14,7 +14,7 @@ builders, proposal, dry-run/runner, независимые проверки и �
 media workflow также разрешены три точные команды: bounded offline helper,
 read-only `git grep` примера контракта и `git ls-files "*typed-plan-contract*"`;
 на этом этапе было 145 rules (после offline проверок — 169, после текущих
-media read grants — 203).
+media read grants — 208).
 Helper ограничен новой
 папкой видео и runtime outputs, не обращается к AE. Он не является общим shell grant.
 
@@ -124,3 +124,6 @@ Flash17 остановился до импорта или mutation; root под�
 новый task ID: conversation с невалидным terminal protocol драйвер не принимает.
 Следующий запуск17c завершился сетевым TLS timeout до модели/MCP;
 процесс проверен завершённым, AE шаги не повторялись.
+В17d чтение всех пяти persistent MP4 прошло. Перед Scene9 добавлены ещё пять
+точных путей принятых клипов:208 rules, остальные поля совпадают.
+Evidence: `scene9-read-grants.json` в том же ignored runtime.
