@@ -26,6 +26,11 @@ conditional probe. Typed native чтение подтвердило: direct HOLD
 выбор до setter. Bounded VM adapter воспроизводит наблюдаемое расхождение,
 не считается полноценным ExtendScript compiler или доказательством native fix.
 
+Live run `7283ed96-f660-422e-981b-af6e18682a8e` подтвердил исправление:
+Queen2/Metal3 ключа LINEAR6612→HOLD6614, native verification и два независимых
+property read-back PASS. Times/values сохранены; samples между ключами дают
+постоянные координаты. Кроп проверяется отдельно по фактическим PNG.
+
 `replace_layer_source` также проверяет native source index/ID/name/type/path и
 независимое чтение слоя. Индекс источника не сравнивается с его именем. Старые
 receipts без stable comp ID не получают PASS из self-reported verification;
