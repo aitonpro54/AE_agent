@@ -8,7 +8,7 @@ AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, pro
 
 ### Progress
 - Checkpoint `checkpoint/ae-agent-3.1.0-before-3.2` отправлен на GitHub и прочитан обратно: target `c6edff9`. Ветка `codex/release-3.2.0` создана от `d0729f6`; локальная 3.1 возвращена к checkpoint. Версия canonical surfaces и зависимых checks обновлена до 3.2.0; описан постоянный порядок выпуска.
-- Итоговые offline checks завершены; подготовлен отдельный commit версии, следующий шаг — push только 3.2 и draft PR с base 3.1. PR №4 сохраняется; merge не выполняется.
+- Завершено: версия подготовлена commit `b86fd2c`, ветка 3.2 отправлена на GitHub, открыт draft PR №5: https://github.com/aitonpro54/AE_agent/pull/5 (head 3.2 → base 3.1). PR №4 остаётся OPEN на `c6edff9`; merge не выполнялся.
 
 ### Decision Log
 - 29 накопленных commits принадлежат новой 3.2; remote 3.1 не меняется. Checkpoint фиксирует исходники, а не установленную CEP/открытый AEP. Исторические release/evidence versions не переписываются.
@@ -17,6 +17,7 @@ AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, pro
 ### Validation
 - Preflight: remote 3.1=`c6edff9`, HEAD=`d0729f6`, target branch/tag отсутствовали; annotated checkpoint опубликован и peeled target совпал. Существующие чужие untracked материалы сохранены.
 - check:rules, bridge/planning/solutions/autonomy-bridge, шесть placeholder groups и plan-run-recovery — exit0. Syntax девяти изменённых JS и diff — PASS. Все daemon tests изолированы; live AE/CEP/provider/AME не запускались. Logs: .codex-runtime/release-3.2.0/.
+- Remote read-back подтвердил опубликованный HEAD `b86fd2c`, неизменную 3.1=`c6edff9`, peeled checkpoint=`c6edff9` и PR №5 OPEN/isDraft=true с правильными head/base. После принятия PR №4 в main остаётся сменить base №5 и проверить diff; условие пока не наступило.
 
 ## Улучшения плейсхолдеров — 2026-09-30
 

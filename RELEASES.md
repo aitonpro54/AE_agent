@@ -16,7 +16,8 @@ read-only сверку после timeout и запрещает автомати
 CEP title/menu/assets и проверки версии согласованы на 3.2.0.
 
 Предыдущий код 3.1 закреплён тегом `checkpoint/ae-agent-3.1.0-before-3.2`
-на `c6edff9`. PR 3.1 остаётся открытым; PR 3.2 — отдельный draft поверх его ветки.
+на `c6edff9`. PR 3.1 остаётся открытым; [PR №5 версии 3.2](https://github.com/aitonpro54/AE_agent/pull/5)
+— отдельный draft поверх его ветки. Commit подготовки — `b86fd2c`.
 В main ничего не слито; тег `v3.2.0` и GitHub Release ещё не опубликованы.
 Установленная CEP и открытый AEP не обновлялись. Политика дальнейших выпусков —
 `docs/release-workflow.md`.

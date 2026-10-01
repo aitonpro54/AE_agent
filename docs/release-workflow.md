@@ -13,7 +13,9 @@
 - Новая `codex/release-3.2.0` начинается с `d0729f6` и включает 29 накопленных
   commits относительно предыдущей ветки, затем отдельный commit подготовки версии.
 - PR №4: `codex/release-3.1.0` → `main`, остаётся открытым.
-- Draft PR 3.2: `codex/release-3.2.0` → `codex/release-3.1.0`.
+- Подготовка версии: commit `b86fd2c`; offline проверки из release-плана — PASS.
+- [Draft PR №5 версии 3.2](https://github.com/aitonpro54/AE_agent/pull/5):
+  `codex/release-3.2.0` → `codex/release-3.1.0`.
 
 Base 3.1 используется для сравнения изменений. PR 3.2 нельзя сливать в 3.1:
 сначала отдельным поручением принимается PR №4 в main, затем base PR 3.2 меняется
