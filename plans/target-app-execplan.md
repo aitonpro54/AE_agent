@@ -153,7 +153,6 @@ M7 release не требует дальнейшей generated-only работы.
 
 Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json. Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e. Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18, blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась. Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
 
-
 ## Live клиентский AEP — 1 октября 2026, продолжается
 
 Progress: CEP/bridge3.2.0 Connected; четыре Screens заменены на принятые постоянные клипы, crop200 исправлен.
@@ -161,7 +160,7 @@ Native2D/TextLayer/Float32 contracts исправлены Flash с узкой So
 Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
 Screens sources5139–5142/6layers, Footage8–11 sources5143–5146/7layers и Final5 sources5147–5151/5layers подтверждены independently. Scene9 пять источников приняты/скопированы root; task19 ждёт исправления semantic/PNG proof. BonJovi8position исправлен, поздний facecrop требует PNG. Вся расстановка ещё не завершена.
 
-Decision Log:213 exact project-only grants Antigravity;39 новых media reads и5semantic offline checks, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
+Decision Log:216 exact project-only grants Antigravity;39 новых media reads и8 bounded offline checks, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
 Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
 Shared targets покрывают видимые интервалы всех сцен. Source helper после двух неполных Flash попыток исправлен Sol/xhigh: FFprobe/type/count/audio, frames/PTS/SAR/no-overwrite.
 Оригиналы не изменены; встроенные полосы, мягкость и внутренние переходы сохранены. Source acceptance не равна AEP artistic acceptance.
@@ -175,4 +174,5 @@ Final5 source: root20encodedPNG/fullprobes/freshhashes/persistentcopy и noorigi
 Access milestone: exact grants/config diff проверены;17 blocked до imports/mutations,17b отвергнут драйвером за invalid terminal conversation,17c TLS timeout до model/MCP. Процессы завершены, повторов AE не было;17d новый запуск в исходном scope. Пользователь подтвердил повторы финала другими фрагментами.
 Scene9 source: root24PNG, пять fullprobes/original+outputhash/persistentcopy PASS;30 reported PNGhash совпадают с disk. Первый Metallica candidate отклонён за одинаковые планы, Flash заменил новым Metallica2ч40/60/80s; остальные clips сохранены. Original intervals disjoint от предыдущих13clips;2cuts.84/1.68 внутриlocal~.287..2.44, AEP ещё не заполнен этим этапом.
 Live17d: networkfailed после20fill/10PNGcompleted; root7freshnative+10PNG/cover/time PASS, AEP412items/idlepending/parents прежние. Semantic195/226 ошибочно отвергает attached+explicit одинаковые reads; исправление pending, writes не replay. Финал13unique slots:6groups×2+Led1, user repeats разрешены.
-NativePNG17:7/10hash mismatch доказаны как SHA незавершённых prefixes, которые handler прочитал приfirstsize>0; fullactualPNG имеютIEND. Source18hashes30/30match. Flash20 boundedsemantic/completePNGproof fix перед19; старыеreceipts не признаватьполными ретроактивно.
+NativePNG17:7/10hash mismatch — SHA незавершённых prefixes приfirstsize>0; actualPNG имеютIEND. Source18hashes30/30match. Draft20 отклонён: PNGcap testFAIL и malformedverification/read guards; Flash20b offline correction, runtime ещё старый. Historical receipts не повышать.
+Scene timing audit18clips/originaloverlap0: Footage8–11 cuts.24/.48 ДО finalvisible.64. Flash21 source-only новаяревизия сcuts.24/.48/1.68/3.00 (2short/3main/2final), acceptance/live pending; docs/live-bohemian2016-scene-timing-audit.md.
