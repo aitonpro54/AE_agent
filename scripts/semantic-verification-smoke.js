@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("assert");
+const path = require("node:path");
 
 const {
   buildSemanticVerification,
@@ -4235,6 +4236,12 @@ function assertRecoveryIdentityAndTransformBoundaries() {
     {index: 2, tool: "get_layer_details", status: "completed", args: {compItemId: 10, layerId: 11}, result: {comp: {...comp, itemIndex: 3}, layer: {...layer, index: 3}, transform: Object.fromEntries(Object.entries(transform).map(([key, value]) => [key, {kind: Array.isArray(value) ? "array" : "number", value}]))}}
   ]};
   const passedTransform = verify(transformRun, "passed"); assert.equal(passedTransform.checks.length, 5);
+  const indexOnly = clone(transformRun);
+  delete indexOnly.steps[0].args.expectedCompItemId; delete indexOnly.steps[0].args.expectedLayerId;
+  indexOnly.steps[0].result.comp.itemIndex = 1; indexOnly.steps[0].result.layer.index = 1;
+  verify(indexOnly, "passed"); // Native result IDs bind the later moved-index read.
+  const conflictingTransformAlias = clone(transformRun); conflictingTransformAlias.steps[0].args.compItemId = 99;
+  verify(conflictingTransformAlias, "needs_review", "needs_review");
   for (const field of Object.keys(transform)) {
     const changed = clone(transformRun); changed.steps[1].result.transform[field].value = Array.isArray(transform[field]) ? transform[field].map(n => n + 1) : transform[field] + 1;
     verify(changed, "needs_review", "failed");
@@ -4291,6 +4298,467 @@ function assertRecoveryIdentityAndTransformBoundaries() {
   const wrongEffectValue = clone(effectRun); wrongEffectValue.steps[1].result.properties[0].value = 41; verify(wrongEffectValue, "needs_review", "failed");
   const unknown = {ok: true, steps: [{index: 1, tool: "unknown_setter", mutating: true, status: "completed", result: {ok: true}}, {index: 2, tool: "get_project_info", status: "completed", result: {file: "synthetic.aep"}}]};
   assert.equal(verify(unknown, "needs_review").unverifiedMutationCount, 1);
+  return cases;
+}
+
+function assertAttachedAndExplicitCorroborationAndPngFileProof() {
+  let cases = 0;
+  function verify(run, expected, checkStatus) {
+    const semantic = buildSemanticVerification({ steps: run.steps }, run);
+    assert.equal(semantic.status, expected, `Expected ${expected} but got ${semantic.status}: ${JSON.stringify(semantic.checks)}`);
+    if (checkStatus) assert(semantic.checks.some(check => check.status === checkStatus));
+    cases++;
+    return semantic;
+  }
+
+  const comp = { itemId: 10, itemIndex: 1, name: "MainComp" };
+  const layer1 = { id: 11, index: 1, name: "TargetLayer" };
+  const layer2 = { id: 12, index: 2, name: "TargetLayer" };
+  const transform1 = { position: [100, 200, 0], scale: [100, 100, 100], anchorPoint: [50, 50, 0] };
+  const transform2 = { position: [300, 400, 0], scale: [120, 120, 100], anchorPoint: [60, 60, 0] };
+
+  // 1. Minimized 195: two same-name targets, exact different IDs
+  const run195 = {
+    ok: true,
+    steps: [
+      {
+        index: 1,
+        tool: "set_layer_transform",
+        status: "completed",
+        args: { compItemId: 10, layerId: 11, expectedLayerId: 11, ...transform1 },
+        result: { comp, layer: layer1, transform: transform1 },
+        independentReadBack: [
+          {
+            tool: "get_layer_details",
+            status: "completed",
+            source: "server_typed_readback",
+            observedAt: "2026-10-01T00:00:00.000Z",
+            args: { compItemId: 10, layerId: 11 },
+            result: {
+              comp,
+              layer: layer1,
+              transform: {
+                position: { kind: "array", value: transform1.position },
+                scale: { kind: "array", value: transform1.scale },
+                anchorPoint: { kind: "array", value: transform1.anchorPoint }
+              }
+            }
+          }
+        ]
+      },
+      {
+        index: 2,
+        tool: "set_layer_transform",
+        status: "completed",
+        args: { compItemId: 10, layerId: 12, expectedLayerId: 12, ...transform2 },
+        result: { comp, layer: layer2, transform: transform2 },
+        independentReadBack: [
+          {
+            tool: "get_layer_details",
+            status: "completed",
+            source: "server_typed_readback",
+            observedAt: "2026-10-01T00:00:01.000Z",
+            args: { compItemId: 10, layerId: 12 },
+            result: {
+              comp,
+              layer: layer2,
+              transform: {
+                position: { kind: "array", value: transform2.position },
+                scale: { kind: "array", value: transform2.scale },
+                anchorPoint: { kind: "array", value: transform2.anchorPoint }
+              }
+            }
+          }
+        ]
+      },
+      {
+        index: 3,
+        tool: "get_layer_details",
+        status: "completed",
+        args: { compItemId: 10, layerId: 12 },
+        result: {
+          comp,
+          layer: layer2,
+          transform: {
+            position: { kind: "array", value: transform2.position },
+            scale: { kind: "array", value: transform2.scale },
+            anchorPoint: { kind: "array", value: transform2.anchorPoint }
+          }
+        }
+      }
+    ]
+  };
+
+  const sem195 = verify(run195, "passed");
+  assert.equal(sem195.passedChecks, 6);
+  assert.equal(sem195.failedChecks, 0);
+  assert.equal(sem195.needsReviewChecks, 0);
+  const checksStep1 = sem195.checks.filter(c => c.id.startsWith("1:"));
+  assert.equal(checksStep1.length, 3);
+  assert(checksStep1.every(c => c.binding.readBack.stepIndex === 1.5));
+  const checksStep2 = sem195.checks.filter(c => c.id.startsWith("2:"));
+  assert.equal(checksStep2.length, 3);
+  assert(checksStep2.every(c => c.binding.readBack.stepIndex === 3 && c.binding.readBack.stepIndices[0] === 2.5 && c.binding.readBack.stepIndices[1] === 3));
+
+  // 2. Minimized 226: 5 targets with attached + explicit
+  const steps226 = [];
+  for (let i = 1; i <= 5; i++) {
+    const l = { id: 100 + i, index: i, name: `Layer_${i}` };
+    const t = { position: [10 * i, 20 * i, 0], scale: [100, 100, 100], anchorPoint: [5 * i, 5 * i, 0] };
+    const mutIdx = (i - 1) * 2 + 1;
+    const expIdx = mutIdx + 1;
+    steps226.push({
+      index: mutIdx,
+      tool: "set_layer_transform",
+      status: "completed",
+      args: { compItemId: 10, layerId: l.id, expectedLayerId: l.id, ...t },
+      result: { comp, layer: l, transform: t },
+      independentReadBack: [
+        {
+          tool: "get_layer_details",
+          status: "completed",
+          source: "server_typed_readback",
+          observedAt: new Date(Date.now() + i * 1000).toISOString(),
+          args: { compItemId: 10, layerId: l.id },
+          result: {
+            comp,
+            layer: l,
+            transform: {
+              position: { kind: "array", value: t.position },
+              scale: { kind: "array", value: t.scale },
+              anchorPoint: { kind: "array", value: t.anchorPoint }
+            }
+          }
+        }
+      ]
+    });
+    steps226.push({
+      index: expIdx,
+      tool: "get_layer_details",
+      status: "completed",
+      args: { compItemId: 10, layerId: l.id },
+      result: {
+        comp,
+        layer: l,
+        transform: {
+          position: { kind: "array", value: t.position },
+          scale: { kind: "array", value: t.scale },
+          anchorPoint: { kind: "array", value: t.anchorPoint }
+        }
+      }
+    });
+  }
+  const run226 = { ok: true, steps: steps226 };
+  const sem226 = verify(run226, "passed");
+  assert.equal(sem226.passedChecks, 15);
+  assert.equal(sem226.failedChecks, 0);
+  assert.equal(sem226.needsReviewChecks, 0);
+
+  // 3. Negatives: conflicting values between attached and explicit
+  const conflict1 = clone(run195);
+  conflict1.steps[2].result.transform.position.value[0] += 10;
+  verify(conflict1, "needs_review", "needs_review");
+
+  const conflict2 = clone(run195);
+  conflict2.steps[1].independentReadBack[0].result.transform.position.value[0] += 10;
+  verify(conflict2, "needs_review", "needs_review");
+
+  const conflictScale = clone(run195);
+  conflictScale.steps[2].result.transform.scale.value[0] += 5;
+  verify(conflictScale, "needs_review", "needs_review");
+
+  const bothMismatch = clone(run195);
+  bothMismatch.steps[1].independentReadBack[0].result.transform.position.value[0] += 20;
+  bothMismatch.steps[2].result.transform.position.value[0] += 20;
+  bothMismatch.steps[1].result.transform.position[0] += 20;
+  verify(bothMismatch, "needs_review", "failed");
+
+  // 4. Negatives: missing field, non-finite, truncated, extra attached, spoofed
+  const missingField = clone(run195);
+  delete missingField.steps[2].result.transform.scale;
+  verify(missingField, "needs_review", "needs_review");
+
+  const nonfiniteAtt = clone(run195);
+  nonfiniteAtt.steps[1].independentReadBack[0].result.transform.position.value[0] = NaN;
+  verify(nonfiniteAtt, "needs_review", "needs_review");
+
+  const truncatedExp = clone(run195);
+  truncatedExp.steps[2].result.transform.position.truncated = true;
+  verify(truncatedExp, "needs_review", "needs_review");
+
+  const extraAttached = clone(run195);
+  extraAttached.steps[1].independentReadBack.push(clone(extraAttached.steps[1].independentReadBack[0]));
+  verify(extraAttached, "needs_review", "needs_review");
+
+  const spoofedExplicit = clone(run195);
+  delete spoofedExplicit.steps[1].independentReadBack;
+  spoofedExplicit.steps[2].source = "server_typed_readback";
+  spoofedExplicit.steps.push({ ...clone(spoofedExplicit.steps[2]), index: 4 });
+  verify(spoofedExplicit, "needs_review", "needs_review");
+
+  // Negative: bad attached + valid explicit (missing layer ID in attached)
+  const badAttValidExp = clone(run195);
+  delete badAttValidExp.steps[1].independentReadBack[0].result.layer.id;
+  verify(badAttValidExp, "needs_review");
+
+  // Negative: bad attached status / source + valid explicit
+  const badSourceValidExp = clone(run195);
+  badSourceValidExp.steps[1].independentReadBack[0].source = "client";
+  verify(badSourceValidExp, "needs_review");
+
+  // Negative: valid attached + bad targeted explicit (missing layer ID in explicit)
+  const validAttBadExp = clone(run195);
+  delete validAttBadExp.steps[2].result.layer.id;
+  verify(validAttBadExp, "needs_review");
+  for (const status of ["failed", "skipped", undefined]) {
+    const badStatus = clone(run195); badStatus.steps[2].status = status; badStatus.steps[2].result = null;
+    verify(badStatus, "needs_review");
+  }
+  for (const marker of [null, {}, false, "invalid", undefined]) {
+    const badMarker = clone(run195); badMarker.steps[1].independentReadBack = marker;
+    verify(badMarker, "needs_review");
+  }
+  for (const args of [{layerId: 12}, {compItemId: 10}, {}, {compItemId: 10, expectedCompItemId: 99, layerId: 12},
+    {compItemId: 10, layerId: 12, expectedLayerId: 99}, {compItemId: 99, layerId: 12}]) {
+    const malformedRequest = clone(run195); malformedRequest.steps[2].args = args;
+    verify(malformedRequest, "needs_review");
+  }
+  const malformedMutationMarker = clone(run195);
+  malformedMutationMarker.steps[1].independentReadBack.push({tool: "set_layer_transform", mutatesProject: true, status: "completed"});
+  verify(malformedMutationMarker, "needs_review");
+  const invalidTimestamp = clone(run195); invalidTimestamp.steps[1].independentReadBack[0].observedAt = "invalid";
+  verify(invalidTimestamp, "needs_review");
+
+  const laterMutation = clone(run195);
+  const changedTarget = clone(laterMutation.steps[1]); changedTarget.index = 4;
+  delete changedTarget.independentReadBack;
+  changedTarget.args.position = [500, 600, 0]; changedTarget.result.transform.position = [500, 600, 0];
+  laterMutation.steps.push(changedTarget, {...clone(laterMutation.steps[2]), index: 5});
+  verify(laterMutation, "needs_review", "failed"); // An older snapshot cannot prove a later requested value.
+
+  // Negative: extra malformed attached (2nd attached without layer ID)
+  const extraMalformedAttached = clone(run195);
+  extraMalformedAttached.steps[1].independentReadBack.push({
+    tool: "get_layer_details",
+    status: "completed",
+    source: "server_typed_readback",
+    observedAt: "2026-10-01T00:00:02.000Z",
+    args: { compItemId: 10 },
+    result: {}
+  });
+  verify(extraMalformedAttached, "needs_review");
+
+  // Positive: foreign explicit for layer 13 is ignored by layer 12 (passes as attached-only)
+  const foreignExplicitRun = clone(run195);
+  foreignExplicitRun.steps[2].args.layerId = 13;
+  foreignExplicitRun.steps[2].result.layer.id = 13;
+  verify(foreignExplicitRun, "passed");
+  const sameNameForeignComp = clone(run195);
+  sameNameForeignComp.steps.push({ ...clone(sameNameForeignComp.steps[2]), index: 4,
+    args: {compItemId: 99, layerId: 111}, result: { comp: {...comp, itemId: 99}, layer: {id: 111, index: 2, name: layer2.name}, transform: clone(sameNameForeignComp.steps[2].result.transform) } });
+  verify(sameNameForeignComp, "passed");
+
+  // 5. Scoped 266 generated-only tests
+  const defaultExportDir = path.resolve(process.cwd(), "logs", "generated-exports");
+  function createPngStep(index, fileName, time, overrides = {}) {
+    const defaultFile = {
+      outputFileName: fileName,
+      outputPath: path.join(defaultExportDir, fileName),
+      byteLength: 123456,
+      width: 1280,
+      height: 720,
+      sha256: "e92707c5746da3478c2e2229f22e8caaee6cbfcff323984e61a8ca2978335e6f",
+      mimeType: "image/png",
+      pngComplete: true,
+      existsAfter: true,
+      deletedAfterReadBack: false
+    };
+    const file = { ...defaultFile, ...(overrides.file || {}) };
+    return {
+      index,
+      tool: "save_comp_frame_png",
+      status: "completed",
+      args: { compName: "Footage Comp", outputFileName: fileName, time },
+      result: {
+        comp: { name: "Footage Comp", itemId: 50 + index, itemIndex: 50 + index, duration: 10 },
+        frame: { time },
+        resolutionFactor: { before: [1, 1], applied: [1, 1], after: [1, 1], restored: true },
+        file,
+        verification: {
+          ok: true,
+          target: {
+            tool: "save_comp_frame_png",
+            outputFileName: fileName,
+            outputPath: file.outputPath
+          },
+          file: {
+            byteLength: file.byteLength,
+            width: file.width,
+            height: file.height,
+            sha256: file.sha256,
+            pngComplete: file.pngComplete,
+            existsAfter: file.existsAfter,
+            deletedAfterReadBack: file.deletedAfterReadBack
+          },
+          resolutionFactor: { before: [1, 1], applied: [1, 1], after: [1, 1], restored: true }
+        },
+        ...overrides.result
+      }
+    };
+  }
+
+  const validPngSteps = [];
+  for (let i = 1; i <= 10; i++) {
+    validPngSteps.push(createPngStep(i, `frame_${i}.png`, i * 0.5));
+  }
+  const validPngRun = { ok: true, steps: validPngSteps };
+  const semPng = verify(validPngRun, "passed");
+  assert.equal(semPng.passedChecks, 30);
+  assert.equal(semPng.failedChecks, 0);
+  assert.equal(semPng.needsReviewChecks, 0);
+  assert.equal(semPng.readBackCount, 0);
+  assert.equal(semPng.verificationScope, "generated_png_file_proof_only");
+  assert.equal(semPng.acceptance, "not_established");
+
+  // Historical 266 run without pngComplete: true flag -> MUST FAIL-CLOSED (needs_review)
+  const historicalPngRun = clone(validPngRun);
+  for (const step of historicalPngRun.steps) {
+    delete step.result.file.pngComplete;
+    delete step.result.verification.file.pngComplete;
+  }
+  const histSem = verify(historicalPngRun, "needs_review");
+  assert.equal(histSem.passedChecks, 30);
+  assert.equal(histSem.readBackCount, 0);
+
+  const falseFlagPng = clone(validPngRun);
+  falseFlagPng.steps[0].result.file.pngComplete = false;
+  verify(falseFlagPng, "needs_review");
+
+  const badHashPng = clone(validPngRun);
+  badHashPng.steps[0].result.file.sha256 = "not-a-sha";
+  verify(badHashPng, "needs_review", "failed");
+
+  const zeroBytesPng = clone(validPngRun);
+  zeroBytesPng.steps[0].result.file.byteLength = 0;
+  verify(zeroBytesPng, "needs_review", "failed");
+
+  const badMimePng = clone(validPngRun);
+  badMimePng.steps[0].result.file.mimeType = "image/jpeg";
+  verify(badMimePng, "needs_review", "failed");
+
+  const notRestoredPng = clone(validPngRun);
+  notRestoredPng.steps[0].result.resolutionFactor.restored = false;
+  verify(notRestoredPng, "needs_review", "failed");
+
+  const unequalResPng = clone(validPngRun);
+  unequalResPng.steps[0].result.resolutionFactor.after = [2, 2];
+  verify(unequalResPng, "needs_review");
+
+  const notExistsPng = clone(validPngRun);
+  notExistsPng.steps[0].result.file.existsAfter = false;
+  verify(notExistsPng, "needs_review");
+
+  const deletedPng = clone(validPngRun);
+  deletedPng.steps[0].result.file.deletedAfterReadBack = true;
+  verify(deletedPng, "needs_review");
+
+  // Finding 1 Negatives: missing, null, string, missing vFile
+  const missingVerif = clone(validPngRun);
+  delete missingVerif.steps[0].result.verification;
+  verify(missingVerif, "needs_review");
+
+  const nullVerif = clone(validPngRun);
+  nullVerif.steps[0].result.verification = null;
+  verify(nullVerif, "needs_review");
+
+  const stringVerif = clone(validPngRun);
+  stringVerif.steps[0].result.verification = "bogus";
+  verify(stringVerif, "needs_review");
+
+  const missingVFile = clone(validPngRun);
+  delete missingVFile.steps[0].result.verification.file;
+  verify(missingVFile, "needs_review");
+
+  // Finding 2 Negatives: foreign path, foreign vTarget, missing target, wrong tool
+  const foreignPath = clone(validPngRun);
+  foreignPath.steps[0].result.file.outputPath = "C:\\foreign\\frame_1.png";
+  foreignPath.steps[0].result.verification.target.outputPath = "C:\\foreign\\frame_1.png";
+  verify(foreignPath, "needs_review");
+
+  const foreignVTarget = clone(validPngRun);
+  foreignVTarget.steps[0].result.verification.target.outputPath = "C:\\foreign\\frame_1.png";
+  verify(foreignVTarget, "needs_review");
+
+  const missingVTarget = clone(validPngRun);
+  delete missingVTarget.steps[0].result.verification.target;
+  verify(missingVTarget, "needs_review");
+
+  const wrongVTargetTool = clone(validPngRun);
+  wrongVTargetTool.steps[0].result.verification.target.tool = "export_text_to_file";
+  verify(wrongVTargetTool, "needs_review");
+
+  // Finding 4 Negatives: comp index mismatch, no comp selector, no time, wrong applied res
+  const wrongCompIndex = clone(validPngRun);
+  wrongCompIndex.steps[0].args = { compItemIndex: 123, outputFileName: "frame_1.png", time: 0.5 };
+  wrongCompIndex.steps[0].result.comp = { itemIndex: 97, name: "Footage Comp" };
+  verify(wrongCompIndex, "needs_review");
+
+  const noCompSelector = clone(validPngRun);
+  noCompSelector.steps[0].args = { outputFileName: "frame_1.png", time: 0.5 };
+  verify(noCompSelector, "needs_review");
+
+  const noTime = clone(validPngRun);
+  delete noTime.steps[0].args.time;
+  verify(noTime, "needs_review");
+
+  const wrongAppliedRes = clone(validPngRun);
+  wrongAppliedRes.steps[0].args.resolutionFactor = [1, 1];
+  wrongAppliedRes.steps[0].result.resolutionFactor.applied = [2, 2];
+  verify(wrongAppliedRes, "needs_review");
+  for (const value of [undefined, null, "invalid", {}, {before: [1], after: [1], applied: [1, 1], restored: true},
+    {before: [2, 2], after: [2, 2], applied: [1, 1], restored: true}, {before: [1, 1], after: [1, 1], applied: [2, 2], restored: true}]) {
+    const missingOrBadHostResolution = clone(validPngRun);
+    missingOrBadHostResolution.steps[0].result.verification.resolutionFactor = value;
+    verify(missingOrBadHostResolution, "needs_review");
+  }
+  const conflictingDimensions = clone(validPngRun); conflictingDimensions.steps[0].result.verification.file.width = 1;
+  verify(conflictingDimensions, "needs_review");
+  const wrongRequestResolution = clone(validPngRun); wrongRequestResolution.steps[0].args.resolutionFactor = [0, 0];
+  verify(wrongRequestResolution, "needs_review");
+  const unsupportedSelector = clone(validPngRun); unsupportedSelector.steps[0].args = {compItemId: 51, time: 0.5, outputFileName: "frame_1.png"};
+  verify(unsupportedSelector, "needs_review");
+  const guardOnlySelector = clone(validPngRun); guardOnlySelector.steps[0].args = {expectedCompName: "Footage Comp", time: 0.5, outputFileName: "frame_1.png"};
+  verify(guardOnlySelector, "needs_review");
+  const registeredReview = clone(validPngRun); const reviewStep = registeredReview.steps[0];
+  reviewStep.args = {reviewOwner: "registered-owner", reviewItemId: 51, time: 0, outputFileName: "frame_1.png", resolutionFactor: [1, 1]};
+  Object.assign(reviewStep.result, {reviewOwner: "registered-owner", reviewItemId: 51}); reviewStep.result.frame.time = 0;
+  verify(registeredReview, "passed"); // Host handler proves current registered ownership; semantic never registers it.
+  const wrongReviewId = clone(registeredReview); wrongReviewId.steps[0].result.reviewItemId = 99;
+  verify(wrongReviewId, "needs_review");
+  const wrongReviewOwner = clone(registeredReview); wrongReviewOwner.steps[0].result.reviewOwner = "foreign-owner";
+  verify(wrongReviewOwner, "needs_review");
+
+  // Finding 5 Negatives: Infinity bytes, negative bytes
+  const infBytesPng = clone(validPngRun);
+  infBytesPng.steps[0].result.file.byteLength = Infinity;
+  infBytesPng.steps[0].result.verification.file.byteLength = Infinity;
+  verify(infBytesPng, "needs_review");
+
+  const negBytesPng = clone(validPngRun);
+  negBytesPng.steps[0].result.file.byteLength = -5;
+  negBytesPng.steps[0].result.verification.file.byteLength = -5;
+  verify(negBytesPng, "needs_review");
+
+  const mixedPlan = clone(validPngRun);
+  mixedPlan.steps.push({
+    index: 11,
+    tool: "set_layer_transform",
+    status: "completed",
+    args: { compItemId: 10, layerId: 11, ...transform1 },
+    result: { comp, layer: layer1, transform: transform1 }
+  });
+  verify(mixedPlan, "needs_review");
+
   return cases;
 }
 
@@ -4370,11 +4838,13 @@ function main() {
   assertListEffectsCountsAsReadBack();
   assertSetEffectPropertyUsesExactCompositeIdentity();
   const recoveryBoundaryCases = assertRecoveryIdentityAndTransformBoundaries();
+  const corroborationAndPngProofCases = assertAttachedAndExplicitCorroborationAndPngFileProof();
 
   console.log(JSON.stringify({
     ok: true,
     schema: SEMANTIC_VERIFICATION_SCHEMA,
     recoveryBoundaryCases,
+    corroborationAndPngProofCases,
     scenarios: results
   }, null, 2));
 }

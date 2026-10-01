@@ -1,9 +1,23 @@
 "use strict";
 
 const path = require("path");
-const { generatedFileEvidenceIssues } = require("./generated-safety-contracts");
+const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
+const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const projectSave = require("./project-save");
 const sourceRecovery = require("./placeholder-source-recovery");
+
+function getAuthoritativeExportRoot(options = {}) {
+  if (options && typeof options.generatedExportDir === "string" && options.generatedExportDir.trim()) {
+    return path.resolve(options.generatedExportDir);
+  }
+  if (process.env.AE_AGENT_GENERATED_EXPORT_DIR && process.env.AE_AGENT_GENERATED_EXPORT_DIR.trim()) {
+    return path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR);
+  }
+  const logDir = process.env.AE_BRIDGE_LOG_DIR
+    ? path.resolve(process.env.AE_BRIDGE_LOG_DIR)
+    : path.resolve(__dirname, "..", "logs");
+  return path.resolve(logDir, "generated-exports");
+}
 
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
@@ -758,6 +772,8 @@ function collectPayloadEvidence(payload, evidence, source, depth = 0) {
   }
 }
 
+const SERVER_ATTACHED_READS = new WeakMap();
+
 function stepOrder(step, fallback) {
   const number = Number(step && step.index);
   return Number.isFinite(number) && number > 0 ? number : fallback;
@@ -769,16 +785,54 @@ function withServerIndependentReads(steps) {
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
     if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property"].includes(step.tool)) continue;
+    if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
+      const order = stepOrder(step, position + 1);
+      const syntheticRead = {
+        tool: "malformed_attached_read",
+        status: "malformed",
+        index: order + 0.5,
+        title: `Malformed independent read after ${step.tool}`
+      };
+      SERVER_ATTACHED_READS.set(syntheticRead, {
+        mutationStep: step,
+        mutationIndex: step.index,
+        mutationOrder: order,
+        valid: false,
+        rawRead: step.independentReadBack
+      });
+      expanded.push(syntheticRead);
+      readCount++;
+      continue;
+    }
     const reads = Array.isArray(step.independentReadBack) ? step.independentReadBack : [];
     if (reads.length > 50 || readCount + reads.length > maxReads) continue;
     const order = stepOrder(step, position + 1);
     for (const [readPosition, read] of reads.entries()) {
       // This is runner metadata, separate from payload.verification supplied by
       // AE. Only the server can populate it from an actual typed read operation.
-      if (!isPlainObject(read) || read.source !== "server_typed_readback" || read.status !== "completed" ||
-        !Number.isFinite(Date.parse(read.observedAt)) || !READ_BACK_TOOLS.has(read.tool) || isMutatingStep(read) ||
-        !isPlainObject(read.args) || !isPlainObject(read.result)) continue;
-      expanded.push({...read, index: order + (readPosition + 1) / (reads.length + 1), title: `Independent ${read.tool} after ${step.tool}`});
+      const isPlain = isPlainObject(read);
+      const isCompleteValid = isPlain && read.source === "server_typed_readback" && read.status === "completed" &&
+        Number.isFinite(Date.parse(read.observedAt)) && READ_BACK_TOOLS.has(read.tool) && !isMutatingStep(read) &&
+        isPlainObject(read.args) && isPlainObject(read.result);
+      const isTypedRead = isPlain && READ_BACK_TOOLS.has(read.tool) && !isMutatingStep(read);
+      const syntheticRead = isTypedRead ? {
+        ...read,
+        index: order + (readPosition + 1) / (reads.length + 1),
+        title: `Independent ${read.tool || "read"} after ${step.tool}`
+      } : {
+        tool: "malformed_attached_read",
+        status: "malformed",
+        index: order + (readPosition + 1) / (reads.length + 1),
+        title: `Malformed independent read after ${step.tool}`
+      };
+      SERVER_ATTACHED_READS.set(syntheticRead, {
+        mutationStep: step,
+        mutationIndex: step.index,
+        mutationOrder: order,
+        valid: isCompleteValid,
+        rawRead: read
+      });
+      expanded.push(syntheticRead);
       readCount++;
     }
   }
@@ -787,18 +841,18 @@ function withServerIndependentReads(steps) {
 
 function collectReadBackEvidence(steps, afterOrder, beforeOrder) {
   const readBackSteps = [];
+  const rawAttemptSteps = [];
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
     const order = stepOrder(step, index + 1);
-    if (
-      isReadBackStep(step) &&
-      order > afterOrder &&
-      (beforeOrder === undefined || beforeOrder === null || order < beforeOrder)
-    ) {
-      readBackSteps.push(step);
-    }
+    if (order <= afterOrder || (beforeOrder !== undefined && beforeOrder !== null && order >= beforeOrder)) continue;
+    // Association counts attempts before status/payload filtering. Failed reads
+    // must never silently downgrade a corroborated pair to a single read.
+    if (SERVER_ATTACHED_READS.has(step) || (step && !isMutatingStep(step) && READ_BACK_TOOLS.has(step.tool))) rawAttemptSteps.push(step);
+    if (isReadBackStep(step)) readBackSteps.push(step);
   }
   const evidence = createEvidenceStore(readBackSteps);
+  evidence.rawAttempts = rawAttemptSteps;
 
   for (const step of readBackSteps) {
     collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
@@ -1416,30 +1470,275 @@ function checkSetLayerTransform(checks, step, payload, evidence) {
   const args = step.args || {}, fields = TRANSFORM_FIELDS.filter(field => hasOwn(args, field));
   const resultComp = payload.comp, resultLayer = payload.layer;
   const resultIdentity = compMatchesRequest(resultComp, args) && layerMatchesRequest(resultLayer, args, positiveIdentityIndex(args.layerIndex)) &&
-    positiveIdentityIndex(resultComp && (resultComp.itemId === undefined ? resultComp.id : resultComp.itemId)) !== null && positiveIdentityIndex(resultLayer && resultLayer.id) !== null;
-  const reads = (evidence.readBack.rawSteps || []).filter(read => {
-    if (read.tool !== "get_layer_details") return false;
+    persistentId(resultComp, "itemId", "id") !== null && positiveIdentityIndex(resultLayer && resultLayer.id) !== null;
+
+  const target = readTargetFromResult(args, resultComp, resultLayer);
+  const targetCompId = persistentId(target, "expectedCompItemId", "compItemId");
+  const targetCompName = typeof args.compName === "string" && args.compName ? args.compName : (resultComp && resultComp.name ? resultComp.name : "");
+
+  const targetLayerId = expectedLayerIdentity(target);
+  const targetLayerIndex = positiveIdentityIndex(resultLayer && resultLayer.index);
+
+  const rawAttachedAttempts = Array.isArray(step.independentReadBack) ? step.independentReadBack : [];
+  const malformedAttachedField = hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack);
+  const allWindowReads = evidence.readBack.rawAttempts || [];
+
+  const attachedReads = [];
+  let extraAttached = rawAttachedAttempts.length > 1;
+  let malformedAttached = malformedAttachedField;
+  let foreignAttached = false;
+
+  for (const read of allWindowReads) {
+    const meta = SERVER_ATTACHED_READS.get(read);
+    if (!meta) continue;
+    if (meta.mutationStep === step) {
+      if (meta.valid !== true) {
+        malformedAttached = true;
+      }
+      const observed = payloadForStep(read);
+      const matches = observed && compMatchesRequest(observed.comp, target) && sameCompIdentity(resultComp, observed.comp) &&
+        layerMatchesRequest(observed.layer, target, targetLayerIndex) && sameLayerIdentity(resultLayer, observed.layer) &&
+        isPlainObject(read.args) && compMatchesRequest(observed.comp, read.args) &&
+        layerMatchesRequest(observed.layer, read.args, positiveIdentityIndex(read.args.layerIndex)) &&
+        readBackStepMatchesTarget(read, observed.comp, target, targetLayerIndex, observed.layer);
+      if (matches) {
+        attachedReads.push(read);
+      } else {
+        malformedAttached = true;
+      }
+    } else {
+      foreignAttached = true;
+    }
+  }
+
+  if (rawAttachedAttempts.length > 0 && attachedReads.length === 0) {
+    malformedAttached = true;
+  }
+
+  const explicitReads = [];
+  let malformedExplicit = false;
+  let targetedExplicitAttemptCount = 0;
+
+  for (const read of allWindowReads) {
+    if (SERVER_ATTACHED_READS.has(read)) continue;
+    if (read.tool !== "get_layer_details") continue;
+
+    const readArgs = isPlainObject(read.args) ? read.args : {};
     const observed = payloadForStep(read);
-    return observed && compMatchesRequest(observed.comp, args) && sameCompIdentity(resultComp, observed.comp) &&
-      layerMatchesRequest(observed.layer, args, positiveIdentityIndex(args.layerIndex)) && sameLayerIdentity(resultLayer, observed.layer) &&
-      readBackStepMatchesTarget(read, observed.comp, args, positiveIdentityIndex(args.layerIndex), observed.layer);
-  });
-  const independent = reads.length === 1 ? payloadForStep(reads[0]) : null;
+    const reqCompId = persistentId(readArgs, "expectedCompItemId", "compItemId");
+    const observedCompId = persistentId(observed && observed.comp, "itemId", "id");
+    const reqCompName = typeof readArgs.compName === "string" ? readArgs.compName : (typeof readArgs.expectedCompName === "string" ? readArgs.expectedCompName : "");
+    // A proven foreign request/result is unrelated. Conflicting/missing IDs
+    // remain attempts; matching names alone cannot hide a conflicting read.
+    if (reqCompId !== null && reqCompId !== targetCompId &&
+      (observedCompId === null || observedCompId === reqCompId)) continue;
+    const reqCompIndex = positiveIdentityIndex(readArgs.compItemIndex);
+    if (reqCompId === null && !hasOwn(readArgs, "compItemId") && !hasOwn(readArgs, "expectedCompItemId") &&
+      observedCompId !== targetCompId && ((reqCompIndex !== null && reqCompIndex !== positiveIdentityIndex(resultComp && resultComp.itemIndex)) ||
+      (reqCompName && targetCompName && reqCompName !== targetCompName))) continue;
+
+    const reqLayerId = expectedLayerIdentity(readArgs);
+    const reqLayerIndex = positiveIdentityIndex(readArgs.layerIndex);
+    const observedLayerId = positiveIdentityIndex(observed && observed.layer && observed.layer.id);
+    if (reqLayerId !== null && reqLayerId !== targetLayerId && (observedLayerId === null || observedLayerId === reqLayerId)) continue;
+    if (reqLayerId === null && !hasOwn(readArgs, "layerId") && !hasOwn(readArgs, "expectedLayerId") &&
+      reqLayerIndex !== null && reqLayerIndex !== targetLayerIndex && observedLayerId !== targetLayerId) continue;
+
+    targetedExplicitAttemptCount++;
+
+    if (read.status !== "completed") {
+      malformedExplicit = true;
+      continue;
+    }
+    const explicitCompSelector = hasOwn(readArgs, "compItemId") || hasOwn(readArgs, "expectedCompItemId") || reqCompIndex !== null || Boolean(reqCompName);
+    const explicitLayerSelector = hasOwn(readArgs, "layerId") || hasOwn(readArgs, "expectedLayerId") || reqLayerIndex !== null;
+    const matches = observed && isPlainObject(observed.layer) && explicitCompSelector && explicitLayerSelector &&
+      compMatchesRequest(observed.comp, target) && sameCompIdentity(resultComp, observed.comp) &&
+      layerMatchesRequest(observed.layer, target, targetLayerIndex) && sameLayerIdentity(resultLayer, observed.layer) &&
+      compMatchesRequest(observed.comp, readArgs) && layerMatchesRequest(observed.layer, readArgs, reqLayerIndex) &&
+      readBackStepMatchesTarget(read, observed.comp, target, targetLayerIndex, observed.layer);
+    if (!matches) {
+      malformedExplicit = true;
+      continue;
+    }
+
+    explicitReads.push(read);
+  }
+
+  const hasAttachedAttempt = malformedAttachedField || rawAttachedAttempts.length > 0;
+  const hasExplicitAttempt = targetedExplicitAttemptCount > 0;
+
+  let isCorroboratedPair = false;
+  let isSingle = false;
+  let reads = [];
+
+  if (hasAttachedAttempt && hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !malformedExplicit && !foreignAttached &&
+        attachedReads.length === 1 && explicitReads.length === 1) {
+      isCorroboratedPair = true;
+      reads = [attachedReads[0], explicitReads[0]];
+    }
+  } else if (hasAttachedAttempt && !hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !foreignAttached && attachedReads.length === 1) {
+      isSingle = true;
+      reads = [attachedReads[0]];
+    }
+  } else if (!hasAttachedAttempt && hasExplicitAttempt) {
+    if (!malformedExplicit && explicitReads.length === 1) {
+      isSingle = true;
+      reads = [explicitReads[0]];
+    }
+  }
+
   if (!fields.length) {
     pushCheck(checks, {id: `${step.index}:${step.tool}:requested-fields`, title: "Requested transform fields are explicit", expected: "at least one finite field", observed: "no transform fields", status: "needs_review", evidence: "No requested transform postcondition can be verified."});
   }
+
   for (const field of fields) {
     const resultValue = payload.transform && payload.transform[field];
-    const observedValue = independent && (independent.transform || independent.layer && independent.layer.transform || {})[field];
-    const complete = resultIdentity && independent && finiteTransformValue(args[field], field) !== null &&
-      finiteTransformValue(resultValue, field) !== null && finiteTransformValue(observedValue, field) !== null;
-    const matches = complete && transformValuesMatch(args[field], resultValue, field) && transformValuesMatch(args[field], observedValue, field);
-    pushCheck(checks, {id: `${step.index}:${step.tool}:${field}`, title: `Transform ${field} matches the requested value and independent read-back`,
-      expected: stableStringify(args[field]), observed: observedValue === undefined ? "missing" : stableStringify(observedValue),
-      passed: Boolean(matches), status: matches ? "passed" : complete ? "failed" : "needs_review",
-      evidence: reads.length !== 1 ? "Missing or ambiguous post-run get_layer_details for the exact stable target." : stepLabel(reads[0]),
-      binding: {target: {compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args)}, result: {comp: compBinding(resultComp), layer: layerBinding(resultLayer)},
-        readBack: independent ? {comp: compBinding(independent.comp), layer: layerBinding(independent.layer)} : null}});
+    const finiteReq = finiteTransformValue(args[field], field);
+    const finiteRes = finiteTransformValue(resultValue, field);
+
+    if (!isSingle && !isCorroboratedPair) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: "missing or ambiguous",
+        passed: false,
+        status: "needs_review",
+        evidence: "Missing or ambiguous post-run get_layer_details for the exact stable target.",
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+      continue;
+    }
+
+    if (isSingle) {
+      const singleRead = reads[0];
+      const independent = payloadForStep(singleRead);
+      const observedValue = independent && (independent.transform || independent.layer && independent.layer.transform || {})[field];
+      const finiteObs = finiteTransformValue(observedValue, field);
+      const complete = resultIdentity && independent && finiteReq !== null && finiteRes !== null && finiteObs !== null;
+      const matches = complete && transformValuesMatch(args[field], resultValue, field) && transformValuesMatch(args[field], observedValue, field);
+
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: observedValue === undefined ? "missing" : stableStringify(observedValue),
+        passed: Boolean(matches),
+        status: matches ? "passed" : complete ? "failed" : "needs_review",
+        evidence: stepLabel(singleRead),
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: independent ? {
+            comp: compBinding(independent.comp),
+            layer: layerBinding(independent.layer),
+            stepIndex: singleRead.index,
+            stepIndices: [singleRead.index]
+          } : null
+        }
+      });
+      continue;
+    }
+
+    // isCorroboratedPair: exactly 1 attached read + 1 explicit read
+    const attachedRead = attachedReads[0];
+    const explicitRead = explicitReads[0];
+    const payloadAtt = payloadForStep(attachedRead);
+    const payloadExp = payloadForStep(explicitRead);
+    const valAtt = payloadAtt && (payloadAtt.transform || payloadAtt.layer && payloadAtt.layer.transform || {})[field];
+    const valExp = payloadExp && (payloadExp.transform || payloadExp.layer && payloadExp.layer.transform || {})[field];
+    const finiteAtt = finiteTransformValue(valAtt, field);
+    const finiteExp = finiteTransformValue(valExp, field);
+    const complete = resultIdentity && finiteReq !== null && finiteRes !== null && finiteAtt !== null && finiteExp !== null;
+
+    if (!complete) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: (finiteAtt === null ? "missing or non-finite attached" : stableStringify(valAtt)) + " / " + (finiteExp === null ? "missing or non-finite explicit" : stableStringify(valExp)),
+        passed: false,
+        status: "needs_review",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+      continue;
+    }
+
+    const matchBoth = transformValuesMatch(valAtt, valExp, field);
+    const matchAtt = transformValuesMatch(args[field], valAtt, field);
+    const matchExp = transformValuesMatch(args[field], valExp, field);
+    const matchRes = transformValuesMatch(args[field], resultValue, field);
+
+    if (matchBoth && matchAtt && matchExp && matchRes) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: stableStringify(valAtt),
+        passed: true,
+        status: "passed",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: {
+            comp: compBinding(payloadAtt.comp),
+            layer: layerBinding(payloadAtt.layer),
+            stepIndex: explicitRead.index,
+            stepIndices: [attachedRead.index, explicitRead.index],
+            sources: ["server_typed_readback", "explicit"]
+          }
+        }
+      });
+    } else if (!matchBoth) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: `${stableStringify(valAtt)} vs ${stableStringify(valExp)}`,
+        passed: false,
+        status: "needs_review",
+        evidence: `Conflicting read-back values between ${stepLabel(attachedRead)} and ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+    } else {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: stableStringify(valAtt),
+        passed: false,
+        status: "failed",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: {
+            comp: compBinding(payloadAtt.comp),
+            layer: layerBinding(payloadAtt.layer),
+            stepIndex: explicitRead.index,
+            stepIndices: [attachedRead.index, explicitRead.index],
+            sources: ["server_typed_readback", "explicit"]
+          }
+        }
+      });
+    }
   }
 }
 
@@ -3990,7 +4289,140 @@ function buildSummary(status, checks, readBackEvidence, mutationVerificationCoun
   return `Semantic verification needs review. Read-back summaries: ${readBackCount}.`;
 }
 
-function buildSemanticVerification(plan, run) {
+function isScopedGeneratedPngPlanSufficient(mutatingSteps, steps, run, checks, options = {}) {
+  if (!Array.isArray(mutatingSteps) || mutatingSteps.length === 0) return false;
+  if (!run || run.ok !== true) return false;
+
+  // Scoped generated-only check: every mutating step in the entire run must be exact save_comp_frame_png
+  for (const step of steps) {
+    if (isMutatingStep(step)) {
+      if (step.tool !== "save_comp_frame_png" || step.status !== "completed") return false;
+    }
+  }
+
+  const authoritativeRoot = getAuthoritativeExportRoot(options);
+
+  for (const step of mutatingSteps) {
+    if (step.tool !== "save_comp_frame_png" || step.status !== "completed") return false;
+    const args = step.args || {};
+    const payload = payloadForStep(step);
+    if (!isPlainObject(payload)) return false;
+
+    const file = payload.file;
+    if (!isPlainObject(file)) return false;
+
+    // Actual trusted completion flag (must be strictly true)
+    if (file.pngComplete !== true) return false;
+
+    // Retained PNG: existsAfter: true, deletedAfterReadBack: false
+    if (file.existsAfter !== true || file.deletedAfterReadBack !== false) return false;
+
+    // Positive safe integer byteLength capped by DEFAULT_MAX_PNG_BYTES (Finding 5)
+    if (!Number.isSafeInteger(file.byteLength) || file.byteLength <= 0 || file.byteLength > DEFAULT_MAX_PNG_BYTES) return false;
+    if (![file.width, file.height].every(n => Number.isSafeInteger(n) && n > 0 && n <= 0x7fffffff)) return false;
+    if (typeof file.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(file.sha256)) return false;
+    if (String(file.mimeType || "") !== "image/png") return false;
+
+    // Correct filename and authoritative generated export root binding (Finding 2)
+    const expectedFileName = args.outputFileName || "frame.png";
+    if (file.outputFileName !== expectedFileName) return false;
+    if (typeof file.outputPath !== "string" || !file.outputPath.trim()) return false;
+
+    const canonicalExpectedPath = path.resolve(authoritativeRoot, expectedFileName);
+    const canonicalFilePath = path.resolve(file.outputPath);
+
+    if (!isPathInside(authoritativeRoot, canonicalExpectedPath)) return false;
+    if (path.normalize(canonicalFilePath).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+
+    if (hasOwn(payload, "outputPath")) {
+      if (typeof payload.outputPath !== "string" || !payload.outputPath.trim()) return false;
+      if (path.normalize(path.resolve(payload.outputPath)).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+    }
+
+    if (generatedFileEvidenceIssues("save_comp_frame_png", file).length > 0) return false;
+
+    // Host verification is mandatory (Finding 1)
+    if (!payload.verification || !isPlainObject(payload.verification)) return false;
+    if (payload.verification.ok !== true) return false;
+
+    // Verification target binding (Finding 2)
+    const vTarget = payload.verification.target;
+    if (!isPlainObject(vTarget)) return false;
+    if (vTarget.tool !== "save_comp_frame_png") return false;
+    if (vTarget.outputFileName !== expectedFileName) return false;
+    if (typeof vTarget.outputPath !== "string" || !vTarget.outputPath.trim()) return false;
+    if (path.normalize(path.resolve(vTarget.outputPath)).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+
+    // Verification file consistency (Finding 1 & Finding 5)
+    const vFile = payload.verification.file;
+    if (!isPlainObject(vFile)) return false;
+    if (vFile.pngComplete !== true) return false;
+    if (vFile.sha256 !== file.sha256) return false;
+    if (vFile.byteLength !== file.byteLength) return false;
+    if (vFile.width !== file.width || vFile.height !== file.height) return false;
+    if (vFile.existsAfter !== true || vFile.deletedAfterReadBack !== false) return false;
+
+    // Explicit supported comp selector (Finding 4)
+    // These are the selectors actually supported by save_comp_frame_png.
+    // compItemId/itemIndex aliases do not resolve a comp in the native handler.
+    const hasCompItemIndex = hasOwn(args, "compItemIndex");
+    const hasCompName = typeof args.compName === "string" && args.compName.trim().length > 0;
+    const hasReviewTarget = hasOwn(args, "reviewOwner") || hasOwn(args, "reviewItemId");
+    if (!hasCompItemIndex && !hasCompName && !hasReviewTarget) return false;
+    if (hasOwn(args, "compItemId") || hasOwn(args, "itemIndex")) return false;
+
+    const comp = payload.comp;
+    if (!isPlainObject(comp)) return false;
+
+    if (hasCompItemIndex) {
+      const reqIndex = positiveIdentityIndex(args.compItemIndex);
+      if (reqIndex === null || positiveIdentityIndex(comp.itemIndex) !== reqIndex) return false;
+    }
+    if (hasCompName) {
+      if (typeof comp.name !== "string" || comp.name !== args.compName) return false;
+    }
+    if (hasOwn(args, "expectedCompName") && (typeof args.expectedCompName !== "string" || comp.name !== args.expectedCompName)) return false;
+    if (hasReviewTarget && (typeof args.reviewOwner !== "string" || !args.reviewOwner.trim() ||
+      positiveIdentityIndex(args.reviewItemId) === null || persistentId(comp, "itemId", "id") !== positiveIdentityIndex(args.reviewItemId) ||
+      payload.reviewOwner !== args.reviewOwner || payload.reviewItemId !== args.reviewItemId || args.time !== 0 ||
+      args.allowOverwrite === true || args.deleteAfterReadBack === true)) return false;
+
+    // Explicit finite non-negative time (Finding 4)
+    if (!hasOwn(args, "time") || typeof args.time !== "number" || !Number.isFinite(args.time) || args.time < 0) return false;
+    const frame = payload.frame;
+    if (!isPlainObject(frame) || typeof frame.time !== "number" || !Number.isFinite(frame.time) || !nearlyEqual(frame.time, args.time, 0.0001)) return false;
+
+    // Applied resolution matches request/default, and restored proof (Finding 4)
+    const validResolution = value => Array.isArray(value) && value.length === 2 && value.every(n => Number.isInteger(n) && n >= 1 && n <= 99);
+    if (hasOwn(args, "resolutionFactor") && !validResolution(args.resolutionFactor)) return false;
+    const reqRes = hasOwn(args, "resolutionFactor") ? args.resolutionFactor : [1, 1];
+    if (hasReviewTarget && (reqRes[0] !== 1 || reqRes[1] !== 1)) return false;
+
+    const res = payload.resolutionFactor;
+    if (!isPlainObject(res) || res.restored !== true) return false;
+    if (!Array.isArray(res.applied) || res.applied.length !== 2 || res.applied[0] !== reqRes[0] || res.applied[1] !== reqRes[1]) return false;
+    if (!Array.isArray(res.before) || res.before.length !== 2 || !res.before.every(n => Number.isInteger(n) && n >= 1 && n <= 99)) return false;
+    if (!Array.isArray(res.after) || res.after.length !== 2 || !res.after.every(n => Number.isInteger(n) && n >= 1 && n <= 99)) return false;
+    if (res.before[0] !== res.after[0] || res.before[1] !== res.after[1]) return false;
+
+    const vRes = payload.verification.resolutionFactor;
+    if (!isPlainObject(vRes) || vRes.restored !== true ||
+      !["before", "applied", "after"].every(key => validResolution(vRes[key]) && vRes[key].every((n, index) => n === res[key][index]))) return false;
+
+    // Existing all 3 semantic postconditions must be passed
+    const stepPrefix = `${step.index || "step"}:${step.tool}`;
+    const checkFile = checks.find(c => c.id === `${stepPrefix}:file`);
+    const checkRes = checks.find(c => c.id === `${stepPrefix}:resolution-factor`);
+    const checkTarget = checks.find(c => c.id === `${stepPrefix}:target`);
+    if (!checkFile || checkFile.status !== "passed") return false;
+    if (!checkRes || checkRes.status !== "passed") return false;
+    if (!checkTarget || checkTarget.status !== "passed") return false;
+  }
+
+  return true;
+}
+
+function buildSemanticVerification(plan, run, options = {}) {
   const steps = withServerIndependentReads(Array.isArray(run && run.steps) ? run.steps : []);
   const mutatingSteps = steps.filter(isMutatingStep);
   const checks = [];
@@ -4066,7 +4498,9 @@ function buildSemanticVerification(plan, run) {
   const failedChecks = checks.filter((check) => check.status === "failed").length;
   const passedChecks = checks.filter((check) => check.status === "passed").length;
   const needsReviewChecks = checks.filter(check => check.status === "needs_review").length;
-  const status = failedChecks === 0 && needsReviewChecks === 0 && unverifiedMutationSteps.length === 0 && readBackEvidence.count > 0 && (run.ok === true)
+  const generatedPngProofSufficient = isScopedGeneratedPngPlanSufficient(mutatingSteps, steps, run, checks, options);
+  const status = failedChecks === 0 && needsReviewChecks === 0 && unverifiedMutationSteps.length === 0 &&
+    (readBackEvidence.count > 0 || generatedPngProofSufficient) && (run.ok === true)
     ? "passed"
     : "needs_review";
 
@@ -4076,7 +4510,7 @@ function buildSemanticVerification(plan, run) {
     ok: status === "passed",
     summary: buildSummary(status, checks, readBackEvidence, mutationVerificationCount),
     requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
-    verificationScope: "implemented_semantic_checks_only",
+    verificationScope: generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
     coverageStatus: unverifiedMutationSteps.length || needsReviewChecks ? "incomplete" : "complete",
     acceptance: "not_established",
     readBackCount: readBackEvidence.count,
@@ -4100,5 +4534,6 @@ module.exports = {
   propertyPathTailIdentityMatches,
   effectPropertyIdentityMatches,
   finiteTransformValue,
-  transformValuesMatch
+  transformValuesMatch,
+  isScopedGeneratedPngPlanSufficient
 };

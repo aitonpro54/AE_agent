@@ -34,6 +34,7 @@ const { classifyAgentPlan } = require("./plan-risk-classifier");
 const { repairAgentPlan } = require("./plan-repair");
 const { buildSemanticVerification } = require("./semantic-verification");
 const generatedSafety = require("./generated-safety-contracts");
+const { waitForCompletePng, verifyCompletePngBuffer, resolveMaxBytes, sameFileSnapshot, DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const m100Protocol = require("./m100-protocol");
 const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
@@ -2379,6 +2380,113 @@ function replayIdempotencyResult(context, record) {
   });
 }
 
+function buildServerSemanticVerification(plan, run) {
+  return buildSemanticVerification(plan, run, { generatedExportDir: GENERATED_EXPORT_DIR });
+}
+
+function validateCachedPngReplay(record, options = {}) {
+  const exportDir = options.exportDir || GENERATED_EXPORT_DIR;
+  const payload = firstToolPayload(record && record.result);
+  const file = payload && typeof payload === "object" && !Array.isArray(payload) && payload.file && typeof payload.file === "object" && !Array.isArray(payload.file)
+    ? payload.file
+    : null;
+  if (!file || file.pngComplete !== true) {
+    // Historical cached proof without completion is preserved without promotion
+    return { ok: true, hasCompletion: false, file };
+  }
+  const maxBytes = resolveMaxBytes(options.maxBytes);
+  if (!Number.isSafeInteger(file.byteLength) || file.byteLength <= 0 || file.byteLength > maxBytes ||
+    typeof file.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(file.sha256) ||
+    ![file.width, file.height].every(n => Number.isSafeInteger(n) && n > 0 && n <= 0x7fffffff)) {
+    return { ok: false, reason: "invalid_cached_file_proof" };
+  }
+  const targetPath = file.outputPath || (payload && payload.outputPath);
+  if (typeof targetPath !== "string" || !targetPath.trim()) {
+    return { ok: false, reason: "missing_output_path" };
+  }
+  const resolvedPath = path.resolve(targetPath);
+  let realFilePath = resolvedPath;
+  try {
+    if (fs.existsSync(resolvedPath)) {
+      realFilePath = fs.realpathSync(resolvedPath);
+    }
+  } catch {}
+  let realExportDir = path.resolve(exportDir);
+  try {
+    if (fs.existsSync(realExportDir)) {
+      realExportDir = fs.realpathSync(realExportDir);
+    }
+  } catch {}
+  if (!realFilePath.startsWith(realExportDir + path.sep) && realFilePath !== realExportDir) {
+    return { ok: false, reason: "foreign_path", path: realFilePath, allowedDir: realExportDir };
+  }
+  if (!fs.existsSync(realFilePath)) {
+    return { ok: false, reason: "file_not_found", path: realFilePath };
+  }
+  let statBefore;
+  try {
+    statBefore = fs.statSync(realFilePath);
+  } catch (err) {
+    return { ok: false, reason: "stat_failed", error: err.message };
+  }
+  if (!statBefore.isFile()) {
+    return { ok: false, reason: "not_a_file", path: realFilePath };
+  }
+  if (statBefore.size === 0) {
+    return { ok: false, reason: "file_empty", path: realFilePath };
+  }
+  if (statBefore.size > maxBytes) {
+    return { ok: false, reason: "file_oversize", byteLength: statBefore.size, maxBytes, path: realFilePath };
+  }
+  let buffer;
+  try {
+    buffer = fs.readFileSync(realFilePath);
+  } catch (err) {
+    return { ok: false, reason: "read_failed", error: err.message };
+  }
+  let statAfter;
+  try {
+    statAfter = fs.statSync(realFilePath);
+  } catch (err) {
+    return { ok: false, reason: "stat_after_read_failed", error: err.message };
+  }
+  if (!sameFileSnapshot(statBefore, statAfter, buffer.length)) {
+    return { ok: false, reason: "concurrent_modification", path: realFilePath };
+  }
+  if (buffer.length !== file.byteLength) {
+    return { ok: false, reason: "byte_length_mismatch", expected: file.byteLength, actual: buffer.length };
+  }
+  const currentProof = verifyCompletePngBuffer(buffer, options);
+  if (!currentProof.ok) {
+    return { ok: false, reason: `invalid_png:${currentProof.reason}` };
+  }
+  if (currentProof.sha256 !== file.sha256) {
+    return { ok: false, reason: "sha256_mismatch", expected: file.sha256, actual: currentProof.sha256 };
+  }
+  if (currentProof.width !== file.width || currentProof.height !== file.height) {
+    return { ok: false, reason: "dimensions_mismatch" };
+  }
+  let statFinal;
+  try {
+    statFinal = fs.statSync(realFilePath);
+  } catch (err) {
+    return { ok: false, reason: "stat_final_failed", error: err.message };
+  }
+  if (!sameFileSnapshot(statAfter, statFinal, buffer.length)) {
+    return { ok: false, reason: "concurrent_modification_during_proof", path: realFilePath };
+  }
+  return {
+    ok: true,
+    hasCompletion: true,
+    proof: currentProof,
+    mtimeMs: statFinal.mtimeMs,
+    birthtimeMs: statFinal.birthtimeMs,
+    dev: statFinal.dev,
+    ino: statFinal.ino,
+    path: realFilePath
+  };
+}
+
 function attachStoredIdempotencyMetadata(result, context, record) {
   if (!record) return result;
   return attachPayloadMetadataToToolResult(result, "idempotency", {
@@ -2479,7 +2587,7 @@ async function verifyMutationResult(toolName, args, payload) {
       context.persist();
     }
     const mutation={index:1,tool:toolName,args,status:"completed",mutatesProject:true,result:payload};
-    const semantic=buildSemanticVerification({steps:[{tool:toolName,args},...reads.map(read=>({tool:read.tool,args:read.args}))]}, {steps:[mutation,...reads],ok:true});
+    const semantic=buildServerSemanticVerification({steps:[{tool:toolName,args},...reads.map(read=>({tool:read.tool,args:read.args}))]}, {steps:[mutation,...reads],ok:true});
     return {ok:semantic.status==="passed" && semantic.unverifiedMutationCount===0,scope:"independent_requested_values",status:semantic.status,checks:semantic.checks,readBack:reads.map(read=>({tool:read.tool,args:read.args,result:read.result}))};
   }
   if(toolName==="create_placeholder_review_comps") {
@@ -2513,8 +2621,11 @@ async function verifyMutationResult(toolName, args, payload) {
     const restored = toolName === "save_comp_frame_png"
       ? restoration.restored === true
       : true;
+    const pngComplete = toolName === "save_comp_frame_png"
+      ? file.pngComplete === true
+      : true;
     return {
-      ok: hashOk && byteLength > 0 && restored,
+      ok: hashOk && byteLength > 0 && restored && pngComplete,
       checkedAt: new Date().toISOString(),
       target: {
         tool: toolName,
@@ -2524,11 +2635,14 @@ async function verifyMutationResult(toolName, args, payload) {
       file: {
         byteLength,
         sha256: file.sha256 || null,
+        pngComplete: toolName === "save_comp_frame_png" ? file.pngComplete === true : undefined,
+        width: toolName === "save_comp_frame_png" ? file.width : undefined,
+        height: toolName === "save_comp_frame_png" ? file.height : undefined,
         existsAfter: file.existsAfter === true,
         deletedAfterReadBack: file.deletedAfterReadBack === true
       },
       resolutionFactor: toolName === "save_comp_frame_png" ? restoration : null,
-      warnings: hashOk && byteLength > 0 && restored ? [] : ["Generated export file read-back did not include a valid sha256/byteLength or resolutionFactor restoration evidence."]
+      warnings: hashOk && byteLength > 0 && restored && pngComplete ? [] : ["Generated export file read-back did not include a valid sha256/byteLength, pngComplete proof, or resolutionFactor restoration evidence."]
     };
   }
 
@@ -6625,7 +6739,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
     }
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
-      run.semanticVerification = buildSemanticVerification(prepared.plan, run);
+      run.semanticVerification = buildServerSemanticVerification(prepared.plan, run);
     }
     if (autonomous && !internalReadOnly && !run.dryRun && run.ok && (!run.semanticVerification || run.semanticVerification.status !== "passed" || run.semanticVerification.unverifiedMutationCount > 0)) {
       run.ok = false;
@@ -7067,7 +7181,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       run.steps.push(item);
       if (result.isError && stopOnError) break;
       if (autonomous && step.tool === "audit_slideshow_generated") {
-        const checked = buildSemanticVerification(prepared.plan, {...run, ok: true});
+        const checked = buildServerSemanticVerification(prepared.plan, {...run, ok: true});
         if (checked.failedChecks > 0 || checked.unverifiedMutationCount > 0) {
           run.errorCode = "slideshow_verification_failed";
           run.error = "Read-back этапа слайд-шоу не совпал с планом; следующие изменения остановлены.";
@@ -14880,6 +14994,7 @@ async function callTool(name, args, executionContext) {
         fs.unlinkSync(output.resolvedPath);
       }
       fs.mkdirSync(path.dirname(output.resolvedPath), { recursive: true });
+      const exportStartedAt = Date.now();
 
       const result = await runExtendScriptBody(`
         ${resolveCompScript}
@@ -14945,14 +15060,31 @@ async function callTool(name, args, executionContext) {
       if (result && result.ok === false) {
         return toolResult(result.error || "save_comp_frame_png failed.", true);
       }
-      const outputStat = await waitForNonEmptyFile(output.resolvedPath, { timeoutMs: 3000, intervalMs: 75 });
-      if (!outputStat) {
-        return toolResult("Generated PNG output was not found after saveFrameToPng.", true);
+      const proof = await waitForCompletePng(output.resolvedPath, {
+        timeoutMs: 5000,
+        intervalMs: 50,
+        stabilityIntervalMs: 50,
+        exportDir: GENERATED_EXPORT_DIR,
+        minMtimeMs: exportStartedAt
+      });
+      if (!proof || !proof.ok) {
+        return toolResult(`Generated PNG output verification failed: ${(proof && proof.reason) || "incomplete or malformed PNG"}.`, true);
       }
 
-      const bytes = fs.readFileSync(output.resolvedPath);
-      const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
+      const bytes = proof.buffer;
+      const sha256 = proof.sha256;
       const existsBeforeCleanup = fs.existsSync(output.resolvedPath);
+
+      if (review) {
+        const image = { itemId: args.reviewItemId, filePath: output.resolvedPath, sha256, byteLength: bytes.length, contentHash: reviewContentHash };
+        const dimensions = placeholderVisualReview.readImage(image, GENERATED_EXPORT_DIR);
+        const item = review.items.find(row => row.itemId === args.reviewItemId);
+        if (dimensions.width !== item.width || dimensions.height !== item.height) throw placeholderError("review_native_export_dimensions_mismatch");
+        const after = await requireFreshReviewRecord(args.reviewOwner);
+        if (await reviewContentFingerprint(after.record) !== reviewContentHash) throw placeholderError("review_content_changed_during_capture");
+        projectStateController.addReviewImage(after.projectFile, args.reviewOwner, image, after.state.revision);
+      }
+
       let existsAfter = existsBeforeCleanup;
       if (deleteAfterReadBack) {
         fs.unlinkSync(output.resolvedPath);
@@ -14968,19 +15100,16 @@ async function callTool(name, args, executionContext) {
         outputPath: output.resolvedPath,
         byteLength: bytes.length,
         sha256,
+        width: proof.width,
+        height: proof.height,
+        pngComplete: true,
         existsAfter,
         deletedAfterReadBack: deleteAfterReadBack,
         mimeType: "image/png"
       };
-      if(review){
-        const image={itemId:args.reviewItemId,filePath:output.resolvedPath,sha256,byteLength:bytes.length,contentHash:reviewContentHash};
-        const dimensions=placeholderVisualReview.readImage(image,GENERATED_EXPORT_DIR);
-        const item=review.items.find(row=>row.itemId===args.reviewItemId);
-        if(dimensions.width!==item.width || dimensions.height!==item.height)throw placeholderError("review_native_export_dimensions_mismatch");
-        const after=await requireFreshReviewRecord(args.reviewOwner);
-        if(await reviewContentFingerprint(after.record)!==reviewContentHash)throw placeholderError("review_content_changed_during_capture");
-        projectStateController.addReviewImage(after.projectFile,args.reviewOwner,image,after.state.revision);
-        payload.reviewOwner=args.reviewOwner;payload.reviewItemId=args.reviewItemId;
+      if (review) {
+        payload.reviewOwner = args.reviewOwner;
+        payload.reviewItemId = args.reviewItemId;
       }
       return toolResult(payload);
     } catch (error) {
@@ -21160,6 +21289,22 @@ async function callToolLogged(source, name, args, executionContext) {
         if (existing.argsHash !== idContext.argsHash) {
           throw new Error(`idempotencyKey conflict for ${name}: the key was already used with different arguments in scope ${idContext.scope}.`);
         }
+        if (name === "save_comp_frame_png") {
+          const replayCheck = validateCachedPngReplay(existing, { exportDir: GENERATED_EXPORT_DIR });
+          if (!replayCheck.ok) {
+            const durationMs = Date.now() - startedAt;
+            recordEvent("tool_call_idempotency_replay_failed", {
+              id: eventId,
+              source,
+              name,
+              durationMs,
+              key: idContext.key,
+              scope: idContext.scope,
+              reason: replayCheck.reason
+            });
+            return toolResult(`Cached generated PNG replay verification failed: ${replayCheck.reason}.`, true);
+          }
+        }
         const replayed = replayIdempotencyResult(idContext, existing);
         const durationMs = Date.now() - startedAt;
         recordEvent("tool_call_idempotency_replayed", {
@@ -21264,7 +21409,7 @@ module.exports = {
       async () => { prepared.result = await callTool(name, args); }));
     return prepared;
   },
-  requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult
+  requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult, validateCachedPngReplay, buildServerSemanticVerification
 };
 
 if (require.main === module) {
