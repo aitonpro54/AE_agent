@@ -2,7 +2,7 @@
 
 ## Project goal
 
-Maintain AE Agent 3.1.0 in this clean repository. The product target is
+Maintain AE Agent 3.2.0 in this clean repository. The product target is
 `specs/target-app.md`; the active execution plan is
 `plans/target-app-execplan.md`.
 
@@ -23,6 +23,10 @@ Maintain AE Agent 3.1.0 in this clean repository. The product target is
 - After each completed milestone, update `.codex/handoff.md` with goal, files
   touched, validation, decisions, risks, commit id, and exact next prompt.
 - Keep `plans/target-app-execplan.md` compact and current.
+- Для новой версии создавай отдельную `codex/release-X.Y.Z` от проверенного
+  состояния, сохраняя предыдущую ветку и точный checkpoint/tag. Выпуск, PR и
+  возврат к прежнему коду описаны в `docs/release-workflow.md`; слияние PR
+  требует отдельного поручения пользователя.
 
 ## Context and continuation
 
