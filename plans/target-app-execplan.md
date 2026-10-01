@@ -159,9 +159,9 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 Progress: CEP/bridge3.2.0 Connected; четыре Screens заменены на принятые постоянные клипы, crop200 исправлен.
 Native2D/TextLayer/Float32 contracts исправлены Flash с узкой Sol/xhigh коррекцией; 10 review comps unregistered, recovery не реализован.
 Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
-Screens sources5139–5142/6layers и Footage8–11 sources5143–5146/7layers подтверждены independently. Final5 clips copied/probed; Flash17d ставит их и исправляет cropBonJovi8. Scene9 пять источников приняты/скопированы root; task19 подготовлен, ждёт освобождения AEcontroller. Вся расстановка ещё не завершена.
+Screens sources5139–5142/6layers, Footage8–11 sources5143–5146/7layers и Final5 sources5147–5151/5layers подтверждены independently. Scene9 пять источников приняты/скопированы root; task19 ждёт исправления semantic/PNG proof. BonJovi8position исправлен, поздний facecrop требует PNG. Вся расстановка ещё не завершена.
 
-Decision Log:208 exact project-only grants Antigravity;39 новых media reads, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
+Decision Log:213 exact project-only grants Antigravity;39 новых media reads и5semantic offline checks, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
 Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
 Shared targets покрывают видимые интервалы всех сцен. Source helper после двух неполных Flash попыток исправлен Sol/xhigh: FFprobe/type/count/audio, frames/PTS/SAR/no-overwrite.
 Оригиналы не изменены; встроенные полосы, мягкость и внутренние переходы сохранены. Source acceptance не равна AEP artistic acceptance.
@@ -174,3 +174,5 @@ Footage8–11 source: root24encodedPNG/fullprobes/freshhashes/copies PASS; darkS
 Final5 source: root20encodedPNG/fullprobes/freshhashes/persistentcopy и nooriginalfragmentoverlap PASS; cuts.84/1.68. Live15:9freshnative layer/route reads+14PNG; inherited camera/DOF/occlusion limits, BonJovi8crop correction17.
 Access milestone: exact grants/config diff проверены;17 blocked до imports/mutations,17b отвергнут драйвером за invalid terminal conversation,17c TLS timeout до model/MCP. Процессы завершены, повторов AE не было;17d новый запуск в исходном scope. Пользователь подтвердил повторы финала другими фрагментами.
 Scene9 source: root24PNG, пять fullprobes/original+outputhash/persistentcopy PASS;30 reported PNGhash совпадают с disk. Первый Metallica candidate отклонён за одинаковые планы, Flash заменил новым Metallica2ч40/60/80s; остальные clips сохранены. Original intervals disjoint от предыдущих13clips;2cuts.84/1.68 внутриlocal~.287..2.44, AEP ещё не заполнен этим этапом.
+Live17d: networkfailed после20fill/10PNGcompleted; root7freshnative+10PNG/cover/time PASS, AEP412items/idlepending/parents прежние. Semantic195/226 ошибочно отвергает attached+explicit одинаковые reads; исправление pending, writes не replay. Финал13unique slots:6groups×2+Led1, user repeats разрешены.
+NativePNG17:7/10hash mismatch доказаны как SHA незавершённых prefixes, которые handler прочитал приfirstsize>0; fullactualPNG имеютIEND. Source18hashes30/30match. Flash20 boundedsemantic/completePNGproof fix перед19; старыеreceipts не признаватьполными ретроактивно.
