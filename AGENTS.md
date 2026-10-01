@@ -20,31 +20,22 @@ Maintain AE Agent 3.2.0 in this clean repository. The product target is
   a new acceptance milestone. Resolve small ambiguities autonomously and record
   material decisions. Communicate with the user and write new handoffs in Russian
   unless requested otherwise; this instruction is scoped to this repository.
-- After each completed milestone, update `.codex/handoff.md` with goal, files
-  touched, validation, decisions, risks, commit id, and exact next prompt.
 - Keep `plans/target-app-execplan.md` compact and current.
 - Для новой версии создавай отдельную `codex/release-X.Y.Z` от проверенного
   состояния, сохраняя предыдущую ветку и точный checkpoint/tag. Выпуск, PR и
   возврат к прежнему коду описаны в `docs/release-workflow.md`; слияние PR
   требует отдельного поручения пользователя.
 
-## Context and continuation
+## Продолжение работы
 
-Use the current client's actual remaining budget and a fresh user-reported UI meter
-when available. Do not infer a UI percentage from internal counters, add a fabricated
-20-point tolerance, or assume a fixed 258K window. A long conversation alone is not
-a mandatory stop. Keep outputs bounded and read only relevant files.
-
-At meaningful checkpoints, update a compact `.codex/handoff.md` with goal, state,
-files, completed/not-run checks, decisions, risks, commit id if any, and next step.
-Do not create a new thread after every small change. If compaction/limit is genuinely
-near, stop expanding scope and record a safe continuation state; capture pending AE
-requests and uncertainty before handing off. Do not abandon an in-flight mutation
-without recording its status, and do not repeat it after compaction without read-back.
-After compaction or a new thread, recheck the current repo/runtime baseline instead
-of treating an old handoff as current. An explicit user request for immediate handoff
-(such as STRICT HANDOFF NOW) is honored. A reported percentage alone is a signal,
-not an unconditional instruction to abandon the task.
+Веди крупные этапы как отдельные проверяемые блоки. После завершения этапа
+обновляй существующий план (Progress, Decision Log, Validation) и фиксируй
+рабочий commit, если проект использует Git и коммиты не запрещены. Не начинай
+новый чат и не создавай handoff из-за длины диалога, счётчика токенов или
+приближения compaction. После compaction продолжай ту же задачу, сверив
+актуальное состояние файлов и runtime. Handoff делай только по явной просьбе
+пользователя. Неизвестный результат мутации сначала сверяй по фактическому
+состоянию; не повторяй операцию вслепую. Ограничивай объём чтения и вывода.
 
 ## Engineering rules
 
@@ -205,7 +196,11 @@ writer на ресурс и один контроллер AE/CEP/UI. Обычн�
 
 Luna/medium используется для простых самостоятельных поручений, когда передача
 задачи оправдана объёмом работы или независимостью; один короткий вызов не требует
-агента. При неоднозначности Luna возвращает вопрос диспетчеру, не расширяя scope.
+агента. `ae_scout` и `ae_operator` задают 272000 токенов — штатное окно Luna
+по каталогу Codex на 1 октября 2026 года. Общий агент `luna-standard` имеет
+такое же окно для задач вне AE-ролей; для AE-задач выбирай scoped роли.
+Обычный вызов Luna без этих ролей наследует глобальные 500000 токенов.
+При неоднозначности Luna возвращает вопрос диспетчеру, не расширяя scope.
 Роль reviewer — Sol 6.1/high для ограниченного ревью. Ultra используется для архитектуры,
 max не является обязательной ступенью. Terra, paid API, покупка кредитов,
 смена провайдера Codex и скрытый fallback не входят в автоматический маршрут;
