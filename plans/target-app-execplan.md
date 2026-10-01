@@ -155,25 +155,23 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 
 ## Live клиентский AEP — 1 октября 2026, продолжается
 
-Progress: CEP/bridge3.2.0 Connected; четыре Screens заменены на принятые постоянные клипы, crop200 исправлен.
-Native2D/TextLayer/Float32 contracts исправлены Flash с узкой Sol/xhigh коррекцией; 10 review comps unregistered, recovery не реализован.
-Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
-Screens sources5139–5142/6layers, Footage8–11 sources5143–5146/7layers и Final5 sources5147–5151/5layers подтверждены independently. Scene9 пять источников приняты/скопированы root; task19 ждёт исправления semantic/PNG proof. BonJovi8position исправлен, поздний facecrop требует PNG. Вся расстановка ещё не завершена.
+### Progress
 
-Decision Log:221 exact project-only grants Antigravity;44 read-file grants и36 bounded command grants, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
-Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
-Shared targets покрывают видимые интервалы всех сцен. Source helper после двух неполных Flash попыток исправлен Sol/xhigh: FFprobe/type/count/audio, frames/PTS/SAR/no-overwrite.
-Оригиналы не изменены; встроенные полосы, мягкость и внутренние переходы сохранены. Source acceptance не равна AEP artistic acceptance.
+- CEP/bridge3.2.0 Connected. Screens5139–5142/6layers, shared5143–5146/7layers, Final5147–5151/5layers и Scene9 5152–5156/8layers установлены и независимо прочитаны. Основная задача ещё не завершена.
+- Source acceptance:18activeclips/overlap0; оригиналы неизменны, silent1280×720/25fps/101frames/PAR1. Source21 четыре shared revisions приняты и скопированы; live замена остаётся.
+- Scene9 старый scale197.22 исправлен на98.61. Root16actualPNG и3native transforms; Queen/Metal требуют адресного position crop.19c остановился по quota до mutations.
+- Product20 принят: stable PNG/IEND/disk proof и corroborated read-back. Runtime7dc36c9 проверен6nativePNG; historical prefixes не повышены.
+- Product23: независимый exact-ID import read-back, строгий path/type/media proof. Flash23b исправил основные замечания; root закрыл null/optional границы и убрал swallowed history assertion. Offline acceptance PASS; live handler дальше.
 
-Validation:76 native регрессий и scoped framing/visual/plan/protection PASS; original receipt rejected за missing type/static proof; native labels read-only подтверждены.
-Source: fresh original hashes, four MP4 probes/count_frames,20 decoded PNG,15 negative guards и end-to-end no-overwrite PASS.
-Диспетчер независимо проверил6 live layers/source/timing/fit и9 native PNG (Screens/Scene3/final); AEP403items, pending0/inflight[]. Scene3:4 разные группы,3 плана/2 гарантированных cuts(.84/1.68); точное число внутренних переходов не заявлено.
-Task13/15/16 transport failed(tool/protocolargs), actual writes/sourcefiles приняты independently; не replay. Fresh AEP407items/idlepending; final частично заполнен, crop8ещёpending; AEP unsaved, review recovery отдельно. PNG metadata отчёта15 mismatch14/14, actualdisk/view audit saved, причина неизвестна.
-Footage8–11 source: root24encodedPNG/fullprobes/freshhashes/copies PASS; darkStairway/blurScorp заменены новымиrev1 безoverwrite. Europe космический видеоряд номера, artistidentity не подтверждена; cuts.24/.48 быстрые. NestedFootage11start-.6 учесть без измененияparent.
-Final5 source: root20encodedPNG/fullprobes/freshhashes/persistentcopy и nooriginalfragmentoverlap PASS; cuts.84/1.68. Live15:9freshnative layer/route reads+14PNG; inherited camera/DOF/occlusion limits, BonJovi8crop correction17.
-Access milestone: exact grants/config diff проверены;17 blocked до imports/mutations,17b отвергнут драйвером за invalid terminal conversation,17c TLS timeout до model/MCP. Процессы завершены, повторов AE не было;17d новый запуск в исходном scope. Пользователь подтвердил повторы финала другими фрагментами.
-Scene9 source: root24PNG, пять fullprobes/original+outputhash/persistentcopy PASS;30 reported PNGhash совпадают с disk. Первый Metallica candidate отклонён за одинаковые планы, Flash заменил новым Metallica2ч40/60/80s; остальные clips сохранены. Original intervals disjoint от предыдущих13clips;2cuts.84/1.68 внутриlocal~.287..2.44, AEP ещё не заполнен этим этапом.
-Live17d: networkfailed после20fill/10PNGcompleted; root7freshnative+10PNG/cover/time PASS, AEP412items/idlepending/parents прежние. Semantic195/226 ошибочно отвергает attached+explicit одинаковые reads; исправление pending, writes не replay. Финал13unique slots:6groups×2+Led1, user repeats разрешены.
-NativePNG17:7/10hash mismatch — SHA незавершённых prefixes приfirstsize>0; actualPNG имеютIEND. Source18hashes30/30match. Draft20 отклонён: PNGcap testFAIL и malformedverification/read guards; Flash20b offline correction, runtime ещё старый. Historical receipts не повышать.
-Scene timing audit: старыеF8–11cutsДОfinalvisible.64. Source21actual4revisions accepted/copied:24views/32PNGhash/4probes/freshoriginalhashPASS,18activeclips/overlap0;cuts.24/.48/1.68/3.00(2short/3main/2final). Flash401послеencodes,rootrecoveredmanifest,no replay;livepending. MAIN remap native:12.64→.64,13.68→1.68,15→3,16.4/25.64→4; границы/hold сохранены.
-Product proof: после двух Flash corrections с actual FAIL узкий Sol/xhigh исправил stable-ID/corroboration и PNG guards. Root rules/semantic(43+73cases)/property-identity/generated-safety/node5/diff PASS; portable PNG smoke PASS после детерминированной Windows fixture коррекции. Новый smoke:png-proof/docs/generated-png-proof.md; runtime reload/live proof и task19/22 дальше.
+### Decision Log
+
+-221exact project-only grants:44read-file/36bounded commands; global/auth unchanged. Пустой required_commands в23 был ошибкой root: мост корректно запрещал terminal.23b команды указаны и реально выполнены. Правило записано в docs/model-routing.md.
+- Один AE controller/writer на ресурс. Unknown/partial не replay; task transport не равен приёмке.10unregistered review comps сохраняются; recovery отдельный scope.
+- Границы/disabled variants/mattes/parents не менять. Scene8 prerenders сохранены. Финал13slots/7groups:6groups×2+Led1, повторы разными фрагментами разрешены пользователем.
+- Native MAIN remap:12.64→.64,13.68→1.68,15→3,16.4/25.64→4. Shared revisions cuts.24/.48/1.68/3.00 покрывают короткие сцены и playing часть финала; inherited hold сохраняется.
+- SHA в отчёте19b отличается11/16 от actualdisk; отчёт также имеет invalid JSON escape.16файлов complete и реально просмотрены. Текстовые SHA отклонены; экспорты не повторять.
+- Flash19c недоступен по quota, процесс завершён; public tools показывают только reads. Допустим Sol6.1/high fallback в том же scope после idle сверки.
+
+### Validation
+
+Product23: rules/semantic(65local cases,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/node3/diff PASS. Число import cases включает optional local receipt; portablefixtures от него не зависят. Product20: rules/semantic/propertyidentity/generatedsafety/node5/diff/portablePNG PASS;6livePNG hashes/bytes/IEND independently match. Source18/21: rootactualviews/fullprobes/freshoriginal+outputhash/persistentcopy PASS. Scene3 fourgroups/2cuts и Final5 crop независимо приняты; timing stretch/remap учтены. AEP unsaved, текущие Scene9 crop и shared source22 acceptance остаются.

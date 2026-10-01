@@ -2381,7 +2381,10 @@ function replayIdempotencyResult(context, record) {
 }
 
 function buildServerSemanticVerification(plan, run) {
-  return buildSemanticVerification(plan, run, { generatedExportDir: GENERATED_EXPORT_DIR });
+  return buildSemanticVerification(plan, run, {
+    generatedExportDir: GENERATED_EXPORT_DIR,
+    projectRoot: PROJECT_ROOT
+  });
 }
 
 function validateCachedPngReplay(record, options = {}) {
@@ -2589,6 +2592,38 @@ async function verifyMutationResult(toolName, args, payload) {
     const mutation={index:1,tool:toolName,args,status:"completed",mutatesProject:true,result:payload};
     const semantic=buildServerSemanticVerification({steps:[{tool:toolName,args},...reads.map(read=>({tool:read.tool,args:read.args}))]}, {steps:[mutation,...reads],ok:true});
     return {ok:semantic.status==="passed" && semantic.unverifiedMutationCount===0,scope:"independent_requested_values",status:semantic.status,checks:semantic.checks,readBack:reads.map(read=>({tool:read.tool,args:read.args,result:read.result}))};
+  }
+  if (toolName === "import_footage") {
+    const item = payload && payload.item;
+    const hasItemId = item && Number.isSafeInteger(item.itemId) && item.itemId > 0;
+    const hasId = item && hasArg(item, "id");
+    const idValid = hasId ? (Number.isSafeInteger(item.id) && item.id > 0 && item.id === item.itemId) : true;
+    const returnedId = hasItemId && idValid ? item.itemId : null;
+    if (!returnedId) return { ok: false, scope: "independent_imported_source", reason: "stable_target_evidence_missing" };
+    const readArgs = { itemIds: [returnedId], type: "footage", limit: 1 };
+    const read = await callTool("find_project_items", readArgs);
+    const reads = [{ index: 2, tool: "find_project_items", args: readArgs, status: read.isError ? "failed" : "completed", result: firstToolPayload(read) }];
+    const context = planCommandContext.getStore();
+    if (context && context.item) {
+      context.item.independentReadBack = reads.map((r) => ({
+        ...r,
+        source: "server_typed_readback",
+        observedAt: new Date().toISOString()
+      }));
+      context.persist();
+    }
+    const mutation = { index: 1, tool: toolName, args, status: "completed", mutatesProject: true, result: payload };
+    const semantic = buildServerSemanticVerification(
+      { steps: [{ tool: toolName, args }, ...reads.map((r) => ({ tool: r.tool, args: r.args }))] },
+      { steps: [mutation, ...reads], ok: true }
+    );
+    return {
+      ok: semantic.status === "passed" && semantic.unverifiedMutationCount === 0,
+      scope: "independent_imported_source",
+      status: semantic.status,
+      checks: semantic.checks,
+      readBack: reads.map((r) => ({ tool: r.tool, args: r.args, result: r.result }))
+    };
   }
   if(toolName==="create_placeholder_review_comps") {
     const fresh=await requireFreshReviewRecord(payload && payload.owner);

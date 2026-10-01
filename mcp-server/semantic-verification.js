@@ -19,6 +19,24 @@ function getAuthoritativeExportRoot(options = {}) {
   return path.resolve(logDir, "generated-exports");
 }
 
+function getAuthoritativeProjectRoot(options = {}) {
+  if (options && typeof options.projectRoot === "string" && options.projectRoot.trim()) {
+    return path.resolve(options.projectRoot);
+  }
+  if (process.env.AE_PROJECT_ROOT && process.env.AE_PROJECT_ROOT.trim()) {
+    return path.resolve(process.env.AE_PROJECT_ROOT);
+  }
+  return path.resolve(__dirname, "..");
+}
+
+function canonicalImportPath(filePath, projectRoot) {
+  if (typeof filePath !== "string" || !filePath.trim()) return "";
+  const root = projectRoot || getAuthoritativeProjectRoot();
+  const resolved = path.resolve(root, filePath.trim());
+  const normalized = path.normalize(resolved).replace(/\\/g, "/");
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+}
+
 const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
@@ -784,7 +802,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -3528,7 +3546,440 @@ function checkSlideshowMutation(checks, step, evidence) {
   });
 }
 
+function checkImportFootage(checks, step, payload, evidence) {
+  const args = isPlainObject(step && step.args) ? step.args : {};
+  const projectRoot = getAuthoritativeProjectRoot(evidence && evidence.options);
+
+  if (!isPlainObject(payload) || !isPlainObject(payload.item)) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source`,
+      title: "Imported footage source identity and path match request",
+      expected: "completed import_footage step with item reference",
+      observed: "missing or invalid payload item",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:metadata`,
+      title: "Imported footage native media metadata matches request",
+      expected: "native video media metadata",
+      observed: "missing payload",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:read-back`,
+      title: "Imported footage matches independent find_project_items read-back",
+      expected: "independent exact-ID read-back evidence",
+      observed: "missing payload",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  const item = payload.item;
+  const footage = isPlainObject(payload.footage) ? payload.footage : {};
+  const isSequence = args.sequence === true || payload.sequence === true;
+  const expectedName = typeof args.name === "string" && args.name.trim() ? args.name.trim() : "";
+  const requestedPath = typeof args.filePath === "string" && args.filePath.trim() ? args.filePath.trim() : "";
+  const canonicalReqPath = canonicalImportPath(requestedPath, projectRoot);
+  const canonicalItemPath = canonicalImportPath(item.file, projectRoot);
+  const canonicalFootagePath = canonicalImportPath(footage.file, projectRoot);
+
+  // Request args type guards
+  const validRequestPath = typeof args.filePath === "string" && args.filePath.trim().length > 0;
+  const malformedNameArg = hasOwn(args, "name") && (args.name === null || typeof args.name !== "string" || !args.name.trim());
+  const malformedSeqArg = hasOwn(args, "sequence") && (args.sequence === null || typeof args.sequence !== "boolean");
+  const malformedResultSequence = hasOwn(payload, "sequence") && typeof payload.sequence !== "boolean";
+  const malformedRequest = !validRequestPath || malformedNameArg || malformedSeqArg || malformedResultSequence;
+
+  // Strict native itemId and ID alias check (safe IDs not index)
+  const validItemId = typeof item.itemId === "number" && Number.isSafeInteger(item.itemId) && item.itemId > 0;
+  const hasConflictingIdAlias = hasOwn(item, "id") &&
+    (typeof item.id !== "number" || !Number.isSafeInteger(item.id) || item.id !== item.itemId);
+  const targetItemId = (validItemId && !hasConflictingIdAlias) ? item.itemId : null;
+
+  // Read-back collection within current mutation window
+  const allWindowReads = (evidence.readBack && evidence.readBack.rawAttempts) || [];
+  const rawAttachedAttempts = allWindowReads.filter((read) => SERVER_ATTACHED_READS.has(read));
+  const malformedAttachedField = hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack);
+  let malformedAttached = false;
+  let foreignAttached = false;
+  const attachedReads = [];
+
+  for (const read of rawAttachedAttempts) {
+    const meta = SERVER_ATTACHED_READS.get(read);
+    if (!meta || meta.mutationStep !== step) {
+      foreignAttached = true;
+      continue;
+    }
+    if (!meta.valid || read.status !== "completed" || read.tool !== "find_project_items") {
+      malformedAttached = true;
+      continue;
+    }
+    const readArgs = isPlainObject(read.args) ? read.args : {};
+    if (!Array.isArray(readArgs.itemIds) || !readArgs.itemIds.every((id) => Number.isSafeInteger(id) && id > 0) || !readArgs.itemIds.includes(targetItemId)) {
+      malformedAttached = true;
+      continue;
+    }
+    if (readArgs.type && readArgs.type !== "footage") {
+      malformedAttached = true;
+      continue;
+    }
+    const res = payloadForStep(read);
+    const matches = res && Array.isArray(res.matches) ? res.matches : [];
+    const targetRows = targetItemId !== null ? matches.filter((m) => m && m.itemId === targetItemId) : [];
+    if (targetRows.length !== 1) {
+      malformedAttached = true;
+      continue;
+    }
+    const row = targetRows[0];
+    if (hasOwn(row, "id") && row.id !== targetItemId) {
+      malformedAttached = true;
+      continue;
+    }
+    attachedReads.push({ read, row });
+  }
+
+  if (rawAttachedAttempts.length > 0 && attachedReads.length === 0) {
+    malformedAttached = true;
+  }
+  const extraAttached = (Array.isArray(step.independentReadBack) && step.independentReadBack.length > 1) || rawAttachedAttempts.length > 1;
+
+  const explicitReads = [];
+  let malformedExplicit = false;
+  let targetedExplicitAttemptCount = 0;
+
+  for (const read of allWindowReads) {
+    if (SERVER_ATTACHED_READS.has(read)) continue;
+    if (read.tool !== "find_project_items") continue;
+
+    // Spoofed marker guard: an explicit plan step must never have source: "server_typed_readback"
+    if (read.source === "server_typed_readback") {
+      malformedExplicit = true;
+      targetedExplicitAttemptCount++;
+      continue;
+    }
+
+    const readArgs = isPlainObject(read.args) ? read.args : {};
+    const hasItemIds = hasOwn(readArgs, "itemIds");
+
+    if (hasItemIds) {
+      const itemIds = readArgs.itemIds;
+      const isArray = Array.isArray(itemIds);
+      const validIds = isArray && itemIds.every((id) => typeof id === "number" && Number.isSafeInteger(id) && id > 0);
+      const uniqueIds = validIds && new Set(itemIds).size === itemIds.length;
+
+      if (!isArray || !validIds || !uniqueIds) {
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const matchesOurId = targetItemId !== null && matches.some((m) => m && m.itemId === targetItemId);
+        const requestsOurId = targetItemId !== null && isArray && itemIds.some((id) => id === targetItemId || String(id) === String(targetItemId));
+        if (requestsOurId || matchesOurId) {
+          malformedExplicit = true;
+          targetedExplicitAttemptCount++;
+          continue;
+        }
+      }
+
+      const targetsOurId = targetItemId !== null && validIds && uniqueIds && itemIds.includes(targetItemId);
+
+      if (targetsOurId) {
+        targetedExplicitAttemptCount++;
+
+        if (read.status !== "completed") {
+          malformedExplicit = true;
+          continue;
+        }
+
+        if (readArgs.type && readArgs.type !== "footage") {
+          malformedExplicit = true;
+          continue;
+        }
+
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const targetRows = matches.filter((m) => m && m.itemId === targetItemId);
+        if (targetRows.length !== 1) {
+          malformedExplicit = true;
+          continue;
+        }
+
+        const row = targetRows[0];
+        if (hasOwn(row, "id") && row.id !== targetItemId) {
+          malformedExplicit = true;
+          continue;
+        }
+
+        explicitReads.push({ read, row });
+      } else {
+        // Does not request our target ID.
+        // Proven unrelated IDs ignore ONLY if request/result no conflict:
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const conflictingRow = targetItemId !== null && matches.find((m) => m && (m.itemId === targetItemId || (canonicalItemPath && canonicalImportPath(m.file, projectRoot) === canonicalItemPath)));
+        if (conflictingRow) {
+          malformedExplicit = true;
+          targetedExplicitAttemptCount++;
+          continue;
+        }
+        continue;
+      }
+    } else {
+      // Lacks exact itemIds (e.g. name-only or query-only find)
+      const res = payloadForStep(read);
+      const matches = res && Array.isArray(res.matches) ? res.matches : [];
+      const conflictingRow = targetItemId !== null && matches.find((m) => m && m.itemId === targetItemId);
+      if (conflictingRow) {
+        targetedExplicitAttemptCount++;
+        malformedExplicit = true;
+      }
+    }
+  }
+
+  const hasAttachedAttempt = malformedAttachedField || rawAttachedAttempts.length > 0;
+  const hasExplicitAttempt = targetedExplicitAttemptCount > 0;
+
+  let isCorroboratedPair = false;
+  let isSingle = false;
+  let chosenReads = [];
+
+  if (hasAttachedAttempt && hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !malformedExplicit && !foreignAttached &&
+        attachedReads.length === 1 && explicitReads.length === 1) {
+      isCorroboratedPair = true;
+      chosenReads = [attachedReads[0], explicitReads[0]];
+    }
+  } else if (hasAttachedAttempt && !hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !foreignAttached && attachedReads.length === 1) {
+      isSingle = true;
+      chosenReads = [attachedReads[0]];
+    }
+  } else if (!hasAttachedAttempt && hasExplicitAttempt) {
+    if (!malformedExplicit && explicitReads.length === 1) {
+      isSingle = true;
+      chosenReads = [explicitReads[0]];
+    }
+  }
+
+  const chosenRead = chosenReads.length ? chosenReads[0].read : null;
+  const chosenRow = chosenReads.length ? chosenReads[0].row : null;
+
+  // 1. Source check
+  const pathMatches = Boolean(canonicalReqPath && canonicalItemPath === canonicalReqPath && canonicalFootagePath === canonicalReqPath);
+  const nameMatches = typeof item.name === "string" && item.name.trim().length > 0 && (!expectedName || item.name === expectedName);
+  const typeMatches = item.type === "footage";
+  const missingMatches = item.footageMissing === false;
+  const idMatches = targetItemId !== null;
+
+  let sourcePassed = !malformedRequest && idMatches && pathMatches && nameMatches && typeMatches && missingMatches && !isSequence && item.hasVideo === true;
+  let sourceStatus = "needs_review";
+  if (sourcePassed) {
+    sourceStatus = "passed";
+  } else if (malformedRequest || isSequence || item.hasVideo !== true) {
+    sourceStatus = "needs_review";
+  } else if (!idMatches || hasConflictingIdAlias || (canonicalItemPath && canonicalItemPath !== canonicalReqPath) || !nameMatches || !typeMatches || item.footageMissing === true) {
+    sourceStatus = "failed";
+  }
+
+  let sourceEvidence = stepLabel(step);
+  if (malformedRequest) {
+    sourceEvidence += " (malformed import_footage request arguments)";
+  } else if (hasConflictingIdAlias) {
+    sourceEvidence += " (conflicting itemId and id aliases in item payload)";
+  } else if (isSequence) {
+    sourceEvidence += " (image sequence import is unsupported by single-file video semantic verification)";
+  } else if (item.hasVideo !== true) {
+    sourceEvidence += " (still image or audio-only footage is unsupported by single-file video semantic verification)";
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:source`,
+    title: "Imported footage source identity and path match request",
+    expected: `${expectedName ? `name: "${expectedName}", ` : ""}path: ${canonicalReqPath || requestedPath}, type: footage, missing: false, sequence: false`,
+    observed: `name: "${item.name || ""}", path: ${canonicalItemPath || "missing"}, type: ${item.type || "missing"}, missing: ${item.footageMissing}, sequence: ${isSequence}`,
+    passed: sourcePassed,
+    status: sourceStatus,
+    evidence: sourceEvidence,
+    binding: {
+      mutationStep: step.index,
+      itemId: targetItemId,
+      file: canonicalItemPath
+    }
+  });
+
+  // 2. Strict native metadata check (Finding 1)
+  const validItemNumbers = typeof item.width === "number" && Number.isSafeInteger(item.width) && item.width > 0 &&
+    typeof item.height === "number" && Number.isSafeInteger(item.height) && item.height > 0 &&
+    typeof item.duration === "number" && Number.isFinite(item.duration) && item.duration > 0 &&
+    typeof item.frameRate === "number" && Number.isFinite(item.frameRate) && item.frameRate > 0 &&
+    typeof item.pixelAspect === "number" && Number.isFinite(item.pixelAspect) && item.pixelAspect > 0;
+  const validItemBooleans = item.hasVideo === true && typeof item.hasAudio === "boolean";
+
+  const validFootageNumbers = isPlainObject(footage) &&
+    typeof footage.width === "number" && Number.isSafeInteger(footage.width) && footage.width > 0 &&
+    typeof footage.height === "number" && Number.isSafeInteger(footage.height) && footage.height > 0 &&
+    typeof footage.duration === "number" && Number.isFinite(footage.duration) && footage.duration > 0 &&
+    typeof footage.frameRate === "number" && Number.isFinite(footage.frameRate) && footage.frameRate > 0;
+  const validFootageBooleans = isPlainObject(footage) &&
+    footage.hasVideo === true && typeof footage.hasAudio === "boolean";
+
+  const hasFootagePar = isPlainObject(footage) && hasOwn(footage, "pixelAspect");
+  const validFootagePar = !hasFootagePar || (typeof footage.pixelAspect === "number" && Number.isFinite(footage.pixelAspect) && footage.pixelAspect > 0);
+  const footageParMatches = !hasFootagePar || (validFootagePar && nearlyEqual(footage.pixelAspect, item.pixelAspect));
+
+  const footageMatchesItem = isPlainObject(footage) &&
+    validFootageNumbers && validFootageBooleans && validFootagePar && footageParMatches &&
+    footage.width === item.width &&
+    footage.height === item.height &&
+    nearlyEqual(footage.duration, item.duration) &&
+    nearlyEqual(footage.frameRate, item.frameRate) &&
+    footage.hasVideo === item.hasVideo &&
+    footage.hasAudio === item.hasAudio;
+
+  let readBackMediaMatches = (isSingle || isCorroboratedPair);
+  if (readBackMediaMatches) {
+    for (const entry of chosenReads) {
+      const row = entry.row;
+      const validRowNumbers = isPlainObject(row) &&
+        typeof row.width === "number" && Number.isSafeInteger(row.width) && row.width > 0 &&
+        typeof row.height === "number" && Number.isSafeInteger(row.height) && row.height > 0 &&
+        typeof row.duration === "number" && Number.isFinite(row.duration) && row.duration > 0 &&
+        typeof row.frameRate === "number" && Number.isFinite(row.frameRate) && row.frameRate > 0 &&
+        typeof row.pixelAspect === "number" && Number.isFinite(row.pixelAspect) && row.pixelAspect > 0;
+      const validRowBooleans = isPlainObject(row) &&
+        row.hasVideo === true && typeof row.hasAudio === "boolean";
+
+      const rowMatch = isPlainObject(row) &&
+        validRowNumbers && validRowBooleans &&
+        row.width === item.width &&
+        row.height === item.height &&
+        nearlyEqual(row.duration, item.duration) &&
+        nearlyEqual(row.frameRate, item.frameRate) &&
+        nearlyEqual(row.pixelAspect, item.pixelAspect) &&
+        row.hasVideo === item.hasVideo &&
+        row.hasAudio === item.hasAudio;
+      if (!rowMatch) {
+        readBackMediaMatches = false;
+        break;
+      }
+    }
+  }
+
+  const metadataPassed = Boolean(validItemNumbers && validItemBooleans && footageMatchesItem && readBackMediaMatches);
+  let metadataStatus = "needs_review";
+  if (metadataPassed) {
+    metadataStatus = "passed";
+  } else if (!validItemNumbers || !validItemBooleans || (isPlainObject(footage) && (!validFootageNumbers || !validFootageBooleans || !validFootagePar))) {
+    metadataStatus = "needs_review";
+  } else if (!footageMatchesItem || ((isSingle || isCorroboratedPair) && !readBackMediaMatches)) {
+    metadataStatus = "failed";
+  }
+
+  let metadataEvidence = "";
+  if (isCorroboratedPair) {
+    metadataEvidence = `Corroborated read-back metadata verified across ${chosenReads.map((e) => stepLabel(e.read)).join(" and ")}.`;
+  } else if (chosenRead) {
+    metadataEvidence = `${stepLabel(chosenRead)} metadata verified.`;
+  } else {
+    metadataEvidence = stepLabel(step);
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Imported footage native media metadata matches request",
+    expected: `${item.width}x${item.height}, ${item.duration}s @ ${item.frameRate}fps, PAR ${item.pixelAspect}, video: true, audio: ${item.hasAudio}`,
+    observed: isPlainObject(footage)
+      ? `${footage.width}x${footage.height}, ${footage.duration}s @ ${footage.frameRate}fps, PAR ${hasFootagePar ? footage.pixelAspect : item.pixelAspect}, video: ${footage.hasVideo}, audio: ${footage.hasAudio}`
+      : "missing footage metadata",
+    passed: metadataPassed,
+    status: metadataStatus,
+    evidence: metadataEvidence,
+    binding: {
+      mutationStep: step.index,
+      itemId: targetItemId,
+      width: item.width,
+      height: item.height,
+      duration: item.duration,
+      frameRate: item.frameRate,
+      pixelAspect: item.pixelAspect,
+      hasVideo: item.hasVideo,
+      hasAudio: item.hasAudio
+    }
+  });
+
+  // 3. Independent read-back check (Finding 0)
+  let readBackTargetMatches = (isSingle || isCorroboratedPair);
+  if (readBackTargetMatches) {
+    for (const entry of chosenReads) {
+      const row = entry.row;
+      const canonicalRowPath = canonicalImportPath(row && row.file, projectRoot);
+      const rowNameMatches = typeof row.name === "string" && row.name.trim().length > 0 &&
+        row.name === (expectedName || item.name);
+      if (!row || row.itemId !== targetItemId || row.type !== "footage" || row.footageMissing !== false ||
+          !canonicalRowPath || canonicalRowPath !== canonicalReqPath || !rowNameMatches) {
+        readBackTargetMatches = false;
+        break;
+      }
+    }
+  }
+
+  const readBackPassed = Boolean(readBackTargetMatches && sourcePassed);
+  let readBackStatus = "needs_review";
+  if (readBackPassed) {
+    readBackStatus = "passed";
+  } else if ((isSingle || isCorroboratedPair) && !readBackTargetMatches) {
+    readBackStatus = "failed";
+  } else {
+    readBackStatus = "needs_review";
+  }
+
+  let readBackEvidenceText = "";
+  if (isCorroboratedPair) {
+    const stepsDesc = chosenReads.map((e) => `${stepLabel(e.read)} [${SERVER_ATTACHED_READS.has(e.read) ? (e.read.source || "server_typed_readback") : "explicit"}]`).join("; ");
+    readBackEvidenceText = `Corroborated server-attached and explicit find_project_items read-back for itemId ${targetItemId} (${stepsDesc}).`;
+  } else if (isSingle) {
+    const readStep = chosenReads[0].read;
+    const prov = SERVER_ATTACHED_READS.has(readStep) ? (readStep.source || "server_typed_readback") : "explicit";
+    readBackEvidenceText = hasAttachedAttempt
+      ? `Server-attached find_project_items read-back for itemId ${targetItemId} (${stepLabel(readStep)} [${prov}]).`
+      : `Explicit find_project_items read-back for itemId ${targetItemId} (${stepLabel(readStep)} [${prov}]).`;
+  } else if (hasAttachedAttempt || hasExplicitAttempt) {
+    readBackEvidenceText = "Ambiguous, conflicting, foreign, or malformed find_project_items read-back attempts.";
+  } else {
+    readBackEvidenceText = "No post-run find_project_items read-back matched import_footage exact itemId.";
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:read-back`,
+    title: "Imported footage matches independent find_project_items read-back",
+    expected: `itemId: ${targetItemId}, type: footage, missing: false, path: ${canonicalReqPath || requestedPath}`,
+    observed: chosenRow
+      ? `itemId: ${chosenRow.itemId}, type: ${chosenRow.type}, missing: ${chosenRow.footageMissing}, path: ${canonicalImportPath(chosenRow.file, projectRoot)}`
+      : "missing or unverified read-back",
+    passed: readBackPassed,
+    status: readBackStatus,
+    evidence: readBackEvidenceText,
+    binding: {
+      mutationStep: step.index,
+      targetItemId,
+      readBackCount: chosenReads.length,
+      stepIndices: chosenReads.map((e) => e.read.index)
+    }
+  });
+}
+
 function verifyStep(checks, step, evidence) {
+  if (step.tool === "import_footage") {
+    const payload = payloadForStep(step);
+    if (!payload || step.status !== "completed") return;
+    checkImportFootage(checks, step, payload, evidence);
+    return;
+  }
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
@@ -4491,7 +4942,7 @@ function buildSemanticVerification(plan, run, options = {}) {
       : null;
     const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
     const priorCheckCount = checks.length;
-    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: allEvidence });
+    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: allEvidence, options });
     if (checks.length === priorCheckCount) unverifiedMutationSteps.push({index: step.index, tool: step.tool});
   }
 
@@ -4535,5 +4986,6 @@ module.exports = {
   effectPropertyIdentityMatches,
   finiteTransformValue,
   transformValuesMatch,
-  isScopedGeneratedPngPlanSufficient
+  isScopedGeneratedPngPlanSufficient,
+  canonicalImportPath
 };

@@ -2,11 +2,15 @@
 
 const assert = require("assert");
 const path = require("node:path");
+const fs = require("node:fs");
 
 const {
   buildSemanticVerification,
   SEMANTIC_VERIFICATION_SCHEMA
 } = require("../mcp-server/semantic-verification");
+const {
+  buildServerSemanticVerification
+} = require("../mcp-server/bridge-daemon");
 const {
   AGENT_SCENARIO_MUTATING_TOOLS,
   agentEffectEnabledScenarioPlans,
@@ -4762,6 +4766,509 @@ function assertAttachedAndExplicitCorroborationAndPngFileProof() {
   return cases;
 }
 
+function createImportTestStep(index, options = {}) {
+  const itemId = options.itemId || (5150 + index);
+  const fileName = options.fileName || `footage${index}_clip_101f.mp4`;
+  const filePath = options.filePath || `C:\\TestMedia\\${fileName}`;
+  const width = options.width !== undefined ? options.width : 1280;
+  const height = options.height !== undefined ? options.height : 720;
+  const duration = options.duration !== undefined ? options.duration : 4.04;
+  const frameRate = options.frameRate !== undefined ? options.frameRate : 25;
+  const pixelAspect = options.pixelAspect !== undefined ? options.pixelAspect : 1;
+  const hasVideo = options.hasVideo !== undefined ? options.hasVideo : true;
+  const hasAudio = options.hasAudio !== undefined ? options.hasAudio : false;
+  const footageMissing = options.footageMissing !== undefined ? options.footageMissing : false;
+  const sequence = options.sequence !== undefined ? options.sequence : false;
+  const name = options.name !== undefined ? options.name : fileName;
+
+  const item = {
+    itemId,
+    itemIndex: options.itemIndex || (47 + index),
+    name,
+    type: options.type || "footage",
+    typeName: "Footage",
+    label: 3,
+    comment: "",
+    folderPath: "",
+    duration,
+    frameRate,
+    footageMissing,
+    file: filePath,
+    width,
+    height,
+    pixelAspect,
+    hasVideo,
+    hasAudio
+  };
+
+  const footage = {
+    file: filePath,
+    width,
+    height,
+    duration,
+    frameRate,
+    hasVideo,
+    hasAudio
+  };
+
+  const args = { filePath };
+  if (options.reqName) args.name = options.reqName;
+  if (sequence) args.sequence = true;
+
+  const step = {
+    index,
+    tool: "import_footage",
+    status: options.status || "completed",
+    args,
+    result: {
+      item,
+      footage,
+      sequence
+    }
+  };
+
+  if (options.attachedRead) {
+    const attachedRow = { ...item, ...(options.attachedRowOverrides || {}) };
+    step.independentReadBack = [{
+      tool: "find_project_items",
+      status: options.attachedStatus || "completed",
+      source: options.attachedSource || "server_typed_readback",
+      observedAt: options.attachedObservedAt || "2026-10-01T16:17:19.000Z",
+      args: { itemIds: [itemId], type: "footage", limit: 1 },
+      result: {
+        matches: [attachedRow]
+      }
+    }];
+  }
+
+  return step;
+}
+
+function createFindTestStep(index, importStep, options = {}) {
+  const item = importStep.result.item;
+  const itemId = options.itemId !== undefined ? options.itemId : item.itemId;
+  const matches = options.matches || [{ ...item, ...(options.rowOverrides || {}) }];
+  const args = options.args || { itemIds: [itemId], type: "footage", limit: 1 };
+
+  return {
+    index,
+    tool: "find_project_items",
+    status: options.status || "completed",
+    args,
+    result: {
+      matches
+    }
+  };
+}
+
+function assertImportSemanticAndNegativeBoundaries() {
+  let cases = 0;
+  function verify(run, expectedStatus, expectedCheckStatus) {
+    cases++;
+    const plan = { steps: run.steps.map(s => ({ tool: s.tool, args: s.args })) };
+    const result = buildSemanticVerification(plan, run);
+    assert.equal(result.status, expectedStatus, `Expected ${expectedStatus} but got ${result.status} for case ${cases}`);
+    if (expectedCheckStatus) {
+      assert(result.checks.some(c => c.status === expectedCheckStatus), `Expected some check to be ${expectedCheckStatus} for case ${cases}`);
+    }
+    return result;
+  }
+
+  // 1. Positive actual-shaped 5 sequence with owned exact-ID reads
+  const steps5 = [];
+  for (let i = 1; i <= 5; i++) {
+    const importStep = createImportTestStep(2 * i - 1, { attachedRead: true });
+    const findStep = createFindTestStep(2 * i, importStep);
+    steps5.push(importStep, findStep);
+  }
+  const pos5Run = { ok: true, steps: steps5 };
+  const sem5 = verify(pos5Run, "passed");
+  assert.equal(sem5.passedChecks, 15);
+  assert.equal(sem5.failedChecks, 0);
+  assert.equal(sem5.needsReviewChecks, 0);
+  assert.equal(sem5.unverifiedMutationCount, 0);
+
+  // 2. Historical stage 19 run without owned reads and with name-only finds remains needs_review
+  const stage19Steps = [];
+  for (let i = 1; i <= 5; i++) {
+    const importStep = createImportTestStep(2 * i - 1, { attachedRead: false });
+    const findStep = {
+      index: 2 * i,
+      tool: "find_project_items",
+      status: "completed",
+      args: { exactName: true, query: `footage${2 * i - 1}_clip_101f.mp4`, type: "footage" },
+      result: { matches: [importStep.result.item] }
+    };
+    stage19Steps.push(importStep, findStep);
+  }
+  const stage19Run = { ok: false, steps: stage19Steps };
+  const semStage19 = verify(stage19Run, "needs_review");
+  assert.equal(semStage19.ok, false);
+
+  // 3. Positive single-file video with corroborated pair (1 attached + 1 explicit)
+  const s1 = createImportTestStep(1, { attachedRead: true });
+  const s2 = createFindTestStep(2, s1);
+  const corrobRes = verify({ ok: true, steps: [s1, s2] }, "passed");
+  assert.equal(corrobRes.passedChecks, 3);
+  const corrobReadBack = corrobRes.checks.find(c => c.id === "1:import_footage:read-back");
+  assert(corrobReadBack && corrobReadBack.evidence.includes("Corroborated server-attached and explicit"));
+
+  // 4. Positive single-file video with explicit read only
+  const expOnlyStep = createImportTestStep(1, { attachedRead: false });
+  const expFind = createFindTestStep(2, expOnlyStep);
+  verify({ ok: true, steps: [expOnlyStep, expFind] }, "passed");
+
+  // 5. Positive single-file video with attached read only
+  const attOnlyStep = createImportTestStep(1, { attachedRead: true });
+  verify({ ok: true, steps: [attOnlyStep] }, "passed");
+
+  // 6. Relative request path vs absolute item and read-back paths
+  const relStep = createImportTestStep(1, { filePath: "media/test_101f.mp4", attachedRead: false });
+  relStep.args.filePath = "media/test_101f.mp4";
+  relStep.result.item.file = path.resolve(process.cwd(), "media", "test_101f.mp4");
+  relStep.result.footage.file = path.resolve(process.cwd(), "media", "test_101f.mp4");
+  const relFind = createFindTestStep(2, relStep);
+  relFind.result.matches[0].file = path.resolve(process.cwd(), "media", "test_101f.mp4");
+  verify({ ok: true, steps: [relStep, relFind] }, "passed");
+
+  // 7. Moved itemIndex still passes with persistent itemId
+  const movedStep = createImportTestStep(1, { attachedRead: false, itemIndex: 48 });
+  const movedFind = createFindTestStep(2, movedStep, { rowOverrides: { itemIndex: 99 } });
+  verify({ ok: true, steps: [movedStep, movedFind] }, "passed");
+
+  // 8. Wrong itemId in read-back fails closed
+  const wrongIdStep = createImportTestStep(1, { attachedRead: false });
+  const wrongIdFind = createFindTestStep(2, wrongIdStep, { itemId: 9999, rowOverrides: { itemId: 9999 } });
+  verify({ ok: true, steps: [wrongIdStep, wrongIdFind] }, "needs_review");
+
+  // 9. Wrong item type (comp instead of footage) fails
+  const wrongTypeStep = createImportTestStep(1, { attachedRead: false, type: "comp" });
+  const wrongTypeFind = createFindTestStep(2, wrongTypeStep);
+  verify({ ok: true, steps: [wrongTypeStep, wrongTypeFind] }, "needs_review", "failed");
+
+  // 10. Footage missing fails
+  const missingStep = createImportTestStep(1, { attachedRead: false, footageMissing: true });
+  const missingFind = createFindTestStep(2, missingStep);
+  verify({ ok: true, steps: [missingStep, missingFind] }, "needs_review", "failed");
+
+  // 11. Same basename in different folder fails
+  const diffFolderStep = createImportTestStep(1, { attachedRead: false, filePath: "C:\\folderA\\video.mp4" });
+  diffFolderStep.result.item.file = "C:\\folderB\\video.mp4";
+  diffFolderStep.result.footage.file = "C:\\folderB\\video.mp4";
+  const diffFolderFind = createFindTestStep(2, diffFolderStep);
+  verify({ ok: true, steps: [diffFolderStep, diffFolderFind] }, "needs_review", "failed");
+
+  // 12. Duplicate target rows in find_project_items fails closed
+  const dupStep = createImportTestStep(1, { attachedRead: false });
+  const dupFind = createFindTestStep(2, dupStep, { matches: [dupStep.result.item, dupStep.result.item] });
+  verify({ ok: true, steps: [dupStep, dupFind] }, "needs_review");
+
+  // 13. Mismatched duration fails
+  const badDurStep = createImportTestStep(1, { attachedRead: false });
+  const badDurFind = createFindTestStep(2, badDurStep, { rowOverrides: { duration: 99.9 } });
+  verify({ ok: true, steps: [badDurStep, badDurFind] }, "needs_review", "failed");
+
+  // 14. Mismatched pixelAspect (PAR) fails
+  const badParStep = createImportTestStep(1, { attachedRead: false });
+  const badParFind = createFindTestStep(2, badParStep, { rowOverrides: { pixelAspect: 1.333 } });
+  verify({ ok: true, steps: [badParStep, badParFind] }, "needs_review", "failed");
+
+  // 15. hasVideo: false (still image or audio only) fails closed
+  const audioOnlyStep = createImportTestStep(1, { attachedRead: false, hasVideo: false, hasAudio: true });
+  const audioOnlyFind = createFindTestStep(2, audioOnlyStep);
+  verify({ ok: true, steps: [audioOnlyStep, audioOnlyFind] }, "needs_review");
+
+  // 16. Missing numeric metadata field fails closed
+  const noWidthStep = createImportTestStep(1, { attachedRead: false });
+  delete noWidthStep.result.item.width;
+  const noWidthFind = createFindTestStep(2, noWidthStep);
+  verify({ ok: true, steps: [noWidthStep, noWidthFind] }, "needs_review");
+
+  // 17. String numeric metadata fails closed
+  const strWidthStep = createImportTestStep(1, { attachedRead: false });
+  strWidthStep.result.item.width = "1280";
+  const strWidthFind = createFindTestStep(2, strWidthStep);
+  verify({ ok: true, steps: [strWidthStep, strWidthFind] }, "needs_review");
+
+  // 18. Unsupported sequence import fails closed
+  const seqStep = createImportTestStep(1, { attachedRead: false, sequence: true });
+  const seqFind = createFindTestStep(2, seqStep);
+  verify({ ok: true, steps: [seqStep, seqFind] }, "needs_review");
+
+  // 19. Name mismatch fails
+  const nameStep = createImportTestStep(1, { attachedRead: false, reqName: "expected_name.mp4" });
+  nameStep.result.item.name = "actual_name.mp4";
+  const nameFind = createFindTestStep(2, nameStep);
+  verify({ ok: true, steps: [nameStep, nameFind] }, "needs_review", "failed");
+
+  // 20. Read before import fails closed
+  const beforeStep = createImportTestStep(2, { attachedRead: false });
+  const beforeFind = createFindTestStep(1, beforeStep);
+  verify({ ok: true, steps: [beforeFind, beforeStep] }, "needs_review");
+
+  // 21. Failed read attempt fails closed
+  const failedReadStep = createImportTestStep(1, { attachedRead: false });
+  const failedReadFind = createFindTestStep(2, failedReadStep, { status: "failed" });
+  verify({ ok: true, steps: [failedReadStep, failedReadFind] }, "needs_review");
+
+  // 22. Conflicting targeted reads (arbitrary 2 explicit reads) fails closed
+  const conflictStep = createImportTestStep(1, { attachedRead: false });
+  const exp1 = createFindTestStep(2, conflictStep);
+  const exp2 = createFindTestStep(3, conflictStep);
+  verify({ ok: true, steps: [conflictStep, exp1, exp2] }, "needs_review");
+
+  // 23. Malformed attached read fails closed
+  const malformedAttStep = createImportTestStep(1, { attachedRead: true, attachedSource: "untrusted_source" });
+  verify({ ok: true, steps: [malformedAttStep] }, "needs_review");
+
+  // 24. Extra attached read fails closed
+  const extraAttStep = createImportTestStep(1, { attachedRead: true });
+  extraAttStep.independentReadBack.push(clone(extraAttStep.independentReadBack[0]));
+  verify({ ok: true, steps: [extraAttStep] }, "needs_review");
+
+  // 25. Foreign attached read fails closed
+  const foreignAttStep = createImportTestStep(1, { attachedRead: true });
+  foreignAttStep.independentReadBack[0].args.itemIds = [9999];
+  verify({ ok: true, steps: [foreignAttStep] }, "needs_review");
+
+  // 26. Cached generic verification with MAIN comp and no exact-ID read fails closed
+  const genericVerifStep = createImportTestStep(1, { attachedRead: false });
+  genericVerifStep.result.verification = {
+    ok: true,
+    comp: { itemIndex: 413, id: 2735, name: "MAIN" }
+  };
+  verify({ ok: true, steps: [genericVerifStep] }, "needs_review");
+
+  // 27. Targeted skipped read fails closed (needs_review)
+  const skippedStep = createImportTestStep(1, { attachedRead: false });
+  const skippedFind = createFindTestStep(2, skippedStep, { status: "skipped" });
+  verify({ ok: true, steps: [skippedStep, skippedFind] }, "needs_review");
+
+  // 28. Targeted failed read in a pair does not silently downgrade to single attached read
+  const pairWithFailedExplicit = createImportTestStep(1, { attachedRead: true });
+  const failedExplicitStep = createFindTestStep(2, pairWithFailedExplicit, { status: "failed" });
+  verify({ ok: true, steps: [pairWithFailedExplicit, failedExplicitStep] }, "needs_review");
+
+  // 29. Targeted skipped read in a pair does not silently downgrade
+  const pairWithSkippedExplicit = createImportTestStep(1, { attachedRead: true });
+  const skippedExplicitStep = createFindTestStep(2, pairWithSkippedExplicit, { status: "skipped" });
+  verify({ ok: true, steps: [pairWithSkippedExplicit, skippedExplicitStep] }, "needs_review");
+
+  // 30. Conflicting id alias in item fails closed
+  const itemConflictingId = createImportTestStep(1, { attachedRead: false });
+  itemConflictingId.result.item.id = 9999;
+  const itemConflictingFind = createFindTestStep(2, itemConflictingId);
+  verify({ ok: true, steps: [itemConflictingId, itemConflictingFind] }, "needs_review");
+
+  // 31. Conflicting id alias in read row fails closed
+  const rowConflictingStep = createImportTestStep(1, { attachedRead: false });
+  const rowConflictingFind = createFindTestStep(2, rowConflictingStep, { rowOverrides: { id: 9999 } });
+  verify({ ok: true, steps: [rowConflictingStep, rowConflictingFind] }, "needs_review");
+
+  // 32. Malformed itemIds in explicit read: string item ID fails closed
+  const strIdStep = createImportTestStep(1, { attachedRead: false });
+  const strIdFind = createFindTestStep(2, strIdStep);
+  strIdFind.args.itemIds = [String(strIdStep.result.item.itemId)];
+  verify({ ok: true, steps: [strIdStep, strIdFind] }, "needs_review");
+
+  // 33. Malformed itemIds in explicit read: negative item ID fails closed
+  const negIdStep = createImportTestStep(1, { attachedRead: false });
+  const negIdFind = createFindTestStep(2, negIdStep);
+  negIdFind.args.itemIds = [-5];
+  verify({ ok: true, steps: [negIdStep, negIdFind] }, "needs_review");
+
+  // 34. Malformed itemIds in explicit read: duplicate item IDs fails closed
+  const dupIdStep = createImportTestStep(1, { attachedRead: false });
+  const dupIdFind = createFindTestStep(2, dupIdStep);
+  dupIdFind.args.itemIds = [dupIdStep.result.item.itemId, dupIdStep.result.item.itemId];
+  verify({ ok: true, steps: [dupIdStep, dupIdFind] }, "needs_review");
+
+  // 35. Malformed itemIds in explicit read: not an array fails closed
+  const nonArrIdStep = createImportTestStep(1, { attachedRead: false });
+  const nonArrIdFind = createFindTestStep(2, nonArrIdStep);
+  nonArrIdFind.args.itemIds = nonArrIdStep.result.item.itemId;
+  verify({ ok: true, steps: [nonArrIdStep, nonArrIdFind] }, "needs_review");
+
+  // 36. Malformed request: empty filePath fails closed
+  const emptyPathStep = createImportTestStep(1, { attachedRead: false });
+  emptyPathStep.args.filePath = "";
+  const emptyPathFind = createFindTestStep(2, emptyPathStep);
+  verify({ ok: true, steps: [emptyPathStep, emptyPathFind] }, "needs_review");
+
+  // 37. Malformed request: non-string name fails closed
+  const nonStrNameStep = createImportTestStep(1, { attachedRead: false, reqName: 12345 });
+  nonStrNameStep.args.name = 12345;
+  const nonStrNameFind = createFindTestStep(2, nonStrNameStep);
+  verify({ ok: true, steps: [nonStrNameStep, nonStrNameFind] }, "needs_review");
+
+  // 38. Malformed request: non-boolean sequence fails closed
+  const nonBoolSeqStep = createImportTestStep(1, { attachedRead: false });
+  nonBoolSeqStep.args.sequence = "false";
+  const nonBoolSeqFind = createFindTestStep(2, nonBoolSeqStep);
+  verify({ ok: true, steps: [nonBoolSeqStep, nonBoolSeqFind] }, "needs_review");
+
+  // 39. Spoofed marker: explicit plan step claiming server_typed_readback fails closed
+  const spoofedStep = createImportTestStep(1, { attachedRead: false });
+  const spoofedFind = createFindTestStep(2, spoofedStep);
+  spoofedFind.source = "server_typed_readback";
+  verify({ ok: true, steps: [spoofedStep, spoofedFind] }, "needs_review");
+
+  // 40. Extra attached attempts in step.independentReadBack fails closed
+  const extraAttFieldStep = createImportTestStep(1, { attachedRead: true });
+  extraAttFieldStep.independentReadBack.push({
+    tool: "find_project_items",
+    status: "completed",
+    source: "server_typed_readback",
+    observedAt: "2026-10-01T16:17:19.000Z",
+    args: { itemIds: [extraAttFieldStep.result.item.itemId], type: "footage", limit: 1 },
+    result: { matches: [clone(extraAttFieldStep.result.item)] }
+  });
+  verify({ ok: true, steps: [extraAttFieldStep] }, "needs_review");
+
+  // 41. Proven unrelated ID explicit read does not conflict with target import
+  const unrelatedStep = createImportTestStep(1, { attachedRead: false });
+  const validTargetFind = createFindTestStep(2, unrelatedStep);
+  const unrelatedFind = {
+    index: 3,
+    tool: "find_project_items",
+    status: "completed",
+    args: { itemIds: [9999], type: "footage", limit: 1 },
+    result: { matches: [{ itemId: 9999, file: "C:\\other\\video.mp4", name: "other.mp4" }] }
+  };
+  verify({ ok: true, steps: [unrelatedStep, validTargetFind, unrelatedFind] }, "passed");
+
+  // 42. Unrelated find with conflicting match leaking target itemId fails closed
+  const leakingUnrelatedStep = createImportTestStep(1, { attachedRead: false });
+  const leakingFind = {
+    index: 2,
+    tool: "find_project_items",
+    status: "completed",
+    args: { itemIds: [9999], type: "footage", limit: 1 },
+    result: { matches: [{ itemId: leakingUnrelatedStep.result.item.itemId, file: leakingUnrelatedStep.result.item.file }] }
+  };
+  verify({ ok: true, steps: [leakingUnrelatedStep, leakingFind] }, "needs_review");
+
+  // 43. Current mutation window guard: read after later mutating step fails closed
+  const windowStep = createImportTestStep(1, { attachedRead: false });
+  const interveningMutation = {
+    index: 2,
+    tool: "delete_layer",
+    status: "completed",
+    args: { compItemId: 10, layerId: 11 },
+    result: { comp: { itemId: 10 }, layer: { id: 11 } }
+  };
+  const lateFind = createFindTestStep(3, windowStep);
+  verify({ ok: true, steps: [windowStep, interveningMutation, lateFind] }, "needs_review");
+
+  // 44. String duration on footage fails closed
+  const strDurFootageStep = createImportTestStep(1, { attachedRead: false });
+  strDurFootageStep.result.footage.duration = "4.04";
+  const strDurFootageFind = createFindTestStep(2, strDurFootageStep);
+  verify({ ok: true, steps: [strDurFootageStep, strDurFootageFind] }, "needs_review");
+
+  // 45. String frameRate on footage fails closed
+  const strFpsFootageStep = createImportTestStep(1, { attachedRead: false });
+  strFpsFootageStep.result.footage.frameRate = "25";
+  const strFpsFootageFind = createFindTestStep(2, strFpsFootageStep);
+  verify({ ok: true, steps: [strFpsFootageStep, strFpsFootageFind] }, "needs_review");
+
+  // 46. Optional pixelAspect on footage mismatching item pixelAspect fails closed
+  const parMismatchFootageStep = createImportTestStep(1, { attachedRead: false });
+  parMismatchFootageStep.result.footage.pixelAspect = 1.333;
+  const parMismatchFootageFind = createFindTestStep(2, parMismatchFootageStep);
+  verify({ ok: true, steps: [parMismatchFootageStep, parMismatchFootageFind] }, "needs_review", "failed");
+
+  // 47. String optional pixelAspect on footage fails closed
+  const strParFootageStep = createImportTestStep(1, { attachedRead: false });
+  strParFootageStep.result.footage.pixelAspect = "1";
+  const strParFootageFind = createFindTestStep(2, strParFootageStep);
+  verify({ ok: true, steps: [strParFootageStep, strParFootageFind] }, "needs_review");
+
+  // 48. String duration on read row fails closed
+  const strDurRowStep = createImportTestStep(1, { attachedRead: false });
+  const strDurRowFind = createFindTestStep(2, strDurRowStep, { rowOverrides: { duration: "4.04" } });
+  verify({ ok: true, steps: [strDurRowStep, strDurRowFind] }, "needs_review");
+
+  // 49. String frameRate on read row fails closed
+  const strFpsRowStep = createImportTestStep(1, { attachedRead: false });
+  const strFpsRowFind = createFindTestStep(2, strFpsRowStep, { rowOverrides: { frameRate: "25" } });
+  verify({ ok: true, steps: [strFpsRowStep, strFpsRowFind] }, "needs_review");
+
+  // 50. String pixelAspect on read row fails closed
+  const strParRowStep = createImportTestStep(1, { attachedRead: false });
+  const strParRowFind = createFindTestStep(2, strParRowStep, { rowOverrides: { pixelAspect: "1" } });
+  verify({ ok: true, steps: [strParRowStep, strParRowFind] }, "needs_review");
+
+  // 51. String hasAudio on item fails closed
+  const strAudioItemStep = createImportTestStep(1, { attachedRead: false });
+  strAudioItemStep.result.item.hasAudio = "false";
+  const strAudioItemFind = createFindTestStep(2, strAudioItemStep);
+  verify({ ok: true, steps: [strAudioItemStep, strAudioItemFind] }, "needs_review");
+
+  // 52. String hasAudio on footage fails closed
+  const strAudioFootageStep = createImportTestStep(1, { attachedRead: false });
+  strAudioFootageStep.result.footage.hasAudio = "false";
+  const strAudioFootageFind = createFindTestStep(2, strAudioFootageStep);
+  verify({ ok: true, steps: [strAudioFootageStep, strAudioFootageFind] }, "needs_review");
+
+  // 53. String hasAudio on read row fails closed
+  const strAudioRowStep = createImportTestStep(1, { attachedRead: false });
+  const strAudioRowFind = createFindTestStep(2, strAudioRowStep, { rowOverrides: { hasAudio: "false" } });
+  verify({ ok: true, steps: [strAudioRowStep, strAudioRowFind] }, "needs_review");
+
+  // 54. Windows casefolding vs case-sensitive host behavior
+  const caseStep = createImportTestStep(1, { attachedRead: false, filePath: "C:\\TestMedia\\UpperVideo.mp4" });
+  caseStep.args.filePath = "C:\\TestMedia\\uppervideo.mp4";
+  caseStep.result.item.file = "C:\\TestMedia\\UpperVideo.mp4";
+  caseStep.result.footage.file = "C:\\TestMedia\\UpperVideo.mp4";
+  const caseFind = createFindTestStep(2, caseStep);
+  caseFind.result.matches[0].file = "C:\\TestMedia\\UpperVideo.mp4";
+  if (process.platform === "win32") {
+    verify({ ok: true, steps: [caseStep, caseFind] }, "passed");
+  } else {
+    verify({ ok: true, steps: [caseStep, caseFind] }, "needs_review");
+  }
+
+  // 55. Optional historical stage 19 receipt: portable synthetic fixtures always run;
+  // optional history file is read conditionally without throwing if absent.
+  const stage19FilePath = path.resolve(__dirname, "..", ".codex-runtime", "live-bohemian2016", "root-stage19-import-run.json");
+  if (fs.existsSync(stage19FilePath)) {
+      const fileData = JSON.parse(fs.readFileSync(stage19FilePath, "utf8"));
+      const histSemResult = verify(fileData, "needs_review");
+      assert.equal(histSemResult.ok, false);
+      const diagData = { ...fileData, ok: true };
+      const diagSemResult = verify(diagData, "needs_review");
+      assert.equal(diagSemResult.ok, false);
+  }
+
+  // 56. Bridge buildServerSemanticVerification pure-module integration proof
+  const bridgeImportStep = createImportTestStep(1, { attachedRead: true });
+  const bridgePlan = { steps: [{ tool: bridgeImportStep.tool, args: bridgeImportStep.args }] };
+  const bridgeRun = { steps: [bridgeImportStep], ok: true };
+  const bridgeVerification = buildServerSemanticVerification(bridgePlan, bridgeRun);
+  assert.equal(bridgeVerification.status, "passed");
+  assert.equal(bridgeVerification.ok, true);
+  assert.equal(bridgeVerification.unverifiedMutationCount, 0);
+  assert.equal(bridgeVerification.passedChecks, 3);
+
+  // Present but malformed optional fields must fail closed, including null.
+  for (const [location, field, value] of [
+    ["footage", "pixelAspect", null], ["footage", "pixelAspect", undefined],
+    ["item", "id", null], ["item", "id", undefined],
+    ["result", "sequence", "false"], ["result", "sequence", null],
+    ["row", "id", null], ["row", "name", null], ["row", "name", ""]
+  ]) {
+    const imp = createImportTestStep(1, { attachedRead: false });
+    const read = createFindTestStep(2, imp);
+    const target = location === "row" ? read.result.matches[0] :
+      location === "result" ? imp.result : imp.result[location];
+    target[field] = value;
+    verify({ ok: true, steps: [imp, read] }, "needs_review");
+  }
+
+  return cases;
+}
+
 function main() {
   const scenarios = agentScenarioPlans("Codex Semantic Fixture", 0);
   const results = scenarios.map(assertScenarioPasses);
@@ -4839,12 +5346,14 @@ function main() {
   assertSetEffectPropertyUsesExactCompositeIdentity();
   const recoveryBoundaryCases = assertRecoveryIdentityAndTransformBoundaries();
   const corroborationAndPngProofCases = assertAttachedAndExplicitCorroborationAndPngFileProof();
+  const importSemanticCases = assertImportSemanticAndNegativeBoundaries();
 
   console.log(JSON.stringify({
     ok: true,
     schema: SEMANTIC_VERIFICATION_SCHEMA,
     recoveryBoundaryCases,
     corroborationAndPngProofCases,
+    importSemanticCases,
     scenarios: results
   }, null, 2));
 }
