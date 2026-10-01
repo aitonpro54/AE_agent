@@ -56,12 +56,19 @@ var app={ project: { numItems: 1, item: function(i) { return i===1 ? comp : null
   beginUndoGroup: function() { undo.begin++; }, endUndoGroup: function() { undo.end++; } };
 `;
 
-async function execute(toolArgs, setup = "", noOp = false) {
+// A bounded adapter models the left-associated evaluation matching the native
+// diagnostic. It is not an ExtendScript compiler or native AE execution.
+function modelNativeConditionalPath(script) {
+  const chained = /([A-Za-z_][A-Za-z_0-9]*) === "hold" \? KeyframeInterpolationType\.HOLD : \1 === "linear" \? KeyframeInterpolationType\.LINEAR : KeyframeInterpolationType\.BEZIER/g;
+  return script.replace(chained, (_, name) => `(${name} === "hold" ? KeyframeInterpolationType.HOLD : ${name} === "linear") ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER`);
+}
+
+async function execute(toolArgs, setup = "", noOp = false, adapter = script => script) {
   const prepared = await prepareToolScript("apply_keyframe_ease", toolArgs);
   assert.equal(typeof prepared.script, "string");
   const context = vm.createContext({ noOp });
   vm.runInContext(fixture + setup, context);
-  const result = JSON.parse(vm.runInContext(prepared.script, context, { timeout: 2000 }));
+  const result = JSON.parse(vm.runInContext(adapter(prepared.script), context, { timeout: 2000 }));
   return { prepared, context, result };
 }
 
@@ -95,11 +102,23 @@ async function main() {
     assert.equal(diagnostic.holdConditionalProbe.request.type,"string");
     assert.equal(diagnostic.holdConditionalProbe.request.text,"hold");
     assert.equal(diagnostic.holdConditionalProbe.selected.numeric,diagnostic.constants.hold.numeric);
+    assert.equal(diagnostic.holdExplicitBranchProbe.selected.numeric,diagnostic.constants.hold.numeric);
     assert.equal(diagnostic.holdDirect.numeric,diagnostic.constants.hold.numeric);
     assert.equal(diagnostic.holdEqualsLinear,aliased);
     results.push({label:aliased ? "typed read surfaces aliased HOLD constant without writing" : "typed read exposes native enum constants and HOLD conditional probe without writing",status:"passed"});
   }
+  const modeledReadContext=vm.createContext({noOp:false});vm.runInContext(fixture,modeledReadContext);
+  const modeledRead=JSON.parse(vm.runInContext(modelNativeConditionalPath(readPrepared.script),modeledReadContext,{timeout:2000}));
+  assert.equal(modeledRead.result.property.interpolationDiagnostics.holdConditionalProbe.selected.numeric,6612);
+  assert.equal(modeledRead.result.property.interpolationDiagnostics.holdExplicitBranchProbe.selected.numeric,6614);
+  assert.deepEqual(Array.from(modeledReadContext.writes),[]);
+  results.push({label:"read-only diagnostic compares conditional6612 and explicit6614 under bounded native model",status:"passed"});
   const nativeModel = await execute(args);
+  const selector = nativeModel.prepared.script.slice(nativeModel.prepared.script.indexOf("var interpolationType;"),
+    nativeModel.prepared.script.indexOf("var interpolationValid ="));
+  assert(selector.includes('if (interpolation === "hold")'));
+  assert(selector.includes('interpolationType = KeyframeInterpolationType.HOLD;'));
+  assert(!selector.includes("?"),"Actual generated mutation enum selector must not use a chained conditional.");
   assert.equal(nativeModel.result.ok, true);
   const payload = nativeModel.result.result;
   assert.deepEqual(Array.from(nativeModel.context.writes), ["interpolation:1:6614", "interpolation:2:6614"]);
@@ -109,6 +128,22 @@ async function main() {
   assert.equal(payload.keyframeEase.temporalEaseApplied, false);
   for (const key of payload.property.keyframes) assert.equal(key.outInterpolation, "hold");
   checkSemantic("native HOLD model with preserved times/values and exact independent target", semanticRun(payload), "passed");
+
+  const conditionalModel=await execute(args,"",false,modelNativeConditionalPath);
+  const modeledDiagnostic=conditionalModel.result.result.property.interpolationDiagnostics;
+  assert.equal(modeledDiagnostic.holdConditionalProbe.selected.numeric,6612,"Bounded adapter must reproduce the observed native diagnostic selection.");
+  assert.equal(modeledDiagnostic.holdExplicitBranchProbe.selected.numeric,6614);
+  assert.equal(conditionalModel.result.result.keyframeEase.interpolationNativeValue,6614);
+  assert.equal(conditionalModel.result.result.keyframeEase.verified,true);
+  assert.deepEqual(Array.from(conditionalModel.context.writes),["interpolation:1:6614","interpolation:2:6614"]);
+  checkSemantic("explicit generated selector retains HOLD under bounded native-conditional model",semanticRun(conditionalModel.result.result),"passed");
+  const legacySelector=nativeModel.prepared.script.replace(selector,
+    'var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;\n      ');
+  const legacyContext=vm.createContext({noOp:false});vm.runInContext(fixture,legacyContext);
+  const modeledLegacy=JSON.parse(vm.runInContext(modelNativeConditionalPath(legacySelector),legacyContext,{timeout:2000}));
+  assert.equal(modeledLegacy.result.keyframeEase.interpolationNativeValue,6612);
+  assert.equal(modeledLegacy.result.keyframeEase.verified,false);
+  checkSemantic("former chained selector reproduces LINEAR failure under the same bounded model",semanticRun(modeledLegacy.result));
 
   const noop = await execute(args, "", true);
   assert.equal(noop.result.result.keyframeEase.verified, false);

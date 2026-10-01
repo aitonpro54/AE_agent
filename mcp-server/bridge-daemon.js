@@ -12905,6 +12905,15 @@ async function callTool(name, args, executionContext) {
           var probeName = "hold";
           var conditionalType = probeName === "hold" ? KeyframeInterpolationType.HOLD : probeName === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
           result.holdConditionalProbe = { request: describe(probeName), selected: describe(conditionalType) };
+          var explicitProbeType;
+          if (probeName === "hold") {
+            explicitProbeType = KeyframeInterpolationType.HOLD;
+          } else if (probeName === "linear") {
+            explicitProbeType = KeyframeInterpolationType.LINEAR;
+          } else {
+            explicitProbeType = KeyframeInterpolationType.BEZIER;
+          }
+          result.holdExplicitBranchProbe = { request: describe(probeName), selected: describe(explicitProbeType) };
           result.holdDirect = describe(KeyframeInterpolationType.HOLD);
           result.holdEqualsLinear = KeyframeInterpolationType.HOLD === KeyframeInterpolationType.LINEAR;
           result.holdEqualsBezier = KeyframeInterpolationType.HOLD === KeyframeInterpolationType.BEZIER;
@@ -20442,7 +20451,16 @@ async function callTool(name, args, executionContext) {
         if (typeof checkedIndex !== "number" || !isFinite(checkedIndex) || Math.floor(checkedIndex) !== checkedIndex || checkedIndex < 1 || checkedIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + checkedIndex);
         keyframesBefore.push(__codexKeyframeInfo(prop, checkedIndex));
       }
-      var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
+      // Native AE selected LINEAR from the chained conditional for "hold";
+      // explicit branches avoid that observed ExtendScript evaluation path.
+      var interpolationType;
+      if (interpolation === "hold") {
+        interpolationType = KeyframeInterpolationType.HOLD;
+      } else if (interpolation === "linear") {
+        interpolationType = KeyframeInterpolationType.LINEAR;
+      } else {
+        interpolationType = KeyframeInterpolationType.BEZIER;
+      }
       var interpolationValid = null;
       if (interpolation) {
         try { interpolationValid = prop.isInterpolationTypeValid(interpolationType); } catch (__interpolationValidError) {}
