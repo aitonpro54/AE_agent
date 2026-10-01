@@ -159,9 +159,9 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 Progress: CEP/bridge3.2.0 Connected; четыре Screens заменены на принятые постоянные клипы, crop200 исправлен.
 Native2D/TextLayer/Float32 contracts исправлены Flash с узкой Sol/xhigh коррекцией; 10 review comps unregistered, recovery не реализован.
 Четыре клипа Scorpions/Queen/Metallica/Beatles готовы:101f/25fps/4.04s/SAR1/noaudio, планы/последний кадр просмотрены.
-Screens sources5139–5142/6layers и Footage8–11 sources5143–5146/7layers подтверждены independently. Final5 clips copied/probed; Flash17 ставит их и исправляет cropBonJovi8, Flash18 source-only готовит Scene9. Вся расстановка ещё не завершена.
+Screens sources5139–5142/6layers и Footage8–11 sources5143–5146/7layers подтверждены independently. Final5 clips copied/probed; Flash17d ставит их и исправляет cropBonJovi8. Flash18 source-only готовит Scene9: root20PNG, Metallica требует разных планов. Вся расстановка ещё не завершена.
 
-Decision Log:169 exact project-only grants Antigravity; global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
+Decision Log:203 exact project-only grants Antigravity;34 новых media reads, global/auth unchanged. Unknown/partial не replay; review objects сохранить до проверяемого recovery.
 Границы/disabled variants не менять. Финал:13 плейсхолдеров/7 групп, повторы разными фрагментами разрешены. Scene8 prerenders сохранить.
 Shared targets покрывают видимые интервалы всех сцен. Source helper после двух неполных Flash попыток исправлен Sol/xhigh: FFprobe/type/count/audio, frames/PTS/SAR/no-overwrite.
 Оригиналы не изменены; встроенные полосы, мягкость и внутренние переходы сохранены. Source acceptance не равна AEP artistic acceptance.
@@ -172,3 +172,4 @@ Source: fresh original hashes, four MP4 probes/count_frames,20 decoded PNG,15 ne
 Task13/15/16 transport failed(tool/protocolargs), actual writes/sourcefiles приняты independently; не replay. Fresh AEP407items/idlepending; final частично заполнен, crop8ещёpending; AEP unsaved, review recovery отдельно. PNG metadata отчёта15 mismatch14/14, actualdisk/view audit saved, причина неизвестна.
 Footage8–11 source: root24encodedPNG/fullprobes/freshhashes/copies PASS; darkStairway/blurScorp заменены новымиrev1 безoverwrite. Europe космический видеоряд номера, artistidentity не подтверждена; cuts.24/.48 быстрые. NestedFootage11start-.6 учесть без измененияparent.
 Final5 source: root20encodedPNG/fullprobes/freshhashes/persistentcopy и nooriginalfragmentoverlap PASS; cuts.84/1.68. Live15:9freshnative layer/route reads+14PNG; inherited camera/DOF/occlusion limits, BonJovi8crop correction17.
+Access milestone: exact grants/config diff проверены;17 blocked до imports/mutations,17b отвергнут драйвером за invalid terminal conversation,17c TLS timeout до model/MCP. Процессы завершены, повторов AE не было;17d новый запуск в исходном scope. Пользователь подтвердил повторы финала другими фрагментами.
