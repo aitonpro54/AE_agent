@@ -11795,7 +11795,7 @@ const tools = [
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         layerIndex: { type: "number", description: "1-based layer index in the target composition." },
         propertyPath: { type: ["array", "string"], description: "Property path from the layer.", items: {} },
-        keyIndices: { type: ["number", "array"], description: "Optional keyframe index or indexes. Defaults to selected keys." },
+        keyIndices: { type: ["integer", "array"], minimum: 1, items: { type: "integer", minimum: 1 }, minItems: 1, description: "Optional positive 1-based keyframe index or integer indexes. Defaults to selected keys." },
         easeIn: { type: "object", description: "Ease-in object with speed and influence. Defaults to speed 0, influence 33." },
         easeOut: { type: "object", description: "Ease-out object with speed and influence. Defaults to speed 0, influence 33." },
         interpolation: { type: "string", enum: ["bezier", "linear", "hold"], description: "Optional interpolation type." }
@@ -12908,6 +12908,15 @@ async function callTool(name, args, executionContext) {
         try { info.value = __codexValueData(prop.keyValue(keyIndex)); } catch (__keyValueError) {}
         try { info.inInterpolation = __codexInterpolationName(prop.keyInInterpolationType(keyIndex)); } catch (__keyInInterpError) {}
         try { info.outInterpolation = __codexInterpolationName(prop.keyOutInterpolationType(keyIndex)); } catch (__keyOutInterpError) {}
+        try { info.inInterpolationValue = Number(prop.keyInInterpolationType(keyIndex)); } catch (__keyInInterpValueError) {}
+        try { info.outInterpolationValue = Number(prop.keyOutInterpolationType(keyIndex)); } catch (__keyOutInterpValueError) {}
+        function temporalEaseData(values) {
+          var result = [];
+          for (var __te = 0; __te < values.length; __te++) result.push({ speed: values[__te].speed, influence: values[__te].influence });
+          return result;
+        }
+        try { info.inTemporalEase = temporalEaseData(prop.keyInTemporalEase(keyIndex)); } catch (__keyInEaseError) {}
+        try { info.outTemporalEase = temporalEaseData(prop.keyOutTemporalEase(keyIndex)); } catch (__keyOutEaseError) {}
         try { info.inSpatialTangent = __codexArrayCopy(prop.keyInSpatialTangent(keyIndex)); } catch (__keyInSpatialError) {}
         try { info.outSpatialTangent = __codexArrayCopy(prop.keyOutSpatialTangent(keyIndex)); } catch (__keyOutSpatialError) {}
         return info;
@@ -18936,7 +18945,7 @@ async function callTool(name, args, executionContext) {
         });
       }
       var response = {
-        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        comp: { itemIndex: __codexProjectIndexForItem(comp), itemId: comp.id, name: comp.name },
         sourceItem: __codexItemReference(sourceItem),
         changedCount: changed.length,
         layers: changed.map(function (item) { return item.after; }),
@@ -20402,6 +20411,21 @@ async function callTool(name, args, executionContext) {
         } catch (__selectedKeyError) {}
       }
       if (!keys.length) throw new Error("No keyframes selected or provided.");
+      // Validate the entire selection before any write; a bad later index must
+      // not leave an earlier key modified.
+      var keyframesBefore = [];
+      var originalKeyCount = prop.numKeys;
+      for (var __validate = 0; __validate < keys.length; __validate++) {
+        var checkedIndex = keys[__validate];
+        if (typeof checkedIndex !== "number" || !isFinite(checkedIndex) || Math.floor(checkedIndex) !== checkedIndex || checkedIndex < 1 || checkedIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + checkedIndex);
+        keyframesBefore.push(__codexKeyframeInfo(prop, checkedIndex));
+      }
+      var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
+      var interpolationValid = null;
+      if (interpolation) {
+        try { interpolationValid = prop.isInterpolationTypeValid(interpolationType); } catch (__interpolationValidError) {}
+        if (interpolationValid === false) throw new Error("Property does not support interpolation: " + interpolation);
+      }
 
       function __codexEaseArray(ease, dimensions) {
         var speed = ease.speed !== undefined ? Number(ease.speed) : 0;
@@ -20430,26 +20454,42 @@ async function callTool(name, args, executionContext) {
       var easeOutValues = __codexEaseArray(easeOut, dimensions);
       var changedKeys = [];
       for (var __i = 0; __i < keys.length; __i++) {
-        var keyIndex = Math.floor(Number(keys[__i]));
-        if (keyIndex < 1 || keyIndex > prop.numKeys) throw new Error("Keyframe index out of range: " + keyIndex);
-        prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
-        if (interpolation) {
-          var interpolationType = interpolation === "hold" ? KeyframeInterpolationType.HOLD : interpolation === "linear" ? KeyframeInterpolationType.LINEAR : KeyframeInterpolationType.BEZIER;
-          prop.setInterpolationTypeAtKey(keyIndex, interpolationType, interpolationType);
-        }
+        var keyIndex = keys[__i];
+        // HOLD has no temporal easing. Apply interpolation in a final pass so
+        // another key's temporal-ease update cannot precede its read-back.
+        if (interpolation !== "hold") prop.setTemporalEaseAtKey(keyIndex, easeInValues, easeOutValues);
         changedKeys.push(keyIndex);
       }
+      for (var __interp = 0; __interp < keys.length; __interp++) {
+        if (interpolation) {
+          prop.setInterpolationTypeAtKey(keys[__interp], interpolationType, interpolationType);
+        }
+      }
+      var keyframesAfter = [];
+      var verificationErrors = [];
+      if (prop.numKeys !== originalKeyCount) verificationErrors.push("Keyframe count changed.");
+      for (var __verify = 0; __verify < keys.length; __verify++) {
+        var afterKey = __codexKeyframeInfo(prop, keys[__verify]);
+        var beforeKey = keyframesBefore[__verify];
+        keyframesAfter.push(afterKey);
+        if (beforeKey.time === null || afterKey.time !== beforeKey.time || __codexStringify(afterKey.value) !== __codexStringify(beforeKey.value)) verificationErrors.push("Keyframe time/value changed: " + keys[__verify]);
+        if (interpolation && (afterKey.inInterpolation !== interpolation || afterKey.outInterpolation !== interpolation)) verificationErrors.push("Interpolation mismatch at key " + keys[__verify] + ": " + afterKey.inInterpolation + "/" + afterKey.outInterpolation);
+      }
       var response = {
-        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name },
+        comp: { itemIndex: __codexProjectIndexForItem(comp), itemId: comp.id, name: comp.name },
         layer: __codexLayerInfo(layer),
         property: __codexPropertyInfo(prop, layer, true, true),
         keyIndices: changedKeys,
-        interpolation: interpolation || null
+        interpolation: interpolation || null,
+        keyframeEase: { before: keyframesBefore, after: keyframesAfter, originalKeyCount: originalKeyCount,
+          interpolationNativeValue: interpolation ? Number(interpolationType) : null, interpolationValid: interpolationValid,
+          temporalEaseApplied: interpolation !== "hold", verified: verificationErrors.length === 0, errors: verificationErrors }
       };
       app.endUndoGroup();
       return response;
     `);
-    return toolResult(result.result);
+    const nativeResult = result.result;
+    return toolResult(nativeResult, Boolean(nativeResult && nativeResult.keyframeEase && nativeResult.keyframeEase.verified === false));
   }
 
   if (name === "set_spatial_in_tangent") {

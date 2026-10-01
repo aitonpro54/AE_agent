@@ -267,6 +267,7 @@ const AVAILABLE_TOOLS = [
   "rename_project_items",
   "set_project_item_metadata",
   "get_layer_details",
+  "get_property_value",
   "update_text_layer",
   "duplicate_layers",
   "deep_duplicate_precomp_sources",
@@ -1425,7 +1426,7 @@ function assertImportedAdvisoryQuality(registry) {
     } else if (id === "make-hold-keyframes-typed-plan") {
       assert.deepStrictEqual(
         solution.execution.preferredTools,
-        ["get_active_comp", "get_selected_properties", "apply_keyframe_ease", "get_layer_details"],
+        ["get_active_comp", "get_selected_properties", "apply_keyframe_ease", "get_property_value"],
         `${id}: imported make-hold-keyframes workflow should stay on the narrow selected-property keyframe interpolation typed tool sequence.`
       );
       assert.strictEqual(solution.execution.mutating, true, `${id}: selected-keyframe hold interpolation workflow must be mutating.`);
@@ -1436,14 +1437,14 @@ function assertImportedAdvisoryQuality(registry) {
       assert(text.includes("holdInterpolation"), `${id}: recipe should define the bounded hold interpolation mode.`);
       assert(text.includes("apply_keyframe_ease"), `${id}: recipe should use the keyframe interpolation typed tool.`);
       assert(text.includes('interpolation:"hold"'), `${id}: recipe should apply hold interpolation explicitly.`);
-      assert(text.includes("get_layer_details"), `${id}: recipe should require keyframe read-back through layer details.`);
+      assert(text.includes("get_property_value"), `${id}: recipe should require exact native keyframe property read-back.`);
       assert(text.includes("Do not infer selected keyframes"), `${id}: recipe should guard selected-key discovery gaps.`);
       assert(solution.verificationRecipe.steps.some((step) => /get_selected_properties/.test(step)), `${id}: verification must capture selected-property evidence before mutation.`);
       assert(solution.verificationRecipe.steps.some((step) => /selectedKeyframes/.test(step)), `${id}: verification must include selectedKeyframes.`);
       assert(solution.verificationRecipe.steps.some((step) => /holdKeyframes/.test(step)), `${id}: verification must include computed holdKeyframes.`);
       assert(solution.verificationRecipe.steps.some((step) => /apply_keyframe_ease/.test(step)), `${id}: verification must include apply_keyframe_ease.`);
       assert(solution.verificationRecipe.steps.some((step) => /interpolation:"hold"/.test(step)), `${id}: verification must require hold interpolation.`);
-      assert(solution.verificationRecipe.steps.some((step) => /get_layer_details/.test(step)), `${id}: verification must read layer details after mutation.`);
+      assert(solution.verificationRecipe.steps.some((step) => /get_property_value/.test(step)), `${id}: verification must read exact native keyframe properties after mutation.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /holdKeyframes/.test(item)), `${id}: verification must require holdKeyframes evidence.`);
       assert(solution.verificationRecipe.expectedEvidence.some((item) => /Skipped targets/.test(item)), `${id}: verification must require skipped-target gap evidence.`);
       assert(solution.notes.some((note) => /selected-keyframe evidence/.test(note)), `${id}: notes must require selected-keyframe evidence.`);
@@ -3945,7 +3946,7 @@ function assertActualRetrieval(registry) {
   assert(makeHoldKeyframesPromptSection.includes("holdKeyframes"), "prompt section should preserve computed hold keyframe guidance.");
   assert(makeHoldKeyframesPromptSection.includes("holdInterpolation"), "prompt section should preserve hold interpolation mode guidance.");
   assert(makeHoldKeyframesPromptSection.includes("apply_keyframe_ease"), "prompt section should prefer apply_keyframe_ease for hold keyframe workflows.");
-  assert(makeHoldKeyframesPromptSection.includes("get_layer_details"), "prompt section should require keyframe read-back.");
+  assert(makeHoldKeyframesPromptSection.includes("get_property_value"), "prompt section should require native keyframe property read-back.");
   assert(!/run_extendscript/i.test(makeHoldKeyframesPromptSection), "make-hold-keyframes guidance should not recommend raw ExtendScript.");
 
   const multiplySelectedKeyframesRetrieval = retrieveSolutionHints("Multiply selected keyframe values by a reviewed keyframeValueMultiplier after inspecting selectedKeyframes on the selected property, compute multipliedKeyframes, set_property_keyframes with clearExisting:false, optionally apply_keyframe_ease with explicit keyIndices, and read back keyframes.", {

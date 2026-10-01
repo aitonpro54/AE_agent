@@ -22,7 +22,7 @@ Convert explicit reviewed selected keyframes on currently selected AE properties
 6. Compute and disclose `holdKeyframes` before confirmation. The list must preserve the same keyframe indices, times, and values while setting the reviewed `interpolationMode` to `holdInterpolation`.
 7. Run one `apply_keyframe_ease` step per accepted selected property target with the inspected comp target, evidence-backed `layerIndex`, exact `propertyPath`, explicit reviewed `keyIndices`, and `interpolation:"hold"`.
 8. Do not call `set_property_keyframes` unless a separate reviewed plan explicitly needs keyframe value repair; this recipe is interpolation-only.
-9. Run `get_layer_details` for every affected layer with enough property detail to read back the keyframed property and hold interpolation evidence when available.
+9. Run `get_property_value` by fresh `compItemId`, `layerId` and the exact inspected property path after every setter. Require native key count, times, values and HOLD interpolation; a layer transform summary does not prove key interpolation.
 10. Report skipped selected properties with the typed-tool gap reason instead of silently changing them.
 
 ## Safety Gates
@@ -38,7 +38,7 @@ Convert explicit reviewed selected keyframes on currently selected AE properties
 
 - Pre-run `get_selected_properties` identifies every concrete selected property target, its owning layer, exact property path, current value shape, expression state, and keyframe/animated state when available.
 - The dry-run plan shows previous `selectedKeyframes`, `interpolationMode:"holdInterpolation"`, and computed `holdKeyframes` for every accepted target.
-- Each `apply_keyframe_ease` result reports the expected property path, `interpolation:"hold"`, and only the explicit reviewed `keyIndices`.
-- Post-run `get_layer_details` shows the affected property still has the expected keyframe count and selected keyframe times/values, with hold interpolation evidence when the bridge read-back exposes it.
+- Each `apply_keyframe_ease` result supplies native before/after keys and verifies preserved times/values and HOLD interpolation. The echoed request alone cannot satisfy verification.
+- Post-run `get_property_value` independently confirms those exact keys on the same composition, layer and property. Missing or conflicting native evidence requires review.
 - Skipped targets are reported with explicit reasons such as missing selected keyframe evidence, expression-driven property, unanimated property, unsupported value shape, missing read-back, requested key creation/removal, selected-key discovery gap, spatial tangent gap, or unsupported exact source semantics.
 - Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key creation/removal, key value, unselected keyframe, or unselected property mutation.

@@ -12650,7 +12650,7 @@
           "get_active_comp",
           "get_selected_properties",
           "apply_keyframe_ease",
-          "get_layer_details"
+          "get_property_value"
         ]
       },
       "requiredSafetyGates": {
@@ -12669,14 +12669,15 @@
           "Fail closed when selected-property evidence is empty, lacks layer/property path targets, lacks exact selected keyframe indices and times, has expression text or enabled expressions, is not keyframed/animated, requires creating/removing keys, or requires source-exact selected-key discovery.",
           "Resolve interpolationMode only as holdInterpolation and show previous selectedKeyframes plus computed holdKeyframes for every accepted target before confirmation.",
           "Run one apply_keyframe_ease step per accepted selected property target with interpolation:\"hold\", the explicit reviewed keyIndices, the evidence-backed layerIndex and exact propertyPath.",
-          "Run get_layer_details for every affected layer with property keyframe read-back.",
-          "Fail closed if selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects or interpolation preservation beyond hold conversion is required."
+          "Run get_property_value for every affected layer with property keyframe read-back.",
+          "Fail closed if selected-key discovery without explicit reviewed keyframes, spatial tangent editing, exact source selection side effects, value generation, destructive key removal, broad property scans, selection side effects or interpolation preservation beyond hold conversion is required.",
+          "Требовать независимый get_property_value по свежим stable compItemId/layerId и точному propertyPath; native before/after ключи, times/values/interpolation должны совпасть. Echo HOLD и summary слоя не являются доказательством."
         ],
         "expectedEvidence": [
           "Pre-run get_selected_properties identifies every concrete selected property target, its owning layer, current value shape, expression state and keyframe/animated state when available.",
           "Dry-run evidence lists previous selectedKeyframes, interpolationMode:\"holdInterpolation\" and computed holdKeyframes for every accepted target.",
           "Each apply_keyframe_ease result reports the expected property path, interpolation:\"hold\" and only the explicit reviewed keyIndices.",
-          "Post-run get_layer_details shows the selected keyframe times and values are preserved on the expected layer/property path with hold interpolation evidence when exposed by read-back.",
+          "Post-run get_property_value shows the selected keyframe times and values are preserved on the expected layer/property path with hold interpolation evidence when exposed by read-back.",
           "Skipped targets are reported with explicit typed-tool gap reasons instead of being silently changed.",
           "Post-run evidence shows no expression, timing, effect, source, render queue, layer name, selection state, project item, key creation/removal, key value, unselected keyframe or unselected property mutation."
         ]

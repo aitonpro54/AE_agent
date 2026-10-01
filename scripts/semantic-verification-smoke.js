@@ -1795,14 +1795,15 @@ function assertScenarioPasses(scenario) {
   const run = fakeRunForPlan(scenario.plan);
   const semantic = buildSemanticVerification(scenario.plan, run);
   assert.strictEqual(semantic.schema, SEMANTIC_VERIFICATION_SCHEMA, `${scenario.id}: schema mismatch`);
-  const fits=run.steps.filter(step=>step.tool==="fit_layer_to_comp");
-  if(fits.length){
-    // Existing scenarios fit generated shape/text assets. The bounded video cover
-    // checker cannot prove these modes from changedCount or predicted transforms.
-    assert.strictEqual(semantic.status,"needs_review",`${scenario.id}: unsupported fit needs independent geometry review`);
+  const nativeProofTools = ["fit_layer_to_comp", "apply_keyframe_ease", "replace_layer_source"];
+  const unsupported=run.steps.filter(step=>nativeProofTools.includes(step.tool));
+  if(unsupported.length){
+    // These legacy scenario fixtures contain predicted transforms or echoed
+    // key/source requests. They do not supply independent native proof.
+    assert.strictEqual(semantic.status,"needs_review",`${scenario.id}: missing native proof needs independent review`);
     const failed=semantic.checks.filter(check=>check.status!=="passed");
-    assert.strictEqual(failed.length,fits.length,`${scenario.id}: only unsupported fit checks may need review`);
-    assert(failed.every(check=>check.id.includes(":fit_layer_to_comp:fit")),`${scenario.id}: unrelated checks must still pass`);
+    assert.strictEqual(failed.length,unsupported.length,`${scenario.id}: only missing native proof checks may need review`);
+    assert(failed.every(check=>nativeProofTools.some(tool=>check.id.includes(`:${tool}:`))),`${scenario.id}: unrelated checks must still pass`);
   }else{
     assert.strictEqual(semantic.status, "passed", `${scenario.id}: semantic verification should pass: ${semantic.summary}`);
     assert.strictEqual(semantic.failedChecks, 0, `${scenario.id}: expected no failed checks`);

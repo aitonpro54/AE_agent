@@ -2342,6 +2342,128 @@ function observedPropertyKeyframesEvidence(evidence, args) {
   return null;
 }
 
+function checkKeyframeEase(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const path = Array.isArray(args.propertyPath) ? args.propertyPath
+    : typeof args.propertyPath === "string" ? args.propertyPath.split(".").map(part => part.trim()).filter(Boolean) : [];
+  const layerIndex = positiveIdentityIndex(args.layerIndex);
+  const property = payload.property;
+  const receipt = isPlainObject(payload.keyframeEase) ? payload.keyframeEase : {};
+  const requested = hasOwn(args, "keyIndices") ? (Array.isArray(args.keyIndices) ? args.keyIndices : [args.keyIndices]) : payload.keyIndices;
+  const indicesValid = Array.isArray(requested) && requested.length > 0 &&
+    requested.every(index => typeof index === "number" && Number.isSafeInteger(index) && index > 0) && new Set(requested).size === requested.length;
+  const sameIndices = (indices) => indicesValid && Array.isArray(indices) && indices.length === requested.length &&
+    indices.every((index, position) => index === requested[position]);
+  const before = Array.isArray(receipt.before) ? receipt.before : [];
+  const baselineValid = sameIndices(before.map(key => key && key.index)) && before.every(key =>
+    typeof key.time === "number" && Number.isFinite(key.time) && hasOwn(key, "value") && key.value !== null);
+  const resultIdentity = compMatchesRequest(payload.comp, args) && layerMatchesRequest(payload.layer, args, layerIndex) &&
+    isPlainObject(property) && (!property.layer || sameLayerIdentity(payload.layer, property.layer)) &&
+    propertyPathTailIdentityMatches(property.propertyPath, path) && sameIndices(payload.keyIndices);
+  const easeMatches = (key, direction) => {
+    if (args.interpolation === "hold" || args.interpolation === "linear") return true;
+    const requestedEase = isPlainObject(args[direction === "in" ? "easeIn" : "easeOut"]) ? args[direction === "in" ? "easeIn" : "easeOut"] : {};
+    const values = key[`${direction}TemporalEase`];
+    return Array.isArray(values) && values.length > 0 && values.every(value =>
+      nearlyEqual(value.speed, requestedEase.speed === undefined ? 0 : requestedEase.speed, 0.000001) &&
+      nearlyEqual(value.influence, requestedEase.influence === undefined ? 33 : requestedEase.influence, 0.000001));
+  };
+  const keysMatch = (keys, requireBaseline) => indicesValid && Array.isArray(keys) && requested.every((index, position) => {
+    const matches = keys.filter(key => key && key.index === index);
+    if (matches.length !== 1) return false;
+    const key = matches[0], original = before[position];
+    if (typeof key.time !== "number" || !Number.isFinite(key.time) || !hasOwn(key, "value") || key.value === null) return false;
+    if (args.interpolation && (key.inInterpolation !== args.interpolation || key.outInterpolation !== args.interpolation)) return false;
+    if (!easeMatches(key, "in") || !easeMatches(key, "out")) return false;
+    return !requireBaseline || (baselineValid && nearlyEqual(key.time, original.time, 0.000001) &&
+      propertyValueMatches(original.value, key.value, 0.000001) && propertyValueMatches(key.value, original.value, 0.000001));
+  });
+  const resultKeys = Array.isArray(receipt.after) ? receipt.after : property && property.keyframes;
+  const resultMatch = resultIdentity && baselineValid && keysMatch(resultKeys, true) &&
+    property.numKeys === receipt.originalKeyCount && receipt.verified === true;
+  // A native mismatch is a failure even when the response echoes the request.
+  let knownMismatch = indicesValid && Array.isArray(resultKeys) && !keysMatch(resultKeys, false);
+  const target = readTargetFromResult(args, payload.comp, payload.layer);
+  let readBack = null;
+  for (const candidate of evidence.readBack.propertyReadbacks || []) {
+    if (!resultIdentity || !compMatchesRequest(candidate.comp, target) || !sameCompIdentity(payload.comp, candidate.comp) ||
+      !layerMatchesRequest(candidate.layer, target, layerIndex) || !sameLayerIdentity(payload.layer, candidate.layer) ||
+      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, target, layerIndex, candidate.layer) ||
+      !propertyPathIdentityMatches(candidate.property.propertyPath, property.propertyPath) ||
+      !propertyPathIdentityMatches(property.propertyPath, candidate.property.propertyPath)) continue;
+    if (!keysMatch(candidate.property.keyframes, true) || candidate.property.numKeys !== receipt.originalKeyCount) {
+      knownMismatch = true;
+      continue;
+    }
+    readBack = candidate;
+  }
+  const passed = Boolean(resultMatch && readBack && !knownMismatch);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:ease`,
+    title: "Native keyframe easing and preserved times/values match independent read-back",
+    expected: `${indicesValid ? requested.join(", ") : "valid explicit or selected indexes"}: ${args.interpolation || "temporal ease"}, preserved times/values`,
+    observed: passed ? "native keys and independent read-back match" : "missing or mismatched native keys/read-back",
+    passed, status: passed ? "passed" : knownMismatch ? "failed" : "needs_review",
+    evidence: readBack ? readBack.source : "No independent property read-back matched this comp, layer, property instance and native keyframe outcome.",
+    binding: { mutationStep: step.index, target: { comp: compBinding(payload.comp), layer: layerBinding(payload.layer), propertyPath: args.propertyPath },
+      readBack: readBack ? { stepIndex: readBack.stepIndex, tool: readBack.stepTool, status: readBack.stepStatus,
+        comp: compBinding(readBack.comp), layer: layerBinding(readBack.layer), propertyPath: readBack.property.propertyPath } : null }
+  });
+}
+
+function checkReplaceLayerSource(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const source = payload.sourceItem;
+  const layers = Array.isArray(payload.layers) ? payload.layers : [];
+  const requested = hasOwn(args, "layerIndices") ? (Array.isArray(args.layerIndices) ? args.layerIndices : [args.layerIndices]) : layers.map(layer => layer.index);
+  const targetsValid = requested.length > 0 && requested.every(index => typeof index === "number" && Number.isSafeInteger(index) && index > 0) && new Set(requested).size === requested.length;
+  const sourceId = persistentId(source, "itemId", "id");
+  const sourceMatches = isPlainObject(source) && sourceId !== null &&
+    (positiveIdentityIndex(args.sourceItemIndex) !== null || (typeof args.sourceItemName === "string" && args.sourceItemName.length > 0)) &&
+    (!hasOwn(args, "sourceItemIndex") || (positiveIdentityIndex(args.sourceItemIndex) !== null && positiveIdentityIndex(source.itemIndex) === positiveIdentityIndex(args.sourceItemIndex))) &&
+    (!args.sourceItemName || source.name === args.sourceItemName) &&
+    (!args.sourceItemType || source.type === args.sourceItemType) &&
+    (!hasOwn(args, "expectedSourceItemId") || sourceId === positiveIdentityIndex(args.expectedSourceItemId));
+  const resultComp = payload.comp;
+  const projectRoot = getAuthoritativeProjectRoot(evidence.options);
+  const sameSource = (observed) => isPlainObject(source) && isPlainObject(observed) && persistentId(observed, "itemId", "id") === sourceId &&
+    observed.name === source.name && observed.type === source.type &&
+    (!(hasOwn(source, "file") || hasOwn(observed, "file")) ||
+      (canonicalImportPath(source.file, projectRoot) !== "" && canonicalImportPath(observed.file, projectRoot) !== "" &&
+        canonicalImportPath(observed.file, projectRoot) === canonicalImportPath(source.file, projectRoot)));
+  for (const [position, index] of (targetsValid ? requested : [null]).entries()) {
+    const layer = layers[position];
+    const change = Array.isArray(payload.changed) ? payload.changed[position] : null;
+    const resultMatches = targetsValid && layers.length === requested.length && payload.changedCount === requested.length &&
+      compMatchesRequest(resultComp, args) && layerMatchesRequest(layer, args, index, position) && sourceMatches && sameSource(layer && layer.source) &&
+      (!hasOwn(args, "expectedPreviousSourceItemId") || (change && sameLayerIdentity(change.before, layer) &&
+        persistentId(change.before.source, "itemId", "id") === positiveIdentityIndex(args.expectedPreviousSourceItemId)));
+    const target = readTargetFromResult(args, resultComp, layer, position);
+    let readBack = null, knownMismatch = Boolean(source && !sourceMatches);
+    for (const readStep of evidence.readBack.rawSteps || []) {
+      if (readStep.tool !== "get_layer_details") continue;
+      const observed = payloadForStep(readStep);
+      if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, target) || !sameCompIdentity(resultComp, observed.comp) ||
+        !layerMatchesRequest(observed.layer, target, index, position) || !sameLayerIdentity(layer, observed.layer) ||
+        !readBackStepMatchesTarget(readStep, observed.comp, target, index, observed.layer)) continue;
+      if (!sameSource(observed.layer.source)) { knownMismatch = true; continue; }
+      readBack = { step: readStep, payload: observed };
+    }
+    const passed = Boolean(resultMatches && readBack && !knownMismatch);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source${requested.length > 1 ? `:layer-${index}` : ""}`,
+      title: "Replacement source identity matches independent layer read-back",
+      expected: `source item ${args.sourceItemIndex || args.sourceItemName || "missing"}, ID ${args.expectedSourceItemId || sourceId || "missing"}`,
+      observed: source ? `item ${source.itemIndex}, ID ${sourceId}, ${source.name || "missing"}` : "missing native source",
+      passed, status: passed ? "passed" : knownMismatch ? "failed" : "needs_review",
+      evidence: readBack ? stepLabel(readBack.step) : "No independent get_layer_details matched this composition, layer and replacement source identity/path.",
+      binding: { mutationStep: step.index, source: source ? { itemIndex: source.itemIndex, itemId: sourceId, name: source.name, file: source.file || null } : null,
+        readBack: readBack ? { stepIndex: readBack.step.index, tool: readBack.step.tool, status: readBack.step.status,
+          comp: compBinding(readBack.payload.comp), layer: layerBinding(readBack.payload.layer), source: readBack.payload.layer.source } : null }
+    });
+  }
+}
+
 function checkCameraWithController(checks, step, payload) {
   const camera = payload.cameraLayer || {};
   const controller = payload.controllerLayer || {};
@@ -4386,14 +4508,7 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "apply_keyframe_ease") {
-    pushCheck(checks, {
-      id: `${step.index || "step"}:${step.tool}:ease`,
-      title: "Requested keyframes received easing",
-      expected: `${arrayLength(args.keyIndices)} keyframe(s)`,
-      observed: `${arrayLength(payload.keyIndices)} keyframe(s)`,
-      passed: !Array.isArray(args.keyIndices) || arrayLength(payload.keyIndices) === arrayLength(args.keyIndices),
-      evidence: stepLabel(step)
-    });
+    checkKeyframeEase(checks, step, payload, evidence);
     return;
   }
 
@@ -4609,16 +4724,7 @@ function verifyStep(checks, step, evidence) {
   }
 
   if (step.tool === "replace_layer_source") {
-    const expected = args.sourceItemName || args.sourceItemIndex;
-    const observed = payload.sourceItem && (payload.sourceItem.name || payload.sourceItem.itemIndex);
-    pushCheck(checks, {
-      id: `${step.index || "step"}:${step.tool}:source`,
-      title: "Replacement source matches request",
-      expected,
-      observed,
-      passed: expected === undefined || expected === null || sameString(observed, expected) || Number(observed) === Number(expected),
-      evidence: stepLabel(step)
-    });
+    checkReplaceLayerSource(checks, step, payload, evidence);
     return;
   }
 

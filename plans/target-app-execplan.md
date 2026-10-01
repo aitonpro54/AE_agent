@@ -158,10 +158,10 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 ### Progress
 
 - CEP/bridge3.2.0 Connected. Screens5139–5142/6layers, shared5143–5146/7layers, Final5147–5151/5layers и Scene9 5152–5156/8layers установлены и независимо прочитаны. Основная задача ещё не завершена.
-- Source acceptance:18activeclips/overlap0; оригиналы неизменны, silent1280×720/25fps/101frames/PAR1. Source21 четыре shared revisions приняты и скопированы; live замена остаётся.
-- Scene9 старый scale197.22 исправлен на98.61. Root16actualPNG и3native transforms; Queen/Metal требуют адресного position crop.19c остановился по quota до mutations.
+- Source acceptance:18activeclips/overlap0; оригиналы неизменны, silent1280×720/25fps/101frames/PAR1. Source21 четыре shared revisions установлены5157–5160/7layers,32actualPNG/nativehash совпадают;F8/F9 crop остаётся.
+- Scene9 старый scale197.22 исправлен на98.61. Root16actualPNG и3native transforms; Queen/Metal требуют адресного position crop.19c Flash quota до mutations; Sol создал keys, HOLD ошибочно LINEAR. Новый native proof patch offline принят; live proof/crop остаются.
 - Product20 принят: stable PNG/IEND/disk proof и corroborated read-back. Runtime7dc36c9 проверен6nativePNG; historical prefixes не повышены.
-- Product23: независимый exact-ID import read-back, строгий path/type/media proof. Flash23b исправил основные замечания; root закрыл null/optional границы и убрал swallowed history assertion. Offline acceptance PASS; live handler дальше.
+- Product23: независимый exact-ID import read-back, строгий path/type/media proof. Flash23b исправил основные замечания; root закрыл null/optional границы и убрал swallowed history assertion. Offline acceptance PASS; live4imports/12checks +rootnative receipt/diskhash audit PASS.
 
 ### Decision Log
 
@@ -174,4 +174,4 @@ Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/gener
 
 ### Validation
 
-Product23: rules/semantic(65local cases,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/node3/diff PASS. Число import cases включает optional local receipt; portablefixtures от него не зависят. Product20: rules/semantic/propertyidentity/generatedsafety/node5/diff/portablePNG PASS;6livePNG hashes/bytes/IEND independently match. Source18/21: rootactualviews/fullprobes/freshoriginal+outputhash/persistentcopy PASS. Scene3 fourgroups/2cuts и Final5 crop независимо приняты; timing stretch/remap учтены. AEP unsaved, текущие Scene9 crop и shared source22 acceptance остаются.
+Product23: rules/semantic(65local cases,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/node3/diff PASS. Число import cases включает optional local receipt; portablefixtures от него не зависят. Product20: rules/semantic/propertyidentity/generatedsafety/node5/diff/portablePNG PASS;6livePNG hashes/bytes/IEND independently match. Source18/21: rootactualviews/fullprobes/freshoriginal+outputhash/persistentcopy PASS. Scene3 fourgroups/2cuts и Final5 crop независимо приняты; timing stretch/remap учтены. HOLD/sourceproof patch:36offline regressions +retained suites/node4/diff PASS; nativeHOLD proof иScene9/F8/F9crop остаются. AEPunsaved.
