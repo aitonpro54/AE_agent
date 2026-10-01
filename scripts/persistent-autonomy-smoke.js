@@ -13,7 +13,13 @@ try {
   let manager = make();
   assert.strictEqual(manager.publicStatus().desiredEnabled, false);
   assert.throws(()=>manager.activate({panelConnectionId:"stranger",panelGeneration:"1"}), /not the active/);
-  manager.activate(identity());
+  manager.observePanel(identity());
+  assert.strictEqual(manager.publicStatus().active, true, "fresh preference enables on first authenticated panel");
+  assert.strictEqual(JSON.parse(fs.readFileSync(statePath,"utf8")).desiredEnabled, true);
+  const failedDefault = make({statePath:path.join(root,"fresh-fail.json"),writeState:()=>{throw new Error("fixture IO failure");}});
+  failedDefault.observePanel(identity());
+  assert.strictEqual(failedDefault.authorization(), null, "failed default persistence grants no authority");
+  assert(failedDefault.publicStatus().persistenceError);
   now += 3 * 60 * 60 * 1000; panel.seenAt = now;
   assert.strictEqual(manager.publicStatus().active, true, "AUT01 permanent enabled");
   const firstAuthority = manager.authorization();
@@ -34,8 +40,12 @@ try {
   panel.seenAt = now;
   manager.revoke(identity());
   assert.strictEqual(make().publicStatus().desiredEnabled, false, "AUT04 off survives restart");
+  manager = make(); manager.observePanel(identity());
+  assert.strictEqual(manager.publicStatus().active, false, "explicit off survives panel reconnect");
   fs.writeFileSync(statePath, "broken");
   assert.strictEqual(make().publicStatus().desiredEnabled, false, "AUT05 corrupt off");
+  manager = make(); manager.observePanel(identity());
+  assert.strictEqual(manager.publicStatus().active, false, "corrupt state never auto enables");
   fs.writeFileSync(statePath, JSON.stringify({active:true,expiresAt:"2099-01-01",schema:1}));
   assert.strictEqual(make().publicStatus().desiredEnabled, false, "AUT06 old temporary off");
   manager = make(); manager.activate(identity());

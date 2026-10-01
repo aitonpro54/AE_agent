@@ -1,5 +1,27 @@
 # AE Agent Releases
 
+## v3.2.0 — подготовка, 2026-10-01
+
+Рабочая ветка `codex/release-3.2.0` содержит проверяемое восстановление missing
+footage, вложенные source intervals и явные группы, защиту принятых ручных правок,
+равномерный cover и отдельную geometry/artistic приёмку по выбранным кадрам.
+Runner сохраняет независимые статусы execution/mutation/verification, предоставляет
+read-only сверку после timeout и запрещает автоматический повтор неизвестной мутации.
+Добавлены 15 typed tools, четыре рецепта и CEP controls; детали проверок и границ —
+`docs/placeholder-improvements-report.md`.
+
+Также включены накопленные после GitHub baseline 3.1 исправления autonomy,
+контракта measured usage и маршрута исполнения, bounded AME status/media checks
+и offline duplicate-submit reservation guard. Package/lockfile, daemon/adapter,
+CEP title/menu/assets и проверки версии согласованы на 3.2.0.
+
+Предыдущий код 3.1 закреплён тегом `checkpoint/ae-agent-3.1.0-before-3.2`
+на `c6edff9`. PR 3.1 остаётся открытым; [PR №5 версии 3.2](https://github.com/aitonpro54/AE_agent/pull/5)
+— отдельный draft поверх его ветки. Commit подготовки — `b86fd2c`.
+В main ничего не слито; тег `v3.2.0` и GitHub Release ещё не опубликованы.
+Установленная CEP и открытый AEP не обновлялись. Политика дальнейших выпусков —
+`docs/release-workflow.md`.
+
 ## v3.1.0 — 2026-09-22
 
 M7 закрывает точную composite identity для duplicate properties/effects, preflight

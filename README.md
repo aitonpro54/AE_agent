@@ -1,11 +1,15 @@
 # AE Agent
 
-AE Agent 3.1.0 is a local After Effects assistant: a CEP panel talks to a local
+AE Agent 3.2.0 is a local After Effects assistant: a CEP panel talks to a local
 bridge daemon, and the daemon owns all provider calls, plan validation, AE
 execution gates, checkpoints, logs, and verification.
 
 The product target is in `specs/target-app.md`. The active work plan is
 `plans/target-app-execplan.md`.
+
+Версия 3.2.0 готовится в отдельной ветке `codex/release-3.2.0`.
+Порядок выпуска и возврата к предыдущей версии —
+[в руководстве по версиям](docs/release-workflow.md).
 
 Поиск готовых решений через MCP, локальные генераторы планов и измерение
 их использования описаны в [руководстве по повторному использованию](docs/solution-reuse.md).
@@ -106,7 +110,8 @@ Important boundaries:
 - Broad or risky mutations require checkpoint/edit-session protection.
 - Raw ExtendScript remains an escape hatch behind bridge-owned gates.
 - Переключатель **Автономная сессия Codex** сохраняет `desiredEnabled` до явного
-  выключения. Reload панели и restart bridge сохраняют настройку; готовность
+  выключения. При первом доверенном подключении панели без сохранённой настройки
+  он включается автоматически. Reload панели и restart bridge сохраняют настройку; готовность
   восстанавливается только после подключения доверенной панели. Разрешение
   конкретного proposal, checkpoint, freshness и read-back проверяются отдельно.
   Direct mutations, raw JSX, destructive и специальный named save остаются
@@ -115,11 +120,17 @@ Important boundaries:
   work; the panel must not imply it created a Codex thread automatically.
 
 Настройка хранится в `autonomy-preference.json` внутри `AE_BRIDGE_STATE_DIR`
-(по умолчанию local ignored log directory). Новый, повреждённый или старый temporary
-state даёт off. Ошибка записи показывается явно: off немедленно отзывает право
+(по умолчанию local ignored log directory). При отсутствии файла она включается
+после первого доверенного подключения CEP; явно сохранённое off остаётся off.
+Повреждённый или старый temporary state даёт off. Ошибка записи показывается явно: off немедленно отзывает право
 в текущем процессе, но при ошибке диска сохранение off после restart не гарантируется.
 Отсутствующая панель означает ожидание соединения при сохранённом enabled.
 Heartbeat поддерживает готовность во время долгого JSX и не получает команды.
+
+Этот переключатель меняет только право MCP выполнить уже предложенный typed-план.
+Поиск решений, регистрация карантинных кандидатов, проверяемое продвижение рецептов
+и отчётность работают независимо от него. Полный доступ Codex к файловой системе
+не заменяет разрешение bridge на изменение AE.
 
 Panel/bridge используют command contract v2: execution, lease, owner и generation
 сверяются до принятия результата. Старую панель нужно обновлять вместе с bridge;
@@ -181,7 +192,7 @@ generated-only subset дополнительно прошёл в реально�
 identity, negative preflight, restart/reload/off и protected save/reopen.
 Матрица критериев, actual IDs/hashes и честное разделение live/offline evidence
 находятся в [отчёте M7](docs/m7-integration-acceptance-2026-09-19.md).
-Клиентская визуальная приёмка не входит в release gate 3.1.0.
+Клиентская визуальная приёмка не входит в release gate 3.2.0.
 
 Run only the groups relevant to the touched surface unless a milestone calls
 for a broader pass. Frozen `smoke:full-intake` requires an explicit reviewed

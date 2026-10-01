@@ -2,6 +2,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const placeholderProtection = require("./placeholder-protection");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const MEMORY_SCHEMA = "ae-project-intent-memory.v1";
@@ -432,6 +434,9 @@ function readProjectIntentMemory(args = {}, options = {}) {
 }
 
 function updateProjectIntentMemory(args = {}, options = {}) {
+  if (args.projectState !== undefined || args.acceptedPlaceholders !== undefined || args.allowProtectedChanges !== undefined) {
+    return { ok: false, code: "project_state_panel_only", error: "Авторитетное состояние плейсхолдеров меняется только доверенным действием CEP." };
+  }
   if (args.confirm !== true) {
     return { ok: false, error: "confirm:true is required to update Project Intent Memory." };
   }
@@ -489,6 +494,172 @@ function updateProjectIntentMemory(args = {}, options = {}) {
   return { ok: true, dryRun: false, memoryPath, validation, registry: summarizeMemoryRegistry(memory) };
 }
 
+const PROJECT_STATE_SCHEMA = "ae-project-intent-runtime.v1";
+const reviewService = require("./placeholder-review-service");
+function projectStatePath(options = {}) {
+  return options.statePath ? path.resolve(options.statePath) : path.join(
+    process.env.AE_BRIDGE_STATE_DIR || path.join(REPO_ROOT, ".codex-runtime", "project-intent"), "project-intent-state.json");
+}
+function canonicalSavedProject(file) {
+  if (typeof file !== "string" || !file.trim() || !(path.win32.isAbsolute(file) || path.posix.isAbsolute(file))) {
+    const error = new Error("Для принятия плейсхолдера требуется идентичность сохранённого проекта; AEP автоматически не сохраняется.");
+    error.code = "project_identity_unavailable";
+    throw error;
+  }
+  let canonical;
+  try { canonical = fs.realpathSync(file); } catch (_error) {
+    canonical = /^[A-Za-z]:[\\/]|^\\\\/.test(file) ? path.win32.normalize(file) : path.resolve(file);
+  }
+  return canonical.replace(/\\/g, "/").toLowerCase();
+}
+function projectStateKey(file) { return crypto.createHash("sha256").update(canonicalSavedProject(file)).digest("hex"); }
+function validateProjectStateStore(store) {
+  if (!store || store.schema !== PROJECT_STATE_SCHEMA || !isPlainObject(store.projectState) ||
+    Object.keys(store.projectState).length > 100) throw new Error("invalid_project_state_schema");
+  for (const [key, state] of Object.entries(store.projectState)) {
+    if (!/^[a-f0-9]{64}$/.test(key) || !state || key !== projectStateKey(state.projectFile) ||
+      !Number.isSafeInteger(state.revision) || state.revision < 0 || !Array.isArray(state.acceptedPlaceholders) ||
+      state.acceptedPlaceholders.length > 200 || !Array.isArray(state.groupMappings) || state.groupMappings.length > 500) throw new Error("invalid_project_state");
+    const targets = new Set();
+    if(state.reviewArtifacts!==undefined) {
+      if(!isPlainObject(state.reviewArtifacts) || Object.keys(state.reviewArtifacts).length>8)throw new Error("invalid_review_artifact_store");
+      let reviewItems=0;
+      for(const [owner,record] of Object.entries(state.reviewArtifacts)) {
+        reviewService.validateReviewRecord(record);
+        if(owner!==record.owner || record.projectKey!==key)throw new Error("review_artifact_project_mismatch");
+        reviewItems+=record.receipt.items.length;
+      }
+      if(reviewItems>200)throw new Error("review_artifact_item_limit");
+    }
+    for (const snapshot of state.acceptedPlaceholders) {
+      placeholderProtection.validateSnapshot(snapshot);
+      const target = placeholderProtection.targetKey(snapshot.target);
+      if (targets.has(target)) throw new Error("duplicate_accepted_placeholder");
+      targets.add(target);
+    }
+    const mediaKeys = new Set();
+    for (const mapping of state.groupMappings) {
+      if (!mapping || typeof mapping.mediaKey !== "string" || !mapping.mediaKey || mapping.mediaKey.length > 4000 ||
+        typeof mapping.groupId !== "string" || !mapping.groupId.trim() || mapping.groupId.length > 120 ||
+        mapping.provenance !== "user_confirmed" || mapping.confirmed !== true || mediaKeys.has(mapping.mediaKey)) throw new Error("invalid_confirmed_group_mapping");
+      mediaKeys.add(mapping.mediaKey);
+    }
+    if (state.constraints !== null && state.constraints !== undefined) {
+      const value = state.constraints;
+      if (!value || typeof value.distinctGroups !== "boolean" || typeof value.disallowSourceOverlap !== "boolean" ||
+        !Array.isArray(value.selectedTargets) || !value.selectedTargets.length || value.selectedTargets.length > 32 ||
+        value.selectedTargets.some(target => !target || !Number.isSafeInteger(target.compItemId) || target.compItemId < 1 || !Number.isSafeInteger(target.layerId) || target.layerId < 1)) throw new Error("invalid_placeholder_constraints");
+    }
+  }
+  return store;
+}
+function loadProjectStateStore(options = {}) {
+  const file = projectStatePath(options);
+  if (!fs.existsSync(file)) return { schema: PROJECT_STATE_SCHEMA, projectState: {} };
+  try {
+    if (fs.statSync(file).size > 2 * 1024 * 1024) throw new Error("state_size_limit");
+    return validateProjectStateStore(JSON.parse(fs.readFileSync(file, "utf8")));
+  } catch (cause) {
+    const error = new Error("Project Intent runtime повреждён: " + cause.message);
+    error.code = "project_state_corrupt";
+    throw error;
+  }
+}
+function readProjectState(projectFile, options = {}) {
+  const store = loadProjectStateStore(options); // Corrupt never becomes an empty successful state.
+  const key = projectStateKey(projectFile);
+  return JSON.parse(JSON.stringify(store.projectState[key] || { projectFile: canonicalSavedProject(projectFile),
+    projectKey: key, revision: 0, acceptedPlaceholders: [], groupMappings: [], constraints: null, reviewArtifacts: {} }));
+}
+function atomicProjectStateWrite(store, options = {}) {
+  validateProjectStateStore(store);
+  const file = projectStatePath(options);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temporary = file + "." + crypto.randomUUID() + ".tmp";
+  let descriptor;
+  try {
+    descriptor = fs.openSync(temporary, "wx");
+    fs.writeFileSync(descriptor, JSON.stringify(store, null, 2) + "\n", "utf8");
+    fs.fsyncSync(descriptor);
+    fs.closeSync(descriptor);
+    descriptor = null;
+    fs.renameSync(temporary, file);
+  } finally {
+    if (descriptor !== undefined && descriptor !== null) fs.closeSync(descriptor);
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
+}
+// A server-held capability, not a client confirm/allowProtectedChanges boolean.
+// The bridge calls these methods only after authenticating a trusted panel action.
+function createProjectStateController(options = {}) {
+  function update(projectFile, expectedRevision, mutate) {
+    const store = loadProjectStateStore(options);
+    const key = projectStateKey(projectFile);
+    const state = store.projectState[key] || readProjectState(projectFile, options);
+    if (state.revision !== expectedRevision) {
+      const error = new Error("Состояние принятия изменилось во время чтения. Повторите явное действие CEP.");
+      error.code = "project_state_revision_changed";
+      throw error;
+    }
+    mutate(state);
+    state.revision++;
+    store.projectState[key] = state;
+    atomicProjectStateWrite(store, options);
+    return JSON.parse(JSON.stringify(state));
+  }
+  return {
+    read: projectFile => readProjectState(projectFile, options),
+    accept(projectFile, snapshot, expectedRevision) {
+      placeholderProtection.validateSnapshot(snapshot);
+      return update(projectFile, expectedRevision, state => {
+        const key = placeholderProtection.targetKey(snapshot.target);
+        state.acceptedPlaceholders = state.acceptedPlaceholders.filter(value => placeholderProtection.targetKey(value.target) !== key);
+        state.acceptedPlaceholders.push(JSON.parse(JSON.stringify(snapshot)));
+      });
+    },
+    release(projectFile, target, expectedRevision) {
+      return update(projectFile, expectedRevision, state => {
+        const key = placeholderProtection.targetKey(target);
+        const next = state.acceptedPlaceholders.filter(value => placeholderProtection.targetKey(value.target) !== key);
+        if (next.length === state.acceptedPlaceholders.length) throw new Error("selected_placeholder_not_protected");
+        state.acceptedPlaceholders = next;
+      });
+    },
+    mapGroup(projectFile, mapping, expectedRevision) {
+      return update(projectFile, expectedRevision, state => {
+        state.groupMappings = state.groupMappings.filter(value => value.mediaKey !== mapping.mediaKey);
+        state.groupMappings.push({ mediaKey: mapping.mediaKey, groupId: mapping.groupId,
+          provenance: "user_confirmed", confirmed: true });
+      });
+    },
+    setConstraints(projectFile, constraints, expectedRevision) {
+      return update(projectFile, expectedRevision, state => { state.constraints = JSON.parse(JSON.stringify(constraints)); });
+    },
+    registerReview(projectFile, record, expectedRevision) {
+      reviewService.validateReviewRecord(record);
+      return update(projectFile,expectedRevision,state=>{
+        if(record.projectKey!==state.projectKey)throw new Error("review_artifact_project_mismatch");
+        state.reviewArtifacts=state.reviewArtifacts || {};
+        if(state.reviewArtifacts[record.owner])throw new Error("review_owner_already_registered");
+        state.reviewArtifacts[record.owner]=JSON.parse(JSON.stringify(record));
+      });
+    },
+    addReviewImage(projectFile,owner,image,expectedRevision) {
+      return update(projectFile,expectedRevision,state=>{
+        const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
+        record.images=record.images.filter(value=>value.itemId!==image.itemId);record.images.push(JSON.parse(JSON.stringify(image)));
+      });
+    },
+    unregisterReview(projectFile,owner,absentIds,expectedRevision) {
+      return update(projectFile,expectedRevision,state=>{
+        const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
+        if(!Array.isArray(absentIds) || JSON.stringify([...absentIds].sort((a,b)=>a-b))!==JSON.stringify(record.receipt.items.map(item=>item.itemId).sort((a,b)=>a-b)))throw new Error("review_removal_proof_incomplete");
+        delete state.reviewArtifacts[owner];
+      });
+    }
+  };
+}
+
 module.exports = {
   MEMORY_SCHEMA,
   MEMORY_ENTRY_SCHEMA,
@@ -500,5 +671,7 @@ module.exports = {
   formatProjectIntentMemoryForPrompt,
   buildProjectIntentMemoryForPrompt,
   readProjectIntentMemory,
-  updateProjectIntentMemory
+  updateProjectIntentMemory,
+  PROJECT_STATE_SCHEMA, canonicalSavedProject, projectStateKey, projectStatePath,
+  validateProjectStateStore, loadProjectStateStore, readProjectState, createProjectStateController
 };

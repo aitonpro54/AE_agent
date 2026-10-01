@@ -20826,6 +20826,418 @@
         "Require a separate typed-tool contract for source-exact selected-key discovery, hidden UI ordering, native layer UI side effects, interpolation/ease or spatial tangent preservation without explicit payloads, same-time collision resolution beyond an explicit reviewed policy, selection mutation, native undo behavior, or exact source JSX semantics.",
         "Do not use this recipe for layer timing edits, source relinking, layer creation, layer deletion, layer duplication, renaming, reordering, parenting, track matte changes, effect edits, expression edits, comp work area changes, render queue work, project item mutation, arbitrary filesystem writes, non-generated user-asset mutation, or raw script execution."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-source-recovery-plan",
+      "title": "План восстановления отсутствующих исходников",
+      "status": "recipe",
+      "tags": [
+        "footage",
+        "missing-footage",
+        "relink",
+        "source-recovery",
+        "placeholder",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Поиск отсутствующих медиафайлов в заданных пользователем папках, разрешение неоднозначностей кандидатов без скрытого автовыбора, построение типизированного плана перепривязки с защитой по устойчивому itemId и read-back проверкой.",
+        "appliesWhen": [
+          "В проекте обнаружены отсутствующие элементы футажа (footageMissing: true).",
+          "Пользователь предоставил явные корневые каталоги для поиска заменяющих медиафайлов.",
+          "Требуется безопасная перепривязка по постоянному itemId с защитой от сдвига индексов и проверкой совпадения путей."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "searchRoots",
+          "type": "array",
+          "required": true,
+          "description": "Массив проверенных абсолютных путей к корневым каталогам на диске для поиска заменяющих файлов."
+        },
+        {
+          "name": "missingItems",
+          "type": "array",
+          "required": true,
+          "description": "Список отсутствующих элементов футажа с persistent itemId, ожидаемым именем и предыдущим путём."
+        }
+      ],
+      "targetAssumptions": [
+        "Операция применяется только к отсутствующим элементам проекта типа FootageItem.",
+        "Поиск ограничен явно переданными корневыми путями без рекурсивного сканирования всей файловой системы.",
+        "Неоднозначные совпадения кандидатов не выбираются автоматически и требуют подтверждения пользователя.",
+        "Перепривязка выполняется по устойчивому itemId, а не по volatile itemIndex."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-source-recovery-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "find_missing_footage_candidates",
+          "build_source_recovery_plan",
+          "find_project_items",
+          "relink_footage_source",
+          "verify_source_recovery_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Проверка снятия флага footageMissing и соответствия пути к файлу для каждого перепривязанного элемента через независимый вызов find_project_items по persistent itemId.",
+        "steps": [
+          "Выполнить find_missing_footage_candidates для явных searchRoots с ограничением глубины и количества файлов.",
+          "Показать список кандидатов и получить явный targetFilePath с candidateSelectionConfirmed: true; incomplete не доказывает единственность.",
+          "Построить типизированный план через build_source_recovery_plan с валидацией guards (itemId, expectedName, expectedPreviousFilePath).",
+          "Выполнить план под защитой checkpoint или сессии редактирования.",
+          "Прочитать ровно целевые itemIds через find_project_items после мутаций и проверить verify_source_recovery_read_back."
+        ],
+        "expectedEvidence": [
+          "Каждый перепривязанный элемент футажа имеет footageMissing: false.",
+          "Фактический путь file совпадает с выбранным целевым файлом на диске.",
+          "Проверка устойчива к сдвигу индексов project items за счёт сопоставления по устойчивому itemId."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Синтетические offline fixtures и VM исполняют production helper и подготовленный daemon JSX; live AE/CEP и реальные AEP не проверялись.",
+          "Версии AE/панели/bridge в живой среде не установлены; null означает отсутствие измерений. Медиа без явного ffprobe остаётся unknown."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Офлайн-проверка через scripts/placeholder-source-recovery-smoke.js и scripts/placeholder-source-recovery-jsx-smoke.js с защитой от неоднозначностей и сдвига индексов.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Не производить скрытый автовыбор при нескольких совпадениях кандидатов (isAmbiguous: true).",
+        "Перепривязка выполняется исключительно по устойчивому itemId с защитой от сдвига индексов при добавлении/удалении элементов.",
+        "ExtendScript оборачивает замену в beginUndoGroup/endUndoGroup с гарантированным завершением в блоке finally.",
+        "Семантическая верификация требует обязательного независимого шага чтения find_project_items после мутации."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-usage-protection-plan",
+      "title": "Интервалы, группы и принятые плейсхолдеры",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "source-intervals",
+        "distinct-groups",
+        "manual-protection",
+        "nested-timing",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Заполнить плейсхолдеры без повторяющихся фрагментов с разными подтверждёнными группами или исполнителями и сохранить принятые ручные исправления. Track source intervals, distinct confirmed performers and accepted manual placeholder corrections.",
+        "appliesWhen": [
+          "Нужна карта исходник → интервалы → плейсхолдеры с учётом вложенности.",
+          "Нужно исключить пересечения фрагментов, разные группы исполнителей и защитить ручную правку.",
+          "Track used source intervals, prevent duplicate fragments, require distinct groups, preserve accepted placeholders."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "roots",
+          "type": "array",
+          "required": true,
+          "description": "Явные compItemId корневых композиций."
+        },
+        {
+          "name": "assignments",
+          "type": "array",
+          "required": true,
+          "description": "Устойчивые ID целей и исходников, sourceRange."
+        }
+      ],
+      "targetAssumptions": [
+        "Fresh server inventory complete; базовая поддержка stretch100/remapfalse.",
+        "Группы имеют явные метаданные или user-confirmed mapping; filename не authority.",
+        "Shared occurrence и неполное evidence не дают ложного успеха.",
+        "Accepted snapshot изменяется только доверенным действием CEP."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-usage-protection-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "get_placeholder_usage",
+          "check_placeholder_assignments",
+          "get_placeholder_protection",
+          "build_placeholder_plan",
+          "verify_placeholder_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Свежие source/occurrence indices и read-back по устойчивым ID; accepted snapshot сохраняется на всех mutation gates.",
+        "steps": [
+          "Прочитать authoritative usage/protection.",
+          "Подтвердить mapping групп в CEP.",
+          "Проверить весь набор assignments на overlap/distinct groups.",
+          "Построить placeholder plan и выполнить обычные gates.",
+          "Прочитать стабильные цели и проверить expectedReadBack."
+        ],
+        "expectedEvidence": [
+          "Нет существующих или внутрипакетных пересечений.",
+          "Группы набора подтверждены и различаются.",
+          "Принятые source/time/transform/properties сохранены либо явный конфликт.",
+          "Сдвиг индексов не меняет содержимое."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Offline production fixtures и изолированные проверки; live AEP/установленная CEP не проверяются этим рецептом."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Bounded interval/group/protection production fixtures; отдельная приёмка milestone в docs/placeholder-improvements-report.md.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Никакого автоматического replay или снятия защиты по model booleans.",
+        "Лексический media key не доказывает symlink aliases.",
+        "Визуальная приёмка проводится отдельным workflow."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-cover-visual-review-plan",
+      "title": "Cover и визуальная приёмка плейсхолдеров",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "cover",
+        "framing",
+        "contact-sheet",
+        "visual-review",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Равномерный cover плейсхолдера без искажения пропорций, смещение по значимым людям и лицам, другой свободный фрагмент при невозможном кадрировании и реальный просмотр owned live-link контрольных кадров. Uniform cover, significant people, safe framing and visual acceptance with a contact sheet.",
+        "appliesWhen": [
+          "Нужно заполнить рамку видео и проверить полное покрытие независимо от setter.",
+          "Нужны несколько временных точек и смены планов, контрольные кадры и контактный лист.",
+          "Inspect placeholder framing, full cover and live linked contact sheet; verify actual image views."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "target",
+          "type": "object",
+          "required": true,
+          "description": "Устойчивые compItemId/layerId цели, sourceItemId будущего источника при замене."
+        },
+        {
+          "name": "samples",
+          "type": "array",
+          "required": true,
+          "description": "Времена, наблюдения значимых subject boxes, image identities; известные shotBoundaries."
+        }
+      ],
+      "targetAssumptions": [
+        "Fresh supported static 2D geometry, PAR1, rotation0, no parent/masks/collapse; unknown не pass.",
+        "Геометрия прямоугольного footprint не доказывает alpha/effects или художественную корректность.",
+        "Artistic acceptance требует actual view_file evidence и конкретных наблюдений выбранных target/root frames.",
+        "Service comps отдельны, с server ownership и verified stable IDs; основной comp не меняется."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/placeholder-cover-visual-review-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "propose_placeholder_cover",
+          "build_placeholder_plan",
+          "verify_placeholder_coverage",
+          "build_placeholder_visual_review_plan",
+          "create_placeholder_review_comps",
+          "get_placeholder_review_manifest",
+          "save_comp_frame_png",
+          "verify_placeholder_visual_review",
+          "cleanup_test_items"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Независимый geometric read-back по stable ID; отдельное actual image review по manifest/hash/NDJSON и exact owned cleanup.",
+        "steps": [
+          "Получить свежие usage/protection/geometry, наблюдать требуемые source frames.",
+          "Предложить uniform cover/offset или свободный same-source interval с новым sampling.",
+          "Выполнить existing placeholder plan/gates, прочитать actual transform и четыре границы.",
+          "Создать отдельные owned live-link service comps и экспортировать control/contact frames.",
+          "Передать compact manifest/images Flash, сверить actual views и конкретные observations.",
+          "Принять вручную через CEP; очистить exact owner/item IDs после dependency preflight."
+        ],
+        "expectedEvidence": [
+          "Uniform scale и полное покрытие рамки; unsupported geometry явно отклонена.",
+          "Наблюдения нескольких times/shots; geometry отдельно от artistic.",
+          "Каждое принятое изображение действительно просмотрено и связано с manifest/hash.",
+          "Service objects не попали в main comp; удалены только проверенные owned IDs."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Offline production/actual JSX VM/isolated daemon и отдельный synthetic Flash image review; live AEP и установленная CEP не являются этим proof."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-09-30",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Bounded cover/visual ownership regressions; финальная validation milestone в docs/placeholder-improvements-report.md.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Значимые boxes задаются наблюдениями; обязательная тяжёлая face-модель не устанавливается.",
+        "PNG/JSON/viewed=true/SUCCESS недостаточны для художественного passed.",
+        "При запрете записи отчёта вернуть текст; отказ view не обходить.",
+        "Предел художественного заключения — только фактически просмотренные кадры."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "placeholder-run-recovery",
+      "title": "Сверка плейсхолдеров после сбоя запуска",
+      "status": "recipe",
+      "tags": [
+        "placeholder",
+        "timeout",
+        "recovery",
+        "reconciliation",
+        "read-back",
+        "stable-identity"
+      ],
+      "intent": {
+        "summary": "После timeout, verification_required или частичной ошибки сначала прочитать фактическое состояние плейсхолдеров по сохранённому run ID. Не повторять применённые или неизвестные мутации. Reconcile placeholder run after timeout or verification_required without replaying mutations.",
+        "appliesWhen": [
+          "Ответ setter потерян после возможной записи, проверка не завершена либо не прошла.",
+          "Нужна сверка устойчивых ID и точных свойств при изменившихся индексах.",
+          "Reconcile placeholder run after timeout; inspect applied steps before any new proposal."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "runId",
+          "type": "string",
+          "required": true,
+          "description": "ID исходного server-owned ordinary plan run; plan/targets берутся из сохранённого evidence."
+        }
+      ],
+      "targetAssumptions": [
+        "Saved same project and server run record required; missing/corrupt evidence stays unknown.",
+        "Stable comp/layer IDs are authoritative; property composite identity remains strict.",
+        "Mismatching current values alone cannot prove not_applied."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": false,
+        "riskLevel": "low",
+        "recipePath": "recipes/placeholder-run-recovery.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "reconcile_plan_run",
+          "get_property_value",
+          "get_layer_details",
+          "verify_placeholder_read_back"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": false,
+        "allowMutations": false,
+        "idempotency": false,
+        "checkpointOrEditSession": false,
+        "postMutationReadBack": false
+      },
+      "verificationRecipe": {
+        "summary": "Fresh before/after project identity, exact stable targets and current requested postconditions; original execution error preserved.",
+        "steps": [
+          "Read immutable run evidence and fresh project.",
+          "Read requested target/property state by stable IDs.",
+          "Report applied/not_applied/unknown per step without mutation replay."
+        ],
+        "expectedEvidence": [
+          "Submitted timeout remains unknown until fresh state confirms postconditions.",
+          "Authoritative pre-submit cancellation allows not_applied.",
+          "No writes during reconcile; manual drift and unsupported evidence remain unknown."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Actual generated JSX VM, isolated ordinary daemon/fake panel and actual panel handlers; no live AEP."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-01",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Offline timeout-after-applied, queued cancellation, partial setter, independent reads and no replay regressions.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Reconciliation confirms current state; lost historical execution receipt is not fabricated.",
+        "New corrective work requires a separate reviewed proposal and existing gates.",
+        "Visual acceptance remains separate."
+      ]
     }
   ]
 }

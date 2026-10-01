@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "profiles": {
+    "ae-agent": {
+      "workspace": "..",
+      "state_dir": "../.codex-runtime/agy-bridge",
+      "model": "gemini-3.8-flash-high",
+      "effort": "high"
+    }
+  }
+}

@@ -12,6 +12,7 @@ function createAutonomousSessionManager(options = {}) {
   const statePath = options.statePath;
   const freshness = options.panelFreshnessMs || PANEL_FRESHNESS_MS;
   let desiredEnabled = false, trustedPanel = null, trustedGeneration = null;
+  let enableOnFirstPanel = Boolean(statePath) && !fs.existsSync(statePath);
   let connected = null, persistenceError = null;
   let sessionHash = crypto.randomBytes(24).toString("hex");
   function validGeneration(value) { return typeof value === "string" && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)); }
@@ -48,6 +49,17 @@ function createAutonomousSessionManager(options = {}) {
   // Called only by the panel-authenticated bridge route, never by automation.
   function observePanel(input) {
     validateIdentity(input);
+    // A new installation adopts its first authenticated panel. An explicit off,
+    // including one saved before this default changed, remains off on reconnect.
+    if (enableOnFirstPanel) {
+      enableOnFirstPanel = false;
+      // A preference written after startup must not be overwritten by this default.
+      if (!fs.existsSync(statePath) && persist(true, input)) {
+        desiredEnabled = true;
+        trustedPanel = input.panelConnectionId;
+        trustedGeneration = input.panelGeneration;
+      }
+    }
     if (desiredEnabled && trustedPanel !== input.panelConnectionId) throw new Error("Trusted panel identity mismatch.");
     if (desiredEnabled && Number(input.panelGeneration) < Number(trustedGeneration)) throw new Error("Stale panel generation.");
     if (desiredEnabled && input.panelGeneration !== trustedGeneration && !persist(true, input)) {

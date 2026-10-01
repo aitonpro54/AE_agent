@@ -9,9 +9,13 @@ const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
+const planCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
+const placeholderMutationContext = new AsyncLocalStorage();
+const placeholderPlanContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
+const planRunRecords = require("./plan-run-records");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
@@ -33,6 +37,19 @@ const generatedSafety = require("./generated-safety-contracts");
 const m100Protocol = require("./m100-protocol");
 const slideshowTools = require("./slideshow-tools");
 const slideshowPlanBuilder = require("./slideshow-plan-builder");
+const placeholderPlanBuilder = require("./placeholder-plan-builder");
+const placeholderReadBack = require("./placeholder-readback");
+const placeholderEvidence = require("./placeholder-evidence");
+const placeholderSourceRecovery = require("./placeholder-source-recovery");
+const placeholderProtection = require("./placeholder-protection");
+const placeholderUsage = require("./placeholder-usage");
+const placeholderGeometry = require("./placeholder-geometry");
+const placeholderReviewService = require("./placeholder-review-service");
+const placeholderVisualReview = require("./placeholder-visual-review");
+const placeholderReviewTools = require("./placeholder-review-tools");
+const placeholderVisualBatches = require("./placeholder-visual-batches");
+const projectStateMemory = require("./project-intent-memory");
+const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -46,7 +63,7 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "3.1.0";
+const SERVER_VERSION = "3.2.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
@@ -932,6 +949,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
   "run_extendscript",
   "run_extendscript_file",
@@ -941,6 +959,7 @@ const MUTATING_TOOL_NAMES = new Set([
   "create_text_layer",
   "create_shapes_from_text",
   "import_footage",
+  "relink_footage_source",
   "create_solid_layer",
   "create_null_layer",
   "create_adjustment_layer",
@@ -1121,7 +1140,13 @@ function m100DirectToolCallBlock(source, name, args, executionContext) {
     && name === "run_ai_agent_plan"
     && args && args.dryRun === false
     && executionContext && executionContext.autonomousSession
-    && executionContext.autonomousSession.authorized === true) return null;
+    && executionContext.autonomousSession.authorized === true) {
+    // Autonomy authorizes a proposal-backed run, not a client-authored plan.
+    // Exact pins and current server record are checked by the runner.
+    const keys = m100PlanRunLookupKey(args);
+    if ((keys.actionId || keys.payloadRef) && keys.payloadHash && keys.previewHash
+      && keys.riskLevel && keys.riskPolicyVersion) return null;
+  }
   const risk = classifyM100ToolRisk(name);
   if (risk.known && risk.riskLevel === "read_only") return null;
   if (m100DirectEscapeHatchAllowed(source, args || {})) {
@@ -1458,6 +1483,7 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
       throw m100ProtocolError("project_target_mismatch", "Proposal предназначен другому проекту.", {project: {expectedFile: specifiedProject, actualFile: projectInfo.file}});
     }
     planResult.plan = {...planResult.plan, targetProject: {file: projectInfo.file}};
+    await guardPlaceholderPlan(planResult.plan);
   }
   const payload = {
     kind: "agent_plan",
@@ -2434,6 +2460,45 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
+  if(["set_layer_transform","set_property_value","set_effect_property"].includes(toolName)) {
+    const compId=payload && payload.comp && payload.comp.itemId;
+    const layers=payload && (payload.layers || (payload.layer ? [payload.layer] : []));
+    if(!Number.isSafeInteger(compId) || !Array.isArray(layers) || !layers.length) return {ok:false,scope:"independent_requested_values",reason:"stable_target_evidence_missing"};
+    const reads=[];
+    for(const layer of layers) {
+      if(!Number.isSafeInteger(layer.id)) return {ok:false,reason:"stable_target_evidence_missing"};
+      let tool="get_layer_details",readArgs={compItemId:compId,layerId:layer.id};
+      if(toolName==="set_property_value") {tool="get_property_value";readArgs.propertyPath=args.propertyPath; if(typeof readArgs.propertyPath==="string") readArgs.propertyPath=readArgs.propertyPath.trim().startsWith("[") ? JSON.parse(readArgs.propertyPath) : readArgs.propertyPath.split(".");if(args.setAtTime===true || args.time!==undefined)readArgs.time=args.time;}
+      if(toolName==="set_effect_property") {tool="get_effect_details";for(const field of ["effectIndex","effectName","effectMatchName"])if(args[field]!==undefined)readArgs[field]=args[field];readArgs.includeValues=true;readArgs.includeProperties=true;}
+      const read=await callTool(tool,readArgs);
+      reads.push({index:reads.length+2,tool,args:readArgs,status:read.isError?"failed":"completed",result:firstToolPayload(read)});
+    }
+    const context=planCommandContext.getStore();
+    if(context && context.item) {
+      context.item.independentReadBack=reads.map(read=>({...read,source:"server_typed_readback",observedAt:new Date().toISOString()}));
+      context.persist();
+    }
+    const mutation={index:1,tool:toolName,args,status:"completed",mutatesProject:true,result:payload};
+    const semantic=buildSemanticVerification({steps:[{tool:toolName,args},...reads.map(read=>({tool:read.tool,args:read.args}))]}, {steps:[mutation,...reads],ok:true});
+    return {ok:semantic.status==="passed" && semantic.unverifiedMutationCount===0,scope:"independent_requested_values",status:semantic.status,checks:semantic.checks,readBack:reads.map(read=>({tool:read.tool,args:read.args,result:read.result}))};
+  }
+  if(toolName==="create_placeholder_review_comps") {
+    const fresh=await requireFreshReviewRecord(payload && payload.owner);
+    return {ok:true,scope:"registered_live_link_service_receipt",owner:fresh.record.owner,itemIds:fresh.record.receipt.items.map(item=>item.itemId)};
+  }
+  if(toolName==="cleanup_test_items" && args && args.owner) return {ok:payload && payload.absenceVerified===true,scope:"exact_registered_ids_absent",owner:args.owner};
+  if(toolName==="fit_layer_to_comp") {
+    if(args.mode!=="cover")return {ok:false,scope:"fit_geometry",reason:"independent_noncover_verification_not_supported"};
+    const rows=payload && payload.changed;
+    if(!payload || !payload.comp || !Number.isSafeInteger(payload.comp.itemId) || !Array.isArray(rows) || !rows.length || rows.length>32)return {ok:false,reason:"fit_stable_identity_unavailable"};
+    const checks=[];
+    for(const row of rows){const id=row.after && row.after.id;
+      if(!Number.isSafeInteger(id))return {ok:false,reason:"fit_stable_identity_unavailable"};
+      const read=await readPlaceholderGeometry({compItemId:payload.comp.itemId,layerId:id});
+      checks.push({target:read.target,...require("./placeholder-framing").verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform})});
+    }
+    return {ok:checks.every(check=>check.covered===true && check.eligible===true),scope:"fresh_rectangular_footprint_only",checks,artisticAccepted:false};
+  }
   if(toolName===projectSave.TOOL_NAME){
     projectSave.verifyReceipt(payload && payload.saveReceipt,args);
     return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
@@ -2737,6 +2802,10 @@ async function attachMutationVerificationToToolResult(result, toolName, args) {
     return attachPayloadMetadataToToolResult(result, "verification", {
       ok: false,
       error: error.message || String(error),
+      errorCode:error.code || "verification_incomplete",
+      commandId:error.commandId || null,
+      lifecycleState:error.lifecycleState || null,
+      timedOutFrom:error.timedOutFrom || null,
       line: error.line || null
     });
   }
@@ -3227,7 +3296,28 @@ function settleCommandFailure(command, code, message) {
   command.reject(createCommandLifecycleError(command, code, message));
 }
 
+function capturePlanCommand(command, payload, required = false) {
+  const context = command.planContext;
+  if (!context || !context.item) return;
+  const item = context.item;
+  item.commands = item.commands || [];
+  let row = item.commands.find(value => value.id === command.id);
+  if (!row) { row = {id:command.id,role:context.role || "readback",history:[]}; item.commands.push(row); }
+  Object.assign(row, compactAeCommand(command));
+  row.neverSubmitted = command.state === "expired_before_delivery" && !command.submittedAt;
+  if (payload) { row.ok = Boolean(payload.ok); row.result = payload.result === undefined ? null : payload.result; row.error = payload.error || null; }
+  if (row.history[row.history.length - 1] !== command.state) row.history.push(command.state);
+  try { context.persist(); }
+  catch (error) { item.recordWarning="run_record_update_failed"; if(required) throw error; }
+}
+
+function withPlanCommandRole(role, fn) {
+  const context = planCommandContext.getStore();
+  return context ? planCommandContext.run({...context,role},fn) : fn();
+}
+
 function retainCommandResult(id, payload, command) {
+  capturePlanCommand(command, payload);
   completedResults.set(id, {
     id,
     receiptDigest: command.receiptDigest || null,
@@ -3320,6 +3410,9 @@ function enqueueAeCommand(script, timeoutMs) {
       settled: false
     };
     command.autonomousGuard = autonomousCommandContext.getStore() || null;
+    command.planContext = planCommandContext.getStore() || null;
+    try { capturePlanCommand(command, null, true); }
+    catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
     command.timeout = setTimeout(() => {
       timeoutAeCommand(id);
     }, timeoutMs);
@@ -3561,6 +3654,7 @@ function leaseNextQueuedCommand(req, url) {
       continue;
     }
     command.state = "leased";
+    capturePlanCommand(command);
     command.leaseId = crypto.randomUUID();
     command.leasedAt = Date.now();
     command.leaseOwner = leaseOwner;
@@ -3644,6 +3738,12 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  const protection = placeholderMutationContext.getStore();
+  if (protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline || protection.geometryBaselines)) {
+    body = placeholderProtection.aeGuardScript(protection.projectFile, protection.snapshots, protection.bindings) + "\n" + body;
+    if (protection.inventoryBaseline) body = placeholderProtection.aeInventoryGuardScript(protection.inventoryBaseline) + "\n" + body;
+    if (protection.geometryBaselines) body=placeholderGeometry.geometryGuardScript(protection.geometryBaselines)+"\n"+body;
+  }
   const guard = autonomousCommandContext.getStore();
   if (guard && guard.projectFile) {
     body = `if (!app.project || !app.project.file || String(app.project.file.fsName).replace(/\\\\/g, "/").toLowerCase() !== ${aeLiteral(guard.projectFile.replace(/\\/g, "/").toLowerCase())}) throw new Error("project_target_mismatch");\n` + body;
@@ -4804,11 +4904,22 @@ const PLANNING_TOOL_NAMES = [
   "list_layers",
   "get_comp_details",
   "get_layer_details",
+  "get_property_value",
+  "reconcile_plan_run",
   "get_layer_essential_properties",
   "get_essential_graphics_controllers",
   "get_path_geometry",
   "get_selected_layers",
   "get_selected_properties",
+  "get_placeholder_protection",
+  "propose_placeholder_cover",
+  "verify_placeholder_coverage",
+  "build_placeholder_visual_review_plan",
+  "create_placeholder_review_comps",
+  "get_placeholder_review_manifest",
+  "verify_placeholder_visual_review",
+  "get_placeholder_usage",
+  "check_placeholder_assignments",
   "find_project_items",
   "find_comps",
   "list_effect_presets",
@@ -4891,6 +5002,8 @@ const PLANNING_TOOL_NAMES = [
   "run_extendscript",
   "run_extendscript_file",
   "build_slideshow_plan",
+  "relink_footage_source",
+  "verify_source_recovery_read_back",
   ...slideshowTools.TOOL_NAMES
 ];
 
@@ -5655,7 +5768,7 @@ function buildHardcoreSolution(session) {
     },
     testedAeContext: {
       aeVersion: null,
-      panelVersion: "AE Agent 3.1.0",
+      panelVersion: "AE Agent 3.2.0",
       bridgeVersion: SERVER_VERSION,
       projectKind: "agent-hardcore-session",
       notes: ["Auto-promoted only after local registry validation succeeds."]
@@ -5916,6 +6029,11 @@ async function runAgentHardcoreSession(source, args) {
 
       const resultCodes = [attempt.run && attempt.run.errorCode].concat(
         attempt.run && Array.isArray(attempt.run.steps) ? attempt.run.steps.map(step => step.errorCode) : []);
+      if(hardcoreRunNeedsReconciliation(attempt.run)) {
+        attempt.status="run-needs-reconciliation";
+        attempt.blocker="Read-only reconcile_plan_run is required; applied or uncertain mutations must not be replayed automatically.";
+        break;
+      }
       if (resultCodes.some(code => /unknown|timed.?out|timeout/i.test(String(code || "")))) {
         attempt.status = "run-needs-reconciliation";
         attempt.blocker = "Execution outcome is uncertain; inspect the project before creating another plan.";
@@ -6384,6 +6502,13 @@ function rawExtendscriptRunApproval(validation, plan, requestId, dryRunId, allow
   return { ok: true, approval };
 }
 
+function hardcoreRunNeedsReconciliation(run) {
+  if(!run || run.dryRun) return false;
+  if(run.outcome && run.outcome.mutation && run.outcome.mutation.status==="not_started") return false;
+  const mutating=run.validation && run.validation.mutatingCount>0 || (run.steps || []).some(step=>step.mutatesProject);
+  return Boolean(mutating && (!run.ok || !run.semanticVerification || run.semanticVerification.status!=="passed" || run.semanticVerification.unverifiedMutationCount>0));
+}
+
 async function runValidatedAgentPlan(options, executionContext) {
   return evidenceContext.run({runId: crypto.randomUUID(), requestId: options && options.requestId || null},
     () => runValidatedAgentPlanWithEvidence(options, executionContext));
@@ -6472,6 +6597,14 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
           ? "planned_checkpoint_step"
           : null
     }
+  };
+  const runRecord = {schema:"ae-agent-plan-run-record.v1",runId:run.id,createdAt:run.startedAt,
+    plan:prepared.plan,project:{file:expectedProject},run};
+  const persistRun = (item) => {
+    if (run.dryRun || validation.mutatingCount === 0) return;
+    runRecord.project = {file:run.project && (run.project.expectedFile || run.project.actualFile) || expectedProject};
+    runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
+    planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
     run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
@@ -6601,6 +6734,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
       failedCount: run.failedCount, verification: diagnostic.verification
     };
+    try { persistRun(); } catch (_error) { run.recordWarning="run_record_update_failed"; }
     return run;
   }
 
@@ -6608,6 +6742,14 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     run.ok = false;
     run.error = "Plan validation failed.";
     return finishRun();
+  }
+  if (validation.mutatingCount > 0) {
+    try { run.placeholderPreflight = await guardPlaceholderPlan(prepared.plan); }
+    catch (error) {
+      run.ok = false; run.errorCode = error.code || "placeholder_preflight_failed";
+      run.error = error.message; run.placeholderPreflight = error.details || null;
+      return finishRun();
+    }
   }
   if (!dryRun && m100PlanRequiresConfirmation(validation) && !options._m100ActionRecord) {
     run.ok = false;
@@ -6876,11 +7018,13 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try {
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
-      const result = await evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+      persistRun(item);
+      const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
+      () => placeholderPlanContext.run({ plan: prepared.plan, remainingSteps: steps.filter(value => value.index >= step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -6938,6 +7082,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       item.status = "failed";
       item.error = error.message || String(error);
       item.errorCode = error.code || "ae_execution_failed";
+      for (const field of ["commandId","lifecycleState","timedOutFrom","phase"]) item[field]=error[field] || null;
       item.durationMs = Date.now() - stepStartedAt;
       recordAutonomyObstacle({operation: step.tool, proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
         runId: run.id, code: item.errorCode, phase: "step", durationMs: item.durationMs, failedSteps: 1, verification: "not_verified"});
@@ -7350,6 +7495,371 @@ async function runAgentPlanLogged(source, args) {
   }
 }
 
+async function readPlaceholderInventory(options = {}) {
+  const targets = options.targets || [];
+  if (!Array.isArray(targets) || targets.length > 200) throw new Error("placeholder_read_target_limit");
+  const paths = placeholderProtection.normalizeProtectedPaths(options.protectedProperties || []);
+  const result = await runExtendScriptBody(`
+    // __codexPlaceholderInventory: bounded fresh project identities and timing.
+    ${placeholderProtection.aeSupportScript}
+    var inventory={complete:true,projectFile:app.project.file ? app.project.file.fsName : null,comps:[],sources:[],ignored:[],selectedTargets:[],evidence:[]};
+    var layerCount=0;
+    if(app.project.numItems>2000) { inventory.complete=false; inventory.reason="project_item_budget"; return inventory; }
+    for(var i=1;i<=app.project.numItems;i++) {
+      var item=app.project.item(i);
+      if(item instanceof CompItem) {
+        if(inventory.comps.length>=200) {inventory.complete=false;inventory.reason="comp_budget";break;}
+        var comp={itemId:item.id,itemIndex:i,name:item.name,comment:item.comment,width:item.width,height:item.height,pixelAspect:item.pixelAspect,duration:item.duration,frameRate:item.frameRate,layers:[]};
+        for(var j=1;j<=item.numLayers;j++) {
+          if(++layerCount>5000) {inventory.complete=false;inventory.reason="layer_budget";break;}
+          var layer=item.layer(j); var source=null; try{source=layer.source;}catch(e){}
+          var kind="media";
+          if(layer.matchName==="ADBE Text Layer")kind="text";
+          else if(layer.matchName==="ADBE Vector Layer")kind="shape";
+          else if(layer.matchName==="ADBE Camera Layer")kind="camera";
+          else if(layer.matchName==="ADBE Light Layer")kind="light";
+          else if(layer.adjustmentLayer===true)kind="adjustment";
+          var ref={id:layer.id,index:j,name:layer.name,enabled:layer.enabled,sourceItemId:source ? source.id : null,
+            startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,kind:kind};
+          comp.layers.push(ref);
+          if(kind!=="media")inventory.ignored.push({compItemId:item.id,layerId:layer.id,kind:kind});
+        }
+        inventory.comps.push(comp);
+      } else if(item instanceof FootageItem) {
+        if(inventory.sources.length>=1000) {inventory.complete=false;inventory.reason="source_budget";break;}
+        var sourceType="footage";
+        try {if(item.mainSource.isStill===true)sourceType="still";else if(item.hasVideo===false && item.hasAudio===true)sourceType="audio";}catch(e){}
+        var file=item.file;
+        inventory.sources.push({itemId:item.id,itemIndex:i,name:item.name,type:sourceType,file:file && file.fsName ? file.fsName : null,
+          duration:item.duration,width:item.width,height:item.height,pixelAspect:item.pixelAspect,frameRate:item.frameRate,footageMissing:item.footageMissing,
+          hasVideo:item.hasVideo,hasAudio:item.hasAudio});
+      }
+      if(!inventory.complete)break;
+    }
+    var active=app.project.activeItem;
+    if(active instanceof CompItem) {
+      inventory.activeCompItemId=active.id;
+      for(var s=0;s<active.selectedLayers.length && s<33;s++)inventory.selectedTargets.push({compItemId:active.id,layerId:active.selectedLayers[s].id});
+    }
+    var specs=${JSON.stringify(targets)};
+    if(${options.selected === true ? "true" : "false"}) {
+      if(inventory.selectedTargets.length<1 || inventory.selectedTargets.length>32)throw new Error("select_1_to_32_placeholder_layers");
+      specs=[];for(var s=0;s<inventory.selectedTargets.length;s++)specs.push({target:inventory.selectedTargets[s],protectedProperties:${JSON.stringify(paths)}});
+      if(${options.useSelectedProperties === true ? "true" : "false"}) {
+        if(inventory.selectedTargets.length!==1 || !active.selectedProperties || active.selectedProperties.length<1 || active.selectedProperties.length>12)throw new Error("select_1_to_12_properties_on_selected_placeholder");
+        var selectedLayer=__phFindLayer(active,inventory.selectedTargets[0].layerId);var selectedPaths=[];
+        for(var p=0;p<active.selectedProperties.length;p++) {
+          var property=active.selectedProperties[p];var current=property;var segments=[];
+          if(typeof property.numKeys!=="number")throw new Error("unsupported_selected_property_group");
+          for(var depth=0;current && current!==selectedLayer && depth<8;depth++) {
+            if(!current.matchName)throw new Error("selected_property_identity_unavailable");
+            segments.unshift({matchName:current.matchName,propertyIndex:current.propertyIndex});
+            current=current.propertyGroup(1);
+          }
+          if(current!==selectedLayer || !segments.length)throw new Error("selected_property_belongs_to_other_layer_or_depth");
+          selectedPaths.push(segments);
+        }
+        specs[0].protectedProperties=selectedPaths;
+        inventory.selectedProtectedProperties=selectedPaths;
+      }
+    }
+    for(var t=0;t<specs.length;t++) {
+      var spec=specs[t];
+      try {var comp=__phFindComp(spec.target.compItemId);var layer=__phFindLayer(comp,spec.target.layerId);
+        inventory.evidence.push(__phEvidence(comp,layer,spec.protectedProperties||[]));}
+      catch(e){inventory.evidence.push({target:spec.target,unsupported:[String(e)]});}
+    }
+    return inventory;
+  `);
+  const inventory=result.result;
+  if(!inventory || !inventory.projectFile || scriptPreparationContext.getStore())return inventory;
+  const state=projectStateMemory.readProjectState(inventory.projectFile);
+  const excluded=[];
+  for(const record of Object.values(state.reviewArtifacts || {})) {
+    const read=await runExtendScriptBody(placeholderReviewService.readServiceScript(record.receipt.items.map(item=>item.itemId)));
+    if(read.result && placeholderSourceRecovery.pathsEqual(read.result.projectFile,inventory.projectFile) && placeholderReviewService.verifyServiceReceipt(record.spec,read.result.items,state.projectKey).ok)
+      excluded.push(...read.result.items.map(item=>item.itemId));
+  }
+  inventory.comps=inventory.comps.filter(comp=>!excluded.includes(comp.itemId));
+  inventory.excludedReviewItemIds=excluded;
+  return inventory;
+}
+
+function placeholderError(code, details) {
+  const reason = details && (details.conflicts && details.conflicts[0] && details.conflicts[0].reason ||
+    details.changes && details.changes[0] || details.reason);
+  const error = new Error("Плейсхолдеры: " + code + (reason ? " (" + reason + ")" : ""));
+  error.code = code;
+  error.details = details || null;
+  return error;
+}
+function placeholderRootsForTargets(inventory, targets) {
+  const roots = new Set();
+  function visit(id, branch) {
+    if (branch.includes(id) || branch.length > 16) throw placeholderError("unsupported_usage_dependency_cycle_or_depth");
+    const parents = inventory.comps.filter(comp => comp.layers.some(layer => layer.sourceItemId === id && layer.enabled === true));
+    if (!parents.length) roots.add(id);
+    for (const comp of parents) visit(comp.itemId, [...branch, id]);
+  }
+  for (const target of targets) visit(target.compItemId, []);
+  if (roots.size > 32) throw placeholderError("placeholder_root_limit");
+  return [...roots].map(compItemId => ({ compItemId }));
+}
+function freshPlaceholderUsage(inventory, roots, state) {
+  const usage=placeholderUsage.buildSourceUsageMap({ inventory, roots, groupMappings: state.groupMappings });
+  usage.scope={...usage.scope,excludedReviewItemIds:inventory.excludedReviewItemIds || []};
+  return usage;
+}
+function normalizeFreshAssignments(assignments, inventory) {
+  if (!Array.isArray(assignments) || !assignments.length || assignments.length > 32) throw placeholderError("placeholder_assignment_limit");
+  return assignments.map(assignment => {
+    const source = inventory.sources.find(value => value.itemId === assignment.sourceItemId);
+    if (!source || source.type !== "footage" || source.footageMissing !== false ||
+      source.hasVideo !== true || !Array.isArray(assignment.sourceRange) || assignment.sourceRange.length !== 2 ||
+      assignment.sourceRange[1] > source.duration) throw placeholderError("unsupported_assignment_video_source");
+    return { ...assignment, mediaKey: placeholderUsage.mediaKeyForSource(source), groupId: undefined };
+  });
+}
+function checkFreshPlanAssignments(plan, state, inventory, mutations) {
+  const policies = [state.constraints, plan.placeholderConstraints].filter(value => value && (value.distinctGroups || value.disallowSourceOverlap));
+  if (!policies.length) return { ok: true, checks: [] };
+  const desired = JSON.parse(JSON.stringify(inventory));
+  for (const step of mutations) {
+    const tool = step.tool;
+    const args = step.safeArgs || step.args || {};
+    if (tool === "set_layer_transform" || tool === "fit_layer_to_comp") continue;
+    if (tool === "set_property_value") {
+      let property;
+      try { property = placeholderProtection.propertyPath(args.propertyPath); } catch (_error) { throw placeholderError("unknown_constrained_property_footprint"); }
+      if (property[0].matchName !== "ADBE Transform Group") throw placeholderError("unknown_constrained_property_footprint");
+      continue;
+    }
+    if (!["replace_layer_source", "set_layer_time_range"].includes(tool)) {
+      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection","create_placeholder_review_comps","save_comp_frame_png"].includes(tool) || tool==="cleanup_test_items" && step.verifiedReviewCleanup===true) continue;
+      throw placeholderError("unknown_constrained_mutation_footprint", { tool });
+    }
+    const targets = placeholderProtection.resolveTargets(args, desired);
+    for (const target of targets) {
+      if (tool === "replace_layer_source") target.layer.sourceItemId = placeholderProtection.sourceId(args, desired);
+      else {
+        for (const field of ["startTime", "inPoint", "outPoint"]) if (args[field] !== undefined) target.layer[field] = args[field];
+        if (args.duration !== undefined) target.layer.outPoint = target.layer.inPoint + args.duration;
+      }
+    }
+  }
+  const checks = [];
+  for (const policy of policies) {
+    const targets = policy.selectedTargets || (plan.placeholderAssignments || []).map(value => value.target);
+    if (!Array.isArray(targets) || !targets.length || targets.length > 32) throw placeholderError("constrained_targets_required");
+    const roots = placeholderRootsForTargets(inventory, targets);
+    const baseline = freshPlaceholderUsage(inventory, roots, state);
+    const predicted = freshPlaceholderUsage(desired, roots, state);
+    if (!predicted.ok || !predicted.complete) throw placeholderError("incomplete_predicted_placeholder_usage", predicted);
+    const assignments = targets.map(target => {
+      const matches = predicted.entries.filter(entry => placeholderProtection.targetKey(entry.target) === placeholderProtection.targetKey(target));
+      if (matches.length !== 1) throw placeholderError(matches.length > 1 ? "unsupported_shared_placeholder" : "selected_placeholder_usage_unavailable", { target });
+      const entry = matches[0];
+      return { target, sourceItemId: entry.sourceItemId, mediaKey: entry.mediaKey, sourceRange: entry.sourceRange };
+    });
+    const result = placeholderUsage.checkPlaceholderAssignments({ usage: baseline,
+      assignments: normalizeFreshAssignments(assignments, desired),
+      constraints: { distinctGroups: policy.distinctGroups === true, disallowSourceOverlap: policy.disallowSourceOverlap === true,
+        selectedTargets: targets, groupMappings: state.groupMappings } });
+    checks.push(result);
+    if (!result.ok) throw placeholderError("placeholder_assignment_conflict", result);
+  }
+  return { ok: true, checks };
+}
+async function currentPlaceholderState() {
+  projectStateMemory.loadProjectStateStore();
+  const project = firstToolPayload(await callToolLogged("placeholder-state-read", "get_project_info", {}));
+  const state = projectStateMemory.readProjectState(project && project.file);
+  return { projectFile: project.file, state };
+}
+async function guardPlaceholderPlan(plan, options = {}) {
+  const store = projectStateMemory.loadProjectStateStore();
+  const mutations = (options.steps || plan.steps || []).filter(step => MUTATING_TOOL_NAMES.has(step.tool || step.toolName))
+    .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
+  for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
+  const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
+  if (!mutations.length || !hasState && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, snapshots: [], bindings: [] };
+  const { projectFile, state } = await currentPlaceholderState();
+  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, projectFile, snapshots: [], bindings: [] };
+  const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
+    protectedProperties: snapshot.properties.map(prop => prop.path) })) });
+  if (!inventory || inventory.complete !== true || !placeholderSourceRecovery.pathsEqual(projectFile, inventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
+  const verifiedReviewCleanupOwners=[];
+  const protectionSteps=[];
+  for(const step of mutations) {
+    delete step.verifiedReviewCleanup;
+    if(step.tool==="cleanup_test_items" && step.args.owner) {
+      await requireFreshReviewRecord(step.args.owner,step.args.itemIds);
+      verifiedReviewCleanupOwners.push(step.args.owner);step.verifiedReviewCleanup=true;
+    }
+    if(step.tool==="fit_layer_to_comp") {
+      for(const target of placeholderProtection.resolveTargets(step.args,inventory)) {
+        const read=await readPlaceholderGeometry({compItemId:target.compItemId,layerId:target.layerId});
+        const transform=calculateFitTransform(read,step.args);
+        protectionSteps.push({...step,tool:"set_layer_transform",args:{...step.args,layerIndex:target.layerIndex,expectedCompItemId:target.compItemId,expectedLayerId:target.layerId,...transform}});
+      }
+    }else protectionSteps.push(step);
+  }
+  const protectedCheck = placeholderProtection.checkProtectedSteps({ accepted: state.acceptedPlaceholders, inventory, steps: protectionSteps,verifiedReviewCleanupOwners });
+  if (!protectedCheck.ok) throw placeholderError(protectedCheck.code, protectedCheck);
+  const snapshots = state.acceptedPlaceholders.filter(snapshot => protectedCheck.affected.includes(placeholderProtection.targetKey(snapshot.target)));
+  for (const snapshot of snapshots) {
+    const observed = inventory.evidence.find(value => value.comp && value.layer && value.comp.itemId === snapshot.target.compItemId && value.layer.id === snapshot.target.layerId);
+    const drift = placeholderProtection.compareSnapshot(snapshot, observed, inventory);
+    if (!drift.ok) throw placeholderError(drift.code, drift);
+  }
+  const assignments = checkFreshPlanAssignments(plan, state, inventory, mutations);
+  const after = projectStateMemory.readProjectState(projectFile);
+  if (after.revision !== state.revision) throw placeholderError("project_state_revision_changed");
+  let bindings = protectedCheck.bindings.flatMap(value => value.targets);
+  if (options.bindingStep) {
+    const step = options.bindingStep;
+    if (placeholderProtection.TARGET_SETTERS.has(step.tool)) bindings = placeholderProtection.resolveTargets(step.args, inventory)
+      .map(value => ({ compItemId: value.compItemId, layerId: value.layerId, compItemIndex: value.compItemIndex, layerIndex: value.layerIndex }));
+    else bindings = [];
+  }
+  const result = { ok: true, projectFile, revision: state.revision, snapshots, assignments,
+    bindings, inventoryComplete: true };
+  if(plan.placeholderFraming) {
+    const framing=plan.placeholderFraming;
+    const read=await readPlaceholderGeometry(framing.target,framing.sourceItemId);
+    if(placeholderReviewService.hash(read.geometry)!==placeholderReviewService.hash(framing.geometry))throw placeholderError("placeholder_framing_geometry_changed");
+    calculateFitTransform(read,{mode:"cover"});
+    const coverage=require("./placeholder-framing").verifyPlaceholderCoverage({geometry:read.geometry,transform:framing.transform});
+    if(coverage.covered!==true || coverage.eligible!==true)throw placeholderError("placeholder_framing_transform_uncovered",coverage);
+    const setters=plan.steps.filter(step=>step.tool==="set_layer_transform" && step.args.expectedCompItemId===framing.target.compItemId && step.args.expectedLayerId===framing.target.layerId);
+    if(setters.length!==1 || !placeholderProtection.valueEqual(setters[0].args.position,framing.transform.position) || !placeholderProtection.valueEqual(setters[0].args.scale,framing.transform.scale))throw placeholderError("placeholder_framing_step_mismatch");
+    result.geometryBaselines=[framing];
+  }
+  if(projectStateMemory.readProjectState(projectFile).revision!==state.revision)throw placeholderError("project_state_revision_changed");
+  Object.defineProperty(result, "_inventory", { value: inventory, enumerable: false });
+  if (assignments.checks.length) Object.defineProperty(result, "inventoryBaseline", { value: inventory, enumerable: false });
+  return result;
+}
+async function getPlaceholderProtection() {
+  const { projectFile, state } = await currentPlaceholderState();
+  if (!state.acceptedPlaceholders.length) return { ok: true, projectFile, ...state, drift: [] };
+  const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
+    protectedProperties: snapshot.properties.map(prop => prop.path) })) });
+  const drift = state.acceptedPlaceholders.map(snapshot => placeholderProtection.compareSnapshot(snapshot,
+    inventory.evidence.find(value => value.comp && value.layer && value.comp.itemId === snapshot.target.compItemId && value.layer.id === snapshot.target.layerId), inventory));
+  return { ok: true, projectFile, ...state, drift, inventoryComplete: inventory.complete };
+}
+function rebindPlaceholderArgs(name, args, protection) {
+  if (protection && protection._inventory) placeholderProtection.assertSupportedSetterIdentity(name,args);
+  if (!protection || !protection._inventory || !placeholderProtection.TARGET_SETTERS.has(name) || !args ||
+    !args.expectedCompItemId || (!args.expectedLayerId && !args.expectedLayerIds)) return args;
+  const targets = placeholderProtection.resolveTargets(args, protection._inventory);
+  const next = { ...args, compItemIndex: targets[0].compItemIndex };
+  if (name==="set_property_value" && targets.length>1) {next.layerIndex=targets.map(value=>value.layerIndex);delete next.layerIndices;}
+  else if (["set_layer_transform","set_property_value"].includes(name)) next.layerIndex = targets[0].layerIndex;
+  else next.layerIndices = targets.map(value => value.layerIndex);
+  if (name === "replace_layer_source" && args.expectedSourceItemId) {
+    const source = [...protection._inventory.sources, ...protection._inventory.comps].find(value => value.itemId === args.expectedSourceItemId);
+    if (!source) throw placeholderError("replacement_source_identity_unavailable");
+    next.sourceItemIndex = source.itemIndex;
+  }
+  return next;
+}
+async function readPlaceholderGeometry(target,sourceItemId=null) {
+  if(!target || !Number.isSafeInteger(target.compItemId) || target.compItemId<1 || !Number.isSafeInteger(target.layerId) || target.layerId<1)throw placeholderError("invalid_geometry_target");
+  const result=await runExtendScriptBody(placeholderGeometry.geometryReadScript(target,sourceItemId));
+  return result.result;
+}
+function calculateFitTransform(read,args={}) {
+  const geometry=read && read.geometry;
+  // Validate with the pure helper before using dimensions; no NaN/unknown pass.
+  const framing=require("./placeholder-framing");
+  const verification=framing.verifyPlaceholderCoverage({geometry,transform:read && read.transform});
+  if(!geometry || !geometry.layer || geometry.layer.transformStatic!==true || geometry.layer.threeDLayer!==false || geometry.layer.parentLayerId!==null || geometry.layer.rotation!==0 || geometry.layer.hasMasks!==false || geometry.layer.collapseTransformation!==false ||
+    ![geometry.comp,geometry.source].every(item=>item && Number.isFinite(item.width) && item.width>0 && Number.isFinite(item.height) && item.height>0 && item.pixelAspect===1) || !Array.isArray(geometry.layer.anchorPoint) || geometry.layer.anchorPoint.length!==2 || !geometry.layer.anchorPoint.every(Number.isFinite))throw placeholderError("unsupported_placeholder_cover_geometry",verification);
+  const c=geometry.comp,s=geometry.source,a=geometry.layer.anchorPoint;
+  const factor=args.mode==="contain" ? Math.min(c.width/s.width,c.height/s.height) : Math.max(c.width/s.width,c.height/s.height);
+  if(args.mode==="stretch")throw placeholderError("unsupported_protected_stretch_fit");
+  const x=args.alignX==="left" ? a[0]*factor : args.alignX==="right" ? c.width-(s.width-a[0])*factor : c.width/2+(a[0]-s.width/2)*factor;
+  const y=args.alignY==="top" ? a[1]*factor : args.alignY==="bottom" ? c.height-(s.height-a[1])*factor : c.height/2+(a[1]-s.height/2)*factor;
+  return {scale:[factor*100,factor*100],position:[x,y]};
+}
+async function requireFreshReviewRecord(owner,itemIds=null) {
+  if(!placeholderReviewService.OWNER.test(owner || ""))throw placeholderError("invalid_review_owner");
+  const {projectFile,state}=await currentPlaceholderState();
+  const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw placeholderError("review_owner_unregistered");
+  const ids=record.receipt.items.map(item=>item.itemId);
+  if(itemIds!==null && (!Array.isArray(itemIds) || new Set(itemIds).size!==itemIds.length || JSON.stringify([...itemIds].sort((a,b)=>a-b))!==JSON.stringify([...ids].sort((a,b)=>a-b))))throw placeholderError("review_cleanup_requires_exact_registered_ids");
+  const read=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+  const verified=placeholderReviewService.verifyServiceReceipt(record.spec,read.result && read.result.items,state.projectKey);
+  if(!read.result || !placeholderSourceRecovery.pathsEqual(read.result.projectFile,projectFile) || !verified.ok)throw placeholderError("review_artifact_drift",verified);
+  return {record,projectFile,state,items:read.result.items};
+}
+async function reviewContentFingerprint(record) {
+  const state=projectStateMemory.readProjectState(record.receipt.projectFile);
+  const targets=[];
+  for(const target of record.spec.targets){
+    const accepted=state.acceptedPlaceholders.find(value=>placeholderProtection.targetKey(value.target)===placeholderProtection.targetKey(target.target));
+    targets.push({target:target.target,protectedProperties:accepted ? accepted.properties.map(value=>value.path) : []});
+    for(const edge of target.route || [])targets.push({target:{compItemId:edge.compItemId,layerId:edge.id},protectedProperties:[],isRoute:true});
+  }
+  const inventory=await readPlaceholderInventory({targets});
+  if(!inventory.complete || !placeholderSourceRecovery.pathsEqual(inventory.projectFile,record.receipt.projectFile))throw placeholderError("review_content_inventory_incomplete");
+  const fresh=placeholderReviewService.resolveReviewTargets({targets:record.spec.targets.map(target=>({target:target.target,rootCompItemId:target.rootCompItemId,routeLayerIds:target.routeLayerIds,samples:target.samples,viewKinds:target.viewKinds}))},inventory);
+  if(fresh.some((target,index)=>target.sourceKey!==record.spec.targets[index].sourceKey || target.sourceItemId!==record.spec.targets[index].sourceItemId))throw placeholderError("review_source_changed");
+  const evidence=[];
+  for(const request of targets){const raw=inventory.evidence.find(row=>row.comp && row.layer && row.comp.itemId===request.target.compItemId && row.layer.id===request.target.layerId);
+    if(!raw)throw placeholderError("review_content_evidence_missing");
+    if(!Array.isArray(raw.unsupported) || raw.unsupported.some(reason=>!(request.isRoute && reason==="unsupported_selected_non_video_source")))throw placeholderError("unsupported_review_content_animation_or_properties");
+    const row=placeholderEvidence.projectPlaceholderLayerEvidence(raw);
+    row.properties=raw.properties;
+    delete row.comp.itemIndex;delete row.layer.index;
+    if(!row.transform || !["anchorPoint","position","scale","rotation"].every(field=>row.transform[field]!==undefined))throw placeholderError("review_content_transform_missing");
+    evidence.push(row);
+  }
+  return placeholderReviewService.hash({evidence,targets:fresh.map(target=>({target:target.target,route:target.route,root:target.root,comp:target.comp,source:target.source,sourceKey:target.sourceKey,samples:target.samples}))});
+}
+async function trustedPlaceholderAction(body) {
+  if (body.snapshot !== undefined || body.acceptedPlaceholders !== undefined || body.allowProtectedChanges !== undefined || body.target !== undefined) throw placeholderError("client_acceptance_snapshot_forbidden");
+  const actions = ["accept", "release", "map_group", "constraints"];
+  if (!actions.includes(body.action)) throw placeholderError("unknown_placeholder_panel_action");
+  projectStateMemory.loadProjectStateStore();
+  if (body.useSelectedProperties !== undefined && typeof body.useSelectedProperties !== "boolean") throw placeholderError("use_selected_properties_requires_boolean");
+  const inventory = await readPlaceholderInventory({ selected: true, protectedProperties: body.protectedProperties || [], useSelectedProperties: body.useSelectedProperties === true });
+  const projectFile = inventory.projectFile;
+  const state = projectStateController.read(projectFile);
+  if (!inventory.complete) throw placeholderError("incomplete_acceptance_inventory");
+  if (body.action !== "constraints" && inventory.selectedTargets.length !== 1) throw placeholderError("select_one_placeholder_layer");
+  const evidence = inventory.evidence[0];
+  const target = inventory.selectedTargets[0];
+  let next;
+  if (body.action === "release") next = projectStateController.release(projectFile, target, state.revision);
+  else if (body.action === "accept") {
+    const snapshot = placeholderProtection.snapshotFromEvidence(evidence, inventory, inventory.selectedProtectedProperties || body.protectedProperties || []);
+    next = projectStateController.accept(projectFile, snapshot, state.revision);
+  } else if (body.action === "map_group") {
+    if (typeof body.groupId !== "string" || !body.groupId.trim() || body.groupId.length > 120) throw placeholderError("explicit_group_id_required");
+    if (!evidence || !evidence.layer || !evidence.layer.source) throw placeholderError("selected_video_source_unavailable");
+    const source = inventory.sources.find(value => value.itemId === evidence.layer.source.itemId);
+    if (!source || source.type !== "footage" || source.hasVideo !== true || source.footageMissing !== false) throw placeholderError("unsupported_selected_non_video_source");
+    const mediaKey = placeholderUsage.mediaKeyForSource(source);
+    if (mediaKey === "unknown") throw placeholderError("source_media_identity_unavailable");
+    next = projectStateController.mapGroup(projectFile, { mediaKey, groupId: body.groupId.trim() }, state.revision);
+  } else {
+    if (typeof body.distinctGroups !== "boolean" || typeof body.disallowSourceOverlap !== "boolean") throw placeholderError("explicit_assignment_constraints_required");
+    for (const value of inventory.evidence) {
+      const source = value.layer && value.layer.source && inventory.sources.find(item => item.itemId === value.layer.source.itemId);
+      if (!source || source.type !== "footage" || source.hasVideo !== true || source.footageMissing !== false ||
+        value.layer.stretch !== 100 || value.layer.timeRemapEnabled !== false) throw placeholderError("unsupported_selected_video_timing");
+    }
+    next = projectStateController.setConstraints(projectFile, { distinctGroups: body.distinctGroups, disallowSourceOverlap: body.disallowSourceOverlap,
+      selectedTargets: inventory.selectedTargets }, state.revision);
+  }
+  recordEvent("placeholder_trusted_panel_action", { action: body.action, projectKey: next.projectKey, revision: next.revision, target });
+  return { ok: true, projectKey: next.projectKey, revision: next.revision, acceptedCount: next.acceptedPlaceholders.length,
+    groupMappings: next.groupMappings, constraints: next.constraints, target };
+}
+
 function startHttpBridge() {
   const server = http.createServer((req, res) => {
     Promise.resolve().then(async () => {
@@ -7381,6 +7891,17 @@ function startHttpBridge() {
       return;
     }
     if (req.method === "POST" && res.authRole) req.parsedJsonBody = await readJsonObject(req, HTTP_BODY_LIMIT);
+
+    if (url.pathname === "/placeholder/protection") {
+      if (!requireToken(req, res, url)) return;
+      if (res.authRole !== "panel") { writeJson(res, 403, { ok: false, code: "placeholder_panel_role_required" }); return; }
+      try {
+        if (req.method === "GET") writeJson(res, 200, await getPlaceholderProtection());
+        else if (req.method === "POST") writeJson(res, 200, await trustedPlaceholderAction(await readJsonBody(req)));
+        else writeJson(res, 405, { ok: false, code: "method_not_allowed" });
+      } catch (error) { writeJson(res, 409, { ok: false, code: error.code || error.message, error: error.message, details: error.details }); }
+      return;
+    }
 
     if (url.pathname === "/autonomy/session" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
@@ -7979,6 +8500,7 @@ function startHttpBridge() {
       }
 
       command.state = "submitted";
+      capturePlanCommand(command);
       command.submittedAt = Date.now();
       recordEvent("ae_command_submitted", {
         id,
@@ -8110,6 +8632,170 @@ function startHttpBridge() {
 const tools = [
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
+  ...placeholderReviewTools.tools,
+  {
+    name: "get_placeholder_protection",
+    description: "Read authoritative accepted placeholder snapshots, confirmed group mappings, constraints and fresh drift diagnostics for the current saved project. Cannot accept/release or override protection.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false }
+  },
+  {
+    name: "get_placeholder_usage",
+    description: "Read a fresh bounded video source-interval map for explicit comp IDs. Resolves nested timing and confirmed groups from server Project Intent state; incomplete/unsupported evidence never passes.",
+    inputSchema: { type: "object", properties: { roots: { type: "array", minItems: 1, maxItems: 32,
+      items: { type: "object", properties: { compItemId: { type: "integer", minimum: 1 }, range: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } } }, required: ["compItemId"] } } }, required: ["roots"] }
+  },
+  {
+    name: "check_placeholder_assignments",
+    description: "Check proposed video source intervals/groups against a fresh server inventory and authoritative confirmed group mappings. Client usage/group claims are not authority; no AE mutation.",
+    inputSchema: { type: "object", properties: {
+      assignments: { type: "array", minItems: 1, maxItems: 32, items: { type: "object", properties: {
+        target: { type: "object", properties: { compItemId: { type: "integer", minimum: 1 }, layerId: { type: "integer", minimum: 1 } }, required: ["compItemId", "layerId"] },
+        sourceItemId: { type: "integer", minimum: 1 }, sourceRange: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } }
+      }, required: ["target", "sourceItemId", "sourceRange"] } },
+      constraints: { type: "object", properties: { distinctGroups: { type: "boolean" }, disallowSourceOverlap: { type: "boolean" } } }
+    }, required: ["assignments"] }
+  },
+  {
+    name: "build_placeholder_plan",
+    description: "Build a local preview plan for one reviewed slideshow placeholder from exact comp, layer, source and root/source timing evidence. No AE call or model inference. Re-inspect before proposal, then use normal dry-run and confirmation gates.",
+    inputSchema: placeholderPlanBuilder.inputSchema
+  },
+  {
+    name: "verify_placeholder_read_back",
+    description: "Compare the expected placeholder comp/layer/source/timing with a fresh independent get_layer_details result. Local only; no AE call or provider inference.",
+    inputSchema: placeholderReadBack.inputSchema
+  },
+  {
+    name: "find_missing_footage_candidates",
+    description: "Search within explicit roots for missing-footage replacements by original filename, extension and filesystem size. Media fields remain unknown unless optional bounded ffprobe reading is requested. Incomplete search cannot establish uniqueness.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        searchRoots: {
+          type: "array",
+          items: { type: "string" },
+          description: "Explicit local directory paths to search. Traversal is strictly bounded to these roots."
+        },
+        missingItems: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              itemId: { type: "number", description: "Persistent project item ID." },
+              itemIndex: { type: "number", description: "Optional current project item index." },
+              name: { type: "string", description: "Missing footage item name." },
+              originalPath: { type: "string", description: "Original file path; basename overrides a renamed item name." },
+              footageMissing: { type: "boolean", description: "Fresh inspected missing state, required by recovery builder." },
+              expectedSize: { type: "number", description: "Known original file size in bytes, when independently available." },
+              expectedMetadata: { type: "object", properties: {
+                width: { type: "number" }, height: { type: "number" }, duration: { type: "number" }, frameRate: { type: "number" }
+              }, description: "Known media fields from inspection; compared only with actually probed fields." }
+            },
+            required: ["itemId", "name"]
+          },
+          description: "List of missing footage items to find candidates for."
+        },
+        maxDepth: {
+          type: "number",
+          description: "Maximum directory traversal depth. Defaults to 5, maximum 10."
+        },
+        maxFiles: {
+          type: "number",
+          description: "Maximum collected files. Defaults to 2000, maximum 10000; traversal also has separate entry/directory budgets."
+        },
+        maxEntries: { type: "number", description: "All visited directory entries, including filtered files. Default 20000, maximum 50000." },
+        maxDirectories: { type: "number", description: "Visited directories. Default 2000, maximum 10000." },
+        probeMedia: { type: "boolean", description: "Explicitly read candidate media with existing ffprobe; default false, no installation." },
+        maxProbeFiles: { type: "number", description: "Maximum candidate probes. Default 10, maximum 25, aggregate budget 10 seconds." },
+        probeTimeoutMs: { type: "number", description: "Per-file probe timeout. Default 2000ms, maximum 5000ms; output limited to 256KiB." },
+        allowedExtensions: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional list of file extensions to include (e.g. ['.mp4', '.mov', '.png'])."
+        }
+      },
+      required: ["searchRoots", "missingItems"]
+    }
+  },
+  {
+    name: "build_source_recovery_plan",
+    description: "Build a typed recovery plan from fresh missing-item identity/path, the current candidate list and an explicit confirmed selected path. Retains expectedReadBack and addresses independent readback by persistent itemIds.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        requests: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              itemId: { type: "number", description: "Persistent project item ID." },
+              itemIndex: { type: "number", description: "Optional project item index hint." },
+              itemName: { type: "string", description: "Item name." },
+              currentFilePath: { type: "string", description: "Expected current/previous file path (stale guard)." },
+              targetFilePath: { type: "string", description: "Target replacement file path on disk." },
+              footageMissing: { type: "boolean", description: "Inspected state must be true before recovery." },
+              candidates: { type: "array", minItems: 1, items: { type: "object", properties: {
+                filePath: { type: "string" }
+              }, required: ["filePath"] }, description: "Candidate list returned by the current search for this item." },
+              isAmbiguous: { type: "boolean", description: "Whether multiple candidates existed." },
+              candidateSelectionConfirmed: { type: "boolean", description: "Must be true for the explicit selected path, including a single candidate." }
+            },
+            required: ["itemId", "itemName", "currentFilePath", "footageMissing", "candidates", "targetFilePath", "candidateSelectionConfirmed"]
+          },
+          description: "Array of relink requests."
+        }
+      },
+      required: ["requests"]
+    }
+  },
+  {
+    name: "relink_footage_source",
+    description: "Relink a footage item to a replacement media file on disk by persistent itemId with stale identity and file guards under an undo group.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        itemId: {
+          type: "number",
+          description: "Persistent project item ID of the footage item to relink."
+        },
+        itemIndex: {
+          type: "number",
+          description: "Optional 1-based project item index hint."
+        },
+        expectedName: {
+          type: "string",
+          description: "Required fresh inspected footage item name guard."
+        },
+        expectedPreviousFilePath: {
+          type: "string",
+          description: "Required fresh inspected previous file path guard. Missing/unavailable current file path fails closed."
+        },
+        filePath: {
+          type: "string",
+          description: "Absolute path to the replacement media file on disk."
+        }
+      },
+      required: ["itemId", "expectedName", "expectedPreviousFilePath", "filePath"]
+    }
+  },
+  {
+    name: "verify_source_recovery_read_back",
+    description: "Compare expected footage item state (itemId, file, footageMissing: false) against fresh independent project read-back. Verifies by persistent itemId to tolerate project item index shifts.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        expected: {
+          type: "array",
+          description: "Expected read-back items from build_source_recovery_plan."
+        },
+        observed: {
+          type: ["object", "array"],
+          description: "Fresh independent find_project_items or get_project_snapshot result."
+        }
+      },
+      required: ["expected", "observed"]
+    }
+  },
   {
     name: "get_bridge_status",
     description: "Return MCP bridge diagnostics, panel connection status, log path, backup path, and recent events.",
@@ -8744,10 +9430,12 @@ const tools = [
   },
   {
     name: "find_project_items",
-    description: "Find project items by name substring, exact name, and optional item type.",
+    description: "Find project items by name/type or explicit persistent itemIds. Footage references include actual missing state, full file path and compact media fields.",
     inputSchema: {
       type: "object",
       properties: {
+        itemIds: { type: "array", minItems: 1, maxItems: 250, items: { type: "integer", minimum: 1 },
+          description: "Optional bounded persistent IDs; filter before limit, independent of current item indices." },
         query: {
           type: "string",
           description: "Name substring or exact name to search for. Empty query returns the first results."
@@ -8998,7 +9686,7 @@ const tools = [
   },
   {
     name: "get_layer_details",
-    description: "Return detailed information for one layer, including source, transform, text, effects, masks, and optional property tree.",
+    description: "Return detailed information for one layer, including source, transform, text, effects, masks, and optional property tree. responseView=placeholder returns only target identity, source and timing fields for placeholder preflight/read-back.",
     inputSchema: {
       type: "object",
       properties: {
@@ -9013,6 +9701,11 @@ const tools = [
         layerIndex: {
           type: "number",
           description: "1-based layer index in the target composition."
+        },
+        responseView: {
+          type: "string",
+          enum: ["full", "placeholder"],
+          description: "Optional response projection. Defaults to full. placeholder omits transform/effects/masks/property tree without changing internal AE read-back."
         },
         includeProperties: {
           type: "boolean",
@@ -10603,6 +11296,9 @@ const tools = [
         compItemIndex: { type: "number", description: "Optional 1-based project item index for the target composition. Defaults to active comp." },
         compName: { type: "string", description: "Optional exact composition name to target when compItemIndex is not provided." },
         layerIndices: { type: ["number", "array"], description: "Optional layer index or indexes. Defaults to selected layers." },
+        expectedCompItemId: { type: "integer", description: "Optional AE composition item ID guard from fresh inspection." },
+        expectedLayerId: { type: "integer", description: "Optional single-layer ID guard; requires exactly one target layer." },
+        expectedSourceItemId: { type: "integer", description: "Optional current layer source item ID guard." },
         startTime: { type: "number", description: "Optional layer start time in seconds." },
         inPoint: { type: "number", description: "Optional layer in-point in seconds." },
         outPoint: { type: "number", description: "Optional layer out-point in seconds." },
@@ -10667,6 +11363,10 @@ const tools = [
         sourceItemIndex: { type: "number", description: "1-based project item index for the replacement source." },
         sourceItemName: { type: "string", description: "Exact replacement source item name when sourceItemIndex is omitted." },
         sourceItemType: { type: "string", enum: ["comp", "footage"], description: "Optional source type filter." },
+        expectedCompItemId: { type: "integer", description: "Optional AE composition item ID guard from fresh inspection." },
+        expectedLayerId: { type: "integer", description: "Optional single-layer ID guard; requires exactly one target layer." },
+        expectedPreviousSourceItemId: { type: "integer", description: "Optional current layer source item ID guard." },
+        expectedSourceItemId: { type: "integer", description: "Optional replacement source item ID guard." },
         fixExpressions: { type: "boolean", description: "Whether After Effects should adjust expressions. Defaults to true." }
       }
     }
@@ -11349,8 +12049,70 @@ const tools = [
   ...projectSave.createToolDefinitions()
 ];
 
+tools.push({name:"get_property_value",description:"Read one exact property by stable comp/layer IDs and composite propertyPath; optional time includes the exact key sample. No mutation.",inputSchema:{type:"object",additionalProperties:false,properties:{compItemId:{type:"integer",minimum:1},layerId:{type:"integer",minimum:1},propertyPath:{type:"array",minItems:1,maxItems:12,items:{type:["string","number","object"]}},time:{type:"number"}},required:["compItemId","layerId","propertyPath"]}});
+tools.push({name:"reconcile_plan_run",description:"Read actual state for a server-stored failed/uncertain plan run. Returns applied/not_applied/unknown per step and preserves the execution error. Never replays mutations.",inputSchema:{type:"object",additionalProperties:false,properties:{runId:{type:"string"},stepIndices:{type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}}},required:["runId"]}});
+
+// Persistent IDs supplement address hints on existing typed surfaces.
+for (const tool of tools) {
+  if(tool.name==="save_comp_frame_png")Object.assign(tool.inputSchema.properties,{reviewOwner:{type:"string",description:"Registered review owner; requires stable reviewItemId/full resolution/retained PNG."},reviewItemId:{type:"integer",minimum:1}});
+  if(tool.name==="cleanup_test_items")Object.assign(tool.inputSchema.properties,{owner:{type:"string",description:"Server-registered review UUID; requires the exact whole registered ID set."},itemIds:{type:"array",minItems:1,maxItems:25,items:{type:"integer",minimum:1}}});
+  if (placeholderProtection.TARGET_SETTERS.has(tool.name) || tool.name === "set_effect_property") {
+    tool.inputSchema.properties.expectedCompItemId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.expectedLayerId = { type: "integer", minimum: 1 };
+  }
+  if(tool.name === "set_property_value") tool.inputSchema.properties.expectedLayerIds={type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}};
+  if(["get_comp_details","get_effect_details"].includes(tool.name)) tool.inputSchema.properties.compItemId={type:"integer",minimum:1};
+  if(["get_layer_details","get_effect_details"].includes(tool.name)) {
+    tool.inputSchema.properties.layerId={type:"integer",minimum:1};
+    tool.inputSchema.required=(tool.inputSchema.required || []).filter(field=>field!=="layerIndex");
+    tool.inputSchema.anyOf=[{required:["layerIndex"]},{required:["layerId"]}];
+  }
+  if (tool.name === "get_layer_details") {
+    tool.inputSchema.properties.compItemId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.layerId = { type: "integer", minimum: 1 };
+    tool.inputSchema.properties.protectedProperties = { type: "array", maxItems: 12, items: { type: "array", minItems: 1, maxItems: 8, items: { type: ["string", "object"] } } };
+  }
+}
+
 async function callTool(name, args, executionContext) {
+  const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
+  if(name === "reconcile_plan_run") {
+    if(Object.keys(args).some(key=>!["runId","stepIndices"].includes(key))) throw new Error("reconciliation_client_evidence_forbidden");
+    const runId=optionalString(args,"runId","");
+    const record=planRunRecords.readRecord(LOG_DIR,runId);
+    if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
+    const selected=args.stepIndices;
+    if(selected!==undefined && (!Array.isArray(selected) || !selected.length || selected.length>50 || new Set(selected).size!==selected.length || selected.some(index=>!Number.isSafeInteger(index) || index<1 || !record.plan.steps[index-1]))) throw new Error("reconciliation_step_indices_invalid");
+    const helper=require("./plan-run-reconciliation");
+    const freshReadSteps=[];
+    const deadline=Date.now()+60000;
+    const read=async(request)=>{
+      try { const value=await callToolLogged("plan-reconciliation-read",request.tool,request.args);freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
+      catch(error){freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:"failed",error:error.message,errorCode:error.code});}
+    };
+    await read({tool:"get_project_info",args:{}});
+    const actual=firstToolPayload(toolResult(freshReadSteps[0].result));
+    const expected=require("./proposal-state").normalizeProject(record.project && record.project.file);
+    if(expected && require("./proposal-state").normalizeProject(actual && (actual.file || actual.project && actual.project.file))===expected) {
+      const readKeys=new Set();
+      for(const request of helper.reconciliationReadRequests(record)) {
+        if(Date.now()>deadline) break;
+        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details"].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
+        const key=reviewEvidence.sha256({tool:request.tool,args:request.args});
+        if((!selected || selected.includes(request.stepIndex)) && !readKeys.has(key)) {readKeys.add(key);await read(request);}
+      }
+      await read({tool:"get_project_info",args:{}});
+    }
+    const commandStates=(record.run.steps || []).flatMap(step=>(step.commands || []).map(row=>{
+      const current=inflightCommands.get(row.id),retained=completedResults.get(row.id);
+      return current ? {...row,...compactAeCommand(current)} : retained ? {...row,...retained.command,ok:retained.ok,result:retained.result,error:retained.error} : row;
+    }));
+    const result=helper.reconcilePlanRun({record,freshReadSteps,commandStates,project:{file:actual && actual.file}});
+    if(selected) result.steps=result.steps.filter(step=>selected.includes(step.index));
+    result.runId=runId;
+    return toolResult(result);
+  }
   if(name===projectSave.TOOL_NAME){
     try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
       return toolResult({ok:true,saveReceipt});
@@ -11400,7 +12162,7 @@ async function callTool(name, args, executionContext) {
         return names.join("/");
       }
 
-      function __codexFindProjectItems(query, type, exactName, caseSensitive, limit) {
+      function __codexFindProjectItems(query, type, exactName, caseSensitive, limit, itemIds) {
         var matches = [];
         var needle = query || "";
         var normalizedNeedle = caseSensitive ? needle : needle.toLowerCase();
@@ -11408,6 +12170,13 @@ async function callTool(name, args, executionContext) {
 
         for (var __i = 1; __i <= app.project.numItems; __i++) {
           var item = app.project.item(__i);
+          if (itemIds && itemIds.length) {
+            var idMatched = false;
+            for (var __id = 0; __id < itemIds.length; __id++) {
+              if (item.id === itemIds[__id]) { idMatched = true; break; }
+            }
+            if (!idMatched) continue;
+          }
           if (!__codexMatchesItemType(item, type)) continue;
 
           var itemName = item.name || "";
@@ -11505,8 +12274,17 @@ async function callTool(name, args, executionContext) {
         return false;
       }
 
-      function __codexResolveComp(index, name) {
+      function __codexResolveComp(index, name, itemId) {
         var item = null;
+        if (itemId !== null && itemId !== undefined) {
+          var found=null, count=0;
+          for(var __id=1;__id<=app.project.numItems;__id++) {
+            item=app.project.item(__id);
+            if(item instanceof CompItem && item.id===itemId){found=item;count++;}
+          }
+          if(count!==1) throw new Error("stable_comp_identity_missing_or_ambiguous");
+          return found;
+        }
         if (index !== null && index !== undefined) {
           item = app.project.item(index);
         } else if (name) {
@@ -11518,6 +12296,16 @@ async function callTool(name, args, executionContext) {
           throw new Error(index || name ? "Project item is not a composition." : "Active item is not a composition.");
         }
         return item;
+      }
+
+      function __codexResolveLayer(comp, index, layerId) {
+        if(layerId===null || layerId===undefined) return comp.layer(index);
+        var found=null,count=0;
+        for(var __id=1;__id<=comp.numLayers;__id++) {
+          var item=comp.layer(__id);if(item.id===layerId){found=item;count++;}
+        }
+        if(count!==1) throw new Error("stable_layer_identity_missing_or_ambiguous");
+        return found;
       }
 
       function __codexItemType(item) {
@@ -11539,6 +12327,24 @@ async function callTool(name, args, executionContext) {
         try { info.label = item.label; } catch (__itemLabelError) {}
         try { info.comment = item.comment || ""; } catch (__itemCommentError) {}
         try { info.folderPath = __codexFolderPath(item); } catch (__itemFolderPathError) {}
+        if (item instanceof CompItem || item instanceof FootageItem) {
+          try { info.duration = item.duration; } catch (__itemDurationError) {}
+          try { info.frameRate = item.frameRate; } catch (__itemFrameRateError) {}
+        }
+        if (item instanceof FootageItem) {
+          try {
+            if (item.footageMissing === true || item.footageMissing === false) info.footageMissing = item.footageMissing;
+          } catch (__missingError) {}
+          try {
+            var curFile = item.file || (item.mainSource && item.mainSource.file ? item.mainSource.file : null);
+            info.file = curFile && curFile.fsName ? curFile.fsName : null;
+          } catch (__fileError) {}
+          try { info.width = item.width; } catch (__widthError) {}
+          try { info.height = item.height; } catch (__heightError) {}
+          try { info.pixelAspect = item.pixelAspect; } catch (__pixelAspectError) {}
+          try { info.hasVideo = item.hasVideo; } catch (__hasVideoError) {}
+          try { info.hasAudio = item.hasAudio; } catch (__hasAudioError) {}
+        }
         return info;
       }
 
@@ -12254,6 +13060,153 @@ async function callTool(name, args, executionContext) {
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
   }
 
+  if (name === "get_placeholder_protection") {
+    try { return toolResult(await getPlaceholderProtection()); }
+    catch (error) { return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true); }
+  }
+  if (name === "get_placeholder_usage" || name === "check_placeholder_assignments") {
+    try {
+      projectStateMemory.loadProjectStateStore();
+      const inventory = await readPlaceholderInventory();
+      const state = inventory.projectFile ? projectStateMemory.readProjectState(inventory.projectFile) : { groupMappings: [] };
+      if (name === "get_placeholder_usage") {
+        if (!Array.isArray(args.roots) || !args.roots.length || args.roots.length > 32) throw placeholderError("explicit_usage_roots_required");
+        const usage = freshPlaceholderUsage(inventory, args.roots, state);
+        return toolResult(usage, !usage.ok);
+      }
+      const assignments = normalizeFreshAssignments(args.assignments, inventory);
+      const selectedTargets = assignments.map(value => value.target);
+      const roots = placeholderRootsForTargets(inventory, selectedTargets);
+      const usage = freshPlaceholderUsage(inventory, roots, state);
+      const check = placeholderUsage.checkPlaceholderAssignments({ usage, assignments,
+        constraints: { distinctGroups: args.constraints && args.constraints.distinctGroups !== false,
+          disallowSourceOverlap: args.constraints && args.constraints.disallowSourceOverlap !== false,
+          selectedTargets, groupMappings: state.groupMappings } });
+      return toolResult({ ...check, authority: "fresh-server-inventory", usageScope: usage.scope }, !check.ok);
+    } catch (error) { return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true); }
+  }
+  if (name === "build_placeholder_plan") {
+    let input=(args || {}).input;
+    if(input && input.framing) {
+      const read=await readPlaceholderGeometry({compItemId:input.targetComp.itemId,layerId:input.targetLayer.id},input.sourceItem.itemId);
+      calculateFitTransform(read,{mode:"cover"});
+      input={...input,framing:{...input.framing,geometry:read.geometry}};
+    }
+    const result = placeholderPlanBuilder.buildPlaceholderPlan(input);
+    if (!result.ok) return toolResult(result, true);
+    const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+    if (!prepared.validation.ok) return toolResult({ ...result, ok: false, validation: prepared.validation }, true);
+    try {
+      const protection = await guardPlaceholderPlan(result.plan);
+      return toolResult({ ...result, validation: prepared.validation, protection,
+        previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true });
+    } catch (error) { return toolResult({ ok: false, code: error.code || error.message, details: error.details, plan: null }, true); }
+  }
+
+  if(name==="propose_placeholder_cover" || name==="verify_placeholder_coverage") {
+    try {
+      let sourceId=args.sourceItemId;
+      if(name==="propose_placeholder_cover" && sourceId===undefined && args.useCurrentSource!==true)throw placeholderError("explicit_planned_source_or_current_choice_required");
+      const read=await readPlaceholderGeometry(args.target,sourceId===undefined ? null : sourceId);
+      const framing=require("./placeholder-framing");
+      let usage=null,sourceEvidence=null;
+      if(name==="propose_placeholder_cover"){
+        const inventory=await readPlaceholderInventory();
+        const state=inventory.projectFile ? projectStateMemory.readProjectState(inventory.projectFile) : {groupMappings:[]};
+        const roots=placeholderRootsForTargets(inventory,[read.target]);
+        usage=freshPlaceholderUsage(inventory,roots,state);
+        const source=inventory.sources.find(item=>item.itemId===read.sourceItemId);
+        if(source)sourceEvidence={itemId:source.itemId,itemIndex:source.itemIndex,name:source.name,type:source.type,duration:source.duration,frameRate:source.frameRate};
+      }
+      const result=name==="verify_placeholder_coverage" ? framing.verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform}) : framing.proposePlaceholderCover({...args,target:{...read.target,sourceItemId:read.sourceItemId},geometry:read.geometry,usage});
+      if(result.alternatives && result.alternatives.mediaKey){result.alternatives.sourceKey=placeholderReviewService.hash(result.alternatives.mediaKey);delete result.alternatives.mediaKey;result.alternatives.sourceItem=sourceEvidence;}
+      return toolResult({...result,target:read.target,sourceItemId:read.sourceItemId,authority:"fresh_stable_id_geometry",artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message},true);}
+  }
+  if(name==="build_placeholder_visual_review_plan" || name==="create_placeholder_review_comps") {
+    try {
+      const {projectFile,state}=await currentPlaceholderState();
+      const inventory=await readPlaceholderInventory();
+      if(!placeholderSourceRecovery.pathsEqual(projectFile,inventory.projectFile))throw placeholderError("review_project_changed");
+      const targets=placeholderReviewService.resolveReviewTargets(args,inventory);
+      const spec=placeholderReviewService.createServiceSpecification(targets,state.projectKey);
+      if(name==="build_placeholder_visual_review_plan") {
+        const steps=[{tool:"create_placeholder_review_comps",args:JSON.parse(JSON.stringify(args))}];
+        for(let index=0;index<=spec.controls.length;index++)steps.push({tool:"save_comp_frame_png",args:{reviewOwner:"{{steps.1.result.owner}}",reviewItemId:`{{steps.1.result.items.${index}.itemId}}`,time:0,resolutionFactor:[1,1],outputFileName:`review-${spec.owner}-${index}.png`}});
+        steps.push({tool:"get_placeholder_review_manifest",args:{owner:"{{steps.1.result.owner}}"}});
+        const plan={summary:"Создать отдельные контрольные кадры плейсхолдеров и контактный лист",risk:"high",requiresCheckpoint:true,steps};
+        const validation=validateAgentPlanWithRepair(plan,null,{}, {repairPlan:false}).validation;
+        return toolResult({ok:validation.ok,plan:validation.ok ? plan : null,validation,controlCount:spec.controls.length,mutatesProject:false,artisticAccepted:false},!validation.ok);
+      }
+      const created=await runExtendScriptBody(placeholderReviewService.createServiceScript(spec,projectFile));
+      const payload=created && created.result;
+      if(!created || created.ok===false || !payload || payload.ok!==true)return toolResult({ok:false,code:"review_creation_failed",details:payload || created,recovery:"Read reported createdItemIds before any further mutation; creation is never retried automatically."},true);
+      const ids=payload.createdItemIds;
+      const fresh=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+      const receipt=fresh && fresh.result;
+      if(!receipt || !placeholderSourceRecovery.pathsEqual(receipt.projectFile,projectFile) || !placeholderReviewService.verifyServiceReceipt(spec,receipt.items,state.projectKey).ok)return toolResult({ok:false,code:"review_creation_receipt_mismatch",owner:spec.owner,createdItemIds:ids},true);
+      const execution=evidenceContext.getStore() || {},guard=autonomousCommandContext.getStore() || {};
+      const record={schema:spec.schema,owner:spec.owner,projectKey:state.projectKey,spec,receipt,receiptHash:placeholderReviewService.hash(receipt),images:[],createdAt:new Date().toISOString(),
+        provenance:{runId:execution.runId || null,proposalId:guard.actionId || null,stepIndex:execution.stepIndex || null}};
+      try{projectStateController.registerReview(projectFile,record,state.revision);}catch(error){return toolResult({ok:false,code:"review_registration_failed",owner:spec.owner,createdItemIds:ids,error:error.message},true);}
+      return toolResult({ok:true,owner:spec.owner,items:receipt.items.map(item=>({itemId:item.itemId,itemIndex:item.itemIndex,name:item.name,outputFileName:`review-${spec.owner}-${item.itemId}.png`})),registered:true,mainCompositionModified:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
+  }
+  if(name==="get_placeholder_review_manifest" || name==="verify_placeholder_visual_review") {
+    try {
+      const fresh=await requireFreshReviewRecord(args.owner);
+      const contentHash=await reviewContentFingerprint(fresh.record);
+      if(fresh.record.images.some(image=>image.contentHash!==contentHash))throw placeholderError("review_content_changed_after_capture");
+      const manifest=placeholderVisualReview.buildManifest(fresh.record,GENERATED_EXPORT_DIR);
+      if(name==="verify_placeholder_visual_review") {
+        const config=JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT,"config","agy-bridge.json"),"utf8"));
+        const profile=config.profiles && config.profiles["ae-agent"];
+        if(!profile || profile.model!=="gemini-3.8-flash-high" || typeof profile.state_dir!=="string")throw placeholderError("inspection_profile_unconfigured");
+        const stateDirectory=path.resolve(PROJECT_ROOT,"config",profile.state_dir);
+        const runIds=args.inspectionRunIds || (args.inspectionRunId ? [args.inspectionRunId] : []);
+        if(!Array.isArray(runIds) || !runIds.length || runIds.length>8 || new Set(runIds).size!==runIds.length || args.inspectionRunId && args.inspectionRunIds)throw placeholderError("explicit_unique_inspection_runs_required");
+        const runs=runIds.map(id=>placeholderVisualReview.readInspectionRun(id,stateDirectory));
+        return toolResult(placeholderVisualBatches.verifyVisualReviewBatches(manifest,runs));
+      }
+      let inspectionMaterial=null,inspectionMaterials=[],inspectionReason=null;
+      try{const batches=placeholderVisualBatches.buildInspectionBatches(manifest);inspectionMaterials=batches.batches;inspectionMaterial=batches.batches.length===1 ? batches.batches[0].material : null;}catch(error){inspectionReason=error.code || error.message;}
+      return toolResult({ok:true,manifest,manifestSha256:placeholderReviewService.hash(manifest),inspectionMaterial,inspectionMaterials,inspectionReason,artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
+  }
+
+  if (name === "verify_placeholder_read_back") {
+    const result = placeholderReadBack.verifyPlaceholderReadBack((args || {}).expected, (args || {}).observed);
+    return toolResult(result, !result.ok);
+  }
+
+  if (name === "find_missing_footage_candidates") {
+    try {
+      const result = placeholderSourceRecovery.findMissingFootageCandidates(args || {});
+      return toolResult(result);
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message }, true);
+    }
+  }
+
+  if (name === "build_source_recovery_plan") {
+    const result = placeholderSourceRecovery.buildSourceRecoveryPlan(args || {});
+    if (!result.ok) return toolResult(result, true);
+    const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+    return toolResult({
+      ...result,
+      ok: prepared.validation.ok,
+      validation: prepared.validation,
+      previewLocal: true,
+      mutatesProject: true,
+      requiresFreshEvidenceReview: true
+    }, !prepared.validation.ok);
+  }
+
+  if (name === "verify_source_recovery_read_back") {
+    const result = placeholderSourceRecovery.verifySourceRecoveryReadBack((args || {}).expected, (args || {}).observed);
+    return toolResult(result, !result.ok);
+  }
+
   if (name === "propose_ai_agent_plan") {
     try {
       const result = await createM100AgentPlanProposalFromRequest(args || {});
@@ -12827,11 +13780,19 @@ async function callTool(name, args, executionContext) {
   }
 
   if (name === "find_project_items") {
+    let itemIds = null;
+    if (args.itemIds !== undefined) {
+      if (!Array.isArray(args.itemIds) || args.itemIds.length < 1 || args.itemIds.length > 250 ||
+        args.itemIds.some(id => !Number.isSafeInteger(id) || id <= 0) || new Set(args.itemIds).size !== args.itemIds.length) {
+        return toolResult("itemIds must contain 1..250 unique positive integer IDs.", true);
+      }
+      itemIds = args.itemIds;
+    }
     const query = optionalString(args, "query", "");
     const type = optionalString(args, "type", "");
     const exactName = optionalBoolean(args, "exactName", false);
     const caseSensitive = optionalBoolean(args, "caseSensitive", false);
-    const limit = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "limit", 25))));
+    const limit = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "limit", itemIds ? itemIds.length : 25))));
 
     if (type && !["comp", "footage", "folder"].includes(type)) {
       return toolResult("type must be one of: comp, footage, folder.", true);
@@ -12844,7 +13805,8 @@ async function callTool(name, args, executionContext) {
         type: ${aeLiteral(type)},
         exactName: ${exactName ? "true" : "false"},
         caseSensitive: ${caseSensitive ? "true" : "false"},
-        matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit})
+        itemIds: ${aeLiteral(itemIds)},
+        matches: __codexFindProjectItems(${aeLiteral(query)}, ${aeLiteral(type)}, ${exactName ? "true" : "false"}, ${caseSensitive ? "true" : "false"}, ${limit}, ${aeLiteral(itemIds)})
       };
     `);
     return toolResult(result.result);
@@ -13266,6 +14228,7 @@ async function callTool(name, args, executionContext) {
   if (name === "get_comp_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const compItemId = optionalPositiveInteger(args,"compItemId");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
     const includeMarkers = optionalBoolean(args, "includeMarkers", false);
@@ -13273,7 +14236,7 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
       var includeLayers = ${includeLayers ? "true" : "false"};
       var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
@@ -13328,20 +14291,58 @@ async function callTool(name, args, executionContext) {
     return toolResult(result.result);
   }
 
+  if (name === "get_property_value") {
+    if(Object.keys(args).some(key=>!["compItemId","layerId","propertyPath","time"].includes(key))) throw new Error("property_read_args_invalid");
+    const compItemId=requiredPositiveInteger(args,"compItemId"),layerId=requiredPositiveInteger(args,"layerId");
+    const propertyPath=args.propertyPath,time=optionalNumber(args,"time",null);
+    if(!Array.isArray(propertyPath) || !propertyPath.length || propertyPath.length>12) throw new Error("property_path_invalid");
+    const result=await runExtendScriptBody(`
+      ${resolveCompScript}
+      var comp=__codexResolveComp(null,"",${compItemId});
+      var layer=__codexResolveLayer(comp,null,${layerId});
+      var propertyPath=${aeLiteral(propertyPath)};
+      if(propertyPath.length===1 && typeof propertyPath[0]==="string" && ["threeDLayer","collapseTransformation","motionBlur"].indexOf(propertyPath[0])>=0) {
+        var attribute=propertyPath[0];
+        if(typeof layer[attribute]!=="boolean") throw new Error("layer_attribute_evidence_unavailable");
+        return {comp:{itemId:comp.id,itemIndex:__codexProjectIndexForItem(comp),name:comp.name},layer:__codexLayerInfo(layer),property:{name:attribute,matchName:attribute,propertyPath:[{name:attribute,matchName:attribute}],value:!!layer[attribute],numKeys:0,expressionEnabled:false}};
+      }
+      var prop=__codexResolveProperty(layer,propertyPath);
+      var info=__codexPropertyInfo(prop,layer,true,true);
+      var sampleTime=${time===null ? "null" : time};
+      if(sampleTime!==null) {
+        info.observedTime=sampleTime;
+        info.value=__codexValueData(prop.valueAtTime(sampleTime,false));
+        info.keyframes=[];
+        if(prop.numKeys>0) {var key=prop.nearestKeyIndex(sampleTime);if(Math.abs(prop.keyTime(key)-sampleTime)<=0.0000001) info.keyframes.push(__codexKeyframeInfo(prop,key));}
+        info.keyframesTruncated=false;
+      }
+      return {comp:{itemId:comp.id,itemIndex:__codexProjectIndexForItem(comp),name:comp.name},layer:__codexLayerInfo(layer),property:info};
+    `);
+    return toolResult(result.result);
+  }
+
   if (name === "get_layer_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const layerIndex = args.layerId === undefined ? requiredPositiveInteger(args,"layerIndex") : optionalPositiveInteger(args,"layerIndex");
+    const compItemId = optionalPositiveInteger(args, "compItemId");
+    const layerId = optionalPositiveInteger(args, "layerId");
+    const protectedProperties = placeholderProtection.normalizeProtectedPaths(args.protectedProperties || []);
     const includeProperties = optionalBoolean(args, "includeProperties", false);
     const propertyDepth = Math.max(0, Math.min(5, Math.floor(optionalNumber(args, "propertyDepth", 1))));
     const propertyLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "propertyLimit", 120))));
     const includeValues = optionalBoolean(args, "includeValues", false);
     const includeExpressions = optionalBoolean(args, "includeExpressions", true);
+    const responseView = optionalString(args, "responseView", "full");
+    if (responseView !== "full" && responseView !== "placeholder") {
+      throw new Error("responseView must be full or placeholder.");
+    }
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      ${placeholderGeometry.aeGeometrySupport}
+      var comp = ${compItemId === null ? `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})` : `__phFindComp(${compItemId})`};
+      var layer = ${layerId === null ? `comp.layer(${layerIndex})` : `__phFindLayer(comp,${layerId})`};
       if (!layer) throw new Error("Layer not found.");
       var includeProperties = ${includeProperties ? "true" : "false"};
       var includeValues = ${includeValues ? "true" : "false"};
@@ -13353,7 +14354,12 @@ async function callTool(name, args, executionContext) {
         try {
           var prop = group.property(matchName);
           if (!prop) return null;
-          return __codexValuePreview(prop);
+          var preview=__codexValuePreview(prop);
+          preview.numKeys=prop.numKeys;
+          preview.expressionEnabled=prop.expressionEnabled;
+          preview.dimensionsSeparated=prop.dimensionsSeparated===true;
+          preview.isSeparationFollower=prop.isSeparationFollower===true;
+          return preview;
         } catch (__readPropertyError) {
           return null;
         }
@@ -13522,10 +14528,19 @@ async function callTool(name, args, executionContext) {
         } catch (__propertyTreeError) {}
       }
 
+      var protectedPaths=${JSON.stringify(protectedProperties)};
+      var protectedRows=[];
+      for(var pr=0;pr<protectedPaths.length;pr++) {
+        var protectedProperty=__phProperty(layer,protectedPaths[pr]);
+        protectedRows.push({path:protectedPaths[pr],value:__phReadValue(protectedProperty),numKeys:protectedProperty.numKeys,
+          expressionEnabled:protectedProperty.expressionEnabled,dimensionsSeparated:protectedProperty.dimensionsSeparated===true});
+      }
       return {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
+          itemId: comp.id,
           name: comp.name,
+          frameRate: comp.frameRate,
           time: comp.time,
           numLayers: comp.numLayers
         },
@@ -13537,10 +14552,14 @@ async function callTool(name, args, executionContext) {
         masks: masks,
         markers: markers,
         propertyTree: propertyTree,
-        propertyTreeTruncated: propertyState.count >= propertyState.max
+        propertyTreeTruncated: propertyState.count >= propertyState.max,
+        protectedProperties: protectedRows
+        ,geometry: __phGeometry(comp,layer,null).geometry
       };
     `);
-    return toolResult(result.result);
+    return toolResult(responseView === "placeholder"
+      ? placeholderEvidence.projectPlaceholderLayerEvidence(result.result)
+      : result.result);
   }
 
   if (name === "get_layer_essential_properties") {
@@ -13812,7 +14831,7 @@ async function callTool(name, args, executionContext) {
 
   if (name === "save_comp_frame_png") {
     try {
-      const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
+      let compItemIndex = optionalPositiveInteger(args, "compItemIndex");
       const compName = optionalString(args, "compName", "");
       const expectedCompName = optionalString(args, "expectedCompName", "");
       const requestedTime = hasArg(args, "time") ? optionalNumber(args, "time", 0) : null;
@@ -13820,6 +14839,15 @@ async function callTool(name, args, executionContext) {
       const deleteAfterReadBack = optionalBoolean(args, "deleteAfterReadBack", false);
       const allowOverwrite = optionalBoolean(args, "allowOverwrite", false);
       const output = resolveGeneratedPngExportFile(optionalString(args, "outputFileName", "frame.png"));
+      let review=null;
+      let reviewContentHash=null;
+      if(args.reviewOwner!==undefined || args.reviewItemId!==undefined){
+        review=await requireFreshReviewRecord(args.reviewOwner);
+        const item=review.items.find(row=>row.itemId===args.reviewItemId);
+        if(!item || deleteAfterReadBack || allowOverwrite || requestedTime!==0 || resolutionFactor[0]!==1 || resolutionFactor[1]!==1)throw placeholderError("review_export_requires_exact_registered_native_frame");
+        compItemIndex=item.itemIndex;
+        reviewContentHash=await reviewContentFingerprint(review.record);
+      }
 
       if (requestedTime !== null && requestedTime < 0) {
         return toolResult("time must be greater than or equal to 0 seconds.", true);
@@ -13834,7 +14862,9 @@ async function callTool(name, args, executionContext) {
 
       const result = await runExtendScriptBody(`
         ${resolveCompScript}
-        var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+        ${review ? placeholderProtection.aeSupportScript : ""}
+        var comp = ${review ? `__phFindComp(${args.reviewItemId})` : `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})`};
+        ${review ? `if(comp.name!==${aeLiteral(review.items.find(row=>row.itemId===args.reviewItemId).name)} || comp.comment!==${aeLiteral(review.record.spec.comment)})throw new Error("review_export_owner_changed");` : ""}
         var expectedCompName = ${aeLiteral(expectedCompName)};
         if (expectedCompName && comp.name !== expectedCompName) {
           throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
@@ -13921,6 +14951,16 @@ async function callTool(name, args, executionContext) {
         deletedAfterReadBack: deleteAfterReadBack,
         mimeType: "image/png"
       };
+      if(review){
+        const image={itemId:args.reviewItemId,filePath:output.resolvedPath,sha256,byteLength:bytes.length,contentHash:reviewContentHash};
+        const dimensions=placeholderVisualReview.readImage(image,GENERATED_EXPORT_DIR);
+        const item=review.items.find(row=>row.itemId===args.reviewItemId);
+        if(dimensions.width!==item.width || dimensions.height!==item.height)throw placeholderError("review_native_export_dimensions_mismatch");
+        const after=await requireFreshReviewRecord(args.reviewOwner);
+        if(await reviewContentFingerprint(after.record)!==reviewContentHash)throw placeholderError("review_content_changed_during_capture");
+        projectStateController.addReviewImage(after.projectFile,args.reviewOwner,image,after.state.revision);
+        payload.reviewOwner=args.reviewOwner;payload.reviewItemId=args.reviewItemId;
+      }
       return toolResult(payload);
     } catch (error) {
       return toolResult(error.message || String(error), true);
@@ -14660,6 +15700,108 @@ async function callTool(name, args, executionContext) {
       };
       app.endUndoGroup();
       return response;
+    `);
+    return toolResult(result.result);
+  }
+
+  if (name === "relink_footage_source") {
+    const itemId = requiredPositiveInteger(args, "itemId");
+    const itemIndex = optionalPositiveInteger(args, "itemIndex");
+    const expectedName = optionalString(args, "expectedName", "");
+    const expectedPreviousFilePath = optionalString(args, "expectedPreviousFilePath", "");
+    const filePath = optionalString(args, "filePath", "");
+    if (!expectedName) return toolResult("expectedName is required.", true);
+    if (!expectedPreviousFilePath) return toolResult("expectedPreviousFilePath is required.", true);
+    if (!filePath) return toolResult("filePath is required.", true);
+
+    let resolved;
+    try {
+      resolved = resolveExistingFile(filePath);
+    } catch (error) {
+      return toolResult(error.message, true);
+    }
+
+    const result = await runExtendScriptBody(`
+      ${resolveCompScript}
+      var targetItemId = ${itemId};
+      var itemIndexHint = ${itemIndex === null ? "null" : itemIndex};
+      var expectedName = ${aeLiteral(expectedName)};
+      var expectedPreviousFilePath = ${aeLiteral(expectedPreviousFilePath)};
+      var targetFilePath = ${aeLiteral(resolved.resolvedPath)};
+
+      var item = null;
+      if (itemIndexHint !== null && itemIndexHint >= 1 && itemIndexHint <= app.project.numItems) {
+        var candidate = app.project.item(itemIndexHint);
+        if (candidate && candidate.id === targetItemId) {
+          item = candidate;
+        }
+      }
+      if (!item) {
+        for (var __i = 1; __i <= app.project.numItems; __i++) {
+          var cur = app.project.item(__i);
+          if (cur && cur.id === targetItemId) {
+            item = cur;
+            break;
+          }
+        }
+      }
+      if (!item) throw new Error("Project item not found with id " + targetItemId + ".");
+      if (!(item instanceof FootageItem)) throw new Error("Project item is not a FootageItem.");
+      if (item.footageMissing !== true) throw new Error("Project item is not missing footage: expected footageMissing === true.");
+
+      if (expectedName && item.name !== expectedName) {
+        throw new Error("Footage item name mismatch. Expected '" + expectedName + "' but found '" + item.name + "'.");
+      }
+      var currentFile = item.file || (item.mainSource && item.mainSource.file ? item.mainSource.file : null);
+      if (expectedPreviousFilePath) {
+        if (!currentFile || !currentFile.fsName) {
+          throw new Error("Previous file path is unavailable on footage item to verify expectedPreviousFilePath.");
+        }
+        var prevNorm = String(currentFile.fsName).replace(/\\\\/g, "/").toLowerCase();
+        var expNorm = String(expectedPreviousFilePath).replace(/\\\\/g, "/").toLowerCase();
+        if (prevNorm !== expNorm) {
+          throw new Error("Previous file path mismatch. Expected '" + expectedPreviousFilePath + "' but found '" + currentFile.fsName + "'.");
+        }
+      }
+
+      var replacementFile = new File(targetFilePath);
+      if (!replacementFile.exists) {
+        throw new Error("Replacement file does not exist on disk: " + targetFilePath);
+      }
+
+      var beforeFile = currentFile && currentFile.fsName ? currentFile.fsName : (item.file ? item.file.fsName : null);
+      var beforeMissing = item.footageMissing;
+      var afterFile = null;
+      var afterMissing = true;
+
+      app.beginUndoGroup("Codex Relink Footage Source");
+      try {
+        item.replace(replacementFile);
+        afterFile = item.file ? item.file.fsName : null;
+        afterMissing = item.footageMissing;
+      } finally {
+        app.endUndoGroup();
+      }
+
+      var afterRef = __codexItemReference(item);
+      var afterNorm = afterFile ? String(afterFile).replace(/\\\\/g, "/").toLowerCase() : "";
+      var targetNorm = String(targetFilePath).replace(/\\\\/g, "/").toLowerCase();
+      var fileMatches = afterNorm === targetNorm;
+      var itemIdMatches = item.id === targetItemId;
+
+      return {
+        item: afterRef,
+        itemId: item.id,
+        itemIndex: __codexProjectIndexForItem(item),
+        before: { file: beforeFile, footageMissing: beforeMissing },
+        after: { file: afterFile, footageMissing: afterMissing },
+        postVerification: {
+          ok: afterMissing === false && fileMatches && itemIdMatches,
+          footageMissing: afterMissing,
+          fileMatches: fileMatches,
+          itemIdMatches: itemIdMatches
+        }
+      };
     `);
     return toolResult(result.result);
   }
@@ -15937,7 +17079,9 @@ async function callTool(name, args, executionContext) {
   if (name === "get_effect_details") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
-    const layerIndex = requiredPositiveInteger(args, "layerIndex");
+    const compItemId = optionalPositiveInteger(args,"compItemId");
+    const layerId=optionalPositiveInteger(args,"layerId");
+    const layerIndex=layerId===null ? requiredPositiveInteger(args,"layerIndex") : optionalPositiveInteger(args,"layerIndex");
     const effectIndex = optionalPositiveInteger(args, "effectIndex");
     const effectName = optionalString(args, "effectName", "");
     const effectMatchName = optionalString(args, "effectMatchName", "");
@@ -15953,8 +17097,8 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex === null ? "null" : layerIndex}, ${layerId === null ? "null" : layerId});
       if (!layer) throw new Error("Layer not found.");
       var effect = __codexResolveEffect(layer, ${effectIndex === null ? "null" : effectIndex}, ${aeLiteral(effectName)}, ${aeLiteral(effectMatchName)});
       var includeProperties = ${includeProperties ? "true" : "false"};
@@ -15976,6 +17120,7 @@ async function callTool(name, args, executionContext) {
 
       return {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -16032,6 +17177,9 @@ async function callTool(name, args, executionContext) {
   if (name === "set_effect_property") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    if(args.compItemId!==undefined || args.layerId!==undefined) throw new Error("unsupported_setter_identity_alias");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const effectIndex = optionalPositiveInteger(args, "effectIndex");
     const effectName = optionalString(args, "effectName", "");
@@ -16064,8 +17212,8 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex}, ${expectedLayerId === null ? "null" : expectedLayerId});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
 
@@ -16076,8 +17224,9 @@ async function callTool(name, args, executionContext) {
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
 
-      app.beginUndoGroup("Codex Set Effect Property");
       var preparedValue = __codexPreparePropertyValue(prop, requestedValue);
+      app.beginUndoGroup("Codex Set Effect Property");
+      try {
       if (shouldSetAtTime) {
         prop.setValueAtTime(targetTime, preparedValue);
       } else {
@@ -16085,6 +17234,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -16094,8 +17244,8 @@ async function callTool(name, args, executionContext) {
         setAtTime: shouldSetAtTime,
         time: targetTime
       };
-      app.endUndoGroup();
       return response;
+      } finally { app.endUndoGroup(); }
     `);
     return toolResult(result.result);
   }
@@ -16438,7 +17588,12 @@ async function callTool(name, args, executionContext) {
   if (name === "set_property_value") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
+    const expectedLayerIds=args.expectedLayerIds===undefined ? null : requiredPositiveIntegerList({expectedLayerId:args.expectedLayerIds},"expectedLayerId");
     const layerIndices = requiredPositiveIntegerList(args, "layerIndex");
+    if(expectedLayerId!==null && layerIndices.length!==1) throw new Error("single_expected_layer_id_requires_one_target");
+    if(expectedLayerIds && (expectedLayerIds.length!==layerIndices.length || expectedLayerId!==null || new Set(expectedLayerIds).size!==expectedLayerIds.length)) throw new Error("expected_layer_ids_invalid");
     const time = optionalNumber(args, "time", null);
     const setAtTime = optionalBoolean(args, "setAtTime", time !== null);
 
@@ -16461,10 +17616,12 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
       var layerIndices = ${aeLiteral(layerIndices)};
+      var expectedLayerIds=${aeLiteral(expectedLayerIds || (expectedLayerId===null ? [] : [expectedLayerId]))};
       var propertyPath = ${aeLiteral(propertyPath)};
       var requestedValue = ${aeLiteral(value)};
+      ${setterIdentityGuard}
       var shouldSetAtTime = ${setAtTime ? "true" : "false"};
       var targetTime = ${time === null ? "null" : time};
       var layerAttributeName = propertyPath.length === 1 ? String(propertyPath[0]) : "";
@@ -16477,7 +17634,7 @@ async function callTool(name, args, executionContext) {
 
       var preparedTargets = [];
       for (var __pre = 0; __pre < layerIndices.length; __pre++) {
-        var preLayer = comp.layer(layerIndices[__pre]);
+        var preLayer = __codexResolveLayer(comp, layerIndices[__pre], expectedLayerIds[__pre]);
         if (!preLayer || preLayer.locked) throw new Error("Layer missing or locked at index " + layerIndices[__pre]);
         if (isLayerAttribute) {
           if (shouldSetAtTime) throw new Error(layerAttributeName + " cannot be keyframed with setAtTime.");
@@ -16530,6 +17687,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -16699,6 +17857,7 @@ async function callTool(name, args, executionContext) {
       }
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -17347,6 +18506,9 @@ async function callTool(name, args, executionContext) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const layerIndices = optionalPositiveIntegerList(args, "layerIndices");
+    const expectedCompItemId = optionalPositiveInteger(args, "expectedCompItemId");
+    const expectedLayerId = optionalPositiveInteger(args, "expectedLayerId");
+    const expectedSourceItemId = optionalPositiveInteger(args, "expectedSourceItemId");
     const startTime = optionalNumber(args, "startTime", null);
     const inPoint = optionalNumber(args, "inPoint", null);
     const outPoint = optionalNumber(args, "outPoint", null);
@@ -17362,10 +18524,15 @@ async function callTool(name, args, executionContext) {
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var requestedLayerIndices = ${layerIndices ? aeLiteral(layerIndices) : "null"};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
+      ${setterIdentityGuard}
       var requestedInPoint = ${inPoint === null ? "null" : inPoint};
       var requestedOutPoint = ${outPoint === null ? "null" : outPoint};
       var requestedDuration = ${duration === null ? "null" : duration};
       var layers = __codexResolveLayers(comp, requestedLayerIndices);
+      if (${compName ? "comp.name !== " + aeLiteral(compName) : "false"}) throw new Error("Composition name changed before timing edit.");
+      if (${expectedCompItemId === null ? "false" : `comp.id !== ${expectedCompItemId}`}) throw new Error("Composition identity changed before timing edit.");
+      if (${expectedLayerId === null ? "false" : "layers.length !== 1 || layers[0].id !== " + expectedLayerId}) throw new Error("Layer identity changed before timing edit.");
+      if (${expectedSourceItemId === null ? "false" : "layers.length !== 1 || !layers[0].source || layers[0].source.id !== " + expectedSourceItemId}) throw new Error("Layer source changed before timing edit.");
 
       app.beginUndoGroup("Codex Set Layer Time Range");
       var changed = [];
@@ -17544,6 +18711,10 @@ async function callTool(name, args, executionContext) {
     const sourceItemIndex = optionalPositiveInteger(args, "sourceItemIndex");
     const sourceItemName = optionalString(args, "sourceItemName", "");
     const sourceItemType = optionalString(args, "sourceItemType", "");
+    const expectedCompItemId = optionalPositiveInteger(args, "expectedCompItemId");
+    const expectedLayerId = optionalPositiveInteger(args, "expectedLayerId");
+    const expectedPreviousSourceItemId = optionalPositiveInteger(args, "expectedPreviousSourceItemId");
+    const expectedSourceItemId = optionalPositiveInteger(args, "expectedSourceItemId");
     const fixExpressions = optionalBoolean(args, "fixExpressions", true);
 
     if (!sourceItemIndex && !sourceItemName) return toolResult("Provide sourceItemIndex or sourceItemName.", true);
@@ -17553,10 +18724,17 @@ async function callTool(name, args, executionContext) {
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
       var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      ${setterIdentityGuard}
       var sourceItem = __codexResolveProjectItem(${sourceItemIndex === null ? "null" : sourceItemIndex}, ${aeLiteral(sourceItemName)}, ${aeLiteral(sourceItemType)});
       if (!(sourceItem instanceof FootageItem) && !(sourceItem instanceof CompItem)) {
         throw new Error("Replacement source must be footage or a composition.");
       }
+      if (${compName ? "comp.name !== " + aeLiteral(compName) : "false"}) throw new Error("Composition name changed before source replacement.");
+      if (${sourceItemName ? "sourceItem.name !== " + aeLiteral(sourceItemName) : "false"}) throw new Error("Replacement source name changed.");
+      if (${expectedCompItemId === null ? "false" : `comp.id !== ${expectedCompItemId}`}) throw new Error("Composition identity changed before source replacement.");
+      if (${expectedSourceItemId === null ? "false" : `sourceItem.id !== ${expectedSourceItemId}`}) throw new Error("Replacement source identity changed.");
+      if (${expectedLayerId === null ? "false" : "layers.length !== 1 || layers[0].id !== " + expectedLayerId}) throw new Error("Layer identity changed before source replacement.");
+      if (${expectedPreviousSourceItemId === null ? "false" : "layers.length !== 1 || !layers[0].source || layers[0].source.id !== " + expectedPreviousSourceItemId}) throw new Error("Previous layer source changed before replacement.");
       var fixExpressions = ${fixExpressions ? "true" : "false"};
 
       app.beginUndoGroup("Codex Replace Layer Source");
@@ -18722,6 +19900,8 @@ async function callTool(name, args, executionContext) {
     const mode = optionalString(args, "mode", "contain");
     const alignX = optionalString(args, "alignX", "center");
     const alignY = optionalString(args, "alignY", "center");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
 
     if (!["contain", "cover", "stretch"].includes(mode)) return toolResult("mode must be one of: contain, cover, stretch.", true);
     if (!["left", "center", "right"].includes(alignX)) return toolResult("alignX must be one of: left, center, right.", true);
@@ -18729,19 +19909,21 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layers = __codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"});
+      ${placeholderGeometry.aeGeometrySupport}
+      ${setterIdentityGuard}
+      var comp = ${expectedCompItemId===null ? `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})` : `__phFindComp(${expectedCompItemId})`};
+      var layers = ${expectedLayerId===null ? `__codexResolveLayers(comp, ${layerIndices ? aeLiteral(layerIndices) : "null"})` : `[__phFindLayer(comp,${expectedLayerId})]`};
       var mode = ${aeLiteral(mode)};
       var alignX = ${aeLiteral(alignX)};
       var alignY = ${aeLiteral(alignY)};
 
-      app.beginUndoGroup("Codex Fit Layer To Comp");
-      var changed = [];
+      var prepared=[];
       for (var __i = 0; __i < layers.length; __i++) {
         var layer = layers[__i];
         if (layer.locked) throw new Error("Layer is locked: " + layer.name);
         var before = __codexLayerInfo(layer);
         var size = __codexLayerSourceSize(layer, comp);
+        if(mode==="cover"){var geometry=__phGeometry(comp,layer,null);__phRequireCoverGeometry(geometry);size={width:geometry.geometry.source.width,height:geometry.geometry.source.height};}
         var scaleX = comp.width / size.width * 100;
         var scaleY = comp.height / size.height * 100;
         if (mode === "contain") {
@@ -18755,21 +19937,31 @@ async function callTool(name, args, executionContext) {
         }
         var fittedWidth = size.width * scaleX / 100;
         var fittedHeight = size.height * scaleY / 100;
-        var x = alignX === "left" ? fittedWidth / 2 : alignX === "right" ? comp.width - fittedWidth / 2 : comp.width / 2;
-        var y = alignY === "top" ? fittedHeight / 2 : alignY === "bottom" ? comp.height - fittedHeight / 2 : comp.height / 2;
         var transform = layer.property("ADBE Transform Group");
-        transform.property("ADBE Scale").setValue([scaleX, scaleY, 100]);
-        transform.property("ADBE Position").setValue([x, y]);
+        var anchor=transform.property("ADBE Anchor Point").value;
+        if(!(anchor instanceof Array) || anchor.length<2 || !isFinite(anchor[0]) || !isFinite(anchor[1]))throw new Error("unsupported_fit_anchor");
+        var x = alignX === "left" ? anchor[0]*scaleX/100 : alignX === "right" ? comp.width-(size.width-anchor[0])*scaleX/100 : comp.width/2+(anchor[0]-size.width/2)*scaleX/100;
+        var y = alignY === "top" ? anchor[1]*scaleY/100 : alignY === "bottom" ? comp.height-(size.height-anchor[1])*scaleY/100 : comp.height/2+(anchor[1]-size.height/2)*scaleY/100;
+        var scaleValue=transform.property("ADBE Scale").value.length===3 ? [scaleX,scaleY,100] : [scaleX,scaleY];
+        prepared.push({layer:layer,before:before,size:size,scale:scaleValue,position:[x,y]});
+      }
+      app.beginUndoGroup("Codex Fit Layer To Comp");
+      try {
+      var changed=[];
+      for(var __i=0;__i<prepared.length;__i++) {
+        var desired=prepared[__i];var layer=desired.layer;var transform=layer.property("ADBE Transform Group");
+        transform.property("ADBE Scale").setValue(desired.scale);
+        transform.property("ADBE Position").setValue(desired.position);
         changed.push({
-          before: before,
+          before: desired.before,
           after: __codexLayerInfo(layer),
-          sourceSize: size,
-          scale: [scaleX, scaleY, 100],
-          position: [x, y]
+          sourceSize: desired.size,
+          scale: transform.property("ADBE Scale").value,
+          position: transform.property("ADBE Position").value
         });
       }
       var response = {
-        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, width: comp.width, height: comp.height },
+        comp: { itemIndex: __codexProjectIndexForItem(comp), itemId:comp.id,name: comp.name, width: comp.width, height: comp.height },
         mode: mode,
         alignX: alignX,
         alignY: alignY,
@@ -18777,8 +19969,8 @@ async function callTool(name, args, executionContext) {
         layers: changed.map(function (item) { return item.after; }),
         changed: changed
       };
-      app.endUndoGroup();
       return response;
+      }finally{app.endUndoGroup();}
     `);
     return toolResult(result.result);
   }
@@ -19363,6 +20555,8 @@ async function callTool(name, args, executionContext) {
   if (name === "set_layer_transform") {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
+    const expectedCompItemId=optionalPositiveInteger(args,"expectedCompItemId");
+    const expectedLayerId=optionalPositiveInteger(args,"expectedLayerId");
     const layerIndex = requiredPositiveInteger(args, "layerIndex");
     const position = optionalNumberArray(args, "position", null, 2, 3);
     const scale = optionalNumberArray(args, "scale", null, 2, 3);
@@ -19379,18 +20573,20 @@ async function callTool(name, args, executionContext) {
 
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
-      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
-      var layer = comp.layer(${layerIndex});
+      var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${expectedCompItemId === null ? "null" : expectedCompItemId});
+      var layer = __codexResolveLayer(comp, ${layerIndex}, ${expectedLayerId === null ? "null" : expectedLayerId});
       if (!layer) throw new Error("Layer not found.");
       if (layer.locked) throw new Error("Layer is locked.");
 
       var positionValue = ${position ? aeLiteral(position) : "null"};
+      ${setterIdentityGuard}
       var scaleValue = ${scale ? aeLiteral(scale) : "null"};
       var anchorPointValue = ${anchorPoint ? aeLiteral(anchorPoint) : "null"};
       var rotationValue = ${rotation === null ? "null" : rotation};
       var opacityValue = ${opacity === null ? "null" : opacity};
 
       app.beginUndoGroup("Codex Set Layer Transform");
+      try {
       var transform = layer.property("ADBE Transform Group");
       if (positionValue !== null) transform.property("ADBE Position").setValue(positionValue);
       if (scaleValue !== null) transform.property("ADBE Scale").setValue(scaleValue);
@@ -19399,6 +20595,7 @@ async function callTool(name, args, executionContext) {
       if (opacityValue !== null) transform.property("ADBE Opacity").setValue(opacityValue);
       var response = {
         comp: {
+          itemId: comp.id,
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
@@ -19411,8 +20608,8 @@ async function callTool(name, args, executionContext) {
           opacity: transform.property("ADBE Opacity").value
         }
       };
-      app.endUndoGroup();
       return response;
+      } finally { app.endUndoGroup(); }
     `);
     return toolResult(result.result);
   }
@@ -19838,6 +21035,20 @@ async function callTool(name, args, executionContext) {
   if (name === "cleanup_test_items") {
     const confirm = optionalBoolean(args, "confirm", false);
     if (!confirm) return toolResult("confirm must be true to remove test items.", true);
+    if(args.owner!==undefined || args.itemIds!==undefined){
+      try{
+        const fresh=await requireFreshReviewRecord(args.owner,args.itemIds || []);
+        const result=await runExtendScriptBody(placeholderReviewService.cleanupServiceScript(fresh.record,fresh.projectFile));
+        const payload=result && result.result;
+        if(!payload || payload.ok!==true)return toolResult({ok:false,code:"review_cleanup_failed",details:payload || result,recovery:"Read remaining item IDs; do not repeat cleanup automatically."},true);
+        const ids=fresh.record.receipt.items.map(item=>item.itemId);
+        const absent=await runExtendScriptBody(placeholderReviewService.readServiceScript(ids));
+        if(!absent.result || !placeholderSourceRecovery.pathsEqual(absent.result.projectFile,fresh.projectFile) || absent.result.items.length)throw placeholderError("review_cleanup_absence_unproven");
+        const current=projectStateMemory.readProjectState(fresh.projectFile);
+        projectStateController.unregisterReview(fresh.projectFile,args.owner,ids,current.revision);
+        return toolResult({...payload,owner:args.owner,absenceVerified:true});
+      }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message},true);}
+    }
 
     const namePrefix = optionalString(args, "namePrefix", "Codex Test");
     const maxItems = Math.max(1, Math.min(250, Math.floor(optionalNumber(args, "maxItems", 25))));
@@ -19850,7 +21061,10 @@ async function callTool(name, args, executionContext) {
       var maxItems = ${maxItems};
       var removed = [];
 
+      for(var p=1;p<=app.project.numItems;p++){var candidate=app.project.item(p);if(candidate && String(candidate.name).indexOf(namePrefix)===0 && String(candidate.name).indexOf("AE_AGENT_REVIEW_")===0)throw new Error("review_items_require_exact_registered_cleanup");}
+
       app.beginUndoGroup("Codex Cleanup Test Items");
+      try {
       for (var i = app.project.numItems; i >= 1 && removed.length < maxItems; i--) {
         var item = app.project.item(i);
         if (item && item.name && item.name.indexOf(namePrefix) === 0) {
@@ -19862,14 +21076,13 @@ async function callTool(name, args, executionContext) {
           item.remove();
         }
       }
-      app.endUndoGroup();
-
       return {
         namePrefix: namePrefix,
         removed: removed,
         removedCount: removed.length,
         hitLimit: removed.length >= maxItems
       };
+      }finally{app.endUndoGroup();}
     `);
     return toolResult(result.result);
   }
@@ -19941,11 +21154,29 @@ async function callToolLogged(source, name, args, executionContext) {
       }
     }
 
-    const checkpoint = name===projectSave.TOOL_NAME ? null : await maybeCreateMutationCheckpoint(args || {}, name);
-    const result = await callTool(name, args, executionContext || null);
+    let placeholderGuard = null;
+    if (MUTATING_TOOL_NAMES.has(name)) {
+      const context = placeholderPlanContext.getStore();
+      const plan = context && context.plan || { steps: [{ tool: name, args: args || {} }] };
+      placeholderGuard = await guardPlaceholderPlan(plan, { steps: context && context.remainingSteps || plan.steps,
+        bindingStep: { tool: name, args: args || {} } });
+      // Resolve explicit persistent identities to current address hints. An index
+      // shift alone is not a content conflict; AE still rechecks the binding.
+      args = rebindPlaceholderArgs(name, args, placeholderGuard);
+    }
+    const commandContext = planCommandContext.getStore();
+    if(commandContext && commandContext.item) commandContext.item.args=args;
+    const checkpoint = name===projectSave.TOOL_NAME ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
+      () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
+    if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
+      commandContext.item.mutationResult=firstToolPayload(result);
+      commandContext.item.mutationResultIsError=Boolean(result.isError);
+      commandContext.persist();
+    }
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
-    resultWithCheckpoint = await autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {}));
+    resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
     resultWithCheckpoint = attachStoredIdempotencyMetadata(resultWithCheckpoint, idContext, idempotencyRecord);
     const durationMs = Date.now() - startedAt;
@@ -19992,16 +21223,24 @@ async function callToolLogged(source, name, args, executionContext) {
 }
 
 module.exports = {
-  async prepareToolScript(name, args, fixtureResult = null) {
-    if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details",
-      "set_comp_properties", "set_comp_work_area", "get_comp_details", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
-      "precompose_layers", "replace_layer_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
+  hardcoreRunNeedsReconciliation,
+  async preparePlaceholderInventoryScript(options = {}) {
+    const prepared = { script: null, fixtureResult: null };
+    await scriptPreparationContext.run(prepared, () => readPlaceholderInventory(options));
+    return prepared;
+  },
+  async prepareToolScript(name, args, fixtureResult = null, protection = null) {
+    if (!["set_property_value", "set_effect_property", "set_property_keyframes", "set_expression", "get_layer_details", "get_effect_details", "get_property_value",
+      "set_comp_properties", "set_comp_work_area", "get_comp_details", "find_project_items", "set_layer_time_range", "stagger_layers", "split_layers_at_time",
+      "precompose_layers", "replace_layer_source", "relink_footage_source", "deep_duplicate_precomp_sources", "rename_layers", "rename_project_items", "update_text_layer",
       "create_shape_layer", "create_camera_layer", "create_layer_mask", "set_layer_mask", "get_path_geometry", "set_path_geometry", "duplicate_layer",
-      "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp",
+      "duplicate_layers", "delete_layer", "add_comp_marker", "add_layer_marker", "update_layer_marker", "delete_layer_marker", "fit_layer_to_comp", "set_layer_transform",
       "apply_keyframe_ease", "clear_expression", "add_comp_to_render_queue", "set_render_queue_output", "get_render_queue_status", "align_layers_to_time"
     ].includes(name)) throw new Error("Script preparation unsupported for this tool.");
     const prepared = { script: null, result: null, fixtureResult };
-    await scriptPreparationContext.run(prepared, async () => { prepared.result = await callTool(name, args); });
+    args = rebindPlaceholderArgs(name, args, protection);
+    await scriptPreparationContext.run(prepared, () => placeholderMutationContext.run(protection,
+      async () => { prepared.result = await callTool(name, args); }));
     return prepared;
   },
   requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult

@@ -27,6 +27,11 @@ function firstNumber(object, names) {
   return null;
 }
 
+function percent(object, names) {
+  const value = firstNumber(object, names);
+  return value !== null && value <= 100 ? value : null;
+}
+
 function firstString(object, names) {
   if (!object || typeof object !== "object") return null;
   for (const name of names) {
@@ -165,8 +170,8 @@ function normalizeQuota(payload, observedAt) {
     const provider = firstString(row, ["provider", "id", "name"]);
     const available = typeof row.available === "boolean" ? row.available : null;
     const nestedWindows = Array.isArray(row.windows) ? row.windows : [];
-    const flatRemaining = firstNumber(row, ["remainingPercent", "remaining", "percentRemaining"]);
-    const flatUsed = firstNumber(row, ["usedPercent", "percentUsed"]);
+    const flatRemaining = percent(row, ["remainingPercent", "remainingPct", "remaining", "percentRemaining"]);
+    const flatUsed = percent(row, ["usedPercent", "usedPct", "percentUsed"]);
     const flatReset = firstString(row, ["resetAt", "resetsAt", "reset"]);
     const candidates = nestedWindows.length || flatRemaining !== null || flatUsed !== null || flatReset
       ? (nestedWindows.length ? nestedWindows : [row])
@@ -174,17 +179,20 @@ function normalizeQuota(payload, observedAt) {
     providerStatuses.push({
       provider,
       available,
+      plan: firstString(row, ["plan", "planType"]),
       status: firstString(row, ["status"]) || (available === true ? "available" : available === false ? "unavailable" : "unknown"),
       windowCount: candidates.length,
       error: row.error ? "provider_quota_unavailable" : null
     });
     for (const windowRow of candidates) {
+      const usedPercent = percent(windowRow, ["usedPercent", "usedPct", "percentUsed"]);
+      const remainingPercent = percent(windowRow, ["remainingPercent", "remainingPct", "remaining", "percentRemaining"]);
       windows.push({
         provider,
         label: firstString(windowRow || {}, ["label", "name", "window", "period"]),
-        status: firstString(windowRow || {}, ["status"]) || (available === false ? "unavailable" : "unknown"),
-        usedPercent: firstNumber(windowRow || {}, ["usedPercent", "percentUsed"]),
-        remainingPercent: firstNumber(windowRow || {}, ["remainingPercent", "remaining", "percentRemaining"]),
+        status: firstString(windowRow || {}, ["status"]) || (available === false ? "unavailable" : available === true && (usedPercent !== null || remainingPercent !== null) ? "ok" : "unknown"),
+        usedPercent,
+        remainingPercent,
         resetAt: firstString(windowRow || {}, ["resetAt", "resetsAt", "reset"]),
         sourceGranularity: "provider_account_snapshot"
       });
@@ -280,10 +288,19 @@ function createCodeburnUsageAdapter(options) {
       if (!result) return { contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt, error: "codeburn_runner_failed" };
       if (result.outputExceeded) return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt, error: "codeburn_output_limit" };
       if (result.timedOut) return { contract: CONTRACT, status: "timeout", source: "codeburn_cli", observedAt, error: "codeburn_timeout" };
-      if (result.exitCode !== 0) return { contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt, error: "codeburn_exit_nonzero" };
+      // CodeBurn 0.9.24 can emit a complete quota snapshot before this Windows
+      // libuv shutdown assertion. Recover only that known case, with a warning.
+      const quotaShutdownFailure = type === "quota" && result.exitCode !== null && result.exitCode !== 0
+        && /Assertion failed:.*UV_HANDLE_CLOSING.*src[\\/]win[\\/]async\.c/.test(result.stderr || "");
+      if (result.exitCode !== 0 && !quotaShutdownFailure) return { contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt, error: "codeburn_exit_nonzero" };
       let payload;
       try { payload = JSON.parse(text(result.stdout, maxOutputBytes)); } catch (_) { return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt, error: "codeburn_invalid_json" }; }
       const normalized = type === "report" ? normalizeReport(payload, observedAt) : normalizeQuota(payload, observedAt);
+      if (quotaShutdownFailure) {
+        const usable = normalized && normalized.quota.windows.some((row) => row.status === "ok" && (row.usedPercent !== null || row.remainingPercent !== null));
+        if (!usable) return { contract: CONTRACT, status: "unavailable", source: "codeburn_cli", observedAt, error: "codeburn_exit_nonzero" };
+        return { ...normalized, status: "partial", warning: "codeburn_shutdown_failed_after_quota_snapshot" };
+      }
       if (type === "report" && normalized && normalized.report && normalized.report.period !== period) {
         return { contract: CONTRACT, status: "invalid", source: "codeburn_cli", observedAt,
           error: normalized.report.period ? "codeburn_period_mismatch" : "codeburn_period_unverified" };

@@ -2,7 +2,7 @@
 
 (function () {
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "3.1.0";
+  var APP_VERSION = "3.2.0";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -40,6 +40,16 @@
   var reloadButton = document.getElementById("reloadButton");
   var autonomousSessionButton = document.getElementById("autonomousSessionButton");
   var autonomousSessionStatusEl = document.getElementById("autonomousSessionStatus");
+  var acceptPlaceholderButton = document.getElementById("acceptPlaceholderButton");
+  var releasePlaceholderButton = document.getElementById("releasePlaceholderButton");
+  var mapPlaceholderGroupButton = document.getElementById("mapPlaceholderGroupButton");
+  var refreshPlaceholderProtectionButton = document.getElementById("refreshPlaceholderProtectionButton");
+  var applyPlaceholderConstraintsButton = document.getElementById("applyPlaceholderConstraintsButton");
+  var placeholderSelectedPropertiesEl = document.getElementById("placeholderSelectedProperties");
+  var placeholderGroupIdEl = document.getElementById("placeholderGroupId");
+  var placeholderDistinctGroupsEl = document.getElementById("placeholderDistinctGroups");
+  var placeholderDisallowOverlapEl = document.getElementById("placeholderDisallowOverlap");
+  var placeholderProtectionStatusEl = document.getElementById("placeholderProtectionStatus");
   var collapseSidebarButton = document.getElementById("collapseSidebarButton");
   var connectorStatusButton = document.getElementById("connectorStatusButton");
   var connectorEmergencyDisableButton = document.getElementById("connectorEmergencyDisableButton");
@@ -77,6 +87,7 @@
   var recoverLastPlanButton = document.getElementById("recoverLastPlanButton");
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
   var runPlanButton = document.getElementById("runPlanButton");
+  var reconcilePlanRunButton = document.getElementById("reconcilePlanRunButton");
   var prepareDevRequestButton = document.getElementById("prepareDevRequestButton");
   var chatHistorySelect = document.getElementById("chatHistorySelect");
   var newChatButton = document.getElementById("newChatButton");
@@ -119,6 +130,7 @@
   var currentPlanSyncAt = 0;
   var currentPlanSyncInFlight = false;
   var lastPlanRunResult = null;
+  var planReconcileInFlight = false;
   var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
@@ -128,6 +140,7 @@
   var panelConnectionId = loadPanelConnectionId();
   var panelConnectionGeneration = 0;
   var autonomousSessionState = null;
+  var placeholderProtectionInFlight = false;
   var panelHeartbeatAt = 0;
   var setupStatusTimer = null;
   var setupStatusUntil = 0;
@@ -239,6 +252,7 @@
   }
 
   function renderAutonomousSession() {
+    renderPlaceholderProtectionControls();
     if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
     var state = autonomousSessionState || {};
     autonomousSessionButton.setAttribute("aria-pressed", state.desiredEnabled ? "true" : "false");
@@ -290,6 +304,67 @@
   function toggleAutonomousSession() {
     var state = autonomousSessionState || {};
     setAutonomousSessionEnabled(!state.desiredEnabled);
+  }
+
+  function renderPlaceholderProtectionControls() {
+    var controls = [acceptPlaceholderButton, releasePlaceholderButton, mapPlaceholderGroupButton,
+      refreshPlaceholderProtectionButton, applyPlaceholderConstraintsButton,
+      placeholderSelectedPropertiesEl, placeholderGroupIdEl, placeholderDistinctGroupsEl, placeholderDisallowOverlapEl];
+    controls.forEach(function (control) {
+      if (control) control.disabled = !running || placeholderProtectionInFlight;
+    });
+    if (!running && placeholderProtectionStatusEl) {
+      placeholderProtectionStatusEl.textContent = "Подключите панель для чтения состояния.";
+    }
+  }
+
+  function placeholderProtectionResponse(error, response) {
+    placeholderProtectionInFlight = false;
+    renderPlaceholderProtectionControls();
+    if (!placeholderProtectionStatusEl || !running) return;
+    if (error || !response || response.ok !== true) {
+      placeholderProtectionStatusEl.textContent = "Ошибка: " + (error && error.message || response && (response.error || response.code) || "Состояние не получено");
+      return;
+    }
+    var accepted = Array.isArray(response.acceptedPlaceholders) ? response.acceptedPlaceholders.length : Number(response.acceptedCount || 0);
+    var groups = Array.isArray(response.groupMappings) ? response.groupMappings.length : 0;
+    var drift = Array.isArray(response.drift) ? response.drift.filter(function (item) { return item.ok !== true; }).length : 0;
+    placeholderProtectionStatusEl.textContent = "Защищено: " + accepted + ". Подтверждённых исходников: " + groups +
+      (drift ? ". Конфликтов текущего состояния: " + drift + "." : ".");
+    if (response.constraints) {
+      if (placeholderDistinctGroupsEl) placeholderDistinctGroupsEl.checked = response.constraints.distinctGroups === true;
+      if (placeholderDisallowOverlapEl) placeholderDisallowOverlapEl.checked = response.constraints.disallowSourceOverlap === true;
+    }
+  }
+
+  function refreshPlaceholderProtection() {
+    if (!running || placeholderProtectionInFlight) return;
+    placeholderProtectionInFlight = true;
+    renderPlaceholderProtectionControls();
+    request("GET", "/placeholder/protection", null, placeholderProtectionResponse);
+  }
+
+  function placeholderProtectionAction(action) {
+    if (!running || placeholderProtectionInFlight) return;
+    var body = { action: action };
+    if (action === "accept") body.useSelectedProperties = !!(placeholderSelectedPropertiesEl && placeholderSelectedPropertiesEl.checked);
+    if (action === "map_group") {
+      body.groupId = String(placeholderGroupIdEl && placeholderGroupIdEl.value || "").trim();
+      if (!body.groupId) {
+        if (placeholderProtectionStatusEl) placeholderProtectionStatusEl.textContent = "Введите подтверждённую группу или исполнителя.";
+        return;
+      }
+    }
+    if (action === "constraints") {
+      body.distinctGroups = !!(placeholderDistinctGroupsEl && placeholderDistinctGroupsEl.checked);
+      body.disallowSourceOverlap = !!(placeholderDisallowOverlapEl && placeholderDisallowOverlapEl.checked);
+    }
+    placeholderProtectionInFlight = true;
+    renderPlaceholderProtectionControls();
+    request("POST", "/placeholder/protection", body, function (error, response) {
+      placeholderProtectionResponse(error, response);
+      if (!error && response && response.ok === true) refreshPlaceholderProtection();
+    });
   }
 
   function getBaseUrl() {
@@ -361,7 +436,7 @@
     var xhr = new XMLHttpRequest();
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0
+    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
     if (body !== null && body !== undefined) {
@@ -732,6 +807,9 @@
     }
     var quota = usageSnapshot.quota || {};
     var windows = quota.quota && quota.quota.windows || [];
+    if (quota.warning) {
+      rows.push({ key: "quota-warning", label: "Quota", value: "Quota snapshot received; CodeBurn failed during shutdown. Treat as partial.", tone: "warning" });
+    }
     if (!windows.length) {
       rows.push({ key: "quota", label: "Quota", value: quota.status || "unavailable", tone: "warning" });
     } else {
@@ -739,7 +817,7 @@
         var remaining = typeof windows[q].remainingPercent === "number"
           ? windows[q].remainingPercent + "% remaining"
           : typeof windows[q].usedPercent === "number" ? windows[q].usedPercent + "% used" : "remaining unknown";
-        rows.push({ key: "quota-" + q, label: "Quota", value: (windows[q].provider || "provider") + " · " + remaining + (windows[q].resetAt ? " · reset " + windows[q].resetAt : ""), tone: windows[q].status === "ok" ? "ready" : "warning" });
+        rows.push({ key: "quota-" + q, label: "Quota", value: (windows[q].provider || "provider") + " · " + remaining + (windows[q].resetAt ? " · reset " + windows[q].resetAt : ""), tone: windows[q].status === "ok" && !quota.warning ? "ready" : "warning" });
       }
     }
     rows.push({ key: "granularity", label: "Granularity", value: "Models and projects are independent aggregates; no model × project inference.", tone: "" });
@@ -2639,6 +2717,7 @@
   }
 
   function updateChatAvailability() {
+    renderPlanReconciliationControl();
     sendChatButton.disabled = chatInFlight || !selectedAgentReady();
     var hardcoreMode = chatModeEl.value === CHAT_MODE_HARDCORE;
     var hasPlan = !!(lastPlanResult && lastPlanResult.plan);
@@ -3212,11 +3291,12 @@
       if (!lastAcceptedDryRun.runId || !lastAcceptedDryRun.planKey) lastAcceptedDryRun = null;
     }
     window.__aeAgentLastAcceptedDryRun = lastAcceptedDryRun;
+    renderPlanReconciliationControl();
   }
 
   function showPlanRunFinishedStatus(dryRun, run, failed) {
     var label = dryRun ? "Dry run" : "Run";
-    var ok = run && run.ok && !failed;
+    var ok = run && !planRunNeedsReview(run) && !failed;
     var validation = lastPlanResult && lastPlanResult.planValidation ? lastPlanResult.planValidation : null;
     var mutatingCount = validation ? Number(validation.mutatingCount || 0) : 0;
     var tone = ok ? (mutatingCount > 0 ? "mutating" : "read-only") : "blocked";
@@ -3241,16 +3321,72 @@
     return parts.join("\n");
   }
 
+  function planRunNeedsReview(run) {
+    if (!run || !run.ok) return true;
+    var outcome = run.outcome;
+    return Boolean(outcome && (outcome.mutation && (outcome.mutation.status === "unknown" || outcome.mutation.status === "failed") || outcome.verification && outcome.verification.status !== "passed" && outcome.verification.status !== "not_required"));
+  }
+
+  function formatRunOutcome(outcome) {
+    if (!outcome) return "";
+    var execution = { not_started: "не началось", completed: "завершено", failed: "завершилось ошибкой", unknown: "результат неизвестен" };
+    var mutation = { not_started: "не начались", applied: "выполнены", unknown: "результат неизвестен — требуется сверка", failed: "завершились ошибкой", not_requested: "не планировались" };
+    var verification = { not_required: "не требовалась", pending: "не завершена", passed: "пройдена", failed: "не прошла", insufficient: "не хватает доказательств" };
+    var lines = [];
+    if (outcome.execution) lines.push("Выполнение: " + (execution[outcome.execution.status] || outcome.execution.status));
+    if (outcome.mutation) {
+      var counts = outcome.mutation.counts;
+      var noMutations = counts && !Number(counts.applied || 0) && !Number(counts.unknown || 0) && !Number(counts.failed || 0) && !Number(counts.not_started || 0);
+      lines.push("Изменения: " + (noMutations ? "не планировались" : mutation[outcome.mutation.status] || outcome.mutation.status));
+    }
+    if (outcome.verification) lines.push("Проверка: " + (verification[outcome.verification.status] || outcome.verification.status));
+    if (outcome.coverage) lines.push("Охват доказательств: " + ({complete:"полный",incomplete:"неполный",not_required:"не требовался"}[outcome.coverage.status] || outcome.coverage.status));
+    var original = outcome.execution && outcome.execution.originalError;
+    if (original) lines.push("Исходная ошибка: " + (original.code || "") + (original.message ? " — " + original.message : ""));
+    return lines.join("\n");
+  }
+
+  function renderPlanReconciliationControl() {
+    if (!reconcilePlanRunButton) return;
+    var run = lastPlanRunResult;
+    reconcilePlanRunButton.disabled = !running || chatInFlight || planReconcileInFlight || !run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0);
+    reconcilePlanRunButton.textContent = planReconcileInFlight ? "Сверяю..." : "Сверить результат";
+  }
+
+  function reconcileLastPlanRun() {
+    var run = lastPlanRunResult;
+    if (!running || chatInFlight || planReconcileInFlight || !run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0)) return;
+    var runId = run.id;
+    planReconcileInFlight = true;
+    chatInFlight = true;
+    updateChatAvailability();
+    request("POST", "/tools/call", {name:"reconcile_plan_run",arguments:{runId:runId}}, function (error, response) {
+      planReconcileInFlight = false;
+      chatInFlight = false;
+      updateChatAvailability();
+      if (!running) return;
+      var result = null;
+      try { if (response && response.result && !response.result.isError) result = JSON.parse(response.result.content[0].text); } catch (_parseError) {}
+      if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); return; }
+      var lines = ["Сверка запуска " + runId + ": " + (result.status === "reconciled" ? "завершена" : "не завершена")];
+      var names = {applied:"ожидаемые значения подтверждены",not_applied:"изменение не применено",unknown:"результат неизвестен"};
+      (result.steps || []).forEach(function (step) { lines.push("Шаг " + step.index + " (" + step.tool + "): " + (names[step.mutationStatus] || step.mutationStatus)); });
+      if (result.reasonCode) lines.push("Причина: " + result.reasonCode);
+      lines.push("Сверка выполнена без повторных изменений. Исходный результат запуска сохранён.");
+      if (lastPlanRunResult && lastPlanRunResult.id === runId) lastPlanRunResult.reconciliation = result;
+      appendChatMessage("assistant", lines.join("\n"));
+    });
+  }
+
   function formatPlanRun(run) {
     if (!run) return "No run result.";
     var lines = [];
     var runValidation = run.validation || null;
     var runSteps = run.steps && typeof run.steps.push === "function" ? run.steps : [];
     var runMutatingCount = runValidation ? Number(runValidation.mutatingCount || 0) : 0;
-    lines.push((run.dryRun ? "Dry run" : "Run") + ": " + (run.ok ? "ok" : "needs review"));
+    lines.push((run.dryRun ? "Проверка плана" : "Результат запуска") + ": " + (planRunNeedsReview(run) ? "требуется проверка" : "готов"));
     if (run.outcome) {
-      lines.push("Проверка: " + run.outcome.verification.status);
-      if (run.outcome.coverage) lines.push("Охват доказательств: " + run.outcome.coverage.status);
+      lines.push(formatRunOutcome(run.outcome));
     }
     if (!run.ok && diagnosticFromBody({ run: run })) {
       lines.push(formatM100DiagnosticBody({ run: run }, run.error || "Run failed."));
@@ -3807,6 +3943,7 @@
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
         refreshAutonomousSession();
+        refreshPlaceholderProtection();
       }
 
       if (response && response.command) {
@@ -3894,6 +4031,11 @@
   diagnosticsButton.addEventListener("click", toggleDiagnostics);
   reloadButton.addEventListener("click", reloadApp);
   if (autonomousSessionButton) autonomousSessionButton.addEventListener("click", toggleAutonomousSession);
+  if (acceptPlaceholderButton) acceptPlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("accept"); });
+  if (releasePlaceholderButton) releasePlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("release"); });
+  if (mapPlaceholderGroupButton) mapPlaceholderGroupButton.addEventListener("click", function () { placeholderProtectionAction("map_group"); });
+  if (applyPlaceholderConstraintsButton) applyPlaceholderConstraintsButton.addEventListener("click", function () { placeholderProtectionAction("constraints"); });
+  if (refreshPlaceholderProtectionButton) refreshPlaceholderProtectionButton.addEventListener("click", refreshPlaceholderProtection);
   collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
   if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
   if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
@@ -3944,6 +4086,7 @@
   runPlanButton.addEventListener("click", function () {
     runLastPlan(false);
   });
+  if (reconcilePlanRunButton) reconcilePlanRunButton.addEventListener("click", reconcileLastPlanRun);
   if (prepareDevRequestButton) prepareDevRequestButton.addEventListener("click", prepareDevRequest);
   newChatButton.addEventListener("click", startNewChat);
   clearChatButton.addEventListener("click", clearActiveChat);

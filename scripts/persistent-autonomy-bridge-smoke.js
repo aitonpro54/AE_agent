@@ -9,7 +9,7 @@ async function main() {
     let status = await request("/autonomy/session");
     assert.strictEqual(status.body.session.desiredEnabled,false);
     await pollPanel(fixture,{panelConnectionId:"persistent-panel",panelGeneration:"1"});
-    assert.strictEqual((await request("/autonomy/session",{enabled:true,panelConnectionId:"persistent-panel",panelGeneration:"1"})).body.session.active,true);
+    assert.strictEqual((await request("/autonomy/session")).body.session.active,true,"new preference enables on first panel poll");
     await pollPanel(fixture,{panelConnectionId:"persistent-panel",panelGeneration:"2"});
     assert.strictEqual((await request("/autonomy/session")).body.session.active,true,"reload reconnect without enable");
     assert.strictEqual((await pollPanel(fixture,{panelConnectionId:"stranger",panelGeneration:"3"})).status,409);

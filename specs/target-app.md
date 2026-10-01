@@ -6,7 +6,7 @@ Build this repository into AE Agent, a local After Effects AI panel that combine
 
 The panel remains a client of the local bridge daemon. The daemon remains the owner of provider access, chat calls, AE plan validation, execution gates, logs, checkpoints, and edit-session protection.
 
-Current release baseline: 3.1.0. M7 acceptance requires exact composite identity,
+Current development version: 3.2.0 (draft release). Inherited M7 acceptance requires exact composite identity,
 preflight-before-write, project/checkpoint binding, receipt-v2 lifecycle checks,
 persistent autonomy with trusted CEP reconnect, and separate manual gates for raw JSX,
 destructive operations, and named save. Generated-only live proof is recorded in
@@ -15,7 +15,7 @@ destructive operations, and named save. Generated-only live proof is recorded in
 ## Product Shape
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
-- The visible product title format is `AE Agent 3.1.0` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
+- The visible product title format is `AE Agent 3.2.0` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
 - The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.
@@ -26,7 +26,7 @@ destructive operations, and named save. Generated-only live proof is recorded in
 - Agent mode shows planned steps with success/error/ready states and concrete backend results.
 - Agent Hardcore is the autonomous project-owner mode: it uses the highest configured reasoning effort, can still expose manual `Dry run / Проверить` and `Выполнить план` controls for the latest plan, reports local 5-hour task-window and context estimates after operations, and keeps execution inside bridge safety gates.
 - Valid Agent-mode plans expose inline `Dry run / Проверить` and `Выполнить план` actions in the chat message, wired to the same validated plan runner and safety gates as the persistent composer controls.
-- The bridge section exposes a user-gesture `Автономная сессия Codex · 20 мин` control. Its in-memory lease lets the official MCP adapter execute only server-proposed typed mutating plans while checkpoint/edit-session, idempotency, preflight, and read-back protection stay active. The lease is bound to the current CEP connection generation, never exposes execution authority to MCP, and does not cover direct mutations, destructive tools, raw JSX, or Hardcore sessions.
+- The bridge section exposes a persistent `Автономная сессия Codex` control. With no saved preference, the first authenticated CEP connection enables it by default; an explicit off remains off until re-enabled. The official MCP adapter may execute only server-proposed typed mutating plans while checkpoint/edit-session, idempotency, preflight, and read-back protection stay active. Authority requires a fresh trusted CEP connection and never exposes execution tokens to MCP. It does not cover direct mutations, destructive tools, raw JSX, or Hardcore sessions.
 - When an Agent plan or run shows a typed-tool gap, raw ExtendScript workaround, failed run, or semantic verification issue, the panel can prepare a targeted dev-request bundle for Codex App instead of continuing repository development inside the AE chat. In Agent Hardcore, failed TypedTools are marked as not working with a Codex App start prompt, while the session may continue the AE task through a narrow raw ExtendScript fallback only after the normal dry-run gate.
 
 ## ChatGPT Subscription Model Access

@@ -98,10 +98,21 @@ async function main() {
     assert.deepStrictEqual(preview.solutionReuse.declaredSolutionIds, [solutionId]);
     const unconfirmed = await call("run_ai_agent_plan", {plan: built.plan, dryRun: false, confirm: true, allowMutations: true}, true);
     assert.strictEqual(unconfirmed.ok, false);
-    assert.strictEqual(unconfirmed.code, "proposal_required");
+    assert.strictEqual(unconfirmed.code, "proposal_required", JSON.stringify({code:unconfirmed.code,
+      errorCode:unconfirmed.errorCode,error:unconfirmed.error,executedCount:unconfirmed.executedCount,
+      outcome:unconfirmed.outcome}).slice(0, 2000));
     const forgedConfirmation = await call("run_ai_agent_plan", {actionId: proposed.proposal.actionId, dryRun: false, confirm: true,
       allowMutations: true, confirmationToken: "pretend-user-token", confirmedBySurface: "cep-panel"}, true);
     assert.strictEqual(forgedConfirmation.code, "proposal_required");
+    const proposalRun = {actionId: proposed.proposal.actionId, payloadHash: proposed.proposal.action.payloadHash,
+      previewHash: proposed.proposal.action.previewHash, riskLevel: proposed.proposal.risk.level,
+      riskPolicyVersion: proposed.proposal.confirmation.riskPolicyVersion, dryRun: false};
+    for (const field of ["actionId", "payloadHash", "previewHash", "riskLevel", "riskPolicyVersion"]) {
+      const incomplete = {...proposalRun}; delete incomplete[field];
+      const blocked = await withProjectPanel(port, env.AE_BRIDGE_PANEL_TOKEN,
+        () => call("run_ai_agent_plan", incomplete, true));
+      assert.strictEqual(blocked.code, "proposal_required", `Missing ${field} must stop before AE reads.`);
+    }
     for (const dryRun of [false, "true", undefined]) {
       const legacy = await legacyDirectCall({actionId: proposed.proposal.actionId, dryRun, confirm: true, allowMutations: true});
       assert(legacy.result.isError, "Legacy direct route must require the literal dryRun:true.");
