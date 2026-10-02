@@ -1,6 +1,6 @@
 # Этап 2: детерминированный монтажный конвейер
 
-Статус: **not_started**; подготовлен план будущего этапа, реализация не начата.
+Статус: **in_progress**; M1–M4 разрешены, M5 и этап 3 исключены.
 Baseline для планирования: `codex/production-usage`, HEAD `50d5cd66014f4778f6e994dbd4ebe61e488111d8` (2026-10-02).
 Перед реализацией сверить текущие HEAD/status и основной [план](target-app-execplan.md); чужие изменения сохранять.
 Контракты: [монтаж](../docs/montage-workflow.md), [завершение поручения](../docs/ae-task-completion.md).
@@ -163,11 +163,32 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- 2026-10-02: старт M1–M4 от `beadf24` на `codex/production-usage`; tracked baseline чистый,
+  чужие untracked материалы сохранены. Sol/ultra уточняет архитектуру, Flash/high реализует
+  M1 отдельным offline блоком. Текущий AEP и live runtime не используются.
+- M1 завершён: strict manifest/readiness, native observation binding, coverage и bounded
+  contracts; existing usage/framing/builder reused. Prepared catalog revision сохраняется
+  отдельно. Public API и execution отсутствуют; следующий блок — M2.
 - 2026-10-02: план подготовлен; M1–M5 и live acceptance не начаты. Реальные монтажные
   входы/frameCoverage подтверждаются отдельным поручением, не извлечены из старого AEP.
 
 ## Decision Log
 
+- Архитектура M1: pure validator и синтетические fixtures без public API. Hard ceilings:
+  scenes/assignments/materials/groups 32, route 4, shots/assignment 12, frames 768,
+  dependency edges 512, graph nodes 5000, manifest/materials 256 KiB, snapshot 4 MiB,
+  plan 50 steps; file 512 MiB, total material reads 2 GiB/32 requests. Caller только снижает.
+  Unknown footprint, неполное покрытие и неподдержанные маршруты блокируют readiness.
+- Первый Flash draft M1 и первое исправление не приняты: независимые actual-module
+  контрпримеры выявили false readiness и contract drift. Отдельный correction2 требует
+  real-shaped native inventory/usage, обязательных route/material/group/dependency bindings.
+  Terminal success и smoke исполнителя не заменяют milestone acceptance; commit M1 до исправления не создаётся.
+- После correction2 сверены completed/exited и отсутствие writer claim; оставшиеся native source/route
+  false readiness переданы `ae_specialist` (Sol/xhigh). Архитектурная роль остаётся read-only;
+  текущая модель чата и пользовательские материалы не менялись.
+- M1 accepted subset: distinct groups, non-overlapping ranges, static 2D/PAR1 и полный
+  target/route footprint. Balanced repeats возвращают unsupported blocker без waiver;
+  unknown source/route/material/graph не даёт ready. Pure snapshot proof не live freshness.
 - Additive compiler: малая миграция, прежние per-target guards/receipts. Multi-target builder
   требует миграции singular metadata/gates; отдельный runner/расширение newspaper slideshow дороже и не нужны.
 - Unsupported/shared случаи — bounded gaps M5; не клонировать comps/обходить server policy.
@@ -176,5 +197,9 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Validation
 
+- M1: 226 actual-module synthetic cases и 20 независимых root counterexamples PASS;
+  `check:rules`, syntax шести новых JS, `git diff --check` PASS. Source/route/path/fps,
+  aliases/duplicates, material revision/hash, coverage, malformed/budgets и неизвестные
+  footprint проверены offline. AEP/live/provider/frozen/dependencies не затронуты.
 - Документ: HEAD/branch, bounded module/schema/doc reads; scoped diff check без whitespace errors.
 - Product suites, модели, live/provider/config/frozen changes и commits не выполнялись; реализация не проверялась.

@@ -168,12 +168,16 @@ Rules/semantic65+43+73/property/generated-safety/portablePNG/library/planbuilder
 
 ### Progress
 
-Этап1 завершён: workflow/skills65d2379, full/summary/evidence7ae3522, completion50d5cd6. Контракты: docs/{montage-workflow,compact-plan-results,ae-task-completion,ae-skills-contract-audit}.md. По поручению пользователя подготовлены планы этапов2/3: plans/{montage-pipeline,agy-bridge-reliability}-execplan.md; старт нового чата: docs/optimization-stage-2-start.md. Реализация2/3 не начата.
+Этап1 завершён: workflow/skills65d2379, full/summary/evidence7ae3522, completion50d5cd6. Контракты: docs/{montage-workflow,compact-plan-results,ae-task-completion,ae-skills-contract-audit}.md. Этап2 M1 завершён: strict manifest/readiness, native bindings/coverage, prepared revision; M2–M4 выполняются по plans/montage-pipeline-execplan.md. Этап3 не начат; M5 и live acceptance вне текущего scope.
 
 ### Decision Log
 
 Full по умолчанию; полная проверка до сокращения, recorded≠fresh, unknown требует сверки. AE gates/маршрут сохранены; AEP/frozen/global/общий agy не менялись.230 exact grants:8 offline commands+1 read-only evidence. Flash потерял provider socket после code/tests; процесс завершён, Sol/high завершил прежние блоки2–3 в том же scope. Verifier drift удалён; insufficient/pass assertion уточнён по HEAD proof без изменения verifier. Changed без before proof неизвестен; PNG/declaration≠task acceptance. Этап2 — AE Agent/offline, этап3 — отдельный repo/scope; handoff создан только по явной просьбе о новом чате, scopes не объединяются.
 
+Этап2 M1: Flash draft и две corrections проверены, remaining false readiness устранены Sol/xhigh после exited/claim-null. Existing usage/framing/builders сохранены; balanced repeats V1 явно unsupported, неизвестные native/material/route/footprint блокируют readiness. Внешние grants только exact project files/commands с backup/other-fields equality; глобальные права не менялись.
+
 ### Validation
 
 Этап1: rules/diff/skills fields/links PASS; quick_validate недоступен(PyYAML), deps неизменны. Compact:6 counterexamples+actual modules/HTTP/runner/parity/persistence/replay/numeric/Unicode PASS;20steps132153→12249bytes≤12KiB. Completion23groups PASS, large receipts/сменаhash/unknown; реальная failed AGY metadata=failed/unknown, exit1 ожидаем. Idle daemon21508/sourceSHA69d6616c/connected/on/queues0/editnull проверен исторически; AEP commands0. Подготовка этапов2/3: текущие builders и audit agybe1a3b0 сверены, doc/rules/diff checks; code/live/provider не запускались. Расход измерять на следующем порученном монтаже.
+
+Этап2 M1: 226 actual-module offline cases + 20 независимых counterexamples, rules/six JS syntax/diff PASS. Native source/path/fps/route/group/geometry, dependency/coverage, alias/duplicate/material revision и budgets/malformed проверены; public API/live proof отсутствуют. Текущий AEP не читался и не менялся.

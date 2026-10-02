@@ -56,6 +56,7 @@
     "review:candidates": "node scripts/solution-candidate-review.js",
     "smoke:frozen-intake": "node scripts/frozen-intake-smoke.js",
     "smoke:network-boundary": "node scripts/network-boundary-smoke.js && node scripts/http-response-regression-smoke.js && node scripts/hardcore-authority-smoke.js",
-    "smoke:plan-run-recovery": "node scripts/run-outcome-smoke.js && node scripts/plan-run-reconciliation-smoke.js && node scripts/plan-run-recovery-jsx-smoke.js && node scripts/plan-run-recovery-panel-smoke.js && node scripts/plan-run-recovery-bridge-smoke.js"
+    "smoke:plan-run-recovery": "node scripts/run-outcome-smoke.js && node scripts/plan-run-reconciliation-smoke.js && node scripts/plan-run-recovery-jsx-smoke.js && node scripts/plan-run-recovery-panel-smoke.js && node scripts/plan-run-recovery-bridge-smoke.js",
+    "smoke:montage-manifest": "node scripts/montage-manifest-smoke.js"
   }
 }
