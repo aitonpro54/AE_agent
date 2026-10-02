@@ -9,12 +9,14 @@ const http = require("http");
 const {spawn} = require("child_process");
 const {buildSolutionPlan, getBuilderContract} = require("../mcp-server/solution-plan-builder");
 const {withProjectPanel, isProjectInfo, PROJECT_FILE, panelRoute, completeCommand} = require("./fake-project-panel");
+const records = require("../mcp-server/plan-run-records");
+const views = require("../mcp-server/plan-run-response");
 const {isolatedEnvironment} = require("./network-test-fixture");
 const root = path.resolve(__dirname, "..");
 const port = 28000 + Math.floor(Math.random() * 10000);
 const token = "isolated-solution-run-test";
 const panelToken = `${token}-panel`;
-const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-solution-run-"));
+const runtime = fs.mkdtempSync(path.join(os.tmpdir(), "ae-response-integration-"));
 fs.writeFileSync(path.join(runtime, "edit-session-active.json"), JSON.stringify({
   id: "synthetic-active-session", status: "active", startedAt: new Date().toISOString(),
   checkpoint: {sourceFile: PROJECT_FILE}, operations: []
@@ -46,17 +48,39 @@ async function main() {
       await pause(100);
     }
     assert(ready, stderr);
+    const catalog = (await request("/tools")).tools;
+    assert(catalog.find(t => t.name === "run_ai_agent_plan").inputSchema.properties.responseView.enum.includes("summary"));
+    assert(catalog.find(t => t.name === "get_plan_run_evidence").inputSchema.required.includes("runId"));
+    const noCommands = (await request("/health")).pending;
+    const invalid = await request("/agents/plan/run", {responseView:"invalid", plan:{summary:"Read-only synthetic project info",steps:[{tool:"get_project_info",args:{}}]}}, panelToken);
+    assert.equal(invalid.errorCode || invalid.code, "response_view_invalid", JSON.stringify(invalid));
+    assert.equal((await request("/health")).pending, noCommands);
+    assert(!fs.existsSync(path.join(runtime,"evidence","plan-runs")));
+    for (const dryRun of [true, false]) {
+      const {run} = await withProjectPanel(port, panelToken, () => request("/agents/plan/run", {dryRun, confirm:true, responseView:"summary",plan:{summary:"Read-only synthetic project info",steps:[{tool:"get_project_info",args:{}}]}}, panelToken));
+      const canonical = records.readRecord(runtime, run.id, {throwOnError:true});
+      assert.deepStrictEqual(run, JSON.parse(JSON.stringify(views.projectPlanRunSummary(canonical.run))));
+      assert.equal(canonical.run.responseView, undefined);
+      assert.equal(canonical.run.dryRun,dryRun);
+      assert.equal(run.ok,true,JSON.stringify(run));
+      if (!dryRun) assert.equal(canonical.run.steps[0].status,"completed");
+    }
+    const parity = new Map();
     const id = "ar-distributekeyframesevenly-typed-plan";
-    for (const mode of ["exact", "stale", "wrong-after"]) {
+    for (const [mode, responseView] of [["exact", undefined],["exact","summary"],["wrong-after",undefined],["wrong-after","summary"]]) {
       const built = buildSolutionPlan(id, getBuilderContract(id).example);
       assert(built.ok);
       const proposalResult = await withProjectPanel(port, panelToken,
         () => request("/agents/plan/propose", {plan: built.plan}, panelToken));
       const proposal = proposalResult.proposal;
       assert(proposal, JSON.stringify(proposalResult));
+      const invalidProposal = await request("/agents/plan/run", {actionId:proposal.actionId,responseView:"invalid"}, panelToken);
+      assert.equal(invalidProposal.errorCode || invalidProposal.code,"response_view_invalid");
       const preview = await withProjectPanel(port, panelToken,
-        () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true}, panelToken));
+        () => request("/agents/plan/run", {actionId: proposal.actionId, dryRun: true, responseView}, panelToken));
       assert(preview.run.ok);
+      const dryRecord = records.readRecord(runtime, preview.run.id, {throwOnError:true});
+      assert.deepStrictEqual(preview.run, responseView ? JSON.parse(JSON.stringify(views.projectPlanRunSummary(dryRecord.run))) : dryRecord.run);
       let completed = false;
       let keyWrites = 0;
       let reads = 0;
@@ -64,7 +88,7 @@ async function main() {
         actionId: proposal.actionId, payloadHash: proposal.action.payloadHash, previewHash: proposal.action.previewHash,
         riskLevel: proposal.risk.level, riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
         confirmationToken: proposal.confirmation.confirmationToken, confirmedBySurface: proposal.confirmation.surface,
-        dryRun: false, confirm: true, allowMutations: true
+        dryRun: false, confirm: true, allowMutations: true, responseView
       }, panelToken).finally(() => {completed = true;});
       running.catch(() => {}); // A failing panel assertion kills this isolated daemon in finally.
       while (!completed) {
@@ -110,15 +134,30 @@ async function main() {
       } else {
         assert.strictEqual(keyWrites, 2);
         assert.strictEqual(run.solutionPlanReadBack.status, mode === "exact" ? "passed" : "failed");
-        // Preserve native evidence: exact solution read-back does not cover
-        // every semantic mutation invariant in this bounded fake-panel fixture.
+        // Preserve the existing full pipeline: this fixture's native semantic
+        // coverage is incomplete even when solution-plan read-back passes.
         assert.strictEqual(run.outcome.verification.status, mode === "exact" ? "insufficient" : "failed");
-        if (mode === "exact") {
-          assert.strictEqual(run.semanticVerification.status, "needs_review");
-          assert.strictEqual(run.semanticVerification.coverageStatus, "incomplete");
-          assert(run.semanticVerification.unverifiedMutationCount > 0 || run.semanticVerification.needsReviewChecks > 0);
-        }
       }
+      const canonical = records.readRecord(runtime, run.id, {throwOnError:true});
+      assert.deepStrictEqual(run, responseView ? JSON.parse(JSON.stringify(views.projectPlanRunSummary(canonical.run))) : canonical.run);
+      assert(canonical.run.validation, "Canonical response must retain full validation before projection");
+      assert(canonical.run.outcome.mutation.steps, "Native full outcome retained");
+      const evidenceResult = await request("/tools/call", {name:"get_plan_run_evidence",arguments:{runId:run.id,stepIndex:1}});
+      assert(!evidenceResult.result.isError,JSON.stringify(evidenceResult));
+      assert.equal(JSON.parse(evidenceResult.result.content[0].text).fresh,false);
+      const comparison = {writes:keyWrites,reads,nativeResults:canonical.run.steps.map(s=> {
+        const result = JSON.parse(JSON.stringify(s.result));
+        if (result && result.idempotency) {
+          // Per-run receipt identities vary; compare the execution and replay contract.
+          delete result.idempotency.key; delete result.idempotency.firstEventId; delete result.idempotency.recordedAt;
+        }
+        return result;
+      }), semantic:canonical.run.semanticVerification, outcome:canonical.run.outcome};
+      if (responseView) assert.deepStrictEqual(comparison,parity.get(mode)); else parity.set(mode,comparison);
+      const beforeReplay = (await request("/health")).pending;
+      const replay = await request("/agents/plan/run", {actionId:proposal.actionId,dryRun:false,responseView:responseView?"full":"summary"},panelToken);
+      assert.equal(replay.errorCode || replay.code,"m100_confirmation_replayed",JSON.stringify(replay));
+      assert.equal((await request("/health")).pending,beforeReplay);
       const events=fs.readFileSync(path.join(runtime,"bridge-events.jsonl"),"utf8").trim().split(/\r?\n/).map(JSON.parse);
       const slice=require("../mcp-server/review-evidence").linkedEventSlice(events,{runIds:[run.id]});
       assert(slice.some(event=>event.type==="tool_call_finished"));
@@ -133,7 +172,11 @@ async function main() {
       assert(slice.filter(event=>event.type==="plan_step_evidence").every(event=>event.details.verificationSubjectRunId===run.id));
       assert(!slice.some(event=>event.details.runId && event.details.runId!==run.id && event.details.actionId!==proposal.actionId));
     }
-    console.log(JSON.stringify({ok: true, isolatedRunner: true, exactPass: true, staleBlockedBeforeWrite: true, wrongAfterFails: true, linkedEvidence:true, outcomeAxes:true, liveAeCommands:0}));
-  } finally {daemon.kill();}
+    console.log(JSON.stringify({ok:true,isolatedRunner:true,fullSummaryNativeParity:true,invalidBeforeCommands:true,dryReadOnlyPersisted:true,canonicalAfterVerification:true,replayRejected:true,liveAeCommands:0}));
+  } finally {
+    daemon.kill();
+    await new Promise(resolve => { if (daemon.exitCode !== null) resolve(); else daemon.once("exit",resolve); });
+    fs.rmSync(runtime,{recursive:true,force:true});
+  }
 }
 main().catch((error) => {console.error(error.stack); process.exitCode = 1;});

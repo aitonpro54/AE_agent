@@ -16,6 +16,7 @@ const placeholderPlanContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
+const planRunResponse = require("./plan-run-response");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
@@ -6666,6 +6667,7 @@ async function runValidatedAgentPlan(options, executionContext) {
 }
 
 async function runValidatedAgentPlanWithEvidence(options, executionContext) {
+  const responseView = planRunResponse.assertValidResponseView(options && options.responseView);
   options = resolveM100PlanRunOptions(options || {});
   const autonomous = executionContext && executionContext.autonomousSession
     && executionContext.autonomousSession.authorized === true
@@ -6751,8 +6753,8 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   };
   const runRecord = {schema:"ae-agent-plan-run-record.v1",runId:run.id,createdAt:run.startedAt,
     plan:prepared.plan,project:{file:expectedProject},run};
-  const persistRun = (item) => {
-    if (run.dryRun || validation.mutatingCount === 0) return;
+  const persistRun = (item, isFinal = false) => {
+    if (!isFinal && (run.dryRun || validation.mutatingCount === 0)) return;
     runRecord.project = {file:run.project && (run.project.expectedFile || run.project.actualFile) || expectedProject};
     runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
     planRunRecords.writeRecord(LOG_DIR,runRecord);
@@ -6885,8 +6887,8 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
       failedCount: run.failedCount, verification: diagnostic.verification
     };
-    try { persistRun(); } catch (_error) { run.recordWarning="run_record_update_failed"; }
-    return run;
+    try { persistRun(null, true); } catch (_error) { run.recordWarning="run_record_update_failed"; }
+    return responseView === "summary" ? planRunResponse.projectPlanRunSummary(run) : run;
   }
 
   if (!validation.ok) {
@@ -9282,9 +9284,40 @@ const tools = [
         maxSteps: {
           type: "number",
           description: "Maximum steps to consider. Defaults to 20."
+        },
+        responseView: {
+          type: "string",
+          enum: ["summary", "full"],
+          description: "Optional response representation. Defaults to 'full' for exact backward compatibility. Set to 'summary' for compact, bounded projection preserving execution/mutation/verification/acceptance outcome, counters, step statuses, repair directives, and evidence references without raw property trees or command histories."
         }
       },
       required: []
+    }
+  },
+  {
+    name: "get_plan_run_evidence",
+    description: "Read-only addressable retrieval of recorded plan run evidence or step evidence artifact from the evidence store. Validates run UUID, step index, containment, integrity hashes, and bindings without calling After Effects.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        runId: {
+          type: "string",
+          description: "Server plan run UUID."
+        },
+        stepIndex: {
+          type: "integer", minimum: 1,
+          description: "Optional 1-based step index to retrieve step evidence artifact. When omitted, returns the canonical full plan run document."
+        },
+        offset: {
+          type: "integer", minimum: 0,
+          description: "Character offset into the text document for paging. Defaults to 0."
+        },
+        limitChars: {
+          type: "integer", minimum: 1, maximum: 12000,
+          description: "Maximum characters to return in the text page. Defaults to 6000, maximum 12000."
+        }
+      },
+      required: ["runId"]
     }
   },
   {
@@ -13533,6 +13566,16 @@ async function callTool(name, args, executionContext) {
       const diagnostic = obstacleEvent({operation: name, proposalId: args.actionId, code: error.code || "plan_run_rejected", phase: "preflight"});
       try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); } catch (_logError) {}
       return toolResult({ok: false, code: diagnostic.code, errorCode: diagnostic.code, error: error.message || String(error), project: error.project || null}, true);
+    }
+  }
+
+  if (name === "get_plan_run_evidence") {
+    try {
+      const evidence = planRunResponse.getPlanRunEvidence(LOG_DIR, args || {});
+      return toolResult(evidence, false);
+    } catch (error) {
+      const code = error.code || "get_plan_run_evidence_failed";
+      return toolResult({ ok: false, code, errorCode: code, error: error.message || String(error) }, true);
     }
   }
 
@@ -21528,7 +21571,8 @@ module.exports = {
       async () => { prepared.result = await callTool(name, args); }));
     return prepared;
   },
-  requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult, validateCachedPngReplay, buildServerSemanticVerification
+  requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult, validateCachedPngReplay, buildServerSemanticVerification,
+  callTool
 };
 
 if (require.main === module) {

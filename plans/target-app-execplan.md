@@ -168,12 +168,12 @@ Rules/semantic65+43+73/property/generated-safety/portablePNG/library/planbuilder
 
 ### Progress
 
-Блок1: docs/montage-workflow.md, AGENTS и routing закрепляют три основных поручения, manifest и заранее заданные кадры; AE skills проверены/уточнены. Блок2compact/evidence в реализации; блок3сводка AGY впереди.
+Блок1contract/AEskills принят65d2379. Блок2: defaultfull +summary после полного verifier, canonical/paged recorded evidence со stable IDs и строгими hash/bindings/realpaths принят offline. Блок3сводка AGY впереди; docs/compact-plan-results.md описывает API.
 
 ### Decision Log
 
-Defaultfull/APIbackcompat, полная проверка доprojection, recorded evidence≠freshread, unknown безreplay. ТолькоAEAgent; agy-bridge/plugin cache/frozen/providers/текущийAEP не менять.229exactprojectgrants для8новыхofflinechecks, остальныеполя/auth/global unchanged. Skill backups/hashes ignoredlocal; handoff не создаётся.
+Defaultfull/APIbackcompat, полная проверка доprojection, recorded≠fresh, unknown безreplay. ТолькоAEAgent, AEP/frozen/global/agy unchanged.229exactgrants для8offlinechecks. Flashprovider socket закрыт послеcode/tests; PID2716gone, Solhighfallback завершил2. Посторонний Flashverifier drift удалён; preexisting insufficient/pass assertion исправлена по HEAD proof, nativeverifier unchanged. Skill backups ignored, nohandoff.
 
 ### Validation
 
-Блок1: rules/diff PASS, skill frontmatter неизменен и поля/ссылки сверены; quick_validate unavailable(PyYAML), deps unchanged. Nativeavailability/экономия не заявлены. Compact/evidence и завершение AGY — следующие блоки.
+Блок1rules/diff/skillfrontmatter+fields+links PASS; quick_validate unavailable(PyYAML), deps unchanged. Блок2root6counterexamples +actualmodule/isolatedHTTP/runner/parity/default/persistence/replay/numeric/Unicode PASS;20step132153→12249bytes<=12KiB. Rules/semantic/recovery/review/node/diff PASS. No liveAE/экономия claims;3completion впереди.
