@@ -1,5 +1,7 @@
 "use strict";
 
+const { isValidStretch, desiredStartTime, isGridAligned, sourceAtRoot, EPSILON } = require("./placeholder-timing");
+
 const isId = (value) => Number.isSafeInteger(value) && value > 0;
 const isTime = (value) => typeof value === "number" && Number.isFinite(value);
 const fail = (code) => ({ ok: false, code, plan: null });
@@ -53,15 +55,17 @@ function buildPlaceholderPlan(input) {
   if (!Array.isArray(route) || route.length > 4) return fail("invalid_route");
   if (!targetLayer || !isId(targetLayer.id) || !isId(targetLayer.index) || !isId(targetLayer.sourceItemId)
     || !targetLayer.name || targetLayer.locked !== false || targetLayer.timeRemapEnabled !== false
-    || targetLayer.stretch !== 100) return fail("unsupported_target_layer");
+    || !isValidStretch(targetLayer.stretch)) return fail("unsupported_target_layer");
   if (!sourceItem || !isId(sourceItem.itemId) || !isId(sourceItem.itemIndex) || !sourceItem.name
     || !["footage", "comp"].includes(sourceItem.type) || !isTime(sourceItem.duration)) return fail("invalid_source_identity");
+  if (targetLayer.stretch !== 100 && sourceItem.type !== "footage") return fail("unsupported_affine_source_type");
   if (!Array.isArray(rootRange) || !Array.isArray(sourceRange) || rootRange.length !== 2 || sourceRange.length !== 2
     || ![...rootRange, ...sourceRange].every(isTime) || rootRange[0] < 0 || rootRange[1] <= rootRange[0]
     || sourceRange[0] < 0 || sourceRange[1] <= sourceRange[0]
     || rootRange[1] > rootComp.duration || sourceRange[1] > sourceItem.duration) return fail("invalid_time_range");
   if (!close(rootComp.frameRate, targetComp.frameRate, 1000)) return fail("mixed_frame_rate");
-  if (![...rootRange, ...sourceRange].every((time) => close(time * rootComp.frameRate, Math.round(time * rootComp.frameRate), 1))) return fail("off_frame_boundary");
+  if(Math.round((rootRange[1]-rootRange[0])*rootComp.frameRate)<1) return fail("empty_frame_range");
+  if (![...rootRange, ...sourceRange].every((time) => isGridAligned(time, rootComp.frameRate))) return fail("off_frame_boundary");
   let currentCompId = rootComp.itemId;
   let localRange = [...rootRange];
   for (const edge of route) {
@@ -73,8 +77,11 @@ function buildPlaceholderPlan(input) {
     currentCompId = edge.childCompItemId;
   }
   if (currentCompId !== targetComp.itemId || localRange[0] < 0 || localRange[1] > targetComp.duration) return fail("target_comp_mismatch");
-  if (!close(localRange[1] - localRange[0], sourceRange[1] - sourceRange[0], targetComp.frameRate)) return fail("source_duration_mismatch");
-  const startTime = localRange[0] - sourceRange[0];
+  if (!localRange.every(time=>isGridAligned(time,targetComp.frameRate))) return fail("off_frame_boundary");
+  const k = targetLayer.stretch / 100;
+  if (Math.abs(localRange[1] - localRange[0] - k * (sourceRange[1] - sourceRange[0])) > EPSILON) return fail("source_duration_mismatch");
+  const startTime = desiredStartTime(localRange[0], sourceRange[0], targetLayer.stretch);
+  if (!isGridAligned(startTime,targetComp.frameRate)) return fail("off_frame_boundary");
   const frameCount = Math.round((rootRange[1] - rootRange[0]) * rootComp.frameRate);
   if (frameCount < 1) return fail("empty_frame_range");
   const frameSelections = [
@@ -90,7 +97,7 @@ function buildPlaceholderPlan(input) {
     frameReview.push({ roles: [selection.role], offsetFrame: selection.offset,
       rootTime: rootRange[0] + offsetSeconds,
       targetTime: localRange[0] + offsetSeconds,
-      sourceTime: sourceRange[0] + offsetSeconds });
+      sourceTime: sourceAtRoot(rootRange[0], sourceRange[0], rootRange[0] + offsetSeconds, targetLayer.stretch) });
   }
   const target = { compItemIndex: targetComp.itemIndex, compName: targetComp.name, layerIndices: [targetLayer.index] };
   const plan = {
@@ -116,13 +123,14 @@ function buildPlaceholderPlan(input) {
     compItemIndex: targetComp.itemIndex, compItemId: targetComp.itemId, compName: targetComp.name,
     frameRate: targetComp.frameRate, layerIndex: targetLayer.index, layerId: targetLayer.id,
     layerName: targetLayer.name, sourceItemId: sourceItem.itemId, sourceName: sourceItem.name,
-    startTime, inPoint: localRange[0], outPoint: localRange[1], rootRange, sourceRange,
+    startTime, inPoint: localRange[0], outPoint: localRange[1], stretch: targetLayer.stretch, rootRange, sourceRange,
     ...(typeof sourceItem.file === "string" ? { sourceFile: sourceItem.file, footageMissing: false } : {})
   };
   if(input.framing) {
     const framing=require("./placeholder-framing");
     const proposal=framing.proposePlaceholderCover({...input.framing,geometry:input.framing.geometry,sourceRange,
-      target:{compItemId:targetComp.itemId,layerId:targetLayer.id},usage:input.usage});
+      target:{compItemId:targetComp.itemId,layerId:targetLayer.id},usage:input.usage,
+      timing:{stretch:targetLayer.stretch,rootRange,sourceRange,localRange,targetStartTime:startTime,rootFps:rootComp.frameRate}});
     if(proposal.status!=="proposed" || proposal.eligible!==true || !proposal.proposal)return {...fail(proposal.reason || proposal.status || "placeholder_framing_unavailable"),framing:proposal};
     const transform=proposal.proposal;
     plan.steps.splice(2,0,{tool:"set_layer_transform",args:{compItemIndex:targetComp.itemIndex,compName:targetComp.name,layerIndex:targetLayer.index,

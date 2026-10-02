@@ -5,6 +5,27 @@ const {verifyMontageMaterials} = require("./montage-materials");
 const {readNativeLayer,routeEdge,equal} = require("./montage-native");
 const {sha256,withoutIndices,executionArgsMatch,preciseFacts,completeTransform} = require("./montage-run-bindings");
 const {deepClone,inspectPayloadSafety,normalizeBudgets,isPositiveInteger,isSafeId,isSha256,isNonNegativeInteger} = require("./montage-contract");
+const {isValidStretch,isGridAligned,EPSILON} = require("./placeholder-timing");
+const {buildSourceUsageMap}=require("./placeholder-usage");
+const {validateGeometry}=require("./placeholder-framing");
+const {isAbsolutePath}=require("./montage-contract");
+
+function completeNativeBinding(row) {
+  const l=row?.targetLayer,s=l?.source;
+  const footprint=f=>f?.complete===true && ["hasEffects","hasTrackMatte","hasExpressions","hasTransformKeys"].every(k=>f[k]===false);
+  return row && isPositiveInteger(row.target?.compItemId) && isPositiveInteger(row.target?.layerId) && l?.id===row.target.layerId &&
+    isPositiveInteger(l.index) && typeof l.name==="string" && !!l.name && isPositiveInteger(l.sourceItemId) && s?.itemId===l.sourceItemId &&
+    typeof s.name==="string" && !!s.name && isAbsolutePath(s.file) && s.footageMissing===false &&
+    ["width","height","duration","frameRate"].every(k=>Number.isFinite(s[k]) && s[k]>0) && s.pixelAspect===1 &&
+    l.enabled===true && l.locked===false && l.threeDLayer===false && l.timeRemapEnabled===false && isValidStretch(l.stretch) &&
+    [l.startTime,l.inPoint,l.outPoint].every(Number.isFinite) && l.outPoint>l.inPoint && completeTransform(row.transform) && row.transform.rotation===0 &&
+    validateGeometry(row.geometry).valid && footprint(row.footprint) && isPositiveInteger(row.plannedSourceItemId) && Array.isArray(row.route) && row.route.length<=4 &&
+    row.route.every(e=>[e.parentCompItemId,e.childCompItemId,e.layerId,e.layerIndex].every(isPositiveInteger) && e.stretch===100 && e.timeRemapEnabled===false &&
+      e.enabled===true && e.locked===false && [e.startTime,e.inPoint,e.outPoint].every(Number.isFinite) && e.outPoint>e.inPoint &&
+      completeTransform(e.transform) && validateGeometry(e.geometry).valid && footprint(e.footprint)) &&
+    row.route.every((e,i)=>i===0 || e.parentCompItemId===row.route[i-1].childCompItemId) &&
+    (!row.route.length || row.route.at(-1).childCompItemId===row.target.compItemId);
+}
 
 const policyHash = state => sha256({projectKey:state.projectKey,revision:state.revision,
   constraints:state.constraints ?? null,groupMappings:state.groupMappings ?? [],
@@ -17,6 +38,8 @@ function materialCatalog(mp) {
 }
 function assertUnitChain(plan,mp) {
   const b=mp.verificationBindings,e=plan.expectedReadBack,a=mp.intent.assignment,steps=plan.steps;
+  const boundRoot=b.route[0]?.parentCompItemId ?? b.target.compItemId;
+  if(mp.intent.rootCompItemId!==undefined && mp.intent.rootCompItemId!==boundRoot)fail("montage_unit_chain_invalid");
   if(!Array.isArray(steps) || ![3,4].includes(steps.length) || !e || !equal(a.target,{compItemId:b.target.compItemId,layerId:b.target.layerId}) ||
     !equal(e.rootRange,mp.intent.rootRange) || !equal(e.sourceRange,a.sourceRange) || e.compItemId!==b.target.compItemId || e.layerId!==b.target.layerId ||
     e.sourceItemId!==mp.sourceItemId || e.sourceName!==b.materialSource.name || e.sourceFile!==mp.path || e.layerName!==b.target.layer.name)fail("montage_unit_chain_invalid");
@@ -34,8 +57,21 @@ function assertUnitChain(plan,mp) {
   if(replace.expectedPreviousSourceItemId!==b.target.layer.sourceItemId || replace.expectedSourceItemId!==mp.sourceItemId || replace.sourceItemName!==b.materialSource.name ||
     replace.sourceItemType!=="footage" || timing.expectedSourceItemId!==mp.sourceItemId || read.compItemId!==b.target.compItemId || read.layerId!==b.target.layerId || read.responseView!=="placeholder")fail("montage_unit_chain_invalid");
   let local=[...mp.intent.rootRange];
-  for(const edge of b.route)local=local.map(t=>t-edge.startTime);
-  const wanted={startTime:local[0]-a.sourceRange[0],inPoint:local[0],outPoint:local[1]};
+  for(const edge of b.route) {
+    if(edge.stretch !== 100) fail("montage_unit_chain_invalid");
+    local=local.map(t=>t-edge.startTime);
+  }
+  const targetStretch = b.target.layer.stretch;
+  if(!isValidStretch(targetStretch)) fail("montage_unit_chain_invalid");
+  const expectedStretch=e.stretch===undefined && targetStretch===100 ? 100 : e.stretch;
+  if(expectedStretch !== targetStretch || b.target.layer.timeRemapEnabled !== false || ![b.target.layer.startTime,b.target.layer.inPoint,b.target.layer.outPoint].every(Number.isFinite)) fail("montage_unit_chain_invalid");
+  const k = targetStretch / 100;
+  if(![mp.intent.rootRange,a.sourceRange].every(r=>Array.isArray(r) && r.length===2 && r.every(Number.isFinite) && r[0]>=0 && r[1]>r[0]) ||
+    Math.abs(local[1]-local[0]-k*(a.sourceRange[1]-a.sourceRange[0]))>EPSILON)fail("montage_unit_chain_invalid");
+  const wanted={startTime:local[0]-k*a.sourceRange[0],inPoint:local[0],outPoint:local[1]};
+  const targetFps=b.target.geometry?.comp?.frameRate,rootFps=b.route[0]?.geometry?.comp?.frameRate ?? targetFps;
+  if(targetFps!==undefined && (!mp.intent.rootRange.every(t=>isGridAligned(t,rootFps)) || !local.every(t=>isGridAligned(t,targetFps)) ||
+    !isGridAligned(wanted.startTime,targetFps) || !a.sourceRange.every(t=>isGridAligned(t,mp.metadata.fps))))fail("montage_unit_chain_invalid");
   if(!preciseFacts(wanted,timing) || !preciseFacts(wanted,e))fail("montage_unit_chain_invalid");
   if(steps.length===4) {
     const transform=steps[2].args,f=plan.placeholderFraming;
@@ -69,10 +105,14 @@ async function guardMontagePlan(plan,deps,options={}) {
     !mp.intent?.assignment || !Array.isArray(mp.intent.rootRange) || !mp.readBudgets || !b?.material || !b?.project || !equal(b.project,mp.project) ||
     !["materialId","sourceItemId","path","sha256","byteLength","metadata","provenance"].every(k=>equal(b.material[k],mp[k])) ||
     !isPositiveInteger(b.target?.compItemId) || !isPositiveInteger(b.target?.layerId) || !b.target.layer?.source ||
+    !["enabled","locked","threeDLayer","timeRemapEnabled"].every(k=>typeof b.target.layer[k]==="boolean") ||
     !completeTransform(b.target.transform) || !b.target.geometry || b.target.footprint?.complete!==true ||
     !b.materialSource || !Array.isArray(b.route) || b.route.length>4 || !equal(mp.route,b.route) ||
     b.route.some(e=>![e?.parentCompItemId,e?.childCompItemId,e?.layerId].every(isPositiveInteger) || !completeTransform(e?.transform) || e.footprint?.complete!==true))
     fail("montage_metadata_incomplete");
+  if(!completeNativeBinding({target:{compItemId:b.target.compItemId,layerId:b.target.layerId},targetLayer:b.target.layer,plannedSourceItemId:mp.sourceItemId,
+    geometry:b.target.geometry,transform:b.target.transform,footprint:b.target.footprint,route:b.route}) ||
+    b.affineScope!==undefined && (!Array.isArray(b.affineScope) || b.affineScope.length>32 || b.affineScope.some(scope=>!completeNativeBinding(scope))))fail("montage_metadata_incomplete");
   assertUnitChain(plan,mp);
   const contentHash=computeUnitContentHash({unitId:mp.unitId,assignment:mp.intent.assignment,rootRange:mp.intent.rootRange,
     material:b.material,crop:mp.intent.assignment.crop,geometry:b.geometry,route:b.route,plan,project:mp.project,
@@ -91,6 +131,15 @@ async function guardMontagePlan(plan,deps,options={}) {
   if(inventory?.complete!==true || normalizeProject(inventory.projectFile)!==normalizeProject(current.projectFile))fail("montage_inventory_incomplete");
   const source=inventory.sources.find(s=>s.itemId===mp.sourceItemId);
   if(!source || !["width","height","pixelAspect","duration"].every(k=>source[k]===mp.metadata[k]) || source.frameRate!==mp.metadata.fps)fail("montage_material_metadata_drift_detected");
+  const root=b.route[0]?.parentCompItemId ?? b.target.compItemId;
+  const usage=buildSourceUsageMap({inventory,roots:[{compItemId:root}],groupMappings:state.groupMappings,maxNodes:budget.budgets.graphNodes});
+  if(!usage.ok || !usage.complete)fail("montage_inventory_incomplete");
+  const scopes=Array.isArray(b.affineScope) ? b.affineScope : [];
+  for(const occurrence of usage.occurrences) {
+    const layer=inventory.comps.find(c=>c.itemId===occurrence.target.compItemId)?.layers.find(l=>l.id===occurrence.target.layerId);
+    if(layer?.stretch!==100 && !(occurrence.target.compItemId===b.target.compItemId && occurrence.target.layerId===b.target.layerId) &&
+      !scopes.some(s=>equal(s.target,occurrence.target)))fail("unsupported_unbound_affine_usage");
+  }
   // Native path authorization precedes every filesystem call in the verifier.
   const verified=await (deps.verifyMontageMaterials || verifyMontageMaterials)({preparedMaterials:materialCatalog(mp),inventory,budgets:budget.budgets});
   if(!verified.ok)fail("montage_material_drift_detected");
@@ -99,6 +148,12 @@ async function guardMontagePlan(plan,deps,options={}) {
   if(!equal(actual.footprint,b.target.footprint) || !actual.layer.enabled || actual.layer.locked)fail("montage_target_footprint_drift_detected");
   if(!preciseFacts(withoutIndices(expected.layer),withoutIndices(actual.layer)) || !preciseFacts(expected.transform,actual.transform) ||
     !preciseFacts(b.target.geometry,actual.geometry))fail("montage_target_drift_detected");
+  for(const scope of scopes) {
+    if(equal(scope.target,{compItemId:b.target.compItemId,layerId:b.target.layerId}))continue;
+    const fresh=await native(scope.target,scope.plannedSourceItemId);
+    if(!equal(fresh.footprint,scope.footprint) || !preciseFacts(scope.targetLayer,fresh.layer) || !preciseFacts(scope.geometry,fresh.geometry) || !preciseFacts(scope.transform,fresh.transform))fail("montage_affine_scope_drift_detected");
+    for(const edge of scope.route)if(!equal(withoutIndices(routeEdge(await native({compItemId:edge.parentCompItemId,layerId:edge.layerId},null))),withoutIndices(edge)))fail("montage_affine_scope_drift_detected");
+  }
   for(const edge of b.route) {
     const fresh=routeEdge(await native({compItemId:edge.parentCompItemId,layerId:edge.layerId},null));
     if(!equal(withoutIndices(fresh),withoutIndices(edge)))fail("montage_route_drift_detected");

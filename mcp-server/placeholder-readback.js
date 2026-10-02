@@ -1,6 +1,7 @@
 "use strict";
 const { pathsEqual } = require("./placeholder-source-recovery");
 const { valueEqual, propertyKey, transformValueEqual } = require("./placeholder-protection");
+const {isValidStretch} = require("./placeholder-timing");
 
 const expectedFields = ["compItemIndex", "compItemId", "compName", "frameRate", "layerIndex", "layerId", "layerName",
   "sourceItemId", "sourceName", "startTime", "inPoint", "outPoint"];
@@ -12,7 +13,7 @@ const inputSchema = { type: "object", required: ["expected", "observed"], proper
     description: "expectedReadBack returned by build_placeholder_plan.",
     properties: { compItemIndex: ID, compItemId: ID, compName: TEXT, frameRate: TIME,
       layerIndex: ID, layerId: ID, layerName: TEXT, sourceItemId: ID, sourceName: TEXT,
-      startTime: TIME, inPoint: TIME, outPoint: TIME } },
+      startTime: TIME, inPoint: TIME, outPoint: TIME, stretch: TIME } },
   observed: { type: "object", required: ["comp", "layer"],
     description: "Fresh independent get_layer_details result for the target layer.",
     properties: { comp: { type: "object", required: ["itemIndex", "itemId", "name", "frameRate"],
@@ -33,7 +34,8 @@ function verifyPlaceholderReadBack(expected, observed) {
   const expectedTimes = ["startTime", "inPoint", "outPoint"];
   if (!expectedIds.every((key) => Number.isSafeInteger(expected[key]) && expected[key] > 0)
     || !expectedNames.every((key) => typeof expected[key] === "string" && expected[key].length > 0)
-    || !expectedTimes.every((key) => typeof expected[key] === "number" && Number.isFinite(expected[key]))) {
+    || !expectedTimes.every((key) => typeof expected[key] === "number" && Number.isFinite(expected[key]))
+    || (expected.stretch !== undefined && !isValidStretch(expected.stretch)) || expected.outPoint <= expected.inPoint) {
     return { ok: false, status: "needs_review", reason: "invalid_expected_evidence", checks: [] };
   }
   const comp = observed.comp;
@@ -57,7 +59,8 @@ function verifyPlaceholderReadBack(expected, observed) {
   time("layer.startTime", expected.startTime, layer.startTime);
   time("layer.inPoint", expected.inPoint, layer.inPoint);
   time("layer.outPoint", expected.outPoint, layer.outPoint);
-  exact("layer.stretch", 100, layer.stretch);
+  const expectedStretch = expected.stretch !== undefined ? expected.stretch : 100;
+  exact("layer.stretch", expectedStretch, layer.stretch);
   exact("layer.timeRemapEnabled", false, layer.timeRemapEnabled);
   if (expected.sourceFile !== undefined) checks.push({ field: "source.file", passed: pathsEqual(expected.sourceFile, source.file), expected: expected.sourceFile, observed: source.file ?? null });
   if (expected.footageMissing !== undefined) exact("source.footageMissing", expected.footageMissing, source.footageMissing);

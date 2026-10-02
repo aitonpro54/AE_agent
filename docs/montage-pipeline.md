@@ -403,3 +403,60 @@ drift и read errors проверяются теми же readers. Официа�
 того же fixture проверяет server proposal/dry-run pins и no-grant/direct negatives.
 Это offline proof; artistic
 acceptance остаётся `false` и требует отдельного existing visual owner API.
+
+## M5: сохранённый affine stretch и root PNG
+
+Поддерживается только наблюдённый статичный положительный `stretch` footage
+target в диапазоне **25..400%** включительно. Это выбранный subset V1. Desired
+stretch от клиента и setter stretch не добавлены: replace/timing/framing сохраняют
+native значение. Route/precomp остаются `100`, remap — `false`; shared targets,
+неполные source/geometry/transform/footprint, неизвестные и неподдерживаемые
+значения блокируют readiness. Legacy expectedReadBack без stretch означает 100
+только при native/bound target100; для affine значение обязательно.
+
+При `k=stretch/100` source time равен `(targetTime-startTime)/k`, desired start
+равен `localIn-k*sourceIn`. Usage, clipping и release DAG считают занятость в
+source seconds. Root/local endpoints и desired start находятся на frame grid;
+source range и shot endpoints — на source grid. Cuts отображаются на root grid,
+каждый shot занимает хотя бы один root frame. Grid precision — `1e-6` frame,
+mapping/read-back precision — `1e-6` seconds. M1 structural adapter сохраняет
+свою прежнюю serialization precision; compiler и execution guard дополнительно
+проверяют строгую grid. Crop/review samples следуют root anchors без source snap:
+при stretch200 кадр root `179/30` отображается в source `179/60`. Framing требует
+полный timing context и точные mapped samples; client `timing/requiredTimes` в
+native `propose_placeholder_cover` запрещены.
+
+Montage binding сохраняет полный native scope выбранных affine targets. Если
+usage встречает другой unbound affine footage, возвращается
+`unsupported_unbound_affine_usage`. Неполный или effectful caller scope не
+принимается даже с пересчитанным digest. Изменение другого bound target после
+предыдущего unit требует fresh rebuild; generic waiver для чужих writes нет.
+Обычный affine placeholder plan без montage binding получает
+`affine_plan_requires_montage_binding`. Перед каждым montage setter штатный
+native inventoryBaseline проверяется **до undo**; Node read не закрывает race.
+
+`compilation.rootPngPackets` содержит per-use root frames: stable root/target IDs,
+scene/assignment/unit/frame IDs, все roles/reasons, root time и mapped source/target
+time. Recipe inputs используют только `root_comp`, не более 24 frames/packet.
+Эти пакеты имеют `completeRootRenderState:false`, `replayAllowed:false`,
+`reuseAllowed:false`, `artisticAccepted:false` и blocker
+`unsupported_unknown_render_graph`. Полный contributing root graph не собран.
+Canonical unit/policy/material context не связан с owner export API; поэтому
+capture binding явно blocked `missing_canonical_unit_material_capture_binding`.
+Client hashes, timestamps и complete flags не создают proof.
+
+Штатный owner review создаёт root controls с точным root sample time и control
+stretch100, сохраняя target stretch и регистрацию владельца. Optional
+`save_comp_frame_png.expectedCompItemId` проверяется до output filesystem writes
+и повторно в native body; response содержит actual `comp.itemId`. Этот режим
+требует half-open root range и frame grid, запрещает overwrite и cached replay
+(`root_png_replay_requires_fresh_capture`); смена ID перед cached return даёт
+`png_comp_identity_changed_before_cached_return`. PNG SHA/IEND/dimensions,
+containment, resolution restoration, owner/cleanup и manual-save gates остаются
+штатными. Файл не объявляется свежим доказательством всей rendered scene.
+
+`npm.cmd run smoke:montage-affine` проверяет actual modules для k50/100/125/200,
+строгие grids, fractional samples, clipping/aliases/shared/unbound cases и
+native200 → stored reconciliation → M3 technical pass. Та же VM выполняет real
+emitted mutation с stretch race до undo, owner root PNG и ID/grid/cache negatives.
+Все проверки offline; native AE/AEP и художественная приёмка не выполняются.

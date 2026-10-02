@@ -19,14 +19,14 @@ const { buildSourceUsageMap } = require("../mcp-server/placeholder-usage");
  * @param {number} [fps=30]
  * @returns {Array<object>}
  */
-function createCropSamples(sourceRange, shotBoundaries = [], fps = 30) {
+function createCropSamples(sourceRange, shotBoundaries = [], fps = 30, timing = null) {
   const [startSec, endSec] = sourceRange;
   const frameCount = Math.round((endSec - startSec) * fps);
   const offset0 = 0;
   const offsetMid = Math.floor((frameCount - 1) / 2);
   const offsetLast = frameCount - 1;
 
-  const times = new Set([
+  const times = new Set(timing ? require("../mcp-server/placeholder-timing").requiredMappedSamples(timing.rootRange,startSec,timing.stretch,fps).map(s=>s.sourceTime) : [
     startSec + offset0 / fps,
     startSec + offsetMid / fps,
     startSec + offsetLast / fps
@@ -40,7 +40,7 @@ function createCropSamples(sourceRange, shotBoundaries = [], fps = 30) {
 
   const sortedTimes = Array.from(times).sort((a, b) => a - b);
   return sortedTimes.map((t, idx) => ({
-    sourceTime: Number(t.toFixed(6)),
+    sourceTime: t,
     coordinateSpace: "source_pixels",
     imageRef: `sample_ref_frame_${idx}`,
     imageSha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",

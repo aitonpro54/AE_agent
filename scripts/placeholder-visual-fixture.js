@@ -7,7 +7,7 @@ function png(width,height){
  const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=6;
  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk("IHDR",header),chunk("IDAT",zlib.deflateSync(Buffer.alloc((width*4+1)*height))),chunk("IEND",Buffer.alloc(0))]);
 }
-function createVisualProject(){
+function createVisualProject(options={}){
  const project=createProject();project.context.writePng=(file,width,height)=>fs.writeFileSync(file,png(width,height));
  project.change(`
  var nextItemId=500,nextLayerId=5000;
@@ -26,6 +26,14 @@ function createVisualProject(){
  var failComment=false,failRender=false;
  `);
  project.body=body=>project.execute(`JSON.stringify((function(){${body}})())`);
+ if(options.nativeFilesystem) {
+  project.context.nativeFileExists=file=>fs.existsSync(file);
+  project.context.nativeCreateDirectory=directory=>{fs.mkdirSync(directory,{recursive:true});return fs.existsSync(directory);};
+  project.context.nativeFileParent=file=>require("path").dirname(file);
+  project.change(`File=function(file){this.fsName=file;var self=this;Object.defineProperty(this,"exists",{get:function(){return nativeFileExists(self.fsName);},set:function(){}});
+    var parentPath=nativeFileParent(file);this.parent={create:function(){return nativeCreateDirectory(parentPath);}};
+    Object.defineProperty(this.parent,"exists",{get:function(){return nativeFileExists(parentPath);}});};`);
+ }
  return project;
 }
 const request={targets:[{rootCompItemId:20,target:{compItemId:10,layerId:11},samples:[{rootTime:0.2,targetTime:0.2,sourceTime:0.2,roles:["first"]},{rootTime:1.96,targetTime:1.96,sourceTime:1.96,roles:["middle"]},{rootTime:3.96,targetTime:3.96,sourceTime:3.96,roles:["last"]}],viewKinds:["target_comp"]}]};

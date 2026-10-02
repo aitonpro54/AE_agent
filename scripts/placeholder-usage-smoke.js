@@ -392,7 +392,7 @@ runTest("buildSourceUsageMap detects cycles, incomplete inventory, and unsupport
         duration: 10.0,
         frameRate: 30,
         layers: [
-          { id: 101, index: 1, name: "Stretched", enabled: true, sourceItemId: 30, startTime: 0, inPoint: 0, outPoint: 5, stretch: 120, timeRemapEnabled: false }
+          { id: 101, index: 1, name: "Stretched", enabled: true, sourceItemId: 30, startTime: 0, inPoint: 0, outPoint: 5, stretch: 500, timeRemapEnabled: false }
         ]
       }
     ],
@@ -404,6 +404,27 @@ runTest("buildSourceUsageMap detects cycles, incomplete inventory, and unsupport
   assert.strictEqual(stretchUsage.ok, false);
   assert.strictEqual(stretchUsage.complete, false);
   assert.ok(stretchUsage.unsupported.some((u) => u.reason === "unsupported_stretch"));
+
+  // Positive: stretch 120 is supported within observed 25..400%
+  const validStretchInventory = {
+    complete: true,
+    comps: [
+      {
+        itemId: 10,
+        duration: 10.0,
+        frameRate: 30,
+        layers: [
+          { id: 101, index: 1, name: "Stretched120", enabled: true, sourceItemId: 30, startTime: 0, inPoint: 0, outPoint: 6, stretch: 120, timeRemapEnabled: false }
+        ]
+      }
+    ],
+    sources: [
+      { itemId: 30, type: "footage", file: "C:/Media/clip.mp4", duration: 10.0, width: 1920, height: 1080, frameRate: 30 }
+    ]
+  };
+  const validStretchUsage = buildSourceUsageMap({ inventory: validStretchInventory, roots: [{ compItemId: 10 }] });
+  assert.strictEqual(validStretchUsage.ok, true);
+  assert.strictEqual(validStretchUsage.entries.length, 1);
 
   const incompleteUsage = buildSourceUsageMap({ inventory: { complete: false }, roots: [{ compItemId: 10 }] });
   assert.strictEqual(incompleteUsage.ok, false);

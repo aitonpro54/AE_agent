@@ -5,6 +5,7 @@
 const crypto = require("crypto");
 const path = require("path");
 const { pathsEqual } = require("./placeholder-source-recovery");
+const { isValidStretch } = require("./placeholder-timing");
 const ID = value => Number.isSafeInteger(value) && value > 0;
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const TRANSFORMS = { anchorPoint: "ADBE Anchor Point", position: "ADBE Position", scale: "ADBE Scale",
@@ -111,7 +112,7 @@ function validateSnapshot(snapshot) {
     !(path.win32.isAbsolute(source.file) || path.posix.isAbsolute(source.file)) || source.footageMissing !== false) throw new Error("unsupported_accepted_source");
   const timing = snapshot.timing;
   if (!timing || ![timing.startTime, timing.inPoint, timing.outPoint].every(finite) || timing.outPoint <= timing.inPoint ||
-    timing.stretch !== 100 || timing.timeRemapEnabled !== false) throw new Error("unsupported_accepted_timing");
+    !isValidStretch(timing.stretch) || timing.timeRemapEnabled !== false) throw new Error("unsupported_accepted_timing");
   if (!snapshot.transform || !["anchorPoint", "position", "scale", "rotation", "opacity"].every(key => validTransform(key,snapshot.transform[key])) ||
     Object.keys(snapshot.transform).some(key => !TRANSFORMS[key] || !validTransform(key,snapshot.transform[key]))) throw new Error("unsupported_accepted_transform");
   if (!Array.isArray(snapshot.properties) || snapshot.properties.length > 12 || snapshot.properties.some(prop => !validValue(prop.value))) throw new Error("invalid_accepted_properties");

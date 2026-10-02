@@ -17,6 +17,7 @@
    - Клиентские наблюдения (`observations`), факты использования (`usage`) и флаги верификации строго запрещены.
    - Сервер самостоятельно считывает saved project/key/policy revision, `inventory`, usage, геометрию, opacity/locked, эффектный footprint и обе роли track matte. Missing native properties дают blocker.
    - Сервер выполняет побайтовую потоковую проверку SHA256 всех подготовленных файлов.
+   - Target footage сохраняет наблюдённый static stretch25..400%; route/precomp100/remapfalse. Unknown/unbound affine usage и shared target блокируются. Source seconds, root grid/cuts и mapped fractional samples проверяются сервером.
    - При сборке гарантируется **0 мутаций** проекта (`writes = 0`).
 
 2. **Unit-by-Unit Proposal & Dry-Run**:
@@ -37,6 +38,8 @@
 
 5. **Visual Review**:
    - После успешного технического подтверждения собрать контрольные кадры для пакетов `compilation.reviewPackets` через штатный `build_placeholder_visual_review_plan`.
+   - `compilation.rootPngPackets` сохраняет все per-use IDs/reasons/times и root_comp-only inputs с лимитом24 frames. Полный root graph неизвестен: freshness blocked `unsupported_unknown_render_graph`, capture binding blocked `missing_canonical_unit_material_capture_binding`; replay/reuse/artisticAccepted=false.
+   - Stable-ID PNG принимает optional expectedCompItemId и возвращает actual comp.itemId. ID/grid проверяются до filesystem writes и native export; этот режим запрещает overwrite/cache reuse. Owner registration, full PNG proof и manual save gates сохраняются.
 
 ## Safety Gates
 

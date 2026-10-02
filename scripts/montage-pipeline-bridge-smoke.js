@@ -23,8 +23,8 @@ const {buildPostRunReadBack} = require("../mcp-server/montage-postread");
 const {verifyPlaceholderReadBack} = require("../mcp-server/placeholder-readback");
 const {verifyPlaceholderCoverage} = require("../mcp-server/placeholder-framing");
 
-async function main() {
-  const nativeFixture = createMontageNativeFixture();
+async function main(options={}) {
+  const nativeFixture = createMontageNativeFixture({target1Stretch:options.stretch ?? 100});
   let nativeCommands = 0, nativeHook = null, negativeCases = 0;
   let mcpChild=null,mcpId=0;
   const mcpPending=new Map();
@@ -149,6 +149,10 @@ async function main() {
     }, true);
     assert.equal(unknownPropTest.code, "unknown_input_property");
     assert.equal(nativeCommands,0,"Client authority must be rejected before AE reads");
+    for(const authority of [{timing:{stretch:100}},{requiredTimes:[0]}]) {
+      const rejected=await call("propose_placeholder_cover",{target:{compItemId:110,layerId:20},sourceItemId:200,...authority},true);
+      assert.equal(rejected.code,"client_timing_authority_forbidden");assert.equal(nativeCommands,0);negativeCases++;
+    }
     for(const mutate of [
       x=>{x.manifest.assignments=Array(33).fill(x.manifest.assignments[0]);},
       x=>{x.preparedMaterials.materials[0].verified=true;},
@@ -226,6 +230,7 @@ async function main() {
     assert.equal(mp.byteLength, nativeFixture.sizeA);
     assert.ok(mp.unitContentHash, "unitContentHash must be present");
     assert.ok(mp.verificationBindings, "verificationBindings must be present");
+    assert.equal(unit0.expectedReadBack.stretch,options.stretch ?? 100);
     // Actual native inventory emitter + the same production guard, same realm.
     // Reseal malformed input to exercise authorization rather than a stale hash.
     const emittedInventory=await require("../mcp-server/bridge-daemon").preparePlaceholderInventoryScript();
@@ -234,10 +239,18 @@ async function main() {
       runExtendScriptBody:async body=>({result:nativeFixture.read(`(function(){${body}})()`)})};
     const reseal=plan=>{const p=plan.montagePipeline,b=p.verificationBindings;p.unitContentHash=computeUnitContentHash({unitId:p.unitId,assignment:p.intent.assignment,rootRange:p.intent.rootRange,
       material:b.material,crop:p.intent.assignment.crop,geometry:b.geometry,route:b.route,plan,project:p.project,manifestRevision:p.manifestRevision,materialRevision:p.materialRevision});};
+    if((options.stretch ?? 100)===100) {
+      const legacy=deepClone(unit0.plan);delete legacy.expectedReadBack.stretch;reseal(legacy);
+      await guardMontagePlan(legacy,directDeps);
+    }
     for(const [label,mutate,resealNeeded] of [
       ["unauthorized path",p=>{p.path=path.join(nativeFixture.tmpDir,"unauthorized.mp4");p.verificationBindings.material.path=p.path;},true],
       ["oversized guard",p=>{p.byteLength=536870913;p.verificationBindings.material.byteLength=p.byteLength;},true],
-      ["missing bindings",p=>{delete p.verificationBindings;},false]
+      ["missing bindings",p=>{delete p.verificationBindings;},false],
+      ["missing native stretch",p=>{delete p.verificationBindings.target.layer.stretch;},true],
+      ["partial affine scope",p=>{p.verificationBindings.affineScope=[{target:{compItemId:110,layerId:20},targetLayer:{stretch:200},geometry:{},transform:{},footprint:{complete:true},route:[],plannedSourceItemId:200}];},true],
+      ["unsupported affine scope footprint",p=>{const t=p.verificationBindings.target;p.verificationBindings.affineScope=[{target:{compItemId:t.compItemId,layerId:t.layerId},targetLayer:deepClone(t.layer),geometry:deepClone(t.geometry),transform:deepClone(t.transform),footprint:{...t.footprint,hasEffects:true},route:deepClone(p.route),plannedSourceItemId:200}];},true],
+      ["unrelated usage root",p=>{p.intent.rootCompItemId=111;},true]
     ]) {
       const plan=deepClone(unit0.plan);mutate(plan.montagePipeline);if(resealNeeded)reseal(plan);
       let fsCalls=0;const originals={};
@@ -251,6 +264,15 @@ async function main() {
     await assert.rejects(()=>guardMontagePlan(unrelated,directDeps),{code:"montage_unit_chain_invalid"});negativeCases++;
     const unrelatedTarget=deepClone(unit0.plan);unrelatedTarget.steps[0].args.expectedLayerId=30;reseal(unrelatedTarget);
     await assert.rejects(()=>guardMontagePlan(unrelatedTarget,directDeps),{code:"montage_unit_chain_invalid"});negativeCases++;
+    if((options.stretch ?? 100)!==100) {
+      const missingExpected=deepClone(unit0.plan);delete missingExpected.expectedReadBack.stretch;reseal(missingExpected);
+      await assert.rejects(()=>guardMontagePlan(missingExpected,directDeps),{code:"montage_unit_chain_invalid"});negativeCases++;
+    }
+    nativeFixture.change('var foreignAffine=scene1Comp.add(new AVLayer(998,"Unbound affine",footageC));foreignAffine.stretch=200;');
+    await assert.rejects(()=>guardMontagePlan(unit0.plan,directDeps),{code:"unsupported_unbound_affine_usage"});negativeCases++;
+    const foreignBuild=await call("build_montage_pipeline_plan",buildInput(),true);
+    assert(foreignBuild.blockers.some(b=>b.code==="unsupported_unbound_affine_usage"));assert.equal(nativeFixture.getWrites(),0);negativeCases++;
+    nativeFixture.change("scene1Comp._layers.pop();");
     const predictableBudget=deepClone(unit0.plan);predictableBudget.montagePipeline.readBudgets.materialReadRequests=3;reseal(predictableBudget);
     await assert.rejects(()=>guardMontagePlan(predictableBudget,directDeps,{montageRunPreflight:true}),{code:"montage_run_material_budget_exceeded"});negativeCases++;
     const nativeInventory=await directDeps.readPlaceholderInventory();
@@ -328,6 +350,7 @@ async function main() {
       ["route position","precomp1.groups[0].children[1].value=[961,540];","precomp1.groups[0].children[1].value=[960,540];"],
       ["route scale","precomp1.groups[0].children[2].value=[101,101];","precomp1.groups[0].children[2].value=[100,100];"],
       ["native metadata","footageA.width=1919;","footageA.width=1920;"]
+      ,["native target stretch","target1.stretch=125;",`target1.stretch=${options.stretch ?? 100};`]
     ]) {
       nativeFixture.change(change);const r=await withPanel(()=>post("/agents/plan/run",runBody()));
       assert.equal(r.body.run.ok,false,label);assert.equal(nativeFixture.getWrites(),0,label);negativeCases++;
@@ -465,6 +488,7 @@ async function main() {
     assert.equal(summary.technicalVerification.status,"passed",JSON.stringify(summary.blockers));
     assert.equal(summary.ok,true,JSON.stringify(summary.blockers));
     assert.equal(summary.visualAcceptance.artisticAccepted,false);
+    assert.equal(nativeFixture.read("target1.stretch"),options.stretch ?? 100);
     const futureRecord=deepClone(record);futureRecord.run.finishedAt=new Date(Date.now()+86400000).toISOString();
     const futureReads=await buildPostRunReadBack(futureRecord,directDeps);
     assert.equal(Object.values(futureReads).flat().length,0,"A future finishedAt cannot cause a fabricated future receipt timestamp");negativeCases++;
@@ -485,6 +509,7 @@ async function main() {
       ["target source","target1.source=footageB;","target1.source=footageA;","failed"],
       ["tiny timing","target1.outPoint=6.00001;","target1.outPoint=6;","failed"],
       ["tiny opacity","target1.groups[0].children[4].value=99.99999;","target1.groups[0].children[4].value=100;","failed"],
+      ["actual stretch","target1.stretch=125;",`target1.stretch=${options.stretch ?? 100};`,"failed"],
       ["route source","precomp1.source=scene2Comp;","precomp1.source=scene1Comp;","failed"],
       ["route timing","precomp1.outPoint=5.9;","precomp1.outPoint=6;","failed"],
       ["route position","precomp1.groups[0].children[1].value=[961,540];","precomp1.groups[0].children[1].value=[960,540];","failed"],
@@ -529,7 +554,27 @@ async function main() {
     assert.equal(solutionPlanBuild.ok, true);
     assert.equal(solutionPlanBuild.compilation.units.length, 2);
 
+    if((options.stretch ?? 100)!==100) {
+      // A fresh action isolates the post-Node/native race from the successful
+      // record. The actual injected inventory guard must fail before undo.
+      const freshPlan=solutionPlanBuild.compilation.units[0].plan;
+      const raceProposal=await withPanel(()=>post("/agents/plan/propose",{plan:freshPlan}));
+      assert.equal(raceProposal.status,200,raceProposal.body?.code);
+      const raceAction=raceProposal.body.proposal;
+      assert.equal((await withPanel(()=>post("/agents/plan/run",{actionId:raceAction.actionId,dryRun:true}))).body.run.ok,true);
+      const undoBefore=nativeFixture.read("undo.length"),writesBefore=nativeFixture.getWrites();let injected=false;
+      nativeHook=script=>{if(script.includes('app.beginUndoGroup("Codex Replace Layer Source")')){nativeHook=null;injected=true;nativeFixture.change("target1.stretch=125;");}};
+      const race=await withPanel(()=>post("/agents/plan/run",{actionId:raceAction.actionId,payloadHash:raceAction.action.payloadHash,previewHash:raceAction.action.previewHash,
+        riskLevel:raceAction.risk.level,riskPolicyVersion:raceAction.confirmation.riskPolicyVersion,confirmationToken:raceAction.confirmation.confirmationToken,
+        confirmedBySurface:raceAction.confirmation.surface,dryRun:false,confirm:true,allowMutations:true}));
+      assert.equal(injected,true,"Native race must reach the real mutation emitter");assert.equal(race.body.run.ok,false);
+      assert.equal(nativeFixture.getWrites(),writesBefore,"Affine race wrote before native validation");assert.equal(nativeFixture.read("undo.length"),undoBefore);
+      assert(race.body.run.id);await call("reconcile_plan_run",{runId:race.body.run.id});
+      nativeFixture.change(`target1.stretch=${options.stretch};`);negativeCases++;
+    }
+
     console.log(`PASS: montage-pipeline-bridge-smoke (actual emitter build/proposal/dry-run/run/reconcile/M3 positive, ${negativeCases} bounded/drift/read-error cases; artistic not established)`);
+    return {technical:summary.technicalVerification.status,stretch:nativeFixture.read("target1.stretch"),rootPackets:buildResult.compilation.rootPngPackets,compilation:buildResult.compilation};
   } finally {
     if(mcpChild) {
       mcpChild.kill();
@@ -542,7 +587,8 @@ async function main() {
   }
 }
 
-main().catch(err => {
+module.exports={runMontageBridgeSmoke:main};
+if(require.main===module)main().catch(err => {
   console.error("FATAL ERROR in montage-pipeline-bridge-smoke:", err);
   process.exitCode = 1;
 });

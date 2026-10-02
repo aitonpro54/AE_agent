@@ -8,6 +8,7 @@
 'use strict';
 
 const { mediaKeyForSource } = require('./placeholder-usage');
+const { isValidStretch, sourceAtRoot, isCutRootAligned, isGridAligned } = require('./placeholder-timing');
 const EPSILON = 1e-8;
 
 /**
@@ -196,6 +197,7 @@ function proposePlaceholderCover({
   marginPixels = 0,
   target = null,
   usage = null,
+  timing = null,
 }) {
   const geoCheck = validateGeometry(geometry);
   if (!geoCheck.valid) {
@@ -261,29 +263,88 @@ function proposePlaceholderCover({
     return { status: 'ineligible', eligible: false, proposal: null, reasons: ['calculated cover bounds are not finite'], artisticReviewPending: true };
   }
 
-  // Exact builder-compatible frame sampling requirements:
-  // frameCount = round((end - start) * fps), required offsets 0, floor((frameCount - 1) / 2), frameCount - 1
-  const [startSec, endSec] = sourceRange;
-  const frameCount = Math.round((endSec - startSec) * fps);
-  if (frameCount < 1) {
-    return {
-      status: 'ineligible',
-      eligible: false,
-      proposal: null,
-      reasons: ['sourceRange duration must be at least 1 frame'],
-      artisticReviewPending: true,
-    };
+  let stretch = undefined;
+  let rootFps = fps;
+  let rootRange = null;
+  if (timing !== undefined && timing !== null) {
+    const validRange=r=>Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[1]>r[0];
+    if (!timing || typeof timing !== 'object' || !isValidStretch(timing.stretch) || !Number.isFinite(timing.rootFps) || timing.rootFps!==fps ||
+        !validRange(timing.rootRange) || !validRange(timing.localRange) || !validRange(timing.sourceRange) ||
+        timing.sourceRange[0]!==sourceRange[0] || timing.sourceRange[1]!==sourceRange[1] ||
+        ![...timing.rootRange,...timing.localRange,timing.targetStartTime].every(t=>isGridAligned(t,timing.rootFps)) ||
+        Math.abs(timing.rootRange[1]-timing.rootRange[0]-(sourceRange[1]-sourceRange[0])*timing.stretch/100)>1e-6 ||
+        Math.abs(timing.localRange[1]-timing.localRange[0]-(timing.rootRange[1]-timing.rootRange[0]))>1e-6 ||
+        Math.abs(timing.targetStartTime-(timing.localRange[0]-sourceRange[0]*timing.stretch/100))>1e-6)
+      return {status:'ineligible',eligible:false,proposal:null,reasons:['incomplete_or_inconsistent_timing_context'],artisticReviewPending:true};
+    if (timing.stretch !== undefined) {
+      if (!isValidStretch(timing.stretch)) {
+        return {
+          status: 'ineligible',
+          eligible: false,
+          proposal: null,
+          reasons: ['unsupported_target_stretch'],
+          artisticReviewPending: true,
+        };
+      }
+      stretch = timing.stretch;
+    }
+    if (timing.rootFps && Number.isFinite(timing.rootFps) && timing.rootFps > 0) {
+      rootFps = timing.rootFps;
+    }
+    if (Array.isArray(timing.rootRange) && timing.rootRange.length === 2) {
+      rootRange = timing.rootRange;
+    }
   }
 
-  const offset0 = 0;
-  const offsetMid = Math.floor((frameCount - 1) / 2);
-  const offsetLast = frameCount - 1;
+  const [startSec, endSec] = sourceRange;
+  let requiredTimes;
 
-  const requiredTimes = [
-    startSec + offset0 / fps,
-    startSec + offsetMid / fps,
-    startSec + offsetLast / fps,
-  ];
+  if (stretch !== undefined && stretch !== 100 && rootRange) {
+    const frameCount = Math.round((rootRange[1] - rootRange[0]) * rootFps);
+    if (frameCount < 1) {
+      return {
+        status: 'ineligible',
+        eligible: false,
+        proposal: null,
+        reasons: ['rootRange duration must be at least 1 frame'],
+        artisticReviewPending: true,
+      };
+    }
+    const offset0 = 0;
+    const offsetMid = Math.floor((frameCount - 1) / 2);
+    const offsetLast = frameCount - 1;
+    const r0 = rootRange[0] + offset0 / rootFps;
+    const rMid = rootRange[0] + offsetMid / rootFps;
+    const rLast = rootRange[0] + offsetLast / rootFps;
+    requiredTimes = [
+      sourceAtRoot(rootRange[0], startSec, r0, stretch),
+      sourceAtRoot(rootRange[0], startSec, rMid, stretch),
+      sourceAtRoot(rootRange[0], startSec, rLast, stretch),
+    ];
+  } else {
+    // Exact builder-compatible frame sampling requirements:
+    // frameCount = round((end - start) * fps), required offsets 0, floor((frameCount - 1) / 2), frameCount - 1
+    const frameCount = Math.round((endSec - startSec) * fps);
+    if (frameCount < 1) {
+      return {
+        status: 'ineligible',
+        eligible: false,
+        proposal: null,
+        reasons: ['sourceRange duration must be at least 1 frame'],
+        artisticReviewPending: true,
+      };
+    }
+
+    const offset0 = 0;
+    const offsetMid = Math.floor((frameCount - 1) / 2);
+    const offsetLast = frameCount - 1;
+
+    requiredTimes = [
+      startSec + offset0 / fps,
+      startSec + offsetMid / fps,
+      startSec + offsetLast / fps,
+    ];
+  }
 
   // Validate shotBoundaries: array of finite numbers, <= 12 entries
   const interiorShots = [];
@@ -318,13 +379,24 @@ function proposePlaceholderCover({
         };
       }
       if (shotTime > startSec && shotTime < endSec) {
+        if (stretch !== undefined && stretch !== 100 && rootRange) {
+          if (!isCutRootAligned(rootRange[0], startSec, shotTime, stretch, rootFps)) {
+            return {
+              status: 'ineligible',
+              eligible: false,
+              proposal: null,
+              reasons: ['unsupported_affine_cut_grid'],
+              artisticReviewPending: true,
+            };
+          }
+        }
         interiorShots.push(shotTime);
       }
     }
   }
 
   for (const shotTime of interiorShots) {
-    if (!requiredTimes.some(rt => Math.abs(rt - shotTime) <= 0.25 / fps)) {
+    if (!requiredTimes.some(rt => Math.abs(rt - shotTime) <= (stretch!==undefined && stretch!==100 ? 1e-6 : 0.25 / fps))) {
       requiredTimes.push(shotTime);
     }
   }
@@ -351,7 +423,7 @@ function proposePlaceholderCover({
     };
   }
 
-  const frameTolerance = 0.25 / fps;
+  const frameTolerance = stretch!==undefined && stretch!==100 ? 1e-6 : 0.25 / fps;
   const sampleErrors = [];
 
   let minX = covBounds.minX;
@@ -363,6 +435,11 @@ function proposePlaceholderCover({
     const sm = samples[i];
     if (!sm || typeof sm !== 'object') {
       sampleErrors.push(`sample[${i}] must be an object`);
+      continue;
+    }
+    if (stretch !== undefined && stretch !== 100 &&
+        (!Number.isFinite(sm.sourceTime) || sm.sourceTime<startSec || sm.sourceTime>=endSec || !isGridAligned(rootRange[0]+(sm.sourceTime-startSec)*stretch/100,rootFps))) {
+      sampleErrors.push(`sample[${i}] is not a mapped root-grid sample`);
       continue;
     }
 

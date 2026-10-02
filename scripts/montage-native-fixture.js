@@ -10,6 +10,7 @@ const { createCropSamples } = require("./montage-fixture");
 
 function createMontageNativeFixture(options = {}) {
   const tmpDir = options.tmpDir || fs.mkdtempSync(path.join(os.tmpdir(), "montage-native-fixture-"));
+  const target1Stretch = options.target1Stretch !== undefined ? Number(options.target1Stretch) : 100;
 
   // Real synthetic video files on disk
   const contentA = "SYNTHETIC_MONTAGE_CLIP_A_CONTENT_BYTES_0123456789";
@@ -30,8 +31,12 @@ function createMontageNativeFixture(options = {}) {
   const projectFilePath = path.join(tmpDir, "SyntheticMontageProject.aep");
   fs.writeFileSync(projectFilePath, "SYNTHETIC_AEP_FILE_HEADER_BINARY");
 
+  const { png } = require("./placeholder-visual-fixture");
   // Create Node VM context simulating AE ExtendScript environment
-  const context = vm.createContext({ console });
+  const context = vm.createContext({
+    console,
+    writePng: (file, width, height) => fs.writeFileSync(file, png(width, height))
+  });
   vm.runInContext(`
     var writes = 0;
     var undo = [];
@@ -140,6 +145,7 @@ function createMontageNativeFixture(options = {}) {
       this._layers = [];
       this.selectedLayers = [];
       this.selectedProperties = [];
+      this.resolutionFactor = [1, 1];
     }
     Object.defineProperty(CompItem.prototype, "numLayers", {
       get: function() { return this._layers.length; }
@@ -151,6 +157,20 @@ function createMontageNativeFixture(options = {}) {
       l.containingComp = this;
       return l;
     };
+    CompItem.prototype.saveFrameToPng = function(time, file) {
+      writePng(file.fsName, this.width, this.height);
+      file.exists = true;
+    };
+
+    function File(file) {
+      this.fsName = typeof file === "object" ? file.fsName : file;
+      this.exists = false;
+      this.parent = {
+        exists: true,
+        create: function() { return true; }
+      };
+      this.remove = function() { this.exists = false; };
+    }
 
     function FootageItem(id, name, filePath) {
       this.id = id;
@@ -185,7 +205,10 @@ function createMontageNativeFixture(options = {}) {
 
     // Target layers inside scene precomps
     var target1 = scene1Comp.add(new AVLayer(20, "Placeholder Target 1", footageC));
-    target1.startTime = 0.2; target1.inPoint = 0.2; target1.outPoint = 5.8;
+    target1.stretch = ${target1Stretch};
+    target1.startTime = 0.2;
+    target1.inPoint = 0.2;
+    target1.outPoint = 5.8;
     target1.groups[0].children[1].value=[970,530];
     target1.groups[0].children[2].value=[90,90];
 
@@ -250,18 +273,26 @@ function createMontageNativeFixture(options = {}) {
         target: { compItemId: 110, layerId: 20 },
         routeLayerIds: [10],
         materialId: "mat_01",
-        sourceRange: [0.0, 6.0],
+        sourceRange: target1Stretch === 200 ? [0.0, 3.0] : [0.0, 6.0],
         groupId: "grp_01",
         crop: {
           mode: "static-cover",
           marginPixels: 0,
-          samples: createCropSamples([0.0, 6.0], [2.0, 4.0], fps)
+          samples: target1Stretch === 200
+            ? createCropSamples([0.0, 3.0], [1.0, 2.0], fps,{stretch:200,rootRange:[0,6]})
+            : createCropSamples([0.0, 6.0], [2.0, 4.0], fps)
         },
-        shots: [
-          { shotId: "shot_1a", sourceRange: [0.0, 2.0] },
-          { shotId: "shot_1b", sourceRange: [2.0, 4.0] },
-          { shotId: "shot_1c", sourceRange: [4.0, 6.0] }
-        ],
+        shots: target1Stretch === 200
+          ? [
+              { shotId: "shot_1a", sourceRange: [0.0, 1.0] },
+              { shotId: "shot_1b", sourceRange: [1.0, 2.0] },
+              { shotId: "shot_1c", sourceRange: [2.0, 3.0] }
+            ]
+          : [
+              { shotId: "shot_1a", sourceRange: [0.0, 2.0] },
+              { shotId: "shot_1b", sourceRange: [2.0, 4.0] },
+              { shotId: "shot_1c", sourceRange: [4.0, 6.0] }
+            ],
         protectedFields: []
       },
       {
@@ -314,10 +345,16 @@ function createMontageNativeFixture(options = {}) {
     frameCoverage: []
   };
 
+  const timingByAssignment = target1Stretch === 200 ? new Map([
+    ["assign_01", { stretch: 200, sourceRange: [0.0, 3.0], rootRange: [0.0, 6.0] }],
+    ["assign_02", { stretch: 100, sourceRange: [0.0, 6.0], rootRange: [6.0, 12.0] }]
+  ]) : null;
+
   const requiredMap = computeRequiredFrameCoverage({
     scenes: manifest.scenes,
     assignments: manifest.assignments,
-    fps
+    fps,
+    timingByAssignment
   });
   manifest.frameCoverage = Array.from(requiredMap.values()).map(req => ({
     frameId: req.frameId,

@@ -1,6 +1,6 @@
 # Этап 2: детерминированный монтажный конвейер
 
-Статус: **M1–M4 complete — offline acceptance**; M5, этап 3 и live приёмка не выполнялись.
+Статус: **M1–M5 complete — offline acceptance**; M5 ограничен observed target affine stretch. Этап 3 и live приёмка не выполнялись.
 Baseline для планирования: `codex/production-usage`, HEAD `50d5cd66014f4778f6e994dbd4ebe61e488111d8` (2026-10-02).
 Перед реализацией сверить текущие HEAD/status и основной [план](target-app-execplan.md); чужие изменения сохранять.
 Контракты: [монтаж](../docs/montage-workflow.md), [завершение поручения](../docs/ae-task-completion.md).
@@ -24,11 +24,11 @@ LLM выбирает фрагменты и оценивает художеств
 | Реальный API / модуль | Повторное использование и предел |
 | --- | --- |
 | `search_solutions`, `get_solution`, `build_solution_plan` | Сначала retrieval; расширять typed library, не создавать параллельный каталог. |
-| `build_placeholder_plan` / `placeholder-plan-builder.js` | Одна цель, route ≤4, одинаковый root/target fps, frame-aligned диапазоны, stretch=100/remap=false; replace → timing → optional transform → read. `expectedReadBack` и `placeholderFraming` одиночные. |
-| `get_placeholder_usage`, `check_placeholder_assignments` / `placeholder-usage.js` | Свежая серверная карта; confirmed groups, half-open source intervals, structural occurrences; incomplete/shared/stretch/remap не дают pass. MCP assignments/roots ≤32. |
+| `build_placeholder_plan` / `placeholder-plan-builder.js` | Одна цель, route ≤4/100%, одинаковый fps, frame grids/remapfalse; replace → timing → optional transform → read. M5 pure footage mapping25..400%; affine writes требуют montage namespace. `expectedReadBack` и framing одиночные. |
+| `get_placeholder_usage`, `check_placeholder_assignments` / `placeholder-usage.js` | Свежая карта, confirmed groups, half-open source intervals/affine clipping, structural occurrences. Unknown/out-domain/route stretch, incomplete/shared/remap блокируются; unbound affine не даёт montage readiness. MCP assignments/roots ≤32. |
 | `get_placeholder_protection` / `placeholder-protection.js` | Авторитетные accepted snapshots и policy сервера; client manifest/usage/selectedTargets не разрешают protected changes. |
 | `verify_placeholder_read_back`, `verify_placeholder_coverage` | Независимое чтение цели; rectangular cover не доказывает качество, прозрачность или весь nested route. |
-| `build_placeholder_visual_review_plan` и review modules | Owner-registered controls/sheet и штатный PNG export: ≤4 targets, ≤24 samples и ≤24 views суммарно; first/middle/last обязательны, shared/stretch/remap отклоняются. |
+| `build_placeholder_visual_review_plan` и review modules | Owner controls/sheet/PNG: ≤4 targets, ≤24 samples/views, first/middle/last. Observed footage25..400% сохраняется, route100; shared/remap блокируются. Stable-ID PNG не даёт full root/canonical material capture proof. |
 | `find_missing_footage_candidates`, `build_source_recovery_plan` | Отдельный recovery workflow с явным подтверждением выбранного пути; не автоматическая стадия pipeline. |
 | `propose_ai_agent_plan`, `run_ai_agent_plan` | Серверный proposal и прежние gates; `maxSteps` default 20, runtime ceiling 50; summary меняет представление ответа. |
 | `get_plan_run_evidence`, `reconcile_plan_run`, `ae-task-completion.js` | История / свежая read-only сверка / сводка provided run IDs; ни один API не разрешает retry и не устанавливает полный просмотр сцены. |
@@ -154,6 +154,10 @@ reconciliation/completion и независимые states, без нового 
   owner review registration не обходится и не объявляется поддержкой shared/remap.
 - Acceptance: точные mapping/boundary/shared-conflict fixtures, native guard/PNG binding
   offline proof; отдельный live proof ниже. M5 не условие завершения supported subset M1–M4.
+- Реализовано 3 октября: observed target footage25..400% preserve, строгие grids и
+  fractional mapped samples; route100/shared/remap gates сохранены. Root packets
+  bounded/per-use/root_comp, но full graph и canonical capture binding дают явные
+  blockers. Подробный контракт — [M5](../docs/montage-pipeline.md).
 
 ## Отдельная будущая live приёмка
 
@@ -164,6 +168,10 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- 2026-10-03: пользователь поручил M5 и выбрал affine stretch. Старт от `e72f838`,
+  tracked baseline чистый; чужие untracked сохранены. Архитектура уточняет bounded
+  positive observed target-footage stretch и root PNG binding; M1–M4 не повторяются.
+  Текущий AEP/live, shared write/remap и этап 3 остаются вне этого scope.
 - 2026-10-02: старт M1–M4 от `beadf24` на `codex/production-usage`; tracked baseline чистый,
   чужие untracked материалы сохранены. Sol/ultra уточняет архитектуру, Flash/high реализует
   M1 отдельным offline блоком. Текущий AEP и live runtime не используются.
@@ -181,11 +189,32 @@ Saved AEP, export/render и protected cleanup требуют своего при
   scoped policy/hash/prefix guards и actual postread. Flash partial run остановлен/сверен;
   correction timeout/unknown сохранён, processes exited/native0/claims released.
   Sol/xhigh закрыл инженерные gaps; source/library/MCP offline acceptance пройдена.
-- M5/этап3/live acceptance не выполнялись. Реальный montage manifest и художественная
-  приёмка подтверждаются следующим отдельным поручением; текущий AEP не использован.
+- M4 checkpoint `e72f838`. M5 завершён: согласованные timing/usage/protection/framing/
+  coverage/guard/readback/owner paths и additive stable-ID PNG/root packets;
+  native200→stored reconciliation→M3 technical PASS, artisticfalse. Commit отдельный.
+- Этап3/live acceptance не выполнялись. Реальный manifest и художественная приёмка
+  подтверждаются отдельным поручением; текущий AEP в этой работе не использован.
 
 ## Decision Log
 
+- M5 выбран пользователем: bounded observed target-footage stretch25..400% сохраняется;
+  route100/remapfalse и shared/protection gates прежние. Root/local/source endpoints
+  и mapped cuts проверяются на grid; fractional mapped source samples не округляются.
+  Stable comp ID/owner scoped PNG binding не доказывает full scene freshness:
+  completeRootRenderState=false, unknown root render graph остаётся blocker.
+- M5 Flash draft не принят: pure14 после нескольких corrections, native200 build
+  blocked и пять independent negative false-pass. Timeout/unknown сохранён;
+  процессы exited/files reviewed/commands exact/native0, claim released.
+  Остаточный timing/guard/owner/native proof blocker передан Sol/xhigh.
+- M5 final: только footage25..400, preserve без нового setter; source-seconds collisions,
+  root/cut/start grids, fractional source samples без snap. Namespace/root/scoped native
+  facts полны; client digest не разрешает partial/effectful/unknown affine scope. Legacy
+  expected stretch absent означает100 только при bound100. Own/foreign scope drift
+  требует fresh rebuild; ordinary affine plan без montage binding блокируется.
+- Root packet/owner PNG — per-use identity/time proof, completeRootRenderState=false.
+  `unsupported_unknown_render_graph` и `missing_canonical_unit_material_capture_binding`
+  сохраняют blocked/pending visual status; declaring hashes/timestamps не proof.
+  Stable-ID export проверяет ID/grid до FS и native save; overwrite/cache replay запрещены.
 - Архитектура M1: pure validator и синтетические fixtures без public API. Hard ceilings:
   scenes/assignments/materials/groups 32, route 4, shots/assignment 12, frames 768,
   dependency edges 512, graph nodes 5000, manifest/materials 256 KiB, snapshot 4 MiB,
@@ -228,6 +257,13 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Validation
 
+- M5: affine38 pure + actual daemon/VM/official MCP native200 → stored M3 technical
+  PASS/artisticfalse +78 negatives; legacy100 emitter +76 negatives/old expected absent;
+  owner rootPNG/registration/fractional mapping/ID/grid/native race/cache PASS. Root
+  independent10 probes (positive controls + strict negatives) и packet coverage/negative3 PASS.
+  Montage226/19/96, placeholder-plan4/usage36/framing83+35/protection3/visual3/png PASS;
+  recovery20+39+JSX/panel/daemon, completion23, montage-library6 и solution4 PASS.
+  Final rules/21 changed JS syntax/diff/staged PASS; fixtures не live/artistic proof.
 - M1: 226 actual-module synthetic cases и 20 независимых root counterexamples PASS;
   `check:rules`, syntax шести новых JS, `git diff --check` PASS. Source/route/path/fps,
   aliases/duplicates, material revision/hash, coverage, malformed/budgets и неизвестные

@@ -357,7 +357,12 @@ function buildReviewPackets({ units, scenes, manifest, observations, budgets, bl
     const sourceRange = a.sourceRange;
     const frameRate = scene.fps;
     const frameCount = Math.round((rootRange[1] - rootRange[0]) * frameRate);
-    const startTime = unit.plan.steps[1].args.startTime;
+    const timingStep = unit.plan.steps[1].args;
+    const inPoint = timingStep.inPoint !== undefined ? timingStep.inPoint : unit.expectedReadBack.inPoint;
+    const stretch = unit.verificationBindings?.target?.layer?.stretch !== undefined
+      ? unit.verificationBindings.target.layer.stretch
+      : (unit.expectedReadBack?.stretch !== undefined ? unit.expectedReadBack.stretch : 100);
+    const k = stretch / 100;
 
     const offsetFirst = 0;
     const offsetMid = Math.floor((frameCount - 1) / 2);
@@ -371,14 +376,14 @@ function buildReviewPackets({ units, scenes, manifest, observations, budgets, bl
     const samplesByTime = new Map();
 
     function addSample(rootTime, role, frameId, isAnchor = false) {
-      const key = rootTime.toFixed(6);
-      const targetTime = rootTime - (rootRange[0] - (sourceRange[0] + startTime));
-      const sourceTime = sourceRange[0] + (rootTime - rootRange[0]);
+      const key = String(Math.round(rootTime*frameRate));
+      const targetTime = inPoint + (rootTime - rootRange[0]);
+      const sourceTime = sourceRange[0] + (rootTime - rootRange[0]) / k;
       if (!samplesByTime.has(key)) {
         samplesByTime.set(key, {
-          rootTime: Number(rootTime.toFixed(6)),
-          targetTime: Number(targetTime.toFixed(6)),
-          sourceTime: Number(sourceTime.toFixed(6)),
+          rootTime,
+          targetTime,
+          sourceTime,
           roles: new Set(),
           frameIds: new Set(),
           isAnchor
@@ -820,6 +825,9 @@ function compileMontagePipeline(input = {}) {
       }
 
       const verificationBindings = {
+        affineScope: observations.targets.filter(t=>t.targetLayer?.stretch!==100).map(t=>({target:deepClone(t.target),targetLayer:deepClone(t.targetLayer),
+          geometry:deepClone(t.geometry),transform:deepClone(t.transform),footprint:deepClone(t.footprint),route:deepClone(t.route),
+          plannedSourceItemId:materialsMap.get(manifest.assignments.find(x=>keyOf(x.target)===keyOf(t.target))?.materialId)?.sourceItemId})),
         material: {
           materialId: a.materialId,
           sourceItemId: material.sourceItemId,
@@ -857,7 +865,7 @@ function compileMontagePipeline(input = {}) {
 
       plan.montagePipeline = {
         unitId,
-        intent: {assignment:deepClone(a),rootRange:deepClone(rootRange)},
+        intent: {assignment:deepClone(a),rootRange:deepClone(rootRange),rootCompItemId:bound.root.itemId},
         manifestRevision: manifest.revision,
         materialRevision: catalog.revision,
         materialId: a.materialId,
@@ -968,6 +976,8 @@ function compileMontagePipeline(input = {}) {
     const manifestHash = sha256(manifest);
     const materialsHash = sha256(catalog);
     const evidenceHash = sha256(observations);
+    const rootPackets=require("./montage-root-png").buildPerUseRootPackets({reviewPackets,units:cleanUnits,manifest,budgets});
+    if(!rootPackets.ok){blockers.push(...rootPackets.blockers);return blockedResponse();}
 
     return {
       ok: true,
@@ -980,6 +990,7 @@ function compileMontagePipeline(input = {}) {
       requiresFreshEvidenceReview: true,
       units: cleanUnits,
       reviewPackets,
+      rootPngPackets:rootPackets.packets,
       affectedScenes,
       blockers: [],
       budgets

@@ -6,12 +6,13 @@ const {
   isFiniteNumber: finite, checkExactKeys, addBlocker
 } = require("./montage-contract");
 const list = value => Array.isArray(value) ? value : [];
+const {isValidStretch,isGridAligned}=require("./placeholder-timing");
 const coverageKey = frame => `${frame.sceneId}:${frame.assignmentId}:${frame.rootFrame}`;
 const frameIdFor = frame => "frame_" + createHash("sha256").update(coverageKey(frame)).digest("hex").slice(0, 24);
 
 // Dedup within each use. A shared root frame may carry requirements for several targets.
 // Shot order is semantic; scene/assignment collection order is not.
-function computeRequiredFrameCoverage({ scenes = [], assignments = [], fps } = {}) {
+function computeRequiredFrameCoverage({ scenes = [], assignments = [], fps, timingByAssignment = null } = {}) {
   const requirements = new Map();
   if (!finite(fps) || fps <= 0) return requirements;
   function add(scene, assignment, frame, role, reason) {
@@ -32,7 +33,14 @@ function computeRequiredFrameCoverage({ scenes = [], assignments = [], fps } = {
       if (!Array.isArray(range) || !range.every(finite) || range[1] <= range[0]) continue;
       const start = Math.round(range[0] * fps), end = Math.round(range[1] * fps);
       const inside = frame => frame >= start && frame < end && frame >= sceneStart && frame < sceneEnd;
-      const mapped = time => Math.round((range[0] + time - assignment.sourceRange[0]) * fps);
+      let k = 1;
+      if (timingByAssignment) {
+        const t = timingByAssignment.get ? timingByAssignment.get(assignment.assignmentId) : timingByAssignment[assignment.assignmentId];
+        const stretch = t && typeof t === "object" ? t.stretch : t;
+        if (!isValidStretch(stretch)) continue;
+        k = stretch / 100;
+      }
+      const mapped = time => {const root=range[0]+k*(time-assignment.sourceRange[0]);return isGridAligned(root,fps) ? Math.round(root*fps) : NaN;};
       const anchors = (a, b) => [a, a + Math.floor((b - a - 1) / 2), b - 1];
       anchors(start, end).forEach((frame, i) => { if (inside(frame)) add(scene, assignment, frame, "assignment_anchor", ["assignment_start", "assignment_middle", "assignment_end"][i]); });
       anchors(sceneStart, sceneEnd).forEach((frame, i) => { if (inside(frame)) add(scene, assignment, frame, "scene_anchor", ["scene_start", "scene_middle", "scene_end"][i]); });

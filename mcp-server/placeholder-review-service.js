@@ -2,6 +2,7 @@
 const crypto = require("crypto");
 const { aeSupportScript, valueEqual, transformValueEqual } = require("./placeholder-protection");
 const { mediaKeyForSource } = require("./placeholder-usage");
+const { isValidStretch,isGridAligned,EPSILON } = require("./placeholder-timing");
 const ID = value => Number.isSafeInteger(value) && value > 0;
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const OWNER = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -19,7 +20,7 @@ function resolveReviewTargets(input, inventory) {
     const comp=inventory.comps.find(value=>value.itemId===target.compItemId),root=inventory.comps.find(value=>value.itemId===request.rootCompItemId);
     const layer=comp && comp.layers.find(value=>value.id===target.layerId),source=layer && inventory.sources.find(value=>value.itemId===layer.sourceItemId);
     if(!validDimensions(comp) || !validDimensions(root) || !validDimensions(source) || ![comp,root,source].every(item=>finite(item.duration) && item.duration>0 && finite(item.frameRate) && item.frameRate>0) || !source || source.type!=="footage" || source.hasVideo!==true || source.footageMissing!==false ||
-      !layer || layer.stretch!==100 || layer.timeRemapEnabled!==false || layer.enabled!==true)fail("unsupported_review_video_geometry_or_timing");
+      !layer || !isValidStretch(layer.stretch) || layer.timeRemapEnabled!==false || layer.enabled!==true)fail("unsupported_review_video_geometry_or_timing");
     const routes=[];
     function visit(current,route,branch) {
       if(branch.includes(current.itemId) || branch.length>16)fail("unsupported_review_route");
@@ -44,8 +45,11 @@ function resolveReviewTargets(input, inventory) {
       let time=sample.rootTime;
       if(time<0 || time>=root.duration)fail("review_sample_outside_root");
       for(const edge of route){if(time<edge.inPoint || time>=edge.outPoint)fail("review_sample_outside_route");time-=edge.startTime;const child=inventory.comps.find(item=>item.itemId===edge.sourceItemId);if(!child || !finite(child.duration) || time<0 || time>=child.duration)fail("review_sample_outside_nested_comp");}
-      const epsilon=0.25/comp.frameRate;
-      if(time<layer.inPoint || time>=layer.outPoint || Math.abs(time-sample.targetTime)>epsilon || Math.abs(time-layer.startTime-sample.sourceTime)>epsilon || sample.sourceTime<0 || sample.sourceTime>=source.duration)fail("stale_review_sample_mapping");
+      const epsilon=layer.stretch===100 ? 0.25/comp.frameRate : EPSILON;
+      if(layer.stretch!==100 && (!isGridAligned(sample.rootTime,root.frameRate) || !isGridAligned(sample.targetTime,comp.frameRate)))fail("affine_review_sample_off_grid");
+      const k=layer.stretch/100;
+      const expectedSourceTime=(time-layer.startTime)/k;
+      if(time<layer.inPoint || time>=layer.outPoint || Math.abs(time-sample.targetTime)>epsilon || Math.abs(expectedSourceTime-sample.sourceTime)>epsilon || sample.sourceTime<0 || sample.sourceTime>=source.duration)fail("stale_review_sample_mapping");
       return {rootTime:sample.rootTime,targetTime:sample.targetTime,sourceTime:sample.sourceTime,index,roles:[...sample.roles]};
     });
     if(!["first","middle","last"].every(role=>samples.some(sample=>sample.roles.includes(role))))fail("review_first_middle_last_required");
@@ -118,7 +122,7 @@ function createServiceScript(spec, projectFile) {
   var media=find(target.sourceItemId);if(!(media instanceof FootageItem) || !media.file || __phPath(media.file.fsName)!==__phPath(target.source.file) || media.footageMissing!==false || media.duration!==target.source.duration || media.frameRate!==target.source.frameRate || media.hasVideo!==true || !media.mainSource || media.mainSource.isStill!==false)throw new Error("review_source_metadata_changed");
   if(comp.duration!==target.comp.duration || comp.frameRate!==target.comp.frameRate || root.duration!==target.root.duration || root.frameRate!==target.root.frameRate)throw new Error("review_comp_sampling_metadata_changed");
   var expectedLayers=[target.layer];var actualLayers=[layer];for(var r=0;r<target.route.length;r++){var edge=target.route[r],parentComp=__phFindComp(edge.compItemId),childComp=__phFindComp(edge.sourceItemId);if(parentComp.duration!==edge.compDuration || parentComp.frameRate!==edge.compFrameRate || childComp.duration!==edge.childDuration || childComp.frameRate!==edge.childFrameRate)throw new Error("review_route_sampling_metadata_changed");expectedLayers.push(edge);actualLayers.push(__phFindLayer(parentComp,edge.id));}
-  for(var r=0;r<expectedLayers.length;r++){var e=expectedLayers[r],a=actualLayers[r];if(!a.source || a.source.id!==e.sourceItemId || a.startTime!==e.startTime || a.inPoint!==e.inPoint || a.outPoint!==e.outPoint || a.stretch!==100 || a.timeRemapEnabled!==false || a.enabled!==true)throw new Error("review_sample_mapping_changed");}}
+  for(var r=0;r<expectedLayers.length;r++){var e=expectedLayers[r],a=actualLayers[r];if(!a.source || a.source.id!==e.sourceItemId || a.startTime!==e.startTime || a.inPoint!==e.inPoint || a.outPoint!==e.outPoint || a.stretch!==e.stretch || a.timeRemapEnabled!==false || a.enabled!==true)throw new Error("review_sample_mapping_changed");}}
  app.beginUndoGroup("Codex Create Placeholder Review");
  try {
   for(var c=0;c<spec.controls.length;c++){var desired=spec.controls[c];var comp=create(desired);controls.push(comp);addReference(comp,desired.layers[0],find(desired.layers[0].sourceItemId));}

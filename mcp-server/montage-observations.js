@@ -8,6 +8,7 @@ const {
 } = require("./montage-contract");
 const { buildSourceUsageMap, mediaKeyForSource } = require("./placeholder-usage");
 const { validateGeometry } = require("./placeholder-framing");
+const { isValidStretch } = require("./placeholder-timing");
 const keyOf = target => `${target.compItemId}:${target.layerId}`;
 const close = (a, b) => finite(a) && finite(b) && Math.abs(a - b) <= EPSILON;
 const same = (a, b) => stableJson(a) === stableJson(b);
@@ -139,6 +140,11 @@ function validateObservations({ observations, manifest, materials, budgets, bloc
   const usage = buildSourceUsageMap({ inventory: comps.size === observations.inventory?.comps?.length &&
     sources.size === observations.inventory?.sources?.length ? observations.inventory : null, roots,
     groupMappings: Array.isArray(supplied?.groupMappings) ? supplied.groupMappings : [], maxNodes: budgets.graphNodes });
+  const boundTargets=new Set((manifest.assignments || []).map(a=>keyOf(a.target)));
+  for(const occurrence of usage.occurrences || []) {
+    const layer=comps.get(occurrence.target.compItemId)?.layers.find(l=>l.id===occurrence.target.layerId);
+    if(layer && layer.stretch!==100 && !boundTargets.has(keyOf(occurrence.target)))addBlocker(blockers,"unsupported_unbound_affine_usage","observations.usage");
+  }
   if (!usage.ok || !usage.complete) addBlocker(blockers, "incomplete_native_usage", "observations.usage", { reason: usage.reason, unsupported: usage.unsupported });
   if (!isRecord(supplied) || supplied.ok !== true || supplied.complete !== true) addBlocker(blockers, "incomplete_usage", "observations.usage");
   else {
@@ -166,7 +172,7 @@ function bindTargetObservation({ assignment, scene, material, facts, blockers, p
     addBlocker(blockers, "target_inventory_mismatch", path);
   }
   validateVideoSource(sources.get(layer?.sourceItemId), `${path}.currentSource`, blockers);
-  if (!layer || layer.enabled !== true || layer.locked !== false || layer.stretch !== 100 || layer.timeRemapEnabled !== false) addBlocker(blockers, "unsupported_target_layer", path);
+  if (!layer || layer.enabled !== true || layer.locked !== false || !isValidStretch(layer.stretch) || layer.timeRemapEnabled !== false) addBlocker(blockers, "unsupported_target_layer", path);
   const footprint = observed.footprint;
   if (!isRecord(footprint) || footprint.complete !== true) addBlocker(blockers, "unknown_footprint", path);
   else for (const [field, code] of [["hasTrackMatte", "unsupported_track_matte"], ["hasEffects", "unsupported_effects"], ["hasExpressions", "unsupported_expressions"], ["hasTransformKeys", "unsupported_transform_keys"]]) {

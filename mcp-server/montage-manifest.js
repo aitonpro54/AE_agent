@@ -12,6 +12,7 @@ const { computeRequiredFrameCoverage, verifyFrameCoverage } = require("./montage
 const { validateObservations, bindTargetObservation, keyOf } = require("./montage-observations");
 const { buildPlaceholderPlan } = require("./placeholder-plan-builder");
 const { checkPlaceholderAssignments, mediaKeyForSource } = require("./placeholder-usage");
+const { isValidStretch, isCutRootAligned } = require("./placeholder-timing");
 const list = value => Array.isArray(value) ? value : [];
 const close = (a, b) => finite(a) && finite(b) && Math.abs(a - b) <= EPSILON;
 const sameSet = (a, b) => Array.isArray(a) && Array.isArray(b) && stableJson(sortedSet(a)) === stableJson(sortedSet(b));
@@ -145,7 +146,12 @@ function assignmentsContract({ manifest, scenes, materials, facts, fps, budgets,
     const rootValid = validRange(rootRange, fps, `${path}.rootRange`, blockers);
     const sourceValid = validRange(assignment.sourceRange, fps, `${path}.sourceRange`, blockers, material?.duration);
     if (rootValid && (!Array.isArray(scene?.rootRange) || rootRange[0] < scene.rootRange[0] || rootRange[1] > scene.rootRange[1])) addBlocker(blockers, "assignment_outside_scene", `${path}.rootRange`);
-    if (rootValid && sourceValid && !close(rootRange[1] - rootRange[0], assignment.sourceRange[1] - assignment.sourceRange[0])) addBlocker(blockers, "source_duration_mismatch", `${path}.sourceRange`);
+    const targetKey = isRecord(assignment.target) ? keyOf(assignment.target) : "";
+    const observedTarget = facts.targets.get(targetKey);
+    const targetStretch = observedTarget?.targetLayer?.stretch;
+    if (!isValidStretch(targetStretch)) addBlocker(blockers,"unsupported_target_stretch",path);
+    const k = isValidStretch(targetStretch) ? targetStretch / 100 : NaN;
+    if (rootValid && sourceValid && !close(rootRange[1] - rootRange[0], k * (assignment.sourceRange[1] - assignment.sourceRange[0]))) addBlocker(blockers, "source_duration_mismatch", `${path}.sourceRange`);
     const crop = assignment.crop;
     checkExactKeys(crop, ["mode", "samples", "marginPixels"], `${path}.crop`, blockers, "unknown_crop_field");
     if (!isRecord(crop) || crop.mode !== "static-cover") addBlocker(blockers, "unsupported_crop_mode", `${path}.crop`);
@@ -153,7 +159,9 @@ function assignmentsContract({ manifest, scenes, materials, facts, fps, budgets,
     if (!finite(crop?.marginPixels) || crop.marginPixels < 0) addBlocker(blockers, "invalid_crop_margin", `${path}.crop.marginPixels`);
     for (const [i, sample] of list(crop?.samples).entries()) {
       checkExactKeys(sample, ["sourceTime", "coordinateSpace", "imageRef", "imageSha256", "observation", "subjects", "noSignificantSubjects"], `${path}.crop.samples[${i}]`, blockers, "unknown_crop_sample_field");
-      if (!isRecord(sample) || !isTimeAligned(sample.sourceTime, fps) || !sourceValid || sample.sourceTime < assignment.sourceRange[0] || sample.sourceTime >= assignment.sourceRange[1]) addBlocker(blockers, "invalid_crop_sample", `${path}.crop.samples[${i}]`);
+      const mappedRootTime = rootRange ? rootRange[0] + k * (sample.sourceTime - assignment.sourceRange[0]) : null;
+      const timeAligned = targetStretch === 100 ? isTimeAligned(sample.sourceTime, fps) : (mappedRootTime !== null && isTimeAligned(mappedRootTime, fps));
+      if (!isRecord(sample) || !timeAligned || !sourceValid || sample.sourceTime < assignment.sourceRange[0] || sample.sourceTime >= assignment.sourceRange[1]) addBlocker(blockers, "invalid_crop_sample", `${path}.crop.samples[${i}]`);
     }
     if (!Array.isArray(assignment.shots) || !assignment.shots.length) addBlocker(blockers, "empty_shots", `${path}.shots`);
     let previous = sourceValid ? assignment.sourceRange[0] : null;
@@ -167,12 +175,20 @@ function assignmentsContract({ manifest, scenes, materials, facts, fps, budgets,
       if (validRange(shot.sourceRange, fps, `${shotPath}.sourceRange`, blockers, material?.duration)) {
         if (!close(shot.sourceRange[0], previous)) addBlocker(blockers, "non_contiguous_shots", shotPath);
         previous = shot.sourceRange[1];
-        if (i < assignment.shots.length - 1) boundaries.push(previous);
+        if (i < assignment.shots.length - 1) {
+          boundaries.push(previous);
+          if (rootValid && targetStretch !== 100 && !isTimeAligned(rootRange[0] + k * (previous - assignment.sourceRange[0]), fps)) {
+            addBlocker(blockers, "unsupported_affine_cut_grid", shotPath);
+          }
+        }
+        if (rootValid && k * (shot.sourceRange[1] - shot.sourceRange[0]) < (1 / fps) - EPSILON) {
+          addBlocker(blockers, "empty_shots", shotPath);
+        }
       }
     }
     if (!sourceValid || !close(previous, assignment.sourceRange[1])) addBlocker(blockers, "shots_do_not_cover_source_range", `${path}.shots`);
     if (sourceValid && rootValid) cuts.set(assignment.sceneId, (cuts.get(assignment.sceneId) || 0) + boundaries.filter(t => {
-      const rootTime = rootRange[0] + t - assignment.sourceRange[0];
+      const rootTime = rootRange[0] + k * (t - assignment.sourceRange[0]);
       return rootTime > scene?.rootRange?.[0] + EPSILON && rootTime < scene?.rootRange?.[1] - EPSILON;
     }).length);
     const intent = { materialId: assignment.materialId, sourceRange: assignment.sourceRange, rootRange, crop };
@@ -297,7 +313,8 @@ function validateMontageManifest(input = {}) {
     const assignments = assignmentsContract({ manifest, scenes, materials, facts, fps, budgets, blockers });
     groupsContract({ manifest, assignments, materials, facts, blockers });
     dependenciesContract({ manifest, scenes, assignments, materials, facts, observations, blockers });
-    const required = computeRequiredFrameCoverage({ scenes: [...scenes.values()], assignments: [...assignments.values()], fps });
+    const timingByAssignment=new Map([...assignments.values()].map(a=>[a.assignmentId,{stretch:facts.targets.get(keyOf(a.target))?.targetLayer?.stretch}]));
+    const required = computeRequiredFrameCoverage({ scenes: [...scenes.values()], assignments: [...assignments.values()], fps, timingByAssignment });
     const coverage = verifyFrameCoverage({ manifestCoverage: manifest.frameCoverage, requiredMap: required, limits: budgets, fps,
       scenes: [...scenes.values()], assignments: [...assignments.values()] });
     blockers.push(...coverage.blockers);

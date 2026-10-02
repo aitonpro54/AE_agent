@@ -1,5 +1,7 @@
 "use strict";
 
+const { isValidStretch } = require("./placeholder-timing");
+
 const isId = (value) => Number.isSafeInteger(value) && value > 0;
 const isTime = (value) => typeof value === "number" && Number.isFinite(value);
 // Interval boundaries must retain their precision: even a sub-microsecond
@@ -657,7 +659,7 @@ function buildSourceUsageMap({
         recordUnsupported({ compItemId: currentCompId, layerId: layer.id, reason: "unknown_layer_stretch" });
         continue;
       }
-      if (layer.stretch !== 100) {
+      if (!isValidStretch(layer.stretch)) {
         recordUnsupported({ compItemId: currentCompId, layerId: layer.id, reason: "unsupported_stretch", stretch: layer.stretch });
         continue;
       }
@@ -716,6 +718,10 @@ function buildSourceUsageMap({
       }
 
       if (compsById.has(layer.sourceItemId)) {
+        if (layer.stretch !== 100) {
+          recordUnsupported({ compItemId: currentCompId, layerId: layer.id, reason: "unsupported_stretch", stretch: layer.stretch });
+          continue;
+        }
         const childComp = compsById.get(layer.sourceItemId);
         // Clip local child range against [0, childComp.duration)
         const clippedChildStart = Math.max(0, localStart);
@@ -762,18 +768,21 @@ function buildSourceUsageMap({
             continue;
           }
 
-          const footageStart = Math.max(0, localStart);
-          const footageEnd = Math.min(source.duration, localEnd);
+          const k = layer.stretch / 100;
+          const sourceStart = localStart / k;
+          const sourceEnd = localEnd / k;
+          const footageStart = Math.max(0, sourceStart);
+          const footageEnd = Math.min(source.duration, sourceEnd);
 
           if (footageStart >= footageEnd) {
             continue;
           }
 
-          const shiftStart = footageStart - localStart;
-          const shiftEnd = localEnd - footageEnd;
+          const shiftStartInLocal = (footageStart - sourceStart) * k;
+          const shiftEndInLocal = (sourceEnd - footageEnd) * k;
           const clippedRoot = [
-            exactTime(layerRootRange[0] + shiftStart),
-            exactTime(layerRootRange[1] - shiftEnd)
+            exactTime(layerRootRange[0] + shiftStartInLocal),
+            exactTime(layerRootRange[1] - shiftEndInLocal)
           ];
 
           const mediaKey = mediaKeyForSource(source);
@@ -796,6 +805,10 @@ function buildSourceUsageMap({
             groupId
           });
         } else if (source.type === "comp" && compsById.has(source.itemId)) {
+          if (layer.stretch !== 100) {
+            recordUnsupported({ compItemId: currentCompId, layerId: layer.id, reason: "unsupported_stretch", stretch: layer.stretch });
+            continue;
+          }
           const childComp = compsById.get(source.itemId);
           const clippedChildStart = Math.max(0, localStart);
           const clippedChildEnd = Math.min(childComp.duration, localEnd);
@@ -817,6 +830,10 @@ function buildSourceUsageMap({
             );
           }
         } else {
+          if (layer.stretch !== 100) {
+            recordUnsupported({ compItemId: currentCompId, layerId: layer.id, reason: "unsupported_stretch", stretch: layer.stretch });
+            continue;
+          }
           recordUnsupported({
             compItemId: currentCompId,
             layerId: layer.id,

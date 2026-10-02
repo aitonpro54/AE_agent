@@ -7848,6 +7848,8 @@ async function guardMontagePipelinePlan(plan, options = {}) {
 }
 
 async function guardPlaceholderPlan(plan, options = {}) {
+  if(!plan.montagePipeline && plan.expectedReadBack?.stretch!==undefined && plan.expectedReadBack.stretch!==100)
+    throw placeholderError("affine_plan_requires_montage_binding");
   const store = projectStateMemory.loadProjectStateStore();
   const mutations = (options.steps || plan.steps || []).filter(step => MUTATING_TOOL_NAMES.has(step.tool || step.toolName))
     .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
@@ -7856,15 +7858,30 @@ async function guardPlaceholderPlan(plan, options = {}) {
     await guardMontagePipelinePlan(plan, options);
   }
   const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
-  if (!mutations.length || !hasState && !plan.placeholderConstraints && !plan.placeholderFraming) {
+  if (!mutations.length || (!hasState && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline)) {
     return { ok: true, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
   }
   const { projectFile, state } = await currentPlaceholderState();
-  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming) {
+  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline) {
     return { ok: true, projectFile, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
   }
-  const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
-    protectedProperties: snapshot.properties.map(prop => prop.path) })) });
+  const targetSpecs = [
+    ...state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target, protectedProperties: snapshot.properties.map(prop => prop.path) })),
+    ...mutations.filter(m => m.args && m.args.expectedCompItemId && m.args.expectedLayerId).map(m => ({
+      target: { compItemId: m.args.expectedCompItemId, layerId: m.args.expectedLayerId },
+      protectedProperties: []
+    }))
+  ];
+  const uniqueSpecs = [];
+  const seenSpecs = new Set();
+  for (const s of targetSpecs) {
+    const key = `${s.target.compItemId}:${s.target.layerId}`;
+    if (!seenSpecs.has(key)) {
+      seenSpecs.add(key);
+      uniqueSpecs.push(s);
+    }
+  }
+  const inventory = await readPlaceholderInventory({ targets: uniqueSpecs });
   if (!inventory || inventory.complete !== true || !placeholderSourceRecovery.pathsEqual(projectFile, inventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
   const verifiedReviewCleanupOwners=[];
   const protectionSteps=[];
@@ -7915,7 +7932,8 @@ async function guardPlaceholderPlan(plan, options = {}) {
   }
   if(projectStateMemory.readProjectState(projectFile).revision!==state.revision)throw placeholderError("project_state_revision_changed");
   Object.defineProperty(result, "_inventory", { value: inventory, enumerable: false });
-  if (assignments.checks.length) Object.defineProperty(result, "inventoryBaseline", { value: inventory, enumerable: false });
+  const hasAffineTarget = inventory && Array.isArray(inventory.evidence) && inventory.evidence.some(value => value.layer && value.layer.stretch !== 100);
+  if (assignments.checks.length || hasAffineTarget || Boolean(plan.montagePipeline)) Object.defineProperty(result, "inventoryBaseline", { value: inventory, enumerable: false });
   return result;
 }
 async function getPlaceholderProtection() {
@@ -8035,7 +8053,7 @@ async function trustedPlaceholderAction(body) {
     for (const value of inventory.evidence) {
       const source = value.layer && value.layer.source && inventory.sources.find(item => item.itemId === value.layer.source.itemId);
       if (!source || source.type !== "footage" || source.hasVideo !== true || source.footageMissing !== false ||
-        value.layer.stretch !== 100 || value.layer.timeRemapEnabled !== false) throw placeholderError("unsupported_selected_video_timing");
+        !require("./placeholder-timing").isValidStretch(value.layer.stretch) || value.layer.timeRemapEnabled !== false) throw placeholderError("unsupported_selected_video_timing");
     }
     next = projectStateController.setConstraints(projectFile, { distinctGroups: body.distinctGroups, disallowSourceOverlap: body.disallowSourceOverlap,
       selectedTargets: inventory.selectedTargets }, state.revision);
@@ -10106,6 +10124,11 @@ const tools = [
         compName: {
           type: "string",
           description: "Optional exact composition name to target when compItemIndex is not provided."
+        },
+        expectedCompItemId: {
+          type: "integer",
+          minimum: 1,
+          description: "Optional guard; fails if the resolved composition itemId differs before any filesystem side effects."
         },
         expectedCompName: {
           type: "string",
@@ -12272,7 +12295,7 @@ tools.push({name:"reconcile_plan_run",description:"Read actual state for a serve
 
 // Persistent IDs supplement address hints on existing typed surfaces.
 for (const tool of tools) {
-  if(tool.name==="save_comp_frame_png")Object.assign(tool.inputSchema.properties,{reviewOwner:{type:"string",description:"Registered review owner; requires stable reviewItemId/full resolution/retained PNG."},reviewItemId:{type:"integer",minimum:1}});
+  if(tool.name==="save_comp_frame_png")Object.assign(tool.inputSchema.properties,{reviewOwner:{type:"string",description:"Registered review owner; requires stable reviewItemId/full resolution/retained PNG."},reviewItemId:{type:"integer",minimum:1},expectedCompItemId:{type:"integer",minimum:1}});
   if(tool.name==="cleanup_test_items")Object.assign(tool.inputSchema.properties,{owner:{type:"string",description:"Server-registered review UUID; requires the exact whole registered ID set."},itemIds:{type:"array",minItems:1,maxItems:25,items:{type:"integer",minimum:1}}});
   if (placeholderProtection.TARGET_SETTERS.has(tool.name) || tool.name === "set_effect_property") {
     tool.inputSchema.properties.expectedCompItemId = { type: "integer", minimum: 1 };
@@ -13397,9 +13420,10 @@ async function callTool(name, args, executionContext) {
     try {
       let sourceId=args.sourceItemId;
       if(name==="propose_placeholder_cover" && sourceId===undefined && args.useCurrentSource!==true)throw placeholderError("explicit_planned_source_or_current_choice_required");
+      if(name==="propose_placeholder_cover" && (args.timing!==undefined || args.requiredTimes!==undefined))throw placeholderError("client_timing_authority_forbidden");
       const read=await readPlaceholderGeometry(args.target,sourceId===undefined ? null : sourceId);
       const framing=require("./placeholder-framing");
-      let usage=null,sourceEvidence=null;
+      let usage=null,sourceEvidence=null,timing;
       if(name==="propose_placeholder_cover"){
         const inventory=await readPlaceholderInventory();
         const state=inventory.projectFile ? projectStateMemory.readProjectState(inventory.projectFile) : {groupMappings:[]};
@@ -13407,8 +13431,17 @@ async function callTool(name, args, executionContext) {
         usage=freshPlaceholderUsage(inventory,roots,state);
         const source=inventory.sources.find(item=>item.itemId===read.sourceItemId);
         if(source)sourceEvidence={itemId:source.itemId,itemIndex:source.itemIndex,name:source.name,type:source.type,duration:source.duration,frameRate:source.frameRate};
+        const comp=inventory.comps.find(c=>c.itemId===read.target.compItemId),layer=comp && comp.layers.find(l=>l.id===read.target.layerId);
+        const affine=require("./placeholder-timing");
+        if(!layer || !affine.isValidStretch(layer.stretch) || layer.timeRemapEnabled!==false)throw placeholderError("unsupported_target_timing");
+        if(layer.stretch!==100) {
+          if(source?.type!=="footage" || !Array.isArray(args.sourceRange) || args.sourceRange.length!==2)throw placeholderError("missing_affine_cover_timing_context");
+          const localRange=[layer.inPoint,layer.outPoint];
+          timing={stretch:layer.stretch,rootRange:localRange,localRange,sourceRange:args.sourceRange,
+            targetStartTime:affine.desiredStartTime(layer.inPoint,args.sourceRange[0],layer.stretch),rootFps:comp.frameRate};
+        }
       }
-      const result=name==="verify_placeholder_coverage" ? framing.verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform}) : framing.proposePlaceholderCover({...args,target:{...read.target,sourceItemId:read.sourceItemId},geometry:read.geometry,usage});
+      const result=name==="verify_placeholder_coverage" ? framing.verifyPlaceholderCoverage({geometry:read.geometry,transform:read.transform}) : framing.proposePlaceholderCover({...args,timing,target:{...read.target,sourceItemId:read.sourceItemId},geometry:read.geometry,usage});
       if(result.alternatives && result.alternatives.mediaKey){result.alternatives.sourceKey=placeholderReviewService.hash(result.alternatives.mediaKey);delete result.alternatives.mediaKey;result.alternatives.sourceItem=sourceEvidence;}
       return toolResult({...result,target:read.target,sourceItemId:read.sourceItemId,authority:"fresh_stable_id_geometry",artisticAccepted:false});
     }catch(error){return toolResult({ok:false,code:error.code || error.message},true);}
@@ -15148,6 +15181,7 @@ async function callTool(name, args, executionContext) {
       let compItemIndex = optionalPositiveInteger(args, "compItemIndex");
       const compName = optionalString(args, "compName", "");
       const expectedCompName = optionalString(args, "expectedCompName", "");
+      const expectedCompItemId = optionalPositiveInteger(args, "expectedCompItemId");
       const requestedTime = hasArg(args, "time") ? optionalNumber(args, "time", 0) : null;
       const resolutionFactor = optionalResolutionFactor(args, "resolutionFactor") || [1, 1];
       const deleteAfterReadBack = optionalBoolean(args, "deleteAfterReadBack", false);
@@ -15159,9 +15193,25 @@ async function callTool(name, args, executionContext) {
         review=await requireFreshReviewRecord(args.reviewOwner);
         const item=review.items.find(row=>row.itemId===args.reviewItemId);
         if(!item || deleteAfterReadBack || allowOverwrite || requestedTime!==0 || resolutionFactor[0]!==1 || resolutionFactor[1]!==1)throw placeholderError("review_export_requires_exact_registered_native_frame");
+        if (expectedCompItemId !== null && item.itemId !== expectedCompItemId) {
+          throw placeholderError("review_export_comp_identity_mismatch");
+        }
         compItemIndex=item.itemIndex;
         reviewContentHash=await reviewContentFingerprint(review.record);
+      } else if (expectedCompItemId !== null) {
+        const probe = await runExtendScriptBody(`
+          ${resolveCompScript}
+          var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)});
+          return { id: comp.id, name: comp.name, duration:comp.duration, frameRate:comp.frameRate, time:comp.time };
+        `);
+        if (!probe || !probe.result || probe.result.id !== expectedCompItemId) {
+          return toolResult(`Composition identity mismatch before export. Expected comp itemId ${expectedCompItemId} but found ${(probe && probe.result && probe.result.id) || "unknown"}.`, true);
+        }
+        const frameTime=requestedTime===null ? probe.result.time : requestedTime;
+        if(!Number.isFinite(frameTime) || frameTime<0 || frameTime>=probe.result.duration || !require("./placeholder-timing").isGridAligned(frameTime,probe.result.frameRate))
+          throw placeholderError("stable_comp_png_frame_outside_grid_or_range");
       }
+      if(expectedCompItemId!==null && allowOverwrite)throw placeholderError("stable_comp_png_overwrite_requires_fresh_capture");
 
       if (requestedTime !== null && requestedTime < 0) {
         return toolResult("time must be greater than or equal to 0 seconds.", true);
@@ -15172,7 +15222,7 @@ async function callTool(name, args, executionContext) {
         }
         fs.unlinkSync(output.resolvedPath);
       }
-      fs.mkdirSync(path.dirname(output.resolvedPath), { recursive: true });
+      if(expectedCompItemId===null)fs.mkdirSync(path.dirname(output.resolvedPath), { recursive: true });
       const exportStartedAt = Date.now();
 
       const result = await runExtendScriptBody(`
@@ -15184,6 +15234,10 @@ async function callTool(name, args, executionContext) {
         if (expectedCompName && comp.name !== expectedCompName) {
           throw new Error("Composition name mismatch. Expected '" + expectedCompName + "' but found '" + comp.name + "'.");
         }
+        var expectedCompItemId = ${expectedCompItemId === null ? "null" : expectedCompItemId};
+        if (expectedCompItemId !== null && comp.id !== expectedCompItemId) {
+          throw new Error("Composition identity mismatch. Expected comp itemId " + expectedCompItemId + " but found " + comp.id + ".");
+        }
         if (typeof comp.saveFrameToPng !== "function") {
           throw new Error("CompItem.saveFrameToPng is not available in this After Effects host.");
         }
@@ -15193,8 +15247,13 @@ async function callTool(name, args, executionContext) {
         if (saveTime < 0 || saveTime > comp.duration) {
           throw new Error("time must be inside the composition duration.");
         }
+        if(expectedCompItemId!==null && (saveTime>=comp.duration || Math.abs(saveTime*comp.frameRate-Math.round(saveTime*comp.frameRate))>0.000001))throw new Error("stable_comp_png_frame_outside_grid_or_range");
 
         var outputFile = new File(${aeLiteral(output.resolvedPath)});
+        if(expectedCompItemId!==null) {
+          if(outputFile.exists)throw new Error("stable_comp_png_output_exists");
+          if(!outputFile.parent || (!outputFile.parent.exists && outputFile.parent.create()!==true))throw new Error("stable_comp_png_output_directory_unavailable");
+        }
         var originalResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
         var targetResolutionFactor = ${aeLiteral(resolutionFactor)};
         var restoredResolutionFactor = null;
@@ -15211,6 +15270,7 @@ async function callTool(name, args, executionContext) {
         return {
           comp: {
             itemIndex: __codexProjectIndexForItem(comp),
+            itemId: comp.id,
             name: comp.name,
             width: comp.width,
             height: comp.height,
@@ -15286,6 +15346,9 @@ async function callTool(name, args, executionContext) {
         deletedAfterReadBack: deleteAfterReadBack,
         mimeType: "image/png"
       };
+      payload.completeRootRenderState = false;
+      payload.rootFreshness = { status: "blocked", code: "unsupported_unknown_render_graph" };
+      if(expectedCompItemId!==null)payload.captureBinding={status:"blocked",code:"missing_canonical_unit_material_capture_binding"};
       if (review) {
         payload.reviewOwner = args.reviewOwner;
         payload.reviewItemId = args.reviewItemId;
@@ -21516,6 +21579,14 @@ async function callToolLogged(source, name, args, executionContext) {
       if (existing) {
         if (existing.argsHash !== idContext.argsHash) {
           throw new Error(`idempotencyKey conflict for ${name}: the key was already used with different arguments in scope ${idContext.scope}.`);
+        }
+        if(name==="save_comp_frame_png" && args.expectedCompItemId!==undefined) {
+          if(args.reviewOwner)throw placeholderError("root_png_replay_requires_fresh_capture");
+          const wanted=requiredPositiveInteger(args,"expectedCompItemId");
+          const probe=await runExtendScriptBody(`${resolveCompScript}
+            var comp=__codexResolveComp(${optionalPositiveInteger(args,"compItemIndex") ?? "null"},${aeLiteral(optionalString(args,"compName",""))});return {itemId:comp.id};`);
+          if(probe.result?.itemId!==wanted)throw placeholderError("png_comp_identity_changed_before_cached_return");
+          throw placeholderError("root_png_replay_requires_fresh_capture");
         }
         if (name === "save_comp_frame_png") {
           const replayCheck = validateCachedPngReplay(existing, { exportDir: GENERATED_EXPORT_DIR });
