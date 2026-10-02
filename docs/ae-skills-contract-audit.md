@@ -31,3 +31,9 @@ Frontmatter трёх изменённых SKILL.md остался идентич
 и ссылки проверены отдельно. Официальный `quick_validate.py` недоступен: PyYAML
 отсутствует в локальном и bundled Python. Зависимости ради этой проверки не
 устанавливались; этот результат не обозначен как успешный полный YAML-validator.
+
+В проект Antigravity добавлены восемь точных offline check commands и один
+read-only MCP grant `after-effects/get_plan_run_evidence`: итог 230 rules.
+Другие поля project JSON сравнены с резервными копиями и сохранены; wildcard,
+глобальные права и auth не менялись. Новые команды будущих задач разрешаются
+отдельно по точному scope. Summary и адресное evidence используют прежние gates.

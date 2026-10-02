@@ -89,6 +89,10 @@ AE/CEP/UI controller. После исправления заново прове�
 подтверждают просмотр. `unknown` требует status/process/files/read-back; это не
 основание повторить план. Старые ошибочные receipts не переписывать.
 
+После поручения собирать [локальную сводку завершения](ae-task-completion.md)
+из AGY metadata, артефактов и предоставленных native run IDs. Она сохраняет
+границы доказательств и не заменяет просмотр итоговых сцен по manifest.
+
 На следующем явно порученном монтаже измерять запуски AGY, повторные inspections/
 exports, байты ответов, время, documented corrections и записанные input/cached/
 output через локальные `get_task_usage`/`get_usage_history`. UUID брать из runtime.

@@ -168,12 +168,12 @@ Rules/semantic65+43+73/property/generated-safety/portablePNG/library/planbuilder
 
 ### Progress
 
-Блок1contract/AEskills принят65d2379. Блок2: defaultfull +summary после полного verifier, canonical/paged recorded evidence со stable IDs и строгими hash/bindings/realpaths принят offline. Блок3сводка AGY впереди; docs/compact-plan-results.md описывает API.
+Блок1: workflow/AE skills принят65d2379. Блок2: full/summary и адресное recorded evidence принят7ae3522. Блок3: read-only сводка AGY/artifacts/native receipts с независимыми execution/technical/visual состояниями принята. Контракты: docs/{montage-workflow,compact-plan-results,ae-task-completion,ae-skills-contract-audit}.md.
 
 ### Decision Log
 
-Defaultfull/APIbackcompat, полная проверка доprojection, recorded≠fresh, unknown безreplay. ТолькоAEAgent, AEP/frozen/global/agy unchanged.229exactgrants для8offlinechecks. Flashprovider socket закрыт послеcode/tests; PID2716gone, Solhighfallback завершил2. Посторонний Flashverifier drift удалён; preexisting insufficient/pass assertion исправлена по HEAD proof, nativeverifier unchanged. Skill backups ignored, nohandoff.
+Full по умолчанию; полная проверка до сокращения, recorded≠fresh, unknown требует сверки. AE gates/маршрут сохранены; AEP/frozen/global/общий agy не менялись.230 exact grants:8 offline commands+1 read-only evidence. Flash потерял provider socket после code/tests; процесс завершён, Sol/high завершил2–3 в том же scope. Verifier drift удалён; прежний insufficient/pass assertion уточнён по HEAD proof без изменения verifier. Changed без before proof неизвестен; PNG/declaration не означают полный task acceptance. Skill backups ignored, handoff не создавался.
 
 ### Validation
 
-Блок1rules/diff/skillfrontmatter+fields+links PASS; quick_validate unavailable(PyYAML), deps unchanged. Блок2root6counterexamples +actualmodule/isolatedHTTP/runner/parity/default/persistence/replay/numeric/Unicode PASS;20step132153→12249bytes<=12KiB. Rules/semantic/recovery/review/node/diff PASS. No liveAE/экономия claims;3completion впереди.
+Блок1 rules/diff/frontmatter/fields/links PASS; quick_validate недоступен(PyYAML), deps не менялись. Блок2:6 root counterexamples и actual module/isolated HTTP/runner/parity/default/persistence/replay/numeric/Unicode PASS;20steps132153→12249bytes≤12KiB. Блок3:23 actual module/CLI groups PASS, включая large receipt/смену hash/unknown; реальная failed AGY metadata остаётся failed/unknown, exit1 ожидаем. Rules/node/diff/review PASS. Idle daemon21508 обновлён, sourceSHA69d6616c совпал с checkout, панель connected/autonomy on/queues0/editnull; AEP commands0. Фактические время/расход/повторные reads измерять на следующем порученном монтаже.
