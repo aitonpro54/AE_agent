@@ -80,11 +80,12 @@ Maintain AE Agent 3.2.0 in this clean repository. The product target is
 - Before editing, compare the relevant examples with the actual target frame:
   date as one visual group, event type versus event title, main performers versus
   supporting details such as cities and instruments. Record the intended hierarchy.
-- Общие принципы равного визуального веса смысловых элементов, принадлежности
-  подписей и оптического выравнивания заданы в `C:/Users/Ant/.codex/AGENTS.md`
-  (раздел «Оформление текстов») и применяются ко всем текстовым макетам.
-  В AE проверяй их после трансформаций родительских слоёв и вложенных композиций:
-  одинаковый Source Text fontSize не доказывает равную видимую высоту букв.
+- Принципы оформления любых текстов через AE Agent описаны в
+  `docs/text-layout-policy.md`; рабочий набор инструкций —
+  `mcp-server/text-layout-policy.js`. Применяй их при подготовке поручений
+  исполнителям и проверке результата. Проверяй визуальный вес и поля после
+  трансформаций вложенных композиций: Source Text fontSize и центр слоя
+  сами по себе не доказывают корректность итогового кадра.
 - Preserve that hierarchy when replacing text. If one typed text update would
   flatten different styles in a layer, use separately controllable text ranges or
   reviewed text layers in the existing comp. Fit text with deliberate line breaks,

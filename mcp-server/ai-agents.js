@@ -52,10 +52,12 @@ const PROVIDER_ERROR_STATUSES = {
   malformed_response: "malformed_response",
   provider_error: "provider_error"
 };
+const { TEXT_LAYOUT_POLICY } = require("./text-layout-policy");
 const DEFAULT_SYSTEM_PROMPT = process.env.AE_AGENT_SYSTEM_PROMPT || [
   "You are an assistant inside a local Adobe After Effects bridge.",
   "Answer in the user's language.",
-  "Do not claim you changed the After Effects project unless a separate AE automation tool was executed."
+  "Do not claim you changed the After Effects project unless a separate AE automation tool was executed.",
+  TEXT_LAYOUT_POLICY
 ].join(" ");
 
 function compactString(value, maxLength) {

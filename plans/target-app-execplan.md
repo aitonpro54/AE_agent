@@ -2,7 +2,7 @@
 
 **Codeburn — 2 октября 2026. Progress:** stdio/HTTP get_task_usage/get_usage_history и native journal реализованы (5827223), runtime обновлён в idle, CEP Connected, persistence active. **Decision Log:** explicit runtime UUID; SQLite в Codeburn; native отдельно, guards/auth сохранены; Flash partial patch result независимо исправлен родителем. **Validation:** production-usage/usage/HTTP fixtures, syntax/diff PASS; real MCP/CLI/web totals совпали, query 0,28 с; общий план и proof — Codeburn/PLAN.md. Hooks требуют штатного trust, recovery Windows 5 мин активен.
 
-**Оформление текстов — 2 октября 2026. Progress:** общие принципы сохранены в глобальном `C:/Users/Ant/.codex/AGENTS.md`, проект содержит AE-уточнение. **Decision Log:** равноправные элементы имеют равный визуальный вес, подписи следуют смысловой принадлежности, поля проверяются оптически в итоговом контейнере. **Validation:** rules/diff PASS; отдельные строки общего стиля проверены адресным read-back и итоговыми PNG; прежние записи плана уплотнены без изменения содержания.
+**Оформление текстов — 2 октября 2026. Progress:** принципы перенесены из глобального Codex AGENTS в общий модуль AE Agent, planner/chat/MCP и текстовый рецепт; docs/text-layout-policy.md. **Decision Log:** смысловая иерархия/равный вес/оптические поля; custom system и AE gates сохранены, Flash partial после timeout/exited завершён родителем. **Validation:** policy/provider/optimization/discovery/registry/rules/syntax/diff PASS; текущий get_solution возвращает правила. Мост не перезапускался, новые промпты — после штатного запуска/подключения; AEP не менялся.
 
 ## Активный baseline
 

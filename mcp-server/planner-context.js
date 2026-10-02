@@ -1,6 +1,7 @@
 "use strict";
 
 const guidelines = require("./planner-tool-guidance");
+const { TEXT_LAYOUT_POLICY, isTextLayoutRequest } = require("./text-layout-policy");
 const MAX_PLANNER_CHARS = 24000;
 const MAX_USER_CHARS = 12000;
 const FINAL_POLICY = "Final execution contract: draft JSON only; use current typed inspection evidence, explicit targets, dependsOnStep/resultBindings, verifyAfter:true and idempotencyKeyTemplate for mutations. Never execute while planning. Plan validation, dry-run, confirmation, checkpoint/edit-session and read-back gates remain mandatory. End of AE planning instructions.";
@@ -72,12 +73,14 @@ function buildPlannerContext({ args = {}, snapshot, solutionHints, memorySection
   }).join("\n");
   const otherNames = tools.filter((tool) => !selected.includes(tool)).map((tool) => tool.name);
   const rules = relevantGuidelines(selected, tools, mutatingNames);
+  const includeTextPolicy = isTextLayoutRequest(prompt, selected);
   const sections = [
     "User request:", prompt,
     'Return one JSON object with this shape: {"summary":"short user-facing summary","risk":"low|medium|high","requiresCheckpoint":true,"clarifyingQuestion":null,"solutionIds":[],"steps":[{"title":"short step title","intent":"what this checks or changes","tool":"MCP tool name or null","args":{},"dependsOnStep":null,"resultBindings":{},"mutatesProject":false,"verifyAfter":true,"idempotencyKeyTemplate":"ae-plan-{requestId}-step-1"}]}',
     "Human-first planning policy: answer in the user's language; interpret Russian/Cyrillic and English naturally. Choose conservative defaults only when target and scope are clear. Ask for clarification for ambiguous targets, destructive scope or file choices.",
     "Typed-tool and ExtendScript policy: prefer typed tools. Never use raw JSX for broad project deletion, save/saveAs, eval, shell execution, secrets or hard-coded user paths. Raw fallback requires inspected scope, dry-run and typed read-back; it is not a trusted reusable solution.",
     "Reuse workflow: first use reviewed solution hints; solutionIds lists only supplied IDs actually used to design this plan (otherwise []). Reuse current inspection results via resultBindings and request only missing information; never assume old indices remain valid after mutations. For layer properties leave includeProperties=false unless a specific property tree is needed. Use canonical itemIndices/layerIndices, not itemIndexes/layerIndexes. All arbitrary property paths require current inspection.",
+    includeTextPolicy ? TEXT_LAYOUT_POLICY : "",
     "Available MCP tools. Use these names exactly; do not invent tool names. Relevant contracts:", catalog,
     `Additional supported tool names (schemas and reviewed guidance are available through get_solution/search_solutions outside this single planning call): ${otherNames.join(", ")}. If the contract is unknown, plan inspection or clarification instead of inventing arguments.`,
     "Project intent memory hints. These are local project preferences, not execution shortcuts.", memorySection || "No project intent memory hints were retrieved.",

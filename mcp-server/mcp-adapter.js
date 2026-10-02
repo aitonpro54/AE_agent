@@ -5,6 +5,7 @@ const http = require("http");
 const readline = require("readline");
 const path = require("path");
 const { spawn } = require("child_process");
+const { TEXT_LAYOUT_POLICY } = require("./text-layout-policy");
 const {
   productionUsageTools,
   isProductionUsageTool,
@@ -202,7 +203,10 @@ async function handleRpc(message) {
         capabilities: {
           tools: {}
         },
-        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Use get_current_ai_agent_plan to reconcile the current project, revision, expiry and run. A new proposal supersedes the pending one. On failure inspect repairDirective and the affected targets; at most two eligible setter corrections may be proposed with parentActionId, followed by a fresh dry-run and read-back. Never retry creation, imports or an unknown outcome automatically. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion. For token usage and telemetry, use read-only get_task_usage with confirmed runtime thread UUID (never 'current') or get_usage_history from local analytics store.",
+        instructions: [
+          "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Use get_current_ai_agent_plan to reconcile the current project, revision, expiry and run. A new proposal supersedes the pending one. On failure inspect repairDirective and the affected targets; at most two eligible setter corrections may be proposed with parentActionId, followed by a fresh dry-run and read-back. Never retry creation, imports or an unknown outcome automatically. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion. For token usage and telemetry, use read-only get_task_usage with confirmed runtime thread UUID (never 'current') or get_usage_history from local analytics store.",
+          TEXT_LAYOUT_POLICY
+        ].join("\n\n"),
         serverInfo: {
           name: SERVER_NAME,
           version: SERVER_VERSION
