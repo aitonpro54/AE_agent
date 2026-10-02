@@ -132,6 +132,79 @@ Timestamps и full hashes связывают identity/provenance; они не д
 freshness или неизменность AE/файла после наблюдения. Сохранённый PNG и декларация
 samples не означают художественной приёмки.
 
-Адресная offline проверка: `npm.cmd run smoke:montage-manifest`. Она вызывает
+Адресная offline проверка M1: `npm.cmd run smoke:montage-manifest`. Она вызывает
 реальные pure modules с synthetic native-shaped fixtures; AE/CEP/providers,
 текущий AEP, M5 и этап 3 не используются.
+
+## M2: Pure Compiler и Bounded Material Adapter
+
+M2 реализует чистый компилятор планов монтажа (`mcp-server/montage-pipeline.js`) и
+изолированный адаптер верификации файлов (`mcp-server/montage-materials.js`).
+
+### Pure Compiler (`compileMontagePipeline`)
+
+Компилятор работает полностью синхронно и детерминированно, без обращений к AE,
+файловой системе, сети или вызовам моделей.
+Выходная схема: `ae-agent-montage-compilation.v1`.
+
+- **Вход**: `{ validated, observations, budgets }` либо `{ manifest, materials, observations, budgets }`.
+  Повторно валидирует вход или использует доверенный результат `validateMontageManifest`.
+- **Глобальная проверка коллизий**: вызов `checkPlaceholderAssignments` на всём
+  множестве назначений до сегментации. Одинаковые или конфликтующие намерения на
+  одну цель блокируются (`conflicting_target_intent` или `unsupported_shared_target`).
+- **Release-Order DAG и Swaps**:
+  Если новое назначение $A$ требует диапазон исходника, который в текущем проекте занят
+  слоем $B$, а слой $B$ освобождает его в другом назначении, выстраивается ребро $B \to A$
+  ($A$ зависит от $B$).
+  При взаимном пересечении ($A \leftrightarrow B$) обнаруживается цикл и возвращается
+  блокер `unsupported_atomic_exchange` (атомарный обмен несколькими слоями не поддерживается).
+- **Симуляция последовательного применения**:
+  После топологической сортировки выполняется пошаговая симуляция `checkPlaceholderAssignments`
+  для каждого юнита с обновлением промежуточного состояния занятости.
+- **Структура юнита**:
+  `{ unitId, assignmentIds, kind: 'application', dependsOn, plan, contentHash, expectedReadBack, frameRequirements, budget }`.
+  `unitId` строится из `${assignmentId}_rev${manifestRevision}`.
+  `contentHash` детерминированно фиксирует целевой слой, stable source IDs, full SHA256
+  материала, ревизии манифеста и каталога, диапазоны, геометрию, полный исполняемый план
+  (инструменты, аргументы, включая `expectedPreviousSourceItemId`), `expectedReadBack`,
+  `placeholderFraming`, `placeholderAssignments`, `placeholderConstraints`, факты маршрута,
+  субъекты кадрирования и привязку к проекту. Любое изменение в исполняемом плане или
+  источниках-псевдонимах изменяет хэш.
+  Каждый план содержит метаданные привязки `plan.montagePipeline` (unitId, manifestRevision,
+  materialRevision, materialId, sourceItemId, path, sha256, metadata, budget, project).
+- **Пакеты визуальной приёмки (`reviewPackets`)**:
+  Формируются как спецификации для штатного `build_placeholder_visual_review_plan`
+  (без создания фальшивой регистрации владельца или UUID).
+  Совместимость проверяется вызовом `resolveReviewTargets(inputs, predictedInventory)`
+  на предиктивном инвентаре после мутаций.
+  Лимиты: $\le 4$ целей на пакет, $\le 24$ сэмплов, $\le 24$ видов, шаги = `views + 3` $\le 50$
+  и $\le \text{maxSteps}$.
+  Обязательные якоря (`first`, `middle`, `last`) сохраняются в каждом пакете; при
+  секционировании цели якоря повторяются с явной причиной. Если сэмплы не помещаются в
+  лимит шагов, компилятор не отбрасывает кадры, а возвращает блокер (`review_packet_samples_cannot_fit`).
+
+### Bounded Material Adapter (`verifyMontageMaterials`)
+
+Изолированный адаптер файловой системы для проверки подготовленных материалов:
+- **Авторизация до чтения**: разрешены только те пути, которые точно соответствуют
+  импортированным источникам из доверенного инвентаря AE (`inventory.sources`).
+  Произвольные пути вызывающей стороны немедленно отклоняются (`arbitrary_path_denied`)
+  до обращения к файловой системе.
+- **Проверка realpath и изоляция**: проверка канонических путей и предотвращение побега через
+  symlink за пределы каталога исходников (`symlink_escape_denied`).
+- **Pre-stat, FD-stat и Post-stat**: сверка `dev`, `ino`, `size`, `mtimeMs` на этапе pre-stat,
+  на открытом файловом дескрипторе (`material_changed_during_open`) и после чтения с проверкой
+  повторного realpath (`material_retargeted_during_read`, `material_changed_during_read`).
+- **Потоковый полный SHA256**: потоковое чтение ограниченными блоками (64 KiB),
+  контроль лимитов на размер файла (`materialFileBytes`) и суммарный объём (`materialTotalBytes`).
+  При превышении лимита или неполном чтении SHA возвращается как `null`.
+- **Строгая валидация метаданных и бюджетов**: блокеры нормализатора бюджетов не игнорируются,
+  значения `NaN` или отсутствующие поля блокируются, дубликаты записей каталога или нативного
+  инвентаря блокируются.
+- **Сверка нативных метаданных**: проверка совпадения `width`, `height`, `pixelAspect` (строго 1),
+  `fps` и `duration` с нативным источником footage.
+- При дрейфе материала требуется выпуск новой ревизии каталога (`materialRevision`).
+
+Адресные проверки M2:
+- `npm.cmd run smoke:montage-pipeline` — 19 offline тестов компилятора, DAG, коллизий, бюджетов и пакетов.
+- `npm.cmd run smoke:montage-materials` — 20 offline тестов адаптера материалов с реальными временными файлами.

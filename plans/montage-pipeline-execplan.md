@@ -169,6 +169,9 @@ Saved AEP, export/render и protected cleanup требуют своего при
 - M1 завершён: strict manifest/readiness, native observation binding, coverage и bounded
   contracts; existing usage/framing/builder reused. Prepared catalog revision сохраняется
   отдельно. Public API и execution отсутствуют; следующий блок — M2.
+- M1 checkpoint `92f0811`. M2 завершён: pure singular-plan compiler, global/sequential
+  collision checks и release DAG, review packet partition с полным покрытием; отдельный
+  bounded material reader проверяет native path/full SHA/metadata и pre/post fd identity.
 - 2026-10-02: план подготовлен; M1–M5 и live acceptance не начаты. Реальные монтажные
   входы/frameCoverage подтверждаются отдельным поручением, не извлечены из старого AEP.
 
@@ -189,6 +192,10 @@ Saved AEP, export/render и protected cleanup требуют своего при
 - M1 accepted subset: distinct groups, non-overlapping ranges, static 2D/PAR1 и полный
   target/route footprint. Balanced repeats возвращают unsupported blocker без waiver;
   unknown source/route/material/graph не даёт ready. Pure snapshot proof не live freshness.
+- M2 correction закрыла ignored caller budgets, подмену validated coverage и executable
+  hash collision при previous-source alias drift. Hash включает guarded plan/route/crop/material
+  revision; ready input перепроверяется. Incomplete file read возвращает SHA=null. Review
+  packets — inputs к штатному builder после apply/read-back, без fake owner/receipt.
 - Additive compiler: малая миграция, прежние per-target guards/receipts. Multi-target builder
   требует миграции singular metadata/gates; отдельный runner/расширение newspaper slideshow дороже и не нужны.
 - Unsupported/shared случаи — bounded gaps M5; не клонировать comps/обходить server policy.
@@ -201,5 +208,9 @@ Saved AEP, export/render и protected cleanup требуют своего при
   `check:rules`, syntax шести новых JS, `git diff --check` PASS. Source/route/path/fps,
   aliases/duplicates, material revision/hash, coverage, malformed/budgets и неизвестные
   footprint проверены offline. AEP/live/provider/frozen/dependencies не затронуты.
+- M2: compiler19/material suite20/M1 regression226 и 7 root cases PASS, rules/syntax пяти
+  touched JS/diff PASS. Реальные symlink fixtures skipped из-за Windows privileges;
+  actual-module/fake-fs containment proof даёт zero byte reads. Normal temp-file/full-SHA,
+  fd drift, group/source collisions, packet/step budgets и сохранение кадров проверены.
 - Документ: HEAD/branch, bounded module/schema/doc reads; scoped diff check без whitespace errors.
 - Product suites, модели, live/provider/config/frozen changes и commits не выполнялись; реализация не проверялась.

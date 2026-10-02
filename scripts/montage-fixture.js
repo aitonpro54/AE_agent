@@ -749,6 +749,144 @@ function createReorderedVariant(fixture) {
   return cloned;
 }
 
+/**
+ * Creates a fixture with a circular swap dependency between two targets.
+ * Target 1 (currently source 301) wants source 302 (currently on Target 2).
+ * Target 2 (currently source 302) wants source 301 (currently on Target 1).
+ * Causes unsupported_atomic_exchange cycle blocker.
+ */
+function createSwapCycleFixture() {
+  const fixture = createValidMontageFixture();
+  fixture.manifest.assignments[0].materialId = "mat_clip_b";
+  fixture.manifest.assignments[0].groupId = "grp_performer_b";
+  fixture.manifest.assignments[1].materialId = "mat_clip_a";
+  fixture.manifest.assignments[1].groupId = "grp_performer_a";
+
+  for (const edge of fixture.manifest.dependencies.edges) {
+    if (edge.kind === "source") {
+      edge.sceneIds = ["scene_1", "scene_2"];
+    }
+  }
+  return fixture;
+}
+
+/**
+ * Creates a fixture with a non-circular release order dependency.
+ * Target 1 (currently source 301) wants source 302 (currently on Target 2).
+ * Target 2 (currently source 302) wants new source 303.
+ * Target 2 must release source 302 before Target 1 can use it.
+ */
+function createReleaseOrderFixture() {
+  const fixture = createValidMontageFixture();
+  const fps = 30;
+
+  const source303 = {
+    itemId: 303,
+    itemIndex: 6,
+    name: "clip_c.mp4",
+    type: "footage",
+    file: "c:/assets/footage/clip_c.mp4",
+    duration: 10.0,
+    frameRate: fps,
+    width: 1920,
+    height: 1080,
+    pixelAspect: 1,
+    hasVideo: true,
+    footageMissing: false,
+    mediaMetadata: {
+      groupId: "grp_performer_c",
+      provenance: "explicit_metadata"
+    }
+  };
+  fixture.observations.inventory.sources.push(source303);
+
+  const matClipC = {
+    materialId: "mat_clip_c",
+    sourceItemId: 303,
+    path: "c:/assets/footage/clip_c.mp4",
+    sha256: "c1c2c3c4c5c60718293a4b5c6d7e8f90c1c2c3c4c5c60718293a4b5c6d7e8f90",
+    byteLength: 2097152,
+    width: 1920,
+    height: 1080,
+    pixelAspect: 1,
+    duration: 10.0,
+    fps,
+    provenance: { kind: "prepared_clip" }
+  };
+  fixture.materials.materials.push(matClipC);
+  fixture.observations.materials.push({
+    materialId: matClipC.materialId,
+    sourceItemId: matClipC.sourceItemId,
+    verified: true,
+    path: matClipC.path,
+    sha256: matClipC.sha256,
+    byteLength: matClipC.byteLength,
+    metadata: {
+      width: 1920,
+      height: 1080,
+      pixelAspect: 1,
+      duration: 10.0,
+      fps
+    }
+  });
+
+  const groupC = {
+    groupId: "grp_performer_c",
+    provenance: "explicit_metadata",
+    confirmed: true
+  };
+  fixture.manifest.groups.push(groupC);
+
+  // Target 1 gets mat_clip_b (source 302, held by Target 2)
+  fixture.manifest.assignments[0].materialId = "mat_clip_b";
+  fixture.manifest.assignments[0].groupId = "grp_performer_b";
+
+  // Target 2 gets mat_clip_c (source 303, fresh)
+  fixture.manifest.assignments[1].materialId = "mat_clip_c";
+  fixture.manifest.assignments[1].groupId = "grp_performer_c";
+
+  // Refresh usage map with new inventory sources
+  fixture.observations.usage = buildSourceUsageMap({
+    inventory: fixture.observations.inventory,
+    roots: [{ compItemId: 100 }]
+  });
+
+  // Update dependencies
+  fixture.manifest.dependencies.scope.sourceItemIds = [301, 302, 303];
+  fixture.observations.dependencyScope.sourceItemIds = [301, 302, 303];
+
+  fixture.manifest.dependencies.edges = [
+    { dependencyId: "dep_t1", kind: "target", compItemId: 110, layerId: 21, sceneIds: ["scene_1"] },
+    { dependencyId: "dep_t2", kind: "target", compItemId: 120, layerId: 22, sceneIds: ["scene_2"] },
+    { dependencyId: "dep_s1", kind: "source", sourceItemId: 301, sceneIds: ["scene_1"] },
+    { dependencyId: "dep_s2", kind: "source", sourceItemId: 302, sceneIds: ["scene_1", "scene_2"] },
+    { dependencyId: "dep_s3", kind: "source", sourceItemId: 303, sceneIds: ["scene_2"] },
+    { dependencyId: "dep_r1", kind: "route", compItemId: 100, layerId: 10, sceneIds: ["scene_1"] },
+    { dependencyId: "dep_r2", kind: "route", compItemId: 100, layerId: 11, sceneIds: ["scene_2"] }
+  ];
+
+  return fixture;
+}
+
+/**
+ * Creates a fixture with two assignments targeting the same layer with conflicting intents.
+ */
+function createConflictingTargetIntentFixture() {
+  const fixture = createValidMontageFixture();
+  // Duplicate assign_1 with a different sourceRange
+  const assign2 = deepClone(fixture.manifest.assignments[0]);
+  assign2.assignmentId = "assign_1_conflict";
+  assign2.sourceRange = [2.0, 8.0];
+  assign2.rootRange = [0, 6];
+  assign2.shots = [
+    { shotId: "shot_conflict_1", sourceRange: [2.0, 5.0] },
+    { shotId: "shot_conflict_2", sourceRange: [5.0, 8.0] }
+  ];
+  fixture.manifest.assignments.push(assign2);
+  fixture.manifest.scenes[0].assignmentIds.push("assign_1_conflict");
+  return fixture;
+}
+
 module.exports = {
   createCropSamples,
   createValidMontageFixture,
@@ -762,5 +900,8 @@ module.exports = {
   createCutCountMismatchManifest,
   createIncompleteCoverageManifest,
   createUnknownFootprintManifest,
-  createReorderedVariant
+  createReorderedVariant,
+  createSwapCycleFixture,
+  createReleaseOrderFixture,
+  createConflictingTargetIntentFixture
 };
