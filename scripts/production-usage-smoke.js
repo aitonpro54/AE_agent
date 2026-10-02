@@ -281,7 +281,7 @@ async function main() {
     `, "utf8");
 
     fs.writeFileSync(path.join(fixtureRoot, "codeburn.py"),
-      'import json,sys\nprint(json.dumps({"ok":True,"source":"mock_subprocess_child","receivedArgs":sys.argv[1:]}))\n', "utf8");
+      'import json,sys\nprint(json.dumps({"ok":True,"source":"mock_subprocess_child","receivedArgs":sys.argv[1:],"label":"проект✓"*20000},ensure_ascii=False))\n', "utf8");
 
     const spawnedResult = await getTaskUsage({
       thread_id: "12345678-1234-1234-1234-123456789abc"
@@ -293,6 +293,7 @@ async function main() {
     const spawnedPayload = JSON.parse(spawnedResult.content[0].text);
     assert.strictEqual(spawnedPayload.ok, true);
     assert.strictEqual(spawnedPayload.source, "mock_subprocess_child");
+    assert.strictEqual(spawnedPayload.label, "проект✓".repeat(20000), "UTF-8 must survive split pipe chunks");
 
     // -------------------------------------------------------------------------
     // 7. MCP Adapter integration without running daemon

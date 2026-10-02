@@ -82,9 +82,12 @@ function runSubprocess(executable, args, options) {
       } catch (_e) {}
     }, timeoutMs);
 
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+
     child.stdout.on("data", (chunk) => {
       if (finished) return;
-      stdoutBytes += chunk.length;
+      stdoutBytes += Buffer.byteLength(chunk, "utf8");
       if (stdoutBytes > maxBytes) {
         outputExceeded = true;
         try {
@@ -97,7 +100,7 @@ function runSubprocess(executable, args, options) {
 
     child.stderr.on("data", (chunk) => {
       if (finished) return;
-      stderrBytes += chunk.length;
+      stderrBytes += Buffer.byteLength(chunk, "utf8");
       if (stderrBytes > maxBytes) {
         outputExceeded = true;
         try {

@@ -1,22 +1,6 @@
 # План исполнения Target App
 
-## Codeburn production analytics — 2 октября 2026
-
-### Progress
-- Этап 1: get_task_usage/get_usage_history добавлены к stdio и HTTP MCP,
-  без зависимости от открытого AE. Общая база — отдельный Codeburn project.
-- Native journal поддержан в store; активация running daemon и страница — этап 2.
-
-### Decision Log
-- Explicit runtime thread UUID; общий MCP env не определяет текущий чат.
-- Read-only subprocess, real Python executable, без shell и raw stderr leakage.
-- Guards/auth/M100 сохранены. Bridge tools catalog знает новые read-only tools.
-- Flash ae-agent завершён с patch errors; parent сверил файлы и исправил
-  основной server.js startup и offline validation. Пользовательские файлы сохранены.
-
-### Validation
-production-usage-smoke, smoke:usage, HTTP fixture tools/query без AE,
-check:rules, touched JS syntax и diff check PASS. Live mutation/providers не запускались.
+**Codeburn — 2 октября 2026. Progress:** stdio/HTTP get_task_usage/get_usage_history и native journal реализованы (5827223), runtime обновлён в idle, CEP Connected, persistence active. **Decision Log:** explicit runtime UUID; SQLite в Codeburn; native отдельно, guards/auth сохранены; Flash partial patch result независимо исправлен родителем. **Validation:** production-usage/usage/HTTP fixtures, syntax/diff PASS; real MCP/CLI/web totals совпали, query 0,28 с; общий план и proof — Codeburn/PLAN.md. Hooks требуют штатного trust, recovery Windows 5 мин активен.
 
 ## Активный baseline
 
