@@ -5,6 +5,11 @@ const http = require("http");
 const readline = require("readline");
 const path = require("path");
 const { spawn } = require("child_process");
+const {
+  productionUsageTools,
+  isProductionUsageTool,
+  handleProductionUsageTool
+} = require("./production-usage-tools");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
 const SERVER_VERSION = "3.2.0";
@@ -152,12 +157,22 @@ async function ensureDaemonRunning() {
 }
 
 async function getTools() {
-  await ensureDaemonRunning();
-  const response = await daemonRequest("GET", "/tools", undefined, 5000);
-  if (response.status !== 200 || !response.body.ok || !Array.isArray(response.body.tools)) {
-    throw new Error(response.body.error || `Bridge daemon tools endpoint failed with HTTP ${response.status}`);
+  const localTools = [...productionUsageTools];
+  try {
+    await ensureDaemonRunning();
+    const response = await daemonRequest("GET", "/tools", undefined, 5000);
+    if (response.status === 200 && response.body && response.body.ok && Array.isArray(response.body.tools)) {
+      const daemonTools = response.body.tools;
+      const localNames = new Set(localTools.map((t) => t.name));
+      const filteredDaemonTools = daemonTools.filter((t) => !localNames.has(t.name));
+      return [...filteredDaemonTools, ...localTools];
+    }
+  } catch (error) {
+    log(`Bridge daemon is not reachable for tools/list; returning local tools only. Reason: ${error.message}`);
   }
-  return response.body.tools;
+  return localTools;
+
+
 }
 
 async function callDaemonTool(name, args) {
@@ -187,7 +202,7 @@ async function handleRpc(message) {
         capabilities: {
           tools: {}
         },
-        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Use get_current_ai_agent_plan to reconcile the current project, revision, expiry and run. A new proposal supersedes the pending one. On failure inspect repairDirective and the affected targets; at most two eligible setter corrections may be proposed with parentActionId, followed by a fresh dry-run and read-back. Never retry creation, imports or an unknown outcome automatically. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion.",
+        instructions: "For AE tasks, use search_solutions first, then get_solution. Prefer build_solution_plan, propose_ai_agent_plan, and a dry run. When the user has enabled the temporary Autonomous Codex session in CEP, run_ai_agent_plan may execute a proposal-backed typed mutating plan; raw JSX and destructive plans still require the normal CEP confirmation flow. Use get_current_ai_agent_plan to reconcile the current project, revision, expiry and run. A new proposal supersedes the pending one. On failure inspect repairDirective and the affected targets; at most two eligible setter corrections may be proposed with parentActionId, followed by a fresh dry-run and read-back. Never retry creation, imports or an unknown outcome automatically. Inspect list_solution_candidates only when reviewing repeated quarantined raw JSX, and use get_solution_candidate for a selected candidate. Candidates remain planner-invisible until explicit promotion. For token usage and telemetry, use read-only get_task_usage with confirmed runtime thread UUID (never 'current') or get_usage_history from local analytics store.",
         serverInfo: {
           name: SERVER_NAME,
           version: SERVER_VERSION
@@ -203,8 +218,18 @@ async function handleRpc(message) {
 
     if (message.method === "tools/call") {
       const params = message.params || {};
+      const toolName = params.name;
+      const toolArgs = params.arguments || {};
+      if (isProductionUsageTool(toolName)) {
+        try {
+          ok(id, await handleProductionUsageTool(toolName, toolArgs));
+        } catch (error) {
+          ok(id, toolResult({ ok: false, error: error.message || String(error) }, true));
+        }
+        return;
+      }
       try {
-        ok(id, await callDaemonTool(params.name, params.arguments || {}));
+        ok(id, await callDaemonTool(toolName, toolArgs));
       } catch (error) {
         ok(id, toolResult({ok: false, code: "bridge_unreachable", phase: "bridge_offline", error: error.message}, true));
       }
@@ -264,4 +289,13 @@ function startStdioMcp() {
   });
 }
 
-startStdioMcp();
+if (require.main === module) {
+  startStdioMcp();
+}
+
+module.exports = {
+  getTools,
+  handleRpc,
+  startStdioMcp,
+  toolResult
+};

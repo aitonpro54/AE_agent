@@ -28,6 +28,7 @@ const reuseTelemetry = require("./reuse-telemetry");
 const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
 const { createCodeburnUsageAdapter } = require("./codeburn-usage-adapter");
 const { createUsageService } = require("./usage-service");
+const { productionUsageTools, isProductionUsageTool, handleProductionUsageTool } = require("./production-usage-tools");
 const { checkSolutionPlanPreflight, verifySolutionPlanReadBack } = require("./solution-plan-verification");
 const { buildSolutionHintsForPrompt } = require("./solution-library");
 const { classifyAgentPlan } = require("./plan-risk-classifier");
@@ -87,7 +88,8 @@ function recordAutonomyObstacle(input) {
   catch (_error) { return false; }
 }
 const AI_CHAT_LOG_FILE = path.join(LOG_DIR, "ai-agent-chats.jsonl");
-const nativeUsageStore = createNativeUsageStore({ maxRecords: 200 });
+const NATIVE_JOURNAL_FILE = process.env.CODEBURN_NATIVE_JOURNAL || path.join(__dirname, "..", ".codex-runtime", "codeburn", "native-usage.jsonl");
+const nativeUsageStore = createNativeUsageStore({ maxRecords: 200, journalPath: NATIVE_JOURNAL_FILE });
 const codeburnUsageAdapter = createCodeburnUsageAdapter({
   ...(process.env.CODEBURN_PATH ? { executable: process.env.CODEBURN_PATH } : {}),
   timeoutMs: 8000,
@@ -8786,6 +8788,7 @@ function startHttpBridge() {
 }
 
 const tools = [
+  ...productionUsageTools,
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
   ...placeholderReviewTools.tools,
@@ -12231,6 +12234,7 @@ for (const tool of tools) {
 }
 
 async function callTool(name, args, executionContext) {
+  if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
   if(name === "reconcile_plan_run") {

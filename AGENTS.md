@@ -55,6 +55,11 @@ Maintain AE Agent 3.2.0 in this clean repository. The product target is
   продвижением рецептов или статистикой.
 - Расход и ограничения измерений описаны в `docs/solution-reuse.md`;
   `npm.cmd run report:reuse` показывает наблюдаемые события, не процент экономии.
+- Для чтения общей истории расхода и токенов задачи используй локальные MCP-инструменты
+  `get_task_usage` и `get_usage_history` без вызова моделей и при закрытом AE. Текущий
+  thread ID берётся только как подтверждённый UUID из runtime (не угадывать и не
+  передавать 'current'). Timestamps и coverage показывают фактически сохранённые
+  сессии/интервалы; API-эквивалент стоимости условен и не заменяет подписочные лимиты.
 
 - Reuse existing components and design tokens.
 - Do not introduce a parallel design system.

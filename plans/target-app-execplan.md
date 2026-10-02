@@ -1,5 +1,23 @@
 # План исполнения Target App
 
+## Codeburn production analytics — 2 октября 2026
+
+### Progress
+- Этап 1: get_task_usage/get_usage_history добавлены к stdio и HTTP MCP,
+  без зависимости от открытого AE. Общая база — отдельный Codeburn project.
+- Native journal поддержан в store; активация running daemon и страница — этап 2.
+
+### Decision Log
+- Explicit runtime thread UUID; общий MCP env не определяет текущий чат.
+- Read-only subprocess, real Python executable, без shell и raw stderr leakage.
+- Guards/auth/M100 сохранены. Bridge tools catalog знает новые read-only tools.
+- Flash ae-agent завершён с patch errors; parent сверил файлы и исправил
+  основной server.js startup и offline validation. Пользовательские файлы сохранены.
+
+### Validation
+production-usage-smoke, smoke:usage, HTTP fixture tools/query без AE,
+check:rules, touched JS syntax и diff check PASS. Live mutation/providers не запускались.
+
 ## Активный baseline
 
 AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, provider layer. Product target: specs/target-app.md. GitHub baseline 3.1: c6edff9738c20347b802d481d2bb6b3ad9ffc646; исходный HEAD 3.2: d0729f69083ffe4f3156778c699febf55fcb4c2d. Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json; единственное активное исключение — orchestrator/bounded-process-result.cjs.

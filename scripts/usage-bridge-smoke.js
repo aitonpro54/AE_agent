@@ -19,6 +19,7 @@ function request(port, token, method, requestPath, body) {
       timeout: 10000,
       headers: {
         "x-ae-bridge-token": token,
+        "x-ae-mcp-adapter": "codex-stdio-v1",
         ...(text ? { "content-type": "text/plain;charset=utf-8", "content-length": Buffer.byteLength(text) } : {})
       }
     }, (res) => {
@@ -58,6 +59,11 @@ async function main() {
   const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-agent-usage-bridge-"));
   const env = isolatedEnvironment(runtimeDir, { port, automationToken: token, panelToken, devAdmin: false, commandTimeoutMs: 10000 });
   env.CODEBURN_PATH = path.join(runtimeDir, "definitely-missing-codeburn.exe");
+  const analyticsRoot = path.join(runtimeDir, "analytics");
+  fs.mkdirSync(analyticsRoot);
+  fs.writeFileSync(path.join(analyticsRoot, "codeburn.py"), 'import json\nprint(json.dumps({"schema":"production-usage.v1","status":"available","totals":{"input_tokens":123}}))\n');
+  env.CODEBURN_ANALYTICS_HOME = analyticsRoot;
+  env.CODEBURN_NATIVE_JOURNAL = path.join(runtimeDir, "native-usage.jsonl");
   const child = spawn(process.execPath, [path.join(__dirname, "..", "mcp-server", "bridge-daemon.js")], {
     cwd: path.join(__dirname, ".."),
     env,
@@ -69,6 +75,14 @@ async function main() {
   child.stderr.on("data", (chunk) => { stderr = (stderr + chunk).slice(-4000); });
   try {
     await waitForBridge(port);
+    const catalog = await request(port, token, "GET", "/tools");
+    assert(catalog.body.tools.some(t => t.name === "get_task_usage"));
+    const taskUsage = await request(port, token, "POST", "/mcp/tools/call", {
+      name: "get_task_usage", arguments: { thread_id: "11111111-1111-4111-8111-111111111111" }
+    });
+    assert.strictEqual(taskUsage.status, 200);
+    assert.strictEqual(taskUsage.body.result.isError, false);
+    assert.strictEqual(JSON.parse(taskUsage.body.result.content[0].text).totals.input_tokens, 123);
     const cold = await request(port, token, "GET", "/usage");
     assert.strictEqual(cold.status, 200);
     assert.strictEqual(cold.body.ok, true);

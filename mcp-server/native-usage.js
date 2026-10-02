@@ -1,6 +1,8 @@
 "use strict";
 
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
 const RECORD_SCHEMA = "ae-agent-native-usage-record.v1";
 const SNAPSHOT_SCHEMA = "ae-agent-native-usage-snapshot.v1";
@@ -156,11 +158,36 @@ function summarizeRecords(records) {
 function createNativeUsageStore(options) {
   options = options || {};
   const maxRecords = Math.max(1, Math.min(2000, Math.floor(Number(options.maxRecords) || 200)));
+  const journalPath = typeof options.journalPath === "string" && options.journalPath.trim() ? path.resolve(options.journalPath.trim()) : null;
   const records = new Map();
+  let persistenceStatus = journalPath ? "active" : "disabled";
+  let persistenceWarning = null;
+
+  function appendToJournal(record) {
+    if (!journalPath || record.aggregation !== "increment") return;
+    try {
+      const line = JSON.stringify(record);
+      if (line.length > 64 * 1024) {
+        persistenceStatus = "degraded";
+        persistenceWarning = "record_size_exceeded_limit";
+        return;
+      }
+      fs.mkdirSync(path.dirname(journalPath), { recursive: true });
+      fs.appendFileSync(journalPath, line + "\n", "utf8");
+      if (persistenceStatus !== "active") {
+        persistenceStatus = "active";
+        persistenceWarning = null;
+      }
+    } catch (_error) {
+      persistenceStatus = "degraded";
+      persistenceWarning = "journal_write_failed";
+    }
+  }
 
   function record(input) {
     const normalized = normalizeUsageRecord(input);
     if (records.has(normalized.recordId)) return records.get(normalized.recordId);
+    appendToJournal(normalized);
     records.set(normalized.recordId, normalized);
     while (records.size > maxRecords) records.delete(records.keys().next().value);
     return normalized;
@@ -176,6 +203,10 @@ function createNativeUsageStore(options) {
       granularity: "exact bridge provider call",
       bounded: true,
       maxRecords,
+      persistence: {
+        status: persistenceStatus,
+        ...(persistenceWarning ? { warning: persistenceWarning } : {})
+      },
       records: items,
       summary: summarizeRecords(items),
       limitations: [

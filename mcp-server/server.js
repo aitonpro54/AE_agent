@@ -8,5 +8,5 @@ const wantsDaemon = process.argv.includes("--bridge-only")
 if (wantsDaemon) {
   require("./bridge-daemon");
 } else {
-  require("./mcp-adapter");
+  require("./mcp-adapter").startStdioMcp();
 }

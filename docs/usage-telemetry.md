@@ -186,3 +186,28 @@ Model aggregates и project aggregates не соединяются догадк�
 Нормализованный ответ не содержит prompts, клиентских текстов, абсолютных project
 paths, auth data или сырого stderr. Fixtures в `scripts/fixtures/codeburn-usage/`
 вымышлены и обезличены. Платные модельные вызовы для проверки M6 не выполняются.
+
+## Чтение общей истории и аналитики (MCP инструменты)
+
+Для прямого доступа к сохранённой истории и токенам задачи из чатов и MCP-клиентов
+реализованы локальные инструменты:
+
+- `get_task_usage(thread_id, include_children)` — чтение расхода токенов и структуры
+  сессий конкретного чата из базы Codeburn analytics SQLite. Параметр `thread_id`
+  требует явный подтверждённый UUID из runtime (`'current'` не принимается; глобальные
+  переменные окружения для подстановки не используются). Флаг `include_children`
+  по умолчанию `true`.
+- `get_usage_history(project, from, to, model)` — чтение агрегированной истории и
+  выборок по фильтрам (`YYYY-MM-DD`).
+
+Оба инструмента выполняют локальный детерминированный subprocess:
+`python -X utf8 <Codeburn root>/codeburn.py query ...` с лимитом вывода <=2 МБ и timeout 10 с,
+не вызывая LLM, генерацию отчётов или живой After Effects. Инструменты доступны через
+`mcp-adapter` даже при закрытом AE и остановленном bridge daemon.
+
+Durable журнал native-записей bridge (`native-usage.jsonl` в `.codex-runtime/codeburn/`
+или через переменную `CODEBURN_NATIVE_JOURNAL`) синхронно сохраняет нормализованные
+increment-записи по принципу fail-open до in-memory ротации, исключая дубликаты `recordId`
+и снапшоты, без сохранения prompts, auth и путей. Timestamps и coverage показывают
+фактически зафиксированные события; оценка стоимости в API-эквиваленте остаётся условной
+и не подменяет подписочные квоты аккаунта.
