@@ -102,3 +102,13 @@ API-эквивалент не считать подписочным счётом
 Для изменения этого контракта достаточно offline/config проверок. Клиентский AEP
 не менять ради измерений; художественную приёмку проводить в следующем
 порученном live scope.
+
+Для поддерживаемого V1 subset сборка доступна через reviewed recipe
+`montage-pipeline-plan` и read-only `build_montage_pipeline_plan`.
+Передавать только manifest/preparedMaterials/budgets; native observations собирает
+сервер. Compilation — preview: каждый unit отдельно проходит обычный proposal,
+dry-run и текущие gates. После run брать actual `reconcile_plan_run.montageReadBack`
+и M3 summary; missing reads блокируют technical pass. Изменение current source
+после применения может потребовать нового manifest/dependency baseline. Review
+packets строить штатным visual builder после application/read-back. API не запускает
+все units, не разрешает replay unknown и не подтверждает художественную приёмку.

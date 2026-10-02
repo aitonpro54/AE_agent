@@ -121,7 +121,8 @@ function computeUnitContentHash({
       expectedReadBack: plan.expectedReadBack,
       placeholderFraming: plan.placeholderFraming,
       placeholderAssignments: plan.placeholderAssignments,
-      placeholderConstraints: plan.placeholderConstraints
+      placeholderConstraints: plan.placeholderConstraints,
+      ...(plan.montagePipeline ? {montagePipeline: Object.fromEntries(Object.entries(plan.montagePipeline).filter(([key]) => key !== "unitContentHash"))} : {})
     } : undefined
   };
   return sha256(content);
@@ -809,19 +810,63 @@ function compileMontagePipeline(input = {}) {
       }
 
       const plan = planResult.plan;
+      // The ordinary proposal captures this exact saved-project binding. Include
+      // it in preview plans so canonical run records retain exact plan identity.
+      plan.targetProject = {file:manifest.project.projectFile};
+      if (plan.expectedReadBack.transform) plan.expectedReadBack.transform.opacity = bound.observed.transform.opacity;
       if (plan.steps.length > budgets.maxSteps || plan.steps.length > 50) {
         addBlocker(blockers, "plan_steps_exceeds_budget", `manifest.assignments.${a.assignmentId}`);
         continue;
       }
 
+      const verificationBindings = {
+        material: {
+          materialId: a.materialId,
+          sourceItemId: material.sourceItemId,
+          path: material.path,
+          sha256: material.sha256,
+          byteLength: material.byteLength,
+          provenance: material.provenance,
+          metadata: {
+            width: material.width,
+            height: material.height,
+            pixelAspect: material.pixelAspect,
+            duration: material.duration,
+            fps: material.fps
+          }
+        },
+        target: {
+          compItemId: a.target.compItemId,
+          layerId: a.target.layerId,
+          footprint: deepClone(bound.observed.footprint),
+          layer: deepClone(bound.observed.targetLayer),
+          geometry: deepClone(bound.observed.geometry),
+          transform: deepClone(bound.observed.transform)
+        },
+        materialSource: {itemId:bound.source.itemId,name:bound.source.name,file:bound.source.file,
+          footageMissing:bound.source.footageMissing,width:bound.source.width,height:bound.source.height,
+          pixelAspect:bound.source.pixelAspect,duration:bound.source.duration,frameRate:bound.source.frameRate},
+        route: deepClone(bound.observed.route || []),
+        geometry: deepClone(bound.observed.geometry || null),
+        project: {
+          projectFile: manifest.project.projectFile,
+          projectKey: manifest.project.projectKey,
+          revision: manifest.project.revision
+        }
+      };
+
       plan.montagePipeline = {
         unitId,
+        intent: {assignment:deepClone(a),rootRange:deepClone(rootRange)},
         manifestRevision: manifest.revision,
         materialRevision: catalog.revision,
         materialId: a.materialId,
         sourceItemId: material.sourceItemId,
         path: material.path,
         sha256: material.sha256,
+        byteLength: material.byteLength,
+        provenance: material.provenance,
+        route: deepClone(bound.observed.route || []),
         metadata: {
           width: material.width,
           height: material.height,
@@ -837,8 +882,11 @@ function compileMontagePipeline(input = {}) {
           projectFile: manifest.project.projectFile,
           projectKey: manifest.project.projectKey,
           revision: manifest.project.revision
-        }
+        },
+        verificationBindings
       };
+      if (bound.observed.protection.policyHash) plan.montagePipeline.policyHash = bound.observed.protection.policyHash;
+      plan.montagePipeline.readBudgets = deepClone(budgets);
 
       const contentHash = computeUnitContentHash({
         unitId,
@@ -853,6 +901,7 @@ function compileMontagePipeline(input = {}) {
         materialRevision: catalog.revision,
         route: bound.observed.route
       });
+      plan.montagePipeline.unitContentHash = contentHash;
 
       const frameRequirements = manifest.frameCoverage.filter(f => f.assignmentId === a.assignmentId);
 
@@ -873,29 +922,7 @@ function compileMontagePipeline(input = {}) {
         material,
         scene,
         rootRange,
-        verificationBindings: {
-          material: {
-            materialId: a.materialId,
-            sourceItemId: material.sourceItemId,
-            path: material.path,
-            sha256: material.sha256,
-            byteLength: material.byteLength,
-            metadata: {
-              width: material.width,
-              height: material.height,
-              pixelAspect: material.pixelAspect,
-              duration: material.duration,
-              fps: material.fps
-            }
-          },
-          target: {
-            compItemId: a.target.compItemId,
-            layerId: a.target.layerId,
-            footprint: deepClone(bound.observed.footprint)
-          },
-          route: deepClone(bound.observed.route || []),
-          geometry: deepClone(bound.observed.geometry || null)
-        }
+        verificationBindings
       };
 
       unitMap.set(unitId, unit);

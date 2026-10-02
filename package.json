@@ -60,6 +60,8 @@
     "smoke:montage-manifest": "node scripts/montage-manifest-smoke.js",
     "smoke:montage-pipeline": "node scripts/montage-pipeline-smoke.js",
     "smoke:montage-materials": "node scripts/montage-materials-smoke.js",
-    "smoke:montage-summary": "node scripts/montage-summary-smoke.js"
+    "smoke:montage-summary": "node scripts/montage-summary-smoke.js",
+    "smoke:montage-library": "node scripts/montage-library-smoke.js",
+    "smoke:montage-bridge": "node scripts/montage-pipeline-bridge-smoke.js"
   }
 }

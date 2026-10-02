@@ -76,7 +76,11 @@ function getSolution(args, tools) {
     recipe: { text: content.slice(offset, offset + limit), offset, totalChars: content.length,
       nextOffset: offset + limit < content.length ? offset + limit : null, truncated: offset + limit < content.length },
     toolContracts: selected,
-    planBuilder: offset === 0 ? getBuilderContract(entry.id) : undefined,
+    planBuilder: offset === 0
+      ? (entry.id === "montage-pipeline-plan"
+          ? require("./montage-tools").getMontagePipelineBuilderContract()
+          : getBuilderContract(entry.id))
+      : undefined,
     next: "Read every recipe page needed for the operation. Build a proposal and dry-run first. A temporary CEP Autonomous Codex session can authorize proposal-backed typed mutations; raw JSX and destructive plans retain manual confirmation. This result authorizes no mutation." };
 }
 

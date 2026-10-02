@@ -51,6 +51,8 @@ const placeholderReviewService = require("./placeholder-review-service");
 const placeholderVisualReview = require("./placeholder-visual-review");
 const placeholderReviewTools = require("./placeholder-review-tools");
 const placeholderVisualBatches = require("./placeholder-visual-batches");
+const montageTools = require("./montage-tools");
+const montagePipelineService = require("./montage-pipeline-service");
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
@@ -5156,7 +5158,8 @@ const PLANNING_TOOL_NAMES = [
   "build_slideshow_plan",
   "relink_footage_source",
   "verify_source_recovery_read_back",
-  ...slideshowTools.TOOL_NAMES
+  ...slideshowTools.TOOL_NAMES,
+  ...montageTools.TOOL_NAMES
 ];
 
 function compactPromptText(text, limit) {
@@ -6896,8 +6899,14 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     run.error = "Plan validation failed.";
     return finishRun();
   }
+  const montageRunMaterialReader = prepared.plan.montagePipeline && !dryRun
+    ? montagePipelineService.boundedMaterialReader(require("./montage-contract").normalizeBudgets(prepared.plan.montagePipeline.readBudgets).budgets)
+    : null;
   if (validation.mutatingCount > 0) {
-    try { run.placeholderPreflight = await guardPlaceholderPlan(prepared.plan); }
+    try { run.placeholderPreflight = await guardPlaceholderPlan(prepared.plan, {
+      montageRunPreflight: Boolean(prepared.plan.montagePipeline && !dryRun),
+      ...(montageRunMaterialReader ? {montageVerifyMaterials:montageRunMaterialReader} : {})
+    }); }
     catch (error) {
       run.ok = false; run.errorCode = error.code || "placeholder_preflight_failed";
       run.error = error.message; run.placeholderPreflight = error.details || null;
@@ -7174,7 +7183,8 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       persistRun(item);
       const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
-      () => placeholderPlanContext.run({ plan: prepared.plan, remainingSteps: steps.filter(value => value.index >= step.index) },
+      () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
+        remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
           confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)))));
@@ -7672,7 +7682,7 @@ async function readPlaceholderInventory(options = {}) {
           else if(layer.matchName==="ADBE Camera Layer")kind="camera";
           else if(layer.matchName==="ADBE Light Layer")kind="light";
           else if(layer.adjustmentLayer===true)kind="adjustment";
-          var ref={id:layer.id,index:j,name:layer.name,enabled:layer.enabled,sourceItemId:source ? source.id : null,
+          var ref={id:layer.id,index:j,name:layer.name,enabled:layer.enabled,locked:layer.locked,sourceItemId:source ? source.id : null,
             startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,kind:kind};
           comp.layers.push(ref);
           if(kind!=="media")inventory.ignored.push({compItemId:item.id,layerId:layer.id,kind:kind});
@@ -7829,15 +7839,30 @@ async function currentPlaceholderState() {
   const state = projectStateMemory.readProjectState(project && project.file);
   return { projectFile: project.file, state };
 }
+
+async function guardMontagePipelinePlan(plan, options = {}) {
+  return require("./montage-plan-guard").guardMontagePlan(plan, {
+    currentPlaceholderState, readPlaceholderInventory, runExtendScriptBody,
+    ...(options.montageVerifyMaterials ? {verifyMontageMaterials:options.montageVerifyMaterials} : {})
+  }, options);
+}
+
 async function guardPlaceholderPlan(plan, options = {}) {
   const store = projectStateMemory.loadProjectStateStore();
   const mutations = (options.steps || plan.steps || []).filter(step => MUTATING_TOOL_NAMES.has(step.tool || step.toolName))
     .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
   for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
+  if (plan.montagePipeline) {
+    await guardMontagePipelinePlan(plan, options);
+  }
   const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
-  if (!mutations.length || !hasState && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, snapshots: [], bindings: [] };
+  if (!mutations.length || !hasState && !plan.placeholderConstraints && !plan.placeholderFraming) {
+    return { ok: true, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
+  }
   const { projectFile, state } = await currentPlaceholderState();
-  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming) return { ok: true, projectFile, snapshots: [], bindings: [] };
+  if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming) {
+    return { ok: true, projectFile, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
+  }
   const inventory = await readPlaceholderInventory({ targets: state.acceptedPlaceholders.map(snapshot => ({ target: snapshot.target,
     protectedProperties: snapshot.properties.map(prop => prop.path) })) });
   if (!inventory || inventory.complete !== true || !placeholderSourceRecovery.pathsEqual(projectFile, inventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
@@ -7865,7 +7890,7 @@ async function guardPlaceholderPlan(plan, options = {}) {
     const drift = placeholderProtection.compareSnapshot(snapshot, observed, inventory);
     if (!drift.ok) throw placeholderError(drift.code, drift);
   }
-  const assignments = checkFreshPlanAssignments(plan, state, inventory, mutations);
+  const assignments = checkFreshPlanAssignments(plan, state, options.montagePreviewInventory || inventory, mutations);
   const after = projectStateMemory.readProjectState(projectFile);
   if (after.revision !== state.revision) throw placeholderError("project_state_revision_changed");
   let bindings = protectedCheck.bindings.flatMap(value => value.targets);
@@ -8794,6 +8819,7 @@ const tools = [
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
   ...placeholderReviewTools.tools,
+  ...montageTools.montageTools,
   {
     name: "get_placeholder_protection",
     description: "Read authoritative accepted placeholder snapshots, confirmed group mappings, constraints and fresh drift diagnostics for the current saved project. Cannot accept/release or override protection.",
@@ -12266,6 +12292,22 @@ for (const tool of tools) {
   }
 }
 
+const daemonMontageDeps = {
+  getProjectInfo: async () => firstToolPayload(await callToolLogged("montage-project-read", "get_project_info", {})),
+  currentPlaceholderState,
+  readPlaceholderInventory,
+  readPlaceholderGeometry,
+  runExtendScriptBody,
+  validateAgentPlanWithRepair,
+  guardPlaceholderPlan
+};
+
+async function buildPostRunMontageReadBack(record, actual) {
+  return require("./montage-postread").buildPostRunReadBack(record, {
+    currentPlaceholderState, readPlaceholderInventory, runExtendScriptBody
+  });
+}
+
 async function callTool(name, args, executionContext) {
   if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
@@ -12304,6 +12346,9 @@ async function callTool(name, args, executionContext) {
     const result=helper.reconcilePlanRun({record,freshReadSteps,commandStates,project:{file:actual && actual.file}});
     if(selected) result.steps=result.steps.filter(step=>selected.includes(step.index));
     result.runId=runId;
+    if(record.plan && record.plan.montagePipeline) {
+      result.montageReadBack = await buildPostRunMontageReadBack(record, actual);
+    }
     return toolResult(result);
   }
   if(name===projectSave.TOOL_NAME){
@@ -13283,6 +13328,10 @@ async function callTool(name, args, executionContext) {
   if (name === "build_solution_plan") {
     try {
       solutionDiscovery.knownSolution(args.solutionId, tools);
+      if (args.solutionId === "montage-pipeline-plan") {
+        const result = await montagePipelineService.buildMontagePipelinePlan(args.inputs, daemonMontageDeps);
+        return toolResult(result, !result.ok);
+      }
       const result = require("./solution-plan-builder").buildSolutionPlan(args.solutionId, args.inputs);
       if (!result.ok) return toolResult(result, true);
       const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
@@ -13334,6 +13383,14 @@ async function callTool(name, args, executionContext) {
       return toolResult({ ...result, validation: prepared.validation, protection,
         previewLocal: true, mutatesProject: false, requiresFreshEvidenceReview: true });
     } catch (error) { return toolResult({ ok: false, code: error.code || error.message, details: error.details, plan: null }, true); }
+  }
+  if (name === "build_montage_pipeline_plan") {
+    try {
+      const result = await montagePipelineService.buildMontagePipelinePlan(args, daemonMontageDeps);
+      return toolResult(result, !result.ok);
+    } catch (error) {
+      return toolResult({ ok: false, code: error.code || error.message, error: error.message }, true);
+    }
   }
 
   if(name==="propose_placeholder_cover" || name==="verify_placeholder_coverage") {
@@ -18824,7 +18881,7 @@ async function callTool(name, args, executionContext) {
         });
       }
       var response = {
-        comp: { itemIndex: __codexProjectIndexForItem(comp), name: comp.name, time: comp.time },
+        comp: { itemIndex: __codexProjectIndexForItem(comp), itemId: comp.id, name: comp.name, time: comp.time },
         changedCount: changed.length,
         layer: changed.length === 1 ? changed[0].layer : null,
         layers: changed.map(function (item) { return item.layer; }),
@@ -21445,6 +21502,15 @@ async function callToolLogged(source, name, args, executionContext) {
       });
     }
 
+    // Montage freshness must also precede a cached mutation-result return.
+    // This is the existing plan guard, scoped to the current typed unit.
+    let placeholderGuard = null;
+    const montageContext = placeholderPlanContext.getStore();
+    if (MUTATING_TOOL_NAMES.has(name) && montageContext && montageContext.plan.montagePipeline) {
+      placeholderGuard = await guardPlaceholderPlan(montageContext.plan, {steps:montageContext.remainingSteps,
+        bindingStep:{tool:name,args:args || {}},completedSteps:montageContext.completedSteps || [],validation:montageContext.validation,
+        ...(montageContext.montageVerifyMaterials ? {montageVerifyMaterials:montageContext.montageVerifyMaterials} : {})});
+    }
     if (idContext) {
       const existing = idempotencyRecords.get(idContext.recordKey);
       if (existing) {
@@ -21482,16 +21548,16 @@ async function callToolLogged(source, name, args, executionContext) {
       }
     }
 
-    let placeholderGuard = null;
-    if (MUTATING_TOOL_NAMES.has(name)) {
+    if (MUTATING_TOOL_NAMES.has(name) && !placeholderGuard) {
       const context = placeholderPlanContext.getStore();
       const plan = context && context.plan || { steps: [{ tool: name, args: args || {} }] };
       placeholderGuard = await guardPlaceholderPlan(plan, { steps: context && context.remainingSteps || plan.steps,
-        bindingStep: { tool: name, args: args || {} } });
-      // Resolve explicit persistent identities to current address hints. An index
-      // shift alone is not a content conflict; AE still rechecks the binding.
-      args = rebindPlaceholderArgs(name, args, placeholderGuard);
+        bindingStep: { tool: name, args: args || {} }, completedSteps: context && context.completedSteps || [], validation: context && context.validation,
+        ...(context && context.montageVerifyMaterials ? {montageVerifyMaterials:context.montageVerifyMaterials} : {}) });
     }
+    // Resolve current address hints for both ordinary and freshly guarded
+    // montage steps. Stable identities are still rechecked by the native setter.
+    if (MUTATING_TOOL_NAMES.has(name)) args = rebindPlaceholderArgs(name, args, placeholderGuard);
     const commandContext = planCommandContext.getStore();
     if(commandContext && commandContext.item) commandContext.item.args=args;
     const checkpoint = name===projectSave.TOOL_NAME ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));

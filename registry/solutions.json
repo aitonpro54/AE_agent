@@ -21239,6 +21239,116 @@
         "New corrective work requires a separate reviewed proposal and existing gates.",
         "Visual acceptance remains separate."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "montage-pipeline-plan",
+      "title": "Монтажный конвейер замены видео и кадров",
+      "status": "recipe",
+      "tags": [
+        "montage",
+        "pipeline",
+        "placeholder",
+        "multi-scene",
+        "multi-shot",
+        "cover",
+        "read-only-build",
+        "typed-plan"
+      ],
+      "intent": {
+        "summary": "Детерминированная замена видео и кадрирование в многосценарном монтажном конвейере по авторскому манифесту без клиентских наблюдений и без мутаций при сборке.",
+        "appliesWhen": [
+          "Пользователь или внешний пайплайн передаёт монтажный манифест с несколькими сценами, нарезками и подготовленными материалами.",
+          "Требуется предпросмотр сегментированных планов единиц исполнения и последующий запуск с сохранением метаданных и защитных проверок.",
+          "Build and execute multi-scene montage replacement pipeline with strict server observations and no build mutations."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "manifest",
+          "type": "object",
+          "required": true,
+          "description": "Authoritative montage manifest conforming to ae-agent-montage-manifest.v1."
+        },
+        {
+          "name": "preparedMaterials",
+          "type": "object",
+          "required": true,
+          "description": "Prepared materials catalog conforming to ae-agent-prepared-materials.v1."
+        },
+        {
+          "name": "budgets",
+          "type": "object",
+          "required": false,
+          "description": "Optional caller budget ceilings to constrain execution graph and step limits."
+        }
+      ],
+      "targetAssumptions": [
+        "Strict server observations: native inventory, usage, geometry, footprints and full material SHA256 hashes are gathered by the server; client authority is rejected.",
+        "Zero mutations during build: build_montage_pipeline_plan is strictly read-only.",
+        "Unit-by-unit proposal: execution units are proposed and executed individually in topological order, preserving plan.montagePipeline metadata across validation and execution."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "high",
+        "recipePath": "recipes/montage-pipeline-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "build_montage_pipeline_plan",
+          "propose_ai_agent_plan",
+          "run_ai_agent_plan",
+          "build_placeholder_visual_review_plan"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Read-only preview compilation, strict native observations, unit plan validation with repairPlan:false, guarded mutation, and post-run technical read-back.",
+        "steps": [
+          "Build compilation with build_montage_pipeline_plan from manifest and preparedMaterials.",
+          "For each ready unit, create server-owned proposal via propose_ai_agent_plan and dry-run with run_ai_agent_plan.",
+          "Execute confirmed plan with full material SHA256 and protection guards checked before every mutating step.",
+          "Reconcile run via reconcile_plan_run to bind fresh post-run observations (projects, targets, materials, routes).",
+          "Build visual review package with build_placeholder_visual_review_plan for verified units."
+        ],
+        "expectedEvidence": [
+          "No project mutation during build_montage_pipeline_plan.",
+          "plan.montagePipeline metadata is retained and verified before every mutating step.",
+          "Drift in project, native source, material hash, or footprint blocks execution.",
+          "Post-run reconcile_plan_run produces valid montageReadBack conforming to ae-agent-montage-post-run-read.v1."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": null,
+        "panelVersion": null,
+        "bridgeVersion": null,
+        "projectKind": "synthetic",
+        "notes": [
+          "Actual generated JSX VM, isolated ordinary daemon/fake panel tests; zero live AEP access."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-02",
+          "from": "candidate",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Offline read-only compilation, client authority rejection, metadata retention, and isolated bridge daemon testing.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Advisory recipe for montage pipeline execution; client observations and verified flags are forbidden.",
+        "Each unit plan is proposed and executed individually; do not submit the entire compilation to propose_ai_agent_plan.",
+        "Reconciliation attaches additive montageReadBack with bound post-run observations."
+      ]
     }
   ]
 }

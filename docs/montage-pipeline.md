@@ -4,7 +4,8 @@ M1 — чистая offline проверка readiness. `validateMontageManifest
 observations, budgets})` использует существующие `buildSourceUsageMap`,
 `checkPlaceholderAssignments`, `buildPlaceholderPlan` и framing helper. Функция
 не читает медиа/AE, не исполняет планы и не подтверждает художественную приёмку.
-Public integration и material reader относятся к следующим milestones.
+M1–M4 реализованы: bounded material reader, compiler, summary и read-only
+server/library integration описаны ниже. Приёмка offline; live/artistic proof отдельно.
 
 ## Контракты
 
@@ -328,3 +329,77 @@ Summary completed/ok означает техническую сверку и н�
 
 M3 smoke: `node scripts/montage-summary-smoke.js` — 96 адресных offline случаев.
 Они проверяют actual pure modules с synthetic native-shaped facts, а не live AE.
+
+## M4: read-only tool и штатное исполнение unit
+
+`build_montage_pipeline_plan({manifest,preparedMaterials,budgets})` и recipe
+`montage-pipeline-plan` в `build_solution_plan` используют один server adapter.
+Public schema запрещает дополнительные верхние поля; bounded structural preflight
+и strict nested keys отклоняют client observations/usage/verified до native/fs reads.
+Сборка возвращает preview compilation, не proposal и не общий runner.
+
+Сервер наблюдает saved project file, Project Intent key/revision (включая 0),
+bounded inventory с `locked`, usage, current/planned source metadata, target и
+каждую route edge. Узкий native reader дополняет existing geometry фактической
+opacity и проверяет наличие всех transform properties, keys/expressions, effect
+group и обеих matte roles — consumer и producer. Отсутствующее свойство остаётся
+unknown; оно не становится `false`. Dependency scope вычисляется из native
+current sources/target IDs и planned imported sources, затем M1 проверяет graph.
+
+Каждый singular unit проходит `validateAgentPlanWithRepair(...,{repairPlan:false})`
+и обычный `guardPlaceholderPlan`. Для release DAG только preview usage получает
+симуляцию предыдущих units; protection, identities, geometry и policy читаются
+заново. Policy hash включает stable accepted snapshots, group mappings и
+constraints, исключая presentation `acceptedAt` и review logs. Namespace хранит
+intent/material/provenance/route/verificationBindings/readBudgets; contentHash
+включает его до добавления self `unitContentHash`. Final plan SHA остаётся отдельной
+привязкой обычного runner. `targetProject.file` включён в preview для exact plan
+binding через штатный proposal.
+
+Hash budgets считаются на всю read-only сборку: initial full reads и final full
+rehash используют общий counter bytes/requests. Проверка идёт последовательно
+по одному файлу и останавливается на первой ошибке. Preview guards повторно
+используют initial material facts только внутри этой read-only операции и при
+совпадении native source records. Финальный rehash и повторное чтение всего
+target/route scope обязательны. При ceiling 32 full read requests каталог из
+более 16 материалов возвращает budget blocker; массив не усекается. Proposal,
+run preflight и каждая запись всегда выполняют свежий full verifier, включая
+native path authorization до filesystem, realpath containment и pre/fd/post
+identity. Stat cache, file locking и in-memory project revision не заявляются.
+В одном mutating run используется transient counter для preflight и каждого
+setter guard; заранее проверяется стоимость `byteLength × (1 + mutatorCount)`
+и число reads. Предсказуемое исчерпание блокируется до первой записи. Это локальный
+counter данного run, не новый persistent store. Proposal и reconciliation имеют
+отдельные operation budgets; стандартная bounded sentinel read при неожиданном
+росте файла остаётся детектором ошибки, не partial hash.
+
+Unit передаётся отдельно в обычный proposal → dry-run → grants/confirmation → run.
+Guard работает и перед idempotency early return. Перед очередной записью target
+должен совпасть с точным доказанным prefix ранее completed steps текущего run;
+manual переход к будущему desired state не является допустимым prefix. Штатные
+runner `verifyAfter/idempotencyKey/idempotencyScope` принимаются M3 только при
+exact binding к persisted validation safeArgs; semantic args не меняются.
+Closed unit chain допускает только existing replace_source → timing → optional
+static framing → placeholder read, с одной namespace target/source identity и
+согласованными intent/expectedReadBack args. Пересчитанный caller digest не даёт
+права добавить create/effect или запись в другую цель.
+
+`reconcile_plan_run` аддитивно возвращает `montageReadBack.projects/targets/materials/routes`.
+Все facts — после-run actual native/file reads, без expected fallback. Время receipt
+фиксируется после завершения readers; future timestamp не синтезируется. Material
+receipt требует двух bounded full reads (actual digest + existing verifier); reads
+и bytes ограничены budgets текущей reconciliation операции. Read errors дают
+missing/insufficient, известный drift — failed. M4 project policy binding обязателен,
+final timing/static transform/source metadata сверяются с precision `1e-6`, без
+широкого окна старого placeholder preview. Native `set_layer_time_range` response
+аддитивно содержит actual `comp.itemId` для штатного reconciliation identity check.
+
+`npm.cmd run smoke:montage-library` проверяет recipe/catalog contract.
+`npm.cmd run smoke:montage-bridge` запускает isolated daemon и выполняет настоящие
+emitted scripts в VM-панели: read-only build, proposal/dry-run, три разные записи,
+stored run, reconciliation и actual M3 technical pass; затем bounded input,
+authorization/budget, missing native properties, project/material/target/route
+drift и read errors проверяются теми же readers. Официальный stdio MCP adapter
+того же fixture проверяет server proposal/dry-run pins и no-grant/direct negatives.
+Это offline proof; artistic
+acceptance остаётся `false` и требует отдельного existing visual owner API.

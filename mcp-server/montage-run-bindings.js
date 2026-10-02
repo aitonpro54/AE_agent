@@ -12,10 +12,31 @@ const projectId = file => typeof file === "string" ? sha256(normalizeProject(fil
 const completeTransform = t => isRecord(t) && ["anchorPoint", "position", "scale"].every(field =>
   Array.isArray(t[field]) && t[field].length === 2 && t[field].every(Number.isFinite)) &&
   Number.isFinite(t.rotation) && Number.isFinite(t.opacity);
+const M4_EPSILON = 1e-6;
+function preciseFacts(expected,observed) {
+  if(typeof expected === "number")return Number.isFinite(observed) && Math.abs(expected-observed)<=M4_EPSILON;
+  if(Array.isArray(expected))return Array.isArray(observed) && expected.length===observed.length && expected.every((v,i)=>preciseFacts(v,observed[i]));
+  if(isRecord(expected))return isRecord(observed) && Object.entries(expected).every(([k,v])=>Object.hasOwn(observed,k)&&preciseFacts(v,observed[k]));
+  return expected===observed;
+}
 function completeShape(expected, observed) {
   if (Array.isArray(expected)) return Array.isArray(observed) && expected.length === observed.length && expected.every((value, i) => completeShape(value, observed[i]));
   if (isRecord(expected)) return isRecord(observed) && Object.entries(expected).every(([key, value]) => Object.hasOwn(observed, key) && completeShape(value, observed[key]));
   return observed !== undefined && (expected === null || typeof expected === typeof observed);
+}
+
+// Ordinary runner safety defaults are observed in its persisted validation.
+// They may extend the args, but cannot change a single planned semantic value.
+function executionArgsMatch(planned, executed, validation) {
+  if (!isRecord(planned?.args) || !isRecord(executed?.args) || planned.tool !== executed.tool) return false;
+  if (equal(planned.args, executed.args)) return true;
+  const extras = ["verifyAfter", "idempotencyKey", "idempotencyScope"];
+  if (!Object.entries(planned.args).every(([k,v]) => Object.hasOwn(executed.args,k) && equal(v,executed.args[k])) ||
+      Object.keys(executed.args).some(k => !Object.hasOwn(planned.args,k) && !extras.includes(k))) return false;
+  const rows = Array.isArray(validation?.steps) ? validation.steps.filter(row => row?.index === executed.index) : [];
+  if (rows.length !== 1 || rows[0].tool !== planned.tool || !isRecord(rows[0].safeArgs) || !equal(rows[0].safeArgs,executed.args)) return false;
+  return (!Object.hasOwn(executed.args,"verifyAfter") || executed.args.verifyAfter === true) &&
+    ["idempotencyKey","idempotencyScope"].every(k => !Object.hasOwn(executed.args,k) || typeof executed.args[k] === "string" && !!executed.args[k]);
 }
 
 function boundedInput(input) {
@@ -69,7 +90,7 @@ function recordBinding(record, unit, project) {
     if (step.commands !== undefined && (!Array.isArray(step.commands) || step.commands.some(cmd => !isRecord(cmd)))) return "invalid_command_evidence";
     indices.add(step.index);
     const planned = unit.plan.steps[step.index - 1];
-    if (!planned || planned.tool !== step.tool || !equal(planned.args, step.args)) return "executed_args_binding_mismatch";
+    if (!planned || !executionArgsMatch(planned, step, record.run.validation)) return "executed_args_binding_mismatch";
   }
   return null;
 }
@@ -133,6 +154,11 @@ function technicalFacts(input = {}) {
   };
   const pr = select(readBack.projects, row => row.unitId === unit.unitId, "project");
   if (pr && normalizeProject(pr.file) !== normalizeProject(project.projectFile)) drift.push("project_drift_detected");
+  const mp = unit.plan?.montagePipeline;
+  if (pr && mp?.policyHash) {
+    if (!isSafeId(pr.projectKey) || !Number.isSafeInteger(pr.revision) || pr.revision < 0 || !isSha256(pr.policyHash)) missing.push("project_policy_facts_incomplete");
+    else if (pr.projectKey !== mp.project?.projectKey || pr.revision !== mp.project?.revision || pr.policyHash !== mp.policyHash) drift.push("project_policy_drift_detected");
+  }
   if (pr) reads.push({tool: "get_project_info", status: "completed", result: {file: pr.file}});
   const exp = unit.expectedReadBack;
   const target = select(readBack.targets, row => row.comp?.itemId === exp?.compItemId && row.layer?.id === exp?.layerId, "target");
@@ -175,6 +201,13 @@ function technicalFacts(input = {}) {
         Object.keys(exp.transform || {}).some(field => !Object.hasOwn(target.transform, field)) ||
         !["enabled", "locked", "threeDLayer", "timeRemapEnabled"].every(field => typeof target.layer[field] === "boolean")) missing.push("target_facts_incomplete");
     else if (bindings?.target?.footprint && (!equal(target.footprint, bindings.target.footprint) || !target.layer.enabled || target.layer.locked)) drift.push("target_footprint_drift_detected");
+    if (mp?.policyHash && !missing.includes("target_facts_incomplete")) {
+      const baseline=bindings.target,finalLayer={...baseline.layer,sourceItemId:exp.sourceItemId,source:bindings.materialSource,
+        startTime:exp.startTime,inPoint:exp.inPoint,outPoint:exp.outPoint};
+      const finalTransform={...baseline.transform,...exp.transform};
+      if(!preciseFacts(withoutIndices(finalLayer),withoutIndices(target.layer)) || !preciseFacts(finalTransform,target.transform) ||
+        !preciseFacts(exp.geometry,target.geometry)) drift.push("target_final_state_drift_detected");
+    }
     if (!missing.includes("target_facts_incomplete")) reads.push({tool: "get_layer_details", status: "completed", args: {compItemId: exp.compItemId, layerId: exp.layerId},
       result: {comp: target.comp, layer: target.layer, transform: target.transform, geometry: target.geometry}});
   }
@@ -204,3 +237,6 @@ function validUnitGraph(units) {
 
 module.exports = {UUID, sha256, equal, projectId, boundedInput, recordBinding, observationHash,
   freshObservation, bindPostRunObservation, technicalFacts, withoutIndices, validUnitGraph, completeTransform};
+module.exports.executionArgsMatch = executionArgsMatch;
+module.exports.preciseFacts = preciseFacts;
+module.exports.M4_EPSILON = M4_EPSILON;

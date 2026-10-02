@@ -1,6 +1,6 @@
 # Этап 2: детерминированный монтажный конвейер
 
-Статус: **in_progress**; M1–M4 разрешены, M5 и этап 3 исключены.
+Статус: **M1–M4 complete — offline acceptance**; M5, этап 3 и live приёмка не выполнялись.
 Baseline для планирования: `codex/production-usage`, HEAD `50d5cd66014f4778f6e994dbd4ebe61e488111d8` (2026-10-02).
 Перед реализацией сверить текущие HEAD/status и основной [план](target-app-execplan.md); чужие изменения сохранять.
 Контракты: [монтаж](../docs/montage-workflow.md), [завершение поручения](../docs/ae-task-completion.md).
@@ -36,7 +36,7 @@ LLM выбирает фрагменты и оценивает художеств
 Чистый `buildPlaceholderPlan` не обращается к AE; MCP-обёртка читает geometry при framing и применяет protection gate.
 `build_slideshow_plan` сохраняет свой newspaper/template manifest, namespace и audits.
 
-## Предлагаемый новый контракт (сейчас отсутствует)
+## Реализованный контракт M1–M4
 
 - `ae-agent-montage-manifest.v1`: `revision`, `taskId`, project identity,
   `observedAt`, stable `sceneId`/`assignmentId`/`shotId`; scenes с root comp ID,
@@ -53,12 +53,13 @@ LLM выбирает фрагменты и оценивает художеств
 - `ae-agent-prepared-materials.v1`: exact path, полный SHA256, bytes, dimensions/PAR,
   duration/fps, происхождение отрезка и импортированный sourceItemId. Preparation — существующее
   bounded tooling отдельным поручением, без нового transcode SDK; неизвестные поля unknown.
-- Предлагаемые pure exports: `validateMontageManifest({manifest,materials,observations,budgets})`, `compileMontagePipeline({validated,observations,budgets})`,
-  `affectedMontageScenes({manifest,changes})`, `summarizeMontagePipeline({compilation,runEvidence,reconciliation,readBack})`.
+- Pure exports: `validateMontageManifest({manifest,materials,observations,budgets})`, `compileMontagePipeline({validated,observations,budgets})`,
+  `affectedMontageScenes({manifest,materials,observations,changes,budgets})`, `summarizeMontagePipeline({compilation,runEvidence,reconciliation,readBack})`.
   Они не читают fs/AE/сеть, не запускают модель, не мутируют и не выдают разрешения.
-- Предлагаемый read-only MCP `build_montage_pipeline_plan({manifest,preparedMaterials,budgets})`:
+- Read-only MCP `build_montage_pipeline_plan({manifest,preparedMaterials,budgets})`:
   bounded adapter получает свежие server facts, проверяет материалы и вызывает pure compiler + existing validation/protection.
-  Выход `ae-agent-montage-compilation.v1`: provenance/hashes, readiness, blocked reasons,
+  Preview wrapper возвращает `compilation` schema `ae-agent-montage-compilation.v1`:
+  provenance/hashes, readiness, blocked reasons,
   `units[{unitId,dependsOn,plan,expectedReadBack,frameRequirements,budget}]`, affected scenes.
   Это preview (`requiresFreshEvidenceReview:true`), не proposal и не execute-all API.
 
@@ -135,7 +136,7 @@ reconciliation/completion и независимые states, без нового 
   grant; raw/destructive/save остаются protected manual flow. Никакого fallback JSX.
 - Порядок acceptance: M1 → M2 → M3 → schema/catalog/library fixture → isolated daemon
   с fake panel → адресные regression smokes → rules/syntax/diff → запись milestone/commit.
-- Проверки будущей реализации: `check:rules`, `node --check` touched JS, `git diff --check`; новые fixtures,
+- Проверки реализации: `check:rules`, `node --check` touched JS, `git diff --check`; новые fixtures,
   применимые `smoke:placeholder-plan`, `smoke:placeholder-usage`, `smoke:placeholder-framing`, `smoke:placeholder-visual`,
   `smoke:plan-run-recovery` и `smoke:ae-task-completion` после сверки их offline scope.
   Broad/default smoke, Full Intaker, модели и live AE не входят в эту приёмку.
@@ -168,7 +169,7 @@ Saved AEP, export/render и protected cleanup требуют своего при
   M1 отдельным offline блоком. Текущий AEP и live runtime не используются.
 - M1 завершён: strict manifest/readiness, native observation binding, coverage и bounded
   contracts; existing usage/framing/builder reused. Prepared catalog revision сохраняется
-  отдельно. Public API и execution отсутствуют; следующий блок — M2.
+  отдельно. На checkpoint M1 public API/execution отсутствовали; следующий блок был M2.
 - M1 checkpoint `92f0811`. M2 завершён: pure singular-plan compiler, global/sequential
   collision checks и release DAG, review packet partition с полным покрытием; отдельный
   bounded material reader проверяет native path/full SHA/metadata и pre/post fd identity.
@@ -176,8 +177,12 @@ Saved AEP, export/render и protected cleanup требуют своего при
   project/target/route/material proofs, affected graph и descriptive remaining без replay.
   Flash denied diagnostic не повторялся; correction потеряла provider socket, оба процесса
   exited/files reviewed/native0/quarantine reconciled. Sol/high завершил тот же scope.
-- M4 — следующий обязательный блок; M5/этап3/live acceptance вне текущего scope.
-  Реальные монтажные входы/frameCoverage подтверждаются отдельным поручением.
+- M3 checkpoint `681df0c`. M4 завершён: read-only tool/library adapter, native facts,
+  scoped policy/hash/prefix guards и actual postread. Flash partial run остановлен/сверен;
+  correction timeout/unknown сохранён, processes exited/native0/claims released.
+  Sol/xhigh закрыл инженерные gaps; source/library/MCP offline acceptance пройдена.
+- M5/этап3/live acceptance не выполнялись. Реальный montage manifest и художественная
+  приёмка подтверждаются следующим отдельным поручением; текущий AEP не использован.
 
 ## Decision Log
 
@@ -200,6 +205,17 @@ Saved AEP, export/render и protected cleanup требуют своего при
   hash collision при previous-source alias drift. Hash включает guarded plan/route/crop/material
   revision; ready input перепроверяется. Incomplete file read возвращает SHA=null. Review
   packets — inputs к штатному builder после apply/read-back, без fake owner/receipt.
+- M4 принят после устранения fake postread pass: только actual native/file facts,
+  unknown не превращается в expected/false. Source/route/full footprint/policy key+rev0
+  проверяются; native path authorization до fs. Private preview usage учитывает DAG,
+  материалы переиспользуются только внутри read-only build с final rehash/scope re-read.
+  Aggregate build/run counters и foreseeable cost блокируют превышение до первой записи.
+- Native timing setter response получил только actual comp.itemId. M3 принимает три
+  штатных runtime safety args только по persisted validation; смысловые args exact.
+  Scoped policyHash и precision1e-6 проверяют final timing/pose/source metadata. Closed
+  chain не разрешает create/effect/foreign target даже при пересчитанном client digest.
+- AE skills discovery/build/gates/readback сверены, новый API требует локального recipe,
+  глобальные skills/plugin cache не менялись. File locking/in-memory revision не заявлены.
 - M3 transport failed/unknown сохранён. Server-owned after-run receipt связывает каждую
   observation с run/action/proposal/project/plan/unit hashes и native finishedAt; timestamp
   либо client flag отдельно не freshness. Actual reconciliation вычисляется по новым reads.
@@ -220,6 +236,17 @@ Saved AEP, export/render и protected cleanup требуют своего при
   touched JS/diff PASS. Реальные symlink fixtures skipped из-за Windows privileges;
   actual-module/fake-fs containment proof даёт zero byte reads. Normal temp-file/full-SHA,
   fd drift, group/source collisions, packet/step budgets и сохранение кадров проверены.
+- M4 регрессии: обязательные placeholder-plan/usage/framing/visual, plan-run-recovery
+  и ae-task-completion, плюс isolated solution-plan-run PASS. Дополнительный autonomous-mcp
+  FAIL на keyframe easing/read-back без stable IDs; тот же отказ воспроизведён в isolated
+  archive checkpoint `681df0c` до M4. Verifier/gates не ослабляются, это baseline fixture gap.
 - M3: summary96/M1 regression226/M2 regression19 PASS, rules/syntax пяти JS/diff PASS.
   Synthetic native-shaped facts проверяют bindings, stale/missing/unknown, graph/index drift,
   remaining и fake visual declarations. Live/artistic proof отсутствует; AEP не использован.
+
+- M4 final: actual daemon/VM/official MCP emitter positive (3 разных writes) → stored
+  run/reconcile → M3 technical passed, artistic false; 66 drift/input/budget/gate/read-error
+  negatives PASS. Library6/M1 226/M2 19/material20/M3 96 и четыре solution smokes PASS;
+  rules, syntax12 JS, staged diff-check PASS. Root preflight2/footprint4 и same-realm
+  extracted postread positive+reader failures PASS; mock native/temporary files не live
+  proof и не decoder/artwork acceptance. Real symlink privilege skip остаётся явным.
