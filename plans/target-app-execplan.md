@@ -132,16 +132,11 @@ Live acceptance: второй из двух одноимённых Fill изме
 ### Decision Log
 
 - Ошибка панели вызвана пропущенной миграцией launch env; причинная связь со скиллами   не подтверждена. Токены раздельны, security gates не ослаблены. Локальная config   применяется к новым adapter-процессам; уже запущенный adapter имеет старый env.
-- 68 acceptance IDs закрыты указанным offline evidence; live subset помечен отдельно.
-- ID07: непосредственно проверены пять handlers; остальные resolver consumers не   объявляются автоматически поддержанными.
-- Persistent on не хранит вечный proposal token и не расширяет raw/destructive/save scope.
-- Off не прерывает уже submitted JSX; следующая mutation запрещена. Unknown требует сверки.
-- При ошибке сохранения off процессный grant отзывается, durability после restart неизвестна.
+- 68 acceptance IDs закрыты указанным offline evidence; live subset отдельно. ID07: пять handlers непосредственно проверены, остальные resolver consumers не объявляются автоматически поддержанными.
+- Persistent on не хранит вечный proposal token и не расширяет raw/destructive/save scope. Off не прерывает submitted JSX; следующие mutations запрещены, unknown требует сверки. Ошибка сохранения off отзывает process grant, durability после restart неизвестна.
 - Post-bump файлы установленной CEP и daemon 3.1.0 проверены по hash/runtime. После   долгого AE startup native menu и панель показали `AE Agent 3.1.0`; панель Connected,   autonomy off, queue/inflight пусты, точный generated AEP повторно прочитан через MCP.
-- Legacy handler assertions идут через безопасный actual-module capture без admin grant.
-- Manifest baseline не обновляется обычными проверками; thaw — отдельный reviewed scope.
-- Native exact и overlapping CodeBurn aggregates не суммируются; unknown=null,   model×project не выводится из отдельных агрегатов, dollars не превращаются в quota.
-- Новых production dependencies и frozen-baseline изменений нет; merge не разрешён.
+- Legacy handler assertions идут через actual-module capture без admin grant. Frozen manifest baseline не обновляется обычными проверками; thaw — отдельный scope.
+- Native exact и overlapping CodeBurn aggregates не суммируются; unknown=null, model×project не выводится догадкой, dollars≠quota. Новых production deps/frozen-baseline изменений нет; merge не разрешён.
 
 ### Validation
 
@@ -155,25 +150,30 @@ M7 release не требует дальнейшей generated-only работы.
 
 Run: full-intake-aturtur-after-effects-scripts. Ledger: .codex-runtime/sdk/generic-repo-importer/aturtur-after-effects-scripts-19599911-intake/queue-ledger.json. Последний accepted candidate: tool-ar_distributekeyframestolayer, commit 577cd6e. Counts: entries=46, completed=27, queued=0, blocked_live_lane_required=18, blocked_policy=1, failed=0. Эти jobs не запускались и их совместимость не перепроверялась. Generic SDK migration, Local/Ollama/fallback, broad CEP smoke, dependencies и новые live/provider trials требуют отдельного scope; local-use source не означает публикацию JSX.
 
-## Live клиентский AEP — 1–2 октября 2026, расстановка завершена
+## Live клиентский AEP — 1–2 октября 2026, завершён
 
 ### Progress
 
-- CEP3.2.0 Connected; 26 видеослоёв используют 18 проверенных клипов из новой папки. Итоговое независимое чтение: 51 цель, 205 native/source/timing checks PASS. Источники silent1280×720/25fps/101frames/PAR1, hashes сохранены, исходные отрезки не пересекаются.
-- В обычных сценах разные группы: Scene3 — 4, Scene7-7 — 2, Scene7 — 4, Scene9 — 5. Смены планов рассчитаны по заданным видимым интервалам сцен. Финал: 16 экземпляров/13 плейсхолдеров/7 групп, шесть групп по два раза +Led1, разные исходные фрагменты.
-- Scene9 Queen/Metal и shared F8/F9 кадрирование принято: 16 ключей HOLD6614, независимые samples, 12+20 новых actualPNG просмотрены; полные hashes/bytes/dimensions/CRC/IEND совпали. Все 16 final parent/matte/timing baselines сохранены; изменения project itemIndex после импортов не считаются сменой stable ID.
-- Product20: stable PNG/disk proof и corroborated read-back. Product23: независимый exact-ID import path/type/media proof, live4imports/12checks PASS. HOLD: выявлен chained conditional→LINEAR в native исполнении; explicit if/else исправлен и проверен runs7283ed96/d388f259. Recipes/registry/native regression обновлены.
+26 видеослоёв/18silent1280×720/25fps/101frame/PAR1 клипов приняты. Root51reads/205checks, sourcehashes/overlap0, 16HOLDkeys и samples PASS. 12+20newPNG и прежние32source22/16normalization реально просмотрены, diskproof совпал. Финал16instances/13targets/7groups:6×2+Led1; разные фрагменты и cuts по заданным сценам. Product20/23/HOLD исправления приняты; docs/generated-png-proof.md, imported-source-proof.md, keyframe-native-proof.md.
 
 ### Decision Log
 
--221exact project-only grants:44read-file/36bounded commands; global/auth unchanged. Пустой required_commands в23 был ошибкой root: мост корректно запрещал terminal.23b команды указаны и реально выполнены. Правило записано в docs/model-routing.md.
-- Один AE controller/writer на ресурс. Unknown/partial не replay; task transport не равен приёмке.10unregistered review comps сохраняются; recovery отдельный scope.
-- Границы/disabled variants/mattes/parents не менять. Scene8 prerenders сохранены. Финал13slots/7groups:6groups×2+Led1, повторы разными фрагментами разрешены пользователем.
-- Native MAIN remap:12.64→.64,13.68→1.68,15→3,16.4/25.64→4. Shared revisions cuts.24/.48/1.68/3.00 покрывают короткие сцены и playing часть финала; inherited hold сохраняется.
-- SHA в отчёте19b отличается11/16 от actualdisk; отчёт также имеет invalid JSON escape.16файлов complete и реально просмотрены. Текстовые SHA отклонены; экспорты не повторять.
-- Flash19c недоступен по quota, процесс завершён; public tools показывают только reads. Допустим Sol6.1/high fallback в том же scope после idle сверки.
-- Группы определены по именам исходных треков; исполнители независимо не идентифицированы. Europe содержит космическое видео. Титр перекрывает часть финала; причина отдельных тёмных карточек не доказана. Все 13 известных targets заполнены, но видимость каждого маленького экземпляра не гарантируется.
+Границы/disabled variants/mattes/parents/Scene8 сохранены;16finalparent baselines PASS. Project itemIndex послеimports не identity. MAINremap12.64→.64,13.68→1.68,15→3,16.4/25.64→4; sharedcuts.24/.48/1.68/3.00.221exactAGYgrants; required_commands≠grants. Flash19cquota доwrites, Solfallback послеidle.10unregisteredreviewcomps сохранены; old19bJSON/SHA и false/partialreceipts не повышены. Groups track-based, Europecosmic; titleocclusion/тёмные карточки остаются с неустановленной причиной.
 
 ### Validation
 
-Rules/semantic(65local import,43recovery,73corroborationPNG)/property-identity/generated-safety/portablePNG/library/plan-builder/node/diff PASS. HOLD regression40portable/41local PASS, actual native16keys/samples PASS. Source18/21 actualviews/fullprobes/original+outputhash/persistentcopy PASS. Final51reads/205checks и16parent comparisons PASS. AEP test_live.aep/421items оставлен открытым без save/reopen; export/render queue не запускались. Runtime PID4012/code81f25d8, SHA b8adbf319d4d9d6f393f76268236a70a2ea7ba24a1fe6ef1d9406e09bd704408; pending0/inflight[]/editnull. Исторические false/partial receipts не повышены.
+Rules/semantic65+43+73/property/generated-safety/portablePNG/library/planbuilder/node/diff и HOLD40portable/41local PASS; sourcefullprobes/actualviews/hash/persistentcopy PASS. AEPtest_live.aep/421items открыт безsave/reopen/render; runtimePID4012/code81f25d8/SHA b8adbf319d4d9d6f393f76268236a70a2ea7ba24a1fe6ef1d9406e09bd704408,pending0/inflight[]/editnull. Runtimeданные исторические, обновлять перед новой live операцией.
+
+## Оптимизация монтажа — 2 октября 2026
+
+### Progress
+
+Блок1: docs/montage-workflow.md, AGENTS и routing закрепляют три основных поручения, manifest и заранее заданные кадры; AE skills проверены/уточнены. Блок2compact/evidence в реализации; блок3сводка AGY впереди.
+
+### Decision Log
+
+Defaultfull/APIbackcompat, полная проверка доprojection, recorded evidence≠freshread, unknown безreplay. ТолькоAEAgent; agy-bridge/plugin cache/frozen/providers/текущийAEP не менять.229exactprojectgrants для8новыхofflinechecks, остальныеполя/auth/global unchanged. Skill backups/hashes ignoredlocal; handoff не создаётся.
+
+### Validation
+
+Блок1: rules/diff PASS, skill frontmatter неизменен и поля/ссылки сверены; quick_validate unavailable(PyYAML), deps unchanged. Nativeavailability/экономия не заявлены. Compact/evidence и завершение AGY — следующие блоки.

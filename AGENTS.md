@@ -68,6 +68,11 @@ Maintain AE Agent 3.2.0 in this clean repository. The product target is
 - Keep API contracts explicit.
 - Do not remove tests unless replacing them with better current coverage.
 
+Для монтажа готовых плейсхолдеров использовать `docs/montage-workflow.md`:
+три основных блока Flash, единый manifest и заранее заданное покрытие кадров;
+после исправления проверять изменённую цель и использующие её сцены. Компактный
+ответ сокращает передачу данных, сохраняя полную серверную проверку и AE gates.
+
 ## AE references and text layout
 
 - When the user supplies layout examples, use them to identify visual hierarchy,
