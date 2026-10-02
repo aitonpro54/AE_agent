@@ -59,6 +59,7 @@
     "smoke:plan-run-recovery": "node scripts/run-outcome-smoke.js && node scripts/plan-run-reconciliation-smoke.js && node scripts/plan-run-recovery-jsx-smoke.js && node scripts/plan-run-recovery-panel-smoke.js && node scripts/plan-run-recovery-bridge-smoke.js",
     "smoke:montage-manifest": "node scripts/montage-manifest-smoke.js",
     "smoke:montage-pipeline": "node scripts/montage-pipeline-smoke.js",
-    "smoke:montage-materials": "node scripts/montage-materials-smoke.js"
+    "smoke:montage-materials": "node scripts/montage-materials-smoke.js",
+    "smoke:montage-summary": "node scripts/montage-summary-smoke.js"
   }
 }

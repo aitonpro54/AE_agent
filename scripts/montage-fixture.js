@@ -540,6 +540,7 @@ function createValidMontageFixture(overrides = {}) {
         layer: deepClone(target.geometry.layer)
       };
       edge.footprint = deepClone(target.footprint);
+      edge.transform = {anchorPoint: [960, 540], position: [960, 540], scale: [100, 100], rotation: 0, opacity: 100};
     }
   }
 
@@ -887,6 +888,202 @@ function createConflictingTargetIntentFixture() {
   return fixture;
 }
 
+/**
+ * Creates a fixture where scene_1 and scene_2 share a route layer (layer 10 in comp 100).
+ */
+function createSharedRouteMontageFixture() {
+  const fixture = createValidMontageFixture();
+  // Modify assignment 2 route to use layer 10
+  fixture.manifest.assignments[1].routeLayerIds = [10];
+  fixture.observations.targets[1].route = [
+    {
+      ...deepClone(fixture.observations.targets[0].route[0]),
+      childCompItemId: 120
+    }
+  ];
+  // Replace route edges with a shared route edge
+  fixture.manifest.dependencies.edges = fixture.manifest.dependencies.edges.filter(e => e.kind !== "route");
+  fixture.manifest.dependencies.edges.push({
+    dependencyId: "dep_rte_shared",
+    kind: "route",
+    compItemId: 100,
+    layerId: 10,
+    sceneIds: ["scene_1", "scene_2"]
+  });
+  return fixture;
+}
+
+/**
+ * Creates a fixture where scene_1 and scene_2 share a source (source 301).
+ */
+function createSharedSourceMontageFixture() {
+  const fixture = createValidMontageFixture();
+  fixture.manifest.dependencies.edges.push({
+    dependencyId: "dep_src_shared",
+    kind: "source",
+    sourceItemId: 301,
+    sceneIds: ["scene_1", "scene_2"]
+  });
+  return fixture;
+}
+
+/**
+ * Creates a synthetic plan run record conforming to ae-agent-plan-run-record.v1.
+ */
+function createPlanRunRecordFixture({
+  unit,
+  runId = "11111111-1111-4111-8111-111111111111",
+  status = "completed",
+  stepOverrides = [],
+  projectFile,
+  actionId = "act-montage-unit-01"
+} = {}) {
+  const { normalizeProject } = require("../mcp-server/proposal-state");
+  const { sha256 } = require("../mcp-server/review-evidence");
+  const plan = deepClone(unit.plan);
+  const projFile = projectFile || plan.montagePipeline?.project?.projectFile || "c:/projects/montage_master.aep";
+
+  const runSteps = (plan.steps || []).map((step, idx) => {
+    const stepIdx = idx + 1;
+    const ov = stepOverrides[idx] || {};
+    const stepStatus = ov.status || (status === "completed" ? "completed" : "failed");
+
+    const commands = ov.commands || (stepStatus === "completed" ? [{
+      id: `cmd_${stepIdx}`,
+      role: "mutation",
+      lifecycleState: "completed",
+      submittedAt: "2026-10-02T12:00:01.000Z"
+    }] : (ov.neverSubmitted ? [{
+      id: `cmd_${stepIdx}`,
+      role: "mutation",
+      neverSubmitted: true
+    }] : [{
+      id: `cmd_${stepIdx}`,
+      role: "mutation",
+      lifecycleState: "timed_out",
+      timedOutFrom: "submitted"
+    }]));
+
+    return {
+      index: stepIdx,
+      tool: step.tool,
+      args: deepClone(step.args),
+      status: stepStatus,
+      mutating: true,
+      commands,
+      mutationResult: ov.mutationResult !== undefined ? ov.mutationResult : (stepStatus === "completed" ? {
+        ok: true,
+        comp: { itemId: step.args.expectedCompItemId || step.args.compItemId || 110 },
+        layer: { id: step.args.expectedLayerId || step.args.layerId || 21 },
+        ...(step.tool === "replace_layer_source" && (step.args.expectedSourceItemId || step.args.sourceItemId) ? {
+          sourceItem: { itemId: step.args.expectedSourceItemId || step.args.sourceItemId }
+        } : {})
+      } : null),
+      ...(ov.error ? { error: ov.error, errorCode: ov.errorCode || "command_timeout" } : {})
+    };
+  });
+
+  return {
+    schema: "ae-agent-plan-run-record.v1",
+    runId,
+    createdAt: "2026-10-02T12:00:00.000Z",
+    project: {
+      file: projFile
+    },
+    plan,
+    run: {
+      id: runId,
+      status,
+      finishedAt: "2026-10-02T12:00:02.000Z",
+      failedCount: status === "failed" ? 1 : 0,
+      executedCount: runSteps.length,
+      steps: runSteps,
+      provenance: {
+        schema: "ae-agent-run-provenance.v1",
+        actionId,
+        proposalRevision: 1,
+        projectId: sha256(normalizeProject(projFile)),
+        projectRevision: null,
+        projectRevisionReason: "in_memory_revision_not_observed",
+        planSha256: sha256(plan)
+      }
+    }
+  };
+}
+
+/**
+ * Creates a synthetic target read-back observation conforming to verifyPlaceholderReadBack.
+ */
+function createTargetReadBackObservation({ expectedReadBack, overrides = {} } = {}) {
+  const exp = expectedReadBack;
+  return {
+    comp: {
+      itemIndex: overrides.compItemIndex !== undefined ? overrides.compItemIndex : exp.compItemIndex,
+      itemId: overrides.compItemId !== undefined ? overrides.compItemId : exp.compItemId,
+      name: overrides.compName !== undefined ? overrides.compName : exp.compName,
+      frameRate: exp.frameRate
+    },
+    layer: {
+      index: overrides.layerIndex !== undefined ? overrides.layerIndex : exp.layerIndex,
+      id: overrides.layerId !== undefined ? overrides.layerId : exp.layerId,
+      name: overrides.layerName !== undefined ? overrides.layerName : exp.layerName,
+      startTime: exp.startTime,
+      inPoint: exp.inPoint,
+      outPoint: exp.outPoint,
+      stretch: 100,
+      timeRemapEnabled: false,
+      threeDLayer: false,
+      enabled: true,
+      locked: false,
+      source: {
+        itemId: overrides.sourceItemId !== undefined ? overrides.sourceItemId : exp.sourceItemId,
+        name: overrides.sourceName !== undefined ? overrides.sourceName : exp.sourceName,
+        file: overrides.sourceFile !== undefined ? overrides.sourceFile : (exp.sourceFile || "c:/assets/footage/clip_a.mp4"),
+        footageMissing: false
+      }
+    },
+    transform: overrides.transform !== undefined ? overrides.transform : deepClone(exp.transform || {
+      position: [960, 540],
+      scale: [100, 100],
+      anchorPoint: [960, 540],
+      rotation: 0,
+      opacity: 100
+    }),
+    geometry: overrides.geometry !== undefined ? overrides.geometry : deepClone(exp.geometry)
+  };
+}
+
+// Synthetic server-adapter facts for offline contract tests; never live proof.
+function bindMontageReadFixture({record, unit, observation, observedAt = "2026-10-02T12:00:03.000Z"}) {
+  const {observationHash} = require("../mcp-server/montage-run-bindings");
+  const facts = deepClone(observation);
+  delete facts.evidence;
+  facts.evidence = {
+    schema: "ae-agent-montage-post-run-read.v1", readId: "99999999-9999-4999-8999-999999999999",
+    phase: "after_run", runId: record.runId, actionId: record.run.provenance.actionId,
+    proposalRevision: record.run.provenance.proposalRevision, projectId: record.run.provenance.projectId,
+    planSha256: record.run.provenance.planSha256, unitContentHash: unit.contentHash, observedAt,
+    stateSha256: observationHash(facts)
+  };
+  return facts;
+}
+
+function createMontageReadBackFixture({compilation, records}) {
+  const readBack = {projects: [], targets: [], materials: [], routes: []};
+  for (const unit of compilation.units) {
+    const record = records.find(row => row.plan.montagePipeline.unitId === unit.unitId);
+    if (!record) continue;
+    const bind = observation => bindMontageReadFixture({record, unit, observation});
+    readBack.projects.push(bind({unitId: unit.unitId, file: compilation.project.projectFile}));
+    const target = createTargetReadBackObservation({expectedReadBack: unit.expectedReadBack});
+    target.footprint = deepClone(unit.verificationBindings.target.footprint);
+    readBack.targets.push(bind(target));
+    readBack.materials.push(bind({...deepClone(unit.verificationBindings.material), verified: true}));
+    readBack.routes.push(bind({unitId: unit.unitId, edges: deepClone(unit.verificationBindings.route)}));
+  }
+  return readBack;
+}
+
 module.exports = {
   createCropSamples,
   createValidMontageFixture,
@@ -903,5 +1100,11 @@ module.exports = {
   createReorderedVariant,
   createSwapCycleFixture,
   createReleaseOrderFixture,
-  createConflictingTargetIntentFixture
+  createConflictingTargetIntentFixture,
+  createSharedRouteMontageFixture,
+  createSharedSourceMontageFixture,
+  createPlanRunRecordFixture,
+  createTargetReadBackObservation,
+  bindMontageReadFixture,
+  createMontageReadBackFixture
 };

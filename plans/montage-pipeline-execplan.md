@@ -172,8 +172,12 @@ Saved AEP, export/render и protected cleanup требуют своего при
 - M1 checkpoint `92f0811`. M2 завершён: pure singular-plan compiler, global/sequential
   collision checks и release DAG, review packet partition с полным покрытием; отдельный
   bounded material reader проверяет native path/full SHA/metadata и pre/post fd identity.
-- 2026-10-02: план подготовлен; M1–M5 и live acceptance не начаты. Реальные монтажные
-  входы/frameCoverage подтверждаются отдельным поручением, не извлечены из старого AEP.
+- M2 checkpoint `bf78802`. M3 завершён: exact run/plan/args/provenance binding, fresh
+  project/target/route/material proofs, affected graph и descriptive remaining без replay.
+  Flash denied diagnostic не повторялся; correction потеряла provider socket, оба процесса
+  exited/files reviewed/native0/quarantine reconciled. Sol/high завершил тот же scope.
+- M4 — следующий обязательный блок; M5/этап3/live acceptance вне текущего scope.
+  Реальные монтажные входы/frameCoverage подтверждаются отдельным поручением.
 
 ## Decision Log
 
@@ -196,6 +200,10 @@ Saved AEP, export/render и protected cleanup требуют своего при
   hash collision при previous-source alias drift. Hash включает guarded plan/route/crop/material
   revision; ready input перепроверяется. Incomplete file read возвращает SHA=null. Review
   packets — inputs к штатному builder после apply/read-back, без fake owner/receipt.
+- M3 transport failed/unknown сохранён. Server-owned after-run receipt связывает каждую
+  observation с run/action/proposal/project/plan/unit hashes и native finishedAt; timestamp
+  либо client flag отдельно не freshness. Actual reconciliation вычисляется по новым reads.
+  Visual declaration всегда not_established; owner API остаётся отдельным proof.
 - Additive compiler: малая миграция, прежние per-target guards/receipts. Multi-target builder
   требует миграции singular metadata/gates; отдельный runner/расширение newspaper slideshow дороже и не нужны.
 - Unsupported/shared случаи — bounded gaps M5; не клонировать comps/обходить server policy.
@@ -212,5 +220,6 @@ Saved AEP, export/render и protected cleanup требуют своего при
   touched JS/diff PASS. Реальные symlink fixtures skipped из-за Windows privileges;
   actual-module/fake-fs containment proof даёт zero byte reads. Normal temp-file/full-SHA,
   fd drift, group/source collisions, packet/step budgets и сохранение кадров проверены.
-- Документ: HEAD/branch, bounded module/schema/doc reads; scoped diff check без whitespace errors.
-- Product suites, модели, live/provider/config/frozen changes и commits не выполнялись; реализация не проверялась.
+- M3: summary96/M1 regression226/M2 regression19 PASS, rules/syntax пяти JS/diff PASS.
+  Synthetic native-shaped facts проверяют bindings, stale/missing/unknown, graph/index drift,
+  remaining и fake visual declarations. Live/artistic proof отсутствует; AEP не использован.

@@ -872,7 +872,30 @@ function compileMontagePipeline(input = {}) {
         assignment: a,
         material,
         scene,
-        rootRange
+        rootRange,
+        verificationBindings: {
+          material: {
+            materialId: a.materialId,
+            sourceItemId: material.sourceItemId,
+            path: material.path,
+            sha256: material.sha256,
+            byteLength: material.byteLength,
+            metadata: {
+              width: material.width,
+              height: material.height,
+              pixelAspect: material.pixelAspect,
+              duration: material.duration,
+              fps: material.fps
+            }
+          },
+          target: {
+            compItemId: a.target.compItemId,
+            layerId: a.target.layerId,
+            footprint: deepClone(bound.observed.footprint)
+          },
+          route: deepClone(bound.observed.route || []),
+          geometry: deepClone(bound.observed.geometry || null)
+        }
       };
 
       unitMap.set(unitId, unit);
@@ -909,7 +932,8 @@ function compileMontagePipeline(input = {}) {
       contentHash: u.contentHash,
       expectedReadBack: u.expectedReadBack,
       frameRequirements: u.frameRequirements,
-      budget: u.budget
+      budget: u.budget,
+      verificationBindings: u.verificationBindings
     }));
 
     const affectedScenes = [...new Set(manifest.assignments.map(a => a.sceneId))].sort();

@@ -208,3 +208,123 @@ M2 реализует чистый компилятор планов монта�
 Адресные проверки M2:
 - `npm.cmd run smoke:montage-pipeline` — 19 offline тестов компилятора, DAG, коллизий, бюджетов и пакетов.
 - `npm.cmd run smoke:montage-materials` — 20 offline тестов адаптера материалов с реальными временными файлами.
+
+## M3: Свежий read-back, зависимости и частичный исход
+
+Pure-модули `montage-pipeline-summary.js` и `montage-run-bindings.js` не
+исполняют AE-команды и не дают полномочий повторить старый план.
+
+`affectedMontageScenes({manifest,materials,observations,changes,budgets})`
+повторно проверяет bounded native baseline через существующий M1 validator:
+точные target/route/source edges, общие occurrences, scene refs и scope.
+Normalized manifest допускается с отдельным catalog либо явной materialRevision.
+Неполный/пустой граф, неизвестная цель/источник/маршрут, неизвестный footprint
+и неизвестный route transform требуют baseline всех известных сцен и кадров.
+Для manual/property/matte/effect/parent change нужен явный complete footprint;
+без него область последствий считается неизвестной.
+
+Index-only exemption требует полные native `before/after` target snapshots:
+after совпадает с фактическим `observations.targets`, stable IDs и всё содержимое
+равны после исключения presentation indices. Флаг `contentUnchanged` и имя
+`index_drift` не заменяют эти факты. Position/scale маршрута входят в сравнение.
+
+`summarizeMontagePipeline({compilation,runEvidence,readBack,reconciliation?,visualReview?})`
+сверяет UUID записи и run.id, exact project file, полный unit.plan и выполненные
+args каждого шага. Обязателен native `ae-agent-run-provenance.v1`:
+actionId, proposalRevision, projectId, planSha256. Хэши считаются существующим
+`review-evidence.sha256`. Native projectRevision может быть null только с
+`projectRevisionReason:'in_memory_revision_not_observed'`; это не revision0.
+Дубликаты, неизвестные unit bindings, missing dependency IDs и циклы блокируют
+проверку. JSON bytes/depth/cycles/accessors и размеры коллекций ограничиваются
+до semantic walk; malformed input возвращает blockers.
+
+### Внутренний контракт readBack для M4
+
+Эти факты собирает доверенный server adapter из существующих native readers
+и bounded material verifier. Они не являются public client input. Synthetic
+fixtures, сохранённый timestamp или самостоятельно заявленный hash не доказывают
+фактического чтения проекта/файла.
+
+`readBack` содержит отдельные массивы:
+
+- `projects:[{unitId,file,evidence}]`.
+- `targets:[{comp,layer,transform,geometry,footprint,evidence}]`: native comp.itemId,
+  comp.itemIndex, name/frameRate; layer.id/index/name/source и полный timing;
+  enabled/locked/threeDLayer/remap — явные boolean. Source содержит itemId/name/file/
+  footageMissing. Static footprint и geometry полны.
+- `materials:[{materialId,sourceItemId,path,sha256,byteLength,metadata,verified:true,evidence}]`:
+  полный SHA256 прочитанных bytes, absolute path и width/height/PAR/duration/fps
+  совпадают с `unit.verificationBindings.material`.
+- `routes:[{unitId,edges,evidence}]`: каждый edge сохраняет parentCompItemId,
+  childCompItemId, layerId/layerIndex, startTime/inPoint/outPoint/stretch/remap,
+  geometry, static footprint и **transform** (anchorPoint/position/scale/rotation/
+  opacity). Отсутствие route transform — insufficient, а его дрейф — failed.
+
+Каждый observation имеет receipt:
+
+```text
+evidence: {
+  schema: 'ae-agent-montage-post-run-read.v1',
+  readId: UUID, phase: 'after_run',
+  runId, actionId, proposalRevision, projectId,
+  planSha256, unitContentHash, observedAt, stateSha256
+}
+```
+
+projectId = sha256(normalizeProject(projectFile)); planSha256 относится к точному
+native prepared plan, unitContentHash — к compiler unit. stateSha256 =
+`observationHash(observation)`: canonical hash всех фактов без evidence.
+observedAt должен быть не раньше native run.finishedAt. Помимо времени обязательны
+exact run/action/revision/project/plan/unit bindings; старый receipt нельзя
+перенести на новые факты. Для одного unit/run должно быть ровно одно наблюдение
+каждой цели, проекта, материала и маршрута.
+
+`bindPostRunObservation({record,unit,project,observation,readId,observedAt})`
+возвращает `{ok,observation? ,code?}`; server adapter передаёт собственные read ID,
+время и факты после реальных читателей. Экспорты `observationHash` и
+`freshObservation` проверяют форму/привязку. Constructor не аутентифицирует
+caller claims и не создаёт store/status/runner.
+
+Технический pass требует весь набор fresh AFTER-run фактов. Используются
+штатные `verifyPlaceholderReadBack`, `verifyPlaceholderCoverage` и
+`reconcilePlanRun({record,project:{file},freshReadSteps})`. Missing/stale данные
+дают insufficient; подтверждённый material/route/target/project drift — failed.
+Дополнительные narrow `freshReadSteps`, если нужны, имеют тот же receipt contract.
+
+### Reconciliation и оставшаяся работа
+
+Переданный reconciliation не authority: стандартный отчёт сравнивается с заново
+вычисленным результатом по independent reads. M4 может добавить рядом
+`montageReadBack`; при сравнении исключается только это поле, а стандартные
+schema/runId/sameProject/status/steps/replayAllowed/originalError сохраняются.
+
+Applied шаг никогда не попадает в `remainingSteps`. Только явное native
+undelivered/preMutationRejected доказательство даёт not_applied original index.
+Missing executed step остаётся в `unresolvedSteps`, даже если желаемое состояние
+впоследствии видно. Unknown блокирует dependents; не подавляет результаты
+проверенных независимых units. Original execution error и dryRun сохраняются.
+`replayAllowed:false` всегда, remaining — описательный список; пересборка нужна
+от фактического состояния, без слепого повторения старого плана.
+
+Отсутствующий record сам по себе не разрешает proposal. Для действительно
+непредложенного unit server adapter может передать `readBack.baseline` с полным
+свежим M1 input и `unexecutedUnits` с внутренним proof
+`ae-agent-montage-never-proposed.v1`: unitId/contentHash/planSha256/projectId,
+manifestHash/materialsHash/evidenceHash, phase:'current_baseline', observedAt
+и serverConfirmedNeverProposed:true. Baseline заново компилируется; точный план,
+хэши и observations timestamp должны совпасть, а baseline следует за известными
+finished runs. Server подтверждает отсутствие proposal по своей истории;
+public boolean не является полномочием. Dependents требуют completed parents.
+
+### Визуальная приёмка
+
+Pure summary возвращает `artisticAccepted:false` и `not_established` даже для
+полного списка кадров с fake SHA, matching stateHash и заявленным accepted.
+Устаревшие stateHash отмечаются pending/stale_png_rejected. Для художественной
+приёмки нужно отдельно использовать существующий visual owner API с validated
+owner/receipt, full frame/state/material/image bindings, paired official views
+и конкретными observations. Нового viewer или альтернативного authority нет.
+Summary completed/ok означает техническую сверку и не означает принятие artwork.
+
+M3 smoke: `node scripts/montage-summary-smoke.js` — 96 адресных offline случаев.
+Они проверяют actual pure modules с synthetic native-shaped facts, а не live AE.
