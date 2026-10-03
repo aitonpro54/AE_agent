@@ -165,3 +165,35 @@ Legacy actual isolated runner после correction:aggregate oktrue, semanticpa
 readBackCount>0; catalog/export/ownership/cleanup regression PASS (AE0).
 Новый live builder нужен после обновления idle runtime; уже завершённый capture
 не повторяется. Полные accepted cycles0; два failed attempts сохранены.
+
+
+## 2026-10-03 — первый полный live montage цикл
+
+### Progress
+
+Exact48 failed review comps удалены штатным CEP: run9f74558d-f897-4b84-82ad-8443f93fbf48.
+Независимый native поиск подтвердил отсутствие48IDs и исходные10IDs. Idle daemon9108
+сверен по executable/argv/creation и заменён official adapter процессом10336.
+Runtime acc2a81, sourceSHA1ef894bc7183c94ada7ff8fb555c0c37eaf2be0d3932b867059cf310f32c996b.
+Первый полный цикл принят:88d5f279/c690b263/1e86c8a0 application runs; capture
+8b41b9ca-411e-40f0-af6d-6513de025e66 —34steps,89checks,readBackCount1.
+Все27actual640×360PNG просмотрены диспетчером и независимым Flash; ownerAPI18+9 PASS.
+Три M3 technical и три production completion technical/declared_accepted PASS.
+Evidence: .codex-runtime/montage-acceptance-20261003/cycle-final-1-accepted.json.
+
+### Decision Log
+
+M3 artisticfalse сохранён: artistic proof устанавливает отдельный owner API.
+Completion сохраняет completeTaskAcceptancefalse, provided_run_ids_only и декларацию
+просмотра без machine proof. First batch2 visual report отклонён по двум
+формулировкам; новый run-r1 фактически повторил все10view_file. Исторический отказ
+сохранён, AE capture не повторялся и verifier не менялся.
+Первый цикл1010,029s измеренных workflows; AGY всех четырёх inspection runs344,767s.
+Полный measured budget включает две прошлые failed attempts и исправление inspection.
+
+### Validation
+
+Application3 semantic/reconciliation/M3 PASS; capture34native/89semantic PASS,unknown0;
+owner visual27frames PASS; paired actual JSON/sheet/fullPNG view_file, concrete
+observations и pins проверены сервером. Completion3 PASS, bounded files/evidence
+проверены production consumer. Second/third cycles и оставшиеся negatives открыты.

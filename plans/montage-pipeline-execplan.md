@@ -186,6 +186,11 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- 2026-10-03: первый полный live цикл независимо принят (1/3): 3 units,
+  27 root PNG, 34 capture steps, 89 checks, fresh owner visual18+9 PASS,
+  3 M3 technical PASS и 3 completion technical/declared_visual PASS. Runtime
+  acc2a81/source1ef894bc; retained historical failures и sampled/provided-ID scope.
+
 - 2026-10-03: собственный saved fixture/три source groups и восстановление CEP
   завершены; fresh native compiler3 units/27 frames ready. Root probes1–4 ещё
   blocked (native source class), полных accepted cycles0. Seed4 steps applied,
@@ -227,6 +232,11 @@ Saved AEP, export/render и protected cleanup требуют своего при
   Это не montage/root/canonical/visual acceptance; текущий AEP в M5 не использован.
 
 ## Decision Log
+
+- Exact48 failed review comps удалены через штатный CEP по action-time подтверждению;
+  run9f74558d, fresh independent IDs: original10 сохранены, 48 отсутствуют.
+  First visual отказ для двух формулировок batch2 сохранён; новый actual view_file
+  run исправил отчёт, verifier/PNG/AE capture не изменялись. Effective effort null.
 
 - Native graph/canonical implementation проверяется отдельно от live acceptance.
   Class diagnostics, Classic3D exacthost mapping и source crop PNG не дают client
@@ -307,8 +317,9 @@ Saved AEP, export/render и protected cleanup требуют своего при
   реализованы, packing20/visual16/epoch30 и3 independent counterexamples PASS.
   Два fullattempts failed:13PNG/2MiB и27PNG+2sheets/33steps/89checks PASS,
   но readBackCount0. Builder genuine project summary исправлен; legacy full runner
-  PASS. Exact48owned cleanup подготовлен с checkpoint, manual confirmation pending.
-  Три accepted cycles ещё открыты; historical failed status не повышен.
+  PASS. Exact48owned cleanup выполнен с checkpoint и независимым native read.
+  Первый accepted cycle:8b41b9ca-411e-40f0-af6d-6513de025e66, полный scope27frames;
+  два следующих цикла/оставшиеся negatives открыты; historical failed status не повышен.
   Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
   model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 
