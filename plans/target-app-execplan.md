@@ -1,14 +1,12 @@
 # План исполнения Target App
 
-**Root/canonical montage — 3 октября 2026. Progress:** AE `2830493`/agy `7ea628f`; этап3 bridge принят, montage root/canonical/live открыт. **Decision Log:** confirmed gaps, owned fixture, клиентский AEP защищён, один controller/прежние gates; три цикла/максимум пять попыток. **Validation:** bridge100 PASS/36,575 s, AE17 suites PASS; known autonomous-mcp fixture FAIL сохранён; runtime2830493/CEP SHA match/typed reads. Детали: plans/montage-pipeline-execplan.md, WORK_LOG.md.
-
 **Codeburn — 2 октября 2026. Progress:** stdio/HTTP get_task_usage/get_usage_history и native journal реализованы (5827223), runtime обновлён в idle, CEP Connected, persistence active. **Decision Log:** explicit runtime UUID; SQLite в Codeburn; native отдельно, guards/auth сохранены; Flash partial patch result независимо исправлен родителем. **Validation:** production-usage/usage/HTTP fixtures, syntax/diff PASS; real MCP/CLI/web totals совпали, query 0,28 с; общий план и proof — Codeburn/PLAN.md. Hooks требуют штатного trust, recovery Windows 5 мин активен.
 
 **Оформление текстов — 2 октября 2026. Progress:** принципы перенесены из глобального Codex AGENTS в общий модуль AE Agent, planner/chat/MCP и текстовый рецепт; docs/text-layout-policy.md. **Decision Log:** смысловая иерархия/равный вес/оптические поля; custom system и AE gates сохранены, Flash partial после timeout/exited завершён родителем. **Validation:** policy/provider/optimization/discovery/registry/rules/syntax/diff PASS; текущий get_solution возвращает правила. Мост не перезапускался, новые промпты — после штатного запуска/подключения; AEP не менялся.
 
 ## Активный baseline
 
-AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, provider layer. Product target: specs/target-app.md. GitHub baseline 3.1: c6edff9738c20347b802d481d2bb6b3ad9ffc646; исходный HEAD 3.2: d0729f69083ffe4f3156778c699febf55fcb4c2d. Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json; единственное активное исключение — orchestrator/bounded-process-result.cjs.
+AE Agent 3.2.0 (draft): CEP, bridge, typed tools, reviewed recipes/registry, provider layer. Product target: specs/target-app.md. GitHub baseline 3.1: c6edff9738c20347b802d481d2bb6b3ad9ffc646; исходный HEAD 3.2: d0729f69083ffe4f3156778c699febf55fcb4c2d. Runtime outputs local/ignored. Intaker/importer/supervisors frozen по config/frozen-intake-manifest.json; единственное активное исключение — orchestrator/bounded-process-result.cjs. Root/canonical montage 3 октября — Progress: этап3 bridge принят, AE root/canonical/live открыт; Decision: owned fixture/три цикла/прежние gates; Validation: bridge100 и AE17 suites PASS, known fixture FAIL сохранён. Подробности: plans/montage-pipeline-execplan.md, WORK_LOG.md.
 
 ## Отдельная версия 3.2 — 2026-10-01
 
