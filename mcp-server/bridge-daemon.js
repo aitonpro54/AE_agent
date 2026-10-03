@@ -24,6 +24,7 @@ const solutionCandidateQueue = require("./solution-candidate-queue");
 const { createAutonomousSessionManager } = require("./autonomous-session");
 const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstacleEvent } = require("./proposal-state");
 const currentProposalState = createProposalState();
+const {waitForBridgeState, waitForPlanState} = require("./operation-wait");
 const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
 const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
@@ -5057,6 +5058,8 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 const PLANNING_TOOL_NAMES = [
   projectSave.TOOL_NAME,
   "get_bridge_status",
+  "wait_for_bridge_state",
+  "wait_for_plan_state",
   "ping_ae",
   "get_project_snapshot",
   "get_project_info",
@@ -5571,6 +5574,8 @@ function isRawExtendscriptTool(tool) {
 
 const HARDCORE_INSPECTION_ONLY_TOOLS = new Set([
   "get_bridge_status",
+  "wait_for_bridge_state",
+  "wait_for_plan_state",
   "ping_ae",
   "get_active_comp",
   "get_selected_layers",
@@ -9042,6 +9047,63 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {}
+    }
+  },
+  {
+    name: "wait_for_bridge_state",
+    description: "Passively wait up to waitMs for bridge panel connectivity or idle state using stored local status without contacting After Effects or mutating project state.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        waitMs: {
+          type: "integer",
+          minimum: 0,
+          maximum: 30000,
+          description: "Maximum milliseconds to wait. Defaults to 1000, maximum 30000."
+        },
+        targetState: {
+          type: "string",
+          enum: ["connected", "idle", "connected_and_idle", "any"],
+          description: "Desired bridge condition to observe. Defaults to connected."
+        }
+      }
+    }
+  },
+  {
+    name: "wait_for_plan_state",
+    description: "Passively wait up to waitMs for proposal state transitions using immutable proposal pins (actionId, instanceId, revision). Returns a compact observer status and lastRun summary without execution authority.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        actionId: {
+          type: "string",
+          description: "Exact actionId of the current proposal pin."
+        },
+        instanceId: {
+          type: "string",
+          description: "Exact bridge instanceId where the proposal was created."
+        },
+        revision: {
+          type: "integer",
+          description: "Exact proposal revision number."
+        },
+        waitMs: {
+          type: "integer",
+          minimum: 0,
+          maximum: 30000,
+          description: "Maximum milliseconds to wait. Defaults to 1000, maximum 30000."
+        },
+        stateToken: {
+          type: "string",
+          description: "Optional previously observed stateToken; waits until state transitions away from this token or reaches a terminal state."
+        },
+        targetStates: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional target states to wait for (e.g. ['completed', 'failed', 'dry_run_passed'])."
+        }
+      },
+      required: ["actionId", "instanceId", "revision"]
     }
   },
   {
@@ -13389,6 +13451,26 @@ async function callTool(name, args, executionContext) {
 
   if (name === "get_bridge_status") {
     return toolResult({...getBridgeStatus(), autonomyContractVersion: AUTONOMY_CONTRACT_VERSION});
+  }
+
+  if (name === "wait_for_bridge_state") {
+    try {
+      const result = await waitForBridgeState(() => ({panelConnected: Date.now() - lastPanelSeenAt < 15000,
+        pendingCommands: countQueuedCommands(Date.now()), inflightCommands: Array.from(inflightCommands.keys()),
+        retainedResults: completedResults.size}), args || {});
+      return toolResult(result, Boolean(result && !result.ok));
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message, code: error.code || "invalid_wait" }, true);
+    }
+  }
+
+  if (name === "wait_for_plan_state") {
+    try {
+      const result = await waitForPlanState(() => currentProposalState.snapshot(), args || {});
+      return toolResult(result, Boolean(result && !result.ok));
+    } catch (error) {
+      return toolResult({ ok: false, error: error.message, code: error.code || "invalid_wait" }, true);
+    }
   }
 
   if (name === "get_current_ai_agent_plan") {

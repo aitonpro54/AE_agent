@@ -46,6 +46,11 @@ Maintain AE Agent 3.2.0 in this clean repository. The product target is
 - Для поддерживаемых операций предпочитай `build_solution_plan`, затем
   `propose_ai_agent_plan` и обычные dry-run/confirmation/read-back gates.
   Raw JSX допустим только при конкретном пробеле typed tools.
+- Приоритет Tool-First / MCP-First: Computer Use допустим исключительно как fallback
+  по таксономии (`typed_gap`, `visual_ui_only`, `panel_bootstrap`, `protected_confirmation`,
+  `modal_blocker`, `diagnostics`), описанной в `docs/tool-first-workflow.md`. Отказ gate
+  нельзя обходить через GUI; экспорт кадра требует фактического визуального просмотра.
+  Для наблюдения использовать пассивные ожидания `wait_for_bridge_state` и `wait_for_plan_state`.
 - Если в CEP активна `Автономная сессия Codex`, после успешного
   dry-run можно выполнить через MCP только server-proposed typed mutating plan.
   Direct mutations, raw JSX и destructive plans остаются в ручном CEP flow.
