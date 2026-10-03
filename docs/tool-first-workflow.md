@@ -129,11 +129,25 @@ PNG-view <── readback <── run_ai_agent_plan <── dry-run (run dryRun:
 Инструмент `get_project_lifecycle_state` предназначен для легкого чтения состояния проекта в After Effects:
 - **Аргументы**: строго 0 аргументов.
 - **Возвращаемые данные**:
-  - `filePath`: строковый путь к файлу проекта или пустая строка для несохраненного проекта.
+  - `file`: путь к проекту или `null`, если проект не сохранен.
+  - `projectPresent` и `revision`: точные значения или `null`, если AE getter недоступен.
   - `dirty`: булев флаг наличия несохраненных изменений в проекте (`app.project.dirty`).
-  - `revision`: числовая или строковая ревизия проекта.
-  - `appVersion`: версия запущенного приложения After Effects.
+  - `appVersion`: версия только если native getter поддерживается; иначе `null`.
+  - `supported`: отдельный флаг достоверности для `appVersion`, `file`, `dirty` и `revision`.
+  - `lifecycleReady` и `reasons`: named source и причины отказа от перехода.
+  - `lifecycle.enabled`, `blocked`, `problem`, `pending`: runtime opt-in и защита store.
   - `observedAt`: временная метка наблюдения.
 - **Инварианты**:
   - Строго read-only: 0 записей в проект, 0 мутаций таймлайна или композиций.
   - При ошибке выполнения скрипта возвращается явная ошибка чтения (`ok: false`).
+
+## Именованные переходы проекта
+
+`guarded-project-lifecycle` описан в [рецепте lifecycle](../recipes/project-lifecycle.md).
+Пока текущий daemon не перезапущен с приватным opt-in `AE_PROJECT_LIFECYCLE_ENABLED=1`,
+эти операции недоступны. Подключённый recipe forwarding строит тот же план через
+`build_solution_plan` с `solutionId: "guarded-project-lifecycle"`; прямой typed
+builder — `build_project_lifecycle_plan({operation, targetProjectFile, checkpointLabel})`.
+Разрешены только single-step Save As/open/create планы с exact CEP manual confirmation;
+неизвестный исход требует read-only reconcile, никогда replay. Это high-risk переход,
+который меняет Undo и активный контекст проекта.

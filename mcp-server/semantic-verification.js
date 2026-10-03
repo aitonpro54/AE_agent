@@ -4,6 +4,8 @@ const path = require("path");
 const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
 const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const projectSave = require("./project-save");
+const projectLifecycle = require("./project-lifecycle-contract");
+const lifecycleVerification = require("./project-lifecycle-verification");
 const sourceRecovery = require("./placeholder-source-recovery");
 
 function getAuthoritativeExportRoot(options = {}) {
@@ -41,6 +43,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  ...projectLifecycle.MUTATIONS,
   "reload_montage_material_source",
   "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
@@ -4155,6 +4158,14 @@ function verifyStep(checks, step, evidence) {
     pushCheck(checks,{id:`${step.index}:save_current_named_project:file-proof`,title:"Typed named-project persistence proof",expected:"bound file/checkpoint/project read-back; live reopen separate",observed:reason,passed:valid,evidence:reason});
     return;
   }
+  if(projectLifecycle.isLifecycleMutation(step.tool)) {
+    let valid=false,reason="missing lifecycle receipt or native read-back";
+    try { const proof=lifecycleVerification.verifyLifecycleStep(step,evidence.run);valid=proof.ok;
+      reason="Bound source disk/checkpoint, target native inventory, exact manual run and retired context verified.";
+    } catch(error) {reason=error.message;}
+    pushCheck(checks,{id:`${step.index}:${step.tool}:lifecycle-proof`,title:"Guarded project lifecycle proof",
+      expected:"exact manual run, unchanged source, proven final native inventory",observed:reason,passed:valid,evidence:reason});return;
+  }
 
   if (SLIDESHOW_MUTATING_TOOLS.has(step.tool)) {
     checkSlideshowMutation(checks, step, evidence);
@@ -5095,8 +5106,13 @@ function buildSemanticVerification(plan, run, options = {}) {
   const passedChecks = checks.filter((check) => check.status === "passed").length;
   const needsReviewChecks = checks.filter(check => check.status === "needs_review").length;
   const generatedPngProofSufficient = isScopedGeneratedPngPlanSufficient(mutatingSteps, steps, run, checks, options);
+  let lifecycleReads=[];
+  if (mutatingSteps.length===1 && steps.length===1 && projectLifecycle.isLifecycleMutation(mutatingSteps[0].tool)) {
+    try {lifecycleReads=lifecycleVerification.verifyLifecycleStep(mutatingSteps[0],run).reads;}catch (_) {}
+  }
+  const verifiedReadBackCount=readBackEvidence.count+lifecycleReads.length;
   const status = failedChecks === 0 && needsReviewChecks === 0 && unverifiedMutationSteps.length === 0 &&
-    (readBackEvidence.count > 0 || generatedPngProofSufficient) && (run.ok === true)
+    (verifiedReadBackCount > 0 || generatedPngProofSufficient) && (run.ok === true)
     ? "passed"
     : "needs_review";
 
@@ -5104,13 +5120,13 @@ function buildSemanticVerification(plan, run, options = {}) {
     schema: SEMANTIC_VERIFICATION_SCHEMA,
     status,
     ok: status === "passed",
-    summary: buildSummary(status, checks, readBackEvidence, mutationVerificationCount),
+    summary: buildSummary(status, checks, {...readBackEvidence,count:verifiedReadBackCount}, mutationVerificationCount),
     requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
-    verificationScope: generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
+    verificationScope: lifecycleReads.length ? "project_lifecycle_native_and_disk_proof" : generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
     coverageStatus: unverifiedMutationSteps.length || needsReviewChecks ? "incomplete" : "complete",
     acceptance: "not_established",
-    readBackCount: readBackEvidence.count,
-    readBackSteps: readBackEvidence.steps,
+    readBackCount: verifiedReadBackCount,
+    readBackSteps: [...readBackEvidence.steps,...lifecycleReads],
     mutationVerificationCount,
     unverifiedMutationCount: unverifiedMutationSteps.length,
     unverifiedMutationSteps,

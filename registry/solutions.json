@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-07-08",
+  "updatedAt": "2026-10-03",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -13,6 +13,93 @@
     "executionRule": "Solutions are advisory metadata; execution still uses validated Agent plans."
   },
   "solutions": [
+    {
+      "schema": "ae-solution.v1",
+      "id": "guarded-project-lifecycle",
+      "title": "Guarded Project Lifecycle",
+      "status": "recipe",
+      "tags": ["project-lifecycle", "save-as", "open-project", "new-project", "manual-confirmation", "tool-first"],
+      "intent": {
+        "summary": "Безопасно сохранить именованную копию, открыть существующий именованный AEP или создать пустой именованный проект через единичный защищённый terminal plan.",
+        "appliesWhen": [
+          "Пользователь явно запрашивает Save As, открытие существующего проекта или создание пустого именованного проекта.",
+          "After Effects сообщает именованный проект, а lifecycle runtime и валидный protection store готовы."
+        ]
+      },
+      "inputs": [
+        { "name": "operation", "type": "string", "required": true, "description": "save_project_as, open_project или create_named_project." },
+        { "name": "targetProjectFile", "type": "string", "required": true, "description": "Абсолютный локальный путь к целевому .aep; open требует существующий проект." },
+        { "name": "checkpointLabel", "type": "string", "required": true, "description": "Короткое имя обязательной on-disk копии исходника." }
+      ],
+      "targetAssumptions": [
+        "Lifecycle opt-in включён на запущенном сервере; источник named, его dirty/revision/file и сохранённый SHA-256 подтверждены свежим наблюдением.",
+        "Существующий target для open имеет сохранённую policy entry; новый путь Save As/create не занят и не совпадает с source.",
+        "Перед изменением native проекта выполнены exact proposal, успешный dry-run и подтверждение в CEP."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "high",
+        "recipePath": "recipes/project-lifecycle.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "build_project_lifecycle_plan",
+          "save_project_as",
+          "open_project",
+          "create_named_project",
+          "reconcile_project_lifecycle",
+          "finalize_project_lifecycle"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Проверить серверные source/target pins, обязательную on-disk копию, полный inventory до и после перехода и persisted final receipt.",
+        "steps": [
+          "Построить одноступенчатый plan через build_project_lifecycle_plan и проверить, что targetProject указывает на исходный проект.",
+          "Выполнить только по CEP manual propose, успешному exact dry-run и явному подтверждению; не запускать direct/admin/autonomous lane.",
+          "При неопределённом результате прочитать reconcile_project_lifecycle без replay; finalize разрешён только новой manual операцией при уже сохранённом final proof.",
+          "Считать переход завершённым только при server receipt и свежем native/file read-back; old review, image, canonical и source-load proofs не переносить."
+        ],
+        "expectedEvidence": [
+          "Lifecycle receipt связывает текущие manual action/run/payload с исходным SHA, policy, native tuple и on-disk checkpoint.",
+          "Финальный project path, file identity/hash и bounded inventory совпадают с persisted proof; target policy и ограничения имеют корректное состояние.",
+          "Для Save As исходный файл остаётся неизменным; для create итоговый проект пуст; для open target сверяется с его заранее существовавшей policy entry."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": "unknown",
+        "panelVersion": "AE Agent 3.2.0",
+        "bridgeVersion": "3.2.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "Offline lifecycle fixtures only; no live AE acceptance.",
+          "Current server runtime has not been restarted with AE_PROJECT_LIFECYCLE_ENABLED=1; the feature is unavailable in that runtime."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-03",
+          "from": "local-architecture-review",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Reviewed lifecycle contract and offline core; no live AE acceptance.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Это одноразовая lifecycle операция с high risk. Не принимать client idempotency/replay authority; persistent generation изолирует будущие cache keys.",
+        "Save As/create используют owned stage и exclusive publish; existing target open проверяет disk hash. Переход меняет Undo и активный контекст.",
+        "Checkpoint копирует сохранённый файл и не восстанавливает dirty in-memory состояние. Неизвестный исход нельзя повторять.",
+        "Legacy visual/review/load proofs недействительны в новом context. Inherited ownership запрещает обычные edit/delete/re-registration до отдельного adoption scope."
+      ]
+    },
     {
       "schema": "ae-solution.v1",
       "id": "comp-visual-review-plan",

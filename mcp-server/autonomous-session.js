@@ -104,6 +104,12 @@ function createAutonomousSessionManager(options = {}) {
   function authorization() {
     return publicStatus().active ? {authorized:true,capability:CAPABILITY,sessionHash} : null;
   }
-  return {activate, revoke, observePanel, authorization, publicStatus};
+  function invalidateProjectContext() {
+    connected = null;
+    sessionHash = crypto.randomBytes(24).toString("hex");
+    // This is a runtime invalidation, not a change to the user's preference.
+    return publicStatus();
+  }
+  return {activate, revoke, observePanel, authorization, publicStatus, invalidateProjectContext};
 }
 module.exports = {CAPABILITY, PANEL_FRESHNESS_MS, SCHEMA, createAutonomousSessionManager};

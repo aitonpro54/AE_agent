@@ -564,7 +564,8 @@ function canonicalSavedProject(file) {
 }
 function projectStateKey(file) { return crypto.createHash("sha256").update(canonicalSavedProject(file)).digest("hex"); }
 function validateProjectStateStore(store) {
-  if (!store || store.schema !== PROJECT_STATE_SCHEMA || !isPlainObject(store.projectState) ||
+  if(store && store.schema===PROJECT_STATE_SCHEMA && ["pendingLifecycle","lifecycleGeneration","lifecycleReceipts"].some(key=>Object.prototype.hasOwnProperty.call(store,key)))throw new Error("lifecycle_schema_downgrade");
+  if (!store || ![PROJECT_STATE_SCHEMA, "ae-project-intent-runtime.v2"].includes(store.schema) || !isPlainObject(store.projectState) ||
     Object.keys(store.projectState).length > 100) throw new Error("invalid_project_state_schema");
   for (const [key, state] of Object.entries(store.projectState)) {
     if (!/^[a-f0-9]{64}$/.test(key) || !state || key !== projectStateKey(state.projectFile) ||
@@ -608,14 +609,15 @@ function validateProjectStateStore(store) {
         value.selectedTargets.some(target => !target || !Number.isSafeInteger(target.compItemId) || target.compItemId < 1 || !Number.isSafeInteger(target.layerId) || target.layerId < 1)) throw new Error("invalid_placeholder_constraints");
     }
   }
-  return store;
+  return require("./project-lifecycle-transition").validateV2Store(store);
 }
 function loadProjectStateStore(options = {}) {
-  const file = projectStatePath(options);
-  if (!fs.existsSync(file)) return { schema: PROJECT_STATE_SCHEMA, projectState: {} };
+  if (options.skipLifecycleReadGuard !== true) require("./project-lifecycle-transition").assertReadableProtectionStore(options);
+  const file = projectStatePath(options), io = options.filesystem || fs;
+  if (!io.existsSync(file)) return { schema: PROJECT_STATE_SCHEMA, projectState: {} };
   try {
-    if (fs.statSync(file).size > MAX_PACKED_STATE_BYTES) throw new Error("state_size_limit");
-    return validateProjectStateStore(transformReviewStore(JSON.parse(fs.readFileSync(file, "utf8")),false));
+    if (io.statSync(file).size > MAX_PACKED_STATE_BYTES) throw new Error("state_size_limit");
+    return validateProjectStateStore(transformReviewStore(JSON.parse(io.readFileSync(file, "utf8")),false));
   } catch (cause) {
     const error = new Error("Project Intent runtime повреждён: " + cause.message);
     error.code = "project_state_corrupt";
@@ -629,30 +631,70 @@ function readProjectState(projectFile, options = {}) {
     projectKey: key, revision: 0, acceptedPlaceholders: [], groupMappings: [], constraints: null, reviewArtifacts: {} }));
 }
 function atomicProjectStateWrite(store, options = {}) {
+  require("./project-lifecycle-transition").assertPolicyWriteAllowed(options);
   validateProjectStateStore(store);
   if(Buffer.byteLength(JSON.stringify(store),"utf8")>MAX_STATE_LOGICAL_BYTES)throw new Error("project_state_logical_size_limit");
   const serialized=JSON.stringify(transformReviewStore(store,true),null,2)+"\n";
   if(Buffer.byteLength(serialized,"utf8")>MAX_PACKED_STATE_BYTES)throw new Error("project_state_size_limit");
-  const file = projectStatePath(options);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const file = projectStatePath(options), io = options.filesystem || fs;
+  io.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = file + "." + crypto.randomUUID() + ".tmp";
   let descriptor;
   try {
-    descriptor = fs.openSync(temporary, "wx");
-    fs.writeFileSync(descriptor, serialized, "utf8");
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
+    descriptor = io.openSync(temporary, "wx");
+    io.writeFileSync(descriptor, serialized, "utf8");
+    io.fsyncSync(descriptor);
+    io.closeSync(descriptor);
     descriptor = null;
-    fs.renameSync(temporary, file);
+    io.renameSync(temporary, file);
   } finally {
-    if (descriptor !== undefined && descriptor !== null) fs.closeSync(descriptor);
-    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    if (descriptor !== undefined && descriptor !== null) io.closeSync(descriptor);
+    if (io.existsSync(temporary)) io.unlinkSync(temporary);
+  }
+}
+// Invalid-proof inherited objects cannot be mutated, cleaned up or re-registered.
+// The daemon must call this before its accepted-placeholder empty-state shortcuts.
+function checkInheritedOwnershipSteps({ state, inventory, steps = [] }) {
+  const rows = state && state.inheritedOwnership || [];
+  require("./project-lifecycle-transition").validateInheritedOwnership(rows);
+  if (!rows.length) return { ok: true, conflicts: [] };
+  const ids = new Set(rows.flatMap(row => row.itemIds)), owners = new Set(rows.map(row => row.owner)), conflicts = [];
+  const newItems = new Set(["create_comp", "create_test_comp", "import_footage", "create_project_folder"]);
+  const nonItemMutations = new Set(["save_current_named_project","checkpoint_project","backup_project_file","start_edit_session","finish_edit_session"]);
+  for (const [index, step] of steps.entries()) {
+    const tool = step.tool || step.toolName, args = step.safeArgs || step.args || step.arguments || {};
+    if (newItems.has(tool) || nonItemMutations.has(tool)) continue;
+    if (!placeholderProtection.TARGET_SETTERS.has(tool)) {
+      conflicts.push({index,tool,reason:"inherited_ownership_unknown_mutation_footprint",itemIds:[]});
+      continue;
+    }
+    const referenced = [];
+    for (const field of ["itemId", "compItemId", "sourceItemId", "expectedCompItemId", "expectedSourceItemId", "rootCompItemId"]) if (Number.isSafeInteger(args[field])) referenced.push(args[field]);
+    for (const field of ["itemIds", "compItemIds"]) if (Array.isArray(args[field])) referenced.push(...args[field]);
+    let resolved = referenced.length > 0;
+    for (const [field, key] of [["compItemIndex", "itemIndex"], ["sourceItemIndex", "itemIndex"], ["compName", "name"], ["sourceItemName", "name"]]) {
+      if (args[field] === undefined) continue;
+      if (!inventory || inventory.complete !== true) { resolved = false; break; }
+      const items = inventory.items || [...(inventory.comps || []), ...(inventory.sources || [])];
+      const matches = items.filter(item => (key === "itemIndex" ? item.itemIndex ?? item.index : item.name) === args[field]);
+      if (matches.length !== 1) { resolved = false; break; } referenced.push(matches[0].itemId ?? matches[0].id); resolved = true;
+    }
+    const ownerConflict = owners.has(args.owner), affected = referenced.filter(id => ids.has(id));
+    if (ownerConflict || affected.length || !resolved) conflicts.push({ index, tool, reason: ownerConflict || affected.length ? "inherited_ownership_requires_adoption" : "inherited_ownership_unknown_mutation_footprint", itemIds: affected });
+  }
+  return { ok: !conflicts.length, code: conflicts.length ? "inherited_ownership_conflict" : null, conflicts };
+}
+function assertInheritedRegistration(state, owner, itemIds) {
+  const rows = state.inheritedOwnership || [];
+  if (rows.some(row => row.owner === owner || row.itemIds.some(id => itemIds.includes(id)))) {
+    const error = new Error("inherited_ownership_requires_adoption"); error.code = "inherited_ownership_requires_adoption"; throw error;
   }
 }
 // A server-held capability, not a client confirm/allowProtectedChanges boolean.
 // The bridge calls these methods only after authenticating a trusted panel action.
 function createProjectStateController(options = {}) {
   function update(projectFile, expectedRevision, mutate) {
+    require("./project-lifecycle-transition").assertMutationAllowed(options);
     const store = loadProjectStateStore(options);
     const key = projectStateKey(projectFile);
     const state = store.projectState[key] || readProjectState(projectFile, options);
@@ -672,6 +714,7 @@ function createProjectStateController(options = {}) {
     accept(projectFile, snapshot, expectedRevision) {
       placeholderProtection.validateSnapshot(snapshot);
       return update(projectFile, expectedRevision, state => {
+        assertInheritedRegistration(state, null, [snapshot.target.compItemId, snapshot.source.itemId, ...snapshot.dependencies.flatMap(edge => [edge.compItemId, edge.sourceItemId])]);
         const key = placeholderProtection.targetKey(snapshot.target);
         state.acceptedPlaceholders = state.acceptedPlaceholders.filter(value => placeholderProtection.targetKey(value.target) !== key);
         state.acceptedPlaceholders.push(JSON.parse(JSON.stringify(snapshot)));
@@ -679,6 +722,7 @@ function createProjectStateController(options = {}) {
     },
     release(projectFile, target, expectedRevision) {
       return update(projectFile, expectedRevision, state => {
+        assertInheritedRegistration(state, null, [target.compItemId]);
         const key = placeholderProtection.targetKey(target);
         const next = state.acceptedPlaceholders.filter(value => placeholderProtection.targetKey(value.target) !== key);
         if (next.length === state.acceptedPlaceholders.length) throw new Error("selected_placeholder_not_protected");
@@ -698,6 +742,7 @@ function createProjectStateController(options = {}) {
     registerReview(projectFile, record, expectedRevision) {
       reviewService.validateReviewRecord(record);
       return update(projectFile,expectedRevision,state=>{
+        assertInheritedRegistration(state, record.owner, record.receipt.items.map(item => item.itemId));
         if(record.projectKey!==state.projectKey)throw new Error("review_artifact_project_mismatch");
         state.reviewArtifacts=state.reviewArtifacts || {};
         if(state.reviewArtifacts[record.owner])throw new Error("review_owner_already_registered");
@@ -708,12 +753,14 @@ function createProjectStateController(options = {}) {
     },
     registerSourceLoadEpoch(projectFile,epoch,expectedRevision){
       return update(projectFile,expectedRevision,state=>{
+        assertInheritedRegistration(state, null, [epoch.sourceItemId]);
         require("./montage-capture-service").validateLoadEpoch(epoch,state);
         state.sourceLoadEpochs=state.sourceLoadEpochs || {};state.sourceLoadEpochs[epoch.sourceItemId]=JSON.parse(JSON.stringify(epoch));
       });
     },
     addReviewImage(projectFile,owner,image,expectedRevision) {
       return update(projectFile,expectedRevision,state=>{
+        assertInheritedRegistration(state, owner, [image.itemId]);
         const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
         if(record.canonicalBinding){
           const capture=require("./montage-capture-service");capture.assertOwnerPolicy(record,state);
@@ -726,6 +773,7 @@ function createProjectStateController(options = {}) {
     },
     unregisterReview(projectFile,owner,absentIds,expectedRevision) {
       return update(projectFile,expectedRevision,state=>{
+        assertInheritedRegistration(state, owner, absentIds || []);
         const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
         if(!Array.isArray(absentIds) || JSON.stringify([...absentIds].sort((a,b)=>a-b))!==JSON.stringify(record.receipt.items.map(item=>item.itemId).sort((a,b)=>a-b)))throw new Error("review_removal_proof_incomplete");
         delete state.reviewArtifacts[owner];
@@ -748,5 +796,6 @@ module.exports = {
   updateProjectIntentMemory,
   PROJECT_STATE_SCHEMA, canonicalSavedProject, projectStateKey, projectStatePath,
   validateProjectStateStore, loadProjectStateStore, readProjectState, createProjectStateController
-  ,PACKED_REVIEW_SCHEMA,MAX_PACKED_STATE_BYTES,MAX_REVIEW_LOGICAL_BYTES,MAX_STATE_LOGICAL_BYTES,packCanonicalReview,unpackCanonicalReview
+  ,PACKED_REVIEW_SCHEMA,MAX_PACKED_STATE_BYTES,MAX_REVIEW_LOGICAL_BYTES,MAX_STATE_LOGICAL_BYTES,packCanonicalReview,unpackCanonicalReview,
+  transformReviewStore, atomicProjectStateWrite, checkInheritedOwnershipSteps, assertInheritedRegistration
 };

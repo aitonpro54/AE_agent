@@ -31,6 +31,7 @@ function createProposalState() {
     if (!record || !current || current !== record || record.executionState === "superseded") {
       throw failure("plan_superseded", "План заменён более новой версией. Получите текущий proposal.");
     }
+    if (record.lifecycleRetired) throw failure("plan_project_lifecycle_retired", "Проект сменился. Создайте новый proposal по свежей инспекции.");
     if (Date.parse(record.proposalExpiresAt) <= Date.now()) throw failure("m100_action_proposal_expired", "Срок действия плана истёк.");
     if (record.contractVersion !== CONTRACT_VERSION) throw failure("plan_contract_changed", "Контракт плана изменился. Создайте новый proposal.");
   }
@@ -52,6 +53,18 @@ function createProposalState() {
       throw failure("plan_superseded", "Срок и версия команды не совпадают с текущим proposal.");
     }
   }
+  function retireLifecycle(record, executionId, transitionId) {
+    if (typeof transitionId !== "string" || !/^[a-zA-Z0-9_-]{1,160}$/.test(transitionId)) {
+      throw failure("invalid_lifecycle_retirement", "Требуется точный transition ID.");
+    }
+    assertCurrent(record);
+    assertExecution({actionId: record && record.actionId, executionId,
+      proposalExpiresAt: record && record.proposalExpiresAt});
+    record.lifecycleRetired = Object.freeze({transitionId, retiredAt: new Date().toISOString()});
+    record.executionState = "completed";
+    // Source binding is historical evidence; never rewrite it to the new path.
+    return record.lifecycleRetired;
+  }
   function snapshot() {
     if (!current) return null;
     const record = current;
@@ -61,10 +74,10 @@ function createProposalState() {
       instanceId: INSTANCE_ID, revision: record.revision, contractVersion: record.contractVersion, actionId: record.actionId,
       project: {...record.project}, proposal: record.proposal, plan: record.payload.plan,
       state, expiresAt: record.proposalExpiresAt, dryRunCompletedAt: record.dryRunCompletedAt,
-      lastRun: record.lastRun || null
+      lastRun: record.lastRun || null, lifecycleRetired: record.lifecycleRetired || null
     };
   }
-  return {register, assertCurrent, assertExecution, bindProject, snapshot, get current() { return current; }};
+  return {register, assertCurrent, assertExecution, bindProject, retireLifecycle, snapshot, get current() { return current; }};
 }
 
 // Только перечисленные поля: никакие args, исходный текст, пути и токены не попадают в статистику.

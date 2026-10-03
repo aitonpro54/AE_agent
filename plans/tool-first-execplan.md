@@ -22,8 +22,8 @@ Overwrites новых AEP запрещены. Native dirty/revision неизве
 - Создан отдельный worktree, исходный checkout другой задачи не меняется.
 - M1 завершён: правила MCP-first, два passive waits и streaming CU audit; native commands0 в actual isolated MCP route.
 - M2 завершён: bounded visual plan builder, manifest из server run records и native lifecycle getter доступны через MCP; обычный manual runner и PNG proof проверены offline.
-- M3/M4 pending.
-- M2 публичные tools/manifest интегрирует Flash. M3 core/store реализует Sol-specialist после local review: это сложный блок durability/authority. Root владеет последующей bridge-интеграцией; helpers работают offline в разных файлах, лимит два соблюдён.
+- M3 завершён: guarded named lifecycle, V2 pending/protection migration, private manual authority, queue/cache barriers и command-backed semantic proof. Recipe готов; direct/admin/autonomous и replay запрещены. Implementation — Sol-specialist, bounded docs/fixtures — Luna, независимое local safety review — Sol-reviewer. Root закрыл findings и свёл интеграцию. Helpers работали в отдельных файлах offline, лимит два соблюдён.
+- M4: source integration/runtime read-only проверка pending. Живое переключение проектов не входит в incidental tests; opt-in остаётся выключенным до отдельной owned fixture приёмки.
 
 ## Decision Log
 - Пользователь исключил весь рендер и поручил реализацию.
@@ -32,6 +32,8 @@ Overwrites новых AEP запрещены. Native dirty/revision неизве
 - Local verdict revise принят: singleton durable pending, admission/enqueue/lease barriers, missing/corrupt store fail-closed при lifecycle-enabled runtime, strict COPYFILE_EXCL publication, restrictive inherited ownership, pre-write store capacity и terminal action scope. Старые proof не переносятся как valid; native unsupported flags блокируют переход.
 - M3 decision-complete contract: docs/project-lifecycle-contract.md. Rollout opt-in до fixture proof; permanent initialized marker предотвращает исчезновение обязательной базы при restart/flag off. Native ambiguity сохраняет global pending, finalize только уже доказанного final state, без replay.
 - Для open полный native inventory закрытого target нельзя читать заранее: до действия проверяются source inventory, target disk hash/identity и target policy; после open target inventory сверяется с собственной policy. Не обещать предварительную native-инспекцию target.
+- Open тоже инвалидирует старые target review/load proofs; accepted restrictions сохраняются. Один production daemon на protection store: process admission+atomic store replace не является cross-process lock. Полное удаление store и marker после остановки при flag off не обнаружимо без внешнего evidence.
+- Независимое code review нашло schema downgrade V2→V1 с оставшимися lifecycle fields, недостающие source native pins в receipt и retirement копии record. Root исправил их и добавил adversarial regressions. Raw/unknown footprint с decoy ID запрещён для inherited ownership; guarded setters и известные операции без изменения item IDs сохраняют свои gates.
 - Flash M1 correction дал transport EOF после записи исправлений. OS status обоих процессов exited; artifacts/source сверены, explicit reconciliation освободила ресурс. Исторический failed/unknown не переписан. Parent исправил missing import и добавил actual MCP route regression.
 - Flash M2 initial достиг timeout; correction после записи files дала Google socket error. CLI/bridge exited подтверждены, ресурсы освобождены explicit reconciliation. Continuation timeout-conversation запрещён driver, новый запуск остался в прежнем scope. Bounded fixtures/docs completion делегирована Luna; root сверил реальный export producer и исправил typed error envelope. Неизвестный transport result не повышен до success.
 
@@ -41,3 +43,5 @@ Overwrites новых AEP запрещены. Native dirty/revision неизве
 - M1: smoke:tool-first (unit/audit/actual isolated daemon AE0), smoke:planning, adapter smoke-test, rules, JS syntax/diff PASS.
 - Recorded root-only audit 2 октября: wrappers52/inner52, windowState47/click24/keyboard10/focus3, image blocks65; usage135 unique responses. Coverage/heuristics/span не screen-lock и не marginal CU tokens.
 - M2: compiler/manifest/actual isolated MCP+manual runner, solutions/registry, syntax/scoped diff PASS. Rules обнаружил превышение компактного общего плана на две строки; лишняя параграфная вставка перенесена в отдельный execution plan, rules повторён exit0. Live AE/художественной приёмки не было.
+- M3: smoke:tool-first целиком exit0, включая actual isolated lifecycle bridge32, contract45/transition54/service74, adapter/semantic/reviewer regressions и старые PNG/waits. Planning/solutions/rules exit0. Ordinary named-save plan regression PASS; source save/finalize proof проверен на fullwrapped VM, live AE mutation не выполнялась. M100 sha256: нормализация только receipt; исходные proposal/run hashes сохранены. Review findings закрыты независимым повторным ревью.
+- JS syntax36/diff PASS. Code review закрывает material findings; это не live feature acceptance и не доказательство экономии токенов/времени.

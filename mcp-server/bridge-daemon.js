@@ -13,6 +13,7 @@ const planCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
 const placeholderMutationContext = new AsyncLocalStorage();
 const placeholderPlanContext = new AsyncLocalStorage();
+const lifecycleCommandContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
@@ -58,6 +59,9 @@ const montageCaptureService = require("./montage-capture-service");
 const { buildCompVisualReviewPlanTool, buildCompVisualReviewPlan, validateCompVisualReviewInput } = require("./comp-visual-review-plan");
 const compVisualReviewManifest = require("./comp-visual-review-manifest");
 const projectLifecycleState = require("./project-lifecycle-state");
+const projectLifecycleContract = require("./project-lifecycle-contract");
+const projectLifecyclePlan = require("./project-lifecycle-plan");
+const { createLifecycleBridgeAdapter } = require("./project-lifecycle-bridge-adapter");
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
@@ -123,7 +127,7 @@ const HARDCORE_SESSIONS_DIR = process.env.AE_AGENT_HARDCORE_SESSION_DIR
 const AGENT_SECRETS_FILE = process.env.AE_AGENT_SECRETS_FILE
   ? path.resolve(process.env.AE_AGENT_SECRETS_FILE)
   : path.join(PROJECT_ROOT, ".codex", "agent-secrets.json");
-const BACKUP_DIR = path.join(PROJECT_ROOT, "backups");
+const BACKUP_DIR = process.env.AE_BRIDGE_BACKUP_DIR ? path.resolve(process.env.AE_BRIDGE_BACKUP_DIR) : path.join(PROJECT_ROOT, "backups");
 const projectSaveExecutor = projectSave.createProjectSaveExecutor({runExtendScriptBody:(body)=>runExtendScriptBody(body),
   createCheckpoint: async (request) => {
     ensureDir(BACKUP_DIR);
@@ -380,6 +384,46 @@ const autonomousSession = createAutonomousSessionManager({
     panelGeneration: lastPanelInfo && lastPanelInfo.panelGeneration || null,
     seenAt: lastPanelSeenAt
   })
+});
+// Registration restores fail-closed guards without creating a protection store.
+const lifecycle = createLifecycleBridgeAdapter({
+  proposals: currentProposalState,
+  verifyDryRun: (record, count) => projectSave.verifyDryRunReceipt(record, count, AUTONOMY_CONTRACT_VERSION),
+  readNative: (body, capability) => {
+    const facts = lifecycle.phaseFacts(capability);
+    if (!facts) projectLifecycleContract.fail("lifecycle_phase_capability_required");
+    return withPlanCommandRole(facts.readOnly ? "readback" : "mutation", () =>
+      lifecycleCommandContext.run({capability, rawScript: body}, async () => {
+        const native = await runExtendScriptBody(body);
+        if (!native || native.ok === false) projectLifecycleContract.fail("lifecycle_native_failed");
+        return native;
+      }));
+  },
+  sourceCheckpoint: async request => {
+    ensureDir(BACKUP_DIR);
+    const checkpointFile = path.join(BACKUP_DIR, `${sanitizeFilenamePart(path.basename(request.sourceFile, ".aep"))}-checkpoint-${sanitizeFilenamePart(request.label)}-${request.transitionId}-${crypto.randomUUID()}.aep`);
+    fs.copyFileSync(request.sourceFile, checkpointFile, fs.constants.COPYFILE_EXCL);
+    const descriptor = fs.openSync(checkpointFile, "r+");
+    try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
+    return {checkpointFile, sourceFile: request.sourceFile, label: request.label, snapshotScope: request.snapshotScope};
+  },
+  isIdle: ownedSessionId => inflightCommands.size === 0 && pendingCommands.length === 0 &&
+    (!activeEditSession || activeEditSession.id === ownedSessionId),
+  retireContext: async (saved, hints) => {
+    const permittedSessionIds = [saved.ownedSessionId, hints.authorization.ownedEditSessionId].filter(Boolean);
+    if (activeEditSession && !permittedSessionIds.includes(activeEditSession.id)) projectLifecycleContract.fail("lifecycle_foreign_edit_session");
+    if (activeEditSession) {
+      const finished = firstToolPayload(finishEditSession({outcome: "completed", summary: `Lifecycle ${hints.transitionId}`}));
+      if (!finished || finished.finished !== true) projectLifecycleContract.fail("lifecycle_session_retirement_failed");
+      saved.run.editSessionFinished = finished.session;
+      saved.run.safety.editSessionFinished = true;
+    }
+    currentProposalState.retireLifecycle(saved.record, saved.run.id, hints.transitionId);
+    idempotencyRecords.clear();
+    autonomousSession.invalidateProjectContext();
+    lastPanelInfo = null; lastPanelSeenAt = 0;
+    return {sessionClosed: true, proposalRetired: true, cachesInvalidated: true, desiredEnabledPreserved: true};
+  }
 });
 
 function log(message) {
@@ -893,6 +937,7 @@ function getBridgeStatus() {
     startedAt: new Date(STARTED_AT).toISOString(),
     panelConnected: now - lastPanelSeenAt < 15000,
     autonomousSession: autonomousSession.publicStatus(),
+    projectLifecycle: lifecycle.diagnostics(),
     lastPanelSeenAt,
     lastPanelInfo,
     pendingCommands: countQueuedCommands(now),
@@ -960,6 +1005,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  ...projectLifecycleContract.MUTATIONS,
   "reload_montage_material_source",
   "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
@@ -1053,6 +1099,7 @@ const M100_RAW_JSX_TOOL_NAMES = new Set([
   "run_extendscript_file"
 ]);
 const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
+  ...projectLifecycleContract.MUTATIONS,
   projectSave.TOOL_NAME,
   "cleanup_test_items",
   "delete_project_checkpoint",
@@ -1144,6 +1191,11 @@ function m100DirectEscapeHatchAllowed(source, args) {
 }
 
 function m100DirectToolCallBlock(source, name, args, executionContext) {
+  if (projectLifecycleContract.isLifecycleMutation(name) &&
+      (source !== "ai-plan-run" || !executionContext || !executionContext.lifecycleAuthorization)) {
+    return {ok:false, code:"lifecycle_manual_only", message:"Project lifecycle writes require the current confirmed manual CEP runner.",
+      toolName:name, knownTool:true, riskLevel:"destructive", requiresProposal:true, ignoredClientConfirmation:true};
+  }
   if (!M100_DIRECT_TOOL_SOURCES.has(source)) return null;
   // The runner never dispatches steps in explicit dry-run mode. Permit only
   // this preview through legacy MCP adapters; real runs retain default-deny.
@@ -1488,14 +1540,17 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
   }
   if (planResult.planValidation.mutatingCount > 0) {
     if (Date.now() - lastPanelSeenAt >= 15000) return null; // Offline planner drafts carry no execution authority.
-    const projectInfo = firstToolPayload(await callToolLogged("proposal-project-capture", "get_project_info", {}));
+    const lifecycleStep = lifecycle.planStep(planResult.plan);
+    const projectInfo = lifecycleStep && lifecycleStep.name === "finalize_project_lifecycle"
+      ? projectLifecycleState.normalizeProjectLifecycleState(await lifecycle.readState())
+      : firstToolPayload(await callToolLogged("proposal-project-capture", "get_project_info", {}));
     if (!projectInfo || !projectInfo.file) throw m100ProtocolError("project_save_required", "Сохраните целевой проект перед созданием proposal.");
     const specifiedProject = planResult.plan.targetProject && planResult.plan.targetProject.file;
     if (specifiedProject && require("./proposal-state").normalizeProject(specifiedProject) !== require("./proposal-state").normalizeProject(projectInfo.file)) {
       throw m100ProtocolError("project_target_mismatch", "Proposal предназначен другому проекту.", {project: {expectedFile: specifiedProject, actualFile: projectInfo.file}});
     }
     planResult.plan = {...planResult.plan, targetProject: {file: projectInfo.file}};
-    await guardPlaceholderPlan(planResult.plan);
+    if (!lifecycleStep) await guardPlaceholderPlan(planResult.plan);
   }
   const payload = {
     kind: "agent_plan",
@@ -2348,11 +2403,12 @@ function idempotencyContext(toolName, args) {
   const key = optionalString(args || {}, "idempotencyKey", "").trim();
   if (!key) return null;
   const scope = optionalString(args || {}, "idempotencyScope", "default").trim() || "default";
+  const generation = lifecycle.epoch();
   return {
     key,
     scope,
     tool: toolName,
-    recordKey: `${scope}:${toolName}:${key}`,
+    recordKey: `${generation > 0 ? `lifecycle-${generation}:` : ""}${scope}:${toolName}:${key}`,
     argsHash: hashStableValue(args || {})
   };
 }
@@ -3409,6 +3465,7 @@ function compactAeCommand(command, now) {
     expiresAt: isoOrNull(command.expiresAt),
     leasedAt: isoOrNull(command.leasedAt),
     submittedAt: isoOrNull(command.submittedAt),
+    completedAt: isoOrNull(command.completedAt),
     leaseOwner: command.leaseOwner || null,
     timedOutFrom: command.timedOutFrom || null,
     errorCode: command.errorCode || null,
@@ -3575,7 +3632,14 @@ function enqueueAeCommand(script, timeoutMs) {
       phase: null,
       settled: false
     };
-    command.autonomousGuard = autonomousCommandContext.getStore() || null;
+    const lifecycleScope = lifecycleCommandContext.getStore();
+    try {
+      if (lifecycleScope) lifecycle.validateCommand(lifecycleScope.capability, lifecycleScope.rawScript, id);
+      else lifecycle.assertMutationAllowed();
+    } catch (error) { reject(Object.assign(error, {phase:"before_delivery"})); return; }
+    command.lifecycleCapability = lifecycleScope && lifecycleScope.capability || null;
+    command.lifecycleRawScript = lifecycleScope && lifecycleScope.rawScript || null;
+    command.autonomousGuard = lifecycleScope ? null : autonomousCommandContext.getStore() || null;
     command.planContext = planCommandContext.getStore() || null;
     try { capturePlanCommand(command, null, true); }
     catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
@@ -3805,6 +3869,15 @@ function leaseNextQueuedCommand(req, url) {
     const id = pendingCommands.shift();
     const command = inflightCommands.get(id);
     if (!command || command.state !== "queued") continue;
+    try {
+      if (command.lifecycleCapability) lifecycle.validateCommand(command.lifecycleCapability, command.lifecycleRawScript, command.id);
+      else lifecycle.assertMutationAllowed();
+    } catch (error) {
+      command.state = "expired_before_delivery"; command.completedAt = Date.now(); command.errorCode = error.code || "lifecycle_delivery_blocked";
+      clearTimeout(command.timeout); inflightCommands.delete(command.id);
+      retainCommandResult(command.id, {ok:false, error:error.message, code:command.errorCode, lifecycleState:command.state}, command);
+      settleCommandFailure(command, command.errorCode, error.message); continue;
+    }
     if (rejectRevokedAutonomousCommand(command)) continue;
     if (command.autonomousGuard && command.autonomousGuard.projectFile &&
         require("./proposal-state").normalizeProject(url.searchParams.get("projectFile")) !== require("./proposal-state").normalizeProject(command.autonomousGuard.projectFile)) {
@@ -3904,14 +3977,16 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  const lifecycleScope = lifecycleCommandContext.getStore();
+  if (lifecycleScope) lifecycle.validateCommand(lifecycleScope.capability, body);
   const protection = placeholderMutationContext.getStore();
-  if (protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline || protection.geometryBaselines)) {
+  if (!lifecycleScope && protection && (protection.snapshots.length || protection.bindings.length || protection.inventoryBaseline || protection.geometryBaselines)) {
     body = placeholderProtection.aeGuardScript(protection.projectFile, protection.snapshots, protection.bindings) + "\n" + body;
     if (protection.inventoryBaseline) body = placeholderProtection.aeInventoryGuardScript(protection.inventoryBaseline) + "\n" + body;
     if (protection.geometryBaselines) body=placeholderGeometry.geometryGuardScript(protection.geometryBaselines)+"\n"+body;
   }
   const guard = autonomousCommandContext.getStore();
-  if (guard && guard.projectFile) {
+  if (!lifecycleScope && guard && guard.projectFile) {
     body = `if (!app.project || !app.project.file || String(app.project.file.fsName).replace(/\\\\/g, "/").toLowerCase() !== ${aeLiteral(guard.projectFile.replace(/\\/g, "/").toLowerCase())}) throw new Error("project_target_mismatch");\n` + body;
   }
   const script = wrapExtendScriptBody(body);
@@ -3922,7 +3997,7 @@ async function runExtendScriptBody(body, timeoutMs) {
 
 function exposedTools() {
   return tools.map((tool) => {
-    if (!MUTATING_TOOL_NAMES.has(tool.name)) return tool;
+    if (!MUTATING_TOOL_NAMES.has(tool.name) || projectLifecycleContract.isLifecycleTool(tool.name)) return tool;
 
     const inputSchema = tool.inputSchema || { type: "object", properties: {} };
     return {
@@ -4098,6 +4173,10 @@ function validateAgentPlanObject(plan, requestId, context) {
       try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
       if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
     }
+    if (projectLifecycleContract.isLifecycleTool(toolName)) {
+      try { projectLifecycleContract.validateInput(toolName, safeArgs); if (projectLifecycleContract.isLifecycleMutation(toolName)) lifecycle.planStep(sourcePlan); }
+      catch (error) { generatedSafetyIssues.push(error.code || error.message); }
+    }
     for (const contract of safetyContracts) {
       if (contract.kind === "generated-file-output") generatedFileIoCount += 1;
       if (contract.kind === "generated-render-output") generatedRenderOutputCount += 1;
@@ -4152,17 +4231,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (toolName !== projectSave.TOOL_NAME && safeArgs.verifyAfter !== true) {
+      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyKey) {
+      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (toolName !== projectSave.TOOL_NAME && !safeArgs.idempotencyScope) {
+      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -4256,7 +4335,8 @@ function compactAgentPlanValidationSummary(validation) {
 
 function validateAgentPlanWithRepair(plan, requestId, context, options) {
   const config = options || {};
-  const repairEnabled = optionalBoolean(config, "repairPlan", true) !== false;
+  const repairEnabled = optionalBoolean(config, "repairPlan", true) !== false &&
+    !(plan && Array.isArray(plan.steps) && plan.steps.some(step => projectLifecycleContract.isLifecycleMutation(planStepToolName(step))));
   const originalValidation = validateAgentPlanObject(plan, requestId, context);
   if (!repairEnabled) {
     originalValidation.planRepair = {
@@ -5059,6 +5139,9 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  ...projectLifecycleContract.MUTATIONS,
+  "get_project_lifecycle_state",
+  "reconcile_project_lifecycle",
   projectSave.TOOL_NAME,
   "get_bridge_status",
   "wait_for_bridge_state",
@@ -6712,6 +6795,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   });
   const validation = prepared.validation;
   const dryRun = optionalBoolean(options, "dryRun", true);
+  const lifecycleStep = validation.ok ? lifecycle.planStep(prepared.plan) : null;
+  const lifecycleFinalize = lifecycleStep && lifecycleStep.name === "finalize_project_lifecycle";
+  let lifecycleAuthorization = null;
   const confirm = optionalBoolean(options, "confirm", false);
   const allowMutations = optionalBoolean(options, "allowMutations", false);
   const autoEditSession = optionalBoolean(options, "autoEditSession", false);
@@ -6734,6 +6820,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   const actionBinding = options._m100ActionRecord;
   const expectedProject = actionBinding && actionBinding.project.expectedFile || prepared.plan.targetProject && prepared.plan.targetProject.file || null;
   const provenance = {schema: "ae-agent-run-provenance.v1", actionId: actionBinding && actionBinding.actionId || null,
+    payloadHash: actionBinding && actionBinding.payloadHash || null,
     proposalRevision: actionBinding && actionBinding.revision || null,
     projectId: expectedProject ? reviewEvidence.sha256(require("./proposal-state").normalizeProject(expectedProject)) : null,
     projectRevision: null, projectRevisionReason: "in_memory_revision_not_observed",
@@ -6781,6 +6868,16 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
     planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
+  if (lifecycleStep && (autonomous || allowWithoutCheckpoint)) {
+    run.ok=false; run.errorCode=autonomous ? "lifecycle_manual_only" : "lifecycle_checkpoint_bypass_forbidden";
+    run.error="Project lifecycle requires manual CEP authority and its mandatory source checkpoint."; return finishRun();
+  }
+  if (lifecycleStep && !options._m100ActionRecord) {
+    run.ok=false; run.errorCode="lifecycle_proposal_required"; run.error="A current server-owned lifecycle proposal is required."; return finishRun();
+  }
+  if (lifecycleStep && !lifecycleFinalize && activeEditSessionAtStart) {
+    run.ok=false; run.errorCode="lifecycle_foreign_edit_session"; run.error="Close the existing edit session before this lifecycle run."; return finishRun();
+  }
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
     run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
   }
@@ -6921,7 +7018,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   const montageRunMaterialReader = prepared.plan.montagePipeline && !dryRun
     ? montagePipelineService.boundedMaterialReader(require("./montage-contract").normalizeBudgets(prepared.plan.montagePipeline.readBudgets).budgets)
     : null;
-  if (validation.mutatingCount > 0) {
+  if (validation.mutatingCount > 0 && !lifecycleStep) {
     try { run.placeholderPreflight = await guardPlaceholderPlan(prepared.plan, {
       montageRunPreflight: Boolean(prepared.plan.montagePipeline && !dryRun),
       ...(montageRunMaterialReader ? {montageVerifyMaterials:montageRunMaterialReader} : {})
@@ -6951,7 +7048,10 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   }
   if (options._m100ActionRecord && validation.mutatingCount > 0) {
     try {
-      const projectResult = firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
+      if (lifecycleStep && !dryRun) projectSave.verifyDryRunReceipt(options._m100ActionRecord, validation.steps.length, AUTONOMY_CONTRACT_VERSION);
+      const lifecyclePreflight = lifecycleStep ? await lifecycle.preflight(prepared.plan, options._m100ActionRecord, dryRun) : null;
+      if (lifecyclePreflight) run.lifecyclePreflight = lifecyclePreflight;
+      const projectResult = lifecycleFinalize ? {file:lifecyclePreflight.projectFile} : firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
       currentProposalState.assertCurrent(options._m100ActionRecord);
       currentProposalState.bindProject(options._m100ActionRecord, projectResult && projectResult.file);
       run.project = {...options._m100ActionRecord.project};
@@ -6965,7 +7065,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
     catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
   }
-  if (!dryRun && validation.mutatingCount > 0) {
+  if (!dryRun && validation.mutatingCount > 0 && !lifecycleFinalize) {
     if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
       require("./proposal-state").normalizeProject(options._m100ActionRecord && options._m100ActionRecord.project.expectedFile)) {
       run.ok = false; run.errorCode = "edit_session_project_mismatch";
@@ -7046,7 +7146,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       return finishRun();
     }
   }
-  if (mutatingExecution && !activeEditSessionAtStart && !checkpointStepPresent) {
+  if (mutatingExecution && !lifecycleFinalize && !activeEditSessionAtStart && !checkpointStepPresent) {
     if (!autoEditSession) {
       run.ok = false;
       run.error = "autoEditSession:true is required to run a mutating plan without an existing edit session or checkpoint step.";
@@ -7073,10 +7173,20 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     run.checkpoint = started.checkpoint;
   }
 
+  if (lifecycleStep && !dryRun) {
+    try {
+      const pending = lifecycleFinalize ? lifecycle.storage.load().pendingLifecycle : null;
+      const ownedSessionId = lifecycleFinalize ? pending && pending.authorization.ownedEditSessionId : run.safety.protection === "auto_edit_session" && activeEditSession && activeEditSession.id;
+      if (activeEditSession && activeEditSession.id !== ownedSessionId) projectLifecycleContract.fail("lifecycle_foreign_edit_session");
+      lifecycleAuthorization = lifecycle.issueContext({record:options._m100ActionRecord, run, plan:prepared.plan, ownedSessionId,
+        manual:!autonomous && confirm && !allowWithoutCheckpoint && options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface === "cep-panel"});
+      if (lifecycleFinalize) run.safety.protection = "persisted_lifecycle_final_proof";
+    } catch (error) { run.ok=false; run.errorCode=error.code || "lifecycle_manual_authorization_required"; run.error=error.message; return finishRun(); }
+  }
   const executedSteps = [];
   let solutionPreflightChecked = false;
   const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
-  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession;
+  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession || Boolean(lifecycleFinalize && lifecycleAuthorization);
   const steps = validation.steps;
   for (const step of steps) {
     const item = {
@@ -7160,7 +7270,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       continue;
     }
 
-    if (step.mutatesProject) {
+    if (step.mutatesProject && !lifecycleFinalize) {
       const freshAuthority = autonomousSession.authorization();
       if (autonomous && (!freshAuthority || freshAuthority.sessionHash !== autonomous.sessionHash)) {
         item.status = "blocked"; item.reason = "Автономная сессия истекла или отозвана.";
@@ -7205,7 +7315,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
-        step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
+        projectLifecycleContract.isLifecycleMutation(step.tool) ? {lifecycleAuthorization} : step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
           confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
@@ -7277,7 +7387,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     }
   }
 
-  if (autoStartedEditSession) {
+  if (autoStartedEditSession && !(lifecycleStep && run.safety.editSessionFinished)) {
     run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
     if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") run.ok = false;
     const finished = finishPlanRunEditSession(run);
@@ -7867,6 +7977,7 @@ async function guardMontagePipelinePlan(plan, options = {}) {
 }
 
 async function guardPlaceholderPlan(plan, options = {}) {
+  if (lifecycle.planStep(plan)) return {ok:true, snapshots:[], bindings:[], lifecycleScope:true};
   if(!plan.montagePipeline && plan.expectedReadBack?.stretch!==undefined && plan.expectedReadBack.stretch!==100)
     throw placeholderError("affine_plan_requires_montage_binding");
   const store = projectStateMemory.loadProjectStateStore();
@@ -7875,6 +7986,16 @@ async function guardPlaceholderPlan(plan, options = {}) {
   for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
   if (plan.montagePipeline) {
     await guardMontagePipelinePlan(plan, options);
+  }
+  const hasInherited = Object.values(store.projectState).some(value => value.inheritedOwnership && value.inheritedOwnership.length);
+  if (mutations.length && hasInherited) {
+    const inheritedCurrent = await currentPlaceholderState();
+    if (inheritedCurrent.state.inheritedOwnership && inheritedCurrent.state.inheritedOwnership.length) {
+      const inheritedInventory = await readPlaceholderInventory();
+      if (!inheritedInventory || inheritedInventory.complete !== true || !placeholderSourceRecovery.pathsEqual(inheritedCurrent.projectFile, inheritedInventory.projectFile)) throw placeholderError("incomplete_or_changed_protection_inventory");
+      const inherited = projectStateMemory.checkInheritedOwnershipSteps({state:inheritedCurrent.state, inventory:inheritedInventory, steps:mutations});
+      if (!inherited.ok) throw placeholderError(inherited.code, inherited);
+    }
   }
   const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
   if (!mutations.length || (!hasState && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline)) {
@@ -8159,6 +8280,7 @@ function startHttpBridge() {
       if (!requireToken(req, res, url)) return;
       try {
         const body = await readJsonBody(req);
+        lifecycle.assertMutationAllowed();
         if (typeof body.enabled !== "boolean") throw new Error("enabled must be boolean.");
         const enabled = body && body.enabled === true;
         const session = enabled ? autonomousSession.activate(body) : autonomousSession.revoke(body);
@@ -8577,7 +8699,9 @@ function startHttpBridge() {
       if (req.method === "GET" && classifyM100ToolRisk(name).riskLevel !== "read_only") {
         writeJson(res, 405, {ok:false, code:"get_mutation_forbidden"}); return;
       }
-      if (name === projectSave.TOOL_NAME) { writeJson(res, 403, {ok:false, code:"project_save_manual_only"}); return; }
+      if (name === projectSave.TOOL_NAME || projectLifecycleContract.isLifecycleMutation(name)) {
+        writeJson(res, 403, {ok:false, code:name === projectSave.TOOL_NAME ? "project_save_manual_only" : "lifecycle_manual_only"}); return;
+      }
       const args = {};
 
       for (const [key, value] of url.searchParams.entries()) {
@@ -12390,7 +12514,9 @@ const tools = [
     }
   },
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
-  ...projectSave.createToolDefinitions()
+  ...projectSave.createToolDefinitions(),
+  ...projectLifecycleContract.toolDefinitions,
+  projectLifecyclePlan.tool
 ];
 
 tools.push({name:"get_property_value",description:"Read one exact property by stable comp/layer IDs and composite propertyPath; optional time includes the exact key sample. No mutation.",inputSchema:{type:"object",additionalProperties:false,properties:{compItemId:{type:"integer",minimum:1},layerId:{type:"integer",minimum:1},propertyPath:{type:"array",minItems:1,maxItems:12,items:{type:["string","number","object"]}},time:{type:"number"}},required:["compItemId","layerId","propertyPath"]}});
@@ -12438,6 +12564,16 @@ async function callTool(name, args, executionContext) {
   if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
+  if (name === projectLifecyclePlan.tool.name) {
+    try { return toolResult(await lifecycle.build(args)); }
+    catch (error) { return toolResult({ok:false, code:error.code || "lifecycle_builder_failed", error:error.message}, true); }
+  }
+  if (projectLifecycleContract.isLifecycleTool(name)) {
+    try {
+      const receipt = await lifecycle.execute(name, args, executionContext && executionContext.lifecycleAuthorization);
+      return toolResult(name === "reconcile_project_lifecycle" ? receipt : {ok:true, lifecycleReceipt:receipt});
+    } catch (error) { return toolResult({ok:false, code:error.code || "lifecycle_failed", error:error.message}, true); }
+  }
   if(name==="get_montage_root_render_state"){
     try{
       if(Object.keys(args).some(k=>!["rootCompItemId","rootTimes"].includes(k)))throw placeholderError("native_root_probe_client_claims_forbidden");
@@ -13517,6 +13653,11 @@ async function callTool(name, args, executionContext) {
   if (name === "build_solution_plan") {
     try {
       solutionDiscovery.knownSolution(args.solutionId, tools);
+      if (args.solutionId === "guarded-project-lifecycle") {
+        const built = await lifecycle.build(args.inputs);
+        const prepared = validateAgentPlanWithRepair(built.plan, null, {}, {repairPlan:false});
+        return toolResult({...built, ok:prepared.validation.ok, validation:prepared.validation}, !prepared.validation.ok);
+      }
       if (args.solutionId === "comp-visual-review-plan") {
         return await callTool("build_comp_visual_review_plan", args.inputs, executionContext);
       }
@@ -13618,12 +13759,12 @@ async function callTool(name, args, executionContext) {
       return toolResult({ok:false,code:"invalid_lifecycle_state_input",error:"get_project_lifecycle_state accepts no arguments."}, true);
     }
     try {
-      const native = await runExtendScriptBody("return " + projectLifecycleState.nativeReadScript());
+      const native = await lifecycle.readState();
       if (!native || native.ok === false) {
         return toolResult({ ok: false, code: "lifecycle_read_failed", error: (native && native.error) || "Failed to read project lifecycle state" }, true);
       }
       const normalized = projectLifecycleState.normalizeProjectLifecycleState(native.result);
-      return toolResult(normalized);
+      return toolResult({...normalized, lifecycle:lifecycle.diagnostics()});
     } catch (error) {
       return toolResult({ ok: false, code: error.code || "lifecycle_read_failed", error: error.message }, true);
     }
@@ -21869,7 +22010,8 @@ async function callToolLogged(source, name, args, executionContext) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
-  const idContext = name===projectSave.TOOL_NAME ? null : idempotencyContext(name, args || {});
+  if (projectLifecycleContract.isLifecycleTool(name)) projectLifecycleContract.validateInput(name, args || {});
+  let idContext = null;
   recordEvent("tool_call_started", {
     id: eventId,
     source,
@@ -21897,6 +22039,12 @@ async function callToolLogged(source, name, args, executionContext) {
         proposalId: args && args.actionId, verification: "not_run"});
       return m100BlockedToolResult(m100Block);
     }
+    const lifecycleMutation = projectLifecycleContract.isLifecycleMutation(name);
+    if (lifecycleMutation) lifecycle.assertManualContext(executionContext && executionContext.lifecycleAuthorization);
+    if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
+      if (!(lifecycleMutation && name === "finalize_project_lifecycle")) lifecycle.assertMutationAllowed();
+    }
+    idContext = name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -21963,7 +22111,7 @@ async function callToolLogged(source, name, args, executionContext) {
       }
     }
 
-    if (MUTATING_TOOL_NAMES.has(name) && !placeholderGuard) {
+    if (MUTATING_TOOL_NAMES.has(name) && !lifecycleMutation && !placeholderGuard) {
       const context = placeholderPlanContext.getStore();
       const plan = context && context.plan || { steps: [{ tool: name, args: args || {} }] };
       placeholderGuard = await guardPlaceholderPlan(plan, { steps: context && context.remainingSteps || plan.steps,
@@ -21972,12 +22120,12 @@ async function callToolLogged(source, name, args, executionContext) {
     }
     // Resolve current address hints for both ordinary and freshly guarded
     // montage steps. Stable identities are still rechecked by the native setter.
-    if (MUTATING_TOOL_NAMES.has(name)) args = rebindPlaceholderArgs(name, args, placeholderGuard);
+    if (MUTATING_TOOL_NAMES.has(name) && !lifecycleMutation) args = rebindPlaceholderArgs(name, args, placeholderGuard);
     const commandContext = planCommandContext.getStore();
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = name===projectSave.TOOL_NAME ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
@@ -21987,7 +22135,7 @@ async function callToolLogged(source, name, args, executionContext) {
     }
     let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
-    resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
+    if (!lifecycleMutation) resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
     resultWithCheckpoint = attachStoredIdempotencyMetadata(resultWithCheckpoint, idContext, idempotencyRecord);
     const durationMs = Date.now() - startedAt;
