@@ -186,6 +186,12 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- 2026-10-03: собственный saved fixture/три source groups и восстановление CEP
+  завершены; fresh native compiler3 units/27 frames ready. Root probes1–4 ещё
+  blocked (native source class), полных accepted cycles0. Seed4 steps applied,
+  historical verification_required сохранён; read-only reconciliation3 passed,
+  replayfalse. Подробная запись текущего блока — WORK_LOG.md.
+
 - 2026-10-03, текущий scope: HEAD AE `2830493`, agy-bridge `7ea628f`, tracked
   деревья чисты; чужие untracked сохранены. Runtime уже HEAD `2830493`, pid29924,
   CEP Connected, pending/inflight0, edit session и current proposal отсутствуют.
@@ -221,6 +227,11 @@ Saved AEP, export/render и protected cleanup требуют своего при
   Это не montage/root/canonical/visual acceptance; текущий AEP в M5 не использован.
 
 ## Decision Log
+
+- Native graph/canonical implementation проверяется отдельно от live acceptance.
+  Class diagnostics, Classic3D exacthost mapping и source crop PNG не дают client
+  complete waiver. Failed seed action не повторять; новый intent требует fresh
+  native build/proposal/dry-run. Raw bootstrap и trusted CEP groups сохранены.
 
 - 2026-10-03: уже принятый общий bridge не переделывается без подтверждённого gap.
   Root/canonical контракт относится к AE Agent. Один архитектурный read-only
@@ -286,6 +297,13 @@ Saved AEP, export/render и protected cleanup требуют своего при
   live packet compatibility и замеры. M1/offline доступны; live readiness/экономия не установлены.
 
 ## Validation
+
+- Fixture/native/UI proof: `.codex-runtime/montage-acceptance-20261003/`; root
+  probes1–4 blocked, seed reconciliation2 current3 applied/pass без replay.
+  Offline root77+3/canonical13/owner21/semantic22 PASS; regression16/17 и отдельный
+  montage-bridge76 rerun PASS, process exit3221226505 сохранён без догадки причины.
+  Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
+  model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 
 - 2026-10-03, свежий baseline: agy-bridge **100 tests PASS** (36,575 s); AE **17
   выбранных npm suites PASS**, включая rules, montage M1–M5/summary/library/bridge,
