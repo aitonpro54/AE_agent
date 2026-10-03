@@ -1,6 +1,6 @@
 # Этап 2: детерминированный монтажный конвейер
 
-Статус: **M1–M5 complete — offline acceptance**; M5 ограничен observed target affine stretch. Этап 3 agy-bridge принят offline и scoped live; полная montage/root/canonical/visual live-приёмка остаётся открытой.
+Статус: **M1–M5 complete — offline acceptance**; M5 ограничен observed target affine stretch. Этап 3 agy-bridge принят offline и scoped live; полная montage/root/canonical/visual live-приёмка явно поддерживаемого subset принята:3/3 циклов,81sampled root PNG. Другие AE graphs/hosts/межкадровая художественная оценка вне этого scope.
 Baseline для планирования: `codex/production-usage`, HEAD `50d5cd66014f4778f6e994dbd4ebe61e488111d8` (2026-10-02).
 Перед реализацией сверить текущие HEAD/status и основной [план](target-app-execplan.md); чужие изменения сохранять.
 Контракты: [монтаж](../docs/montage-workflow.md), [завершение поручения](../docs/ae-task-completion.md).
@@ -186,6 +186,21 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- Финал 2026-10-03: **3/3 полных последовательных live циклов приняты**.
+  Third2396b208-7cdb-400c-87b3-eaaeb2afdf60 после material recovery:3units/M3,
+  34native steps/89checks/readBackCount1,27root PNG, owner18+9 иcompletion3 PASS.
+  Final saved fixture68items/5,294,240bytes; native project/epoch/owner reads PASS.
+  Known first13partial/secondaggregate failures сохранены. Exact current source
+  SHA1ef894bc, runtimeacc2a81; final evidenceacceptance-summary.json local/ignored.
+
+- Второй live цикл принят (2/3): eae4b81b-6ca5-4bc7-bb75-19e8064439bd;
+  units3/M3/34native/89checks/27owner visuals/completion3 PASS. Реальные PNG faults,
+  cached replay, owner conflict/dependent stop и root/target/material invalidation
+  выполнены; bytes restored не повышали decoder epoch. Typed reload2197b62a PASS.
+  Перед последним циклом требуется exact29 owned cleanup для лимита record16MiB;
+  checkpoint5,294,240bytes/0d42f9ad сохранён; cleanup выполнен CEP
+  runabb286b5,29IDs absent/original10 preserved, PNG/evidence сохранены.
+
 - 2026-10-03: первый полный live цикл независимо принят (1/3): 3 units,
   27 root PNG, 34 capture steps, 89 checks, fresh owner visual18+9 PASS,
   3 M3 technical PASS и 3 completion technical/declared_visual PASS. Runtime
@@ -232,6 +247,15 @@ Saved AEP, export/render и protected cleanup требуют своего при
   Это не montage/root/canonical/visual acceptance; текущий AEP в M5 не использован.
 
 ## Decision Log
+
+- Приёмка ограничена static2D/moving FileSource, target stretch25..400,
+  route100/remapfalse; native exercised100/125/200/fractional samples,27preset frames.
+  M3 artisticfalse и completion completeTaskAcceptancefalse/provided_run_ids_only
+  сохранены; independent owner API подтверждает sampled artistic scope.
+  Native record ceiling16MiB не увеличен:29старых owned controls удалены только
+  после checkpoint и explicit action-time approval. Last record15,193,775bytes.
+  Generic negative ownership/cache reconcileunknown/insufficient не повышен;
+  independent current files/position и dependent stop сохранены без replay.
 
 - Exact48 failed review comps удалены через штатный CEP по action-time подтверждению;
   run9f74558d, fresh independent IDs: original10 сохранены, 48 отсутствуют.
@@ -308,6 +332,17 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Validation
 
+- Final:3cycles×(3unit applications/M3,34capture steps,89semantic checks,
+  27PNG,3official Flash inspect packets,2owner verdicts,3completion summaries) PASS.
+  Final save→fresh owner18+9/epoch/project PASS. Process100 иselected AE17 PASS;
+  current27modules SHA unchanged, rules/diff PASS. Full workflow measurements
+  1010,029/1292,134/1281,331s; total measured fullattempts4534,6s, AGY1390,487s
+  включая generator failures иinspection correction, budgets1800/7200/1800 intact.
+  PNG hash/truncation,root/target drift/materialfullSHA+decoder invalidation,
+  stale/raw/foreign/ID/outPoint/TextLayer blockers реальны; inverse mutations/
+  source reload/new compilation/third full capture установили recovery.
+  Runtimeproofacc2a81/source1ef894bc; final native Source2 epoch fresh.
+
 - Fixture/native/UI proof: `.codex-runtime/montage-acceptance-20261003/`; root
   probes1–4 blocked, probe5 fresh native closure/GUID PASS; seed reconciliation2
   current3 applied/pass без replay. Root82+3/canonical13/owner21/semantic22 PASS;
@@ -319,7 +354,8 @@ Saved AEP, export/render и protected cleanup требуют своего при
   но readBackCount0. Builder genuine project summary исправлен; legacy full runner
   PASS. Exact48owned cleanup выполнен с checkpoint и независимым native read.
   Первый accepted cycle:8b41b9ca-411e-40f0-af6d-6513de025e66, полный scope27frames;
-  два следующих цикла/оставшиеся negatives открыты; historical failed status не повышен.
+  второй цикл eae4b81b также принят; target/root/PNG/material faults блокируются,
+  bytes restored→typed reload2197b62a→fresh epoch PASS; третий2396b208 также принят; historical failed status не повышен.
   Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
   model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 

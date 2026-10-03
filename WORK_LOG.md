@@ -197,3 +197,98 @@ Application3 semantic/reconciliation/M3 PASS; capture34native/89semantic PASS,un
 owner visual27frames PASS; paired actual JSON/sheet/fullPNG view_file, concrete
 observations и pins проверены сервером. Completion3 PASS, bounded files/evidence
 проверены production consumer. Second/third cycles и оставшиеся negatives открыты.
+
+
+## 2026-10-03 — второй live цикл и реальные faults
+
+### Progress
+
+Cycle-final-2 принят: eae4b81b-6ca5-4bc7-bb75-19e8064439bd,3applications/M3,
+34capture steps/89checks/readBackCount1,27fullPNG и3Flash packets accepted,
+ownerAPI18+9 и completion3 PASS. Native813,336s, apps181,204s, Flash283,563s,
+visual14,031s; measured workflows1292,134s. Parent9representative PNG viewed;
+27fullSHA совпали с ранее полностью просмотренными кадрами. Все27 заново просмотрены
+независимым Flash с текущими JSON/PNG pins; native freshness проверена отдельно.
+
+Реальные PNG tamper/truncation→review_image_hash_changed; exact restore→fresh PASS.
+RootC+1px→canonical_route_changed и targetA+1px→canonical_target_final_state_changed;
+отдельные обратные typed actions→fresh current manifest PASS после каждого.
+MaterialA+4bytes→canonical_capture_stale_contributing_file и epoch unproven.
+Exact original bytes восстановлены, timestamps/epoch не подделаны; epoch остался
+unproven. Fresh source-bound application9b9201c6→typed reload2197b62a-22a8-4e2c-89a0-d12309825b94
+→independent native source epoch PASS. Third full cycle проверит конечное recovery.
+
+### Decision Log
+
+Ownership/cached fault plans rejected executed0: f4b7408f и39f20097,
+review_export_requires_exact_registered_native_frame/root_png_replay_requires_fresh_capture.
+Dependent setter не достигнут, native position320/180/0 и отсутствие foreign PNG
+независимо сверены. Generic reconcile сохраняет conservative unknown/insufficient;
+исторические statuses не переписаны и replayAllowedfalse, failures не повышены.
+Code/receipt опровергли предположение о cloned footage targets: controls добавляют
+existing root CompItem; FileSource2 direct usedIn остаётся exact own target5.
+Не требуется cleanup ради reload. Но native record вырос11,913,360→15,184,540bytes;
+следующий без уменьшения project inventory рискует лимитом16MiB. Подготовлен
+exact29 cleanup first accepted cycle; все PNG/immutable evidence сохраняются.
+Checkpoint before-cleanup29-cycle1.aep5,294,240bytes,
+SHA0d42f9ad0bef99ca9a0a190d876300c337f74dba7212e78499f80d5704f54824.
+
+### Validation
+
+Native/file faults — реальные own fixtures; exact current positives до faults,
+обратные actions и independent read-back после них. Deleted83 и current TextLayer
+sheet1457 actual native probes→production root validator blocked. Process hangs/exit/
+pipes/PID/locks ранее проверены100real process fixtures. Runtime acc2a81/source1ef894bc
+сохраняется; docs commit не подменяет identity loaded daemon. Third cycle открыт.
+
+
+## 2026-10-03 — финальная scoped montage live-приёмка
+
+### Progress
+
+Все3/3полных последовательных циклов приняты. Third application runs c063c1f5/
+6018ae9a/937dd9eb и capture2396b208-7cdb-400c-87b3-eaaeb2afdf60:34steps,
+89checks,readBackCount1,27fresh native PNG. Flash3/terminal/schema/artifacts/
+toolincidents0; owner18+9 artisticaccepted; M3 technical3 иcompletion3 PASS.
+Итого9units/M3,81sampled PNG,9official inspection packets плюс1correction,
+9production completion summaries. Stage1–3 supported root/canonical gaps закрыты.
+
+Exact29first-cycle review comps удалены штатным CEP по explicit action-time
+подтверждению: abb286b5-0849-4834-bf97-bbc0d0847361, independent29absent/original10
+present. Все PNG иimmutable records сохранены. Снижение inventory сохранило
+record16MiB cap; final record15,193,775bytes. Fixture saved5,294,240bytes,
+SHA0aebdd44f0408d13f36aa834da4d99d3f13999c78b5b106c0cfd97125a66bb24,68items.
+Final save→native project/sourceEpoch/owner18+9 PASS. CEP usable/docked,
+подтверждённые операции прошли через panel; client AEP/foreign files не менялись.
+
+### Decision Log
+
+Source bytes exact restored не подменяют decoder epoch: readonly remainunproven→
+typed reload2197b62a→fresh compilation/application→third complete capture accepted.
+Старые failures/unknown иfirst visual lexical rejection сохранены; mutationне
+replay. Parent first27PNG fully viewed, later9current representatives плюс27fullSHA
+equality; независимый Flash каждый цикл фактически viewed JSON/sheet/all27PNGs.
+M3 artisticallyfalse, completioncompleteTaskAcceptancefalse/machineProofOfViewingfalse
+иprovided_run_ids_only сохраняются; ownerAPI устанавливает sampled visual scope.
+Границы: static2D prepared moving FileSource;25..400positive targetstretch,
+route100/remapfalse; native100/125/200/fractional samples, rendererexacthost26.2x49.
+Unknown/effectful/shared writes остаются blocked; другие hosts/interframe artistry/
+final movie/audio render не заявлены. Effortunknown/null, token/subscription savings
+не выдуманы. Shared bridge/VideoScout checkpoints unchanged.
+
+### Validation
+
+Bridge100actual unit/process tests PASS, current AE17groups PASS; new root/canonical/
+owner/packing/visual/semantic/recovery counters PASS ранее зафиксированы. Current27
+product modules sourceSHA совпадает с loaded runtimeacc2a81/1ef894bc после docs commits.
+Final real negatives: PNGtamper/truncation/hash, target/root drift+inverse restore,
+material fullSHA/epoch invalidation, stale/raw/foreign bindings, cached replay,
+deleted ID, outPoint/wrongkind/TextLayer graph; failures block dependent steps.
+Generic failed ownership/cache reconciliation сохраняет unknown/insufficient без
+retry; independent files/position reads сохранены. Applied bootstrap/reload/failed
+partial steps independently reconciled; failed/timeout history не повышена.
+Full workflow seconds1010,029/1292,134/1281,331 (each<1800); measured fullattempt
+workflows4534,6 (limit7200), AGY1390,487 (limit1800), attempts5/accepted3.
+Evidence: .codex-runtime/montage-acceptance-20261003/acceptance-summary.json.
+Known baseline autonomous keyframe fixture gap остаётся isolatedoffline; verifier
+не ослаблен. Финальные rules/diff checks обязательны перед commit.
