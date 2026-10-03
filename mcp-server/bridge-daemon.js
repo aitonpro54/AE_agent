@@ -55,6 +55,9 @@ const placeholderVisualBatches = require("./placeholder-visual-batches");
 const montageTools = require("./montage-tools");
 const montagePipelineService = require("./montage-pipeline-service");
 const montageCaptureService = require("./montage-capture-service");
+const { buildCompVisualReviewPlanTool, buildCompVisualReviewPlan, validateCompVisualReviewInput } = require("./comp-visual-review-plan");
+const compVisualReviewManifest = require("./comp-visual-review-manifest");
+const projectLifecycleState = require("./project-lifecycle-state");
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
@@ -8878,6 +8881,9 @@ const tools = [
   ...solutionCandidateQueue.solutionCandidateQueueTools,
   ...placeholderReviewTools.tools,
   ...montageTools.montageTools,
+  buildCompVisualReviewPlanTool,
+  compVisualReviewManifest.getCompVisualReviewManifestTool,
+  projectLifecycleState.getProjectLifecycleStateTool,
   {
     name: "get_placeholder_protection",
     description: "Read authoritative accepted placeholder snapshots, confirmed group mappings, constraints and fresh drift diagnostics for the current saved project. Cannot accept/release or override protection.",
@@ -13511,6 +13517,9 @@ async function callTool(name, args, executionContext) {
   if (name === "build_solution_plan") {
     try {
       solutionDiscovery.knownSolution(args.solutionId, tools);
+      if (args.solutionId === "comp-visual-review-plan") {
+        return await callTool("build_comp_visual_review_plan", args.inputs, executionContext);
+      }
       if (args.solutionId === "montage-pipeline-plan") {
         const result = await montagePipelineService.buildMontagePipelinePlan(args.inputs, daemonMontageDeps);
         return toolResult(result, !result.ok);
@@ -13523,6 +13532,101 @@ async function callTool(name, args, executionContext) {
       return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation,
         next: "Review inputs and current evidence, then use propose_ai_agent_plan and run_ai_agent_plan dry-run before any confirmed execution." }, !prepared.validation.ok);
     } catch (error) { return toolResult({ ok: false, error: error.message }, true); }
+  }
+
+  if (name === "build_comp_visual_review_plan") {
+    try {
+      validateCompVisualReviewInput(args);
+      const info1Read = await callToolLogged("comp-review-plan-read", "get_project_info", {});
+      if (info1Read && info1Read.isError) {
+        return toolResult({ ok: false, code: "project_read_failed", error: "Failed to read project info." }, true);
+      }
+      const info1 = firstToolPayload(info1Read);
+      if (!info1 || typeof info1.file !== "string" || !path.isAbsolute(info1.file) || path.extname(info1.file).toLowerCase() !== ".aep") {
+        return toolResult({ ok: false, code: "no_active_named_project", error: "A saved named .aep project is required for visual review." }, true);
+      }
+      const observedComps = [];
+      for (const target of args.targets) {
+        const compRead = await callToolLogged("comp-review-plan-read", "get_comp_details", { compItemId: target.compItemId, includeLayers: false });
+        if (compRead && compRead.isError) {
+          return toolResult({ ok: false, code: "comp_read_failed", error: `Failed to read details for comp item ID ${target.compItemId}.` }, true);
+        }
+        const compResult = firstToolPayload(compRead);
+        const observedId = compResult && (compResult.itemId ?? compResult.id);
+        const observedIndex = compResult && (compResult.itemIndex ?? compResult.index);
+        if (!compResult || observedId !== target.compItemId || !Number.isSafeInteger(observedIndex) || observedIndex <= 0) {
+          return toolResult({ ok: false, code: "requested_comp_not_observed", error: `Comp item ID ${target.compItemId} was not found in project.` }, true);
+        }
+        observedComps.push({
+          itemId: observedId,
+          itemIndex: observedIndex,
+          name: compResult.name,
+          width: compResult.width,
+          height: compResult.height,
+          frameRate: compResult.frameRate,
+          duration: compResult.duration
+        });
+      }
+      const info2Read = await callToolLogged("comp-review-plan-read", "get_project_info", {});
+      if (info2Read && info2Read.isError) {
+        return toolResult({ ok: false, code: "project_read_failed", error: "Failed to re-read project info." }, true);
+      }
+      const info2 = firstToolPayload(info2Read);
+      if (!info2 || info2.file !== info1.file || info2.numItems !== info1.numItems) {
+        return toolResult({ ok: false, code: "stale_project", error: "Project changed during comp observation." }, true);
+      }
+      const serverObservedContext = {
+        projectFile: info2.file,
+        observedAt: new Date().toISOString(),
+        comps: observedComps
+      };
+      const result = buildCompVisualReviewPlan(args, serverObservedContext);
+      const prepared = validateAgentPlanWithRepair(result.plan, null, {}, { repairPlan: false });
+      return toolResult({ ...result, ok: prepared.validation.ok, validation: prepared.validation }, !prepared.validation.ok);
+    } catch (error) {
+      return toolResult({ ok: false, code: error.code || "invalid_plan_input", error: error.message }, true);
+    }
+  }
+
+  if (name === "get_comp_visual_review_manifest") {
+    try {
+      if (!args || typeof args !== "object" || Array.isArray(args)) {
+        return toolResult({ ok: false, code: "invalid_arguments", error: "get_comp_visual_review_manifest requires an object with a runId property." }, true);
+      }
+      const keys = Object.keys(args);
+      if (keys.length !== 1 || keys[0] !== "runId" || typeof args.runId !== "string") {
+        return toolResult({ ok: false, code: "invalid_arguments", error: "get_comp_visual_review_manifest accepts only a strict runId string property without extra arguments." }, true);
+      }
+      const runId = args.runId;
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!UUID_REGEX.test(runId)) {
+        return toolResult({ ok: false, code: "invalid_run_id", error: "runId must be a valid UUID." }, true);
+      }
+      const record = planRunRecords.readRecord(LOG_DIR, runId, { throwOnError: true });
+      const manifest = await compVisualReviewManifest.createManifest(record, {
+        runId,
+        exportRoot: GENERATED_EXPORT_DIR
+      });
+      return toolResult(manifest, !manifest.ok);
+    } catch (error) {
+      return toolResult({ ok: false, code: error.code || "manifest_failed", error: error.message }, true);
+    }
+  }
+
+  if (name === "get_project_lifecycle_state") {
+    if (args && (typeof args !== "object" || Array.isArray(args) || Object.keys(args).length > 0)) {
+      return toolResult({ok:false,code:"invalid_lifecycle_state_input",error:"get_project_lifecycle_state accepts no arguments."}, true);
+    }
+    try {
+      const native = await runExtendScriptBody("return " + projectLifecycleState.nativeReadScript());
+      if (!native || native.ok === false) {
+        return toolResult({ ok: false, code: "lifecycle_read_failed", error: (native && native.error) || "Failed to read project lifecycle state" }, true);
+      }
+      const normalized = projectLifecycleState.normalizeProjectLifecycleState(native.result);
+      return toolResult(normalized);
+    } catch (error) {
+      return toolResult({ ok: false, code: error.code || "lifecycle_read_failed", error: error.message }, true);
+    }
   }
 
   if (name === "get_placeholder_protection") {

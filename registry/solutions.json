@@ -15,6 +15,95 @@
   "solutions": [
     {
       "schema": "ae-solution.v1",
+      "id": "comp-visual-review-plan",
+      "title": "Comp Visual Review Plan",
+      "status": "recipe",
+      "tags": [
+        "visual-review",
+        "png-export",
+        "gated-export",
+        "save_comp_frame_png",
+        "manifest",
+        "tool-first"
+      ],
+      "intent": {
+        "summary": "Сформировать детерминированный план экспорта проверочных кадров композиций через save_comp_frame_png и прочитать верифицированный манифест с доказательством целостности PNG.",
+        "appliesWhen": [
+          "Пользователь или агент запрашивает визуальный контроль/ревью одного или нескольких кадров композиций через защищённый экспорт кадров.",
+          "Требуется экспортировать проверочные PNG кадры композиции и получить изолированный манифест со статусом и SHA-256 хэшами."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "targets",
+          "type": "array",
+          "required": true,
+          "description": "Список целевых композиций с compItemId и массивом временных меток в секундах (до 4 композиций, до 12 кадров суммарно)."
+        }
+      ],
+      "targetAssumptions": [
+        "Композиции существуют в проекте и их compItemId подтверждены через get_comp_details.",
+        "Запрашиваемые временные метки находятся внутри длительности композиции и выровнены по сетке кадров."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/comp-visual-review-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "build_comp_visual_review_plan",
+          "get_comp_visual_review_manifest",
+          "get_project_info",
+          "save_comp_frame_png"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Проверить, что план содержит только save_comp_frame_png и диагностические чтения, а get_comp_visual_review_manifest подтверждает наличие и валидность всех PNG.",
+        "steps": [
+          "Построить план через build_comp_visual_review_plan или build_solution_plan с solutionId 'comp-visual-review-plan'.",
+          "Выполнить план через стандартный propose/dry-run/run цикл.",
+          "Прочитать манифест через get_comp_visual_review_manifest с полученным runId и проверить SHA-256 и размеры кадров."
+        ],
+        "expectedEvidence": [
+          "Экспортированные файлы PNG в директории экспорта с уникальным reviewId.",
+          "Запись выполнения плана в logs/evidence/plan-runs/.",
+          "Манифест со статусом complete и флагами historicalCapture: true, currentProjectStateVerified: false."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": "unknown",
+        "panelVersion": "AE Agent 3.2.0",
+        "bridgeVersion": "3.2.0",
+        "projectKind": "synthetic",
+        "notes": [
+          "offline only"
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-03",
+          "from": "reviewed-workflow",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "M2 comp visual review integration baseline.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "План визуального контроля только фиксирует кадры; манифест не является доказательством художественного принятия (artisticAccepted: false)."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "active-comp-context-review",
       "title": "Active Comp Context Review",
       "status": "recipe",

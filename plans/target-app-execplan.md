@@ -1,6 +1,4 @@
-# План исполнения Target App
-
-**MCP-first без рендера — 3 октября 2026. Progress:** M1 — маршрутизация, passive waits и локальный CU audit завершены в изолированном worktree. **Decision Log:** UI fallback с причиной, exact proposal pins, неизвестные значения не становятся readiness; Pro заменён локальным архитектурным ревью по прямому решению пользователя. **Validation:** actual isolated MCP waits AE0, planning/adapter/rules/syntax/diff PASS; recorded audit52 calls/65 image blocks. M2/lifecycle ещё в работе; общий AE/runtime не перезапускался. План: plans/tool-first-execplan.md.
+# План исполнения Target App — [MCP-first без рендера](tool-first-execplan.md)
 
 **Codeburn — 2 октября 2026. Progress:** stdio/HTTP get_task_usage/get_usage_history и native journal реализованы (5827223), runtime обновлён в idle, CEP Connected, persistence active. **Decision Log:** explicit runtime UUID; SQLite в Codeburn; native отдельно, guards/auth сохранены; Flash partial patch result независимо исправлен родителем. **Validation:** production-usage/usage/HTTP fixtures, syntax/diff PASS; real MCP/CLI/web totals совпали, query 0,28 с; общий план и proof — Codeburn/PLAN.md. Hooks требуют штатного trust, recovery Windows 5 мин активен.
 
