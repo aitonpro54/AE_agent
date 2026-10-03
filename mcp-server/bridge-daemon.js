@@ -13550,7 +13550,7 @@ async function callTool(name, args, executionContext) {
             for(let index=0;index<=previewSpec.controls.length;index++)steps.push({tool:"save_comp_frame_png",args:{reviewOwner:`{{steps.${createIndex}.result.owner}}`,reviewItemId:`{{steps.${createIndex}.result.items.${index}.itemId}}`,time:0,resolutionFactor:[1,1],outputFileName:`review-${previewSpec.owner}-${index}.png`}});
             manifestReads.push({tool:"get_placeholder_review_manifest",args:{owner:`{{steps.${createIndex}.result.owner}}`}});
           }
-          steps.push(...manifestReads);
+          steps.push(...manifestReads,{tool:"get_project_info",args:{}});
           const plan={summary:"Создать canonical root controls для сохранённых montage units и проверить полный набор кадров",targetProject:{file:projectFile},risk:"high",requiresCheckpoint:true,steps};
           const validation=validateAgentPlanWithRepair(plan,null,{}, {repairPlan:false}).validation;
           return toolResult({ok:validation.ok,plan:validation.ok ? plan : null,validation,packetCount:manifestReads.length,controlCount:canonicalBinding.frames.length,mutatesProject:false,artisticAccepted:false},!validation.ok);
@@ -13563,6 +13563,7 @@ async function callTool(name, args, executionContext) {
         const steps=[{tool:"create_placeholder_review_comps",args:JSON.parse(JSON.stringify(args))}];
         for(let index=0;index<=spec.controls.length;index++)steps.push({tool:"save_comp_frame_png",args:{reviewOwner:"{{steps.1.result.owner}}",reviewItemId:`{{steps.1.result.items.${index}.itemId}}`,time:0,resolutionFactor:[1,1],outputFileName:`review-${spec.owner}-${index}.png`}});
         steps.push({tool:"get_placeholder_review_manifest",args:{owner:"{{steps.1.result.owner}}"}});
+        steps.push({tool:"get_project_info",args:{}});
         const plan={summary:"Создать отдельные контрольные кадры плейсхолдеров и контактный лист",risk:"high",requiresCheckpoint:true,steps};
         const validation=validateAgentPlanWithRepair(plan,null,{}, {repairPlan:false}).validation;
         return toolResult({ok:validation.ok,plan:validation.ok ? plan : null,validation,controlCount:spec.controls.length,mutatesProject:false,artisticAccepted:false},!validation.ok);

@@ -305,7 +305,10 @@ Saved AEP, export/render и protected cleanup требуют своего при
   сохранён без догадки причины; отдельный rerun76 PASS.
   Reload recovery3native PASS без replay; lossless store/official JSON packets
   реализованы, packing20/visual16/epoch30 и3 independent counterexamples PASS.
-  Первый fullattempt failed после13PNG на2MiB;3 accepted cycles ещё открыты.
+  Два fullattempts failed:13PNG/2MiB и27PNG+2sheets/33steps/89checks PASS,
+  но readBackCount0. Builder genuine project summary исправлен; legacy full runner
+  PASS. Exact48owned cleanup подготовлен с checkpoint, manual confirmation pending.
+  Три accepted cycles ещё открыты; historical failed status не повышен.
   Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
   model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 

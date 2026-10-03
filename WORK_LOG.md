@@ -138,3 +138,30 @@ corrupt prototype state — project_state_corrupt, missing provenance — needs_
 Actual source preparations после reopen3/3 semantic/final reconciliation PASS;
 полные accepted live cycles всё ещё0. New code milestone не объявляет приёмку
 partial owner, исторических failed records, arbitrary roots или всего монтажа.
+
+## Полный capture bracket и read-back summary — исправление
+
+### Progress
+
+Run35e720c8-3937-44eb-8b45-11528f2248de завершил33steps:27canonical root PNG,
+2sheets, два complete current manifests с official JSON pins. Все89semanticchecks
+passed, failures0/unknown0. Native657,562s, immutable record14,045,131bytes.
+Но readBackCount0 дал verification_required; historical runfalse сохранён.
+
+### Decision Log
+
+Builder добавляет настоящую get_project_info summary после manifest reads в
+canonical и legacy paths; verifier не ослаблен. Ранний legacy daemon smoke не
+проверял aggregate run.ok, теперь проверяет ok/pass и положительный readBackCount.
+Для трёх оставшихся full attempts нужны свежие owners и ограниченный размер evidence;
+prepared destructive plan удаляет ровно48 own review comps трёх failed owners.
+Checkpoint cleanup-before-48-owned-comps.aep:4,457,408bytes,
+SHA82d00eb064ab33075e3955cc67419a28fb46fc194c6b1525e2fa716b38aa2717.
+Vendor action-time deletion confirmation запрошена; cleanup ещё не выполнен.
+
+### Validation
+
+Legacy actual isolated runner после correction:aggregate oktrue, semanticpassed,
+readBackCount>0; catalog/export/ownership/cleanup regression PASS (AE0).
+Новый live builder нужен после обновления idle runtime; уже завершённый capture
+не повторяется. Полные accepted cycles0; два failed attempts сохранены.

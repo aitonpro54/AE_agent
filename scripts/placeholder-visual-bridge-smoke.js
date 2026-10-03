@@ -22,15 +22,16 @@ async function main(){
   const catalog=await fixture.request({path:"/tools",token:fixture.automationToken});const names=new Set(catalog.body.tools.map(tool=>tool.name));for(const name of ["propose_placeholder_cover","verify_placeholder_coverage","build_placeholder_visual_review_plan","create_placeholder_review_comps","get_placeholder_review_manifest","verify_placeholder_visual_review"])assert(names.has(name));
   assert.equal(serviceMutations,0);
   const coverage=await call("verify_placeholder_coverage",{target:{compItemId:10,layerId:11}});assert(coverage.covered && coverage.eligible);assert(!coverage.artisticAccepted);
-  const build=await call("build_placeholder_visual_review_plan",request);assert(build.ok,JSON.stringify(build));assert.equal(build.plan.steps.length,6);assert(build.plan.steps.every(step=>names.has(step.tool)));assert.equal(serviceMutations,0);
+  const build=await call("build_placeholder_visual_review_plan",request);assert(build.ok,JSON.stringify(build));assert.equal(build.plan.steps.length,7);assert.deepEqual(build.plan.steps.at(-1),{tool:"get_project_info",args:{}});assert(build.plan.steps.every(step=>names.has(step.tool)));assert.equal(serviceMutations,0);
   const proposal=await withPanel(()=>post("/agents/plan/propose",{plan:build.plan}));assert(proposal.body.proposal,proposal.text);const preview=await withPanel(()=>post("/agents/plan/run",{actionId:proposal.body.proposal.actionId,dryRun:true}));assert(preview.body.run.ok,preview.text);assert.equal(serviceMutations,0);
   const accepted=await withPanel(()=>post("/placeholder/protection",{action:"accept"}));assert.equal(accepted.status,200,accepted.text);
   const action=proposal.body.proposal;
   const execution=await withPanel(()=>post("/agents/plan/run",{actionId:action.actionId,payloadHash:action.action.payloadHash,previewHash:action.action.previewHash,riskLevel:action.risk.level,riskPolicyVersion:action.confirmation.riskPolicyVersion,confirmationToken:action.confirmation.confirmationToken,confirmedBySurface:action.confirmation.surface,dryRun:false,confirm:true,allowMutations:true}));
+  assert.equal(execution.body.run.ok,true,JSON.stringify(execution.body.run.semanticVerification));assert.equal(execution.body.run.semanticVerification.status,"passed");assert(execution.body.run.semanticVerification.readBackCount>0);
   assert(execution.body.run,execution.text);const first=execution.body.run.steps[0];const created=first.result;assert(created && created.registered && created.owner,JSON.stringify(first));assert.equal(created.items.length,4);assert.equal(serviceMutations,1);assert.equal(project.read('child.numLayers+root.numLayers'),3);
   const acceptedAfter=await call("get_placeholder_protection");assert(acceptedAfter.drift[0].ok,JSON.stringify(acceptedAfter.drift));
   const usage=await call("get_placeholder_usage",{roots:[{compItemId:20}]});assert(usage.complete);assert.equal(usage.scope.excludedReviewItemIds.length,4);
-  assert.equal(execution.body.run.steps.length,6,execution.text);
+  assert.equal(execution.body.run.steps.length,7,execution.text);
   for(const step of execution.body.run.steps.slice(1,5)){assert(step.result.file.sha256 && step.result.resolutionFactor.restored);}
   const manifest=await call("get_placeholder_review_manifest",{owner:created.owner});assert.equal(manifest.manifest.frames.length,3);assert(manifest.manifest.frames.every(frame=>frame.image));assert(!JSON.stringify(manifest.manifest).includes("Synthetic/a.mp4"));assert.equal(manifest.inspectionReason,"inspection_images_outside_workspace");
   for(const change of ['target.startTime=0.1;','a.file.fsName="C:/Synthetic/relinked.mp4";','target.source=b;']){
