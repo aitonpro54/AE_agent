@@ -1,6 +1,6 @@
 # Этап 2: детерминированный монтажный конвейер
 
-Статус: **M1–M5 complete — offline acceptance**; M5 ограничен observed target affine stretch. Этап 3 и live приёмка не выполнялись.
+Статус: **M1–M5 complete — offline acceptance**; M5 ограничен observed target affine stretch. Этап 3 agy-bridge принят offline и scoped live; полная montage/root/canonical/visual live-приёмка остаётся открытой.
 Baseline для планирования: `codex/production-usage`, HEAD `50d5cd66014f4778f6e994dbd4ebe61e488111d8` (2026-10-02).
 Перед реализацией сверить текущие HEAD/status и основной [план](target-app-execplan.md); чужие изменения сохранять.
 Контракты: [монтаж](../docs/montage-workflow.md), [завершение поручения](../docs/ae-task-completion.md).
@@ -159,14 +159,38 @@ reconciliation/completion и независимые states, без нового 
   bounded/per-use/root_comp, но full graph и canonical capture binding дают явные
   blockers. Подробный контракт — [M5](../docs/montage-pipeline.md).
 
-## Отдельная будущая live приёмка
+## Текущий порученный root/canonical и bounded live scope — 3 октября 2026
 
-Только на следующем порученном монтаже: scenes/materials, один AE/CEP/UI controller;
+Пользователь разрешил исправить подтверждённые root-render/canonical capture gaps,
+создать isolated owned fixture и выполнить минимум три полных последовательных
+цикла. Клиентский AEP защищён; переключение, raw и save сохраняют штатные gates.
+До реализации требуется матрица requirement/code/offline/live/gap и явный whitelist
+полного contributing graph. Client complete/digest/timestamp не разрешают capture.
+
+Блоки: (1) свежий baseline и матрица; (2) native graph/canonical binding и offline
+negative regression; (3) fixture/runtime preflight; (4) три live цикла, invalidation,
+recovery и independent PNG review; (5) итоговые consumer verdicts и проверки.
+Бюджет live: три обязательных цикла, максимум пять попыток полных циклов; каждый
+не более 30 минут активного исполнения, суммарно 120 минут live. AGY поручение
+не более 1800 секунд. Human gate не считается исполнением и не означает approval.
+Стоп dependent branch при denial, unknown mutation, ownership conflict, drift,
+неполном graph/capture proof или deadline; сначала независимая сверка, без replay.
+Новый daemon/scheduler не добавляется. Исторические failures сохраняются.
+
+## Live приёмка
+
+В текущем явно порученном fixture scope: scenes/materials, один AE/CEP/UI controller;
 fresh inspect → approved manifest → bounded proposal/dry-run/run → read-back → просмотр affected frames → completion.
 Saved AEP, export/render и protected cleanup требуют своего применимого scope/gates.
 Измерять запуски/чтения/экспорты/bytes/time и local usage с coverage; absent = unknown. Offline fixtures не live proof.
 
 ## Progress
+
+- 2026-10-03, текущий scope: HEAD AE `2830493`, agy-bridge `7ea628f`, tracked
+  деревья чисты; чужие untracked сохранены. Runtime уже HEAD `2830493`, pid29924,
+  CEP Connected, pending/inflight0, edit session и current proposal отсутствуют.
+  Три установленных CEP файла совпадают SHA с repo. Typed project read показывает
+  клиентский AEP; он не используется как fixture. WORK_LOG.md ранее отсутствовал.
 
 - 2026-10-03: пользователь поручил M5 и выбрал affine stretch. Старт от `e72f838`,
   tracked baseline чистый; чужие untracked сохранены. Архитектура уточняет bounded
@@ -192,10 +216,16 @@ Saved AEP, export/render и protected cleanup требуют своего при
 - M4 checkpoint `e72f838`. M5 завершён: согласованные timing/usage/protection/framing/
   coverage/guard/readback/owner paths и additive stable-ID PNG/root packets;
   native200→stored reconciliation→M3 technical PASS, artisticfalse. Commit отдельный.
-- Этап3/live acceptance не выполнялись. Реальный manifest и художественная приёмка
-  подтверждаются отдельным поручением; текущий AEP в этой работе не использован.
+- На момент M5 этап3/live acceptance не выполнялись. Позднее этап3 принят только
+  в bridge scope (8 model runs, 7 accepted cases, 1 timeout unknown cause).
+  Это не montage/root/canonical/visual acceptance; текущий AEP в M5 не использован.
 
 ## Decision Log
+
+- 2026-10-03: уже принятый общий bridge не переделывается без подтверждённого gap.
+  Root/canonical контракт относится к AE Agent. Один архитектурный read-only
+  исполнитель; AE/CEP/UI controller — root. Реализация начинается после матрицы.
+  Unknown effort прошлых model runs остаётся null; timeout не повышается reconcile.
 
 - M5 выбран пользователем: bounded observed target-footage stretch25..400% сохраняется;
   route100/remapfalse и shared/protection gates прежние. Root/local/source endpoints
@@ -256,6 +286,14 @@ Saved AEP, export/render и protected cleanup требуют своего при
   live packet compatibility и замеры. M1/offline доступны; live readiness/экономия не установлены.
 
 ## Validation
+
+- 2026-10-03, свежий baseline: agy-bridge **100 tests PASS** (36,575 s); AE **17
+  выбранных npm suites PASS**, включая rules, montage M1–M5/summary/library/bridge,
+  response/completion/PNG и placeholder/recovery. Isolated autonomous-mcp FAIL
+  воспроизведён: `verification_required`, synthetic keyframe receipt/read-back
+  без stable IDs, assertion line258. Это известный baseline fixture gap; verifier
+  не ослаблен. Logs: `.codex-runtime/montage-acceptance-20261003/baseline/`.
+  Настоящее typed project read подтверждает connectivity; offline suites не live proof.
 
 - M5: affine38 pure + actual daemon/VM/official MCP native200 → stored M3 technical
   PASS/artisticfalse +78 negatives; legacy100 emitter +76 negatives/old expected absent;
