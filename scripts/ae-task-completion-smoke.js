@@ -112,6 +112,25 @@ try {
     json(metadataFile,{...metadata,request:{...metadata.request,expected_artifacts:[{path:"artifact.txt",scope:"workspace",check:"changed"}]}});
     const summary=build();assert.equal(summary.artifacts[0].status,"present");assert.equal(summary.artifacts[0].changed,null);assert(summary.blockers.some(b=>b.code==="artifact_change_not_proven"));json(metadataFile,metadata);
   });
+  test("bound bridge before/after proof and current match; tamper stays unknown",()=>{
+    const request={...metadata.request,expected_artifacts:[{path:"artifact.txt",scope:"workspace",check:"changed"}]};
+    const encode=value=>Array.isArray(value)?"["+value.map(encode).join(", ")+"]":value&&typeof value==="object"?"{"+Object.keys(value).sort().map(k=>JSON.stringify(k)+": "+encode(value[k])).join(", ")+"}":JSON.stringify(value);
+    const sha=digest(encode(request));
+    const common={schema:"agy-bridge-artifact-observation.v1",source:"bridge_disk",task_id:taskId,request_sha256:sha,scope:"workspace",path:"artifact.txt",root:workspace,resolved_path:path.join(workspace,"artifact.txt"),exists:true,error:null,proof_status:"observed"};
+    const before={...common,phase:"before",observed_at:1790856000.1,bytes:6,sha256:digest("before")};
+    const after={...common,phase:"after",observed_at:1790856000.9,bytes:16,sha256:digest("current artifact")};
+    const saved={...metadata,request,request_sha256:sha,executor_started_at:1790856000.5,artifact_observations:[{before,after,changed:true}]};
+    json(metadataFile,saved);assert.equal(build().artifacts[0].changed,true);assert.equal(build().completeTaskAcceptance,false);
+    for(const change of [{task_id:"other"},{request_sha256:"0".repeat(64)},{path:"other.txt"},{scope:"code"},{root:base},{resolved_path:path.join(base,"artifact.txt")},{sha256:"partial"},{error:"read_failure"},{observed_at:1790856000.8}]) {
+      json(metadataFile,{...saved,artifact_observations:[{before:{...before,...change},after,changed:true}]});assert.equal(build().artifacts[0].changed,null);
+    }
+    json(metadataFile,{...saved,request_sha256:"0".repeat(64)});assert.equal(build().artifacts[0].changed,null);
+    json(metadataFile,{...saved,artifact_observations:[{before:null,after,changed:true}]});assert.equal(build().artifacts[0].changed,null);
+    json(metadataFile,{...saved,artifact_observations:[{before,after:{...after,sha256:digest("tampered")},changed:true}]});assert.equal(build().artifacts[0].changed,null);
+    json(metadataFile,{...saved,artifact_observations:[{before:{...before,exists:false,bytes:null,sha256:null},after}]});assert.equal(build().artifacts[0].changed,true);
+    json(metadataFile,{...saved,artifact_observations:[{before:{...before,bytes:after.bytes,sha256:after.sha256},after,changed:true}]});assert.equal(build().artifacts[0].changed,false);
+    json(metadataFile,metadata);
+  });
   test("missing artifact and escaping workspace path",()=>{
     json(metadataFile,{...metadata,request:{...metadata.request,expected_artifacts:[{path:"missing.txt",scope:"workspace",check:"exists"}]}});
     assert.equal(build().artifacts[0].status,"missing");

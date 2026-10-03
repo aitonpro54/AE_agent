@@ -120,6 +120,11 @@ evidence остаётся целиком локально. Зафиксиров�
 
 ## Progress
 
+2026-10-03: R1.5 реализован в agy-bridge; persisted before до spawn и after
+включая failure, request/path binding, full SHA с 16 MiB/file, 64 MiB/phase и
+2 s deadline. AE consumer сверяет обе фазы и текущий файл; legacy changed:null.
+Compact/pages и report остаются следующим блоком. R3.4 consumer адаптация готова.
+
 - [x] План подготовлен; существующий аудит и границы клиентской сводки учтены.
 - [ ] R1 — диагностика и доказуемые artifact snapshots.
 - [ ] R2 — process lifecycle и read-only reconciliation.
@@ -136,6 +141,11 @@ R3.1–3: atomic scopes/conversation и exact token существуют; reques
 
 ## Decision Log
 
+2026-10-03: persisted artifact evidence локальное и неподписанное; hash/binding
+предотвращают смешение snapshot, не доказывают доверенность полностью
+переписанного state. Windows stat/fstat ctime сравнивается внутри одной API.
+Transport/native/technical/visual acceptance не объединяются.
+
 2026-10-03: существующую реализацию не повторяем. Блоки: baseline/карта gaps;
 persisted bounded artifact proof и AE consumer; read-only compact/report и
 оставшиеся lifecycle/ownership contracts. Чужие untracked AE-файлы сохраняются.
@@ -147,6 +157,10 @@ AE root-render/canonical capture blockers.
 Этап 2 не ждёт R3. Persist before proof предлагается впервые, не объявлен готовым.
 
 ## Validation
+
+2026-10-03, artifact block: **89 bridge tests PASS** (29,231 s), **24 AE offline
+groups PASS**, реальный Python state прочитан настоящим AE consumer; py_compile,
+node --check, check:rules и git diff --check PASS. Live/model/AE calls отсутствуют.
 
 2026-10-03: свежий baseline **80 tests PASS** (26,223 с); AE offline completion
 **23 groups PASS**, check:rules и diff checks PASS. Python не менялся.

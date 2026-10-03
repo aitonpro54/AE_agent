@@ -107,6 +107,40 @@ function observeArtifact(artifact, options, observedAt) {
   }
   return observation;
 }
+// Match the existing Python request_sha256 encoding (sorted keys, UTF-8,
+// default JSON separators). This validates binding, not hostile state authorship.
+function requestEncoding(value) {
+  if (Array.isArray(value)) return "[" + value.map(requestEncoding).join(", ") + "]";
+  if (value && typeof value === "object") return "{" + Object.keys(value).sort().map(k => JSON.stringify(k) + ": " + requestEncoding(value[k])).join(", ") + "}";
+  return JSON.stringify(value);
+}
+function applyArtifactProof(observation, expected, metadata, options) {
+  if (observation.status !== "present") return;
+  const pairs = metadata.artifact_observations;
+  if (!Array.isArray(pairs) || pairs.length !== metadata.request.expected_artifacts.length) return;
+  const matching = pairs.filter(p => p && p.before && p.before.scope === expected.scope && p.before.path === expected.path);
+  if (matching.length !== 1) return;
+  const {before,after} = matching[0], requestSha = hash(Buffer.from(requestEncoding(metadata.request),"utf8"));
+  if (metadata.request_sha256 !== requestSha || !before || !after) return;
+  const started = metadata.executor_started_at, finished = metadata.finished_at;
+  if (!Number.isFinite(metadata.started_at) || !Number.isFinite(started) || !Number.isFinite(finished) || finished < started) return;
+  let real;
+  try {real = records.containedFile(options.workspace,path.join(options.workspace,expected.path));} catch (_) {return;}
+  for (const [phase,proof] of [["before",before],["after",after]]) {
+    if (proof.schema !== "agy-bridge-artifact-observation.v1" || proof.source !== "bridge_disk" || proof.phase !== phase ||
+        proof.task_id !== metadata.task_id || proof.request_sha256 !== requestSha || proof.scope !== expected.scope || proof.path !== expected.path ||
+        proof.root !== path.resolve(options.workspace) || proof.resolved_path !== real || proof.proof_status !== "observed" || proof.error !== null ||
+        typeof proof.exists !== "boolean" || !Number.isFinite(proof.observed_at) || proof.observed_at < metadata.started_at || proof.observed_at > finished) return;
+    if (proof.exists ? !HASH.test(proof.sha256) || !Number.isSafeInteger(proof.bytes) || proof.bytes < 0 || proof.bytes > ARTIFACT_LIMIT : proof.sha256 !== null || proof.bytes !== null) return;
+  }
+  if (before.observed_at > started || after.observed_at < started || before.observed_at > after.observed_at ||
+      after.exists !== true || after.sha256 !== observation.sha256 || after.bytes !== observation.bytes) return;
+  observation.changed = before.exists !== after.exists || before.bytes !== after.bytes || before.sha256 !== after.sha256;
+  observation.changeStatus = observation.changed ? "proven_recorded_before_after_current_match" : "proven_unchanged_current_match";
+  observation.changeSource = "recorded_bridge_disk_observations";
+  observation.beforeObservedAt = timestamp(before.observed_at);
+  observation.afterObservedAt = timestamp(after.observed_at);
+}
 function aggregate(statuses, order, absent) {
   if (!statuses.length) return absent;
   for (const state of order) if (statuses.includes(state)) return state;
@@ -229,9 +263,10 @@ function buildTaskCompletion(input, options) {
     for (const expected of saved.metadata.request.expected_artifacts) {
       try {
         const artifact = observeArtifact(expected,options,generatedAt);
+        applyArtifactProof(artifact,expected,saved.metadata,options);
         artifacts.push(artifact);
         if (artifact.status !== "present") block(artifact.errorCode || "artifact_missing","current_disk",artifact.path);
-        else if (artifact.expectedCheck === "changed") block("artifact_change_not_proven","current_disk",artifact.path);
+        else if (artifact.expectedCheck === "changed" && artifact.changed !== true) block("artifact_change_not_proven","current_disk",artifact.path);
       } catch (error) {block(error.code || "artifact_invalid","recorded_task_request");}
     }
     if (transport.status !== "completed" || transport.taskStatus !== "success" || transport.terminalResultSeen !== true || transport.terminalResultValid !== true || transport.schemaValid !== true) block("transport_not_verified_complete","recorded_transport");

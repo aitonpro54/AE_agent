@@ -84,3 +84,14 @@ unknown; расход отдельно читается разрешёнными
 изолированном файловом fixture: ошибки транспорта при выполненных native plans,
 unknown/partial/incomplete, hashes/bindings/containment, артефакты и декларации
 PNG. Хеши fixture до и после подтверждают read-only поведение. Это offline proof.
+
+## Дополнение этапа 3 agy-bridge (2026-10-03)
+
+`changed` может быть доказан persisted парой `agy-bridge-artifact-observation.v1`:
+consumer проверяет hash исходного request, task/scope/path/root/realpath, фазу,
+времена before/spawn/after/finish, полный SHA и свежий файл, совпавший с after.
+Missing before, частичный SHA, чужой binding и read errors оставляют changed:null.
+Наблюдавшийся отсутствующий файл до запуска может доказать создание. Утверждение
+`changed` в metadata не используется без проверки пары. State остаётся локальным
+неподписанным evidence; проверка не защищает от полной злонамеренной перезаписи.
+Timeout/failed и независимая native/visual acceptance не повышаются.
