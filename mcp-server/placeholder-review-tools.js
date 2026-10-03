@@ -5,6 +5,22 @@ const range={type:"array",minItems:2,maxItems:2,items:{type:"number"}};
 const sample={type:"object",additionalProperties:false,required:["rootTime","targetTime","sourceTime","roles"],properties:{rootTime:{type:"number"},targetTime:{type:"number"},sourceTime:{type:"number"},roles:{type:"array",minItems:1,maxItems:4,items:{enum:["first","middle","last","shot"]}}}};
 const reviewTarget={type:"object",additionalProperties:false,required:["rootCompItemId","target","samples"],properties:{rootCompItemId:id,target,routeLayerIds:{type:"array",maxItems:16,items:id},viewKinds:{type:"array",minItems:1,maxItems:3,items:{enum:["source","target_comp","root_comp"]}},samples:{type:"array",minItems:1,maxItems:24,items:sample}}};
 const reviewInput={type:"object",additionalProperties:false,oneOf:[{required:["targets"]},{required:["applicationRunId"]},{required:["applicationRunIds"]}],properties:{targets:{type:"array",minItems:1,maxItems:4,items:reviewTarget},applicationRunId:{type:"string",pattern:"^[0-9a-fA-F-]{36}$"},applicationRunIds:{type:"array",minItems:1,maxItems:4,uniqueItems:true,items:{type:"string",pattern:"^[0-9a-fA-F-]{36}$"}},frameIds:{type:"array",minItems:1,maxItems:24,uniqueItems:true,items:{type:"string",maxLength:128}}}};
+const codexUuidPattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+const codexReviewRef={type:"object",additionalProperties:false,required:["threadId","turnId"],properties:{threadId:{type:"string",pattern:codexUuidPattern},turnId:{type:"string",pattern:codexUuidPattern}}};
+function visualReviewSelector(args){
+ const fail=code=>{const error=new Error(code);error.code=code;throw error;};
+ const selectors=["inspectionRunId","inspectionRunIds","codexReviews"],own=key=>Object.prototype.hasOwnProperty.call(args,key),present=selectors.filter(own);
+ if(own("codexReview"))fail("unsupported_inspection_selector");
+ if(present.includes("codexReviews") && present.some(key=>key!=="codexReviews"))fail("mixed_inspection_selectors_forbidden");
+ if(present.length!==1)fail("explicit_unique_inspection_runs_required");
+ if(Object.keys(args).some(key=>!["owner",...selectors].includes(key)))fail("client_evidence_paths_forbidden");
+ if(present[0]!=="codexReviews")return {kind:"agy"};
+ const refs=args.codexReviews,uuid=new RegExp(codexUuidPattern);
+ if(!Array.isArray(refs) || refs.length<1 || refs.length>8)fail("explicit_unique_inspection_runs_required");
+ for(const ref of refs)if(!ref || typeof ref!=="object" || Array.isArray(ref) || Object.keys(ref).some(key=>!["threadId","turnId"].includes(key)) || typeof ref.threadId!=="string" || typeof ref.turnId!=="string" || !uuid.test(ref.threadId) || !uuid.test(ref.turnId))fail("codex_review_reference_invalid");
+ if(new Set(refs.map(ref=>ref.threadId.toLowerCase()+":"+ref.turnId.toLowerCase())).size!==refs.length)fail("explicit_unique_inspection_runs_required");
+ return {kind:"codex",refs};
+}
 const tools=[
  {name:"get_montage_root_render_state",description:"Bounded read-only native full root graph and diagnostic host getRenderGUID calls at exact requested root/source mapped times. No refresh, mutation or completion authority. Missing thread/getter/GUID remains blocked diagnostic.",inputSchema:{type:"object",additionalProperties:false,required:["rootCompItemId","rootTimes"],properties:{rootCompItemId:id,rootTimes:{type:"array",minItems:1,maxItems:24,uniqueItems:true,items:{type:"number",minimum:0}}}}},
  {name:"reload_montage_material_source",description:"Explicit gated native FileSource.reload for a server-stored successful montage application and its complete owned direct usedIn consumers. Fresh full bytes/native metadata bracket plus independent read-back establish a source load epoch; unknown results never replay.",inputSchema:{type:"object",additionalProperties:false,required:["applicationRunIds","sourceItemId"],properties:{applicationRunIds:{type:"array",minItems:1,maxItems:32,uniqueItems:true,items:{type:"string",pattern:"^[0-9a-fA-F-]{36}$"}},sourceItemId:id}}},
@@ -14,6 +30,6 @@ const tools=[
  {name:"build_placeholder_visual_review_plan",description:"Build a typed ordinary-runner plan creating owner-registered live-link control comps and a contain contact sheet, exporting native PNGs and reading a pinned inspection manifest. No project mutation at build time.",inputSchema:reviewInput},
  {name:"create_placeholder_review_comps",description:"Create separate one-frame live-link controls/sheet for fresh video targets. Server generates UUID ownership, verifies actual receipts and registers only proven item IDs. Ordinary mutation/confirmation gates apply.",inputSchema:reviewInput},
  {name:"get_placeholder_review_manifest",description:"Read freshly verified owner artifacts and generated PNG hashes, produce compact opaque-source manifest and pinned read-only inspection material. Does not dispatch a provider.",inputSchema:{type:"object",additionalProperties:false,required:["owner"],properties:{owner:{type:"string"}}}},
- {name:"verify_placeholder_visual_review",description:"Verify all deterministic batches from official completed ae-agent inspect runs, pinned manifest/images, actual paired view_file events and concrete per-sample observations. Client flags/subset runs never grant owner-wide acceptance.",inputSchema:{type:"object",additionalProperties:false,required:["owner"],properties:{owner:{type:"string"},inspectionRunId:{type:"string"},inspectionRunIds:{type:"array",minItems:1,maxItems:8,items:{type:"string"}}}}}
+ {name:"verify_placeholder_visual_review",description:"Verify complete deterministic owner batches from official completed ae-agent inspect runs or Codex thread/turn UUID refs. Requires full pinned manifest delivery, actual native image bytes/views and concrete official per-sample observations; subset runs and client evidence flags cannot grant acceptance.",inputSchema:{type:"object",additionalProperties:false,required:["owner"],oneOf:[{required:["inspectionRunId"]},{required:["inspectionRunIds"]},{required:["codexReviews"]}],properties:{owner:{type:"string"},inspectionRunId:{type:"string"},inspectionRunIds:{type:"array",minItems:1,maxItems:8,items:{type:"string"}},codexReviews:{type:"array",minItems:1,maxItems:8,items:codexReviewRef}}}}
 ];
-module.exports={tools,reviewInput};
+module.exports={tools,reviewInput,visualReviewSelector};
