@@ -240,3 +240,55 @@ Native/file faults — реальные own fixtures; exact current positives д
 sheet1457 actual native probes→production root validator blocked. Process hangs/exit/
 pipes/PID/locks ранее проверены100real process fixtures. Runtime acc2a81/source1ef894bc
 сохраняется; docs commit не подменяет identity loaded daemon. Third cycle открыт.
+
+
+## 2026-10-03 — финальная scoped montage live-приёмка
+
+### Progress
+
+Все3/3полных последовательных циклов приняты. Third application runs c063c1f5/
+6018ae9a/937dd9eb и capture2396b208-7cdb-400c-87b3-eaaeb2afdf60:34steps,
+89checks,readBackCount1,27fresh native PNG. Flash3/terminal/schema/artifacts/
+toolincidents0; owner18+9 artisticaccepted; M3 technical3 иcompletion3 PASS.
+Итого9units/M3,81sampled PNG,9official inspection packets плюс1correction,
+9production completion summaries. Stage1–3 supported root/canonical gaps закрыты.
+
+Exact29first-cycle review comps удалены штатным CEP по explicit action-time
+подтверждению: abb286b5-0849-4834-bf97-bbc0d0847361, independent29absent/original10
+present. Все PNG иimmutable records сохранены. Снижение inventory сохранило
+record16MiB cap; final record15,193,775bytes. Fixture saved5,294,240bytes,
+SHA0aebdd44f0408d13f36aa834da4d99d3f13999c78b5b106c0cfd97125a66bb24,68items.
+Final save→native project/sourceEpoch/owner18+9 PASS. CEP usable/docked,
+подтверждённые операции прошли через panel; client AEP/foreign files не менялись.
+
+### Decision Log
+
+Source bytes exact restored не подменяют decoder epoch: readonly remainunproven→
+typed reload2197b62a→fresh compilation/application→third complete capture accepted.
+Старые failures/unknown иfirst visual lexical rejection сохранены; mutationне
+replay. Parent first27PNG fully viewed, later9current representatives плюс27fullSHA
+equality; независимый Flash каждый цикл фактически viewed JSON/sheet/all27PNGs.
+M3 artisticallyfalse, completioncompleteTaskAcceptancefalse/machineProofOfViewingfalse
+иprovided_run_ids_only сохраняются; ownerAPI устанавливает sampled visual scope.
+Границы: static2D prepared moving FileSource;25..400positive targetstretch,
+route100/remapfalse; native100/125/200/fractional samples, rendererexacthost26.2x49.
+Unknown/effectful/shared writes остаются blocked; другие hosts/interframe artistry/
+final movie/audio render не заявлены. Effortunknown/null, token/subscription savings
+не выдуманы. Shared bridge/VideoScout checkpoints unchanged.
+
+### Validation
+
+Bridge100actual unit/process tests PASS, current AE17groups PASS; new root/canonical/
+owner/packing/visual/semantic/recovery counters PASS ранее зафиксированы. Current27
+product modules sourceSHA совпадает с loaded runtimeacc2a81/1ef894bc после docs commits.
+Final real negatives: PNGtamper/truncation/hash, target/root drift+inverse restore,
+material fullSHA/epoch invalidation, stale/raw/foreign bindings, cached replay,
+deleted ID, outPoint/wrongkind/TextLayer graph; failures block dependent steps.
+Generic failed ownership/cache reconciliation сохраняет unknown/insufficient без
+retry; independent files/position reads сохранены. Applied bootstrap/reload/failed
+partial steps independently reconciled; failed/timeout history не повышена.
+Full workflow seconds1010,029/1292,134/1281,331 (each<1800); measured fullattempt
+workflows4534,6 (limit7200), AGY1390,487 (limit1800), attempts5/accepted3.
+Evidence: .codex-runtime/montage-acceptance-20261003/acceptance-summary.json.
+Known baseline autonomous keyframe fixture gap остаётся isolatedoffline; verifier
+не ослаблен. Финальные rules/diff checks обязательны перед commit.
