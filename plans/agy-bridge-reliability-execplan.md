@@ -1,6 +1,6 @@
 # Этап 3 — завершение и восстановление поручений agy-bridge
 
-Статус: план подготовлен 2 октября 2026, реализация не начата.
+Статус: 3 октября 2026 — baseline сверён, оставшийся offline scope в работе.
 Целевой репозиторий: `C:/Users/Ant/Documents/Codex/agy-bridge`.
 Документ хранится в AE Agent как связанный roadmap; общий код меняется только
 в целевом репозитории после отдельного поручения на этот этап.
@@ -16,9 +16,10 @@
 на baseline code278296f, docsbe1a3b0; сверить свежий HEAD перед реализацией.
 Повторный сбор всей истории и новый live demo для старта не нужны.
 
-Подтверждённые пробелы: preflight теряет причину; status выдаёт сохранённый
-snapshot; tool/protocol errors объединены; `no output produced` ошибочно может
-означать denial; нет ресурсного lock. Причина сетевых reset/EOF не установлена.
+Исторические пробелы диагностики, process identity, tool/protocol errors,
+denial и resource lock уже закрыты `d804665`/`05d0d53`. Остались persisted
+artifact observations, opt-in compact/paged diagnostics, read-only report и
+точечная проверка lifecycle/ownership/consumer contracts. Причина reset/EOF не установлена.
 Улучшение наблюдаемости не обещает устранить внешние сеть, OAuth или квоту.
 
 AE Agent уже имеет read-only `ae-task-completion` и paged native evidence.
@@ -124,13 +125,31 @@ evidence остаётся целиком локально. Зафиксиров�
 - [ ] R2 — process lifecycle и read-only reconciliation.
 - [ ] R3 — ownership, lock и совместимость клиентов.
 
+2026-10-03: сопоставление R1–R3 на `agy-bridge 05d0d53`, AE `8560e0d`:
+R1.1–4 существуют (preflight не резервирует task ID; причины возвращаются без
+state, это сохраняемый контракт). R1.5: before только в памяти, SHA чтение
+не ограничено — требуется реализация. R2.2–3/5: identity, deadline, quarantine
+существуют; last public event неполон, R2.1/4 и compact/pages отсутствуют.
+R3.1–3: atomic scopes/conversation и exact token существуют; request hash пока
+только в state. R3.4: старый consumer всегда возвращает changed:null; нужна
+минимальная адаптация и offline fixtures. Общий код только в agy-bridge.
+
 ## Decision Log
+
+2026-10-03: существующую реализацию не повторяем. Блоки: baseline/карта gaps;
+persisted bounded artifact proof и AE consumer; read-only compact/report и
+оставшиеся lifecycle/ownership contracts. Чужие untracked AE-файлы сохраняются.
+Нет вызовов моделей, AE, VideoScout, auth/network изменений или закрытия
+AE root-render/canonical capture blockers.
 
 2026-10-02: общий bridge реализуется отдельным scope в своём repo. Сначала
 наблюдаемость; текущая strict acceptance не ослабляется ради completed counts.
 Этап 2 не ждёт R3. Persist before proof предлагается впервые, не объявлен готовым.
 
 ## Validation
+
+2026-10-03: свежий baseline **80 tests PASS** (26,223 с); AE offline completion
+**23 groups PASS**, check:rules и diff checks PASS. Python не менялся.
 
 При подготовке прочитаны актуальные contracts/code и existing audit; общий
 Python-код, runtime и конфигурация не менялись. 39 tests PASS в аудитном отчёте
