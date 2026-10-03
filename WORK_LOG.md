@@ -197,3 +197,46 @@ Application3 semantic/reconciliation/M3 PASS; capture34native/89semantic PASS,un
 owner visual27frames PASS; paired actual JSON/sheet/fullPNG view_file, concrete
 observations и pins проверены сервером. Completion3 PASS, bounded files/evidence
 проверены production consumer. Second/third cycles и оставшиеся negatives открыты.
+
+
+## 2026-10-03 — второй live цикл и реальные faults
+
+### Progress
+
+Cycle-final-2 принят: eae4b81b-6ca5-4bc7-bb75-19e8064439bd,3applications/M3,
+34capture steps/89checks/readBackCount1,27fullPNG и3Flash packets accepted,
+ownerAPI18+9 и completion3 PASS. Native813,336s, apps181,204s, Flash283,563s,
+visual14,031s; measured workflows1292,134s. Parent9representative PNG viewed;
+27fullSHA совпали с ранее полностью просмотренными кадрами. Все27 заново просмотрены
+независимым Flash с текущими JSON/PNG pins; native freshness проверена отдельно.
+
+Реальные PNG tamper/truncation→review_image_hash_changed; exact restore→fresh PASS.
+RootC+1px→canonical_route_changed и targetA+1px→canonical_target_final_state_changed;
+отдельные обратные typed actions→fresh current manifest PASS после каждого.
+MaterialA+4bytes→canonical_capture_stale_contributing_file и epoch unproven.
+Exact original bytes восстановлены, timestamps/epoch не подделаны; epoch остался
+unproven. Fresh source-bound application9b9201c6→typed reload2197b62a-22a8-4e2c-89a0-d12309825b94
+→independent native source epoch PASS. Third full cycle проверит конечное recovery.
+
+### Decision Log
+
+Ownership/cached fault plans rejected executed0: f4b7408f и39f20097,
+review_export_requires_exact_registered_native_frame/root_png_replay_requires_fresh_capture.
+Dependent setter не достигнут, native position320/180/0 и отсутствие foreign PNG
+независимо сверены. Generic reconcile сохраняет conservative unknown/insufficient;
+исторические statuses не переписаны и replayAllowedfalse, failures не повышены.
+Code/receipt опровергли предположение о cloned footage targets: controls добавляют
+existing root CompItem; FileSource2 direct usedIn остаётся exact own target5.
+Не требуется cleanup ради reload. Но native record вырос11,913,360→15,184,540bytes;
+следующий без уменьшения project inventory рискует лимитом16MiB. Подготовлен
+exact29 cleanup first accepted cycle; все PNG/immutable evidence сохраняются.
+Checkpoint before-cleanup29-cycle1.aep5,294,240bytes,
+SHA0d42f9ad0bef99ca9a0a190d876300c337f74dba7212e78499f80d5704f54824.
+
+### Validation
+
+Native/file faults — реальные own fixtures; exact current positives до faults,
+обратные actions и independent read-back после них. Deleted83 и current TextLayer
+sheet1457 actual native probes→production root validator blocked. Process hangs/exit/
+pipes/PID/locks ранее проверены100real process fixtures. Runtime acc2a81/source1ef894bc
+сохраняется; docs commit не подменяет identity loaded daemon. Third cycle открыт.

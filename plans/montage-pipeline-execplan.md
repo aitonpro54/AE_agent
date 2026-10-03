@@ -186,6 +186,13 @@ Saved AEP, export/render и protected cleanup требуют своего при
 
 ## Progress
 
+- Второй live цикл принят (2/3): eae4b81b-6ca5-4bc7-bb75-19e8064439bd;
+  units3/M3/34native/89checks/27owner visuals/completion3 PASS. Реальные PNG faults,
+  cached replay, owner conflict/dependent stop и root/target/material invalidation
+  выполнены; bytes restored не повышали decoder epoch. Typed reload2197b62a PASS.
+  Перед последним циклом требуется exact29 owned cleanup для лимита record16MiB;
+  checkpoint5,294,240bytes/0d42f9ad сохранён, action-time approval pending.
+
 - 2026-10-03: первый полный live цикл независимо принят (1/3): 3 units,
   27 root PNG, 34 capture steps, 89 checks, fresh owner visual18+9 PASS,
   3 M3 technical PASS и 3 completion technical/declared_visual PASS. Runtime
@@ -319,7 +326,8 @@ Saved AEP, export/render и protected cleanup требуют своего при
   но readBackCount0. Builder genuine project summary исправлен; legacy full runner
   PASS. Exact48owned cleanup выполнен с checkpoint и независимым native read.
   Первый accepted cycle:8b41b9ca-411e-40f0-af6d-6513de025e66, полный scope27frames;
-  два следующих цикла/оставшиеся negatives открыты; historical failed status не повышен.
+  второй цикл eae4b81b также принят; target/root/PNG/material faults блокируются,
+  bytes restored→typed reload2197b62a→fresh epoch PASS; третий цикл открыт; historical failed status не повышен.
   Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
   model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 
