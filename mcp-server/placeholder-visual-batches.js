@@ -2,6 +2,7 @@
 // Bounded evidence batches reuse the existing review validator and dispatcher.
 const { hash } = require("./placeholder-review-service");
 const { inspectionMaterial, verifyVisualReview } = require("./placeholder-visual-review");
+const { verifyCodexVisualReviewBatches } = require("./codex-visual-evidence");
 function invalid(code) { const error=new Error(code);error.code=code;throw error; }
 function buildInspectionBatches(manifest,options={}) {
   if (!manifest || !Array.isArray(manifest.frames)) invalid("review_manifest_frames_missing");
@@ -43,4 +44,4 @@ function verifyVisualReviewBatches(manifest,runs,options={}) {
   return {ok:true,status:accepted?"accepted_sampled_frames":"rejected_sampled_frames",artisticAccepted:accepted,observations,batchResults,
     manifestSha256:built.baseManifestSha256,coverage:{reviewedFrames:observations.length,expectedFrames:observations.length},limits:manifest.limits};
 }
-module.exports={buildInspectionBatches,verifyVisualReviewBatches};
+module.exports={buildInspectionBatches,verifyVisualReviewBatches,verifyCodexVisualReviewBatches};

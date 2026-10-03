@@ -33,15 +33,26 @@
    `inspectionMaterials` разбивает большой набор на части до десяти control
    frames плюс лист. Каждая часть имеет свой manifest pin и уникальный task ID;
    service objects создаются один раз. Все части относятся к одному owner.
-7. Проверить `verify_placeholder_visual_review` по owner и inspectionRunId.
-   Конкретные observations сервер читает из официального ответа Flash;
-   он сверяет фактические view_file call/result
-   пары и manifest identities. PNG, viewed=true и SUCCESS не заменяют просмотр.
+7. Проверить `verify_placeholder_visual_review` по owner и селектору:
+   для AGY — `inspectionRunId` / `inspectionRunIds`; для Codex —
+   `codexReviews:[{threadId, turnId}]`. Смешанные селекторы отклоняются.
+   Для Codex сервер разрешает UUID в официальном корне сессий, проверяет
+   полную фактическую доставку canonical JSON до картинок и совпадение
+   plaintext pin, если он доступен. SHA, путь или обрезанный JSON недостаточны.
+   Бюджет внешнего functions.exec должен вместить полное тело manifest.
+   Проверяются мультимножество
+   ImageView и оригинальных PNG вложений (по байтам, SHA, размерам),
+   завершённый turn и официальный JSON финал с last_agent_message.
+   Конкретные observations сервер читает из официального ответа Flash/Codex;
+   он сверяет фактические view_file call/result пары (для AGY) либо
+   независимые полные мультимножества ImageView + original attachments
+   (для Codex) и manifest identities. Финал следует за всеми PNG.
+   PNG, viewed=true и SUCCESS не заменяют просмотр.
    Нечитаемая ячейка требует просмотра отдельного control frame. Заключение
    относится только к просмотренным временам; промежутки остаются неизвестными.
-   Для нескольких частей передать полный `inspectionRunIds`. Отсутствующий
-   просмотр, повторный run, изменившийся hash или неполный набор не дают общей
-   приёмки. Client observations не подменяют outputs официальных запусков.
+   Для нескольких частей передать полный `inspectionRunIds` или `codexReviews`.
+   Отсутствующий просмотр, повторный run, изменившийся hash или неполный набор
+   не дают общей приёмки. Client observations не подменяют outputs официальных запусков.
 8. После пользовательской приёмки зафиксировать плейсхолдер через CEP.
    Удалить service objects существующим `cleanup_test_items` с точными itemIds,
    owner и confirm. Ownership/read-back и отсутствие внешних dependents обязательны.

@@ -127,6 +127,21 @@ function parseViewEvidence(state,events){
  if(model!=="gemini-3.8-flash-high" || active.size)return {ok:false,reason:"inspection_model_or_completion_unverified",viewed:[]};
  return {ok:true,viewed:[...viewed]};
 }
+function validateReviewOutputs(manifest,rawOutputs){
+ if(!Array.isArray(rawOutputs))return {ok:false,reason:"inspection_response_invalid"};
+ const observations=[];
+ for(const item of rawOutputs){
+  if(typeof item==="string"){try{const parsed=JSON.parse(item);if(!parsed || typeof parsed!=="object" || Array.isArray(parsed))return {ok:false,reason:"concrete_structured_observations_required"};observations.push(parsed);}catch(_error){return {ok:false,reason:"concrete_structured_observations_required"};}}
+  else return {ok:false,reason:"concrete_structured_observations_required"};
+ }
+ const frames=manifest.frames.filter(frame=>frame.viewKind!=="source");
+ if(observations.length!==frames.length || new Set(observations.map(value=>value.frameId)).size!==frames.length)return {ok:false,reason:"observation_sample_count_mismatch"};
+ for(const frame of frames){const observed=observations.find(value=>value.frameId===frame.frameId);
+  if(!observed || !["safe","reject"].includes(observed.decision) || typeof observed.observation!=="string" || observed.observation.trim().length<30 || observed.observation.length>2000 ||
+   !/(голов|человек|люд|фигур|лиц|head|person|people|face|subject)/i.test(observed.observation) || !/(границ|кра[йя]|отступ|верх|низ|слева|справа|обрез|поля по (?:четыр[её]м|всем) сторонам|edge|margin|top|bottom|left|right|crop)/i.test(observed.observation))return {ok:false,reason:"concrete_sample_observation_required"};}
+ const accepted=observations.every(value=>value.decision==="safe");
+ return {ok:true,accepted,observations};
+}
 function verifyVisualReview(manifest,state,events,response){
  const pending=(reason)=>({ok:false,status:"insufficient_material",reason,limits:manifest.limits,artisticAccepted:false});
  const proof=parseViewEvidence(state,events);if(!proof.ok)return pending(proof.reason);
@@ -141,13 +156,10 @@ function verifyVisualReview(manifest,state,events,response){
  if(material.manifestReference && !proof.viewed.includes(resolved(material.manifestReference.path)))return pending("actual_manifest_view_missing");
  if(material.requiredInputs.some(input=>!proof.viewed.includes(resolved(input.path))))return pending("actual_image_view_missing");
  if(!response || response.status!=="success" || !Array.isArray(response.outputs))return pending("inspection_response_invalid");
- const observations=[];for(const text of response.outputs){try{observations.push(JSON.parse(text));}catch(_error){return pending("concrete_structured_observations_required");}}
- const frames=manifest.frames.filter(frame=>frame.viewKind!=="source");
- if(observations.length!==frames.length || new Set(observations.map(value=>value.frameId)).size!==frames.length)return pending("observation_sample_count_mismatch");
- for(const frame of frames){const observed=observations.find(value=>value.frameId===frame.frameId);
-  if(!observed || !["safe","reject"].includes(observed.decision) || typeof observed.observation!=="string" || observed.observation.trim().length<30 || observed.observation.length>2000 ||
-   !/(голов|человек|люд|фигур|лиц|head|person|people|face|subject)/i.test(observed.observation) || !/(границ|кра[йя]|отступ|верх|низ|слева|справа|обрез|edge|margin|top|bottom|left|right|crop)/i.test(observed.observation))return pending("concrete_sample_observation_required");}
- const accepted=observations.every(value=>value.decision==="safe");
+ const validated=validateReviewOutputs(manifest,response.outputs);
+ if(!validated.ok)return pending(validated.reason);
+ const observations=validated.observations;
+ const accepted=validated.accepted;
  return {ok:true,status:accepted ? "accepted_sampled_frames" : "rejected_sampled_frames",artisticAccepted:accepted,observations,manifestSha256:material.manifestSha256,
   provenance:{conversationId:state.conversation_id,taskId:state.task_id,actualViewedImages:material.requiredInputs.length-(material.manifestReference ? 1 : 0),
    ...(material.manifestReference ? {manifestFile:material.manifestReference,actualManifestView:true} : {})},limits:manifest.limits};
@@ -159,4 +171,4 @@ function readInspectionRun(taskId,stateDirectory){
  const lines=read(".ndjson",4*1024*1024).trim().split(/\r?\n/);if(lines.length>10000)fail("inspection_event_budget");
  return {state,events:lines.map(line=>JSON.parse(line)),response:JSON.parse(read(".response.json",256*1024))};
 }
-module.exports={readImage,buildManifest,inspectionMaterial,parseViewEvidence,verifyVisualReview,readInspectionRun,MAX_INSPECTION_INSTRUCTIONS,MAX_MANIFEST_BYTES};
+module.exports={readImage,buildManifest,inspectionMaterial,parseViewEvidence,validateReviewOutputs,verifyVisualReview,readInspectionRun,MAX_INSPECTION_INSTRUCTIONS,MAX_MANIFEST_BYTES};

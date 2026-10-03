@@ -13607,6 +13607,10 @@ async function callTool(name, args, executionContext) {
       const manifest=placeholderVisualReview.buildManifest(fresh.record,GENERATED_EXPORT_DIR);
       if(canonicalValidation){manifest.canonicalCoverage=canonicalValidation.coverage;manifest.completeRootRenderState=canonicalValidation.completeRootRenderState;}
       if(name==="verify_placeholder_visual_review") {
+        const selector = placeholderReviewTools.visualReviewSelector(args);
+        if (selector.kind === "codex") {
+          return toolResult(placeholderVisualBatches.verifyCodexVisualReviewBatches(manifest, selector.refs));
+        }
         const config=JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT,"config","agy-bridge.json"),"utf8"));
         const profile=config.profiles && config.profiles["ae-agent"];
         if(!profile || profile.model!=="gemini-3.8-flash-high" || typeof profile.state_dir!=="string")throw placeholderError("inspection_profile_unconfigured");
