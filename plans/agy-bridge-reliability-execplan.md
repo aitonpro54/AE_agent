@@ -1,10 +1,11 @@
 # Этап 3 — завершение и восстановление поручений agy-bridge
 
-Статус: 3 октября 2026 — R1–R3 завершены и приняты offline.
+Статус: 3 октября 2026 — R1–R3 приняты offline и scoped live.
 Целевой репозиторий: `C:/Users/Ant/Documents/Codex/agy-bridge`.
 Документ хранится в AE Agent как связанный roadmap; общий код меняется только
-в целевом репозитории по отдельному поручению на этот этап. Live acceptance
-и оставшиеся AE root-render/canonical capture blockers сюда не входят.
+в целевом репозитории по отдельному поручению на этот этап. Scoped live acceptance
+разрешена отдельным поручением 3 октября; оставшиеся AE root-render/canonical
+capture blockers относятся к самостоятельному AE scope.
 
 ## Цель и существующее основание
 
@@ -121,6 +122,14 @@ evidence остаётся целиком локально. Зафиксиров�
 
 ## Progress
 
+2026-10-03 live: 8 фактических AGY CLI runs, 7 scoped cases приняты. Проверены
+три profiles/VideoScout wrapper, live file edits/full SHA/persisted binding во
+всех трёх, AE MCP read-only и consumer changed:true. Первый codex probe timeout
+сохранён как отдельный outcome; явный reconcile после ревизии не повысил статус.
+Live active-writer conflicts, immutable bounded status/report и paged SHA
+проверены. Общий код/AE source не менялись; новая запись относится к приёмке.
+Live checkpoint agy-bridge: `7f58087` (evidence/docs), product source — `e7da18f`.
+
 2026-10-03: оставшийся scope закрыт. Opt-in compact status (8 KiB), paged
 public diagnostics с generation SHA, read-only paged reconciliation report,
 OS source/time и recorded identities, last public event/lifecycle/stop поля;
@@ -136,9 +145,9 @@ Checkpoints: agy-bridge `42e11b2` (baseline), `4288fc2` (artifact proof),
 Compact/pages и report остаются следующим блоком. R3.4 consumer адаптация готова.
 
 - [x] План подготовлен; существующий аудит и границы клиентской сводки учтены.
-- [x] R1 — диагностика и доказуемые artifact snapshots (offline).
-- [x] R2 — process lifecycle и read-only reconciliation (offline).
-- [x] R3 — ownership, lock и совместимость клиентов (offline).
+- [x] R1 — диагностика и доказуемые artifact snapshots (offline + scoped live).
+- [x] R2 — process lifecycle и read-only reconciliation (offline + scoped live).
+- [x] R3 — ownership, lock и совместимость клиентов (offline + scoped live).
 
 2026-10-03: сопоставление R1–R3 на `agy-bridge 05d0d53`, AE `8560e0d`:
 R1.1–4 существуют (preflight не резервирует task ID; причины возвращаются без
@@ -150,6 +159,14 @@ R3.1–3: atomic scopes/conversation и exact token существуют; reques
 минимальная адаптация и offline fixtures. Общий код только в agy-bridge.
 
 ## Decision Log
+
+2026-10-03 live: existing accept-edits достаточен для exact fixture writes,
+grants не менялись; предварительный запрос на temporary grants снят. Native
+read-only plan Run остановлен ожидаемым autonomous_session_scope_blocked (0
+executed), gate не обходился. Прямые и Flash typed reads AE подтверждены.
+Провайдер не сообщает effective effort — null сохранён; model init подтверждён.
+Результат scoped bridge acceptance не закрывает AE root/canonical/render/visual
+blockers и не обещает отсутствие будущих transport/network failures.
 
 2026-10-03: default task schema/profiles/run/status/exit policy сохранены.
 Compact/page/report — совместимые opt-in схемы v1. Report не пишет state и не
@@ -175,6 +192,16 @@ AE root-render/canonical capture blockers.
 Этап 2 не ждёт R3. Persist before proof предлагается впервые, не объявлен готовым.
 
 ## Validation
+
+2026-10-03 live: 7 accepted cases + 1 historical timeout; независимые exact
+bytes/SHA/binding/time checks трёх edits, real resource_busy без второго model
+spawn, 7 SHA-bound pages, fresh mismatch без state mutation и explicit release
+с сохранением timeout/status exit 1 PASS. AE consumer проверен на реальном
+metadata, changed:true, а native blocked record — not_started/acceptance false.
+Fresh 100 bridge tests PASS (37,710 s), 24 AE groups/check:rules/diff и controller
+py_compile PASS. Live summary: agy-bridge `.codex-runtime/live-acceptance-20261003/acceptance-summary.json`;
+canonical state/NDJSON остаются в client state_dir. Старый concert quarantine и
+чужие untracked файлы сохранены. CLI 1.2.15, никаких auth/grants/updater изменений.
 
 2026-10-03, финальный блок: **100 bridge tests PASS**, 35,747 s; **24 AE offline
 groups PASS**, check:rules/node --check/py_compile/diff checks и CLI help PASS.
