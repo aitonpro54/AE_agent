@@ -1,13 +1,6 @@
 # План исполнения Target App
 
-**Root/canonical montage — 3 октября 2026. Progress:** текущий порученный scope
-начат от AE `2830493`/agy `7ea628f`; этап3 bridge уже принят offline/scoped live,
-montage root/canonical/visual остаются открытыми. **Decision Log:** только confirmed
-gaps, isolated owned fixture, client AEP защищён, три цикла/максимум пять попыток;
-один AE controller и прежние gates. **Validation:** bridge100 tests PASS/36,575 s,
-AE17 выбранных suites PASS; известный isolated autonomous-mcp fixture FAIL
-воспроизведён без ослабления verifier. Runtime HEAD2830493, CEP SHA match,
-typed project read/pending0; детали — plans/montage-pipeline-execplan.md и WORK_LOG.md.
+**Root/canonical montage — 3 октября 2026. Progress:** AE `2830493`/agy `7ea628f`; этап3 bridge принят, montage root/canonical/live открыт. **Decision Log:** confirmed gaps, owned fixture, клиентский AEP защищён, один controller/прежние gates; три цикла/максимум пять попыток. **Validation:** bridge100 PASS/36,575 s, AE17 suites PASS; known autonomous-mcp fixture FAIL сохранён; runtime2830493/CEP SHA match/typed reads. Детали: plans/montage-pipeline-execplan.md, WORK_LOG.md.
 
 **Codeburn — 2 октября 2026. Progress:** stdio/HTTP get_task_usage/get_usage_history и native journal реализованы (5827223), runtime обновлён в idle, CEP Connected, persistence active. **Decision Log:** explicit runtime UUID; SQLite в Codeburn; native отдельно, guards/auth сохранены; Flash partial patch result независимо исправлен родителем. **Validation:** production-usage/usage/HTTP fixtures, syntax/diff PASS; real MCP/CLI/web totals совпали, query 0,28 с; общий план и proof — Codeburn/PLAN.md. Hooks требуют штатного trust, recovery Windows 5 мин активен.
 
