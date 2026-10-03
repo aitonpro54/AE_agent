@@ -233,6 +233,12 @@ function checkProtectedSteps({ accepted = [], inventory, steps = [], verifiedRev
     if (args.allowProtectedChanges === true || step.allowProtectedChanges === true) { conflicts.push({ index, tool, reason: "protected_override_forbidden" }); continue; }
     if (SAFE_ADDITIONS.has(tool)) continue;
     if(tool==="cleanup_test_items" && verifiedReviewCleanupOwners.includes(args.owner))continue;
+    if(tool==="reload_montage_material_source"){
+      for(const snapshot of accepted)if(snapshot.source.itemId===args.sourceItemId || snapshot.dependencies.some(edge=>edge.sourceItemId===args.sourceItemId)){
+        affected.add(targetKey(snapshot.target));conflicts.push({index,tool,target:snapshot.target,reason:"accepted_source_reload_forbidden"});
+      }
+      continue;
+    }
     if (tool === "relink_footage_source") {
       for (const snapshot of accepted) if (snapshot.source.itemId === args.itemId) {
         affected.add(targetKey(snapshot.target));

@@ -41,6 +41,8 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "reload_montage_material_source",
+  "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
   "create_comp",
   "create_test_comp",
@@ -122,6 +124,7 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "get_montage_source_load_evidence",
   "get_bridge_status",
   "get_project_info",
   "get_project_snapshot",
@@ -802,7 +805,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -1478,9 +1481,17 @@ function finiteTransformValue(value, field) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function transformValuesMatch(expected, observed, field) {
-  const a = finiteTransformValue(expected, field), b = finiteTransformValue(observed, field);
+function transformValuesMatch(expected, observed, field, threeDLayer) {
+  let a = finiteTransformValue(expected, field), b = finiteTransformValue(observed, field);
   if (a === null || b === null) return false;
+  if(threeDLayer===false && ["position","scale","anchorPoint"].includes(field)){
+    // Normalize only a positively observed 2D layer. Typed property envelopes
+    // must also prove a complete static value; an unknown/nonstandard Z is not
+    // discarded, and 3D/unknown layers retain exact dimension comparison.
+    const staticValue=value=>!isPlainObject(value) || value.truncated!==true && value.numKeys===0 && value.expressionEnabled===false && value.dimensionsSeparated===false && value.isSeparationFollower===false;
+    if(!staticValue(expected) || !staticValue(observed))return false;
+    try{const normalize=require("./placeholder-geometry").normalizeTransformValue;a=normalize(field,a,false);b=normalize(field,b,false);}catch(_error){return false;}
+  }
   return Array.isArray(a) ? Array.isArray(b) && a.length === b.length && a.every((n, i) => nearlyEqual(n, b[i])) : nearlyEqual(a, b);
 }
 
@@ -1641,7 +1652,8 @@ function checkSetLayerTransform(checks, step, payload, evidence) {
       const observedValue = independent && (independent.transform || independent.layer && independent.layer.transform || {})[field];
       const finiteObs = finiteTransformValue(observedValue, field);
       const complete = resultIdentity && independent && finiteReq !== null && finiteRes !== null && finiteObs !== null;
-      const matches = complete && transformValuesMatch(args[field], resultValue, field) && transformValuesMatch(args[field], observedValue, field);
+      const proven2D=resultLayer?.threeDLayer===false && independent?.layer?.threeDLayer===false ? false : undefined;
+      const matches = complete && transformValuesMatch(args[field], resultValue, field,resultLayer?.threeDLayer) && transformValuesMatch(args[field], observedValue, field,proven2D);
 
       pushCheck(checks, {
         id: `${step.index}:${step.tool}:${field}`,
@@ -1694,10 +1706,11 @@ function checkSetLayerTransform(checks, step, payload, evidence) {
       continue;
     }
 
-    const matchBoth = transformValuesMatch(valAtt, valExp, field);
-    const matchAtt = transformValuesMatch(args[field], valAtt, field);
-    const matchExp = transformValuesMatch(args[field], valExp, field);
-    const matchRes = transformValuesMatch(args[field], resultValue, field);
+    const pair2D=payloadAtt?.layer?.threeDLayer===false && payloadExp?.layer?.threeDLayer===false ? false : undefined;
+    const matchBoth = transformValuesMatch(valAtt, valExp, field,pair2D);
+    const matchAtt = transformValuesMatch(args[field], valAtt, field,resultLayer?.threeDLayer===false && payloadAtt?.layer?.threeDLayer===false ? false : undefined);
+    const matchExp = transformValuesMatch(args[field], valExp, field,resultLayer?.threeDLayer===false && payloadExp?.layer?.threeDLayer===false ? false : undefined);
+    const matchRes = transformValuesMatch(args[field], resultValue, field,resultLayer?.threeDLayer);
 
     if (matchBoth && matchAtt && matchExp && matchRes) {
       pushCheck(checks, {
@@ -2426,8 +2439,9 @@ function checkReplaceLayerSource(checks, step, payload, evidence) {
     (!hasOwn(args, "expectedSourceItemId") || sourceId === positiveIdentityIndex(args.expectedSourceItemId));
   const resultComp = payload.comp;
   const projectRoot = getAuthoritativeProjectRoot(evidence.options);
-  const sameSource = (observed) => isPlainObject(source) && isPlainObject(observed) && persistentId(observed, "itemId", "id") === sourceId &&
-    observed.name === source.name && observed.type === source.type &&
+  const sameSource = (observed,view) => isPlainObject(source) && isPlainObject(observed) && persistentId(observed, "itemId", "id") === sourceId &&
+    observed.name === source.name && (observed.type === source.type || view==="placeholder.v1" && !hasOwn(observed,"type") && source.type==="footage" &&
+      observed.footageMissing===false && typeof observed.file==="string" && observed.file.length>0 && typeof observed.duration==="number" && observed.duration>0 && typeof observed.frameRate==="number" && observed.frameRate>0) &&
     (!(hasOwn(source, "file") || hasOwn(observed, "file")) ||
       (canonicalImportPath(source.file, projectRoot) !== "" && canonicalImportPath(observed.file, projectRoot) !== "" &&
         canonicalImportPath(observed.file, projectRoot) === canonicalImportPath(source.file, projectRoot)));
@@ -2439,17 +2453,21 @@ function checkReplaceLayerSource(checks, step, payload, evidence) {
       (!hasOwn(args, "expectedPreviousSourceItemId") || (change && sameLayerIdentity(change.before, layer) &&
         persistentId(change.before.source, "itemId", "id") === positiveIdentityIndex(args.expectedPreviousSourceItemId)));
     const target = readTargetFromResult(args, resultComp, layer, position);
-    let readBack = null, knownMismatch = Boolean(source && !sourceMatches);
+    let readBack = null, knownMismatch = Boolean(source && !sourceMatches), matchingReadCount=0,attachedMatchCount=0,explicitMatchCount=0;
+    const invalidAttached=(evidence.readBack.rawAttempts || []).some(read=>{const meta=SERVER_ATTACHED_READS.get(read);return meta?.mutationStep===step && meta.valid!==true;});
     for (const readStep of evidence.readBack.rawSteps || []) {
       if (readStep.tool !== "get_layer_details") continue;
+      const attached=SERVER_ATTACHED_READS.get(readStep);
+      if(attached && (attached.mutationStep!==step || attached.valid!==true))continue;
       const observed = payloadForStep(readStep);
       if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, target) || !sameCompIdentity(resultComp, observed.comp) ||
         !layerMatchesRequest(observed.layer, target, index, position) || !sameLayerIdentity(layer, observed.layer) ||
         !readBackStepMatchesTarget(readStep, observed.comp, target, index, observed.layer)) continue;
-      if (!sameSource(observed.layer.source)) { knownMismatch = true; continue; }
-      readBack = { step: readStep, payload: observed };
+      if (!sameSource(observed.layer.source,observed.evidenceView)) { knownMismatch = true; continue; }
+      matchingReadCount++;if(attached)attachedMatchCount++;else explicitMatchCount++;readBack = { step: readStep, payload: observed };
     }
-    const passed = Boolean(resultMatches && readBack && !knownMismatch);
+    const unambiguous=matchingReadCount===1 || matchingReadCount===2 && attachedMatchCount===1 && explicitMatchCount===1;
+    const passed = Boolean(resultMatches && readBack && unambiguous && !knownMismatch && !invalidAttached);
     pushCheck(checks, {
       id: `${step.index || "step"}:${step.tool}:source${requested.length > 1 ? `:layer-${index}` : ""}`,
       title: "Replacement source identity matches independent layer read-back",
@@ -4105,6 +4123,27 @@ function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+  if(step.tool==="reload_montage_material_source"){
+    const epoch=payload.sourceLoadEpoch,verified=payload.verification;
+    let valid=false;try{const capture=require("./montage-capture-service"),p=evidence.run.provenance;capture.validateLoadEpoch(epoch,{projectKey:epoch?.projectKey});
+      valid=capture.validExecutionBinding({runId:evidence.run.id,actionId:p?.actionId,proposalRevision:p?.proposalRevision,planSha256:p?.planSha256,stepIndex:step.index}) &&
+        epoch.sourceItemId===args.sourceItemId && epoch.runId===evidence.run.id && epoch.actionId===p.actionId &&
+        epoch.proposalRevision===evidence.run.provenance?.proposalRevision && epoch.planSha256===evidence.run.provenance?.planSha256 &&
+        epoch.stepIndex===step.index && verified?.ok===true && verified.scope==="independent_native_source_load_epoch" && verified.sourceLoadEvidence?.epoch?.epochId===epoch.epochId;
+      if(hasOwn(step,"independentReadBack")){
+        const attached=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+        const read=attached.length===1 ? attached[0] : null,meta=read && SERVER_ATTACHED_READS.get(read),observed=read && payloadForStep(read);
+        valid=valid && meta?.valid===true && read.tool==="get_montage_source_load_evidence" && read.args?.sourceItemId===args.sourceItemId && observed?.ok===true && observed.epoch?.epochId===epoch.epochId;
+      }
+    }catch(_error){}
+    pushCheck(checks,{id:`${step.index}:reload_montage_material_source:native-load`,title:"Explicit native reload with exact owned scope and independent load evidence",expected:"Bound native command, full file bracket and independent native read",observed:valid ? "native source load epoch verified" : "native source load authority incomplete",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="create_placeholder_review_comps"){
+    const v=payload.verification;
+    const valid=payload.registered===true && typeof payload.owner==="string" && v?.ok===true && v.scope==="registered_live_link_service_receipt" && v.owner===payload.owner &&
+      Array.isArray(payload.items) && Array.isArray(v.itemIds) && payload.items.length===v.itemIds.length && payload.items.every(item=>v.itemIds.includes(item.itemId));
+    pushCheck(checks,{id:`${step.index}:create_placeholder_review_comps:registered-owner`,title:"Native review controls registered and independently verified",expected:"Exact owner and registered native item set",observed:valid ? "registered live-link service receipt" : "owner receipt incomplete",passed:valid,evidence:stepLabel(step)});return;
+  }
   if(step.tool===projectSave.TOOL_NAME){
     let valid=false,reason="missing typed save receipt";
     try{projectSave.verifyReceipt(payload.saveReceipt,args);

@@ -10,7 +10,7 @@ const PREFIX = "AE_AGENT_REVIEW_";
 const hash = value => crypto.createHash("sha256").update(Buffer.isBuffer(value) || typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
 function fail(code) { const error=new Error(code);error.code=code;throw error; }
 function validDimensions(item) { return item && finite(item.width) && finite(item.height) && item.width>0 && item.height>0 && item.width<=16384 && item.height<=16384 && item.pixelAspect===1; }
-function resolveReviewTargets(input, inventory) {
+function resolveReviewTargets(input, inventory, {canonicalBinding=null}={}) {
   if (!inventory || inventory.complete!==true || !input || !Array.isArray(input.targets) || !input.targets.length || input.targets.length>4) fail("invalid_review_scope");
   const output=[];let count=0;let views=0;const seen=new Set();
   for(const request of input.targets) {
@@ -40,7 +40,11 @@ function resolveReviewTargets(input, inventory) {
     if(!Array.isArray(request.samples) || !request.samples.length || request.samples.length>24)fail("review_samples_required");
     const sampleTimes=new Set();
     const samples=request.samples.map((sample,index)=>{
-      if(![sample.rootTime,sample.targetTime,sample.sourceTime].every(finite) || !Array.isArray(sample.roles) || !sample.roles.length || sample.roles.some(role=>!["first","middle","last","shot"].includes(role)))fail("invalid_review_sample");
+      const canonical=sample.canonicalFrame;
+      if(canonical && (!canonicalBinding || !canonicalBinding.frames.some(f=>JSON.stringify(f)===JSON.stringify(canonical))))fail("canonical_review_sample_requires_server_binding");
+      if(canonical && (canonical.target.compItemId!==target.compItemId || canonical.target.layerId!==target.layerId || canonical.rootCompItemId!==request.rootCompItemId ||
+        canonical.rootTime!==sample.rootTime || canonical.targetTime!==sample.targetTime || canonical.sourceTime!==sample.sourceTime || JSON.stringify(canonical.roles)!==JSON.stringify(sample.roles)))fail("canonical_review_sample_mismatch");
+      if(![sample.rootTime,sample.targetTime,sample.sourceTime].every(finite) || !Array.isArray(sample.roles) || !sample.roles.length || sample.roles.some(role=>canonical ? typeof role!=="string" || !role : !["first","middle","last","shot"].includes(role)))fail("invalid_review_sample");
       if(sampleTimes.has(sample.rootTime))fail("duplicate_review_sample");sampleTimes.add(sample.rootTime);
       let time=sample.rootTime;
       if(time<0 || time>=root.duration)fail("review_sample_outside_root");
@@ -50,9 +54,9 @@ function resolveReviewTargets(input, inventory) {
       const k=layer.stretch/100;
       const expectedSourceTime=(time-layer.startTime)/k;
       if(time<layer.inPoint || time>=layer.outPoint || Math.abs(time-sample.targetTime)>epsilon || Math.abs(expectedSourceTime-sample.sourceTime)>epsilon || sample.sourceTime<0 || sample.sourceTime>=source.duration)fail("stale_review_sample_mapping");
-      return {rootTime:sample.rootTime,targetTime:sample.targetTime,sourceTime:sample.sourceTime,index,roles:[...sample.roles]};
+      return {rootTime:sample.rootTime,targetTime:sample.targetTime,sourceTime:sample.sourceTime,index,roles:[...sample.roles],...(canonical ? {canonicalFrame:JSON.parse(JSON.stringify(canonical))} : {})};
     });
-    if(!["first","middle","last"].every(role=>samples.some(sample=>sample.roles.includes(role))))fail("review_first_middle_last_required");
+    if(!samples.every(sample=>sample.canonicalFrame) && !["first","middle","last"].every(role=>samples.some(sample=>sample.roles.includes(role))))fail("review_first_middle_last_required");
     count+=samples.length;views+=samples.length*viewKinds.length;
     if(count>24 || views>24)fail("review_sample_or_view_budget");
     const mediaKey=mediaKeyForSource(source);if(mediaKey==="unknown")fail("review_source_identity_unknown");
@@ -76,7 +80,7 @@ function createServiceSpecification(targets, projectKey, owner=crypto.randomUUID
     const time=kind==="source" ? sample.sourceTime : kind==="root_comp" ? sample.rootTime : sample.targetTime;
     const index=controls.length;const frameRate=target.root.frameRate;
     const item={name:`${PREFIX}${owner}_${String(index+1).padStart(2,"0")}_${kind}`,comment,width:source.width,height:source.height,frameRate,duration:1/frameRate,
-      role:"control",targetIndex,sampleIndex:sample.index,viewKind:kind,
+      role:"control",targetIndex,sampleIndex:sample.index,viewKind:kind,...(sample.canonicalFrame ? {resolutionFactor:[1,1]} : {}),
       layers:[{role:"reference",sourceItemId:kind==="source" ? target.sourceItemId : kind==="root_comp" ? target.rootCompItemId : target.target.compItemId,
         startTime:-time,inPoint:0,outPoint:1/frameRate,anchorPoint:[source.width/2,source.height/2],position:[source.width/2,source.height/2],scale:[100,100]}]};
     controls.push(item);
@@ -91,7 +95,7 @@ function createServiceSpecification(targets, projectKey, owner=crypto.randomUUID
 const aeServiceReadSupport=`${aeSupportScript}
 function __phReadService(item) {
  if(item.numLayers>48)throw new Error("review_layer_read_budget");
- var row={itemId:item.id,itemIndex:__phProjectIndex(item),name:item.name,comment:item.comment,width:item.width,height:item.height,frameRate:item.frameRate,duration:item.duration,pixelAspect:item.pixelAspect,layers:[]};
+ var row={itemId:item.id,itemIndex:__phProjectIndex(item),name:item.name,comment:item.comment,width:item.width,height:item.height,frameRate:item.frameRate,duration:item.duration,pixelAspect:item.pixelAspect,resolutionFactor:[item.resolutionFactor[0],item.resolutionFactor[1]],layers:[]};
  for(var j=1;j<=item.numLayers;j++){var layer=item.layer(j);var group=layer.property("ADBE Transform Group");var unsupported=[];
   var value={id:layer.id,index:j,name:layer.name,matchName:layer.matchName,sourceItemId:layer.source ? layer.source.id : null,startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,stretch:layer.stretch,timeRemapEnabled:layer.timeRemapEnabled,enabled:layer.enabled,
    anchorPoint:__phReadValue(group.property("ADBE Anchor Point"),unsupported),position:__phReadValue(group.property("ADBE Position"),unsupported),scale:__phReadValue(group.property("ADBE Scale"),unsupported),
@@ -112,7 +116,7 @@ function createServiceScript(spec, projectFile) {
  var spec=${JSON.stringify(spec)};var created=[];var controls=[];
  if(!app.project.file || __phPath(app.project.file.fsName)!==__phPath(${JSON.stringify(projectFile)}))throw new Error("review_project_changed");
  for(var i=1;i<=app.project.numItems;i++)if(String(app.project.item(i).name).indexOf(${JSON.stringify(PREFIX+spec.owner)})===0)throw new Error("review_name_collision");
- function create(desired){var comp=app.project.items.addComp(desired.name,desired.width,desired.height,1,desired.duration,desired.frameRate);created.push(comp);comp.comment=desired.comment;if(comp.comment!==desired.comment)throw new Error("review_owner_comment_write_failed");return comp;}
+ function create(desired){var comp=app.project.items.addComp(desired.name,desired.width,desired.height,1,desired.duration,desired.frameRate);created.push(comp);comp.comment=desired.comment;if(desired.resolutionFactor)comp.resolutionFactor=desired.resolutionFactor;if(comp.comment!==desired.comment)throw new Error("review_owner_comment_write_failed");return comp;}
  function addReference(comp,desired,source){var layer=comp.layers.add(source);layer.startTime=desired.startTime;layer.inPoint=desired.inPoint;layer.outPoint=desired.outPoint;layer.stretch=100;layer.timeRemapEnabled=false;
   var transform=layer.property("ADBE Transform Group");transform.property("ADBE Anchor Point").setValue(desired.anchorPoint);transform.property("ADBE Position").setValue(desired.position);transform.property("ADBE Scale").setValue(desired.scale);return layer;}
  function find(id){for(var i=1;i<=app.project.numItems;i++)if(app.project.item(i).id===id)return app.project.item(i);throw new Error("review_source_missing");}
@@ -150,6 +154,7 @@ function verifyServiceReceipt(spec, rows, projectKey) {
   const controlIds=spec.controls.map(control=>(rows.find(row=>row.name===control.name)||{}).itemId);
   for(const expected of desired) {
     const row=rows.find(value=>value.name===expected.name);
+    if(expected.resolutionFactor && (!row || !valueEqual(row.resolutionFactor,expected.resolutionFactor)))fail("canonical_review_resolution_changed");
     if(!row || !ID(row.itemId) || row.comment!==spec.comment || !["width","height","frameRate","duration"].every(key=>valueEqual(row[key],expected[key])) || row.pixelAspect!==1 || row.layers.length!==expected.layers.length){failures.push("review_comp_mismatch:"+expected.name);continue;}
     const actual=[...row.layers].reverse(); // AE adds new layers at the top.
     for(const [index,layer] of expected.layers.entries()) {
@@ -198,6 +203,7 @@ function validateReviewRecord(record) {
     record.spec.comment!==`AE_AGENT_REVIEW:v1:${record.projectKey}:${record.owner}` || record.spec.specHash!==hash({targets:record.spec.targets,controls:record.spec.controls,sheet:record.spec.sheet}) ||
     !record.receipt || !verifyServiceReceipt(record.spec,record.receipt.items,record.projectKey).ok || record.receiptHash!==hash(record.receipt) || !Array.isArray(record.images) || record.images.length>25 || new Set(record.images.map(image=>image.itemId)).size!==record.images.length ||
     record.images.some(image=>!ID(image.itemId) || !record.receipt.items.some(item=>item.itemId===image.itemId) || typeof image.filePath!=="string" || image.filePath.length>4000 || !/^[a-f0-9]{64}$/.test(image.sha256) || !/^[a-f0-9]{64}$/.test(image.contentHash) || !Number.isSafeInteger(image.byteLength) || image.byteLength<1))fail("invalid_review_artifact_record");
+  if(record.canonicalBinding)require("./montage-capture-service").validateBindingShape(record);
   return record;
 }
 function cleanupServiceScript(record, projectFile) {

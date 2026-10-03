@@ -53,6 +53,7 @@ const placeholderReviewTools = require("./placeholder-review-tools");
 const placeholderVisualBatches = require("./placeholder-visual-batches");
 const montageTools = require("./montage-tools");
 const montagePipelineService = require("./montage-pipeline-service");
+const montageCaptureService = require("./montage-capture-service");
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
@@ -955,6 +956,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  "reload_montage_material_source",
   "create_placeholder_review_comps",
   projectSave.TOOL_NAME,
   "run_extendscript",
@@ -2576,7 +2578,13 @@ function inferVerificationTarget(toolName, args, payload) {
 }
 
 async function verifyMutationResult(toolName, args, payload) {
-  if(["set_layer_transform","set_property_value","set_effect_property"].includes(toolName)) {
+  if(toolName==="reload_montage_material_source"){
+    const current=await readCurrentSourceLoadEvidence(args.sourceItemId);
+    const context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:"get_montage_source_load_evidence",args:{sourceItemId:args.sourceItemId},status:"completed",result:current,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {ok:current.ok===true && current.epoch?.epochId===payload?.sourceLoadEpoch?.epochId,scope:"independent_native_source_load_epoch",sourceLoadEvidence:current};
+  }
+  if(["set_layer_transform","set_property_value","set_effect_property","replace_layer_source"].includes(toolName)) {
     const compId=payload && payload.comp && payload.comp.itemId;
     const layers=payload && (payload.layers || (payload.layer ? [payload.layer] : []));
     if(!Number.isSafeInteger(compId) || !Array.isArray(layers) || !layers.length) return {ok:false,scope:"independent_requested_values",reason:"stable_target_evidence_missing"};
@@ -5071,6 +5079,9 @@ const PLANNING_TOOL_NAMES = [
   "build_placeholder_visual_review_plan",
   "create_placeholder_review_comps",
   "get_placeholder_review_manifest",
+  "reload_montage_material_source",
+  "get_montage_source_load_evidence",
+  "get_montage_root_render_state",
   "verify_placeholder_visual_review",
   "get_placeholder_usage",
   "check_placeholder_assignments",
@@ -7798,7 +7809,7 @@ function checkFreshPlanAssignments(plan, state, inventory, mutations) {
       continue;
     }
     if (!["replace_layer_source", "set_layer_time_range"].includes(tool)) {
-      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection","create_placeholder_review_comps","save_comp_frame_png"].includes(tool) || tool==="cleanup_test_items" && step.verifiedReviewCleanup===true) continue;
+      if (["create_comp", "create_test_comp", "create_project_folder", "set_comp_current_time", "refresh_comp_panel", "set_layer_selection","create_placeholder_review_comps","save_comp_frame_png","reload_montage_material_source"].includes(tool) || tool==="cleanup_test_items" && step.verifiedReviewCleanup===true) continue;
       throw placeholderError("unknown_constrained_mutation_footprint", { tool });
     }
     const targets = placeholderProtection.resolveTargets(args, desired);
@@ -8008,7 +8019,7 @@ async function reviewContentFingerprint(record) {
   }
   const inventory=await readPlaceholderInventory({targets});
   if(!inventory.complete || !placeholderSourceRecovery.pathsEqual(inventory.projectFile,record.receipt.projectFile))throw placeholderError("review_content_inventory_incomplete");
-  const fresh=placeholderReviewService.resolveReviewTargets({targets:record.spec.targets.map(target=>({target:target.target,rootCompItemId:target.rootCompItemId,routeLayerIds:target.routeLayerIds,samples:target.samples,viewKinds:target.viewKinds}))},inventory);
+  const fresh=placeholderReviewService.resolveReviewTargets({targets:record.spec.targets.map(target=>({target:target.target,rootCompItemId:target.rootCompItemId,routeLayerIds:target.routeLayerIds,samples:target.samples,viewKinds:target.viewKinds}))},inventory,{canonicalBinding:record.canonicalBinding});
   if(fresh.some((target,index)=>target.sourceKey!==record.spec.targets[index].sourceKey || target.sourceItemId!==record.spec.targets[index].sourceItemId))throw placeholderError("review_source_changed");
   const evidence=[];
   for(const request of targets){const raw=inventory.evidence.find(row=>row.comp && row.layer && row.comp.itemId===request.target.compItemId && row.layer.id===request.target.layerId);
@@ -8021,6 +8032,30 @@ async function reviewContentFingerprint(record) {
     evidence.push(row);
   }
   return placeholderReviewService.hash({evidence,targets:fresh.map(target=>({target:target.target,route:target.route,root:target.root,comp:target.comp,source:target.source,sourceKey:target.sourceKey,samples:target.samples}))});
+}
+function canonicalCaptureDependencies(){return {readApplication:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),run:runExtendScriptBody,exportRoot:GENERATED_EXPORT_DIR,
+  readNativeLayer:(target,sourceId)=>require("./montage-native").readNativeLayer(target,sourceId,runExtendScriptBody),
+  readRouteEdge:async target=>require("./montage-native").routeEdge(await require("./montage-native").readNativeLayer(target,null,runExtendScriptBody))};}
+function canonicalExportContext(){
+ const c=evidenceContext.getStore() || {},p=planCommandContext.getStore();
+ if(!p?.item || !c.runId || !c.actionId || !c.proposalRevision || !c.planSha256 || !c.stepIndex)throw placeholderError("canonical_capture_requires_proposal_runner");
+ return {runId:c.runId,actionId:c.actionId,proposalRevision:c.proposalRevision,planSha256:c.planSha256,stepIndex:c.stepIndex};
+}
+function canonicalNativeCommandId(readerId){
+ const rows=planCommandContext.getStore()?.item?.commands || [],matches=rows.filter(c=>c.state==="completed" && c.ok===true && c.result?.nativeCaptureGraph?.before?.readerId===readerId);
+ if(matches.length!==1)throw placeholderError("canonical_capture_native_command_unproven");return matches[0].id;
+}
+async function readCurrentSourceLoadEvidence(sourceItemId){
+ const current=await currentPlaceholderState(),epoch=current.state.sourceLoadEpochs?.[sourceItemId];
+ if(!epoch)throw placeholderError("native_source_load_epoch_unproven");
+ montageCaptureService.validateLoadEpoch(epoch,current.state);
+ const native=await runExtendScriptBody(montageCaptureService.nativeSourceScopeScript(epoch.scope));
+ if(native?.ok===false || !native?.result)throw placeholderError("native_source_load_read_failed");
+ if(require("./montage-contract").stableJson(native.result.nativeReload.after)!==require("./montage-contract").stableJson(epoch.independentNativeRead.nativeReload.after))throw placeholderError("native_source_load_metadata_changed");
+ const reference=montageCaptureService.sourceFileReference(epoch.scope,native.result),files=montageCaptureService.readContributingFiles([reference]);
+ montageCaptureService.assertSourceLoadEpochs(files,current.state);
+ const final=await currentPlaceholderState();if(final.state.revision!==current.state.revision || !placeholderSourceRecovery.pathsEqual(final.projectFile,current.projectFile))throw placeholderError("native_source_load_project_changed");
+ return {ok:true,epoch,nativeRead:native.result,files,acceptance:false};
 }
 async function trustedPlaceholderAction(body) {
   if (body.snapshot !== undefined || body.acceptedPlaceholders !== undefined || body.allowProtectedChanges !== undefined || body.target !== undefined) throw placeholderError("client_acceptance_snapshot_forbidden");
@@ -12335,6 +12370,49 @@ async function callTool(name, args, executionContext) {
   if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
+  if(name==="get_montage_root_render_state"){
+    try{
+      if(Object.keys(args).some(k=>!["rootCompItemId","rootTimes"].includes(k)))throw placeholderError("native_root_probe_client_claims_forbidden");
+      const native=await runExtendScriptBody(montageCaptureService.nativeRootProbeScript(args.rootCompItemId,args.rootTimes));
+      if(native?.ok===false || !native?.result)throw placeholderError("native_root_probe_failed");
+      return toolResult({...native.result,completeRootRenderState:false,artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message,completeRootRenderState:false},true);}
+  }
+  if(name==="get_montage_source_load_evidence"){
+    try{return toolResult(await readCurrentSourceLoadEvidence(requiredPositiveInteger(args,"sourceItemId")));}
+    catch(error){return toolResult({ok:false,code:error.code || error.message},true);}
+  }
+  if(name==="reload_montage_material_source"){
+    try{
+      if(Object.keys(args).some(k=>!["applicationRunIds","sourceItemId",...Object.keys(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES)].includes(k)))throw placeholderError("native_reload_client_claims_forbidden");
+      const sourceItemId=requiredPositiveInteger(args,"sourceItemId"),execution=canonicalExportContext();
+      if(!Array.isArray(args.applicationRunIds) || !args.applicationRunIds.length || args.applicationRunIds.length>32)throw placeholderError("native_reload_scope_invalid");
+      const {projectFile,state}=await currentPlaceholderState(),records=args.applicationRunIds.map(id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}));
+      const inventory=await readPlaceholderInventory(),scope=montageCaptureService.resolveReloadScope(records,state,sourceItemId,inventory,execution);
+      for(const record of records){const binding=montageCaptureService.resolveApplicationRecord(record,null,[record.plan.montagePipeline.captureRequirements.frameRequirements[0].frameId]);await montageCaptureService.assertFreshTarget(binding,record,canonicalCaptureDependencies());}
+      const before=await withPlanCommandRole("readback",()=>runExtendScriptBody(montageCaptureService.nativeSourceScopeScript(scope)));
+      if(before?.ok===false || !before?.result)throw placeholderError("native_reload_source_preflight_failed");
+      const fileLedger={bytes:0,requests:0},filesBefore=montageCaptureService.readContributingFiles([montageCaptureService.sourceFileReference(scope,before.result)],records[0].plan.montagePipeline.readBudgets,fileLedger);
+      if(filesBefore[0].sha256!==scope.material.sha256 || filesBefore[0].byteLength!==scope.material.byteLength)throw placeholderError("native_reload_material_changed");
+      const readerId=crypto.randomUUID(),native=await runExtendScriptBody(montageCaptureService.nativeSourceScopeScript(scope,{reload:true,readerId}));
+      if(native?.ok===false || native?.result?.nativeReload?.operationExecuted!==true)throw placeholderError("native_reload_not_proven");
+      const read=await withPlanCommandRole("readback",()=>runExtendScriptBody(montageCaptureService.nativeSourceScopeScript(scope)));
+      if(read?.ok===false || !read?.result)throw placeholderError("native_reload_independent_read_failed");
+      const filesAfter=montageCaptureService.readContributingFiles([montageCaptureService.sourceFileReference(scope,read.result)],records[0].plan.montagePipeline.readBudgets,fileLedger);
+      if(require("./montage-contract").stableJson(filesBefore)!==require("./montage-contract").stableJson(filesAfter))throw placeholderError("native_reload_material_changed_during_operation");
+      const final=await currentPlaceholderState();if(final.state.revision!==state.revision || !placeholderSourceRecovery.pathsEqual(projectFile,final.projectFile))throw placeholderError("native_reload_policy_changed");
+      const commands=planCommandContext.getStore().item.commands || [],matches=commands.filter(c=>c.state==="completed" && c.ok===true && c.result?.nativeReload?.readerId===readerId && c.result.nativeReload.operationExecuted===true);
+      if(matches.length!==1)throw placeholderError("native_reload_command_unproven");
+      const file=filesAfter[0],epoch={schema:"ae-agent-native-source-load-epoch.v1",epochId:crypto.randomUUID(),sourceItemId,projectKey:state.projectKey,file:file.file,sha256:file.sha256,byteLength:file.byteLength,
+        fileIdentity:file.identity,metadata:file.nativeMetadata.metadata,commandId:matches[0].id,...execution,nativeOperation:"reload",scope,
+        nativeBracket:native.result,independentNativeRead:read.result,independentReadBackVerified:true,ownedUsedInComplete:true,observedAt:new Date().toISOString(),
+        policyTransition:{originalRevision:records[0].plan.montagePipeline.captureRequirements.project.revision,originalPolicyHash:records[0].plan.montagePipeline.captureRequirements.policy.policyHash,
+          manifestHash:records[0].plan.montagePipeline.captureRequirements.manifest.sha256,materialsHash:records[0].plan.montagePipeline.captureRequirements.materials.sha256,
+          toRevision:state.revision+1,policyHashAfter:require("./montage-plan-guard").policyHash({...state,revision:state.revision+1}),semanticSha256:montageCaptureService.semanticPolicyHash(state),reviewOwnersHash:reviewEvidence.sha256(state.reviewArtifacts || {})}};
+      projectStateController.registerSourceLoadEpoch(projectFile,epoch,state.revision);
+      return toolResult({ok:true,sourceLoadEpoch:epoch,requiresFreshMontageCompilation:true,nextAction:"recompile_and_apply_at_new_project_revision",completeRootRenderState:false,artisticAccepted:false});
+    }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message,replayAllowed:false,recovery:"Read native source/load evidence and the command lifecycle; never repeat an unknown reload."},true);}
+  }
   if(name === "reconcile_plan_run") {
     if(Object.keys(args).some(key=>!["runId","stepIndices"].includes(key))) throw new Error("reconciliation_client_evidence_forbidden");
     const runId=optionalString(args,"runId","");
@@ -12356,7 +12434,7 @@ async function callTool(name, args, executionContext) {
       const readKeys=new Set();
       for(const request of helper.reconciliationReadRequests(record)) {
         if(Date.now()>deadline) break;
-        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details"].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
+        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details","get_montage_source_load_evidence"].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
         const key=reviewEvidence.sha256({tool:request.tool,args:request.args});
         if((!selected || selected.includes(request.stepIndex)) && !readKeys.has(key)) {readKeys.add(key);await read(request);}
       }
@@ -13451,7 +13529,35 @@ async function callTool(name, args, executionContext) {
       const {projectFile,state}=await currentPlaceholderState();
       const inventory=await readPlaceholderInventory();
       if(!placeholderSourceRecovery.pathsEqual(projectFile,inventory.projectFile))throw placeholderError("review_project_changed");
-      const targets=placeholderReviewService.resolveReviewTargets(args,inventory);
+      let canonicalBinding=null,captureSession=null,reviewInput=args;
+      if(args.applicationRunId!==undefined || args.applicationRunIds!==undefined){
+        if(Object.keys(args).some(k=>!["applicationRunId","applicationRunIds","frameIds",...Object.keys(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES)].includes(k)) || args.targets!==undefined || args.applicationRunId && args.applicationRunIds)throw placeholderError("canonical_capture_client_claims_forbidden");
+        const ids=args.applicationRunIds || [args.applicationRunId];
+        if(!Array.isArray(ids) || !ids.length || ids.length>4)throw placeholderError("canonical_application_runs_invalid");
+        const records=ids.map(id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}));
+        canonicalBinding=montageCaptureService.resolveApplicationRecords(records,name==="build_placeholder_visual_review_plan" ? state : null,args.frameIds);
+        if(name==="create_placeholder_review_comps"){
+          captureSession=montageCaptureService.createCaptureSession(canonicalBinding,canonicalExportContext(),placeholderPlanContext.getStore()?.plan);
+          montageCaptureService.preflightOwnerRegistration({owner:"pending",canonicalBinding,captureSession},state);
+        }
+        for(const binding of montageCaptureService.applications(canonicalBinding))await montageCaptureService.assertFreshTarget(binding,records.find(r=>r.runId===binding.applicationRunId),canonicalCaptureDependencies());
+        if(name==="build_placeholder_visual_review_plan"){
+          const steps=[],manifestReads=[];
+          for(const frameIds of montageCaptureService.partitionCaptureBinding(canonicalBinding)){
+            const packet=montageCaptureService.resolveApplicationRecords(records,state,frameIds),targets=placeholderReviewService.resolveReviewTargets(montageCaptureService.canonicalReviewInput(packet),inventory,{canonicalBinding:packet});
+            const previewSpec=placeholderReviewService.createServiceSpecification(targets,state.projectKey),createIndex=steps.length+1;
+            steps.push({tool:"create_placeholder_review_comps",args:{applicationRunIds:ids,frameIds}});
+            for(let index=0;index<=previewSpec.controls.length;index++)steps.push({tool:"save_comp_frame_png",args:{reviewOwner:`{{steps.${createIndex}.result.owner}}`,reviewItemId:`{{steps.${createIndex}.result.items.${index}.itemId}}`,time:0,resolutionFactor:[1,1],outputFileName:`review-${previewSpec.owner}-${index}.png`}});
+            manifestReads.push({tool:"get_placeholder_review_manifest",args:{owner:`{{steps.${createIndex}.result.owner}}`}});
+          }
+          steps.push(...manifestReads);
+          const plan={summary:"Создать canonical root controls для сохранённых montage units и проверить полный набор кадров",targetProject:{file:projectFile},risk:"high",requiresCheckpoint:true,steps};
+          const validation=validateAgentPlanWithRepair(plan,null,{}, {repairPlan:false}).validation;
+          return toolResult({ok:validation.ok,plan:validation.ok ? plan : null,validation,packetCount:manifestReads.length,controlCount:canonicalBinding.frames.length,mutatesProject:false,artisticAccepted:false},!validation.ok);
+        }
+        reviewInput=montageCaptureService.canonicalReviewInput(canonicalBinding);
+      }else if(args.frameIds!==undefined)throw placeholderError("canonical_capture_application_run_required");
+      const targets=placeholderReviewService.resolveReviewTargets(reviewInput,inventory,{canonicalBinding});
       const spec=placeholderReviewService.createServiceSpecification(targets,state.projectKey);
       if(name==="build_placeholder_visual_review_plan") {
         const steps=[{tool:"create_placeholder_review_comps",args:JSON.parse(JSON.stringify(args))}];
@@ -13484,6 +13590,7 @@ async function callTool(name, args, executionContext) {
       }
       const execution=evidenceContext.getStore() || {},guard=autonomousCommandContext.getStore() || {};
       const record={schema:spec.schema,owner:spec.owner,projectKey:state.projectKey,spec,receipt,receiptHash:placeholderReviewService.hash(receipt),images:[],createdAt:new Date().toISOString(),
+        ...(canonicalBinding ? {canonicalBinding,captureSession} : {}),
         provenance:{runId:execution.runId || null,proposalId:guard.actionId || null,stepIndex:execution.stepIndex || null}};
       try{projectStateController.registerReview(projectFile,record,state.revision);}catch(error){return toolResult({ok:false,code:"review_registration_failed",owner:spec.owner,createdItemIds:ids,error:error.message},true);}
       return toolResult({ok:true,owner:spec.owner,items:receipt.items.map(item=>({itemId:item.itemId,itemIndex:item.itemIndex,name:item.name,outputFileName:`review-${spec.owner}-${item.itemId}.png`})),registered:true,mainCompositionModified:false});
@@ -13492,9 +13599,12 @@ async function callTool(name, args, executionContext) {
   if(name==="get_placeholder_review_manifest" || name==="verify_placeholder_visual_review") {
     try {
       const fresh=await requireFreshReviewRecord(args.owner);
+      let canonicalValidation=null;
+      if(fresh.record.canonicalBinding)canonicalValidation=await montageCaptureService.verifyCurrentCaptures(fresh.record,fresh.state,canonicalCaptureDependencies());
       const contentHash=await reviewContentFingerprint(fresh.record);
       if(fresh.record.images.some(image=>image.contentHash!==contentHash))throw placeholderError("review_content_changed_after_capture");
       const manifest=placeholderVisualReview.buildManifest(fresh.record,GENERATED_EXPORT_DIR);
+      if(canonicalValidation){manifest.canonicalCoverage=canonicalValidation.coverage;manifest.completeRootRenderState=canonicalValidation.completeRootRenderState;}
       if(name==="verify_placeholder_visual_review") {
         const config=JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT,"config","agy-bridge.json"),"utf8"));
         const profile=config.profiles && config.profiles["ae-agent"];
@@ -15189,6 +15299,7 @@ async function callTool(name, args, executionContext) {
       const output = resolveGeneratedPngExportFile(optionalString(args, "outputFileName", "frame.png"));
       let review=null;
       let reviewContentHash=null;
+      let canonicalCapture=null;
       if(args.reviewOwner!==undefined || args.reviewItemId!==undefined){
         review=await requireFreshReviewRecord(args.reviewOwner);
         const item=review.items.find(row=>row.itemId===args.reviewItemId);
@@ -15198,6 +15309,21 @@ async function callTool(name, args, executionContext) {
         }
         compItemIndex=item.itemIndex;
         reviewContentHash=await reviewContentFingerprint(review.record);
+        if(review.record.canonicalBinding && montageCaptureService.frameForItem(review.record,args.reviewItemId)){
+          if(review.record.images.some(image=>image.itemId===args.reviewItemId))throw placeholderError("root_png_replay_requires_fresh_capture");
+          const exportContext=canonicalExportContext(),deps=canonicalCaptureDependencies();
+          montageCaptureService.assertOwnerPolicy(review.record,review.state);
+          const binding=montageCaptureService.bindingForFrame(review.record,montageCaptureService.frameForItem(review.record,args.reviewItemId));
+          const application=deps.readApplication(binding.applicationRunId);
+          const targetRead=await montageCaptureService.assertFreshTarget(binding,application,deps);
+          const graph=await montageCaptureService.observeGraph(review.record,args.reviewItemId,runExtendScriptBody);
+          const validated=montageCaptureService.validateGraph(review.record,args.reviewItemId,graph);
+          const fileLedger={bytes:0,requests:0},files=montageCaptureService.readContributingFiles(validated.sourceReferences,application.plan.montagePipeline.readBudgets,fileLedger);
+          montageCaptureService.assertMaterialFiles(binding,files);
+          montageCaptureService.assertSourceLoadEpochs(files,review.state);
+          canonicalCapture={captureId:crypto.randomUUID(),application,binding,targetRead,graph,files,fileLedger,exportContext,
+            parts:montageCaptureService.nativeCaptureParts(review.record,args.reviewItemId,graph)};
+        }
       } else if (expectedCompItemId !== null) {
         const probe = await runExtendScriptBody(`
           ${resolveCompScript}
@@ -15228,6 +15354,7 @@ async function callTool(name, args, executionContext) {
       const result = await runExtendScriptBody(`
         ${resolveCompScript}
         ${review ? placeholderProtection.aeSupportScript : ""}
+        ${canonicalCapture ? canonicalCapture.parts.support : ""}
         var comp = ${review ? `__phFindComp(${args.reviewItemId})` : `__codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)})`};
         ${review ? `if(comp.name!==${aeLiteral(review.items.find(row=>row.itemId===args.reviewItemId).name)} || comp.comment!==${aeLiteral(review.record.spec.comment)})throw new Error("review_export_owner_changed");` : ""}
         var expectedCompName = ${aeLiteral(expectedCompName)};
@@ -15255,6 +15382,7 @@ async function callTool(name, args, executionContext) {
           if(!outputFile.parent || (!outputFile.parent.exists && outputFile.parent.create()!==true))throw new Error("stable_comp_png_output_directory_unavailable");
         }
         var originalResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
+        ${canonicalCapture ? canonicalCapture.parts.before : ""}
         var targetResolutionFactor = ${aeLiteral(resolutionFactor)};
         var restoredResolutionFactor = null;
         var saved = false;
@@ -15266,8 +15394,10 @@ async function callTool(name, args, executionContext) {
           comp.resolutionFactor = originalResolutionFactor;
           restoredResolutionFactor = [comp.resolutionFactor[0], comp.resolutionFactor[1]];
         }
+        ${canonicalCapture ? canonicalCapture.parts.after : ""}
 
         return {
+          ${canonicalCapture ? canonicalCapture.parts.result : ""}
           comp: {
             itemIndex: __codexProjectIndexForItem(comp),
             itemId: comp.id,
@@ -15321,6 +15451,30 @@ async function callTool(name, args, executionContext) {
         if (dimensions.width !== item.width || dimensions.height !== item.height) throw placeholderError("review_native_export_dimensions_mismatch");
         const after = await requireFreshReviewRecord(args.reviewOwner);
         if (await reviewContentFingerprint(after.record) !== reviewContentHash) throw placeholderError("review_content_changed_during_capture");
+        if(canonicalCapture){
+          montageCaptureService.assertOwnerPolicy(after.record,after.state);
+          const graphs=result.result?.nativeCaptureGraph;if(!graphs)throw placeholderError("canonical_capture_native_bracket_missing");
+          montageCaptureService.assertGraphs(after.record,args.reviewItemId,canonicalCapture.graph,graphs.before);
+          montageCaptureService.assertGraphs(after.record,args.reviewItemId,graphs.before,graphs.after);
+          const finalGraph=await montageCaptureService.observeGraph(after.record,args.reviewItemId,runExtendScriptBody);
+          montageCaptureService.assertGraphs(after.record,args.reviewItemId,graphs.after,finalGraph);
+          const validated=montageCaptureService.validateGraph(after.record,args.reviewItemId,finalGraph);
+          const afterFiles=montageCaptureService.readContributingFiles(validated.sourceReferences,canonicalCapture.application.plan.montagePipeline.readBudgets,canonicalCapture.fileLedger);
+          if(require("./montage-contract").stableJson(afterFiles)!==require("./montage-contract").stableJson(canonicalCapture.files))throw placeholderError("canonical_capture_contributing_files_changed");
+          montageCaptureService.assertSourceLoadEpochs(afterFiles,after.state);
+          const finalTargetRead=await montageCaptureService.assertFreshTarget(canonicalCapture.binding,canonicalCapture.application,canonicalCaptureDependencies());
+          const current=await currentPlaceholderState();montageCaptureService.assertOwnerPolicy(after.record,current.state);
+          if(!placeholderSourceRecovery.pathsEqual(current.projectFile,after.projectFile))throw placeholderError("canonical_capture_project_changed");
+          image.canonicalCapture={schema:montageCaptureService.CAPTURE_SCHEMA,captureId:canonicalCapture.captureId,owner:after.record.owner,itemId:args.reviewItemId,
+            application:canonicalCapture.binding,frame:montageCaptureService.frameForItem(after.record,args.reviewItemId),
+            export:{...canonicalCapture.exportContext,commandId:canonicalNativeCommandId(graphs.before.readerId)},
+            policy:{original:after.record.canonicalBinding.originalPolicy,before:after.record.capturePolicy,publicationRevision:after.state.revision+1},
+            graph:{before:graphs.before,after:graphs.after,final:finalGraph},files:{before:canonicalCapture.files,after:afterFiles},
+            targetRead:{before:canonicalCapture.targetRead,after:finalTargetRead},
+            png:{sha256,byteLength:bytes.length,width:proof.width,height:proof.height,pngComplete:true},
+            resolutionFactor:result.result.resolutionFactor,completeRootRenderState:true,artisticAccepted:false,
+            limits:"Full bounded observations bracket native save; undetected external ABA between reads is not excluded by file hashes."};
+        }
         projectStateController.addReviewImage(after.projectFile, args.reviewOwner, image, after.state.revision);
       }
 
@@ -15352,6 +15506,8 @@ async function callTool(name, args, executionContext) {
       if (review) {
         payload.reviewOwner = args.reviewOwner;
         payload.reviewItemId = args.reviewItemId;
+        if(canonicalCapture){const image=projectStateController.read(review.projectFile).reviewArtifacts[args.reviewOwner].images.find(i=>i.itemId===args.reviewItemId);
+          payload.completeRootRenderState=true;payload.rootFreshness={status:"fresh_native_bracket",captureId:image.canonicalCapture.captureId};payload.captureBinding={status:"verified",...image.canonicalCapture};}
       }
       return toolResult(payload);
     } catch (error) {
@@ -21580,7 +21736,8 @@ async function callToolLogged(source, name, args, executionContext) {
         if (existing.argsHash !== idContext.argsHash) {
           throw new Error(`idempotencyKey conflict for ${name}: the key was already used with different arguments in scope ${idContext.scope}.`);
         }
-        if(name==="save_comp_frame_png" && args.expectedCompItemId!==undefined) {
+        if(name==="reload_montage_material_source")throw placeholderError("native_source_reload_replay_forbidden");
+        if(name==="save_comp_frame_png" && (args.expectedCompItemId!==undefined || args.reviewOwner)) {
           if(args.reviewOwner)throw placeholderError("root_png_replay_requires_fresh_capture");
           const wanted=requiredPositiveInteger(args,"expectedCompItemId");
           const probe=await runExtendScriptBody(`${resolveCompScript}
@@ -21630,7 +21787,9 @@ async function callToolLogged(source, name, args, executionContext) {
     // montage steps. Stable identities are still rechecked by the native setter.
     if (MUTATING_TOOL_NAMES.has(name)) args = rebindPlaceholderArgs(name, args, placeholderGuard);
     const commandContext = planCommandContext.getStore();
-    if(commandContext && commandContext.item) commandContext.item.args=args;
+    // Nested typed inspection must not replace the enclosing mutation's bound
+    // execution arguments with its own (often empty) read arguments.
+    if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
     const checkpoint = name===projectSave.TOOL_NAME ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));

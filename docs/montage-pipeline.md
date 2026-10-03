@@ -438,12 +438,13 @@ native inventoryBaseline проверяется **до undo**; Node read не з
 `compilation.rootPngPackets` содержит per-use root frames: stable root/target IDs,
 scene/assignment/unit/frame IDs, все roles/reasons, root time и mapped source/target
 time. Recipe inputs используют только `root_comp`, не более 24 frames/packet.
-Эти пакеты имеют `completeRootRenderState:false`, `replayAllowed:false`,
-`reuseAllowed:false`, `artisticAccepted:false` и blocker
-`unsupported_unknown_render_graph`. Полный contributing root graph не собран.
-Canonical unit/policy/material context не связан с owner export API; поэтому
-capture binding явно blocked `missing_canonical_unit_material_capture_binding`.
-Client hashes, timestamps и complete flags не создают proof.
+Сами preview packets имеют `completeRootRenderState:false`, `replayAllowed:false`,
+`reuseAllowed:false`, `artisticAccepted:false`: компиляция не экспортирует кадры.
+Сервер сохраняет полный canonical frame context в unit plan до вычисления его
+content hash. `build_placeholder_visual_review_plan({applicationRunIds})` читает
+только успешно проверенные immutable application runs, заново сверяет текущие
+target/source/route и разбивает согласованное покрытие на owner packets.
+Client hashes, timestamps, samples и complete flags не создают capture proof.
 
 Штатный owner review создаёт root controls с точным root sample time и control
 stretch100, сохраняя target stretch и регистрацию владельца. Optional
@@ -460,3 +461,33 @@ containment, resolution restoration, owner/cleanup и manual-save gates оста
 native200 → stored reconciliation → M3 technical pass. Та же VM выполняет real
 emitted mutation с stretch race до undo, owner root PNG и ID/grid/cache negatives.
 Все проверки offline; native AE/AEP и художественная приёмка не выполняются.
+
+## Native root capture: поддерживаемая граница
+
+`get_montage_root_render_state` — диагностическое чтение полного ordered графа
+статичных 2D Comp/AVLayer/Comp либо существующего moving FileSource. Оно сохраняет
+все слои, включая disabled и вне интервала, renderer/resolution/project color,
+switches, transforms и source interpretation. Неизвестные поля, эффекты, masks,
+matte, parent, 3D, keys, expressions, proxy и неподдерживаемые источники блокируют
+readiness. Getter failures не заменяются default-значениями.
+
+Для непрозрачного native source color branch нужен реальный `getRenderGUID` с
+точным mapped time и `ProjectThread.MainThread`, полным ordered closure и стабильным
+before/after acquisition. Диагностика сама всегда возвращает
+`completeRootRenderState:false`: GUID не устанавливает файловую или decoder authority.
+На проверенном host `26.2x49` raw renderer `ADBE Advanced 3d` сопоставлен с UI
+Classic 3D и точным списком renderer identifiers; другие host contracts не доказаны.
+
+Gated `reload_montage_material_source` принимает application run IDs одного
+источника и проверяет полный собственный direct usedIn scope до native reload.
+Полные file hashes/identity и native metadata читаются до, после и независимо.
+Источник получает серверный load epoch; затем обязательны новая policy revision,
+fresh compilation и новый application run. Read-only
+`get_montage_source_load_evidence` только сверяет существующий epoch.
+
+Каждый canonical PNG требует exact owner/control/full-resolution binding,
+свежий native graph до filesystem writes, native graph по обе стороны PNG save,
+независимое финальное чтение, полный contributing file bracket и load epochs.
+Canonical owner publication продвигает только свой подтверждённый capture session;
+foreign/manual policy drift блокируется. Sheet остаётся отдельным обзорным PNG.
+Partial/failed exports сохраняются и не становятся принятым полным циклом.

@@ -60,7 +60,7 @@ function nativeLayerScript(target, plannedSourceId = null) {
  read.footprint=__montageFootprint(layer);
  read.transform.opacity=__phReadValue(layer.property("ADBE Transform Group").property("ADBE Opacity"),read.unsupported);
  read.geometry.layer.transformStatic=read.unsupported.length===0;
- var current=layer.source;var ci=null;
+ var current=__phCanonicalSource(layer.source,read.unsupported);var ci=null;
  for(var q=1;q<=app.project.numItems;q++)if(app.project.item(q).id===comp.id){ci=q;break;}
  read.comp={itemId:comp.id,itemIndex:ci,name:comp.name,frameRate:comp.frameRate};
  read.layer={id:layer.id,index:layer.index,name:layer.name,sourceItemId:current ? current.id : null,
@@ -69,6 +69,7 @@ function nativeLayerScript(target, plannedSourceId = null) {
   source:current ? {itemId:current.id,name:current.name,file:current.file ? current.file.fsName : null,
    footageMissing:current instanceof FootageItem ? current.footageMissing : false,
    width:current.width,height:current.height,pixelAspect:current.pixelAspect,duration:current.duration,frameRate:current.frameRate} : null};
+ read.geometry.layer.transformStatic=read.unsupported.length===0;
  return read;`;
 }
 

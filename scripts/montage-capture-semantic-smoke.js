@@ -1,0 +1,30 @@
+"use strict";
+// Native-shaped regressions for the actual AE 26 source/2D read-back contract.
+// No AE, CEP, provider, stored runtime record writes or replay.
+const assert=require("node:assert/strict"),crypto=require("node:crypto");
+const semantic=require("../mcp-server/semantic-verification"),{reconcilePlanRun}=require("../mcp-server/plan-run-reconciliation");
+const clone=x=>JSON.parse(JSON.stringify(x));let passed=0;
+function test(name,fn){try{fn();passed++;}catch(e){console.error(name);throw e;}}
+const comp={itemId:5,itemIndex:8,name:"Synthetic target"},source={itemId:2,itemIndex:4,name:"Synthetic source",type:"footage",file:"C:/Synthetic/source.mp4",footageMissing:false};
+const layer={id:17,index:1,name:"Synthetic placeholder",threeDLayer:false,source};
+const envelope=value=>({kind:"array",length:value.length,value,numKeys:0,expressionEnabled:false,dimensionsSeparated:false,isSeparationFollower:false,truncated:false});
+function nativeRead(){return {comp:clone(comp),layer:clone(layer),transform:{position:envelope([320,180,0]),scale:envelope([80,80,100]),anchorPoint:envelope([400,225,0])}};}
+function transformFixture(){const args={expectedCompItemId:5,expectedLayerId:17,compItemIndex:8,layerIndex:1,position:[320,180],scale:[80,80]};
+ return {plan:{steps:[{tool:"set_layer_transform",args},{tool:"get_layer_details",args:{compItemId:5,layerId:17}}]},run:{ok:true,dryRun:false,steps:[{index:1,tool:"set_layer_transform",args,status:"completed",result:{comp:clone(comp),layer:clone(layer),transform:{position:[320,180,0],scale:[80,80,100]}}},{index:2,tool:"get_layer_details",args:{compItemId:5,layerId:17},status:"completed",result:nativeRead()}]}};}
+function sourceFixture(){const args={expectedCompItemId:5,expectedLayerId:17,expectedSourceItemId:2,expectedPreviousSourceItemId:9,compItemIndex:8,layerIndices:[1],sourceItemIndex:4,sourceItemName:source.name,sourceItemType:"footage"};
+ return {plan:{steps:[{tool:"replace_layer_source",args},{tool:"get_project_info",args:{}}]},run:{ok:true,dryRun:false,steps:[{index:1,tool:"replace_layer_source",args,status:"completed",result:{comp:clone(comp),sourceItem:clone(source),layers:[clone(layer)],changedCount:1,changed:[{before:{...clone(layer),source:{...clone(source),itemId:9}},after:clone(layer)}]},independentReadBack:[{index:2,tool:"get_layer_details",args:{compItemId:5,layerId:17},status:"completed",result:nativeRead(),source:"server_typed_readback",observedAt:"2026-10-03T00:00:00.000Z"}]},{index:2,tool:"get_project_info",args:{},status:"completed",result:{file:"C:/Synthetic/project.aep"}}]}};}
+const verify=f=>semantic.buildSemanticVerification(f.plan,f.run);
+test("actual complete native2D static vec3 envelopes match requested vec2",()=>assert.equal(verify(transformFixture()).status,"passed"));
+for(const edit of [f=>{delete f.run.steps[0].result.layer.threeDLayer;},f=>{delete f.run.steps[1].result.layer.threeDLayer;},f=>{f.run.steps[1].result.layer.threeDLayer=true;},f=>{f.run.steps[0].result.transform.position[2]=1;},f=>{f.run.steps[1].result.transform.scale.value[2]=99;},f=>{f.run.steps[1].result.transform.position.truncated=true;},f=>{f.run.steps[1].result.transform.position.numKeys=1;},f=>{f.run.steps[1].result.transform.scale.expressionEnabled=true;},f=>{f.run.steps[1].result.transform.position.dimensionsSeparated=true;},f=>{f.run.steps[1].result.transform.position.isSeparationFollower=true;},f=>{f.run.steps[1].result.transform.scale.value[0]=79;}])
+ test("unknown3D/Z/animated/truncated/changed native values never normalize into proof",()=>{const f=transformFixture();edit(f);assert.notEqual(verify(f).status,"passed");});
+test("threeD unknown retains exact dimension comparison",()=>{assert.equal(semantic.transformValuesMatch([1,2],[1,2,0],"position"),false);assert.equal(semantic.transformValuesMatch([1,2],[1,2,0],"position",true),false);assert.equal(semantic.transformValuesMatch([1,2],[1,2,0],"position",false),true);});
+test("server attached immediate source read proves exact IDs/type/path",()=>assert.equal(verify(sourceFixture()).status,"passed"));
+for(const edit of [f=>{delete f.run.steps[0].independentReadBack;},f=>{f.run.steps[0].independentReadBack[0].source="client";},f=>{f.run.steps[0].independentReadBack[0].result.layer.source.itemId=3;},f=>{f.run.steps[0].independentReadBack[0].result.layer.id=18;},f=>{f.run.steps[0].independentReadBack[0].result.layer.source.file="C:/Synthetic/foreign.mp4";},f=>{delete f.run.steps[0].independentReadBack[0].result.layer.source.type;},f=>{f.run.steps[0].independentReadBack[0].status="failed";}])
+ test("missing/untrusted/foreign source observation never accepts identity/path",()=>{const f=sourceFixture();edit(f);assert.notEqual(verify(f).status,"passed");});
+test("new read-only reconciliation confirms native2D current state and retains original failure",()=>{const f=transformFixture(),file="C:/Synthetic/project.aep",step=f.run.steps[0];step.commands=[{id:crypto.randomUUID(),role:"mutation",state:"completed",ok:true}];
+ const record={schema:"ae-agent-plan-run-record.v1",runId:crypto.randomUUID(),project:{file},plan:f.plan,run:{...f.run,ok:false,errorCode:"verification_required",error:"Historical verification failure"}};
+ const original=clone(record),result=reconcilePlanRun({record,project:{file},freshReadSteps:[{tool:"get_project_info",status:"completed",result:{file}},{...f.run.steps[1],index:2}]});
+ assert.equal(result.steps[0].mutationStatus,"applied");assert.equal(result.steps[0].verificationStatus,"passed");assert.equal(result.originalError.code,"verification_required");assert.equal(result.replayAllowed,false);assert.deepEqual(record,original);
+ const missing=clone(f.run.steps[1]);delete missing.result.layer.threeDLayer;const blocked=reconcilePlanRun({record,project:{file},freshReadSteps:[{tool:"get_project_info",status:"completed",result:{file}},missing]});assert.notEqual(blocked.steps[0].verificationStatus,"passed");
+});
+console.log(`PASS: ${passed} native-shaped source/2D strict semantic + read-only reconciliation cases; AE0, record writes0.`);

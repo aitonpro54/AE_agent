@@ -20,6 +20,26 @@ function stableId(value, first, second) {
   return fields.length && ids.every(id => id !== null && id === ids[0]) ? ids[0] : null;
 }
 const identity = comp => stableId(comp, "itemId", "id");
+// Explicit read-only recovery for the historical nested-read args overwrite.
+// Authority is the persisted validated plan PLUS its bound native reload epoch;
+// no input value is guessed from an epoch and no original record is changed.
+function recoverReloadArguments(record,index){
+ const planned=record?.plan?.steps?.[index-1],executed=executionStep(record,index);
+ if(planned?.tool!=="reload_montage_material_source" || !executed || !executed.args || Object.keys(executed.args).length!==0)return null;
+ const p=record.run?.provenance,e=payload(executed)?.sourceLoadEpoch;
+ const capture=require("./montage-capture-service");
+ try{if(!capture.validExecutionBinding({runId:record.run.id,actionId:p?.actionId,proposalRevision:p?.proposalRevision,planSha256:p?.planSha256,stepIndex:index}))return null;
+  capture.validateLoadEpoch(e,{projectKey:e?.projectKey});}catch(_error){return null;}
+ const rows=record.run?.validation?.steps?.filter(s=>s.index===index && s.tool===planned.tool) || [],safe=rows.length===1 ? rows[0].safeArgs : null;
+ if(!safe || !Array.isArray(safe.applicationRunIds) || !Array.isArray(e?.scope?.applicationRunIds) || !require("./montage-run-bindings").executionArgsMatch(planned,{...executed,args:safe},record.run.validation) ||
+   p?.schema!=="ae-agent-run-provenance.v1" || p.planSha256!==require("./review-evidence").sha256(record.plan) ||
+   !e || e.runId!==record.runId || record.run.id!==record.runId || e.actionId!==p.actionId || e.proposalRevision!==p.proposalRevision || e.planSha256!==p.planSha256 || e.stepIndex!==index ||
+   e.projectKey!==p.projectId || p.projectId!==require("./review-evidence").sha256(normalizeProject(record.project?.file)) || normalizeProject(e.scope.projectFile)!==normalizeProject(record.project?.file) ||
+   e.sourceItemId!==safe.sourceItemId || JSON.stringify(e.scope?.applicationRunIds?.slice().sort())!==JSON.stringify(safe.applicationRunIds?.slice().sort()))return null;
+ const commands=(executed.commands || []).filter(c=>c.id===e.commandId && c.role==="mutation" && c.state==="completed" && c.ok===true && c.result?.nativeReload?.operationExecuted===true);
+ if(commands.length!==1 || JSON.stringify(commands[0].result)!==JSON.stringify(e.nativeBracket))return null;
+ return JSON.parse(JSON.stringify(safe));
+}
 
 function validRecord(record) {
   return !!(record && record.schema === RECORD_SCHEMA && typeof record.runId === "string" && record.runId && record.plan &&
@@ -37,7 +57,8 @@ function executionStep(record, index) {
 
 function boundStep(record, index) {
   const planned = record.plan.steps[index - 1] || {}, executed = executionStep(record, index);
-  return {...planned, ...(executed || {}), index, args: executed && executed.args || planned.args || {}};
+  const recovered=recoverReloadArguments(record,index);
+  return {...planned, ...(executed || {}), index, args: recovered || executed && executed.args || planned.args || {},...(recovered ? {argumentsRecovery:{kind:"stored_validated_reload_args",originalArgsEmpty:true}} : {})};
 }
 
 function targetsFor(step) {
@@ -57,6 +78,9 @@ function reconciliationReadRequests(record) {
   for (let index = 1; index <= record.plan.steps.length; index++) {
     const step = boundStep(record, index), args = step.args || {};
     if (!isMutatingStep(step)) continue;
+    if(step.tool==="reload_montage_material_source"){
+      if(positive(args.sourceItemId))requests.push({stepIndex:index,tool:"get_montage_source_load_evidence",args:{sourceItemId:args.sourceItemId}});continue;
+    }
     for (const target of targetsFor(step)) {
       let tool = COMP_SETTERS.has(step.tool) ? "get_comp_details" : "get_layer_details";
       const readArgs = {...target};
@@ -118,7 +142,7 @@ function requestedState(step, data) {
     const fields = ["position", "scale", "anchorPoint", "rotation", "opacity"].filter(field => own(args, field));
     const observed = data.transform || layer.transform || {};
     if (!fields.length || fields.some(field => finiteTransformValue(args[field], field) === null || finiteTransformValue(observed[field], field) === null)) return null;
-    return fields.every(field => transformValuesMatch(args[field], observed[field], field));
+    return fields.every(field => transformValuesMatch(args[field], observed[field], field,layer.threeDLayer));
   }
   if (step.tool === "replace_layer_source") {
     const sourceId = positive(args.expectedSourceItemId);
@@ -203,6 +227,19 @@ function reconcilePlanRun({record, freshReadSteps = [], commandStates = [], proj
     if (disposition.status === "not_started" && hasUndeliveredProof || disposition.status === "failed" && disposition.reasonCode === "rejected_before_mutation") {
       row.mutationStatus = "not_applied"; row.verificationStatus = "not_required"; row.reasonCode = disposition.reasonCode; continue;
     }
+    if(step.tool==="reload_montage_material_source"){
+      if(step.argumentsRecovery)row.argumentsRecovery=step.argumentsRecovery;
+      const historical=payload(step)?.sourceLoadEpoch,candidates=reads.filter(read=>read?.status==="completed" && read.tool==="get_montage_source_load_evidence" && read.args?.sourceItemId===step.args.sourceItemId && read.mutatesProject!==true);
+      let epochBound=false;try{const c=require("./montage-capture-service"),p=record.run.provenance;c.validateLoadEpoch(historical,{projectKey:historical?.projectKey});
+       epochBound=c.validExecutionBinding({runId:record.run.id,actionId:p?.actionId,proposalRevision:p?.proposalRevision,planSha256:p?.planSha256,stepIndex:step.index}) &&
+        historical.runId===record.runId && record.run.id===record.runId && historical.actionId===p.actionId && historical.proposalRevision===p.proposalRevision && historical.planSha256===p.planSha256 && historical.stepIndex===step.index;
+      }catch(_error){}
+      if(epochBound && candidates.length===1 && payload(candidates[0])?.ok===true && payload(candidates[0]).epoch?.epochId===historical.epochId &&
+        commands.some(c=>c.id===historical.commandId && c.role==="mutation" && c.state==="completed" && c.ok===true && c.result?.nativeReload?.operationExecuted===true)){
+        row.mutationStatus="applied";row.verificationStatus="passed";row.reasonCode="persisted_native_reload_epoch_independently_confirmed";
+      }else row.reasonCode="native_reload_outcome_unresolved_no_epoch";
+      continue;
+    }
     const targets = targetsFor(step), requests = reconciliationReadRequests({...record, plan: {steps: [step]}, run: {steps: [{...step, index: 1}]}});
     if (!targets.length || !typedResultIdentityMatches(step, targets) || !requests.length) continue;
     const states = targets.map((target, position) => {
@@ -220,4 +257,4 @@ function reconcilePlanRun({record, freshReadSteps = [], commandStates = [], proj
   return result;
 }
 
-module.exports = {SCHEMA, reconcilePlanRun, reconciliationReadRequests};
+module.exports = {SCHEMA, reconcilePlanRun, reconciliationReadRequests,recoverReloadArguments};

@@ -299,9 +299,13 @@ Saved AEP, export/render и protected cleanup требуют своего при
 ## Validation
 
 - Fixture/native/UI proof: `.codex-runtime/montage-acceptance-20261003/`; root
-  probes1–4 blocked, seed reconciliation2 current3 applied/pass без replay.
-  Offline root77+3/canonical13/owner21/semantic22 PASS; regression16/17 и отдельный
-  montage-bridge76 rerun PASS, process exit3221226505 сохранён без догадки причины.
+  probes1–4 blocked, probe5 fresh native closure/GUID PASS; seed reconciliation2
+  current3 applied/pass без replay. Root82+3/canonical13/owner21/semantic22 PASS;
+  свежая regression17/17 PASS. Ранний montage-bridge process exit3221226505
+  сохранён без догадки причины; отдельный rerun76 PASS.
+  Reload recovery3native PASS без replay; lossless store/official JSON packets
+  реализованы, packing20/visual16/epoch30 и3 independent counterexamples PASS.
+  Первый fullattempt failed после13PNG на2MiB;3 accepted cycles ещё открыты.
   Flash correction227,75s terminal/schema/artifacts PASS,0 tool errors; effective
   model gemini-3.8-flash-high, effortunknown/null. Полная montage visual ещё открыта.
 

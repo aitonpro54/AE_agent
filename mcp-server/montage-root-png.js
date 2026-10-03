@@ -1,6 +1,7 @@
 "use strict";
 const {deepClone,inspectPayloadSafety,isPositiveInteger,isNonNegativeInteger,isSafeId,normalizeBudgets}=require("./montage-contract");
 const {isValidStretch,isGridAligned,sourceAtRoot,EPSILON}=require("./placeholder-timing");
+const {SCHEMA:CAPTURE_REQUIREMENTS_SCHEMA}=require("./montage-capture-requirements");
 const ROOT_FRAME_BINDING_SCHEMA="ae-agent-root-frame-binding.v1";
 const ROOT_FRAME_BINDING_SCOPE="selected-target-route-root-metadata";
 const ROOT_FRESHNESS_BLOCKED=Object.freeze({status:"blocked",code:"unsupported_unknown_render_graph"});
@@ -39,9 +40,17 @@ function buildPerUseRootPackets({reviewPackets,units,manifest,budgets}={}) {
         if(!isNonNegativeInteger(rootFrame) || Math.abs(sourceTime-sample.sourceTime)>EPSILON || Math.abs(targetTime-sample.targetTime)>EPSILON)return blocked("invalid_root_packet_frame_mapping");
         const requirements=(unit.frameRequirements || []).filter(f=>f.rootFrame===rootFrame && packet.frameIds.includes(f.frameId));
         if(!requirements.length || requirements.some(f=>!isSafeId(f.frameId)))return blocked("missing_root_packet_frame_binding");
-        for(const f of requirements)frames.push({frameId:f.frameId,sceneId:f.sceneId,assignmentId:f.assignmentId,unitId:unit.unitId,
+        for(const f of requirements){
+          const canonical=unit.plan?.montagePipeline?.captureRequirements;
+          const persisted=canonical?.frameRequirements?.find(row=>row.frameId===f.frameId);
+          if(canonical && (canonical.schema!==CAPTURE_REQUIREMENTS_SCHEMA || !persisted || persisted.unitId!==unit.unitId ||
+            persisted.rootCompItemId!==request.rootCompItemId || persisted.rootFrame!==rootFrame ||
+            Math.abs(persisted.rootTime-sample.rootTime)>EPSILON || Math.abs(persisted.targetTime-sample.targetTime)>EPSILON ||
+            Math.abs(persisted.sourceTime-sample.sourceTime)>EPSILON))return blocked("canonical_root_packet_frame_mismatch");
+          frames.push(persisted ? deepClone(persisted) : {frameId:f.frameId,sceneId:f.sceneId,assignmentId:f.assignmentId,unitId:unit.unitId,
           target:deepClone(request.target),rootCompItemId:request.rootCompItemId,rootFrame,rootTime:sample.rootTime,targetTime:sample.targetTime,
           sourceTime:sample.sourceTime,observedStretch:stretch,roles:deepClone(f.roles),reasons:deepClone(f.reasons)});
+        }
       }
     }
     if(frames.length>24 || packet.frameIds.some(id=>!frames.some(f=>f.frameId===id)))return blocked("root_packet_coverage_incomplete");

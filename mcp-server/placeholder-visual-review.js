@@ -1,8 +1,10 @@
 "use strict";
-// Read-only evidence validation. This module never dispatches a provider or an AE command.
+// Evidence validation and bounded server-created inspection packets. Never dispatches a provider or AE command.
 const fs=require("fs"),path=require("path");
 const {hash,OWNER,validateReviewRecord}=require("./placeholder-review-service");
 const PNG=Buffer.from([137,80,78,71,13,10,26,10]);
+const MAX_INSPECTION_INSTRUCTIONS=6000,MAX_MANIFEST_BYTES=1024*1024;
+const MANIFEST_DIRECTORY=path.join(".codex-runtime","placeholder-review-manifests");
 function fail(code){const error=new Error(code);error.code=code;throw error;}
 function normalized(file){return path.resolve(file).replace(/\\/g,"/").toLowerCase();}
 function readImage(image,root){
@@ -13,30 +15,97 @@ function readImage(image,root){
  if(hash(bytes)!==image.sha256 || bytes.length!==image.byteLength)fail("review_image_hash_changed");
  return {width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20)};
 }
+function applicationReference(binding){
+ return {applicationRunId:binding.applicationRunId,actionId:binding.actionId,proposalRevision:binding.proposalRevision,
+  planSha256:binding.planSha256,unitId:binding.unitId,unitContentHash:binding.unitContentHash,bindingSha256:hash(binding)};
+}
+function captureReference(record,image){
+ if(!image?.canonicalCapture)return null;
+ // Presentation refs are derived only after the full original receipt validator.
+ const capture=require("./montage-capture-service");capture.validateCaptureReceipt(record,image);const c=image.canonicalCapture;
+ return {schema:"ae-agent-montage-native-capture-reference.v1",captureId:c.captureId,owner:c.owner,itemId:c.itemId,receiptSha256:hash(c),
+  application:applicationReference(c.application),export:c.export,originalPolicy:c.policy.original,frameSha256:hash(c.frame),
+  graph:Object.fromEntries(Object.entries(c.graph).map(([stage,g])=>[stage,{readerId:g.readerId,sha256:hash(g)}])),
+  files:{sha256:hash(c.files),sources:c.files.after.map(f=>({sourceItemId:f.sourceItemId,sha256:f.sha256,byteLength:f.byteLength}))},
+  png:c.png,resolutionFactor:c.resolutionFactor,completeRootRenderState:c.completeRootRenderState,artisticAccepted:false};
+}
+function bindingReference(record){
+ const b=record.canonicalBinding,apps=b.schema==="ae-agent-montage-owner-bindings.v1" ? b.applications : [b];
+ return {schema:"ae-agent-montage-owner-binding-reference.v1",sha256:hash(b),applications:apps.map(applicationReference),
+  originalPolicy:b.originalPolicy,frameIds:b.frames.map(f=>f.frameId),...(record.captureSession ? {captureSession:record.captureSession} : {})};
+}
 function buildManifest(record,exportRoot){
  validateReviewRecord(record);const images=[];
  for(const image of record.images){const receipt=record.receipt.items.find(item=>item.itemId===image.itemId),dimensions=readImage(image,exportRoot);
   if(dimensions.width!==receipt.width || dimensions.height!==receipt.height)fail("review_image_dimensions_mismatch");
   images.push({itemId:image.itemId,filePath:image.filePath,sha256:image.sha256,byteLength:image.byteLength,...dimensions});}
  const frames=record.spec.controls.map((control,index)=>{const target=record.spec.targets[control.targetIndex],sample=target.samples[control.sampleIndex],receipt=record.receipt.items.find(item=>item.name===control.name);
-  return {frameId:"review-"+index,itemId:receipt.itemId,target:target.target,rootCompItemId:target.rootCompItemId,sourceItemId:target.sourceItemId,sourceKey:target.sourceKey,
+  return {frameId:sample.canonicalFrame?.frameId || "review-"+index,...(sample.canonicalFrame ? {canonicalFrame:sample.canonicalFrame} : {}),itemId:receipt.itemId,target:target.target,rootCompItemId:target.rootCompItemId,sourceItemId:target.sourceItemId,sourceKey:target.sourceKey,
    routeLayerIds:target.routeLayerIds,sampleIndex:control.sampleIndex,roles:sample.roles,rootTime:sample.rootTime,targetTime:sample.targetTime,sourceTime:sample.sourceTime,
-   viewKind:control.viewKind,image:images.find(image=>image.itemId===receipt.itemId)||null};});
+   viewKind:control.viewKind,image:images.find(image=>image.itemId===receipt.itemId)||null,
+   ...(record.canonicalBinding ? {capture:captureReference(record,record.images.find(image=>image.itemId===receipt.itemId))} : {})};});
  const sheet=record.receipt.items.find(item=>item.name===record.spec.sheet.name);
  return {schema:"ae-placeholder-review-manifest.v1",owner:record.owner,projectKey:record.projectKey,receiptHash:record.receiptHash,
   geometryScope:"rectangular_footprint_only; alpha/effects/artistic require image review",frames,sheet:{itemId:sheet.itemId,image:images.find(image=>image.itemId===sheet.itemId)||null},
+  ...(record.canonicalBinding ? {canonicalBinding:bindingReference(record),completeRootRenderState:frames.every(f=>f.capture?.completeRootRenderState===true)} : {}),
   limits:"Only supplied sampled frames; continuity between frames and unsampled shots is unknown."};
 }
-function inspectionMaterial(manifest,workspaceRoot=path.resolve(__dirname,"..")){
+function relativeInput(workspaceRoot,file){
+ const relative=path.relative(workspaceRoot,file);if(relative.startsWith("..") || path.isAbsolute(relative))fail("inspection_images_outside_workspace");
+ return {path:relative.replace(/\\/g,"/"),access:"view_file",scope:"workspace"};
+}
+function manifestDirectoryAncestors(workspace,directory){
+ const relative=path.relative(workspace,directory);
+ if(relative.startsWith("..") || path.isAbsolute(relative) || !fs.lstatSync(workspace).isDirectory() || normalized(fs.realpathSync(workspace))!==normalized(workspace))fail("inspection_manifest_outside_workspace");
+ const nodes=[];let current=workspace;
+ for(const part of relative.split(path.sep)){current=path.join(current,part);nodes.push(current);}
+ for(const node of nodes){let stat;try{stat=fs.lstatSync(node);}catch(error){if(error.code==="ENOENT")break;throw error;}
+  if(!stat.isDirectory() || stat.isSymbolicLink() || normalized(fs.realpathSync(node))!==normalized(node))fail("inspection_manifest_outside_workspace");}
+ return nodes;
+}
+function pinnedManifestFile(manifest,workspaceRoot,allowWrite){
+ const text=JSON.stringify(manifest),bytes=Buffer.from(text,"utf8"),sha256=hash(bytes);
+ if(bytes.length<1 || bytes.length>MAX_MANIFEST_BYTES)fail("inspection_manifest_byte_budget");
+ if(typeof workspaceRoot!=="string" || !path.isAbsolute(workspaceRoot))fail("inspection_workspace_missing");
+ const workspace=fs.realpathSync(workspaceRoot),directory=path.join(workspace,MANIFEST_DIRECTORY);
+ if(normalized(workspace)!==normalized(workspaceRoot))fail("inspection_manifest_outside_workspace");
+ // Inspect every existing ancestor before any mkdir; a junction at an earlier
+ // node must not create a child in its external target before it is rejected.
+ const nodes=manifestDirectoryAncestors(workspace,directory);
+ if(allowWrite)for(const node of nodes){manifestDirectoryAncestors(workspace,node);
+  if(!fs.existsSync(node)){try{fs.mkdirSync(node);}catch(error){if(error.code!=="EEXIST")throw error;}}
+  manifestDirectoryAncestors(workspace,node);}
+ manifestDirectoryAncestors(workspace,directory);
+ const realDirectory=fs.realpathSync(directory),relativeDirectory=path.relative(workspace,realDirectory);
+ if(relativeDirectory.startsWith("..") || path.isAbsolute(relativeDirectory) || normalized(realDirectory)!==normalized(directory))fail("inspection_manifest_outside_workspace");
+ const filePath=path.join(directory,sha256+".json");
+ if(allowWrite && !fs.existsSync(filePath)){try{fs.writeFileSync(filePath,bytes,{flag:"wx"});}catch(error){if(error.code!=="EEXIST")throw error;}}
+ manifestDirectoryAncestors(workspace,directory);
+ const realPath=fs.realpathSync(filePath);if(normalized(realPath)!==normalized(filePath))fail("inspection_manifest_path_changed");
+ let fd;try{
+  fd=fs.openSync(realPath,"r");const before=fs.fstatSync(fd),identity=s=>JSON.stringify([s.dev,s.ino,s.size,s.mtimeMs,s.ctimeMs]);
+  if(!before.isFile() || before.size!==bytes.length || before.size>MAX_MANIFEST_BYTES)fail("inspection_manifest_file_changed");
+  const buffer=Buffer.alloc(bytes.length+1);let length=0,count;
+  while(length<buffer.length && (count=fs.readSync(fd,buffer,length,buffer.length-length,null))>0)length+=count;
+  const actual=buffer.subarray(0,length);
+  if(actual.length!==bytes.length || hash(actual)!==sha256 || !actual.equals(bytes) || identity(before)!==identity(fs.fstatSync(fd)) ||
+   identity(before)!==identity(fs.statSync(realPath)) || fs.realpathSync(filePath)!==realPath)fail("inspection_manifest_file_changed");
+ }finally{if(fd!==undefined)fs.closeSync(fd);}
+ return {schema:"ae-placeholder-review-manifest-file.v1",...relativeInput(workspace,filePath),filePath,realPath,sha256,byteLength:bytes.length};
+}
+const INSPECTION_GUIDANCE="Фактически вызови view_file для каждого required_input: сначала JSON manifest, если задан, затем sheet и каждый полный native PNG. Ничего не записывай. В outputs верни по одному JSON-encoded объекту {frameId,decision:'safe'|'reject',observation} для каждого target_comp/root_comp кадра. В observation конкретно опиши границы, головы/людей и отступы. Только эти кадры; между ними неизвестно. Наличие PNG или JSON не доказательство просмотра.";
+function inspectionMaterial(manifest,workspaceRoot=path.resolve(__dirname,".."),{allowManifestWrite=true}={}){
  const required=manifest.frames.filter(frame=>frame.viewKind!=="source");
  if(!required.length || required.some(frame=>!frame.image) || !manifest.sheet.image)fail("target_images_required");
  // Native control images are required: sheet readability never silently replaces a full control frame.
  const images=[manifest.sheet.image,...required.map(frame=>frame.image)];
  if(images.length>11)fail("inspection_file_budget_requires_smaller_review_scope");
  const manifestSha256=hash(manifest),pin="AE_PLACEHOLDER_REVIEW_PIN:"+manifestSha256;
- const inputs=images.map(image=>{const relative=path.relative(workspaceRoot,image.filePath);if(relative.startsWith("..") || path.isAbsolute(relative))fail("inspection_images_outside_workspace");return {path:relative.replace(/\\/g,"/"),access:"view_file",scope:"workspace"};});
- return {manifestSha256,pin,inlineManifest:manifest,requiredInputs:inputs,
-  instructions:pin+"\n"+JSON.stringify(manifest)+"\nФактически вызови view_file для каждого PNG. Ничего не записывай. В outputs верни по одному JSON-encoded объекту {frameId,decision:'safe'|'reject',observation} для каждого target_comp/root_comp кадра. В observation конкретно опиши границы, головы/людей и отступы. Только эти кадры; между ними неизвестно. Наличие PNG или JSON не доказательство просмотра."};
+ const inputs=images.map(image=>relativeInput(workspaceRoot,image.filePath)),inline=pin+"\n"+JSON.stringify(manifest)+"\n"+INSPECTION_GUIDANCE;
+ if(!manifest.canonicalBinding && inline.length<=MAX_INSPECTION_INSTRUCTIONS)return {manifestSha256,pin,inlineManifest:manifest,requiredInputs:inputs,instructions:inline};
+ const reference=pinnedManifestFile(manifest,workspaceRoot,allowManifestWrite),manifestFilePin="AE_PLACEHOLDER_REVIEW_MANIFEST:"+JSON.stringify({path:reference.path,sha256:reference.sha256,byteLength:reference.byteLength});
+ const instructions=pin+"\n"+manifestFilePin+"\n"+INSPECTION_GUIDANCE;if(instructions.length>MAX_INSPECTION_INSTRUCTIONS)fail("inspection_instructions_budget");
+ return {manifestSha256,pin,manifestFilePin,manifestReference:reference,requiredInputs:[{path:reference.path,access:"view_file",scope:"workspace"},...inputs],instructions};
 }
 function parseViewEvidence(state,events){
  if(!state || state.transport_status!=="completed" || state.task_status!=="success" || state.terminal_result_seen!==true || state.terminal_result_valid!==true || state.schema_valid!==true ||
@@ -61,11 +130,15 @@ function parseViewEvidence(state,events){
 function verifyVisualReview(manifest,state,events,response){
  const pending=(reason)=>({ok:false,status:"insufficient_material",reason,limits:manifest.limits,artisticAccepted:false});
  const proof=parseViewEvidence(state,events);if(!proof.ok)return pending(proof.reason);
- let material;try{material=inspectionMaterial(manifest,state.workspace);}catch(error){return pending(error.code);}
- if(!state.request.instructions || !state.request.instructions.includes(material.pin) || !state.request.instructions.includes(JSON.stringify(manifest)))return pending("inspection_manifest_not_pinned");
- const inputs=state.request.required_inputs;const resolved=value=>normalized(path.resolve(state.workspace,value));
  if(typeof state.workspace!=="string" || !path.isAbsolute(state.workspace))return pending("inspection_workspace_missing");
- if(!Array.isArray(inputs) || material.requiredInputs.some(input=>!inputs.some(value=>value.access==="view_file" && value.scope==="workspace" && resolved(value.path)===resolved(input.path))))return pending("inspection_required_inputs_mismatch");
+ let material;try{material=inspectionMaterial(manifest,state.workspace,{allowManifestWrite:false});}catch(error){return pending(error.code || "inspection_manifest_file_unavailable");}
+ if(typeof state.request.instructions!=="string" || state.request.instructions.length>MAX_INSPECTION_INSTRUCTIONS || !state.request.instructions.includes(material.pin) ||
+  !state.request.instructions.includes(material.manifestFilePin || JSON.stringify(manifest)))return pending("inspection_manifest_not_pinned");
+ if(material.manifestReference && (typeof state.task_id!=="string" || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,100}$/.test(state.task_id)))return pending("inspection_task_identity_mismatch");
+ const inputs=state.request.required_inputs;const resolved=value=>normalized(path.resolve(state.workspace,value));
+ if(!Array.isArray(inputs) || inputs.length>12 || material.requiredInputs.some(input=>!inputs.some(value=>typeof value?.path==="string" && value.access==="view_file" && value.scope==="workspace" && resolved(value.path)===resolved(input.path))))return pending("inspection_required_inputs_mismatch");
+ if(material.manifestReference && inputs.length!==material.requiredInputs.length)return pending("inspection_required_inputs_mismatch");
+ if(material.manifestReference && !proof.viewed.includes(resolved(material.manifestReference.path)))return pending("actual_manifest_view_missing");
  if(material.requiredInputs.some(input=>!proof.viewed.includes(resolved(input.path))))return pending("actual_image_view_missing");
  if(!response || response.status!=="success" || !Array.isArray(response.outputs))return pending("inspection_response_invalid");
  const observations=[];for(const text of response.outputs){try{observations.push(JSON.parse(text));}catch(_error){return pending("concrete_structured_observations_required");}}
@@ -76,7 +149,8 @@ function verifyVisualReview(manifest,state,events,response){
    !/(голов|человек|люд|фигур|лиц|head|person|people|face|subject)/i.test(observed.observation) || !/(границ|кра[йя]|отступ|верх|низ|слева|справа|обрез|edge|margin|top|bottom|left|right|crop)/i.test(observed.observation))return pending("concrete_sample_observation_required");}
  const accepted=observations.every(value=>value.decision==="safe");
  return {ok:true,status:accepted ? "accepted_sampled_frames" : "rejected_sampled_frames",artisticAccepted:accepted,observations,manifestSha256:material.manifestSha256,
-  provenance:{conversationId:state.conversation_id,taskId:state.task_id,actualViewedImages:material.requiredInputs.length},limits:manifest.limits};
+  provenance:{conversationId:state.conversation_id,taskId:state.task_id,actualViewedImages:material.requiredInputs.length-(material.manifestReference ? 1 : 0),
+   ...(material.manifestReference ? {manifestFile:material.manifestReference,actualManifestView:true} : {})},limits:manifest.limits};
 }
 function readInspectionRun(taskId,stateDirectory){
  if(typeof taskId!=="string" || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,100}$/.test(taskId))fail("invalid_inspection_run_id");
@@ -85,4 +159,4 @@ function readInspectionRun(taskId,stateDirectory){
  const lines=read(".ndjson",4*1024*1024).trim().split(/\r?\n/);if(lines.length>10000)fail("inspection_event_budget");
  return {state,events:lines.map(line=>JSON.parse(line)),response:JSON.parse(read(".response.json",256*1024))};
 }
-module.exports={readImage,buildManifest,inspectionMaterial,parseViewEvidence,verifyVisualReview,readInspectionRun};
+module.exports={readImage,buildManifest,inspectionMaterial,parseViewEvidence,verifyVisualReview,readInspectionRun,MAX_INSPECTION_INSTRUCTIONS,MAX_MANIFEST_BYTES};

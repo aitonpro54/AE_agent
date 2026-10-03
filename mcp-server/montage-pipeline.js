@@ -24,6 +24,7 @@ const { validateObservations, bindTargetObservation, keyOf } = require("./montag
 const { buildPlaceholderPlan } = require("./placeholder-plan-builder");
 const { checkPlaceholderAssignments, mediaKeyForSource } = require("./placeholder-usage");
 const { resolveReviewTargets } = require("./placeholder-review-service");
+const { buildCanonicalCaptureRequirements } = require("./montage-capture-requirements");
 
 const COMPILATION_SCHEMA = "ae-agent-montage-compilation.v1";
 const close = (a, b) => isFiniteNumber(a) && isFiniteNumber(b) && Math.abs(a - b) <= EPSILON;
@@ -896,6 +897,19 @@ function compileMontagePipeline(input = {}) {
       if (bound.observed.protection.policyHash) plan.montagePipeline.policyHash = bound.observed.protection.policyHash;
       plan.montagePipeline.readBudgets = deepClone(budgets);
 
+      // Coverage and its exact mapping are executable intent. Persist them before
+      // unit hashing so a stored application record is the capture authority.
+      const frameRequirements = manifest.frameCoverage.filter(f => f.assignmentId === a.assignmentId);
+      const capture = buildCanonicalCaptureRequirements({unitId,assignment:a,scene,frames:frameRequirements,
+        expectedReadBack:plan.expectedReadBack,route:bound.observed.route || [],project:manifest.project,
+        manifestRevision:manifest.revision,materialRevision:catalog.revision,manifestHash:sha256(manifest),materialsHash:sha256(catalog),
+        policyHash:plan.montagePipeline.policyHash,material:verificationBindings.material});
+      if(!capture.ok) {
+        addBlocker(blockers,capture.reason,`manifest.assignments.${a.assignmentId}`,undefined,{assignmentId:a.assignmentId});
+        continue;
+      }
+      plan.montagePipeline.captureRequirements=capture.requirements;
+
       const contentHash = computeUnitContentHash({
         unitId,
         assignment: a,
@@ -910,8 +924,6 @@ function compileMontagePipeline(input = {}) {
         route: bound.observed.route
       });
       plan.montagePipeline.unitContentHash = contentHash;
-
-      const frameRequirements = manifest.frameCoverage.filter(f => f.assignmentId === a.assignmentId);
 
       const unit = {
         unitId,

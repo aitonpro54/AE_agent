@@ -1,8 +1,29 @@
 "use strict";
 const { aeSupportScript } = require("./placeholder-protection");
+// Same bounded normalization is used in Node and serialized into ExtendScript.
+// An observed disabled 3D switch is mandatory; unknown Z is never discarded.
+function normalizeTransformValue(key,value,threeD) {
+ if(key!=="anchorPoint" && key!=="position" && key!=="scale")return value;
+ if(threeD!==false || !(value instanceof Array) || (value.length!==2 && value.length!==3))throw new Error("unsupported_placeholder_transform_dimensions");
+ for(var i=0;i<value.length;i++)if(typeof value[i]!=="number" || !isFinite(value[i]))throw new Error("unknown_placeholder_transform_value");
+ if(value.length===3 && value[2]!==(key==="scale"?100:0))throw new Error("unsupported_placeholder_transform_z");
+ return [value[0],value[1]];
+}
 const aeGeometrySupport = `${aeSupportScript}
+${normalizeTransformValue.toString()}
+function __phCanonicalSource(source,unsupported) {
+ unsupported=unsupported||[];
+ var id=null;try{id=source ? source.id : null;}catch(e){}
+ if(typeof id!=="number" || !isFinite(id) || id<=0 || Math.floor(id)!==id || id>9007199254740991){unsupported.push("unknown_placeholder_source_identity");return null;}
+ var count=app.project.numItems,found=null;
+ if(typeof count!=="number" || !isFinite(count) || count<0 || Math.floor(count)!==count || count>2000){unsupported.push("placeholder_source_lookup_budget");return null;}
+ for(var i=1;i<=count;i++){var item=app.project.item(i);if(item && item.id===id){if(found){unsupported.push("ambiguous_placeholder_source_identity");return null;}found=item;}}
+ if(!found){unsupported.push("missing_canonical_placeholder_source");return null;}
+ if(!(found instanceof CompItem) && !(found instanceof FootageItem)){unsupported.push("unsupported_canonical_placeholder_source");return null;}
+ return found;
+}
 function __phGeometry(comp,layer,sourceOverride) {
- var source=sourceOverride||layer.source;var transform={};var unsupported=[];var group=layer.property("ADBE Transform Group");
+ var transform={};var unsupported=[];var source=__phCanonicalSource(sourceOverride||layer.source,unsupported);var group=layer.property("ADBE Transform Group");
  var names={anchorPoint:"ADBE Anchor Point",position:"ADBE Position",scale:"ADBE Scale",rotation:"ADBE Rotate Z"};
  if(!layer.source || layer.matchName==="ADBE Text Layer" || layer.matchName==="ADBE Vector Layer")unsupported.push("unsupported_placeholder_layer_kind");
  for(var key in names)if(names.hasOwnProperty(key))transform[key]=__phReadValue(group && group.property(names[key]),unsupported);
@@ -10,12 +31,8 @@ function __phGeometry(comp,layer,sourceOverride) {
  var sourceKnown=source instanceof FootageItem || source instanceof CompItem;
  var parentId=null;try{parentId=layer.parent ? layer.parent.id : null;}catch(e){parentId="unknown";}
  var threeD=typeof layer.threeDLayer==="boolean" ? layer.threeDLayer : null;
- var rawAnchor=transform.anchorPoint;
- var canonicalAnchor=rawAnchor;
- if(threeD===false && (rawAnchor instanceof Array)) {
-  if(rawAnchor.length===2 && isFinite(rawAnchor[0]) && isFinite(rawAnchor[1])) canonicalAnchor=[rawAnchor[0],rawAnchor[1]];
-  else if(rawAnchor.length===3 && isFinite(rawAnchor[0]) && isFinite(rawAnchor[1]) && rawAnchor[2]===0) canonicalAnchor=[rawAnchor[0],rawAnchor[1]];
- }
+ for(var field in names)if(names.hasOwnProperty(field) && field!=="rotation")try{transform[field]=normalizeTransformValue(field,transform[field],threeD);}catch(e){unsupported.push(String(e.message || e));}
+ var canonicalAnchor=transform.anchorPoint;
  return {geometry:{comp:{width:comp.width,height:comp.height,pixelAspect:comp.pixelAspect,frameRate:comp.frameRate},
   source:{width:sourceKnown ? source.width : null,height:sourceKnown ? source.height : null,pixelAspect:sourceKnown ? source.pixelAspect : null,duration:sourceKnown ? source.duration : null,frameRate:sourceKnown ? source.frameRate : null},
   layer:{threeDLayer:threeD,parentLayerId:parentId,
@@ -60,4 +77,4 @@ function geometryGuardScript(baselines) {
   }
  }`;
 }
-module.exports = { aeGeometrySupport, geometryReadScript,geometryGuardScript };
+module.exports = { aeGeometrySupport, geometryReadScript,geometryGuardScript,normalizeTransformValue };

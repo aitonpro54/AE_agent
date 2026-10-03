@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("node:zlib");
 const placeholderProtection = require("./placeholder-protection");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -496,6 +497,55 @@ function updateProjectIntentMemory(args = {}, options = {}) {
 
 const PROJECT_STATE_SCHEMA = "ae-project-intent-runtime.v1";
 const reviewService = require("./placeholder-review-service");
+const PACKED_REVIEW_SCHEMA="ae-agent-canonical-review-packed.v1";
+const MAX_PACKED_STATE_BYTES=2*1024*1024,MAX_REVIEW_LOGICAL_BYTES=16*1024*1024,MAX_STATE_LOGICAL_BYTES=32*1024*1024;
+function packedReviewError(code){throw new Error(code);}
+function packCanonicalReview(record){
+  reviewService.validateReviewRecord(record);
+  if(!record.canonicalBinding)return record;
+  const raw=Buffer.from(JSON.stringify(record),"utf8");
+  if(raw.length>MAX_REVIEW_LOGICAL_BYTES)packedReviewError("canonical_review_logical_size_limit");
+  const compressed=zlib.deflateRawSync(raw),payloadBase64=compressed.toString("base64");
+  return {schema:PACKED_REVIEW_SCHEMA,codec:"deflate-raw",rawByteLength:raw.length,compressedByteLength:compressed.length,
+    rawSha256:reviewService.hash(raw),compressedSha256:reviewService.hash(compressed),payloadBase64};
+}
+function unpackCanonicalReview(envelope){
+  if(!envelope || envelope.schema!==PACKED_REVIEW_SCHEMA)return envelope;
+  const keys=["schema","codec","rawByteLength","compressedByteLength","rawSha256","compressedSha256","payloadBase64"];
+  if(Object.keys(envelope).length!==keys.length || Object.keys(envelope).some(k=>!keys.includes(k)) || envelope.codec!=="deflate-raw" ||
+    !Number.isSafeInteger(envelope.rawByteLength) || envelope.rawByteLength<1 || envelope.rawByteLength>MAX_REVIEW_LOGICAL_BYTES ||
+    !Number.isSafeInteger(envelope.compressedByteLength) || envelope.compressedByteLength<1 || envelope.compressedByteLength>MAX_PACKED_STATE_BYTES ||
+    !/^[a-f0-9]{64}$/.test(envelope.rawSha256) || !/^[a-f0-9]{64}$/.test(envelope.compressedSha256) || typeof envelope.payloadBase64!=="string" ||
+    envelope.payloadBase64.length!==4*Math.ceil(envelope.compressedByteLength/3) || !/^[A-Za-z0-9+/]*={0,2}$/.test(envelope.payloadBase64))packedReviewError("invalid_canonical_review_packed_envelope");
+  const compressed=Buffer.from(envelope.payloadBase64,"base64");
+  if(compressed.length!==envelope.compressedByteLength || compressed.toString("base64")!==envelope.payloadBase64 || reviewService.hash(compressed)!==envelope.compressedSha256)packedReviewError("canonical_review_packed_hash_mismatch");
+  let raw;try{const inflated=zlib.inflateRawSync(compressed,{maxOutputLength:envelope.rawByteLength,info:true});if(inflated.engine.bytesWritten!==compressed.length)packedReviewError("canonical_review_compressed_trailing_bytes");raw=inflated.buffer;}catch(_error){packedReviewError("canonical_review_inflate_budget_or_format");}
+  if(raw.length!==envelope.rawByteLength || reviewService.hash(raw)!==envelope.rawSha256)packedReviewError("canonical_review_decoded_hash_mismatch");
+  const text=raw.toString("utf8");if(!Buffer.from(text,"utf8").equals(raw))packedReviewError("canonical_review_invalid_utf8");
+  let record;try{record=JSON.parse(text);}catch(_error){packedReviewError("canonical_review_invalid_json");}
+  if(JSON.stringify(record)!==text || !record?.canonicalBinding)packedReviewError("canonical_review_noncanonical_json_or_legacy");
+  reviewService.validateReviewRecord(record);return record;
+}
+function transformReviewStore(store,pack){
+  if(!store || !isPlainObject(store.projectState) || Object.keys(store.projectState).length>100)packedReviewError("invalid_project_state_schema");
+  let logicalBytes=0;const projectState=Object.create(null);
+  for(const [key,state] of Object.entries(store.projectState)){
+    if(!/^[a-f0-9]{64}$/.test(key) || !state || !isPlainObject(state))packedReviewError("invalid_project_state");
+    if(state.reviewArtifacts!==undefined && (!isPlainObject(state.reviewArtifacts) || Object.keys(state.reviewArtifacts).length>8))packedReviewError("invalid_review_artifact_store");
+    const reviews=Object.create(null);
+    for(const [owner,value] of Object.entries(state.reviewArtifacts || {})){
+      if(!reviewService.OWNER.test(owner))packedReviewError("invalid_review_artifact_owner");
+      if(!pack && value?.schema===PACKED_REVIEW_SCHEMA){logicalBytes+=value.rawByteLength;if(logicalBytes>MAX_STATE_LOGICAL_BYTES)packedReviewError("project_state_logical_size_limit");}
+      const record=pack ? value : unpackCanonicalReview(value);
+      if(pack || value?.schema!==PACKED_REVIEW_SCHEMA){logicalBytes+=Buffer.byteLength(JSON.stringify(record),"utf8");if(logicalBytes>MAX_STATE_LOGICAL_BYTES)packedReviewError("project_state_logical_size_limit");}
+      reviews[owner]=pack ? packCanonicalReview(record) : record;
+    }
+    projectState[key]={...state,...(state.reviewArtifacts!==undefined ? {reviewArtifacts:reviews} : {})};
+  }
+  const logical={...store,projectState};
+  if(!pack && Buffer.byteLength(JSON.stringify(logical),"utf8")>MAX_STATE_LOGICAL_BYTES)packedReviewError("project_state_logical_size_limit");
+  return logical;
+}
 function projectStatePath(options = {}) {
   return options.statePath ? path.resolve(options.statePath) : path.join(
     process.env.AE_BRIDGE_STATE_DIR || path.join(REPO_ROOT, ".codex-runtime", "project-intent"), "project-intent-state.json");
@@ -521,6 +571,13 @@ function validateProjectStateStore(store) {
       !Number.isSafeInteger(state.revision) || state.revision < 0 || !Array.isArray(state.acceptedPlaceholders) ||
       state.acceptedPlaceholders.length > 200 || !Array.isArray(state.groupMappings) || state.groupMappings.length > 500) throw new Error("invalid_project_state");
     const targets = new Set();
+    if(state.sourceLoadEpochs!==undefined){
+      if(!isPlainObject(state.sourceLoadEpochs) || Object.keys(state.sourceLoadEpochs).length>64)throw new Error("invalid_native_source_load_epoch_store");
+      for(const [sourceId,epoch] of Object.entries(state.sourceLoadEpochs)){
+        if(String(epoch.sourceItemId)!==sourceId)throw new Error("invalid_native_source_load_epoch_identity");
+        require("./montage-capture-service").validateLoadEpoch(epoch,state);
+      }
+    }
     if(state.reviewArtifacts!==undefined) {
       if(!isPlainObject(state.reviewArtifacts) || Object.keys(state.reviewArtifacts).length>8)throw new Error("invalid_review_artifact_store");
       let reviewItems=0;
@@ -557,8 +614,8 @@ function loadProjectStateStore(options = {}) {
   const file = projectStatePath(options);
   if (!fs.existsSync(file)) return { schema: PROJECT_STATE_SCHEMA, projectState: {} };
   try {
-    if (fs.statSync(file).size > 2 * 1024 * 1024) throw new Error("state_size_limit");
-    return validateProjectStateStore(JSON.parse(fs.readFileSync(file, "utf8")));
+    if (fs.statSync(file).size > MAX_PACKED_STATE_BYTES) throw new Error("state_size_limit");
+    return validateProjectStateStore(transformReviewStore(JSON.parse(fs.readFileSync(file, "utf8")),false));
   } catch (cause) {
     const error = new Error("Project Intent runtime повреждён: " + cause.message);
     error.code = "project_state_corrupt";
@@ -573,13 +630,16 @@ function readProjectState(projectFile, options = {}) {
 }
 function atomicProjectStateWrite(store, options = {}) {
   validateProjectStateStore(store);
+  if(Buffer.byteLength(JSON.stringify(store),"utf8")>MAX_STATE_LOGICAL_BYTES)throw new Error("project_state_logical_size_limit");
+  const serialized=JSON.stringify(transformReviewStore(store,true),null,2)+"\n";
+  if(Buffer.byteLength(serialized,"utf8")>MAX_PACKED_STATE_BYTES)throw new Error("project_state_size_limit");
   const file = projectStatePath(options);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = file + "." + crypto.randomUUID() + ".tmp";
   let descriptor;
   try {
     descriptor = fs.openSync(temporary, "wx");
-    fs.writeFileSync(descriptor, JSON.stringify(store, null, 2) + "\n", "utf8");
+    fs.writeFileSync(descriptor, serialized, "utf8");
     fs.fsyncSync(descriptor);
     fs.closeSync(descriptor);
     descriptor = null;
@@ -641,12 +701,26 @@ function createProjectStateController(options = {}) {
         if(record.projectKey!==state.projectKey)throw new Error("review_artifact_project_mismatch");
         state.reviewArtifacts=state.reviewArtifacts || {};
         if(state.reviewArtifacts[record.owner])throw new Error("review_owner_already_registered");
-        state.reviewArtifacts[record.owner]=JSON.parse(JSON.stringify(record));
+        const owned=JSON.parse(JSON.stringify(record));
+        if(owned.canonicalBinding)require("./montage-capture-service").registerOwnerPolicy(owned,state);
+        state.reviewArtifacts[record.owner]=owned;
+      });
+    },
+    registerSourceLoadEpoch(projectFile,epoch,expectedRevision){
+      return update(projectFile,expectedRevision,state=>{
+        require("./montage-capture-service").validateLoadEpoch(epoch,state);
+        state.sourceLoadEpochs=state.sourceLoadEpochs || {};state.sourceLoadEpochs[epoch.sourceItemId]=JSON.parse(JSON.stringify(epoch));
       });
     },
     addReviewImage(projectFile,owner,image,expectedRevision) {
       return update(projectFile,expectedRevision,state=>{
         const record=state.reviewArtifacts && state.reviewArtifacts[owner];if(!record)throw new Error("review_owner_unregistered");
+        if(record.canonicalBinding){
+          const capture=require("./montage-capture-service");capture.assertOwnerPolicy(record,state);
+          if(record.images.some(value=>value.itemId===image.itemId))throw new Error("root_png_replay_requires_fresh_capture");
+          if(capture.frameForItem(record,image.itemId))capture.validateCaptureReceipt(record,image);
+          capture.advanceOwnerPolicy(record,state);
+        }
         record.images=record.images.filter(value=>value.itemId!==image.itemId);record.images.push(JSON.parse(JSON.stringify(image)));
       });
     },
@@ -674,4 +748,5 @@ module.exports = {
   updateProjectIntentMemory,
   PROJECT_STATE_SCHEMA, canonicalSavedProject, projectStateKey, projectStatePath,
   validateProjectStateStore, loadProjectStateStore, readProjectState, createProjectStateController
+  ,PACKED_REVIEW_SCHEMA,MAX_PACKED_STATE_BYTES,MAX_REVIEW_LOGICAL_BYTES,MAX_STATE_LOGICAL_BYTES,packCanonicalReview,unpackCanonicalReview
 };

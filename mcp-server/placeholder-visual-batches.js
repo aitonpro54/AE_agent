@@ -3,7 +3,7 @@
 const { hash } = require("./placeholder-review-service");
 const { inspectionMaterial, verifyVisualReview } = require("./placeholder-visual-review");
 function invalid(code) { const error=new Error(code);error.code=code;throw error; }
-function buildInspectionBatches(manifest) {
+function buildInspectionBatches(manifest,options={}) {
   if (!manifest || !Array.isArray(manifest.frames)) invalid("review_manifest_frames_missing");
   if (manifest.frames.some(frame=>!frame || !["source","target_comp","root_comp"].includes(frame.viewKind))) invalid("review_frame_view_kind_invalid");
   const frames=manifest.frames.filter(frame=>frame && frame.viewKind!=="source");
@@ -15,12 +15,13 @@ function buildInspectionBatches(manifest) {
   for(let index=0;index<totalBatches;index++) {
     const selected=frames.slice(index*10,(index+1)*10),frameIds=selected.map(frame=>frame.frameId);
     const scoped=totalBatches===1 ? manifest : {...manifest,frames:selected,reviewScope:{baseManifestSha256,batchIndex:index,totalBatches,frameIds}};
-    batches.push({index,frameIds,manifest:scoped,material:inspectionMaterial(scoped)});
+    batches.push({index,frameIds,manifest:scoped,material:inspectionMaterial(scoped,options.workspaceRoot,options)});
   }
   return {baseManifestSha256,batches};
 }
-function verifyVisualReviewBatches(manifest,runs) {
-  let built;try{built=buildInspectionBatches(manifest);}catch(error){return {ok:false,status:"insufficient_material",artisticAccepted:false,reason:error.code,limits:manifest && manifest.limits};}
+function verifyVisualReviewBatches(manifest,runs,options={}) {
+  // Rebuild only the immutable pins; verification must never recreate a missing or changed JSON file.
+  let built;try{built=buildInspectionBatches(manifest,{...options,allowManifestWrite:false});}catch(error){return {ok:false,status:"insufficient_material",artisticAccepted:false,reason:error.code || "inspection_manifest_file_unavailable",limits:manifest && manifest.limits};}
   const pending=(reason,batchResults=[])=>({ok:false,status:"insufficient_material",artisticAccepted:false,reason,batchResults,
     coverage:{reviewedFrames:batchResults.reduce((count,result)=>count+result.observations.length,0),expectedFrames:built.batches.reduce((count,batch)=>count+batch.frameIds.length,0)},limits:manifest.limits});
   if(!Array.isArray(runs) || !runs.length || runs.length>8) return pending("inspection_runs_missing_or_over_budget");
@@ -33,6 +34,8 @@ function verifyVisualReviewBatches(manifest,runs) {
     const run=candidates[0];used.add(run.state.task_id);
     const result=verifyVisualReview(batch.manifest,run.state,run.events,run.response);
     if(!result.ok) return pending(result.reason,batchResults);
+    if(batch.material.manifestReference && result.provenance.manifestFile.realPath!==batch.material.manifestReference.realPath)
+      return pending("inspection_manifest_task_path_mismatch",batchResults);
     batchResults.push(result);
   }
   if(used.size!==runs.length) return pending("inspection_run_outside_review_scope",batchResults);
