@@ -43,9 +43,11 @@ canonical record повторно сверяются, чтобы не смеши
 
 `artifacts` описывает нынешние файлы из `request.expected_artifacts`, включая
 полный SHA256 и время чтения. Старое `artifactVerification` не становится свежим
-доказательством изменения. AGY metadata не хранит before hashes: `changed:null`,
-`changeStatus:"unknown_no_before_proof"` сохраняются; требование `changed` остаётся
-блокером без независимой проверки. Model `reported_outputs` не выбирает пути.
+доказательством изменения. Legacy metadata без доказанной пары before/after
+сохраняет `changed:null`, `changeStatus:"unknown_no_before_proof"`; требование
+`changed` остаётся блокером. Новый bound proof применяется только после сверки
+request/path/times/full SHA и текущего файла (см. дополнение ниже).
+Model `reported_outputs` не выбирает пути.
 
 Native сведения имеют `fresh:false` и прошлое `observedAt`; generatedAt сводки
 не обновляет их свежесть. `coverage:"provided_run_ids_only"` и

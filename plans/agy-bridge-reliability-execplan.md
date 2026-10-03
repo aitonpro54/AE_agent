@@ -1,9 +1,10 @@
 # Этап 3 — завершение и восстановление поручений agy-bridge
 
-Статус: 3 октября 2026 — baseline сверён, оставшийся offline scope в работе.
+Статус: 3 октября 2026 — R1–R3 завершены и приняты offline.
 Целевой репозиторий: `C:/Users/Ant/Documents/Codex/agy-bridge`.
 Документ хранится в AE Agent как связанный roadmap; общий код меняется только
-в целевом репозитории после отдельного поручения на этот этап.
+в целевом репозитории по отдельному поручению на этот этап. Live acceptance
+и оставшиеся AE root-render/canonical capture blockers сюда не входят.
 
 ## Цель и существующее основание
 
@@ -120,15 +121,24 @@ evidence остаётся целиком локально. Зафиксиров�
 
 ## Progress
 
+2026-10-03: оставшийся scope закрыт. Opt-in compact status (8 KiB), paged
+public diagnostics с generation SHA, read-only paged reconciliation report,
+OS source/time и recorded identities, last public event/lifecycle/stop поля;
+claim дополнен request SHA. Проверены actual wrapper и все три consumer profiles.
+Этапы AE 1–2 остаются на checkpoint `8560e0d`; их runtime blockers не закрывались.
+Checkpoints: agy-bridge `42e11b2` (baseline), `4288fc2` (artifact proof),
+`e7da18f` (report/lifecycle/приёмка); AE `652b08e` (roadmap) и `d84e8a6`
+(consumer proof). Все изменения общего кода находятся в agy-bridge.
+
 2026-10-03: R1.5 реализован в agy-bridge; persisted before до spawn и after
 включая failure, request/path binding, full SHA с 16 MiB/file, 64 MiB/phase и
 2 s deadline. AE consumer сверяет обе фазы и текущий файл; legacy changed:null.
 Compact/pages и report остаются следующим блоком. R3.4 consumer адаптация готова.
 
 - [x] План подготовлен; существующий аудит и границы клиентской сводки учтены.
-- [ ] R1 — диагностика и доказуемые artifact snapshots.
-- [ ] R2 — process lifecycle и read-only reconciliation.
-- [ ] R3 — ownership, lock и совместимость клиентов.
+- [x] R1 — диагностика и доказуемые artifact snapshots (offline).
+- [x] R2 — process lifecycle и read-only reconciliation (offline).
+- [x] R3 — ownership, lock и совместимость клиентов (offline).
 
 2026-10-03: сопоставление R1–R3 на `agy-bridge 05d0d53`, AE `8560e0d`:
 R1.1–4 существуют (preflight не резервирует task ID; причины возвращаются без
@@ -140,6 +150,14 @@ R3.1–3: atomic scopes/conversation и exact token существуют; reques
 минимальная адаптация и offline fixtures. Общий код только в agy-bridge.
 
 ## Decision Log
+
+2026-10-03: default task schema/profiles/run/status/exit policy сохранены.
+Compact/page/report — совместимые opt-in схемы v1. Report не пишет state и не
+освобождает ресурс; query success не task acceptance. Release response сохраняет
+исторические outcome; новый claim требует exact token + request SHA, legacy
+без hash читается. Client-native refs не открываются. Внешний controller остаётся
+у клиента; descendants unknown, auto-unlock/retry отсутствуют. File deadline
+кооперативный между syscalls; state не подписан и containment не sandbox.
 
 2026-10-03: persisted artifact evidence локальное и неподписанное; hash/binding
 предотвращают смешение snapshot, не доказывают доверенность полностью
@@ -157,6 +175,14 @@ AE root-render/canonical capture blockers.
 Этап 2 не ждёт R3. Persist before proof предлагается впервые, не объявлен готовым.
 
 ## Validation
+
+2026-10-03, финальный блок: **100 bridge tests PASS**, 35,747 s; **24 AE offline
+groups PASS**, check:rules/node --check/py_compile/diff checks и CLI help PASS.
+Реальные finite subprocess воспроизводят deadline/hanging/abrupt exit/inherited
+pipes/manager crash/PID identity/cross-process lock races. Read-only fixture
+trees сохраняют SHA; 40 artifact pages и Unicode diagnostics ≤8 KiB, поколения
+связаны SHA. Actual VideoScout wrapper status и codex fixtures PASS; действующие
+antigravity-cli references сверены без изменений. Live/model proof отсутствует.
 
 2026-10-03, artifact block: **89 bridge tests PASS** (29,231 s), **24 AE offline
 groups PASS**, реальный Python state прочитан настоящим AE consumer; py_compile,
