@@ -162,6 +162,12 @@ For read-only live connectivity, when After Effects and the panel are available:
 - `node scripts/cep-panel-cdp-smoke.js inspect`
 - `node scripts/cep-panel-cdp-smoke.js connector-status-smoke`
 
+Проверяй фактический scope этих команд: `inspect` может автостартовать daemon
+(для только чтения задавать `CEP_PANEL_ENSURE_DAEMON=0`), а
+`connector-status-smoke` использует временные fake overrides, reload и UI clicks.
+Последний не является доказательством live connectivity и требует scope на эти
+UI действия. Для живого подключения достаточно точных MCP status/native reads.
+
 Do not run mutating live validation, OpenAI CLI planner lanes, Local/Ollama, or
 broad/default CEP smoke unless the current scope explicitly approves it. For
 Markdown/TOML-only instruction changes, use rules/config validation and diff checks;
