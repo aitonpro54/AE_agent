@@ -233,6 +233,7 @@ async function main() {
         result = {comp: {itemIndex: expected.compItemIndex, name: expected.compName},
           layer: {index: expected.layerIndex, name: expected.layerName}, propertyTreeTruncated: false,
           propertyTree: [{propertyPath: expected.propertyPath, expressionEnabled: false,
+            value: expected.completeKeyframes[expected.completeKeyframes.length - 1].value,
             numKeys: expected.completeKeyframes.length,
             keyframes: expected.completeKeyframes.map((key) => ({...key})), keyframesTruncated: false}]};
       } else if (command.script.includes("setValueAtTime")) {
@@ -248,7 +249,30 @@ async function main() {
         }
         result = {keyframeCount: 3, clearExisting: true, propertyPath: [2, 11]};
       } else if (command.script.includes("setInterpolationTypeAtKey")) {
-        result = {keyIndices: [1, 2, 3], interpolation: "linear"};
+        const target = built.plan.expectedReadBack.after[0];
+        const keyframes = target.completeKeyframes.map((key) => ({...key}));
+        result = {
+          comp: {itemIndex: target.compItemIndex, name: target.compName},
+          layer: {index: target.layerIndex, name: target.layerName},
+          property: {
+            name: target.propertyPath[target.propertyPath.length - 1].name,
+            matchName: target.propertyPath[target.propertyPath.length - 1].matchName,
+            propertyIndex: target.propertyPath[target.propertyPath.length - 1].propertyIndex,
+            propertyPath: target.propertyPath,
+            numKeys: keyframes.length,
+            keyframes,
+            layer: {index: target.layerIndex, name: target.layerName}
+          },
+          keyIndices: keyframes.map((key) => key.index),
+          interpolation: "linear",
+          keyframeEase: {
+            before: keyframes.map((key) => ({...key})),
+            after: keyframes.map((key) => ({...key})),
+            originalKeyCount: keyframes.length,
+            verified: true,
+            errors: []
+          }
+        };
       } else {
         throw new Error(`Unexpected synthetic panel command: ${command.script.slice(-1600)}`);
       }

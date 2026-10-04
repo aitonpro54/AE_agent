@@ -306,7 +306,8 @@ async function waitForPlanState(proposalSnapshotReader, options = {}) {
         distinct: true,
         ok: false,
         status: "expired",
-        reason: "proposal_expired"
+        reason: "proposal_expired",
+        snapshot
       };
     }
 
@@ -376,7 +377,7 @@ async function waitForPlanState(proposalSnapshotReader, options = {}) {
         timedOut: false,
         durationMs: Date.now() - startedAt,
         observedAt: new Date().toISOString(),
-        lastRun: null,
+        lastRun: (res.status === "expired" && res.snapshot) ? compactLastRunSummary(res.snapshot.lastRun) : null,
         ...(res.observedInstanceId ? { observedInstanceId: res.observedInstanceId } : {}),
         ...(res.supersededBy ? { supersededBy: res.supersededBy } : {}),
         ...(res.currentRevision !== undefined ? { currentRevision: res.currentRevision } : {})

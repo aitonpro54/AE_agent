@@ -37,7 +37,7 @@ async function main() {
   const post = (route, body, token = fixture.panelToken) =>
     fixture.request({ path: route, token, body, timeoutMs: 30000 });
 
-  async function withPanel(action) {
+  async function withPanel(action, afterNativeResult = null) {
     let done = false, response, error;
     await pollPanel(fixture, { projectFile: project.read("app.project.file.fsName") });
     const pending = action().then(
@@ -56,6 +56,9 @@ async function main() {
       const echo = commandEcho(command);
       assert.equal((await post("/bridge/submitted", echo)).status, 200);
       const raw = project.execute(script);
+      if (typeof afterNativeResult === "function") {
+        afterNativeResult(command, raw);
+      }
       const result = await post("/bridge/result", { ...echo, ok: true, result: JSON.stringify(raw) });
       assert.equal(result.status, 200, result.text);
     }
@@ -96,13 +99,86 @@ async function main() {
     assert.equal(lifecycle.appVersion, "24.2.1");
     assert.equal(lifecycle.lifecycleReady, true);
 
-    // 3. build_comp_visual_review_plan: strict bad input (zero native queries) and valid build
+    // 3. get_project_info: confirmed native revision and supported.revision
+    const projectInfo = await call("get_project_info", {});
+    assert.equal(projectInfo.revision, 42);
+    assert.equal(projectInfo.supported && projectInfo.supported.revision, true);
+
+    // 4. build_comp_visual_review_plan: strict bad input (zero native queries) and revision guards
     const badBuild1 = await call("build_comp_visual_review_plan", { targets: [] }, true);
     assert.equal(badBuild1.code, "target_count_out_of_range");
 
     const badBuild2 = await call("build_comp_visual_review_plan", { targets: [{ compItemId: "invalid" }] }, true);
     assert.equal(badBuild2.code, "invalid_target_shape");
 
+    // 4a. Native reads never coerce unknown, nonnumeric or unsafe revisions into proof.
+    for (const value of ["undefined", "null", '"42"', "false", "9007199254740992", "-1", "1.5"]) {
+      project.change(`app.project.revision = ${value};`);
+      const info = await call("get_project_info", {});
+      assert.equal(info.revision, null, value);
+      assert.equal(info.supported.revision, false, value);
+      const badRevisionBuild = await call("build_comp_visual_review_plan", {
+        targets: [{ compItemId: 10, times: [0] }]
+      }, true);
+      assert.equal(badRevisionBuild.ok, false, value);
+      assert.equal(badRevisionBuild.code, "project_revision_unavailable", value);
+    }
+
+    const isProjectInfoResult = (command, raw) =>
+      command.script.includes("var framesCount = __codexFramesCountTypeSnapshot(project);") &&
+      raw && raw.result && Object.hasOwn(raw.result, "revision");
+    const buildRequest = () => post("/tools/call", {
+      name: "build_comp_visual_review_plan",
+      arguments: { targets: [{ compItemId: 10, times: [0] }] }
+    }, fixture.automationToken);
+    const assertBuildRejected = (response, code) => {
+      assert.equal(response.status, 200, response.text);
+      assert.equal(response.body.result.isError, true);
+      const result = JSON.parse(response.body.result.content[0].text);
+      assert.equal(result.ok, false);
+      assert.equal(result.code, code);
+    };
+
+    // 4b. Reject revision drift (10 -> 11) with same file and numItems
+    project.change("app.project.revision = 10;");
+    const driftObservations = [];
+    const driftResponse = await withPanel(buildRequest,
+      (command, raw) => {
+        if (isProjectInfoResult(command, raw)) {
+          driftObservations.push(raw.result);
+          if (driftObservations.length === 1) {
+            project.change("app.project.revision = 11;");
+          }
+        }
+      }
+    );
+    assertBuildRejected(driftResponse, "stale_project");
+    assert.deepEqual(driftObservations.map((info) => info.revision), [10, 11]);
+    assert.equal(driftObservations[0].file, driftObservations[1].file);
+    assert.equal(driftObservations[0].numItems, driftObservations[1].numItems);
+
+    // The closing bracket must also prove a native revision.
+    project.change("app.project.revision = 42;");
+    const unavailableObservations = [];
+    const unavailableResponse = await withPanel(buildRequest, (command, raw) => {
+      if (isProjectInfoResult(command, raw)) {
+        unavailableObservations.push(raw.result);
+        if (unavailableObservations.length === 1) project.change("delete app.project.revision;");
+      }
+    });
+    assertBuildRejected(unavailableResponse, "project_revision_unavailable");
+    assert.deepEqual(unavailableObservations.map((info) => info.revision), [42, null]);
+    assert.equal(unavailableObservations[1].supported.revision, false);
+
+    // An unconfirmed numeric value cannot serve as equality proof either.
+    project.change("app.project.revision = 42;");
+    const unconfirmedResponse = await withPanel(buildRequest, (command, raw) => {
+      if (isProjectInfoResult(command, raw)) raw.result.supported.revision = false;
+    });
+    assertBuildRejected(unconfirmedResponse, "project_revision_unavailable");
+    project.change("app.project.revision = 42;");
+
+    // 4c. Equal known revisions (42 -> 42) => build success
     const build = await call("build_comp_visual_review_plan", {
       targets: [{ compItemId: 10, times: [0, 0.04] }]
     });
@@ -186,7 +262,7 @@ async function main() {
 
     console.log(JSON.stringify({
       ok: true,
-      checks: "comp-visual-review-bridge-smoke: tools catalog, strict lifecycle noargs, builder zero-query input validation, manifest strict args, propose/dry-run gates, mutating execution with PNG export, verified completed manifest with invariant flags"
+      checks: "comp-visual-review-bridge-smoke: tools catalog, strict lifecycle noargs, get_project_info native revision, builder revision bracket and drift rejection, builder zero-query input validation, manifest strict args, propose/dry-run gates, mutating execution with PNG export, verified completed manifest with invariant flags"
     }));
   } finally {
     await fixture.stop();

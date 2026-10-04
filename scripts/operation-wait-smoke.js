@@ -10,6 +10,7 @@ const {
   MAX_WAIT_MS,
   DEFAULT_WAIT_MS
 } = require("../mcp-server/operation-wait");
+const { createProposalState } = require("../mcp-server/proposal-state");
 
 async function testWaitBounds() {
   // Valid defaults and bounds
@@ -179,6 +180,143 @@ async function testPlanStatePinsAndExpiry() {
   assert.strictEqual(expiredRes.ok, false);
   assert.strictEqual(expiredRes.status, "expired");
   assert.strictEqual(expiredRes.reason, "proposal_expired");
+  assert.strictEqual(expiredRes.lastRun, null);
+
+  // 4a. Expired completed proposal preserves compact lastRun
+  const expiredCompletedProposal = {
+    ...proposal,
+    state: "completed",
+    expiresAt: "2020-01-01T00:00:00.000Z",
+    lastRun: {
+      id: "run_completed_123",
+      ok: true,
+      dryRun: false,
+      errorCode: null,
+      error: null,
+      durationMs: 150,
+      executedCount: 2,
+      failedCount: 0,
+      verification: { complete: true }
+    }
+  };
+  const expCompletedRes = await waitForPlanState(() => expiredCompletedProposal, {
+    actionId: "action_123",
+    instanceId: "inst_abc",
+    revision: 1
+  });
+  assert.strictEqual(expCompletedRes.ok, false);
+  assert.strictEqual(expCompletedRes.status, "expired");
+  assert.strictEqual(expCompletedRes.reason, "proposal_expired");
+  assert.deepStrictEqual(expCompletedRes.lastRun, {
+    id: "run_completed_123",
+    ok: true,
+    dryRun: false,
+    errorCode: null,
+    error: null,
+    durationMs: 150,
+    executedCount: 2,
+    failedCount: 0,
+    verification: { complete: true }
+  });
+
+  // 4b. Expired timeout/unknown: confirmed repro with createProposalState
+  const propState = createProposalState();
+  propState.register({
+    actionId: "a",
+    payload: { plan: { targetProject: { file: "C:/fixture.aep" } } },
+    executionState: "failed",
+    proposalExpiresAt: "2020-01-01T00:00:00.000Z",
+    lastRun: {
+      id: "12345678-1234-4123-8123-123456789abc",
+      ok: false,
+      dryRun: false,
+      errorCode: "ae_command_timeout",
+      executedCount: 1,
+      failedCount: 1,
+      verification: "needs_review",
+      steps: [{ secret: "must_not_escape_compact_summary" }],
+      confirmationToken: "must_not_escape_compact_summary"
+    }
+  });
+  const reproSnapshot = propState.snapshot();
+  assert(reproSnapshot && reproSnapshot.lastRun !== null, "Repro snapshot must have lastRun");
+  assert.throws(() => propState.assertCurrent(propState.current),
+    (error) => error.code === "m100_action_proposal_expired");
+  const expTimeoutRes = await waitForPlanState(() => reproSnapshot, {
+    actionId: "a",
+    instanceId: reproSnapshot.instanceId,
+    revision: reproSnapshot.revision,
+    waitMs: 0
+  });
+  assert.strictEqual(expTimeoutRes.ok, false);
+  assert.strictEqual(expTimeoutRes.status, "expired");
+  assert.strictEqual(expTimeoutRes.reason, "proposal_expired");
+  assert.deepStrictEqual(expTimeoutRes.lastRun, {
+    id: "12345678-1234-4123-8123-123456789abc",
+    ok: false,
+    dryRun: false,
+    errorCode: "ae_command_timeout",
+    error: null,
+    durationMs: null,
+    executedCount: 1,
+    failedCount: 1,
+    verification: "needs_review"
+  });
+
+  // 4c. Mismatching pins never expose foreign run even if proposal is expired and has lastRun
+  const mismatchActionRes = await waitForPlanState(() => reproSnapshot, {
+    actionId: "wrong_action",
+    instanceId: reproSnapshot.instanceId,
+    revision: reproSnapshot.revision,
+    waitMs: 0
+  });
+  assert.strictEqual(mismatchActionRes.ok, false);
+  assert.strictEqual(mismatchActionRes.status, "superseded");
+  assert.strictEqual(mismatchActionRes.reason, "action_id_mismatch");
+  assert.strictEqual(mismatchActionRes.lastRun, null, "Mismatching actionId must NEVER expose lastRun");
+
+  const mismatchInstRes = await waitForPlanState(() => reproSnapshot, {
+    actionId: "a",
+    instanceId: "wrong_instance",
+    revision: reproSnapshot.revision,
+    waitMs: 0
+  });
+  assert.strictEqual(mismatchInstRes.ok, false);
+  assert.strictEqual(mismatchInstRes.status, "superseded");
+  assert.strictEqual(mismatchInstRes.reason, "instance_id_mismatch");
+  assert.strictEqual(mismatchInstRes.lastRun, null, "Mismatching instanceId must NEVER expose lastRun");
+
+  const mismatchRevRes = await waitForPlanState(() => reproSnapshot, {
+    actionId: "a",
+    instanceId: reproSnapshot.instanceId,
+    revision: 999,
+    waitMs: 0
+  });
+  assert.strictEqual(mismatchRevRes.ok, false);
+  assert.strictEqual(mismatchRevRes.status, "superseded");
+  assert.strictEqual(mismatchRevRes.reason, "revision_mismatch");
+  assert.strictEqual(mismatchRevRes.lastRun, null, "Mismatching revision must NEVER expose lastRun");
+
+  // 4d. Superseded proposal never exposes lastRun
+  const supersededProposal = {
+    ...proposal,
+    state: "superseded",
+    lastRun: {
+      id: "superseded_run_uuid",
+      ok: true,
+      dryRun: false
+    }
+  };
+  const supersededRes = await waitForPlanState(() => supersededProposal, {
+    actionId: "action_123",
+    instanceId: "inst_abc",
+    revision: 1,
+    waitMs: 0
+  });
+  assert.strictEqual(supersededRes.ok, false);
+  assert.strictEqual(supersededRes.status, "superseded");
+  assert.strictEqual(supersededRes.reason, "proposal_superseded");
+  assert.strictEqual(supersededRes.lastRun, null, "Superseded state must NEVER expose lastRun");
 
   // 5. Corrupted snapshot is nonready (does not match, times out)
   const corruptedRes = await waitForPlanState(() => ({ corrupted: true }), {
@@ -260,7 +398,7 @@ async function main() {
   console.log(JSON.stringify({
     ok: true,
     suite: "operation-wait-smoke",
-    checks: "strict wait input rejects, bridge targetState/timedOut/flatstatus, missing fields not idle, plan strict pins/rejects, absent/superseded/expired ISO, stateToken SHA hex, compact lastRun strict bool"
+    checks: "strict wait input rejects, bridge targetState/timedOut/flatstatus, missing fields not idle, plan strict pins/rejects, absent/superseded/expired ISO, expired lastRun preservation, mismatch/superseded lastRun isolation, stateToken SHA hex, compact lastRun strict bool"
   }));
 }
 

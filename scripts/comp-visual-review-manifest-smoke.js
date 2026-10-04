@@ -130,7 +130,7 @@ async function runTests() {
             tool: "get_project_info",
             args: {},
             status: "completed",
-            result: { ok: true, file: "C:/work/project.aep", numItems: 2 }
+            result: { ok: true, file: "C:/work/project.aep", numItems: 2, revision: 42, supported: { revision: true } }
           },
           {
             index: 2,
@@ -220,7 +220,7 @@ async function runTests() {
             tool: "get_project_info",
             args: {},
             status: "completed",
-            result: { ok: true, file: "C:/work/project.aep", numItems: 2 }
+            result: { ok: true, file: "C:/work/project.aep", numItems: 2, revision: 42, supported: { revision: true } }
           }
         ]
       }

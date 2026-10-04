@@ -13686,6 +13686,11 @@ async function callTool(name, args, executionContext) {
       if (!info1 || typeof info1.file !== "string" || !path.isAbsolute(info1.file) || path.extname(info1.file).toLowerCase() !== ".aep") {
         return toolResult({ ok: false, code: "no_active_named_project", error: "A saved named .aep project is required for visual review." }, true);
       }
+      const isConfirmedRevision = (info) =>
+        Boolean(info && info.supported && info.supported.revision === true && Number.isSafeInteger(info.revision) && info.revision >= 0);
+      if (!isConfirmedRevision(info1)) {
+        return toolResult({ ok: false, code: "project_revision_unavailable", error: "Project revision is unavailable or unsupported." }, true);
+      }
       const observedComps = [];
       for (const target of args.targets) {
         const compRead = await callToolLogged("comp-review-plan-read", "get_comp_details", { compItemId: target.compItemId, includeLayers: false });
@@ -13715,6 +13720,12 @@ async function callTool(name, args, executionContext) {
       const info2 = firstToolPayload(info2Read);
       if (!info2 || info2.file !== info1.file || info2.numItems !== info1.numItems) {
         return toolResult({ ok: false, code: "stale_project", error: "Project changed during comp observation." }, true);
+      }
+      if (!isConfirmedRevision(info2)) {
+        return toolResult({ ok: false, code: "project_revision_unavailable", error: "Project revision is unavailable or unsupported on re-read." }, true);
+      }
+      if (info2.revision !== info1.revision) {
+        return toolResult({ ok: false, code: "stale_project", error: "Project revision changed during comp observation." }, true);
       }
       const serverObservedContext = {
         projectFile: info2.file,
@@ -14359,6 +14370,16 @@ async function callTool(name, args, executionContext) {
         };
       }
       var framesCount = __codexFramesCountTypeSnapshot(project);
+      function __codexRead(fn) { try { return fn(); } catch (_) { return undefined; } }
+      var revision = null;
+      var revisionSupported = false;
+      if (project) {
+        var rawRevision = __codexRead(function () { return project.revision; });
+        if (typeof rawRevision === "number" && isFinite(rawRevision) && Math.floor(rawRevision) === rawRevision && rawRevision >= 0 && rawRevision <= 9007199254740991) {
+          revision = rawRevision;
+          revisionSupported = true;
+        }
+      }
       return {
         file: project && project.file ? project.file.fsName : null,
         bitsPerChannel: project ? project.bitsPerChannel : null,
@@ -14367,7 +14388,11 @@ async function callTool(name, args, executionContext) {
         activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
         framesCountType: framesCount.name,
         framesCountTypeValue: framesCount.value,
-        framesCountStartFrame: framesCount.startFrame
+        framesCountStartFrame: framesCount.startFrame,
+        revision: revision,
+        supported: {
+          revision: revisionSupported
+        }
       };
     `);
     return toolResult(result.result);
