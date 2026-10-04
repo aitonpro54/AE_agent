@@ -19,7 +19,7 @@ const DETERMINISTIC_CASES = Object.freeze({
     frames: [{time:0,phase:"entry"},{time:1,phase:"hold"},{time:2.5,phase:"exit"}] }),
   "offset-stretch-phases": Object.freeze({ id: "offset-stretch-phases", startTime: 1.2, stretch: 150,
     frames: [{time:1.2,phase:"entry"},{time:2.2,phase:"hold"},{time:3.2,phase:"exit"}], staticSourceText: true }),
-  "accents-descenders": Object.freeze({ id: "accents-descenders", expectedText: "ÁÉÍÓÚ ЙЁ\nagjpqy",
+  "accents-descenders": Object.freeze({ id: "accents-descenders", expectedText: "ÁÉÍÓÚ ЙЁ\ragjpqy",
     frames: [{time:1,phase:"hold"}] }),
   "font-difference": Object.freeze({ id: "font-difference", requiresFontRequest: true,
     frames: [{time:1,phase:"hold"}] })
@@ -82,8 +82,9 @@ function layerObservation(payload, target, expectedText, childCompItemId = null)
   if (!plainObject(payload) || payload.ok === false || comp?.itemId !== target.compItemId
     || layer?.id !== target.layerId || !positiveId(comp.itemIndex) || !positiveId(layer.index)
     || typeof comp.name !== "string" || !Number.isFinite(comp.time)) invalid("layer_identity_mismatch");
-  // Unobserved parents, 3D, collapse and time remap are outside this first bounded variant.
-  if (layer.threeDLayer !== false || layer.timeRemapEnabled !== false || layer.collapseTransformation !== false
+  // TextLayer has intrinsic continuous rasterization. Collapsed precomp routes remain unsupported.
+  if (layer.threeDLayer !== false || layer.timeRemapEnabled !== false
+    || (childCompItemId !== null ? layer.collapseTransformation !== false : typeof layer.collapseTransformation !== "boolean")
     || layer.parent !== null) invalid("unsupported_layer_route");
   if (![layer.startTime,layer.inPoint,layer.outPoint,layer.stretch].every(Number.isFinite)
     || layer.outPoint <= layer.inPoint || layer.stretch <= 0) invalid("unsupported_layer_timing");
@@ -99,13 +100,14 @@ function layerObservation(payload, target, expectedText, childCompItemId = null)
   }
   const result = {compItemId:comp.itemId,compItemIndex:comp.itemIndex,compName:comp.name,time:comp.time,
     layerId:layer.id,layerIndex:layer.index,startTime:layer.startTime,inPoint:layer.inPoint,outPoint:layer.outPoint,
-    stretch:layer.stretch,threeDLayer:false,timeRemapEnabled:false,collapseTransformation:false,parent:null,transform};
+    stretch:layer.stretch,threeDLayer:false,timeRemapEnabled:false,collapseTransformation:layer.collapseTransformation,parent:null,transform};
   if (childCompItemId !== null) {
     if (layer.source?.itemId !== childCompItemId || layer.source?.type !== "comp") invalid("route_source_mismatch");
     result.sourceCompItemId = layer.source.itemId;
   } else {
     const doc = payload.text?.kind === "TextDocument" ? payload.text : layer.text;
-    if (layer.textLayer !== true || layer.layerKind !== "text" || doc?.kind !== "TextDocument"
+    if (layer.textLayer !== true || layer.layerKind !== "text" || layer.matchName !== "ADBE Text Layer" || layer.source !== null
+      || doc?.kind !== "TextDocument"
       || doc.text !== expectedText || typeof doc.font !== "string" || !doc.font
       || !Number.isFinite(doc.fontSize) || doc.fontSize <= 0 || typeof doc.justification !== "string" || !doc.justification) invalid("text_observation_incomplete");
     // If both normal previews are present, neither may contradict the other.
@@ -116,8 +118,9 @@ function layerObservation(payload, target, expectedText, childCompItemId = null)
     if (!Array.isArray(rows) || rows.length !== 1 || !Array.isArray(rows[0]?.path) || rows[0].path.length !== 2
       || rows[0].path.some((segment,i) => segment?.matchName !== SOURCE_TEXT_PATH[i])
       || rows[0].numKeys !== 0 || rows[0].expressionEnabled !== false) invalid("static_source_text_unproven");
+    result.matchName = layer.matchName;
     result.text = {kind:doc.kind,text:doc.text,font:doc.font,fontSize:doc.fontSize,justification:doc.justification};
-    // protected.value is a raw host value; its serialization is not a text proof.
+    // protected.value is a bounded preview; static metadata and the normal preview are the proof.
     result.staticSourceText = true;
   }
   return result;

@@ -17,12 +17,13 @@ function layer(compItemId,layerId,text = "Scaled Text",child = null) {
   const prop = value => ({kind:Array.isArray(value) ? "array" : "number",value,numKeys:0,expressionEnabled:false,dimensionsSeparated:false});
   const doc = {kind:"TextDocument",text,font:"ArialMT",fontSize:72,justification:"center"};
   return {comp:{itemId:comp.itemId,itemIndex:comp.itemIndex,name:comp.name,time:0},layer:{id:layerId,index:child ? 5 : 2,
-    textLayer:child === null,layerKind:child === null ? "text" : null,threeDLayer:false,collapseTransformation:false,
+    textLayer:child === null,layerKind:child === null ? "text" : null,matchName:child === null ? "ADBE Text Layer" : "ADBE AV Layer",
+    threeDLayer:false,collapseTransformation:child === null,
     timeRemapEnabled:false,parent:null,startTime:0,inPoint:0,outPoint:10,stretch:100,
-    ...(child === null ? {text:clone(doc)} : {source:{itemId:child,type:"comp",itemIndex:1,name:"Nested Precomp"}})},
+    ...(child === null ? {text:clone(doc),source:null} : {source:{itemId:child,type:"comp",itemIndex:1,name:"Nested Precomp"}})},
     transform:{anchorPoint:prop([40,20,0]),position:prop([640,360,0]),scale:prop([125,85,100]),rotation:prop(0),opacity:prop(100)},
     text:child === null ? doc : null,protectedProperties:child === null ? [{path:[{matchName:"ADBE Text Properties"},{matchName:"ADBE Text Document"}],
-      numKeys:0,expressionEnabled:false,value:{rawHostPreview:"opaque"}}] : []};
+      numKeys:0,expressionEnabled:false,value:clone(doc)}] : []};
 }
 const input = {caseId:"scaled-precomp-text",rootCompItemId:20,textTarget:{compItemId:10,layerId:2},
   route:[{parentCompItemId:20,layerId:5,childCompItemId:10}],frames:[{time:0,phase:"entry"},{time:1,phase:"hold"},{time:2.5,phase:"exit"}],
@@ -56,8 +57,13 @@ async function protocol() {
       root.frameRate=child.frameRate=30;
       var ParagraphJustification={LEFT_JUSTIFY:1,CENTER_JUSTIFY:2,RIGHT_JUSTIFY:3};
       var textGroup=new Group("ADBE Text Properties",4,target);
-      textGroup.add("ADBE Text Document",{text:"Scaled Text",font:"ArialMT",fontSize:72,justification:2});
-      target.groups.push(textGroup);target.source=null;
+      var pointDocument={text:"Scaled Text",font:"ArialMT",fontSize:72,justification:2};
+      var boxGetterReads=0,sourceValueReads=0,sourceValueThrows=false;
+      Object.defineProperty(pointDocument,"boxTextSize",{enumerable:true,get:function(){boxGetterReads++;throw new Error("Text document not of Box document type");}});
+      var sourceTextProperty=textGroup.add("ADBE Text Document",pointDocument);
+      Object.defineProperty(sourceTextProperty,"value",{configurable:true,get:function(){sourceValueReads++;if(sourceValueThrows)throw new Error("native Source Text value unavailable");return pointDocument;}});
+      target.groups.push(textGroup);target.source=null;target.matchName="ADBE Text Layer";target.collapseTransformation=true;
+      TextLayer.prototype=Object.create(AVLayer.prototype);Object.setPrototypeOf(target,TextLayer.prototype);
     `);
     fixture=await startDaemon({automationToken:"text-auto",panelToken:"text-panel",commandTimeoutMs:4000});
     const env=isolatedEnvironment(fixture.runtimeDir,{port:fixture.port,automationToken:fixture.automationToken,panelToken:fixture.panelToken});
@@ -70,7 +76,7 @@ async function protocol() {
       pending.delete(message.id);clearTimeout(p.timer);
       message.error ? p.reject(new Error(message.error.message)) : p.resolve(message.result);
     });
-    let id=0,nativeReads=0;
+    let id=0,nativeReads=0,lastNativeScript;
     const rpc=(method,params)=>new Promise((resolve,reject)=>{
       const requestId=++id,timer=setTimeout(()=>{pending.delete(requestId);reject(new Error("isolated MCP timeout: "+stderr));},12000);
       pending.set(requestId,{resolve,reject,timer});adapter.stdin.write(JSON.stringify({jsonrpc:"2.0",id:requestId,method,params})+"\n");
@@ -86,6 +92,7 @@ async function protocol() {
         assert(!command.script.includes("comp.saveFrameToPng("),"build must never export");
         const echo=commandEcho(command);
         assert.equal((await fixture.request({path:"/bridge/submitted",token:fixture.panelToken,body:echo})).status,200);
+        lastNativeScript=command.script;
         const raw=projectVM.execute(command.script);nativeReads++;
         if(afterRead)afterRead(raw);
         assert.equal((await fixture.request({path:"/bridge/result",token:fixture.panelToken,body:{...echo,ok:true,result:JSON.stringify(raw)}})).status,200);
@@ -99,19 +106,66 @@ async function protocol() {
     const solution=await call("get_solution",{id:"text-visual-review-plan"});
     assert.equal(solution.isError,false);assert.deepEqual(solution.value.planBuilder,builder.getTextVisualReviewBuilderContract());
     const protocolInput={...clone(input),textTarget:{compItemId:10,layerId:11},route:[{parentCompItemId:20,layerId:21,childCompItemId:10}]};
+    const sourceTextArgs={compItemId:10,layerId:11,protectedProperties:[["ADBE Text Properties","ADBE Text Document"]]};
+    const nativeText=await call("get_layer_details",sourceTextArgs);
+    assert.equal(nativeText.isError,false,JSON.stringify(nativeText));
+    assert.equal(nativeText.value.layer.matchName,"ADBE Text Layer");assert.equal(nativeText.value.layer.textLayer,true);
+    assert.equal(nativeText.value.layer.collapseTransformation,true);assert.equal(nativeText.value.layer.source,null);
+    const sourceRow=nativeText.value.protectedProperties[0];
+    assert.deepEqual(sourceRow.value,nativeText.value.text);assert.equal(sourceRow.value.kind,"TextDocument");
+    assert.equal(sourceRow.numKeys,0);assert.equal(sourceRow.expressionEnabled,false);
+    assert.equal(Object.hasOwn(sourceRow.value,"boxTextSize"),false);assert(projectVM.read("sourceValueReads")>0);
+    assert.equal(projectVM.read("boxGetterReads"),0);
+    // Reproduce the original fault with the actual native wrapper and raw host value.
+    const rawScript=lastNativeScript.replace("value:protectedValue","value:__phReadValue(protectedProperty)");
+    assert.notEqual(rawScript,lastNativeScript);
+    const rawFailure=projectVM.execute(rawScript);
+    assert.equal(rawFailure.ok,false);assert.match(rawFailure.error,/Text document not of Box document type/);
+    assert.equal(projectVM.read("boxGetterReads"),1);projectVM.change("boxGetterReads=0;");
+    const otherPath=await call("get_layer_details",{...sourceTextArgs,protectedProperties:[...sourceTextArgs.protectedProperties,
+      ["ADBE Effect Parade","Custom Effect","Custom Value"]]});
+    assert.equal(otherPath.isError,false);assert.equal(otherPath.value.protectedProperties[1].value,7);
+    projectVM.change("sourceValueThrows=true;");
+    const valueFailure=await call("get_layer_details",sourceTextArgs);
+    assert.equal(valueFailure.isError,true);assert.match(valueFailure.value.error,/native Source Text value unavailable/);
+    projectVM.change('sourceValueThrows=false;var originalPointDocument=pointDocument;pointDocument={kind:"TextDocument",font:"ArialMT",fontSize:72,justification:2};');
+    const declaredKind=await call("get_layer_details",sourceTextArgs);
+    assert.equal(declaredKind.isError,true);assert.match(declaredKind.value.error,/protected_source_text_unavailable/);
+    projectVM.change("pointDocument=originalPointDocument;");
     const before=nativeReads;
     const invalid=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:{...protocolInput,checks:{staticSourceText:true}}});
     assert.equal(invalid.isError,true);assert.equal(nativeReads,before);
     const built=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:protocolInput});
     assert.equal(built.isError,false,JSON.stringify(built));assert.equal(built.value.ok,true,JSON.stringify(built));
     assert.equal(built.value.plan.steps.length,10);assert.equal(nativeReads-before,6);
+    assert.equal(built.value.plan.textReview.observation.text.collapseTransformation,true);
+    projectVM.change("route.collapseTransformation=true;");
+    const collapsedRoute=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:protocolInput});
+    assert.equal(collapsedRoute.isError,true);assert.match(collapsedRoute.value.error,/unsupported_layer_route/);
+    projectVM.change("route.collapseTransformation=false;sourceTextProperty.numKeys=2;");
+    const animatedSource=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:protocolInput});
+    assert.equal(animatedSource.isError,true);assert.match(animatedSource.value.error,/static_source_text_unproven/);
+    projectVM.change("sourceTextProperty.numKeys=0;pointDocument.text="+JSON.stringify(builder.DETERMINISTIC_CASES["accents-descenders"].expectedText)+";");
+    const accentInput={...clone(protocolInput),caseId:"accents-descenders",expectedText:builder.DETERMINISTIC_CASES["accents-descenders"].expectedText};
+    const nativeAccents=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:accentInput});
+    assert.equal(nativeAccents.isError,false,JSON.stringify(nativeAccents));
+    assert.equal(nativeAccents.value.plan.textReview.expectedText,"ÁÉÍÓÚ ЙЁ\ragjpqy");
+    const beforeLF=nativeReads;
+    const accentLF=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:{...accentInput,expectedText:"ÁÉÍÓÚ ЙЁ\nagjpqy"}});
+    assert.equal(accentLF.isError,true);assert.equal(nativeReads,beforeLF);
+    projectVM.change("pointDocument.text="+JSON.stringify("ÁÉÍÓÚ ЙЁ\nagjpqy")+";");
+    const observedLF=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:accentInput});
+    assert.equal(observedLF.isError,true);assert.match(observedLF.value.error,/text_observation_incomplete/);
+    projectVM.change('pointDocument.text="Scaled Text";');
     let changed=false;
     const drift=await call("build_solution_plan",{solutionId:"text-visual-review-plan",inputs:protocolInput},raw=>{
       if(raw.result?.protectedProperties && !changed){changed=true;projectVM.change("app.project.revision=99;");}
     });
     assert.equal(drift.isError,true);assert.match(drift.value.error,/stale_project/);
     assert.equal(projectVM.read("writes"),0);
-    return {mcpDispatch:true,nativeVMReadOnly:true,nativeReads,projectWrites:0};
+    assert.equal(projectVM.read("boxGetterReads"),0);
+    return {mcpDispatch:true,nativeVMReadOnly:true,nativeReads,projectWrites:0,pointTextBoxGetterReads:0,
+      rawHostSerializationFaultReproduced:true,sourceValueFailurePreserved:true,otherProtectedValuePreserved:true,exactNativeCR:true};
   } finally {
     for(const p of pending.values()){clearTimeout(p.timer);p.reject(new Error("isolated fixture closed"));}
     if(lines)lines.close();
@@ -130,6 +184,8 @@ async function main() {
   assert.deepEqual(built.plan.textReview.declarations.postReadCompStepIndices,[9]);
   assert.equal(built.plan.textReview.observation.project.projectId,sha256(normalizeProject(projectFile)));
   assert.equal(built.projectMutations,0);
+  assert.equal(built.plan.textReview.observation.text.collapseTransformation,true);
+  assert.equal(built.plan.textReview.observation.text.matchName,"ADBE Text Layer");
   const before = clone({input,context}); build(); assert.deepEqual({input,context},before);
 
   for (const caseId of Object.keys(builder.DETERMINISTIC_CASES)) {
@@ -163,11 +219,16 @@ async function main() {
   for (const mutate of [
     c=>{c.textObservation.comp.itemId=99;},c=>{c.textObservation.layer.id=999;},
     c=>{c.textObservation.layer.textLayer=false;},c=>{c.textObservation.text.kind="object";},
+    c=>{c.textObservation.layer.matchName="ADBE AV Layer";},c=>{c.textObservation.layer.source={itemId:10,type:"comp"};},
+    c=>{c.textObservation.layer.layerKind="shape";},c=>{c.textObservation.layer.collapseTransformation=null;},
     c=>{c.textObservation.protectedProperties[0].numKeys=8;},c=>{c.textObservation.protectedProperties[0].expressionEnabled=true;},
     c=>{c.textObservation.protectedProperties[0].path.reverse();},c=>{c.routeObservation.layer.source.itemId=99;},
-    c=>{c.routeObservation.layer.threeDLayer=true;},c=>{c.textObservation.layer.timeRemapEnabled=true;},
+    c=>{c.routeObservation.layer.threeDLayer=true;},c=>{c.routeObservation.layer.collapseTransformation=true;},
+    c=>{c.textObservation.layer.timeRemapEnabled=true;},
     c=>{delete c.project.supported;},c=>{c.textObservation.layer.parent={id:8};}
   ]) { const ctx=clone(context); mutate(ctx); rejects(input,ctx); }
+  const noRasterFlag=clone(context);noRasterFlag.textObservation.layer.collapseTransformation=false;
+  assert.equal(build(input,noRasterFlag).plan.textReview.observation.text.collapseTransformation,false);
 
   const reads=[];
   const read=async(tool,args)=>{

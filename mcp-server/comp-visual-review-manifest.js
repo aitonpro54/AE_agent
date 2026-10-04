@@ -273,7 +273,8 @@ function validateTextReviewPlanShape(planSteps, tr) {
     startTime:observation.startTime,inPoint:observation.inPoint,outPoint:observation.outPoint,stretch:observation.stretch,
     threeDLayer:observation.threeDLayer,timeRemapEnabled:observation.timeRemapEnabled,
     collapseTransformation:observation.collapseTransformation,parent:observation.parent,
-    ...(observation.text ? {textLayer:true,layerKind:"text",text:observation.text} : {source:{itemId:observation.sourceCompItemId,type:"comp"}})},
+    ...(observation.text ? {textLayer:true,layerKind:"text",matchName:observation.matchName,source:null,text:observation.text}
+      : {source:{itemId:observation.sourceCompItemId,type:"comp"}})},
     transform:observation.transform,protectedProperties:observation.text ? [{path:[{matchName:"ADBE Text Properties"},{matchName:"ADBE Text Document"}],numKeys:0,expressionEnabled:false}] : []};
   let rebuilt;
   try { rebuilt = text.buildTextVisualReviewPlan({caseId:tr.caseId,rootCompItemId:tr.rootCompItemId,textTarget:tr.textTarget,route:tr.route,

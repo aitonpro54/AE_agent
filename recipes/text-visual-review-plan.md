@@ -29,7 +29,11 @@
 
 ID в примере заменяются подтверждёнными текущими ID. Route имеет длину 0 для
 текста в корне или 1 для вложенной композиции. Поддерживаются существующие 2D
-слои без дополнительного layer parenting, collapse transformation и time-remap.
+слои без дополнительного layer parenting и time-remap. Intrinsic continuous
+rasterization обычного `ADBE Text Layer` поддерживается: нужны native
+`textLayer: true`, `layerKind: "text"`, `source: null` и нормальный TextDocument.
+Фактический boolean `collapseTransformation` сохраняется и сверяется до/после;
+для слоя precomp в route он обязательно false.
 Source Text должен быть статичен. `frames` содержит 1–3 явных времени корневой
 композиции на её frame grid; `phase` обязателен и равен entry/hold/exit.
 `checks` — массив имён, staticSourceText обязателен. Остальные имена обозначают
@@ -69,8 +73,11 @@ Pre и post обязаны подтвердить точные comp/layer IDs, e
 нормализации, normal text.kind `TextDocument`, font как строку, отдельный fontSize
 и justification. Защищённая строка Source Text имеет path
 `[{matchName:"ADBE Text Properties"},{matchName:"ADBE Text Document"}]` именно в этом
-порядке, numKeys 0 и expressionEnabled false. `protectedProperties.value` — raw
-host value; его сериализация не используется как текстовое доказательство.
+порядке, numKeys 0 и expressionEnabled false. Только для точного Source Text path
+`protectedProperties.value` содержит существующий безопасный TextDocument preview:
+host-объект не перечисляется, поэтому point text не вызывает box-only getters.
+Остальные protected paths сохраняют прежний value-контракт. Статичность подтверждают
+реально прочитанные metadata и normal preview; protected value её не заменяет.
 Имя слоя не заменяет Source Text. Сверяются route.source.itemId, timing/stretch,
 2D flags и transform metadata. Динамические transform values сравниваются только
 при одинаковом comp.time; getter не читает их в каждом экспортном времени.
@@ -91,6 +98,12 @@ Verified означает только исторические native read-back
 canonicalFreshness, artisticAccepted, visibleBoundsVerified, fontRenderingVerified
 false. После редактирования строится новый план и новый capture; старый манифест
 не является доказательством текущего состояния.
+
+В сохранённом text observation обязателен прочитанный `matchName: "ADBE Text Layer"`.
+Прежняя запись `textReview.v1` без этого поля не проходит закрытую проверку формы.
+Не добавлять identity в историческую запись: нужен новый builder и новый capture
+после актуальных native reads. Изменение boolean `collapseTransformation` между
+наблюдениями также отклоняется, даже если оба значения допустимы для text target.
 
 ## Воспроизводимые будущие synthetic случаи
 
@@ -123,10 +136,14 @@ confirmation/checkpoint и independent read-back; save_current_named_project
   [300,540] при 1.2 s, [960,540] при 2.2 s, [1620,540] при 3.2 s.
   Экспортные времена root заданы явно: 1.2/entry, 2.2/hold, 3.2/exit.
   У Source Text остаются numKeys 0 / expression false; не вычислять sourceTime oracle.
-- `accents-descenders`: exact текст `ÁÉÍÓÚ ЙЁ\nagjpqy`, fontSize 72, center,
+- `accents-descenders`: exact native текст `ÁÉÍÓÚ ЙЁ\ragjpqy` (CR между строками), fontSize 72, center,
   position [960,540] в root, static Source Text. Hold frame 1 s.
   В читаемом PNG проверить акценты, Й/Ё, нижние выносные элементы и межстрочное
   расстояние; numeric fontSize и центр слоя не подтверждают видимые поля.
+  При создании можно передать native CR; после создания обязательно прочитать
+  фактический Source Text. Builder и manifest сравнивают точный Unicode, CR и LF
+  не уравниваются. Историческая semantic failure после создания с LF сохраняется;
+  её нельзя исправлять повторной мутацией или нормализацией verifier.
 - `font-difference`: текст `Font Difference Sample` в root; после получения
   точного layer ID/индекса подготовить отдельный typed update_text_layer запрос
   конкретного имени шрифта. В том же durable plan сохранить exact stable-ID

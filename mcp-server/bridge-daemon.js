@@ -15373,7 +15373,16 @@ async function callTool(name, args, executionContext) {
       var protectedRows=[];
       for(var pr=0;pr<protectedPaths.length;pr++) {
         var protectedProperty=__phProperty(layer,protectedPaths[pr]);
-        protectedRows.push({path:protectedPaths[pr],value:__phReadValue(protectedProperty),numKeys:protectedProperty.numKeys,
+        var protectedPath=protectedPaths[pr];
+        var protectedValue;
+        if(protectedPath.length===2 && protectedPath[0].matchName==="ADBE Text Properties"
+          && protectedPath[1].matchName==="ADBE Text Document") {
+          // Raw host TextDocument enumeration can invoke box-only getters on point text.
+          // Use the existing normal preview; property identity and metadata still come from AE.
+          protectedValue=__codexValuePreview(protectedProperty);
+          if(protectedValue.kind!=="TextDocument") throw new Error("protected_source_text_unavailable");
+        } else protectedValue=__phReadValue(protectedProperty);
+        protectedRows.push({path:protectedPath,value:protectedValue,numKeys:protectedProperty.numKeys,
           expressionEnabled:protectedProperty.expressionEnabled,dimensionsSeparated:protectedProperty.dimensionsSeparated===true});
       }
       return {

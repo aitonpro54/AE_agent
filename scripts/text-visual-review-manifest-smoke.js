@@ -62,6 +62,9 @@ async function main() {
     badShape(r=>{r.plan.textReview.declarations.exportStepIndices.reverse();});
     badShape(r=>{r.plan.textReview.route.push(f.clone(r.plan.textReview.route[0]));});
     badShape(r=>{r.plan.textReview.fontRequest={runId:fontRunId,stepIndex:99,requestedFont:"fake"};});
+    badShape(r=>{r.plan.textReview.observation.text.matchName="ADBE AV Layer";});
+    badShape(r=>{delete r.plan.textReview.observation.text.matchName;}); // Historical v1 shape cannot invent native identity.
+    badShape(r=>{r.plan.textReview.observation.route.collapseTransformation=true;});
     const negative=async(mutate)=>{
       const r=f.clone(base);mutate(r);
       const manifest=await createManifest(r,options);
@@ -72,6 +75,9 @@ async function main() {
       r=>{r.run.steps[1].tool="get_comp_details";},r=>{r.run.steps[1].args.layerId=99;},
       r=>{r.run.steps[1].result.comp.itemId=99;},r=>{r.run.steps[1].result.layer.id=99;},
       r=>{r.run.steps[1].result.layer.textLayer=false;r.run.steps[1].result.layer.name=f.input.expectedText;},
+      r=>{r.run.steps[1].result.layer.matchName="ADBE AV Layer";},
+      r=>{r.run.steps[1].result.layer.source={itemId:10,type:"comp"};},
+      r=>{r.run.steps[6].result.layer.collapseTransformation=false;},
       r=>{r.run.steps[1].result.text=null;delete r.run.steps[1].result.layer.text;},
       r=>{r.run.steps[1].result.protectedProperties=[];},r=>{r.run.steps[6].result.protectedProperties=[];},
       r=>{r.run.steps[1].result.protectedProperties[0].numKeys=8;},
@@ -81,7 +87,8 @@ async function main() {
       r=>{r.run.steps[6].result.text.fontSize=100;r.run.steps[6].result.layer.text.fontSize=100;},
       r=>{r.run.steps[6].result.text.justification="left";r.run.steps[6].result.layer.text.justification="left";},
       r=>{r.run.steps[7].result.layer.source.itemId=99;},r=>{r.run.steps[2].result.layer.threeDLayer=true;},
-      r=>{r.run.steps[7].result.layer.timeRemapEnabled=true;},r=>{r.run.steps[7].result.layer.startTime=1.2;},
+      r=>{r.run.steps[7].result.layer.timeRemapEnabled=true;},r=>{r.run.steps[7].result.layer.collapseTransformation=true;},
+      r=>{r.run.steps[7].result.layer.startTime=1.2;},
       r=>{r.run.steps[7].result.transform.scale.value=[40,40,100];},
       r=>{r.run.steps[9].result.revision=99;},r=>{r.run.steps[0].result.revision=99;},
       r=>{delete r.run.steps[9].result.supported;},r=>{r.run.steps[9].status="failed";},
@@ -91,10 +98,14 @@ async function main() {
       r=>{r.run.steps[8].result.width=100;},
       r=>{r.run.steps.splice(6,1);},r=>{r.run.steps.push({index:99,tool:"delete_layer",args:{},status:"completed",result:{}});}
     ]) await negative(mutate);
-    const accents={...f.clone(f.input),caseId:"accents-descenders",expectedText:"ÁÉÍÓÚ ЙЁ\nagjpqy"};
+    const accents={...f.clone(f.input),caseId:"accents-descenders",expectedText:"ÁÉÍÓÚ ЙЁ\ragjpqy"};
     const accentContext=f.clone(f.context);accentContext.textObservation=f.layer(10,2,accents.expectedText);
     const accent=makeRecord(accents,accentContext);assert.equal((await createManifest(accent,options)).ok,true);
-    accent.run.steps[6].result.text.text="AÉÍÓÚ ЙЁ\nagjpqy";accent.run.steps[6].result.layer.text.text=accent.run.steps[6].result.text.text;
+    accent.run.steps[6].result.text.text="ÁÉÍÓÚ ЙЁ\nagjpqy";accent.run.steps[6].result.layer.text.text=accent.run.steps[6].result.text.text;
+    assert.equal((await createManifest(accent,options)).ok,false);negatives++;
+    accent.run.steps[6].result.text.text="AÉÍÓÚ ЙЁ\ragjpqy";accent.run.steps[6].result.layer.text.text=accent.run.steps[6].result.text.text;
+    assert.equal((await createManifest(accent,options)).ok,false);negatives++;
+    accent.run.steps[6].result.text.text="A\u0301ÉÍÓÚ ЙЁ\ragjpqy";accent.run.steps[6].result.layer.text.text=accent.run.steps[6].result.text.text;
     assert.equal((await createManifest(accent,options)).ok,false);negatives++;
 
     // Dynamic values may be compared only at the same observed comp.time.
