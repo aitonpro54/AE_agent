@@ -1,6 +1,6 @@
-# Live review текста — 4 октября 2026
+# Live review текста — 4–5 октября 2026
 
-Статус: IN PROGRESS. Ограниченная live проверка четырёх synthetic кейсов решения `text-visual-review-plan`; единственный AE/CEP/UI контроллер — root. Семь actual PNG просмотрены и измерены. Native timing repair принят offline; его активация, три offset-кадра, финальный защищённый save и независимый artifact review ещё не завершены.
+Статус: COMPLETE в ограниченном synthetic scope: четыре кейса, 10/10 actual PNG проверены и просмотрены, independent ACCEPT; protected save подтверждён по дисковому артефакту и native project path. Reopen verification не выполнялась и остаётся pending. Серверные acceptance flags и исторические failure outcomes сохранены без повышения. Root был единственным AE/CEP/UI controller.
 
 ## Границы и исходное состояние
 
@@ -14,12 +14,12 @@
 
 ## Матрица кейсов
 
-Все времена — root time по frame grid. Получены семь PNG; итоговое покрытие — десять с сохранением диагностического accents и font-baseline кадров. Каждый открывается и просматривается в читаемом размере. ID, run ID, revision, receipts, PNG и выводы добавляются только по фактическому read-back.
+Все времена — root time по frame grid. Итоговое покрытие: 10 PNG и 6 manifests, включая диагностические accents и font-baseline кадры; каждый PNG проверен и просмотрен в original resolution. ID, run ID, revision, receipts, PNG и выводы добавляются только по фактическому read-back.
 
 | Кейс | Контракт | Экспорты | Статус / evidence |
 |---|---|---|---|
 | `scaled-precomp-text` | Текст `Scaled Text`; font 72, вложенная comp scale [125,85], root precomp layer scale [65,65]; проверить видимый итог и поля | 0 entry, 1 hold, 2.5 exit | Три actual PNG просмотрены; статичны и SHA идентичны. Pixels show shifted text block in stated transform; no clipping observed. |
-| `offset-stretch-phases` | startTime/inPoint 1.2 s, stretch 150%, no time-remap; protected raw setter и независимый read-back | 1.2 entry, 2.2 hold, 3.2 exit | Native primitive150 и три linear Position keys подтверждены; три PNG ждут исправленного typed reader. |
+| `offset-stretch-phases` | startTime/inPoint 1.2 s, stretch 150%, no time-remap; protected raw setter и независимый read-back | 1.2 entry (frame 36), 2.2 hold (frame 66), 3.2 exit (frame 96) | Все три кадра завершены и просмотрены; fresh typed read-back подтвердил stretch150, remapfalse, static. |
 | `accents-descenders` | Точный native текст `ÁÉÍÓÚ ЙЁ\ragjpqy`, font72; глифы, descenders, clipping и поля | 1 hold | Диагностический Luga кадр сохранён; после typed ArialMT correction новый кадр показывает правильные глифы без clipping. |
 | `font-difference` | Exact unique unavailable PostScript request, durable step/pre-read, native FontObject и сравнительный кадр | 1 hold до/после | Baseline и missing-font PNG просмотрены; после8f62c78 manifests complete. Native `isSubstitute=true`, requested/stored равны; rendered fallback name не установлен. |
 
@@ -29,7 +29,7 @@
 
 У каждого PNG зафиксировать путь, размеры/hash, comp/time/frame, просмотр и наблюдения видимых границ, полей, clipping и фаз. Source Text, SourceRect, layer position и stored font сами по себе не доказывают отрисованный результат. Для unavailable font отдельно фиксируются authoritative update outcome, native `FontObject.isSubstitute` и сравнительные PNG; generic error или unknown требует reconciliation. Requested/stored equality не исключает подмену и не устанавливает имя фактически отрисованного шрифта.
 
-Root сверяет receipts/read-backs и фактические PNG; source reviewer проверяет код отдельно от изображений. Pending offset3 плюс уже полученные7 составят10. Общую приёмку live этапа нельзя объявлять до выполнения оставшихся критериев. Серверные artistic/freshness/fontRendering flags не повышаются ручной оценкой.
+Root сверил receipts/read-backs и все 10 фактических PNG; независимый reviewer принял ограниченный synthetic scope. Серверные artistic/freshness/fontRendering flags и исторические failure outcomes не повышаются ручной оценкой.
 
 ## Фаза 1 — исторические результаты
 
@@ -48,7 +48,7 @@ Root сверяет receipts/read-backs и фактические PNG; source re
 - Runtime evidence dir: `.codex-runtime/text-live-20261004/` (локальная ignored зона); подробные machine-readable receipts и фактические summaries добавляются после операций root.
 - План/документ не являются разрешением обойти любые AE gates.
 
-## Фаза 2 — свежие результаты и native timing repair
+## Фаза 2 — исторические результаты и native timing repair
 
 - `8f62c78f348c3b9d196a776c6f7163c3601fa294` активирован в PID2860/sourceSHA `702beb22cd41b877deb7326101c8887e109bf6c88fcbe306770a52004894905b`. Baseline manifest `83473005…` после server-normalization repair complete; исходный blocked response не переписан, setter не повторён.
 - Typed run `9301cbe2-8bdb-4143-9254-732b7fd6fe97`: step3 ArialMT на37/63, step6 `AEAgentMissingFontLive20261004` на49/64; оба applied, aggregate `verification_required/insufficient` сохранён. Stable-ID pre/post Source Text reads подтвердили текст, font, keys0/expressionfalse.
@@ -66,8 +66,8 @@ Root сверяет receipts/read-backs и фактические PNG; source re
 ## Фаза 3 — финальная ограниченная проверка и protected save (5 октября 2026)
 
 - Приёмка закрывает только четыре синтетических live-кейса. Она не означает universal/product acceptance и не повышает серверные artistic, freshness, fontRendering или исторические failure-флаги.
-- Исправленный bridge source активирован: PID `20604`, SHA-256 `1bd49391ae0a7189456b06aa9a16ca21819e28eb797b07963bd72c3664582f6d`; на свежем состоянии Connected, pending 0, inflight `[]`, edit `null`, autonomy `true`, lifecycle `false`. Панельная группа восстановлена через UI. Генератор offset capture `c124fca1-d44a-4716-b577-bbc8b34217c8` завершил кадры 1.2/2.2/3.2 s (frame 36/66/96); typed read-back: stretch 150, remap false, static.
-- Coverage содержит 10 PNG и 6 manifests. Все десять PNG имеют 1920×1080, совпадают по bytes/SHA с manifests и были фактически открыты в original resolution независимым reviewer. Полный машинный индекс: `.codex-runtime/text-live-20261004/captures-final.json`; manifest SHA-256 `93b0d086c80294687d13afa0f33f7b323e3cedfee9ba889e5e7f89dbda3df158` (сопроводительный файл `final-png-measurements.json`). Независимая проверка `live_stretch_review` приняла именно этот synthetic scope: десять реальных просмотров, hashes/bytes, dimensions, bindings и failure flags сверены; blockers нет.
+- Исправленный bridge source активирован: PID `20604`, SHA-256 `1bd49391ae0a7189456b06aa9a16ca21819e28eb797b07963bd72c3664582f6d`; runtime identity review подтвердил 31 named module и `matchesActiveRuntime=true`. Свежий статус: Connected, pending 0, inflight `[]`, edit `null`, autonomy `true`, lifecycle `false`. Панельная группа восстановлена через UI. Генератор offset capture `c124fca1-d44a-4716-b577-bbc8b34217c8` завершил кадры 1.2/2.2/3.2 s (frame 36/66/96); typed read-back: stretch 150, remap false, static.
+- Coverage содержит 10 PNG и 6 manifests. Все десять PNG имеют 1920×1080, совпадают по bytes/SHA с manifests и были фактически открыты в original resolution независимым reviewer. Полный машинный индекс: `.codex-runtime/text-live-20261004/captures-final.json`; SHA-256 `93b0d086c80294687d13afa0f33f7b323e3cedfee9ba889e5e7f89dbda3df158` относится к `final-png-measurements.json` (отчёту измерений), не к capture index или manifests. Независимая проверка `live_stretch_review` приняла именно этот synthetic scope: десять реальных просмотров, hashes/bytes, dimensions, bindings и failure flags сверены; blockers нет.
 - Offset frame bounds измерены с тем же exclusive bbox threshold 8: entry `[100,489,498,542)`, hold `[760,489,1158,542)`, exit `[1420,489,1818,542)`. Центры 299/959/1619; крайние clearances 100/102 px. Текст не обрезан. Arial показывает ожидаемые глифы; native FontObject всё ещё сообщает `isSubstitute=true`, requested/stored совпадают, rendered fallback name неизвестно.
 - Protected manual CEP save: dry-run `afbfaa7a-f8e1-4fdc-8765-202c0b58e2c8`, action `act_955db5e62097404aab4fd8428b4868cb`, instance `c78d34cb-100c-429e-b14c-a76e6f432101`, revision 3; run `6ead7304-2295-4cfb-918b-e56c61c25a74` завершил 2 шага. Сохранённый AEP: 325826 bytes, SHA-256 `95cc5cd1f41db05026b1e946144af7f013c47042704d8fb4cbcb5e387635e5b1`; native path совпал, `numItems=5`, revision 389. До сохранения checkpoint был 8346 bytes, SHA-256 `8bc9e0baab10049118a2a37352121285ae15ee1eee32d9c5d7a3862553d608aa` (`on_disk_before_save`).
 - Save contract scope — `disk_file_and_project_path_only`: доказательство in-memory revision не наблюдалось; reopen verification остаётся pending. Два расширенных save proposals отвергнуты validation до записи (autoCheckpoint/verifyAfter не разрешены schema safety contract); приняты минимальные три обязательных аргумента, protected gate сохранён. Не было reopen, lifecycle change, global font preference/provider changes или raw bypass.
