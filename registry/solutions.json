@@ -191,6 +191,143 @@
     },
     {
       "schema": "ae-solution.v1",
+      "id": "text-visual-review-plan",
+      "title": "Визуальный контроль текста: ограниченный план и исторический read-back",
+      "status": "recipe",
+      "tags": [
+        "visual-review",
+        "text-layout",
+        "png-export",
+        "gated-export",
+        "save_comp_frame_png",
+        "manifest",
+        "tool-first"
+      ],
+      "intent": {
+        "summary": "Подготовить план одного текстового случая с точными pre/post typed reads, существующим frame builder и PNG integrity; художественная оценка требует просмотра.",
+        "appliesWhen": [
+          "Требуется воспроизводимая визуальная проверка текстовых слоёв после трансформаций, подмены шрифта или изменения содержимого.",
+          "Необходима фиксация pre-read и post-read текстовых параметров, целостности экспортных PNG и ограничений визуальных границ текста."
+        ]
+      },
+      "inputs": [
+        {
+          "name": "caseId",
+          "type": "string",
+          "required": true,
+          "description": "Детерминированный идентификатор тестового случая (scaled-precomp-text, offset-stretch-phases, accents-descenders, font-difference)."
+        },
+        {
+          "name": "rootCompItemId",
+          "type": "integer",
+          "required": true,
+          "description": "Идентификатор корневой композиции."
+        },
+        {
+          "name": "textTarget",
+          "type": "object",
+          "required": true,
+          "description": "Целевой текстовый слой: compItemId и layerId."
+        },
+        {
+          "name": "route",
+          "type": "array",
+          "required": true,
+          "description": "Маршрут вложенности (длина 0 для слоя в корне, 1 для слоя во вложенной прекомпозиции)."
+        },
+        {
+          "name": "frames",
+          "type": "array",
+          "required": true,
+          "description": "От 1 до 3 кадров: обязательные time и phase (entry/hold/exit), явное время корневой композиции на сетке кадров."
+        },
+        {
+          "name": "checks",
+          "type": "array",
+          "required": true,
+          "description": "Имена проверок: staticSourceText обязателен; transformedBounds, phaseCoverage, fontDifference обозначают задачу просмотра, не доказанные результаты."
+        },
+        {
+          "name": "expectedText",
+          "type": "string",
+          "required": true,
+          "description": "Ожидаемый текст слоя для сверки с SourceText."
+        },
+        {
+          "name": "fontRequest",
+          "type": "object",
+          "required": false,
+          "description": "Только {runId, stepIndex}: точный durable update_text_layer record того же проекта и слоя; requested font извлекается сервером из его plan args."
+        }
+      ],
+      "targetAssumptions": [
+        "Сохранённый именованный .aep с доступной native revision; builder читает проект до и после всех наблюдений.",
+        "Известные 2D text/route targets; SourceText статичен по защищённому read-back, route 0/1, без layer parenting, collapse и time-remap.",
+        "Native normal preview TextDocument, точные ID/source links/timing/transforms; protected path использует matchName, raw value не является текстовым oracle.",
+        "Времена кадров корневой композиции явные, на frame grid; getter comp.time не является покадровой оценкой transform."
+      ],
+      "execution": {
+        "mode": "typed-plan",
+        "mutating": true,
+        "riskLevel": "medium",
+        "recipePath": "recipes/text-visual-review-plan.md",
+        "scriptPath": null,
+        "preferredTools": [
+          "build_solution_plan",
+          "get_comp_visual_review_manifest",
+          "get_project_info",
+          "get_layer_details",
+          "save_comp_frame_png"
+        ]
+      },
+      "requiredSafetyGates": {
+        "planValidation": true,
+        "explicitConfirmation": true,
+        "allowMutations": true,
+        "idempotency": true,
+        "checkpointOrEditSession": true,
+        "postMutationReadBack": true
+      },
+      "verificationRecipe": {
+        "summary": "Офлайн проверены компиляция, закрытый шаблон и исторические bindings; будущий экспорт требует отдельного разрешённого AE scope и действующих gates.",
+        "steps": [
+          "Получить builder contract через get_solution; build_solution_plan наблюдает проект/comps/слой/route read-only и отклоняет drift.",
+          "В отдельно разрешённой live-области выполнить proposal → dry-run → штатное confirmation/checkpoint → run; неизвестный результат сверить без повтора.",
+          "Прочитать get_comp_visual_review_manifest по точному runId; сверить canonical plan hash, pre/post snapshots, ordinal/step/root/time/frameNumber и PNG bytes.",
+          "Фактически открыть каждый PNG в читаемом размере для оценки полей, диакритики, выносных элементов и фаз; записать отдельный визуальный вывод."
+        ],
+        "expectedEvidence": [
+          "Исторические server records и независимые pre/post typed read-back с одинаковой native revision.",
+          "Проверенные PNG bytes/path/hash и точные frameBindings; mock PNG не подтверждает glyph rendering.",
+          "fontObservation из точного update_text_layer шага; missing/unknown остаётся blocked/incomplete, stored font mismatch — только наблюдение.",
+          "historicalCapture:true; currentProjectStateVerified/canonicalFreshness/artisticAccepted/visibleBoundsVerified/fontRenderingVerified:false."
+        ]
+      },
+      "testedAeContext": {
+        "aeVersion": "unknown",
+        "panelVersion": "AE Agent 3.2.0",
+        "bridgeVersion": "3.2.0",
+        "projectKind": "offline-native-shaped-fixtures",
+        "notes": [
+          "Офлайн pure fixtures; живой AE, реальные глифы и font substitution в этом этапе не проверялись."
+        ]
+      },
+      "promotionHistory": [
+        {
+          "date": "2026-10-04",
+          "from": "reviewed-workflow",
+          "to": "recipe",
+          "reviewer": "codex",
+          "evidence": "Офлайн закрытый wrapper existing comp builder/manifest, native-shaped text/route fixtures и integrity negatives; live/visual acceptance отсутствует.",
+          "commit": null
+        }
+      ],
+      "notes": [
+        "Манифест подтверждает факт экспорта и параметры слоя, но не доказывает визуальные границы глифов (visibleBoundsVerified: false) и отсутствие подмены шрифта (fontRenderingVerified: false) без просмотра человеком."
+      ]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "active-comp-context-review",
       "title": "Active Comp Context Review",
       "status": "recipe",

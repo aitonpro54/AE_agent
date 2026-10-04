@@ -79,7 +79,9 @@ function getSolution(args, tools) {
     planBuilder: offset === 0
       ? (entry.id === "montage-pipeline-plan"
           ? require("./montage-tools").getMontagePipelineBuilderContract()
-          : getBuilderContract(entry.id))
+          : (entry.id === "text-visual-review-plan"
+              ? require("./text-visual-review-plan").getTextVisualReviewBuilderContract()
+              : getBuilderContract(entry.id)))
       : undefined,
     next: "Read every recipe page needed for the operation. Build a proposal and dry-run first. A temporary CEP Autonomous Codex session can authorize proposal-backed typed mutations; raw JSX and destructive plans retain manual confirmation. This result authorizes no mutation." };
 }
@@ -90,7 +92,7 @@ const discoveryTools = [
     inputSchema: {type: "object", properties: {query: {type: "string", description: "Natural user task, RU or EN."}, limit: {type: "integer", minimum: 1, maximum: 8, default: 3}}, required: ["query"]} },
   { name: "get_solution", description: "Read a reviewed AE recipe by id, including its actual algorithm, inputs, safety gates, and optional preferred-tool JSON schemas. Local paginated lookup; no execution or provider call.",
     inputSchema: {type: "object", properties: {id: {type: "string"}, offset: {type: "integer", minimum: 0}, limit: {type: "integer", minimum: 500, maximum: 12000, default: 6000}, toolNames: {type: "array", maxItems: 4, items: {type: "string"}, description: "Preferred tool names whose full contracts are needed; omit to keep the response compact."}}, required: ["id"]} },
-  { name: "build_solution_plan", description: "Build a deterministic reviewed AE keyframe-distribution plan from explicit complete inspected evidence. Local computation, no LLM or AE mutation. Returns normal plan for review/proposal, with scalar linear-only limits.",
+  { name: "build_solution_plan", description: "Build a reviewed deterministic AE plan using the solution-specific contract returned by get_solution. Observed visual-review builders perform typed read-only inspection; compilation calls no provider and performs no project mutation. Execution retains proposal, dry-run and confirmation gates.",
     inputSchema: {type: "object", properties: {solutionId: {type: "string"}, inputs: {type: "object", description: "Explicit complete inspected evidence per the supported builder input contract returned by get_solution."}}, required: ["solutionId", "inputs"]} },
   { name: "propose_ai_agent_plan", description: "Create a server-owned action proposal for an explicit AE plan without a provider call or AE mutation. Returns a redacted proposal for dry-run and, while the user-enabled CEP Autonomous Codex session is active, proposal-backed typed mutation. Raw JSX and destructive plans retain manual confirmation.",
     inputSchema: {type: "object", properties: {plan: {type: "object"}, requestId: {type: "string"}, parentActionId: {type: "string", description: "Failed proposal eligible for at most two inspected setter corrections. Creation/import/JSX and unknown outcomes cannot be retried this way."}}, required: ["plan"]} }

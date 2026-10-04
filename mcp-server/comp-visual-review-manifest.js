@@ -250,6 +250,191 @@ function validateBuilderPlanShape(planSteps) {
   };
 }
 
+// Only this fully closed wrapper may be remapped into the existing frame verifier.
+function validateTextReviewPlanShape(planSteps, tr) {
+  const text = require("./text-visual-review-plan");
+  const fail = () => { throw manifestError("non_builder_plan", "Text review must match the complete builder pattern."); };
+  const exact = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
+    && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value,key));
+  if (!exact(tr,["schema","caseId","rootCompItemId","textTarget","route","frames","checks","expectedText","fontRequest","observation","declarations"])
+    || tr.schema !== "ae-agent-text-visual-review.v1") throw manifestError("invalid_text_review");
+  try { text.validateTextVisualReviewInput({caseId:tr.caseId,rootCompItemId:tr.rootCompItemId,textTarget:tr.textTarget,route:tr.route,
+    frames:tr.frames.map(f=>({time:f.time,phase:f.phase})),checks:tr.checks,expectedText:tr.expectedText,
+    ...(tr.fontRequest === null ? {} : {fontRequest:tr.fontRequest})}); } catch (_) { fail(); }
+  if (!Array.isArray(planSteps) || planSteps.length > MAX_PLAN_STEPS || !exact(tr.observation,["project","text","route","comps"])) fail();
+  const o = tr.observation;
+  if (!exact(o.project,["file","revision","numItems","projectId"])) fail();
+  try {
+    if (!text.same(o.project,text.projectSnapshot({...o.project,supported:{revision:true}}))) fail();
+  } catch (_) { fail(); }
+  // Reconstitute the real normal preview shape to check all stored observation fields.
+  const raw = observation => observation && {comp:{itemId:observation.compItemId,itemIndex:observation.compItemIndex,
+    name:observation.compName,time:observation.time},layer:{id:observation.layerId,index:observation.layerIndex,
+    startTime:observation.startTime,inPoint:observation.inPoint,outPoint:observation.outPoint,stretch:observation.stretch,
+    threeDLayer:observation.threeDLayer,timeRemapEnabled:observation.timeRemapEnabled,
+    collapseTransformation:observation.collapseTransformation,parent:observation.parent,
+    ...(observation.text ? {textLayer:true,layerKind:"text",text:observation.text} : {source:{itemId:observation.sourceCompItemId,type:"comp"}})},
+    transform:observation.transform,protectedProperties:observation.text ? [{path:[{matchName:"ADBE Text Properties"},{matchName:"ADBE Text Document"}],numKeys:0,expressionEnabled:false}] : []};
+  let rebuilt;
+  try { rebuilt = text.buildTextVisualReviewPlan({caseId:tr.caseId,rootCompItemId:tr.rootCompItemId,textTarget:tr.textTarget,route:tr.route,
+    frames:tr.frames.map(f=>({time:f.time,phase:f.phase})),checks:tr.checks,expectedText:tr.expectedText,
+    ...(tr.fontRequest === null ? {} : {fontRequest:tr.fontRequest})},
+    {projectFile:o.project.file,project:{...o.project,supported:{revision:true}},observedAt:"2026-10-04T00:00:00.000Z",
+      comps:o.comps,textObservation:raw(o.text),routeObservation:raw(o.route)},
+    String(tr.frames[0]?.outputFileName || "").match(REVIEW_FILENAME_REGEX)?.[1]); } catch (_) { fail(); }
+  if (!text.same(rebuilt.plan.steps,planSteps) || !text.same(rebuilt.plan.textReview,tr)) fail();
+
+  const dec = tr.declarations;
+  // Exact coverage has been proven above. Never discard arbitrary reads or unknown steps.
+  const baseIndices = [1,...dec.exportStepIndices,...dec.postReadCompStepIndices,dec.finalProjectInfoStepIndex];
+  const baseSteps = baseIndices.map(index=>planSteps[index-1]);
+  const base = validateBuilderPlanShape(baseSteps);
+  return {...base,baseIndices,baseSteps,preReadTextStepIndex:dec.preReadTextStepIndex,
+    preReadRouteStepIndices:dec.preReadRouteStepIndices,postReadTextStepIndex:dec.postReadTextStepIndex,
+    postReadRouteStepIndices:dec.postReadRouteStepIndices,
+    exportSteps:base.exportSteps.map(item=>({...item,stepIndex:baseIndices[item.stepIndex-1]})),
+    postReadCompSteps:base.postReadCompSteps.map(item=>({...item,stepIndex:baseIndices[item.stepIndex-1]})),
+    initialStepIndex:1,finalStepIndex:planSteps.length};
+}
+
+function fontRequestObservation(record, tr, options) {
+  if (!tr.fontRequest) return null;
+  const {sha256} = require("./review-evidence");
+  const {same} = require("./text-visual-review-plan");
+  const request = tr.fontRequest;
+  const blocked = reason => ({status:"blocked",reason,runId:request.runId,stepIndex:request.stepIndex,requestedFont:null,fontRenderingVerified:false});
+  const prior = require("./plan-run-records").readRecord(options.logDir ? path.resolve(options.logDir) : path.resolve("logs"),request.runId);
+  if (!prior || prior.unavailable) return blocked(prior?.reasonCode || "font_request_record_missing");
+  const provenance = prior.run?.provenance;
+  if (prior.runId !== request.runId || prior.run?.id !== request.runId || prior.run?.dryRun !== false
+    || prior.project?.file !== tr.observation.project.file || prior.plan?.targetProject?.file !== tr.observation.project.file
+    || provenance?.projectId !== tr.observation.project.projectId || provenance?.planSha256 !== sha256(prior.plan)) return blocked("font_request_binding_mismatch");
+  const planned = prior.plan.steps?.[request.stepIndex-1];
+  const matches = prior.run.steps?.filter(s=>s?.index === request.stepIndex);
+  if (!planned || planned.tool !== "update_text_layer" || matches?.length !== 1) return blocked("font_request_step_missing");
+  const step = matches[0], args = planned.args, target = tr.observation.text;
+  // update_text_layer currently addresses indices/name, so an independent stable-ID read
+  // in that durable record must bind its exact index before this update (no invented args).
+  const targetRead = prior.run.steps.filter(s => s?.index < request.stepIndex && s.tool === "get_layer_details"
+    && s.status === "completed" && s.result?.ok !== false && s.result?.comp?.itemId === target.compItemId
+    && s.result?.comp?.itemIndex === target.compItemIndex && s.result?.comp?.name === target.compName
+    && s.result?.layer?.id === target.layerId && s.result?.layer?.index === target.layerIndex
+    && prior.plan.steps[s.index-1]?.tool === s.tool && same(prior.plan.steps[s.index-1]?.args,s.args)
+    && s.args?.compItemId === target.compItemId && s.args?.layerId === target.layerId).at(-1);
+  if (!targetRead || !args || step.tool !== planned.tool || !same(step.args,args)
+    || typeof args.font !== "string" || !args.font || args.layerIndex !== target.layerIndex
+    || !(args.compItemIndex === target.compItemIndex || args.compItemIndex === undefined && args.compName === target.compName)) return blocked("font_request_target_mismatch");
+  const observation = {runId:request.runId,stepIndex:request.stepIndex,planSha256:provenance.planSha256,
+    projectId:provenance.projectId,compItemId:target.compItemId,layerId:target.layerId,requestedFont:args.font,
+    storedFont:target.text.font,storedFontMatchesRequest:target.text.font === args.font,fontRenderingVerified:false};
+  const native = step.mutationResult;
+  if (step.status === "completed" && step.isError !== true && step.mutationResultIsError === false && native?.ok !== false
+    && native?.layer?.id === target.layerId && native?.comp?.itemIndex === target.compItemIndex
+    && native?.comp?.name === target.compName && typeof prior.run.finishedAt === "string") {
+    return {...observation,status:"recorded",reason:"stored_font_observation_only"};
+  }
+  // A missing/unknown/generic failed result never proves the font was unavailable.
+  const nativeCode = native && typeof native === "object" && (native.code || native.errorCode);
+  const authoritativeRejection = step.status === "failed" && step.preMutationRejected === true
+    && step.mutationResultIsError === true && ["native_rejected_unavailable_font","font_unavailable","font_not_found"].includes(nativeCode);
+  if (authoritativeRejection) return {...observation,status:"rejected",reason:"native_rejected_unavailable_font"};
+  return {...blocked("font_request_outcome_unresolved"),requestedFont:args.font,planSha256:provenance.planSha256};
+}
+
+async function createTextReviewManifest(record, options, shape) {
+  const text = require("./text-visual-review-plan");
+  const {sha256} = require("./review-evidence");
+  const tr = record.plan.textReview, run = record.run, runId = record.runId, planSha256 = sha256(record.plan);
+  const issues = [];
+  const bad = code => issues.push(code);
+  const byIndex = new Map();
+  for (const step of run.steps) {
+    if (!step || !Number.isSafeInteger(step.index) || step.index < 1 || step.index > record.plan.steps.length
+      || byIndex.has(step.index)) { bad("run_step_index_mismatch"); continue; }
+    byIndex.set(step.index,step);
+    const planned = record.plan.steps[step.index-1];
+    if (step.tool !== planned.tool || !text.same(step.args,planned.args)) bad("run_step_args_mismatch");
+  }
+  if (record.project?.file !== tr.observation.project.file || record.plan.targetProject?.file !== tr.observation.project.file
+    || run.provenance?.projectId !== tr.observation.project.projectId || run.provenance?.planSha256 !== planSha256) bad("review_record_binding_mismatch");
+  const complete = index => {
+    const step = byIndex.get(index);
+    return step?.status === "completed" && step.isError !== true && step.result != null && step.result.ok !== false ? step.result : null;
+  };
+  let readsComplete = true;
+  for (const index of [shape.initialStepIndex,shape.finalStepIndex]) {
+    const result = complete(index);
+    if (!result) { readsComplete = false; continue; }
+    try { if (!text.same(text.projectSnapshot(result),tr.observation.project)) bad("project_revision_or_identity_changed"); }
+    catch (_) { readsComplete=false; bad("project_snapshot_incomplete"); }
+  }
+  let staticProofPassed = true, observedText = null;
+  const observations = [];
+  for (const index of [shape.preReadTextStepIndex,shape.postReadTextStepIndex]) {
+    const result = complete(index);
+    if (!result) { readsComplete=false; staticProofPassed=false; continue; }
+    try {
+      const observed = text.layerObservation(result,tr.textTarget,tr.expectedText);
+      observations.push(observed);
+      observedText = observed.text.text;
+      if (!text.observationsMatch(tr.observation.text,observed)) bad("text_technical_fields_changed");
+    } catch (error) { staticProofPassed=false; readsComplete=false; bad(error.code || "text_readback_incomplete"); }
+  }
+  if (observations.length === 2 && !text.observationsMatch(observations[0],observations[1])) bad("text_pre_post_mismatch");
+  const routeObservations = [];
+  for (const index of [...shape.preReadRouteStepIndices,...shape.postReadRouteStepIndices]) {
+    const result = complete(index);
+    if (!result) { readsComplete=false; continue; }
+    const hop = tr.route[0];
+    try {
+      const observed = text.layerObservation(result,{compItemId:hop.parentCompItemId,layerId:hop.layerId},null,hop.childCompItemId);
+      routeObservations.push(observed);
+      if (!text.observationsMatch(tr.observation.route,observed)) bad("route_technical_fields_changed");
+    } catch (error) { readsComplete=false; bad(error.code || "route_readback_incomplete"); }
+  }
+  if (routeObservations.length === 2 && !text.observationsMatch(routeObservations[0],routeObservations[1])) bad("route_pre_post_mismatch");
+
+  // Reuse the legacy bytes/path/PNG proof with exact, already-closed step-index mapping.
+  const mapped = {...record,plan:{...record.plan,steps:shape.baseSteps},run:{...run,steps:shape.baseIndices.flatMap((index,i) => {
+    const step=byIndex.get(index); return step ? [{...step,index:i+1}] : [];
+  })}};
+  delete mapped.plan.textReview;
+  const base = await createManifest(mapped,options);
+  const root = tr.observation.comps.find(c=>c.itemId === tr.rootCompItemId);
+  const compIdentity = comp => [comp?.itemId ?? comp?.id,comp?.itemIndex ?? comp?.index,comp?.name,
+    comp?.width,comp?.height,comp?.frameRate,comp?.duration];
+  for (const post of shape.postReadCompSteps) {
+    const observed = complete(post.stepIndex);
+    if (!observed) readsComplete=false;
+    else if (!text.same(compIdentity(observed.comp || observed),compIdentity(root))) bad("post_comp_technical_fields_changed");
+  }
+  const frames = base.frames.map((frame,i) => {
+    const expected = tr.frames[i], result = complete(expected.stepIndex);
+    const comp = result?.comp, actual = result?.frame;
+    const frameMismatch = result && (!text.same(compIdentity(comp),compIdentity(root))
+      || actual?.time !== expected.time || actual?.frameNumber !== expected.frameNumber
+      || actual?.frameNumber !== Math.round(actual?.time * root.frameRate));
+    if (frameMismatch) bad("frame_grid_or_comp_mismatch");
+    return {...frame,...(frameMismatch ? {verified:false,status:"frame_grid_or_comp_mismatch"} : {}),
+      runId,planSha256,stepIndex:expected.stepIndex,ordinal:expected.ordinal,rootCompItemId:tr.rootCompItemId,phase:expected.phase};
+  });
+  const fontObservation = fontRequestObservation(record,tr,options);
+  const blockedFont = fontObservation?.status === "blocked" || fontObservation?.status === "rejected";
+  const corrupt = issues.length > 0 || base.status === "corrupt";
+  const ok = !corrupt && readsComplete && staticProofPassed && !blockedFont && base.ok === true;
+  const status = corrupt ? "corrupt" : ok ? "complete" : "incomplete";
+  return {...base,ok,status,verificationStatus:ok ? "verified" : corrupt ? "failed" : "partial",
+    textEvidenceStatus:corrupt ? "corrupt" : ok ? "verified" : fontObservation?.status === "rejected" ? "font_request_rejected"
+      : fontObservation?.status === "blocked" ? "font_request_blocked" : "incomplete",
+    runId,planSha256,issues,frames,verifiedFramesCount:frames.filter(f=>f.verified).length,
+    frameBindings:frames.map(frame=>({runId,planSha256,stepIndex:frame.stepIndex,ordinal:frame.ordinal,
+      rootCompItemId:frame.rootCompItemId,time:frame.time,frameNumber:frame.frameNumber,phase:frame.phase,sha256:frame.sha256 || null})),
+    textReview:{caseId:tr.caseId,textTarget:tr.textTarget,route:tr.route,expectedText:tr.expectedText,observedText,staticProof:{ok:staticProofPassed}},
+    fontObservation,historicalCapture:true,currentProjectStateVerified:false,canonicalFreshness:false,artisticAccepted:false,
+    visibleBoundsVerified:false,fontRenderingVerified:false,
+    limits:"Исторические native read-back и PNG integrity. Фактический просмотр PNG требуется для глифов, полей и художественной оценки; stored font не доказывает rendered font. Transform getter читает только текущее comp.time."};
+}
+
 async function createManifest(record, options = {}) {
   if (!record || typeof record !== "object" || Array.isArray(record)) {
     throw manifestError("invalid_record", "Run record must be an object");
@@ -268,6 +453,11 @@ async function createManifest(record, options = {}) {
 
   if (!record.plan || !Array.isArray(record.plan.steps) || !record.run || !Array.isArray(record.run.steps)) {
     throw manifestError("invalid_record", "Record must contain plan.steps and run.steps");
+  }
+
+  if (record.plan && record.plan.textReview) {
+    const shape = validateTextReviewPlanShape(record.plan.steps, record.plan.textReview);
+    return await createTextReviewManifest(record, options, shape);
   }
 
   // Strictly validate builder plan shape (bounded 4..18 steps, contiguous ordinals, 1..12 frames, 1..4 comps)
@@ -557,6 +747,7 @@ module.exports = {
   getCompVisualReviewManifestTool,
   createManifest,
   validateBuilderPlanShape,
+  validateTextReviewPlanShape,
   verifyPathContainment,
   manifestError,
   REVIEW_FILENAME_REGEX

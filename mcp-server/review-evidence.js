@@ -133,13 +133,26 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
   return {status:missingSeconds>1e-9?"gap":"covered",expected,frameRate,sampleRate,gaps,missingSeconds,missingSamples,cause:null,audibleImpact:null,acceptance:"not_established"};
 }
 
+const RUNTIME_FILES = [
+  "mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js","mcp-server/plan-run-records.js","mcp-server/plan-run-response.js","mcp-server/tool-error-response.js",
+  "mcp-server/montage-pipeline.js","mcp-server/montage-plan-guard.js","mcp-server/montage-native.js","mcp-server/montage-postread.js","mcp-server/montage-materials.js",
+  "mcp-server/montage-root-render.js","mcp-server/montage-root-png.js","mcp-server/montage-capture-requirements.js","mcp-server/montage-capture-service.js",
+  "mcp-server/placeholder-review-service.js","mcp-server/placeholder-review-tools.js","mcp-server/placeholder-visual-review.js","mcp-server/placeholder-visual-batches.js","mcp-server/placeholder-protection.js","mcp-server/placeholder-geometry.js",
+  "mcp-server/project-intent-memory.js","mcp-server/plan-run-reconciliation.js",
+  "mcp-server/comp-visual-review-plan.js","mcp-server/comp-visual-review-manifest.js","mcp-server/text-visual-review-plan.js"
+];
+
+function runtimeNamedHashSet(root, fileList = RUNTIME_FILES) {
+  const targetRoot = root || path.resolve(__dirname, "..");
+  const files = Array.isArray(fileList) ? fileList : RUNTIME_FILES;
+  return files.map((name) => ({
+    name,
+    sha256: sha256(fs.readFileSync(path.join(targetRoot, name)))
+  }));
+}
+
 function runtimeIdentity(root) {
-  const files=["mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js","mcp-server/plan-run-records.js","mcp-server/plan-run-response.js","mcp-server/tool-error-response.js",
-    "mcp-server/montage-pipeline.js","mcp-server/montage-plan-guard.js","mcp-server/montage-native.js","mcp-server/montage-postread.js","mcp-server/montage-materials.js",
-    "mcp-server/montage-root-render.js","mcp-server/montage-root-png.js","mcp-server/montage-capture-requirements.js","mcp-server/montage-capture-service.js",
-    "mcp-server/placeholder-review-service.js","mcp-server/placeholder-review-tools.js","mcp-server/placeholder-visual-review.js","mcp-server/placeholder-visual-batches.js","mcp-server/placeholder-protection.js","mcp-server/placeholder-geometry.js",
-    "mcp-server/project-intent-memory.js","mcp-server/plan-run-reconciliation.js"];
-  const modules=files.map(name=>({name,sha256:sha256(fs.readFileSync(path.join(root,name)))}));
+  const modules = runtimeNamedHashSet(root);
   let gitCommit=null;try{gitCommit=execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8",windowsHide:true,stdio:["ignore","pipe","ignore"]}).trim();}catch(_){}
   return {schema:"ae-agent-runtime-identity.v1",gitCommit,sourceSha256:sha256(modules),modules};
 }
@@ -181,4 +194,4 @@ function packageReviewEvidence(input,options={}) {
   const manifest={schema:"ae-agent-review-package.v1",eventCount:events.length,completeClientAcceptance:false,payloadPolicy:"allowlisted_machine_metadata_only; raw payloads and client artifacts excluded",files:Object.entries(sanitized).map(([name,value])=>({name,sha256:sha256(canonical(value))}))};
   return {manifest,files:sanitized};
 }
-module.exports={canonical,sha256,createVerificationEvidence,linkedEventSlice,sanitizeEvidence,findLeaks,packageReviewEvidence,assessRequirements,assessAudioCoverage,runtimeIdentity,writeStepEvidence};
+module.exports={canonical,sha256,createVerificationEvidence,linkedEventSlice,sanitizeEvidence,findLeaks,packageReviewEvidence,assessRequirements,assessAudioCoverage,runtimeIdentity,runtimeNamedHashSet,writeStepEvidence};

@@ -13677,6 +13677,16 @@ async function callTool(name, args, executionContext) {
       if (args.solutionId === "comp-visual-review-plan") {
         return await callTool("build_comp_visual_review_plan", args.inputs, executionContext);
       }
+      if (args.solutionId === "text-visual-review-plan") {
+        const textReviewPlan = require("./text-visual-review-plan");
+        const result = await textReviewPlan.observeTextVisualReviewPlan(args.inputs, async (tool, readArgs) => {
+          const read = await callToolLogged("text-review-plan-read", tool, readArgs);
+          if (read && read.isError) throw Object.assign(new Error("Text review observation failed."), {code:"text_review_read_failed"});
+          return firstToolPayload(read);
+        });
+        const prepared = validateAgentPlanWithRepair(result.plan, null, {}, {repairPlan:false});
+        return toolResult({...result,ok:prepared.validation.ok,validation:prepared.validation},!prepared.validation.ok);
+      }
       if (args.solutionId === "montage-pipeline-plan") {
         const result = await montagePipelineService.buildMontagePipelinePlan(args.inputs, daemonMontageDeps);
         return toolResult(result, !result.ok);
@@ -13773,7 +13783,8 @@ async function callTool(name, args, executionContext) {
       const record = planRunRecords.readRecord(LOG_DIR, runId, { throwOnError: true });
       const manifest = await compVisualReviewManifest.createManifest(record, {
         runId,
-        exportRoot: GENERATED_EXPORT_DIR
+        exportRoot: GENERATED_EXPORT_DIR,
+        logDir: LOG_DIR
       });
       return toolResult(manifest, !manifest.ok);
     } catch (error) {
