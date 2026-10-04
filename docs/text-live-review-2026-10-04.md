@@ -1,6 +1,6 @@
 # Live review текста — 4 октября 2026
 
-Статус: IN PROGRESS. Ограниченная live проверка четырёх synthetic кейсов решения `text-visual-review-plan`; единственный AE/CEP/UI контроллер — root. Source repair принят offline и активирован. Первая партия 5 actual PNG просмотрена и измерена; следующие исправления/экспорты pending.
+Статус: IN PROGRESS. Ограниченная live проверка четырёх synthetic кейсов решения `text-visual-review-plan`; единственный AE/CEP/UI контроллер — root. Семь actual PNG просмотрены и измерены. Native timing repair принят offline; его активация, три offset-кадра, финальный защищённый save и независимый artifact review ещё не завершены.
 
 ## Границы и исходное состояние
 
@@ -14,24 +14,24 @@
 
 ## Матрица кейсов
 
-Все времена — root time по frame grid. Итого восемь фактически экспортированных PNG; каждый должен быть открыт и просмотрен в читаемом размере. ID, run ID, revision, receipts, PNG и выводы добавляются только по фактическому read-back.
+Все времена — root time по frame grid. Получены семь PNG; итоговое покрытие — десять с сохранением диагностического accents и font-baseline кадров. Каждый открывается и просматривается в читаемом размере. ID, run ID, revision, receipts, PNG и выводы добавляются только по фактическому read-back.
 
 | Кейс | Контракт | Экспорты | Статус / evidence |
 |---|---|---|---|
 | `scaled-precomp-text` | Текст `Scaled Text`; font 72, вложенная comp scale [125,85], root precomp layer scale [65,65]; проверить видимый итог и поля | 0 entry, 1 hold, 2.5 exit | Три actual PNG просмотрены; статичны и SHA идентичны. Pixels show shifted text block in stated transform; no clipping observed. |
-| `offset-stretch-phases` | startTime/inPoint 1.2 s, stretch 150%, no time-remap; stretch — typed gap, не разрешение на raw обход; проверить фазы | 1.2 entry, 2.2 hold, 3.2 exit | Three exports pending. Position read-backs at all three times match linear animation. |
-| `accents-descenders` | Точный текст `ÁÉÍÓÚ ЙЁ\nagjpqy`, font 72, центр; проверить глифы, descenders, clipping и баланс полей | 1 hold | One PNG viewed; wrong acute Latin glyphs with inherited `LugaBookAd-Book`, source exact (CR). Explicit Arial typed correction + fresh affected capture pending. |
-| `font-difference` | Синтетический текст; exact unique unavailable PostScript name, durable update step + pre-read; проверка только по authoritative outcome, meaningful font metadata/read-back и фактическому кадру | 1 hold | Baseline one PNG viewed/readable. Manifest incomplete from server-added `verifyAfter`/`idempotencyKey`/scope arg normalization mismatch; no setter replay. Normalization guard fix pending. |
+| `offset-stretch-phases` | startTime/inPoint 1.2 s, stretch 150%, no time-remap; protected raw setter и независимый read-back | 1.2 entry, 2.2 hold, 3.2 exit | Native primitive150 и три linear Position keys подтверждены; три PNG ждут исправленного typed reader. |
+| `accents-descenders` | Точный native текст `ÁÉÍÓÚ ЙЁ\ragjpqy`, font72; глифы, descenders, clipping и поля | 1 hold | Диагностический Luga кадр сохранён; после typed ArialMT correction новый кадр показывает правильные глифы без clipping. |
+| `font-difference` | Exact unique unavailable PostScript request, durable step/pre-read, native FontObject и сравнительный кадр | 1 hold до/после | Baseline и missing-font PNG просмотрены; после8f62c78 manifests complete. Native `isSubstitute=true`, requested/stored равны; rendered fallback name не установлен. |
 
 ## Общие gates и критерии
 
 В каждой сцене записать exact comp/layer IDs и ID/name/index mapping до мутаций, revision и исходные свойства. Сохранить recipe plan, canonical hash, run/step IDs, dry-run и confirmation receipts. После мутаций независимо перечитать цели и проверить revision. Review manifest и hashes помогают связать кадры с операцией, но не заменяют открытие PNG.
 
-У каждого фактического PNG зафиксировать путь, размеры/hash, соответствующие comp/time/frame, просмотр и наблюдения: видимые границы, поля, clipping, иерархия, требуемые фазы. Source Text, font metadata, SourceRect, layer position и stored font сами по себе не доказывают отрисованный результат. Различие requested/stored font само по себе не доказывает подмену. Для unavailable font нужен явный authoritative native отказ; generic error или unknown outcome — incomplete, сначала reconciliation.
+У каждого PNG зафиксировать путь, размеры/hash, comp/time/frame, просмотр и наблюдения видимых границ, полей, clipping и фаз. Source Text, SourceRect, layer position и stored font сами по себе не доказывают отрисованный результат. Для unavailable font отдельно фиксируются authoritative update outcome, native `FontObject.isSubstitute` и сравнительные PNG; generic error или unknown требует reconciliation. Requested/stored equality не исключает подмену и не устанавливает имя фактически отрисованного шрифта.
 
-Root сверяет receipts/read-backs и фактические PNG; separate source reviewer reviewed code, not the artwork. Требуемые будущие capture count теперь минимум 10 суммарно: pending offset 3, corrected accents 1, post-fix font 1 плюс первые 5 сохранённых. До завершения всех критериев не писать PASS, verified, rendered-font proof или artistic acceptance.
+Root сверяет receipts/read-backs и фактические PNG; source reviewer проверяет код отдельно от изображений. Pending offset3 плюс уже полученные7 составят10. Общую приёмку live этапа нельзя объявлять до выполнения оставшихся критериев. Серверные artistic/freshness/fontRendering flags не повышаются ручной оценкой.
 
-## Результаты
+## Фаза 1 — исторические результаты
 
 - Save As выполнен root для первого unnamed synthetic проекта: 2026-10-04 17:26:39Z, 8346 bytes, SHA-256 `8bc9e0baab10049118a2a37352121285ae15ee1eee32d9c5d7a3862553d608aa`; native path совпал с целевым, `numItems=0`, revision=1.
 - `create_comps` run `c9c09688-c2d0-427f-b389-d0f99c0dcb36`: success; protected checkpoint создан.
@@ -47,3 +47,18 @@ Root сверяет receipts/read-backs и фактические PNG; separate 
 - Rules PASS. Root keeps AE paused pending next scoped step. Pending: typed Arial correction/read-back for comp/layer 37/63, affected recapture/view; offset case captures; explicit missing-font request review at 49/64. Any RawFontObject observation must use the separately protected gate, scoped to one request; do not set global font preferences or inspect/install/list fonts or font locations. Total task remains IN PROGRESS; do not blindly replay any prior mutation.
 - Runtime evidence dir: `.codex-runtime/text-live-20261004/` (локальная ignored зона); подробные machine-readable receipts и фактические summaries добавляются после операций root.
 - План/документ не являются разрешением обойти любые AE gates.
+
+## Фаза 2 — свежие результаты и native timing repair
+
+- `8f62c78f348c3b9d196a776c6f7163c3601fa294` активирован в PID2860/sourceSHA `702beb22cd41b877deb7326101c8887e109bf6c88fcbe306770a52004894905b`. Baseline manifest `83473005…` после server-normalization repair complete; исходный blocked response не переписан, setter не повторён.
+- Typed run `9301cbe2-8bdb-4143-9254-732b7fd6fe97`: step3 ArialMT на37/63, step6 `AEAgentMissingFontLive20261004` на49/64; оба applied, aggregate `verification_required/insufficient` сохранён. Stable-ID pre/post Source Text reads подтвердили текст, font, keys0/expressionfalse.
+- Corrected accents capture `5ebe731d-982e-4654-8ece-6252889c222c`, review `d6e9db5f-b1a4-4cd9-bd93-6de1e8851969`: complete, PNG29212bytes/SHA `44b79ce553cab1fbd1defc9d87c0ae5607896dc138da8452ee819cf0f93f1ad5`. Root фактически увидел правильные ÁÉÍÓÚ ЙЁ и agjpqy без clipping.
+- Missing-font capture `50f62d04-3a6f-4f3d-bed1-50c92fbf722d`, review `853a89e3-b3c1-4363-a737-27e452ed54c9`: complete, PNG29587bytes/SHA `d1b44b18f0440eb37251fb6ac55175fb14dd8a68c1771cabb81e3db39645897e`. Root увидел читаемый текст с изменённым рисунком/шириной; stored=requested, server fontRenderingVerified=false сохранён.
+- Manual CEP raw run `a441b8fa-5924-45d7-83c8-27740bb96128` после exact panel dry-run `702740dd…`: один setter stretch100→150 на25/62; gate/undo/ownership guards соблюдены. Step2 SHA `1a4832f13c19ed12e5d562c7806abbcc09c06d1cf6340cdca13b2c6da92907d0`. Read-only FontObject49/64 сообщает `isSubstitute=true`; никаких font prefs/install/list/location writes. Общая raw verification остаётся needs_review. Quarantine candidate прочитан и оставлен без promotion.
+- AE автоматически перенёс Position keys1.2/2.2/3.2 на1.2/2.7/4.2. Typed run `629bc28f-0f8f-4c75-ac92-d68c99d9b896` изменил только три собственных Position keyframes обратно на root1.2/2.2/3.2; applied/semanticpassed. Независимые значения [300,540,0]/[960,540,0]/[1620,540,0] совпали.
+- Общий typed reader сообщал100 уже ДО key setter. Read-only manual CEP run `9049579d-5590-4cfc-b114-8c9ace857de7` непосредственно подтвердил native150/startin1.2/out14.4/desiredkeys/revision389; step1 SHA `391292c85242af9ee965b87cdbc483f2e4349baf0216e5a4db24525043db52f4`. Первый readonly diagnostic `699ecc8a…` вернул null из-за пропущенного outer return, поэтому подготовлен новый readonly план; setters отсутствуют, revision389 не изменена. Консервативные wrapper changed=true/needs_review не трактуются как доказательство реальной записи.
+- Причина serializer defect: `instanceof AVLayer` подставлял100/false для TextLayer. Sol/xhigh изменил только два getter: finite number/boolean либо null. Keyframe handler побайтово сохранён (LF SHA `413bdc745eb1194400c6e6d103d4df633ba9c87fb159614bc631dd43db547ca3`). Unknown отвергают real text builder и manifest validator. Автор:75 generated-JSX/VM observations,15 builder/+15 manifest refusals; existing text/comp suites, syntax/rules/diff PASS. Независимый Sol/high повторил75+15+15 с запретом filesystem writes/listen/spawn:0 попыток, ACCEPT. Evidence `.codex-runtime/native-layer-timing-20261005/specialist-01CBgh/offline-evidence.json`, SHA `10294e3f5a8021db303b0d4576aeac0d8a3503d7d6fda900f7c76bb23e397311`; bridgeSHA `5e3b24967d7e829c5b2616d1dc2c9512bae368bd16a912094e6dea8120a0c4cc`, smokeSHA `00f7362b906dd5225725bc743119549f35f3abacc1ae2fab91b5a9889780f4ae`. Runtime ещё не активирован.
+- Luna измерила7/7 уникальных PNG: SHA/bytes/1920×1080 и actual view paths совпали. Phase2 reportSHA `f592158af328d5d9ebd65d0e0224e1acaa282c28079fd9d42620875db9d4f5b8`; bbox@8 exclusive: Arial [778,474,1135,663), missing-font [615,487,1308,555). Отличаются18512/19899 pixels соответственно от диагностического accents/baseline; это pixel differences, не имя fallback font и не artistic acceptance.
+- Диск AEP по свежему preflight всё ещё8346bytes/SHA8bc9e0… начального пустого bootstrap; пять comps сейчас только в памяти AE. Final protected named save обязателен после offset review, reopen не заявляется.
+- Routine docs dispatch несколько раз получил `agent thread limit reached`; новая ae_operator попытка также отклонена. Root проверил completed helpers/status и выполнил только docs/commit fallback. AE остаётся под одним controller; исходные файлы, PNG и mutation records не переписываются.
+- Pending: activation/fresh typed150 read-back, offset3 captures/views, final protected save, независимый artifact review. Исторические failed/verification_required/needs_review outcomes не повышаются до PASS.

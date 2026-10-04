@@ -13052,8 +13052,8 @@ async function callTool(name, args, executionContext) {
           threeDLayer: false,
           collapseTransformation: false,
           audioEnabled: false,
-          stretch: 100,
-          timeRemapEnabled: false
+          stretch: null,
+          timeRemapEnabled: null
         };
 
         try { info.label = layer.label; } catch (__labelError) {}
@@ -13067,8 +13067,15 @@ async function callTool(name, args, executionContext) {
         try { info.collapseTransformation = !!layer.collapseTransformation; } catch (__collapseError) {}
         try { info.motionBlur = !!layer.motionBlur; } catch (__motionBlurError) {}
         try { info.audioEnabled = !!layer.audioEnabled; } catch (__audioEnabledError) {}
-        try { info.stretch = layer instanceof AVLayer ? Number(layer.stretch) : 100; } catch (__stretchError) {}
-        try { info.timeRemapEnabled = layer instanceof AVLayer ? !!layer.timeRemapEnabled : false; } catch (__timeRemapEnabledError) {}
+        // Native TextLayer inheritance tests can fail; observe timing without inferring defaults.
+        try {
+          var nativeStretch = layer.stretch;
+          if (typeof nativeStretch === "number" && isFinite(nativeStretch)) info.stretch = nativeStretch;
+        } catch (__stretchError) {}
+        try {
+          var nativeTimeRemapEnabled = layer.timeRemapEnabled;
+          if (typeof nativeTimeRemapEnabled === "boolean") info.timeRemapEnabled = nativeTimeRemapEnabled;
+        } catch (__timeRemapEnabledError) {}
         try {
           info.blendingMode = layer.blendingMode;
           info.blendingModeName = __codexBlendingModeName(layer.blendingMode);
