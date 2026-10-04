@@ -298,6 +298,24 @@ function validateTextReviewPlanShape(planSteps, tr) {
     initialStepIndex:1,finalStepIndex:planSteps.length};
 }
 
+function fontExecutionArgsMatch(prior, planned, executed) {
+  const {same} = require("./text-visual-review-plan");
+  if (same(planned.args,executed.args)) return true;
+  const validation = prior.run?.validation;
+  // Reuse the runner-record contract: only three safety fields may extend original args.
+  if (!require("./montage-run-bindings").executionArgsMatch(planned,executed,validation)) return false;
+  const rows = validation.steps.filter(row=>row?.index === executed.index);
+  const row = rows[0], id = validation.validationId;
+  if (prior.run.provenance?.schema !== "ae-agent-run-provenance.v1" || validation.ok !== true
+    || typeof id !== "string" || !id.trim() || row.valid !== true || row.executable !== true
+    || row.mutatesProject !== true || row.requiresRuntimeBinding !== false || !same(row.args,planned.args)) return false;
+  const args = planned.args;
+  // Bind generated values to the persisted validation ID, not arbitrary safeArgs declarations.
+  return same(executed.args,{...args,verifyAfter:true,
+    idempotencyKey:Object.hasOwn(args,"idempotencyKey") ? args.idempotencyKey : `ae-plan-${id}-step-${executed.index}-${planned.tool}`,
+    idempotencyScope:Object.hasOwn(args,"idempotencyScope") ? args.idempotencyScope : `ae-plan:${id}`});
+}
+
 function fontRequestObservation(record, tr, options) {
   if (!tr.fontRequest) return null;
   const {sha256} = require("./review-evidence");
@@ -322,8 +340,9 @@ function fontRequestObservation(record, tr, options) {
     && s.result?.layer?.id === target.layerId && s.result?.layer?.index === target.layerIndex
     && prior.plan.steps[s.index-1]?.tool === s.tool && same(prior.plan.steps[s.index-1]?.args,s.args)
     && s.args?.compItemId === target.compItemId && s.args?.layerId === target.layerId).at(-1);
-  if (!targetRead || !args || step.tool !== planned.tool || !same(step.args,args)
+  if (!targetRead || !args || step.tool !== planned.tool || !fontExecutionArgsMatch(prior,planned,step)
     || typeof args.font !== "string" || !args.font || args.layerIndex !== target.layerIndex
+    || args.compName !== undefined && args.compName !== target.compName
     || !(args.compItemIndex === target.compItemIndex || args.compItemIndex === undefined && args.compName === target.compName)) return blocked("font_request_target_mismatch");
   const observation = {runId:request.runId,stepIndex:request.stepIndex,planSha256:provenance.planSha256,
     projectId:provenance.projectId,compItemId:target.compItemId,layerId:target.layerId,requestedFont:args.font,

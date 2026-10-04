@@ -125,11 +125,11 @@ async function main() {
       const target=f.context.textObservation;
       const plan={targetProject:{file:f.projectFile},steps:[
         {tool:"get_layer_details",args:{compItemId:10,layerId:2}},
-        {tool:"update_text_layer",args:{compItemIndex:1,layerIndex:2,font:"RequestedFont-Bold"}}
+        {tool:"update_text_layer",args:{compItemIndex:1,compName:"Nested Precomp",layerIndex:2,font:"RequestedFont-Bold"}}
       ]};
       return {schema:"ae-agent-plan-run-record.v1",runId:fontRunId,project:{file:f.projectFile},plan,
         run:{id:fontRunId,dryRun:false,ok:true,finishedAt:"2026-10-04T11:00:00Z",
-          provenance:{projectId:fontRecord.plan.textReview.observation.project.projectId,planSha256:sha256(plan)},
+          provenance:{schema:"ae-agent-run-provenance.v1",projectId:fontRecord.plan.textReview.observation.project.projectId,planSha256:sha256(plan)},
           steps:[{index:1,...f.clone(plan.steps[0]),status:"completed",result:f.clone(target)},
             {index:2,...f.clone(plan.steps[1]),status:"completed",isError:false,mutationResultIsError:false,
               mutationResult:{comp:{itemIndex:1,name:"Nested Precomp"},layer:{id:2},text:{kind:"TextDocument",font:"ArialMT"}},
@@ -138,6 +138,54 @@ async function main() {
     const prior=priorRecord();records.writeRecord(options.logDir,prior);
     fm=await createManifest(fontRecord,options);assert.equal(fm.ok,true);assert.equal(fm.fontObservation.requestedFont,"RequestedFont-Bold");
     assert.equal(fm.fontObservation.storedFontMatchesRequest,false);assert.equal(fm.fontObservation.fontRenderingVerified,false);
+    function normalizedPriorRecord() {
+      const r=priorRecord(),id="text-live-font-baseline-fixture-01",index=2,step=r.run.steps[index-1];
+      const args=f.clone(r.plan.steps[index-1].args);
+      step.args={...f.clone(args),verifyAfter:true,idempotencyKey:`ae-plan-${id}-step-${index}-update_text_layer`,idempotencyScope:`ae-plan:${id}`};
+      r.run.validation={ok:true,validationId:id,steps:[
+        {index:1,tool:"get_layer_details",valid:true,executable:true,mutatesProject:false,requiresRuntimeBinding:false,
+          args:f.clone(r.plan.steps[0].args),safeArgs:f.clone(r.plan.steps[0].args)},
+        {index,tool:"update_text_layer",valid:true,executable:true,mutatesProject:true,requiresRuntimeBinding:false,
+          args,safeArgs:f.clone(step.args),autofixes:["verifyAfter=true","idempotencyKey","idempotencyScope"]}
+      ]};
+      // A completed font receipt is independent of unresolved verification on another step.
+      r.run.ok=false;r.run.errorCode="verification_required";r.run.outcome={status:"verification_required"};
+      return r;
+    }
+    const normalized=normalizedPriorRecord();records.writeRecord(options.logDir,normalized);
+    const normalizedBefore=fs.readFileSync(records.fileFor(options.logDir,fontRunId),"utf8");
+    fm=await createManifest(fontRecord,options);
+    assert.equal(fm.ok,true);assert.equal(fm.fontObservation.status,"recorded");
+    assert.equal(fm.fontObservation.requestedFont,"RequestedFont-Bold");assert.equal(fm.fontRenderingVerified,false);
+    assert.equal(fs.readFileSync(records.fileFor(options.logDir,fontRunId),"utf8"),normalizedBefore);
+    assert.equal(records.readRecord(options.logDir,fontRunId).run.ok,false);
+    assert.equal(records.readRecord(options.logDir,fontRunId).run.errorCode,"verification_required");
+    const safetyRow=r=>r.run.validation.steps[1];
+    for(const mutate of [
+      r=>{delete r.run.validation;},r=>{r.run.validation.ok=false;},r=>{delete r.run.validation.validationId;},
+      r=>{r.run.validation.validationId="foreign";},r=>{r.run.provenance.schema="caller_declared";},
+      r=>{r.run.validation.steps=[];},r=>{r.run.validation.steps.push(f.clone(safetyRow(r)));},
+      r=>{safetyRow(r).index=1;},r=>{safetyRow(r).tool="set_layer_transform";},
+      r=>{safetyRow(r).valid=false;},r=>{safetyRow(r).executable=false;},
+      r=>{safetyRow(r).mutatesProject=false;},r=>{safetyRow(r).requiresRuntimeBinding=true;},
+      r=>{delete safetyRow(r).args;},r=>{safetyRow(r).args.font="ForeignFont";},
+      r=>{safetyRow(r).safeArgs.font="ForeignFont";},
+      r=>{r.run.steps[1].args.font="ForeignFont";safetyRow(r).safeArgs.font="ForeignFont";},
+      r=>{r.run.steps[1].args.layerIndex=99;safetyRow(r).safeArgs.layerIndex=99;},
+      r=>{r.run.steps[1].args.compName="Foreign Comp";safetyRow(r).safeArgs.compName="Foreign Comp";},
+      r=>{r.run.steps[1].args.fontSize=90;safetyRow(r).safeArgs.fontSize=90;},
+      r=>{r.run.steps[1].args.verifyAfter=false;safetyRow(r).safeArgs.verifyAfter=false;},
+      r=>{r.run.steps[1].args.idempotencyKey="custom-override";safetyRow(r).safeArgs.idempotencyKey="custom-override";},
+      r=>{r.run.steps[1].args.idempotencyScope="custom-override";safetyRow(r).safeArgs.idempotencyScope="custom-override";},
+      r=>{delete r.run.steps[1].args.idempotencyScope;delete safetyRow(r).safeArgs.idempotencyScope;},
+      r=>{r.plan.steps[1].args.compName="Foreign Comp";r.run.steps[1].args.compName="Foreign Comp";
+        safetyRow(r).args.compName="Foreign Comp";safetyRow(r).safeArgs.compName="Foreign Comp";r.run.provenance.planSha256=sha256(r.plan);},
+      r=>{r.run.steps[1].mutationResult.layer.id=99;},r=>{r.run.steps[1].status="unknown";},
+      r=>{r.run.steps[1].mutationResultIsError=true;},r=>{r.run.provenance.planSha256="0".repeat(64);}
+    ]) {
+      const r=normalizedPriorRecord();mutate(r);records.writeRecord(options.logDir,r);
+      fm=await createManifest(fontRecord,options);assert.equal(fm.status,"incomplete");assert.equal(fm.fontObservation.status,"blocked");negatives++;
+    }
     for(const mutate of [
       r=>{r.project.file="C:/foreign.aep";},r=>{r.run.provenance.planSha256="0".repeat(64);},
       r=>{r.run.steps[1].args.layerIndex=99;},r=>{r.run.steps[1].mutationResult.layer.id=99;},

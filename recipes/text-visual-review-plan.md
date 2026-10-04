@@ -93,6 +93,16 @@ Font observation требует исходную запись того же пр
 Различие requested/stored font — историческое наблюдение, а не доказанная подмена
 в отрисовке.
 
+Выполненные font args могут содержать серверные safety defaults `verifyAfter`,
+`idempotencyKey`, `idempotencyScope`. При таком расширении все исходные args
+остаются точными; нужны единственная validation-строка того же index/tool,
+исходные `validation.args`, совпадающие `safeArgs`, успешная executable validation
+без runtime bindings и точные generated значения от её `validationId`.
+Произвольные дополнительные поля, переопределения font/target/safety и отсутствующая
+validation блокируют font evidence. Завершённый native font receipt может дать
+историческое stored-font observation при unresolved verification другого шага;
+исходный статус всего запуска и прежние blocked evidence при этом не меняются.
+
 Verified означает только исторические native read-back и PNG integrity.
 Всегда сохраняются historicalCapture true и currentProjectStateVerified,
 canonicalFreshness, artisticAccepted, visibleBoundsVerified, fontRenderingVerified
