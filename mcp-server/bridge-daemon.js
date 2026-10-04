@@ -18,6 +18,7 @@ const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
 const planRunResponse = require("./plan-run-response");
+const toolErrorResponse = require("./tool-error-response");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
 const solutionDiscovery = require("./solution-discovery");
@@ -1421,7 +1422,7 @@ function m100SanitizedDiagnosticObject(value, maxLength = 4000) {
 
 function m100HttpFailure(error, options = {}) {
   const diagnostic = m100UserDiagnosticFromError(error, options);
-  return {
+  const failure = {
     ok: false,
     error: diagnostic.message,
     code: diagnostic.code,
@@ -1454,6 +1455,11 @@ function m100HttpFailure(error, options = {}) {
       ]
     })
   };
+  failure.guidance = toolErrorResponse.buildGuidance(failure, {
+    daemonAvailable: true, panelConnected: Date.now() - lastPanelSeenAt < 15000,
+    exposedTools: exposedTools()
+  });
+  return failure;
 }
 
 function m100StoredProposalCopy(proposal) {
@@ -4010,6 +4016,16 @@ function exposedTools() {
         }
       }
     };
+  });
+}
+
+// External presentation boundary only: persisted and nested tool results retain
+// their legacy representation and all confirmation/read-back gates run first.
+function decorateDaemonToolResult(name, result) {
+  return toolErrorResponse.decorateToolResult(result, {
+    toolName: name, daemonAvailable: true,
+    panelConnected: Date.now() - lastPanelSeenAt < 15000,
+    exposedTools: exposedTools()
   });
 }
 
@@ -8657,7 +8673,7 @@ function startHttpBridge() {
         const body = await readJsonBody(req);
         const name = String(body.name || "");
         const args = body.arguments || {};
-        const result = await callToolLogged("direct-tools-call", name, args);
+        const result = decorateDaemonToolResult(name, await callToolLogged("direct-tools-call", name, args));
         writeJson(res, 200, {
           ok: true,
           tool: name,
@@ -8682,9 +8698,9 @@ function startHttpBridge() {
         const name = String(body.name || "");
         const args = body.arguments || {};
         const authority = autonomousSession.authorization();
-        const result = await callToolLogged("mcp-adapter", name, args, {
+        const result = decorateDaemonToolResult(name, await callToolLogged("mcp-adapter", name, args, {
           autonomousSession: authority
-        });
+        }));
         writeJson(res, 200, { ok: true, tool: name, result });
       } catch (error) {
         writeJson(res, 500, m100HttpFailure(error, { fallbackPhase: "ae_execution" }));
@@ -22211,6 +22227,7 @@ async function callToolLogged(source, name, args, executionContext) {
 }
 
 module.exports = {
+  decorateDaemonToolResult,
   hardcoreRunNeedsReconciliation,
   async preparePlaceholderInventoryScript(options = {}) {
     const prepared = { script: null, fixtureResult: null };

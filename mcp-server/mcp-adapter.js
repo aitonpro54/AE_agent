@@ -6,6 +6,7 @@ const readline = require("readline");
 const path = require("path");
 const { spawn } = require("child_process");
 const { TEXT_LAYOUT_POLICY } = require("./text-layout-policy");
+const { decorateToolResult, sanitizeHttpFailure } = require("./tool-error-response");
 const {
   productionUsageTools,
   isProductionUsageTool,
@@ -184,9 +185,11 @@ async function callDaemonTool(name, args) {
   });
 
   if (response.status !== 200 || !response.body.ok || !response.body.result) {
-    return toolResult({ok: false, code: response.body.code || "bridge_http_rejected",
-      phase: response.body.phase || "protocol_validation",
-      error: response.body.error || `Bridge daemon tool call failed with HTTP ${response.status}`}, true);
+    // Keep sanitized server diagnostics and exact proof IDs. A rejected HTTP
+    // exchange cannot establish the availability of a recovery tool catalog.
+    return decorateToolResult(toolResult(sanitizeHttpFailure(response.body, response.status), true), {
+      toolName: name, daemonAvailable: true, exposedTools: []
+    });
   }
 
   return response.body.result;
@@ -226,16 +229,22 @@ async function handleRpc(message) {
       const toolArgs = params.arguments || {};
       if (isProductionUsageTool(toolName)) {
         try {
-          ok(id, await handleProductionUsageTool(toolName, toolArgs));
+          ok(id, decorateToolResult(await handleProductionUsageTool(toolName, toolArgs), {
+            toolName, daemonAvailable: true, exposedTools: []
+          }));
         } catch (error) {
-          ok(id, toolResult({ ok: false, error: error.message || String(error) }, true));
+          ok(id, decorateToolResult(toolResult({ ok: false, error: error.message || String(error) }, true), {
+            toolName, daemonAvailable: true, exposedTools: []
+          }));
         }
         return;
       }
       try {
         ok(id, await callDaemonTool(toolName, toolArgs));
       } catch (error) {
-        ok(id, toolResult({ok: false, code: "bridge_unreachable", phase: "bridge_offline", error: error.message}, true));
+        ok(id, decorateToolResult(toolResult({ok: false, code: "bridge_unreachable", phase: "bridge_offline", error: error.message}, true), {
+          toolName, daemonAvailable: false, transportUnavailable: true
+        }));
       }
       return;
     }

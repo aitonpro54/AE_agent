@@ -134,7 +134,7 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 function runtimeIdentity(root) {
-  const files=["mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js","mcp-server/plan-run-records.js","mcp-server/plan-run-response.js",
+  const files=["mcp-server/bridge-daemon.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js","mcp-server/plan-run-records.js","mcp-server/plan-run-response.js","mcp-server/tool-error-response.js",
     "mcp-server/montage-pipeline.js","mcp-server/montage-plan-guard.js","mcp-server/montage-native.js","mcp-server/montage-postread.js","mcp-server/montage-materials.js",
     "mcp-server/montage-root-render.js","mcp-server/montage-root-png.js","mcp-server/montage-capture-requirements.js","mcp-server/montage-capture-service.js",
     "mcp-server/placeholder-review-service.js","mcp-server/placeholder-review-tools.js","mcp-server/placeholder-visual-review.js","mcp-server/placeholder-visual-batches.js","mcp-server/placeholder-protection.js","mcp-server/placeholder-geometry.js",
