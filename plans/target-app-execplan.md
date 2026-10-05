@@ -1,5 +1,6 @@
 # План исполнения Target App — [MCP-first без рендера](tool-first-execplan.md)
 
+**Переход CLI-провайдеров — 5 октября 2026 (PLANNED). Progress:** подготовлены [9 последовательных блоков](provider-cli-transition-execplan.md) и [стартовый промпт нового чата](../docs/provider-cli-transition-start-prompt.md); реализация не начата. **Decision Log:** активные Codex CLI/AntiGravity CLI, остальные API/Local frozen с сохранением config/keys; protective Codex regressions до полного удаления Hardcore, AGY владеет scoped task, server gates сохранены. **Validation:** docs-only rules/diff PASS, план 180 строк; product/live/model вызовы не выполнялись.
 ## Развитие А–В — 4 октября 2026 (COMPLETE)
 
 **Progress:** А завершён (`db42751`), Б завершён (`7e4cbcd`). В завершён в разрешённом offline scope; Flash handback reconciled, specialist закрыл findings, независимый reviewer и root приняли diff. Рабочий C commit фиксирует ровно 9 changed source/recipe/test paths плюс этот план. Изменений AE-проекта, сохранений и экспорта не было.
