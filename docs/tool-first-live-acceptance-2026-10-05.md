@@ -44,11 +44,11 @@ read-back в исходных запусках. Raw setter `d3cf…` остаё�
   controlled idle restart и отдельную свежую проверку после CLI reload. Исторические
   сведения о PID/config и точный read-back приведены ниже. Для каждой операции
   обязателен свежий `get_project_lifecycle_state`.
-- Реализация project PreToolUse guard имеет 36 тестов / 1495 assertions,
-  offline approval и локальный matching. Последняя отрицательная canary была
-  исполнена (см. ниже): runtime enforcement не подтверждён; review/trust текущего
-  project hook через `/hooks` остаётся pending. Общая цель 100% и direct/nested
-  покрытие не доказаны.
+- На том историческом checkpoint реализация project PreToolUse guard имела
+  36 тестов / 1495 assertions, offline approval и локальный matching, но
+  отрицательная canary исполнилась и review/trust ещё ожидался. Последующие
+  installer, trust и bounded runtime проверки записаны ниже; предыдущая формулировка
+  не описывает текущий статус.
 - Запись не меняет статус, результат или историю каких-либо run.
 
 ## Read-back после штатного CLI reload
@@ -172,24 +172,71 @@ revision `85`, lifecycle generation `6`, policy revision `3`, drift `0` — бе
 project mutations `0`. Финальные native pins: clean revision 85, lifecycle
 generation 6, `pending=null`, protection revision 3, drift 0.
 
-## Project hook: установка не подтверждает runtime enforcement
+## Project hook: bounded enforcement принят для текущих проверенных путей
 
-Root проверил `node scripts/install-ae-tool-first-hook.js --check` из корня
-проекта; результат показал
-`matching=true`, definitionHash
-`6bb452bfe754453b126568304454a88403510e0c7daa79a1a829ee97e1c8e244`, но это
-только соответствие установленной записи `.codex/hooks.json`.
-Последний Desktop canary `throw new Error("AE_TOOL_FIRST_CANARY_EXECUTED")`
-фактически исполнился; результат содержал `toolIsError=true` и буквальный текст
-ошибки. Точный read-only no-op `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` прошёл.
-Поэтому install match, 36 тестов / 1495 assertions и offline approval не
-подтверждают работающую runtime блокировку.
+Installer и smoke harness исправлены; installer source SHA-256
+`8e6cb078bfa5db435509184c1805c5430a275fcf0631084620f9091f8e2de963` прошёл
+independent review без замечаний. Полный Windows smoke завершился **48/48**,
+включая 1495 pure assertions, 2 положительных и 15 отрицательных AST проверок
+(только parse, без исполнения fixture scripts), а также реальные CMD/PowerShell
+проверки. Старый command проходит CMD и не проходит PowerShell; новый даёт
+ожидаемые deny/no-op/canary результаты в обеих оболочках. Smoke harness SHA-256:
+`a5e1641a25de12adbaf1bd317a6b9e4e6ae42fcbfe13c3226302d081e3a09b26`.
+Smart quotes отклоняются до записи; missing SystemRoot и Windows path handling
+проверены fail-closed. Это локальная Windows проверка, не Desktop acceptance.
 
-Перед заявлением об активном guard оператор должен открыть `/hooks`, проверить
-и доверить точное текущее определение project hook из
-`C:\Users\Ant\Documents\Codex\AE_agent\.codex\hooks.json`; изменение hash
-требует нового review/trust. Официально Codex запускает non-managed hooks только
-после review/trust текущего определения: [Review and trust hooks](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks).
-Текущий host-level review/trust остаётся pending; hash не меняли и trust обходом
-не устанавливали. Нельзя заявлять runtime enforcement, 100% цель или direct/nested
-coverage, пока exact current hook trust и canary deny не подтверждены.
+Root установил обычным `--install` и проверил `--check`; предыдущая запись
+сохранена в ignored `hooks.before-windows-launch.json`. Текущее состояние:
+`installed=true`, `matching=true`, установленный и ожидаемый definition hash
+`1e6345f23c5fee924da00458ec416c318d9efee6674091b71e00d867af42ed0d`. Hook command
+использует абсолютный
+`C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe` с
+`-NoProfile -NonInteractive -EncodedCommand`; decoded command точно запускает
+Node и project handler. Profile, PATH fallback и execution-policy bypass не
+используются.
+
+После новой установки bundled CLI `codex.exe 0.160 --no-daemon` сообщил о review
+одного изменённого hook (`beforeActive=0`, `Modified since last trusted`). Root
+выполнил стандартное `t` только для выбранного project hook по ранее данному
+пользовательскому разрешению. `/hooks` затем показал `Installed 1`, `Active 1 [x]`,
+`Trusted`, без оставшегося review. Сессия завершилась `/quit`, exit 0,
+`01a10d61-7fb9-7302-bbff-e2343cdd1e2d`; model prompt и дополнительное human
+confirmation не потребовались. Официальный контракт:
+[Codex hook tool coverage](https://learn.chatgpt.com/docs/hooks#tool-coverage).
+
+Сразу после trust definition hash `1e6345f...` отрицательные canary действительно
+исполнялись в nested `node_repl` и direct `cua_repl`; эти исторические наблюдения
+сохраняются. Отдельная helper canary исполнялась ещё раньше, до trust этого
+definition hash. Причина промежуточных passthrough не установлена. Позднее root добавил
+временный точный observer matcher `*` и доверил только этот observer; исходный
+guard оставался активен. Observer NDJSON файл не появился, поэтому event name и
+причину не выводим. Root удалил ровно временную observer entry, сохранив исходную
+группу guard. После cleanup повторный `--check` подтвердил
+`installed=true`, `matching=true` и исходный definition hash
+`1e6345f23c5fee924da00458ec416c318d9efee6674091b71e00d867af42ed0d`.
+
+В итоговой проверке после cleanup root получил ожидаемое pre-execution deny для
+запрещённых nested `node_repl`, direct `cua_repl` и shell-canary вызовов. Точные
+no-op варианты прошли для nested/direct; shell positive control был обычным
+`WriteOutput`. Прошли классифицированный `diagnostics` declaration и
+string-control transport case. Вызов без classification/fallback packet и вызов
+с неверным primitive получили deny; missing-primitive вариант отдельно не
+проверялся. Ещё один otherwise-valid `diagnostics` / `ui_render_inspection`
+packet с `Control_L+r` и reload intent был отклонён с требованием Use CLI до
+исполнения JS. Synthetic transport controls не доказывают фактический просмотр
+изображения или GUI-действие. Ни один отрицательный marker после cleanup не
+исполнился. Это bounded M7 acceptance перечисленных путей в текущем Desktop;
+универсальная песочница произвольного JS и все 134 индивидуальных tool paths
+этим не заявляются.
+
+Отдельный свежий helper context после cleanup подтвердил nested путь: попытка
+`AE_TOOL_FIRST_HELPER_CANARY_EXECUTED` была отклонена PreToolUse до REPL execution,
+а точный `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` завершился успешно. Вызовов
+reset, GUI или AE не было.
+
+App-server PID `46828` был запущен до review (13:36 +05), использует bundled
+`codex.exe 0.160`; точный activation timing, hook flags и причина прежних
+исполненных canary остаются неизвестны. Desktop restart не требуется как
+следующий шаг этой bounded acceptance и не выполнялся. Более широкие/неизвестные
+hook paths требуют отдельного evidence; текущий вывод ограничен перечисленными
+проверками.

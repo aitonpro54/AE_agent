@@ -291,13 +291,16 @@ builder — `build_project_lifecycle_plan({operation, targetProjectFile, checkpo
 1. После установки из корня проекта проверь соответствие точного локального hook:
    `node scripts/install-ae-tool-first-hook.js --check` читает
    `C:\Users\Ant\Documents\Codex\AE_agent\.codex\hooks.json`, command и hash.
-2. Затем открой `/hooks`, просмотри и доверь точное текущее определение project
-   hook. До review/trust non-managed hook не считается активным; изменение hash
-   требует повторного review. См. официальный раздел
-   [Review and trust hooks](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks).
+2. Затем проверь `/hooks`: точное текущее определение должно быть `Installed 1`,
+   `Active 1 [x]`, `Trust: Trusted`. Если оно уже Trusted, повторное доверие не
+   требуется. До review/trust non-managed hook не считается активным; изменение
+   definition hash требует нового review/trust. На 2026-10-05 установленный
+   definition hash `1e6345f23c5fee924da00458ec416c318d9efee6674091b71e00d867af42ed0d`
+   уже прошёл штатный CLI review/trust. См. официальный раздел
+   [Codex hook tool coverage](https://learn.chatgpt.com/docs/hooks#tool-coverage).
 3. Верификация активного потока (Desktop Canary):
    - Попытка вызова `mcp__node_repl__js` с кодом `throw new Error("AE_TOOL_FIRST_CANARY_EXECUTED")` без fallback-пакета обязана быть отклонена хуком (`permissionDecision: "deny"`) **до** фактического запуска REPL.
-   - Изолированная read-only canary проверка с точным no-op шаблоном `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` обязана завершиться успешно (`pass`). Последняя фактическая проверка исполнила запрещённую canary, поэтому runtime enforcement и прямое/вложенное coverage остаются неподтверждёнными; см. live acceptance note.
+   - Read-only canary с точным шаблоном `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` должна завершиться успешно (`pass`), а запрещённая canary — получить hook deny до исполнения. Для definition hash `1e6345f23c5fee924da00458ec416c318d9efee6674091b71e00d867af42ed0d` после удаления временного observer подтверждены nested `node_repl`, direct `cua_repl` и shell: отрицательные вызовы блокируются; точные no-op проходят для nested/direct, а shell positive control был обычным `WriteOutput`. Это bounded acceptance перечисленных путей, не универсальное покрытие произвольного JS или всех catalog tools; более ранние противоречивые canary и пределы доказательства записаны в [live acceptance note](tool-first-live-acceptance-2026-10-05.md). Trust этого же определения не повторяй.
 
 ### 8. Запуск автономных тестов перехватчика
 

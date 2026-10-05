@@ -2,10 +2,10 @@
 /**
  * scripts/ae-tool-first-pretool-smoke.js
  *
- * Focused pure smoke test suite for AE Tool-First PreToolUse guard and installer.
+ * Focused offline smoke test suite for AE Tool-First PreToolUse guard and installer.
  * Covers all material findings, vendor key alias normalization, first_unnamed_save scoping,
  * exact project handler ownership, schema validation, strict proposal pins, and guard-second-review.cjs.
- * Zero external dependencies (pure Node.js).
+ * No external dependencies. Windows adds native shell/guard subprocesses and parse-only AST fixtures.
  */
 
 'use strict';
@@ -26,6 +26,7 @@ const {
   EXACT_HARMLESS_CANARY_TEMPLATES
 } = require('./ae-tool-first-pretool.js');
 
+const cp = require('child_process');
 const {
   mergeHooksConfig,
   unmergeHooksConfig,
@@ -37,7 +38,15 @@ const {
   getHookCommand,
   parseCliArgs,
   MATCHER_PATTERN,
-  getRepoRoot
+  getRepoRoot,
+  validateWindowsPathSafe,
+  validateWindowsShellTokenSafe,
+  getWindowsPowerShellPath,
+  SMART_QUOTES_REGEX,
+  escapePowershellSingleQuote,
+  buildWindowsPowershellScript,
+  encodePowershellCommand,
+  decodePowershellCommand
 } = require('./install-ae-tool-first-hook.js');
 
 const PROJECT_ROOT = getRepoRoot();
@@ -425,11 +434,41 @@ runTest('CORRECTION 2 DEFECT: Null config throws error without modifying', () =>
   }, /Incompatible hooks configuration/);
 });
 
-runTest('CORRECTION 2 DEFECT: getHookCommand uses absolute process.execPath and script path quoted safely', () => {
-  const cmd = getHookCommand(PROJECT_ROOT);
+runTest('getHookCommand uses absolute process.execPath and script path safely across platforms', () => {
+  const nonWinCmd = getHookCommand(PROJECT_ROOT, { platform: 'linux' });
   const expectedNode = `"${process.execPath.replace(/\\/g, '/')}"`;
   const expectedScript = `"${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`;
-  assert.strictEqual(cmd, `${expectedNode} ${expectedScript}`);
+  assert.strictEqual(nonWinCmd, `${expectedNode} ${expectedScript}`);
+
+  const winFixtureRoot = 'C:\\Windows';
+  const winCmd = getHookCommand(PROJECT_ROOT, { platform: 'win32', systemRoot: winFixtureRoot });
+  const psExe = getWindowsPowerShellPath({ platform: 'win32', systemRoot: winFixtureRoot });
+  assert(winCmd.startsWith(`${psExe} -NoProfile -NonInteractive -EncodedCommand `));
+  const b64 = winCmd.replace(`${psExe} -NoProfile -NonInteractive -EncodedCommand `, '');
+  const decoded = decodePowershellCommand(b64);
+  const escNode = escapePowershellSingleQuote(process.execPath);
+  const escScript = escapePowershellSingleQuote(path.win32.resolve(PROJECT_ROOT, 'scripts', 'ae-tool-first-pretool.js'));
+  assert.strictEqual(decoded, `& '${escNode}' '${escScript}'`);
+
+  const currentCmd = getHookCommand(PROJECT_ROOT);
+  if (process.platform === 'win32') {
+    const actualPsExe = getWindowsPowerShellPath();
+    assert.strictEqual(currentCmd, `${actualPsExe} -NoProfile -NonInteractive -EncodedCommand ${b64}`);
+  } else {
+    assert.strictEqual(currentCmd, nonWinCmd);
+  }
+});
+
+runTest('getHookCommand keeps pure Windows root fixtures independent of the current environment', () => {
+  for (const systemRoot of ['C:\\Windows', 'D:\\Windows']) {
+    const command = getHookCommand(PROJECT_ROOT, { platform: 'win32', systemRoot });
+    const prefix = `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -NonInteractive -EncodedCommand `;
+    assert(command.startsWith(prefix), `Expected pinned executable under fixture ${systemRoot}`);
+    assert.strictEqual(
+      decodePowershellCommand(command.slice(prefix.length)),
+      `& '${escapePowershellSingleQuote(process.execPath)}' '${escapePowershellSingleQuote(path.win32.resolve(PROJECT_ROOT, 'scripts', 'ae-tool-first-pretool.js'))}'`
+    );
+  }
 });
 
 console.log('\n--- Suite 8: Exact guard-second-review.cjs Replication ---');
@@ -473,7 +512,12 @@ runTest('Replicates exact guard-second-review.cjs output assertions', () => {
   assert.strictEqual(first.decision, 'pass');
   assert.strictEqual(foreignPreserved, true);
   assert.strictEqual(nullAccepted, false);
-  assert.strictEqual(hookCmd, `"${process.execPath.replace(/\\/g, '/')}" "${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`);
+  if (process.platform === 'win32') {
+    const winExpected = getHookCommand(PROJECT_ROOT, { platform: 'win32' });
+    assert.strictEqual(hookCmd, winExpected);
+  } else {
+    assert.strictEqual(hookCmd, `"${process.execPath.replace(/\\/g, '/')}" "${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`);
+  }
 });
 
 console.log('\n--- Suite 9: Final Review Regressions (Quoted Keys, Literal Canary, Action Shape, Optional Matcher) ---');
@@ -585,6 +629,423 @@ runTest('Final review: present nonstring matcher fails without mutation, empty m
   const config = { hooks: { PreToolUse: [{ matcher: '', hooks: [] }] } };
   assert.deepStrictEqual(unmergeHooksConfig(mergeHooksConfig(config, PROJECT_ROOT).config, PROJECT_ROOT).config, config); finalReviewCases++;
 });
+console.log('\n--- Suite 10: Windows Shell-Portability & Subprocess Verification (CMD & PowerShell) ---');
+
+function runSubprocessViaCmd(commandStr, stdinPayload) {
+  const cmdLine = commandStr.includes('"') ? `"${commandStr}"` : commandStr;
+  return cp.spawnSync('cmd.exe', ['/d', '/s', '/c', cmdLine], {
+    input: stdinPayload,
+    encoding: 'utf-8',
+    windowsVerbatimArguments: true,
+    timeout: 15000
+  });
+}
+
+function runSubprocessViaPowerShell(commandStr, stdinPayload) {
+  return cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', commandStr], {
+    input: stdinPayload,
+    encoding: 'utf-8',
+    windowsVerbatimArguments: true,
+    timeout: 15000
+  });
+}
+
+runTest('Suite 10: Special characters in Windows paths (spaces, apostrophes, $, backticks) are safely literal and do not inject code', () => {
+  const nodeWithSpecial = 'C:\\Program Files\\Node\'s $dir\\`test\\node.exe';
+  const scriptWithSpecial = 'C:\\My Projects\\AE\'s $agent\\`pretool\\scripts\\ae-tool-first-pretool.js';
+
+  const script = buildWindowsPowershellScript(nodeWithSpecial, scriptWithSpecial);
+  assert.strictEqual(
+    script,
+    "& 'C:\\Program Files\\Node''s $dir\\`test\\node.exe' 'C:\\My Projects\\AE''s $agent\\`pretool\\scripts\\ae-tool-first-pretool.js'"
+  );
+
+  const encoded = encodePowershellCommand(script);
+  const decoded = decodePowershellCommand(encoded);
+  assert.strictEqual(decoded, script);
+
+  // Illegal control characters must fail closed before write
+  assert.throws(() => validateWindowsPathSafe('C:\\invalid\npath\\node.exe'), /illegal control characters/);
+  assert.throws(() => validateWindowsPathSafe('C:\\invalid\rpath\\node.exe'), /illegal control characters/);
+  assert.throws(() => validateWindowsPathSafe('C:\\invalid\0path\\node.exe'), /illegal control characters/);
+  assert.throws(() => validateWindowsPathSafe(''), /non-empty string/);
+  assert.throws(() => validateWindowsPathSafe('   '), /non-empty string/);
+});
+
+runTest('Suite 10: Smart quotes fail closed before write; AST parse verification without fixture execution', () => {
+  // Point (2): Fixtures with Unicode smart quotes (U+2018, U+2019, etc.) must fail closed before write
+  const smartQuoteFixture1 = 'C:\\AE’s Agent\\node.exe'; // U+2019 right single quote
+  const smartQuoteFixture2 = 'C:\\AE‘s Agent\\node.exe'; // U+2018 left single quote
+  const smartQuoteFixture3 = 'C:\\AE’s Agent; # malicious injection\\script.js';
+
+  assert.throws(() => validateWindowsPathSafe(smartQuoteFixture1), /unsupported Unicode smart quotes/);
+  assert.throws(() => validateWindowsPathSafe(smartQuoteFixture2), /unsupported Unicode smart quotes/);
+  assert.throws(() => validateWindowsPathSafe(smartQuoteFixture3), /unsupported Unicode smart quotes/);
+  assert.throws(() => getHookCommand(PROJECT_ROOT, { platform: 'win32', systemRoot: 'C:\\Windows', execPath: smartQuoteFixture1 }), /unsupported Unicode smart quotes/);
+
+  // Supported special characters (ASCII apostrophes, spaces, $, backticks, harmless semicolons/hashes in benign path context)
+  const validSpecialNode = 'C:\\Program Files\\Node\'s $app\\`build\\node.exe';
+  const validSpecialScript = 'C:\\Projects\\AE\'s Agent\\scripts\\ae-tool-first-pretool.js';
+  const validScript = buildWindowsPowershellScript(validSpecialNode, validSpecialScript);
+  assert.strictEqual(
+    validScript,
+    "& 'C:\\Program Files\\Node''s $app\\`build\\node.exe' 'C:\\Projects\\AE''s Agent\\scripts\\ae-tool-first-pretool.js'"
+  );
+
+  // On Windows, audit via PowerShell AST parser API without executing any fixture.
+  // All fixture strings cross stdin as ASCII Base64 to preserve Unicode regardless of console encoding.
+  if (process.platform === 'win32') {
+    const auditCode = `
+      $ProgressPreference = 'SilentlyContinue';
+      $ErrorActionPreference = 'Stop';
+      $inputObj = [Console]::In.ReadToEnd() | ConvertFrom-Json;
+      $inputCode = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($inputObj.inputCode));
+      $expectedNode = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($inputObj.expectedNode));
+      $expectedScript = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($inputObj.expectedScript));
+      $tokens = $null; $errors = $null;
+      $ast = [System.Management.Automation.Language.Parser]::ParseInput($inputCode, [ref]$tokens, [ref]$errors);
+      $commands = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true));
+      $report = [ordered]@{ parseErrorCount = $errors.Count; commandCount = $commands.Count; failureCode = 0 };
+      function Complete-Audit([int]$code) {
+        $report.failureCode = $code;
+        $report | ConvertTo-Json -Compress;
+        exit $code;
+      }
+
+      if ($errors.Count -gt 0) { Complete-Audit 10; }
+      if ($ast.ParamBlock -or $ast.DynamicParamBlock -or $ast.BeginBlock -or $ast.ProcessBlock -or
+          $ast.Attributes.Count -gt 0 -or $ast.UsingStatements.Count -gt 0 -or
+          -not $ast.EndBlock -or -not $ast.EndBlock.Unnamed -or
+          $ast.EndBlock.Traps.Count -gt 0 -or $ast.EndBlock.Statements.Count -ne 1) { Complete-Audit 11; }
+      $pipeline = $ast.EndBlock.Statements[0];
+      if (-not ($pipeline -is [System.Management.Automation.Language.PipelineAst])) { Complete-Audit 12; }
+      if ($pipeline.PipelineElements.Count -ne 1) { Complete-Audit 13; }
+      $command = $pipeline.PipelineElements[0];
+      if (-not ($command -is [System.Management.Automation.Language.CommandAst])) { Complete-Audit 14; }
+      if ($command.InvocationOperator -ne [System.Management.Automation.Language.TokenKind]::Ampersand) { Complete-Audit 15; }
+      if ($command.CommandElements.Count -ne 2) { Complete-Audit 16; }
+      if ($command.Redirections.Count -ne 0 -or $commands.Count -ne 1) { Complete-Audit 17; }
+
+      $nodeLiteral = $command.CommandElements[0];
+      $scriptLiteral = $command.CommandElements[1];
+      if (-not ($nodeLiteral -is [System.Management.Automation.Language.StringConstantExpressionAst]) -or
+          -not ($scriptLiteral -is [System.Management.Automation.Language.StringConstantExpressionAst])) { Complete-Audit 18; }
+      if ($nodeLiteral.StringConstantType -ne [System.Management.Automation.Language.StringConstantType]::SingleQuoted -or
+          $scriptLiteral.StringConstantType -ne [System.Management.Automation.Language.StringConstantType]::SingleQuoted) { Complete-Audit 19; }
+      if ($nodeLiteral.Value -cne $expectedNode -or $scriptLiteral.Value -cne $expectedScript) { Complete-Audit 20; }
+      Complete-Audit 0;
+    `;
+
+    function runAstAudit(inputCode, expectedNode, expectedScript) {
+      const encodeFixture = value => Buffer.from(value, 'utf8').toString('base64');
+      const result = cp.spawnSync(getWindowsPowerShellPath(), ['-NoProfile', '-NonInteractive', '-EncodedCommand', encodePowershellCommand(auditCode)], {
+        input: JSON.stringify({
+          inputCode: encodeFixture(inputCode),
+          expectedNode: encodeFixture(expectedNode),
+          expectedScript: encodeFixture(expectedScript)
+        }),
+        encoding: 'utf-8',
+        windowsVerbatimArguments: true,
+        timeout: 10000
+      });
+      assert.ifError(result.error);
+      assert.strictEqual(result.signal, null, 'AST auditor must finish without timeout or termination');
+      assert.strictEqual(result.stderr.trim(), '', `AST auditor itself failed: ${result.stderr}`);
+      const audit = JSON.parse(result.stdout.trim());
+      assert.strictEqual(result.status, audit.failureCode, 'AST auditor exit must match its structural verdict');
+      return { ...result, audit };
+    }
+
+    // 1. Safe path with ASCII apostrophe, $, backtick, spaces: must pass exact AST literal check
+    const validRes = runAstAudit(validScript, validSpecialNode, validSpecialScript);
+    assert.strictEqual(validRes.status, 0, `Valid safe script must pass AST audit: ${validRes.stderr} (status ${validRes.status})`);
+    assert.deepStrictEqual(validRes.audit, { parseErrorCount: 0, commandCount: 1, failureCode: 0 });
+
+    const punctuationNode = 'C:\\Узел; # literal\\Node\'s $app\\`build\\node.exe';
+    const punctuationScript = 'D:\\Проект; # literal\\scripts\\ae-tool-first-pretool.js';
+    const punctuationRes = runAstAudit(buildWindowsPowershellScript(punctuationNode, punctuationScript), punctuationNode, punctuationScript);
+    assert.deepStrictEqual(punctuationRes.audit, { parseErrorCount: 0, commandCount: 1, failureCode: 0 });
+
+    // 2. Negative control: Unescaped smart quote fixture C:\AE’s Agent\node.exe
+    // Delimiter behavior splits path into multiple command elements and corrupts Value
+    const brokenScript = `& 'C:\\AE’s Agent\\node.exe' 'C:\\test\\script.js'`;
+    const brokenRes = runAstAudit(brokenScript, 'C:\\AE’s Agent\\node.exe', 'C:\\test\\script.js');
+    assert.notStrictEqual(brokenRes.status, 0, 'Unescaped smart quote must fail AST exact-literal validation');
+
+    // 3. Negative control: Old unsafe quoted path without & fails PowerShell parser completely
+    const oldQuotedScript = `"C:\\Program Files\\nodejs\\node.exe" "C:\\test\\script.js"`;
+    const oldQuotedRes = runAstAudit(oldQuotedScript, 'C:\\Program Files\\nodejs\\node.exe', 'C:\\test\\script.js');
+    assert.notStrictEqual(oldQuotedRes.status, 0, 'Old unsafe quoted path without & must fail AST parser');
+
+    // 4. A smart quote plus semicolon/hash can produce zero parse errors and one command,
+    // yet split the literal path. Those shallow criteria must not approve it.
+    const injectionScript = `& 'C:\\AE’s Agent; # malicious' 'C:\\test\\script.js'`;
+    const injectionRes = runAstAudit(injectionScript, 'C:\\AE’s Agent; # malicious', 'C:\\test\\script.js');
+    assert.strictEqual(injectionRes.audit.parseErrorCount, 0, 'Marker fixture must be syntactically valid to test exact literal validation');
+    assert.strictEqual(injectionRes.audit.commandCount, 1, 'Marker fixture must contain only one parsed command');
+    assert.notStrictEqual(injectionRes.status, 0, 'Injection marker with smart quote must fail AST validation');
+
+    // Every fixture below is parsed only. It is never invoked by the auditor.
+    const rejectedForms = [
+      `${validScript}; Write-Output 'AST_ONLY_MARKER'`,
+      `if ($true) { ${validScript} }`,
+      `${validScript} | Write-Output`,
+      `${validScript} > 'AST_ONLY_MARKER'`,
+      `. '${escapePowershellSingleQuote(validSpecialNode)}' '${escapePowershellSingleQuote(validSpecialScript)}'`,
+      `& $node '${escapePowershellSingleQuote(validSpecialScript)}'`,
+      `& '${escapePowershellSingleQuote(validSpecialNode)}' $script`,
+      `& "C:\\Node\\node.exe" 'C:\\script.js'`,
+      buildWindowsPowershellScript(validSpecialNode.toLowerCase(), validSpecialScript),
+      `begin {} end { ${validScript} }`,
+      `end { ${validScript} }`,
+      `trap {} ${validScript}`
+    ];
+    for (const inputCode of rejectedForms) {
+      const result = runAstAudit(inputCode, validSpecialNode, validSpecialScript);
+      assert.notStrictEqual(result.status, 0, `Additional statements, commands or nonexact literals must fail: ${inputCode}`);
+    }
+    console.log(`  Windows AST matrix: 2 literal positives, ${3 + rejectedForms.length} negative fixtures; Parser::ParseInput only.`);
+  }
+});
+
+runTest('Suite 10: Pin trusted native Windows PowerShell under SystemRoot; no PATH or cwd fallback', () => {
+  const winFixtureRoot = 'C:\\Windows';
+  // Point (3): Unquoted executable path is absolute under SystemRoot
+  const winCmd = getHookCommand(PROJECT_ROOT, { platform: 'win32', systemRoot: winFixtureRoot });
+  const exeToken = winCmd.split(' -NoProfile')[0];
+  assert(path.win32.isAbsolute(exeToken), 'PowerShell executable must be absolute');
+  assert(!exeToken.startsWith('powershell.exe'), 'Must not use bare powershell.exe');
+  assert(!exeToken.startsWith('powershell '), 'Must not use bare powershell');
+  assert(/System32[\\/]WindowsPowerShell[\\/]v1\.0[\\/]powershell\.exe/i.test(exeToken), 'Must pin WindowsPowerShell v1.0 under System32');
+
+  // Safe unquoted token validation
+  validateWindowsShellTokenSafe(exeToken);
+
+  // Fails closed if SystemRoot has whitespace
+  assert.throws(
+    () => getWindowsPowerShellPath({ systemRoot: 'C:\\Weird Windows Path' }),
+    /contains whitespace and cannot be safely unquoted/
+  );
+
+  // Fails closed if SystemRoot has metacharacters
+  assert.throws(
+    () => getWindowsPowerShellPath({ systemRoot: 'C:\\Windows&more' }),
+    /contains shell metacharacters/
+  );
+
+  // Fails closed if powershellPath is relative (cwd spoof attempt)
+  assert.throws(
+    () => getWindowsPowerShellPath({ powershellPath: 'powershell.exe' }),
+    /must be an absolute path \(no PATH\/cwd resolution\)/
+  );
+  assert.throws(
+    () => getWindowsPowerShellPath({ powershellPath: './powershell.exe' }),
+    /must be an absolute path/
+  );
+
+  // Point (1): Fails closed if SystemRoot is explicitly empty string, null, or whitespace
+  assert.throws(
+    () => getWindowsPowerShellPath({ systemRoot: '', platform: 'other' }),
+    /SystemRoot is not defined/
+  );
+  assert.throws(
+    () => getWindowsPowerShellPath({ systemRoot: null }),
+    /SystemRoot is not defined/
+  );
+  assert.throws(
+    () => getWindowsPowerShellPath({ systemRoot: '   ' }),
+    /SystemRoot is not defined/
+  );
+});
+
+runTest('Suite 10: Idempotent migration of historical direct quoted command for THIS repoRoot', () => {
+  const historicalCmd = `"${process.execPath.replace(/\\/g, '/')}" "${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`;
+  const foreignCmd = 'node C:/another-project/scripts/ae-tool-first-pretool.js';
+  const foreignGroup = { matcher: 'other-matcher', hooks: [{ type: 'command', command: 'other-cmd' }] };
+  const emptyForeignGroup = { hooks: [] };
+
+  const initial = {
+    hooks: {
+      PreToolUse: [
+        foreignGroup,
+        {
+          matcher: MATCHER_PATTERN,
+          hooks: [
+            { type: 'command', command: foreignCmd, timeout: 5 },
+            { type: 'command', command: historicalCmd, timeout: 5 }
+          ]
+        },
+        emptyForeignGroup
+      ]
+    }
+  };
+
+  const merge1 = mergeHooksConfig(initial, PROJECT_ROOT);
+  // Point (1): Platform-appropriate expectation
+  // On Windows: historical command is migrated to new pinned PowerShell wrapper (changed === true).
+  // On non-Windows: historical command is already identical to canonical getHookCommand (changed === false).
+  const expectedChanged = process.platform === 'win32';
+  assert.strictEqual(merge1.changed, expectedChanged, `merge1.changed should be ${expectedChanged} on ${process.platform}`);
+
+  const targetGroup = merge1.config.hooks.PreToolUse.find(g => g.matcher === MATCHER_PATTERN);
+  assert(targetGroup, 'Target group must exist');
+  assert.strictEqual(targetGroup.hooks.length, 2, 'Must not duplicate our handler');
+  assert.strictEqual(targetGroup.hooks[0].command, foreignCmd, 'Foreign sibling handler must be preserved');
+  assert.strictEqual(targetGroup.hooks[1].command, getHookCommand(PROJECT_ROOT), 'Our handler must be updated to current command');
+
+  // Foreign groups preserved
+  assert.deepStrictEqual(merge1.config.hooks.PreToolUse[0], foreignGroup);
+  assert.deepStrictEqual(merge1.config.hooks.PreToolUse[2], emptyForeignGroup);
+
+  // Idempotence: second merge produces no changes
+  const merge2 = mergeHooksConfig(merge1.config, PROJECT_ROOT);
+  assert.strictEqual(merge2.changed, false);
+  assert.deepStrictEqual(merge2.config, merge1.config);
+
+  // Also verify legacy bare node command migrates on all platforms
+  const legacyInitial = {
+    hooks: {
+      PreToolUse: [
+        {
+          matcher: MATCHER_PATTERN,
+          hooks: [{ type: 'command', command: `node "${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`, timeout: 5 }]
+        }
+      ]
+    }
+  };
+  const legacyMerge = mergeHooksConfig(legacyInitial, PROJECT_ROOT);
+  assert.strictEqual(legacyMerge.changed, true, 'Legacy node command must migrate on all platforms');
+  assert.strictEqual(legacyMerge.config.hooks.PreToolUse[0].hooks[0].command, getHookCommand(PROJECT_ROOT));
+
+  // Also verify round 1 bare powershell command migrates to pinned wrapper on Windows
+  if (process.platform === 'win32') {
+    const rawScript = path.win32.resolve(PROJECT_ROOT, 'scripts', 'ae-tool-first-pretool.js');
+    const psScript = buildWindowsPowershellScript(process.execPath, rawScript);
+    const round1Cmd = `powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encodePowershellCommand(psScript)}`;
+    const round1Initial = {
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: MATCHER_PATTERN,
+            hooks: [{ type: 'command', command: round1Cmd, timeout: 5 }]
+          }
+        ]
+      }
+    };
+    const round1Merge = mergeHooksConfig(round1Initial, PROJECT_ROOT);
+    assert.strictEqual(round1Merge.changed, true, 'Round 1 bare powershell command must migrate to pinned executable');
+    assert.strictEqual(round1Merge.config.hooks.PreToolUse[0].hooks[0].command, getHookCommand(PROJECT_ROOT));
+  }
+
+  // Unmerge removes ONLY our handler, preserving foreign sibling and foreign groups
+  const unmerged = unmergeHooksConfig(merge1.config, PROJECT_ROOT);
+  assert.strictEqual(unmerged.changed, true);
+  const unmergedTarget = unmerged.config.hooks.PreToolUse.find(g => g.matcher === MATCHER_PATTERN);
+  assert.strictEqual(unmergedTarget.hooks.length, 1);
+  assert.strictEqual(unmergedTarget.hooks[0].command, foreignCmd);
+  assert.deepStrictEqual(unmerged.config.hooks.PreToolUse[0], foreignGroup);
+  assert.deepStrictEqual(unmerged.config.hooks.PreToolUse[2], emptyForeignGroup);
+});
+
+runTest('Suite 10: isOurHandler strictly preserves foreign handlers and commands with suffix args', () => {
+  const currentCmd = getHookCommand(PROJECT_ROOT);
+  assert.strictEqual(isOurHandler({ type: 'command', command: currentCmd }, PROJECT_ROOT), true);
+  assert.strictEqual(isOurHandler({ type: 'command', command: `${currentCmd} --extra-arg` }, PROJECT_ROOT), false);
+  assert.strictEqual(isOurHandler({ type: 'command', command: 'node C:/other/scripts/ae-tool-first-pretool.js' }, PROJECT_ROOT), false);
+  assert.strictEqual(isOurHandler({ type: 'other_type', command: currentCmd }, PROJECT_ROOT), false);
+  assert.strictEqual(isOurHandler(null, PROJECT_ROOT), false);
+});
+
+if (process.platform !== 'win32') {
+  console.log(`  [SKIP] Windows CMD and PowerShell real subprocess tests skipped on non-Windows platform: ${process.platform}`);
+} else {
+  const canonicalNegativePayload = JSON.stringify({
+    cwd: PROJECT_ROOT,
+    tool_name: 'mcp__node_repl__js',
+    tool_input: {
+      code: 'console.log("unclassified CU invocation");'
+    }
+  });
+
+  const canonicalNoopPayload = JSON.stringify({
+    cwd: PROJECT_ROOT,
+    tool_name: 'get_project_info',
+    tool_input: {}
+  });
+
+  const canonicalCanaryPayload = JSON.stringify({
+    cwd: PROJECT_ROOT,
+    tool_name: 'mcp__node_repl__js',
+    tool_input: {
+      code: '/* AE_TOOL_FIRST_READONLY_CANARY */'
+    }
+  });
+
+  const historicalOldCommand = `"${process.execPath.replace(/\\/g, '/')}" "${path.resolve(PROJECT_ROOT, 'scripts/ae-tool-first-pretool.js').replace(/\\/g, '/')}"`;
+  const currentExportedCommand = getHookCommand(PROJECT_ROOT);
+
+  runTest('Suite 10: BEFORE archived old command reproducibly fails PowerShell criterion while passing CMD', () => {
+    // 1. Run historical command in PowerShell: must fail execution criterion
+    const psRes = runSubprocessViaPowerShell(historicalOldCommand, canonicalNegativePayload);
+    const failedPs = psRes.status !== 0 ||
+      (psRes.stderr && /ParserError|Unexpected token/i.test(psRes.stderr)) ||
+      !psRes.stdout.includes('permissionDecision');
+    assert.strictEqual(failedPs, true, 'Historical old command must fail PowerShell execution criterion');
+
+    // 2. Run historical command in CMD: succeeds (demonstrating the historical CMD-only behavior)
+    const cmdRes = runSubprocessViaCmd(historicalOldCommand, canonicalNegativePayload);
+    assert.strictEqual(cmdRes.status, 0, 'Historical old command passes in CMD');
+    const cmdParsed = JSON.parse(cmdRes.stdout.trim());
+    assert.strictEqual(cmdParsed.hookSpecificOutput.permissionDecision, 'deny');
+  });
+
+  runTest('Suite 10: Current exported installer command passes negative canonical MCP guard via CMD (exit 0, parsed deny JSON)', () => {
+    const cmdRes = runSubprocessViaCmd(currentExportedCommand, canonicalNegativePayload);
+    assert.strictEqual(cmdRes.status, 0, `CMD execution must exit 0: ${cmdRes.stderr}`);
+    const parsed = JSON.parse(cmdRes.stdout.trim());
+    assert.strictEqual(parsed.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.strictEqual(parsed.hookSpecificOutput.permissionDecision, 'deny');
+    assert(
+      parsed.hookSpecificOutput.permissionDecisionReason.includes('отсутствует классификация CU-capable вызова'),
+      `Unexpected reason: ${parsed.hookSpecificOutput.permissionDecisionReason}`
+    );
+  });
+
+  runTest('Suite 10: Current exported installer command passes negative canonical MCP guard via PowerShell (exit 0, parsed deny JSON)', () => {
+    const psRes = runSubprocessViaPowerShell(currentExportedCommand, canonicalNegativePayload);
+    assert.strictEqual(psRes.status, 0, `PowerShell execution must exit 0: ${psRes.stderr}`);
+    const parsed = JSON.parse(psRes.stdout.trim());
+    assert.strictEqual(parsed.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.strictEqual(parsed.hookSpecificOutput.permissionDecision, 'deny');
+    assert(
+      parsed.hookSpecificOutput.permissionDecisionReason.includes('отсутствует классификация CU-capable вызова'),
+      `Unexpected reason: ${parsed.hookSpecificOutput.permissionDecisionReason}`
+    );
+  });
+
+  runTest('Suite 10: Current exported installer command passes exact noop via CMD (exit 0, no output)', () => {
+    const cmdRes = runSubprocessViaCmd(currentExportedCommand, canonicalNoopPayload);
+    assert.strictEqual(cmdRes.status, 0, `CMD noop must exit 0: ${cmdRes.stderr}`);
+    assert.strictEqual(cmdRes.stdout.trim(), '', 'CMD noop must produce no output');
+  });
+
+  runTest('Suite 10: Current exported installer command passes exact noop via PowerShell (exit 0, no output)', () => {
+    const psRes = runSubprocessViaPowerShell(currentExportedCommand, canonicalNoopPayload);
+    assert.strictEqual(psRes.status, 0, `PowerShell noop must exit 0: ${psRes.stderr}`);
+    assert.strictEqual(psRes.stdout.trim(), '', 'PowerShell noop must produce no output');
+  });
+
+  runTest('Suite 10: Current exported installer command passes harmless canary exemption via CMD and PowerShell (exit 0, no output)', () => {
+    const cmdRes = runSubprocessViaCmd(currentExportedCommand, canonicalCanaryPayload);
+    assert.strictEqual(cmdRes.status, 0, `CMD canary must exit 0: ${cmdRes.stderr}`);
+    assert.strictEqual(cmdRes.stdout.trim(), '', 'CMD canary must produce no output');
+
+    const psRes = runSubprocessViaPowerShell(currentExportedCommand, canonicalCanaryPayload);
+    assert.strictEqual(psRes.status, 0, `PowerShell canary must exit 0: ${psRes.stderr}`);
+    assert.strictEqual(psRes.stdout.trim(), '', 'PowerShell canary must produce no output');
+  });
+}
+
 console.log(`Final review matrix: ${finalReviewCases} pure assertions; no live UI, daemon, hooks installation or trust writes.`);
 console.log('\n=======================================');
 console.log(`Results: ${passed} passed, ${failed} failed.`);

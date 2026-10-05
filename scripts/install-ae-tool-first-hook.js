@@ -45,12 +45,136 @@ function getRepoRoot(fsAdapter = fs) {
   }
 }
 
+const SMART_QUOTES_REGEX = /[\u2018\u2019\u201A\u201B\u201C\u201D\u201E]/;
+
 /**
- * Formats command line using absolute current Node executable and script path, both quoted safely.
+ * Validates that a path does not contain illegal characters or unsupported smart quotes
+ * that could break out of single-quoted string literals in PowerShell.
+ * Fails closed before write if dangerous characters like newlines, null bytes,
+ * or Unicode smart quotation marks (delimiters in PowerShell) are present.
  */
-function getHookCommand(repoRoot) {
-  const nodeExe = process.execPath.replace(/\\/g, '/');
-  const scriptPath = path.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js').replace(/\\/g, '/');
+function validateWindowsPathSafe(p) {
+  if (typeof p !== 'string' || !p.trim()) {
+    throw new Error('Path must be a non-empty string');
+  }
+  if (/[\r\n\0]/.test(p)) {
+    throw new Error(`Path contains illegal control characters: ${JSON.stringify(p)}`);
+  }
+  if (SMART_QUOTES_REGEX.test(p)) {
+    throw new Error(`Path contains unsupported Unicode smart quotes (PowerShell delimiters): ${JSON.stringify(p)}`);
+  }
+}
+
+/**
+ * Validates that an executable path is safe to use as an unquoted token in both CMD and PowerShell.
+ * It must be an absolute path without whitespace, quotes, or shell metacharacters.
+ * Fails closed before write if unusual SystemRoot contains whitespace or metacharacters.
+ */
+function validateWindowsShellTokenSafe(token) {
+  if (typeof token !== 'string' || !token.trim()) {
+    throw new Error('PowerShell executable token must be a non-empty string');
+  }
+  if (!path.win32.isAbsolute(token)) {
+    throw new Error(`PowerShell executable token must be an absolute path (no PATH/cwd resolution): ${token}`);
+  }
+  if (/\s/.test(token)) {
+    throw new Error(`PowerShell executable token contains whitespace and cannot be safely unquoted: ${token}`);
+  }
+  if (/["'\u2018\u2019\u201A\u201B\u201C\u201D\u201E]/.test(token)) {
+    throw new Error(`PowerShell executable token contains quotes: ${token}`);
+  }
+  if (/[&|<>;%^$()`\r\n\0]/.test(token)) {
+    throw new Error(`PowerShell executable token contains shell metacharacters: ${token}`);
+  }
+}
+
+/**
+ * Resolves the pinned native Windows PowerShell executable path under SystemRoot.
+ * Never falls back to PATH or cwd.
+ * Fails closed before write if SystemRoot is undefined or path contains unsafe metacharacters.
+ */
+function getWindowsPowerShellPath(options = {}) {
+  if (options && Object.prototype.hasOwnProperty.call(options, 'powershellPath')) {
+    if (!options.powershellPath || typeof options.powershellPath !== 'string' || !options.powershellPath.trim()) {
+      throw new Error('PowerShell executable token must be a non-empty string');
+    }
+    validateWindowsShellTokenSafe(options.powershellPath);
+    return options.powershellPath;
+  }
+
+  let systemRoot;
+  if (options && Object.prototype.hasOwnProperty.call(options, 'systemRoot')) {
+    systemRoot = options.systemRoot;
+  } else {
+    systemRoot = process.env.SystemRoot || process.env.windir;
+  }
+
+  if (!systemRoot || typeof systemRoot !== 'string' || !systemRoot.trim()) {
+    throw new Error('SystemRoot is not defined; cannot pin native Windows PowerShell executable (fail closed)');
+  }
+
+  const resolved = path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  validateWindowsShellTokenSafe(resolved);
+  return resolved;
+}
+
+/**
+ * Escapes a literal path for inclusion inside PowerShell single-quoted string ('...').
+ * In PowerShell single-quoted strings:
+ * - Variables ($var) are NOT expanded.
+ * - Backticks (`) are NOT escape characters.
+ * - Single quotes are escaped by doubling them (' -> '').
+ */
+function escapePowershellSingleQuote(str) {
+  validateWindowsPathSafe(str);
+  return str.replace(/'/g, "''");
+}
+
+/**
+ * Builds the PowerShell script to invoke node with the target pretool script.
+ */
+function buildWindowsPowershellScript(nodeExe, scriptPath) {
+  const escNode = escapePowershellSingleQuote(nodeExe);
+  const escScript = escapePowershellSingleQuote(scriptPath);
+  return `& '${escNode}' '${escScript}'`;
+}
+
+/**
+ * Encodes a PowerShell script as a Base64 UTF-16LE string for -EncodedCommand.
+ */
+function encodePowershellCommand(psScript) {
+  return Buffer.from(psScript, 'utf16le').toString('base64');
+}
+
+/**
+ * Decodes an -EncodedCommand Base64 string back to UTF-16LE string (for review and test inspection).
+ */
+function decodePowershellCommand(encoded) {
+  return Buffer.from(encoded, 'base64').toString('utf16le');
+}
+
+/**
+ * Formats command line using absolute current Node executable and script path.
+ * On Windows: uses an explicit native WindowsPowerShell absolute executable under SystemRoot
+ * with -NoProfile -NonInteractive -EncodedCommand wrapper, which is shell-portable (executes with stdin through both CMD and PowerShell).
+ * On other OS: uses safely quoted absolute Node executable and script path.
+ */
+function getHookCommand(repoRoot, options = {}) {
+  const platform = (options && options.platform) || process.platform;
+  const rawNode = (options && options.execPath) || process.execPath;
+  const rawScript = platform === 'win32'
+    ? path.win32.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js')
+    : path.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js');
+
+  if (platform === 'win32') {
+    const psExe = getWindowsPowerShellPath(options);
+    const psScript = buildWindowsPowershellScript(rawNode, rawScript);
+    const encoded = encodePowershellCommand(psScript);
+    return `${psExe} -NoProfile -NonInteractive -EncodedCommand ${encoded}`;
+  }
+
+  const nodeExe = rawNode.replace(/\\/g, '/');
+  const scriptPath = rawScript.replace(/\\/g, '/');
   return `"${nodeExe}" "${scriptPath}"`;
 }
 
@@ -94,13 +218,26 @@ function isOurHandler(handler, repoRoot) {
   if (typeof handler.command !== 'string') return false;
 
   const cmd = handler.command.trim();
-  const currentCommand = getHookCommand(repoRoot);
-  if (cmd === currentCommand) return true;
+  let currentCommand = '';
+  try {
+    currentCommand = getHookCommand(repoRoot);
+  } catch (_) {}
+  if (currentCommand && cmd === currentCommand) return true;
 
   const scriptNorm = path.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js').replace(/\\/g, '/');
   const scriptWin = path.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js').replace(/\//g, '\\');
   const nodeNorm = process.execPath.replace(/\\/g, '/');
   const nodeWin = process.execPath.replace(/\//g, '\\');
+
+  let winCmd = '';
+  let nonWinCmd = '';
+  try {
+    const sysRoot = process.env.SystemRoot || process.env.windir || 'C:\\Windows';
+    winCmd = getHookCommand(repoRoot, { platform: 'win32', systemRoot: sysRoot });
+  } catch (_) {}
+  try {
+    nonWinCmd = getHookCommand(repoRoot, { platform: 'linux' });
+  } catch (_) {}
 
   const enumeratedLegacy = new Set([
     `node "${scriptNorm}"`,
@@ -110,8 +247,21 @@ function isOurHandler(handler, repoRoot) {
     `"${nodeNorm}" "${scriptNorm}"`,
     `"${nodeNorm}" ${scriptNorm}`,
     `"${nodeWin}" "${scriptWin}"`,
-    `"${nodeWin}" ${scriptWin}`
+    `"${nodeWin}" ${scriptWin}`,
+    `"${nodeNorm}" "${scriptWin}"`,
+    `"${nodeWin}" "${scriptNorm}"`
   ]);
+
+  if (winCmd) enumeratedLegacy.add(winCmd);
+  if (nonWinCmd) enumeratedLegacy.add(nonWinCmd);
+
+  // Also recognize round 1 bare powershell.exe wrapper for this repo
+  try {
+    const rawScript = path.win32.resolve(repoRoot, 'scripts', 'ae-tool-first-pretool.js');
+    const psScript = buildWindowsPowershellScript(process.execPath, rawScript);
+    const encoded = encodePowershellCommand(psScript);
+    enumeratedLegacy.add(`powershell.exe -NoProfile -NonInteractive -EncodedCommand ${encoded}`);
+  } catch (_) {}
 
   return enumeratedLegacy.has(cmd);
 }
@@ -481,5 +631,13 @@ module.exports = {
   unmergeHooksConfig,
   checkHooksInstallation,
   writeHooksFileAtomic,
-  parseCliArgs
+  parseCliArgs,
+  validateWindowsPathSafe,
+  validateWindowsShellTokenSafe,
+  getWindowsPowerShellPath,
+  SMART_QUOTES_REGEX,
+  escapePowershellSingleQuote,
+  buildWindowsPowershellScript,
+  encodePowershellCommand,
+  decodePowershellCommand
 };
