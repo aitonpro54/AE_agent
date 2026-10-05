@@ -61,9 +61,25 @@ function createProposalState() {
     assertExecution({actionId: record && record.actionId, executionId,
       proposalExpiresAt: record && record.proposalExpiresAt});
     record.lifecycleRetired = Object.freeze({transitionId, retiredAt: new Date().toISOString()});
-    record.executionState = "completed";
-    // Source binding is historical evidence; never rewrite it to the new path.
+    // Authority is revoked now; observer completion belongs to the runner after
+    // post-retirement reads, commit and semantic tail. Source binding stays historical.
     return record.lifecycleRetired;
+  }
+  function publishRunResult(record, run, summary) {
+    // Observer publication is deliberately independent of assertCurrent: a retired
+    // proposal has no execution authority, but its exact running owner must finish.
+    if (!record || record !== current || !run || record.executionId && record.executionId !== run.id ||
+        ["confirmed", "executing"].includes(record.executionState) && record.executionId !== run.id ||
+        !["pending", "confirmed", "executing"].includes(record.executionState) || run.dryRun === true && record.executionState !== "pending") return false;
+    if (typeof run.id !== "string" || !run.id || typeof run.ok !== "boolean" || typeof run.dryRun !== "boolean" ||
+        typeof run.finishedAt !== "string" || !Number.isFinite(Date.parse(run.finishedAt)) || !summary ||
+        summary.id !== run.id || summary.ok !== run.ok || summary.dryRun !== run.dryRun) throw failure("invalid_plan_run_publication", "Требуется итог завершённого текущего запуска.");
+    record.lastRun = {...summary};
+    if (!run.dryRun && record.executionState === "executing" && record.executionId === run.id) {
+      record.finishedAt = run.finishedAt;
+      record.executionState = run.ok ? "completed" : "failed";
+    }
+    return true;
   }
   function snapshot() {
     if (!current) return null;
@@ -77,7 +93,7 @@ function createProposalState() {
       lastRun: record.lastRun || null, lifecycleRetired: record.lifecycleRetired || null
     };
   }
-  return {register, assertCurrent, assertExecution, bindProject, retireLifecycle, snapshot, get current() { return current; }};
+  return {register, assertCurrent, assertExecution, bindProject, retireLifecycle, publishRunResult, snapshot, get current() { return current; }};
 }
 
 // Только перечисленные поля: никакие args, исходный текст, пути и токены не попадают в статистику.

@@ -6985,11 +6985,6 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         actionRecord.dryRunReceipt = {payloadHash: actionRecord.payloadHash, contractVersion: AUTONOMY_CONTRACT_VERSION,
           stepCount: validation.steps.length, projectFile: actionRecord.project.expectedFile};
       }
-      if (actionRecord && !run.dryRun && actionRecord.executionState === "executing" && actionRecord.executionId === run.id) {
-        actionRecord.executionState = run.ok ? "completed" : "failed";
-        actionRecord.executionId = run.id;
-        actionRecord.finishedAt = run.finishedAt;
-      }
       run.m100Action = {
         actionId: options._m100ActionProposal.actionId,
         payloadRef: options._m100PayloadRef || options._m100ActionProposal.action.payloadRef,
@@ -7028,17 +7023,26 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       failedSteps: run.failedCount, verification: run.solutionPlanReadBack && run.solutionPlanReadBack.status || run.semanticVerification && run.semanticVerification.status});
     try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); }
     catch (_telemetryError) { run.telemetryWarning = "autonomy_obstacle_log_unavailable"; }
-    const ownsRecord = options._m100ActionRecord && (!options._m100ActionRecord.executionId || options._m100ActionRecord.executionId === run.id);
+    const ownsRecord = options._m100ActionRecord && options._m100ActionRecord === currentProposalState.current &&
+      (!options._m100ActionRecord.executionId || options._m100ActionRecord.executionId === run.id);
     if (ownsRecord) {
       run.repairDirective = autonomousRepair.directive(options._m100ActionRecord, run);
       options._m100ActionRecord.repairDirective = run.repairDirective;
     }
-    if (ownsRecord) options._m100ActionRecord.lastRun = {
+    const lastRunSummary = {
       id: run.id, ok: run.ok, dryRun: run.dryRun, errorCode: diagnostic.code,
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
       failedCount: run.failedCount, verification: diagnostic.verification
     };
+    if (ownsRecord && run.m100Action && !run.dryRun && options._m100ActionRecord.executionState === "executing") {
+      // Final run evidence may describe the result before observer publication;
+      // the proposal remains executing until its current summary is ready.
+      run.m100Action.confirmationState = run.ok ? "completed" : "failed";
+    }
     try { persistRun(null, true); } catch (_error) { run.recordWarning="run_record_update_failed"; }
+    if (currentProposalState.publishRunResult(options._m100ActionRecord, run, lastRunSummary) && run.m100Action) {
+      run.m100Action.confirmationState = m100ActionRecordState(options._m100ActionRecord);
+    }
     return responseView === "summary" ? planRunResponse.projectPlanRunSummary(run) : run;
   }
 
