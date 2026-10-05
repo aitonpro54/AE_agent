@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const path = require("path");
 const { pathsEqual } = require("./placeholder-source-recovery");
 const { isValidStretch } = require("./placeholder-timing");
+const projectSave = require("./project-save");
 const ID = value => Number.isSafeInteger(value) && value > 0;
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const TRANSFORMS = { anchorPoint: "ADBE Anchor Point", position: "ADBE Position", scale: "ADBE Scale",
@@ -221,8 +222,13 @@ function checkProtectedSteps({ accepted = [], inventory, steps = [], verifiedRev
   const affected = new Set();
   for (const [index, step] of steps.entries()) {
     const tool = step.tool || step.toolName;
-    try { assertSupportedSetterIdentity(tool, step.args || step.arguments || {}); }
+    const args = step.args || step.arguments || {};
+    try { assertSupportedSetterIdentity(tool, args); }
     catch (error) { conflicts.push({ index, tool, reason: error.message }); }
+    if (tool === projectSave.TOOL_NAME) {
+      try { projectSave.validateToolInput(tool, args); }
+      catch (error) { conflicts.push({ index, tool, reason: error.code || error.message }); }
+    }
   }
   if (!accepted.length) return { ok: !conflicts.length, code: conflicts.length ? "unsupported_setter_identity_alias" : null, conflicts, bindings, affected: [] };
   if (!inventory || inventory.complete !== true) return { ok: false, code: "incomplete_protection_inventory", conflicts: [] };
@@ -231,6 +237,7 @@ function checkProtectedSteps({ accepted = [], inventory, steps = [], verifiedRev
     const args = step.args || step.arguments || {};
     if (unsupportedSetterIdentityAliases(tool,args).length) continue;
     if (args.allowProtectedChanges === true || step.allowProtectedChanges === true) { conflicts.push({ index, tool, reason: "protected_override_forbidden" }); continue; }
+    if (tool === projectSave.TOOL_NAME) continue;
     if (SAFE_ADDITIONS.has(tool)) continue;
     if(tool==="cleanup_test_items" && verifiedReviewCleanupOwners.includes(args.owner))continue;
     if(tool==="reload_montage_material_source"){

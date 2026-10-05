@@ -8,7 +8,7 @@ const { createProject } = require("./placeholder-protection-fixture");
 async function main() {
   // Existing HTTP boundary, ephemeral port and disposable runtime. No installed
   // AE/CEP/provider is contacted. Admin authority is fixture-only and distinct.
-  const project=createProject();let mutatingCommands=0;let afterMutation=null;
+  const project=createProject();let mutatingCommands=0;let nativeCommands=0;let afterMutation=null;
   const fixture=await startDaemon({automationToken:"protection-test-auto",panelToken:"protection-test-panel",adminToken:"protection-test-admin",devAdmin:true,commandTimeoutMs:4000,
     setupRuntime(runtime) { fs.writeFileSync(path.join(runtime,"logs","edit-session-active.json"),JSON.stringify({id:"protection-synthetic-session",status:"active",checkpoint:{sourceFile:"C:/Synthetic/Protected.aep"},operations:[]})); } });
   const post=(route,body,token=fixture.panelToken)=>fixture.request({path:route,token,body,timeoutMs:12000});
@@ -21,6 +21,7 @@ async function main() {
       const polled=await pollPanel(fixture,{projectFile:project.read('app.project.file && app.project.file.fsName')});
       const command=polled.body.command;
       if(!command) {await pause(10);continue;}
+      nativeCommands++;
       const script=command.script;
       const allowed=script.includes("bitsPerChannel: project ? project.bitsPerChannel") || script.includes("__codexPlaceholderInventory") ||
         script.includes("__codexPlaceholderProtectionGuard") || script.includes("var includeProperties =") ||
@@ -100,6 +101,28 @@ async function main() {
     const direct=await withPanel(()=>post("/dev/tool/set_layer_transform",{compItemIndex:1,layerIndex:1,expectedCompItemId:10,expectedLayerId:11,position:[960,540]},fixture.adminToken));assert.equal(direct.status,200,direct.text);assert.equal(mutatingCommands,2);assert.equal(project.read('other.property("ADBE Transform Group").property("ADBE Position").value[0]'),960);
     project.change('child.selectedLayers=[target,other];');
     const constraints=await withPanel(()=>post("/placeholder/protection",{action:"constraints",distinctGroups:true,disallowSourceOverlap:true}));assert.equal(constraints.status,200,constraints.text);
+    const saveArgs={expectedProjectFile:"C:/Synthetic/Protected.aep",expectedSavedFileSha25664:"a".repeat(64),checkpointLabel:"named-save-protection"};
+    const savePlan=(args=saveArgs)=>({summary:"Guard named save with accepted placeholder",targetProject:{file:"C:/Synthetic/Protected.aep"},risk:"high",requiresCheckpoint:true,
+      steps:[{tool:"save_current_named_project",args,mutatesProject:true},{tool:"get_project_info",args:{}}]});
+    const namedSaveProposal=await withPanel(()=>post("/agents/plan/propose",{plan:savePlan()}));
+    assert.equal(namedSaveProposal.status,200,namedSaveProposal.text);assert(namedSaveProposal.body.proposal,JSON.stringify(namedSaveProposal.body));
+    assert.equal(mutatingCommands,2,"Proposing a guarded save performs no project writes.");
+    const beforeMalformed=nativeCommands;
+    const malformed=await withPanel(()=>post("/agents/plan/propose",{plan:savePlan({...saveArgs,unexpected:true})}));
+    assert(malformed.body.ok===false || !malformed.body.proposal,JSON.stringify(malformed.body));
+    assert.equal(nativeCommands,beforeMalformed,"Malformed named-save input is rejected before native reads.");
+    const foreignArgs={...saveArgs,expectedProjectFile:"C:/Synthetic/Other.aep"};
+    const beforeForeignWrites=mutatingCommands;
+    const foreign=await withPanel(()=>post("/agents/plan/propose",{plan:savePlan(foreignArgs)}));
+    assert(foreign.body.ok===false || !foreign.body.proposal,JSON.stringify(foreign.body));
+    assert(JSON.stringify(foreign.body).includes("project_save_expected_file_mismatch"),JSON.stringify(foreign.body));
+    assert.equal(mutatingCommands,beforeForeignWrites,"Foreign named-save target cannot write to the synthetic project.");
+    project.change('target.property("ADBE Transform Group").property("ADBE Position").value=[901,540];');
+    const driftProposal=await withPanel(()=>post("/agents/plan/propose",{plan:savePlan()}));
+    assert(driftProposal.body.ok===false || !driftProposal.body.proposal,JSON.stringify(driftProposal.body));
+    assert(JSON.stringify(driftProposal.body).includes("accepted_placeholder_drift"),JSON.stringify(driftProposal.body));
+    assert.equal(mutatingCommands,beforeForeignWrites,"Accepted drift blocks the save proposal without writes.");
+    project.change('target.property("ADBE Transform Group").property("ADBE Position").value=[960,540];');
     // Fresh policy enforcement does not trust old client usage or metadata.
     const constrained=await withPanel(()=>post("/dev/tool/replace_layer_source",{compItemIndex:2,layerIndices:[1],expectedCompItemId:10,expectedLayerId:12,sourceItemIndex:4,expectedSourceItemId:100,sourceItemName:"Performer A",sourceItemType:"footage"},fixture.adminToken));assert.equal(constrained.status,500,constrained.text);assert(constrained.text.includes("placeholder_assignment_conflict"));assert.equal(mutatingCommands,2);
     project.change('child.selectedLayers=[target];app.project.file=null;');

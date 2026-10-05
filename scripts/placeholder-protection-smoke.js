@@ -6,6 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const memory = require("../mcp-server/project-intent-memory");
 const protection = require("../mcp-server/placeholder-protection");
+const projectSave = require("../mcp-server/project-save");
 const usage = require("../mcp-server/placeholder-usage");
 const { prepareToolScript, preparePlaceholderInventoryScript } = require("../mcp-server/bridge-daemon");
 const { verifyPlaceholderReadBack } = require("../mcp-server/placeholder-readback");
@@ -24,6 +25,20 @@ async function main() {
   assert.equal(accepted.dependencies.length, 1);
   const targetArgs = { compItemIndex: 1, layerIndex: 1, expectedCompItemId: 10, expectedLayerId: 11 };
   const check = (tool, args) => protection.checkProtectedSteps({ accepted: [accepted], inventory: baseline, steps: [{ tool, args: { ...targetArgs, ...args } }] });
+  const namedSaveArgs = { expectedProjectFile: "C:/Synthetic/Protected.aep", expectedSavedFileSha25664: "a".repeat(64), checkpointLabel: "protection-test" };
+  const checkNamedSave = args => protection.checkProtectedSteps({ accepted: [accepted], inventory: baseline, steps: [{ tool: projectSave.TOOL_NAME, args }] });
+  assert(checkNamedSave(namedSaveArgs).ok, "Validated named save has an explicit persistence-only footprint.");
+  assert.equal(checkNamedSave({ ...namedSaveArgs, extra: true }).ok, false, "Named save rejects malformed input.");
+  assert.equal(protection.checkProtectedSteps({ accepted: [], inventory: null, steps: [{ tool: projectSave.TOOL_NAME, args: { ...namedSaveArgs, extra: true } }] }).ok,
+    false, "Malformed named save is rejected even when there are no accepted snapshots.");
+  const protectedOverride = checkNamedSave(namedSaveArgs);
+  const overrideResult = protection.checkProtectedSteps({ accepted: [accepted], inventory: baseline,
+    steps: [{ tool: projectSave.TOOL_NAME, args: { ...namedSaveArgs, allowProtectedChanges: true } }] });
+  assert.equal(overrideResult.ok, false, "Persistence footprint cannot bypass the protected-change override ban.");
+  assert(overrideResult.conflicts.some(conflict => conflict.reason === "protected_override_forbidden"));
+  assert(protectedOverride.ok);
+  assert.equal(check("save_project_as", namedSaveArgs).ok, false, "Other save tools remain unknown footprints.");
+  assert.equal(check("run_extendscript", { script: "app.project.save()" }).ok, false, "Raw persistence remains denied.");
   for (const [tool, args] of [
     ["replace_layer_source", { expectedSourceItemId: 100 }], ["set_layer_time_range", { startTime: 0, inPoint: 0, outPoint: 4, duration: 4 }],
     ["set_layer_transform", { position: [960,540], scale: [100,100] }], ["set_property_value", { propertyPath: paths[0], value: 7 }],

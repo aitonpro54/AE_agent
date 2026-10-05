@@ -7955,6 +7955,10 @@ function checkFreshPlanAssignments(plan, state, inventory, mutations) {
   for (const step of mutations) {
     const tool = step.tool;
     const args = step.safeArgs || step.args || {};
+    if (tool === projectSave.TOOL_NAME) {
+      projectSave.validateToolInput(tool, args);
+      continue;
+    }
     if (tool === "set_layer_transform" || tool === "fit_layer_to_comp") continue;
     if (tool === "set_property_value") {
       let property;
@@ -8019,6 +8023,8 @@ async function guardPlaceholderPlan(plan, options = {}) {
   const store = projectStateMemory.loadProjectStateStore();
   const mutations = (options.steps || plan.steps || []).filter(step => MUTATING_TOOL_NAMES.has(step.tool || step.toolName))
     .map(step => ({ ...step, tool: step.tool || step.toolName, args: step.safeArgs || step.args || step.arguments || {} }));
+  const namedSaves = mutations.filter(step => step.tool === projectSave.TOOL_NAME);
+  for (const step of namedSaves) projectSave.validateToolInput(step.tool, step.args);
   for (const step of mutations) placeholderProtection.assertSupportedSetterIdentity(step.tool,step.args);
   if (plan.montagePipeline) {
     await guardMontagePipelinePlan(plan, options);
@@ -8034,10 +8040,14 @@ async function guardPlaceholderPlan(plan, options = {}) {
     }
   }
   const hasState = Object.values(store.projectState).some(value => value.acceptedPlaceholders.length || value.constraints);
-  if (!mutations.length || (!hasState && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline)) {
+  if (!mutations.length || (!hasState && !namedSaves.length && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline)) {
     return { ok: true, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
   }
   const { projectFile, state } = await currentPlaceholderState();
+  for (const step of namedSaves) {
+    if (!placeholderSourceRecovery.pathsEqual(step.args.expectedProjectFile, projectFile))
+      throw placeholderError("project_save_expected_file_mismatch");
+  }
   if (!state.acceptedPlaceholders.length && !state.constraints && !plan.placeholderConstraints && !plan.placeholderFraming && !plan.montagePipeline) {
     return { ok: true, projectFile, snapshots: [], bindings: [], ...(plan.montagePipeline ? { montagePipeline: plan.montagePipeline } : {}) };
   }
@@ -8077,7 +8087,8 @@ async function guardPlaceholderPlan(plan, options = {}) {
   }
   const protectedCheck = placeholderProtection.checkProtectedSteps({ accepted: state.acceptedPlaceholders, inventory, steps: protectionSteps,verifiedReviewCleanupOwners });
   if (!protectedCheck.ok) throw placeholderError(protectedCheck.code, protectedCheck);
-  const snapshots = state.acceptedPlaceholders.filter(snapshot => protectedCheck.affected.includes(placeholderProtection.targetKey(snapshot.target)));
+  const snapshots = namedSaves.length ? state.acceptedPlaceholders :
+    state.acceptedPlaceholders.filter(snapshot => protectedCheck.affected.includes(placeholderProtection.targetKey(snapshot.target)));
   for (const snapshot of snapshots) {
     const observed = inventory.evidence.find(value => value.comp && value.layer && value.comp.itemId === snapshot.target.compItemId && value.layer.id === snapshot.target.layerId);
     const drift = placeholderProtection.compareSnapshot(snapshot, observed, inventory);
