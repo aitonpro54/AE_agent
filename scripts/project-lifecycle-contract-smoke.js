@@ -6,7 +6,7 @@ let checks = 0;
 function throws(fn, code) { checks++; assert.throws(fn, error => error.code === code || String(error.message).includes(code)); }
 const f = fixture();
 try {
-  assert.strictEqual(c.toolDefinitions.length, 5); const args = f.args();
+  assert.strictEqual(c.toolDefinitions.length, 6); const args = f.args();
   assert.deepStrictEqual(c.validateInput("save_project_as", args), args); checks++;
   for (const field of ["overwrite", "rawScript", "authorization", "phase", "transitionId", "confirm", "expectedNative"]) throws(() => c.validateInput("save_project_as", { ...args, [field]: true }), "lifecycle_invalid_input");
   for (const revision of [undefined, null, -1, 0.1, "7", Number.MAX_SAFE_INTEGER + 1]) throws(() => c.validateInput("save_project_as", { ...args, expectedSourceRevision: revision }), revision === undefined ? "lifecycle_native_unknown" : "lifecycle_native_unknown");
@@ -18,6 +18,23 @@ try {
   const emitted = c.nativeInventoryScript({ expectedNative: { file: f.source, dirty: false, revision: 7 } });
   const run = script => JSON.parse(JSON.stringify(vm.runInContext("(function(){" + script + "})()", f.runtime)));
   const inventory = c.validateInventory(run(emitted)); checks++; assert.strictEqual(inventory.items[2].mainSourceKind, "solid"); assert.strictEqual(inventory.items[2].mainFile, null);
+  // Actual AE CMS is numeric; reject the former string contract and unknown values.
+  const cms = f.runtime.app.project.colorManagementSystem;
+  assert.strictEqual(typeof cms, "number"); assert(Number.isFinite(cms));
+  assert.strictEqual(inventory.settings.colorManagementSystem, cms); checks++;
+  for (const bad of ["private_value_should_not_appear", undefined, NaN]) {
+    f.runtime.app.project.colorManagementSystem = bad;
+    assert.throws(() => run(emitted), error => {
+      const message = String(error.message);
+      return /^lifecycle_inventory_unknown:project\.colorManagementSystem:expected_number:actual_(string|undefined|number)$/.test(message)
+        && message.length <= 120 && !message.includes("private_value_should_not_appear");
+    }); checks++;
+    const wire = c.clone(inventory); wire.settings.colorManagementSystem = bad;
+    assert.throws(() => c.validateInventory(wire), error =>
+      error.code === "lifecycle_inventory_settings_unknown" && error.message.includes("colorManagementSystem")); checks++;
+  }
+  f.runtime.app.project.colorManagementSystem = cms;
+  assert.strictEqual(c.validateInventory(run(emitted)).settings.colorManagementSystem, cms); checks++;
   // Native FileSource proxy and already-known missing file are observed, never relinked.
   vm.runInContext("app.project.item(1).proxySource=new FileSource(__proxy);app.project.item(1).useProxy=true;", f.runtime);
   const proxyInventory = c.validateInventory(run(emitted)); checks++; assert.strictEqual(proxyInventory.items[0].proxy.kind, "file");

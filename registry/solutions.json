@@ -1,7 +1,7 @@
 {
   "schema": "ae-solution-registry.v1",
   "solutionSchema": "ae-solution.v1",
-  "updatedAt": "2026-10-03",
+  "updatedAt": "2026-10-05",
   "policy": {
     "trackedStatuses": [
       "recipe",
@@ -99,6 +99,32 @@
         "Checkpoint копирует сохранённый файл и не восстанавливает dirty in-memory состояние. Неизвестный исход нельзя повторять.",
         "Legacy visual/review/load proofs недействительны в новом context. Inherited ownership запрещает обычные edit/delete/re-registration до отдельного adoption scope."
       ]
+    },
+    {
+      "schema": "ae-solution.v1",
+      "id": "published-save-as-state-only-recovery",
+      "title": "Published Save As State-only Recovery",
+      "status": "recipe",
+      "tags": ["project-lifecycle", "save-as", "unknown-delivery", "recovery", "manual-confirmation", "tool-first"],
+      "intent": {
+        "summary": "Подтвердить уже открытую опубликованную Save As копию после unknown/open_final_submitted и завершить только server state без Save/Open/New replay.",
+        "appliesWhen": ["Save As сохранил stage и опубликовал final, но финальное открытие имеет неизвестный исход.", "Точный recovery scope разрешён, источник на диске сохранён, final уже открыт clean и полный server assessor подтверждает persisted chain."]
+      },
+      "inputs": [{"name":"transitionId","type":"string","required":true,"description":"Exact UUID existing singleton Save As pending transition; никаких client proofs или force."}],
+      "targetAssumptions": ["Lifecycle enabled; initialized marker и V2 store валидны; original run завершён failed и native queue idle.", "Complete source/stage/publish/checkpoint records, exact policy migration и fresh final native/file pins подтверждены сервером."],
+      "execution": {
+        "mode":"typed-plan","mutating":true,"riskLevel":"high","recipePath":"recipes/project-lifecycle.md","scriptPath":null,
+        "preferredTools":["build_project_lifecycle_recovery_plan","recover_project_lifecycle","reconcile_project_lifecycle","finalize_project_lifecycle"]
+      },
+      "requiredSafetyGates": {"planValidation":true,"explicitConfirmation":true,"allowMutations":true,"idempotency":true,"checkpointOrEditSession":true,"postMutationReadBack":true},
+      "verificationRecipe": {
+        "summary":"Новый manual authority, полные source/stage/final inventories, policy и четыре disk/identity pins; state-only commit без native mutations.",
+        "steps":["Build read-only recovery plan по exact transitionId; targetProject — actual final из fresh assessor.","Новое propose → exact dry-run → fresh manual CEP confirmation/run в разрешённом recovery scope.","Проверить recovery origin, новый recoveredBy, generation и terminal receipt с command-backed final reads; исходный run остаётся failed."],
+        "expectedEvidence":["Ноль native mutation commands и filesystem publish/save/copy/cleanup.","Original authorization/input/source/stage/publish evidence сохранены; origin unknown delivery аудирован.","Source policy неизменна; existing migrated target policy, receipt и cleared pending записаны атомарно; artistic=false."]
+      },
+      "testedAeContext":{"aeVersion":"unknown","panelVersion":"AE Agent 3.3.0","bridgeVersion":"3.3.0","projectKind":"synthetic","notes":["Focused offline VM/store/adapter fixtures; live recovery requires sole controller and fresh CEP technical gates."]},
+      "promotionHistory":[{"date":"2026-10-05","from":"local-architecture-review","to":"recipe","reviewer":"codex","evidence":"Bounded state-only recovery implementation and isolated adversarial checks.","commit":null}],
+      "notes":["Read-only reconcile и summary не являются proof authority. Old finalize остаётся строгим; только persisted final proof допускает его.","Undo/unsaved memory не восстанавливаются; source не открывается, stage/checkpoint остаются evidence. Direct/admin/autonomous forbidden.","Optional recovery fields backward-compatible для старого pending reader новой версии; downgrade после recovery к прежнему строгому reader не обещается."]
     },
     {
       "schema": "ae-solution.v1",

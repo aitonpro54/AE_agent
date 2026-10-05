@@ -36,7 +36,7 @@ function validateInheritedOwnership(index) {
   if (ids.size > MAX_OWNED_ITEMS) c.fail("lifecycle_inherited_ownership_budget"); return index;
 }
 function validatePending(p) {
-  c.exact(p, ["schema", "transitionId", "operation", "args", "inputHash", "authorization", "sourcePolicyHash", "targetPolicyHash", "sourceState", "targetStateBefore", "targetState", "sourceBefore", "sourceNative", "sourceInventory", "stageProjectFile", "targetFile", "baseGeneration", "phase", "status", "possibleDelivery", "createdAt", "checkpoint", "stageReservation", "stageNative", "stageInventory", "stageFile", "targetInventory", "proof", "retirement", "errorCode", "finalizationAuthorization"], "lifecycle_invalid_pending");
+  c.exact(p, ["schema", "transitionId", "operation", "args", "inputHash", "authorization", "sourcePolicyHash", "targetPolicyHash", "sourceState", "targetStateBefore", "targetState", "sourceBefore", "sourceNative", "sourceInventory", "stageProjectFile", "targetFile", "baseGeneration", "phase", "status", "possibleDelivery", "createdAt", "checkpoint", "stageReservation", "stageNative", "stageInventory", "stageFile", "targetInventory", "proof", "retirement", "errorCode", "finalizationAuthorization", "recovery", "recoveryAuthorization"], "lifecycle_invalid_pending");
   if (p.schema !== c.VERSION + ".pending" || !c.UUID.test(p.transitionId || "") || !c.MUTATIONS.slice(0, 3).includes(p.operation) || !PHASES.has(p.phase) || !["active", "unknown", "not_started"].includes(p.status) || typeof p.possibleDelivery !== "boolean" || !c.SHA.test(p.inputHash || "") || !c.SHA.test(p.sourcePolicyHash || "") || !c.SHA.test(p.targetPolicyHash || "") || !p.authorization || typeof p.authorization.actionId !== "string" || !p.authorization.actionId || typeof p.authorization.runId !== "string" || !p.authorization.runId || !c.SHA.test(p.authorization.payloadHash || "") || !Number.isSafeInteger(p.baseGeneration) || p.baseGeneration < 0) c.fail("lifecycle_invalid_pending");
   c.validateInput(p.operation, p.args); if (p.inputHash !== c.hash({ name: p.operation, args: p.args })) c.fail("lifecycle_pending_input_changed");
   validateNestedState(p.sourceState, p.args.expectedSourceProjectFile); validateNestedState(p.targetState, p.args.targetProjectFile);
@@ -48,6 +48,12 @@ function validatePending(p) {
     c.exact(p.finalizationAuthorization, ["actionId", "runId", "payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash", "ownedEditSessionId"], "lifecycle_invalid_pending_authorization");
     const a = p.finalizationAuthorization;
     if (typeof a.actionId !== "string" || !a.actionId || typeof a.runId !== "string" || !a.runId || !c.SHA.test(a.payloadHash || "") || a.inputHash !== c.hash({ name: "finalize_project_lifecycle", args: { transitionId: p.transitionId } }) || a.sourcePolicyHash !== p.sourcePolicyHash || a.targetPolicyHash !== p.targetPolicyHash || a.ownedEditSessionId !== undefined && (typeof a.ownedEditSessionId !== "string" || !a.ownedEditSessionId || a.ownedEditSessionId.length > 240)) c.fail("lifecycle_invalid_pending_authorization");
+  }
+  if (p.recovery !== undefined || p.recoveryAuthorization !== undefined) {
+    c.validateRecovery(p.recovery, p.authorization); c.validateCompletionAuthority(p.recoveryAuthorization, "recover_project_lifecycle", p.transitionId);
+    const a = p.recoveryAuthorization;
+    if (!p.proof || p.operation !== "save_project_as" || a.sourcePolicyHash !== p.sourcePolicyHash || a.targetPolicyHash !== p.targetPolicyHash || a.actionId === p.authorization.actionId || a.runId === p.authorization.runId) c.fail("lifecycle_invalid_recovery_authorization");
+    if (p.finalizationAuthorization && [p.authorization, a].some(authority => authority.actionId === p.finalizationAuthorization.actionId || authority.runId === p.finalizationAuthorization.runId)) c.fail("lifecycle_recovery_authority_reused");
   }
   c.nativeTuple(p.sourceNative); c.validateInventory(p.sourceInventory, p.sourceState.acceptedPlaceholders);
   if (!c.samePath(p.sourceNative.file, p.args.expectedSourceProjectFile) || p.sourceNative.dirty !== p.args.expectedSourceDirty || p.sourceNative.revision !== p.args.expectedSourceRevision || !c.samePath(p.sourceNative.file, p.sourceInventory.native.file) || p.sourceNative.dirty !== p.sourceInventory.native.dirty || p.sourceNative.revision !== p.sourceInventory.native.revision || !c.samePath(p.sourceBefore.path, p.args.expectedSourceProjectFile) || p.sourceBefore.sha256 !== p.args.expectedSourceSavedSha25664 || c.hash(p.sourceState) !== p.sourcePolicyHash || c.hash(p.targetStateBefore) !== p.targetPolicyHash) c.fail("lifecycle_pending_pin_changed");
@@ -64,6 +70,26 @@ function validatePending(p) {
   }
   if ((p.phase === "final_proven" || p.phase === "context_retired") && !p.proof) c.fail("lifecycle_invalid_pending_proof");
   if (p.phase === "context_retired" && (!p.retirement || ["sessionClosed", "proposalRetired", "cachesInvalidated", "desiredEnabledPreserved"].some(k => p.retirement[k] !== true))) c.fail("lifecycle_invalid_pending_retirement");
+  return p;
+}
+// Completeness is separate from the backwards-compatible partial pending reader.
+function assertRecoveryEligible(p, proven = false) {
+  validatePending(p);
+  if (p.operation !== "save_project_as" || (!proven && (p.phase !== "open_final_submitted" || p.status !== "unknown" || p.possibleDelivery !== true || p.proof || p.recovery || p.recoveryAuthorization || p.finalizationAuthorization)) || proven && (!p.recovery || !p.proof || !["final_proven", "context_retired"].includes(p.phase))) c.fail("lifecycle_recovery_ineligible");
+  for (const key of ["checkpoint", "stageReservation", "stageNative", "stageInventory", "stageFile", "targetFile"]) if (!p[key]) c.fail("lifecycle_recovery_chain_incomplete", key);
+  if (!proven && (typeof p.errorCode !== "string" || !p.errorCode || p.errorCode.length > 120)) c.fail("lifecycle_recovery_chain_incomplete", "errorCode");
+  c.nativeTuple(p.stageNative);
+  if (!c.UUID.test(path.basename(p.stageProjectFile).slice(".ae-agent-stage-".length,-".aep".length))) c.fail("lifecycle_invalid_stage");
+  if (!c.samePath(p.stageNative.file, p.stageProjectFile) || p.stageNative.dirty !== false || c.hash(p.stageNative) !== c.hash(p.stageInventory.native) || !c.samePath(p.stageFile.path, p.stageProjectFile) || !c.samePath(p.stageReservation.path, p.stageProjectFile) || p.stageReservation.bytes !== 0 || p.stageReservation.sha256 !== c.hash(Buffer.alloc(0)) || !c.samePath(p.targetFile.path, p.args.targetProjectFile) || p.stageFile.bytes < 1 || p.stageFile.sha256 !== p.targetFile.sha256 || p.stageFile.bytes !== p.targetFile.bytes || p.targetStateBefore !== null) c.fail("lifecycle_recovery_chain_mismatch");
+  const checkpoint = p.checkpoint;
+  c.exact(checkpoint, ["path", "bytes", "sha256", "fileIdentity", "observedAt", "checkpointFile", "sourceFile", "label", "snapshotScope"], "lifecycle_checkpoint_invalid");
+  validateFileRecord({path:checkpoint.path, bytes:checkpoint.bytes, sha256:checkpoint.sha256, fileIdentity:checkpoint.fileIdentity, observedAt:checkpoint.observedAt});
+  if (!c.samePath(checkpoint.path, checkpoint.checkpointFile) || !c.samePath(checkpoint.sourceFile, p.sourceBefore.path) || checkpoint.label !== p.args.checkpointLabel || checkpoint.snapshotScope !== "on_disk_before_lifecycle" || checkpoint.bytes !== p.sourceBefore.bytes || checkpoint.sha256 !== p.sourceBefore.sha256) c.fail("lifecycle_checkpoint_invalid");
+  const records = [p.sourceBefore, checkpoint, p.stageFile, p.targetFile];
+  for (let i = 0; i < records.length; i++) for (let j = i + 1; j < records.length; j++) if (c.samePath(records[i].path, records[j].path) || c.hash(records[i].fileIdentity) === c.hash(records[j].fileIdentity)) c.fail("lifecycle_recovery_file_alias");
+  c.assertInventoryMatch(p.sourceInventory, p.stageInventory); assertOwnershipInventory(p.sourceState, p.sourceInventory); assertOwnershipInventory(p.sourceState, p.stageInventory);
+  const migrated = migrateTargetState(p.operation, p.sourceState, p.args.targetProjectFile, p.transitionId, p.stageInventory, null);
+  if (c.hash(migrated) !== c.hash(p.targetState)) c.fail("lifecycle_recovery_migration_changed");
   return p;
 }
 function validateV2Store(store) {
@@ -173,6 +199,15 @@ function createLifecycleStorage(options = {}) {
   const configured = { ...options, statePath: statePath(options) }, file = configured.statePath, io = options.filesystem || fs;
   guards.set(file, { options: configured });
   const load = () => { assertReadableProtectionStore(configured); return memory().loadProjectStateStore({ ...configured, skipLifecycleReadGuard: true }); };
+  function assertRecoveryReadable() {
+    const facts = assertReadableProtectionStore(configured);
+    if (!facts.enabled || !facts.marker) c.fail("lifecycle_recovery_ineligible");
+    for (const target of [file, markerPath(file)]) {
+      const stat = io.lstatSync(target);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || !c.samePath(io.realpathSync(target), target) || !c.samePath(io.realpathSync(path.dirname(target)), path.dirname(target))) c.fail("lifecycle_recovery_store_ambiguous");
+    }
+    return facts;
+  }
   function atomicMarker() {
     if (io.existsSync(markerPath(file))) return;
     const marker = { schema: MARKER, storePathHash: c.hash(path.resolve(file)) }, temporary = markerPath(file) + "." + crypto.randomUUID() + ".tmp";
@@ -198,9 +233,17 @@ function createLifecycleStorage(options = {}) {
     if (!facts.enabled || !facts.pending || facts.pending.transitionId !== transitionId || typeof idle !== "function" || idle() !== true) c.fail("lifecycle_finalize_admission_denied");
     const lease = Object.freeze(Object.create(null)); leases.set(lease, { active: true, binding }); locks.set(file, lease); return lease;
   }
+  function acquireRecoveryAdmission(binding, transitionId, pendingHash, idle) {
+    if (locks.has(file)) c.fail("lifecycle_concurrent_admission");
+    const facts = assertRecoveryReadable();
+    if (!facts.enabled || !facts.marker || !facts.pending || facts.pending.transitionId !== transitionId || facts.generation !== facts.pending.baseGeneration || facts.generation === Number.MAX_SAFE_INTEGER || c.hash(facts.pending) !== pendingHash || typeof idle !== "function" || idle() !== true) c.fail("lifecycle_recovery_admission_denied");
+    assertRecoveryEligible(facts.pending); c.validateCompletionAuthority(binding, "recover_project_lifecycle", transitionId);
+    if (binding.actionId === facts.pending.authorization.actionId || binding.runId === facts.pending.authorization.runId) c.fail("lifecycle_recovery_authority_reused");
+    const lease = Object.freeze(Object.create(null)); leases.set(lease, { active: true, binding, mode: "recovery", pendingHash }); locks.set(file, lease); return lease;
+  }
   function releaseAdmission(lease) { requireLease(lease); leases.get(lease).active = false; locks.delete(file); }
   async function withCapability(lease, pending, phase, native, script, callback, delivery) {
-    const l = requireLease(lease); c.nativeTuple(native); const fresh = load().pendingLifecycle;
+    const l = requireLease(lease); if (l.mode === "recovery") c.fail("lifecycle_recovery_native_mutation_forbidden"); c.nativeTuple(native); const fresh = load().pendingLifecycle;
     if (!fresh || fresh.transitionId !== pending.transitionId || fresh.phase !== pending.phase || c.hash(fresh.authorization) !== c.hash(pending.authorization)) c.fail("lifecycle_phase_capability_stale");
     const cap = Object.freeze(Object.create(null)), record = { active: true, file, options: configured, transitionId: pending.transitionId, pendingPhase: pending.phase, phase,
       currentFile: native.file, expectedNative: c.clone(native), scriptHash: c.hash(script), binding: { ...pending.authorization, inputHash: pending.inputHash, sourcePolicyHash: pending.sourcePolicyHash, targetPolicyHash: pending.targetPolicyHash }, lease, readOnly: false,
@@ -208,8 +251,9 @@ function createLifecycleStorage(options = {}) {
     if (l.binding.actionId !== pending.authorization.actionId || l.binding.runId !== pending.authorization.runId) c.fail("lifecycle_phase_authority_mismatch"); capabilities.set(cap, record);
     try { validateCommandCapability(cap, { rawScript: script, phase }); return await callback(cap); } finally { record.active = false; }
   }
-  async function withReadCapability(transitionId, inventoryOptions, callback) {
-    const script = c.nativeInventoryScript(inventoryOptions), cap = Object.freeze(Object.create(null)), record = { active: true, file, options: configured, transitionId: transitionId || null, phase: "readonly_inventory", scriptHash: c.hash(script), readOnly: true };
+  async function withReadCapability(transitionId, inventoryOptions, callback, readbackRole) {
+    if (readbackRole !== undefined && !c.RECOVERY_READBACK_ROLES.includes(readbackRole)) c.fail("lifecycle_recovery_readback_role_invalid");
+    const script = c.nativeInventoryScript(inventoryOptions), cap = Object.freeze(Object.create(null)), record = { active: true, file, options: configured, transitionId: transitionId || null, phase: "readonly_inventory", scriptHash: c.hash(script), readOnly: true, readbackRole:readbackRole || null };
     capabilities.set(cap, record); try { return await callback(script, cap); } finally { record.active = false; }
   }
   async function withStateReadCapability(callback) {
@@ -221,19 +265,30 @@ function createLifecycleStorage(options = {}) {
     const binding = requireLease(lease).binding; if (binding.actionId !== pending.authorization.actionId || binding.runId !== pending.authorization.runId) c.fail("lifecycle_authority_mismatch");
     validatePending(pending); atomicMarker(); return write(lease, candidate => { if (candidate.pendingLifecycle) c.fail("lifecycle_pending_blocks_writes"); Object.assign(candidate, asV2(candidate)); candidate.pendingLifecycle = c.clone(pending); }).pendingLifecycle;
   }
-  function update(lease, transitionId, mutate) { return write(lease, candidate => { if (!candidate.pendingLifecycle || candidate.pendingLifecycle.transitionId !== transitionId) c.fail("lifecycle_pending_changed"); mutate(candidate.pendingLifecycle); }).pendingLifecycle; }
+  function update(lease, transitionId, mutate) { return write(lease, candidate => {
+    if (!candidate.pendingLifecycle || candidate.pendingLifecycle.transitionId !== transitionId) c.fail("lifecycle_pending_changed");
+    const before = c.clone(candidate.pendingLifecycle); mutate(candidate.pendingLifecycle);
+    if (requireLease(lease).mode === "recovery") {
+      const immutable = p => Object.fromEntries(Object.entries(p).filter(([key]) => !["targetInventory", "proof", "phase", "status", "errorCode", "recovery", "recoveryAuthorization", "retirement"].includes(key)));
+      const after = candidate.pendingLifecycle, admission = requireLease(lease);
+      if (c.hash(immutable(before)) !== c.hash(immutable(after)) || !after.recovery || !after.proof || !["final_proven", "context_retired"].includes(after.phase) || c.hash(after.recoveryAuthorization) !== c.hash(admission.binding)) c.fail("lifecycle_recovery_origin_changed");
+      if (!before.recovery && (after.recovery.origin.pendingHash !== admission.pendingHash || c.hash(before) !== admission.pendingHash || after.recovery.origin.errorCode !== before.errorCode || after.recovery.origin.phase !== before.phase || after.recovery.origin.status !== before.status || after.recovery.provenAt !== after.proof.provenAt)) c.fail("lifecycle_recovery_origin_changed");
+      if (before.recovery && ["targetInventory", "proof", "recovery", "recoveryAuthorization"].some(key => c.hash(before[key]) !== c.hash(after[key]))) c.fail("lifecycle_recovery_origin_changed");
+    }
+  }).pendingLifecycle; }
   function commit(lease, transitionId, receipt) {
     c.verifyReceipt(receipt); return write(lease, candidate => {
       const p = candidate.pendingLifecycle; if (!p || p.transitionId !== transitionId || p.phase !== "context_retired" || !p.proof || !p.retirement || receipt.generation !== candidate.lifecycleGeneration + 1) c.fail("lifecycle_commit_not_proven");
+      if (p.recovery && (c.hash(receipt.recovery) !== c.hash(p.recovery) || c.hash(receipt.recoveredBy) !== c.hash(p.recoveryAuthorization) || c.hash(receipt.authorization) !== c.hash(p.authorization) || c.hash(receipt.finalizedBy || null) !== c.hash(p.finalizationAuthorization || null))) c.fail("lifecycle_recovery_receipt_changed");
       if (c.hash(readState(candidate, p.args.expectedSourceProjectFile)) !== p.sourcePolicyHash || c.hash(candidate.projectState[keyFor(p.args.targetProjectFile)] || null) !== p.targetPolicyHash) c.fail("lifecycle_policy_changed");
       candidate.projectState[p.targetState.projectKey] = c.clone(p.targetState); candidate.lifecycleReceipts = [...candidate.lifecycleReceipts.slice(-(MAX_RECEIPTS - 1)), c.clone(receipt)]; candidate.lifecycleGeneration++; candidate.pendingLifecycle = null;
     });
   }
-  return { load, begin, update, commit, acquireAdmission, acquireFinalizeAdmission, releaseAdmission, withPhaseCapability: withCapability, withReadCapability, withStateReadCapability,
+  return { load, begin, update, commit, acquireAdmission, acquireFinalizeAdmission, acquireRecoveryAdmission, assertRecoveryReadable, releaseAdmission, withPhaseCapability: withCapability, withReadCapability, withStateReadCapability,
     assertMutationAllowed: context => assertMutationAllowed({ ...configured, ...(context || {}) }), epoch: () => { const facts = assertReadableProtectionStore(configured); return facts.generation; },
     pendingProjection: () => { const facts = guardSnapshot(configured); const p = facts.pending; return { enabled: facts.enabled, blocked: !!facts.problem || !!p || locks.has(file), problem: facts.problem, generation: facts.generation, pending: p ? { transitionId: p.transitionId, operation: p.operation, phase: p.phase, status: p.status, possibleDelivery: p.possibleDelivery, sourceProjectFile: p.args && p.args.expectedSourceProjectFile, targetProjectFile: p.args && p.args.targetProjectFile } : null }; } };
 }
-module.exports = { V2, MARKER, MAX_RECEIPTS, validateV2Store, validatePending, validateInheritedOwnership, defaultState, readState, assertOwnershipInventory, invalidateContextProofs, migrateTargetState, packedCapacity, capacityPreflight,
+module.exports = { V2, MARKER, MAX_RECEIPTS, validateV2Store, validatePending, validateFileRecord, assertRecoveryEligible, validateInheritedOwnership, defaultState, readState, assertOwnershipInventory, invalidateContextProofs, migrateTargetState, packedCapacity, capacityPreflight,
   createLifecycleStorage, assertReadableProtectionStore, assertMutationAllowed, assertPolicyWriteAllowed, guardSnapshot, markerPath, validateCommandCapability, isPhaseCapability: cap => !!capabilityRecord(cap)?.active,
-  phaseCapabilityFacts: cap => { const r = capabilityRecord(cap); if (!r || !r.active) return null; return Object.freeze({ phase: r.phase, readOnly: r.readOnly, currentFile: r.currentFile || null, transitionId: r.transitionId, scriptHash: r.scriptHash }); },
+  phaseCapabilityFacts: cap => { const r = capabilityRecord(cap); if (!r || !r.active) return null; return Object.freeze({ phase: r.phase, readOnly: r.readOnly, currentFile: r.currentFile || null, transitionId: r.transitionId, scriptHash: r.scriptHash, commandId:r.commandId || null, readbackRole:r.readbackRole || null }); },
   epoch: options => assertReadableProtectionStore(options).generation };

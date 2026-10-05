@@ -410,11 +410,25 @@ const lifecycle = createLifecycleBridgeAdapter({
   },
   isIdle: ownedSessionId => inflightCommands.size === 0 && pendingCommands.length === 0 &&
     (!activeEditSession || activeEditSession.id === ownedSessionId),
+  isRecoveryIdle: (pending, saved) => {
+    if (inflightCommands.size !== 0 || pendingCommands.length !== 0 || activeEditSession && ![pending.authorization.ownedEditSessionId, saved && saved.ownedSessionId].filter(Boolean).includes(activeEditSession.id)) return false;
+    const current = currentProposalState.current;
+    if (current && ["confirmed", "executing"].includes(current.executionState) && (!saved || current !== saved.record || current.executionId !== saved.run.id)) return false;
+    // Durable original outcome is evidence only; recovery never rewrites that run.
+    const original = planRunRecords.readRecord(LOG_DIR, pending.authorization.runId);
+    const run = original && original.run;
+    return !!(run && run.dryRun === false && run.ok === false && run.finishedAt && Number.isFinite(Date.parse(run.finishedAt)) &&
+      run.provenance && run.provenance.actionId === pending.authorization.actionId && projectLifecycleContract.canonicalPlanHash(run.provenance.payloadHash) === pending.authorization.payloadHash &&
+      original.plan && original.plan.steps && original.plan.steps.length === 1 && original.plan.steps[0].tool === pending.operation &&
+      projectLifecycleContract.hash(original.plan.steps[0].args) === projectLifecycleContract.hash(pending.args) &&
+      !(run.steps || []).some(step => (step.commands || []).some(command => ["pending", "submitted", "inflight"].includes(command.state))));
+  },
   retireContext: async (saved, hints) => {
     const permittedSessionIds = [saved.ownedSessionId, hints.authorization.ownedEditSessionId].filter(Boolean);
     if (activeEditSession && !permittedSessionIds.includes(activeEditSession.id)) projectLifecycleContract.fail("lifecycle_foreign_edit_session");
     if (activeEditSession) {
-      const finished = firstToolPayload(finishEditSession({outcome: "completed", summary: `Lifecycle ${hints.transitionId}`}));
+      const recoveringOriginal = hints.recovery && activeEditSession.id === hints.authorization.ownedEditSessionId;
+      const finished = firstToolPayload(finishEditSession({outcome: recoveringOriginal ? "failed" : "completed", summary: `Lifecycle ${hints.transitionId}${recoveringOriginal ? "; original unknown delivery retained" : ""}`}));
       if (!finished || finished.finished !== true) projectLifecycleContract.fail("lifecycle_session_retirement_failed");
       saved.run.editSessionFinished = finished.session;
       saved.run.safety.editSessionFinished = true;
@@ -1547,7 +1561,7 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
   if (planResult.planValidation.mutatingCount > 0) {
     if (Date.now() - lastPanelSeenAt >= 15000) return null; // Offline planner drafts carry no execution authority.
     const lifecycleStep = lifecycle.planStep(planResult.plan);
-    const projectInfo = lifecycleStep && lifecycleStep.name === "finalize_project_lifecycle"
+    const projectInfo = lifecycleStep && projectLifecycleContract.isLifecycleCompletion(lifecycleStep.name)
       ? projectLifecycleState.normalizeProjectLifecycleState(await lifecycle.readState())
       : firstToolPayload(await callToolLogged("proposal-project-capture", "get_project_info", {}));
     if (!projectInfo || !projectInfo.file) throw m100ProtocolError("project_save_required", "Сохраните целевой проект перед созданием proposal.");
@@ -3475,6 +3489,7 @@ function compactAeCommand(command, now) {
     leaseOwner: command.leaseOwner || null,
     timedOutFrom: command.timedOutFrom || null,
     errorCode: command.errorCode || null,
+    ...(command.lifecycleReadbackRole ? {lifecycleReadbackRole:command.lifecycleReadbackRole} : {}),
     phase: command.phase || null
   };
 }
@@ -3645,6 +3660,7 @@ function enqueueAeCommand(script, timeoutMs) {
     } catch (error) { reject(Object.assign(error, {phase:"before_delivery"})); return; }
     command.lifecycleCapability = lifecycleScope && lifecycleScope.capability || null;
     command.lifecycleRawScript = lifecycleScope && lifecycleScope.rawScript || null;
+    command.lifecycleReadbackRole = lifecycleScope && lifecycle.phaseFacts(lifecycleScope.capability).readbackRole || null;
     command.autonomousGuard = lifecycleScope ? null : autonomousCommandContext.getStore() || null;
     command.planContext = planCommandContext.getStore() || null;
     try { capturePlanCommand(command, null, true); }
@@ -6812,7 +6828,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   const validation = prepared.validation;
   const dryRun = optionalBoolean(options, "dryRun", true);
   const lifecycleStep = validation.ok ? lifecycle.planStep(prepared.plan) : null;
-  const lifecycleFinalize = lifecycleStep && lifecycleStep.name === "finalize_project_lifecycle";
+  const lifecycleCompletion = lifecycleStep && projectLifecycleContract.isLifecycleCompletion(lifecycleStep.name);
   let lifecycleAuthorization = null;
   const confirm = optionalBoolean(options, "confirm", false);
   const allowMutations = optionalBoolean(options, "allowMutations", false);
@@ -6891,7 +6907,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   if (lifecycleStep && !options._m100ActionRecord) {
     run.ok=false; run.errorCode="lifecycle_proposal_required"; run.error="A current server-owned lifecycle proposal is required."; return finishRun();
   }
-  if (lifecycleStep && !lifecycleFinalize && activeEditSessionAtStart) {
+  if (lifecycleStep && !lifecycleCompletion && activeEditSessionAtStart) {
     run.ok=false; run.errorCode="lifecycle_foreign_edit_session"; run.error="Close the existing edit session before this lifecycle run."; return finishRun();
   }
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
@@ -7067,7 +7083,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       if (lifecycleStep && !dryRun) projectSave.verifyDryRunReceipt(options._m100ActionRecord, validation.steps.length, AUTONOMY_CONTRACT_VERSION);
       const lifecyclePreflight = lifecycleStep ? await lifecycle.preflight(prepared.plan, options._m100ActionRecord, dryRun) : null;
       if (lifecyclePreflight) run.lifecyclePreflight = lifecyclePreflight;
-      const projectResult = lifecycleFinalize ? {file:lifecyclePreflight.projectFile} : firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
+      const projectResult = lifecycleCompletion ? {file:lifecyclePreflight.projectFile} : firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
       currentProposalState.assertCurrent(options._m100ActionRecord);
       currentProposalState.bindProject(options._m100ActionRecord, projectResult && projectResult.file);
       run.project = {...options._m100ActionRecord.project};
@@ -7081,7 +7097,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
     catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
   }
-  if (!dryRun && validation.mutatingCount > 0 && !lifecycleFinalize) {
+  if (!dryRun && validation.mutatingCount > 0 && !lifecycleCompletion) {
     if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
       require("./proposal-state").normalizeProject(options._m100ActionRecord && options._m100ActionRecord.project.expectedFile)) {
       run.ok = false; run.errorCode = "edit_session_project_mismatch";
@@ -7162,7 +7178,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       return finishRun();
     }
   }
-  if (mutatingExecution && !lifecycleFinalize && !activeEditSessionAtStart && !checkpointStepPresent) {
+  if (mutatingExecution && !lifecycleCompletion && !activeEditSessionAtStart && !checkpointStepPresent) {
     if (!autoEditSession) {
       run.ok = false;
       run.error = "autoEditSession:true is required to run a mutating plan without an existing edit session or checkpoint step.";
@@ -7191,18 +7207,18 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
 
   if (lifecycleStep && !dryRun) {
     try {
-      const pending = lifecycleFinalize ? lifecycle.storage.load().pendingLifecycle : null;
-      const ownedSessionId = lifecycleFinalize ? pending && pending.authorization.ownedEditSessionId : run.safety.protection === "auto_edit_session" && activeEditSession && activeEditSession.id;
+      const pending = lifecycleCompletion ? lifecycle.storage.load().pendingLifecycle : null;
+      const ownedSessionId = lifecycleCompletion ? pending && pending.authorization.ownedEditSessionId : run.safety.protection === "auto_edit_session" && activeEditSession && activeEditSession.id;
       if (activeEditSession && activeEditSession.id !== ownedSessionId) projectLifecycleContract.fail("lifecycle_foreign_edit_session");
       lifecycleAuthorization = lifecycle.issueContext({record:options._m100ActionRecord, run, plan:prepared.plan, ownedSessionId,
         manual:!autonomous && confirm && !allowWithoutCheckpoint && options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface === "cep-panel"});
-      if (lifecycleFinalize) run.safety.protection = "persisted_lifecycle_final_proof";
+      if (lifecycleCompletion) run.safety.protection = lifecycleStep.name === "recover_project_lifecycle" ? "persisted_published_lifecycle_chain" : "persisted_lifecycle_final_proof";
     } catch (error) { run.ok=false; run.errorCode=error.code || "lifecycle_manual_authorization_required"; run.error=error.message; return finishRun(); }
   }
   const executedSteps = [];
   let solutionPreflightChecked = false;
   const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
-  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession || Boolean(lifecycleFinalize && lifecycleAuthorization);
+  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession || Boolean(lifecycleCompletion && lifecycleAuthorization);
   const steps = validation.steps;
   for (const step of steps) {
     const item = {
@@ -7286,7 +7302,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       continue;
     }
 
-    if (step.mutatesProject && !lifecycleFinalize) {
+    if (step.mutatesProject && !lifecycleCompletion) {
       const freshAuthority = autonomousSession.authorization();
       if (autonomous && (!freshAuthority || freshAuthority.sessionHash !== autonomous.sessionHash)) {
         item.status = "blocked"; item.reason = "Автономная сессия истекла или отозвана.";
@@ -12532,7 +12548,8 @@ const tools = [
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
   ...projectSave.createToolDefinitions(),
   ...projectLifecycleContract.toolDefinitions,
-  projectLifecyclePlan.tool
+  projectLifecyclePlan.tool,
+  projectLifecyclePlan.recoveryTool
 ];
 
 tools.push({name:"get_property_value",description:"Read one exact property by stable comp/layer IDs and composite propertyPath; optional time includes the exact key sample. No mutation.",inputSchema:{type:"object",additionalProperties:false,properties:{compItemId:{type:"integer",minimum:1},layerId:{type:"integer",minimum:1},propertyPath:{type:"array",minItems:1,maxItems:12,items:{type:["string","number","object"]}},time:{type:"number"}},required:["compItemId","layerId","propertyPath"]}});
@@ -12584,10 +12601,15 @@ async function callTool(name, args, executionContext) {
     try { return toolResult(await lifecycle.build(args)); }
     catch (error) { return toolResult({ok:false, code:error.code || "lifecycle_builder_failed", error:error.message}, true); }
   }
+  if (name === projectLifecyclePlan.recoveryTool.name) {
+    try { return toolResult(await lifecycle.buildRecovery(args)); }
+    catch (error) { return toolResult({ok:false, code:error.code || "lifecycle_recovery_builder_failed", error:error.message}, true); }
+  }
   if (projectLifecycleContract.isLifecycleTool(name)) {
     try {
       const receipt = await lifecycle.execute(name, args, executionContext && executionContext.lifecycleAuthorization);
-      return toolResult(name === "reconcile_project_lifecycle" ? receipt : {ok:true, lifecycleReceipt:receipt});
+      return toolResult(name === "reconcile_project_lifecycle" ? receipt : {ok:true, lifecycleReceipt:receipt,
+        ...(name === "recover_project_lifecycle" ? {recoveryReadbacks:lifecycle.recoveryReadbacks(receipt)} : {})});
     } catch (error) { return toolResult({ok:false, code:error.code || "lifecycle_failed", error:error.message}, true); }
   }
   if(name==="get_montage_root_render_state"){
@@ -13678,6 +13700,11 @@ async function callTool(name, args, executionContext) {
       solutionDiscovery.knownSolution(args.solutionId, tools);
       if (args.solutionId === "guarded-project-lifecycle") {
         const built = await lifecycle.build(args.inputs);
+        const prepared = validateAgentPlanWithRepair(built.plan, null, {}, {repairPlan:false});
+        return toolResult({...built, ok:prepared.validation.ok, validation:prepared.validation}, !prepared.validation.ok);
+      }
+      if (args.solutionId === "published-save-as-state-only-recovery") {
+        const built = await lifecycle.buildRecovery(args.inputs);
         const prepared = validateAgentPlanWithRepair(built.plan, null, {}, {repairPlan:false});
         return toolResult({...built, ok:prepared.validation.ok, validation:prepared.validation}, !prepared.validation.ok);
       }
@@ -22114,7 +22141,7 @@ async function callToolLogged(source, name, args, executionContext) {
     const lifecycleMutation = projectLifecycleContract.isLifecycleMutation(name);
     if (lifecycleMutation) lifecycle.assertManualContext(executionContext && executionContext.lifecycleAuthorization);
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
-      if (!(lifecycleMutation && name === "finalize_project_lifecycle")) lifecycle.assertMutationAllowed();
+      if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
     idContext = name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 

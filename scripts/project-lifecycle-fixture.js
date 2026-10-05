@@ -45,8 +45,9 @@ var app={project:new Project(__source,false),newProject:function(){this.project=
     },
     retireContext: async () => { if (options.retireFailure) throw new Error("fixture retirement failure"); return { sessionClosed: true, proposalRetired: true, cachesInvalidated: true, desiredEnabledPreserved: true }; },
     readNative: async (script, cap) => {
-      t.validateCommandCapability(cap, { rawScript: script }); const facts = t.phaseCapabilityFacts(cap);
-      calls.push({ phase: facts.phase, readOnly: facts.readOnly, script, cap });
+      const existing=t.phaseCapabilityFacts(cap);
+      t.validateCommandCapability(cap, { rawScript: script, commandId:existing && existing.commandId || crypto.randomUUID() }); const facts = t.phaseCapabilityFacts(cap);
+      calls.push({ phase: facts.phase, readOnly: facts.readOnly, script, cap, commandId:facts.commandId, readbackRole:facts.readbackRole });
       if (callback) await callback({ when: "before", script, facts, runtime, calls, storage, service });
       const result = vm.runInContext("(function(){" + script + "})()", runtime);
       if (callback) await callback({ when: "after", result, script, facts, runtime, calls, storage, service });

@@ -7,6 +7,20 @@ const tool = Object.freeze({
   inputSchema:{type:"object",additionalProperties:false,required:["operation","targetProjectFile","checkpointLabel"],
     properties:{operation:{type:"string",enum:NAMES},targetProjectFile:{type:"string"},checkpointLabel:{type:"string",minLength:1,maxLength:160}}}
 });
+const recoveryTool = Object.freeze({name:"build_project_lifecycle_recovery_plan",
+  description:"Read-only full assessment of an already published Save As after unknown final-open delivery. Builds one fresh manual state-only recovery step; never replays Save/Open/New.",
+  inputSchema:{type:"object",additionalProperties:false,required:["transitionId"],properties:{transitionId:{type:"string",format:"uuid"}}}});
+function validateRecoveryBuilderInput(input) { return require("./project-lifecycle-contract").validateInput("recover_project_lifecycle",input); }
+function buildProjectLifecycleRecoveryPlan(input, assessment) {
+  const args=validateRecoveryBuilderInput(input),c=require("./project-lifecycle-contract");
+  if (!assessment || assessment.pins?.transitionId!==args.transitionId || !assessment.inventory || !assessment.pending) invalid("lifecycle_recovery_assessment_required");
+  const native=c.nativeTuple(assessment.inventory.native);
+  if (native.dirty || !c.samePath(native.file,assessment.pending.args.targetProjectFile)) invalid("lifecycle_recovery_final_not_open");
+  return {ok:true,previewOnly:true,projectMutations:0,nativeMutations:0,reviewedRecoveryScopeRequired:true,
+    disclosure:"Записать final/policy proof уже открытой опубликованной копии и закрыть pending barrier. Исходный Save As остаётся failed/unknown-delivery. Undo и несохранённая память не восстанавливаются; source не открывается, stage/partial файлы не удаляются; artistic acceptance не устанавливается. Требуются проверенный точный recovery scope и новое manual CEP подтверждение после exact dry-run; ранее данное разрешение на этот scope сохраняется.",
+    assessment:{transitionId:args.transitionId,pins:assessment.pins,finalNative:native,sourceFile:assessment.pending.sourceBefore.path,targetFile:assessment.pending.targetFile.path},
+    plan:{summary:`Подтвердить опубликованную копию: ${path.basename(native.file)}.`,risk:"high",targetProject:{file:native.file},steps:[{tool:"recover_project_lifecycle",args}]}};
+}
 function invalid(code) { throw Object.assign(new Error(code),{code}); }
 function validateBuilderInput(input) {
   if (!input || typeof input !== "object" || Array.isArray(input) ||
@@ -40,4 +54,4 @@ function buildProjectLifecyclePlan(input, observation, validateLifecycleInput) {
     plan:{summary:`${captions[input.operation]}: ${path.basename(input.targetProjectFile)}.`,risk:"high",
       targetProject:{file:native.file},steps:[{tool:input.operation,args}]}};
 }
-module.exports={tool,NAMES,validateBuilderInput,buildProjectLifecyclePlan};
+module.exports={tool,recoveryTool,NAMES,validateBuilderInput,buildProjectLifecyclePlan,validateRecoveryBuilderInput,buildProjectLifecycleRecoveryPlan};

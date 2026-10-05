@@ -82,6 +82,51 @@ Target state + terminal receipt + cleared pending + generation фиксирую�
 Error после possible delivery сохраняет pending/unknown; undelivered not_started только по authoritative lifecycle evidence.
 Read-only reconciliation не разрешает replay или auto-commit. Fresh manual finalize допускает только already proven final state; остальные partial/unknown требуют отдельного explicit recovery scope, без reset-lock кнопки.
 
+## State-only recovery опубликованного Save As
+
+`recover_project_lifecycle` и read-only builder
+`build_project_lifecycle_recovery_plan` принимают ровно `{transitionId:UUID}`.
+V1 поддерживает только existing Save As `unknown/open_final_submitted` с полным
+stage/publish/checkpoint chain. Existing finalize predicate остаётся прежним.
+Новый plan привязан к actual final, исходные source tuple/authorization/input hash
+сохраняются. Recovery mutating только по server state; native mutations равны нулю.
+Новый reviewed exact scope использует уже данное разрешение пользователя; technical
+gates требуют новое proposal, actual successful dry-run и fresh manual CEP run.
+Direct/admin/autonomous, client proof/force, raw и replay запрещены.
+
+Общий server assessor заново валидирует полный persisted chain и Save As migration,
+source/stage/final settings/items/layers/assets/proxies/protected/ownership, четыре
+canonical fd-consistent disk записи (source/checkpoint/stage/target) и policy pins.
+File pin projection включает path/SHA/bytes/device/inode, исключая observedAt.
+Bracket до/после native read фиксирует отсутствие drift. Original run должен быть
+durably finished failed; queue/submitted writers и foreign session отсутствуют.
+Синхронный admission lease блокирует конкурирующее recovery и не выдаёт native
+mutation capability. Поддерживается один controller на canonical store; fd/CAS и
+post-await read не заявляют непрерывной cross-process/AE атомарной изоляции.
+
+До первого store write проверяется capacity full pending/proof/target/audit/receipt.
+Guarded update записывает fresh target inventory/final proof, optional validated
+`recovery` и `recoveryAuthorization`, сохраняя original authorization и records.
+Recovery origin хранит исходные phase/status/error/delivery/action/run/pending hash;
+completionMethod — `state_only_final_readback`. После exact owned context retirement
+следует полная повторная проверка; targetState/receipt/generation/pending=null
+фиксируются атомарно, затем receipt/store projection и final читаются независимо.
+Новая terminal receipt содержит `recoveredBy` с hash именно recover tool; старый
+run и его transport outcome не переписываются. Original owned session закрывается
+как failed. Verification требует current recovery authority и completed native
+readback commands нового run, запрещает mutation commands и artistic acceptance.
+Sibling tool-result `recoveryReadbacks` содержит exact distinct server command IDs
+для post-retirement и post-commit; private capability dispatcher фиксирует их роли
+в ledger. Verifier связывает оба IDs с completed/ok same-run final tuple/inventory.
+Timestamps не задают порядок. Эти witnesses не требуют второго store commit.
+
+До proof write failure не меняет original pending. После write доказанный origin
+и barrier остаются; strict finalize допускается только с настоящим persisted proof
+и новой manual authority. Crash/unknown store outcome сначала сверяется без replay.
+Store version не повышается: новые optional fields сохраняют чтение старого pending
+новой версией. Старый строгий reader может отказать после recovery; rollback требует
+совместимого reader либо отдельно проверенной миграции, никогда удаления pending.
+
 ## Core interfaces для root bridge adapter
 contract: toolDefinitions, isLifecycleTool, validateInput, nativeInventoryScript, phaseScript, verifyReceipt.
 transition: V2 validation, source/target restriction migration, capacity estimate, guarded store adapter,

@@ -14,6 +14,7 @@ function createProjectLifecycleService(dependencies) {
   c.object(dependencies, "lifecycle_invalid_dependencies"); const deps = dependencies;
   for (const method of ["readNative", "sourceCheckpoint", "verifyManualAuthorization", "retireContext", "assertIdle"]) if (typeof deps[method] !== "function") c.fail("lifecycle_invalid_dependencies", method);
   const storage = deps.storage || t.createLifecycleStorage(deps.storageOptions || {}), io = { ...fs, ...(deps.filesystem || {}) };
+  const completionReadbacks = new WeakMap();
   function canonical(file, present) {
     c.projectPath(file); const parent = io.realpathSync(path.dirname(file)); if (!c.samePath(parent, path.dirname(file))) c.fail("lifecycle_ambiguous_parent");
     if (present) { if (!c.samePath(io.realpathSync(file), file) || io.lstatSync(file).isSymbolicLink()) c.fail("lifecycle_ambiguous_file"); }
@@ -43,8 +44,16 @@ function createProjectLifecycleService(dependencies) {
     if (value.ownedEditSessionId !== undefined && (typeof value.ownedEditSessionId !== "string" || !value.ownedEditSessionId || value.ownedEditSessionId.length > 240)) c.fail("lifecycle_manual_authorization_required");
     return Object.freeze({ actionId: value.actionId, runId: value.runId, payloadHash: value.payloadHash, inputHash, sourcePolicyHash: value.sourcePolicyHash, targetPolicyHash: value.targetPolicyHash, ...(value.ownedEditSessionId ? { ownedEditSessionId: value.ownedEditSessionId } : {}) });
   }
-  async function observe(transitionId, accepted, expectedNative) {
-    return storage.withReadCapability(transitionId, { ...(expectedNative ? { expectedNative } : {}), accepted }, async (script, cap) => c.validateInventory(await deps.readNative(script, cap), accepted));
+  async function observe(transitionId, accepted, expectedNative, witness, readbackRole) {
+    return storage.withReadCapability(transitionId, { ...(expectedNative ? { expectedNative } : {}), accepted }, async (script, cap) => {
+      const inventory = c.validateInventory(await deps.readNative(script, cap), accepted);
+      if (witness) {
+        const facts = t.phaseCapabilityFacts(cap);
+        if (!facts || !c.UUID.test(facts.commandId || "") || facts.readbackRole !== readbackRole) c.fail("lifecycle_recovery_command_witness_missing");
+        witness.commandId = facts.commandId; witness.readbackRole = facts.readbackRole;
+      }
+      return inventory;
+    }, readbackRole);
   }
   async function checkpoint(context, pending) {
     const before = pending.sourceBefore, label = pending.args.checkpointLabel;
@@ -54,6 +63,37 @@ function createProjectLifecycleService(dependencies) {
     return { ...copy, checkpointFile: copy.path, sourceFile: before.path, label, snapshotScope: "on_disk_before_lifecycle" };
   }
   function ensureSource(p) { const actual = verifyRecord(p.sourceBefore); requirePolicyPins(p); return actual; }
+  function recoveryFiles(p) {
+    requirePolicyPins(p);
+    const files = {source:verifyRecord(p.sourceBefore), checkpoint:verifyRecord(p.checkpoint), stage:verifyRecord(p.stageFile), target:verifyRecord(p.targetFile)};
+    for (const value of Object.values(files)) if (value.bytes < 1 || value.fileIdentity.device === "0") c.fail("lifecycle_recovery_file_identity_unknown");
+    const records = Object.values(files);
+    for (let i = 0; i < records.length; i++) for (let j = i + 1; j < records.length; j++) if (sameIdentity(records[i].fileIdentity, records[j].fileIdentity)) c.fail("lifecycle_recovery_file_alias");
+    return files;
+  }
+  function fileProjection(files) {
+    return Object.fromEntries(Object.entries(files).map(([key, value]) => [key, {path:c.normalizePath(value.path), sha256:value.sha256, bytes:value.bytes, fileIdentity:value.fileIdentity}]));
+  }
+  // Server-owned full assessment. Reconcile summaries and client observations are never inputs.
+  async function assessRecovery(rawArgs, options = {}) {
+    storage.assertRecoveryReadable();
+    const args = c.validateInput("recover_project_lifecycle", rawArgs), projection = storage.pendingProjection(), before = storage.load(), p = before.pendingLifecycle;
+    if (!projection.enabled || projection.problem || !p || p.transitionId !== args.transitionId || before.schema !== t.V2 || p.baseGeneration !== before.lifecycleGeneration) c.fail("lifecycle_recovery_ineligible");
+    t.assertRecoveryEligible(p, options.proven === true);
+    if (typeof deps.assertRecoveryIdle !== "function" || deps.assertRecoveryIdle(c.clone(p), options.context) !== true) c.fail("lifecycle_recovery_not_idle");
+    const beforeHash = c.hash(before), files = recoveryFiles(p);
+    const inventory = await observe(p.transitionId, p.targetState.acceptedPlaceholders, options.expectedNative || (options.proven ? p.proof.finalNative : undefined), options.witness, options.readbackRole);
+    if (!c.samePath(inventory.native.file, p.args.targetProjectFile) || inventory.native.dirty !== false) c.fail("lifecycle_recovery_final_not_open");
+    c.assertInventoryMatch(p.sourceInventory, inventory); c.assertInventoryMatch(p.stageInventory, inventory); t.assertOwnershipInventory(p.sourceState, inventory); t.assertOwnershipInventory(p.targetState, inventory);
+    if (options.proven) c.assertInventoryMatch(p.targetInventory, inventory);
+    const filesAfter = recoveryFiles(p), after = storage.load(); storage.assertRecoveryReadable();
+    if (beforeHash !== c.hash(after) || c.hash(fileProjection(files)) !== c.hash(fileProjection(filesAfter)) || deps.assertRecoveryIdle(c.clone(p), options.context) !== true) c.fail("lifecycle_recovery_observation_changed");
+    t.capacityPreflight(before, p, p.targetState);
+    const pins = {mode:"published_save_as_state_only.v1", tool:"recover_project_lifecycle", inputHash:c.hash({name:"recover_project_lifecycle", args}), transitionId:p.transitionId,
+      pendingHash:c.hash(p), baseGeneration:p.baseGeneration, sourcePolicyHash:p.sourcePolicyHash, targetPolicyHash:p.targetPolicyHash,
+      targetStateHash:c.hash(p.targetState), nativeHash:c.hash(inventory.native), inventoryHash:c.inventoryHash(inventory), filePinsHash:c.hash(fileProjection(filesAfter))};
+    return {pending:c.clone(p), inventory, files:filesAfter, pins:Object.freeze(pins)};
+  }
   function reserveStage(p) {
     canonical(p.stageProjectFile, false); let fd;
     try { fd = io.openSync(p.stageProjectFile, "wx"); io.fsyncSync(fd); } finally { if (fd !== undefined) io.closeSync(fd); }
@@ -84,23 +124,38 @@ function createProjectLifecycleService(dependencies) {
       sourceBefore: p.sourceBefore, sourceAfter: proof.sourceAfter, targetFile: proof.targetFile, stageFile: p.stageFile || null,
       checkpoint: p.checkpoint, sourceInventoryHash: c.inventoryHash(p.sourceInventory), stageInventoryHash: p.stageInventory ? c.inventoryHash(p.stageInventory) : null,
       targetInventoryHash: c.inventoryHash(p.targetInventory), finalNative: p.targetInventory.native, targetEmpty: p.operation === "create_named_project" && p.targetInventory.items.length === 0,
-      authorization: p.authorization, ...(p.finalizationAuthorization ? { finalizedBy: p.finalizationAuthorization } : {}), contextRetired: true, artisticAccepted: false, sourceCheckpointRestoresUnsavedMemory: false, undoContextChanged: true };
+      authorization: p.authorization, ...(p.finalizationAuthorization ? { finalizedBy: p.finalizationAuthorization } : {}), ...(p.recovery ? {recovery:p.recovery, recoveredBy:p.recoveryAuthorization} : {}), contextRetired: true, artisticAccepted: false, sourceCheckpointRestoresUnsavedMemory: false, undoContextChanged: true };
     c.verifyReceipt(receipt); return receipt;
   }
   async function retireAndCommit(context, lease, pending) {
     ensureSource(pending); verifyRecord(pending.proof.targetFile);
-    const retirement = await deps.retireContext(context, Object.freeze({ transitionId: pending.transitionId, authorization: Object.freeze(c.clone(pending.authorization)), ...(pending.finalizationAuthorization ? { finalizationAuthorization: Object.freeze(c.clone(pending.finalizationAuthorization)) } : {}), sourceProjectFile: pending.args.expectedSourceProjectFile,
+    const retirement = await deps.retireContext(context, Object.freeze({ transitionId: pending.transitionId, authorization: Object.freeze(c.clone(pending.authorization)), ...(pending.finalizationAuthorization ? { finalizationAuthorization: Object.freeze(c.clone(pending.finalizationAuthorization)) } : {}), ...(pending.recovery ? {recovery:c.clone(pending.recovery), recoveryAuthorization:c.clone(pending.recoveryAuthorization)} : {}), sourceProjectFile: pending.args.expectedSourceProjectFile,
       targetProjectFile: pending.args.targetProjectFile, generation: pending.baseGeneration + 1 }));
     if (!retirement || ["sessionClosed", "proposalRetired", "cachesInvalidated", "desiredEnabledPreserved"].some(k => retirement[k] !== true)) c.fail("lifecycle_context_retirement_unproven");
     // Manual AE edits are outside the queue lock. Recheck after asynchronous retirement.
-    const finalCurrent = await observe(pending.transitionId, pending.targetState.acceptedPlaceholders, pending.proof.finalNative);
+    const postRetirement = {}, postCommit = {};
+    const finalCurrent = pending.recovery ? (await assessRecovery({transitionId:pending.transitionId}, {proven:true, expectedNative:pending.proof.finalNative, context, witness:postRetirement, readbackRole:"recovery_post_retirement"})).inventory : await observe(pending.transitionId, pending.targetState.acceptedPlaceholders, pending.proof.finalNative);
     c.assertInventoryMatch(pending.targetInventory, finalCurrent); ensureSource(pending); verifyRecord(pending.proof.targetFile); if (pending.stageFile) verifyRecord(pending.stageFile);
     pending = mutatePending(lease, pending, { phase: "context_retired", retirement: { sessionClosed: true, proposalRetired: true, cachesInvalidated: true, desiredEnabledPreserved: true } });
-    const receipt = makeReceipt(pending, pending.baseGeneration + 1); storage.commit(lease, pending.transitionId, receipt); return receipt;
+    const receipt = makeReceipt(pending, pending.baseGeneration + 1); storage.commit(lease, pending.transitionId, receipt);
+    if (pending.recovery) {
+      const terminal = storage.load();
+      if (terminal.pendingLifecycle !== null || terminal.lifecycleGeneration !== receipt.generation || c.hash(terminal.lifecycleReceipts.at(-1)) !== c.hash(receipt) || c.hash(currentState(terminal, pending.args.expectedSourceProjectFile)) !== pending.sourcePolicyHash || c.hash(currentState(terminal, pending.args.targetProjectFile)) !== c.hash(pending.targetState)) c.fail("lifecycle_recovery_terminal_unproven");
+      const final = await observe(null, pending.targetState.acceptedPlaceholders, pending.proof.finalNative, postCommit, "recovery_post_commit"); c.assertInventoryMatch(pending.targetInventory, final);
+      for (const record of [pending.sourceBefore, pending.checkpoint, pending.stageFile, pending.targetFile]) verifyRecord(record);
+      if (c.hash(storage.load()) !== c.hash(terminal)) c.fail("lifecycle_recovery_terminal_changed");
+      if (postRetirement.commandId === postCommit.commandId) c.fail("lifecycle_recovery_command_witness_missing");
+      // Ephemeral execution witnesses are sibling tool-result evidence, never a
+      // second authoritative store write or a replacement for the saved receipt.
+      completionReadbacks.set(receipt, Object.freeze({schema:c.VERSION + ".recovery-readbacks.v1", transitionId:pending.transitionId,
+        runId:(pending.finalizationAuthorization || pending.recoveryAuthorization).runId, postRetirement:Object.freeze(postRetirement), postCommit:Object.freeze(postCommit)}));
+    }
+    return receipt;
   }
   async function execute(name, rawArgs, context) {
     const args = c.validateInput(name, rawArgs); if (name === "reconcile_project_lifecycle") return reconcile(args);
     if (name === "finalize_project_lifecycle") return finalize(args, context);
+    if (name === "recover_project_lifecycle") return recover(args, context);
     // Barrier precedes any cached/idempotent response. This service never returns legacy cache hits.
     storage.assertMutationAllowed(); const beforeStore = storage.load(), sourceState = currentState(beforeStore, args.expectedSourceProjectFile), targetStateBefore = beforeStore.projectState[memory.projectStateKey(args.targetProjectFile)] || null;
     const sourcePolicyHash = c.hash(sourceState), targetPolicyHash = c.hash(targetStateBefore);
@@ -168,6 +223,7 @@ function createProjectLifecycleService(dependencies) {
     const args = c.validateInput("finalize_project_lifecycle", rawArgs), store = storage.load(); let pending = store.pendingLifecycle;
     if (!pending || pending.transitionId !== args.transitionId || !pending.proof || !["final_proven", "context_retired"].includes(pending.phase)) c.fail("lifecycle_finalize_requires_persisted_final_proof");
     const authorization = await manual(context, "finalize_project_lifecycle", args, { sourcePolicyHash: pending.sourcePolicyHash, targetPolicyHash: pending.targetPolicyHash, pending: c.clone(pending), expectedNative: pending.proof.finalNative });
+    if (pending.recovery && [pending.authorization, pending.recoveryAuthorization].some(a => a.actionId === authorization.actionId || a.runId === authorization.runId)) c.fail("lifecycle_recovery_authority_reused");
     const lease = storage.acquireFinalizeAdmission(authorization, args.transitionId, () => deps.assertIdle(context) === true);
     try {
       pending = storage.update(lease, pending.transitionId, current => { current.finalizationAuthorization = c.clone(authorization); });
@@ -180,6 +236,30 @@ function createProjectLifecycleService(dependencies) {
     } catch (error) { try { storage.update(lease, pending.transitionId, current => { current.status = "unknown"; current.errorCode = String(error.code || "lifecycle_finalize_failed").slice(0, 120); }); } catch (_) {} throw error; }
     finally { storage.releaseAdmission(lease); }
   }
-  return { execute, reconcile, finalize, storage, readFileRecord: readFile };
+  async function recover(rawArgs, context) {
+    const args = c.validateInput("recover_project_lifecycle", rawArgs), assessed = await assessRecovery(args, {context});
+    const original = assessed.pending;
+    const authorization = await manual(context, "recover_project_lifecycle", args, {sourcePolicyHash:original.sourcePolicyHash, targetPolicyHash:original.targetPolicyHash, expectedNative:assessed.inventory.native, recoveryPins:assessed.pins});
+    if (authorization.actionId === original.authorization.actionId || authorization.runId === original.authorization.runId || (storage.load().lifecycleReceipts || []).some(r => [r.authorization, r.finalizedBy, r.recoveredBy].filter(Boolean).some(a => a.actionId === authorization.actionId || a.runId === authorization.runId))) c.fail("lifecycle_recovery_authority_reused");
+    const lease = storage.acquireRecoveryAdmission(authorization, args.transitionId, assessed.pins.pendingHash, () => deps.assertIdle(context) === true && deps.assertRecoveryIdle(c.clone(original), context) === true);
+    let pending = original, proofWritten = false;
+    try {
+      const fresh = await assessRecovery(args, {context, expectedNative:assessed.inventory.native});
+      if (c.hash(fresh.pins) !== c.hash(assessed.pins)) c.fail("lifecycle_dry_run_pins_changed");
+      const provenAt = new Date().toISOString(), recovery = {schema:c.VERSION + ".recovery.v1", completionMethod:"state_only_final_readback", nativeMutations:0, provenAt, pinsHash:c.hash(fresh.pins),
+        origin:{phase:original.phase, status:original.status, errorCode:original.errorCode, possibleDelivery:original.possibleDelivery, actionId:original.authorization.actionId, runId:original.authorization.runId, pendingHash:fresh.pins.pendingHash}};
+      const fields = {phase:"final_proven", targetInventory:fresh.inventory, proof:{sourceAfter:fresh.files.source, targetFile:fresh.files.target, targetInventoryHash:c.inventoryHash(fresh.inventory), finalNative:fresh.inventory.native, provenAt}, recovery, recoveryAuthorization:authorization};
+      const candidate = {...c.clone(pending), ...c.clone(fields)};
+      t.validatePending(candidate); t.capacityPreflight(storage.load(), candidate, candidate.targetState, makeReceipt(candidate, candidate.baseGeneration + 1));
+      pending = mutatePending(lease, pending, fields); proofWritten = true;
+      return await retireAndCommit(context, lease, pending);
+    } catch (error) {
+      // Before first proof write the original unknown pending is byte-for-byte intact.
+      if (proofWritten) try { storage.update(lease, pending.transitionId, current => {current.status = "unknown"; current.errorCode = String(error.code || "lifecycle_recovery_failed").slice(0,120);}); } catch (_) {}
+      throw error;
+    } finally { storage.releaseAdmission(lease); }
+  }
+  return { execute, reconcile, finalize, recover, assessRecovery, storage, readFileRecord: readFile,
+    recoveryReadbacks:receipt=>{const result=completionReadbacks.get(receipt);if (!result) c.fail("lifecycle_recovery_command_witness_missing");return c.clone(result);} };
 }
 module.exports = { createProjectLifecycleService, MAX_AEP_BYTES, identity, sameIdentity, recordEqual };

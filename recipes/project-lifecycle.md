@@ -80,9 +80,37 @@ scope.
 `context_retired` proof, можно построить **новое** manual CEP предложение
 `finalize_project_lifecycle({transitionId})` и пройти exact dry-run/подтверждение.
 Finalize фиксирует доказанное состояние в protection store и не запускает
-Save/New/Open. При partial/unknown состоянии требуется отдельный явно заданный
-recovery scope; автоматического rollback, source reopen и удаления stage или
-partial final нет.
+Save/New/Open. При partial/unknown состоянии требуется явно заданный проверяемый
+recovery scope; уже данное разрешение на этот scope повторно не запрашивается.
+Автоматического rollback, source reopen и удаления stage или partial final нет.
+
+Для Save As `unknown/open_final_submitted` после проверенного stage/publish
+доступен отдельный state-only путь. Read-only
+`build_project_lifecycle_recovery_plan({transitionId})` или
+`build_solution_plan({solutionId:"published-save-as-state-only-recovery",inputs:{transitionId}})`
+проверяет полный persisted chain, checkpoint/source/stage/target SHA/bytes/identity,
+policy migration и свежий clean final inventory. При неполном evidence, drift,
+busy original run/queue или другом phase/operation builder отказывает без writes.
+Summary reconcile и совпадение item count не заменяют эту проверку.
+
+Новое предложение содержит единственный `recover_project_lifecycle({transitionId})`;
+`targetProject.file` соответствует открытому final, а original source pins остаются
+историческими. Exact dry-run фиксирует полный pending fingerprint, policy/migration,
+native tuple/inventory и disk pins без transient observedAt. После свежего manual
+CEP подтверждения recovery повторяет проверку под admission barrier, записывает
+proof и immutable origin, завершает owned context, ещё раз проверяет final и
+атомарно фиксирует existing target policy/receipt/generation. Ноль native
+Save/Open/New и filesystem publish/save/copy/cleanup; existing checkpoint и stage
+сохраняются. Original authorization и failed/unknown execution не превращаются в
+успех: `recoveredBy` подтверждает только новый recovery run. Artistic acceptance,
+Undo и unsaved memory не восстанавливаются.
+
+Failure до proof write оставляет original pending; после write barrier и recovery
+origin сохраняются. Только реально persisted recovered proof допускает новый
+strict manual finalize, без replay. Unknown store-write исход сначала сверяется;
+слепой повтор запрещён. Старый строгий reader может не прочитать новые optional
+recovery fields: downgrade после исполнения требует совместимого reader либо
+отдельной reviewed migration.
 
 Поддерживается один production daemon/controller на один store. Изменение
 контекста меняет Undo; старые proposals/caches/context retired. Persistent

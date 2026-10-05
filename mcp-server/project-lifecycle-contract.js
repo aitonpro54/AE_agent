@@ -13,10 +13,12 @@ function canonicalPlanHash(value) {
 }
 const LIMITS = Object.freeze({ items: 1000, layers: 5000, protected: 200, bytes: 1024 * 1024 });
 const SETTINGS = Object.freeze({ bitsPerChannel: "number", workingSpace: "string", linearBlending: "boolean",
-  linearizeWorkingSpace: "boolean", expressionEngine: "string", colorManagementSystem: "string",
+  linearizeWorkingSpace: "boolean", expressionEngine: "string", colorManagementSystem: "number",
   timeDisplayType: "number", framesCountType: "number", feetFramesFilmType: "number",
   framesUseFeetFrames: "boolean" });
-const MUTATIONS = Object.freeze(["save_project_as", "open_project", "create_named_project", "finalize_project_lifecycle"]);
+const COMPLETIONS = Object.freeze(["finalize_project_lifecycle", "recover_project_lifecycle"]);
+const RECOVERY_READBACK_ROLES = Object.freeze(["recovery_post_retirement", "recovery_post_commit"]);
+const MUTATIONS = Object.freeze(["save_project_as", "open_project", "create_named_project", ...COMPLETIONS]);
 const TOOLS = Object.freeze([...MUTATIONS, "reconcile_project_lifecycle"]);
 function fail(code, detail) { const error = new Error(code + (detail ? ": " + detail : "")); error.code = code; throw error; }
 function object(value, code = "lifecycle_invalid_input") {
@@ -44,7 +46,7 @@ function nativeTuple(value) {
 }
 function validateInput(name, args) {
   if (!TOOLS.includes(name)) fail("lifecycle_unknown_tool");
-  if (name === "reconcile_project_lifecycle" || name === "finalize_project_lifecycle") {
+  if (name === "reconcile_project_lifecycle" || COMPLETIONS.includes(name)) {
     exact(args, ["transitionId"]); if (!UUID.test(args.transitionId || "")) fail("lifecycle_invalid_input", "transitionId"); return { transitionId: args.transitionId };
   }
   const keys = ["expectedSourceProjectFile", "expectedSourceSavedSha25664", "expectedSourceRevision", "expectedSourceDirty", "checkpointLabel", "targetProjectFile", ...(name === "open_project" ? ["expectedTargetSavedSha25664"] : [])];
@@ -62,14 +64,14 @@ const commonProperties = { expectedSourceProjectFile: { type: "string" }, expect
   expectedSourceRevision: { type: "integer", minimum: 0 }, expectedSourceDirty: { type: "boolean" }, checkpointLabel: { type: "string", minLength: 1, maxLength: 160 }, targetProjectFile: { type: "string" } };
 const toolDefinitions = Object.freeze(TOOLS.map(name => {
   const properties = name.endsWith("project_lifecycle") ? { transitionId: { type: "string", format: "uuid" } } : { ...commonProperties, ...(name === "open_project" ? { expectedTargetSavedSha25664: { type: "string", pattern: "^[a-f0-9]{64}$" } } : {}) };
-  return Object.freeze({ name, description: name === "reconcile_project_lifecycle" ? "Read lifecycle facts without replay or state writes." : "Protected manual terminal lifecycle operation. Reopening changes undo and active project context; disk checkpoint does not restore unsaved memory.", inputSchema: { type: "object", properties, required: Object.keys(properties), additionalProperties: false } });
+  return Object.freeze({ name, description: name === "reconcile_project_lifecycle" ? "Read lifecycle facts without replay or state writes." : name === "recover_project_lifecycle" ? "Manual state-only completion of a proven published Save As after unknown final-open delivery. Preserves original failed outcome; no Save/Open/New or filesystem publish/cleanup." : "Protected manual terminal lifecycle operation. Reopening changes undo and active project context; disk checkpoint does not restore unsaved memory.", inputSchema: { type: "object", properties, required: Object.keys(properties), additionalProperties: false } });
 }));
 const nativeSupport = `
 function __lcPath(s){s=String(s||"").replace(/\\\\/g,"/").replace(/\\/+$/,"");return /^[A-Za-z]:\\//.test(s)?s.toLowerCase():s;}
 function __lcTuple(){if(!app.project || !app.project.file || typeof app.project.file.fsName!=="string")throw new Error("lifecycle_native_unknown");
  var d=app.project.dirty,r=app.project.revision;if(typeof d!=="boolean" || typeof r!=="number" || !isFinite(r) || Math.floor(r)!==r || r<0 || r>9007199254740991)throw new Error("lifecycle_native_unknown");return {file:app.project.file.fsName,dirty:d,revision:r};}
 function __lcGuard(e){var a=__lcTuple();if(__lcPath(a.file)!==__lcPath(e.file)||a.dirty!==e.dirty||a.revision!==e.revision)throw new Error("lifecycle_native_guard_changed");}
-function __lcNeed(v,t){if(typeof v!==t || (t==="number" && !isFinite(v)))throw new Error("lifecycle_inventory_unknown");return v;}
+function __lcNeed(v,t,label){if(typeof v!==t || (t==="number" && !isFinite(v)))throw new Error("lifecycle_inventory_unknown"+(label?":"+label+":expected_"+t+":actual_"+typeof v:""));return v;}
 function __lcID(v){if(typeof v!=="number"||!isFinite(v)||Math.floor(v)!==v||v<1||v>9007199254740991)throw new Error("lifecycle_inventory_identity_unknown");return v;}
 function __lcFile(f){if(!f)return null;return {path:__lcNeed(f.fsName,"string"),missing:!__lcNeed(f.exists,"boolean")};}
 function __lcSource(s){if(!s)throw new Error("lifecycle_inventory_source_unknown");var kind=typeof FileSource!=="undefined" && s instanceof FileSource?"file":typeof SolidSource!=="undefined" && s instanceof SolidSource?"solid":typeof PlaceholderSource!=="undefined" && s instanceof PlaceholderSource?"placeholder":null;
@@ -81,7 +83,7 @@ function nativeInventoryScript(options = {}) {
   const expected = options.expectedNative ? nativeTuple(options.expectedNative) : null;
   return nativeSupport + (expected ? `__lcGuard(${JSON.stringify(expected)});` : "") + `
 var __lcBefore=__lcTuple(),__lcP=app.project,__lcItems=[],__lcLayers=0,__lcSettings={},__lcTypes=${JSON.stringify(SETTINGS)};
-for(var __lcK in __lcTypes)if(__lcTypes.hasOwnProperty(__lcK))__lcSettings[__lcK]=__lcNeed(__lcP[__lcK],__lcTypes[__lcK]);
+for(var __lcK in __lcTypes)if(__lcTypes.hasOwnProperty(__lcK))__lcSettings[__lcK]=__lcNeed(__lcP[__lcK],__lcTypes[__lcK],"project."+__lcK);
 var __lcCount=__lcNeed(__lcP.numItems,"number");if(Math.floor(__lcCount)!==__lcCount||__lcCount<0||__lcCount>${LIMITS.items})throw new Error("lifecycle_inventory_budget");
 for(var i=1;i<=__lcCount;i++){var item=__lcP.item(i),kind=item instanceof CompItem?"comp":item instanceof FootageItem?"footage":item instanceof FolderItem?"folder":null;
  if(!kind)throw new Error("lifecycle_inventory_unknown_item");var row={id:__lcID(item.id),index:i,kind:kind,name:__lcNeed(item.name,"string"),comment:__lcNeed(item.comment,"string"),parentId:item.parentFolder===__lcP.rootFolder?null:__lcID(item.parentFolder.id)};
@@ -95,7 +97,7 @@ for(var i=1;i<=__lcCount;i++){var item=__lcP.item(i),kind=item instanceof CompIt
 ${accepted.length ? protection.aeSupportScript : ""}
 var __lcAccepted=${JSON.stringify(accepted)},__lcProtected=[];
 for(var n=0;n<__lcAccepted.length;n++){var s=__lcAccepted[n],c=__phFindComp(s.target.compItemId),a=__phFindLayer(c,s.target.layerId),paths=[];for(var p=0;p<s.properties.length;p++)paths.push(s.properties[p].path);__lcProtected.push(__phEvidence(c,a,paths));}
-var __lcAfter=__lcTuple();__lcGuard(__lcBefore);return {schema:"${VERSION}.inventory",native:__lcAfter,complete:true,settings:__lcSettings,items:__lcItems,protectedEvidence:__lcProtected};`;
+var __lcAfter=__lcTuple();__lcGuard(__lcBefore);return {schema:"${VERSION}.inventory","native":__lcAfter,complete:true,settings:__lcSettings,items:__lcItems,protectedEvidence:__lcProtected};`;
 }
 function phaseScript(options) {
   exact(options, ["operation", "phase", "expectedNative", "destinationProjectFile", "accepted"]);
@@ -107,7 +109,7 @@ function phaseScript(options) {
   const guard = nativeSupport + `__lcGuard(${JSON.stringify(expected)});` + (accepted.length ? protection.aeGuardScript(expected.file, accepted) : "");
   const action = options.phase === "save_stage" ? "app.project.save(__lcDestination);" : options.phase === "create_stage" ? 'if(app.project.dirty!==false)throw new Error("lifecycle_clean_source_required");app.newProject();if(!app.project || app.project.numItems!==0)throw new Error("lifecycle_create_not_empty");app.project.save(__lcDestination);'
     : 'if(app.project.dirty!==false)throw new Error("lifecycle_clean_source_required");app.open(__lcDestination);';
-  return guard + `var __lcDestination=new File(${JSON.stringify(destination)});if(__lcDestination.exists!==true)throw new Error("lifecycle_destination_missing");${action}var __lcResult=__lcTuple();if(__lcPath(__lcResult.file)!==__lcPath(${JSON.stringify(destination)})||__lcResult.dirty!==false)throw new Error("lifecycle_phase_readback_mismatch");return {phase:${JSON.stringify(options.phase)},native:__lcResult};`;
+  return guard + `var __lcDestination=new File(${JSON.stringify(destination)});if(__lcDestination.exists!==true)throw new Error("lifecycle_destination_missing");${action}var __lcResult=__lcTuple();if(__lcPath(__lcResult.file)!==__lcPath(${JSON.stringify(destination)})||__lcResult.dirty!==false)throw new Error("lifecycle_phase_readback_mismatch");return {phase:${JSON.stringify(options.phase)},"native":__lcResult};`;
 }
 function validateInventory(raw, accepted = []) {
   let value = raw; for (let i = 0; i < 4 && value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "result"); i++) value = value.result;
@@ -141,7 +143,7 @@ function inventoryHash(value) { return hash(inventoryContent(value)); }
 function assertInventoryMatch(a, b) { if (inventoryHash(a) !== inventoryHash(b)) fail("lifecycle_inventory_mismatch"); }
 function verifyReceipt(receipt) {
   object(receipt, "lifecycle_invalid_receipt");
-  exact(receipt, ["contractVersion", "operation", "success", "transitionId", "generation", "inputHash", "sourceNative", "sourceBefore", "sourceAfter", "targetFile", "stageFile", "checkpoint", "sourceInventoryHash", "stageInventoryHash", "targetInventoryHash", "finalNative", "targetEmpty", "authorization", "finalizedBy", "contextRetired", "artisticAccepted", "sourceCheckpointRestoresUnsavedMemory", "undoContextChanged"], "lifecycle_invalid_receipt");
+  exact(receipt, ["contractVersion", "operation", "success", "transitionId", "generation", "inputHash", "sourceNative", "sourceBefore", "sourceAfter", "targetFile", "stageFile", "checkpoint", "sourceInventoryHash", "stageInventoryHash", "targetInventoryHash", "finalNative", "targetEmpty", "authorization", "finalizedBy", "recoveredBy", "recovery", "contextRetired", "artisticAccepted", "sourceCheckpointRestoresUnsavedMemory", "undoContextChanged"], "lifecycle_invalid_receipt");
   function file(record) {
     exact(record, ["path", "bytes", "sha256", "fileIdentity", "observedAt"], "lifecycle_invalid_receipt"); projectPath(record.path);
     if (!Number.isSafeInteger(record.bytes) || record.bytes < 1 || !SHA.test(record.sha256 || "") || typeof record.observedAt !== "string" || !Number.isFinite(Date.parse(record.observedAt))) fail("lifecycle_invalid_receipt");
@@ -165,7 +167,26 @@ function verifyReceipt(receipt) {
     exact(receipt.finalizedBy, ["actionId", "runId", "payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash", "ownedEditSessionId"], "lifecycle_invalid_receipt");
     if (typeof receipt.finalizedBy.actionId !== "string" || !receipt.finalizedBy.actionId || typeof receipt.finalizedBy.runId !== "string" || !receipt.finalizedBy.runId || ["payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash"].some(k => !SHA.test(receipt.finalizedBy[k] || "")) || receipt.finalizedBy.inputHash !== hash({ name: "finalize_project_lifecycle", args: { transitionId: receipt.transitionId } }) || receipt.finalizedBy.ownedEditSessionId !== undefined && (typeof receipt.finalizedBy.ownedEditSessionId !== "string" || !receipt.finalizedBy.ownedEditSessionId)) fail("lifecycle_invalid_receipt");
   }
+  if (receipt.recovery !== undefined || receipt.recoveredBy !== undefined) {
+    if (receipt.operation !== "save_project_as") fail("lifecycle_invalid_recovery");
+    validateRecovery(receipt.recovery, receipt.authorization);
+    validateCompletionAuthority(receipt.recoveredBy, "recover_project_lifecycle", receipt.transitionId);
+    if (receipt.recoveredBy.actionId === receipt.authorization.actionId || receipt.recoveredBy.runId === receipt.authorization.runId) fail("lifecycle_recovery_authority_reused");
+    if (receipt.finalizedBy && [receipt.authorization, receipt.recoveredBy].some(a => a.actionId === receipt.finalizedBy.actionId || a.runId === receipt.finalizedBy.runId)) fail("lifecycle_recovery_authority_reused");
+  }
   if (receipt.artisticAccepted !== false || receipt.sourceCheckpointRestoresUnsavedMemory !== false || receipt.undoContextChanged !== true) fail("lifecycle_invalid_receipt"); return { valid: true, transitionId: receipt.transitionId, generation: receipt.generation };
 }
-module.exports = { VERSION, UUID, SHA, LIMITS, SETTINGS, MUTATIONS, toolDefinitions, isLifecycleTool: name => TOOLS.includes(name), isLifecycleMutation: name => MUTATIONS.includes(name), validateInput,
+function validateCompletionAuthority(a, name, transitionId) {
+  exact(a, ["actionId", "runId", "payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash", "ownedEditSessionId"], "lifecycle_invalid_recovery_authorization");
+  if (["actionId", "runId"].some(k => typeof a[k] !== "string" || !a[k] || a[k].length > 240) || ["payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash"].some(k => !SHA.test(a[k] || "")) || a.inputHash !== hash({ name, args: { transitionId } }) || a.ownedEditSessionId !== undefined && (typeof a.ownedEditSessionId !== "string" || !a.ownedEditSessionId || a.ownedEditSessionId.length > 240)) fail("lifecycle_invalid_recovery_authorization");
+  return a;
+}
+function validateRecovery(value, authorization) {
+  exact(value, ["schema", "completionMethod", "origin", "provenAt", "pinsHash", "nativeMutations"], "lifecycle_invalid_recovery");
+  exact(value.origin, ["phase", "status", "errorCode", "possibleDelivery", "actionId", "runId", "pendingHash"], "lifecycle_invalid_recovery");
+  const origin = value.origin;
+  if (value.schema !== VERSION + ".recovery.v1" || value.completionMethod !== "state_only_final_readback" || value.nativeMutations !== 0 || !SHA.test(value.pinsHash || "") || typeof value.provenAt !== "string" || !Number.isFinite(Date.parse(value.provenAt)) || origin.phase !== "open_final_submitted" || origin.status !== "unknown" || origin.possibleDelivery !== true || typeof origin.errorCode !== "string" || !origin.errorCode || origin.errorCode.length > 120 || !SHA.test(origin.pendingHash || "") || origin.actionId !== authorization.actionId || origin.runId !== authorization.runId) fail("lifecycle_invalid_recovery");
+  return value;
+}
+module.exports = { VERSION, UUID, SHA, LIMITS, SETTINGS, MUTATIONS, COMPLETIONS, RECOVERY_READBACK_ROLES, toolDefinitions, isLifecycleCompletion: name => COMPLETIONS.includes(name), validateRecovery, validateCompletionAuthority, isLifecycleTool: name => TOOLS.includes(name), isLifecycleMutation: name => MUTATIONS.includes(name), validateInput,
   nativeInventoryScript, phaseScript, validateInventory, inventoryContent, inventoryHash, assertInventoryMatch, nativeTuple, verifyReceipt, canonicalPlanHash, projectPath, samePath, normalizePath, hash, stableJson, clone, fail, object, exact };

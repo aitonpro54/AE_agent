@@ -5122,7 +5122,7 @@ function buildSemanticVerification(plan, run, options = {}) {
     ok: status === "passed",
     summary: buildSummary(status, checks, {...readBackEvidence,count:verifiedReadBackCount}, mutationVerificationCount),
     requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
-    verificationScope: lifecycleReads.length ? "project_lifecycle_native_and_disk_proof" : generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
+    verificationScope: lifecycleReads.length ? (mutatingSteps[0].tool === "recover_project_lifecycle" ? "project_lifecycle_state_only_recovery_proof" : "project_lifecycle_native_and_disk_proof") : generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
     coverageStatus: unverifiedMutationSteps.length || needsReviewChecks ? "incomplete" : "complete",
     acceptance: "not_established",
     readBackCount: verifiedReadBackCount,

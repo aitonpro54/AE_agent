@@ -20,7 +20,7 @@ function createLifecycleBridgeAdapter(deps) {
     const step=lifecycle[0],name=step.tool || step.toolName,args=step.safeArgs || step.args || step.arguments || {};
     c.validateInput(name,args);
     if (Object.values(args).some(v=>typeof v==="string" && /\{\{|\$\{|\bsteps\./.test(v))) c.fail("lifecycle_runtime_bindings_forbidden");
-    if (name!=="finalize_project_lifecycle" && !c.samePath(plan.targetProject && plan.targetProject.file,args.expectedSourceProjectFile)) c.fail("lifecycle_source_plan_mismatch");
+    if (!c.isLifecycleCompletion(name) && !c.samePath(plan.targetProject && plan.targetProject.file,args.expectedSourceProjectFile)) c.fail("lifecycle_source_plan_mismatch");
     return {name,args};
   }
   function assertContext(context) {
@@ -37,6 +37,7 @@ function createLifecycleBridgeAdapter(deps) {
     if (!pins || pins.inputHash!==hints.inputHash || pins.sourcePolicyHash!==hints.sourcePolicyHash || pins.targetPolicyHash!==hints.targetPolicyHash ||
         saved.inputHash!==hints.inputHash || saved.name!==hints.name) c.fail("lifecycle_dry_run_pins_changed");
     if (c.hash(hints.expectedNative)!==pins.nativeHash) c.fail("lifecycle_native_dry_run_changed");
+    if (hints.name === "recover_project_lifecycle" && (!hints.recoveryPins || c.hash(hints.recoveryPins)!==c.hash(pins))) c.fail("lifecycle_dry_run_pins_changed");
     return Object.freeze({channel:"manual_cep",confirmed:true,dryRunVerified:true,actionId:record.actionId,runId:saved.run.id,
       payloadHash:c.canonicalPlanHash(saved.payloadHash),inputHash:hints.inputHash,sourcePolicyHash:pins.sourcePolicyHash,targetPolicyHash:pins.targetPolicyHash,
       ...(saved.ownedSessionId ? {ownedEditSessionId:saved.ownedSessionId} : {})});
@@ -49,6 +50,7 @@ function createLifecycleBridgeAdapter(deps) {
   }
   const service=createProjectLifecycleService({storage,readNative,sourceCheckpoint:deps.sourceCheckpoint,
     verifyManualAuthorization,assertIdle:context=>{const saved=assertContext(context);return deps.isIdle(saved.ownedSessionId)===true;},
+    assertRecoveryIdle:(pending,context)=>{const saved=context && contexts.get(context);return typeof deps.isRecoveryIdle==="function" && deps.isRecoveryIdle(pending,saved)===true;},
     retireContext:async(context,hints)=>{const saved=assertContext(context);return deps.retireContext(saved,hints);}});
   async function preflight(plan,record,dryRun) {
     const step=planStep(plan); if (!step) return null;
@@ -56,6 +58,13 @@ function createLifecycleBridgeAdapter(deps) {
     if (!projection.enabled) c.fail("lifecycle_disabled");
     let sourcePolicyHash,targetPolicyHash,expectedNative,accepted;
     const store=storage.load();
+    if (step.name === "recover_project_lifecycle") {
+      const assessed=await service.assessRecovery(step.args),pins=assessed.pins;
+      if (!c.samePath(plan.targetProject && plan.targetProject.file,assessed.inventory.native.file)) c.fail("lifecycle_source_plan_mismatch");
+      if (dryRun && record) record.lifecycleDryRunPins=pins;
+      if (!dryRun && (!record || !record.lifecycleDryRunPins || c.hash(record.lifecycleDryRunPins)!==c.hash(pins))) c.fail("lifecycle_dry_run_pins_changed");
+      return {ok:true,scope:"published_save_as_state_only_full_proof",projectFile:assessed.inventory.native.file,nativeMutations:0,artisticAccepted:false};
+    }
     if (step.name==="finalize_project_lifecycle") {
       const p=store.pendingLifecycle;
       if (!p || p.transitionId!==step.args.transitionId || !p.proof || !["final_proven","context_retired"].includes(p.phase)) c.fail("lifecycle_finalize_requires_persisted_final_proof");
@@ -118,8 +127,12 @@ function createLifecycleBridgeAdapter(deps) {
     if (before.file!==after.file || before.dirty!==after.dirty || before.revision!==after.revision) c.fail("lifecycle_builder_source_changed");
     return planBuilder.buildProjectLifecyclePlan(input,{native:after,sourceFile,targetFile},c.validateInput);
   }
+  async function buildRecovery(input) {
+    const args=planBuilder.validateRecoveryBuilderInput(input),assessed=await service.assessRecovery(args);
+    return planBuilder.buildProjectLifecycleRecoveryPlan(args,assessed);
+  }
   function readState() { return storage.withStateReadCapability((script,cap)=>readNative(script,cap)); }
-  return {storage,service,planStep,preflight,issueContext,execute,validateCommand,build,
+  return {storage,service,planStep,preflight,issueContext,execute,validateCommand,build,buildRecovery,recoveryReadbacks:service.recoveryReadbacks,
     assertManualContext:assertContext,
     isPhaseCapability:t.isPhaseCapability,phaseFacts:t.phaseCapabilityFacts,
     readState,assertMutationAllowed:()=>storage.assertMutationAllowed(),epoch:()=>storage.epoch(),diagnostics:()=>storage.pendingProjection()};
