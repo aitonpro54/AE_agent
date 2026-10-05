@@ -42,6 +42,8 @@ function selectTools(userPrompt, tools, retrieval) {
 function relevantGuidelines(selected, tools, mutatingNames) {
   const chosen = new Set(selected.map((tool) => tool.name));
   return guidelines.filter((line) => {
+    if (guidelines.isAlwaysIncluded && guidelines.isAlwaysIncluded(line)) return true;
+    if (guidelines.alwaysIncluded && guidelines.alwaysIncluded.has(line)) return true;
     // Match the operation's first sentence, not read-back tools or exclusions later in the rule.
     const firstSentence = line.split(/\.\s/)[0];
     const names = tools.filter((tool) => firstSentence.includes(tool.name)).map((tool) => tool.name);
@@ -101,4 +103,4 @@ function buildPlannerContext({ args = {}, snapshot, solutionHints, memorySection
     truncated: false, maxPromptChars: MAX_PLANNER_CHARS } };
 }
 
-module.exports = { buildPlannerContext, MAX_PLANNER_CHARS, FINAL_POLICY };
+module.exports = { buildPlannerContext, MAX_PLANNER_CHARS, FINAL_POLICY, relevantGuidelines, selectTools };

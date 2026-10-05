@@ -2,11 +2,11 @@
 
 ## Доступность
 
-Lifecycle операция сейчас выключена. Production opt-in `AE_PROJECT_LIFECYCLE_ENABLED=1`
-остаётся выключенным до отдельной live fixture приёмки, а текущий MCP runtime не
-перезапущен с этой capability. Не предлагать выполнение в таком состоянии.
-Первое включение требует уже существующий валидный protection store; runtime не
-создаёт пустую базу автоматически.
+Rollout production opt-in `AE_PROJECT_LIFECYCLE_ENABLED=1` остаётся OFF до отдельной
+fixture scope. Перед lifecycle предложением проверь свежий `get_project_lifecycle_state`:
+`enabled === true`, `blocked === false` и `pending === null`; при disabled, неизвестных
+полях или pending transition остановись. Для работы требуется уже существующий валидный
+protection store; runtime не создаёт пустую базу автоматически.
 
 ## Когда применять
 
@@ -24,12 +24,12 @@ Save/Open/New и финальное открытие меняют Undo и акт
    lifecycle disabled, protection store отсутствует/повреждён или есть pending
    transition, остановиться.
 2. В объекте `lifecycle` проверить `enabled === true`, `blocked === false`,
-   `problem === null` и `pending === null`. Сейчас вызвать напрямую
-   `build_project_lifecycle_plan({operation, targetProjectFile, checkpointLabel})`,
-   где `operation` строго одно из `save_project_as`, `open_project`,
-   `create_named_project`. После завершения текущей daemon integration recipe
-   также будет доступен через `build_solution_plan` с
-   `solutionId: "guarded-project-lifecycle"` и теми же входными полями.
+   `problem === null` и `pending === null`. Сейчас доступны оба пути к одному
+   контракту: `build_solution_plan` с `solutionId: "guarded-project-lifecycle"`
+   и теми же входными полями либо прямой
+   `build_project_lifecycle_plan({operation, targetProjectFile, checkpointLabel})`.
+   `operation` строго одно из `save_project_as`, `open_project`,
+   `create_named_project`.
 3. Builder сам читает свежие native file/dirty/revision, disk SHA-256 source и
    для `open_project` SHA-256 существующего target. Клиентские поля authority,
    native observations, overwrite, raw script и runtime bindings запрещены.

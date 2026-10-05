@@ -2,7 +2,7 @@
 
 Основной перенос — M1–M5 в [плане MCP-first без рендера](../plans/tool-first-execplan.md). Проверен checkout `6e5a9e7`, AE Agent 3.3.0. Все 11 инструментов переноса присутствуют в загруженном каталоге из 170 AE MCP tools. Это подтверждает доступность имён, а не live-приёмку каждой операции.
 
-Сегодня 8 из 9 выбранных smoke-групп прошли; `smoke:solutions` завершился с ошибкой. `check:rules` и `git diff --check` прошли отдельно. В живом AE подтверждены подключение, native чтение проекта, пассивное ожидание и CLI inspect. Live mutation, GUI, reload, save, экспорт PNG и рендер в этом аудите не выполнялись.
+Первичный аудит дал 8/9 smoke PASS и отказ `smoke:solutions`. После исправлений все девять выбранных smoke-групп прошли; шесть изменённых JS прошли `node --check`, rules/diff — PASS. Ошибки исходного прогона сохранены в evidence. В первоначальном live read-only срезе подтверждены подключение, native чтение проекта, пассивное ожидание и CLI inspect. Активация исправленного bridge и финальный live read-back фиксируются ниже отдельно.
 
 ## Список маршрутов и текущий статус
 
@@ -16,7 +16,7 @@
 | Подготовка одного именованного перехода | `build_project_lifecycle_plan`, также `build_solution_plan` для `guarded-project-lifecycle` | Offline PASS; lifecycle opt-in текущего runtime выключен |
 | Save As / Open / New с именованным AEP | `save_project_as`, `open_project`, `create_named_project` внутри защищённого terminal plan | Offline PASS; live переходы намеренно недоступны до отдельной fixture-приёмки |
 | Сверка неизвестного результата перехода и завершение доказанного перехода | `reconcile_project_lifecycle`, `finalize_project_lifecycle` | Offline PASS; live transition отсутствует. Reconcile не разрешает replay; finalize сохраняет manual gate |
-| Диагностика и перезагрузка CEP | `node scripts/cep-panel-cdp-smoke.js inspect` / `reload` с `CEP_PANEL_ENSURE_DAEMON=0` | Сегодня inspect PASS: уникальная AE Agent page, title 3.3.0, Connected/online. Reload уже проверен в предшествующем обновлении панели; сегодня не повторялся. Остался дефект выбора CDP target, F-01 |
+| Диагностика и перезагрузка CEP | `node scripts/cep-panel-cdp-smoke.js inspect` / `reload` с `CEP_PANEL_ENSURE_DAEMON=0` | Исходный inspect PASS. Исправленный selector и actual connector — 16 offline случаев PASS; итоговая live диагностика фиксируется после активации отдельно. GUI reload исключён |
 | Локальная классификация прежних CU-действий | `npm.cmd run report:cu-audit` | Классификатор входит в прошедшую `smoke:tool-first`; новый разбор истории сессий не запускался |
 | Независимая сводка результата задачи | `node scripts/ae-task-completion.js <input.json>` | Offline CLI/actual module PASS: 24 группы, AE/provider calls=0 |
 | Сохранение уже названного проекта | `save_current_named_project` через точный protected/manual flow | `smoke:project-save` PASS offline; текущий проект unnamed, live save не проводился |
@@ -25,21 +25,23 @@
 
 Обычная инспекция comp/layer/property и импорт/замена source/тайминг/transform уже имели typed инструменты до M1–M5. Сегодня выполнен `get_project_info` и выбранные planner/placeholder проверки, а не live-проверка всех setters и импортов. [Разбор прежних CU-сессий](placeholder-workflow-review-2026-09-28.md) отделяет эти существующие маршруты от нового переноса.
 
-## Найденные проблемы
+## Найденные проблемы и исправления
 
 ### F-01 — подтверждённый дефект выбора CEP target
 
-В `scripts/cep-panel-cdp-smoke.js:1555`:
+На исходном baseline в `scripts/cep-panel-cdp-smoke.js:1555`:
 
 ```js
 const page = pages.find((item) => item.url && item.url.indexOf(EXTENSION_ID) >= 0) || pages[0];
 ```
 
-Если AE Agent page отсутствует, helper подключается к первой CDP-странице. При нескольких совпадениях выбирается первое. Для `reload` это может перезагрузить чужую CEP-панель; для `inspect` — дать ложную диагностику и затем спровоцировать ненужный CU fallback. В исправленных инструкциях уже есть внешний preflight уникальной страницы, но сам helper ещё не отказывает безопасно. Требуется точный уникальный target, отсутствие fallback и offline regression для missing/ambiguous/foreign page.
+Исходный helper мог подключиться к чужой или первой из нескольких страниц. Исправлено через `scripts/cep-panel-target.js`: только `type=page`, точный ID непосредственно после первого `CEP/extensions`, ровно один target и пригодный WebSocket URL. Удалён fallback; malformed encoding, вложенная папка чужой extension, worker, URL fragment/credentials и ambiguity не допускают подключения. Реальный `connectToPanel` вызывает selector до socket. Leaf regression: 11 unit, 4 dynamic-loopback integration случая и defect proof — PASS; независимый reviewer повторил counterexamples без сети. Штатный CLI сохранён.
 
 ### F-02 — потеря общих правил в контексте встроенного планировщика
 
-`mcp-server/planner-context.js:42–56` фильтрует guidance по именам выбранных tools в первом предложении каждого правила. Независимая проба использовала production `buildPlannerContext` и фактический каталог 170 tools из существующего isolated fixture. На трёх запросах (замена текста, изменение position, изменение fontSize) selectedTools содержали нужный setter, но не runner/waits; в итоговом prompt отсутствовали оба дополнительных правила: passive waits и MCP-first/CU fallback. Общая typed policy и финальные validation/dry-run/confirmation/checkpoint/read-back gates сохранились. Нужны безусловные общие правила и regression на реальные selected tool sets. Эта проблема относится к встроенному планировщику панели (`buildAePlanPrompt`); текущий Codex dispatcher получает project AGENTS и личные skills отдельно.
+Первичный probe передавал в `buildPlannerContext` весь exposed каталог 170 tools; оба дополнительных правила исчезали. Production wrapper использует 134 planning names и явный Set из 91 mutation. Перепроверка этих настоящих declarations уточнила вывод: старый production filter терял **passive-wait**, а **MCP-first сохранялся**. Прежний вывод об исчезновении обоих правил именно в production был завышен; общий typed/execution gate контекст не терялся.
+
+Исправлено явной always-included metadata двух cross-cutting правил в `planner-tool-guidance.js`. Три реальных запроса проверены через bounded извлечение production declarations и `buildAePlanPrompt`; имена, порядок и mutation Set совпадают, нужные setters/правила/ручные gates сохраняются, specialized guidance фильтруется. Все четыре lifecycle mutations правильно размечены без `autoCheckpoint`. Anonymous `/tools` остаётся 401; authenticated fixture даёт 170 tools. Использованы decorated exposed schemas, поэтому доказано равенство names/mutation Set и консервативный budget, а не полное равенство raw schemas. Legacy Array export сохранён. Это built-in planner; Codex dispatcher получает AGENTS/skills отдельно.
 
 ### F-03 — подтверждённое несовпадение схемы библиотеки решений
 
@@ -49,11 +51,11 @@ const page = pages.find((item) => item.url && item.url.indexOf(EXTENSION_ID) >= 
 text-visual-review-plan: inputs[1].type is not allowed: integer
 ```
 
-В `registry/solutions.json` у `rootCompItemId` рецепта `text-visual-review-plan` стоит `type: "integer"`; `scripts/solution-registry-smoke.js:18–31` допускает `number`, но не `integer`. Остальные вложенные проверки этой группы после отказа не исполнились. Живые `search_solutions`/`get_solution` для двух других рецептов работают, поэтому это не доказательство полного отказа библиотеки. Нужна согласованная правка registry contract и повтор всей `smoke:solutions`; простой обход валидатора недопустим.
+У `rootCompItemId` был недопустимый custom-registry type `integer`. Исправлен на `number` с явным positive-integer требованием в description; фактический typed builder по-прежнему проверяет integer. Первый post-fix прогон выявил ещё один mismatch того же descriptor: `projectKind=offline-native-shaped-fixtures` вне enum. Указан `synthetic`, исторические версии и offline/no-real-glyph notes сохранены. Валидатор не ослаблен. Полная `smoke:solutions`, включая все 189 entries и последующие subtests, — PASS.
 
 ### D-01 — устаревшее описание integration в lifecycle recipe
 
-`recipes/project-lifecycle.md:30–32` говорит, что `build_solution_plan` станет доступен после завершения daemon integration. Special case `guarded-project-lifecycle` уже реализован в `mcp-server/bridge-daemon.js:13679–13683` и покрыт прошедшей lifecycle bridge regression. Формулировка устарела. Это не разрешает включать production opt-in или обходить manual gate.
+Устаревшее обещание будущей integration удалено. Recipe описывает оба текущих пути к одному контракту: `build_solution_plan` и `build_project_lifecycle_plan`. Opt-in остаётся off до отдельного fixture scope; перед предложением нужна фактическая native/runtime готовность. Manual gate и первый unnamed Save через UI сохранены.
 
 ## Ограничения, которые остаются намеренными
 
@@ -64,10 +66,10 @@ text-visual-review-plan: inputs[1].type is not allowed: integer
 
 ## Проверки и evidence
 
-Luna сверила scope entrypoints: bridge regression используют изолированные fixture-порты и VM, без live AE/provider. Выполнены `smoke:tool-first`, `smoke:planning`, `smoke:png-proof`, `smoke:ae-task-completion`, `smoke:project-save`, `smoke:placeholder-plan`, `smoke:placeholder-visual`, `smoke:placeholder-usage` — PASS; `smoke:solutions` — FAIL. Отдельно `check:rules`/diff — PASS. Tracked Git status до/после серии чистый.
+Первый аудит сохранён: 8/9 smoke PASS, solutions FAIL. Post-fix матрица дала 15/17 PASS; новые fixtures выявили missing-property default и неаутентифицированный catalog GET. После коррекции и независимого review целиком повторены `smoke:tool-first` и `smoke:planning`, шесть JS syntax, rules/diff — 10/10 PASS. Остальные семь smoke-групп ранее прошли и не дублировались: solutions, PNG proof, task completion, project save, placeholder plan/visual/usage. Новые leaf suites встроены в tool-first/planning и отдельно повторно не запускались. Source SHA и ownership status до/после recheck совпали. Всё offline/isolated VM; provider/live AE calls из suites=0.
 
 Root — единственный live controller: bridge 3.3.0/PID34896, Connected, pending=0/inflight=[], editSession=null; desiredEnabled/active автономной сессии сохранены. Повторное native чтение после offline серии сохранило unnamed/dirty=false/revision=1. Exact catalogue содержит все 11 migration names. Настройки/grants и файлы проекта AE не менялись.
 
-Flash: профиль `ae-agent`, configured model `gemini-3.8-flash-high`/high; effective model подтверждён driver metadata, effective effort отдельно не возвращён. Terminal/schema/artifact verification PASS, источник не менялся. Parent сверил findings по исходникам и фактической проверочной серии; обобщение Flash, включавшее reconcile в mutating/manual-only группу, не принято: adapter отделяет read-only reconcile от mutation context.
+Маршрут: Luna inventory/registry/fixture validation; Flash/high основная реализация; Sol/high bounded review, Sol/xhigh узкий production-fixture parity blocker; root единственный live controller. Первоначальный Flash inspect завершился valid. Flash edit после файлов завершился сетевым failure/unknown без валидного terminal JSON; оба процесса exited, фактические файлы сверены и explicit reconciliation освободила claim. Этот outcome не переписан в success: изменения приняты по diff, review и тестам. Configured model/effort Flash подтверждены, effective model подтверждён metadata, отдельный effective effort не возвращён. Reconcile lifecycle не смешан с mutating/manual-only группой.
 
-Локальные текущие артефакты (ignored, не historical archive): `.codex-runtime/tool-first-audit-20261005/checks/summary.json`, логи соответствующих групп, `live-readonly.json`, planner probe; Flash response — `.codex-runtime/agy-bridge/tool-first-capability-audit-20261005-01.response.json`. Отчёт проверяет указанный scope и не заявляет исправление всех 170 tools.
+Локальные текущие артефакты (ignored): исходный audit `.codex-runtime/tool-first-audit-20261005/`; post-fix `.codex-runtime/tool-first-fixes-20261005/{registry,checks,cep-correction,planner-correction,final-recheck}/`. Старые failures сохранены. AGY inspect/edit metadata — `.codex-runtime/agy-bridge/tool-first-*20261005-01*`. Отчёт закрывает F-01/F-02/F-03/D-01 в указанном scope; проверка всех 170 инструментов live не заявляется.

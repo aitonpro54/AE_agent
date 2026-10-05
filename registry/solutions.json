@@ -219,9 +219,9 @@
         },
         {
           "name": "rootCompItemId",
-          "type": "integer",
+          "type": "number",
           "required": true,
-          "description": "Идентификатор корневой композиции."
+          "description": "Положительный целочисленный ID корневой композиции; typed builder принимает целое значение."
         },
         {
           "name": "textTarget",
@@ -307,7 +307,7 @@
         "aeVersion": "unknown",
         "panelVersion": "AE Agent 3.2.0",
         "bridgeVersion": "3.2.0",
-        "projectKind": "offline-native-shaped-fixtures",
+        "projectKind": "synthetic",
         "notes": [
           "Офлайн pure fixtures; живой AE, реальные глифы и font substitution в этом этапе не проверялись."
         ]

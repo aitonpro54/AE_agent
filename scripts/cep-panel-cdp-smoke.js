@@ -1,9 +1,10 @@
-﻿"use strict";
+"use strict";
 
 const childProcess = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { selectCepPanelTarget } = require("./cep-panel-target");
 const { writeAgentRunReport } = require("./agent-scenario-report");
 const {
   agentAssortedCompositionGuidesScenarioPlans,
@@ -1550,12 +1551,11 @@ function boundedNumber(value, fallback, min, max) {
   return Math.max(min, Math.min(max, parsed));
 }
 
-async function connectToPanel() {
-  const pages = await getJson(`http://127.0.0.1:${DEFAULT_PORT}/json/list`);
-  const page = pages.find((item) => item.url && item.url.indexOf(EXTENSION_ID) >= 0) || pages[0];
-  if (!page || !page.webSocketDebuggerUrl) {
-    throw new Error(`Could not find AE Agent panel DevTools page on port ${DEFAULT_PORT}.`);
-  }
+async function connectToPanel(options = {}) {
+  const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
+  const extensionId = options.extensionId || EXTENSION_ID;
+  const pages = await getJson(`http://127.0.0.1:${port}/json/list`);
+  const page = selectCepPanelTarget(pages, { port, extensionId });
 
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   let id = 0;
@@ -9244,12 +9244,20 @@ async function main() {
   throw new Error(`Unknown command: ${command}`);
 }
 
-main().catch((error) => {
-  const output = {
-    ok: false,
-    error: error.message || String(error),
-    state: error.state || null
-  };
-  console.error(JSON.stringify(output, null, 2));
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    const output = {
+      ok: false,
+      error: error.message || String(error),
+      state: error.state || null
+    };
+    console.error(JSON.stringify(output, null, 2));
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  connectToPanel,
+  DEFAULT_PORT,
+  EXTENSION_ID
+};

@@ -1,7 +1,17 @@
 "use strict";
 
+const PASSIVE_WAIT_RULE = "For observation of bridge connectivity or proposal lifecycle transitions, prefer passive wait tools wait_for_bridge_state and wait_for_plan_state over active polling loops; wait_for_plan_state requires exact immutable actionId, instanceId, and revision pins and never grants mutation authority.";
+const MCP_FIRST_COMPUTER_USE_RULE = "Adhere to the MCP-first workflow (search, get, build, propose, dry-run via run_ai_agent_plan with dryRun:true, run, readback, PNG view); validate_ai_agent_plan provides static preflight without dry-run receipt; treat Computer Use as a strict fallback only for classified reasons (typed_gap, visual_ui_only, panel_bootstrap, protected_confirmation, modal_blocker, diagnostics) and never bypass approval or risk gates.";
+
+const CROSS_CUTTING_GUIDELINES = Object.freeze([
+  PASSIVE_WAIT_RULE,
+  MCP_FIRST_COMPUTER_USE_RULE
+]);
+
+const ALWAYS_INCLUDED_SET = new Set(CROSS_CUTTING_GUIDELINES);
+
 // Reviewed operation-specific rules, selected by the bounded prompt builder.
-module.exports = [
+const GUIDELINES = [
   "For any project-changing request, plan inspection steps first, then the narrow mutating step(s), then verification/readback steps.",
   "For requests to align selected layers, clips, or precomps to the current time indicator, use align_layers_to_time with no layerIndices and omit targetTime so it uses the active comp CTI.",
   "For current time indicator or playhead navigation, use set_comp_current_time only on one explicit comp target with finite seconds or a reviewed frame/frameRate conversion, then read back get_comp_details.time. Do not substitute work-area, layer timing, keyframes, markers, or raw ExtendScript.",
@@ -38,8 +48,8 @@ module.exports = [
   "For deep duplicate of a selected precomp and its sources, prefer one deep_duplicate_precomp_sources step with layerIndex {{selectedPrecompLayerIndex}} and sourceCompItemIndex {{selectedPrecompItemIndex}} after inspection; do not use run_extendscript.",
   "For read-back after deep_duplicate_precomp_sources, use get_comp_details with compItemIndex {{duplicatedRootCompItemIndex}} or {{rootCompItemIndex}}; the tool also returns createdItemIndices for project-item summaries.",
   "To verify the parent layer after deep_duplicate_precomp_sources relinks it, use get_layer_details with compItemIndex steps.<deep-duplicate-step>.result.comp.itemIndex and layerIndex {{selectedPrecompLayerIndex}}; do not reuse generic {{compItemIndex}} after reading the duplicated source comp.",
-  "For observation of bridge connectivity or proposal lifecycle transitions, prefer passive wait tools wait_for_bridge_state and wait_for_plan_state over active polling loops; wait_for_plan_state requires exact immutable actionId, instanceId, and revision pins and never grants mutation authority.",
-  "Adhere to the MCP-first workflow (search, get, build, propose, dry-run via run_ai_agent_plan with dryRun:true, run, readback, PNG view); validate_ai_agent_plan provides static preflight without dry-run receipt; treat Computer Use as a strict fallback only for classified reasons (typed_gap, visual_ui_only, panel_bootstrap, protected_confirmation, modal_blocker, diagnostics) and never bypass approval or risk gates.",
+  PASSIVE_WAIT_RULE,
+  MCP_FIRST_COMPUTER_USE_RULE,
   "For multi-comp visual frame review or snapshot captures, use the read-only builder build_comp_visual_review_plan with explicit targets ({compItemId, times}) to generate a gated mutating export plan of save_comp_frame_png steps bounded by max 12 frames and 4 comps; follow normal propose, dry-run, approval, execution, and manifest verification gates.",
   "For validating captured composition visual reviews, use get_comp_visual_review_manifest with runId to verify on-disk PNG proofs, checksums, dimensions, and execution records; note that manifest reports historical capture facts and does not verify current live AE state or grant artistic approval.",
   "For inspecting native After Effects project state without mutation, use get_project_lifecycle_state with zero arguments and trust appVersion, file, dirty, and revision only when their matching supported flag is true.",
@@ -47,3 +57,14 @@ module.exports = [
   "Run project lifecycle steps only through a valid manual CEP proposal, exact successful dry-run, and explicit confirmation; direct, admin, autonomous, multi-step, or replay execution is forbidden.",
   "After an uncertain lifecycle result, call read-only reconcile_project_lifecycle and never retry the native operation; finalize_project_lifecycle is allowed only as a fresh manual plan when persisted final proof already exists, and old review/image/load proofs remain invalid."
 ];
+
+GUIDELINES.PASSIVE_WAIT_RULE = PASSIVE_WAIT_RULE;
+GUIDELINES.MCP_FIRST_COMPUTER_USE_RULE = MCP_FIRST_COMPUTER_USE_RULE;
+GUIDELINES.CROSS_CUTTING_GUIDELINES = CROSS_CUTTING_GUIDELINES;
+GUIDELINES.ALWAYS_INCLUDED_GUIDELINES = CROSS_CUTTING_GUIDELINES;
+GUIDELINES.alwaysIncluded = ALWAYS_INCLUDED_SET;
+GUIDELINES.isAlwaysIncluded = function (line) {
+  return ALWAYS_INCLUDED_SET.has(line);
+};
+
+module.exports = GUIDELINES;
