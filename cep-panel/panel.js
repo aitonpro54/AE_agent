@@ -129,6 +129,11 @@
   var currentBridgePlan = null;
   var currentPlanSyncAt = 0;
   var currentPlanSyncInFlight = false;
+  var currentPlanSyncSeq = 0;
+  var currentPlanSyncActiveReqId = 0;
+  var currentPlanSyncActiveEpoch = 0;
+  var panelLifecycleEpoch = 0;
+  var currentPlanSyncWaiters = [];
   var lastPlanRunResult = null;
   var planReconcileInFlight = false;
   var lastAcceptedDryRun = null;
@@ -1822,39 +1827,207 @@
     currentBridgePlanEl.style.overflowWrap = "anywhere";
   }
 
-  function refreshCurrentBridgePlan(onDone) {
-    if (currentPlanSyncInFlight) { if (onDone) onDone(new Error("Обновление плана ещё выполняется")); return; }
+  function currentBridgePlanPins(state) {
+    var proposal = normalizeM100ActionProposal(state && state.proposal);
+    if (!proposal || !state.instanceId || typeof state.revision !== "number" ||
+        state.revision < 1 || Math.floor(state.revision) !== state.revision ||
+        proposal.revision !== state.revision || state.actionId !== proposal.actionId) return null;
+    if (state.state !== "pending" && state.state !== "dry_run_passed") return null;
+    if (state.lifecycleRetired || state.lastRun && state.lastRun.errorCode === "project_target_mismatch" ||
+        !state.validation || state.validation.ok !== true ||
+        state.expiresAt !== proposal.confirmation.proposalExpiresAt || Date.parse(state.expiresAt) <= Date.now()) return null;
+    var project = state.project || {};
+    var projectFile = project.expectedFile || "";
+    var planProjectFile = state.plan && state.plan.targetProject && state.plan.targetProject.file || "";
+    if (projectFile !== planProjectFile || project.actualFile && project.actualFile !== projectFile) return null;
+    return {
+      instanceId: state.instanceId,
+      revision: state.revision,
+      actionId: proposal.actionId,
+      requestId: proposal.requestId,
+      actionKind: proposal.action.kind,
+      payloadRef: proposal.action.payloadRef,
+      payloadHash: proposal.action.payloadHash,
+      previewHash: proposal.action.previewHash,
+      projectFile: projectFile,
+      expiresAt: proposal.confirmation.proposalExpiresAt,
+      riskLevel: proposal.risk.level,
+      riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
+      surface: proposal.confirmation.surface,
+      sessionId: proposal.confirmation.sessionId || ""
+    };
+  }
+
+  function currentBridgePlanMatchesPins(state, expected) {
+    var actual = currentBridgePlanPins(state);
+    if (!actual || !expected) return false;
+    for (var key in expected) {
+      if (Object.prototype.hasOwnProperty.call(expected, key) && actual[key] !== expected[key]) return false;
+    }
+    return true;
+  }
+
+  function dispatchCurrentBridgePlanSync() {
+    if (currentPlanSyncInFlight) return;
     currentPlanSyncInFlight = true;
+    var reqId = ++currentPlanSyncSeq;
+    var reqEpoch = panelLifecycleEpoch;
+    var reqGen = panelConnectionGeneration;
+    currentPlanSyncActiveReqId = reqId;
+    currentPlanSyncActiveEpoch = reqEpoch;
     currentPlanSyncAt = Date.now();
+
     request("GET", "/agents/plan/current", null, function (error, response) {
+      if (reqEpoch !== panelLifecycleEpoch || reqId !== currentPlanSyncActiveReqId || reqGen !== panelConnectionGeneration) {
+        return;
+      }
+
       currentPlanSyncInFlight = false;
-      if (error) {
-        currentBridgePlan = null;
-      } else {
-        var incoming = response && response.current || null;
-        if (!incoming || !currentBridgePlan || incoming.instanceId !== currentBridgePlan.instanceId || incoming.revision >= currentBridgePlan.revision) {
-          var replaced = incoming && (!currentBridgePlan || incoming.actionId !== currentBridgePlan.actionId);
-          currentBridgePlan = incoming;
+      currentPlanSyncActiveReqId = 0;
+      currentPlanSyncActiveEpoch = 0;
+      currentPlanSyncAt = Date.now();
+
+      var hasFreshFollowupWaiters = false;
+      for (var f = 0; f < currentPlanSyncWaiters.length; f++) {
+        var wCandidate = currentPlanSyncWaiters[f];
+        if (wCandidate.epoch === reqEpoch && wCandidate.minReqId > reqId) {
+          hasFreshFollowupWaiters = true;
+          break;
+        }
+      }
+
+      var canonicalChanged = false;
+      var incoming = response && response.current || null;
+
+      if (!hasFreshFollowupWaiters) {
+        if (error) {
+          currentBridgePlan = null;
+        } else {
           if (incoming) {
             var oldProposal = m100ActionProposalForResult(lastPlanResult);
-            var localToken = oldProposal && oldProposal.actionId === incoming.actionId ? oldProposal.confirmation.confirmationToken : null;
-            if (localToken) incoming.proposal.confirmation.confirmationToken = localToken;
-            lastPlanResult = {plan: incoming.plan, planValidation: incoming.validation,
-              requestId: incoming.proposal.requestId, m100ActionProposal: incoming.proposal};
-            if (replaced) {
-              lastAcceptedDryRun = null;
-              appendChatMessage("assistant", "Текущий план Bridge v" + incoming.revision + ": " + (incoming.plan.summary || incoming.actionId),
-                {actionProposal: incoming.proposal, planResult: lastPlanResult});
+            var localToken = null;
+            var localPins = lastPlanResult && lastPlanResult.bridgePlanPins || currentBridgePlanPins(currentBridgePlan);
+            if (oldProposal && oldProposal.actionId === incoming.actionId &&
+                oldProposal.confirmation && oldProposal.confirmation.confirmationToken) {
+              if (currentBridgePlanMatchesPins(incoming, localPins) &&
+                  oldProposal.actionId === localPins.actionId && oldProposal.requestId === localPins.requestId &&
+                  oldProposal.revision === localPins.revision && oldProposal.action.kind === localPins.actionKind &&
+                  oldProposal.action.payloadRef === localPins.payloadRef &&
+                  oldProposal.action.payloadHash === localPins.payloadHash && oldProposal.action.previewHash === localPins.previewHash &&
+                  oldProposal.risk.level === localPins.riskLevel && oldProposal.confirmation.riskPolicyVersion === localPins.riskPolicyVersion &&
+                  oldProposal.confirmation.proposalExpiresAt === localPins.expiresAt &&
+                  oldProposal.confirmation.surface === localPins.surface && (oldProposal.confirmation.sessionId || "") === localPins.sessionId) {
+                localToken = oldProposal.confirmation.confirmationToken;
+              } else {
+                canonicalChanged = true;
+              }
+            }
+
+            if (!currentBridgePlan || incoming.instanceId !== currentBridgePlan.instanceId || incoming.revision >= currentBridgePlan.revision) {
+              var replaced = !currentBridgePlan || incoming.actionId !== currentBridgePlan.actionId;
+              currentBridgePlan = incoming;
+              if (incoming.proposal && incoming.proposal.confirmation) {
+                incoming.proposal.confirmation.confirmationToken = localToken;
+              }
+              lastPlanResult = {
+                plan: incoming.plan,
+                planValidation: incoming.validation,
+                requestId: incoming.proposal ? incoming.proposal.requestId : "",
+                m100ActionProposal: incoming.proposal,
+                bridgePlanPins: localToken ? localPins : null
+              };
+              if (replaced) {
+                lastAcceptedDryRun = null;
+                appendChatMessage("assistant", "Текущий план Bridge v" + incoming.revision + ": " + (incoming.plan && incoming.plan.summary || incoming.actionId),
+                  {actionProposal: incoming.proposal, planResult: lastPlanResult});
+              }
             }
           } else {
-            lastPlanResult = null; lastAcceptedDryRun = null;
+            currentBridgePlan = null;
+            lastPlanResult = null;
+            lastAcceptedDryRun = null;
+          }
+        }
+        renderCurrentBridgePlan();
+        updateChatAvailability();
+      }
+
+      var satisfied = [];
+      var remaining = [];
+      for (var w = 0; w < currentPlanSyncWaiters.length; w++) {
+        var waiter = currentPlanSyncWaiters[w];
+        if (waiter.epoch !== reqEpoch || waiter.generation !== reqGen) {
+          satisfied.push({ waiter: waiter, error: makeBridgeOfflineError("Connection lifecycle reset") });
+        } else if (waiter.minReqId <= reqId) {
+          var waiterErr = error;
+          if (!waiterErr && waiter.expectedActionId) {
+            if (!incoming || incoming.actionId !== waiter.expectedActionId || canonicalChanged ||
+                waiter.expectedPlanPins && !currentBridgePlanMatchesPins(incoming, waiter.expectedPlanPins)) {
+              waiterErr = new Error("План на сервере изменился. Просмотрите актуальную версию.");
+            }
+          }
+          satisfied.push({ waiter: waiter, error: waiterErr });
+        } else {
+          if (error && isBridgeOfflineError(error)) {
+            satisfied.push({ waiter: waiter, error: error });
+          } else {
+            remaining.push(waiter);
           }
         }
       }
-      renderCurrentBridgePlan();
-      updateChatAvailability();
-      if (onDone) onDone(error);
+      currentPlanSyncWaiters = remaining;
+
+      for (var s = 0; s < satisfied.length; s++) {
+        try {
+          var settled = satisfied[s];
+          var lifecycleChanged = settled.waiter.epoch !== panelLifecycleEpoch || settled.waiter.generation !== panelConnectionGeneration;
+          settled.waiter.onDone(lifecycleChanged ? makeBridgeOfflineError("Connection lifecycle reset") : settled.error || null);
+        } catch (_cbErr) {}
+      }
+
+      if (reqEpoch === panelLifecycleEpoch && reqGen === panelConnectionGeneration && currentPlanSyncWaiters.length > 0) {
+        dispatchCurrentBridgePlanSync();
+      }
     });
+  }
+
+  function refreshCurrentBridgePlan(options, onDone) {
+    if (typeof options === "function") {
+      var tmpDone = onDone;
+      onDone = options;
+      options = (typeof tmpDone === "object" && tmpDone !== null) ? tmpDone : null;
+    }
+    options = options || {};
+    var isFresh = options.fresh === true;
+    var reqEpoch = panelLifecycleEpoch;
+    var reqGen = panelConnectionGeneration;
+
+    var minReqId;
+    if (isFresh) {
+      minReqId = currentPlanSyncSeq + 1;
+    } else if (currentPlanSyncInFlight && currentPlanSyncActiveEpoch === reqEpoch) {
+      minReqId = currentPlanSyncActiveReqId;
+    } else {
+      minReqId = currentPlanSyncSeq + 1;
+    }
+
+    if (typeof onDone === "function") {
+      currentPlanSyncWaiters.push({
+        onDone: onDone,
+        minReqId: minReqId,
+        fresh: isFresh,
+        expectedActionId: options.expectedActionId || null,
+        expectedPlanPins: options.expectedPlanPins || null,
+        epoch: reqEpoch,
+        generation: reqGen
+      });
+    }
+
+    if (currentPlanSyncInFlight) {
+      return;
+    }
+
+    dispatchCurrentBridgePlanSync();
   }
 
   function appendChatMessage(role, text, options) {
@@ -3634,15 +3807,40 @@
     var blockReason = currentProposalBlockReason(proposal);
     if (blockReason) { setPlanRunStatus(blockReason, "blocked"); return; }
     if (!proposal.confirmation.confirmationToken) {
+      var adoptEpoch = panelLifecycleEpoch;
+      var adoptGeneration = panelConnectionGeneration;
+      var adoptInstanceId = currentBridgePlan.instanceId;
       request("POST", "/agents/plan/adopt", {actionId: proposal.actionId, revision: currentBridgePlan.revision,
         panelConnectionId: panelConnectionId, panelGeneration: String(panelConnectionGeneration),
         confirmationSessionId: m100ConfirmationSessionId()}, function (error, response) {
+        if (adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) return;
         if (error) { setPlanRunStatus(error.message, "blocked"); return; }
+        var adoptedProposal = normalizeM100ActionProposal(response && response.proposal);
+        var adoptedPlan = response && response.plan;
+        var adoptedPins = currentBridgePlanPins({
+          instanceId: adoptInstanceId,
+          revision: adoptedProposal && adoptedProposal.revision,
+          actionId: adoptedProposal && adoptedProposal.actionId,
+          proposal: adoptedProposal,
+          plan: adoptedPlan,
+          validation: response && response.validation,
+          state: "pending",
+          expiresAt: adoptedProposal && adoptedProposal.confirmation.proposalExpiresAt,
+          project: { expectedFile: adoptedPlan && adoptedPlan.targetProject && adoptedPlan.targetProject.file || null }
+        });
+        if (!adoptedPins || !adoptedProposal.confirmation.confirmationToken ||
+            response.revision !== undefined && response.revision !== adoptedPins.revision) {
+          setPlanRunStatus("План на сервере изменился. Просмотрите актуальную версию.", "blocked");
+          return;
+        }
         lastPlanResult = {plan: response.plan, planValidation: response.validation,
-          requestId: response.proposal.requestId, m100ActionProposal: response.proposal};
+          requestId: adoptedProposal.requestId, m100ActionProposal: adoptedProposal, bridgePlanPins: adoptedPins};
         lastAcceptedDryRun = null;
-        refreshCurrentBridgePlan(function (syncError) {
-          if (syncError) return;
+        refreshCurrentBridgePlan({ fresh: true, expectedActionId: adoptedProposal.actionId, expectedPlanPins: adoptedPins }, function (syncError) {
+          if (syncError) {
+            setPlanRunStatus(syncError.message || "Не удалось обновить план", "blocked");
+            return;
+          }
           runLastPlan(true, true);
         });
       });
@@ -3958,6 +4156,20 @@
   function connect() {
     running = true;
     panelConnectionGeneration = Date.now();
+    panelLifecycleEpoch += 1;
+    currentPlanSyncInFlight = false;
+    currentPlanSyncActiveReqId = 0;
+    currentPlanSyncActiveEpoch = 0;
+    if (currentPlanSyncWaiters && currentPlanSyncWaiters.length) {
+      var oldWaiters = currentPlanSyncWaiters;
+      currentPlanSyncWaiters = [];
+      var resetError = makeBridgeOfflineError("Connection lifecycle reset");
+      for (var ow = 0; ow < oldWaiters.length; ow++) {
+        try { oldWaiters[ow].onDone(resetError); } catch (_err) {}
+      }
+    } else {
+      currentPlanSyncWaiters = [];
+    }
     autonomousSessionState = null;
     renderAutonomousSession();
     activeEvalScriptCommandId = "";
@@ -3983,6 +4195,18 @@
     autonomousSessionState = null;
     renderAutonomousSession();
     if (pollTimer) clearTimeout(pollTimer);
+    panelLifecycleEpoch += 1;
+    currentPlanSyncInFlight = false;
+    currentPlanSyncActiveReqId = 0;
+    currentPlanSyncActiveEpoch = 0;
+    if (currentPlanSyncWaiters && currentPlanSyncWaiters.length) {
+      var syncWaiters = currentPlanSyncWaiters;
+      currentPlanSyncWaiters = [];
+      var disconnectError = makeBridgeOfflineError("Bridge disconnected");
+      for (var w = 0; w < syncWaiters.length; w++) {
+        try { syncWaiters[w].onDone(disconnectError); } catch (_err) {}
+      }
+    }
     localStorage.setItem("codexAeBridgeAutoConnect", "0");
     setStatus("Disconnected", false);
     setBridgeHelp("Disconnected. Click Connect when the bridge is running.", "");
