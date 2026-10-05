@@ -51,6 +51,13 @@ Maintain AE Agent 3.3.0 in this clean repository. The product target is
   `modal_blocker`, `diagnostics`), описанной в `docs/tool-first-workflow.md`. Отказ gate
   нельзя обходить через GUI; экспорт кадра требует фактического визуального просмотра.
   Для наблюдения использовать пассивные ожидания `wait_for_bridge_state` и `wait_for_plan_state`.
+- Для ограниченного блока Computer Use заранее объяви точную цель; после последнего
+  нужного действия перечитай результат и сверь неизвестные отправки, затем заверши
+  UI-блок до офлайн-работы, ожидания Flash, тестов или долгих ожиданий. Сохрани нужные
+  наблюдения и сбрось только свой REPL поддержанным `mcp__node_repl__js_reset`;
+  reset не доказывает закрытие overlay или освобождение контроллера. Не повторяй
+  неизвестное действие и не сбрасывай чужой REPL; подробности в
+  `docs/tool-first-workflow.md`.
 - Отсутствие typed MCP само по себе не обосновывает Computer Use: сначала проверь
   готовые CLI/helpers/API. Для CEP inspect/reload уже есть `scripts/cep-panel-cdp-smoke.js`;
   штатный reload выполняй с `CEP_PANEL_ENSURE_DAEMON=0` по scoped-порядку из `docs/tool-first-workflow.md`.
