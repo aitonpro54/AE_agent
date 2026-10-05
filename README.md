@@ -69,9 +69,9 @@ origins explicitly with `AE_BRIDGE_ALLOWED_ORIGINS` rather than disabling CORS.
 
 ## Install The CEP Panel
 
-Use `cep-panel/` as the extension source during local development. The panel
-expects the bridge daemon to be running locally. If the panel appears offline,
-start the daemon first and then reload the CEP panel.
+Для локальной разработки используй `cep-panel/` как исходники расширения. Панель
+требует работающий локально bridge daemon. Если панель отображается offline, сначала запусти daemon, затем выполни scoped-команду reload из [Tool-First workflow](docs/tool-first-workflow.md#штатная-диагностика-и-reload-cep):
+`$env:CEP_PANEL_ENSURE_DAEMON='0'; node scripts/cep-panel-cdp-smoke.js reload`.
 
 ### Обновление с общего токена на раздельные роли
 
