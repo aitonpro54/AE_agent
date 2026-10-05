@@ -44,10 +44,11 @@ read-back в исходных запусках. Raw setter `d3cf…` остаё�
   controlled idle restart и отдельную свежую проверку после CLI reload. Исторические
   сведения о PID/config и точный read-back приведены ниже. Для каждой операции
   обязателен свежий `get_project_lifecycle_state`.
-- Реализация project PreToolUse guard имеет 36 тестов / 1495 assertions и
-  локальный matching включён. Отрицательная canary была исполнена, однако
-  техническое доверие `/hooks` остаётся pending. Это не доказывает runtime
-  enforcement guard или достижение 100% цели.
+- Реализация project PreToolUse guard имеет 36 тестов / 1495 assertions,
+  offline approval и локальный matching. Последняя отрицательная canary была
+  исполнена (см. ниже): runtime enforcement не подтверждён; review/trust текущего
+  project hook через `/hooks` остаётся pending. Общая цель 100% и direct/nested
+  покрытие не доказаны.
 - Запись не меняет статус, результат или историю каких-либо run.
 
 ## Read-back после штатного CLI reload
@@ -125,10 +126,70 @@ state остался clean revision 85, generation 6, `pending=null`, policy rev
 drift 0; source file не изменился. Это доказательство только данного protected
 placeholder gate; оно не обобщается на все трансформации или `/hooks` enforcement.
 
-Отдельно выявлена CEP current-plan refresh/adoption race в scoped source:
-`currentPlanSyncInFlight` означает только GET current-plan refresh, а post/adopt
-callback может отбросить автоматическое dry-run continuation. Причина конкретного
-first click остаётся unknown; в этом инциденте execution/native command не было.
-AGY ведёт scoped refresh fix (`ae-panel-adopt-dry-refresh-20261005-01`); не считать
-исправление принятым до нового подтверждения root. Общие unknown-result и no-replay
-правила lifecycle остаются независимыми от этого UI race.
+CEP current-plan refresh/adoption race исправлена scoped change `50e0c7f`.
+`currentPlanSyncInFlight` относится только к GET current-plan refresh; corrected
+callback проходит connect/disconnect, late-adopt, reentry, exact canonical pins
+и tokenless GET. Причина исходного first click остаётся unknown; historical AGY03
+timeout также initially unknown, пока root не сверил exited process/files и
+explicit reconcile `released=true`. В incident execution/native command не было;
+никакой искусственной lifecycle recovery для него не создавалось. См. проверяемые
+acceptance details ниже. Lifecycle unknown-result/no-replay остаётся независимым.
+
+## Принятое CEP refresh/adoption исправление
+
+После initial Flash и двух corrections, а также сверки timeout, Sol/xhigh scoped
+validation завершилась 33/33 GREEN; baseline воспроизвёл 3/33 meaningful RED.
+Independent `ae_reviewer` вынес APPROVE. Luna подтвердил зарегистрированный
+33-case npm smoke, 2 syntax checks, rules, diff и hash checks. Covered cases:
+Date constructible, реальные connect/disconnect, late-adopt, reentry, exact
+canonical pins и tokenless GET. Commit: `50e0c7f`.
+
+Установленный `cep-panel/panel.js` SHA-256:
+`12e9b70e5b249f817ebe11b0571f480f49152b2270f62528f70f3ba0c97d2869`.
+Предыдущий файл (SHA `63577…`) сохранён в ignored
+`.codex-runtime/tool-first-completion-20261005/cep-refresh-install-backup/panel.js`.
+Root CLI reload выполнен штатной командой:
+
+```powershell
+$env:CEP_PANEL_ENSURE_DAEMON='0'; node scripts/cep-panel-cdp-smoke.js reload
+```
+
+Он подтвердил title/assetVersion
+`3.3.0`, `Connected`/`online`, panelGeneration
+`1791214953069` → `1791221007898`; autonomy `true`, bridge `24144`, project clean
+revision `85`, lifecycle generation `6`, policy revision `3`, drift `0` — без
+изменения.
+
+Одна штатная кнопка **Dry** приняла текущий MCP readonly plan: initial action
+`act_4030c71932834bc8abe14bf5553df06b` был adopted как
+`act_4aa5c67811c74521b33dd1f866a3db70`, revision 6, instance
+`585f2dc8-b542-474a-b39d-f10f7f74a3e1`; автоматический run
+`e2fbc7e4-31b3-4efb-afe3-80e0fba6621b` завершился `dry_run_passed`
+(`dry=true`, `ok`, `executed=0`). Был один клик, без повтора, fake override и CU.
+Последующий явный `get_project_info` run
+`298ba6e3-bc4f-4c21-b54b-819d47618c76` прошёл 1/1 non-dry/read-only;
+`verification=null` (semantic pass не заявляется), manualRun сохранён,
+project mutations `0`. Финальные native pins: clean revision 85, lifecycle
+generation 6, `pending=null`, protection revision 3, drift 0.
+
+## Project hook: установка не подтверждает runtime enforcement
+
+Root проверил `node scripts/install-ae-tool-first-hook.js --check` из корня
+проекта; результат показал
+`matching=true`, definitionHash
+`6bb452bfe754453b126568304454a88403510e0c7daa79a1a829ee97e1c8e244`, но это
+только соответствие установленной записи `.codex/hooks.json`.
+Последний Desktop canary `throw new Error("AE_TOOL_FIRST_CANARY_EXECUTED")`
+фактически исполнился; результат содержал `toolIsError=true` и буквальный текст
+ошибки. Точный read-only no-op `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` прошёл.
+Поэтому install match, 36 тестов / 1495 assertions и offline approval не
+подтверждают работающую runtime блокировку.
+
+Перед заявлением об активном guard оператор должен открыть `/hooks`, проверить
+и доверить точное текущее определение project hook из
+`C:\Users\Ant\Documents\Codex\AE_agent\.codex\hooks.json`; изменение hash
+требует нового review/trust. Официально Codex запускает non-managed hooks только
+после review/trust текущего определения: [Review and trust hooks](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks).
+Текущий host-level review/trust остаётся pending; hash не меняли и trust обходом
+не устанавливали. Нельзя заявлять runtime enforcement, 100% цель или direct/nested
+coverage, пока exact current hook trust и canary deny не подтверждены.

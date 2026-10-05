@@ -64,7 +64,8 @@ target и проверяет его SHA до открытия; полный nati
 composition source identities. Неизвестные поля и переполнение блокируют запись.
 Для полной media/proxy приёмки native inventory должен показывать фактические
 kind/path/metadata и их cross-relations; один `complete:true` или совпавший hash
-недостаточен. Актуальный live пример и известная отдельная CEP race записаны в
+недостаточен. Актуальный live пример и принятая scoped CEP refresh/adoption
+проверка записаны в
 [acceptance note](../docs/tool-first-live-acceptance-2026-10-05.md).
 
 Lifecycle сохраняет только точно подтверждённые restrictions, mappings и

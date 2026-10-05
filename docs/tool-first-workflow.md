@@ -195,7 +195,7 @@ builder — `build_project_lifecycle_plan({operation, targetProjectFile, checkpo
 неизвестный исход требует read-only reconcile, никогда replay. Это high-risk переход,
 который меняет Undo и активный контекст проекта. Для полного media/proxy read-back
 проверяй actual item kind/path и cross-relations; текущая corrected acceptance и
-отдельный известный CEP in-flight race описаны в acceptance note. Там также
+принятая scoped CEP current-plan refresh/adoption проверка описана в acceptance note. Там также
 зафиксирован один protected-placeholder отказ до плана; это узкий кейс, не общая
 гарантия `/hooks` enforcement.
 
@@ -288,10 +288,16 @@ builder — `build_project_lifecycle_plan({operation, targetProjectFile, checkpo
 
 ### 7. Штатный Trust и Desktop Canary
 
-1. После установки хука оператор или root выполняет стандартный шаг доверия хуку в окружении Codex (`/hooks` review).
-2. Верификация активного потока (Desktop Canary):
+1. После установки из корня проекта проверь соответствие точного локального hook:
+   `node scripts/install-ae-tool-first-hook.js --check` читает
+   `C:\Users\Ant\Documents\Codex\AE_agent\.codex\hooks.json`, command и hash.
+2. Затем открой `/hooks`, просмотри и доверь точное текущее определение project
+   hook. До review/trust non-managed hook не считается активным; изменение hash
+   требует повторного review. См. официальный раздел
+   [Review and trust hooks](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks).
+3. Верификация активного потока (Desktop Canary):
    - Попытка вызова `mcp__node_repl__js` с кодом `throw new Error("AE_TOOL_FIRST_CANARY_EXECUTED")` без fallback-пакета обязана быть отклонена хуком (`permissionDecision: "deny"`) **до** фактического запуска REPL.
-   - Изолированная read-only canary проверка с точным no-op шаблоном `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` обязана завершиться успешно (`pass`).
+   - Изолированная read-only canary проверка с точным no-op шаблоном `/* AE_TOOL_FIRST_READONLY_CANARY */ 0;` обязана завершиться успешно (`pass`). Последняя фактическая проверка исполнила запрещённую canary, поэтому runtime enforcement и прямое/вложенное coverage остаются неподтверждёнными; см. live acceptance note.
 
 ### 8. Запуск автономных тестов перехватчика
 
