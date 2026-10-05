@@ -7,7 +7,7 @@ execution gates, checkpoints, logs, and verification.
 The product target is in `specs/target-app.md`. The active work plan is
 `plans/target-app-execplan.md`.
 
-Версия 3.3.0 готовится в отдельной ветке `codex/release-3.3.0`.
+Версия 3.3.0 опубликована в отдельной ветке `codex/release-3.3.0`.
 Порядок выпуска и возврата к предыдущей версии —
 [в руководстве по версиям](docs/release-workflow.md).
 
