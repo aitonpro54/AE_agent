@@ -66,6 +66,7 @@ const toolDefinitions = Object.freeze(TOOLS.map(name => {
   const properties = name.endsWith("project_lifecycle") ? { transitionId: { type: "string", format: "uuid" } } : { ...commonProperties, ...(name === "open_project" ? { expectedTargetSavedSha25664: { type: "string", pattern: "^[a-f0-9]{64}$" } } : {}) };
   return Object.freeze({ name, description: name === "reconcile_project_lifecycle" ? "Read lifecycle facts without replay or state writes." : name === "recover_project_lifecycle" ? "Manual state-only completion of a proven published Save As after unknown final-open delivery. Preserves original failed outcome; no Save/Open/New or filesystem publish/cleanup." : "Protected manual terminal lifecycle operation. Reopening changes undo and active project context; disk checkpoint does not restore unsaved memory.", inputSchema: { type: "object", properties, required: Object.keys(properties), additionalProperties: false } });
 }));
+// ExtendScript misassociates chained ternaries; keep native class selection explicit.
 const nativeSupport = `
 function __lcPath(s){s=String(s||"").replace(/\\\\/g,"/").replace(/\\/+$/,"");return /^[A-Za-z]:\\//.test(s)?s.toLowerCase():s;}
 function __lcTuple(){if(!app.project || !app.project.file || typeof app.project.file.fsName!=="string")throw new Error("lifecycle_native_unknown");
@@ -74,7 +75,10 @@ function __lcGuard(e){var a=__lcTuple();if(__lcPath(a.file)!==__lcPath(e.file)||
 function __lcNeed(v,t,label){if(typeof v!==t || (t==="number" && !isFinite(v)))throw new Error("lifecycle_inventory_unknown"+(label?":"+label+":expected_"+t+":actual_"+typeof v:""));return v;}
 function __lcID(v){if(typeof v!=="number"||!isFinite(v)||Math.floor(v)!==v||v<1||v>9007199254740991)throw new Error("lifecycle_inventory_identity_unknown");return v;}
 function __lcFile(f){if(!f)return null;return {path:__lcNeed(f.fsName,"string"),missing:!__lcNeed(f.exists,"boolean")};}
-function __lcSource(s){if(!s)throw new Error("lifecycle_inventory_source_unknown");var kind=typeof FileSource!=="undefined" && s instanceof FileSource?"file":typeof SolidSource!=="undefined" && s instanceof SolidSource?"solid":typeof PlaceholderSource!=="undefined" && s instanceof PlaceholderSource?"placeholder":null;
+function __lcSource(s){if(!s)throw new Error("lifecycle_inventory_source_unknown");var kind=null;
+ if(typeof FileSource!=="undefined" && s instanceof FileSource)kind="file";
+ else if(typeof SolidSource!=="undefined" && s instanceof SolidSource)kind="solid";
+ else if(typeof PlaceholderSource!=="undefined" && s instanceof PlaceholderSource)kind="placeholder";
  if(!kind)throw new Error("lifecycle_inventory_source_unknown");var file=kind==="file"?__lcFile(s.file):null;if(kind==="file" && !file)throw new Error("lifecycle_inventory_source_unknown");return {kind:kind,file:file,isStill:__lcNeed(s.isStill,"boolean")};}
 `;
 function nativeInventoryScript(options = {}) {
@@ -85,7 +89,10 @@ function nativeInventoryScript(options = {}) {
 var __lcBefore=__lcTuple(),__lcP=app.project,__lcItems=[],__lcLayers=0,__lcSettings={},__lcTypes=${JSON.stringify(SETTINGS)};
 for(var __lcK in __lcTypes)if(__lcTypes.hasOwnProperty(__lcK))__lcSettings[__lcK]=__lcNeed(__lcP[__lcK],__lcTypes[__lcK],"project."+__lcK);
 var __lcCount=__lcNeed(__lcP.numItems,"number");if(Math.floor(__lcCount)!==__lcCount||__lcCount<0||__lcCount>${LIMITS.items})throw new Error("lifecycle_inventory_budget");
-for(var i=1;i<=__lcCount;i++){var item=__lcP.item(i),kind=item instanceof CompItem?"comp":item instanceof FootageItem?"footage":item instanceof FolderItem?"folder":null;
+for(var i=1;i<=__lcCount;i++){var item=__lcP.item(i),kind=null;
+ if(item instanceof CompItem)kind="comp";
+ else if(item instanceof FootageItem)kind="footage";
+ else if(item instanceof FolderItem)kind="folder";
  if(!kind)throw new Error("lifecycle_inventory_unknown_item");var row={id:__lcID(item.id),index:i,kind:kind,name:__lcNeed(item.name,"string"),comment:__lcNeed(item.comment,"string"),parentId:item.parentFolder===__lcP.rootFolder?null:__lcID(item.parentFolder.id)};
  if(kind!=="folder"){row.width=__lcNeed(item.width,"number");row.height=__lcNeed(item.height,"number");row.pixelAspect=__lcNeed(item.pixelAspect,"number");row.duration=__lcNeed(item.duration,"number");row.frameRate=__lcNeed(item.frameRate,"number");row.hasVideo=__lcNeed(item.hasVideo,"boolean");row.hasAudio=__lcNeed(item.hasAudio,"boolean");row.useProxy=__lcNeed(item.useProxy,"boolean");
   if(item.proxySource===undefined)throw new Error("lifecycle_inventory_proxy_unknown");row.proxy=item.proxySource===null?null:__lcSource(item.proxySource);if(row.useProxy && !row.proxy)throw new Error("lifecycle_inventory_proxy_unknown");}
@@ -118,11 +125,12 @@ function validateInventory(raw, accepted = []) {
   if (value.schema !== VERSION + ".inventory" || value.complete !== true || !Array.isArray(value.items) || value.items.length > LIMITS.items || !Array.isArray(value.protectedEvidence) || value.protectedEvidence.length !== accepted.length || Buffer.byteLength(JSON.stringify(value), "utf8") > LIMITS.bytes) fail("lifecycle_inventory_budget_or_incomplete");
   nativeTuple(value.native); exact(value.settings, Object.keys(SETTINGS), "lifecycle_inventory_settings_unknown");
   for (const [key, type] of Object.entries(SETTINGS)) if (typeof value.settings[key] !== type || type === "number" && !Number.isFinite(value.settings[key])) fail("lifecycle_inventory_settings_unknown", key);
-  const ids = new Set(), layerIds = new Set(); let layerCount = 0;
+  const ids = new Set(), itemsById = new Map(), layerIds = new Set(); let layerCount = 0;
   const file = v => { if (v === null) return; exact(v, ["path", "missing"], "lifecycle_inventory_file_unknown"); if (typeof v.path !== "string" || !v.path || v.path.length > 4096 || !(path.win32.isAbsolute(v.path) || path.posix.isAbsolute(v.path)) || typeof v.missing !== "boolean") fail("lifecycle_inventory_file_unknown"); };
   const id = v => Number.isSafeInteger(v) && v > 0;
   for (const [index, item] of value.items.entries()) {
-    if (!id(item.id) || ids.has(item.id) || item.index !== index + 1 || !["comp", "footage", "folder"].includes(item.kind) || typeof item.name !== "string" || item.name.length > 4096 || typeof item.comment !== "string" || item.comment.length > 4096 || item.parentId !== null && !id(item.parentId)) fail("lifecycle_inventory_identity_unknown"); ids.add(item.id);
+    if (!id(item.id) || ids.has(item.id) || item.index !== index + 1 || !["comp", "footage", "folder"].includes(item.kind) || typeof item.name !== "string" || item.name.length > 4096 || typeof item.comment !== "string" || item.comment.length > 4096 || item.parentId !== null && !id(item.parentId)) fail("lifecycle_inventory_identity_unknown"); ids.add(item.id); itemsById.set(item.id, item);
+    if (item.kind === "folder" && ["width", "height", "pixelAspect", "duration", "frameRate", "hasVideo", "hasAudio", "useProxy", "proxy", "mainSourceKind", "file", "mainFile", "footageMissing", "isStill", "layers"].some(key => Object.prototype.hasOwnProperty.call(item, key))) fail("lifecycle_inventory_unknown");
     if (item.kind !== "folder") {
       if (["width", "height", "pixelAspect", "duration", "frameRate"].some(k => typeof item[k] !== "number" || !Number.isFinite(item[k])) || ["hasVideo", "hasAudio", "useProxy"].some(k => typeof item[k] !== "boolean") || item.proxy === undefined) fail("lifecycle_inventory_unknown");
       if (item.proxy !== null) { object(item.proxy); file(item.proxy.file); if (!["file", "solid", "placeholder"].includes(item.proxy.kind) || typeof item.proxy.isStill !== "boolean" || item.proxy.kind === "file" && item.proxy.file === null || item.proxy.kind !== "file" && item.proxy.file !== null) fail("lifecycle_inventory_proxy_unknown"); } if (item.useProxy && !item.proxy) fail("lifecycle_inventory_proxy_unknown");
@@ -133,9 +141,23 @@ function validateInventory(raw, accepted = []) {
       for (const [li, l] of item.layers.entries()) { if (!id(l.id) || layerIds.has(l.id) || l.index !== li + 1 || typeof l.name !== "string" || l.sourceItemId !== null && !id(l.sourceItemId) || ["enabled", "timeRemapEnabled"].some(k => typeof l[k] !== "boolean") || ["startTime", "inPoint", "outPoint", "stretch"].some(k => typeof l[k] !== "number" || !Number.isFinite(l[k]))) fail("lifecycle_inventory_layer_unknown"); layerIds.add(l.id); }
     }
   }
-  for (const item of value.items) { if (item.parentId !== null && !value.items.some(p => p.id === item.parentId && p.kind === "folder")) fail("lifecycle_inventory_parent_unknown"); for (const layer of item.layers || []) if (layer.sourceItemId !== null && !ids.has(layer.sourceItemId)) fail("lifecycle_inventory_source_identity_unknown"); }
+  for (const item of value.items) {
+    if (item.parentId !== null && itemsById.get(item.parentId)?.kind !== "folder") fail("lifecycle_inventory_parent_unknown");
+    for (const layer of item.layers || []) if (layer.sourceItemId !== null && !["comp", "footage"].includes(itemsById.get(layer.sourceItemId)?.kind)) fail("lifecycle_inventory_source_identity_unknown");
+  }
   const inventory = { complete: true, comps: value.items.filter(i => i.kind === "comp").map(i => ({ itemId: i.id, duration: i.duration, frameRate: i.frameRate, layers: i.layers })), sources: value.items.filter(i => i.kind === "footage").map(i => ({ itemId: i.id, file: i.file && i.file.path, duration: i.duration, footageMissing: i.footageMissing })) };
-  accepted.forEach((snapshot, index) => { if (!protection.compareSnapshot(snapshot, value.protectedEvidence[index], inventory).ok) fail("lifecycle_protected_snapshot_mismatch"); });
+  accepted.forEach((snapshot, index) => {
+    const evidence = value.protectedEvidence[index], comp = itemsById.get(snapshot.target.compItemId), source = itemsById.get(snapshot.source.itemId);
+    const layer = comp?.kind === "comp" && comp.layers.find(row => row.id === snapshot.target.layerId);
+    const observedComp = evidence?.comp, observedLayer = evidence?.layer, observedSource = observedLayer?.source;
+    // A complete inventory and its protected evidence must describe the same native objects.
+    if (!layer || source?.kind !== snapshot.source.type || source.mainSourceKind !== "file" || source.file?.missing !== false || source.footageMissing !== false ||
+        layer.sourceItemId !== source.id || observedComp?.itemId !== comp.id || observedComp.itemIndex !== comp.index || observedComp.name !== comp.name || !protection.valueEqual(observedComp.frameRate, comp.frameRate) ||
+        observedLayer?.id !== layer.id || observedLayer.index !== layer.index || observedLayer.name !== layer.name ||
+        ["startTime", "inPoint", "outPoint", "stretch", "timeRemapEnabled"].some(key => !protection.valueEqual(observedLayer[key], layer[key])) ||
+        observedSource?.itemId !== source.id || typeof observedSource.file !== "string" || !samePath(observedSource.file, source.file.path) || observedSource.footageMissing !== source.footageMissing) fail("lifecycle_protected_snapshot_mismatch");
+    if (!protection.compareSnapshot(snapshot, evidence, inventory).ok) fail("lifecycle_protected_snapshot_mismatch");
+  });
   return clone(value);
 }
 function inventoryContent(value) { return { settings: value.settings, items: value.items, protectedEvidence: value.protectedEvidence }; }

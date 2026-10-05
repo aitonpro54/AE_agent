@@ -21,9 +21,32 @@ assert(template.quasis.length === 2 && template.quasis.every(q => typeof q.value
 const wrap = body => template.quasis[0].value.cooked + body + template.quasis[1].value.cooked;
 const profile = { ecmaVersion: 3, allowReserved: "never" };
 const parse = text => acorn.parse(text, profile);
+function assertNoNestedConditionals(ast, name) {
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "ConditionalExpression") {
+      assert([node.test, node.consequent, node.alternate].every(child => child.type !== "ConditionalExpression"),
+        name + ": nested ternary is unsafe in ExtendScript");
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value === "object") visit(value);
+    }
+  }
+  visit(ast);
+}
 assert.throws(() => parse("(function(){return {native:1};})();"), /reserved/);
 assert.throws(() => parse("(function(){return {class:1};})();"), /reserved/);
 assert.doesNotThrow(() => parse('(function(){return {"native":1};})();'));
+// A modern parser/VM accepts these old chains; ExtendScript misassociates them.
+const oldClassifiers = [
+  'var kind=item instanceof CompItem?"comp":item instanceof FootageItem?"footage":item instanceof FolderItem?"folder":null;',
+  'var kind=typeof FileSource!=="undefined" && s instanceof FileSource?"file":typeof SolidSource!=="undefined" && s instanceof SolidSource?"solid":typeof PlaceholderSource!=="undefined" && s instanceof PlaceholderSource?"placeholder":null;'
+];
+for (const body of oldClassifiers) {
+  const ast = parse(wrap(body));
+  assert.throws(() => assertNoNestedConditionals(ast, "old classifier control"), /nested ternary is unsafe/);
+}
 const tuple = { file: path.join(ROOT, ".codex-runtime", "es3-source.aep"), dirty: false, revision: 1 };
 const destination = path.join(ROOT, ".codex-runtime", "es3-target.aep");
 const cases = [
@@ -44,6 +67,7 @@ let oldDefects = 0;
 for (const [name, body] of cases) {
   const wrapped = wrap(body);
   assert.doesNotThrow(() => parse(wrapped), name + " must parse as strict ES3");
+  assertNoNestedConditionals(parse(wrapped), name);
   const defective = wrapped.replace(/"native":(?=__lcAfter|__lcResult)/g, "native:");
   if (defective !== wrapped) {
     assert.throws(() => parse(defective), /keyword 'native' is reserved/, name + " negative defect control");
@@ -52,4 +76,5 @@ for (const [name, body] of cases) {
 }
 assert.equal(oldDefects, 7, "All inventory/phase reserved-key controls must exist");
 console.log("Lifecycle strict ES3 PASS", cases.length, "current outputs;", oldDefects,
-  "old reserved-key rejects; parser", acorn.version, "(syntax only)");
+  "old reserved-key rejects;", oldClassifiers.length, "old classifier-chain rejects; parser", acorn.version,
+  "(syntax and static host-compatibility checks only)");
