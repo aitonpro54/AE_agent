@@ -158,13 +158,21 @@ $env:CEP_PANEL_ENSURE_DAEMON='0'; node scripts/cep-panel-cdp-smoke.js reload
 ## Именованные переходы проекта
 
 `guarded-project-lifecycle` описан в [рецепте lifecycle](../recipes/project-lifecycle.md).
-Пока текущий daemon не перезапущен с приватным opt-in `AE_PROJECT_LIFECYCLE_ENABLED=1`,
-эти операции недоступны. Подключённый recipe forwarding строит тот же план через
+Доступность зависит от фактического состояния daemon: перед операцией прочитай свежий
+`get_project_lifecycle_state` и требуй `enabled === true`, `blocked === false`,
+`problem === null`, `pending === null` и готовый protection store; не выводи состояние
+из версии панели, предыдущего acceptance или настроек проекта. Live acceptance и его
+границы записаны [отдельно](tool-first-live-acceptance-2026-10-05.md). Подключённый
+recipe forwarding строит тот же план через
 `build_solution_plan` с `solutionId: "guarded-project-lifecycle"`; прямой typed
 builder — `build_project_lifecycle_plan({operation, targetProjectFile, checkpointLabel})`.
 Разрешены только single-step Save As/open/create планы с exact CEP manual confirmation;
 неизвестный исход требует read-only reconcile, никогда replay. Это high-risk переход,
-который меняет Undo и активный контекст проекта.
+который меняет Undo и активный контекст проекта. Для полного media/proxy read-back
+проверяй actual item kind/path и cross-relations; текущая corrected acceptance и
+отдельный известный CEP in-flight race описаны в acceptance note. Там также
+зафиксирован один protected-placeholder отказ до плана; это узкий кейс, не общая
+гарантия `/hooks` enforcement.
 
 ---
 

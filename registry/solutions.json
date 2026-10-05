@@ -74,13 +74,16 @@
         ]
       },
       "testedAeContext": {
-        "aeVersion": "unknown",
-        "panelVersion": "AE Agent 3.2.0",
-        "bridgeVersion": "3.2.0",
-        "projectKind": "synthetic",
+        "aeVersion": "26.2x49",
+        "panelVersion": "AE Agent 3.3.0",
+        "bridgeVersion": "3.3.0",
+        "projectKind": "live-generated",
         "notes": [
-          "Offline lifecycle fixtures only; no live AE acceptance.",
-          "Current server runtime has not been restarted with AE_PROJECT_LIFECYCLE_ENABLED=1; the feature is unavailable in that runtime."
+          "Offline fixtures plus bounded live acceptance on AE 26.2x49 / AE Agent and bridge 3.3.0; run evidence and exact limits: docs/tool-first-live-acceptance-2026-10-05.md.",
+          "Historical frames/manifest run: 8/8 steps, 12/12 semantic checks, 4/4 entries; 1920x1080 PNG physically viewed, not artistic acceptance. State-only recovery 1/1 with zero native mutations; empty create 1/1; protected named save 2/2. Historical Save As/Open operation runs remain successful records but their media evidence is partial because an old folder-kind bug misclassified comp/footage.",
+          "Corrected full-media acceptance after 915e46b: fresh Save As run 0fc5e30a-bfef-45ba-8b51-fcf71f9fc59d (revision 2, one non-dry semantic-passed step) and Open-back run ad2cea85-f106-418f-910b-fc0b6b08e6cd (revision 4, one non-dry semantic-passed step). Full inventory, exact identities and limits are recorded in docs/tool-first-live-acceptance-2026-10-05.md.",
+          "Current live read-back: daemon 24144, configured opt-in enabled, lifecycle generation 6, pending null, created source fixture clean at native revision 85. One valid typed transform proposal for protected comp/layer identity was rejected before plan/run with protected_placeholder_conflict / accepted_transform_conflict; no action or dry-run was created. This is a bounded gate case, not general /hooks enforcement.",
+          "Live results do not establish artistic acceptance, runtime PreToolUse enforcement, or completion of the overall guard goal. A separate CEP current-plan refresh/adoption race remains under repair; the scoped source issue does not establish the specific incident cause, and no execution/native command occurred in that incident."
         ]
       },
       "promotionHistory": [
@@ -122,7 +125,7 @@
         "steps":["Build read-only recovery plan по exact transitionId; targetProject — actual final из fresh assessor.","Новое propose → exact dry-run → fresh manual CEP confirmation/run в разрешённом recovery scope.","Проверить recovery origin, новый recoveredBy, generation и terminal receipt с command-backed final reads; исходный run остаётся failed."],
         "expectedEvidence":["Ноль native mutation commands и filesystem publish/save/copy/cleanup.","Original authorization/input/source/stage/publish evidence сохранены; origin unknown delivery аудирован.","Source policy неизменна; existing migrated target policy, receipt и cleared pending записаны атомарно; artistic=false."]
       },
-      "testedAeContext":{"aeVersion":"unknown","panelVersion":"AE Agent 3.3.0","bridgeVersion":"3.3.0","projectKind":"synthetic","notes":["Focused offline VM/store/adapter fixtures; live recovery requires sole controller and fresh CEP technical gates."]},
+      "testedAeContext":{"aeVersion":"26.2x49","panelVersion":"AE Agent 3.3.0","bridgeVersion":"3.3.0","projectKind":"live-generated","notes":["Focused offline coverage (351). Bounded live state-only recovery: run 0e9c4b5f-4ea4-442a-8c10-50f31cc69576, 1/1 semantic passed, zero native mutations, generation 1; original failed run retained.","Read-only server-ledger receipt reconciled exact post-retirement UUID e385fe15-5118-4e7c-8fb4-d9dccd36f5a0 and post-commit UUID 04c700d4-5b34-4840-b22e-0149a50c395d. Evidence and limits: docs/tool-first-live-acceptance-2026-10-05.md.","Old recovery producer had lower-fidelity comp/media inventories; server-ledger roles and the zero-native-mutation sequence remain proven. Full-media proof is in the corrected shared-producer Save As/Open runs; no second unknown recovery was fabricated."]},
       "promotionHistory":[{"date":"2026-10-05","from":"local-architecture-review","to":"recipe","reviewer":"codex","evidence":"Bounded state-only recovery implementation and isolated adversarial checks.","commit":null}],
       "notes":["Read-only reconcile и summary не являются proof authority. Old finalize остаётся строгим; только persisted final proof допускает его.","Undo/unsaved memory не восстанавливаются; source не открывается, stage/checkpoint остаются evidence. Direct/admin/autonomous forbidden.","Optional recovery fields backward-compatible для старого pending reader новой версии; downgrade после recovery к прежнему строгому reader не обещается."]
     },

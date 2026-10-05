@@ -2,11 +2,17 @@
 
 ## Доступность
 
-Rollout production opt-in `AE_PROJECT_LIFECYCLE_ENABLED=1` остаётся OFF до отдельной
-fixture scope. Перед lifecycle предложением проверь свежий `get_project_lifecycle_state`:
-`enabled === true`, `blocked === false` и `pending === null`; при disabled, неизвестных
-полях или pending transition остановись. Для работы требуется уже существующий валидный
-protection store; runtime не создаёт пустую базу автоматически.
+Lifecycle доступен только при явном opt-in
+`AE_PROJECT_LIFECYCLE_ENABLED=1` и валидном protection store. Live acceptance
+проведён в отдельном fixture scope; исторические сведения об активации и
+подключении записаны в [acceptance note](../docs/tool-first-live-acceptance-2026-10-05.md).
+Они не заменяют проверку состояния подключённого runtime.
+Перед каждым lifecycle предложением проверь свежий `get_project_lifecycle_state`:
+`enabled === true`, `blocked === false`, `problem === null`, `pending === null`;
+при disabled, blocked, problem, неизвестных полях или pending transition остановись.
+Если runtime выключен, недоступен или
+наблюдение не свежее — остановись и сообщи фактическое состояние. Для работы требуется
+уже существующий валидный protection store; runtime не создаёт пустую базу автоматически.
 
 ## Когда применять
 
@@ -56,6 +62,10 @@ target и проверяет его SHA до открытия; полный nati
 только после открытия и сравнивается с его сохранённой policy. Во всех случаях
 проверяются ограниченный inventory, declared project settings, footage/proxy и
 composition source identities. Неизвестные поля и переполнение блокируют запись.
+Для полной media/proxy приёмки native inventory должен показывать фактические
+kind/path/metadata и их cross-relations; один `complete:true` или совпавший hash
+недостаточен. Актуальный live пример и известная отдельная CEP race записаны в
+[acceptance note](../docs/tool-first-live-acceptance-2026-10-05.md).
 
 Lifecycle сохраняет только точно подтверждённые restrictions, mappings и
 constraints по совпадающим IDs, значениям и зависимостям. Old visual/review,
