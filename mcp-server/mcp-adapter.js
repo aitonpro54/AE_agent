@@ -14,7 +14,7 @@ const {
 } = require("./production-usage-tools");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "3.2.0";
+const SERVER_VERSION = "3.3.0";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);

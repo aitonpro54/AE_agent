@@ -31,7 +31,7 @@ function createMcpClient() {
     let value; try {value = JSON.parse(text.text);} catch (_error) {value = {error: text && text.text};}
     return {isError: Boolean(result.isError), value};
   }
-  const ready = rpc("initialize", {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "ae-agent-autonomous-plan-client", version: "3.2.0"}});
+  const ready = rpc("initialize", {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "ae-agent-autonomous-plan-client", version: "3.3.0"}});
   ready.then(() => child.stdin.write(JSON.stringify({jsonrpc: "2.0", method: "notifications/initialized"}) + "\n"), () => {});
   return {rpc, call, close: () => child.kill()};
 }

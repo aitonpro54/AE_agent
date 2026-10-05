@@ -1,13 +1,13 @@
 # AE Agent
 
-AE Agent 3.2.0 is a local After Effects assistant: a CEP panel talks to a local
+AE Agent 3.3.0 is a local After Effects assistant: a CEP panel talks to a local
 bridge daemon, and the daemon owns all provider calls, plan validation, AE
 execution gates, checkpoints, logs, and verification.
 
 The product target is in `specs/target-app.md`. The active work plan is
 `plans/target-app-execplan.md`.
 
-Версия 3.2.0 готовится в отдельной ветке `codex/release-3.2.0`.
+Версия 3.3.0 готовится в отдельной ветке `codex/release-3.3.0`.
 Порядок выпуска и возврата к предыдущей версии —
 [в руководстве по версиям](docs/release-workflow.md).
 
@@ -192,7 +192,7 @@ generated-only subset дополнительно прошёл в реально�
 identity, negative preflight, restart/reload/off и protected save/reopen.
 Матрица критериев, actual IDs/hashes и честное разделение live/offline evidence
 находятся в [отчёте M7](docs/m7-integration-acceptance-2026-09-19.md).
-Клиентская визуальная приёмка не входит в release gate 3.2.0.
+Клиентская визуальная приёмка не входит в release gate 3.3.0.
 
 Run only the groups relevant to the touched surface unless a milestone calls
 for a broader pass. Frozen `smoke:full-intake` requires an explicit reviewed
