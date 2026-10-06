@@ -50,7 +50,7 @@ release-3.3.0, не назначай новую версию и не перем�
 Используй соответствующих исполнителей, включая реальный Flash через существующий
 agy-bridge с config/agy-bridge.json и profile ae-agent. Прочитай ae-task-routing,
 cep-panel-controls и antigravity-cli + references/ae-agent.md перед их применением.
-Luna/medium ae_scout — bounded evidence; ae_operator — понятные правки/сводки/checks;
+Luna/high ae_scout — bounded evidence; ae_operator — понятные правки/сводки/checks;
 Flash/high — средние implementation blocks; ae_specialist Sol/xhigh — локальный
 блокер после двух исправлений критерия; ae_architect Sol/ultra — системный пробел;
 ae_reviewer Sol/high — ограниченное review блока 7. Astra только после доказанной

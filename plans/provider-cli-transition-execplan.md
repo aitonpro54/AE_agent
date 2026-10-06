@@ -126,7 +126,7 @@ packet `ae-agent`, выполняет весь свой блок; родител
 
 ### 1. Свежий baseline и карта зависимостей
 
-**Исполнитель:** `ae_scout` (Luna/medium), read-only; решения scope и Git — родитель.
+**Исполнитель:** `ae_scout` (Luna/high), read-only; решения scope и Git — родитель.
 **Ownership:** evidence для `mcp-server/{ai-agents,bridge-daemon,autonomous-session,
 proposal-state,run-outcome,plan-run-reconciliation}.js`, нужных CEP handlers,
 package/test routes, целевых registry entries/recipes; locked intake исключён.
@@ -240,7 +240,7 @@ callers; rules/syntax/diff. Local removal commit.
 
 ### 7. Одна offline matrix и ограниченное независимое review
 
-**Исполнители:** `ae_operator` (Luna/medium) собирает и запускает scoped matrix;
+**Исполнители:** `ae_operator` (Luna/high) собирает и запускает scoped matrix;
 затем `ae_reviewer` (Sol/high), read-only bounded diff/contract review.
 **Ownership:** `package.json`, active provider/AGY/autonomy/bridge test routing,
 targeted fixtures и записи этого плана; production changes только адресной correction.
@@ -285,7 +285,7 @@ installed CEP/runtime автоматически. Не трогать AEP/media 
 
 ### 9. Итоговая документация и checkpoint
 
-**Исполнитель:** `ae_operator` (Luna/medium), docs only; финальная приёмка/Git — родитель.
+**Исполнитель:** `ae_operator` (Luna/high), docs only; финальная приёмка/Git — родитель.
 **Ownership:** `specs/target-app.md`, актуальные provider/routing docs и оба execplans;
 не переписывать историческую evidence. Этот план содержит ссылки на actual checks,
 commits и live limitations; главный target plan остаётся не длиннее 180 строк.

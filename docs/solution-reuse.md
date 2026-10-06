@@ -60,7 +60,7 @@ raw JSX, destructive plans, `Agent Hardcore` и replay прежнего proposal
 для диспетчеризации. Средние задачи — Flash 3.8/high под контролем модели чата.
 `ae_specialist` — Sol 6.1/xhigh; `ae_architect` — Sol 6.1/ultra;
 `ae_escalation` — Astra/high только после неудачи Sol/ultra. Scout/operator —
-Luna/medium для простых самостоятельных поручений; reviewer — Sol 6.1/high.
+Luna/high для простых самостоятельных поручений; reviewer — Sol 6.1/high.
 Для одного короткого вызова отдельный агент не нужен. Terra исключена из маршрута.
 Родитель сохраняет выбранную пользователем модель. Наличие ролей не означает
 автоматической делегации: фактическую модель и effort нужно проверять по runtime
