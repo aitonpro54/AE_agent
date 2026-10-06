@@ -59,7 +59,10 @@ Maintain AE Agent 3.3.0 in this clean repository. The product target is
   неизвестное действие и не сбрасывай чужой REPL; подробности в
   `docs/tool-first-workflow.md`.
 - Отсутствие typed MCP само по себе не обосновывает Computer Use: сначала проверь
-  готовые CLI/helpers/API. Для CEP inspect/reload уже есть `scripts/cep-panel-cdp-smoke.js`;
+  готовые CLI/helpers/API. Для открытия/восстановления панели сначала используй
+  `ensure_ae_agent_panel` (контракт `docs/ae-agent-panel-bootstrap.md`);
+  `panelConnected=false` не доказывает закрытую панель, timeout/unknown не разрешает replay.
+  Для CEP inspect/reload уже есть `scripts/cep-panel-cdp-smoke.js`;
   штатный reload выполняй с `CEP_PANEL_ENSURE_DAEMON=0` по scoped-порядку из `docs/tool-first-workflow.md`.
 - Если в CEP активна `Автономная сессия Codex`, после успешного
   dry-run можно выполнить через MCP только server-proposed typed mutating plan.

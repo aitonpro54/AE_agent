@@ -11,6 +11,7 @@ const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const planCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
+const panelBootstrapReadContext = new AsyncLocalStorage();
 const placeholderMutationContext = new AsyncLocalStorage();
 const placeholderPlanContext = new AsyncLocalStorage();
 const lifecycleCommandContext = new AsyncLocalStorage();
@@ -27,6 +28,7 @@ const { createAutonomousSessionManager } = require("./autonomous-session");
 const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstacleEvent } = require("./proposal-state");
 const currentProposalState = createProposalState();
 const {waitForBridgeState, waitForPlanState} = require("./operation-wait");
+const panelBootstrap = require("./ae-agent-panel-bootstrap");
 const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
 const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
@@ -951,6 +953,7 @@ function getBridgeStatus() {
     uptimeMs: now - STARTED_AT,
     startedAt: new Date(STARTED_AT).toISOString(),
     panelConnected: now - lastPanelSeenAt < 15000,
+    panelBootstrap: panelBootstrapService.snapshot(),
     autonomousSession: autonomousSession.publicStatus(),
     projectLifecycle: lifecycle.diagnostics(),
     lastPanelSeenAt,
@@ -1197,7 +1200,8 @@ function classifyM100ToolRisk(name) {
     known: true,
     riskLevel: "read_only",
     requiresProposal: false,
-    reasons: []
+    // M100 risk describes project content. This service also activates panel UI.
+    reasons: toolName === panelBootstrap.TOOL_NAME ? ["fixed_application_panel_ui_effect; no_project_content_mutation"] : []
   };
 }
 
@@ -3629,6 +3633,9 @@ function drainWaitingPanels() {
 }
 
 function enqueueAeCommand(script, timeoutMs) {
+  if (panelBootstrapService.isBusy() && !panelBootstrapReadContext.getStore()) {
+    return Promise.reject(Object.assign(new Error("Panel bootstrap admission is active; retry after its reconciliation."), {code:"panel_bootstrap_busy",phase:"before_delivery"}));
+  }
   return new Promise((resolve, reject) => {
     const id = crypto.randomUUID();
     const createdAt = Date.now();
@@ -3665,6 +3672,11 @@ function enqueueAeCommand(script, timeoutMs) {
     command.planContext = planCommandContext.getStore() || null;
     try { capturePlanCommand(command, null, true); }
     catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
+    const bootstrapRead = panelBootstrapReadContext.getStore();
+    if (bootstrapRead) {
+      try { bootstrapRead.onQueued({id,executionId:command.executionId,expiresAt:command.expiresAt}); }
+      catch(error) {reject(Object.assign(error,{code:"bootstrap_read_record_failed",phase:"before_delivery"}));return;}
+    }
     command.timeout = setTimeout(() => {
       timeoutAeCommand(id);
     }, timeoutMs);
@@ -8729,6 +8741,10 @@ function startHttpBridge() {
         const name = String(body.name || "");
         const args = body.arguments || {};
         const authority = autonomousSession.authorization();
+        if (name === panelBootstrap.TOOL_NAME && res.authRole !== "automation") {
+          writeJson(res, 403, {ok:false, code:"bootstrap_automation_role_required"});
+          return;
+        }
         const result = decorateDaemonToolResult(name, await callToolLogged("mcp-adapter", name, args, {
           autonomousSession: authority
         }));
@@ -9047,6 +9063,7 @@ function startHttpBridge() {
 }
 
 const tools = [
+  panelBootstrap.tool,
   ...productionUsageTools,
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
@@ -12608,7 +12625,17 @@ async function buildPostRunMontageReadBack(record, actual) {
   });
 }
 
+const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
+  stateDir: path.join(process.env.AE_BRIDGE_STATE_DIR || LOG_DIR, "ae-agent-panel-bootstrap"),
+  getStatus: () => ({...getBridgeStatus(), planExecutionState: currentProposalState.current && currentProposalState.current.executionState || null}),
+  readProject: (timeoutMs,onQueued) => panelBootstrapReadContext.run({onQueued}, async () => firstToolPayload(await callToolLogged("panel-bootstrap-read", "get_project_info", {}, {panelBootstrapReadTimeoutMs: timeoutMs})))
+});
+
 async function callTool(name, args, executionContext) {
+  if (name === panelBootstrap.TOOL_NAME) {
+    const result = await panelBootstrapService.ensure(args || {});
+    return toolResult(result, !result.ok);
+  }
   if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
   args = args || {};
@@ -14470,7 +14497,7 @@ async function callTool(name, args, executionContext) {
           revision: revisionSupported
         }
       };
-    `);
+    `, executionContext && executionContext.panelBootstrapReadTimeoutMs);
     return toolResult(result.result);
   }
 
@@ -22121,6 +22148,9 @@ async function callTool(name, args, executionContext) {
 }
 
 async function callToolLogged(source, name, args, executionContext) {
+  if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
+    return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
+  }
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
