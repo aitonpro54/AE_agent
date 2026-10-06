@@ -265,29 +265,50 @@ async function runProviderReadinessMatrix(check, opts = {}) {
   };
 }
 
-function runSpawned(check) {
+function runSpawned(check, opts = {}) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let settled = false;
     let child;
-    const done = (status, exitCode, signal, error) => resolve({
-      id: check.id,
-      category: check.category,
-      command: check.command,
-      status,
-      exitCode,
-      signal: signal || null,
-      durationMs: Date.now() - startedAt,
-      timedOut,
-      stdoutTail: tail(stdout),
-      stderrTail: tail(stderr),
-      error: error || null
-    });
+    let killTimer;
+    let closeTimer;
+    const done = (status, exitCode, signal, error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearTimeout(killTimer);
+      clearTimeout(closeTimer);
+      resolve({
+        id: check.id,
+        category: check.category,
+        command: check.command,
+        status,
+        exitCode,
+        signal: signal || null,
+        durationMs: Date.now() - startedAt,
+        timedOut,
+        stdoutTail: tail(stdout),
+        stderrTail: tail(stderr),
+        error: error || null,
+        ...(opts.captureOutput ? { stdout, stderr } : {})
+      });
+    };
     const timer = setTimeout(() => {
       timedOut = true;
       if (child) child.kill();
+      // A check can ignore SIGTERM or keep inherited pipes open. Bound cleanup
+      // too; Node's kill API works without a shell on Windows.
+      killTimer = setTimeout(() => { if (child) child.kill("SIGKILL"); }, 1000);
+      closeTimer = setTimeout(() => {
+        if (child) {
+          child.stdout.destroy();
+          child.stderr.destroy();
+        }
+        done(opts.timeoutStatus || "failed", null, null, "Check timed out; output pipes closed after cleanup deadline.");
+      }, 2000);
     }, Math.max(1000, Number(check.timeoutMs || 60000)));
     try {
       child = spawn(check.cmd, check.args || [], { cwd: ROOT, env: process.env, windowsHide: true });
@@ -306,7 +327,8 @@ function runSpawned(check) {
     });
     child.on("close", (code, signal) => {
       clearTimeout(timer);
-      done(code === 0 && !timedOut ? "passed" : "failed", code, signal);
+      done(timedOut ? opts.timeoutStatus || "failed" : code === 0 ? "passed" : "failed", code, signal,
+        timedOut ? "Check timed out." : null);
     });
   });
 }
@@ -447,12 +469,15 @@ module.exports = {
   REPORT_SCHEMA_VERSION: SCHEMA,
   PROVIDER_READINESS_TARGETS: READINESS_TARGETS,
   buildCheckCatalog,
+  cmd,
   categoriesForScope,
   listCatalog,
   normalizeScope,
   parseArgs,
   runProviderReadinessMatrix,
+  runSpawned,
   runSuite,
   selectedChecks,
-  summarizeResults
+  summarizeResults,
+  writeReport
 };

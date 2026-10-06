@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "check:rules": "node scripts/clean-current-check.js",
+    "diagnostics": "node scripts/diagnostics.js",
+    "smoke:diagnostics": "node scripts/diagnostics-smoke.js",
     "smoke:panel-bootstrap": "node scripts/ae-agent-panel-bootstrap-smoke.js",
     "smoke:panel-auth": "node scripts/panel-auth-smoke.js",
     "smoke:provider-contract": "node scripts/provider-contract-smoke.js",

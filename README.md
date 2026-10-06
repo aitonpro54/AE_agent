@@ -31,6 +31,9 @@ Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`,
 `.codex-autonomy/`, `logs/`, `backups/`, `snapshots/`, and
 `pro-review-bundles/`.
 
+Выбранные офлайн-проверки, receipts и hashes можно собрать одним запуском
+[компактной диагностики](docs/compact-diagnostics.md); полный отчёт остаётся в `logs/diagnostics/`.
+
 ## Run The Bridge
 
 Start the local bridge daemon:
