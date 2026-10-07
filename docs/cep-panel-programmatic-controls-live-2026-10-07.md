@@ -1,0 +1,30 @@
+# CEP-панель AE Agent: ограниченная runtime-приёмка — 7 октября 2026
+
+Статус блока — `limited-live-passive-passed`: проверены хеши файлов на диске и ограниченные пассивные API панели. Готовность текущего плана, состояния проекта и защищённого исполнения остаётся **BLOCKED** из-за неизвестного исхода исходного `plan.run`. Полная приёмка продукта не проводилась.
+
+| Область | Результат и граница |
+|---|---|
+| Исторические офлайн-проверки | Исходный checkpoint `299d3a5`; историческая сводка валидатора содержит 29/29 checks, 0 failures. Эти офлайн-проверки завершились до активации; исходная readiness сохранена отдельной копией. |
+| Исходники и файлы CEP | Только чтением пересчитаны все 14 source SHA-256 и 7 установленных файлов. Все семь совпали с хешами исходников и `installed-update.json`. Заменены contract, actions, `panel.js`, `index.html`; CSS, manifest и `CSInterface.js` совпадали и не заменялись. Эти хеши не подтверждают побайтную идентичность загруженного cache. |
+| Daemon и активация | Отчёт активации фиксирует PID 32728 на commit `299d3a57bd9b5a894b2124f2690679905d7ef1a6`, composite SHA-256 `ede2697e1ca91db85d1fcd9322b3695f3c91c188733b3bc13a4702fb0063f187`. Composite не включает отдельно сохранённый lifecycle transition source `b176d624dc6c2f4a815661dcb989d3700a50318fad4898675df427d5c96a2c2a`. Документационный commit не станет причиной перезапуска daemon. |
+| Чтение проекта при активации | В 12:50:28 UTC получено типизированное чтение для `titr_02.aep`: dirty, revision `12884255`, lifecycle generation `6`. Оно предшествовало штатному сохранению контроллером титров и не подтверждает текущее состояние проекта или bridge после unknown. Контроль вернулся контроллеру. |
+| Пассивные API панели | Для обнаружения инструментов через официальный stdio adapter с `AE_DAEMON_AUTO_START=0` найдены 4 MCP tools. Каталог содержит 48 действий: доступны 4 (`chat.sessions.list`, `chat.transcript.get`, `plan.current`, `logs.get`), 44 закрыты gates. Постоянный adapter не перезапускался; настроенные credentials/config не менялись, их значения не записывались. |
+| Загруженный именованный service | Загруженный `AEAgentPanelActions` подтверждён через live catalog/state: protocol `ae-agent.panel-actions.v1`, panel instance `panel-1791377235126-3jvnzt07quq`, epoch `1`, generation `1791377404854`. Байты/hash cache не снимались: `loadedCepServiceVerified=true`, `loadedCepCacheVerified=false`. |
+| Проверка receipts | `logs.get` request `22030a74-1827-42d1-9ce0-6ce8f304d7a4` завершился; receipt точно совпал при пассивном чтении. Запрос с устаревшей panel binding `69fe55d2-abb0-45b0-a186-4cebfbfd0811` отклонён как `expected_state_mismatch`, `delivery: not_submitted`. Проверялись только panel binding pins, не canonical plan pins. |
+| Штатное сохранение контроллером титров | Зафиксирован `titr_all.aep`, 31,202,378 bytes, SHA-256 `cfc5add053606a8b62bf774fc8eaff3e0777d1687d6d52647989612fdf9d0e7a`; инвентаризация stage из 448 items совпала точно. Проверка фактического открытия с подтверждением native state не выполнена. |
+
+Блок этого чата — activation и пассивные API — прошёл без CU, CEP clicks и DOM. Контроллер титров в отдельном scope позже выполнил только чтение UI после штатного сохранения, без CEP clicks. Root не выполнял provider, raw, destructive, save или client mutations. В пассивном блоке `preferences`, provider state и local settings сравнивались без переключений и остались без изменений.
+
+Protection-store hash `38000e81…` совпал только до и после активации, до штатного сохранения. Позже контроллер записал pending при штатном сохранении, поэтому итоговые bytes store ожидаемо изменились. Root вручную store не редактировал; итоговый unknown/pending сохранён. Неизменность на активации не означает, что store не менялся позднее.
+
+## Заблокированная приёмка и следующий объём работ
+
+Исходный `plan.run` request `f61816c5-2e20-42b0-9d99-245eb69d16d3` остаётся `effect: unknown`, `bridge_offline`, с `panel runId: null`. В server evidence есть canonical run `bbc517e5…` с terminal failure `timed_out_after_submit`, но проверенной terminal association с panel receipt нет. Текущий guard остаётся. Cached `connected=true`, предыдущее чтение native state, postconditions, idle/pending snapshots и новая UUID не снимают неопределённость; текущее bridge connection state после unknown не проверено.
+
+Отдельный исторический Save run `21e7d3e6-3aa3-4fd2-bb8b-ff1ce9284850` завершился terminal `lifecycle_store_capacity` (`executedCount: 0`, `failedCount: 1`); его исторический mutation classifier остаётся `unknown`, повторной отправки не было. Эта запись не описывает текущий CEP admission guard: тогда panel action API ещё не существовал. Guard текущего `f61816c5-2e20-42b0-9d99-245eb69d16d3` остаётся. В блоке этого чата не проверялись canonical plan pins, dry-run, local-settings test и fixture mutation. Мутаций проекта — 0; provider state, preferences и local settings не менялись. Готовность current/project/protected — **BLOCKED**.
+
+Будущий ремонт — только предложение, без реализации: сохранять исходный plan binding до отправки и доказывать явную terminal association для receipt с `runId: null`. Должны совпасть `actionId`, `payloadHash`, revision, session и terminal evidence server run/native command. Одни postconditions, idle state или новая UUID не снимают guard; публичный небезопасный reset и изменение существующего receipt/live state не допускаются. Нужны offline fixtures. Внешний вопрос контроллеру AE остаётся открытым.
+
+Подтверждения: ignored `.codex-runtime/panel-control-20261007/activation-summary.json`, `installed-update.json`, `passive-live-summary.json` и связанные `live-*.json`. Исходная readiness до активации сохранена в `runtime-readiness-before-activation.json`; текущая содержит пересчитанные source/installed hashes и ограниченный live результат.
+
+**Проверки:** нынешние проверки документации `npm.cmd run check:rules` и `git diff --check` прошли; повторно рассчитаны 14 source и 7 installed hashes; source не менялись. Исторические VM 48/48 (12 groups), transport 13 groups, stdio 10 cases и 29 final checks повторно не запускались.
