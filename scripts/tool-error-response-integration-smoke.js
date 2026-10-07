@@ -13,6 +13,7 @@ const { spawn } = require("child_process");
 const { decorateDaemonToolResult } = require("../mcp-server/bridge-daemon");
 const { projectPlanRunSummary } = require("../mcp-server/plan-run-response");
 const { runtimeIdentity } = require("../mcp-server/review-evidence");
+const { panelControlTools } = require("../mcp-server/cep-panel-control");
 const runId = "12345678-1234-1234-1234-123456789abc";
 const legacy = (value, isError) => ({content:[{type:"text",text:JSON.stringify(value)}],isError});
 const guidance = result => JSON.parse(result.content[1].text);
@@ -24,8 +25,10 @@ async function main() {
   assert.ok(baseline.modules.some(row=>row.name === "mcp-server/tool-error-response.js"));
   const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(),"ae-guidance-identity-"));
   try {
-    fs.mkdirSync(path.join(fixtureRoot,"mcp-server"));
-    for(const row of baseline.modules) fs.copyFileSync(path.join(repo,row.name),path.join(fixtureRoot,row.name));
+    for(const row of baseline.modules) {
+      fs.mkdirSync(path.join(fixtureRoot, path.dirname(row.name)), { recursive: true });
+      fs.copyFileSync(path.join(repo, row.name), path.join(fixtureRoot, row.name));
+    }
     assert.equal(runtimeIdentity(fixtureRoot).sourceSha256,baseline.sourceSha256);
     fs.appendFileSync(path.join(fixtureRoot,"mcp-server/tool-error-response.js"),"\n// isolated fixture drift\n");
     assert.notEqual(runtimeIdentity(fixtureRoot).sourceSha256,baseline.sourceSha256);
@@ -40,7 +43,7 @@ async function main() {
     repairDirective:{eligible:false,automaticReplayAllowed:false},outcome:{mutation:{status:"unknown"}}};
   const server = http.createServer((req,res) => {
     if(req.url === "/health") {res.end(JSON.stringify({ok:true,server:"isolated-fixture"}));return;}
-    if(req.url === "/tools") {res.end(JSON.stringify({ok:true,tools:[{name:"reconcile_plan_run",inputSchema:{type:"object",properties:{runId:{type:"string"}},required:["runId"]}}]}));return;}
+    if(req.url === "/tools") {res.end(JSON.stringify({ok:true,tools:[{name:"reconcile_plan_run",inputSchema:{type:"object",properties:{runId:{type:"string"}},required:["runId"]}},...panelControlTools]}));return;}
     if(req.url !== "/mcp/tools/call") {res.writeHead(404);res.end("{}");return;}
     let text="";
     req.on("data",chunk=>{text+=chunk;});
@@ -49,6 +52,12 @@ async function main() {
       const body=JSON.parse(text);
       assert.equal(req.headers["x-ae-mcp-adapter"],"codex-stdio-v1");
       assert.equal(req.headers["x-ae-bridge-token"],"isolated-fixture-token");
+      if(panelControlTools.some(tool=>tool.name===body.name)) {
+        if(body.arguments === null) {res.end(JSON.stringify({ok:true,tool:body.name,result:legacy({ok:false,code:"invalid_arguments"},true)}));return;}
+        const payload={ok:true,protocolVersion:"ae-agent.panel-actions.v1",receipt:{requestId:body.arguments.requestId || runId,
+          action:"ui.sidebar.set",state:"completed",replayAllowed:false}};
+        res.end(JSON.stringify({ok:true,tool:body.name,result:legacy(payload,false)}));return;
+      }
       if(body.name === "transport_lost") {req.socket.destroy();return;}
       if(body.name === "http_failure") {
         res.writeHead(500);
@@ -86,6 +95,15 @@ async function main() {
   let cases=1;
   try {
     const listed=await rpc("tools/list");assert.ok(listed.result.tools.some(t=>t.name === "reconcile_plan_run"));
+    for(const tool of panelControlTools) {
+      const discovered=listed.result.tools.find(item=>item.name===tool.name);assert(discovered,"Dynamic stdio discovery: "+tool.name);
+      assert.deepEqual(discovered.inputSchema,tool.inputSchema);
+      const result=(await rpc("tools/call",{name:tool.name,arguments:tool.name==="invoke_panel_action"?
+        {requestId:runId,action:"ui.sidebar.set",args:{collapsed:true}}:tool.name==="get_panel_action_result"?{requestId:runId}:{}})).result;
+      assert.equal(JSON.parse(result.content[0].text).receipt.requestId,runId);assert.equal(result.isError,false);cases++;
+    }
+    const nullPanelArgs=(await rpc("tools/call",{name:"get_panel_state",arguments:null})).result;
+    assert.equal(JSON.parse(nullPanelArgs.content[0].text).code,"invalid_arguments");assert.equal(nullPanelArgs.isError,true);cases++;
     const full=(await rpc("tools/call",{name:"run_ai_agent_plan",arguments:{}})).result;
     const summary=(await rpc("tools/call",{name:"run_ai_agent_plan",arguments:{responseView:"summary"}})).result;
     assert.deepEqual(JSON.parse(full.content[0].text),run);assert.deepEqual(JSON.parse(summary.content[0].text),projectPlanRunSummary(run));
@@ -103,7 +121,7 @@ async function main() {
     assert.equal(JSON.parse(lost.content[0].text).code,"bridge_unreachable");
     assert.equal(guidance(lost).nextAction.reasonCode,"daemon_transport_unavailable");assert.deepEqual(guidance(lost).identity,{});
     assert.equal(JSON.stringify(lost).includes("not_applied"),false);assert.equal(guidance(lost).automaticReplayAllowed,false);cases++;
-    assert.equal(requests,5);
+    assert.equal(requests,10);
     process.stdout.write(JSON.stringify({ok:true,cases,scope:"isolated HTTP/stdio fixture; no live daemon or AE"})+"\n");
   } finally {
     lines.close();child.stdin.end();

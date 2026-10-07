@@ -29,6 +29,7 @@ const { CONTRACT_VERSION: AUTONOMY_CONTRACT_VERSION, createProposalState, obstac
 const currentProposalState = createProposalState();
 const {waitForBridgeState, waitForPlanState} = require("./operation-wait");
 const panelBootstrap = require("./ae-agent-panel-bootstrap");
+const panelControl = require("./cep-panel-control");
 const autonomousRepair = require("./autonomous-repair");
 const reuseTelemetry = require("./reuse-telemetry");
 const { createNativeUsageStore, recordObservedProviderCall } = require("./native-usage");
@@ -8715,7 +8716,9 @@ function startHttpBridge() {
       try {
         const body = await readJsonBody(req);
         const name = String(body.name || "");
-        const args = body.arguments || {};
+        const args = panelControl.isPanelControlTool(name)
+          ? (Object.prototype.hasOwnProperty.call(body, "arguments") ? body.arguments : {})
+          : (body.arguments || {});
         const result = decorateDaemonToolResult(name, await callToolLogged("direct-tools-call", name, args));
         writeJson(res, 200, {
           ok: true,
@@ -8739,14 +8742,21 @@ function startHttpBridge() {
       try {
         const body = await readJsonBody(req);
         const name = String(body.name || "");
-        const args = body.arguments || {};
+        const args = panelControl.isPanelControlTool(name)
+          ? (Object.prototype.hasOwnProperty.call(body, "arguments") ? body.arguments : {})
+          : (body.arguments || {});
         const authority = autonomousSession.authorization();
         if (name === panelBootstrap.TOOL_NAME && res.authRole !== "automation") {
           writeJson(res, 403, {ok:false, code:"bootstrap_automation_role_required"});
           return;
         }
+        if (panelControl.isPanelControlTool(name) && res.authRole !== "automation") {
+          writeJson(res, 403, {ok:false, code:"panel_control_automation_role_required"});
+          return;
+        }
         const result = decorateDaemonToolResult(name, await callToolLogged("mcp-adapter", name, args, {
-          autonomousSession: authority
+          autonomousSession: authority,
+          panelControlAuthority: PANEL_CONTROL_AUTHORITY
         }));
         writeJson(res, 200, { ok: true, tool: name, result });
       } catch (error) {
@@ -9064,6 +9074,7 @@ function startHttpBridge() {
 
 const tools = [
   panelBootstrap.tool,
+  ...panelControl.panelControlTools,
   ...productionUsageTools,
   ...solutionDiscovery.discoveryTools,
   ...solutionCandidateQueue.solutionCandidateQueueTools,
@@ -12609,6 +12620,10 @@ for (const tool of tools) {
   }
 }
 
+function exposedTools() {
+  return tools;
+}
+
 const daemonMontageDeps = {
   getProjectInfo: async () => firstToolPayload(await callToolLogged("montage-project-read", "get_project_info", {})),
   currentPlaceholderState,
@@ -12631,10 +12646,25 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
   readProject: (timeoutMs,onQueued) => panelBootstrapReadContext.run({onQueued}, async () => firstToolPayload(await callToolLogged("panel-bootstrap-read", "get_project_info", {}, {panelBootstrapReadTimeoutMs: timeoutMs})))
 });
 
+// CLI and daemon must share this module's fixed durable controller root.
+const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
+const panelControlService = panelControl.createPanelControlService();
+
 async function callTool(name, args, executionContext) {
   if (name === panelBootstrap.TOOL_NAME) {
     const result = await panelBootstrapService.ensure(args || {});
     return toolResult(result, !result.ok);
+  }
+  if (panelControl.isPanelControlTool(name)) {
+    if (!executionContext || executionContext.panelControlAuthority !== PANEL_CONTROL_AUTHORITY) {
+      return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
+    }
+    try {
+      const result = await panelControlService.handleTool(name, args);
+      return toolResult(result, !result.ok);
+    } catch (error) {
+      return toolResult({ok:false, code:error.code || "panel_control_failed", error:error.message}, true);
+    }
   }
   if (isProductionUsageTool(name)) return handleProductionUsageTool(name, args || {});
   const setterIdentityGuard = placeholderProtection.aeSetterIdentityGuard(name,args);
@@ -22151,6 +22181,13 @@ async function callToolLogged(source, name, args, executionContext) {
   if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
   }
+  if (panelControl.isPanelControlTool(name) && (source !== "mcp-adapter" ||
+      !executionContext || executionContext.panelControlAuthority !== PANEL_CONTROL_AUTHORITY)) {
+    return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
+  }
+  // Panel service owns its gates and durable sanitized receipts. Generic AE
+  // logging/idempotency must not persist write-only action arguments or cache an invocation.
+  if (panelControl.isPanelControlTool(name)) return callTool(name, args, executionContext);
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
@@ -22348,7 +22385,9 @@ module.exports = {
     return prepared;
   },
   requiredPositiveInteger, requiredPositiveIntegerList, compactCheckpoint, writeJson, toolResult, validateCachedPngReplay, buildServerSemanticVerification,
-  callTool
+  callTool,
+  exposedTools,
+  callToolLogged
 };
 
 if (require.main === module) {
