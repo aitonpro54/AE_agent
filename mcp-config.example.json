@@ -7,7 +7,8 @@
       ],
       "env": {
         "AE_BRIDGE_PORT": "3456",
-        "AE_BRIDGE_TOKEN": "codex-ae-local"
+        "AE_BRIDGE_TOKEN": "<unique automation token>",
+        "AE_BRIDGE_PANEL_TOKEN": "<different unique panel token>"
       }
     }
   }

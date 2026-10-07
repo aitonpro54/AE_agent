@@ -33,6 +33,8 @@ Runtime output stays local and ignored: `.codex/`, `.codex-runtime/`,
 
 Выбранные офлайн-проверки, receipts и hashes можно собрать одним запуском
 [компактной диагностики](docs/compact-diagnostics.md); полный отчёт остаётся в `logs/diagnostics/`.
+Перенос проверенного checkout на Windows и порядок локальной приёмки —
+[в инструкции переноса](docs/windows-transfer.md).
 
 ## Run The Bridge
 
