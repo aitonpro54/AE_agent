@@ -183,7 +183,7 @@ function createPanelEnvironment(panelSource, options) {
     return elements.get(idOrTag);
   }
 
-  const localStorageStore = new Map();
+  const localStorageStore = options.storageStore || new Map();
   const localStorage = {
     getItem: function (key) {
       return localStorageStore.has(key) ? localStorageStore.get(key) : null;
@@ -205,10 +205,19 @@ function createPanelEnvironment(panelSource, options) {
       return getOrCreateElement(id);
     },
     createElement: function (tag) {
-      return getOrCreateElement("created_" + tag + "_" + Math.random().toString(36).slice(2));
+      const el = getOrCreateElement("created_" + tag + "_" + Math.random().toString(36).slice(2));
+      el.tagName=tag.toUpperCase();
+      return el;
     },
-    querySelectorAll: function () {
-      return [];
+    querySelectorAll: function (selector) {
+      const definitions={
+        ".provider-tab": ["provider-group",["gemini","openai","claude","openrouter","local"]],
+        "#authModeTabs button": ["auth-mode",["api","cli"]],
+        "#chatModeTabs button": ["chat-mode",["chat","plan","hardcore"]]
+      };
+      if(!definitions[selector]) return [];
+      const [attribute,values]=definitions[selector];
+      return values.map(value=>{const el=getOrCreateElement(attribute+"-"+value);el.setAttribute("data-"+attribute,value);return el;});
     }
   };
 
@@ -369,6 +378,10 @@ function createPanelEnvironment(panelSource, options) {
     }
   })();`);
 
+  getOrCreateElement("bridgeUrl").value="http://127.0.0.1:8777";
+  for(const file of ["panel-action-contract.js","panel-actions.js"]) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname,"../cep-panel",file),"utf8"),context,{filename:file});
+  }
   vm.runInContext(executableSource, context);
 
   const environment = {
@@ -379,6 +392,10 @@ function createPanelEnvironment(panelSource, options) {
     document: document,
     elements: elements,
     timers: timers,
+    storageStore:localStorageStore,
+    context:context,
+    api:sandbox.window.AEAgentPanelActions,
+    invoke:function(envelope) {return vm.runInContext("window.AEAgentPanelActions.invoke("+JSON.stringify(envelope)+")",context);},
     runTimer: function (predicate) {
       for (const [id, timer] of timers) {
         if (!predicate || predicate(timer)) {
@@ -972,5 +989,8 @@ function runAllTests(panelPath) {
   }
 }
 
-const { panelPath } = parseArgs();
-runAllTests(panelPath);
+if(require.main === module) {
+  const { panelPath } = parseArgs();
+  runAllTests(panelPath);
+}
+module.exports={createPanelEnvironment,makeActionProposal,makeCurrentPlan};

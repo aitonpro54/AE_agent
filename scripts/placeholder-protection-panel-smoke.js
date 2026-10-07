@@ -23,22 +23,22 @@ for (const name of names) {
   assert.strictEqual(html.split('id="' + id + '"').length, 2, "Every control has one actual DOM target: " + id);
 }
 context.placeholderSelectedPropertiesEl.checked = true;
-context.placeholderProtectionAction("accept");
+context.placeholderProtectionAction("accept",{useSelectedProperties:true});
 assert.strictEqual(calls.length, 1);
 assert.strictEqual(calls[0].endpoint, "/placeholder/protection");
 assert.strictEqual(JSON.stringify(calls[0].body), '{"action":"accept","useSelectedProperties":true}');
 assert.strictEqual(context.acceptPlaceholderButton.disabled, true);
-context.placeholderProtectionAction("release");
+context.placeholderProtectionAction("release",{confirm:true});
 assert.strictEqual(calls.length, 1, "Busy state prevents a second request.");
 calls[0].callback(new Error("Selected property is animated"));
 assert.strictEqual(context.acceptPlaceholderButton.disabled, false);
 assert.match(context.placeholderProtectionStatusEl.textContent, /animated/);
 assert.strictEqual(calls.length, 1, "Failure never retries acceptance.");
 
-context.placeholderProtectionAction("map_group");
+context.placeholderProtectionAction("map_group",{groupId:""});
 assert.strictEqual(calls.length, 1, "Empty group requires an explicit name.");
 context.placeholderGroupIdEl.value = "  Группа 1  ";
-context.placeholderProtectionAction("map_group");
+context.placeholderProtectionAction("map_group",{groupId:context.placeholderGroupIdEl.value});
 assert.strictEqual(calls[1].body.groupId, "Группа 1");
 calls[1].callback(null, { ok: true, acceptedCount: 1, groupMappings: [{ groupId: "Группа 1" }] });
 assert.strictEqual(calls[2].method, "GET", "Successful action obtains fresh status.");
@@ -47,14 +47,14 @@ calls[2].callback(null, { ok: true, acceptedPlaceholders: [{}], groupMappings: [
 assert.strictEqual(context.placeholderDistinctGroupsEl.checked, true);
 assert.match(context.placeholderProtectionStatusEl.textContent, /Конфликтов.*1/);
 
-context.placeholderProtectionAction("constraints");
+context.placeholderProtectionAction("constraints",{distinctGroups:true,disallowSourceOverlap:true});
 assert.strictEqual(JSON.stringify(calls[3].body), '{"action":"constraints","distinctGroups":true,"disallowSourceOverlap":true}');
 calls[3].callback(null, { ok: false, code: "inventory_incomplete" });
 assert.match(context.placeholderProtectionStatusEl.textContent, /inventory_incomplete/);
 assert.strictEqual(calls.length, 4, "Rejected action never retries or refreshes as success.");
 context.running = false;
 context.renderPlaceholderProtectionControls();
-context.placeholderProtectionAction("release");
+context.placeholderProtectionAction("release",{confirm:true});
 context.refreshPlaceholderProtection();
 assert.strictEqual(calls.length, 4);
 assert.strictEqual(context.releasePlaceholderButton.disabled, true);

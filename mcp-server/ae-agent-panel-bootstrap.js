@@ -72,7 +72,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
   const c=copies[0];
   if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.0"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.0"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
   const hashes={};
-  for (const asset of ["CSXS/manifest.xml","index.html","panel.js","style.css","lib/CSInterface.js"]) {
+  for (const asset of ["CSXS/manifest.xml","index.html","panel-action-contract.js","panel-actions.js","panel.js","style.css","lib/CSInterface.js"]) {
     const installed=path.join(c.root,asset), source=path.join(sourceRoot,asset);
     if (!fs.existsSync(installed) || !fs.existsSync(source) || sha(installed)!==sha(source)) throw problem("installed_panel_source_mismatch",`Installed ${asset} differs from this repository.`);
     hashes[asset]=sha(installed);

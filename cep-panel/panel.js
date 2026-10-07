@@ -98,6 +98,7 @@
   var workflowPresetSelect = document.getElementById("workflowPresetSelect");
   var applyWorkflowPresetButton = document.getElementById("applyWorkflowPresetButton");
 
+  var configuredBridgeUrl=null,configuredPanelToken=null,panelLifecycleGuard=false;
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
@@ -267,42 +268,25 @@
       : state.desiredEnabled ? (state.connectionReady ? "Включена до явного выключения" : "Включена · ожидание панели") : "Выключена";
   }
 
-  function refreshAutonomousSession() {
-    if (!running) {
-      autonomousSessionState = null;
-      renderAutonomousSession();
-      return;
-    }
-    request("GET", "/autonomy/session", null, function (error, response) {
-      if (error) {
-        autonomousSessionState = null;
-        renderAutonomousSession();
-        return;
-      }
-      autonomousSessionState = response && response.session ? response.session : null;
-      renderAutonomousSession();
+  function refreshAutonomousSession(onDone) {
+    if (!running) {autonomousSessionState=null;renderAutonomousSession();if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
+    request("GET","/autonomy/session",null,function(error,response) {
+      autonomousSessionState=!error && response && response.session || null;renderAutonomousSession();
+      if(onDone) onDone(error,response);
     });
   }
 
-  function setAutonomousSessionEnabled(enabled) {
-    if (!running || !panelConnectionGeneration) return;
-    autonomousSessionButton.disabled = true;
-    request("POST", "/autonomy/session", {
-      enabled: enabled === true,
-      panelConnectionId: panelConnectionId,
-      panelGeneration: String(panelConnectionGeneration)
-    }, function (error, response) {
-      autonomousSessionButton.disabled = false;
-      if (error) {
-        autonomousSessionState = {persistenceError: error.message};
-        renderAutonomousSession();
-        log("Autonomous session failed: " + error.message);
-        refreshAutonomousSession();
-        return;
-      }
-      autonomousSessionState = response && response.session ? response.session : null;
-      renderAutonomousSession();
-      log(enabled ? "Автономная сессия Codex включена до явного выключения" : "Автономная сессия Codex выключена");
+  function setAutonomousSessionEnabled(enabled,onDone) {
+    if (!running || !panelConnectionGeneration) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
+    autonomousSessionButton.disabled=true;
+    request("POST","/autonomy/session",{enabled:enabled,panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration)},function(error,response) {
+      autonomousSessionButton.disabled=false;
+      if(error) {autonomousSessionState={persistenceError:error.message};renderAutonomousSession();log("Autonomous session failed: "+error.message);if(onDone) onDone(error);return;}
+      autonomousSessionState=response && response.session || null;renderAutonomousSession();
+      refreshAutonomousSession(function(readError,current) {
+        if(!readError && (!autonomousSessionState || autonomousSessionState.desiredEnabled !== enabled)) readError={code:"autonomy_postcondition_failed",message:"Desired autonomous session setting was not confirmed."};
+        if(onDone) onDone(readError,current);
+      });
     });
   }
 
@@ -342,42 +326,38 @@
     }
   }
 
-  function refreshPlaceholderProtection() {
-    if (!running || placeholderProtectionInFlight) return;
-    placeholderProtectionInFlight = true;
-    renderPlaceholderProtectionControls();
-    request("GET", "/placeholder/protection", null, placeholderProtectionResponse);
+  function refreshPlaceholderProtection(onDone) {
+    if (!running || placeholderProtectionInFlight) {if(onDone) onDone({rejected:true,code:!running?"bridge_disconnected":"placeholder_busy"});return;}
+    placeholderProtectionInFlight=true;renderPlaceholderProtectionControls();
+    request("GET","/placeholder/protection",null,function(error,response) {
+      placeholderProtectionResponse(error,response);if(onDone) onDone(error,response);
+    });
   }
 
-  function placeholderProtectionAction(action) {
-    if (!running || placeholderProtectionInFlight) return;
-    var body = { action: action };
-    if (action === "accept") body.useSelectedProperties = !!(placeholderSelectedPropertiesEl && placeholderSelectedPropertiesEl.checked);
-    if (action === "map_group") {
-      body.groupId = String(placeholderGroupIdEl && placeholderGroupIdEl.value || "").trim();
-      if (!body.groupId) {
-        if (placeholderProtectionStatusEl) placeholderProtectionStatusEl.textContent = "Введите подтверждённую группу или исполнителя.";
-        return;
-      }
+  function placeholderProtectionAction(action,args,onDone) {
+    if (!running || placeholderProtectionInFlight) {if(onDone) onDone({rejected:true,code:!running?"bridge_disconnected":"placeholder_busy"});return;}
+    var body={action:action};
+    if(action === "accept") body.useSelectedProperties=args.useSelectedProperties;
+    if(action === "map_group") {
+      body.groupId=args.groupId.trim();
+      if(!body.groupId) {if(placeholderProtectionStatusEl) placeholderProtectionStatusEl.textContent="Введите подтверждённую группу или исполнителя.";
+        if(onDone) onDone({rejected:true,code:"group_required"});return;}
     }
-    if (action === "constraints") {
-      body.distinctGroups = !!(placeholderDistinctGroupsEl && placeholderDistinctGroupsEl.checked);
-      body.disallowSourceOverlap = !!(placeholderDisallowOverlapEl && placeholderDisallowOverlapEl.checked);
-    }
-    placeholderProtectionInFlight = true;
-    renderPlaceholderProtectionControls();
-    request("POST", "/placeholder/protection", body, function (error, response) {
-      placeholderProtectionResponse(error, response);
-      if (!error && response && response.ok === true) refreshPlaceholderProtection();
+    if(action === "constraints") {body.distinctGroups=args.distinctGroups;body.disallowSourceOverlap=args.disallowSourceOverlap;}
+    placeholderProtectionInFlight=true;renderPlaceholderProtectionControls();
+    request("POST","/placeholder/protection",body,function(error,response) {
+      placeholderProtectionResponse(error,response);
+      if(error || !response || response.ok !== true) {if(onDone) onDone(error || {code:response && response.code || "placeholder_rejected",message:response && response.error},response);return;}
+      refreshPlaceholderProtection(function(readError,current) {if(onDone) onDone(readError,current);});
     });
   }
 
   function getBaseUrl() {
-    return urlEl.value.replace(/\/+$/, "");
+    return (configuredBridgeUrl === null ? urlEl.value : configuredBridgeUrl).replace(/\/+$/, "");
   }
 
   function getToken() {
-    return tokenEl.value;
+    return configuredPanelToken === null ? tokenEl.value : configuredPanelToken;
   }
 
   function makePanelConnectionId() {
@@ -438,7 +418,9 @@
 
   function request(method, path, body, onDone) {
     var completed = false;
+    var requestEpoch=panelLifecycleEpoch,requestGeneration=panelConnectionGeneration;
     var xhr = new XMLHttpRequest();
+    if (!window.AEAgentPanelContract.validateLoopbackUrl(getBaseUrl())) { onDone({rejected:true,code:"invalid_loopback_url",message:"Bridge origin is not loopback."}); return; }
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
     xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
@@ -450,6 +432,11 @@
     function finish(error, response) {
       if (completed) return;
       completed = true;
+      if(requestEpoch !== panelLifecycleEpoch || requestGeneration !== panelConnectionGeneration) {
+        error={isUnknown:method === "POST",rejected:method !== "POST",code:"lifecycle_interrupted",phase:"lifecycle_interrupted",message:"Connection changed before this request completed."};
+        response=null;
+      }
+      if (error) { error.isUnknown = method === "POST" && (error.status === 0 || error.status === undefined); error.phase = error.diagnostic && error.diagnostic.phase || (error.isUnknown ? "delivery_unknown" : "transport"); }
       onDone(error, response);
     }
     xhr.onreadystatechange = function () {
@@ -477,6 +464,8 @@
         requestError.status = xhr.status;
         requestError.body = errorBody;
         requestError.diagnostic = diagnosticFromBody(errorBody);
+        requestError.code = errorBody && (errorBody.code || errorBody.run && errorBody.run.errorCode) ||
+          requestError.diagnostic && requestError.diagnostic.code || "http_" + xhr.status;
         if (xhr.status === 0) requestError.bridgeOffline = true;
         finish(requestError);
         return;
@@ -568,12 +557,15 @@
     function finish(error, response) {
       if (completed) return;
       completed = true;
+      if (error) {error.isUnknown=method === "POST" && (error.status === 0 || error.status === undefined);error.phase=error.isUnknown?"delivery_unknown":"transport";}
       onDone(error, response);
     }
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       if (xhr.status < 200 || xhr.status >= 300) {
-        finish(new Error(xhr.status === 0 ? "Connector offline" : "HTTP " + xhr.status));
+        var connectorError=new Error(xhr.status === 0 ? "Connector offline" : "HTTP " + xhr.status);
+        connectorError.status=xhr.status;connectorError.code="http_"+xhr.status;
+        finish(connectorError);
         return;
       }
       try {
@@ -654,8 +646,8 @@
     if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.disabled = connectorStatusInFlight || !online || connector.emergencyDisabled;
   }
 
-  function refreshConnectorStatus() {
-    if (connectorStatusInFlight) return;
+  function refreshConnectorStatus(onDone) {
+    if (connectorStatusInFlight) {if(onDone) onDone({rejected:true,code:"connector_busy"});return;}
     connectorStatusInFlight = true;
     if (connectorStatusButton) connectorStatusButton.textContent = "Checking...";
     if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.disabled = true;
@@ -674,15 +666,16 @@
           }
         };
         renderConnectorStatus();
-        return;
+        if(onDone) onDone(error);return;
       }
       connectorStatus = response && response.status ? response.status : null;
       renderConnectorStatus();
+      if(onDone) onDone(null,response);
     });
   }
 
-  function emergencyDisableConnector() {
-    if (connectorStatusInFlight) return;
+  function emergencyDisableConnector(onDone) {
+    if (connectorStatusInFlight) {if(onDone) onDone({rejected:true,code:"connector_busy"});return;}
     connectorStatusInFlight = true;
     connectorEmergencyDisableButton.disabled = true;
     connectorEmergencyDisableButton.textContent = "Disabling...";
@@ -692,10 +685,14 @@
       if (error) {
         log("Could not disable connector writes: " + error.message);
         renderConnectorStatus();
-        return;
+        if(onDone) onDone(error);return;
       }
       connectorStatus = response && response.status ? response.status : connectorStatus;
       renderConnectorStatus();
+      refreshConnectorStatus(function(readError,current) {
+        if(!readError && !(connectorStatus && connectorStatus.connector && connectorStatus.connector.emergencyDisabled)) readError={code:"connector_postcondition_failed",message:"Emergency disable was not confirmed."};
+        if(onDone) onDone(readError,current);
+      });
     });
   }
 
@@ -837,8 +834,8 @@
     });
   }
 
-  function refreshUsage() {
-    if (usageRefreshInFlight) return;
+  function refreshUsage(onDone) {
+    if (usageRefreshInFlight) {if(onDone) onDone({rejected:true,code:"usage_busy"});return;}
     usageRefreshInFlight = true;
     if (usageRefreshButton) {
       usageRefreshButton.disabled = true;
@@ -852,11 +849,11 @@
       }
       if (error) {
         log("Usage refresh failed: " + error.message);
-        loadUsageSnapshot();
-        return;
+        if(onDone) onDone(error);return;
       }
       usageSnapshot = response && response.usage || null;
       renderUsageSnapshot();
+      if(onDone) onDone(null,response);
     });
   }
 
@@ -1182,28 +1179,28 @@
       "&checkModels=0&freeOnly=" + (freeModelsOnlyEl.checked ? "1" : "0");
   }
 
-  function runProviderSelfTestAt(index) {
+  function runProviderSelfTestAt(index,onDone) {
     if (index >= PROVIDER_SELF_TESTS.length) {
       providerSelfTestInFlight = false;
       setAgentStatus("Provider self-test complete");
       updateProviderSelfTestButton();
       updateChatAvailability();
       updateKeyAvailability();
-      return;
+      if(onDone) onDone(null,{results:providerSelfTestResults});return;
     }
 
     var spec = PROVIDER_SELF_TESTS[index];
     if (spec.manualOnly) {
       providerSelfTestResults[spec.key] = baselineSelfTestResult(spec);
       renderProviderSelfTest();
-      runProviderSelfTestAt(index + 1);
+      runProviderSelfTestAt(index + 1,onDone);
       return;
     }
     var agent = findAgent(spec.agentId);
     if (!agent) {
       providerSelfTestResults[spec.key] = baselineSelfTestResult(spec);
       renderProviderSelfTest();
-      runProviderSelfTestAt(index + 1);
+      runProviderSelfTestAt(index + 1,onDone);
       return;
     }
 
@@ -1217,7 +1214,7 @@
         detail: "Choose or configure a model before testing this provider."
       };
       renderProviderSelfTest();
-      runProviderSelfTestAt(index + 1);
+      runProviderSelfTestAt(index + 1,onDone);
       return;
     }
 
@@ -1249,18 +1246,24 @@
         }
       }
       renderProviderSelfTest();
-      runProviderSelfTestAt(index + 1);
+      if(error && error.status === 0) {
+        providerSelfTestInFlight=false;setAgentStatus("Provider self-test outcome unknown; reconciliation is required.");
+        updateProviderSelfTestButton();updateChatAvailability();updateKeyAvailability();
+        if(onDone) onDone({isUnknown:true,status:0,code:"provider_delivery_unknown",message:"A provider readiness operation may still be running."},{results:providerSelfTestResults});
+        return;
+      }
+      runProviderSelfTestAt(index + 1,onDone);
     });
   }
 
-  function runProviderSelfTest() {
-    if (providerSelfTestInFlight || readinessInFlight || chatInFlight) return;
+  function runProviderSelfTest(onDone) {
+    if (providerSelfTestInFlight || readinessInFlight || chatInFlight) {if(onDone) onDone({rejected:true,code:"provider_busy"});return;}
     providerSelfTestInFlight = true;
     providerSelfTestResults = {};
     setAgentStatus("Testing provider setup...");
     updateProviderSelfTestButton();
     renderProviderSelfTest();
-    runProviderSelfTestAt(0);
+    runProviderSelfTestAt(0,onDone);
   }
 
   function updateProviderSelfTestButton() {
@@ -1590,7 +1593,7 @@
     request("GET", "/agents?includeModels=1&freeOnly=" + freeOnly, null, function (error, response) {
       if (loadSeq !== agentsLoadSeq || loadBaseUrl !== getBaseUrl() || loadDataVersion !== agentDataVersion) {
         if (loadSeq === agentsLoadSeq) agentsLoadInFlight = false;
-        return;
+        if(options.afterLoad) options.afterLoad(null,{isUnknown:true,code:"provider_selection_drift",message:"Provider refresh was superseded."});return;
       }
       agentsLoadInFlight = false;
       if (error) {
@@ -1681,17 +1684,18 @@
     return agent;
   }
 
-  function checkSelectedAgent() {
-    if (readinessInFlight || providerSelfTestInFlight) return;
-    var agent = findAgent(agentSelect.value);
+  function checkSelectedAgent(args,onDone) {
+    if (readinessInFlight || providerSelfTestInFlight) {if(onDone) onDone({rejected:true,code:"provider_busy"});return;}
+    var agent = findAgent(args.agentId);
     if (!agent) {
       setAgentStatus("Select an agent first");
-      return;
+      if(onDone) onDone({rejected:true,code:"provider_not_ready"});return;
     }
-    var model = selectedModel();
+    var model = args.model;
     if (!model) {
       setAgentStatus("Choose a model first");
       updateChatAvailability();
+      if(onDone) onDone({rejected:true,code:"model_missing"});
       return;
     }
 
@@ -1709,6 +1713,7 @@
         updateProviderUi(agent);
         updateChatAvailability();
         updateKeyAvailability();
+        if(onDone) onDone(error,response);
         return;
       }
 
@@ -1725,6 +1730,7 @@
       }
       updateChatAvailability();
       updateKeyAvailability();
+      if(onDone) onDone(null,response);
     });
   }
 
@@ -2197,10 +2203,10 @@
     };
 
     dryRunButton.addEventListener("click", function () {
-      if (!dryRunButton.disabled && currentBridgePlan && entry.actionProposal.actionId === currentBridgePlan.actionId) runLastPlan(true);
+      uiPlanAction(true,entry.actionProposal.actionId);
     });
     runButton.addEventListener("click", function () {
-      if (!runButton.disabled && currentBridgePlan && entry.actionProposal.actionId === currentBridgePlan.actionId) runLastPlan(false);
+      uiPlanAction(false,entry.actionProposal.actionId);
     });
 
     inlinePlanActionRows.push(entry);
@@ -3008,7 +3014,7 @@
     }
 
     chatPromptEl.value = preset.prompt;
-    dispatchControlChange(chatPromptEl);
+    updateChatAvailability();
     workflowPresetSelect.value = "";
     lastPlanResult = null;
     rememberPlanRun(null);
@@ -3019,18 +3025,18 @@
     } catch (_focusError) {}
   }
 
-  function recoverLastPlanFromChat() {
-    if (chatInFlight || (lastPlanResult && lastPlanResult.plan)) return;
+  function recoverLastPlanFromChat(onDone) {
+    if (chatInFlight || (lastPlanResult && lastPlanResult.plan)) {if(onDone) onDone({rejected:true,code:"recovery_unavailable"});return;}
     var storedPlanResult = findLastStoredPlanResult();
     if (storedPlanResult) {
-      recoverStoredPlanResult(storedPlanResult);
-      return;
+      recoverStoredPlanResult(storedPlanResult,onDone);return;
     }
     var sourceText = findLastPlanLikeTranscriptText();
     if (!sourceText) {
       updateChatAvailability();
       setPlanRunStatus("No saved Agent plan in chat", "blocked");
       log("No structured Agent plan found in current chat history");
+      if(onDone) onDone({rejected:true,code:"recovery_unavailable"});
       return;
     }
 
@@ -3041,6 +3047,7 @@
       updateChatAvailability();
       setPlanRunStatus(readyError, "blocked");
       setAgentStatus(readyError);
+      if(onDone) onDone({rejected:true,code:"provider_not_ready",message:readyError});
       return;
     }
 
@@ -3057,6 +3064,7 @@
       if (error) {
         appendChatMessage("error", error.message);
         log("Plan recovery failed: " + error.message);
+        if(onDone) onDone(error,response);
         return;
       }
       var result = response && response.result ? response.result : {};
@@ -3072,10 +3080,11 @@
         log("Recovered chat plan through Agent planner");
       }
       updateChatAvailability();
+      if(onDone) onDone(null,response);
     });
   }
 
-  function recoverStoredPlanResult(storedPlanResult) {
+  function recoverStoredPlanResult(storedPlanResult,onDone) {
     var requestId = storedPlanResult.requestId || ("recovered-plan-" + Date.now());
     rememberPlanRun(null);
     setChatBusy(true, "Preparing plan");
@@ -3091,7 +3100,7 @@
         appendChatMessage("error", error.message);
         log("Stored plan recovery failed: " + error.message);
         updateChatAvailability();
-        return;
+        if(onDone) onDone(error || {code:"proposal_missing",message:"Runnable action proposal was not returned."},response);return;
       }
 
       var proposal = response && response.proposal ? response.proposal : null;
@@ -3100,6 +3109,7 @@
         appendChatMessage("error", "Plan recovery failed: bridge did not return a runnable action proposal.");
         log("Stored plan recovery failed: missing action proposal");
         updateChatAvailability();
+        if(onDone) onDone({code:"proposal_missing",message:"Runnable action proposal was not returned."},response);
         return;
       }
 
@@ -3124,6 +3134,7 @@
       });
       log("Recovered saved structured plan through bridge proposal " + result.requestId);
       updateChatAvailability();
+      if(onDone) onDone(null,response);
     });
   }
 
@@ -3163,15 +3174,15 @@
     setDiagnosticsOpen(open);
   }
 
-  function saveAgentKey() {
-    if (keySaveInFlight) return;
-    var agent = findAgent(agentSelect.value);
-    if (!agent || !agent.requiresApiKey) return;
-    var apiKey = trimText(agentApiKeyEl.value);
+  function saveAgentKey(args,onDone) {
+    if (keySaveInFlight) {if(onDone) onDone({rejected:true,code:"provider_busy"});return;}
+    var agent = findAgent(args.agentId);
+    if (!agent || !agent.requiresApiKey) {if(onDone) onDone({rejected:true,code:"key_not_supported"});return;}
+    var apiKey = trimText(args.key);
     if (!apiKey) {
       setAgentStatus("Paste API key first");
       updateKeyAvailability();
-      return;
+      if(onDone) onDone({rejected:true,code:"empty_key"});return;
     }
 
     keySaveInFlight = true;
@@ -3187,6 +3198,7 @@
         setAgentStatus(error.message);
         log("Could not save API key: " + error.message);
         updateKeyAvailability();
+        if(onDone) onDone(error,response);
         return;
       }
       setAgentStatus("API key saved");
@@ -3199,13 +3211,14 @@
         updateSelectedAgent();
       }
       updateKeyAvailability();
+      if(onDone) onDone(null,{saved:true,readiness:response && response.readiness});
     });
   }
 
-  function startAgentSetup() {
-    if (setupActionInFlight) return;
-    var agent = findAgent(agentSelect.value);
-    if (!agent || agent.id !== "openai-cli") return;
+  function startAgentSetup(args,onDone) {
+    if (setupActionInFlight) {if(onDone) onDone({rejected:true,code:"provider_busy"});return;}
+    var agent = findAgent(args.agentId);
+    if (!agent || agent.id !== "openai-cli") {if(onDone) onDone({rejected:true,code:"setup_unavailable"});return;}
 
     setupActionInFlight = true;
     var missingCodex = agent.codexStatus && agent.codexStatus.installed === false;
@@ -3222,7 +3235,7 @@
         setAgentDetails(agent);
         updateProviderUi(agent);
         updateKeyAvailability();
-        return;
+        if(onDone) onDone(error,response);return;
       }
 
       var setup = response && response.setup ? response.setup : {};
@@ -3237,6 +3250,7 @@
       } else {
         setTimeout(loadAgents, 2500);
       }
+      if(onDone) onDone(null,response);
     });
   }
 
@@ -3453,12 +3467,13 @@
     lastPlanRunResult = run || null;
     window.__aeAgentLastPlanRunResult = lastPlanRunResult;
     lastAcceptedDryRun = null;
-    if (run && run.dryRun && run.ok && rawExtendscriptStepCount((lastPlanResult && lastPlanResult.planValidation) || run.validation || null) > 0) {
+    if (run && run.dryRun && run.ok) {
       lastAcceptedDryRun = {
         ok: true,
         runId: String(run.id || ""),
         requestId: lastPlanResult && lastPlanResult.requestId ? String(lastPlanResult.requestId) : "",
         planKey: currentPlanKey(),
+        pins: currentBridgePlanPins(currentBridgePlan),
         acceptedAt: new Date().toISOString()
       };
       if (!lastAcceptedDryRun.runId || !lastAcceptedDryRun.planKey) lastAcceptedDryRun = null;
@@ -3526,10 +3541,18 @@
     reconcilePlanRunButton.textContent = planReconcileInFlight ? "Сверяю..." : "Сверить результат";
   }
 
-  function reconcileLastPlanRun() {
+  function knownUnresolvedPlanRun(runId) {
+    if(typeof window === "undefined" || !window.AEAgentPanelActions) return false;
+    return window.AEAgentPanelActions.state().unresolvedActions.some(function(row) {return !!row.runId && (!runId || row.runId === runId);});
+  }
+
+  function reconcileLastPlanRun(args,onDone) {
     var run = lastPlanRunResult;
-    if (!running || chatInFlight || planReconcileInFlight || !run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0)) return;
-    var runId = run.id;
+    var runId = args ? args.runId : run && run.id;
+    var guarded=knownUnresolvedPlanRun(runId);
+    if ((!running && !guarded) || chatInFlight || planReconcileInFlight ||
+        !guarded && (!run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0))) {if(onDone) onDone({rejected:true,code:"reconciliation_unavailable"});return;}
+    if(!guarded && runId !== run.id) {if(onDone) onDone({rejected:true,code:"run_id_mismatch"});return;}
     planReconcileInFlight = true;
     chatInFlight = true;
     updateChatAvailability();
@@ -3537,10 +3560,11 @@
       planReconcileInFlight = false;
       chatInFlight = false;
       updateChatAvailability();
-      if (!running) return;
+      if (!running && !guarded) {if(onDone) onDone({isUnknown:true,code:"lifecycle_interrupted"});return;}
       var result = null;
       try { if (response && response.result && !response.result.isError) result = JSON.parse(response.result.content[0].text); } catch (_parseError) {}
-      if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); return; }
+      if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); if(onDone) onDone(error || {code:"reconciliation_missing",message:"No reconciliation evidence."},response);return; }
+      if(result.runId && result.runId !== runId) {if(onDone) onDone({code:"reconciliation_identity_mismatch",message:"Reconciliation belongs to another run."},{runId:runId,reconciliation:result});return;}
       var lines = ["Сверка запуска " + runId + ": " + (result.status === "reconciled" ? "завершена" : "не завершена")];
       var names = {applied:"ожидаемые значения подтверждены",not_applied:"изменение не применено",unknown:"результат неизвестен"};
       (result.steps || []).forEach(function (step) { lines.push("Шаг " + step.index + " (" + step.tool + "): " + (names[step.mutationStatus] || step.mutationStatus)); });
@@ -3548,6 +3572,9 @@
       lines.push("Сверка выполнена без повторных изменений. Исходный результат запуска сохранён.");
       if (lastPlanRunResult && lastPlanRunResult.id === runId) lastPlanRunResult.reconciliation = result;
       appendChatMessage("assistant", lines.join("\n"));
+      // Current postconditions do not establish that the original command has stopped.
+      if(onDone) onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:false,
+        terminalEvidenceRequired:guarded});
     });
   }
 
@@ -3742,11 +3769,11 @@
     return lines.join("\n");
   }
 
-  function prepareDevRequest() {
-    if (chatInFlight || devRequestInFlight || !lastPlanResult || !lastPlanResult.plan) return;
+  function prepareDevRequest(onDone) {
+    if (chatInFlight || devRequestInFlight || !lastPlanResult || !lastPlanResult.plan) {if(onDone) onDone({rejected:true,code:"dev_request_unavailable"});return;}
     var validation = lastPlanResult.planValidation || null;
     var eligibility = devRequestEligibility(validation, lastPlanRunResult);
-    if (!eligibility.ok) return;
+    if (!eligibility.ok) {if(onDone) onDone({rejected:true,code:"dev_request_ineligible",message:eligibility.reason});return;}
 
     var goal = lastUserPromptText() || (lastPlanResult.plan && lastPlanResult.plan.summary) || "AE Agent typed tool request";
     var body = {
@@ -3779,157 +3806,144 @@
       if (error) {
         appendChatMessage("error", error.message);
         log("Dev request failed: " + error.message);
-        return;
+        if(onDone) onDone(error,response);return;
       }
       appendChatMessage("assistant", formatDevRequestResult(response || {}));
       appendOperationUsageReport("dev request handoff", response || {});
       log("Dev request prepared");
+      if(onDone) onDone(null,response);
     });
   }
 
-  function runLastPlan(dryRun, fresh) {
+  function runLastPlan(dryRun, fresh, onDone, policy) {
+    policy=policy || {prepare:true};
+    function fail(code,message,unknown) {
+      setPlanRunStatus(message || code,"blocked");
+      if(onDone) onDone({code:code,message:message || code,rejected:!unknown,isUnknown:!!unknown});
+    }
     if (!fresh) {
-      var clicked = m100ActionProposalForResult(lastPlanResult);
-      if (!clicked) return;
-      refreshCurrentBridgePlan(function (error) {
-        if (error || !currentBridgePlan || currentBridgePlan.actionId !== clicked.actionId) {
-          setPlanRunStatus("План изменился. Просмотрите актуальную версию.", "blocked"); return;
+      var clicked=m100ActionProposalForResult(lastPlanResult);
+      if (!clicked) {fail("proposal_missing","No backend action proposal ready");return;}
+      refreshCurrentBridgePlan({fresh:true,expectedActionId:clicked.actionId,expectedPlanPins:policy.pins},function(error) {
+        if(error || !currentBridgePlan || currentBridgePlan.actionId !== clicked.actionId) {
+          fail("plan_pins_mismatch",error && error.message || "План изменился. Просмотрите актуальную версию.");return;
         }
-        runLastPlan(dryRun, true);
+        runLastPlan(dryRun,true,onDone,policy);
       });
       return;
     }
-    var proposal = m100ActionProposalForResult(lastPlanResult);
-    if (chatInFlight || !lastPlanResult || !lastPlanResult.plan || !proposal) {
-      setPlanRunStatus("No backend action proposal ready", "blocked");
-      return;
+    var proposal=m100ActionProposalForResult(lastPlanResult);
+    if(chatInFlight || !lastPlanResult || !lastPlanResult.plan || !proposal) {fail("proposal_missing","No backend action proposal ready");return;}
+    if(policy.pins && !currentBridgePlanMatchesPins(currentBridgePlan,policy.pins)) {fail("plan_pins_mismatch","План на сервере изменился. Просмотрите актуальную версию.");return;}
+    var blocked=currentProposalBlockReason(proposal);
+    if(blocked) {fail("proposal_blocked",blocked);return;}
+    if(proposal.confirmation.confirmationToken && policy.strict &&
+       (proposal.confirmation.surface !== "cep-panel" || proposal.confirmation.sessionId && proposal.confirmation.sessionId !== m100ConfirmationSessionId())) {
+      fail("confirmation_session_mismatch","Proposal confirmation belongs to a different panel/chat session.");return;
     }
-    var blockReason = currentProposalBlockReason(proposal);
-    if (blockReason) { setPlanRunStatus(blockReason, "blocked"); return; }
-    if (!proposal.confirmation.confirmationToken) {
-      var adoptEpoch = panelLifecycleEpoch;
-      var adoptGeneration = panelConnectionGeneration;
-      var adoptInstanceId = currentBridgePlan.instanceId;
-      request("POST", "/agents/plan/adopt", {actionId: proposal.actionId, revision: currentBridgePlan.revision,
-        panelConnectionId: panelConnectionId, panelGeneration: String(panelConnectionGeneration),
-        confirmationSessionId: m100ConfirmationSessionId()}, function (error, response) {
-        if (adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) return;
-        if (error) { setPlanRunStatus(error.message, "blocked"); return; }
-        var adoptedProposal = normalizeM100ActionProposal(response && response.proposal);
-        var adoptedPlan = response && response.plan;
-        var adoptedPins = currentBridgePlanPins({
-          instanceId: adoptInstanceId,
-          revision: adoptedProposal && adoptedProposal.revision,
-          actionId: adoptedProposal && adoptedProposal.actionId,
-          proposal: adoptedProposal,
-          plan: adoptedPlan,
-          validation: response && response.validation,
-          state: "pending",
-          expiresAt: adoptedProposal && adoptedProposal.confirmation.proposalExpiresAt,
-          project: { expectedFile: adoptedPlan && adoptedPlan.targetProject && adoptedPlan.targetProject.file || null }
-        });
-        if (!adoptedPins || !adoptedProposal.confirmation.confirmationToken ||
-            response.revision !== undefined && response.revision !== adoptedPins.revision) {
-          setPlanRunStatus("План на сервере изменился. Просмотрите актуальную версию.", "blocked");
-          return;
+    if(!proposal.confirmation.confirmationToken) {
+      if(!policy.prepare) {fail("proposal_adoption_required","Prepare the proposal and inspect the resulting new pins before execution.");return;}
+      var adoptEpoch=panelLifecycleEpoch, adoptGeneration=panelConnectionGeneration, adoptInstanceId=currentBridgePlan.instanceId;
+      if(policy.context && !policy.context.submit()) return;
+      request("POST","/agents/plan/adopt",{actionId:proposal.actionId,revision:currentBridgePlan.revision,
+        panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),confirmationSessionId:m100ConfirmationSessionId()},function(error,response) {
+        if(adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during adoption.",true);return;}
+        if(error) {setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
+        var adoptedProposal=normalizeM100ActionProposal(response && response.proposal),adoptedPlan=response && response.plan;
+        var adoptedPins=currentBridgePlanPins({instanceId:adoptInstanceId,revision:adoptedProposal && adoptedProposal.revision,
+          actionId:adoptedProposal && adoptedProposal.actionId,proposal:adoptedProposal,plan:adoptedPlan,validation:response && response.validation,
+          state:"pending",expiresAt:adoptedProposal && adoptedProposal.confirmation.proposalExpiresAt,
+          project:{expectedFile:adoptedPlan && adoptedPlan.targetProject && adoptedPlan.targetProject.file || ""}});
+        if(!adoptedPins || !adoptedProposal.confirmation.confirmationToken || response.revision !== undefined && response.revision !== adoptedPins.revision) {
+          fail("adoption_pins_invalid","План на сервере изменился. Просмотрите актуальную версию.");return;
         }
-        lastPlanResult = {plan: response.plan, planValidation: response.validation,
-          requestId: adoptedProposal.requestId, m100ActionProposal: adoptedProposal, bridgePlanPins: adoptedPins};
-        lastAcceptedDryRun = null;
-        refreshCurrentBridgePlan({ fresh: true, expectedActionId: adoptedProposal.actionId, expectedPlanPins: adoptedPins }, function (syncError) {
-          if (syncError) {
-            setPlanRunStatus(syncError.message || "Не удалось обновить план", "blocked");
-            return;
-          }
-          runLastPlan(true, true);
+        lastPlanResult={plan:response.plan,planValidation:response.validation,requestId:adoptedProposal.requestId,
+          m100ActionProposal:adoptedProposal,bridgePlanPins:adoptedPins};
+        lastAcceptedDryRun=null;
+        refreshCurrentBridgePlan({fresh:true,expectedActionId:adoptedProposal.actionId,expectedPlanPins:adoptedPins},function(syncError) {
+          if(syncError) {fail("plan_pins_mismatch",syncError.message || "Не удалось обновить план");return;}
+          runLastPlan(true,true,onDone,{prepare:true,pins:adoptedPins,context:policy.context,strict:policy.strict});
         });
       });
       return;
     }
-    var validation = lastPlanResult.planValidation || {};
-    var mutatingCount = Number(validation.mutatingCount || 0);
-    var allowMutations = !dryRun && mutatingCount > 0;
-    var autoEditSession = allowMutations;
-    var allowRawExtendscript = !dryRun && rawExtendscriptDryRunGateReady(validation);
-    var body = {
-      actionId: proposal.actionId,
-      payloadRef: proposal.action.payloadRef,
-      payloadHash: proposal.action.payloadHash,
-      previewHash: proposal.action.previewHash,
-      riskLevel: proposal.risk.level,
-      riskPolicyVersion: proposal.confirmation.riskPolicyVersion,
-      requestId: proposal.requestId,
-      dryRun: dryRun,
-      confirm: !dryRun,
-      allowMutations: allowMutations,
-      autoEditSession: autoEditSession,
-      timeoutMs: 120000
-    };
-    if (!dryRun) {
-      body.confirmationToken = proposal.confirmation.confirmationToken;
-      body.confirmedBySurface = proposal.confirmation.surface || "cep-panel";
-      body.confirmedBySession = proposal.confirmation.sessionId || m100ConfirmationSessionId();
+    var validation=lastPlanResult.planValidation || {}, accepted=lastAcceptedDryRun;
+    if(!dryRun && policy.strict && (!accepted || !accepted.ok || !accepted.runId || accepted.planKey !== currentPlanKey() ||
+        accepted.requestId !== proposal.requestId || !currentBridgePlanMatchesPins(currentBridgePlan,accepted.pins))) {
+      fail("matching_dry_run_required","An accepted dry-run matching the current canonical plan is required.");return;
     }
-    if (allowRawExtendscript) {
-      body.allowRawExtendscript = true;
-      body.rawExtendscriptDryRunId = lastAcceptedDryRun.runId;
+    if(!dryRun && classificationBlocksRun(validation) && !rawExtendscriptDryRunGateReady(validation)) {
+      fail("raw_dry_run_required","Protected raw execution requires the matching accepted raw dry-run.");return;
     }
-
-    planRunInFlightMode = dryRun ? "dry-run" : "run";
-    rememberPlanRun(null);
-    setChatBusy(true, dryRun ? "Dry run" : "Running");
-    request("POST", "/agents/plan/run", body, function (error, response) {
-      planRunInFlightMode = "";
-      setChatBusy(false);
-      currentPlanSyncAt = 0;
-      if (error) {
-        var errorRun = error.body && error.body.run ? error.body.run : null;
-        if (errorRun) {
-          rememberPlanRun(errorRun);
-          updateChatAvailability();
-          appendChatMessage("assistant", formatPlanRun(errorRun));
-          showPlanRunFinishedStatus(dryRun, errorRun, true);
-          appendOperationUsageReport(dryRun ? "dry run" : "run plan", errorRun);
-          log("Plan run " + (errorRun.id || "") + " needs review");
-          return;
-        }
-        appendChatMessage("error", error.message);
-        showPlanRunFinishedStatus(dryRun, null, true);
-        appendOperationUsageReport(dryRun ? "dry run" : "run plan", error.body || error);
-        log("Plan run failed: " + error.message);
-        return;
+    var mutatingCount=Number(validation.mutatingCount || 0), allowMutations=!dryRun && mutatingCount>0;
+    var allowRawExtendscript=!dryRun && rawExtendscriptDryRunGateReady(validation);
+    var body={actionId:proposal.actionId,payloadRef:proposal.action.payloadRef,payloadHash:proposal.action.payloadHash,
+      previewHash:proposal.action.previewHash,riskLevel:proposal.risk.level,riskPolicyVersion:proposal.confirmation.riskPolicyVersion,
+      requestId:proposal.requestId,dryRun:dryRun,confirm:!dryRun,allowMutations:allowMutations,autoEditSession:allowMutations,timeoutMs:120000};
+    if(!dryRun) {body.confirmationToken=proposal.confirmation.confirmationToken;body.confirmedBySurface=proposal.confirmation.surface;
+      body.confirmedBySession=proposal.confirmation.sessionId || m100ConfirmationSessionId();}
+    if(allowRawExtendscript) {body.allowRawExtendscript=true;body.rawExtendscriptDryRunId=accepted.runId;}
+    if(policy.context && !policy.context.submit()) return;
+    var runEpoch=panelLifecycleEpoch,runGeneration=panelConnectionGeneration;
+    planRunInFlightMode=dryRun?"dry-run":"run";rememberPlanRun(null);setChatBusy(true,dryRun?"Dry run":"Running");
+    request("POST","/agents/plan/run",body,function(error,response) {
+      if(runEpoch !== panelLifecycleEpoch || runGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during execution.",true);return;}
+      planRunInFlightMode="";setChatBusy(false);currentPlanSyncAt=0;
+      var run=response && response.run || error && error.body && error.body.run || null;
+      if(run) {
+        rememberPlanRun(run);updateChatAvailability();appendChatMessage("assistant",formatPlanRun(run));
+        showPlanRunFinishedStatus(dryRun,run,!!error || run.ok !== true);appendOperationUsageReport(dryRun?"dry run":"run plan",run);
+        if(run.id) log("Plan run "+run.id+" finished");
+      } else if(error) {
+        appendChatMessage("error",error.message);showPlanRunFinishedStatus(dryRun,null,true);
+        appendOperationUsageReport(dryRun?"dry run":"run plan",error.body || error);log("Plan run failed: "+error.message);
       }
-      var run = response && response.run ? response.run : null;
-      rememberPlanRun(run);
-      updateChatAvailability();
-      appendChatMessage("assistant", formatPlanRun(run));
-      showPlanRunFinishedStatus(dryRun, run, false);
-      appendOperationUsageReport(dryRun ? "dry run" : "run plan", run);
-      if (run && run.id) log("Plan run " + run.id + " finished");
+      var execution=run && run.outcome && run.outcome.execution,mutation=run && run.outcome && run.outcome.mutation;
+      var executed=dryRun ? false : execution && execution.status === "not_started" ? false
+        : run && (run.ok === true || execution && execution.status === "completed" || mutation && mutation.status === "applied") ? true
+        : !run && error && error.status > 0 ? false : null;
+      var outcome={run:run,runId:run && run.id,executionRequested:!dryRun,executed:executed,acceptedDryRunId:dryRun && run && run.ok ? run.id : null,
+        pins:currentBridgePlanPins(currentBridgePlan)};
+      if(error || !run || run.ok !== true) {
+        var failed=error || {code:run && (run.errorCode || run.code) || "plan_run_failed",message:run && run.error || "Runner did not return an accepted result."};
+        if(onDone) onDone(failed,outcome);return;
+      }
+      // Completion is the actual runner result; canonical refresh is a separate observable read.
+      if(onDone) onDone(null,outcome);
     });
   }
 
-  function sendChat() {
-    if (chatInFlight) return;
-    var prompt = trimText(chatPromptEl.value);
-    if (!prompt) return;
 
-    var agentId = agentSelect.value;
+  function hardcoreReceiptResult(session,sessionId) {
+    var attempts=Array.isArray(session && session.attempts) ? session.attempts : [];
+    var run=session && (session.finalRun || session.finalAttempt && session.finalAttempt.run) || null;
+    if(!run) for(var i=attempts.length-1;i>=0;i--) {if(attempts[i] && attempts[i].run) {run=attempts[i].run;break;}}
+    return {response:session || {},sessionId:sessionId,run:run,runId:run && (run.id || run.runId) || null,
+      outcome:run && run.outcome || null,executionRequested:true,pins:currentBridgePlanPins(currentBridgePlan)};
+  }
+
+  function sendChat(args,onDone) {
+    if (chatInFlight) {if(onDone) onDone({rejected:true,code:"chat_busy"});return;}
+    var prompt = trimText(args.prompt);
+    if (!prompt) {if(onDone) onDone({rejected:true,code:"empty_prompt"});return;}
+
+    var agentId = args.agentId;
     var agent = findAgent(agentId);
     if (!agent) {
       appendChatMessage("error", "Select an agent first.");
-      return;
+      if(onDone) onDone({rejected:true,code:"provider_not_ready"});return;
     }
     if (!selectedAgentReady()) {
       var readyError = readinessError(agent);
       appendChatMessage("error", readyError);
       setAgentStatus(readyError);
-      loadAgents();
+
+      if(onDone) onDone({rejected:true,code:"provider_not_ready",message:readyError});
       return;
     }
 
     rememberModel();
-    var mode = chatModeEl.value || CHAT_MODE_CHAT;
+    var mode = args.mode;
     var agentPlanMode = isAgentChatMode(mode);
     var hardcoreMode = mode === CHAT_MODE_HARDCORE;
     chatPromptEl.value = "";
@@ -3946,10 +3960,10 @@
 
     setChatBusy(true, agentPlanMode ? (hardcoreMode ? "Hardcore autopilot" : "Planning") : "Thinking");
     var path = hardcoreMode ? "/agents/hardcore/run" : (agentPlanMode ? "/agents/plan" : "/agents/chat");
-    var optimizePrompt = promptOptimizationEl && promptOptimizationEl.checked;
+    var optimizePrompt = args.promptOptimization === undefined ? promptOptimizationEl.checked : args.promptOptimization;
     var body = hardcoreMode ? {
       agentId: agentId,
-      model: selectedModel(),
+      model: args.model,
       prompt: prompt,
       promptOptimization: optimizePrompt,
       hardcore: true,
@@ -3964,7 +3978,7 @@
       timeoutMs: 120000
     } : agentPlanMode ? {
       agentId: agentId,
-      model: selectedModel(),
+      model: args.model,
       prompt: prompt,
       promptOptimization: optimizePrompt,
       hardcore: hardcoreMode,
@@ -3974,7 +3988,7 @@
       timeoutMs: 120000
     } : {
       agentId: agentId,
-      model: selectedModel(),
+      model: args.model,
       messages: chatMessages,
       promptOptimization: optimizePrompt,
       timeoutMs: 120000
@@ -3989,6 +4003,12 @@
       if (error) {
         appendChatMessage("error", error.message);
         log("Agent " + mode + " failed: " + error.message);
+        var errorSession=hardcoreMode && error.body && error.body.session;
+        if(errorSession) {
+          var partial=hardcoreReceiptResult(errorSession,args.sessionId);
+          rememberPlanRun(partial.run);
+          if(onDone) onDone(error,partial);
+        } else if(onDone) onDone(error,response);
         return;
       }
 
@@ -3996,7 +4016,7 @@
       var text = hardcoreMode ? formatHardcoreSession(result) : (agentPlanMode ? formatPlanResult(result) : result.text || "");
       if (hardcoreMode) {
         lastPlanResult = result.finalPlanResult || null;
-        rememberPlanRun(result.finalRun || null);
+        rememberPlanRun(hardcoreReceiptResult(result,args.sessionId).run);
       } else {
         lastPlanResult = agentPlanMode ? result : lastPlanResult;
       }
@@ -4017,6 +4037,8 @@
         log("Agent " + mode + " " + result.requestId + " finished in " + (result.durationMs || 0) + "ms with " + (result.model || selectedModel()));
       }
       updateChatAvailability();
+      if(onDone) onDone(null,hardcoreMode ? hardcoreReceiptResult(result,args.sessionId) :
+        {response:result,sessionId:args.sessionId,pins:currentBridgePlanPins(currentBridgePlan)});
     });
   }
 
@@ -4102,8 +4124,9 @@
     });
   }
 
-  function poll() {
-    if (!running) return;
+  function poll(onDone) {
+    if (!running) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
+    if (panelLifecycleGuard) {pollTimer=setTimeout(poll,100);return;}
     if (pollInFlight) return;
     if (activeEvalScriptCommandId) {
       if (Date.now() - panelHeartbeatAt >= 5000) {
@@ -4130,6 +4153,7 @@
           log(message);
           lastPollErrorMessage = message;
         }
+        if(onDone) onDone(error);
         pollTimer = setTimeout(poll, 1500);
         return;
       }
@@ -4137,6 +4161,7 @@
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
       lastPollErrorMessage = "";
       setBridgeConnected();
+      if(onDone) onDone(null,{connected:true,generation:String(panelConnectionGeneration)});
       if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
@@ -4153,7 +4178,7 @@
     });
   }
 
-  function connect() {
+  function connect(onDone) {
     running = true;
     panelConnectionGeneration = Date.now();
     panelLifecycleEpoch += 1;
@@ -4183,7 +4208,7 @@
     loadAgents();
     loadUsageSnapshot();
     log("Connecting to " + getBaseUrl());
-    poll();
+    poll(onDone);
   }
 
   function disconnect() {
@@ -4250,81 +4275,252 @@
     }
   }
 
-  connectButton.addEventListener("click", connect);
-  disconnectButton.addEventListener("click", disconnect);
-  diagnosticsButton.addEventListener("click", toggleDiagnostics);
-  reloadButton.addEventListener("click", reloadApp);
-  if (autonomousSessionButton) autonomousSessionButton.addEventListener("click", toggleAutonomousSession);
-  if (acceptPlaceholderButton) acceptPlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("accept"); });
-  if (releasePlaceholderButton) releasePlaceholderButton.addEventListener("click", function () { placeholderProtectionAction("release"); });
-  if (mapPlaceholderGroupButton) mapPlaceholderGroupButton.addEventListener("click", function () { placeholderProtectionAction("map_group"); });
-  if (applyPlaceholderConstraintsButton) applyPlaceholderConstraintsButton.addEventListener("click", function () { placeholderProtectionAction("constraints"); });
-  if (refreshPlaceholderProtectionButton) refreshPlaceholderProtectionButton.addEventListener("click", refreshPlaceholderProtection);
-  collapseSidebarButton.addEventListener("click", toggleSidebarCollapsed);
-  if (connectorStatusButton) connectorStatusButton.addEventListener("click", refreshConnectorStatus);
-  if (connectorEmergencyDisableButton) connectorEmergencyDisableButton.addEventListener("click", emergencyDisableConnector);
-  if (usageRefreshButton) usageRefreshButton.addEventListener("click", refreshUsage);
-  forEachNode(providerTabEls, function (button) {
-    button.addEventListener("click", function () {
-      selectProviderGroup(getData(button, "provider-group"));
-    });
-  });
-  forEachNode(authModeButtonEls, function (button) {
-    button.addEventListener("click", function () {
-      var mode = getData(button, "auth-mode") === "api" ? "api" : "cli";
-      localStorage.setItem("codexAeOpenAiAuthMode", mode);
-      selectProviderGroup("openai");
-    });
-  });
-  detectLocalButton.addEventListener("click", function () {
-    selectProviderGroup("local");
-    loadAgents();
-  });
-  refreshAgentsButton.addEventListener("click", loadAgents);
-  agentSelect.addEventListener("change", updateSelectedAgent);
-  agentModelEl.addEventListener("input", onAgentModelChanged);
-  agentModelEl.addEventListener("change", onAgentModelChanged);
-  freeModelsOnlyEl.addEventListener("change", onFreeModelsOnlyChanged);
-  agentApiKeyEl.addEventListener("input", updateKeyAvailability);
-  checkAgentButton.addEventListener("click", checkSelectedAgent);
-  providerSelfTestButton.addEventListener("click", runProviderSelfTest);
-  saveAgentKeyButton.addEventListener("click", saveAgentKey);
-  agentSetupActionButton.addEventListener("click", startAgentSetup);
-  sendChatButton.addEventListener("click", sendChat);
-  forEachNode(chatModeButtonEls, function (button) {
-    button.addEventListener("click", function () {
-      setChatMode(getData(button, "chat-mode"));
-    });
-  });
-  if (workflowPresetSelect) {
-    workflowPresetSelect.addEventListener("change", updateChatAvailability);
+  function panelActionBusy() {
+    return !!(chatInFlight || activeEvalScriptCommandId || keySaveInFlight || setupActionInFlight || readinessInFlight ||
+      providerSelfTestInFlight || devRequestInFlight || agentsLoadInFlight || placeholderProtectionInFlight ||
+      connectorStatusInFlight || usageRefreshInFlight || planReconcileInFlight || planRunInFlightMode);
   }
-  if (applyWorkflowPresetButton) {
-    applyWorkflowPresetButton.addEventListener("click", applyWorkflowPreset);
+
+  function rememberPanelSecrets() {
+    var contract=window.AEAgentPanelContract;
+    contract.rememberSecret(getToken());contract.rememberSecret(agentApiKeyEl.value);
+    var proposal=m100ActionProposalForResult(lastPlanResult);
+    if(proposal) contract.rememberSecret(proposal.confirmation.confirmationToken);
   }
-  promptOptimizationEl.addEventListener("change", onPromptOptimizationChanged);
-  if (recoverLastPlanButton) recoverLastPlanButton.addEventListener("click", recoverLastPlanFromChat);
-  dryRunPlanButton.addEventListener("click", function () {
-    runLastPlan(true);
-  });
-  runPlanButton.addEventListener("click", function () {
-    runLastPlan(false);
-  });
-  if (reconcilePlanRunButton) reconcilePlanRunButton.addEventListener("click", reconcileLastPlanRun);
-  if (prepareDevRequestButton) prepareDevRequestButton.addEventListener("click", prepareDevRequest);
-  newChatButton.addEventListener("click", startNewChat);
-  clearChatButton.addEventListener("click", clearActiveChat);
-  chatHistorySelect.addEventListener("change", selectChatSession);
-  chatPromptEl.addEventListener("keydown", function (event) {
-    if (event.keyCode === 13 && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      sendChat();
+
+  function panelActionSnapshot() {
+    rememberPanelSecrets();
+    return {assetVersion:APP_VERSION,connected:running && badgeEl.textContent === "online",running:running,
+      provider:{group:localStorage.getItem("codexAeProviderGroup") || "",authMode:openAiAuthMode(),agentId:agentSelect.value,
+        model:selectedModel(),freeOnly:freeModelsOnlyEl.checked},
+      autonomy:autonomousSessionState ? {desiredEnabled:autonomousSessionState.desiredEnabled === true,
+        effective:autonomousSessionState.connectionReady === true && autonomousSessionState.desiredEnabled === true,
+        connectionReady:autonomousSessionState.connectionReady === true} : null,
+      chat:{mode:chatModeEl.value,optimization:promptOptimizationEl.checked,sessionId:activeChatSessionId,
+        presetId:workflowPresetSelect.value,sessions:chatSessions.length,inFlight:chatInFlight},
+      plan:{pins:currentBridgePlanPins(currentBridgePlan),state:currentBridgePlan && currentBridgePlan.state,
+        validation:lastPlanResult && lastPlanResult.planValidation,acceptedDryRun:lastAcceptedDryRun,
+        lastRun:lastPlanRunResult && {id:lastPlanRunResult.id,ok:lastPlanRunResult.ok,dryRun:lastPlanRunResult.dryRun,
+          errorCode:lastPlanRunResult.errorCode,outcome:lastPlanRunResult.outcome}},
+      connector:connectorStatus && connectorStatus.connector,usage:{available:!!usageSnapshot,inFlight:usageRefreshInFlight},
+      preferences:{sidebarCollapsed:localStorage.getItem("codexAeSidebarCollapsed") === "1",
+        diagnosticsOpen:localStorage.getItem("codexAeDiagnosticsOpen") === "1",
+        autoConnect:localStorage.getItem("codexAeBridgeAutoConnect") !== "0"}};
+  }
+
+  function actionAvailability(name,args) {
+    var reasons=[], passive=/^(logs.get|chat.sessions.list|chat.transcript.get)$/.test(name) || name === "plan.current" && !(args && args.fresh);
+    if(!passive && panelActionBusy()) reasons.push("panel_busy");
+    if(name === "bridge.configure" && running) reasons.push("disconnect_required");
+    if(/^(autonomy|placeholder|plan)\./.test(name) && !running && name !== "plan.current" &&
+       !(name === "plan.reconcile" && knownUnresolvedPlanRun(args && args.runId))) reasons.push("bridge_disconnected");
+    if(/^(provider|chat.send|agent\.)/.test(name) && !window.AEAgentPanelContract.validateLoopbackUrl(getBaseUrl())) reasons.push("invalid_loopback_url");
+    var agent=findAgent(agentSelect.value);
+    if(/^provider\.(check|selfTest|key.save|setup)$/.test(name) || /^(chat.send|agent.plan|agent.hardcore)$/.test(name)) {
+      if(!agent || !selectedModel()) reasons.push("provider_not_selected");
+      if(args && (args.agentId !== agentSelect.value || args.model !== selectedModel())) reasons.push("provider_selection_mismatch");
     }
-  });
+    if(/^(chat.send|agent.plan|agent.hardcore)$/.test(name)) {
+      if(!selectedAgentReady()) reasons.push("provider_not_ready");
+      if(args && (args.sessionId !== activeChatSessionId || args.mode !== chatModeEl.value)) reasons.push("chat_context_mismatch");
+    }
+    if(name === "provider.key.save" && (!agent || !agent.requiresApiKey || agent.canSaveKey === false)) reasons.push("key_not_supported");
+    if(name === "provider.setup" && (!agent || agent.id !== "openai-cli" || agent.codexStatus && agent.codexStatus.loggedIn ||
+       args && args.action !== undefined && args.action !== (agent.setupAction || "codex_login"))) reasons.push("setup_unavailable");
+    if(name === "provider.group.set" && args && !findAgentByGroup(args.group) && !isPlaceholderProviderGroup(args.group)) reasons.push("provider_group_unavailable");
+    if(name === "provider.agent.set" && args && !findAgent(args.agentId)) reasons.push("unknown_agent");
+    if(name === "provider.model.set" && !agent) reasons.push("provider_not_selected");
+    if(/^workflow\./.test(name) && args && args.presetId && !findWorkflowPreset(args.presetId)) reasons.push("unknown_preset");
+    if(name === "workflow.insert" && (!args ? !findWorkflowPreset(workflowPresetSelect.value) : !findWorkflowPreset(args.presetId))) reasons.push("preset_required");
+    if(name === "chat.session.select" && args && !chatSessions.some(function(session) {return session.id === args.sessionId;})) reasons.push("unknown_chat_session");
+    if(name === "chat.clear" && args && args.sessionId !== activeChatSessionId) reasons.push("chat_session_mismatch");
+    if(name === "chat.transcript.get" && args && args.sessionId && !chatSessions.some(function(session) {return session.id === args.sessionId;})) reasons.push("unknown_chat_session");
+    if(/^plan\.(prepare|dryRun|run)$/.test(name)) {
+      if(!currentBridgePlanPins(currentBridgePlan)) reasons.push("canonical_plan_unavailable");
+      var proposal=m100ActionProposalForResult(lastPlanResult);
+      if(name === "plan.run" && !(proposal && proposal.confirmation.confirmationToken)) reasons.push("proposal_adoption_required");
+      if(name === "plan.run" && (!lastAcceptedDryRun || !lastAcceptedDryRun.ok)) reasons.push("matching_dry_run_required");
+    }
+    if(name === "plan.recover" && (lastPlanResult && lastPlanResult.plan || !findLastStoredPlanResult() && !findLastPlanLikeTranscriptText())) reasons.push("recovery_unavailable");
+    if(name === "plan.reconcile" && !knownUnresolvedPlanRun(args && args.runId) &&
+       (!lastPlanRunResult || !lastPlanRunResult.id || lastPlanRunResult.dryRun || !lastPlanRunResult.validation || !lastPlanRunResult.validation.mutatingCount)) reasons.push("reconciliation_unavailable");
+    if(name === "plan.devRequest" && (!lastPlanResult || !lastPlanResult.plan || !devRequestEligibility(lastPlanResult.planValidation,lastPlanRunResult).ok)) reasons.push("dev_request_ineligible");
+    if(name === "connector.emergencyDisable" && (!connectorStatus || !connectorStatus.connector ||
+       connectorStatus.connector.connected === false || connectorStatus.connector.emergencyDisabled)) reasons.push("connector_unavailable_or_disabled");
+    return {available:reasons.length === 0,reasonCodes:reasons};
+  }
+
+  function panelLifecycleIdle(onDone) {
+    if(panelActionBusy()) {onDone({rejected:true,code:"panel_busy"});return;}
+    // Freeze command acquisition during the status check; active commands remain protected.
+    var paused=panelLifecycleGuard;
+    panelLifecycleGuard=true;
+    request("POST","/tools/call",{name:"get_bridge_status",arguments:{}},function(error,response) {
+      var status=null;
+      try {if(response && response.result && !response.result.isError) status=JSON.parse(response.result.content[0].text);} catch(_parseError) {}
+      if(error || !status) {panelLifecycleGuard=paused;onDone(error || {rejected:true,code:"bridge_idle_unknown",message:"Fresh bridge status is unavailable."});return;}
+      if(!status.projectLifecycle || typeof status.projectLifecycle.blocked !== "boolean") {
+        panelLifecycleGuard=paused;onDone({rejected:true,code:"bridge_idle_unknown",message:"Lifecycle status is unavailable."});return;
+      }
+      var lifecycle=status.projectLifecycle;
+      var pending=status.pendingCommands, inflight=status.inflightCommands;
+      var idle=typeof pending === "number" && pending === 0 && Array.isArray(inflight) && inflight.length === 0 &&
+        !status.activeEditSession && !lifecycle.blocked && !lifecycle.problem && !lifecycle.pendingTransition && !lifecycle.pending && !lifecycle.activeTransition;
+      if(!idle) {panelLifecycleGuard=paused;onDone({rejected:true,code:"bridge_busy",message:"Bridge has pending/inflight work or an active project session."});return;}
+      refreshCurrentBridgePlan({fresh:true},function(syncError) {
+        if(syncError || panelActionBusy() || currentBridgePlan && /^(confirmed|executing)$/.test(currentBridgePlan.state)) {
+          panelLifecycleGuard=paused;onDone(syncError || {rejected:true,code:"bridge_busy"});return;
+        }
+        panelLifecycleGuard=paused;onDone(null);
+      });
+    });
+  }
+
+  var panelActionHandlers={
+    "bridge.configure":function(args,done) {
+      if(args.url !== undefined) {configuredBridgeUrl=args.url.replace(/\/+$/,"");urlEl.value=configuredBridgeUrl;localStorage.setItem("codexAeBridgeUrl",configuredBridgeUrl);}
+      if(args.panelToken !== undefined) {configuredPanelToken=args.panelToken;tokenEl.value=args.panelToken;localStorage.setItem("codexAeBridgeToken",args.panelToken);}
+      done(null,{configured:true,url:getBaseUrl()});
+    },
+    "bridge.connect":function(args,done,context) {
+      if(running) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
+      panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(context.submit()) connect(done);});
+    },
+    "bridge.disconnect":function(args,done,context) {
+      panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(!context.submit()) return;disconnect();done(null,{disconnected:true});});
+    },
+    "panel.reload":function(args,done,context) {
+      panelLifecycleIdle(function(error) {if(error) {done(error);return;}var current=panelActionSnapshot();
+        if(!context.checkpoint({assetVersion:APP_VERSION,preferences:current.preferences,reloading:true})) return;
+        reloadApp();
+      });
+    },
+    "ui.diagnostics.set":function(args,done) {setDiagnosticsOpen(args.open);done(null,{open:args.open});},
+    "ui.sidebar.set":function(args,done) {setSidebarCollapsed(args.collapsed);done(null,{collapsed:args.collapsed});},
+    "autonomy.refresh":function(args,done,context) {if(context.submit()) refreshAutonomousSession(done);},
+    "autonomy.set":function(args,done,context) {if(context.submit()) setAutonomousSessionEnabled(args.enabled,done);},
+    "placeholder.refresh":function(args,done,context) {if(context.submit()) refreshPlaceholderProtection(done);},
+    "placeholder.accept":function(args,done,context) {if(context.submit()) placeholderProtectionAction("accept",args,done);},
+    "placeholder.release":function(args,done,context) {if(context.submit()) placeholderProtectionAction("release",args,done);},
+    "placeholder.mapGroup":function(args,done,context) {if(context.submit()) placeholderProtectionAction("map_group",args,done);},
+    "placeholder.constraints.set":function(args,done,context) {if(context.submit()) placeholderProtectionAction("constraints",args,done);},
+    "connector.refresh":function(args,done,context) {if(context.submit()) refreshConnectorStatus(done);},
+    "connector.emergencyDisable":function(args,done,context) {if(context.submit()) emergencyDisableConnector(done);},
+    "usage.refresh":function(args,done,context) {if(context.submit()) refreshUsage(done);},
+    "provider.group.set":function(args,done) {selectProviderGroup(args.group);done(null,{group:args.group,agentId:agentSelect.value});},
+    "provider.authMode.set":function(args,done) {localStorage.setItem("codexAeOpenAiAuthMode",args.mode);selectProviderGroup("openai");done(null,{mode:args.mode,agentId:agentSelect.value});},
+    "provider.agent.set":function(args,done) {selectAgent(args.agentId);done(null,{agentId:agentSelect.value});},
+    "provider.model.set":function(args,done) {agentModelEl.value=args.model;onAgentModelChanged();done(null,{model:selectedModel()});},
+    "provider.freeOnly.set":function(args,done,context) {if(!context.submit()) return;freeModelsOnlyEl.checked=args.enabled;localStorage.setItem("codexAeFreeModelsOnly",args.enabled?"1":"0");loadAgents({afterLoad:function(agent,error) {done(error,{enabled:args.enabled,agentId:agent && agent.id});}});},
+    "provider.refresh":function(args,done,context) {if(context.submit()) loadAgents({quiet:args.quiet,afterLoad:function(agent,error) {done(error,{agentId:agent && agent.id,agents:agents.map(function(item) {return {id:item.id,label:item.label};})});}});},
+    "provider.detectLocal":function(args,done,context) {if(!context.submit()) return;selectProviderGroup("local");loadAgents({afterLoad:function(agent,error) {done(error,{agentId:agent && agent.id});}});},
+    "provider.check":function(args,done,context) {if(context.submit()) checkSelectedAgent(args,done);},
+    "provider.selfTest":function(args,done,context) {if(context.submit()) runProviderSelfTest(done);},
+    "provider.key.save":function(args,done,context) {if(context.submit()) saveAgentKey(args,done);},
+    "provider.setup":function(args,done,context) {if(context.submit()) startAgentSetup(args,done);},
+    "chat.mode.set":function(args,done) {setChatMode(args.mode);done(null,{mode:chatModeEl.value});},
+    "chat.optimization.set":function(args,done) {promptOptimizationEl.checked=args.enabled;onPromptOptimizationChanged();done(null,{enabled:args.enabled});},
+    "chat.prompt.set":function(args,done) {chatPromptEl.value=args.prompt;updateChatAvailability();done(null,{length:args.prompt.length});},
+    "workflow.preset.set":function(args,done) {workflowPresetSelect.value=args.presetId;updateChatAvailability();done(null,{presetId:args.presetId});},
+    "workflow.insert":function(args,done) {workflowPresetSelect.value=args.presetId;applyWorkflowPreset();done(null,{inserted:true,presetId:args.presetId});},
+    "chat.sessions.list":function(args,done) {done(null,{total:chatSessions.length,sessions:chatSessions.slice(args.offset || 0,(args.offset || 0)+(args.limit || 50)).map(function(session) {return {id:session.id,title:chatSessionTitle(session),updatedAt:session.updatedAt};})});},
+    "chat.session.select":function(args,done) {chatHistorySelect.value=args.sessionId;selectChatSession();done(null,{sessionId:activeChatSessionId});},
+    "chat.new":function(args,done) {startNewChat();done(null,{sessionId:activeChatSessionId});},
+    "chat.clear":function(args,done) {clearActiveChat();done(null,{cleared:true,sessionId:activeChatSessionId});},
+    "chat.transcript.get":function(args,done) {var sessionId=args.sessionId || activeChatSessionId,items=transcriptHistory;
+      if(sessionId !== activeChatSessionId) {var session=chatSessions.filter(function(item) {return item.id === sessionId;})[0];items=session.transcript || [];}
+      done(null,{sessionId:sessionId,total:items.length,messages:items.slice(args.offset || 0,(args.offset || 0)+(args.limit || 50)).map(function(item) {return {role:item.role,text:item.text,at:item.at};})});
+    },
+    "chat.send":function(args,done,context) {if(context.submit()) sendChat(args,done);},
+    "agent.plan":function(args,done,context) {if(context.submit()) sendChat(args,done);},
+    "agent.hardcore":function(args,done,context) {if(context.submit()) sendChat(args,done);},
+    "plan.current":function(args,done) {if(!args.fresh) {done(null,{pins:currentBridgePlanPins(currentBridgePlan),state:currentBridgePlan && currentBridgePlan.state});return;}
+      refreshCurrentBridgePlan({fresh:true,expectedActionId:args.expectedActionId},function(error) {done(error,{pins:currentBridgePlanPins(currentBridgePlan),state:currentBridgePlan && currentBridgePlan.state});});
+    },
+    "plan.recover":function(args,done,context) {if(context.submit()) recoverLastPlanFromChat(done);},
+    "plan.prepare":function(args,done,context) {runLastPlan(true,false,done,{prepare:true,strict:true,pins:args.pins,context:context});},
+    "plan.dryRun":function(args,done,context) {runLastPlan(true,false,done,{prepare:false,strict:true,pins:args.pins,context:context});},
+    "plan.run":function(args,done,context) {runLastPlan(false,false,done,{prepare:false,strict:true,pins:args.pins,context:context});},
+    "plan.reconcile":function(args,done) {reconcileLastPlanRun(args,done);},
+    "plan.devRequest":function(args,done,context) {if(context.submit()) prepareDevRequest(done);},
+    "logs.get":function(args,done) {rememberPanelSecrets();var lines=String(logEl.textContent || "").split("\n").filter(Boolean);
+      done(null,{total:lines.length,lines:lines.slice(args.offset || 0,(args.offset || 0)+(args.limit || 50))});
+    }
+  };
+  var panelActionUI=null;
+  function actionUuid() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c) {var r=Math.random()*16|0;return (c === "x"?r:(r&3|8)).toString(16);});
+  }
+  function invokePanelUI(action,args) {
+    var receipt=panelActionUI.invokeUI({protocolVersion:window.AEAgentPanelActions.protocolVersion,requestId:actionUuid(),action:action,args:args || {}});
+    if(receipt.state === "rejected" || receipt.state === "error") log("Panel action "+action+": "+receipt.code);
+    return receipt;
+  }
+  function uiPlanAction(dryRun,actionId) {
+    var pins=currentBridgePlanPins(currentBridgePlan),proposal=m100ActionProposalForResult(lastPlanResult);
+    if(actionId && pins) pins=Object.assign({},pins,{actionId:actionId});
+    var action=proposal && !proposal.confirmation.confirmationToken ? "plan.prepare" : dryRun ? "plan.dryRun" : "plan.run";
+    invokePanelUI(action,action === "plan.run" ? {pins:pins,confirm:true} : {pins:pins});
+  }
+  function providerActionArgs() {return {agentId:agentSelect.value,model:selectedModel()};}
+  function uiSendChat() {
+    var args=providerActionArgs(),mode=chatModeEl.value || "chat";
+    args.prompt=chatPromptEl.value;args.sessionId=activeChatSessionId;args.mode=mode;args.promptOptimization=promptOptimizationEl.checked;
+    if(mode === "hardcore") args.confirm=true;
+    invokePanelUI(mode === "chat"?"chat.send":mode === "hardcore"?"agent.hardcore":"agent.plan",args);
+  }
+  function onControl(el,event,action,args) {
+    if(el) el.addEventListener(event,function() {invokePanelUI(action,typeof args === "function"?args():args || {});});
+  }
+  onControl(connectButton,"click","bridge.connect");
+  onControl(disconnectButton,"click","bridge.disconnect");
+  onControl(reloadButton,"click","panel.reload");
+  [urlEl,tokenEl].forEach(function(el) {onControl(el,"change","bridge.configure",function() {return {url:urlEl.value,panelToken:tokenEl.value};});});
+  onControl(diagnosticsButton,"click","ui.diagnostics.set",function() {return {open:diagnosticsButton.getAttribute("aria-expanded") !== "true"};});
+  onControl(collapseSidebarButton,"click","ui.sidebar.set",function() {return {collapsed:collapseSidebarButton.getAttribute("aria-expanded") !== "false"};});
+  onControl(autonomousSessionButton,"click","autonomy.set",function() {return {enabled:!(autonomousSessionState && autonomousSessionState.desiredEnabled)};});
+  onControl(acceptPlaceholderButton,"click","placeholder.accept",function() {return {useSelectedProperties:placeholderSelectedPropertiesEl.checked};});
+  onControl(releasePlaceholderButton,"click","placeholder.release",{confirm:true});
+  onControl(mapPlaceholderGroupButton,"click","placeholder.mapGroup",function() {return {groupId:placeholderGroupIdEl.value};});
+  onControl(applyPlaceholderConstraintsButton,"click","placeholder.constraints.set",function() {return {distinctGroups:placeholderDistinctGroupsEl.checked,disallowSourceOverlap:placeholderDisallowOverlapEl.checked};});
+  onControl(refreshPlaceholderProtectionButton,"click","placeholder.refresh");
+  onControl(connectorStatusButton,"click","connector.refresh");
+  onControl(connectorEmergencyDisableButton,"click","connector.emergencyDisable",{confirm:true});
+  onControl(usageRefreshButton,"click","usage.refresh");
+  forEachNode(providerTabEls,function(button) {onControl(button,"click","provider.group.set",function() {return {group:getData(button,"provider-group")};});});
+  forEachNode(authModeButtonEls,function(button) {onControl(button,"click","provider.authMode.set",function() {return {mode:getData(button,"auth-mode")};});});
+  onControl(detectLocalButton,"click","provider.detectLocal");
+  onControl(refreshAgentsButton,"click","provider.refresh");
+  onControl(agentSelect,"change","provider.agent.set",function() {return {agentId:agentSelect.value};});
+  ["input","change"].forEach(function(event) {onControl(agentModelEl,event,"provider.model.set",function() {return {model:agentModelEl.value};});});
+  onControl(freeModelsOnlyEl,"change","provider.freeOnly.set",function() {return {enabled:freeModelsOnlyEl.checked};});
+  agentApiKeyEl.addEventListener("input",updateKeyAvailability);
+  onControl(checkAgentButton,"click","provider.check",providerActionArgs);
+  onControl(providerSelfTestButton,"click","provider.selfTest",providerActionArgs);
+  onControl(saveAgentKeyButton,"click","provider.key.save",function() {var args=providerActionArgs();args.key=agentApiKeyEl.value;return args;});
+  onControl(agentSetupActionButton,"click","provider.setup",providerActionArgs);
+  sendChatButton.addEventListener("click",uiSendChat);
+  forEachNode(chatModeButtonEls,function(button) {onControl(button,"click","chat.mode.set",function() {return {mode:getData(button,"chat-mode")};});});
+  onControl(chatModeEl,"change","chat.mode.set",function() {return {mode:chatModeEl.value};});
+  onControl(workflowPresetSelect,"change","workflow.preset.set",function() {return {presetId:workflowPresetSelect.value};});
+  onControl(applyWorkflowPresetButton,"click","workflow.insert",function() {return {presetId:workflowPresetSelect.value};});
+  onControl(promptOptimizationEl,"change","chat.optimization.set",function() {return {enabled:promptOptimizationEl.checked};});
+  onControl(recoverLastPlanButton,"click","plan.recover");
+  dryRunPlanButton.addEventListener("click",function() {uiPlanAction(true);});
+  runPlanButton.addEventListener("click",function() {uiPlanAction(false);});
+  onControl(reconcilePlanRunButton,"click","plan.reconcile",function() {return {runId:lastPlanRunResult && lastPlanRunResult.id || ""};});
+  onControl(prepareDevRequestButton,"click","plan.devRequest");
+  onControl(newChatButton,"click","chat.new");
+  onControl(clearChatButton,"click","chat.clear",function() {return {sessionId:activeChatSessionId,confirm:true};});
+  onControl(chatHistorySelect,"change","chat.session.select",function() {return {sessionId:chatHistorySelect.value};});
+  onControl(chatPromptEl,"change","chat.prompt.set",function() {return {prompt:chatPromptEl.value};});
+  chatPromptEl.addEventListener("keydown",function(event) {if(event.keyCode === 13 && (event.ctrlKey || event.metaKey)) {event.preventDefault();uiSendChat();}});
+
 
   setAppTitle(APP_VERSION);
   urlEl.value = localStorage.getItem("codexAeBridgeUrl") || urlEl.value;
   tokenEl.value = localStorage.getItem("codexAeBridgeToken") || "";
+  configuredBridgeUrl=urlEl.value;configuredPanelToken=tokenEl.value;
   freeModelsOnlyEl.checked = localStorage.getItem("codexAeFreeModelsOnly") === "1";
   promptOptimizationEl.checked = localStorage.getItem("codexAePromptOptimization") === "1";
   populateWorkflowPresets();
@@ -4347,6 +4543,11 @@
     setTimeout(loadAgents, 250);
   }
   if (tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect") !== "0") {
-    setTimeout(connect, 250);
+    setTimeout(function() {invokePanelUI("bridge.connect",{});}, 250);
   }
+  rememberPanelSecrets();
+  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,
+    passive:{"logs.get":true,"chat.sessions.list":true,"chat.transcript.get":true,"plan.current":function(args) {return !args || !args.fresh;}},
+    availability:actionAvailability,state:panelActionSnapshot,
+    lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
 })();
