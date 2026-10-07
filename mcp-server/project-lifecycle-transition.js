@@ -140,7 +140,7 @@ function migrateTargetState(operation, source, targetFile, transitionId, invento
 function asV2(store) { return store.schema === V2 ? c.clone(store) : { ...c.clone(store), schema: V2, pendingLifecycle: null, lifecycleReceipts: [], lifecycleGeneration: 0 }; }
 function packedCapacity(store) {
   memory().validateProjectStateStore(store);
-  const logicalBytes = Buffer.byteLength(JSON.stringify(store), "utf8"), packedBytes = Buffer.byteLength(JSON.stringify(memory().transformReviewStore(store, true), null, 2) + "\n", "utf8");
+  const logicalBytes = Buffer.byteLength(JSON.stringify(store), "utf8"), packedBytes = Buffer.byteLength(memory().serializeProjectStateStore(store), "utf8");
   if (logicalBytes > memory().MAX_STATE_LOGICAL_BYTES || packedBytes > memory().MAX_PACKED_STATE_BYTES) c.fail("lifecycle_store_capacity"); return { logicalBytes, packedBytes };
 }
 function capacityPreflight(store, pending, target, receipt) {
@@ -155,7 +155,7 @@ function capacityPreflight(store, pending, target, receipt) {
   // Capacity is a size estimate, not a claim that the projected record is semantically complete.
   const logicalBytes = Buffer.byteLength(JSON.stringify({ ...candidate, pendingLifecycle: reserved, lifecycleReceipts: [...candidate.lifecycleReceipts.slice(-(MAX_RECEIPTS - 1)), receipt || { reserved: "x".repeat(16384) }], projectState: { ...candidate.projectState, [target.projectKey]: target } }), "utf8");
   const projected = { ...candidate, pendingLifecycle: reserved, projectState: { ...candidate.projectState, [target.projectKey]: target }, lifecycleReceipts: [...candidate.lifecycleReceipts.slice(-(MAX_RECEIPTS - 1)), receipt || { reserved: "x".repeat(16384) }] };
-  const packedBytes = Buffer.byteLength(JSON.stringify(memory().transformReviewStore(projected, true), null, 2) + "\n", "utf8");
+  const packedBytes = Buffer.byteLength(memory().serializeProjectStateStore(projected), "utf8");
   if (logicalBytes > memory().MAX_STATE_LOGICAL_BYTES || packedBytes > memory().MAX_PACKED_STATE_BYTES) c.fail("lifecycle_store_capacity"); return { logicalBytes, packedBytes };
 }
 function guardSnapshot(options = {}) {

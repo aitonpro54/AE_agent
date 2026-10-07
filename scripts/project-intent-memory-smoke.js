@@ -13,7 +13,17 @@ const {
   validateMemoryRegistry,
   retrieveProjectIntentMemory,
   formatProjectIntentMemoryForPrompt,
-  updateProjectIntentMemory
+  updateProjectIntentMemory,
+  PROJECT_STATE_SCHEMA,
+  MAX_PACKED_STATE_BYTES,
+  MAX_STATE_LOGICAL_BYTES,
+  serializeProjectStateStore,
+  atomicProjectStateWrite,
+  loadProjectStateStore,
+  validateProjectStateStore,
+  canonicalSavedProject,
+  projectStateKey,
+  transformReviewStore
 } = require("../mcp-server/project-intent-memory");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -221,6 +231,8 @@ function run() {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 
+  testProjectStateStorage();
+
   console.log(JSON.stringify({
     ok: true,
     trackedEntries: trackedValidation.entryCount,
@@ -228,6 +240,124 @@ function run() {
     protectedSurface: ids(protectedRetrieval),
     promptChars: formatProjectIntentMemoryForPrompt(retrieval).length
   }, null, 2));
+}
+
+function testProjectStateStorage() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ae-project-state-storage-"));
+  try {
+    const statePath = path.join(tempDir, "project-intent-state.json");
+
+    function makeProjectState(projectFile, mappingCount = 450, valueLen = 0) {
+      const normFile = canonicalSavedProject(projectFile);
+      const key = projectStateKey(normFile);
+      const groupMappings = [];
+      for (let m = 0; m < mappingCount; m++) {
+        const extra = valueLen > 0 ? "_" + "x".repeat(valueLen) : "";
+        groupMappings.push({
+          mediaKey: `media_${key.slice(0, 8)}_${m}${extra}`,
+          groupId: `group_${m % 5}`,
+          provenance: "user_confirmed",
+          confirmed: true
+        });
+      }
+      return {
+        projectFile: normFile,
+        projectKey: key,
+        revision: 0,
+        acceptedPlaceholders: [],
+        groupMappings,
+        constraints: null,
+        reviewArtifacts: {},
+        sourceLoadEpochs: {}
+      };
+    }
+
+    // 1. Compact format & trailing newline check
+    const baseState = makeProjectState("C:/Projects/small.aep", 2);
+    const smallStore = {
+      schema: PROJECT_STATE_SCHEMA,
+      projectState: { [baseState.projectKey]: baseState }
+    };
+    validateProjectStateStore(smallStore);
+    const compactOutput = serializeProjectStateStore(smallStore);
+    assert(compactOutput.endsWith("\n"), "Serialized store must end with newline");
+    assert(!compactOutput.includes("\n  "), "Serialized store must be compact without pretty indentations");
+    assert.deepStrictEqual(JSON.parse(compactOutput), smallStore, "Compact store parses back to original");
+
+    // 2. Legacy pretty JSON readability via loadProjectStateStore
+    const legacyPath = path.join(tempDir, "legacy-state.json");
+    const legacyPretty = JSON.stringify(transformReviewStore(smallStore, true), null, 2) + "\n";
+    fs.writeFileSync(legacyPath, legacyPretty, "utf8");
+    const loadedLegacy = loadProjectStateStore({ statePath: legacyPath, enabled: false, skipLifecycleReadGuard: true });
+    assertJsonEqual(loadedLegacy, smallStore, "loadProjectStateStore must read legacy pretty JSON without loss");
+
+    // 3. Meaningful regression: state that exceeds 2MiB in pretty JSON, but fits in compact JSON
+    const largeStore = {
+      schema: PROJECT_STATE_SCHEMA,
+      projectState: {}
+    };
+    for (let i = 0; i < 35; i++) {
+      const pState = makeProjectState(`C:/Projects/large_${i}.aep`, 450);
+      largeStore.projectState[pState.projectKey] = pState;
+    }
+    validateProjectStateStore(largeStore);
+
+    const prettySize = Buffer.byteLength(JSON.stringify(transformReviewStore(largeStore, true), null, 2) + "\n", "utf8");
+    const compactSize = Buffer.byteLength(serializeProjectStateStore(largeStore), "utf8");
+    assert(prettySize > MAX_PACKED_STATE_BYTES, `Pretty size (${prettySize}) must exceed 2MiB limit (${MAX_PACKED_STATE_BYTES})`);
+    assert(compactSize <= MAX_PACKED_STATE_BYTES, `Compact size (${compactSize}) must fit within 2MiB limit (${MAX_PACKED_STATE_BYTES})`);
+
+    // Atomic writer accepts compact state that would fail as pretty
+    atomicProjectStateWrite(largeStore, { statePath, enabled: false, skipLifecycleReadGuard: true });
+    assert(fs.existsSync(statePath), "atomicProjectStateWrite must produce state file");
+
+    // Byte-for-byte consistency between serializeProjectStateStore and atomic write output
+    const writtenBytes = fs.readFileSync(statePath, "utf8");
+    assert.strictEqual(writtenBytes, serializeProjectStateStore(largeStore), "Written disk store must match serializeProjectStateStore byte-for-byte");
+
+    // Read back and verify roundtrip data integrity
+    const readBack = loadProjectStateStore({ statePath, enabled: false, skipLifecycleReadGuard: true });
+    assert.strictEqual(Object.keys(readBack.projectState).length, 35);
+    assertJsonEqual(readBack, largeStore, "Read-back store must equal original large store");
+
+    // 4. True packed overflow (> 2MiB even in compact) is rejected
+    const packedOverflowStore = {
+      schema: PROJECT_STATE_SCHEMA,
+      projectState: {}
+    };
+    for (let i = 0; i < 40; i++) {
+      const pState = makeProjectState(`C:/Projects/overflow_${i}.aep`, 450, 160);
+      packedOverflowStore.projectState[pState.projectKey] = pState;
+    }
+    validateProjectStateStore(packedOverflowStore);
+    assert(Buffer.byteLength(serializeProjectStateStore(packedOverflowStore), "utf8") > MAX_PACKED_STATE_BYTES);
+    assert.throws(
+      () => atomicProjectStateWrite(packedOverflowStore, { statePath: path.join(tempDir, "overflow.json"), enabled: false, skipLifecycleReadGuard: true }),
+      /project_state_size_limit/
+    );
+
+    // 5. Logical overflow (> 32MiB) is rejected
+    const logicalOverflowStore = {
+      schema: PROJECT_STATE_SCHEMA,
+      projectState: {}
+    };
+    for (let i = 0; i < 20; i++) {
+      const pState = makeProjectState(`C:/Projects/logical_${i}.aep`, 450, 3800);
+      logicalOverflowStore.projectState[pState.projectKey] = pState;
+    }
+    validateProjectStateStore(logicalOverflowStore);
+    assert(Buffer.byteLength(JSON.stringify(logicalOverflowStore), "utf8") > MAX_STATE_LOGICAL_BYTES);
+    assert.throws(
+      () => atomicProjectStateWrite(logicalOverflowStore, { statePath: path.join(tempDir, "logical-overflow.json"), enabled: false, skipLifecycleReadGuard: true }),
+      /project_state_logical_size_limit/
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function assertJsonEqual(actual, expected, message) {
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), message);
 }
 
 run();

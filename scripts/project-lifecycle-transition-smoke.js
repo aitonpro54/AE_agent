@@ -87,6 +87,61 @@ async function main() {
     } });
     await rejects(f.service.execute("save_project_as", f.args(), f.context), "lifecycle_store_capacity"); assert(!f.calls.some(call => !call.readOnly)); assert.strictEqual(f.storage.load().pendingLifecycle, undefined); checks++;
   });
+  await using({}, async f => {
+    // Meaningful offline regression: inventory sized so projected pretty JSON exceeds 2MiB, but compact fits and executes.
+    f.setNativeHook(data => { if (data.when === "after" && data.facts.readOnly) {
+      const comp = data.result.items.find(i => i.kind === "comp");
+      if (comp && comp.layers.length === 1) {
+        const baseLayer = comp.layers[0];
+        comp.layers = [];
+        for (let l = 1; l <= 2600; l++) {
+          comp.layers.push({ ...baseLayer, id: 100 + l, index: l, name: "layer_" + l });
+        }
+      }
+    } });
+    const receipt = await f.service.execute("save_project_as", f.args(), f.context);
+    assert.strictEqual(receipt.success, true);
+    const diskContent = fs.readFileSync(f.statePath, "utf8");
+    const loaded = f.storage.load();
+    assert.strictEqual(diskContent, m.serializeProjectStateStore(loaded));
+    assert(diskContent.endsWith("\n"));
+    assert(!diskContent.includes("\n  "));
+    checks++;
+  });
+  await using({}, async f => {
+    // True packed overflow (> 2MiB in compact) is still rejected.
+    const store = f.storage.load();
+    for (let i = 0; i < 3; i++) {
+      const state = t.defaultState(path.join(f.root, "overflow_" + i + ".aep"));
+      for (let m = 0; m < 500; m++) {
+        state.groupMappings.push({ mediaKey: "k_" + i + "_" + m + "_" + "x".repeat(3500), groupId: "g", provenance: "user_confirmed", confirmed: true });
+      }
+      store.projectState[state.projectKey] = state;
+    }
+    throws(() => t.packedCapacity(store), "lifecycle_store_capacity");
+    checks++;
+  });
+  await using({}, async f => {
+    // Logical size overflow (> 32MiB) is still rejected.
+    const store = f.storage.load();
+    for (let i = 0; i < 20; i++) {
+      const state = t.defaultState(path.join(f.root, "logical_" + i + ".aep"));
+      for (let m = 0; m < 450; m++) {
+        state.groupMappings.push({ mediaKey: "k_" + i + "_" + m + "_" + "y".repeat(3800), groupId: "g", provenance: "user_confirmed", confirmed: true });
+      }
+      store.projectState[state.projectKey] = state;
+    }
+    throws(() => t.packedCapacity(store), "lifecycle_store_capacity");
+    checks++;
+  });
+  await using({}, async f => {
+    // Legacy pretty JSON store on disk is readable without loss.
+    const store = f.storage.load();
+    fs.writeFileSync(f.statePath, JSON.stringify(m.transformReviewStore(store, true), null, 2) + "\n", "utf8");
+    const loaded = f.storage.load();
+    assert.deepStrictEqual(loaded, store);
+    checks++;
+  });
   await using({}, async f => { await f.service.execute("save_project_as", f.args(), f.context); const firstEpoch = f.storage.epoch(), store = f.storage.load(); store.lifecycleGeneration = -1; fs.writeFileSync(f.statePath, JSON.stringify(store)); throws(() => f.storage.epoch(), "lifecycle_store_corrupt"); assert.strictEqual(firstEpoch, 1); checks++; });
   console.log("project-lifecycle-transition-smoke PASS", checks, "offline checks (V2/marker faults, migration, inherited ownership, capacity, barriers)");
 }

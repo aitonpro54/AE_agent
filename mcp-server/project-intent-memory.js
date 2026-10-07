@@ -630,11 +630,14 @@ function readProjectState(projectFile, options = {}) {
   return JSON.parse(JSON.stringify(store.projectState[key] || { projectFile: canonicalSavedProject(projectFile),
     projectKey: key, revision: 0, acceptedPlaceholders: [], groupMappings: [], constraints: null, reviewArtifacts: {} }));
 }
+function serializeProjectStateStore(store) {
+  return JSON.stringify(transformReviewStore(store, true)) + "\n";
+}
 function atomicProjectStateWrite(store, options = {}) {
   require("./project-lifecycle-transition").assertPolicyWriteAllowed(options);
   validateProjectStateStore(store);
   if(Buffer.byteLength(JSON.stringify(store),"utf8")>MAX_STATE_LOGICAL_BYTES)throw new Error("project_state_logical_size_limit");
-  const serialized=JSON.stringify(transformReviewStore(store,true),null,2)+"\n";
+  const serialized = serializeProjectStateStore(store);
   if(Buffer.byteLength(serialized,"utf8")>MAX_PACKED_STATE_BYTES)throw new Error("project_state_size_limit");
   const file = projectStatePath(options), io = options.filesystem || fs;
   io.mkdirSync(path.dirname(file), { recursive: true });
@@ -797,5 +800,5 @@ module.exports = {
   PROJECT_STATE_SCHEMA, canonicalSavedProject, projectStateKey, projectStatePath,
   validateProjectStateStore, loadProjectStateStore, readProjectState, createProjectStateController
   ,PACKED_REVIEW_SCHEMA,MAX_PACKED_STATE_BYTES,MAX_REVIEW_LOGICAL_BYTES,MAX_STATE_LOGICAL_BYTES,packCanonicalReview,unpackCanonicalReview,
-  transformReviewStore, atomicProjectStateWrite, checkInheritedOwnershipSteps, assertInheritedRegistration
+  transformReviewStore, serializeProjectStateStore, atomicProjectStateWrite, checkInheritedOwnershipSteps, assertInheritedRegistration
 };
