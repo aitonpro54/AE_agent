@@ -38,6 +38,7 @@ function fixture(options={}) {
   class FootageItem {constructor(id){Object.assign(this,{id,name:"image"+id,file:new File(path.join(root,"image"+id+".png")),width:1920,height:1080,pixelAspect:1,duration:0,frameRate:0,hasVideo:true,hasAudio:false,footageMissing:false,useProxy:false,mainSource:{isStill:true,hasAlpha:true,alphaMode:"STRAIGHT",premulColor:[0,0,0],invertAlpha:false}});}}
   class TextLayer {constructor(id,enabled){Object.assign(this,{id,name:"text"+id,enabled,solo:false,guideLayer:false,locked:false,hasTrackMatte:false,isTrackMatte:false,trackMatteType:0,trackMatteLayer:null});definitions(this);}}
   const layers=[new TextLayer(11,true),new TextLayer(12,false)],target=new CompItem(20,layers),other=new CompItem(30,[]);
+  if(options.immutableCompletedLayer)Object.defineProperty(layers[1],"enabled",{get(){return false;},set(){throw Error("already-disabled layer is immutable");}});
   const rootComp=new CompItem(10,[{id:21,name:"common",enabled:true,solo:false,guideLayer:false,locked:false,hasTrackMatte:false,isTrackMatte:false,trackMatteType:0,source:target}]);
   const projectItems=[rootComp,target,other],writes=[];
   let producer=null,background=null,matteSource=null;
@@ -65,7 +66,9 @@ function fixture(options={}) {
   function queueItem(comp,flag){
     const om={templates:["Movie","AVI","Sequence","Dangerous"],file:new File(path.join(root,"foreign"+comp.id+".mov")),postRenderAction:0,
       applyTemplate(t){this.format=options.outputFormat || (t==="AVI" ? "AVI" : t==="Sequence" ? "PNG Sequence" : "QuickTime");if(t==="Dangerous")this.postRenderAction=1;if(options.templateError)throw Error("template error");},getSettings(){return {Format:this.format||"QuickTime"};}};
-    return {comp,render:flag,status:"QUEUED",templates:["Best Settings"],numOutputModules:1,timeSpanStart:0,timeSpanDuration:2,outputModule:()=>om,applyTemplate(){if(options.renderTemplateError)throw Error("render template error");}};
+    const item={comp,render:flag,status:comp.id===30 && options.immutableCompletedQueue ? "DONE" : "QUEUED",templates:["Best Settings"],numOutputModules:1,timeSpanStart:0,timeSpanDuration:2,outputModule:()=>om,applyTemplate(){if(options.renderTemplateError)throw Error("render template error");}};
+    if(comp.id===30 && options.immutableCompletedQueue)Object.defineProperty(item,"render",{get(){return flag;},set(){throw Error("completed queue item render is immutable");}});
+    return item;
   }
   const items=[queueItem(rootComp,true),queueItem(other,false)],original=items.slice();
   const project={file:new File(file),revision:1,get numItems(){return projectItems.length;},item:i=>projectItems[i-1]};
@@ -126,7 +129,7 @@ async function matteChecks(){
   const post=fixture({matted:true,afterRender:({producer})=>{producer.enabled=true;}}),pe=executor(post,"matte-post").exec,pr=await pe.execute(await renderArgs(pe),grant(pe));
   check(!pr.ok && pr.renderReceipt.matteDependenciesUnchanged===false && pr.renderReceipt.error==="matte_dependency_drift_after_render","native DONE with producer drift is failure");
   check(post.producer.enabled===true && post.writes.length===1,"matte drift is reported and never automatically restored");restored(post);
-  const restore=fixture({matted:true});let originalEnabled=restore.layers[0].enabled,sets=0;Object.defineProperty(restore.layers[0],"enabled",{get:()=>originalEnabled,set:v=>{originalEnabled=v;if(++sets===2)restore.producer.outPoint=3;}});
+  const restore=fixture({matted:true});restore.layers[0].enabled=false;let originalEnabled=restore.layers[0].enabled,sets=0;Object.defineProperty(restore.layers[0],"enabled",{get:()=>originalEnabled,set:v=>{originalEnabled=v;if(++sets===2)restore.producer.outPoint=3;}});
   const re=executor(restore,"matte-restore").exec,rr=await re.execute(await renderArgs(re),grant(re));check(!rr.ok && rr.renderReceipt.restoreErrors.includes("matte_dependency_drift_after_restore"),"drift during controlled restoration is failure without matte repair");
   const independent=fixture({matted:true});let delivered=false;const ie=executor(independent,"matte-readback",(body,meta,f)=>{if(delivered && meta.phase==="inspection")f.producer.stretch=99;const result=f.run(body);if(meta.phase==="render")delivered=true;return {result};}).exec;
   const ir=await ie.execute(await renderArgs(ie),grant(ie));check(ir.code==="native_render_readback_failed" && ir.renderReceipt.ok===true && ir.inspection.attempt.receiptConfirmed===false,"drift only at independent read-back cannot count as success");
@@ -196,6 +199,8 @@ async function main(){
   check(result.alphaDxvProof==="not_verified","template name is not codec alpha proof");
   const b=await renderArgs(exec,variants[1]),r2=await exec.execute(b,grant(exec));check(r2.ok,JSON.stringify(r2));restored(f);check(JSON.stringify(f.samples[1].visible)==="[12]","second title uses same common comp");check(f.project.numItems===3 && f.items.length===4,"one owned item per title, zero comp creation");
   const restart=native.createExecutor(deps),again=await renderArgs(restart);await assert.rejects(restart.execute(again,grant(restart)),/reserved_replay_blocked/);check(f.samples.length===2,"restart duplicate never delivered");
+  const immutable=fixture({immutableCompletedQueue:true,immutableCompletedLayer:true}),immutableExec=executor(immutable,"immutable-completed").exec,immutableResult=await immutableExec.execute(await renderArgs(immutableExec),grant(immutableExec));
+  check(immutableResult.ok && immutable.items[1].status==="DONE" && immutable.items[1].render===false,"completed disabled foreign queue item and already-correct layer receive no setter writes");restored(immutable);
   for(const mode of ["error","cancel","templateError"]){const fx=fixture({[mode]:true}),e=executor(fx,mode).exec;const args=await renderArgs(e);const r=await e.execute(args,grant(e));check(!r.ok,"failure not native success");restored(fx);check(fx.items.length===3,"failure keeps exactly one owned item");}
   const dangerous=fixture(),de=executor(dangerous,"post").exec,da={...await renderArgs(de),outputModuleTemplate:"Dangerous"};const dr=await de.execute(da,grant(de));check(dr.ok && dangerous.samples[0].post===0,"dangerous postrender template forced NONE");
   const dxv=fixture({outputFormat:"DXV 3"}),dxvExec=executor(dxv,"format-dxv3").exec,dxvResult=await dxvExec.execute(await renderArgs(dxvExec),grant(dxvExec));

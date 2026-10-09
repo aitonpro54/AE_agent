@@ -205,8 +205,8 @@ function nativeRender(a, baseline, outputPath, attemptId) {
     for(i=1;i<=rq.numItems;i++)oldQueue.push({item:rq.item(i),render:rq.item(i).render});
     for(i=1;i<=target.numLayers;i++){l=target.layer(i);if(contains(a.controlledLayerIds,l.id))oldLayers.push({layer:l,enabled:l.enabled});}
     phase="mutating";
-    for(i=0;i<oldQueue.length;i++)oldQueue[i].item.render=false;
-    for(i=0;i<oldLayers.length;i++)oldLayers[i].layer.enabled=contains(a.activeLayerIds,oldLayers[i].layer.id);
+    for(i=0;i<oldQueue.length;i++)if(oldQueue[i].item.render!==false)oldQueue[i].item.render=false;
+    for(i=0;i<oldLayers.length;i++){var wanted=contains(a.activeLayerIds,oldLayers[i].layer.id);if(oldLayers[i].layer.enabled!==wanted)oldLayers[i].layer.enabled=wanted;}
     var root=null;for(i=1;i<=app.project.numItems;i++)if(app.project.item(i).id===a.rootCompItemId)root=app.project.item(i);
     owned=rq.items.add(root); owned.render=false;
     owned.applyTemplate(a.renderSettingsTemplate);
@@ -233,8 +233,8 @@ function nativeRender(a, baseline, outputPath, attemptId) {
   } catch(e) { error=String(e.message || e); }
   finally {
     if(owned){try{owned.render=false;}catch(e0){restoreErrors.push("owned_disable_failed");}}
-    for(i=0;i<oldLayers.length;i++){try{oldLayers[i].layer.enabled=oldLayers[i].enabled;}catch(e1){restoreErrors.push("layer_restore_failed");}}
-    for(i=0;i<oldQueue.length;i++){try{oldQueue[i].item.render=oldQueue[i].render;}catch(e2){restoreErrors.push("queue_restore_failed");}}
+    for(i=0;i<oldLayers.length;i++){try{if(oldLayers[i].layer.enabled!==oldLayers[i].enabled)oldLayers[i].layer.enabled=oldLayers[i].enabled;}catch(e1){restoreErrors.push("layer_restore_failed");}}
+    for(i=0;i<oldQueue.length;i++){try{if(oldQueue[i].item.render!==oldQueue[i].render)oldQueue[i].item.render=oldQueue[i].render;}catch(e2){restoreErrors.push("queue_restore_failed");}}
     for(i=0;i<oldLayers.length;i++)if(oldLayers[i].layer.enabled!==oldLayers[i].enabled)restoreErrors.push("layer_restore_mismatch");
     for(i=0;i<oldQueue.length;i++)if(rq.item(i+1)!==oldQueue[i].item || oldQueue[i].item.render!==oldQueue[i].render)restoreErrors.push("queue_restore_mismatch");
     if(owned && (owned.render!==false || rq.item(rq.numItems)!==owned || rq.numItems!==oldQueue.length+1))restoreErrors.push("owned_identity_or_disable_mismatch");

@@ -97,7 +97,9 @@ snapshot и его hash сохраняют точную форму.
 
 Native body сохраняет все existing queue `render` flags и controlled `enabled`,
 изолирует чужую очередь, добавляет ровно один owned item, рендерит и восстанавливает
-состояния в `finally` при success/error/cancel. Owned item остаётся выключенным
+состояния в `finally` при success/error/cancel. Уже выключенные queue items и уже
+нужные значения controlled `enabled` не получают лишних присваиваний. Owned item
+остаётся выключенным
 для точного read-back, удаления по имени/пути нет. Ошибка restoration не считается
 успехом. При сбое процесса/AE до выполнения finally восстановление не доказано:
 нужна инспекция и отдельное ручное исправление. Unknown не разрешает replay.
