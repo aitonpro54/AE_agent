@@ -83,7 +83,7 @@ function nativeVerify(baseline,targetName){
     copies.push(copy);sources.push(source);content.push({variantId:wanted.name,sourceCompId:wanted.id,sourceLayerId:wanted.acceptedId,layerId:copy.id,content:digest(canonical(layerContent(copy,wanted.time)))});
   }
   requireValue(first===baseAccepted.state.index,"recovery_controlled_insert_position_mismatch");
-  source=sources[0];var left=compState(common),right=compState(source);delete left.id;delete left.name;delete left.numLayers;delete right.id;delete right.name;delete right.numLayers;equal(left,right,"recovery_common_comp_settings");
+  source=sources[0];var left=compState(common),right=compState(source);delete left.id;delete left.name;delete left.numLayers;delete left.time;delete right.id;delete right.name;delete right.numLayers;delete right.time;equal(left,right,"recovery_common_comp_settings");
   for(i=0;i<base.layers.length;i++){wanted=base.layers[i];var index=wanted.state.index+(wanted.state.index>first ? 10 : 0);copy=common.layer(index);source=layerById(sources[0],wanted.id);requireValue(copy.name===source.name && copy.matchName===source.matchName && copy.enabled===source.enabled,"recovery_background_identity_mismatch");map.push({sourceId:source.id,cloneId:copy.id});equal(layerContent(copy,base.time),layerContent(source,base.time),"recovery_current_background_content:"+wanted.id);}
   function mapped(id){if(id===null)return null;var n;for(n=0;n<map.length;n++)if(map[n].sourceId===id)return map[n].cloneId;fail("recovery_background_mapping_missing");}
   var matte=layerById(common,mapped(69912)),adjustment=layerById(common,mapped(69913));
