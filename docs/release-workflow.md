@@ -2,9 +2,9 @@
 
 ## Подготовка 3.3.1 — 2026-10-09
 
-- Ветка `codex/release-3.3.1` начинается от `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`; checkpoint `checkpoint/ae-agent-3.3.0-before-3.3.1` фиксирует исходное состояние.
+- Ветка `codex/release-3.3.1` создана от `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`; первый push/read-back PASS на `e5dc9f1f736005f6faecbff56106301c8c673dbd`. Опубликованный annotated checkpoint `checkpoint/ae-agent-3.3.0-before-3.3.1`: tag object `7d53d33ddc00aa919dcd956f644e872433587d70`, peeled target `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`.
 - Текущие product identity, канонические документы и адресные smoke fixtures обновлены до 3.3.1. Записи выпуска 3.3.0, testedAeContext и замороженная intake-граница сохранены.
-- Validation: `check:rules`, 12 JS syntax checks, `bridge-only` и panel-bootstrap offline smokes, `git diff --check` — PASS. Push, GitHub Release и live AE/CEP/provider acceptance не выполнялись.
+- Validation: `check:rules`, 12 JS syntax checks, `bridge-only` и panel-bootstrap offline smokes, `git diff --check` — PASS. PR, GitHub Release и live AE/CEP/provider acceptance не выполнялись.
 
 ## Подготовка 3.3.0 — 2026-10-05
 
