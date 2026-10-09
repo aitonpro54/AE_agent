@@ -9,6 +9,7 @@ const { buildPlannerContext, MAX_PLANNER_CHARS, FINAL_POLICY, relevantGuidelines
 const guidelines = require("../mcp-server/planner-tool-guidance");
 const projectLifecycleContract = require("../mcp-server/project-lifecycle-contract");
 const projectSave = require("../mcp-server/project-save");
+const nativeRenderVariant = require("../mcp-server/native-render-variant");
 const slideshowTools = require("../mcp-server/slideshow-tools");
 const montageTools = require("../mcp-server/montage-tools");
 const { startDaemon } = require("./network-test-fixture");
@@ -39,6 +40,28 @@ const UNRELATED_SPECIALIZED_PATTERNS = [
   "For camera controller rigs",
   "For onion skinning",
   "For requests to align selected layers, clips, or precomps"
+];
+
+const TITLE_ROUTING_PROMPTS = [
+  { id: "font-title-en", prompt: TEST_PROMPTS[2].prompt, expected: ["create_text_layer", "update_text_layer"], absent: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER] },
+  { id: "font-title-ru", prompt: "Измени размер шрифта выбранного титра на 72 и прочитай стиль текста.", expected: ["create_text_layer", "update_text_layer"], absent: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER] },
+  { id: "create-title-en", prompt: "Create a title text layer with font size 72.", expected: ["create_text_layer"], absent: [nativeRenderVariant.RENDER] },
+  { id: "create-title-ru", prompt: "Создай текстовый слой титра с размером шрифта 72.", expected: ["create_text_layer"], absent: [nativeRenderVariant.RENDER] },
+  { id: "title-only-en", prompt: "title", expected: [], absent: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER] },
+  { id: "title-only-ru", prompt: "титр", expected: [], absent: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER] },
+  { id: "native-render-en", prompt: "Render one title variant using the native Render Queue to a generated MOV video.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "native-render-ru", prompt: "Отрендери один вариант титра через штатную очередь рендера в MOV.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "native-render-heading-ru", prompt: "Отрендери варианты заголовков.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "video-export-en", prompt: "Export one title variant as an AVI movie.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "video-export-ru", prompt: "Экспортируй один вариант титра в видео.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "inspect-variants-en", prompt: "Inspect title variants and read native render queue settings.", expected: [nativeRenderVariant.INSPECT], absent: [nativeRenderVariant.RENDER] },
+  { id: "inspect-variants-ru", prompt: "Проверь варианты титра и прочитай настройки очереди рендера.", expected: [nativeRenderVariant.INSPECT], absent: [nativeRenderVariant.RENDER] },
+  { id: "png-export-en", prompt: "Export a preview frame of one title variant as PNG.", expected: [], absent: [nativeRenderVariant.RENDER] },
+  { id: "png-export-ru", prompt: "Экспортируй кадр предпросмотра одного варианта титра в PNG.", expected: [], absent: [nativeRenderVariant.RENDER] },
+  { id: "png-render-en", prompt: "Render a preview frame of one title variant to PNG.", expected: [], absent: [nativeRenderVariant.RENDER] },
+  { id: "png-render-ru", prompt: "Отрендери кадр предпросмотра одного варианта титра в PNG.", expected: [], absent: [nativeRenderVariant.RENDER] },
+  { id: "named-render", prompt: "Use render_one_title_variant for this explicit title variant render.", expected: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER], absent: [] },
+  { id: "named-inspection", prompt: "Use inspect_title_variants for the common title comp.", expected: [nativeRenderVariant.INSPECT], absent: [nativeRenderVariant.RENDER] }
 ];
 
 /**
@@ -90,6 +113,7 @@ function productionPlannerFixture(catalog) {
     tools: catalog,
     projectLifecycleContract: { MUTATIONS: projectLifecycleContract.MUTATIONS },
     projectSave: { TOOL_NAME: projectSave.TOOL_NAME },
+    nativeRenderVariant,
     slideshowTools: { TOOL_NAMES: slideshowTools.TOOL_NAMES },
     montageTools: { TOOL_NAMES: montageTools.TOOL_NAMES },
     buildPlannerContext(input) {
@@ -228,6 +252,29 @@ async function main() {
     });
   }
 
+  const titleRoutingEvaluations = [];
+  for (const item of TITLE_ROUTING_PROMPTS) {
+    for (const retrieval of [null, { toolMatches: [{ preferredTools: [nativeRenderVariant.INSPECT, nativeRenderVariant.RENDER] }] }]) {
+      const selectedNames = new Set(selectTools(item.prompt, tools, retrieval).map((tool) => tool.name));
+      for (const name of item.expected) assert(selectedNames.has(name), `${item.id}: must select ${name}`);
+      for (const name of item.absent) assert(!selectedNames.has(name), `${item.id}: must not select ${name}, including retrieval hints`);
+    }
+    const context = production.build({ prompt: item.prompt });
+    assertRequiredPolicy(context, item.id);
+    for (const name of item.expected) {
+      const mode = mutatingNames.has(name) ? "mutates" : "read-only";
+      assert(context.text.includes(`- ${name} (${mode}):`), `${item.id}: production context must contain the selected ${name} contract`);
+    }
+    for (const name of item.absent) assert(!context.text.includes(`- ${name} (`), `${item.id}: production context must exclude the unrelated ${name} contract`);
+    if (item.expected.includes(nativeRenderVariant.RENDER)) {
+      assert(mutatingNames.has(nativeRenderVariant.RENDER), `${item.id}: native render must remain a mutation`);
+      assert(context.text.includes("Protected manual CEP synchronous native render"), `${item.id}: manual CEP render contract must remain explicit`);
+      assert(context.text.includes("Requires current dry-run"), `${item.id}: render dry-run requirement must remain explicit`);
+      assert(context.text.includes("expectedStateHash") && context.text.includes("renderSettingsTemplate") && context.text.includes("outputModuleTemplate"), `${item.id}: current state and inspected templates must remain required`);
+    }
+    titleRoutingEvaluations.push({ id: item.id, expected: item.expected, absent: item.absent, retrievalIntentGuardChecked: true });
+  }
+
   const lifecycleEvaluations = [];
   for (const name of projectLifecycleContract.MUTATIONS) {
     const tool = tools.find((item) => item.name === name);
@@ -253,12 +300,14 @@ async function main() {
     nonPlanningToolsExcluded: catalog.filter((tool) => !production.planningNames.includes(tool.name)).map((tool) => tool.name),
     crossCuttingRulesCount: guidelines.CROSS_CUTTING_GUIDELINES.length,
     promptEvaluations,
+    titleRoutingEvaluations,
     lifecycleEvaluations,
     verifications: {
       defectF02ReproducedAndFixed: true,
       crossCuttingGuidanceAlwaysIncluded: true,
       specializedGuidanceStillFiltered: true,
       appropriateSettersSelected: true,
+      titleVariantRenderIntentScoped: true,
       tokenBudgetsPreserved: true,
       legacyArrayContractPreserved: true,
       productionPlannerInputParity: true,

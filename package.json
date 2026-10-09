@@ -3,6 +3,7 @@
   "version": "3.3.1",
   "private": true,
   "scripts": {
+    "smoke:native-title-render": "node scripts/native-render-variant-smoke.js",
     "check:rules": "node scripts/clean-current-check.js",
     "diagnostics": "node scripts/diagnostics.js",
     "smoke:diagnostics": "node scripts/diagnostics-smoke.js",

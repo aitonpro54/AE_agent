@@ -15,6 +15,22 @@
   "solutions": [
     {
       "schema": "ae-solution.v1",
+      "id": "render-one-title-variant-typed-plan",
+      "title": "Один вариант титра: native render общей композиции",
+      "status": "recipe",
+      "tags": ["title", "титры", "render", "visibility", "native", "render-queue", "manual-confirmation"],
+      "intent": {"summary": "Детерминированно переключить явную группу текстовых слоёв в одной общей композиции, синхронно отрендерить один вариант и восстановить видимость/очередь.", "appliesWhen": ["Варианты титров заданы явными text layer IDs в одной общей композиции.", "Нужен native render с manual CEP confirmation и неизвестный исход нельзя повторять."]},
+      "inputs": [{"name": "expectedProjectFile", "type": "file-path", "required": true, "description": "Точный текущий named AEP."}, {"name": "controlledLayerIds", "type": "array", "required": true, "description": "Полный набор stable text IDs общей comp."}, {"name": "activeLayerIds", "type": "array", "required": true, "description": "Видимая группа одного варианта."}, {"name": "outputFileName", "type": "string", "required": true, "description": "Уникальное generated MOV/AVI имя без путей."}],
+      "targetAssumptions": ["Fresh native state hash и exact root/variant comp IDs; variant comp встречается ровно один раз.", "Имена существующих шаблонов получены без staging mutations, checkpoint и current dry-run подтверждены."],
+      "execution": {"mode": "typed-plan", "mutating": true, "riskLevel": "high", "recipePath": "recipes/render-one-title-variant-typed-plan.md", "scriptPath": null, "preferredTools": ["inspect_title_variants", "render_one_title_variant", "reconcile_plan_run"]},
+      "requiredSafetyGates": {"planValidation": true, "explicitConfirmation": true, "allowMutations": true, "idempotency": true, "checkpointOrEditSession": true, "postMutationReadBack": true},
+      "verificationRecipe": {"summary": "Exact persisted manual attempt, native DONE и независимый read-back восстановленных состояний; media proof отдельно.", "steps": ["Inspect exact variants, proposal с одним render, successful current dry-run и manual CEP confirmation.", "Проверить bound receipt и exact attempt inspection; unknown не повторять."], "expectedEvidence": ["Native terminal DONE, owned item disabled и foreign RQ/controlled visibility restored.", "Durable reservation записана перед native delivery; output не перезаписывается."]},
+      "testedAeContext": {"aeVersion": null, "panelVersion": "3.3.0", "bridgeVersion": "3.3.0", "projectKind": "synthetic", "notes": ["ES3 host VM и offline contracts; live AE render, media/alpha/DXV и художественная приёмка не заявляются."]},
+      "promotionHistory": [{"date": "2026-10-07", "from": "design", "to": "recipe", "reviewer": "Codex", "evidence": "Scoped native-title-render smoke: actual generated ES3 host scripts, visibility isolation/restoration, auth and unknown replay guards.", "commit": null}],
+      "notes": ["Идеи enabled/RQ restoration из Titles.", "AME variant mode и dedicated plan builder не реализованы; составить обычный typed plan.", "Пустая очередь: explicit guarded template carrier, затем новая inspection. См. docs/title-variant-render.md."]
+    },
+    {
+      "schema": "ae-solution.v1",
       "id": "guarded-project-lifecycle",
       "title": "Guarded Project Lifecycle",
       "status": "recipe",

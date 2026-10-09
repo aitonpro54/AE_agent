@@ -19,12 +19,38 @@ function flag(value) {
   throw new Error("Planner mode flags must be boolean.");
 }
 
+function titleVariantIntent(userPrompt) {
+  const prompt = words(userPrompt).join(" ");
+  const title = /(?:^| )(?:titles?|титр[а-яё]*|заголов[а-яё]*)(?: |$)/.test(prompt);
+  const variant = /(?:^| )(?:variants?|вариант[а-яё]*)(?: |$)/.test(prompt);
+  const inspect = /(?:^| )(?:inspect|list|read|check|show|инспект[а-яё]*|провер[а-яё]*|прочит[а-яё]*|покаж[а-яё]*|перечисл[а-яё]*)(?: |$)/.test(prompt);
+  const render = /(?:^| )render(?:ing|ed|s)?(?!(?: (?:queue|settings|templates?|state|status|receipt|contract))(?: |$))(?: |$)/.test(prompt)
+    || /(?:^| )(?:рендер|рендерить|отрендер[а-яё]*)(?: |$)/.test(prompt);
+  const exportVideo = /(?:^| )(?:export(?:ing|ed|s)?|экспорт[а-яё]*|выгруз[а-яё]*)(?: |$)/.test(prompt);
+  const movie = /(?:^| )(?:videos?|movies?|mov|avi|видео|видеоролик[а-яё]*|ролик[а-яё]*)(?: |$)/.test(prompt);
+  const frame = /(?:^| )(?:frames?|кадр[а-яё]*)(?: |$)/.test(prompt);
+  const stillImage = /(?:^| )(?:png|jpe?g|webp|screenshots?)(?: |$)/.test(prompt)
+    || frame && (exportVideo || /(?:^| )(?:preview|предпросмотр[а-яё]*)(?: |$)/.test(prompt));
+  const renderVariant = title && variant && (render || exportVideo && movie) && (!stillImage || movie);
+  return { inspect: title && variant && (inspect || renderVariant), render: renderVariant };
+}
+
 function selectTools(userPrompt, tools, retrieval) {
   const byName = new Map(tools.map((tool) => [tool.name, tool]));
   const chosen = new Set(CORE_TOOLS.filter((name) => byName.has(name)));
+  const titleIntent = titleVariantIntent(userPrompt);
+  const eligible = (name) => name === "render_one_title_variant" ? titleIntent.render
+    : name === "inspect_title_variants" ? titleIntent.inspect : true;
+  // Title render contracts must not displace ordinary text tools on shared keywords.
+  if (isTextLayoutRequest(userPrompt)) {
+    for (const name of ["create_text_layer", "update_text_layer"]) if (byName.has(name)) chosen.add(name);
+  }
+  for (const name of ["inspect_title_variants", "render_one_title_variant"]) {
+    if (eligible(name) && byName.has(name)) chosen.add(name);
+  }
   const matches = [...(retrieval && retrieval.toolMatches || []), ...(retrieval && retrieval.entries || [])];
   for (const match of matches.slice(0, 3)) {
-    for (const name of match.preferredTools || []) if (byName.has(name)) chosen.add(name);
+    for (const name of match.preferredTools || []) if (eligible(name) && byName.has(name)) chosen.add(name);
   }
   const query = new Set(words(userPrompt).filter((word) => !STOP_WORDS.has(word)));
   const scored = tools.map((tool) => {
@@ -34,7 +60,7 @@ function selectTools(userPrompt, tools, retrieval) {
     let score = exact;
     for (const word of query) score += nameWords.has(word) ? 4 : descriptionWords.has(word) ? 1 : 0;
     return { tool, score };
-  }).filter((item) => item.score >= 4).sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name));
+  }).filter((item) => eligible(item.tool.name) && item.score >= 4).sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name));
   for (const item of scored.slice(0, 8)) chosen.add(item.tool.name);
   return tools.filter((tool) => chosen.has(tool.name));
 }

@@ -78,6 +78,11 @@ function reconciliationReadRequests(record) {
   for (let index = 1; index <= record.plan.steps.length; index++) {
     const step = boundStep(record, index), args = step.args || {};
     if (!isMutatingStep(step)) continue;
+    if(step.tool==="render_one_title_variant"){
+      const native=require("./native-render-variant"),attemptId=payload(step)?.renderReceipt?.attemptId || payload(step)?.attemptId;
+      try{requests.push({stepIndex:index,tool:native.INSPECT,args:native.inspectionArgs(args,attemptId)});}catch(_error){}
+      continue;
+    }
     if(step.tool==="reload_montage_material_source"){
       if(positive(args.sourceItemId))requests.push({stepIndex:index,tool:"get_montage_source_load_evidence",args:{sourceItemId:args.sourceItemId}});continue;
     }
@@ -226,6 +231,19 @@ function reconcilePlanRun({record, freshReadSteps = [], commandStates = [], proj
     const hasUndeliveredProof = commands.filter(command => command.role === "mutation").length > 0 && commands.filter(command => command.role === "mutation").every(command => command.neverSubmitted === true && !command.leasedAt && !command.submittedAt) || step.phase === "before_delivery";
     if (disposition.status === "not_started" && hasUndeliveredProof || disposition.status === "failed" && disposition.reasonCode === "rejected_before_mutation") {
       row.mutationStatus = "not_applied"; row.verificationStatus = "not_required"; row.reasonCode = disposition.reasonCode; continue;
+    }
+    if(step.tool==="render_one_title_variant"){
+      const native=require("./native-render-variant"),receipt=payload(step)?.renderReceipt;
+      let valid=false;
+      try{
+        const requestArgs=native.inspectionArgs(step.args,receipt?.attemptId);
+        const candidates=reads.filter(read=>read.status==="completed" && read.tool===native.INSPECT && read.mutatesProject!==true && read.mutating!==true && native.digest(read.args)===native.digest(requestArgs));
+        valid=Boolean(receipt?.authorization?.runId===record.run.id && receipt?.authorization?.proposalId===record.run.provenance?.actionId && candidates.length===1 &&
+          native.verifyInspection(receipt,payload(candidates[0]),step.args));
+      }catch(_error){}
+      if(valid){row.mutationStatus="applied";row.verificationStatus="passed";row.reasonCode="persisted_native_done_and_restoration_independently_confirmed";row.scope="native_completion_only";}
+      else row.reasonCode="native_render_outcome_unresolved_no_replay";
+      continue;
     }
     if(step.tool==="reload_montage_material_source"){
       if(step.argumentsRecovery)row.argumentsRecovery=step.argumentsRecovery;

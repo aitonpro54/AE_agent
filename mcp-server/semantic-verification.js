@@ -112,6 +112,7 @@ const MUTATING_TOOLS = new Set([
   "rename_layers",
   "rename_project_items",
   "add_comp_to_render_queue",
+  "render_one_title_variant",
   "set_render_queue_output",
   "clone_slideshow_event_tree",
   "extend_slideshow_cloned_tree",
@@ -127,6 +128,7 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "inspect_title_variants",
   "get_montage_source_load_evidence",
   "get_bridge_status",
   "get_project_info",
@@ -808,7 +810,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4126,6 +4128,18 @@ function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+  if(step.tool==="render_one_title_variant"){
+    const native=require("./native-render-variant"),receipt=payload.renderReceipt;
+    let valid=false;
+    try{native.verifyReceipt(receipt,args);
+      const wanted=native.inspectionArgs(args,receipt.attemptId),attempts=(evidence.readBack.rawAttempts || []).filter(read=>
+        SERVER_ATTACHED_READS.get(read)?.mutationStep===step || read.tool===native.INSPECT && read.args?.attemptId===receipt.attemptId);
+      const attached=attempts.filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+      valid=Boolean(receipt.authorization && receipt.authorization.runId===evidence.run.id && receipt.authorization.proposalId===evidence.run.provenance?.actionId && attempts.length>0 && attached.length<=1 &&
+        attempts.every(read=>read.status==="completed" && read.tool===native.INSPECT && (!SERVER_ATTACHED_READS.has(read) || SERVER_ATTACHED_READS.get(read).valid===true) && native.digest(read.args)===native.digest(wanted) && native.verifyInspection(receipt,payloadForStep(read),args)));
+    }catch(_error){}
+    pushCheck(checks,{id:`${step.index}:render_one_title_variant:native-done`,title:"Bound native DONE and independent restored-state receipt",expected:"exact manual attempt + native DONE + restored visibility/queue",observed:valid ? "native completion confirmed; media/alpha/DXV/visual proof separate" : "native render outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if(step.tool==="reload_montage_material_source"){
     const epoch=payload.sourceLoadEpoch,verified=payload.verification;
     let valid=false;try{const capture=require("./montage-capture-service"),p=evidence.run.provenance;capture.validateLoadEpoch(epoch,{projectKey:epoch?.projectKey});

@@ -69,6 +69,7 @@ const { createLifecycleBridgeAdapter } = require("./project-lifecycle-bridge-ada
 const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
+const nativeRenderVariant = require("./native-render-variant");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -143,6 +144,10 @@ const projectSaveExecutor = projectSave.createProjectSaveExecutor({runExtendScri
     return receipt;
   }});
 const CHECKPOINT_SUFFIX = "-checkpoint";
+const nativeRenderExecutor = nativeRenderVariant.createExecutor({
+  stateDir:path.join(LOG_DIR,"native-title-render-attempts"), resolveOutputFilePath,
+  runExtendScriptBody:(body,meta)=>withPlanCommandRole(meta.mutatesProject ? "mutation" : "readback",()=>runExtendScriptBody(body,meta.timeoutMs))
+});
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
 const AE_PLAN_SYSTEM_PROMPT = [
@@ -1024,6 +1029,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  nativeRenderVariant.RENDER,
   ...projectLifecycleContract.MUTATIONS,
   "reload_montage_material_source",
   "create_placeholder_review_comps",
@@ -1118,6 +1124,7 @@ const M100_RAW_JSX_TOOL_NAMES = new Set([
   "run_extendscript_file"
 ]);
 const M100_DESTRUCTIVE_TOOL_NAMES = new Set([
+  nativeRenderVariant.RENDER,
   ...projectLifecycleContract.MUTATIONS,
   projectSave.TOOL_NAME,
   "cleanup_test_items",
@@ -2744,6 +2751,16 @@ async function verifyMutationResult(toolName, args, payload) {
     projectSave.verifyReceipt(payload && payload.saveReceipt,args);
     return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
   }
+  if(toolName===nativeRenderVariant.RENDER){
+    const receipt=payload && payload.renderReceipt;
+    nativeRenderVariant.verifyReceipt(receipt,args);
+    const readArgs=nativeRenderVariant.inspectionArgs(args,receipt.attemptId);
+    const result=await callToolLogged("verification-readback",nativeRenderVariant.INSPECT,readArgs);
+    const read=firstToolPayload(result);
+    const context=planCommandContext.getStore();
+    if(context && context.item){context.item.independentReadBack=[{index:2,tool:nativeRenderVariant.INSPECT,args:readArgs,status:result.isError ? "failed" : "completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {ok:!result.isError && nativeRenderVariant.verifyInspection(receipt,read,args),scope:"native_done_and_restored_state_only",independentReadBack:{tool:nativeRenderVariant.INSPECT,args:readArgs,result:read},mediaProof:"not_inspected",alphaDxvProof:"not_verified",visualProof:"not_reviewed"};
+  }
   if (toolName === "export_path_points" || toolName === "export_text_to_file" || toolName === "save_comp_frame_png") {
     const file = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.file || {} : {};
     const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
@@ -4218,6 +4235,14 @@ function validateAgentPlanObject(plan, requestId, context) {
       try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
       if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
     }
+    if([nativeRenderVariant.INSPECT,nativeRenderVariant.RENDER].includes(toolName)) {
+      try{nativeRenderVariant.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
+      if(toolName===nativeRenderVariant.RENDER) {
+        try{resolveOutputFilePath(safeArgs.outputFileName);}catch(error){generatedSafetyIssues.push(error.message);}
+        generatedRenderOutputCount++;
+        if(steps.filter(value=>planStepToolName(value)===nativeRenderVariant.RENDER).length!==1)generatedSafetyIssues.push("One title variant render is allowed per manual proposal.");
+      }
+    }
     if (projectLifecycleContract.isLifecycleTool(toolName)) {
       try { projectLifecycleContract.validateInput(toolName, safeArgs); if (projectLifecycleContract.isLifecycleMutation(toolName)) lifecycle.planStep(sourcePlan); }
       catch (error) { generatedSafetyIssues.push(error.code || error.message); }
@@ -4276,17 +4301,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
+      if (toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
+      if (toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
+      if (toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -5184,6 +5209,8 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  nativeRenderVariant.INSPECT,
+  nativeRenderVariant.RENDER,
   ...projectLifecycleContract.MUTATIONS,
   "get_project_lifecycle_state",
   "reconcile_project_lifecycle",
@@ -7110,7 +7137,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       return finishRun();
     }
   }
-  if(!dryRun&&validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)){
+  if(!dryRun&&validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME || step.tool===nativeRenderVariant.RENDER)){
     try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,validation.steps.length,AUTONOMY_CONTRACT_VERSION);}
     catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
   }
@@ -7359,13 +7386,18 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       persistRun(item);
+      const nativeRenderAuthorization=step.tool===nativeRenderVariant.RENDER ? nativeRenderExecutor.authorize({
+        record:options._m100ActionRecord,runId:run.id,autonomous:Boolean(autonomous),confirm,allowWithoutCheckpoint,
+        checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,
+        stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }) : null;
       const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
       () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         projectLifecycleContract.isLifecycleMutation(step.tool) ? {lifecycleAuthorization} : step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : undefined)))));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : nativeRenderAuthorization ? {nativeRenderAuthorization} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -12590,6 +12622,7 @@ const tools = [
   },
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
   ...projectSave.createToolDefinitions(),
+  ...nativeRenderVariant.createToolDefinitions(),
   ...projectLifecycleContract.toolDefinitions,
   projectLifecyclePlan.tool,
   projectLifecyclePlan.recoveryTool
@@ -12748,7 +12781,7 @@ async function callTool(name, args, executionContext) {
       const readKeys=new Set();
       for(const request of helper.reconciliationReadRequests(record)) {
         if(Date.now()>deadline) break;
-        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details","get_montage_source_load_evidence"].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
+        if(!["get_comp_details","get_layer_details","get_property_value","get_effect_details","get_montage_source_load_evidence",nativeRenderVariant.INSPECT].includes(request.tool)) throw new Error("reconciliation_read_not_allowlisted");
         const key=reviewEvidence.sha256({tool:request.tool,args:request.args});
         if((!selected || selected.includes(request.stepIndex)) && !readKeys.has(key)) {readKeys.add(key);await read(request);}
       }
@@ -12770,6 +12803,11 @@ async function callTool(name, args, executionContext) {
     try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
       return toolResult({ok:true,saveReceipt});
     }catch(error){return toolResult({ok:false,error:error.message,code:error.code||"PROJECT_SAVE_FAILED"},true);}
+  }
+  if(name===nativeRenderVariant.INSPECT || name===nativeRenderVariant.RENDER){
+    try { const result=name===nativeRenderVariant.INSPECT ? await nativeRenderExecutor.inspect(args) : await nativeRenderExecutor.execute(args,executionContext && executionContext.nativeRenderAuthorization);
+      return toolResult(result,result.ok!==true);
+    }catch(error){return toolResult({ok:false,code:error.code || "native_render_failed",error:error.message},true);}
   }
   if (name === "build_slideshow_plan") {
     try { const result=slideshowPlanBuilder.buildSlideshowPlan(args.manifest, args.articles, args.inventory);
@@ -22191,6 +22229,7 @@ async function callToolLogged(source, name, args, executionContext) {
   const eventId = crypto.randomUUID();
   const startedAt = Date.now();
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
+  if(name===nativeRenderVariant.RENDER)nativeRenderExecutor.assertAuthorization(executionContext && executionContext.nativeRenderAuthorization,args || {});
   if (projectLifecycleContract.isLifecycleTool(name)) projectLifecycleContract.validateInput(name, args || {});
   let idContext = null;
   recordEvent("tool_call_started", {
@@ -22225,7 +22264,7 @@ async function callToolLogged(source, name, args, executionContext) {
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
       if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
-    idContext = name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
+    idContext = name === nativeRenderVariant.RENDER || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -22306,7 +22345,7 @@ async function callToolLogged(source, name, args, executionContext) {
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
