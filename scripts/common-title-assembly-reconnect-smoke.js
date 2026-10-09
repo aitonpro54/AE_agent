@@ -4,6 +4,12 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("nod
 const recovery=require("../mcp-server/common-title-assembly-recovery"),control=require("../mcp-server/cep-panel-control"),records=require("../mcp-server/plan-run-records"),contract=require("../cep-panel/panel-action-contract"),network=require("./network-test-fixture"),{createPanelEnvironment}=require("./cep-plan-refresh-smoke"),x=require("./common-title-assembly-recovery-smoke"),loader=require("./common-title-assembly-maintenance");
 const copy=v=>JSON.parse(JSON.stringify(v)),root=fs.mkdtempSync(path.join(os.tmpdir(),"ae-agent-network-boundary-common-title-"));
 async function main(){
+  const absentEnv=path.join(root,"absent.env"),suppliedEnv={AE_BRIDGE_HOST:"127.0.0.1",AE_BRIDGE_PORT:"3456",AE_BRIDGE_TOKEN:"fixture-inherited-token"};
+  assert.equal(fs.existsSync(absentEnv),false);
+  assert.deepEqual(loader.config(suppliedEnv,absentEnv),{host:"127.0.0.1",port:3456,token:"fixture-inherited-token"});
+  for(const field of ["AE_BRIDGE_HOST","AE_BRIDGE_PORT","AE_BRIDGE_TOKEN"]){const missing={...suppliedEnv};delete missing[field];assert.throws(()=>loader.config(missing,absentEnv),e=>e.code==="common_title_maintenance_configuration_invalid");}
+  const fallbackEnv=path.join(root,"fallback.env");fs.writeFileSync(fallbackEnv,'AE_BRIDGE_HOST=127.0.0.1\nAE_BRIDGE_PORT=3457\nAE_BRIDGE_TOKEN="fixture-file-token"\n');
+  assert.deepEqual(loader.config(suppliedEnv,fallbackEnv),{host:"127.0.0.1",port:3456,token:"fixture-inherited-token"});
   const port=await network.reserveLoopbackPort(),settings={port,automationToken:"common-auto",panelToken:"common-panel",adminToken:"common-admin",devAdmin:true,commandTimeoutMs:1500};
   const env=network.isolatedEnvironment(root,settings);for(const k of Object.keys(process.env))if(/^(AE_|CODEBURN|OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE|OPENROUTER)/i.test(k))delete process.env[k];Object.assign(process.env,env);
   fs.writeFileSync(path.join(root,"state/autonomy-preference.json"),JSON.stringify({schema:"ae-agent.autonomy-preference.v2",desiredEnabled:false}));
@@ -72,7 +78,7 @@ async function main(){
       }finally{if(foreign)foreign.release();}
     }
     await reloadInterleaving(true);await reloadInterleaving(false);
-    console.log(JSON.stringify({ok:true,scope:"isolated production HTTP + full CEP VM + generated native verifier VM",maintenanceReservation:"durable once",p1NativeDispatches:0,successfulP2NativeReads:1,storageFailureP2NativeReads:1,guardReloadRetention:true,privateAdoption:true,transportProjection:true,adoptionStorageFailureRetainsGuard:true,loaderForeignAfterAuthReloads:0,loaderCompetingInvoke:"transport_busy",originalOutcome:"unknown",replayAllowed:false,negatives:["before reload/native proof","client assertions","foreign controller","duplicate reload authorization","restart unconfirmed guard","lost recovery scope","adoption storage failure","CLI arbitrary inputs","loaded source mismatch","foreign lock after authorization","competing invoke before send"]}));
+    console.log(JSON.stringify({ok:true,scope:"isolated production HTTP + full CEP VM + generated native verifier VM",loaderOptionalEnv:true,loaderEnvironmentPriority:true,maintenanceReservation:"durable once",p1NativeDispatches:0,successfulP2NativeReads:1,storageFailureP2NativeReads:1,guardReloadRetention:true,privateAdoption:true,transportProjection:true,adoptionStorageFailureRetainsGuard:true,loaderForeignAfterAuthReloads:0,loaderCompetingInvoke:"transport_busy",originalOutcome:"unknown",replayAllowed:false,negatives:["before reload/native proof","client assertions","foreign controller","duplicate reload authorization","restart unconfirmed guard","lost recovery scope","adoption storage failure","CLI arbitrary inputs","loaded source mismatch","foreign lock after authorization","competing invoke before send","missing configured host/port/token"]}));
   }finally{server.close();}
 }
 main().catch(e=>{console.error(e.stack||e);process.exitCode=1;});
