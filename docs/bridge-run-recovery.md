@@ -70,6 +70,36 @@ unconfirmed до свежей canonical server validation; missing/corrupt evide
 execution. Клиентские proof/terminal/release assertions, reset и raw/create/import/
 save/destructive/Hardcore остаются вне recovery-контракта.
 
+### Двухэтапное восстановление транспорта
+
+Если canonical P1 reconciliation валидирует допустимый terminal PNG run, но bridge
+отключён, сервер возвращает отдельный `transport_prerequisite`: это ещё не recovery
+receipt, не освобождает исходный unknown guard и не разрешает replay. Trusted panel
+handler сохраняет завершённый P1 receipt при прежних epoch/generation и только после
+успешной записи начинает private same-config transport с новым lifecycle identity.
+При сбое записи, изменении lifecycle/config, timeout или истечении scope продолжения
+и автоматического повтора нет.
+
+Handshake обязан быть пустым. Временный server-owned scope привязан к точным run,
+исходному request, panel connection и recovery generation. В recovery polling
+разрешена доставка только новых `get_project_info` и `get_comp_details` команд,
+помеченных этим scope; чужая queued/inflight команда, неверный или потерянный после
+restart scope блокируют выдачу без обычной queue fallback. P2 — отдельный новый
+`plan.reconcile` context с повторной canonical validation и одним свежим
+project/comp/project окном. Только полный durable receipt вместе с точной private
+panel adoption снимает targeted guard. После этого обычный `bridge.connect` может
+вернуть polling через существующие gates; автоматического продолжения plan нет.
+
+Validation: `generated-export-reconnect-smoke.js` проверяет production HTTP queue и
+handlers в isolated full-panel VM: P1 без native dispatch, handshake, точные три P2
+read, no export/replay, сохранение чужих команд и normal-poll gates. Это offline
+evidence. Source correction закрывает гонки при poll error и scope expiry: transport
+invalidates lifecycle, поэтому held P2 response не сохраняет adoption. Reconnect smoke
+также проверяет selector: connected unknown setter выполняет только текущую typed
+postconditions-сверку и сохраняет guard без recovery/release/replay; disconnected
+setter не вызывает connect или native reads. Offline source/integration checks passed;
+live activation и same-run P1/P2 в CEP/AE остаются pending.
+
 Validation: offline production-runner/adjudicator, full-panel VM и isolated
 transport fixtures покрывают terminal export, partial projection, reload,
 fail-stop и no-replay. Live activation/read-back, исходный run recovery и просмотр

@@ -298,6 +298,39 @@ test("private recovery adoption rejects epoch-only and generation-only drift bef
   }
 });
 
+test("poll error and scope expiry cancel held P2 before a late trusted recovery response",()=>{
+  for(const mode of ["poll_error","scope_expiry"]){
+    const x=makeExportFixture(),p=x.record.run.provenance,original={...x.remote,protocolVersion:contract.PROTOCOL_VERSION,signature:"f".repeat(64)},store=new Map([["codexAePanelActionReceiptsInitialized","1"],["codexAePanelActionReceipts",JSON.stringify({version:1,records:{[original.requestId]:original},tombstones:{}})],["codexAePanelActionReceiptIndex",JSON.stringify({[original.requestId]:{action:"plan.run",signature:original.signature}})]]),f=fixture({storageStore:store});
+    const before=f.env.api.state(),scopeId=crypto.randomUUID(),prerequisite={schema:"ae-agent-generated-export-transport-prerequisite.v1",scopeId,runId:original.runId,originalRequestId:original.requestId,actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,projectId:p.projectId,panelConnectionId:before.bridgeConnection.panelConnectionId,currentBinding:{panelInstanceId:before.panelInstanceId,panelLifecycleEpoch:before.panelLifecycleEpoch,panelGeneration:before.panelGeneration},nextBinding:{panelInstanceId:before.panelInstanceId,panelLifecycleEpoch:before.panelLifecycleEpoch+1,panelGeneration:"recovery-"+scopeId},expiresAt:new Date(Date.now()+60000).toISOString(),freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false};
+    const first=f.invoke("plan.reconcile",{runId:original.runId},{hold:true});f.env.inFlightRequests.find(r=>r.path==="/tools/call").respond(200,{result:{content:[{text:JSON.stringify({runId:original.runId,status:"transport_prerequisite",transportPrerequisite:prerequisite})}]}});
+    f.env.inFlightRequests.find(r=>r.path.includes("recoveryHandshake=1")).respond(200,{ok:true,command:null,recoveryTransport:{scopeId,state:"ready"}});assert.equal(f.env.api.getResult(first.request.requestId).state,"completed");assert.equal(f.env.api.state().connected,true);
+    const second=f.invoke("plan.reconcile",{runId:original.runId},{hold:true}),held=f.env.inFlightRequests.find(r=>r.path==="/tools/call"),epoch=f.env.api.state().panelLifecycleEpoch;
+    if(mode==="scope_expiry")f.env.setFrozenNow(Date.parse(prerequisite.expiresAt)+1);
+    assert(f.env.runTimer(timer=>timer.fn.name==="pollRecoveryTransport"));
+    if(mode==="poll_error")f.env.inFlightRequests.find(r=>r.path.startsWith("/bridge/next?")).error("synthetic recovery poll failure");
+    assert.equal(f.env.api.state().connected,false);assert.equal(f.env.api.state().recoveryTransport.state,"failed");assert.equal(f.env.api.state().panelLifecycleEpoch,epoch+1);
+    const full=recovery.envelope({schema:recovery.SCHEMA,recoveryId:crypto.randomUUID(),originalRequestId:original.requestId,originalAction:"plan.run",runId:original.runId,actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,projectId:p.projectId,originalBinding:{panelInstanceId:original.panelInstanceId,panelLifecycleEpoch:original.epoch,panelGeneration:original.generation},terminal:"failed",replayAllowed:false,artisticAccepted:false});
+    held.respond(200,{result:{content:[{text:JSON.stringify({runId:original.runId,status:"incomplete",generatedExportRecovery:full,replayAllowed:false})}]}});
+    assert.equal(f.env.api.getResult(second.request.requestId).state,"unknown");assert.equal(f.env.api.getResult(second.request.requestId).code,"lifecycle_interrupted");assert.equal(f.env.api.state().reconciliationRequired,true);assert.equal(f.env.api.getResult(original.requestId).state,"unknown");assert.equal(f.env.api.getResult(original.requestId).recovery,undefined);assert.equal(JSON.parse(store.get("codexAePanelActionReceipts")).recoveries[original.requestId],undefined);
+    assert.equal(f.env.requestHistory.filter(r=>r.path==="/tools/call").length,2,"No implicit retry/P2");assert.equal(f.env.requestHistory.filter(r=>r.path.includes("recoveryHandshake=1")).length,1,"No implicit reconnect");
+  }
+});
+
+test("P1 continuation requires completed persistence and a second lifecycle check",()=>{
+  for(const mode of ["ok","persistence_failure","lifecycle_after_persist"]){
+    const x=makeExportFixture(),p=x.record.run.provenance,original={...x.remote,protocolVersion:contract.PROTOCOL_VERSION,signature:"d".repeat(64)},map=new Map();
+    map.set("codexAePanelActionReceiptsInitialized","1");map.set("codexAePanelActionReceipts",JSON.stringify({version:1,records:{[original.requestId]:original},tombstones:{}}));map.set("codexAePanelActionReceiptIndex",JSON.stringify({[original.requestId]:{action:"plan.run",signature:original.signature}}));
+    const life={epoch:1,generation:"current",busy:false};let started=0,completed;
+    const storage={getItem:key=>map.get(key)||null,setItem:(key,value)=>{if(key==="codexAePanelActionReceipts" && value.indexOf('"status":"transport_prerequisite"')>=0){if(mode==="persistence_failure")throw Error("P1 persist");if(mode==="lifecycle_after_persist")life.epoch++;}map.set(key,value);}};
+    const service=createService(contract,storage),scopeId=crypto.randomUUID();
+    service.bind({handlers:{"plan.reconcile":function(args,done,context){const current=service.api.state();const result={status:"transport_prerequisite",transportPrerequisite:{schema:"ae-agent-generated-export-transport-prerequisite.v1",scopeId,runId:original.runId,originalRequestId:original.requestId,actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,projectId:p.projectId,currentBinding:{panelInstanceId:current.panelInstanceId,panelLifecycleEpoch:life.epoch,panelGeneration:life.generation},nextBinding:{panelInstanceId:current.panelInstanceId,panelLifecycleEpoch:life.epoch+1,panelGeneration:"recovery-"+scopeId},expiresAt:new Date(Date.now()+60000).toISOString(),freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false}};
+      completed=context.completeRecoveryTransportPrerequisite(result,function(){started++;const disk=JSON.parse(map.get("codexAePanelActionReceipts"));assert(Object.values(disk.records).some(r=>r.action==="plan.reconcile" && r.state==="completed" && r.generation==="current"));});}},passive:{},lifecycle:()=>life,state:()=>({}),availability:()=>({available:true,reasonCodes:[]})});
+    const request=envelope("plan.reconcile",{runId:original.runId});service.api.invoke(request);
+    assert.equal(completed,mode==="ok");assert.equal(started,mode==="ok"?1:0);assert.equal(service.api.state().reconciliationRequired,true);assert.equal(service.api.getResult(original.requestId).recovery,undefined);
+    if(mode==="persistence_failure")assert.equal(service.api.getResult(request.requestId).state,"unknown");else assert.equal(service.api.getResult(request.requestId).state,"completed");
+  }
+});
+
 test("Hardcore HTTP success is not execution proof: nested/attempt unknown and partial error preserve guard",()=>{
   function submit(status,session,extra={}) {
     const f=fixture();f.connect();f.invoke("chat.mode.set",{mode:"hardcore"});

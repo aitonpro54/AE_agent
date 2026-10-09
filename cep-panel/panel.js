@@ -137,6 +137,8 @@
   var currentPlanSyncWaiters = [];
   var lastPlanRunResult = null;
   var planReconcileInFlight = false;
+  var recoveryTransportScope = null;
+  var recoveryTransportConnecting = false;
   var lastAcceptedDryRun = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
@@ -3550,17 +3552,16 @@
     var run = lastPlanRunResult;
     var runId = args ? args.runId : run && run.id;
     var guarded=knownUnresolvedPlanRun(runId);
-    if ((!running && !guarded) || chatInFlight || planReconcileInFlight ||
+    if ((!running && !guarded) || chatInFlight || planReconcileInFlight || recoveryTransportConnecting ||
         !guarded && (!run || !run.id || run.dryRun || !run.validation || !(run.validation.mutatingCount > 0))) {if(onDone) onDone({rejected:true,code:"reconciliation_unavailable"});return;}
     if(!guarded && runId !== run.id) {if(onDone) onDone({rejected:true,code:"run_id_mismatch"});return;}
+    var originalRequestId=context && context.originalGeneratedExportRequest ? context.originalGeneratedExportRequest(runId) : null;
+    if(guarded && !originalRequestId){if(onDone)onDone({rejected:true,code:"generated_recovery_original_plan_request_required"});return;}
     planReconcileInFlight = true;
     chatInFlight = true;
     updateChatAvailability();
-    var reconcileArguments={runId:runId};
-    if(context && context.originalGeneratedExportRequest){
-      var originalRequestId=context.originalGeneratedExportRequest(runId);
-      if(originalRequestId)reconcileArguments.originalRequestId=originalRequestId;
-    }
+    var reconcileArguments={runId:runId},recoveryConfig={url:getBaseUrl(),token:getToken(),panelConnectionId:panelConnectionId,epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration)};
+    if(originalRequestId)reconcileArguments.originalRequestId=originalRequestId;
     request("POST", "/tools/call", {name:"reconcile_plan_run",arguments:reconcileArguments}, function (error, response) {
       planReconcileInFlight = false;
       chatInFlight = false;
@@ -3571,6 +3572,11 @@
       try { if (response && response.result && !response.result.isError) result = JSON.parse(response.result.content[0].text); } catch (_parseError) {}
       if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); if(onDone) onDone(error || {code:"reconciliation_missing",message:"No reconciliation evidence."},response);return; }
       if(result.runId && result.runId !== runId) {if(onDone) onDone({code:"reconciliation_identity_mismatch",message:"Reconciliation belongs to another run."},{runId:runId,reconciliation:result});return;}
+      if(result.status==="transport_prerequisite"){
+        var completed=!!(context && context.completeRecoveryTransportPrerequisite && context.completeRecoveryTransportPrerequisite(result,function(value){connectRecoveryTransport(value,recoveryConfig);}));
+        if(!completed && onDone)onDone({isUnknown:true,code:"recovery_transport_prerequisite_not_persisted"});
+        return;
+      }
       var lines = ["Сверка запуска " + runId + ": " + (result.status === "reconciled" ? "завершена" : "не завершена")];
       var names = {applied:"ожидаемые значения подтверждены",not_applied:"изменение не применено",unknown:"результат неизвестен"};
       (result.steps || []).forEach(function (step) { lines.push("Шаг " + step.index + " (" + step.tool + "): " + (names[step.mutationStatus] || step.mutationStatus)); });
@@ -4103,6 +4109,12 @@
   }
 
   function executeCommand(command) {
+    if(recoveryTransportScope){
+      var tag=command.generatedRecoveryRead;
+      if(!tag || tag.scopeId!==recoveryTransportScope.scopeId || tag.originalRequestId!==recoveryTransportScope.originalRequestId || tag.runId!==recoveryTransportScope.runId || !/^(get_project_info|get_comp_details)$/.test(tag.tool)){
+        stopRecoveryTransport("generated_recovery_foreign_command");return;
+      }
+    }
     if (command.contractVersion !== 2 || !command.executionId || !command.leaseId) {
       log("Bridge execution contract mismatch: update the bridge and panel together."); return;
     }
@@ -4131,7 +4143,52 @@
     });
   }
 
+  function stopRecoveryTransport(code) {
+    // Cancels every response from the failed transport, including a held P2.
+    // Historical receipts keep their original binding; no context is rebased.
+    panelLifecycleEpoch += 1;
+    running=false;pollInFlight=false;recoveryTransportConnecting=false;
+    if(recoveryTransportScope)recoveryTransportScope.state="failed";
+    if(pollTimer)clearTimeout(pollTimer);
+    setStatus("Recovery transport stopped: "+code,false);
+    log("Recovery transport stopped; a new canonical reconciliation is required: "+code);
+    updateChatAvailability();
+  }
+  function connectRecoveryTransport(value,config) {
+    if(panelLifecycleEpoch!==config.epoch || String(panelConnectionGeneration)!==config.generation || getBaseUrl()!==config.url || getToken()!==config.token || panelConnectionId!==config.panelConnectionId || value.panelConnectionId!==panelConnectionId || Date.parse(value.expiresAt)<=Date.now())return;
+    recoveryTransportScope=value;recoveryTransportScope.state="connecting";recoveryTransportConnecting=true;
+    running=true;panelLifecycleEpoch=value.nextBinding.panelLifecycleEpoch;panelConnectionGeneration=value.nextBinding.panelGeneration;
+    pollInFlight=false;activeEvalScriptCommandId="";
+    if(pollTimer)clearTimeout(pollTimer);
+    var epoch=panelLifecycleEpoch,generation=panelConnectionGeneration;
+    setStatus("Connecting read-only recovery transport...",false);updateChatAvailability();
+    request("GET",bridgeNextPath()+"&recoveryMode=1&recoveryScopeId="+encodeURIComponent(value.scopeId)+"&recoveryHandshake=1",null,function(error,response){
+      if(panelLifecycleEpoch!==epoch || panelConnectionGeneration!==generation || recoveryTransportScope!==value || getBaseUrl()!==config.url || getToken()!==config.token)return;
+      if(error || !response || response.command!==null || !response.recoveryTransport || response.recoveryTransport.scopeId!==value.scopeId || response.recoveryTransport.state!=="ready"){
+        stopRecoveryTransport(error && error.code || "generated_recovery_handshake_invalid");return;
+      }
+      recoveryTransportConnecting=false;value.state="ready";setBridgeConnected();updateChatAvailability();
+      log("Read-only recovery transport connected. Start a new canonical reconciliation for "+value.runId+".");
+      pollTimer=setTimeout(pollRecoveryTransport,50);
+    });
+  }
+  function pollRecoveryTransport() {
+    var scope=recoveryTransportScope,epoch=panelLifecycleEpoch,generation=panelConnectionGeneration;
+    if(!scope || !running || recoveryTransportConnecting || scope.state!=="ready")return;
+    if(Date.parse(scope.expiresAt)<=Date.now()){stopRecoveryTransport("generated_recovery_scope_expired");return;}
+    if(pollInFlight || activeEvalScriptCommandId){pollTimer=setTimeout(pollRecoveryTransport,100);return;}
+    pollInFlight=true;
+    request("GET",bridgeNextPath()+"&recoveryMode=1&recoveryScopeId="+encodeURIComponent(scope.scopeId),null,function(error,response){
+      if(panelLifecycleEpoch!==epoch || panelConnectionGeneration!==generation || recoveryTransportScope!==scope)return;
+      pollInFlight=false;
+      if(error){stopRecoveryTransport(error.code || "generated_recovery_poll_failed");return;}
+      if(response && response.command)executeCommand(response.command);
+      if(running && scope.state==="ready")pollTimer=setTimeout(pollRecoveryTransport,50);
+    });
+  }
+
   function poll(onDone) {
+    if(recoveryTransportScope){pollRecoveryTransport();return;}
     if (!running) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
     if (panelLifecycleGuard) {pollTimer=setTimeout(poll,100);return;}
     if (pollInFlight) return;
@@ -4186,7 +4243,11 @@
   }
 
   function connect(onDone) {
+    var restoringRecovery=!!recoveryTransportScope;
+    recoveryTransportScope=null;recoveryTransportConnecting=false;
+    if(pollTimer)clearTimeout(pollTimer);
     running = true;
+    pollInFlight = false;
     panelConnectionGeneration = Date.now();
     panelLifecycleEpoch += 1;
     currentPlanSyncInFlight = false;
@@ -4206,19 +4267,19 @@
     renderAutonomousSession();
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
-    localStorage.setItem("codexAeBridgeUrl", urlEl.value);
-    localStorage.setItem("codexAeBridgeToken", tokenEl.value);
-    localStorage.setItem("codexAeBridgeAutoConnect", "1");
+    if(!restoringRecovery){localStorage.setItem("codexAeBridgeUrl", urlEl.value);
+      localStorage.setItem("codexAeBridgeToken", tokenEl.value);
+      localStorage.setItem("codexAeBridgeAutoConnect", "1");}
     setStatus("Connecting...", false);
     setBridgeHelp("Connecting to the local bridge...", "");
     refreshAppTitle();
-    loadAgents();
-    loadUsageSnapshot();
+    if(!restoringRecovery){loadAgents();loadUsageSnapshot();}
     log("Connecting to " + getBaseUrl());
     poll(onDone);
   }
 
   function disconnect() {
+    recoveryTransportConnecting=false;recoveryTransportScope=null;
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
@@ -4283,7 +4344,7 @@
   }
 
   function panelActionBusy() {
-    return !!(chatInFlight || activeEvalScriptCommandId || keySaveInFlight || setupActionInFlight || readinessInFlight ||
+    return !!(recoveryTransportConnecting || chatInFlight || activeEvalScriptCommandId || keySaveInFlight || setupActionInFlight || readinessInFlight ||
       providerSelfTestInFlight || devRequestInFlight || agentsLoadInFlight || placeholderProtectionInFlight ||
       connectorStatusInFlight || usageRefreshInFlight || planReconcileInFlight || planRunInFlightMode);
   }
@@ -4298,6 +4359,8 @@
   function panelActionSnapshot() {
     rememberPanelSecrets();
     return {assetVersion:APP_VERSION,connected:running && badgeEl.textContent === "online",running:running,
+      bridgeConnection:{panelConnectionId:panelConnectionId},
+      recoveryTransport:recoveryTransportScope ? {scopeId:recoveryTransportScope.scopeId,connecting:recoveryTransportConnecting,state:recoveryTransportScope.state || "connecting",freshReconcileRequired:true} : null,
       provider:{group:localStorage.getItem("codexAeProviderGroup") || "",authMode:openAiAuthMode(),agentId:agentSelect.value,
         model:selectedModel(),freeOnly:freeModelsOnlyEl.checked},
       autonomy:autonomousSessionState ? {desiredEnabled:autonomousSessionState.desiredEnabled === true,
@@ -4390,7 +4453,7 @@
       done(null,{configured:true,url:getBaseUrl()});
     },
     "bridge.connect":function(args,done,context) {
-      if(running) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
+      if(running && !recoveryTransportScope) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
       panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(context.submit()) connect(done);});
     },
     "bridge.disconnect":function(args,done,context) {

@@ -360,6 +360,20 @@
     }
     var context={
       source:r.source,
+      completeRecoveryTransportPrerequisite:function(result,continuation) {
+        var now=life(),value=result && result.transportPrerequisite,id=value && value.originalRequestId,original=id && records[id],p=original && original.result && original.result.run && original.result.run.provenance;
+        if(finished || storageFailure || envelope.action!=="plan.reconcile" || now.epoch!==startEpoch || String(now.generation)!==startGeneration || !value ||
+          value.schema!=="ae-agent-generated-export-transport-prerequisite.v1" || result.status!=="transport_prerequisite" || value.runId!==envelope.args.runId || !original || original.action!=="plan.run" || original.state!=="unknown" || original.runId!==value.runId ||
+          !p || ["actionId","proposalRevision","payloadHash","planSha256","projectId"].some(function(k){return p[k]!==value[k];}) ||
+          !value.currentBinding || value.currentBinding.panelInstanceId!==instanceId || value.currentBinding.panelLifecycleEpoch!==startEpoch || value.currentBinding.panelGeneration!==startGeneration ||
+          !value.nextBinding || value.nextBinding.panelInstanceId!==instanceId || value.nextBinding.panelLifecycleEpoch!==startEpoch+1 || value.nextBinding.panelGeneration!=="recovery-"+value.scopeId ||
+          !contract.UUID_REGEX.test(value.scopeId || "") || !isFinite(Date.parse(value.expiresAt)) || Date.parse(value.expiresAt)<=Date.now() || value.freshReconcileRequired!==true || value.admissionGuardReleased!==false || value.replayAllowed!==false || typeof continuation!=="function")return false;
+        done(null,{reconciliation:result,runId:value.runId,admissionGuardReleased:false,freshReconcileRequired:true});
+        now=life();
+        if(storageFailure || r.state!=="completed" || now.epoch!==startEpoch || String(now.generation)!==startGeneration)return false;
+        continuation(clone(value));
+        return true;
+      },
       originalGeneratedExportRequest:function(runId) {
         if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId)return null;
         var ids=Object.keys(records).filter(function(id) {return records[id].action==="plan.run" && records[id].state==="unknown" && records[id].runId===runId;});

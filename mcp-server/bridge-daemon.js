@@ -15,6 +15,7 @@ const panelBootstrapReadContext = new AsyncLocalStorage();
 const placeholderMutationContext = new AsyncLocalStorage();
 const placeholderPlanContext = new AsyncLocalStorage();
 const lifecycleCommandContext = new AsyncLocalStorage();
+const generatedRecoveryReadContext = new AsyncLocalStorage();
 const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
@@ -175,6 +176,10 @@ const pendingCommands = [];
 const inflightCommands = new Map();
 const completedResults = new Map();
 const waitingPanels = [];
+// Transient delivery restrictions, never an execution grant or a durable release.
+const generatedRecoveryScopes = new Map();
+const generatedRecoveryByPanel = new Map();
+const GENERATED_RECOVERY_SCOPE_TTL_MS = 120000;
 const recentEvents = [];
 const idempotencyRecords = new Map();
 const rawExtendscriptDryRunApprovals = new Map();
@@ -3524,7 +3529,8 @@ function commandForPanel(command) {
     contractVersion: commandReceipt.CONTRACT_VERSION,
     script: command.script,
     lifecycleState: command.state,
-    leaseOwner: command.leaseOwner || null
+    leaseOwner: command.leaseOwner || null,
+    ...(command.generatedRecoveryRead ? {generatedRecoveryRead:command.generatedRecoveryRead} : {})
   };
 }
 
@@ -3639,7 +3645,8 @@ function drainWaitingPanels() {
       continue;
     }
 
-    const command = leaseNextQueuedCommand(waiter.req, waiter.url);
+    let command;
+    try{command=leaseNextQueuedCommand(waiter.req, waiter.url);}catch(error){waiter.done=true;writeJson(waiter.res,409,{ok:false,code:error.code || error.message,command:null});continue;}
     if (!command) {
       waiter.done = true;
       writeJson(waiter.res, 200, { ok: true, command: null });
@@ -3679,6 +3686,12 @@ function enqueueAeCommand(script, timeoutMs) {
       settled: false
     };
     const lifecycleScope = lifecycleCommandContext.getStore();
+    const recoveryRead=generatedRecoveryReadContext.getStore();
+    if(recoveryRead){
+      const scope=generatedRecoveryScopes.get(recoveryRead.scopeId);
+      if(!scope || scope.state!=="ready" || Date.now()>=scope.expiresAt || !["get_project_info","get_comp_details"].includes(recoveryRead.tool) || recoveryRead.runId!==scope.runId || recoveryRead.originalRequestId!==scope.originalRequestId){reject(Object.assign(new Error("generated_recovery_read_scope_invalid"),{code:"generated_recovery_read_scope_invalid",phase:"before_delivery"}));return;}
+      command.generatedRecoveryRead={scopeId:scope.scopeId,originalRequestId:scope.originalRequestId,runId:scope.runId,tool:recoveryRead.tool};
+    }
     try {
       if (lifecycleScope) lifecycle.validateCommand(lifecycleScope.capability, lifecycleScope.rawScript, id);
       else lifecycle.assertMutationAllowed();
@@ -3911,7 +3924,17 @@ function rejectRevokedAutonomousCommand(command) {
   return true;
 }
 
+function generatedRecoveryLeaseScope(req,url){
+  const owner=panelLeaseOwner(req,url),selected=url.searchParams.get("recoveryScopeId"),required=url.searchParams.get("recoveryMode")==="1" || owner.panelGeneration.startsWith("recovery-") || generatedRecoveryByPanel.has(owner.panelConnectionId);
+  if(!required && !selected)return null;
+  const scope=selected && generatedRecoveryScopes.get(selected);
+  if(!scope || generatedRecoveryByPanel.get(owner.panelConnectionId)!==scope.scopeId || owner.panelConnectionId!==scope.panelConnectionId || owner.panelGeneration!==scope.nextBinding.panelGeneration || Date.now()>=scope.expiresAt || !["created","ready"].includes(scope.state))throw Object.assign(new Error("generated_recovery_transport_scope_invalid"),{code:"generated_recovery_transport_scope_invalid"});
+  if(Array.from(inflightCommands.values()).some(c=>c.generatedRecoveryRead?.scopeId!==scope.scopeId || !["get_project_info","get_comp_details"].includes(c.generatedRecoveryRead?.tool)))throw Object.assign(new Error("generated_recovery_foreign_queue_blocked"),{code:"generated_recovery_foreign_queue_blocked"});
+  return scope;
+}
 function leaseNextQueuedCommand(req, url) {
+  const recoveryScope=generatedRecoveryLeaseScope(req,url);
+  if(recoveryScope && (url.searchParams.get("recoveryHandshake")==="1" || recoveryScope.state!=="ready"))return null;
   expireQueuedCommands(Date.now(), "bridge_next");
   const leaseOwner = panelLeaseOwner(req, url);
   const activeCommand = findActiveEvalScriptCommandForOwner(leaseOwner);
@@ -3921,6 +3944,7 @@ function leaseNextQueuedCommand(req, url) {
     const id = pendingCommands.shift();
     const command = inflightCommands.get(id);
     if (!command || command.state !== "queued") continue;
+    if(recoveryScope && (command.generatedRecoveryRead?.scopeId!==recoveryScope.scopeId || !["get_project_info","get_comp_details"].includes(command.generatedRecoveryRead?.tool)))throw new Error("generated_recovery_foreign_queue_blocked");
     try {
       if (command.lifecycleCapability) lifecycle.validateCommand(command.lifecycleCapability, command.lifecycleRawScript, command.id);
       else lifecycle.assertMutationAllowed();
@@ -3958,6 +3982,16 @@ function leaseNextQueuedCommand(req, url) {
     return commandForPanel(command);
   }
   return null;
+}
+async function retireGeneratedRecoveryForNormalPoll(req,url){
+  const owner=panelLeaseOwner(req,url),id=generatedRecoveryByPanel.get(owner.panelConnectionId);
+  if(!id || owner.panelGeneration.startsWith("recovery-") || url.searchParams.get("recoveryMode")==="1")return;
+  const scope=generatedRecoveryScopes.get(id),recovery=require("./generated-export-recovery");
+  if(!scope || inflightCommands.size || pendingCommands.length)throw new Error("generated_recovery_transport_still_guarded");
+  const original=await panelControlService.readRecoveryLinkage(scope.originalRequestId),saved=recovery.readReceipt(LOG_DIR,scope.runId,scope.originalRequestId);
+  if(!saved || original.remote.recovery?.sha256!==saved.sha256)throw new Error("generated_recovery_full_adoption_required");
+  recovery.validateStoredBinding(saved,planRunRecords.readRecord(LOG_DIR,scope.runId,{throwOnError:true}),original.local);
+  generatedRecoveryByPanel.delete(owner.panelConnectionId);generatedRecoveryScopes.delete(id);
 }
 
 function wrapExtendScriptBody(body) {
@@ -8882,7 +8916,10 @@ function startHttpBridge() {
       const panelIdentity = url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"];
       const panelGeneration = url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"];
       if (!panelIdentity || !panelGeneration) { writeJson(res, 409, {ok:false, code:"panel_identity_required", error:"Panel identity and generation are required."}); return; }
-      try { autonomousSession.observePanel({panelConnectionId:panelIdentity,panelGeneration}); }
+      let recoveryTransport;
+      try{await retireGeneratedRecoveryForNormalPoll(req,url);recoveryTransport=generatedRecoveryLeaseScope(req,url);}
+      catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
+      try { if(!recoveryTransport)autonomousSession.observePanel({panelConnectionId:panelIdentity,panelGeneration}); }
       catch (error) { writeJson(res, 409, {ok:false,code:"panel_identity_mismatch",error:error.message}); return; }
       lastPanelSeenAt = Date.now();
       lastPanelInfo = {
@@ -8891,6 +8928,10 @@ function startHttpBridge() {
         panelGeneration: url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"] || null,
         at: lastPanelSeenAt
       };
+      if(recoveryTransport && url.searchParams.get("recoveryHandshake")==="1"){
+        recoveryTransport.state="ready";
+        writeJson(res,200,{ok:true,command:null,recoveryTransport:{scopeId:recoveryTransport.scopeId,state:"ready",freshReconcileRequired:true,expiresAt:new Date(recoveryTransport.expiresAt).toISOString()}});return;
+      }
       if (pendingCommands.length || Date.now() - lastPanelPollLoggedAt > 60000) {
         lastPanelPollLoggedAt = Date.now();
         recordEvent("panel_poll", {
@@ -8899,7 +8940,8 @@ function startHttpBridge() {
         });
       }
 
-      const command = leaseNextQueuedCommand(req, url);
+      let command;
+      try{command=leaseNextQueuedCommand(req,url);}catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
       if (command) {
         writeJson(res, 200, { ok: true, command });
         return;
@@ -12769,10 +12811,50 @@ async function callTool(name, args, executionContext) {
     const selected=args.stepIndices;
     if(selected!==undefined && (!Array.isArray(selected) || !selected.length || selected.length>50 || new Set(selected).size!==selected.length || selected.some(index=>!Number.isSafeInteger(index) || index<1 || !record.plan.steps[index-1]))) throw new Error("reconciliation_step_indices_invalid");
     const helper=require("./plan-run-reconciliation");
+    let generatedRecoveryPreflight=null,ordinaryReconciliationOnly=null;
+    if(args.originalRequestId!==undefined){
+      const recovery=require("./generated-export-recovery");
+      try{
+        const original=await panelControlService.readRecoveryLinkage(args.originalRequestId);
+        recovery.validateLinkage(record,original.local,original.remote);
+        const stateResponse=await panelControlService.state(),panel=stateResponse.state,status=getBridgeStatus();
+        if(!stateResponse.ok || !panel || status.pendingCommands || status.inflightCommands.length || status.activeEditSession || status.projectLifecycle?.blocked || status.projectLifecycle?.pending)throw new Error("generated_recovery_transport_not_idle");
+        if(panel.recoveryTransport?.connecting)throw new Error("generated_recovery_transport_connecting");
+        const currentBinding={panelInstanceId:panel.panelInstanceId,panelLifecycleEpoch:panel.panelLifecycleEpoch,panelGeneration:panel.panelGeneration},connectionId=panel.bridgeConnection?.panelConnectionId;
+        if(!connectionId || !currentBinding.panelInstanceId || !Number.isSafeInteger(currentBinding.panelLifecycleEpoch))throw new Error("generated_recovery_current_panel_identity_missing");
+        let exports=null;
+        try{exports=recovery.inspectRecord(record);}catch(error){
+          const requests=helper.reconciliationReadRequests(record),mutating=record.plan.steps.map((step,index)=>({step,index:index+1})).filter(row=>require("./semantic-verification").isMutatingStep(row.step));
+          if(panel.connected && panel.running && !panel.recoveryTransport && !String(currentBinding.panelGeneration).startsWith("recovery-") && !generatedRecoveryByPanel.has(connectionId) && mutating.length && mutating.every(row=>requests.some(request=>request.stepIndex===row.index)))ordinaryReconciliationOnly=error.code || error.message;
+          else throw error;
+        }
+        if(exports){
+        if(!panel.connected || !panel.running){
+          if(autonomousSession.publicStatus().desiredEnabled!==false)throw new Error("generated_recovery_requires_autonomy_off");
+          if(generatedRecoveryScopes.size>=32)throw new Error("generated_recovery_scope_capacity");
+          const scopeId=crypto.randomUUID(),p=record.run.provenance,createdAt=Date.now();
+          const scope={scopeId,state:"created",runId,originalRequestId:args.originalRequestId,panelConnectionId:connectionId,currentBinding,
+            nextBinding:{panelInstanceId:currentBinding.panelInstanceId,panelLifecycleEpoch:currentBinding.panelLifecycleEpoch+1,panelGeneration:"recovery-"+scopeId},createdAt,expiresAt:createdAt+GENERATED_RECOVERY_SCOPE_TTL_MS};
+          generatedRecoveryScopes.set(scopeId,scope);generatedRecoveryByPanel.set(connectionId,scopeId);
+          return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"transport_prerequisite",reasonCode:"validated_generated_export_reconnect_required",steps:[],freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false,
+            transportPrerequisite:{schema:"ae-agent-generated-export-transport-prerequisite.v1",scopeId,runId,originalRequestId:args.originalRequestId,actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,runEnvelopeSha256:recovery.hash(record),projectId:p.projectId,
+              currentBinding,nextBinding:scope.nextBinding,panelConnectionId:connectionId,createdAt:new Date(createdAt).toISOString(),expiresAt:new Date(scope.expiresAt).toISOString(),freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false}});
+        }
+        let scope=null;
+        if(String(currentBinding.panelGeneration).startsWith("recovery-") || generatedRecoveryByPanel.has(connectionId)){
+          scope=generatedRecoveryScopes.get(panel.recoveryTransport?.scopeId);
+          if(!scope || generatedRecoveryByPanel.get(connectionId)!==scope.scopeId || scope.state!=="ready" || Date.now()>=scope.expiresAt || scope.runId!==runId || scope.originalRequestId!==args.originalRequestId || reviewEvidence.sha256(scope.nextBinding)!==reviewEvidence.sha256(currentBinding) || lastPanelInfo?.panelConnectionId!==connectionId || lastPanelInfo?.panelGeneration!==scope.nextBinding.panelGeneration)throw new Error("generated_recovery_transport_scope_invalid");
+        }
+        generatedRecoveryPreflight={original,exports,scope};
+        }
+      }catch(error){return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"incomplete",reasonCode:error.code || error.message,steps:[],freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false});}
+    }
     const freshReadSteps=[];
     const deadline=Date.now()+60000;
     const read=async(request)=>{
-      try { const value=await callToolLogged("plan-reconciliation-read",request.tool,request.args);freshReadSteps.push({index:freshReadSteps.length+1,readId:crypto.randomUUID(),tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
+      try { const scope=generatedRecoveryPreflight?.scope,operation=()=>callToolLogged("plan-reconciliation-read",request.tool,request.args);
+        const value=scope ? await generatedRecoveryReadContext.run({scopeId:scope.scopeId,runId,originalRequestId:args.originalRequestId,tool:request.tool},operation) : await operation();
+        freshReadSteps.push({index:freshReadSteps.length+1,readId:crypto.randomUUID(),tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
       catch(error){freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:"failed",error:error.message,errorCode:error.code});}
     };
     await read({tool:"get_project_info",args:{}});
@@ -12795,12 +12877,12 @@ async function callTool(name, args, executionContext) {
     const result=helper.reconcilePlanRun({record,freshReadSteps,commandStates,project:{file:actual && actual.file}});
     if(selected) result.steps=result.steps.filter(step=>selected.includes(step.index));
     result.runId=runId;
-    if(args.originalRequestId!==undefined){
+    if(args.originalRequestId!==undefined && generatedRecoveryPreflight){
       const recovery=require("./generated-export-recovery");
       try{
         const known=new Set(commandStates.map(c=>c.id));
         for(const retained of completedResults.values())if(retained.command?.executionId===runId && !known.has(retained.id))commandStates.push({...retained.command,id:retained.id,ok:retained.ok,result:retained.result});
-        const original=await panelControlService.readRecoveryLinkage(args.originalRequestId);
+        const original=generatedRecoveryPreflight.original;
         const stored=recovery.readReceipt(LOG_DIR,runId,args.originalRequestId);
         if(stored){
           recovery.validateStoredBinding(stored,record,original.local);
@@ -12813,6 +12895,7 @@ async function callTool(name, args, executionContext) {
         }
       }catch(error){result.generatedExportRecoveryFailure={code:error.code || error.message,replayAllowed:false};}
     }
+    if(ordinaryReconciliationOnly)result.generatedExportRecoveryFailure={code:ordinaryReconciliationOnly,scope:"current_postconditions_only",replayAllowed:false};
     if(record.plan && record.plan.montagePipeline) {
       result.montageReadBack = await buildPostRunMontageReadBack(record, actual);
     }
