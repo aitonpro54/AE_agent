@@ -98,7 +98,7 @@ function validateV2Store(store) {
     return store;
   }
   if (!Number.isSafeInteger(store.lifecycleGeneration) || store.lifecycleGeneration < 0 || !Object.prototype.hasOwnProperty.call(store, "pendingLifecycle") || !Array.isArray(store.lifecycleReceipts) || store.lifecycleReceipts.length > MAX_RECEIPTS) c.fail("lifecycle_invalid_v2_store");
-  const ids = new Set(); for (const receipt of store.lifecycleReceipts) { c.verifyReceipt(receipt); if (ids.has(receipt.transitionId) || receipt.generation > store.lifecycleGeneration) c.fail("lifecycle_invalid_v2_receipts"); ids.add(receipt.transitionId); }
+  const ids = new Set(); for (const receipt of store.lifecycleReceipts) { c.verifyStoredReceipt(receipt); if (ids.has(receipt.transitionId) || receipt.generation > store.lifecycleGeneration) c.fail("lifecycle_invalid_v2_receipts"); ids.add(receipt.transitionId); }
   if (store.lifecycleGeneration > 0 && (!store.lifecycleReceipts.length || store.lifecycleReceipts.at(-1).generation !== store.lifecycleGeneration) || store.lifecycleReceipts.some((r, i) => i > 0 && r.generation !== store.lifecycleReceipts[i - 1].generation + 1)) c.fail("lifecycle_invalid_v2_receipts");
   if (store.pendingLifecycle !== null) { validatePending(store.pendingLifecycle); if (store.pendingLifecycle.baseGeneration !== store.lifecycleGeneration || ids.has(store.pendingLifecycle.transitionId)) c.fail("lifecycle_invalid_v2_pending"); }
   if (store.pendingLifecycle) {

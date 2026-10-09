@@ -6,10 +6,11 @@ const control=require("../mcp-server/cep-panel-control"),contract=require("../ce
 const {createPanelEnvironment}=require("./cep-plan-refresh-smoke"),bootstrap=require("../mcp-server/ae-agent-panel-bootstrap");
 const {runtimeIdentity}=require("../mcp-server/review-evidence"),network=require("./network-test-fixture");
 const root=fs.mkdtempSync(path.join(os.tmpdir(),"cep-control-smoke-")),cases=[];
+const receiptHistoryOnly=process.argv.includes("--receipt-history-only");
 const source=fs.readFileSync(path.resolve(__dirname,"../cep-panel/panel.js"),"utf8"),protocolVersion=control.PROTOCOL_VERSION;
 const clone=value=>JSON.parse(JSON.stringify(value));
 const input=(action="ui.sidebar.set",args={collapsed:true})=>({protocolVersion,requestId:crypto.randomUUID(),action,args});
-async function test(name,fn){await fn();cases.push(name);}
+async function test(name,fn,receiptHistory=false){if(receiptHistoryOnly && !receiptHistory)return;await fn();cases.push(name);}
 function fixture(name,extra={}) {
   const env=createPanelEnvironment(source),directory=path.join(root,name),indexPath=path.join(root,"CEP","extensions",bootstrap.TARGET.bundleId,"index.html");
   const installed={indexPath,hashes:{source:"fixture"}},page={type:"page",url:require("node:url").pathToFileURL(indexPath).href,webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/fake"};
@@ -39,7 +40,7 @@ async function main() {
     assert.equal((await f.service.handleTool("get_panel_action_result",{requestId:good.requestId,extra:true})).ok,false);
     assert.equal((await f.service.state({extra:true})).ok,false);
     assert.throws(()=>control.createPanelControlService({cdpPort:19999}),/fixed_cdp_port_required/);
-  });
+  },true);
   await test("actual VM fixed catalog/state/handler receipts and SHA256 duplicate identity",async()=>{
     const f=fixture("actual"),e=input("ui.diagnostics.set",{open:true});
     const catalog=await f.service.catalog();assert.equal(catalog.ok,true,JSON.stringify(catalog));assert.equal(catalog.actions.length,48);
@@ -52,7 +53,78 @@ async function main() {
     const stored=JSON.parse(fs.readFileSync(path.join(f.directory,e.requestId+".json"),"utf8"));assert.match(stored.signature,/^[a-f0-9]{64}$/);
     assert.equal(stored.signature,control.computeActionSignature(e));assert.equal(first.receipt.signature,undefined);
     assert(f.expressions.every(expression=>!expression.includes("querySelector") && !expression.includes("eval(")));
-  });
+  },true);
+  function historyFixture(name) {
+    const f=fixture(name),historicalId=crypto.randomUUID(),normal=input(),unknownId=crypto.randomUUID();
+    const binding={panelInstanceId:"historical-panel",panelLifecycleEpoch:2,panelGeneration:"historical-generation"};
+    const receipt=(id,action,signature,state="completed")=>({protocolVersion,requestId:id,action,signature,state,
+      phase:state==="unknown"?"bridge_offline":"completed",delivery:"delivered",replayAllowed:false,binding});
+    const records=[receipt(historicalId,"recovery.bootstrap","a".repeat(64)),
+      receipt(normal.requestId,normal.action,control.computeActionSignature(normal)),receipt(unknownId,"plan.run","b".repeat(64),"unknown")];
+    const index={schema:"ae-agent.cep-panel-transport.v1",identities:Object.fromEntries(records.map(row=>[row.requestId,{action:row.action,signature:row.signature,binding}]))};
+    fs.mkdirSync(f.directory,{recursive:true});fs.writeFileSync(path.join(f.directory,"identities.json"),JSON.stringify(index));
+    for(const row of records)fs.writeFileSync(path.join(f.directory,row.requestId+".json"),JSON.stringify(row));
+    return {...f,index,records,historicalId,normal,unknownId};
+  }
+  await test("receipt history: retired identities coexist with normal and unresolved reads without writes",async()=>{
+    const f=historyFixture("history-valid"),before=fs.readFileSync(path.join(f.directory,"identities.json"));
+    for(const row of f.records)assert.deepEqual(control.loadDurableReceipt(f.directory,row.requestId),row);
+    for(const row of f.records) {
+      const result=await f.service.handleTool("get_panel_action_result",{requestId:row.requestId});
+      assert.equal(result.receipt.action,row.action);assert.equal(result.receipt.state,row.state);assert.equal(result.receipt.phase,row.phase);
+      assert.equal(result.receipt.replayAllowed,false);assert.equal(result.receipt.signature,undefined);
+    }
+    assert.deepEqual(fs.readFileSync(path.join(f.directory,"identities.json")),before);assert.equal(f.sends(),0);
+    const blocked=await f.service.invoke(input());assert.equal(blocked.code,"transport_reconciliation_required");assert.equal(f.sends(),0);
+    assert.deepEqual(fs.readFileSync(path.join(f.directory,"identities.json")),before);
+  },true);
+  await test("receipt history: unknown names, invalid identities and hashes fail closed for the entire index",async()=>{
+    const invalid=[
+      ["unknown-action",row=>row.action="recovery.future"], ["prefix",row=>row.action="recovery.bootstrap.extra"],
+      ["action-case",row=>row.action="Recovery.bootstrap"], ["action-type",row=>row.action=["recovery.bootstrap"]],
+      ["missing-signature",row=>delete row.signature], ["short-hash",row=>row.signature="a".repeat(63)],
+      ["invalid-hash",row=>row.signature="z".repeat(64)], ["hash-case",row=>row.signature="A".repeat(64)],
+      ["hash-type",row=>row.signature=["a".repeat(64)]], ["binding-null",row=>row.binding=null],
+      ["binding-type",row=>row.binding=""], ["binding-epoch",row=>row.binding.panelLifecycleEpoch=-1],
+      ["binding-instance",row=>row.binding.panelInstanceId=""], ["binding-generation",row=>row.binding.panelGeneration=1]
+    ];
+    for(const [name,change] of invalid) {
+      const f=historyFixture("history-invalid-"+name);change(f.index.identities[f.historicalId]);
+      fs.writeFileSync(path.join(f.directory,"identities.json"),JSON.stringify(f.index));
+      const result=control.loadDurableReceipt(f.directory,f.normal.requestId);
+      assert.equal(result.code,"receipt_index_corrupt",name);assert.equal(result.state,"unknown",name);assert.equal(result.replayAllowed,false);
+    }
+    for(const invalidId of ["../../escape",crypto.randomUUID().toUpperCase()]) {
+      const f=historyFixture("history-invalid-id-"+crypto.randomUUID());
+      f.index.identities[invalidId]=f.index.identities[f.historicalId];delete f.index.identities[f.historicalId];
+      fs.writeFileSync(path.join(f.directory,"identities.json"),JSON.stringify(f.index));
+      assert.equal(control.loadDurableReceipt(f.directory,f.normal.requestId).code,"invalid_request_id");
+    }
+  },true);
+  await test("receipt history: stored record identity, hash, state and binding checks remain required",async()=>{
+    const invalid={protocolVersion:"foreign",requestId:crypto.randomUUID(),action:"logs.get",signature:"c".repeat(64),
+      state:"invalid",delivery:"invalid",replayAllowed:true,binding:{panelInstanceId:"another",panelLifecycleEpoch:2,panelGeneration:"historical-generation"}};
+    for(const [field,value] of Object.entries(invalid)) {
+      const f=historyFixture("history-record-"+field),row={...f.records[0],[field]:value};
+      fs.writeFileSync(path.join(f.directory,f.historicalId+".json"),JSON.stringify(row));
+      const result=control.loadDurableReceipt(f.directory,f.historicalId);
+      assert.equal(result.code,"receipt_corrupt",field);assert.equal(result.action,"recovery.bootstrap");assert.equal(result.replayAllowed,false);
+    }
+  },true);
+  await test("receipt history: retired action stays absent from invocation, signatures and new writes",async()=>{
+    const f=historyFixture("history-not-callable"),before=fs.readFileSync(path.join(f.directory,"identities.json"));
+    assert.equal(contract.getActionDefinition("recovery.bootstrap"),null);
+    assert.equal(control.invokePanelActionTool.inputSchema.properties.action.enum.includes("recovery.bootstrap"),false);
+    assert.equal(control.invokePanelActionTool.inputSchema.oneOf.some(row=>row.properties.action.enum.includes("recovery.bootstrap")),false);
+    const envelope=input("recovery.bootstrap",{});
+    assert.throws(()=>control.validateRawInvokeInput(envelope),{code:"unknown_action"});
+    assert.throws(()=>control.computeActionSignature(envelope),{code:"unknown_action"});
+    assert.equal((await f.service.invoke(envelope)).code,"unknown_action");assert.equal(f.sends()+f.reads(),0);
+    assert.throws(()=>control.saveDurableReceipt(f.directory,{...f.records[0],requestId:envelope.requestId}),{code:"receipt_identity_invalid"});
+    assert.equal(fs.existsSync(path.join(f.directory,envelope.requestId+".json")),false);
+    assert.deepEqual(fs.readFileSync(path.join(f.directory,"identities.json")),before);
+    assert.equal((await f.service.catalog()).actions.some(row=>row.name==="recovery.bootstrap"),false);
+  },true);
   await test("write-only credentials and prompt never persist or echo",async()=>{
     const f=fixture("redaction"),secret="private-key-value-98463";
     const e=input("bridge.configure",{panelToken:secret});assert.equal((await f.service.invoke(e)).ok,true);
@@ -214,7 +286,9 @@ async function main() {
       assert.equal(JSON.parse(direct.body.result.content[0].text).reason,"official_mcp_adapter_required");
     } finally {await f.stop();}
   });
-  console.log(JSON.stringify({ok:true,testCases:cases.length,scenarios:cases,scope:"offline VM/fake CDP + isolated ephemeral HTTP/child-process; no live CEP/AE/providers"}));
+  console.log(JSON.stringify({ok:true,testCases:cases.length,scenarios:cases,scope:receiptHistoryOnly?
+    "offline VM/fake CDP + temporary receipt files; no live CEP/AE/network/child-process/providers":
+    "offline VM/fake CDP + isolated ephemeral HTTP/child-process; no live CEP/AE/providers"}));
 }
 main().catch(error=>{console.error(error.stack);process.exitCode=1;}).finally(()=>{
   assert.equal(path.dirname(root),path.resolve(os.tmpdir()));assert(path.basename(root).startsWith("cep-control-smoke-"));fs.rmSync(root,{recursive:true,force:true});

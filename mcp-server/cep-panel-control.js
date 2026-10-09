@@ -7,6 +7,8 @@ const bootstrap=require("./ae-agent-panel-bootstrap");
 const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT_TIMEOUT_MS=30000;
 const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
+// Retired identity accepted only from persisted history, never by the callable catalog.
+const HISTORICAL_RECEIPT_ACTION="recovery.bootstrap";
 const TERMINAL=/^(completed|error|rejected)$/, UUID=contract.UUID_REGEX, MAX_BYTES=1024*1024, MAX_IDENTITIES=1000;
 const PANEL_CONTROL_TOOL_NAMES=new Set(["list_panel_actions","get_panel_state","invoke_panel_action","get_panel_action_result"]);
 const isPanelControlTool=name=>PANEL_CONTROL_TOOL_NAMES.has(name);
@@ -102,8 +104,10 @@ function readIndex(directory,create=false) {
   let data;try {data=JSON.parse(boundedRead(file));}catch(_) {throw problem("receipt_index_corrupt");}
   if(!plain(data) || data.schema!==STORE_VERSION || !plain(data.identities) || Object.keys(data.identities).length>MAX_IDENTITIES) throw problem("receipt_index_corrupt");
   for(const [id,row] of Object.entries(data.identities)) {
-    requestId(id);if(!plain(row) || !contract.getActionDefinition(row.action) || !/^[a-f0-9]{64}$/.test(row.signature || "") ||
-      row.binding && !validBinding(row.binding)) throw problem("receipt_index_corrupt");
+    requestId(id);if(!plain(row) || typeof row.action!=="string" ||
+      !contract.getActionDefinition(row.action) && row.action!==HISTORICAL_RECEIPT_ACTION ||
+      typeof row.signature!=="string" || !/^[a-f0-9]{64}$/.test(row.signature) ||
+      Object.hasOwn(row,"binding") && !validBinding(row.binding)) throw problem("receipt_index_corrupt");
   }
   for(const name of fs.readdirSync(root)) if(UUID.test(name.replace(/\.json$/,"")) && !data.identities[name.slice(0,-5)]) throw problem("unindexed_receipt");
   return {root,identities:data.identities};

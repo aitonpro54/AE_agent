@@ -143,6 +143,48 @@ async function main() {
     checks++;
   });
   await using({}, async f => { await f.service.execute("save_project_as", f.args(), f.context); const firstEpoch = f.storage.epoch(), store = f.storage.load(); store.lifecycleGeneration = -1; fs.writeFileSync(f.statePath, JSON.stringify(store)); throws(() => f.storage.epoch(), "lifecycle_store_corrupt"); assert.strictEqual(firstEpoch, 1); checks++; });
+  await using({}, async f => {
+    // A rollback may read finalized adoption history without restoring that operation or rewriting evidence.
+    const prior = await f.service.execute("save_project_as", f.args(), f.context), store = f.storage.load();
+    const operation = "adopt_saved_current_after_unknown_lifecycle", retiredTransitionId = crypto.randomUUID();
+    const sourcePolicyHash = c.hash("source policy"), targetPolicyHash = c.hash(null);
+    const historical = { schema: c.VERSION + ".saved-current-adoption.v1", operation, success: true, transitionId: crypto.randomUUID(), retiredTransitionId, generation: 2,
+      origin: { pendingHash: c.hash("original unknown pending"), baseGeneration: 1, authorization: c.clone(prior.authorization) },
+      authorization: { actionId: "historical-action", runId: "historical-run", payloadHash: c.hash("historical-plan"), inputHash: c.hash({ name: operation, args: { transitionId: retiredTransitionId } }), sourcePolicyHash, targetPolicyHash },
+      capsule: { path: path.join(f.root, "historical-adoption.json"), sha256: c.hash("historical capsule") }, currentFile: c.clone(prior.targetFile), finalNative: c.clone(prior.finalNative),
+      inventoryHash: prior.targetInventoryHash, sourcePolicyHash, targetPolicyHash, adoptedPolicyHash: c.hash("adopted policy"), sealHash: c.hash("seal"), activationHash: c.hash("activation"), nativeMutations: 0, contextRetired: true, artisticAccepted: false };
+    assert.deepStrictEqual(c.verifyStoredReceipt(historical), { valid: true, transitionId: historical.transitionId, generation: 2 });
+    throws(() => c.verifyReceipt(historical), "lifecycle_invalid_receipt");
+    for (const name of [operation, "finalize_saved_current_adoption"]) {
+      assert(!c.isLifecycleTool(name) && !c.isLifecycleMutation(name) && !c.isLifecycleCompletion(name));
+      assert(!c.toolDefinitions.some(tool => tool.name === name));
+      throws(() => c.validateInput(name, { transitionId: retiredTransitionId }), "lifecycle_unknown_tool");
+    }
+    store.lifecycleReceipts.push(historical); store.lifecycleGeneration = 2;
+    const bytes = m.serializeProjectStateStore(store), markerBefore = fs.readFileSync(t.markerPath(f.statePath)), callCount = f.calls.length;
+    fs.writeFileSync(f.statePath, bytes, "utf8");
+    assert.deepStrictEqual(f.storage.load(), store); assert.strictEqual(f.storage.epoch(), 2); assert.strictEqual(f.storage.pendingProjection().blocked, false);
+    assert.strictEqual(fs.readFileSync(f.statePath, "utf8"), bytes); assert(fs.readFileSync(t.markerPath(f.statePath)).equals(markerBefore)); assert.strictEqual(f.calls.length, callCount); checks++;
+    for (const mutate of [
+      r => { r.cloudOwner = "unsupported"; }, r => { r.schema += ".unknown"; }, r => { r.operation = "finalize_saved_current_adoption"; },
+      r => { r.nativeMutations = 1; }, r => { r.contextRetired = false; }, r => { r.artisticAccepted = true; },
+      r => { r.origin.baseGeneration = 0; }, r => { r.origin.pendingHash = "invalid"; }, r => { r.origin.authorization.cloudOwner = "unsupported"; },
+      r => { r.authorization.actionId = r.origin.authorization.actionId; }, r => { r.authorization.runId = r.origin.authorization.runId; },
+      r => { r.authorization.inputHash = c.hash({ name: operation, args: { transitionId: r.transitionId } }); },
+      r => { r.authorization.sourcePolicyHash = c.hash("different policy"); }, r => { r.inventoryHash = "invalid"; },
+      r => { r.capsule.path = "relative.json"; }, r => { r.capsule.sha256 = "invalid"; }, r => { r.capsule.authorization = {}; },
+      r => { r.currentFile.bytes = 0; }, r => { r.currentFile.fileIdentity.inode = "0"; }, r => { r.finalNative.dirty = true; },
+      r => { r.finalNative.file = f.source; }
+    ]) {
+      const bad = c.clone(store); mutate(bad.lifecycleReceipts.at(-1)); throws(() => m.validateProjectStateStore(bad));
+    }
+    const gap = c.clone(store); gap.lifecycleGeneration = 3; throws(() => t.validateV2Store(gap), "lifecycle_invalid_v2_receipts");
+    const duplicate = c.clone(store); duplicate.lifecycleReceipts.push({ ...c.clone(historical), generation: 3, origin: { ...c.clone(historical.origin), baseGeneration: 2 } }); duplicate.lifecycleGeneration = 3;
+    throws(() => t.validateV2Store(duplicate), "lifecycle_invalid_v2_receipts");
+    const invalidPending = c.clone(store); invalidPending.pendingLifecycle = {}; throws(() => t.validateV2Store(invalidPending), "lifecycle_invalid_pending");
+    const bad = c.clone(store); bad.lifecycleReceipts.at(-1).nativeMutations = 1; fs.writeFileSync(f.statePath, m.serializeProjectStateStore(bad), "utf8");
+    throws(() => f.storage.assertMutationAllowed(), "lifecycle_store_corrupt"); assert.strictEqual(f.calls.length, callCount);
+  });
   console.log("project-lifecycle-transition-smoke PASS", checks, "offline checks (V2/marker faults, migration, inherited ownership, capacity, barriers)");
 }
 const descriptorFiles = new Map();

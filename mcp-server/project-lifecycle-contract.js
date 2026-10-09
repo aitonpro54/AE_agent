@@ -163,14 +163,15 @@ function validateInventory(raw, accepted = []) {
 function inventoryContent(value) { return { settings: value.settings, items: value.items, protectedEvidence: value.protectedEvidence }; }
 function inventoryHash(value) { return hash(inventoryContent(value)); }
 function assertInventoryMatch(a, b) { if (inventoryHash(a) !== inventoryHash(b)) fail("lifecycle_inventory_mismatch"); }
+function verifyReceiptFile(record, code = "lifecycle_invalid_receipt") {
+  exact(record, ["path", "bytes", "sha256", "fileIdentity", "observedAt"], code); projectPath(record.path);
+  if (!Number.isSafeInteger(record.bytes) || record.bytes < 1 || !SHA.test(record.sha256 || "") || typeof record.observedAt !== "string" || !Number.isFinite(Date.parse(record.observedAt))) fail(code);
+  exact(record.fileIdentity, ["device", "inode"], code); if (typeof record.fileIdentity.device !== "string" || !record.fileIdentity.device || typeof record.fileIdentity.inode !== "string" || !record.fileIdentity.inode || record.fileIdentity.inode === "0") fail(code);
+}
 function verifyReceipt(receipt) {
   object(receipt, "lifecycle_invalid_receipt");
   exact(receipt, ["contractVersion", "operation", "success", "transitionId", "generation", "inputHash", "sourceNative", "sourceBefore", "sourceAfter", "targetFile", "stageFile", "checkpoint", "sourceInventoryHash", "stageInventoryHash", "targetInventoryHash", "finalNative", "targetEmpty", "authorization", "finalizedBy", "recoveredBy", "recovery", "contextRetired", "artisticAccepted", "sourceCheckpointRestoresUnsavedMemory", "undoContextChanged"], "lifecycle_invalid_receipt");
-  function file(record) {
-    exact(record, ["path", "bytes", "sha256", "fileIdentity", "observedAt"], "lifecycle_invalid_receipt"); projectPath(record.path);
-    if (!Number.isSafeInteger(record.bytes) || record.bytes < 1 || !SHA.test(record.sha256 || "") || typeof record.observedAt !== "string" || !Number.isFinite(Date.parse(record.observedAt))) fail("lifecycle_invalid_receipt");
-    exact(record.fileIdentity, ["device", "inode"], "lifecycle_invalid_receipt"); if (typeof record.fileIdentity.device !== "string" || !record.fileIdentity.device || typeof record.fileIdentity.inode !== "string" || !record.fileIdentity.inode || record.fileIdentity.inode === "0") fail("lifecycle_invalid_receipt");
-  }
+  const file = verifyReceiptFile;
   file(receipt.sourceBefore); file(receipt.sourceAfter); file(receipt.targetFile); if (receipt.stageFile !== null) file(receipt.stageFile);
   nativeTuple(receipt.sourceNative);if(!samePath(receipt.sourceNative.file,receipt.sourceBefore.path) || !SHA.test(receipt.inputHash || ""))fail("lifecycle_invalid_receipt");
   if (receipt.contractVersion !== VERSION || receipt.success !== true || !UUID.test(receipt.transitionId || "") || !MUTATIONS.slice(0, 3).includes(receipt.operation) || !Number.isSafeInteger(receipt.generation) || receipt.generation < 1 || receipt.contextRetired !== true) fail("lifecycle_invalid_receipt");
@@ -198,6 +199,27 @@ function verifyReceipt(receipt) {
   }
   if (receipt.artisticAccepted !== false || receipt.sourceCheckpointRestoresUnsavedMemory !== false || receipt.undoContextChanged !== true) fail("lifecycle_invalid_receipt"); return { valid: true, transitionId: receipt.transitionId, generation: receipt.generation };
 }
+function verifyStoredReceipt(receipt) {
+  // Read compatibility for terminal history only. No adoption tools, runners or authority are enabled.
+  if (!receipt || receipt.schema !== VERSION + ".saved-current-adoption.v1") return verifyReceipt(receipt);
+  const code = "lifecycle_invalid_historical_receipt", operation = "adopt_saved_current_after_unknown_lifecycle";
+  exact(receipt, ["schema", "operation", "success", "transitionId", "retiredTransitionId", "generation", "origin", "authorization", "capsule", "currentFile", "finalNative", "inventoryHash", "sourcePolicyHash", "targetPolicyHash", "adoptedPolicyHash", "sealHash", "activationHash", "nativeMutations", "contextRetired", "artisticAccepted"], code);
+  if (receipt.operation !== operation || receipt.success !== true || !UUID.test(receipt.transitionId || "") || !UUID.test(receipt.retiredTransitionId || "") || receipt.transitionId === receipt.retiredTransitionId || !Number.isSafeInteger(receipt.generation) || receipt.generation < 1 || receipt.nativeMutations !== 0 || receipt.contextRetired !== true || receipt.artisticAccepted !== false) fail(code);
+  exact(receipt.origin, ["pendingHash", "baseGeneration", "authorization"], code);
+  if (receipt.origin.baseGeneration !== receipt.generation - 1 || !SHA.test(receipt.origin.pendingHash || "")) fail(code);
+  const origin = receipt.origin.authorization;
+  exact(origin, ["actionId", "runId", "payloadHash", "ownedEditSessionId"], code);
+  if (["actionId", "runId"].some(k => typeof origin[k] !== "string" || !origin[k] || origin[k].length > 240) || !SHA.test(origin.payloadHash || "") || origin.ownedEditSessionId !== undefined && (typeof origin.ownedEditSessionId !== "string" || !origin.ownedEditSessionId || origin.ownedEditSessionId.length > 240)) fail(code);
+  validateCompletionAuthority(receipt.authorization, operation, receipt.retiredTransitionId);
+  if (["actionId", "runId"].some(k => receipt.authorization[k] === origin[k])) fail(code);
+  verifyReceiptFile(receipt.currentFile, code); nativeTuple(receipt.finalNative);
+  if (!samePath(receipt.currentFile.path, receipt.finalNative.file) || receipt.finalNative.dirty !== false) fail(code);
+  for (const key of ["inventoryHash", "sourcePolicyHash", "targetPolicyHash", "adoptedPolicyHash", "sealHash", "activationHash"]) if (!SHA.test(receipt[key] || "")) fail(code);
+  if (receipt.authorization.sourcePolicyHash !== receipt.sourcePolicyHash || receipt.authorization.targetPolicyHash !== receipt.targetPolicyHash) fail(code);
+  exact(receipt.capsule, ["path", "sha256"], code);
+  if (typeof receipt.capsule.path !== "string" || !path.isAbsolute(receipt.capsule.path) || !SHA.test(receipt.capsule.sha256 || "")) fail(code);
+  return { valid: true, transitionId: receipt.transitionId, generation: receipt.generation };
+}
 function validateCompletionAuthority(a, name, transitionId) {
   exact(a, ["actionId", "runId", "payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash", "ownedEditSessionId"], "lifecycle_invalid_recovery_authorization");
   if (["actionId", "runId"].some(k => typeof a[k] !== "string" || !a[k] || a[k].length > 240) || ["payloadHash", "inputHash", "sourcePolicyHash", "targetPolicyHash"].some(k => !SHA.test(a[k] || "")) || a.inputHash !== hash({ name, args: { transitionId } }) || a.ownedEditSessionId !== undefined && (typeof a.ownedEditSessionId !== "string" || !a.ownedEditSessionId || a.ownedEditSessionId.length > 240)) fail("lifecycle_invalid_recovery_authorization");
@@ -211,4 +233,4 @@ function validateRecovery(value, authorization) {
   return value;
 }
 module.exports = { VERSION, UUID, SHA, LIMITS, SETTINGS, MUTATIONS, COMPLETIONS, RECOVERY_READBACK_ROLES, toolDefinitions, isLifecycleCompletion: name => COMPLETIONS.includes(name), validateRecovery, validateCompletionAuthority, isLifecycleTool: name => TOOLS.includes(name), isLifecycleMutation: name => MUTATIONS.includes(name), validateInput,
-  nativeInventoryScript, phaseScript, validateInventory, inventoryContent, inventoryHash, assertInventoryMatch, nativeTuple, verifyReceipt, canonicalPlanHash, projectPath, samePath, normalizePath, hash, stableJson, clone, fail, object, exact };
+  nativeInventoryScript, phaseScript, validateInventory, inventoryContent, inventoryHash, assertInventoryMatch, nativeTuple, verifyReceipt, verifyStoredReceipt, canonicalPlanHash, projectPath, samePath, normalizePath, hash, stableJson, clone, fail, object, exact };
