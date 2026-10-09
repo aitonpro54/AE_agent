@@ -6,7 +6,7 @@ Build this repository into AE Agent, a local After Effects AI panel that combine
 
 The panel remains a client of the local bridge daemon. The daemon remains the owner of provider access, chat calls, AE plan validation, execution gates, logs, checkpoints, and edit-session protection.
 
-Current development version: 3.3.0 (draft release). Inherited M7 acceptance requires exact composite identity,
+Current development version: 3.3.1 (draft release). Inherited M7 acceptance requires exact composite identity,
 preflight-before-write, project/checkpoint binding, receipt-v2 lifecycle checks,
 persistent autonomy with trusted CEP reconnect, and separate manual gates for raw JSX,
 destructive operations, and named save. Generated-only live proof is recorded in
@@ -15,7 +15,7 @@ destructive operations, and named save. Generated-only live proof is recorded in
 ## Product Shape
 
 - The first screen is a compact dark CEP panel inspired by the references in `specs/screenshots/`.
-- The visible product title format is `AE Agent 3.3.0` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
+- The visible product title format is `AE Agent 3.3.1` in the native CEP title/menu only; do not duplicate the product name in a separate in-panel top bar or sidebar heading.
 - The left side exposes provider setup: `Gemini`, `OpenAI`, `Claude`, `OpenRouter`, and `Local`.
 - `OpenAI` supports two auth modes:
   - `API`: uses an OpenAI API key and normal API billing.

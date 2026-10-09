@@ -1,6 +1,6 @@
 # AE Agent
 
-AE Agent 3.3.0 is a local After Effects assistant: a CEP panel talks to a local
+AE Agent 3.3.1 is a local After Effects assistant: a CEP panel talks to a local
 bridge daemon, and the daemon owns all provider calls, plan validation, AE
 execution gates, checkpoints, logs, and verification.
 
@@ -8,6 +8,7 @@ The product target is in `specs/target-app.md`. The active work plan is
 `plans/target-app-execplan.md`.
 
 Версия 3.3.0 опубликована в отдельной ветке `codex/release-3.3.0`.
+Подготовка 3.3.1 ведётся в отдельной ветке `codex/release-3.3.1`.
 Порядок выпуска и возврата к предыдущей версии —
 [в руководстве по версиям](docs/release-workflow.md).
 

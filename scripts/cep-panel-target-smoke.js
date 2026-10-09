@@ -13,7 +13,7 @@ const { connectToPanel } = require("./cep-panel-cdp-smoke");
 
 function createMockPage(options = {}) {
   const {
-    title = "AE Agent 3.3.0",
+    title = "AE Agent 3.3.1",
     url = "file:///C:/Users/Ant/AppData/Roaming/Adobe/CEP/extensions/com.codex.aemcpbridge/client/index.html",
     type = "page",
     id = "TEST_UUID_1234"
@@ -157,7 +157,7 @@ async function runUnitTests() {
   {
     const titleSpoofPage = {
       id: "SPOOF_TITLE",
-      title: "AE Agent 3.3.0",
+      title: "AE Agent 3.3.1",
       type: "page",
       url: "file:///C:/Program%20Files/Adobe/CEP/extensions/com.malicious.impostor/index.html",
       webSocketDebuggerUrl: "ws://127.0.0.1:8870/devtools/page/SPOOF_TITLE"

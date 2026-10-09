@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const repo = path.resolve(__dirname, "..");
-const PRODUCT_VERSION = "3.3.0";
+const PRODUCT_VERSION = "3.3.1";
 const auditLiteral = [".codex", "audit"].join("-");
 const oldPlanRoot = ["plans", "archive"].join("/");
 const oldPlanHistory = ["target-app-execplan", "history"].join("-");

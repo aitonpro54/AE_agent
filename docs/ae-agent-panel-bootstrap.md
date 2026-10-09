@@ -2,7 +2,7 @@
 
 `ensure_ae_agent_panel` — typed MCP-инструмент для фиксированной установленной
 CEP-панели `com.codex.aemcpbridge.panel`, bundle `com.codex.aemcpbridge`, menu
-`AE Agent 3.3.0`. Единственный аргумент — `timeoutMs` (целое 1–30000, default
+`AE Agent 3.3.1`. Единственный аргумент — `timeoutMs` (целое 1–30000, default
 30000). Например:
 
 ```json

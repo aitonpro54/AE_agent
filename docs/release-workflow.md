@@ -1,5 +1,11 @@
 # Отдельные версии AE Agent и возврат к предыдущему коду
 
+## Подготовка 3.3.1 — 2026-10-09
+
+- Ветка `codex/release-3.3.1` начинается от `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`; checkpoint `checkpoint/ae-agent-3.3.0-before-3.3.1` фиксирует исходное состояние.
+- Текущие product identity, канонические документы и адресные smoke fixtures обновлены до 3.3.1. Записи выпуска 3.3.0, testedAeContext и замороженная intake-граница сохранены.
+- Validation: `check:rules`, 12 JS syntax checks, `bridge-only` и panel-bootstrap offline smokes, `git diff --check` — PASS. Push, GitHub Release и live AE/CEP/provider acceptance не выполнялись.
+
 ## Подготовка 3.3.0 — 2026-10-05
 
 - Новая ветка `codex/release-3.3.0` опубликована от проверенного состояния

@@ -9,7 +9,7 @@ const {spawn, execFile} = require("child_process");
 const {fileURLToPath} = require("url");
 const {selectCepPanelTarget,isCepExtensionUrl} = require("../scripts/cep-panel-target");
 
-const TARGET = Object.freeze({bundleId:"com.codex.aemcpbridge", extensionId:"com.codex.aemcpbridge.panel", menu:"AE Agent 3.3.0", version:"3.3.0"});
+const TARGET = Object.freeze({bundleId:"com.codex.aemcpbridge", extensionId:"com.codex.aemcpbridge.panel", menu:"AE Agent 3.3.1", version:"3.3.1"});
 const TOOL_NAME = "ensure_ae_agent_panel";
 const tool = {name:TOOL_NAME, description:"Open/activate the fixed installed AE Agent CEP panel in one already-running After Effects, or reconnect its exact existing CDP page. Changes application panel UI only; never project contents. Success requires fresh panel connectivity and the ordinary native typed get_project_info. Unknown delivery blocks replay.",
   annotations:{readOnlyHint:false, destructiveHint:false, idempotentHint:false, openWorldHint:false},
@@ -62,7 +62,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
       const root=path.join(base,entry.name),manifest=path.join(root,"CSXS","manifest.xml");
       if (!fs.existsSync(manifest)) continue;
       const xml=fs.readFileSync(manifest,"utf8");
-      const matchingMenus=(xml.match(/<Menu>\s*AE Agent 3\.3\.0\s*<\/Menu>/g)||[]).length;
+      const matchingMenus=(xml.match(/<Menu>\s*AE Agent 3\.3\.1\s*<\/Menu>/g)||[]).length;
       for(let i=0;i<matchingMenus;i++) menus.push(root);
       if (/\bId\s*=\s*["']com\.codex\.aemcpbridge\.panel["']/.test(xml)) copies.push({root,manifest,xml});
     }
@@ -70,7 +70,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
   if (!copies.length) throw problem("installed_panel_missing");
   if (copies.length!==1 || menus.length!==1 || path.resolve(menus[0])!==path.resolve(copies[0].root)) throw problem("installed_panel_ambiguous","Exact extension ID or menu title has multiple installed owners.",{copies:copies.map(c=>c.root),menuOwners:menus});
   const c=copies[0];
-  if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.0"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.0"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
+  if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.1"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.1"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
   const hashes={};
   for (const asset of ["CSXS/manifest.xml","index.html","panel-action-contract.js","panel-actions.js","panel.js","style.css","lib/CSInterface.js"]) {
     const installed=path.join(c.root,asset), source=path.join(sourceRoot,asset);

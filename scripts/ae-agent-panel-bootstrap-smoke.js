@@ -62,7 +62,7 @@ async function unitTests(root) {
   fs.cpSync(sourceRoot,path.join(roots,"duplicate"),{recursive:true});
   test("duplicate installed IDs",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_ambiguous"}));
   fs.rmSync(path.join(roots,"duplicate"),{recursive:true});
-  fs.mkdirSync(path.join(roots,"third-party","CSXS"),{recursive:true});fs.writeFileSync(path.join(roots,"third-party","CSXS","manifest.xml"),"<Menu>AE Agent 3.3.0</Menu>");
+  fs.mkdirSync(path.join(roots,"third-party","CSXS"),{recursive:true});fs.writeFileSync(path.join(roots,"third-party","CSXS","manifest.xml"),"<Menu>AE Agent 3.3.1</Menu>");
   test("menu duplicate owner",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_ambiguous"}));
   fs.rmSync(path.join(roots,"third-party"),{recursive:true});fs.appendFileSync(path.join(copy,"panel.js"),"\n// stale");
   test("stale installed asset",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_source_mismatch"}));

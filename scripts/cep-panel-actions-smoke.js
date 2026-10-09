@@ -61,7 +61,7 @@ function fixture(options={}) {
     if(req.path === "/emergency-disable") {emergencyDisabled=true;return {status:{connector:{connected:true,emergencyDisabled:true}}};}
     if(req.path.indexOf("/status?")===0) return {status:{connector:{connected:true,publicUrlConfigured:true,writeActionsEnabled:!emergencyDisabled,emergencyDisabled,exposedToolsSnapshot:[]}}};
     if(req.path === "/usage" || req.path === "/usage/refresh") return {usage:{sources:{native:{status:"available"}}}};
-    return {ok:true,command:null,version:"3.3.0"};
+    return {ok:true,command:null,version:"3.3.1"};
   };
   function drain() {
     let guard=0;
@@ -396,7 +396,7 @@ test("storage corruption, missing store, admission failure and unresolved capaci
   function runtime(storage) {
     const service=createService(contract,storage);let writes=0;
     service.bind({handlers:{"ui.sidebar.set":(args,done)=>{writes++;done(null,{collapsed:args.collapsed});}},passive:{},
-      lifecycle:()=>({epoch:0,generation:"0",busy:false}),state:()=>({assetVersion:"3.3.0",preferences:{}}),availability:()=>({available:true,reasonCodes:[]})});
+      lifecycle:()=>({epoch:0,generation:"0",busy:false}),state:()=>({assetVersion:"3.3.1",preferences:{}}),availability:()=>({available:true,reasonCodes:[]})});
     return {api:service.api,writes:()=>writes};
   }
   const bad=runtime(store("{bad"));assert.equal(bad.api.invoke(envelope("ui.sidebar.set",{collapsed:true})).state,"rejected");assert.equal(bad.writes(),0);
