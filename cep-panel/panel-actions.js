@@ -17,7 +17,7 @@
   var INDEX_KEY = "codexAePanelActionReceiptIndex";
   var MAX_RECEIPTS = 120, MAX_TOMBSTONES = 1000, MAX_TERMINAL = 50;
   var instanceId = "panel-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-  var records = Object.create(null), tombstones = Object.create(null);
+  var records = Object.create(null), tombstones = Object.create(null), recoveries=Object.create(null), validatedRecoveries=Object.create(null);
   var active = null, bindings = null, storageFailure = "", bound = false;
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
@@ -33,7 +33,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile";
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -158,15 +158,39 @@
     return sha256(JSON.stringify({action:envelope.action,args:canonical(envelope.args,def.schema),expectedState:envelope.expectedState || {}}));
   }
   function terminal(record) { return /^(completed|error|rejected)$/.test(record.state); }
+  function recoveryValid(id,confirmed) {
+    var side=recoveries[id],original=records[id],value=side && side.envelope,r=value && value.receipt,p=original && original.result && original.result.run && original.result.run.provenance;
+    if(!original || original.action!=="plan.run" || original.state!=="unknown" || !side || !r ||
+      value.schema!=="ae-agent-generated-export-recovery-envelope.v1" || value.sha256!==sha256(JSON.stringify(r)) ||
+      r.schema!=="ae-agent-generated-export-recovery.v1" || r.originalRequestId!==id || r.originalAction!==original.action || r.runId!==original.runId ||
+      !/^(completed|failed)$/.test(r.terminal) || r.replayAllowed!==false || r.artisticAccepted!==false ||
+      side.panelIdentityHash!==sha256(original.signature) || !p ||
+      ["actionId","proposalRevision","payloadHash","planSha256","projectId"].some(function(k) {return p[k]!==r[k];}) ||
+      !r.originalBinding || r.originalBinding.panelInstanceId!==original.panelInstanceId || r.originalBinding.panelLifecycleEpoch!==original.epoch || r.originalBinding.panelGeneration!==original.generation) return false;
+    // Restart needs trusted server lookup again, never client assertions or idle auto-heal.
+    return !confirmed || validatedRecoveries[id]===value.sha256;
+  }
+  function adoptRecovery(value,runId) {
+    var r=value && value.receipt,id=r && r.originalRequestId,original=id && records[id];
+    if(storageFailure || !original || original.runId!==runId || r.runId!==runId) return false;
+    var previous=recoveries[id];
+    if(previous && previous.envelope.sha256!==value.sha256)return false;
+    recoveries[id]={envelope:clone(value),panelIdentityHash:sha256(original.signature)};
+    if(!recoveryValid(id,false)){if(previous)recoveries[id]=previous;else delete recoveries[id];return false;}
+    if(!persist())return false;
+    validatedRecoveries[id]=value.sha256;
+    return true;
+  }
   function persist() {
     if (storageFailure) return false;
     try {
       if (!storage || typeof storage.setItem !== "function") throw new Error("Storage is unavailable");
       storage.setItem(INITIALIZED_KEY,"1");
-      storage.setItem(STORAGE_KEY, JSON.stringify({version:1,records:records,tombstones:tombstones}));
+      storage.setItem(STORAGE_KEY, JSON.stringify({version:1,records:records,tombstones:tombstones,recoveries:recoveries}));
       var index={};
       Object.keys(records).forEach(function(id) {index[id]={action:records[id].action,signature:records[id].signature};});
       Object.keys(tombstones).forEach(function(id) {index[id]={action:tombstones[id].action,signature:tombstones[id].signature};});
+      Object.keys(recoveries).forEach(function(id) {if(!index[id])throw new Error("Unbound recovery");index[id].recoverySha256=recoveries[id].envelope.sha256;});
       storage.setItem(INDEX_KEY,JSON.stringify(index));
       return true;
     } catch (_) { storageFailure = "receipt_persistence_failed"; return false; }
@@ -203,6 +227,8 @@
         if (!contract.UUID_REGEX.test(id) || !t || !(contract.getActionDefinition(t.action) || t.action === "unknown") || typeof t.signature !== "string" || !terminal(t)) throw new Error("Invalid tombstone");
         tombstones[id]=t;
       });
+      if(parsed.recoveries && (typeof parsed.recoveries!=="object" || Array.isArray(parsed.recoveries)))throw new Error("Invalid recoveries");
+      Object.keys(parsed.recoveries || {}).forEach(function(id) {recoveries[id]=parsed.recoveries[id];if(!recoveryValid(id,false))throw new Error("Invalid recovery binding");});
       var indexRaw=storage.getItem(INDEX_KEY);
       if(!indexRaw) throw new Error("Missing receipt index");
       var index=JSON.parse(indexRaw);
@@ -214,6 +240,7 @@
         if(!record) records[id]={protocolVersion:contract.PROTOCOL_VERSION,requestId:id,action:entry.action,signature:entry.signature,
           state:"unknown",phase:"receipt_missing",code:"receipt_record_missing",delivery:"unknown",replayAllowed:false};
         else if(record.action !== entry.action || record.signature !== entry.signature) throw new Error("Indexed receipt mismatch");
+        if(entry.recoverySha256!==undefined && (!recoveries[id] || recoveries[id].envelope.sha256!==entry.recoverySha256) || recoveries[id] && recoveries[id].envelope.sha256!==entry.recoverySha256)throw new Error("Recovery index mismatch");
       });
       Object.keys(records).concat(Object.keys(tombstones)).forEach(function(id) {if(!index[id]) throw new Error("Unindexed receipt");});
       if (Object.keys(records).length > MAX_RECEIPTS || Object.keys(tombstones).length > MAX_TOMBSTONES) throw new Error("Oversize store");
@@ -241,7 +268,7 @@
   }
   function getResult(id) {
     if (typeof id !== "string" || !contract.UUID_REGEX.test(id)) return null;
-    if (records[id]) return contract.sanitizeReceipt(records[id]);
+    if (records[id]) {var result=contract.sanitizeReceipt(records[id]);if(recoveryValid(id,true))result.recovery=clone(recoveries[id].envelope);return result;}
     if (tombstones[id]) return reject({requestId:id,action:tombstones[id].action},"receipt_retained_without_detail","Request was completed earlier. Re-execution is forbidden.");
     return storageFailure ? {protocolVersion:contract.PROTOCOL_VERSION,requestId:id,state:"unknown",phase:"receipt_storage",code:storageFailure,delivery:"unknown",replayAllowed:false} : null;
   }
@@ -333,6 +360,16 @@
     }
     var context={
       source:r.source,
+      originalGeneratedExportRequest:function(runId) {
+        if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId)return null;
+        var ids=Object.keys(records).filter(function(id) {return records[id].action==="plan.run" && records[id].state==="unknown" && records[id].runId===runId;});
+        return ids.length===1 ? ids[0] : null;
+      },
+      adoptGeneratedExportRecovery:function(value,runId) {
+        var now=life();
+        if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId || finished || now.epoch!==startEpoch || String(now.generation)!==startGeneration)return false;
+        return adoptRecovery(value,runId);
+      },
       submit:function() {
         r.delivery="submitted";r.phase="submitted";
         if (!persist()) {done({isUnknown:true,code:storageFailure,phase:"receipt_storage",message:"Submission receipt could not be persisted."});return false;}

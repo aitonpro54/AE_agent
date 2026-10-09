@@ -4,6 +4,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const contract=require("../cep-panel/panel-action-contract");
 const createService=require("../cep-panel/panel-actions");
+const recovery=require("../mcp-server/generated-export-recovery"),{makeFixture:makeExportFixture}=require("./generated-export-recovery-smoke");
 const {createPanelEnvironment,makeActionProposal,makeCurrentPlan}=require("./cep-plan-refresh-smoke");
 const panel=fs.readFileSync(path.join(__dirname,"../cep-panel/panel.js"),"utf8");
 const coverage=new Set(),scenarios=[];
@@ -241,6 +242,60 @@ test("same-run reconciliation remains callable but postconditions/foreign eviden
   const restored=fixture({storageStore:env.storageStore});
   restored.invoke("plan.reconcile",{runId:"same-unknown-run"});
   assert.equal(restored.env.api.state().reconciliationRequired,true);
+});
+
+test("canonical PNG recovery uses private adoption, preserves history, and revalidates after reload",()=>{
+  const f=fixture(),x=makeExportFixture();f.connect();f.setCurrent(makeCurrentPlan("png-original",1));f.invoke("plan.current",{fresh:true});f.invoke("plan.prepare",{pins:f.pins()});
+  const submitted=f.invoke("plan.run",{pins:f.pins(),confirm:true},{hold:true});
+  f.env.inFlightRequests.find(r=>r.path==="/agents/plan/current").respond(200,{ok:true,current:copy(f.getCurrent())});
+  f.env.inFlightRequests.find(r=>r.path==="/agents/plan/run").respond(200,{ok:false,run:copy(x.record.run)});
+  const original=f.env.api.getResult(submitted.request.requestId);assert.equal(original.state,"unknown");
+  const p=x.record.run.provenance,value=recovery.envelope({schema:recovery.SCHEMA,recoveryId:crypto.randomUUID(),originalRequestId:original.requestId,originalAction:"plan.run",runId:original.runId,
+    actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,projectId:p.projectId,
+    originalBinding:{panelInstanceId:original.panelInstanceId,panelLifecycleEpoch:original.epoch,panelGeneration:original.generation},terminal:"failed",replayAllowed:false,artisticAccepted:false});
+  function reconcile(target,serverValue){
+    const request=target.invoke("plan.reconcile",{runId:original.runId},{hold:true});const native=target.env.inFlightRequests.find(r=>r.path==="/tools/call");
+    assert.equal(native.body.arguments.originalRequestId,original.requestId,"Selector also finds already adopted originals");
+    native.respond(200,{result:{content:[{text:JSON.stringify({schema:"ae-agent-plan-reconciliation.v1",runId:original.runId,status:"incomplete",generatedExportRecovery:serverValue,replayAllowed:false})}]}});
+    return target.env.api.getResult(request.request.requestId);
+  }
+  const forged=copy(value);forged.receipt.originalRequestId=crypto.randomUUID();forged.sha256=recovery.hash(forged.receipt);
+  assert.equal(reconcile(f,forged).result.admissionGuardReleased,false);assert.equal(f.env.api.state().reconciliationRequired,true);
+  const stale=fixture({storageStore:new Map(f.env.storageStore)}),late=stale.invoke("plan.reconcile",{runId:original.runId},{hold:true});
+  const oldResponse=stale.env.inFlightRequests.find(r=>r.path==="/tools/call");stale.env.planOps.disconnect();
+  oldResponse.respond(200,{result:{content:[{text:JSON.stringify({runId:original.runId,status:"incomplete",generatedExportRecovery:value,replayAllowed:false})}]}});
+  assert.equal(stale.env.api.getResult(late.request.requestId).state,"unknown");assert.equal(stale.env.api.getResult(late.request.requestId).code,"lifecycle_interrupted");
+  assert.equal(stale.env.api.getResult(original.requestId).recovery,undefined);assert.equal(stale.env.api.state().reconciliationRequired,true,"Trusted old response after disconnect cannot adopt recovery");
+  assert.equal(JSON.parse(stale.env.storageStore.get("codexAePanelActionReceipts")).recoveries[original.requestId],undefined);
+  const accepted=reconcile(f,value);assert.equal(accepted.result.admissionGuardReleased,true);assert.equal(f.env.api.state().reconciliationRequired,false);
+  assert.equal(f.env.api.getResult(original.requestId).state,"unknown");assert.equal(f.env.api.getResult(original.requestId).outcome.mutation.status,"unknown");assert.equal(f.env.api.getResult(original.requestId).recovery.sha256,value.sha256);
+  const before=f.env.requestHistory.filter(r=>r.path==="/agents/plan/run").length;f.env.invoke(submitted.request);assert.equal(f.env.requestHistory.filter(r=>r.path==="/agents/plan/run").length,before);
+  reconcile(f,value);assert.equal(f.env.api.state().reconciliationRequired,false,"Retry after panel adoption finishes projections without dispatch");
+  const restored=fixture({storageStore:f.env.storageStore});assert.equal(restored.env.api.state().reconciliationRequired,true,"Loaded sidecar is unconfirmed");
+  assert.equal(reconcile(restored,null).result.admissionGuardReleased,false);assert.equal(restored.env.api.state().reconciliationRequired,true,"Missing/unavailable server does not trust cache");
+  const corrupt=copy(value);corrupt.sha256="0".repeat(64);assert.equal(reconcile(restored,corrupt).result.admissionGuardReleased,false);assert.equal(restored.env.api.state().reconciliationRequired,true);
+  assert.equal(reconcile(restored,value).result.admissionGuardReleased,true);assert.equal(restored.env.api.state().reconciliationRequired,false);
+  assert.equal(restored.env.requestHistory.filter(r=>r.path==="/agents/plan/run").length,0);
+  const disk=JSON.parse(f.env.storageStore.get("codexAePanelActionReceipts"));delete disk.recoveries[original.requestId];f.env.storageStore.set("codexAePanelActionReceipts",JSON.stringify(disk));
+  assert.equal(fixture({storageStore:f.env.storageStore}).env.api.state().actionStorage,"unavailable");
+});
+
+test("private recovery adoption rejects epoch-only and generation-only drift before persistence",()=>{
+  for(const field of ["epoch","generation"]){
+    const x=makeExportFixture(),p=x.record.run.provenance,original={...x.remote,protocolVersion:contract.PROTOCOL_VERSION,signature:"c".repeat(64)};
+    const map=new Map([["codexAePanelActionReceiptsInitialized","1"],["codexAePanelActionReceipts",JSON.stringify({version:1,records:{[original.requestId]:original},tombstones:{}})],
+      ["codexAePanelActionReceiptIndex",JSON.stringify({[original.requestId]:{action:"plan.run",signature:original.signature}})]]);
+    const storage={getItem:key=>map.get(key)||null,setItem:(key,value)=>map.set(key,value)},service=createService(contract,storage),life={epoch:1,generation:"current",busy:false};let held;
+    service.bind({handlers:{"plan.reconcile":function(args,done,context){held={args,done,context};}},passive:{},lifecycle:()=>life,state:()=>({}),availability:()=>({available:true,reasonCodes:[]})});
+    const value=recovery.envelope({schema:recovery.SCHEMA,recoveryId:crypto.randomUUID(),originalRequestId:original.requestId,originalAction:"plan.run",runId:original.runId,actionId:p.actionId,proposalRevision:p.proposalRevision,payloadHash:p.payloadHash,planSha256:p.planSha256,projectId:p.projectId,
+      originalBinding:{panelInstanceId:original.panelInstanceId,panelLifecycleEpoch:original.epoch,panelGeneration:original.generation},terminal:"failed",replayAllowed:false,artisticAccepted:false});
+    const request=envelope("plan.reconcile",{runId:original.runId});assert.equal(service.api.invoke(request).state,"running");
+    if(field==="epoch")life.epoch++;else life.generation="changed";
+    assert.equal(held.context.isCurrent(),false);assert.equal(held.context.adoptGeneratedExportRecovery(value,original.runId),false,field);
+    held.done(null,{reconciliation:{generatedExportRecovery:value},runId:original.runId});
+    assert.equal(service.api.getResult(request.requestId).state,"unknown");assert.equal(service.api.state().reconciliationRequired,true);assert.equal(service.api.getResult(original.requestId).recovery,undefined);
+    assert.equal(JSON.parse(map.get("codexAePanelActionReceipts")).recoveries[original.requestId],undefined);
+  }
 });
 
 test("Hardcore HTTP success is not execution proof: nested/attempt unknown and partial error preserve guard",()=>{

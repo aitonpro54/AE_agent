@@ -3546,7 +3546,7 @@
     return window.AEAgentPanelActions.state().unresolvedActions.some(function(row) {return !!row.runId && (!runId || row.runId === runId);});
   }
 
-  function reconcileLastPlanRun(args,onDone) {
+  function reconcileLastPlanRun(args,onDone,context) {
     var run = lastPlanRunResult;
     var runId = args ? args.runId : run && run.id;
     var guarded=knownUnresolvedPlanRun(runId);
@@ -3556,11 +3556,17 @@
     planReconcileInFlight = true;
     chatInFlight = true;
     updateChatAvailability();
-    request("POST", "/tools/call", {name:"reconcile_plan_run",arguments:{runId:runId}}, function (error, response) {
+    var reconcileArguments={runId:runId};
+    if(context && context.originalGeneratedExportRequest){
+      var originalRequestId=context.originalGeneratedExportRequest(runId);
+      if(originalRequestId)reconcileArguments.originalRequestId=originalRequestId;
+    }
+    request("POST", "/tools/call", {name:"reconcile_plan_run",arguments:reconcileArguments}, function (error, response) {
       planReconcileInFlight = false;
       chatInFlight = false;
       updateChatAvailability();
       if (!running && !guarded) {if(onDone) onDone({isUnknown:true,code:"lifecycle_interrupted"});return;}
+      if(context && context.isCurrent && !context.isCurrent()){if(onDone)onDone({isUnknown:true,code:"lifecycle_interrupted",phase:"lifecycle_interrupted"});return;}
       var result = null;
       try { if (response && response.result && !response.result.isError) result = JSON.parse(response.result.content[0].text); } catch (_parseError) {}
       if (error || !result) { appendChatMessage("error", "Сверка не завершена: " + (error && error.message || "Нет доказательств состояния.")); if(onDone) onDone(error || {code:"reconciliation_missing",message:"No reconciliation evidence."},response);return; }
@@ -3572,9 +3578,10 @@
       lines.push("Сверка выполнена без повторных изменений. Исходный результат запуска сохранён.");
       if (lastPlanRunResult && lastPlanRunResult.id === runId) lastPlanRunResult.reconciliation = result;
       appendChatMessage("assistant", lines.join("\n"));
-      // Current postconditions do not establish that the original command has stopped.
-      if(onDone) onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:false,
-        terminalEvidenceRequired:guarded});
+      // Only this trusted handler may adopt server-persisted terminal evidence.
+      var adopted=!!(result.generatedExportRecovery && context && context.adoptGeneratedExportRecovery && context.adoptGeneratedExportRecovery(result.generatedExportRecovery,runId));
+      if(onDone) onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:adopted,
+        terminalEvidenceRequired:guarded && !adopted});
     });
   }
 
@@ -4441,7 +4448,7 @@
     "plan.prepare":function(args,done,context) {runLastPlan(true,false,done,{prepare:true,strict:true,pins:args.pins,context:context});},
     "plan.dryRun":function(args,done,context) {runLastPlan(true,false,done,{prepare:false,strict:true,pins:args.pins,context:context});},
     "plan.run":function(args,done,context) {runLastPlan(false,false,done,{prepare:false,strict:true,pins:args.pins,context:context});},
-    "plan.reconcile":function(args,done) {reconcileLastPlanRun(args,done);},
+    "plan.reconcile":function(args,done,context) {reconcileLastPlanRun(args,done,context);},
     "plan.devRequest":function(args,done,context) {if(context.submit()) prepareDevRequest(done);},
     "logs.get":function(args,done) {rememberPanelSecrets();var lines=String(logEl.textContent || "").split("\n").filter(Boolean);
       done(null,{total:lines.length,lines:lines.slice(args.offset || 0,(args.offset || 0)+(args.limit || 50))});

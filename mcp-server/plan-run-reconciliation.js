@@ -78,6 +78,12 @@ function reconciliationReadRequests(record) {
   for (let index = 1; index <= record.plan.steps.length; index++) {
     const step = boundStep(record, index), args = step.args || {};
     if (!isMutatingStep(step)) continue;
+    if(step.tool==="save_comp_frame_png"){
+      try{require("./generated-export-recovery").inspectRecord(record);
+        requests.push({stepIndex:index,tool:"get_comp_details",args:{compItemId:args.expectedCompItemId,includeLayers:false}});
+      }catch(_error){}
+      continue;
+    }
     if(step.tool==="render_one_title_variant"){
       const native=require("./native-render-variant"),attemptId=payload(step)?.renderReceipt?.attemptId || payload(step)?.attemptId;
       try{requests.push({stepIndex:index,tool:native.INSPECT,args:native.inspectionArgs(args,attemptId)});}catch(_error){}

@@ -46,3 +46,32 @@ Validation: production generated JSX VM, обычный confirmed isolated daemo
 actual panel functions VM. Проверены timeout после записи, queued cancellation,
 readback timeout, partial setter/finally, manual/index/project drift, missing/
 corrupt records и restart. Пользовательский AEP и установленная CEP не изменялись.
+
+## Сверка завершённого generated PNG export
+
+Для ограниченного `save_comp_frame_png` recovery использует существующий
+`plan.reconcile({runId})` и unique lookup исходного `plan.run`, включая случай,
+когда панель уже приняла recovery, а transport-проекция ещё не завершена.
+Сервер проверяет исходную запись, terminal native command и восстановление
+resolution, свежую project/comp/project скобку и PNG по filename из записи с
+проверкой containment и полных PNG bytes. Отсутствующий или неполный файл после
+доказанного terminal native результата даёт `terminal=failed` и artifact
+`missing|invalid`; это не переписывает прежние unknown receipts и не означает
+визуальную или художественную приёмку.
+
+Recovery envelope сначала атомарно сохраняется сервером. Панель затем принимает
+его через trusted handler и сохраняет private adoption, после чего transport
+отдельно проецирует подтверждённую ссылку. Sidecar панели после reload остаётся
+unconfirmed до свежей canonical server validation; missing/corrupt evidence,
+несовпадение binding, storage failure и чужой controller lock fail closed.
+Перед private adoption callback проверяет актуальность lifecycle epoch/generation;
+устаревший callback после drift не может сохранить original recovery.
+`replayAllowed=false`: сверка не возобновляет старый plan и не разрешает следующий
+execution. Клиентские proof/terminal/release assertions, reset и raw/create/import/
+save/destructive/Hardcore остаются вне recovery-контракта.
+
+Validation: offline production-runner/adjudicator, full-panel VM и isolated
+transport fixtures покрывают terminal export, partial projection, reload,
+fail-stop и no-replay. Live activation/read-back, исходный run recovery и просмотр
+PNG остаются отдельной проверкой; физическая полнота PNG не заменяет визуальную
+приёмку.

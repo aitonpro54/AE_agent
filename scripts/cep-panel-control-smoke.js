@@ -5,14 +5,15 @@ const {spawn,spawnSync}=require("node:child_process");
 const control=require("../mcp-server/cep-panel-control"),contract=require("../cep-panel/panel-action-contract");
 const {createPanelEnvironment}=require("./cep-plan-refresh-smoke"),bootstrap=require("../mcp-server/ae-agent-panel-bootstrap");
 const {runtimeIdentity}=require("../mcp-server/review-evidence"),network=require("./network-test-fixture");
+const recovery=require("../mcp-server/generated-export-recovery"),records=require("../mcp-server/plan-run-records"),{makeFixture:makeExportFixture}=require("./generated-export-recovery-smoke");
 const root=fs.mkdtempSync(path.join(os.tmpdir(),"cep-control-smoke-")),cases=[];
 const receiptHistoryOnly=process.argv.includes("--receipt-history-only");
 const source=fs.readFileSync(path.resolve(__dirname,"../cep-panel/panel.js"),"utf8"),protocolVersion=control.PROTOCOL_VERSION;
 const clone=value=>JSON.parse(JSON.stringify(value));
 const input=(action="ui.sidebar.set",args={collapsed:true})=>({protocolVersion,requestId:crypto.randomUUID(),action,args});
 async function test(name,fn,receiptHistory=false){if(receiptHistoryOnly && !receiptHistory)return;await fn();cases.push(name);}
-function fixture(name,extra={}) {
-  const env=createPanelEnvironment(source),directory=path.join(root,name),indexPath=path.join(root,"CEP","extensions",bootstrap.TARGET.bundleId,"index.html");
+function fixture(name,extra={},panelOptions={}) {
+  let env=createPanelEnvironment(source,panelOptions);const directory=path.join(root,name),indexPath=path.join(root,"CEP","extensions",bootstrap.TARGET.bundleId,"index.html");
   const installed={indexPath,hashes:{source:"fixture"}},page={type:"page",url:require("node:url").pathToFileURL(indexPath).href,webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/fake"};
   let sends=0,reads=0;const expressions=[];
   const service=control.createPanelControlService({stateDir:directory,inspectInstalledTarget:()=>installed,
@@ -20,9 +21,40 @@ function fixture(name,extra={}) {
       expressions.push(expression);if(expression.includes("api.invoke("))sends++;else reads++;
       return clone(vm.runInContext(expression,env.context));
     },...extra});
-  return {env,directory,installed,page,service,expressions,sends:()=>sends,reads:()=>reads};
+  return {get env(){return env;},reload(){env=createPanelEnvironment(source,{storageStore:env.storageStore});},directory,installed,page,service,expressions,sends:()=>sends,reads:()=>reads};
 }
 async function main() {
+  await test("canonical recovery projections survive partial persistence; loaded panel cache needs server proof",async()=>{
+    const x=makeExportFixture();x.remote.protocolVersion=protocolVersion;x.local.protocolVersion=protocolVersion;
+    const pins=Object.fromEntries(Object.entries(contract.PIN_SCHEMA.properties).map(([k,v])=>[k,v.enum?v.enum[0]:v.type==="integer"?1:v.format==="date-time"?new Date(Date.now()+600000).toISOString():v.pattern?"sha256:"+"a".repeat(64):"synthetic"]));
+    const old={protocolVersion,requestId:x.local.requestId,action:"plan.run",args:{pins,confirm:true}};
+    x.local.signature=control.computeActionSignature(old);
+    const panelOriginal={...clone(x.remote),signature:control.computeActionSignature({...old,expectedState:x.local.binding})};
+    const store=new Map([["codexAePanelActionReceiptsInitialized","1"],["codexAePanelActionReceipts",JSON.stringify({version:1,records:{[old.requestId]:panelOriginal},tombstones:{}})],
+      ["codexAePanelActionReceiptIndex",JSON.stringify({[old.requestId]:{action:"plan.run",signature:panelOriginal.signature}})]]);
+    let failProjection=true;const f=fixture("recovery-projection",{persistReceipt(dir,row){if(row.recoveryReference && failProjection)throw Error("synthetic projection crash");control.saveDurableReceipt(dir,row);}},{storageStore:store});
+    control.saveDurableReceipt(f.directory,x.local);records.writeRecord(root,x.record);x.exportRoot=path.join(root,"png-recovery");fs.mkdirSync(x.exportRoot);
+    const saved=recovery.writeReceipt(root,await recovery.adjudicate(x));
+    async function reconcile(server=saved){
+      const e=input("plan.reconcile",{runId:x.record.runId});const accepted=await f.service.invoke(e);assert.equal(accepted.receipt.state,"running",JSON.stringify(accepted));
+      const req=f.env.inFlightRequests.find(r=>r.path==="/tools/call");assert.equal(req.body.arguments.originalRequestId,old.requestId);
+      // Backend lookup inside the currently held controller is passive and never takes a second lock.
+      const claim=control.acquireControllerLock(f.directory,e.requestId);try{assert.equal((await f.service.readRecoveryLinkage(old.requestId)).local.signature,x.local.signature);}finally{claim.release();}
+      req.respond(200,{result:{content:[{text:JSON.stringify({schema:"ae-agent-plan-reconciliation.v1",runId:x.record.runId,status:"incomplete",generatedExportRecovery:server,replayAllowed:false})}]}});
+      return f.service.getResult(e.requestId);
+    }
+    const first=await reconcile();assert.equal(first.ok,false);assert.equal(f.env.api.state().reconciliationRequired,false,"Server + panel saved before projection failure");assert.equal(control.loadDurableReceipt(f.directory,old.requestId).recoveryReference,undefined);
+    f.reload();assert.equal(f.env.api.state().reconciliationRequired,true,"Reload invalidates cached server proof");
+    const file=recovery.fileFor(root,x.record.runId,old.requestId),bytes=fs.readFileSync(file);fs.unlinkSync(file);
+    await reconcile(null);assert.equal(f.env.api.state().reconciliationRequired,true);assert.equal((await f.service.invoke(input())).code,"transport_reconciliation_required");
+    fs.writeFileSync(file,"{corrupt");await reconcile(null);assert.equal(f.env.api.state().reconciliationRequired,true);assert.equal((await f.service.invoke(input())).code,"transport_reconciliation_required");
+    fs.writeFileSync(file,bytes);failProjection=false;assert.equal((await reconcile()).ok,true);assert.equal(f.env.api.state().reconciliationRequired,false);
+    const historical=await f.service.getResult(old.requestId);assert.equal(historical.receipt.state,"unknown");assert.equal(historical.receipt.recovery.sha256,saved.sha256);assert.equal(control.loadDurableReceipt(f.directory,old.requestId).recoveryReference.sha256,saved.sha256);
+    const sends=f.sends();assert.equal((await f.service.invoke(old)).receipt.state,"unknown");assert.equal(f.sends(),sends,"Old invocation never dispatches again");assert.equal((await f.service.invoke(input())).ok,true);
+    const foreignId=crypto.randomUUID();control.saveDurableReceipt(f.directory,{...clone(x.local),requestId:foreignId,signature:"c".repeat(64),runId:crypto.randomUUID()});assert.equal((await f.service.invoke(input())).code,"transport_reconciliation_required","Other unknown identities retain their barrier");
+    const lock=control.acquireControllerLock(f.directory,foreignId);try{assert.equal((await f.service.invoke(input())).code,"transport_busy");assert(fs.existsSync(path.join(f.directory,"controller.lock")));}finally{lock.release();}
+    assert.equal(f.env.requestHistory.filter(r=>r.path==="/agents/plan/run").length,0);
+  });
   await test("strict validation precedes paths/writes/CDP, no ignored options/accessors/coercion",async()=>{
     const f=fixture("strict"),good=input();
     const invalid=[

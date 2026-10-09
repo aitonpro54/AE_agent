@@ -729,7 +729,7 @@
         }
       },
       affectedInputs: ["reconcilePlanRunButton"],
-      outputFields: ["reconciliation"]
+      outputFields: ["reconciliation", "admissionGuardReleased", "terminalEvidenceRequired"]
     },
     {
       name: "plan.devRequest",

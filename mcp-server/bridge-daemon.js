@@ -12629,7 +12629,7 @@ const tools = [
 ];
 
 tools.push({name:"get_property_value",description:"Read one exact property by stable comp/layer IDs and composite propertyPath; optional time includes the exact key sample. No mutation.",inputSchema:{type:"object",additionalProperties:false,properties:{compItemId:{type:"integer",minimum:1},layerId:{type:"integer",minimum:1},propertyPath:{type:"array",minItems:1,maxItems:12,items:{type:["string","number","object"]}},time:{type:"number"}},required:["compItemId","layerId","propertyPath"]}});
-tools.push({name:"reconcile_plan_run",description:"Read actual state for a server-stored failed/uncertain plan run. Returns applied/not_applied/unknown per step and preserves the execution error. Never replays mutations.",inputSchema:{type:"object",additionalProperties:false,properties:{runId:{type:"string"},stepIndices:{type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}}},required:["runId"]}});
+tools.push({name:"reconcile_plan_run",description:"Read actual state for a server-stored failed/uncertain plan run. Returns applied/not_applied/unknown per step and preserves the execution error. Never replays mutations.",inputSchema:{type:"object",additionalProperties:false,properties:{runId:{type:"string"},originalRequestId:{type:"string",description:"Exact original panel request UUID selector; no client evidence is accepted."},stepIndices:{type:"array",minItems:1,maxItems:50,items:{type:"integer",minimum:1}}},required:["runId"]}});
 
 // Persistent IDs supplement address hints on existing typed surfaces.
 for (const tool of tools) {
@@ -12761,7 +12761,8 @@ async function callTool(name, args, executionContext) {
     }catch(error){return toolResult({ok:false,code:error.code || error.message,error:error.message,replayAllowed:false,recovery:"Read native source/load evidence and the command lifecycle; never repeat an unknown reload."},true);}
   }
   if(name === "reconcile_plan_run") {
-    if(Object.keys(args).some(key=>!["runId","stepIndices"].includes(key))) throw new Error("reconciliation_client_evidence_forbidden");
+    if(Object.keys(args).some(key=>!["runId","stepIndices","originalRequestId"].includes(key))) throw new Error("reconciliation_client_evidence_forbidden");
+    if(args.originalRequestId!==undefined && (!planRunRecords.ID.test(args.originalRequestId) || args.stepIndices!==undefined)) throw new Error("recovery_whole_request_selector_required");
     const runId=optionalString(args,"runId","");
     const record=planRunRecords.readRecord(LOG_DIR,runId);
     if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
@@ -12771,7 +12772,7 @@ async function callTool(name, args, executionContext) {
     const freshReadSteps=[];
     const deadline=Date.now()+60000;
     const read=async(request)=>{
-      try { const value=await callToolLogged("plan-reconciliation-read",request.tool,request.args);freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
+      try { const value=await callToolLogged("plan-reconciliation-read",request.tool,request.args);freshReadSteps.push({index:freshReadSteps.length+1,readId:crypto.randomUUID(),tool:request.tool,args:request.args,status:value.isError?"failed":"completed",result:firstToolPayload(value)}); }
       catch(error){freshReadSteps.push({index:freshReadSteps.length+1,tool:request.tool,args:request.args,status:"failed",error:error.message,errorCode:error.code});}
     };
     await read({tool:"get_project_info",args:{}});
@@ -12794,6 +12795,24 @@ async function callTool(name, args, executionContext) {
     const result=helper.reconcilePlanRun({record,freshReadSteps,commandStates,project:{file:actual && actual.file}});
     if(selected) result.steps=result.steps.filter(step=>selected.includes(step.index));
     result.runId=runId;
+    if(args.originalRequestId!==undefined){
+      const recovery=require("./generated-export-recovery");
+      try{
+        const known=new Set(commandStates.map(c=>c.id));
+        for(const retained of completedResults.values())if(retained.command?.executionId===runId && !known.has(retained.id))commandStates.push({...retained.command,id:retained.id,ok:retained.ok,result:retained.result});
+        const original=await panelControlService.readRecoveryLinkage(args.originalRequestId);
+        const stored=recovery.readReceipt(LOG_DIR,runId,args.originalRequestId);
+        if(stored){
+          recovery.validateStoredBinding(stored,record,original.local);
+          recovery.validateLinkage(record,original.local,original.remote);
+          recovery.validateFresh(record,recovery.inspectRecord(record),freshReadSteps,commandStates,getBridgeStatus());
+          result.generatedExportRecovery=stored;
+        }else{
+          const adjudicated=await recovery.adjudicate({record,local:original.local,remote:original.remote,freshReadSteps,commandStates,busy:getBridgeStatus(),exportRoot:GENERATED_EXPORT_DIR,runtimeIdentity:RUNTIME_IDENTITY});
+          result.generatedExportRecovery=recovery.writeReceipt(LOG_DIR,adjudicated);
+        }
+      }catch(error){result.generatedExportRecoveryFailure={code:error.code || error.message,replayAllowed:false};}
+    }
     if(record.plan && record.plan.montagePipeline) {
       result.montageReadBack = await buildPostRunMontageReadBack(record, actual);
     }
@@ -15259,6 +15278,7 @@ async function callTool(name, args, executionContext) {
         workAreaDuration: comp.workAreaDuration,
         frameRate: comp.frameRate,
         displayStartTime: comp.displayStartTime,
+        resolutionFactor: comp.resolutionFactor ? [comp.resolutionFactor[0], comp.resolutionFactor[1]] : null,
         displayStartFrame: displayStartFrame,
         displayStartFrameSupported: displayStartFrameSupported,
         preserveNestedFrameRate: !!comp.preserveNestedFrameRate,

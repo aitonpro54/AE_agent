@@ -217,6 +217,7 @@ function createPanelControlService(options={}) {
   exact(options,["stateDir","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt"]);
   if(options.cdpPort!==undefined && options.cdpPort!==DEFAULT_CDP_PORT) throw problem("fixed_cdp_port_required");
   const directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
+  const recoveryLogDir=path.dirname(directory),recovery=require("./generated-export-recovery"),runRecords=require("./plan-run-records");
   const inspect=options.inspectInstalledTarget || bootstrap.inspectInstalledTarget,fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
   const evaluate=options.evaluateViaCdp || evaluateViaWebSocket,persist=options.persistReceipt || saveDurableReceipt;
   async function resolveTarget(budget) {
@@ -228,6 +229,34 @@ function createPanelControlService(options={}) {
     if(!plain(value) || value.ok!==true || !Object.hasOwn(value,"value")) throw problem("panel_response_invalid");return value.value;
   }
   async function read(method,args,budget) {const {target}=await resolveTarget(budget);return methodAt(target,method,args,budget);}
+  // No controller lock here: a reconcile handler can run inside a held invoke.
+  async function readRecoveryLinkage(id) {
+    requestId(id);const local=loadDurableReceipt(directory,id);
+    if(!local || local.phase==="receipt_storage")throw problem("recovery_original_transport_missing_or_corrupt");
+    const remote=remoteReceipt(await read("getResult",id,5000),id,local);
+    return {local,remote};
+  }
+  function projectedRecoveryValid(row) {
+    try {
+      const ref=row.recoveryReference;if(!ref || ref.schema!==recovery.SCHEMA || ref.originalRequestId!==row.requestId || ref.runId!==row.runId)return false;
+      const saved=recovery.readReceipt(recoveryLogDir,row.runId,row.requestId);
+      if(!saved || ref.sha256!==saved.sha256 || ref.recoveryId!==saved.receipt.recoveryId)return false;
+      recovery.validateStoredBinding(saved,runRecords.readRecord(recoveryLogDir,row.runId,{throwOnError:true}),row);
+      return true;
+    }catch(_){return false;}
+  }
+  async function projectRecovery(row) {
+    if(row.action!=="plan.reconcile" || row.state!=="completed")return;
+    const candidate=row.result?.reconciliation?.generatedExportRecovery;
+    if(!candidate)return;
+    const value=recovery.validateEnvelope(candidate),original=await readRecoveryLinkage(value.originalRequestId);
+    const saved=recovery.readReceipt(recoveryLogDir,value.runId,value.originalRequestId);
+    if(!saved || saved.sha256!==candidate.sha256 || original.remote.recovery?.sha256!==saved.sha256)throw problem("recovery_panel_adoption_or_server_receipt_missing");
+    recovery.validateStoredBinding(saved,runRecords.readRecord(recoveryLogDir,value.runId,{throwOnError:true}),original.local);
+    const adopted={...original.local,recoveryReference:{schema:recovery.SCHEMA,originalRequestId:value.originalRequestId,runId:value.runId,recoveryId:value.recoveryId,sha256:saved.sha256}};
+    persist(directory,adopted);
+    if(!projectedRecoveryValid(loadDurableReceipt(directory,adopted.requestId)))throw problem("recovery_projection_persistence_failed");
+  }
   async function catalog(timeoutMs=5000) {try {const budget=timeout(timeoutMs,5000);return {ok:true,protocolVersion:PROTOCOL_VERSION,
     actions:remoteCatalog(await read("catalog",undefined,budget))};}catch(error){return responseError(error);}}
   async function state(args={},timeoutMs=5000) {try {exact(args,[]);const budget=timeout(timeoutMs,5000);return {ok:true,
@@ -248,7 +277,7 @@ function createPanelControlService(options={}) {
             // Exact request terminal evidence retires an orphan; never take over a live owner.
             persist(directory,updated);
             if(readLock(directory)?.token===owner.token && deadProcess(owner.pid)) fs.unlinkSync(path.join(directory,"controller.lock"));
-          } else {lock=acquireControllerLock(directory,id);persist(directory,updated);}
+          } else {lock=acquireControllerLock(directory,id);persist(directory,updated);await projectRecovery(updated);}
         }catch(error){if(error.code!=="transport_busy")return responseError(problem("receipt_persistence_failed"),
           {...updated,state:"unknown",delivery:"unknown",code:"receipt_persistence_failed"});}
         finally{if(lock)lock.release();}
@@ -288,7 +317,7 @@ function createPanelControlService(options={}) {
         const prior=loadDurableReceipt(directory,previous);
         const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
         if(!prior || /^(accepted|running|unknown)$/.test(prior.state) &&
-           (storageUnproven || !PASSIVE_ACTIONS.has(prior.action))) unresolved.push(prior);
+           (storageUnproven || !PASSIVE_ACTIONS.has(prior.action)) && !projectedRecoveryValid(prior)) unresolved.push(prior);
       }
       if(unresolved.length && !PASSIVE_ACTIONS.has(envelope.action) && envelope.action!=="connector.emergencyDisable" &&
           !(envelope.action==="plan.reconcile" && unresolved.some(prior=>prior?.runId===envelope.args.runId))) throw problem("transport_reconciliation_required");
@@ -304,7 +333,7 @@ function createPanelControlService(options={}) {
       record.binding=binding;record.panelInstanceId=binding.panelInstanceId;record.epoch=binding.panelLifecycleEpoch;record.generation=binding.panelGeneration;
       record.state="running";record.phase="submitted";record.delivery="submitted";persist(directory,record);sent=true;
       const value=await methodAt(checked.target,"invoke",bound,budget(),binding),verified=remoteReceipt(value,id,{action:envelope.action,binding});
-      record={...record,...verified,signature,delivery:"delivered"};persist(directory,record);
+      record={...record,...verified,signature,delivery:"delivered"};persist(directory,record);await projectRecovery(record);
     }catch(error) {
       if(record) {
         record={...record,state:sent?"unknown":"rejected",phase:sent?"delivery_unknown":"admission",code:error.code || "receipt_persistence_failed",
@@ -325,7 +354,7 @@ function createPanelControlService(options={}) {
       throw problem("unknown_tool");
     }catch(error){return responseError(error);}
   }
-  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool});
+  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage});
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
