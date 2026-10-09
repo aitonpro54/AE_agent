@@ -68,13 +68,86 @@ function nativeSnapshot(a) {
   if (typeof app.project.revision !== "number" || !isFinite(app.project.revision))bad("project_revision_unavailable");
   var rq=app.project.renderQueue;
   if (rq.rendering || rq.numItems>200)bad("queue_busy_or_too_large");
-  var root=comp(a.rootCompItemId), target=comp(a.variantCompItemId), nodes=[], layerTotal=0, visits=0, occurrences=0, controlled=[], queue=[], i,j,k;
+  var root=comp(a.rootCompItemId), target=comp(a.variantCompItemId), nodes=[], layerTotal=0, visits=0, occurrences=0, controlled=[], queue=[], bindings=[], producers=[], bindingKeys=[], definitionKeys=0, i,j,k;
+  function contains(arr,id){var n;for(n=0;n<arr.length;n++)if(arr[n]===id)return true;return false;}
+  function number(v){if(typeof v!=="number" || !isFinite(v))bad("matte_definition_unavailable");return v;}
+  function readBool(v){if(typeof v!=="boolean")bad("matte_definition_unavailable");return v;}
+  function value(v){var n,out=[];if(typeof v==="number")return number(v);if(!v || Object.prototype.toString.call(v)!=="[object Array]" || !v.length || v.length>3)bad("matte_definition_unsupported");for(n=0;n<v.length;n++)out.push(number(v[n]));return out;}
+  function ease(v){var n,out=[];if(!v || typeof v.length!=="number" || !v.length || v.length>3)bad("matte_definition_unavailable");for(n=0;n<v.length;n++)out.push({speed:number(v[n].speed),influence:number(v[n].influence)});return out;}
+  function definition(p){
+    var n,row,keys=[],count,expression,spatial;
+    if(!p || typeof p.numKeys!=="number" || p.numKeys<0 || p.numKeys!==Math.floor(p.numKeys) || p.numKeys>2000)bad("matte_definition_unavailable");
+    count=p.numKeys;definitionKeys+=count;if(definitionKeys>12000)bad("matte_definition_too_large");spatial=readBool(p.isSpatial);
+    if(readBool(p.canSetExpression)){if(typeof p.expression!=="string")bad("matte_definition_unavailable");expression=p.expression;}else expression="";
+    row={numKeys:count,expressionEnabled:readBool(p.expressionEnabled),expression:expression,isSpatial:spatial};
+    if(row.expressionEnabled && (!p.canSetExpression || !expression || typeof p.expressionError!=="string" || p.expressionError))bad("matte_expression_unavailable");
+    for(n=1;n<=count;n++){
+      var key={time:number(p.keyTime(n)),value:value(p.keyValue(n)),inType:String(p.keyInInterpolationType(n)),outType:String(p.keyOutInterpolationType(n)),inEase:ease(p.keyInTemporalEase(n)),outEase:ease(p.keyOutTemporalEase(n)),temporalContinuous:readBool(p.keyTemporalContinuous(n)),temporalAutoBezier:readBool(p.keyTemporalAutoBezier(n))};
+      if(!key.inType || !key.outType || key.inType==="undefined" || key.outType==="undefined")bad("matte_definition_unavailable");
+      if(spatial){key.inSpatial=value(p.keyInSpatialTangent(n));key.outSpatial=value(p.keyOutSpatialTangent(n));key.roving=readBool(p.keyRoving(n));key.spatialContinuous=readBool(p.keySpatialContinuous(n));key.spatialAutoBezier=readBool(p.keySpatialAutoBezier(n));}
+      keys.push(key);
+    }
+    if(count)row.keys=keys;
+    // With no keys the pre-expression base is constant. Never sample comp.time or a rendered expression value.
+    else row.value=value(row.expressionEnabled ? p.valueAtTime(0,true) : p.value);
+    return row;
+  }
+  function layerDefinition(l){
+    var group=l.property("ADBE Transform Group"),names=["ADBE Anchor Point","ADBE Position","ADBE Scale","ADBE Rotate Z","ADBE Opacity"],rows=[],n,p;
+    if(!group || l.parent || readBool(l.threeDLayer))bad("matte_transform_unsupported");
+    for(n=0;n<names.length;n++){p=group.property(names[n]);if(names[n]==="ADBE Position" && (!p || p.dimensionsSeparated!==false))bad("matte_transform_unsupported");rows.push({matchName:names[n],definition:definition(p)});}
+    var row={startTime:number(l.startTime),inPoint:number(l.inPoint),outPoint:number(l.outPoint),stretch:number(l.stretch),timeRemapEnabled:readBool(l.timeRemapEnabled),threeDLayer:false,collapseTransformation:readBool(l.collapseTransformation),transform:rows};
+    if(row.outPoint<=row.inPoint || row.stretch===0)bad("matte_timing_unsupported");
+    if(row.timeRemapEnabled)row.timeRemap=definition(l.property("ADBE Time Remapping"));
+    return row;
+  }
+  function sourceDefinition(s){
+    if(!(s instanceof CompItem) || typeof s.id!=="number" || s.id<1 || s.useProxy!==false)bad("matte_source_unsupported");
+    return {id:s.id,name:String(s.name),type:"comp",width:number(s.width),height:number(s.height),pixelAspect:number(s.pixelAspect),duration:number(s.duration),frameDuration:number(s.frameDuration),displayStartTime:number(s.displayStartTime),useProxy:false};
+  }
+  function footageDefinition(s){
+    if(typeof FootageItem==="undefined" || !(s instanceof FootageItem) || typeof s.id!=="number" || s.id<1 || s.useProxy!==false || s.footageMissing!==false || !s.file || !s.file.fsName || !s.mainSource)bad("matte_consumer_source_unsupported");
+    var main=s.mainSource,row={id:s.id,name:String(s.name),type:"footage",file:String(s.file.fsName),width:number(s.width),height:number(s.height),pixelAspect:number(s.pixelAspect),duration:number(s.duration),frameRate:number(s.frameRate),hasVideo:readBool(s.hasVideo),hasAudio:readBool(s.hasAudio),footageMissing:false,useProxy:false,isStill:readBool(main.isStill),hasAlpha:readBool(main.hasAlpha)};
+    if(row.hasAlpha){if(main.alphaMode===undefined)bad("matte_consumer_source_unsupported");row.alphaMode=String(main.alphaMode);row.premulColor=value(main.premulColor);row.invertAlpha=readBool(main.invertAlpha);}
+    return row;
+  }
+  function registeredProducer(c,l){var n;for(n=0;n<producers.length;n++)if(producers[n].ownerCompItemId===c.id && producers[n].layer===l)return true;return false;}
+  // Local first pass in each visited comp. Permission is exact owner/layer identity, never shared source identity.
+  function deriveBindings(c){
+    var n,m,fill,isControlled,producer,found,producerIdCount,fillIdCount,producerIndex,key,row,producerRow;
+    for(n=1;n<=c.numLayers;n++){
+      fill=c.layer(n);isControlled=c.id===target.id && contains(a.controlledLayerIds,fill.id);
+      if(isControlled){
+        if(!(fill instanceof TextLayer))bad("controlled_layer_not_text");
+        if(fill.guideLayer || fill.locked || fill.isTrackMatte)bad("controlled_flags_unsupported");
+        if(fill.hasTrackMatte!==true){if(fill.hasTrackMatte || fill.trackMatteLayer || (fill.trackMatteType!==undefined && fill.trackMatteType!==TrackMatteType.NO_TRACK_MATTE))bad("controlled_flags_unsupported");continue;}
+      }else{
+        // Preserve previously allowed footage/shape producers without introducing dependencies or new restrictions.
+        if(fill.hasTrackMatte!==true || !fill.trackMatteLayer || !(fill.trackMatteLayer.source instanceof CompItem))continue;
+        if(typeof AVLayer==="undefined" || !(fill instanceof AVLayer) || typeof FootageItem==="undefined" || !(fill.source instanceof FootageItem) || fill.isTrackMatte!==false)bad("immutable_matte_consumer_unsupported");
+      }
+      if(typeof TrackMatteType.ALPHA==="undefined" || fill.trackMatteType!==TrackMatteType.ALPHA)bad("controlled_matte_type_unsupported");
+      producer=fill.trackMatteLayer;found=0;producerIdCount=0;fillIdCount=0;producerIndex=0;
+      if(!producer || typeof producer.id!=="number" || producer.id<1)bad("controlled_matte_link_unavailable");
+      for(m=1;m<=c.numLayers;m++){if(c.layer(m).id===fill.id)fillIdCount++;if(c.layer(m).id===producer.id)producerIdCount++;if(c.layer(m)===producer){found++;producerIndex=m;}}
+      if(found!==1 || producerIdCount!==1 || fillIdCount!==1 || fill.trackMatteLayer!==producer || producer===fill || c.id===target.id && contains(a.controlledLayerIds,producer.id))bad("controlled_matte_link_unsupported");
+      if(typeof AVLayer==="undefined" || !(producer instanceof AVLayer) || producer.hasTrackMatte!==false || producer.isTrackMatte!==true || producer.trackMatteType!==TrackMatteType.NO_TRACK_MATTE || producer.trackMatteLayer!==null || readBool(producer.solo) || readBool(producer.guideLayer) || readBool(producer.locked))bad("matte_producer_flags_unsupported");
+      key=c.id+":"+fill.id;if(contains(bindingKeys,key))continue;
+      producerRow={id:producer.id,index:producerIndex,name:String(producer.name),enabled:readBool(producer.enabled),solo:false,guide:false,locked:false,hasTrackMatte:false,isTrackMatte:true,trackMatteType:"none",trackMatteLayerId:null,source:sourceDefinition(producer.source),definition:layerDefinition(producer)};
+      row={ownerCompItemId:c.id,consumerLayerId:fill.id,consumerRole:isControlled ? "controlled_text" : "immutable_footage",trackMatteType:"alpha",trackMatteLayerId:producer.id,producer:producerRow};
+      if(isControlled){row.controlledLayerId=fill.id;row.controlledLayerIndex=n;row.controlledDefinition=layerDefinition(fill);}
+      else row.consumer={id:fill.id,index:n,name:String(fill.name),enabled:readBool(fill.enabled),solo:readBool(fill.solo),guide:readBool(fill.guideLayer),locked:readBool(fill.locked),hasTrackMatte:true,isTrackMatte:false,source:footageDefinition(fill.source),definition:layerDefinition(fill)};
+      bindings.push(row);bindingKeys.push(key);
+      if(!registeredProducer(c,producer))producers.push({ownerCompItemId:c.id,layer:producer});
+    }
+  }
   function walk(c, stack, live) {
     var n,l,rows=[],next=[],x;
     visits++; if(visits>100)bad("comp_graph_too_large");
     for(n=0;n<stack.length;n++)if(stack[n]===c.id)bad("cyclic_comp_graph");
     if(c.id===target.id){occurrences++; if(!live)bad("variant_path_disabled");}
     for(n=0;n<stack.length;n++)next.push(stack[n]); next.push(c.id);
+    deriveBindings(c);
     for(n=1;n<=c.numLayers;n++){
       l=c.layer(n);layerTotal++; if(layerTotal>1000)bad("layer_graph_too_large");
       if(typeof l.id!=="number" || l.id<1)bad("layer_identity_unavailable");
@@ -83,13 +156,12 @@ function nativeSnapshot(a) {
       if(c.id===target.id){
         for(x=0;x<a.controlledLayerIds.length;x++)if(l.id===a.controlledLayerIds[x]){
           if(!(l instanceof TextLayer))bad("controlled_layer_not_text");
-          if(l.guideLayer || l.locked || l.hasTrackMatte || l.isTrackMatte || (l.trackMatteType!==undefined && l.trackMatteType!==TrackMatteType.NO_TRACK_MATTE))bad("controlled_flags_unsupported");
           if(l.property("ADBE Text Properties").property("ADBE Text Document").expressionEnabled)bad("text_expression_unsupported");
           controlled.push({id:l.id,index:n,name:String(l.name),enabled:l.enabled===true,text:String(l.property("ADBE Text Properties").property("ADBE Text Document").value.text)});
         }
       }
       if(l.source instanceof CompItem){
-        if(l.guideLayer || l.locked || l.hasTrackMatte || l.isTrackMatte || (l.trackMatteType!==undefined && l.trackMatteType!==TrackMatteType.NO_TRACK_MATTE))bad("comp_path_flags_unsupported");
+        if(l.guideLayer || l.locked || l.hasTrackMatte || (l.isTrackMatte && !registeredProducer(c,l)) || (l.trackMatteType!==undefined && l.trackMatteType!==TrackMatteType.NO_TRACK_MATTE))bad("comp_path_flags_unsupported");
         walk(l.source,next,live && l.enabled===true);
       }
     }
@@ -98,6 +170,7 @@ function nativeSnapshot(a) {
   walk(root,[],true);
   if(occurrences!==1 || controlled.length!==a.controlledLayerIds.length)bad("variant_not_uniquely_reachable_or_missing_layers");
   controlled.sort(function(a,b){return a.id-b.id;});
+  bindings.sort(function(a,b){return a.ownerCompItemId-b.ownerCompItemId || a.consumerLayerId-b.consumerLayerId;});
   var rt=[],ot=[],item,om;
   for(i=1;i<=rq.numItems;i++){
     item=rq.item(i); var outputs=[];
@@ -105,10 +178,12 @@ function nativeSnapshot(a) {
     queue.push({index:i,compItemId:item.comp.id,render:item.render===true,status:String(item.status),start:item.timeSpanStart,duration:item.timeSpanDuration,outputs:outputs});
     if(i===1){for(k=0;k<item.templates.length;k++)rt.push(String(item.templates[k]));om=item.outputModule(1);for(k=0;k<om.templates.length;k++)ot.push(String(om.templates[k]));}
   }
-  return {projectFile:String(app.project.file.fsName),revision:app.project.revision,rootCompItemId:root.id,variantCompItemId:target.id,frameDuration:root.frameDuration,duration:root.duration,controlled:controlled,graph:nodes,queue:queue,templates:{renderSettings:rt,outputModule:ot,gap:rq.numItems ? null : "existing_queue_template_carrier_required"}};
+  var snapshot={projectFile:String(app.project.file.fsName),revision:app.project.revision,rootCompItemId:root.id,variantCompItemId:target.id,frameDuration:root.frameDuration,duration:root.duration,controlled:controlled,graph:nodes,queue:queue,templates:{renderSettings:rt,outputModule:ot,gap:rq.numItems ? null : "existing_queue_template_carrier_required"}};
+  if(bindings.length)snapshot.matteDependencies=bindings;
+  return snapshot;
 }
 function nativeRender(a, baseline, outputPath, attemptId) {
-  var before, owned=null, oldQueue=[], oldLayers=[], rq=app.project.renderQueue, target=null, i,j,l,error=null,invoked=false,terminal=null,restoreErrors=[],phase="before_delivery";
+  var before, owned=null, oldQueue=[], oldLayers=[], rq=app.project.renderQueue, target=null, i,j,l,error=null,invoked=false,terminal=null,restoreErrors=[],phase="before_delivery",matteUnchanged=true;
   function norm(p){return String(p || "").replace(/\\/g,"/").toLowerCase();}
   function contains(arr,v){var n;for(n=0;n<arr.length;n++)if(arr[n]===v)return true;return false;}
   function equal(left,right){
@@ -151,6 +226,10 @@ function nativeRender(a, baseline, outputPath, attemptId) {
     owned.render=true;invoked=true;rq.render();
     terminal=owned.status===RQItemStatus.DONE ? "DONE" : String(owned.status);
     if(terminal!=="DONE")throw new Error("native_render_not_done");
+    if(baseline.matteDependencies){
+      var rendered=nativeSnapshot(a);
+      if(!equal(rendered.matteDependencies,baseline.matteDependencies)){matteUnchanged=false;throw new Error("matte_dependency_drift_after_render");}
+    }
   } catch(e) { error=String(e.message || e); }
   finally {
     if(owned){try{owned.render=false;}catch(e0){restoreErrors.push("owned_disable_failed");}}
@@ -159,16 +238,27 @@ function nativeRender(a, baseline, outputPath, attemptId) {
     for(i=0;i<oldLayers.length;i++)if(oldLayers[i].layer.enabled!==oldLayers[i].enabled)restoreErrors.push("layer_restore_mismatch");
     for(i=0;i<oldQueue.length;i++)if(rq.item(i+1)!==oldQueue[i].item || oldQueue[i].item.render!==oldQueue[i].render)restoreErrors.push("queue_restore_mismatch");
     if(owned && (owned.render!==false || rq.item(rq.numItems)!==owned || rq.numItems!==oldQueue.length+1))restoreErrors.push("owned_identity_or_disable_mismatch");
+    if(baseline.matteDependencies){
+      try{if(!equal(nativeSnapshot(a).matteDependencies,baseline.matteDependencies)){matteUnchanged=false;restoreErrors.push("matte_dependency_drift_after_restore");}}
+      catch(e3){matteUnchanged=false;restoreErrors.push("matte_dependency_read_failed_after_restore");}
+    }
   }
-  return {schema:"ae-agent-native-title-render.v1",attemptId:attemptId,ok:!error && restoreErrors.length===0,phase:phase,error:error,renderInvoked:invoked,terminal:terminal,nativeDoneStatus:String(RQItemStatus.DONE),ownedStatusAfterRestore:owned ? String(owned.status) : null,restored:restoreErrors.length===0,restoreErrors:restoreErrors,ownedQueueIndex:owned ? rq.numItems : null,ownedDisabled:owned ? owned.render===false : null,outputPath:outputPath,rootCompItemId:a.rootCompItemId,variantCompItemId:a.variantCompItemId,variantId:a.variantId,activeLayerIds:a.activeLayerIds,range:a.range,renderSettingsTemplate:a.renderSettingsTemplate,outputModuleTemplate:a.outputModuleTemplate};
+  var receipt={schema:"ae-agent-native-title-render.v1",attemptId:attemptId,ok:!error && restoreErrors.length===0,phase:phase,error:error,renderInvoked:invoked,terminal:terminal,nativeDoneStatus:String(RQItemStatus.DONE),ownedStatusAfterRestore:owned ? String(owned.status) : null,restored:restoreErrors.length===0,restoreErrors:restoreErrors,ownedQueueIndex:owned ? rq.numItems : null,ownedDisabled:owned ? owned.render===false : null,outputPath:outputPath,rootCompItemId:a.rootCompItemId,variantCompItemId:a.variantCompItemId,variantId:a.variantId,activeLayerIds:a.activeLayerIds,range:a.range,renderSettingsTemplate:a.renderSettingsTemplate,outputModuleTemplate:a.outputModuleTemplate};
+  if(baseline.matteDependencies){receipt.matteDependencies=baseline.matteDependencies;receipt.matteDependenciesUnchanged=matteUnchanged;}
+  return receipt;
 }
 const literal = v => JSON.stringify(v).replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
 function inspectScript(a) { return `var nativeSnapshot=${nativeSnapshot.toString()};return nativeSnapshot(${literal(a)});`; }
 function renderScript(a, baseline, output, attempt) { return `var nativeSnapshot=${nativeSnapshot.toString()};var nativeRender=${nativeRender.toString()};return nativeRender(${literal(a)},${literal(baseline)},${literal(output)},${literal(attempt)});`; }
 function unwrap(v) { return v && Object.prototype.hasOwnProperty.call(v,"result") ? v.result : v; }
+function sameMatteDependencies(left,right) {
+  const l=left && Object.prototype.hasOwnProperty.call(left,"matteDependencies"),r=right && Object.prototype.hasOwnProperty.call(right,"matteDependencies");
+  return l===r && (!l || Array.isArray(left.matteDependencies) && left.matteDependencies.length>0 && digest(left.matteDependencies)===digest(right.matteDependencies));
+}
 function verifyReceipt(receipt,args) {
   const a=validateInput(RENDER,args);
   if (!receipt || receipt.schema!==SCHEMA || receipt.ok!==true || receipt.renderInvoked!==true || receipt.terminal!=="DONE" || receipt.restored!==true || receipt.ownedDisabled!==true || !Number.isSafeInteger(receipt.ownedQueueIndex) || receipt.ownedQueueIndex<1 || !/^[a-f0-9]{64}$/.test(receipt.attemptId) || receipt.argsHash!==digest(a) || !samePath(receipt.projectFile,a.expectedProjectFile) || receipt.stateHash!==a.expectedStateHash || receipt.variantId!==a.variantId || receipt.rootCompItemId!==a.rootCompItemId || receipt.variantCompItemId!==a.variantCompItemId || JSON.stringify(receipt.activeLayerIds)!==JSON.stringify(a.activeLayerIds) || JSON.stringify(receipt.range)!==JSON.stringify(a.range) || receipt.renderSettingsTemplate!==a.renderSettingsTemplate || receipt.outputModuleTemplate!==a.outputModuleTemplate || path.basename(receipt.outputPath || "").toLowerCase()!==a.outputFileName.toLowerCase()) fail("native_render_invalid_receipt");
+  if(Object.prototype.hasOwnProperty.call(receipt,"matteDependencies") && (!Array.isArray(receipt.matteDependencies) || !receipt.matteDependencies.length || receipt.matteDependenciesUnchanged!==true))fail("native_render_invalid_matte_receipt");
   return true;
 }
 function inspectionArgs(args, attemptId) { const a=validateInput(RENDER,args);return {expectedProjectFile:a.expectedProjectFile,rootCompItemId:a.rootCompItemId,variantCompItemId:a.variantCompItemId,controlledLayerIds:a.controlledLayerIds,variants:[{variantId:a.variantId,activeLayerIds:a.activeLayerIds,outputFileName:a.outputFileName}],...(attemptId ? {attemptId} : {})}; }
@@ -176,6 +266,7 @@ function verifyInspection(receipt, read, args) {
   try{verifyReceipt(receipt,args);}catch(_){return false;}
   const a=validateInput(RENDER,args), attempt=read && read.attempt;
   if(!read || read.ok!==true || !attempt || attempt.attemptId!==receipt.attemptId || attempt.state!=="completed" || attempt.receiptConfirmed!==true || !samePath(read.snapshot && read.snapshot.projectFile,a.expectedProjectFile) || digest(attempt.receipt)!==digest(receipt))return false;
+  if(!sameMatteDependencies(receipt,read.snapshot) || receipt.matteDependencies && digest(read.snapshot)!==read.stateHash)return false;
   return true;
 }
 function createExecutor(deps) {
@@ -216,6 +307,9 @@ function createExecutor(deps) {
       if(record && record.receipt && record.state==="completed" && digest(inspectionArgs(record.args))===digest({...a,attemptId:undefined})) {
         const r=record.receipt,q=snapshot.queue[r.ownedQueueIndex-1],b=record.baseline;
         attempt.receiptConfirmed=Boolean(q && q.compItemId===r.rootCompItemId && q.render===false && q.status===r.ownedStatusAfterRestore && q.outputs.length===1 && samePath(q.outputs[0],r.outputPath) && Math.abs(q.start-r.range.startFrame*snapshot.frameDuration)<0.000001 && Math.abs(q.duration-r.range.frameCount*snapshot.frameDuration)<0.000001 && snapshot.queue.length===b.queue.length+1 && b.queue.every((v,i)=>snapshot.queue[i].compItemId===v.compItemId && snapshot.queue[i].render===v.render && JSON.stringify(snapshot.queue[i].outputs)===JSON.stringify(v.outputs)) && b.controlled.every(v=>snapshot.controlled.some(l=>l.id===v.id && l.enabled===v.enabled)));
+        if(b.matteDependencies || r.matteDependencies || snapshot.matteDependencies){
+          try{verifyReceipt(r,record.args);attempt.receiptConfirmed=attempt.receiptConfirmed && digest(b)===record.args.expectedStateHash && sameMatteDependencies(b,r) && sameMatteDependencies(b,snapshot);}catch(_){attempt.receiptConfirmed=false;}
+        }
       }
     }
     return {ok:true,schema:SCHEMA,snapshot,stateHash:digest(snapshot),variants:a.variants,attempt,mediaProof:"not_inspected",visualProof:"not_reviewed",alphaDxvProof:"not_verified"};
@@ -243,6 +337,7 @@ function createExecutor(deps) {
       record.state=receipt.ok ? "completed" : receipt.phase==="before_delivery" ? "rejected_before_mutation" : "failed";
       // Expected status comes from the native receipt, never from an untrusted later read.
       if(receipt.ok)verifyReceipt(receipt,a);
+      if(receipt.ok && !sameMatteDependencies(record.baseline,receipt))fail("native_render_invalid_matte_receipt");
       writeRecord(record,false);
       const read=await inspect(inspectionArgs(a,attemptId));
       if(!receipt.ok || !verifyInspection(receipt,read,a))return {ok:false,code:receipt.ok ? "native_render_readback_failed" : "native_render_failed",attemptId,renderReceipt:receipt,inspection:read,replayAllowed:false};

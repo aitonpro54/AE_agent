@@ -44,9 +44,43 @@ output modules, формат соответствует расширению. П
 Имя шаблона не подтверждает DXV, качество High или alpha.
 Нужны stable native layer IDs и `app.project.revision`. Variant comp должна
 встречаться в root graph ровно один раз, по включённому пути. Solo, controlled
-guide/locked/matte, текстовые expressions и неоднозначные графы отвергаются.
+guide/locked, текстовые expressions и неоднозначные графы отвергаются.
 Здесь проверяются ID и видимость; художественный layout требует отдельного
 просмотра кадров по действующей text-layout policy.
+
+Controlled text может иметь прямой `ALPHA` track matte через стабильный
+`trackMatteLayer` в той же variant comp. Producer должен быть отдельным
+noncontrolled слоем с source `CompItem`, `isTrackMatte=true`, без собственной
+matte-связи, solo, guide или locked. Допуск в comp graph относится только к этому
+точному producer layer в его owner comp; другой слой с тем же source остаётся
+отдельным фоном.
+Producer может быть выключен: инструмент сохраняет его `enabled` и никогда
+не переключает matte, фон, timing, transform или masks. У controlled text
+shape/text producers без source и footage producers не поддерживаются.
+
+В каждом посещённом comp выполняется такой же локальный проход для immutable
+`AVLayer` с source `FootageItem`, который напрямую использует ALPHA producer с
+source `CompItem`. Consumer также остаётся immutable; сохраняются его identity,
+enabled/roles, footage metadata (включая alpha interpretation), timing и transform
+definitions. Повторные посещения comp и несколько consumers одного producer
+дают одну dependency на пару `(ownerCompItemId, consumerLayerId)`. Связь с другим
+comp, consumer с source comp, matte chains, parent/3D/separated transforms, proxy
+source, неполные определения, другие matte types и циклы отвергаются. Прежде
+допустимые uncontrolled footage/shape producers не получают новых dependency
+полей или дополнительных ограничений: exception относится только к producer
+с source comp, которому нужен допуск в существующем comp graph.
+
+Только snapshot с указанными зависимостями получает `matteDependencies`: direct fill link/type,
+producer identity/flags/enabled, source comp metadata, timing и определения
+двумерных transform обоих слоёв. Для анимации читаются key values, interpolation,
+temporal ease и spatial metadata; expressions читаются как definitions. У static
+expression base берётся `valueAtTime(0,true)`, то есть постоянное pre-expression
+значение без keys. Текущее `comp.time` и вычисленный animated/expression value
+не используются. Legacy unmatted и ранее допустимый footage/footage matte
+snapshot и его hash сохраняют точную форму.
+Зависимости входят в `stateHash`, сверяются перед delivery, после native render,
+после восстановления и независимым exact attempt read-back с durable baseline
+и receipt. Drift не считается успешным DONE и не вызывает matte repair writes.
 
 Перед delivery сервер эксклюзивно записывает и fsync-ит per-output reservation
 с полным attempt. Она сохраняется даже после ошибки/отмены и блокирует повтор
@@ -75,4 +109,7 @@ Native body сохраняет все existing queue `render` flags и controlle
 Офлайн проверка: `npm.cmd run smoke:native-title-render`, ES3 parse + fake AE VM,
 разные группы видимости, чужая очередь, успех/error/cancel, stale preflight,
 manual auth negatives, timeout/restart/replay и строгие semantic/reconciliation
-negatives. VM и transport fixtures не доказывают живой рендер или alpha/DXV.
+negatives; direct ALPHA/shared precomp/disabled producer, nested footage consumer,
+повторные graph visits и общие producers, definition-based keys и expressions,
+ошибочные link/type/roles/cycles, dependency drift и tampered receipts.
+VM и transport fixtures не доказывают живой рендер или alpha/DXV.

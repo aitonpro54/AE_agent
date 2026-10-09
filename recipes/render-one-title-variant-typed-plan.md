@@ -9,6 +9,19 @@ controlled IDs, варианты и уникальные MOV/AVI имена. Е�
 подготовить template carrier через защищённый `add_comp_to_render_queue` и
 повторить инспекцию. Read tool сам не меняет очередь.
 
+Прямой ALPHA matte у controlled text допускается только с точным stable producer
+layer в той же comp и source `CompItem`. Producer остаётся noncontrolled,
+выключенная matte не включается, отдельный видимый фон с тем же source не меняется.
+В reachable фоновых comps допускается immutable AV footage consumer с прямым
+ALPHA producer на source comp, с той же проверкой точного owner/layer linkage.
+Несколько consumers и повторные comp visits не дублируют dependency. Прежде
+допустимые footage/shape matte producers вне controlled text сохраняют прежний
+snapshot без новых ограничений.
+При наличии таких связей `matteDependencies` автоматически входят в snapshot/hash
+и сверяются после render/restoration и независимым durable read-back. Другие matte
+types, цепочки, unsupported/incomplete definitions и drift блокируют success;
+matte/masks/timing/transform не записываются. Ручные CEP gates остаются обязательными.
+
 Для каждого варианта отдельно: project-matched checkpoint/edit session, свежий
 state hash, один typed `render_one_title_variant` с active subset, точными
 шаблонами и целочисленным frame range. Новый manual CEP proposal → current
