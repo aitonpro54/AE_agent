@@ -37,11 +37,13 @@
 
 Выход — один MOV/AVI внутри существующего generated render root. Запрещены
 абсолютные/вложенные пути, Win reserved имена, trailing dots, case aliases,
-перезапись, symlink root и image sequence templates. Поддерживаются QuickTime/AVI
-output modules, формат соответствует расширению. После применения шаблона
+перезапись, symlink root и image sequence templates. Поддерживаются QuickTime,
+AVI и точный формат `DXV 3` (сравнение без учёта регистра); DXV 3 требует `.mov`,
+AVI — `.avi`, QuickTime — `.mov`. После применения шаблона
 `postRenderAction` принудительно устанавливается в `NONE` и сверяется:
 импорт результата, замена usage и установка proxy не выполняются.
-Имя шаблона не подтверждает DXV, качество High или alpha.
+Формат `DXV 3` не подтверждает preset High или alpha; для этого нужна отдельная
+проверка фактического preset и медиа.
 Нужны stable native layer IDs и `app.project.revision`. Variant comp должна
 встречаться в root graph ровно один раз, по включённому пути. Solo, controlled
 guide/locked, текстовые expressions и неоднозначные графы отвергаются.

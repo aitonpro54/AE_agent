@@ -213,8 +213,8 @@ function nativeRender(a, baseline, outputPath, attemptId) {
     if(owned.numOutputModules!==1)throw new Error("multiple_output_modules_unsupported");
     var om=owned.outputModule(1);om.applyTemplate(a.outputModuleTemplate);
     var settings=om.getSettings(GetSettingsFormat.STRING),format=String(settings.Format || "");
-    if(!/^(quicktime|avi)$/i.test(format))throw new Error("single_movie_template_required");
-    if((/^quicktime$/i.test(format) && !/\.mov$/i.test(outputPath)) || (/^avi$/i.test(format) && !/\.avi$/i.test(outputPath)))throw new Error("movie_format_extension_mismatch");
+    if(!/^(quicktime|avi|dxv 3)$/i.test(format))throw new Error("single_movie_template_required");
+    if(((/^quicktime$/i.test(format) || /^dxv 3$/i.test(format)) && !/\.mov$/i.test(outputPath)) || (/^avi$/i.test(format) && !/\.avi$/i.test(outputPath)))throw new Error("movie_format_extension_mismatch");
     if(typeof PostRenderAction==="undefined" || PostRenderAction.NONE===undefined || om.postRenderAction===undefined)throw new Error("post_render_action_unavailable");
     om.postRenderAction=PostRenderAction.NONE;
     if(om.postRenderAction!==PostRenderAction.NONE)throw new Error("post_render_action_not_disabled");

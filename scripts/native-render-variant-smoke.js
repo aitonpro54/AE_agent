@@ -64,7 +64,7 @@ function fixture(options={}) {
   function File(p){this.fsName=p;Object.defineProperty(this,"exists",{get:()=>nativeFiles.has(p)||fs.existsSync(p)});}
   function queueItem(comp,flag){
     const om={templates:["Movie","AVI","Sequence","Dangerous"],file:new File(path.join(root,"foreign"+comp.id+".mov")),postRenderAction:0,
-      applyTemplate(t){this.format=t==="AVI" ? "AVI" : t==="Sequence" ? "PNG Sequence" : "QuickTime";if(t==="Dangerous")this.postRenderAction=1;if(options.templateError)throw Error("template error");},getSettings(){return {Format:this.format||"QuickTime"};}};
+      applyTemplate(t){this.format=options.outputFormat || (t==="AVI" ? "AVI" : t==="Sequence" ? "PNG Sequence" : "QuickTime");if(t==="Dangerous")this.postRenderAction=1;if(options.templateError)throw Error("template error");},getSettings(){return {Format:this.format||"QuickTime"};}};
     return {comp,render:flag,status:"QUEUED",templates:["Best Settings"],numOutputModules:1,timeSpanStart:0,timeSpanDuration:2,outputModule:()=>om,applyTemplate(){if(options.renderTemplateError)throw Error("render template error");}};
   }
   const items=[queueItem(rootComp,true),queueItem(other,false)],original=items.slice();
@@ -198,7 +198,14 @@ async function main(){
   const restart=native.createExecutor(deps),again=await renderArgs(restart);await assert.rejects(restart.execute(again,grant(restart)),/reserved_replay_blocked/);check(f.samples.length===2,"restart duplicate never delivered");
   for(const mode of ["error","cancel","templateError"]){const fx=fixture({[mode]:true}),e=executor(fx,mode).exec;const args=await renderArgs(e);const r=await e.execute(args,grant(e));check(!r.ok,"failure not native success");restored(fx);check(fx.items.length===3,"failure keeps exactly one owned item");}
   const dangerous=fixture(),de=executor(dangerous,"post").exec,da={...await renderArgs(de),outputModuleTemplate:"Dangerous"};const dr=await de.execute(da,grant(de));check(dr.ok && dangerous.samples[0].post===0,"dangerous postrender template forced NONE");
-  for(const tpl of ["AVI","Sequence"]){const fx=fixture(),e=executor(fx,"format"+tpl).exec;const r=await e.execute({...await renderArgs(e),outputModuleTemplate:tpl},grant(e));check(!r.ok && fx.samples.length===0,"format/extension sequence rejected before render");restored(fx);}
+  const dxv=fixture({outputFormat:"DXV 3"}),dxvExec=executor(dxv,"format-dxv3").exec,dxvResult=await dxvExec.execute(await renderArgs(dxvExec),grant(dxvExec));
+  check(dxvResult.ok && dxv.samples.length===1,"exact DXV 3 format accepts one MOV render");restored(dxv);
+  for(const [label,options,outputFileName,outputModuleTemplate] of [
+    ["dxv-avi",{outputFormat:"DXV 3"},"bad.avi","Movie"],
+    ["other-dxv",{outputFormat:"Other DXV"},"other.mov","Movie"],
+    ["sequence",{},"sequence.mov","Sequence"],
+    ["avi",{},"avi.mov","AVI"]
+  ]){const fx=fixture(options),e=executor(fx,"format"+label).exec;const r=await e.execute({...await renderArgs(e),outputFileName,outputModuleTemplate},grant(e));check(!r.ok && fx.samples.length===0,"unsupported format or extension rejected before render: "+label);restored(fx);}
   const stale=fixture(),se=executor(stale,"stale").exec,sa=await renderArgs(se);stale.project.revision++;await assert.rejects(se.execute(sa,grant(se)),/stale_state/);check(stale.items.length===2,"stale native no mutation");
   const freshStale=fixture(),fe=executor(freshStale,"freshstale",(body,meta,fx)=>{if(meta.phase==="render")fx.project.revision++;return {result:fx.run(body)};}).exec;
   const fr=await fe.execute(await renderArgs(fe),grant(fe));check(!fr.ok && freshStale.items.length===2 && freshStale.samples.length===0,"synchronous recheck no mutation on stale delivery");
