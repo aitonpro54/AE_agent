@@ -179,6 +179,35 @@ const waitingPanels = [];
 // Transient delivery restrictions, never an execution grant or a durable release.
 const generatedRecoveryScopes = new Map();
 const generatedRecoveryByPanel = new Map();
+const commonTitleRecovery = require("./common-title-assembly-recovery");
+function recoveryReadAllowed(scope,tool){return scope?.profile===commonTitleRecovery.PROFILE ? tool===commonTitleRecovery.READ : ["get_project_info","get_comp_details"].includes(tool);}
+async function reconcileCommonTitle(record,args){
+  commonTitleRecovery.inputs(args);commonTitleRecovery.inspectRecord(record);
+  const original=await panelControlService.readRecoveryLinkage(args.originalRequestId);
+  commonTitleRecovery.validateLinkage(record,original.local,original.remote);commonTitleRecovery.idle(getBridgeStatus());
+  const capsule=commonTitleRecovery.read(LOG_DIR,"capsule"),c=commonTitleRecovery.validateCapsule(capsule,record,original.local),maintenance=commonTitleRecovery.read(LOG_DIR,"maintenance"),selected=await panelControlService.maintenanceTarget(),panel=selected.state;
+  if(!maintenance || maintenance.value.status!=="reload_authorized" || maintenance.value.capsuleSha256!==capsule.sha256 || c.configuration?.host!==HOST || c.configuration?.port!==PORT || c.configuration?.credentialIdentity!==crypto.createHash("sha256").update(TOKEN).digest("hex") || !panel || panel.panelInstanceId===c.oldPanelBinding.panelInstanceId || panel.bridgeConnection?.panelConnectionId!==c.panelConnectionId || commonTitleRecovery.hash(selected.installed.hashes)!==commonTitleRecovery.hash(maintenance.value.installed.hashes) || selected.installed.indexPath!==maintenance.value.installed.indexPath)throw new Error("common_title_maintenance_reload_unproven");
+  const currentBinding={panelInstanceId:panel.panelInstanceId,panelLifecycleEpoch:panel.panelLifecycleEpoch,panelGeneration:panel.panelGeneration},connectionId=c.panelConnectionId;
+  let scope=panel.recoveryTransport && generatedRecoveryScopes.get(panel.recoveryTransport.scopeId);
+  if(!scope){
+    if(panel.connected || panel.running || panel.recoveryTransport || generatedRecoveryByPanel.has(connectionId) || autonomousSession.publicStatus().desiredEnabled!==false || generatedRecoveryScopes.size>=32)throw new Error("common_title_recovery_transport_admission_invalid");
+    const scopeId=crypto.randomUUID(),createdAt=Date.now();scope={scopeId,profile:commonTitleRecovery.PROFILE,state:"created",runId:args.runId,originalRequestId:args.originalRequestId,panelConnectionId:connectionId,currentBinding,nextBinding:{panelInstanceId:currentBinding.panelInstanceId,panelLifecycleEpoch:currentBinding.panelLifecycleEpoch+1,panelGeneration:"recovery-"+scopeId},createdAt,expiresAt:createdAt+300000};
+    generatedRecoveryScopes.set(scopeId,scope);generatedRecoveryByPanel.set(connectionId,scopeId);
+    return {schema:"ae-agent-plan-run-reconciliation.v1",runId:args.runId,status:"transport_prerequisite",reasonCode:"common_title_readonly_transport_required",steps:[],freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false,transportPrerequisite:{schema:"ae-agent-common-title-transport-prerequisite.v1",profile:scope.profile,scopeId,runId:scope.runId,originalRequestId:scope.originalRequestId,...commonTitleRecovery.EXPECTED,currentBinding,nextBinding:scope.nextBinding,panelConnectionId:connectionId,createdAt:new Date(createdAt).toISOString(),expiresAt:new Date(scope.expiresAt).toISOString(),freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false}};
+  }
+  if(scope.profile!==commonTitleRecovery.PROFILE || scope.state!=="ready" || scope.runId!==args.runId || scope.originalRequestId!==args.originalRequestId || generatedRecoveryByPanel.get(connectionId)!==scope.scopeId || Date.now()>=scope.expiresAt || reviewEvidence.sha256(scope.nextBinding)!==reviewEvidence.sha256(currentBinding) || lastPanelInfo?.panelConnectionId!==connectionId || lastPanelInfo?.panelGeneration!==scope.nextBinding.panelGeneration)throw new Error("common_title_recovery_transport_scope_invalid");
+  const verifier=commonTitleRecovery.verifierScript(record),readerId=crypto.randomUUID(),body="var observation=(function(){"+verifier.body+"})();observation.readerId="+JSON.stringify(readerId)+";return observation;";
+  const result=await generatedRecoveryReadContext.run({scopeId:scope.scopeId,runId:scope.runId,originalRequestId:scope.originalRequestId,tool:commonTitleRecovery.READ},()=>runExtendScriptBody(body,120000));
+  commonTitleRecovery.idle(getBridgeStatus());
+  if(Date.now()>=scope.expiresAt || generatedRecoveryScopes.get(scope.scopeId)!==scope || scope.state!=="ready")throw new Error("common_title_verification_context_expired");
+  const retained=Array.from(completedResults.values()).filter(r=>r.ok===true && r.result?.readerId===readerId);
+  if(retained.length!==1 || retained[0].command.leaseOwner?.panelConnectionId!==scope.panelConnectionId || retained[0].command.leaseOwner?.panelGeneration!==scope.nextBinding.panelGeneration)throw new Error("common_title_native_command_binding_missing");
+  const latest=await panelControlService.readRecoveryLinkage(scope.originalRequestId);commonTitleRecovery.validateLinkage(record,latest.local,latest.remote);
+  const envelope=commonTitleRecovery.adjudicate({record,local:latest.local,remote:latest.remote,native:result.result,runtime:RUNTIME_IDENTITY,command:{...retained[0].command,ok:retained[0].ok,receiptDigest:retained[0].receiptDigest,verifierDeliveryBodySha256:planRunRecords.digest(body)}});
+  const existing=commonTitleRecovery.read(LOG_DIR,"recovery");if(existing){commonTitleRecovery.validateRecovery(existing,record,latest.local);const before={...existing.value.native},after={...result.result};delete before.readerId;delete after.readerId;if(reviewEvidence.sha256(before)!==reviewEvidence.sha256(after))throw new Error("common_title_stored_observation_drift");}
+  const saved=existing || commonTitleRecovery.write(LOG_DIR,"recovery",envelope.value);
+  return {schema:"ae-agent-plan-run-reconciliation.v1",runId:args.runId,status:"verified_current_state",steps:[],commonTitleAssemblyRecovery:saved,historicalExecutionOutcome:"unknown",admissionGuardReleased:false,replayAllowed:false};
+}
 const GENERATED_RECOVERY_SCOPE_TTL_MS = 120000;
 const recentEvents = [];
 const idempotencyRecords = new Map();
@@ -3689,7 +3718,7 @@ function enqueueAeCommand(script, timeoutMs) {
     const recoveryRead=generatedRecoveryReadContext.getStore();
     if(recoveryRead){
       const scope=generatedRecoveryScopes.get(recoveryRead.scopeId);
-      if(!scope || scope.state!=="ready" || Date.now()>=scope.expiresAt || !["get_project_info","get_comp_details"].includes(recoveryRead.tool) || recoveryRead.runId!==scope.runId || recoveryRead.originalRequestId!==scope.originalRequestId){reject(Object.assign(new Error("generated_recovery_read_scope_invalid"),{code:"generated_recovery_read_scope_invalid",phase:"before_delivery"}));return;}
+      if(!scope || scope.state!=="ready" || Date.now()>=scope.expiresAt || !recoveryReadAllowed(scope,recoveryRead.tool) || recoveryRead.runId!==scope.runId || recoveryRead.originalRequestId!==scope.originalRequestId){reject(Object.assign(new Error("generated_recovery_read_scope_invalid"),{code:"generated_recovery_read_scope_invalid",phase:"before_delivery"}));return;}
       command.generatedRecoveryRead={scopeId:scope.scopeId,originalRequestId:scope.originalRequestId,runId:scope.runId,tool:recoveryRead.tool};
     }
     try {
@@ -3929,7 +3958,7 @@ function generatedRecoveryLeaseScope(req,url){
   if(!required && !selected)return null;
   const scope=selected && generatedRecoveryScopes.get(selected);
   if(!scope || generatedRecoveryByPanel.get(owner.panelConnectionId)!==scope.scopeId || owner.panelConnectionId!==scope.panelConnectionId || owner.panelGeneration!==scope.nextBinding.panelGeneration || Date.now()>=scope.expiresAt || !["created","ready"].includes(scope.state))throw Object.assign(new Error("generated_recovery_transport_scope_invalid"),{code:"generated_recovery_transport_scope_invalid"});
-  if(Array.from(inflightCommands.values()).some(c=>c.generatedRecoveryRead?.scopeId!==scope.scopeId || !["get_project_info","get_comp_details"].includes(c.generatedRecoveryRead?.tool)))throw Object.assign(new Error("generated_recovery_foreign_queue_blocked"),{code:"generated_recovery_foreign_queue_blocked"});
+  if(Array.from(inflightCommands.values()).some(c=>c.generatedRecoveryRead?.scopeId!==scope.scopeId || !recoveryReadAllowed(scope,c.generatedRecoveryRead?.tool)))throw Object.assign(new Error("generated_recovery_foreign_queue_blocked"),{code:"generated_recovery_foreign_queue_blocked"});
   return scope;
 }
 function leaseNextQueuedCommand(req, url) {
@@ -3944,7 +3973,7 @@ function leaseNextQueuedCommand(req, url) {
     const id = pendingCommands.shift();
     const command = inflightCommands.get(id);
     if (!command || command.state !== "queued") continue;
-    if(recoveryScope && (command.generatedRecoveryRead?.scopeId!==recoveryScope.scopeId || !["get_project_info","get_comp_details"].includes(command.generatedRecoveryRead?.tool)))throw new Error("generated_recovery_foreign_queue_blocked");
+    if(recoveryScope && (command.generatedRecoveryRead?.scopeId!==recoveryScope.scopeId || !recoveryReadAllowed(recoveryScope,command.generatedRecoveryRead?.tool)))throw new Error("generated_recovery_foreign_queue_blocked");
     try {
       if (command.lifecycleCapability) lifecycle.validateCommand(command.lifecycleCapability, command.lifecycleRawScript, command.id);
       else lifecycle.assertMutationAllowed();
@@ -3988,6 +4017,12 @@ async function retireGeneratedRecoveryForNormalPoll(req,url){
   if(!id || owner.panelGeneration.startsWith("recovery-") || url.searchParams.get("recoveryMode")==="1")return;
   const scope=generatedRecoveryScopes.get(id),recovery=require("./generated-export-recovery");
   if(!scope || inflightCommands.size || pendingCommands.length)throw new Error("generated_recovery_transport_still_guarded");
+  if(scope.profile===commonTitleRecovery.PROFILE){
+    const original=await panelControlService.readRecoveryLinkage(scope.originalRequestId),saved=commonTitleRecovery.read(LOG_DIR,"recovery");
+    if(!saved || original.remote.recovery?.sha256!==saved.sha256)throw new Error("common_title_full_adoption_required");
+    commonTitleRecovery.validateRecovery(saved,planRunRecords.readRecord(LOG_DIR,scope.runId,{throwOnError:true}),original.local);
+    generatedRecoveryByPanel.delete(owner.panelConnectionId);generatedRecoveryScopes.delete(id);return;
+  }
   const original=await panelControlService.readRecoveryLinkage(scope.originalRequestId),saved=recovery.readReceipt(LOG_DIR,scope.runId,scope.originalRequestId);
   if(!saved || original.remote.recovery?.sha256!==saved.sha256)throw new Error("generated_recovery_full_adoption_required");
   recovery.validateStoredBinding(saved,planRunRecords.readRecord(LOG_DIR,scope.runId,{throwOnError:true}),original.local);
@@ -8890,6 +8925,21 @@ function startHttpBridge() {
       return;
     }
 
+    if(url.pathname==="/common-title-recovery/maintenance" && req.method==="POST"){
+      if(!requireToken(req,res,url))return;
+      const args=await readJsonBody(req);commonTitleRecovery.inputs(args);
+      const lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"cep-panel-control"),crypto.randomUUID());
+      try{
+        commonTitleRecovery.idle(getBridgeStatus());
+        const record=planRunRecords.readRecord(LOG_DIR,args.runId,{throwOnError:true}),original=await panelControlService.readRecoveryLinkage(args.originalRequestId),capsule=commonTitleRecovery.read(LOG_DIR,"capsule");
+        const c=commonTitleRecovery.validateCapsule(capsule,record,original.local),selected=await panelControlService.maintenanceTarget(),s=selected.state;
+        commonTitleRecovery.validateLinkage(record,original.local,original.remote);
+        if(commonTitleRecovery.read(LOG_DIR,"maintenance") || c.configuration?.host!==HOST || c.configuration?.port!==PORT || c.configuration?.credentialIdentity!==crypto.createHash("sha256").update(TOKEN).digest("hex") || !s || s.nativeControlIdle!==true || s.panelInstanceId!==c.oldPanelBinding.panelInstanceId || s.panelLifecycleEpoch!==c.oldPanelBinding.panelLifecycleEpoch || s.panelGeneration!==c.oldPanelBinding.panelGeneration || s.bridgeConnection?.panelConnectionId!==c.panelConnectionId || s.unresolvedActions?.length!==1 || s.unresolvedActions[0].requestId!==args.originalRequestId || selected.installed.indexPath!==c.installed.indexPath)throw new Error("common_title_reload_scope_ambiguous_or_reserved");
+        const scope=commonTitleRecovery.write(LOG_DIR,"maintenance",{schema:"ae-agent-common-title-reload-authorization.v1",scopeId:crypto.randomUUID(),status:"reload_authorized",capsuleSha256:capsule.sha256,runId:args.runId,originalRequestId:args.originalRequestId,currentBinding:c.oldPanelBinding,installed:selected.installed,target:selected.target,expiresAt:c.expiresAt,verifierRuntime:RUNTIME_IDENTITY,guardReleased:false,replayAllowed:false});
+        writeJson(res,200,{ok:true,authorization:scope});
+      }finally{lock.release();}
+      return;
+    }
     if (url.pathname.startsWith("/results/") && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       const id = decodeURIComponent(url.pathname.slice("/results/".length));
@@ -12808,6 +12858,10 @@ async function callTool(name, args, executionContext) {
     const runId=optionalString(args,"runId","");
     const record=planRunRecords.readRecord(LOG_DIR,runId);
     if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
+    if(runId===commonTitleRecovery.RUN_ID && args.originalRequestId!==undefined){
+      try{return toolResult(await reconcileCommonTitle(record,args));}
+      catch(error){return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"incomplete",reasonCode:error.code || error.message,steps:[],freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false});}
+    }
     const selected=args.stepIndices;
     if(selected!==undefined && (!Array.isArray(selected) || !selected.length || selected.length>50 || new Set(selected).size!==selected.length || selected.some(index=>!Number.isSafeInteger(index) || index<1 || !record.plan.steps[index-1]))) throw new Error("reconciliation_step_indices_invalid");
     const helper=require("./plan-run-reconciliation");

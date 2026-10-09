@@ -3586,6 +3586,7 @@
       appendChatMessage("assistant", lines.join("\n"));
       // Only this trusted handler may adopt server-persisted terminal evidence.
       var adopted=!!(result.generatedExportRecovery && context && context.adoptGeneratedExportRecovery && context.adoptGeneratedExportRecovery(result.generatedExportRecovery,runId));
+      if(result.commonTitleAssemblyRecovery && context && context.adoptCommonTitleAssemblyRecovery)adopted=!!context.adoptCommonTitleAssemblyRecovery(result.commonTitleAssemblyRecovery,runId);
       if(onDone) onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:adopted,
         terminalEvidenceRequired:guarded && !adopted});
     });
@@ -4111,7 +4112,7 @@
   function executeCommand(command) {
     if(recoveryTransportScope){
       var tag=command.generatedRecoveryRead;
-      if(!tag || tag.scopeId!==recoveryTransportScope.scopeId || tag.originalRequestId!==recoveryTransportScope.originalRequestId || tag.runId!==recoveryTransportScope.runId || !/^(get_project_info|get_comp_details)$/.test(tag.tool)){
+      if(!tag || tag.scopeId!==recoveryTransportScope.scopeId || tag.originalRequestId!==recoveryTransportScope.originalRequestId || tag.runId!==recoveryTransportScope.runId || !(recoveryTransportScope.profile==="common-title-assembly" ? tag.tool==="common_title_assembly_verify" : /^(get_project_info|get_comp_details)$/.test(tag.tool))){
         stopRecoveryTransport("generated_recovery_foreign_command");return;
       }
     }

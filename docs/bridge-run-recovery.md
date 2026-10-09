@@ -122,3 +122,96 @@ transport fixtures покрывают terminal export, partial projection, reloa
 fail-stop и no-replay. Live activation/read-back, исходный run recovery и просмотр
 PNG остаются отдельной проверкой; физическая полнота PNG не заменяет визуальную
 приёмку.
+
+## Точный recovery сборки общей композиции титров
+
+Отдельный профиль `common-title-assembly` распознаёт только сохранённый run
+`c6d0acfb-5c05-4897-80a9-e509ab0a47cf`, исходный CEP request
+`cb5c3b53-5443-474e-93df-aa8210758886` и raw BODY SHA-256
+`9d4bfaeb6dcf9ed0695ee009abb47ccbaf888b2ea775568df5572771e2e22262`.
+Другие raw/create runs продолжают давать unknown в обычной сверке. PNG-контракт
+не расширен. Клиент передаёт только исходные run/request selectors; baseline,
+script, target IDs, proof и clear/release assertions запрещены.
+
+Inline JSON baseline разбирается без eval из канонического record. Проверяются
+envelope/hash, action/proposal/payload/plan/checkpoint, submitted timeout command,
+lease, исходный transport и точная **redacted** server run projection панели.
+Серверный readonly native verifier сам выводит unique common comp, 11 принятых
+текстов и mapping девяти base layers в итоговые 19 layers. Он сверяет текущее
+состояние/text исходников с inline baseline, полные текущие source/copy trees
+(character-range styles, transform, effects, text animators, markers, masks,
+expressions и key definitions), visibility/order/parent/matte relations и
+project/revision bookends. Animated/evaluated values не семплируются; static base
+читается pre-expression при нулевом времени. Limits: 11 source comps, 19 common
+layers, 50000 property nodes и 20000 keys; неполные key metadata fail closed.
+
+Durable envelope имеет отдельный статус `verified_current_state`. Это проверка
+текущих copies и сохранённого baseline state/text. Полные pre-mutation trees
+исходников не сохранялись, поэтому историческая неизменность всех styles/effects
+не доказана. Исходные run/transport остаются `unknown`, native DONE не создаётся,
+старый script не повторяется, replay запрещён. Private adoption освобождает только
+указанный request guard; остальные операции сохраняют manual CEP gates.
+
+### Maintenance loader для старой панели
+
+До restart/install единственный live-контроллер делает свежий обычный
+`get_project_info` и получает его **completed command UUID** через bridge status.
+Барьер должен иметь тот же старый panel connection/generation/lease owner и
+submitted/completed timestamps после первоначальной raw submit. Reviewed BODY
+синхронен и не содержит schedule/evalScript/process lanes. Serial `executeCommand`
+и завершённый поздний native барьер доказывают возврат старого BODY, сохраняя
+неизвестным его утраченный receipt. Одних JSONL событий для этого недостаточно.
+
+Затем из корня репозитория:
+
+```powershell
+node scripts/common-title-assembly-maintenance.js capture --barrier-command-id <completed-command-uuid>
+```
+
+Loader сам читает authenticated `/results/<id>`, status, canonical records,
+точную installed панель и её API. Он сверяет загруженные старые JavaScript sources
+через read-only CDP Debugger с Git checkpoint runtime, не исполняя их. Старое
+`state.busy` включает unknown guard; отдельная availability `plan.reconcile` в
+существующем catalog доказывает отсутствие `panel_busy`/`action_in_flight`.
+Capsule fsync-ится в `logs/evidence/common-title-assembly-recovery/<runId>/`;
+действует 120 секунд, guard остаётся на месте. Auth/config и storage сохраняются.
+
+Только после успешного capture контроллер выполняет уже разрешённый maintenance
+restart daemon и установку согласованных CEP assets. Сам loader этого не делает.
+В пределах срока capsule:
+
+```powershell
+node scripts/common-title-assembly-maintenance.js reload
+```
+
+Новый daemon предварительно валидирует capsule, неизменные credentials/config,
+idle, controller lock, старую current binding, единственный historical guard и
+точный installed target/assets. Reload authorization записывается до первого
+`Page.reload(ignoreCache:true)` и не используется повторно. Обычный CDP reload,
+reset и очистка localStorage не подходят. При unknown submit, missing/stale
+barrier/capsule, изменённом target/config или storage failure процесс останавливается
+с сохранённым guard; автоматического повтора нет.
+После durable authorization loader получает общий controller lock по `scopeId`
+и держит его через повторные server-idle, binding/epoch/generation, sole guard,
+config/assets/linkage проверки до исхода `Page.reload`. Чужой lock после authorization
+блокирует отправку; reservation остаётся использованной, повтор не допускается.
+
+Новая панель загружает прежний guard как unconfirmed. Контроллер вызывает новый
+`plan.reconcile` для того же run: P1 не отправляет native commands, сохраняет
+prerequisite и делает пустой same-config handshake. Существующая preference
+автономии должна быть явно выключена; профиль не меняет её автоматически.
+Затем отдельный P2 разрешает
+только server-owned `common_title_assembly_verify` в пяти минутном scope. Чужие
+queued/inflight commands и потеря scope после restart блокируют транспорт.
+Перед входом в P2 capsule также должна оставаться в исходном сроке 120 секунд;
+пяти минутный scope не продлевает этот срок. P1 и P2 выполняются сразу после reload.
+После durable native current-state envelope, private adoption и transport projection
+можно отдельно выполнить обычный `bridge.connect`. Автоматического выполнения
+нового render/save plan нет; native media/alpha/DXV и визуальная приёмка отдельны.
+
+Offline checks: `node scripts/common-title-assembly-recovery-smoke.js` и
+`node scripts/common-title-assembly-reconnect-smoke.js`; generated verifier ES3,
+actual full-panel VM и isolated production HTTP проверяют lineage/metadata/tamper,
+styles/effects/animators/keys/mattes/drift, barrier/config/controller negatives,
+one-shot maintenance reservation, guard retention/restart, private adoption и
+durable projection. Эти fixtures не доказывают live recovery.

@@ -217,7 +217,7 @@ function createPanelControlService(options={}) {
   exact(options,["stateDir","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt"]);
   if(options.cdpPort!==undefined && options.cdpPort!==DEFAULT_CDP_PORT) throw problem("fixed_cdp_port_required");
   const directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
-  const recoveryLogDir=path.dirname(directory),recovery=require("./generated-export-recovery"),runRecords=require("./plan-run-records");
+  const recoveryLogDir=path.dirname(directory),recovery=require("./generated-export-recovery"),commonRecovery=require("./common-title-assembly-recovery"),runRecords=require("./plan-run-records");
   const inspect=options.inspectInstalledTarget || bootstrap.inspectInstalledTarget,fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
   const evaluate=options.evaluateViaCdp || evaluateViaWebSocket,persist=options.persistReceipt || saveDurableReceipt;
   async function resolveTarget(budget) {
@@ -238,6 +238,11 @@ function createPanelControlService(options={}) {
   }
   function projectedRecoveryValid(row) {
     try {
+      if(row.recoveryReference?.schema===commonRecovery.SCHEMA){
+        const ref=row.recoveryReference,saved=commonRecovery.read(recoveryLogDir,"recovery");
+        if(!saved || ref.originalRequestId!==row.requestId || ref.runId!==row.runId || ref.sha256!==saved.sha256 || ref.recoveryId!==saved.value.recoveryId)return false;
+        commonRecovery.validateRecovery(saved,runRecords.readRecord(recoveryLogDir,row.runId,{throwOnError:true}),row);return true;
+      }
       const ref=row.recoveryReference;if(!ref || ref.schema!==recovery.SCHEMA || ref.originalRequestId!==row.requestId || ref.runId!==row.runId)return false;
       const saved=recovery.readReceipt(recoveryLogDir,row.runId,row.requestId);
       if(!saved || ref.sha256!==saved.sha256 || ref.recoveryId!==saved.receipt.recoveryId)return false;
@@ -247,6 +252,14 @@ function createPanelControlService(options={}) {
   }
   async function projectRecovery(row) {
     if(row.action!=="plan.reconcile" || row.state!=="completed")return;
+    const common=row.result?.reconciliation?.commonTitleAssemblyRecovery;
+    if(common){
+      const original=await readRecoveryLinkage(common.value?.originalRequestId),saved=commonRecovery.read(recoveryLogDir,"recovery");
+      if(!saved || saved.sha256!==common.sha256 || original.remote.recovery?.sha256!==saved.sha256)throw problem("common_title_panel_adoption_or_store_missing");
+      const value=commonRecovery.validateRecovery(saved,runRecords.readRecord(recoveryLogDir,common.value.runId,{throwOnError:true}),original.local);
+      const adopted={...original.local,recoveryReference:{schema:commonRecovery.SCHEMA,originalRequestId:value.originalRequestId,runId:value.runId,recoveryId:value.recoveryId,sha256:saved.sha256}};
+      persist(directory,adopted);if(!projectedRecoveryValid(loadDurableReceipt(directory,adopted.requestId)))throw problem("common_title_projection_persistence_failed");return;
+    }
     const candidate=row.result?.reconciliation?.generatedExportRecovery;
     if(!candidate)return;
     const value=recovery.validateEnvelope(candidate),original=await readRecoveryLinkage(value.originalRequestId);
@@ -354,7 +367,14 @@ function createPanelControlService(options={}) {
       throw problem("unknown_tool");
     }catch(error){return responseError(error);}
   }
-  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage});
+  async function maintenanceTarget(){
+    const selected=await resolveTarget(5000),before=remoteState(await methodAt(selected.target,"state",{},5000)),catalog=remoteCatalog(await methodAt(selected.target,"catalog",undefined,5000)),after=remoteState(await methodAt(selected.target,"state",{},5000));
+    if(before.panelInstanceId!==after.panelInstanceId || before.panelLifecycleEpoch!==after.panelLifecycleEpoch || before.panelGeneration!==after.panelGeneration)throw problem("maintenance_panel_binding_changed");
+    const reconcile=catalog.find(row=>row.name==="plan.reconcile");
+    // Public busy includes the historical guard. Existing catalog probes actual lifecycle/controller work separately.
+    return {...selected,state:{...after,nativeControlIdle:reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 && !after.activeAction}};
+  }
+  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget});
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],

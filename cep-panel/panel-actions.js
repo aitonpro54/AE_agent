@@ -159,11 +159,11 @@
   }
   function terminal(record) { return /^(completed|error|rejected)$/.test(record.state); }
   function recoveryValid(id,confirmed) {
-    var side=recoveries[id],original=records[id],value=side && side.envelope,r=value && value.receipt,p=original && original.result && original.result.run && original.result.run.provenance;
+    var side=recoveries[id],original=records[id],value=side && side.envelope,common=value && value.schema==="ae-agent-common-title-assembly-recovery.v1.envelope",r=value && (common ? value.value : value.receipt),p=original && original.result && original.result.run && original.result.run.provenance;
     if(!original || original.action!=="plan.run" || original.state!=="unknown" || !side || !r ||
-      value.schema!=="ae-agent-generated-export-recovery-envelope.v1" || value.sha256!==sha256(JSON.stringify(r)) ||
-      r.schema!=="ae-agent-generated-export-recovery.v1" || r.originalRequestId!==id || r.originalAction!==original.action || r.runId!==original.runId ||
-      !/^(completed|failed)$/.test(r.terminal) || r.replayAllowed!==false || r.artisticAccepted!==false ||
+      (!common && value.schema!=="ae-agent-generated-export-recovery-envelope.v1") || value.sha256!==sha256(JSON.stringify(r)) ||
+      (common ? r.schema!=="ae-agent-common-title-assembly-recovery.v1" || r.status!=="verified_current_state" || r.historicalExecutionOutcome!=="unknown" || r.originalNativeReceiptRecovered!==false || r.historicalFullSourceContentUnchanged!==false : r.schema!=="ae-agent-generated-export-recovery.v1" || !/^(completed|failed)$/.test(r.terminal)) || r.originalRequestId!==id || r.originalAction!==original.action || r.runId!==original.runId ||
+      r.replayAllowed!==false || r.artisticAccepted!==false ||
       side.panelIdentityHash!==sha256(original.signature) || !p ||
       ["actionId","proposalRevision","payloadHash","planSha256","projectId"].some(function(k) {return p[k]!==r[k];}) ||
       !r.originalBinding || r.originalBinding.panelInstanceId!==original.panelInstanceId || r.originalBinding.panelLifecycleEpoch!==original.epoch || r.originalBinding.panelGeneration!==original.generation) return false;
@@ -171,7 +171,7 @@
     return !confirmed || validatedRecoveries[id]===value.sha256;
   }
   function adoptRecovery(value,runId) {
-    var r=value && value.receipt,id=r && r.originalRequestId,original=id && records[id];
+    var r=value && (value.schema==="ae-agent-common-title-assembly-recovery.v1.envelope" ? value.value : value.receipt),id=r && r.originalRequestId,original=id && records[id];
     if(storageFailure || !original || original.runId!==runId || r.runId!==runId) return false;
     var previous=recoveries[id];
     if(previous && previous.envelope.sha256!==value.sha256)return false;
@@ -363,7 +363,7 @@
       completeRecoveryTransportPrerequisite:function(result,continuation) {
         var now=life(),value=result && result.transportPrerequisite,id=value && value.originalRequestId,original=id && records[id],p=original && original.result && original.result.run && original.result.run.provenance;
         if(finished || storageFailure || envelope.action!=="plan.reconcile" || now.epoch!==startEpoch || String(now.generation)!==startGeneration || !value ||
-          value.schema!=="ae-agent-generated-export-transport-prerequisite.v1" || result.status!=="transport_prerequisite" || value.runId!==envelope.args.runId || !original || original.action!=="plan.run" || original.state!=="unknown" || original.runId!==value.runId ||
+          (value.schema!=="ae-agent-generated-export-transport-prerequisite.v1" && !(value.schema==="ae-agent-common-title-transport-prerequisite.v1" && value.profile==="common-title-assembly")) || result.status!=="transport_prerequisite" || value.runId!==envelope.args.runId || !original || original.action!=="plan.run" || original.state!=="unknown" || original.runId!==value.runId ||
           !p || ["actionId","proposalRevision","payloadHash","planSha256","projectId"].some(function(k){return p[k]!==value[k];}) ||
           !value.currentBinding || value.currentBinding.panelInstanceId!==instanceId || value.currentBinding.panelLifecycleEpoch!==startEpoch || value.currentBinding.panelGeneration!==startGeneration ||
           !value.nextBinding || value.nextBinding.panelInstanceId!==instanceId || value.nextBinding.panelLifecycleEpoch!==startEpoch+1 || value.nextBinding.panelGeneration!=="recovery-"+value.scopeId ||
@@ -381,7 +381,12 @@
       },
       adoptGeneratedExportRecovery:function(value,runId) {
         var now=life();
-        if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId || finished || now.epoch!==startEpoch || String(now.generation)!==startGeneration)return false;
+        if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId || finished || now.epoch!==startEpoch || String(now.generation)!==startGeneration || value && value.schema!=="ae-agent-generated-export-recovery-envelope.v1")return false;
+        return adoptRecovery(value,runId);
+      },
+      adoptCommonTitleAssemblyRecovery:function(value,runId) {
+        var now=life();
+        if(envelope.action!=="plan.reconcile" || runId!==envelope.args.runId || finished || now.epoch!==startEpoch || String(now.generation)!==startGeneration || value && value.schema!=="ae-agent-common-title-assembly-recovery.v1.envelope")return false;
         return adoptRecovery(value,runId);
       },
       submit:function() {
