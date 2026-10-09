@@ -97,8 +97,25 @@ evidence. Source correction закрывает гонки при poll error и s
 invalidates lifecycle, поэтому held P2 response не сохраняет adoption. Reconnect smoke
 также проверяет selector: connected unknown setter выполняет только текущую typed
 postconditions-сверку и сохраняет guard без recovery/release/replay; disconnected
-setter не вызывает connect или native reads. Offline source/integration checks passed;
-live activation и same-run P1/P2 в CEP/AE остаются pending.
+setter не вызывает connect или native reads. Offline source/integration checks passed.
+
+### Ограниченная live-проверка — 9 октября 2026
+
+Для исходного run P1 завершился durable `transport_prerequisite` без снятия guard.
+После empty handshake новый P2 сделал шесть свежих reads: project, четыре comp и
+project. Canonical recovery receipt сохранён и принят: `terminal=failed`, причина
+`generated_png_missing_after_native_terminal`, артефакта PNG нет, replay запрещён;
+targeted guard снят после recovery. Затем обычный `bridge.connect` завершился, а
+независимый `get_project_info` подтвердил тот же `titr_all.aep`, 448 items и revision
+12896026. Исторический исходный receipt остался `unknown` (`ok=false`) со ссылкой на
+отдельное canonical recovery; повторного экспорта не было.
+
+Live runtime: commit `4d7dc119f41c689a9470079e9ba6ccf39594168e`, PID 28352,
+source SHA-256 `282ff58144e974464479f6475b5eb67a3a8156ab2bfe43bc9ca77c3efc81ebc1`;
+installed assets совпали. Полные request/recovery IDs и read evidence — в
+`.codex-runtime/export-recovery-20261009/live-report.json`. Это bounded acceptance
+восстановления результата как failed/missing, а не успешного PNG экспорта: файл не
+появился, визуальная/художественная приёмка и правка титров остаются pending.
 
 Validation: offline production-runner/adjudicator, full-panel VM и isolated
 transport fixtures покрывают terminal export, partial projection, reload,
