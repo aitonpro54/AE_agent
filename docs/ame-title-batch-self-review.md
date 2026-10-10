@@ -38,6 +38,21 @@ SDK и исследует минимальный snapshot route. Flash и вне
 probe с durable attempt; затем решение о конкретном writer/submit fixture-контракте.
 Неизвестный результат не повторяется.
 
+Root проверил fixed native fixture и AME wrapper adapter. Старый unsigned writer
+остался закрыт; новый путь работает только со своими capture/stage children и
+подписанными phase grants. Private result cache плюс отдельный file/process read
+не принимают echo JSON как доказательство snapshot. Enqueue резервирует intent
+до BridgeTalk и проверяет source/output/range/EPR/процесс отдельным status read.
+Приложение выдаёт own UUID, не выдумывает native ID. Общий start закрыт, native
+completion и media proof отделены. Проверки offline не принимаются как live export.
+
+Manual fixture run остановился на EPERM установки AEX. Own AEX затем скопирована
+с UAC и exact hash verification. У ручной CEP-операции нет external transport
+receipt: текущий recovery требует его и не поддерживает fixture adoption. Root
+не создаёт фиктивный transport receipt и не объявляет историческую мутацию
+`not_started`. Исправление — отдельный audited disposition исходного unknown,
+с неизменными журналами и запретом повторения; его implementation ещё проверяется.
+
 ## Приёмка
 
 Полная цепочка двух вариантов ещё не выполнена. Отражение интерфейса и offline

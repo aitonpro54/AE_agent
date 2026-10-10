@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("path");
+const crypto = require("node:crypto");
 const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
 const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const projectSave = require("./project-save");
@@ -44,6 +45,9 @@ const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
   "ensure_ame_running",
+  "enqueue_ame_title_variant",
+  "start_ame_title_batch",
+  "ame_native_fixture_probe",
   ...projectLifecycle.MUTATIONS,
   "reload_montage_material_source",
   "create_placeholder_review_comps",
@@ -130,6 +134,9 @@ const MUTATING_TOOLS = new Set([
 
 const READ_BACK_TOOLS = new Set([
   "inspect_ame_transport",
+  "inspect_ame_title_sources",
+  "get_ame_title_job_status",
+  "inspect_ame_native_fixture_result",
   "inspect_title_variants",
   "get_montage_source_load_evidence",
   "get_bridge_status",
@@ -812,7 +819,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4120,6 +4127,126 @@ function checkImportFootage(checks, step, payload, evidence) {
   });
 }
 
+function verifyAmeTitleAssociation(step, evidence) {
+  const jobs = require("./ame-title-jobs"), payload = payloadForStep(step);
+  const args = jobs.validateInput(jobs.ENQUEUE, step.args || {}), run = evidence.run;
+  const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+  const read = attached.length === 1 ? attached[0] : null, observed = read && payloadForStep(read);
+  const verification = payload && payload.verification, authorization = payload && payload.authorization;
+  if (!read || SERVER_ATTACHED_READS.get(read)?.valid !== true || read.tool !== jobs.STATUS || read.status !== "completed" ||
+      !run || typeof run.id !== "string" || !run.id || typeof run.provenance?.actionId !== "string" || !run.provenance.actionId ||
+      authorization?.runId !== run.id || authorization?.proposalId !== run.provenance.actionId ||
+      verification?.ok !== true || verification.scope !== "ame_native_wrapper_association_only") return false;
+  const wanted = jobs.validateInput(jobs.STATUS, {
+    targetSpecifier: args.targetSpecifier, expectedProcess: args.expectedProcess, timeoutMs: args.timeoutMs,
+    ...(args.expectedSessionNonce ? { expectedSessionNonce: args.expectedSessionNonce } : {}), batchId: args.batchId, jobId: payload.jobId
+  });
+  if (jobs.operationArgsHash(jobs.STATUS, read.args) !== jobs.operationArgsHash(jobs.STATUS, wanted)) return false;
+  const first = payload.native, second = observed && observed.native;
+  const digest = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, sha = /^[a-f0-9]{64}$/;
+  const exactPath = (left, right) => typeof left === "string" && left.length > 0 && typeof right === "string" && right.length > 0 &&
+    normalizeSlashes(left).toLowerCase() === normalizeSlashes(right).toLowerCase();
+  if (!first || !second || payload.schema !== jobs.SCHEMA || observed.schema !== jobs.SCHEMA ||
+      payload.ok !== true || observed.ok !== true || payload.code !== "job_enqueued" || observed.code !== "job_observed" ||
+      payload.batchId !== args.batchId || observed.batchId !== args.batchId || observed.jobId !== payload.jobId ||
+      payload.handleKey !== payload.jobId || observed.handleKey !== payload.jobId ||
+      payload.nativeJobId !== null || observed.nativeJobId !== null ||
+      payload.nativeAssociationVerified !== true || observed.nativeAssociationVerified !== true ||
+      payload.nativeQueueCompositionVerified !== false || observed.nativeQueueCompositionVerified !== false ||
+      !path.isAbsolute(payload.outputPath || "") || !exactPath(path.basename(payload.outputPath), args.outputFileName) ||
+      !uuid.test(payload.requestNonce || "") || !uuid.test(observed.requestNonce || "") || payload.requestNonce === observed.requestNonce ||
+      first.operationBinding !== digest({ operation: "enqueue", jobId: payload.jobId, args }) ||
+      second.operationBinding !== digest({ operation: "status", jobId: payload.jobId })) return false;
+  for (const [native, result, code] of [[first, payload, "job_enqueued"], [second, observed, "job_observed"]]) {
+    const job = native.job;
+    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || native.requestNonce !== result.requestNonce ||
+        native.appSpecifier !== args.targetSpecifier || args.expectedSessionNonce && native.sessionNonce !== args.expectedSessionNonce ||
+        native.nativeJobId !== null || native.nativeAssociationVerified !== true || !job ||
+        job.nativeJobId !== null || job.handleKey !== payload.jobId || job.nativeAssociationVerified !== true ||
+        job.sourceGuid !== args.sourceGuid || !exactPath(job.sourcePath, args.sourceProjectFile) ||
+        !exactPath(job.outputPath, payload.outputPath) || !sha.test(job.presetIdentity || "") || !sha.test(job.processBinding || "") ||
+        !isPlainObject(job.range) || Object.keys(job.range).length !== 2 ||
+        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds ||
+        !Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
+  }
+  if (!exactPath(first.job.sourcePath, second.job.sourcePath) || !exactPath(first.job.outputPath, second.job.outputPath) ||
+      first.job.presetIdentity !== second.job.presetIdentity || first.job.processBinding !== second.job.processBinding ||
+      first.sessionNonce !== second.sessionNonce) return false;
+  const firstTime = Date.parse(payload.observedAt), secondTime = Date.parse(observed.observedAt), attachedTime = Date.parse(read.observedAt);
+  const runStart = Date.parse(run.startedAt), runFinish = Date.parse(run.finishedAt);
+  // A fresh, distinct status nonce is mandatory. A later timestamp on copied
+  // enqueue JSON is insufficient; native observations must also be ordered.
+  return Number.isFinite(firstTime) && Number.isFinite(secondTime) && Number.isFinite(attachedTime) &&
+    Number.isFinite(first.observedAt) && first.observedAt > 0 && Number.isFinite(second.observedAt) &&
+    second.observedAt >= first.observedAt && first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
+    secondTime >= firstTime && attachedTime >= secondTime &&
+    (!Number.isFinite(runStart) || firstTime >= runStart && first.observedAt >= runStart) &&
+    (!Number.isFinite(runFinish) || attachedTime <= runFinish);
+}
+
+function verifyAmeNativeFixture(step, evidence) {
+  const fixture = require("./ame-native-fixture-grant"), runner = require("./ame-native-fixture-runner");
+  const args = fixture.validateInput(step.args || {}), payload = payloadForStep(step), run = evidence.run;
+  const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+  const read = attached.length === 1 ? attached[0] : null, observed = read && payloadForStep(read);
+  const scope = "signed_owned_fixture_copy_and_reopened_variants";
+  const sha = /^[a-f0-9]{64}$/, token = /^[a-f0-9]{32}$/, uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+  const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  const fixedReadback = value => isPlainObject(value) && value.fixedMainName === "Main" && value.fixedNestedName === "AEAgent Fixture Nested" &&
+    value.rootCompositionCount === 1 && typeof value.fixtureEvidence === "string" && value.fixtureEvidence.length > 0 &&
+    sha.test(value.fixtureCanonicalSha256 || "") && typeof value.projectHandle === "string" && value.projectHandle.length > 0 &&
+    isPlainObject(value.observedState) && Array.isArray(value.observedState.items) && value.observedState.items.length === 4;
+  if (!read || SERVER_ATTACHED_READS.get(read)?.valid !== true || read.status !== "completed" || read.tool !== runner.INSPECT ||
+      !payload || !observed || !uuid.test(payload.evidenceId || "") || Object.keys(read.args).length !== 1 || read.args.evidenceId !== payload.evidenceId ||
+      !run || typeof run.id !== "string" || !run.id || typeof run.provenance?.actionId !== "string" || !run.provenance.actionId ||
+      payload.schema !== fixture.SCHEMA || observed.schema !== "ae-agent.native-fixture-readback.v1" || observed.producer !== "private_signed_fixture_cache" ||
+      observed.evidenceId !== payload.evidenceId || typeof payload.buildId !== "string" || !payload.buildId || observed.buildId !== payload.buildId ||
+      payload.fixtureKind !== args.fixtureKind || observed.fixtureKind !== args.fixtureKind || payload.nativeSubmissionAttempted !== false ||
+      payload.automaticRetryAllowed !== false || observed.mediaProof !== "not_inspected" || observed.ameSubmission !== "not_attempted") return false;
+  for (const result of [payload, observed]) {
+    const v = result.verification;
+    if (result.ok !== true || result.productionBackend !== false || result.currentUserProjectMutation !== false ||
+        result.authorization?.runId !== run.id || result.authorization?.proposalId !== run.provenance.actionId ||
+        v?.ok !== true || v.scope !== scope || v.currentUserProjectMutation !== false || v.productionBackend !== false ||
+        v.sourcePathAndDirtyPreserved !== true || v.outputsHashVerified !== true || v.mediaProof !== "not_inspected" || v.ameSubmission !== "not_attempted") return false;
+  }
+  const snapshot = payload.nativeFixtureSnapshot, variants = payload.nativeFixtureVariants;
+  if (!snapshot || !variants || snapshot.status !== "fixture_baseline_saved_source_preserved" || variants.status !== "two_owned_variants_reopened" ||
+      snapshot.layerSwitchDispatches !== 0 || variants.ameSubmissionAttempted !== false || snapshot.pid === variants.pid || snapshot.rootPath === variants.rootPath ||
+      !Array.isArray(payload.childProcesses) || payload.childProcesses.length !== 2 || !Array.isArray(observed.childProcesses) || observed.childProcesses.length !== 2 ||
+      !sha.test(snapshot.baselineSha256 || "") || snapshot.baselineSha256 !== variants.baselineSha256 || snapshot.baselineSha256 !== observed.baselineSha256 ||
+      snapshot.baselinePath !== path.join(snapshot.rootPath || "", "baseline.aep") || snapshot.baselinePath !== observed.baselinePath) return false;
+  for (const [index, receipt, role] of [[0, snapshot, "capture"], [1, variants, "stage"]]) {
+    const child = payload.childProcesses[index], current = observed.childProcesses[index];
+    if (receipt.schema !== fixture.SCHEMA || receipt.role !== role || receipt.fixture !== args.fixtureKind || receipt.hostLoaded !== true ||
+        receipt.productionAuthorization !== false || receipt.readiness !== false || receipt.replayAllowed !== false ||
+        !Number.isSafeInteger(receipt.pid) || receipt.pid < 1 || !Number.isSafeInteger(receipt.processCreatedUnixMs) || receipt.processCreatedUnixMs <= 0 ||
+        !token.test(receipt.nonce || "") || !token.test(receipt.stageId || "") || !token.test(receipt.challenge || "") || !sha.test(receipt.pluginSha256 || "") ||
+        receipt.grant?.runId !== run.id || receipt.grant?.actionId !== run.provenance.actionId || receipt.grant?.stageId !== receipt.stageId ||
+        receipt.grant?.operation !== (role === "capture" ? "snapshot" : "stage-variants") ||
+        !path.isAbsolute(receipt.rootPath || "") || path.basename(receipt.rootPath) !== `probe-${receipt.nonce}` ||
+        !child || child.pid !== receipt.pid || child.rootPath !== receipt.rootPath || child.terminalReceiptVerified !== true ||
+        !current || current.pid !== receipt.pid || current.createdUnixMs !== receipt.processCreatedUnixMs || current.role !== role) return false;
+  }
+  if (snapshot.pluginSha256 !== variants.pluginSha256) return false;
+  const before = snapshot.sourceBefore, after = snapshot.sourceAfter;
+  const expectedPath = args.fixtureKind === "untitled-dirty" ? "" : path.join(snapshot.rootPath, "source.aep");
+  if (!fixedReadback(before) || !fixedReadback(after) || before.path !== expectedPath || after.path !== before.path ||
+      before.dirty !== (args.fixtureKind !== "saved-clean") || after.dirty !== before.dirty || after.projectHandle !== before.projectHandle ||
+      after.fixtureCanonicalSha256 !== before.fixtureCanonicalSha256 || after.fixtureEvidence !== before.fixtureEvidence ||
+      !same(before, observed.sourceBefore) || !same(after, observed.sourceAfter)) return false;
+  if (!Array.isArray(variants.outputs) || variants.outputs.length !== 2 || !same(payload.outputFiles, variants.outputs) || !same(observed.outputs, variants.outputs)) return false;
+  for (const [index, output] of variants.outputs.entries()) {
+    const expected = path.join(variants.rootPath, `variant-0${index + 1}.aep`);
+    if (!output || output.variant !== index + 1 || output.path !== expected || !sha.test(output.sha256 || "") || output.reopened !== true ||
+        !fixedReadback(output.readback) || output.readback.path !== expected || output.readback.dirty !== false) return false;
+  }
+  const readTime = Date.parse(observed.observedAt), attachedTime = Date.parse(read.observedAt), runStart = Date.parse(run.startedAt), runFinish = Date.parse(run.finishedAt);
+  return Number.isFinite(readTime) && Number.isFinite(attachedTime) && attachedTime >= readTime &&
+    (!Number.isFinite(runStart) || readTime >= runStart) && (!Number.isFinite(runFinish) || attachedTime <= runFinish);
+}
+
 function verifyStep(checks, step, evidence) {
   if (step.tool === "import_footage") {
     const payload = payloadForStep(step);
@@ -4130,6 +4257,30 @@ function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+  if (step.tool === "enqueue_ame_title_variant") {
+    let valid = false;
+    try { valid = verifyAmeTitleAssociation(step, evidence); } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:${step.tool}:native-association`, title: "Independent AME native wrapper association",
+      expected: "exact manual run and one fresh server-attached status read of the same wrapper",
+      observed: valid ? "wrapper association confirmed; native ID, whole queue, encode and media proof remain separate" : "native wrapper association unresolved",
+      passed: valid, evidence: stepLabel(step) });
+    return;
+  }
+  if (step.tool === "start_ame_title_batch") {
+    pushCheck(checks, { id: `${step.index}:${step.tool}:native-queue-composition`, title: "Entire native AME queue ownership before start",
+      expected: "independent server proof of the entire native queue composition", observed: "queue_composition_unavailable",
+      passed: false, status: "needs_review", evidence: "Retained wrappers, job status and an injected gate assertion do not prove the entire native queue." });
+    return;
+  }
+  if (step.tool === "ame_native_fixture_probe") {
+    let valid = false;
+    try { valid = verifyAmeNativeFixture(step, evidence); } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:${step.tool}:independent-native-evidence`, title: "Independent native fixture outcome",
+      expected: "exact signed capture/stage receipts and one fresh server-attached file/process read",
+      observed: valid ? "owned source preserved and two saved variants reopened at receipts; fresh files/processes verified; production, current-user, AME and media proof separate" : "independent native fixture evidence unavailable",
+      passed: valid, status: valid ? "passed" : "needs_review", evidence: stepLabel(step) });
+    return;
+  }
   if (step.tool === "ensure_ame_running") {
     const running = require("./ame-running"), verification = payload.verification;
     let valid = false;

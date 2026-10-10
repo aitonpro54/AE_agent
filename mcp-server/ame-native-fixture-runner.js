@@ -6,6 +6,7 @@ const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
 const grant = require("./ame-native-fixture-grant");
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+const INSPECT = "inspect_ame_native_fixture_result";
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function writeOnce(file, bytes) {
   const fd = fs.openSync(file, "wx");
@@ -181,7 +182,7 @@ function createExecutor(deps) {
             childProcesses: children.map(value => ({ pid: value.pid, rootPath: value.descriptor.rootPath, terminalReceiptVerified: value.terminal })),
             automaticRetryAllowed: false, buildId: artifacts.receipt.buildId, evidenceId: crypto.randomUUID(),
             authorization: { runId: entry.context.runId, proposalId: entry.context.record.actionId } };
-          verifiedResults.set(result.evidenceId, sha(JSON.stringify(result)));
+          verifiedResults.set(result.evidenceId, { hash: sha(JSON.stringify(result)), payload: JSON.parse(JSON.stringify(result)) });
           return result;
         }
       }
@@ -193,18 +194,49 @@ function createExecutor(deps) {
     }
   }
   function verifyResult(payload) {
-    if (!payload || verifiedResults.get(payload.evidenceId) !== sha(JSON.stringify(payload))) fail("fixture_runner_unverified_result");
+    if (!payload || verifiedResults.get(payload.evidenceId)?.hash !== sha(JSON.stringify(payload))) fail("fixture_runner_unverified_result");
     if (sha(readRegular(payload.nativeFixtureSnapshot.baselinePath)) !== payload.nativeFixtureSnapshot.baselineSha256 ||
         payload.outputFiles.some(output => sha(readRegular(output.path)) !== output.sha256)) fail("fixture_runner_verified_files_changed");
     return { ok: true, scope: "signed_owned_fixture_copy_and_reopened_variants", currentUserProjectMutation: false,
       productionBackend: false, sourcePathAndDirtyPreserved: true, outputsHashVerified: true,
       mediaProof: "not_inspected", ameSubmission: "not_attempted" };
   }
-  return { authorize, assertAuthorization, execute, verifyResult };
+  async function inspectResult(args) {
+    if (!args || Object.keys(args).length !== 1 || typeof args.evidenceId !== "string" ||
+        !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(args.evidenceId)) fail("fixture_result_invalid_selector");
+    const cached = verifiedResults.get(args.evidenceId);
+    if (!cached) fail("fixture_runner_verified_result_unavailable");
+    const payload = cached.payload, verification = verifyResult(payload), observed = [];
+    for (const receipt of [payload.nativeFixtureSnapshot, payload.nativeFixtureVariants]) {
+      const child = payload.childProcesses.find(value => value.pid === receipt.pid);
+      const descriptor = Array.from(descriptors.values()).find(value => value.rootPath === child?.rootPath);
+      const processInfo = await readProcess(receipt.pid);
+      if (!descriptor || !processInfo || processInfo.pid !== receipt.pid || processInfo.createdUnixMs !== receipt.processCreatedUnixMs ||
+          processInfo.path.toLowerCase() !== descriptor.executablePath.toLowerCase() ||
+          sha(readRegular(descriptor.pluginPath)) !== descriptor.pluginSha256 ||
+          sha(readRegular(descriptor.executablePath)) !== descriptor.executableSha256) fail("fixture_runner_evidence_process_changed");
+      observed.push({ pid: processInfo.pid, createdUnixMs: processInfo.createdUnixMs, role: descriptor.role });
+    }
+    // The producer cache exists only in this daemon after signed receipt checks.
+    // This separate read verifies current files/processes; it proves the owned
+    // snapshot operation at its native receipts, not a current-user capture.
+    verifyResult(payload);
+    return { ok: true, schema: "ae-agent.native-fixture-readback.v1", evidenceId: payload.evidenceId,
+      authorization: payload.authorization, buildId: payload.buildId, fixtureKind: payload.fixtureKind,
+      verification, sourceBefore: payload.nativeFixtureSnapshot.sourceBefore, sourceAfter: payload.nativeFixtureSnapshot.sourceAfter,
+      baselinePath: payload.nativeFixtureSnapshot.baselinePath, baselineSha256: payload.nativeFixtureSnapshot.baselineSha256,
+      outputs: payload.outputFiles, childProcesses: observed, observedAt: new Date().toISOString(),
+      producer: "private_signed_fixture_cache", productionBackend: false, currentUserProjectMutation: false,
+      mediaProof: "not_inspected", ameSubmission: "not_attempted" };
+  }
+  return { authorize, assertAuthorization, execute, verifyResult, inspectResult };
 }
 
 const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snapshot experiment on two server-owned empty AE children. Creates fixed test fixtures, captures current unsaved state, saves two independent variants and reopens them for read-back. Does not mutate the current user project, render, enqueue in AME, claim a production snapshot backend or replay unknown phases.",
   inputSchema: { type: "object", additionalProperties: false, required: ["fixtureKind"], properties: {
     fixtureKind: { type: "string", enum: ["saved-clean", "saved-dirty", "untitled-dirty"] }, restoreDirty: { type: "boolean", default: false }
   } }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } };
-module.exports = { createExecutor, tool, buildArtifacts, writeOnce, readRegular };
+const inspectTool = { name: INSPECT, description: "Read independent evidence for one private signed native fixture result in the current daemon, rechecking saved file hashes, exact owned child birth and native images. No replay, render, AME enqueue or current-user snapshot claim.",
+  inputSchema: { type: "object", additionalProperties: false, required: ["evidenceId"], properties: { evidenceId: { type: "string", format: "uuid" } } },
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false } };
+module.exports = { INSPECT, createExecutor, tool, inspectTool, buildArtifacts, writeOnce, readRegular };

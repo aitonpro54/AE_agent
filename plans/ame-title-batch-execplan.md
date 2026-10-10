@@ -25,6 +25,17 @@ Flash в этой задаче. Подробное фактическое сос
   реализован и проверен офлайн (27 групп + 5 ingress-групп). Авторизация приходит только
   от panel-role `/agents/plan/run`; MCP/admin/autonomous echo не выдаёт разрешение.
   Живой ручной запуск этого пути ещё не выполнен.
+- [x] Native fixture implementation, commit `a85bb26`: signed v2 capture/stage runner.
+  Manual CEP dry-run принят; run `40ddeee4-8b49-47d6-9301-03873fbe8cec` завершился
+  `EPERM` при установке AEX, до наблюдаемого запуска children. Parent fixtures пуст;
+  историческое исполнение не объявляется машинно доказанным `not_started`.
+- [ ] Текущий блокер: private manual UI receipt `67d45704-92ac-4700-9288-b7db697ea90f`
+  остался unknown; стандартный reconcile требует отсутствующий external transport receipt.
+  Требуется scoped disposition, сохраняя unknown/no-replay исходной операции.
+- [x] Jobs implementation: fixed GUID inspection, exact EPR enqueue, retained wrapper
+  status и отдельный semantic read-back зарегистрированы. Fixture outcome тоже требует
+  отдельного private-cache file/process read. START остаётся закрыт без full queue proof;
+  это код/offline milestone, не экспорт двух вариантов.
 - [x] SDK intake и offline probe: build `build-63db389697a6421089900d260a1ae582`,
   AEX SHA `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`.
   Independent review PASS только offline protocol/read-only bootstrap scope: P1/P2
@@ -38,9 +49,9 @@ Flash в этой задаче. Подробное фактическое сос
   native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
-- Текущий блок: `ae_specialist` реализовал native fixture; второй `ae_specialist`
-  завершает AME jobs. Luna/high проверяет offline runner/planning, root интегрирует
-  private CEP ingress и сам проводит ревью. Root — единственный live controller;
+- Текущий блок: `ae_specialist` завершил native fixture и AME jobs; отдельный specialist
+  исправляет exact manual fixture disposition. Luna/high проверил offline runner/planning;
+  root интегрировал private CEP ingress и провёл собственное ревью. Root — единственный live controller;
   пользователь запретил Flash/Pro. Native grant не публикуется через raw/MCP/admin.
 - Signed v2 runner устанавливает только собственную точную AEX-сборку и не заменяет
   другой файл. Fixed fixtures имеют одну root comp `Main`, вложенную comp и media/proxy
@@ -103,6 +114,15 @@ Flash в этой задаче. Подробное фактическое сос
   `.codex-runtime/ame-transport-probe/runtime-identity-d7746f1-20261010-004b3911-8169-4752-9916-9567dfb3107c/runtime-identity.json`.
 
 ## Validation
+
+- Own AEX установлена по прямому поручению пользователя через стандартный UAC:
+  точный binary SHA совпал, receipt `owned-plugin-install/install-17e7622b/`.
+  Исходный `-File` остановила `ExecutionPolicy=Restricted`; затем выполнен тот же
+  проверенный inline command в разрешённом Windows command lane, policy не менялась.
+  AE/AME не закрывались, child/save/submit/encode этим действием не запускались.
+- Jobs adapter: 16 offline VM групп и 18 semantic групп; exact wrapper association
+  отдельно от native job ID/media. Tool START по умолчанию отказывает с
+  `queue_composition_unavailable`; сообщение об очищенной очереди не заменяет API proof.
 
 - Signed v2 build `build-9a6b7110dd934bfb85982f3331b9d1fd`, AEX SHA
   `ba4afb624dbb29ddea905cac86a618a30de0f3b8bac1068bc85b70b923813d8a`:

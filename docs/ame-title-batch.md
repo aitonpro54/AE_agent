@@ -26,7 +26,10 @@ Private ingress проверяет фактический panel-role запро�
 неизвестная отправка запрещает повтор. Это проверка отдельных fixtures, ещё не
 production backend снимка открытого пользовательского проекта и не AME export.
 Последняя сборка: 215 legacy + 65 signed C++ checks и 63 JS grant checks;
-runner — 28 offline/mock checks. Реальный запуск и просмотр двух результатов впереди.
+runner — 28 offline/mock checks. После native receipts отдельный
+`inspect_ame_native_fixture_result` сверяет private producer cache, текущие хеши
+файлов и PID/birth двух children. Semantic pass требует этот отдельный read;
+echo результата не принимается. Реальный snapshot и просмотр двух результатов впереди.
 
 ## Доступные инструменты
 
@@ -58,6 +61,22 @@ VM.
 записями, выбор требует точного пути либо пары `presetId` + `sha256`.
 `nativeAvailability=not_verified`: наличие и корректный разбор EPR не доказывают,
 что AME применит его к экспорту.
+
+Добавлены `inspect_ame_title_sources`, `enqueue_ame_title_variant`,
+`start_ame_title_batch`, `get_ame_title_job_status`. Сначала читают GUID из точного
+saved AEP с указанным SHA; первый GUID не угадывается. В enqueue передают exact
+`presetId` + `presetSha25664`, source GUID/SHA, диапазон и уникальное имя output.
+До отправки резервируются output и intent; неизвестная отправка сверяется по тому
+же nonce. Returned `EncoderWrapper` и source/output сохраняются в AME, а отдельный
+status read проверяет эту association. `jobId`/`handleKey` остаются нашими UUID,
+`nativeJobId:null`. Успех native encode требует exact host event source/output и
+documented string result `"True"`; затем ещё нужна media-проверка.
+
+Enqueue/start допускаются только в отдельных ручных CEP-планах. Общий start
+отказывает с `queue_composition_unavailable`, пока нельзя доказать весь native
+состав очереди. Retained wrappers, файл batch.xml, idle и сообщение об очистке
+сами по себе этого не доказывают. Adapter не запускает/не закрывает AME и не
+меняет чужие задания. AME encoding и media proof пока не выполнены.
 
 ## Проверенное live-состояние и ограничения
 

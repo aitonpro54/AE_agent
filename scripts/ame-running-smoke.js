@@ -290,10 +290,11 @@ async function pinnedFixture(label, options = {}) {
   });
   await check("bridge exact mutation registration, branded gate and no cached ready replay", () => {
     const source = fs.readFileSync(path.join(__dirname, "../mcp-server/bridge-daemon.js"), "utf8");
-    assert(/const MUTATING_TOOL_NAMES = new Set\(\[\s*ameRunning\.TOOL_NAME,/.test(source));
+    const mutationSet = source.match(/const MUTATING_TOOL_NAMES = new Set\(\[([\s\S]*?)\]\);/);
+    assert(mutationSet && /(?:^|,)\s*ameRunning\.TOOL_NAME\s*(?:,|$)/.test(mutationSet[1]));
     assert(source.includes("ameRunningExecutor.assertAuthorization(executionContext && executionContext.ameRunningAuthorization, args || {})"));
     assert(source.includes('source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args'));
-    assert(source.includes('ameRunningAuthorization ? {ameRunningAuthorization} : undefined'));
+    assert(source.includes('ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization}'));
     assert(source.includes('name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext'));
     assert(source.includes('copySavedProjectFile(checkpointLabel, "checkpoint")'));
     const modules = require("../mcp-server/review-evidence").runtimeNamedHashSet(path.resolve(__dirname, "..")); assert.equal(modules.filter(row => row.name === "mcp-server/ame-running.js").length, 1);
