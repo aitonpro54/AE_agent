@@ -1,5 +1,12 @@
 # Экспорт вариантов титров через AME: состояние реализации
 
+Grouped abandonment lookup выполняет два свежих полных rounds; в каждом общие
+runtime/loaded-assets/executor факты читаются один раз для всей группы. Независимые
+child-state и held exit proofs обоих процессов сохраняются, на границах повторно
+проверяются guard, bridge status, transport, actor, canonical/member/files и полный
+inventory. Cache между rounds или запросами отсутствует, singleton не изменён.
+64 offline сценария PASS; фактический GET после deployment ещё не проверен.
+
 Резидентная основа находится в [native/ame-snapshot-service](../native/ame-snapshot-service/README.md).
 Полный offline build `e8c17338…` собрал x64 AEX и прошёл 250 проверок протокола.
 Это informational identity и закрытый transport seam: production issuer, listener,

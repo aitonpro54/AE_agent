@@ -67,7 +67,85 @@ function fixture(group=false) {
     unchanged(){assert.deepEqual(fs.readFileSync(records.fileFor(evidenceRoot,s.runId)),originalRecord);assert.equal(store.get("codexAePanelActionReceipts"),originalReceipt);},cleanup:()=>fs.rmSync(repoRoot,{recursive:true,force:true})};
 }
 async function test(name,fn,group=false) {const f=fixture(group);try{await fn(f);checks.push(name);}finally{f.cleanup();}}
+function countReaders(f) {
+  const counts={},children=[];
+  for(const name of ["maintenanceTarget","readPanelGuard","readBridgeStatus","readRuntimeIdentity","readTransportAbsence","readExecutorQuiescence","readChildState"]) {
+    const read=f.deps[name];f.deps[name]=async(...args)=>{counts[name]=(counts[name] || 0)+1;if(name==="readChildState")children.push({role:args[0].role,stageId:args[0].stageId,pid:args[1].pid,identitySource:args[2]});return read(...args);};
+  }
+  return {counts,children,reset(){for(const name of Object.keys(counts))delete counts[name];children.length=0;}};
+}
+function assertGroupReads(counter,rounds) {
+  const c=counter.counts;for(const name of ["readRuntimeIdentity","readExecutorQuiescence"])assert.equal(c[name],rounds,name);
+  for(const name of ["maintenanceTarget","readPanelGuard","readBridgeStatus","readTransportAbsence","readChildState"])assert.equal(c[name],rounds*2,name);
+  for(const role of ["capture","stage"])assert.equal(counter.children.filter(v=>v.role===role).length,rounds,role);
+  assert(counter.children.every(v=>v.identitySource==="trusted_process_handle"));
+}
 async function main() {
+  await test("group shares exactly one complete common bundle per fresh round through capture authorization and lookup",async f=>{
+    f.exitAll();const count=countReaders(f),c=await f.capture();assertGroupReads(count,2);
+    for(const m of c.value.observed.attempts)assert.deepEqual(Object.keys(m),["selector","observationId","observationSha256","entry","currentActor","target","installed","runtime","historicalObservedRuntime","descriptor","process","exit","child","executor","transport"]);
+    count.reset();await f.authorize(c);assertGroupReads(count,4);count.reset();await abandonment.lookup(f.s,f.deps);assertGroupReads(count,2);f.unchanged();
+  },true);
+  await test("singleton keeps its historical complete reads and output layout",async f=>{
+    f.exit();const count=countReaders(f),c=await f.capture();assert.equal(c.value.observed.attemptGroup,undefined);assert.equal(count.counts.readRuntimeIdentity,2);assert.equal(count.counts.readChildState,2);assert.equal(count.counts.readPanelGuard,2);assert.equal(count.counts.maintenanceTarget,4);assert(count.children.every(v=>v.identitySource==="historical_cim"));f.unchanged();
+  });
+  await test("group reverse observation order still independently checks both children and preserves canonical order",async f=>{
+    f.exitAll();const count=countReaders(f),c=await abandonment.capture({selector:f.s,observationIds:f.observations.map(o=>o.observationId).reverse()},f.deps);assertGroupReads(count,2);assert.deepEqual(c.value.observed.attempts.map(m=>m.descriptor.role),["capture","stage"]);
+  },true);
+  await test("group two distinct rounds reject valid runtime identity drift",async f=>{
+    f.exitAll();const read=f.deps.readRuntimeIdentity;let calls=0;f.deps.readRuntimeIdentity=async()=>{const v=await read();if(++calls===2)v.daemon.pid++;return v;};await assert.rejects(f.capture(),/fresh_bracket_changed/);
+  },true);
+  await test("group source hash drift remains rejected by the runtime gate",async f=>{
+    f.exitAll();const read=f.deps.readRuntimeIdentity;f.deps.readRuntimeIdentity=async()=>({...await read(),currentRuntimeSha256:"0".repeat(64)});await assert.rejects(f.capture(),/runtime_changed/);
+  },true);
+  await test("group two distinct rounds reject valid executor projection drift",async f=>{
+    f.exitAll();const read=f.deps.readExecutorQuiescence;let calls=0;f.deps.readExecutorQuiescence=async()=>({...await read(),pendingCount:++calls===2 ? 1 : 0});await assert.rejects(f.capture(),/fresh_bracket_changed/);
+  },true);
+  await test("group actor boundary detects a reload during member two",async f=>{
+    f.exitAll();const read=f.deps.maintenanceTarget;let calls=0;f.deps.maintenanceTarget=async()=>{const v=await read();if(++calls===2)v.state.panelLifecycleEpoch++;return v;};await assert.rejects(f.capture(),/actor_or_frame_changed/);
+  },true);
+  await test("group target drift across two individually stable rounds fails closed",async f=>{
+    f.exitAll();const read=f.deps.maintenanceTarget;let calls=0;f.deps.maintenanceTarget=async()=>{const v=await read();if(++calls>2)v.target.webSocketDebuggerUrl="ws://127.0.0.1:8870/devtools/page/changed";return v;};await assert.rejects(f.capture(),/fresh_bracket_changed/);
+  },true);
+  await test("group late private guard drift is checked after both children",async f=>{
+    f.exitAll();const read=f.deps.readPanelGuard;let calls=0;f.deps.readPanelGuard=async s=>{const v=await read(s);if(++calls===2)v.signatureSha256="0".repeat(64);return v;};await assert.rejects(f.capture(),/original_guard_drift/);
+  },true);
+  await test("group late guard controller activity remains blocked",async f=>{
+    f.exitAll();const read=f.deps.readPanelGuard;let calls=0;f.deps.readPanelGuard=async s=>{const v=await read(s);if(++calls===2)v.controllerIdle=false;return v;};await assert.rejects(f.capture(),/writer_not_idle/);
+  },true);
+  for(const drift of ["pending","inflight","lifecycle_pending","lifecycle_blocked"])await test("group latest bridge "+drift+" cannot borrow initial idle status",async f=>{
+    f.exitAll();const read=f.deps.readBridgeStatus;let calls=0;f.deps.readBridgeStatus=async()=>{const v=await read();if(++calls===2){if(drift==="pending")v.pendingCommands=1;else if(drift==="inflight")v.inflightCommands=[{id:"late"}];else if(drift==="lifecycle_pending")v.projectLifecycle.pending={phase:"late"};else v.projectLifecycle.blocked=true;}return v;};await assert.rejects(f.capture(),/writer_not_idle/);assert.equal(f.api().state().unresolvedActions.length,1);
+  },true);
+  for(const drift of ["receipt","pending","inflight"])await test("group latest transport "+drift+" cannot borrow initial absence",async f=>{
+    f.exitAll();const read=f.deps.readTransportAbsence;let calls=0;f.deps.readTransportAbsence=async s=>{const v=await read(s);if(++calls===2){if(drift==="receipt")v.originalReceiptAbsent=false;else if(drift==="pending")v.pendingCount=1;else v.inflightCount=1;}return v;};await assert.rejects(f.capture(),/transport_not_absent/);assert.equal(f.api().state().unresolvedActions.length,1);
+  },true);
+  await test("group latest valid transport projection must still match the initial boundary",async f=>{
+    f.exitAll();const read=f.deps.readTransportAbsence;let calls=0;f.deps.readTransportAbsence=async s=>{const v=await read(s);if(++calls===2)v.extraProjection="late-drift";return v;};await assert.rejects(f.capture(),/group_observation_drift/);
+  },true);
+  await test("group late pending authorization refuses before any consumption",async f=>{
+    f.exitAll();const c=await f.capture(),read=f.deps.readBridgeStatus;let calls=0;f.deps.readBridgeStatus=async()=>({...await read(),pendingCommands:++calls===2 ? 1 : 0});await assert.rejects(f.authorize(c),/writer_not_idle/);assert.equal(fs.existsSync(abandonment.fileFor(f.evidenceRoot,"consumption",f.s.requestId)),false);assert.throws(()=>ledger.assertAdmission(f.repoRoot));f.unchanged();
+  },true);
+  await test("group audited lookup still refuses late transport presence without trusted guard adoption",async f=>{
+    f.exitAll();const c=await f.capture();await f.authorize(c);const read=f.deps.readTransportAbsence;let calls=0;f.deps.readTransportAbsence=async s=>({...await read(s),originalReceiptAbsent:++calls!==2});await assert.rejects(abandonment.lookup(f.s,f.deps),/transport_not_absent/);assert.equal(f.api().state().unresolvedActions.length,1);f.unchanged();
+  },true);
+  for(const status of ["identity_mismatch","unknown","alive_exact"])await test("group second child "+status+" never inherits first child proof",async f=>{
+    f.exitAll();const read=f.deps.readChildState;f.deps.readChildState=async(...args)=>args[0].role==="stage" ? {status} : read(...args);await assert.rejects(f.capture(),status==="alive_exact" ? /exit_proof_conflicts_with_alive_child/ : /child_identity_or_exit_unknown/);assert.equal(f.api().state().unresolvedActions.length,1);assert.throws(()=>ledger.assertAdmission(f.repoRoot));
+  },true);
+  await test("group late second member exit proof cannot become an inventory absence proof",async f=>{
+    f.exitAll();const read=f.deps.readChildState;let changed=false;f.deps.readChildState=async(...args)=>{if(!changed&&args[0].role==="stage"){changed=true;const file=abandonment.observationFile(f.repoRoot,f.observations[1].observationId,true),row=JSON.parse(fs.readFileSync(file));row.value.proof.kind="missing_pid_inventory";fs.unlinkSync(file);ledger.writeOnce(file,row.value,{schema:row.value.schema+".envelope"});}return read(...args);};await assert.rejects(f.capture(),/positive_exit_proof_required/);
+  },true);
+  await test("group late first member held proof is reread after the second child",async f=>{
+    f.exitAll();const read=f.deps.readChildState;let changed=false;f.deps.readChildState=async(...args)=>{if(!changed&&args[0].role==="stage"){changed=true;const file=abandonment.observationFile(f.repoRoot,f.observationId,true),row=JSON.parse(fs.readFileSync(file));row.value.proof.observedAt=new Date(Date.parse(row.value.proof.observedAt)+1).toISOString();fs.unlinkSync(file);ledger.writeOnce(file,row.value,{schema:row.value.schema+".envelope"});}return read(...args);};await assert.rejects(f.capture(),/group_member_changed/);
+  },true);
+  await test("group late second recovered observation remains immutable within a round",async f=>{
+    f.exitAll();const read=f.deps.readChildState;let changed=false;f.deps.readChildState=async(...args)=>{if(!changed&&args[0].role==="stage"){changed=true;const file=abandonment.observationFile(f.repoRoot,f.observations[1].observationId),row=JSON.parse(fs.readFileSync(file));row.value.controller.source="late-drift";fs.unlinkSync(file);ledger.writeOnce(file,row.value,{schema:abandonment.OBSERVATION+".envelope"});}return read(...args);};await assert.rejects(f.capture(),/group_member_changed/);
+  },true);
+  await test("group canonical bytes cannot drift after the second child read",async f=>{
+    f.exitAll();const read=f.deps.readChildState;let changed=false;f.deps.readChildState=async(...args)=>{if(!changed&&args[0].role==="stage"){changed=true;records.writeRecord(f.evidenceRoot,{...f.record,maintenanceNote:"late canonical drift"});}return read(...args);};await assert.rejects(f.capture(),/canonical_changed/);
+  },true);
+  await test("group source assets cannot diverge from the runtime bundle",async f=>{
+    f.exitAll();const read=f.deps.readRuntimeIdentity;f.deps.readRuntimeIdentity=async()=>{const v=await read();v.panelAssetHashes["panel.js"]="0".repeat(64);return v;};await assert.rejects(f.capture(),/frame_source_mismatch/);
+  },true);
   await test("group retires both exact children with one immutable disposition and one guard release",async f=>{f.exitAll();const c=await f.capture(),saved=await f.authorize(c);assert.equal(saved.value.attemptGroup.inventory.length,2);assert.equal(saved.value.historicalOutcome,"unknown");f.answer(await abandonment.lookup(f.s,f.deps));f.ui().refreshNativeFixtureAbandonments();assert.equal(f.api().state().unresolvedActions.length,0);assert.equal(f.api().getResult(f.s.requestId).state,"unknown");ledger.assertAdmission(f.repoRoot);for(const o of f.observations)assert(ledger.validRetirement(f.repoRoot,o.attempt.descriptor));assert.equal(fs.readdirSync(abandonment.directory(f.evidenceRoot)).filter(n=>n.endsWith(".consumption.json")).length,1);f.unchanged();},true);
   await test("group references cannot omit a durable member or use singleton group input",async f=>{f.exitAll();await assert.rejects(abandonment.capture({selector:f.s,observationId:f.observationId},f.deps),/full_attempt_set_required/);await assert.rejects(abandonment.capture({selector:f.s,observationIds:[f.observationId]},f.deps),/selector_invalid/);await assert.rejects(abandonment.capture({selector:f.s,observationIds:[f.observationId,f.observationId]},f.deps),/selector_invalid/);assert.throws(()=>ledger.assertAdmission(f.repoRoot));},true);
   await test("group missing root cannot disappear from the full inventory",async f=>{f.exitAll();fs.renameSync(f.observations[1].attempt.descriptor.rootPath,path.join(f.repoRoot,"lost-stage-root"));await assert.rejects(f.capture());assert.throws(()=>ledger.assertAdmission(f.repoRoot));},true);

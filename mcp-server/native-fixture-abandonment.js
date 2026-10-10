@@ -81,30 +81,72 @@ function runtime(v) {
     v.currentRuntimeSha256!==v.loadedRuntimeSha256 || !v.panelAssetHashes || !SHA.test(v.panelAssetHashes["panel-actions.js"] || "") || !SHA.test(v.panelAssetHashes["panel.js"] || "") ||
     Object.values(v.panelAssetHashes).some(h=>!SHA.test(h)))fail("fixture_abandonment_runtime_changed");return clone(v);
 }
-async function snapshot(deps,s,id,mode="capture") {
+function requireSnapshotReaders(deps) {
   for(const name of ["maintenanceTarget","readPanelGuard","readBridgeStatus","readRuntimeIdentity","readTransportAbsence","readExecutorQuiescence","readChildState"])if(typeof deps[name]!=="function")fail("fixture_abandonment_backend_reader_required");
-  const selected=await deps.maintenanceTarget(),currentActor=actor(selected.state),proof=canonical(deps.evidenceRoot,s),obs=recovered(deps.repoRoot,id,s,proof),guard=await deps.readPanelGuard(s);
-  const entry=guardEntry(s,guard,proof,currentActor);
-  if(!same(entry,obs.entry))fail("fixture_abandonment_original_guard_drift");
-  const status=await deps.readBridgeStatus(),p=selected.state;
+}
+function guardState(s,p,guard,status,mode) {
   if(status.pendingCommands!==0 || status.inflightCommands?.length!==0 || status.activeEditSession!==null || status.projectLifecycle?.blocked || status.projectLifecycle?.pending || status.panelBootstrap?.busy ||
     guard.controllerIdle!==true || p.activeAction!==null || p.recoveryTransport || p.actionStorage!=="ready")fail("fixture_abandonment_writer_not_idle");
   if(!Array.isArray(p.unresolvedActions) || p.unresolvedActions.filter(r=>r.requestId===s.requestId).some(r=>r.runId!==s.runId || r.action!=="plan.run" || r.effect!=="protected_plan_run") ||
     mode!=="lookup" && p.unresolvedActions.filter(r=>r.requestId===s.requestId).length!==1)fail("fixture_abandonment_guard_scope_mismatch");
-  const transport=await deps.readTransportAbsence(s);
+}
+function transportEvidence(s,transport) {
   if(!transport || transport.requestId!==s.requestId || transport.originalReceiptAbsent!==true || transport.pendingCount!==0 || transport.inflightCount!==0)fail("fixture_abandonment_transport_not_absent");
-  const executor=await deps.readExecutorQuiescence(),exit=retirement(deps.repoRoot,obs),child=await deps.readChildState(obs.descriptor,obs.process,obs.value.files || obs.value.attempt.files ? "historical_cim" : "trusted_process_handle");
+}
+function childEvidence(obs,executor,exit,child) {
   if(executor?.executing!==false)fail("fixture_abandonment_executor_active_or_unknown");
   if(!exit && (obs.value.controller?.executing!==false || !Number.isInteger(obs.value.controller?.pendingCount) || !Number.isInteger(obs.value.controller?.descriptorCount)))fail("fixture_abandonment_historical_exit_proof_required");
   if(child?.status==="identity_mismatch" || child?.status==="unknown" || !exit && child?.status!=="alive_exact")fail("fixture_abandonment_child_identity_or_exit_unknown");
   if(exit && child?.status==="alive_exact")fail("fixture_abandonment_exit_proof_conflicts_with_alive_child");
-  const live=runtime(await deps.readRuntimeIdentity());
+}
+function frameEvidence(selected,live) {
   if(typeof selected.target?.url!=="string" || !selected.target.url.startsWith("file:///") || !/^ws:\/\/127\.0\.0\.1:8870\/devtools\/page\/[A-Za-z0-9_-]+$/.test(selected.target.webSocketDebuggerUrl || "") ||
     !selected.installed?.indexPath || !same(selected.installed.hashes,live.panelAssetHashes))fail("fixture_abandonment_frame_source_mismatch");
-  const after=await deps.maintenanceTarget();
+}
+function sameTarget(selected,after,currentActor) {
   if(!same(actor(after.state),currentActor) || !same(after.target,selected.target) || !same(after.installed,selected.installed))fail("fixture_abandonment_actor_or_frame_changed");
+}
+async function snapshot(deps,s,id,mode="capture") {
+  requireSnapshotReaders(deps);
+  const selected=await deps.maintenanceTarget(),currentActor=actor(selected.state),proof=canonical(deps.evidenceRoot,s),obs=recovered(deps.repoRoot,id,s,proof),guard=await deps.readPanelGuard(s);
+  const entry=guardEntry(s,guard,proof,currentActor);
+  if(!same(entry,obs.entry))fail("fixture_abandonment_original_guard_drift");
+  const status=await deps.readBridgeStatus();guardState(s,selected.state,guard,status,mode);
+  const transport=await deps.readTransportAbsence(s);transportEvidence(s,transport);
+  const executor=await deps.readExecutorQuiescence(),exit=retirement(deps.repoRoot,obs),child=await deps.readChildState(obs.descriptor,obs.process,obs.value.files || obs.value.attempt.files ? "historical_cim" : "trusted_process_handle");childEvidence(obs,executor,exit,child);
+  const live=runtime(await deps.readRuntimeIdentity());frameEvidence(selected,live);
+  const after=await deps.maintenanceTarget();sameTarget(selected,after,currentActor);
   return {selector:s,observationId:id,observationSha256:obs.row.sha256,entry,currentActor,target:clone(selected.target),installed:clone(selected.installed),runtime:live,
     historicalObservedRuntime:clone(obs.value.runtime),descriptor:obs.descriptor,process:obs.process,exit,child:clone(child),executor:clone(executor),transport:clone(transport)};
+}
+// A round owns its common evidence. Nothing is cached across rounds or requests;
+// each member retains its independent recovered identity, held exit proof and
+// fresh child-state read. Boundary reads also catch drift during the other child.
+async function groupMembers(deps,s,ids,mode,proof) {
+  requireSnapshotReaders(deps);
+  const selected=await deps.maintenanceTarget(),currentActor=actor(selected.state),observations=ids.map(id=>recovered(deps.repoRoot,id,s,proof)),guard=await deps.readPanelGuard(s),entry=guardEntry(s,guard,proof,currentActor);
+  if(observations.some(obs=>!same(entry,obs.entry)))fail("fixture_abandonment_original_guard_drift");
+  const status=await deps.readBridgeStatus();guardState(s,selected.state,guard,status,mode);
+  const transport=await deps.readTransportAbsence(s);transportEvidence(s,transport);
+  const executor=await deps.readExecutorQuiescence(),members=[];
+  for(const obs of observations) {
+    const exit=retirement(deps.repoRoot,obs),child=await deps.readChildState(obs.descriptor,obs.process,obs.value.files || obs.value.attempt.files ? "historical_cim" : "trusted_process_handle");childEvidence(obs,executor,exit,child);
+    members.push({selector:s,observationId:obs.value.observationId,observationSha256:obs.row.sha256,entry,currentActor,target:clone(selected.target),installed:clone(selected.installed),runtime:null,
+      historicalObservedRuntime:clone(obs.value.runtime),descriptor:obs.descriptor,process:obs.process,exit,child:clone(child),executor:clone(executor),transport:clone(transport)});
+  }
+  const live=runtime(await deps.readRuntimeIdentity());frameEvidence(selected,live);
+  const finalStatus=await deps.readBridgeStatus(),finalTransport=await deps.readTransportAbsence(s);transportEvidence(s,finalTransport);
+  if(!same(finalTransport,transport))fail("fixture_abandonment_group_observation_drift");
+  const finalGuard=await deps.readPanelGuard(s);
+  const after=await deps.maintenanceTarget();sameTarget(selected,after,currentActor);
+  guardState(s,after.state,finalGuard,finalStatus,mode);
+  if(!same(guardEntry(s,finalGuard,proof,currentActor),entry))fail("fixture_abandonment_original_guard_drift");
+  for(const member of members) {
+    const fresh=recovered(deps.repoRoot,member.observationId,s,proof),exit=retirement(deps.repoRoot,fresh);
+    if(fresh.row.sha256!==member.observationSha256 || !same(fresh.descriptor,member.descriptor) || !same(fresh.process,member.process) || !same(exit,member.exit))fail("fixture_abandonment_group_member_changed");
+    member.runtime=clone(live);
+  }
+  return members;
 }
 async function bracket(deps,s,id,mode) {const a=await snapshot(deps,s,id,mode),b=await snapshot(deps,s,id,mode);if(!same(a,b))fail("fixture_abandonment_fresh_bracket_changed");return b;}
 function inventoryContext(s,proof) {return {runId:s.runId,actionId:proof.run.provenance.actionId,proposalRevision:proof.run.provenance.proposalRevision,payloadHash:proof.run.provenance.payloadHash || null};}
@@ -123,10 +165,11 @@ function sameObservationBinding(value,observed) {
     value.attemptGroup===undefined && value.observationIds===undefined && value.observationHashes===undefined && value.observationId===expected.observationId && value.observationSha256===expected.observationSha256;
 }
 async function setSnapshot(deps,s,ids,mode) {
-  const proof=canonical(deps.evidenceRoot,s),before=fullInventory(deps,s,proof),members=[];
-  for(const id of ids)members.push(await snapshot(deps,s,id,mode));
+  const proof=canonical(deps.evidenceRoot,s),before=fullInventory(deps,s,proof),members=ids.length===1 ? [await snapshot(deps,s,ids[0],mode)] : await groupMembers(deps,s,ids,mode,proof);
   members.sort((a,b)=>a.descriptor.role.localeCompare(b.descriptor.role));
-  if(!same(before,fullInventory(deps,s,canonical(deps.evidenceRoot,s))))fail("fixture_abandonment_attempt_inventory_changed");
+  const finalProof=canonical(deps.evidenceRoot,s);
+  if(ids.length!==1 && proof.canonicalRunRecordHash!==finalProof.canonicalRunRecordHash)fail("fixture_abandonment_canonical_changed");
+  if(!same(before,fullInventory(deps,s,finalProof)))fail("fixture_abandonment_attempt_inventory_changed");
   if(ids.length===1) {
     if(before.inventory.length>1 || before.inventory.length===1 && !same(before.inventory[0].descriptor,members[0].descriptor))fail("fixture_abandonment_full_attempt_set_required");
     return members[0];

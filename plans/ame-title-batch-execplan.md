@@ -1,12 +1,15 @@
 # Пакетный экспорт вариантов титров через AME
 
-**Текущий блок — 10 октября, 18:55 UTC. Progress:** daemon-only maintenance
-завершён; два свежих brackets подтвердили PID46240 / source `05da9485…`, прежние
-AE/AME/assets и оба native UNKNOWN/no-replay guard. Exact lock PID40068 закрыт
-по отдельной consumed/disposition/retired цепочке, original receipt не изменён.
-Singleton trusted GET получил HTTP200; групповой `f306…` — `net::ERR_ABORTED`.
-Следующий шаг — устранить повторные чтения группового lookup, сохранив два свежих
-полных brackets, затем проверить реальные GET и диагностический fixture.
+**Текущий блок — 10 октября, 19:10 UTC. Progress:** grouped lookup использует
+один общий runtime/executor bundle на каждый из двух свежих полных rounds.
+Оба child-state, signed held exit proof, guard/status/transport/actor и
+canonical/member/files/inventory проверяются отдельно и на границах; singleton
+порядок и durable layout сохранены. **Decision Log:** это scoped оптимизация
+дублирующихся чтений, без cache между rounds/requests и без ослабления UNKNOWN,
+no-replay или exit gates. Sol/xhigh — код, root — self-review, Luna — checks.
+**Validation:** 64 offline сценария, rules, 2 JS syntax и diff PASS. Live GET
+пока не перепроверен; источник прежнего ERR_ABORTED не объявлен доказанным.
+Следующий шаг — daemon-only deployment и реальные trusted grouped GET.
 
 **Progress:** готов offline foundation резидентного AEX
 (`native/ame-snapshot-service`): штатные hooks, informational OS/module identity
