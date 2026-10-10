@@ -1,6 +1,18 @@
 # Пакетный экспорт вариантов титров через AME
 
-**Текущий блок — 11 октября, grouped lookup после daemon-only deployment. Progress:**
+**Остановлено на сегодня по поручению пользователя — 11 октября. Progress:**
+manual run `5a4ac6eb…` отказал `fixture_runner_launch_identity_changed` до phase
+grants; panel снова busy/reconciliationRequired, unresolved только этот run.
+Остался тестовый AE40476 (`Untitled Project.aep`) и broker21888; primary31728,
+DL38316/36520 и AME35400 сохранены. Все helpers остановлены, WIP скопирован с SHA.
+**Decision Log:** UNKNOWN/no-replay и guards сохраняются; новые тесты, закрытие
+непроверенного child, restart/reload не выполняются. **Validation:** свежая
+инвентаризация и redacted panel read, 4/4 protected SHA совпали; новых tests/builds
+нет. Следующий шаг после возобновления — восстановить exact launch/held-exit
+evidence, затем закрыть только доказанный тестовый child и исправить durable
+launch identity. [Полный checkpoint и безопасное завершение](ame-title-batch-stop-20261011.md).
+
+**Предыдущий завершённый блок — 11 октября, grouped lookup после daemon-only deployment. Progress:**
 root заменил daemon PID46240 на PID29132; loaded runtime SHA
 `793480e403334fc7462afbef4fdcd49667b50bdefa5cfe13c3b34386b40a818b`, checkpoint
 `d32eb48`. Fresh GET singleton и групп `f306…`/`82…` вернул HTTP 200; fresh panel
@@ -12,9 +24,9 @@ read-back сохранили ровно три AE, AME, panel, исходную 
 Причина/latency прежних timeout не измерены. Root — sole live controller, Luna —
 docs/offline checks. **Validation:**
 64 offline lookup сценария и 39 helper checks PASS; пассивный observer + fresh
-reconcile `44fd2191…` и все три trusted GET PASS. Следующий шаг — новый ручной
-fixture на установленной diagnostic AEX `8bdf6507…`; M3/M4 и production backend
-не приняты.
+reconcile `44fd2191…` и все три trusted GET PASS. Последующий ручной fixture на
+diagnostic AEX `8bdf6507…` остановился до stage facts (см. checkpoint выше);
+M3/M4 и production backend не приняты.
 
 **Progress:** diagnostic probe теперь читает fixture evidence перед dirty-guard,
 только после совпадения собственного handle/path/file SHA/baseline SHA; dirty

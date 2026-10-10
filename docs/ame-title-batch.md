@@ -1,6 +1,15 @@
 # Экспорт вариантов титров через AME: состояние реализации
 
-**Текущее состояние — 11 октября, daemon-only deployment. Progress:** daemon
+**Остановлено на сегодня — 11 октября. Progress:** последний manual run
+`5a4ac6eb…` получил `fixture_runner_launch_identity_changed` до phase grants.
+Остался тестовый AE40476 и broker21888; panel busy, unresolved только этот run.
+**Decision Log:** процессы/guards сохраняются, новые тесты и replay запрещены;
+resident-inspect WIP остановлен без сборки и установки. **Validation:** свежие
+process/panel наблюдения и SHA checkpoint, новых tests/builds нет. Следующий шаг
+после возобновления — восстановить точную launch/exit цепочку и безопасно закрыть
+только доказанный тестовый host. [Checkpoint](../plans/ame-title-batch-stop-20261011.md).
+
+**Предыдущий завершённый блок — 11 октября, daemon-only deployment. Progress:** daemon
 PID46240 заменён PID29132; загруженный runtime SHA
 `793480e403334fc7462afbef4fdcd49667b50bdefa5cfe13c3b34386b40a818b`. Два fresh
 read-back подтвердили сохранность AE PID31728/36520/38316, AME PID35400, panel,
@@ -15,9 +24,8 @@ fresh `get_panel_state`: idle, reconciliation не требуется, unresolve
 64 offline lookup scenarios, singleton HTTP 200; `f306…` HTTP 200 с disposition
 `58d2be7d…`, `82…` HTTP 200 с `967a32cb…`; passive observer и fresh reconciliation
 `44fd2191…` PASS. Diagnostic AEX `8bdf6507…` установлена,
-но новый native fixture ещё не запускался; foundation build `e8c17338…` остаётся
-offline foundation, не production backend. Следующий шаг — свежий ручной fixture
-с установленной diagnostic AEX; AME export/M4 не принят.
+последующий native fixture отказал до stage facts; foundation build `e8c17338…`
+остаётся offline foundation, не production backend. AME export/M4 не принят.
 
 Diagnostic probe `2a90b554…` / AEX SHA `8bdf6507…` добавляет read-only fixture
 evidence в signed stage facts даже при dirty-refusal, когда handle/path и оба
