@@ -68,7 +68,7 @@ function nativeAmeRead(requestNonce) {
     return "{" + out.join(",") + "}";
   }
   var result = { schema: "ae-agent-ame-read-response.v1", requestNonce: requestNonce, observedAt: new Date().getTime(), appSpecifier: null, sessionNonce: null, buildNumber: null,
-    app: describe(app), frontend: null, encoderHost: null, batchEncoder: null, reads: {}, errors: [] };
+    app: describe(app), exporter: null, frontend: null, encoderHost: null, batchEncoder: null, reads: {}, errors: [] };
   try { result.appSpecifier = scalar(BridgeTalk.appSpecifier); } catch (e1) { result.errors.push("app_specifier_read_failed"); }
   try { result.sessionNonce = scalar($.global.aeAgentAMEProbeSessionNonce); } catch (e2) { result.errors.push("session_nonce_read_failed"); }
   try { result.buildNumber = scalar(app.buildNumber); } catch (e3) { result.errors.push("build_number_read_failed"); }
@@ -76,14 +76,15 @@ function nativeAmeRead(requestNonce) {
   try { if (typeof app.getFrontend === "function") frontend = app.getFrontend(); result.frontend = describe(frontend); } catch (e4) { result.errors.push("frontend_read_failed"); }
   try { if (typeof app.getEncoderHost === "function") host = app.getEncoderHost(); result.encoderHost = describe(host); } catch (e5) { result.errors.push("encoder_host_read_failed"); }
   try { if (typeof app.getBatchEncoder === "function") batch = app.getBatchEncoder(); result.batchEncoder = describe(batch); } catch (e6) { result.errors.push("batch_encoder_read_failed"); }
-  try { if (host && typeof host.isBatchRunning === "function") result.reads.isBatchRunning = scalar(host.isBatchRunning()); } catch (e7) { result.errors.push("batch_running_read_failed"); }
-  try { if (host && typeof host.getBatchEncoderStatus === "function") result.reads.batchEncoderStatus = scalar(host.getBatchEncoderStatus()); } catch (e8) { result.errors.push("batch_status_read_failed"); }
+  try { if (typeof app.getExporter === "function") result.exporter = describe(app.getExporter()); } catch (e7) { result.errors.push("exporter_read_failed"); }
+  try { if (host && typeof host.isBatchRunning === "function") result.reads.isBatchRunning = scalar(host.isBatchRunning()); } catch (e8) { result.errors.push("batch_running_read_failed"); }
+  try { if (host && typeof host.getBatchEncoderStatus === "function") result.reads.batchEncoderStatus = scalar(host.getBatchEncoderStatus()); } catch (e9) { result.errors.push("batch_status_read_failed"); }
   try {
     if (host && typeof host.getFormatList === "function") {
       formats = host.getFormatList(); result.reads.formats = [];
       if (formats && typeof formats.length === "number") for (i = 0; i < formats.length && i < 128; i++) result.reads.formats.push(scalar(formats[i]));
     }
-  } catch (e9) { result.errors.push("format_list_read_failed"); }
+  } catch (e10) { result.errors.push("format_list_read_failed"); }
   return stringify(result);
 }
 

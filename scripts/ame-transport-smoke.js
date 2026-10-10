@@ -24,9 +24,12 @@ function ameFixture(options = {}) {
     isBatchRunning() { calls.push("isBatchRunning"); return false; }, runBatch: denied("runBatch"), createEncoderForFormat: denied("createEncoderForFormat") };
   const frontend = { reflect: metadata(["addDLToBatch", "getDLItemsAtRoot"]), addDLToBatch: denied("addDLToBatch"), addItemToBatch: denied("addItemToBatch") };
   const batch = { reflect: metadata(["start", "stop"]), start: denied("start"), stop: denied("stop") };
+  const exporter = { reflect: { methods: ["exportItem", "encode"].map(name => ({ name })), properties: [{ name: "queue" }, { name: "items" }] },
+    exportItem: denied("exportItem"), encode: denied("encode") };
   const app = { buildNumber: "52", reflect: metadata(["getFrontend", "getEncoderHost", "getBatchEncoder"]),
     getFrontend() { calls.push("getFrontend"); return frontend; }, getEncoderHost() { calls.push("getEncoderHost"); return host; },
-    getBatchEncoder() { calls.push("getBatchEncoder"); return batch; } };
+    getBatchEncoder() { calls.push("getBatchEncoder"); return batch; },
+    getExporter() { calls.push("getExporter"); if (options.exporterError) throw Error("exporter getter failed"); return exporter; } };
   if (options.readError) host.getFormatList = () => { throw Error("backend read failure"); };
   const global = { aeAgentAMEProbeSessionNonce: options.session || "cold-session" };
   const context = vm.createContext({ app, BridgeTalk: { appSpecifier: options.target || "ame-26.0" }, $: { global }, JSON: undefined });
@@ -81,8 +84,16 @@ check("closed input rejects code, generic target and invalid reconciliation", ()
 check("AME fixed reader uses only getters, safe JSON without JSON global", () => {
   const f = ameFixture(); assert.equal(f.parsed.requestNonce, nonce); assert.equal(f.parsed.sessionNonce, "cold-session");
   assert.deepEqual(f.parsed.reads, { isBatchRunning: false, batchEncoderStatus: "stopped", formats: ["H.264", "QuickTime"] });
+  assert.deepEqual(f.parsed.exporter, { available: true, methods: ["exportItem", "encode"], properties: ["queue", "items"],
+    methodMetadata: { available: true, count: 2, truncated: false }, propertyMetadata: { available: true, count: 2, truncated: false } });
+  assert.equal(f.calls.filter(name => name === "getExporter").length, 1);
   assert(f.parsed.frontend.methods.includes("addDLToBatch")); assert.equal(f.mutators.length, 0);
   assert.deepEqual(f.global, { aeAgentAMEProbeSessionNonce: "cold-session" });
+});
+check("exporter getter failure is reported without fallback or side effects", () => {
+  const f = ameFixture({ exporterError: true }); assert.equal(f.parsed.exporter, null);
+  assert(f.parsed.errors.includes("exporter_read_failed")); assert.equal(f.mutators.length, 0);
+  assert.deepEqual(f.calls.filter(name => name === "getExporter"), ["getExporter"]);
 });
 check("read errors remain metadata, no fallback mutation", () => { const f = ameFixture({ readError: true }); assert(f.parsed.errors.includes("format_list_read_failed")); assert.equal(f.mutators.length, 0); });
 check("matching response proves command and existing nonce only", () => {

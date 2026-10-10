@@ -11,11 +11,15 @@ Flash в этой задаче. Подробное фактическое сос
   каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
 - [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
-- [ ] M3 BLOCKED: snapshot/submit/native job identity/start/status не доказаны и не
+- [ ] M3 IN PROGRESS: пользователь поручил продолжить без GPT Pro; root проводит
+  собственное ревью. Snapshot/submit/native job identity/start/status не доказаны и не
   зарегистрированы. Текущий guard-run `run-39442a5bbcad41d8b5daafea8c85d429` прошёл
   независимую проверку: 4 ранних отказа; допуск, claim flush, AppContainer и AE не проверялись.
   Предыдущий ACL failure относится только к прошлой версии исходников.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
+- [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
+  `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
+  Encoder/exporter API отражён без submit/encode, это не готовность экспортировать.
 - [x] SDK intake и offline probe: build `build-63db389697a6421089900d260a1ae582`,
   AEX SHA `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`.
   Independent review PASS только offline protocol/read-only bootstrap scope: P1/P2
@@ -26,7 +30,7 @@ Flash в этой задаче. Подробное фактическое сос
 ## Decision Log
 
 - Исполнители по scope: root — единственный live controller; `ae_specialist` —
-  native ABI и CEP async boundary; независимый Sol review ожидается; Luna/high —
+  native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
 - `ensure_ame_running` использует обычные proposal/dry-run/confirmed-or-autonomous
@@ -84,6 +88,16 @@ Flash в этой задаче. Подробное фактическое сос
 
 ## Validation
 
+- 10 октября пользователь явно отменил GPT Pro и подтвердил, что убрал очередь AME.
+  [Собственное ревью](../docs/ame-title-batch-self-review.md) снимает только добавленные
+  нами full-undo/hostile-same-user критерии и требование Pro; CEP/runtime gates действуют.
+  Root scoped bridge-only reload: PID24440→40760, aggregate SHA `cb2f5017…5382a`.
+  Fresh process metadata: AME PID35400/start `2026-10-10T13:52:47.495Z`, version26.2.0.52,
+  прежний executable SHA и HashMismatch. Probe вернул exporter 9 methods/4 properties,
+  deliveryVerified=true, sessionNonce=null, `target_session_changed`, queue writes=0.
+  После сообщения о cleared queue persisted batch.xml ещё содержит 9 Group/9 Status,
+  mtime14:05:57Z: disk-only observation не доказывает текущую очередь в памяти.
+  Никакой encode/start/fixture/save текущего проекта не выполнялся.
 - Offline PASS: running 19 групп; transport 17; presets; полный `smoke:planning`;
   `check:rules`; семь
   `node --check`; `git diff --check`. Все четыре исходных dirty-file SHA совпали
