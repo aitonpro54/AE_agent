@@ -13,9 +13,9 @@ Flash в этой задаче. Подробное фактическое сос
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
 - [ ] M3 BLOCKED: immutable grant `a56cae55-40c1-49f2-b79e-e4aa9f23f1b5`, SHA-256
   `f46238c1038d7b890dc02cc314d5b22f7d0ff075385eff0ba4058b1281f72f4e`, принят
-  только актуальным CEP epoch 1 / generation 1791648133063. Свежий run
-  `54062238-4828-453c-a115-6ddc9f302dee` завершился
-  `fixture_runner_receipt_unknown_no_replay` примерно за 92.9 с; M3 не принят.
+  только актуальным CEP epoch 1 / generation 1791648133063. Run
+  `54062238-4828-453c-a115-6ddc9f302dee` остаётся `UNKNOWN/no-replay`; root
+  подтвердил выход ранее удержанного exact child handle (exit 0), но M3 не принят.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 - [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
   `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
@@ -43,6 +43,11 @@ Flash в этой задаче. Подробное фактическое сос
   закрыты в этом scope; harness 215 PASS (22 Win32 interleavings, 18 guard refusals).
   Harness вызывает общий closed guard напрямую, не native state machine. Production
   acceptance/M3 остаются BLOCKED; старый 39-check build отклонён как pre-fix.
+- [x] Native bootstrap + durable fixture lifecycle, offline этап: build
+  `build-30d58da3cfc14850bc2d343958e726be`, SHA-256
+  `efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`. Root
+  атомарно установил тот же hash и read-back подтвердил совпадение. M3/M4 и live
+  acceptance не меняются; текущая session-resident backend и AME цепочка не приняты.
 
 ## Decision Log
 
@@ -50,9 +55,12 @@ Flash в этой задаче. Подробное фактическое сос
   native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
-- Текущий блок: root — sole live controller и reviewer; пользователь запретил Flash/Pro.
-  Старый EPERM-run адресно помечен `abandoned_reviewed`, сохранив original unknown/no-replay.
-  Signed grant остаётся private и был принят только свежим exact CEP actor/runtime.
+- Offline native lifecycle: strict root-manifest-only/stage-baseline-pinned;
+  signed grant expiry проверяется до suite; durable ledger вынесен из mutable claim root.
+  Birth identity — exact PID + 100 ns creation time; unknown sidecar неизменяем и
+  abandon-only; retirement требует выхода удержанного handle. Complete принимается
+  только при совпадении обоих verified native receipts/full chain. Старый EPERM-run
+  и его unknown/no-replay сохранены; Flash/Pro не использовались.
 - Signed v2 runner устанавливает только собственную точную AEX-сборку и не заменяет
   другой файл. Fixed fixtures имеют одну root comp `Main`, вложенную comp и media/proxy
   в отдельной папке. Process birth, MAC, source/binary SHA и receipts проверяются до
@@ -241,6 +249,13 @@ Flash в этой задаче. Подробное фактическое сос
   SDK показывает только startup entry point; требуется bounded диагностика раннего
   старта/жизненного цикла и expiry. Это технический blocker, не доказательство
   невозможности.
-- Offline final: disposition 17, panel-actions 48, backend 28, rules/syntax/diff PASS;
-  четыре исходных baseline SHA без изменений. M3 и M4 не приняты; нет production
-  acceptance, live load, snapshot/save, submit/encode или полного AME результата.
+- Последний offline milestone: 434 C++ checks (215 legacy + 65 signed + 115 startup +
+  39 root), 0 warnings; JS grant86, runner34, abandonment20, old-v1 disposition17,
+  backend28, CEP VM48 действий/16 сценариев; полный `smoke:planning` PASS (шесть
+  ранних групп и исправленный planner-guidance regression, 189 actual tools),
+  `check:rules`, 13 JS syntax и diff PASS.
+  Root review закрыл ordering/future-birth regressions. Установленный replacement SHA
+  совпал; backup прежней AEX сохранён. Новый AE run не создавался: текущий daemon
+  всё ещё загрузил старый SHA `97490d3b…2745`, CEP assets не обновлены. M3/M4 остаются
+  BLOCKED: production current-user snapshot backend, AME submit/encoding/media и полная
+  двухвариантная цепочка не приняты.

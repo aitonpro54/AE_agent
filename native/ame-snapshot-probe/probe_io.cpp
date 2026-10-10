@@ -246,16 +246,35 @@ std::string OwnedRoot::Hash(const std::wstring& basename) const {
     auto sha = HashHandle(retained->second.handle.value);
     Require(sha == retained->second.sha256, "retained_file_bytes_changed"); return sha;
 }
-void OwnedRoot::Claim(const std::string& receipt) {
-    // A bootstrap root must be new and contain exactly its controller launch manifest.
+void OwnedRoot::Claim(const std::string& receipt) { ClaimExact(receipt, false); }
+void OwnedRoot::ClaimStage(const std::string& receipt, const std::string& baseline_sha) {
+    Require(LowerHex(baseline_sha, 64) && retained_files_.count(L"baseline.aep") == 0, "stage_claim_baseline_sha_required");
+    auto baseline = ReadHandle(Child(L"baseline.aep"));
+    const auto identity = Identity(baseline.value);
+    Require(HashHandle(baseline.value) == baseline_sha, "stage_claim_baseline_binding_mismatch");
+    retained_files_.emplace(L"baseline.aep", RetainedFile{std::move(baseline), identity, baseline_sha});
+    ClaimExact(receipt, true);
+    Require(Hash(L"baseline.aep") == baseline_sha, "stage_claim_baseline_changed");
+}
+void OwnedRoot::ClaimExact(const std::string& receipt, bool signed_stage) {
+    // No arbitrary allowlist: legacy/capture require exactly the manifest;
+    // signed stage requires exactly the manifest plus its pinned baseline.
     WIN32_FIND_DATAW data{}; HANDLE find = FindFirstFileW((path_ + L"\\*").c_str(), &data); Require(find != INVALID_HANDLE_VALUE, "root_enumeration");
-    bool good = true; size_t count = 0;
-    do { std::wstring name(data.cFileName); if (name == L"." || name == L"..") continue; ++count; if (name != L"launch.manifest" || data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) good = false; } while (FindNextFileW(find, &data));
-    DWORD e = GetLastError(); FindClose(find); Require(good && count == 1 && e == ERROR_NO_MORE_FILES, "root_not_fresh_exclusive");
+    bool good = true, manifest_seen = false, baseline_seen = false; size_t count = 0;
+    do {
+        std::wstring name(data.cFileName); if (name == L"." || name == L"..") continue; ++count;
+        if (name == L"launch.manifest") manifest_seen = true;
+        else if (signed_stage && name == L"baseline.aep") baseline_seen = true;
+        else good = false;
+        if (data.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) good = false;
+    } while (FindNextFileW(find, &data));
+    DWORD e = GetLastError(); FindClose(find);
+    Require(good && manifest_seen && (!signed_stage || baseline_seen) && count == (signed_stage ? 2U : 1U) && e == ERROR_NO_MORE_FILES, "root_not_fresh_exclusive");
     owner_ = Handle(CreateFileW(Child(L"owner.lock").c_str(), GENERIC_READ | GENERIC_WRITE, 0,
         nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_WRITE_THROUGH, nullptr));
     VerifyHandle(owner_.value, Child(L"owner.lock"), false);
     WriteAndFlush(owner_.value, receipt); // held with no sharing until host exit
+    claimed_ = true;
 }
 static bool Id(const std::string& value) { return value.size() >= 8 && value.size() <= 128 && std::all_of(value.begin(), value.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.'; }); }
 Ack ValidateAck(const Fields& f, const Binding& b, const std::string& operation, const std::string& expected, std::uint64_t now) {

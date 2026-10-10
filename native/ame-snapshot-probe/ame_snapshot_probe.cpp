@@ -107,6 +107,10 @@ struct State {
     std::uint64_t deadline = 0;
     A_long driver_major = 0, driver_minor = 0;
     bool signed_fixture = false, mutation_dispatched = false, dirty_restored = false;
+    bool idle_hook_registration_attempted = false, expired_bootstrap = false;
+    probe::FixtureLaunch startup_launch;
+    std::string launch_manifest_sha, executable_sha;
+    std::uint64_t bootstrap_refused_at = 0;
     std::string session_key, stage_id, role, source_root_path, baseline_sha;
     std::unique_ptr<probe::OwnedRoot> source_root;
     probe::Handle original_source_pin;
@@ -119,7 +123,7 @@ struct State {
     }
     void Receipt(const wchar_t* name, const std::string& json) {
         const auto body = "{" + Base() + "," + json + "}";
-        root->WriteNew(name, signed_fixture ? "{\"body\":" + probe::Json(body) + ",\"mac\":" + probe::Json(probe::Hmac256(session_key, body)) + "}\n" : body + "\n");
+        root->WriteNew(name, signed_fixture ? probe::SignedFixtureReceipt(body, session_key) : body + "\n");
     }
     std::string Revision() {
         const char* compiled = "(function(){if(!app.project||typeof app.project.revision!=='number')throw Error('revision unavailable');return String(app.project.revision);})()";
@@ -375,6 +379,18 @@ struct State {
         phase = Phase::Terminal;
         try { Receipt(signed_fixture ? L"signed-refusal.json" : L"refusal.json", "\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":" + Bool(mutation_dispatched) + ",\"replayAllowed\":false"); } catch (...) { /* no retry or dialog */ }
     }
+    void RefuseStartup(const std::string& reason) noexcept {
+        phase = Phase::Terminal;
+        // Only called after descriptor trust, exact child identity and a
+        // successful exclusive Claim. No Tick or project suite has run here.
+        try {
+            if (expired_bootstrap) probe::WriteFixtureExpiredLaunchRefusal(*root, binding, startup_launch,
+                session_key, executable_sha, launch_manifest_sha, bootstrap_refused_at);
+            else probe::WriteFixtureStartupRefusal(*root, binding, startup_launch, session_key, PROBE_BUILD_ID,
+                reason, idle_hook_registration_attempted);
+        }
+        catch (...) { /* failed publication is terminal; never retry or dialog */ }
+    }
 };
 // Process-lifetime state; AE unload never runs work. The hook becomes inert at Terminal.
 State* g_state = nullptr;
@@ -388,52 +404,72 @@ A_Err Idle(AEGP_GlobalRefcon, AEGP_IdleRefcon refcon, A_long* max_sleep) {
 extern "C" __declspec(dllexport) A_Err EntryPointFunc(SPBasicSuite* basic, A_long major, A_long minor, AEGP_PluginID plugin_id, AEGP_GlobalRefcon* global) {
     if (global) *global = nullptr;
     // No env => no acquisition, hook registration, filesystem activity or project read.
+    // Retain trusted startup state across exceptions and for process lifetime:
+    // otherwise the Claim and published receipt handles would be released.
+    std::unique_ptr<State> state;
     try {
         auto root_path = Env(L"AE_AGENT_NATIVE_PROBE_ROOT"), nonce_w = Env(L"AE_AGENT_NATIVE_PROBE_NONCE");
         if (root_path.empty() || nonce_w.empty()) return A_Err_NONE;
-        auto state = std::make_unique<State>(); state->binding.nonce = probe::Utf8(nonce_w);
+        state = std::make_unique<State>(); state->binding.nonce = probe::Utf8(nonce_w);
         Need(probe::LowerHex(state->binding.nonce, 32), "invalid_boot_nonce");
         auto executable = probe::ModulePath(nullptr); Need(_wcsicmp(executable.substr(executable.find_last_of(L'\\') + 1).c_str(), L"AfterFX.exe") == 0, "wrong_host_executable");
         state->root = std::make_unique<probe::OwnedRoot>(root_path, state->binding.nonce);
         HMODULE module = nullptr; Need(GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(&EntryPointFunc), &module) != 0, "own_module_handle");
         state->plugin_path = probe::Utf8(probe::ModulePath(module)); state->binding.build_sha = probe::FileHash(probe::Wide(state->plugin_path));
-        auto manifest = probe::ParseFields(state->root->Read(L"launch.manifest"));
+        state->binding.root_path = probe::Utf8(state->root->path());
+        const auto manifest_bytes = state->root->Read(L"launch.manifest");
+        auto manifest = probe::ParseFields(manifest_bytes);
         state->signed_fixture = manifest.at("protocol") == "2";
+        probe::FixtureLaunch launch;
         if (state->signed_fixture) {
-            probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path", "stage_id", "role", "fixture",
-                "executable_path", "executable_sha256", "source_root", "baseline_sha256", "expires_unix_ms", "mac"});
             state->session_key = probe::Utf8(Env(L"AE_AGENT_NATIVE_FIXTURE_KEY"));
-            Need(probe::LowerHex(state->session_key, 64), "child_session_key_required");
             SetEnvironmentVariableW(L"AE_AGENT_NATIVE_FIXTURE_KEY", nullptr); // retain only in this state
-            probe::VerifySignedFields(manifest, state->session_key);
-            const auto expiry = probe::Decimal(manifest.at("expires_unix_ms")), now = probe::NowMs();
-            Need(expiry > now && expiry - now <= 300000, "signed_launch_expired");
-            Need(manifest.at("executable_path") == probe::Utf8(executable) && manifest.at("executable_sha256") == probe::FileHash(executable), "signed_host_image_mismatch");
-            state->stage_id = manifest.at("stage_id"); state->role = manifest.at("role"); state->fixture_kind = manifest.at("fixture");
-            state->source_root_path = manifest.at("source_root"); state->baseline_sha = manifest.at("baseline_sha256");
-            Need(probe::LowerHex(state->stage_id, 32) && (state->role == "capture" || state->role == "stage") &&
-                (state->fixture_kind == "saved-clean" || state->fixture_kind == "saved-dirty" || state->fixture_kind == "untitled-dirty") &&
-                probe::LowerHex(state->baseline_sha, 64), "signed_launch_scope");
-            if (state->role == "capture") Need(state->source_root_path == probe::Utf8(state->root->path()) &&
-                state->baseline_sha == std::string(64, '0'), "capture_launch_source");
-            else {
-                const auto source_path = probe::Canonical(probe::Wide(state->source_root_path));
+            state->executable_sha = probe::FileHash(executable);
+            launch = probe::ValidateFixtureLaunch(manifest, state->binding, state->session_key,
+                state->plugin_path, probe::Utf8(executable), state->executable_sha);
+            state->startup_launch = launch;
+            state->launch_manifest_sha = probe::Sha256(manifest_bytes);
+            state->stage_id = launch.stage_id; state->role = launch.role; state->fixture_kind = launch.fixture;
+            state->source_root_path = launch.source_root; state->baseline_sha = launch.baseline_sha;
+        } else {
+            probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path"});
+            Need(manifest.at("protocol") == "1" && manifest.at("nonce") == state->binding.nonce && manifest.at("plugin_path") == state->plugin_path && manifest.at("plugin_sha256") == state->binding.build_sha && manifest.at("root_path") == state->binding.root_path, "launch_manifest_binding_mismatch");
+        }
+        state->binding.challenge = probe::RandomToken(); state->binding.pid = GetCurrentProcessId(); state->binding.process_created_ms = ProcessCreated();
+        state->plugin_id = plugin_id; state->driver_major = major; state->driver_minor = minor; state->deadline = probe::NowMs() + 1800000;
+        const auto owner_receipt = "{" + state->Base() + ",\"status\":\"exclusive_native_owner\"}\n";
+        if (state->signed_fixture && state->role == "stage") state->root->ClaimStage(owner_receipt, state->baseline_sha);
+        else state->root->Claim(owner_receipt);
+        if (state->signed_fixture) {
+            // Expiry is a host authorization gate, not permission to hide a
+            // trustworthy failed boot. No source-root or AE API work below
+            // executes when expired; ClaimStage only hashes its own baseline.
+            state->bootstrap_refused_at = probe::NowMs();
+            state->expired_bootstrap = launch.expires_ms <= state->bootstrap_refused_at;
+            probe::RequireFixtureLaunchFresh(launch, state->bootstrap_refused_at);
+            if (state->role == "stage") {
+                const auto source_path = probe::Wide(state->source_root_path);
                 const auto leaf = source_path.substr(source_path.find_last_of(L'\\') + 1);
-                Need(leaf.size() == 38 && leaf.substr(0, 6) == L"probe-" && source_path != state->root->path(), "stage_source_owned_leaf");
                 state->source_root = std::make_unique<probe::OwnedRoot>(source_path, probe::Utf8(leaf.substr(6)));
                 Need(state->root->Hash(L"baseline.aep") == state->baseline_sha && state->source_root->Hash(L"baseline.aep") == state->baseline_sha, "stage_baseline_binding_mismatch");
             }
-        } else probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path"});
-        Need((manifest.at("protocol") == "1" || state->signed_fixture) && manifest.at("nonce") == state->binding.nonce && manifest.at("plugin_path") == state->plugin_path && manifest.at("plugin_sha256") == state->binding.build_sha && manifest.at("root_path") == probe::Utf8(state->root->path()), "launch_manifest_binding_mismatch");
-        state->binding.challenge = probe::RandomToken(); state->binding.pid = GetCurrentProcessId(); state->binding.process_created_ms = ProcessCreated(); state->binding.root_path = probe::Utf8(state->root->path());
-        state->plugin_id = plugin_id; state->driver_major = major; state->driver_minor = minor; state->deadline = probe::NowMs() + 1800000;
-        state->root->Claim("{" + state->Base() + ",\"status\":\"exclusive_native_owner\"}\n");
+        }
         state->suites.basic = basic;
-        try { state->suites.Required(); }
-        catch (const std::exception& e) { state->Refuse(e.what()); return A_Err_NONE; }
+        state->suites.Required();
         if (!state->signed_fixture) state->Receipt(L"handshake.json", "\"status\":\"native_identity_waiting_ack_no_project_actions\",\"driverMajor\":" + Number(major) + ",\"driverMinor\":" + Number(minor) + ",\"rootPath\":" + probe::Json(state->binding.root_path) + ",\"inspectApprovalSha256\":" + probe::Json(probe::Sha256("native-handshake:" + state->binding.challenge)) + ",\"suites\":{\"ProjSuite6\":9,\"CompSuite12\":26,\"MemorySuite1\":1,\"RegisterSuite5\":6,\"ItemSuite9\":14,\"LayerSuite9\":15,\"FootageSuite5\":11,\"UtilitySuite6\":13,\"CollectionSuite2\":2}");
+        state->idle_hook_registration_attempted = true;
         AE(state->suites.registration->AEGP_RegisterIdleHook(plugin_id, Idle, reinterpret_cast<AEGP_IdleRefcon>(state.get())), "RegisterIdleHook");
         g_state = state.release(); if (global) *global = reinterpret_cast<AEGP_GlobalRefcon>(g_state);
-    } catch (...) { /* fail closed before registration; never display host dialogs */ }
+    } catch (const std::exception& e) {
+        if (state && state->root && state->root->Claimed()) {
+            if (state->signed_fixture) state->RefuseStartup(e.what()); else state->Refuse(e.what());
+            g_state = state.release(); if (global) *global = reinterpret_cast<AEGP_GlobalRefcon>(g_state);
+        }
+    } catch (...) {
+        if (state && state->root && state->root->Claimed()) {
+            if (state->signed_fixture) state->RefuseStartup("unknown_native_startup_exception"); else state->Refuse("unknown_native_startup_exception");
+            g_state = state.release(); if (global) *global = reinterpret_cast<AEGP_GlobalRefcon>(g_state);
+        }
+    } // Untrusted or unclaimed failures remain inert; never display host dialogs.
     return A_Err_NONE;
 }

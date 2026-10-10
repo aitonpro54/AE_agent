@@ -3593,6 +3593,12 @@
       // Only this trusted handler may adopt server-persisted terminal evidence.
       var adopted=!!(result.generatedExportRecovery && context && context.adoptGeneratedExportRecovery && context.adoptGeneratedExportRecovery(result.generatedExportRecovery,runId));
       if(result.commonTitleAssemblyRecovery && context && context.adoptCommonTitleAssemblyRecovery)adopted=!!context.adoptCommonTitleAssemblyRecovery(result.commonTitleAssemblyRecovery,runId);
+      if(result.nativeFixtureAbandonmentAvailable===true && result.originalRequestId===originalRequestId && result.historicalOutcome==="unknown" && result.nativeExecutionProven===false && result.replayAllowed===false) {
+        // Release this read-only handler first; the independent trusted GET then
+        // verifies actual controller idleness before adopting the exact sidecar.
+        if(onDone)onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:false,terminalEvidenceRequired:true});
+        panelActionUI.refreshNativeFixtureAbandonments();return;
+      }
       if(onDone) onDone(null,{reconciliation:result,runId:runId,admissionGuardReleased:adopted,
         terminalEvidenceRequired:guarded && !adopted});
     });
@@ -4652,6 +4658,14 @@
         done(null,response.disposition);
       });
     },
+    lookupNativeFixtureAbandonment:function(selector,done) {
+      var url=getBaseUrl(),token=getToken();
+      if(!window.AEAgentPanelContract.validateLoopbackUrl(url) || !token){done({code:"fixture_abandonment_bridge_unavailable"});return;}
+      request("GET","/ame/native-fixture-abandonment/lookup?requestId="+encodeURIComponent(selector.requestId)+"&runId="+encodeURIComponent(selector.runId),null,function(error,response) {
+        if(getBaseUrl()!==url || getToken()!==token || error || !response || response.ok!==true || !Object.prototype.hasOwnProperty.call(response,"disposition")){done(error || {code:"fixture_abandonment_lookup_failed"});return;}
+        done(null,response.disposition);
+      });
+    },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
   function lookupHumanSettlementBeforeConnect(attempt) {
     panelActionUI.refreshHumanSettlements(function(ready) {
@@ -4659,7 +4673,7 @@
         if(allReady && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0")setTimeout(function(){invokePanelUI("bridge.connect",{});},250);
         else if(!allReady && tokenEl.value && attempt<3)setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
       }
-      if(ready)panelActionUI.refreshAmeFixtureDisposition(finishLookup);
+      if(ready)panelActionUI.refreshAmeFixtureDisposition(function(fixtureReady){if(fixtureReady)panelActionUI.refreshNativeFixtureAbandonments(finishLookup);else finishLookup(false);});
       else finishLookup(false);
     });
   }

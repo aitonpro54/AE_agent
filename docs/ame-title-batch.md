@@ -6,6 +6,16 @@ M2: реализация `ensure_ame_running` и её offline-проверки �
 остановился на обязательной проверке проекта `project_save_required`. Полная
 цепочка двух вариантов не принята.
 
+**Последний этап, 10 октября — offline native bootstrap и durable fixture lifecycle.**
+Build `build-30d58da3cfc14850bc2d343958e726be`, SHA-256
+`efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`; root установил
+тот же файл атомарно, read-back hash совпал. Реализованы strict root-manifest-only и
+stage-baseline-pinned проверки, отказ по истёкшему signed manifest до suites, внешний
+durable ledger, точная identity PID + 100 ns birth, immutable unknown sidecar с
+abandonment и retirement только после выхода удержанного handle. `complete` требует
+оба verified native receipts и полную цепочку. Это offline milestone: новый AE run не
+создавался, а production snapshot backend, AME submit/encoding/media и M3/M4 не приняты.
+
 Уточнение M2: доступен отдельный ручной pin точной существующей установки с
 `HashMismatch`. В `ensure_ame_running` передают `installationId` и
 `existingInstallationTrust:{acknowledgedSignatureStatus:"HashMismatch",sha256:"<точный SHA-256>"}`.
@@ -25,11 +35,16 @@ Private ingress проверяет фактический panel-role запро�
 Каждая фаза привязана к текущему плану, checkpoint, процессу и точной сборке;
 неизвестная отправка запрещает повтор. Это проверка отдельных fixtures, ещё не
 production backend снимка открытого пользовательского проекта и не AME export.
-Последняя сборка: 215 legacy + 65 signed C++ checks и 63 JS grant checks;
-runner — 28 offline/mock checks. После native receipts отдельный
+Прежняя сборка: 215 legacy + 65 signed C++ checks и 63 JS grant checks;
+runner — 28 offline/mock checks. В последнем lifecycle build проверены 434 offline C++
+cases (215 legacy + 65 signed + 115 startup + 39 root), 0 warnings; JS grant 86,
+runner 34, abandonment 20, old-v1 disposition 17, backend 28, CEP VM 48 actions / 16 scenarios.
+После native receipts отдельный
 `inspect_ame_native_fixture_result` сверяет private producer cache, текущие хеши
 файлов и PID/birth двух children. Semantic pass требует этот отдельный read;
-echo результата не принимается. Реальный snapshot и просмотр двух результатов впереди.
+echo результата не принимается. Root review исправил completion/cache ordering и future-birth
+identity checks. Реальный snapshot пользовательского проекта и AME export остаются впереди;
+daemon продолжает держать прежний runtime SHA, CEP assets не обновлены.
 
 ## Доступные инструменты
 
@@ -203,7 +218,10 @@ M1 offline: `smoke:ame-transport` — 17 групп strict ES3/fake VM; `smoke:a
 исхода; приложения не запускались. По указанным preset fixtures симлинк файла
 недоступен в Windows host, junction-каталог проверен. Ни один offline smoke не
 является доказательством live запуска или кодирования видео. Полный
-`smoke:planning`, rules, семь JS syntax checks и diff checks прошли.
+`smoke:planning`, rules, 13 JS syntax checks и diff checks прошли. В planning smoke
+исправлен VM sandbox последнего planner-guidance regression: isolated production catalog
+содержит все 189 ожидаемых tools и проверяет новый readonly tool. Полный набор включает
+шесть ранее успешных скриптов и повторно принятый последний сценарий.
 
 Финальный bounded review snapshot contract подтвердил три safeguards на уровне
 спецификации; это не проверка backend. Последний passive bridge read root показал

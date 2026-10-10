@@ -65,8 +65,10 @@ class OwnedRoot {
     std::wstring path_;
     std::vector<Handle> directories_;
     Handle owner_;
+    bool claimed_ = false;
     std::map<std::wstring, RetainedFile> retained_files_;
     std::set<std::wstring> attempted_publications_;
+    void ClaimExact(const std::string& receipt, bool signed_stage);
 #ifdef PROBE_OFFLINE_HARNESS
     PublicationInterleaving publication_interleaving_;
 #endif
@@ -82,6 +84,11 @@ public:
     void WriteFixtureAsset(const std::wstring& basename, const std::string& bytes);
     std::string Hash(const std::wstring& basename) const;
     void Claim(const std::string& receipt);
+    bool Claimed() const { return claimed_; } // true only after flushed Claim
+    // Closed protocol-2 stage bootstrap: exactly launch.manifest+baseline.aep.
+    // Pin/hash the fixed baseline on the same read handle before Claim and keep
+    // it until this root dies; Hash rechecks that retained identity and bytes.
+    void ClaimStage(const std::string& receipt, const std::string& baseline_sha);
 #ifdef PROBE_OFFLINE_HARNESS
     // Deterministic interleavings exist only in the separate offline executable.
     void InterleavePublicationForTest(PublicationInterleaving hook) { publication_interleaving_ = std::move(hook); }

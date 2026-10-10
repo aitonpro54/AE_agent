@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path").win32;
 const m100 = require("./m100-protocol");
+const ledger = require("./native-fixture-attempt-ledger");
 
 const TOOL_NAME = "ame_native_fixture_probe";
 const SCHEMA = "ae-agent.native-fixture-probe.v2";
@@ -62,12 +63,17 @@ async function inspectOwnedRoot(descriptor, ownedParent, filesystem = fs.promise
     need(stat.isDirectory() && !stat.isSymbolicLink() && String(await filesystem.realpath(cursor)).toLowerCase() === cursor.toLowerCase(), "fixture_root_reparse_or_identity");
     if (path.dirname(cursor) === cursor) break;
   }
-  const ownerFile = path.join(root, "server-owner.json");
+  const ownerFile = path.join(path.dirname(parent), "ame-native-fixture-ledger",descriptor.stageId,"owner.json");
   await regularFile(ownerFile, filesystem);
-  const marker = JSON.parse(await filesystem.readFile(ownerFile, "utf8"));
+  const envelope=JSON.parse(await filesystem.readFile(ownerFile, "utf8")), marker=envelope.value;
+  need(envelope.schema===ledger.SCHEMA+".envelope" && envelope.sha256===sha(JSON.stringify(marker)),"fixture_root_owner_mismatch");
   exact(marker, ["schema", "rootPath", "nonce", "stageId", "role"]);
   need(marker.schema === "ae-agent.native-fixture-owner.v2" && marker.rootPath === root && marker.nonce === descriptor.nonce &&
     marker.stageId === descriptor.stageId && marker.role === descriptor.role, "fixture_root_owner_mismatch");
+  const expected=descriptor.role === "capture" ? ["launch.manifest"] : ["baseline.aep","launch.manifest"];
+  // Before the manifest is published, the native root must be otherwise empty.
+  const present=(await filesystem.readdir(root)).sort();
+  need(JSON.stringify(present)===JSON.stringify(expected.filter(name=>name!=="launch.manifest")),"fixture_native_claim_layout_required");
   for (const file of [descriptor.pluginPath, descriptor.executablePath]) await regularFile(file, filesystem);
   need(sha(await filesystem.readFile(descriptor.pluginPath)) === descriptor.pluginSha256 &&
     sha(await filesystem.readFile(descriptor.executablePath)) === descriptor.executableSha256, "fixture_child_image_hash_mismatch");
@@ -160,10 +166,12 @@ function createFixtureGrantIssuer(dependencies) {
       source_root: descriptor.role === "capture" ? descriptor.rootPath : capture.descriptor.rootPath,
       baseline_sha256: descriptor.role === "capture" ? ZERO : capture.snapshot.baselineSha256, expires_unix_ms: String(expiry) };
     a[descriptor.role] = child;
-    children.set(child, { capability, childId, descriptor, descriptorStamp, key, state: "prepared", binding: null, expectedSha: null, snapshot: null, grants: new Map() });
+    const manifestBytes=sign(manifest,key);
+    children.set(child, { capability, childId, descriptor, descriptorStamp, key, state: "prepared", binding: null, expectedSha: null, snapshot: null, grants: new Map(),
+      fixture:a.args.fixtureKind,manifestSha256:sha(manifestBytes),expiresUnixMs:expiry });
     // Return only to trusted bridge launch code. Never expose env/key in tool output,
     // durable receipts, logs, diagnostics or MCP response payloads.
-    return Object.freeze({ child, manifestBytes: sign(manifest, key), environment: Object.freeze({
+    return Object.freeze({ child, manifestBytes, environment: Object.freeze({
       AE_AGENT_NATIVE_PROBE_ROOT: descriptor.rootPath, AE_AGENT_NATIVE_PROBE_NONCE: descriptor.nonce, AE_AGENT_NATIVE_FIXTURE_KEY: key }) });
   }
   function childState(child) {
@@ -271,7 +279,28 @@ function createFixtureGrantIssuer(dependencies) {
     } catch (error) { s.state = "unknown"; throw error; }
   }
   function markUnknown(child) { const s = children.get(child); need(s, "fixture_private_child_required"); s.state = "unknown"; }
-  return Object.freeze({ authorize, prepareChild, acceptReceipt, issuePhase, markUnknown });
+  // A terminal bootstrap refusal can be checked after proposal expiry. This
+  // path cannot ACK a phase, mint a grant, revive a capability or retire a host.
+  async function verifyBootstrapRefusal(child,bytes) {
+    const s=children.get(child); need(s,"fixture_private_child_required");
+    need(typeof bytes==="string" && Buffer.byteLength(bytes)<=65536,"fixture_receipt_size");
+    const envelope=JSON.parse(bytes);exact(envelope,["body","mac"]);
+    need(typeof envelope.body==="string" && HEX.test(envelope.mac),"fixture_signed_receipt_required");
+    need(crypto.timingSafeEqual(Buffer.from(envelope.mac,"hex"),Buffer.from(hmac(s.key,envelope.body),"hex")),"fixture_receipt_mac_mismatch");
+    const b=JSON.parse(envelope.body), d=s.descriptor;
+    exact(b,["schema","status","reason","hostLoaded","productionAuthorization","readiness","role","fixture","stageId","rootPath","nonce","challenge","pluginSha256","executableSha256","pid","processCreatedUnixMs","manifestSha256","expiresUnixMs","refusedAtUnixMs","suitesAcquired","fixtureMutationDispatches","nativeSaveDispatches","replayAllowed"]);
+    need(b.schema==="ae-agent.native-fixture-bootstrap-refusal.v1" && b.status==="bootstrap_refused_before_suite_acquisition" &&
+      typeof b.reason==="string" && b.reason.length>0 && b.reason.length<=300 && b.hostLoaded===true && b.productionAuthorization===false && b.readiness===false &&
+      b.role===d.role && b.fixture===s.fixture && b.stageId===d.stageId && b.rootPath===d.rootPath && b.nonce===d.nonce && TOKEN.test(b.challenge) &&
+      Number.isSafeInteger(b.pid) && b.pid>0 && Number.isSafeInteger(b.processCreatedUnixMs) && b.processCreatedUnixMs>0 &&
+      (!s.binding || b.challenge===s.binding.challenge && b.pid===s.binding.pid && b.processCreatedUnixMs===s.binding.processCreatedUnixMs) &&
+      b.pluginSha256===d.pluginSha256 && b.executableSha256===d.executableSha256 && b.manifestSha256===s.manifestSha256 && b.expiresUnixMs===s.expiresUnixMs &&
+      Number.isSafeInteger(b.refusedAtUnixMs) && b.refusedAtUnixMs>=s.expiresUnixMs && b.refusedAtUnixMs<=clock() && b.suitesAcquired===false &&
+      b.fixtureMutationDispatches===0 && b.nativeSaveDispatches===0 && b.replayAllowed===false,"fixture_bootstrap_refusal_binding");
+    need(await dependencies.inspectProcess(d,b)===true,"fixture_live_child_identity_required");
+    return Object.freeze({schema:b.schema,endpointInert:true,processExited:false,nativeExecutionProven:false,replayAllowed:false,receipt:b});
+  }
+  return Object.freeze({ authorize, prepareChild, acceptReceipt, issuePhase, markUnknown,verifyBootstrapRefusal });
 }
 
 module.exports = { TOOL_NAME, SCHEMA, validateInput, canonicalFields, inspectOwnedRoot, createFixtureGrantIssuer };

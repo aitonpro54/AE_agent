@@ -80,6 +80,8 @@ const ameFixtureRunner = require("./ame-native-fixture-runner");
 const ameTitleJobs = require("./ame-title-jobs");
 const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
 const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
+const nativeFixtureAbandonment = require("./native-fixture-abandonment");
+const nativeFixtureAbandonmentBackend = require("./native-fixture-abandonment-backend");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -5398,6 +5400,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 
 const PLANNING_TOOL_NAMES = [
   ameFixtureRunner.INSPECT,
+  ameFixtureRunner.INSPECT_ATTEMPT,
   ...ameTitleJobs.tools.map(tool => tool.name),
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
@@ -9080,6 +9083,27 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname.startsWith("/ame/native-fixture-abandonment/")) {
+      if (!requireToken(req,res,url)) return;
+      const operation=url.pathname.slice("/ame/native-fixture-abandonment/".length);
+      if (!["capture","authorize","lookup","retire"].includes(operation) || req.method!==(operation==="lookup" ? "GET" : "POST")) {
+        writeJson(res,404,{ok:false,code:"fixture_abandonment_route_invalid"});return;
+      }
+      if(res.authRole!==(operation==="lookup" ? "panel" : "automation")){writeJson(res,403,{ok:false,code:"fixture_abandonment_role_required"});return;}
+      try {
+        const readers=nativeFixtureAbandonmentBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControlService,
+          readBridgeStatus:getBridgeStatus,loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
+          executorQuiescence:()=>ameFixtureExecutor.quiescence()});
+        let input;
+        if(operation==="lookup") {
+          if(Array.from(url.searchParams.keys()).sort().join(",")!=="requestId,runId")throw Object.assign(Error("fixture_abandonment_selector_invalid"),{code:"fixture_abandonment_selector_invalid"});
+          input={requestId:url.searchParams.get("requestId"),runId:url.searchParams.get("runId")};
+        } else input=await readJsonBody(req);
+        const result=await nativeFixtureAbandonment[operation](input,readers);
+        writeJson(res,200,{ok:true,[operation==="capture" ? "capture" : "disposition"]:result});
+      } catch(error){writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_abandonment_failed"});}
+      return;
+    }
     if (url.pathname.startsWith("/ame/fixture-ui-disposition/")) {
       if (!requireToken(req,res,url)) return;
       const operation = url.pathname.slice("/ame/fixture-ui-disposition/".length);
@@ -12923,6 +12947,7 @@ const tools = [
   ameRunning.tool,
   ameFixtureRunner.tool,
   ameFixtureRunner.inspectTool,
+  ameFixtureRunner.inspectAttemptTool,
   ...ameTitleJobs.tools,
   ...projectLifecycleContract.toolDefinitions,
   projectLifecyclePlan.tool,
@@ -13067,6 +13092,14 @@ async function callTool(name, args, executionContext) {
     const runId=optionalString(args,"runId","");
     const record=planRunRecords.readRecord(LOG_DIR,runId);
     if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
+    if(record.plan.steps?.length===1 && record.plan.steps[0].tool===ameFixtureGrant.TOOL_NAME && args.originalRequestId!==undefined) {
+      try {
+        const saved=nativeFixtureAbandonment.lookupAudited({requestId:args.originalRequestId,runId},{evidenceRoot:LOG_DIR,repoRoot:PROJECT_ROOT});
+        return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:saved ? "abandoned_reviewed" : "unknown",steps:[],
+          reasonCode:saved ? "native_fixture_fresh_trusted_lookup_required" : "native_fixture_abandonment_audit_required",nativeFixtureAbandonmentAvailable:!!saved,
+          originalRequestId:args.originalRequestId,historicalOutcome:"unknown",nativeExecutionProven:false,admissionGuardReleased:false,replayAllowed:false});
+      } catch(error){return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"incomplete",reasonCode:error.code || error.message,steps:[],admissionGuardReleased:false,replayAllowed:false});}
+    }
     if(runId===commonTitleRecovery.RUN_ID && args.originalRequestId!==undefined){
       try{return toolResult(await reconcileCommonTitle(record,args));}
       catch(error){return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"incomplete",reasonCode:error.code || error.message,steps:[],freshReconcileRequired:true,admissionGuardReleased:false,replayAllowed:false});}
@@ -13184,12 +13217,16 @@ async function callTool(name, args, executionContext) {
   if (name === ameFixtureGrant.TOOL_NAME) {
     try { const result = await ameFixtureExecutor.execute(args, executionContext && executionContext.ameFixtureAuthorization); return toolResult(result, !result.ok); }
     catch (error) { return toolResult({ ok: false, code: error.code || "fixture_runner_failed", nativeReason: error.nativeReason || null,
-      error: error.message, automaticRetryAllowed: false, productionBackend: false }, true); }
+      error: error.message, nativeAttempts:error.nativeAttempts || [],automaticRetryAllowed: false, productionBackend: false }, true); }
     finally { ameFixtureCheckpoints.clear(); }
   }
   if (name === ameFixtureRunner.INSPECT) {
     try { return toolResult(await ameFixtureExecutor.inspectResult(args)); }
     catch (error) { return toolResult({ ok: false, code: error.code || "fixture_result_inspection_failed", automaticRetryAllowed: false }, true); }
+  }
+  if(name===ameFixtureRunner.INSPECT_ATTEMPT) {
+    try{return toolResult(await ameFixtureExecutor.inspectAttempt(args));}
+    catch(error){return toolResult({ok:false,code:error.code || "fixture_attempt_inspection_failed",replayAllowed:false},true);}
   }
   if (ameTitleJobs.tools.some(tool => tool.name === name)) {
     const result = await ameTitleExecutor.execute(name, args, executionContext && executionContext.ameTitleAuthorization);

@@ -123,7 +123,7 @@ function productionPlannerFixture(catalog) {
     amePresets: { listAmePresetsTool: amePresets.listAmePresetsTool },
     ameRunning: { TOOL_NAME: ameRunning.TOOL_NAME },
     ameFixtureGrant: { TOOL_NAME: ameFixtureGrant.TOOL_NAME },
-    ameFixtureRunner: { INSPECT: ameFixtureRunner.INSPECT },
+    ameFixtureRunner: { INSPECT: ameFixtureRunner.INSPECT, INSPECT_ATTEMPT: ameFixtureRunner.INSPECT_ATTEMPT },
     ameTitleJobs: { ENQUEUE: ameTitleJobs.ENQUEUE, START: ameTitleJobs.START, tools: ameTitleJobs.tools },
     nativeRenderVariant,
     slideshowTools: { TOOL_NAMES: slideshowTools.TOOL_NAMES },
@@ -140,6 +140,8 @@ function productionPlannerFixture(catalog) {
   );
   const planningNames = Array.from(production.planningNames);
   const mutatingNames = new Set(Array.from(production.mutatingNames));
+  assert(planningNames.includes(ameFixtureRunner.INSPECT_ATTEMPT), "Production planning input must preserve native fixture attempt inspection");
+  assert(!mutatingNames.has(ameFixtureRunner.INSPECT_ATTEMPT), "Native fixture attempt inspection must remain read-only");
   const catalogNames = new Set(catalog.map((tool) => tool.name));
   assert(planningNames.length > 0 && mutatingNames.size > 0, "Production planning and mutation sets must not be empty");
   assert.strictEqual(new Set(planningNames).size, planningNames.length, "Production planning names must be unique");

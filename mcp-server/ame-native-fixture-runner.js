@@ -3,10 +3,12 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { execFile } = require("node:child_process");
+const { execFile,spawn } = require("node:child_process");
 const grant = require("./ame-native-fixture-grant");
+const ledger = require("./native-fixture-attempt-ledger");
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const INSPECT = "inspect_ame_native_fixture_result";
+const INSPECT_ATTEMPT="inspect_native_fixture_attempt";
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function writeOnce(file, bytes) {
   const fd = fs.openSync(file, "wx");
@@ -36,14 +38,46 @@ function queryWindows(script, env = process.env) {
 }
 async function inspectProcess(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) fail("fixture_runner_pid_invalid");
-  return queryWindows(`$ErrorActionPreference='Stop'; $p=Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}'; if(!$p){'null';exit}; $b=[DateTimeOffset]$p.CreationDate.ToUniversalTime(); @{pid=[int]$p.ProcessId;path=[string]$p.ExecutablePath;createdUnixMs=$b.ToUnixTimeMilliseconds()} | ConvertTo-Json -Compress`);
+  return queryWindows(`$ErrorActionPreference='Stop'; $p=Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if(!$p){'null';exit}; try{$h=$p.Handle; $b=[DateTimeOffset]$p.StartTime.ToUniversalTime(); @{pid=[int]$p.Id;path=[string]$p.MainModule.FileName;createdUnixMs=$b.ToUnixTimeMilliseconds();createdAt=$b.ToString('o')} | ConvertTo-Json -Compress}finally{$p.Dispose()}`);
 }
 async function launchChild(descriptor, environment) {
   // A new AE instance, hidden at launch. No -r, arbitrary JSX, GUI actions or
   // Render Queue operation. Only the startup-loaded fixed native fixture runs.
   const env = { ...process.env, ...environment, AE_AGENT_NATIVE_FIXTURE_EXECUTABLE: descriptor.executablePath };
   for (const name of Object.keys(env)) if (/^AE_BRIDGE_.*TOKEN$|^AE_BRIDGE_DEV_ADMIN$|^AE_M100_ALLOW_DIRECT_TOOL_EXECUTION$/i.test(name)) delete env[name];
-  return queryWindows("$ErrorActionPreference='Stop'; $p=Start-Process -FilePath $env:AE_AGENT_NATIVE_FIXTURE_EXECUTABLE -ArgumentList '-m' -WindowStyle Hidden -PassThru; @{pid=[int]$p.Id} | ConvertTo-Json -Compress", env);
+  // This observer retains the exact process handle from launch through exit.
+  // A lost observer or daemon crash leaves admission closed; PID absence/reuse
+  // never becomes an exit proof. It performs no termination or project action.
+  const script=["$ErrorActionPreference='Stop'",
+    "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class FixtureExitWait { [DllImport(\"kernel32.dll\",SetLastError=true)] public static extern uint WaitForSingleObject(IntPtr h,uint ms); }'",
+    "$p=Start-Process -FilePath $env:AE_AGENT_NATIVE_FIXTURE_EXECUTABLE -ArgumentList '-m' -WindowStyle Hidden -PassThru",
+    "$h=$p.Handle; $opened=[DateTimeOffset]::UtcNow; $birth=[DateTimeOffset]$p.StartTime.ToUniversalTime(); $image=[string]$p.MainModule.FileName; $verified=[DateTimeOffset]::UtcNow",
+    "$identity=@{pid=[int]$p.Id;createdUnixMs=$birth.ToUnixTimeMilliseconds();createdAt=$birth.ToString('o');path=$image}",
+    "@{type='launch';process=$identity} | ConvertTo-Json -Compress; [Console]::Out.Flush()",
+    "$wait=[FixtureExitWait]::WaitForSingleObject($h,[uint32]::MaxValue); if($wait -ne 0){throw 'fixture_wait_failed'}; $p.Refresh(); $code=$p.ExitCode",
+    "@{type='exit';process=$identity;proof=@{kind='held_process_handle_signaled';handleOpenedAt=$opened.ToString('o');identityVerifiedAt=$verified.ToString('o');observedAt=[DateTimeOffset]::UtcNow.ToString('o');waitResult='WAIT_OBJECT_0';exitCode=[int]$code}} | ConvertTo-Json -Depth 4 -Compress; [Console]::Out.Flush(); $p.Dispose()"
+  ].join(";\n");
+  const executable=path.join(process.env.SystemRoot || "C:\\Windows","System32","WindowsPowerShell","v1.0","powershell.exe");
+  return new Promise((resolve,reject)=> {
+    const observer=spawn(executable,["-NoProfile","-NonInteractive","-Command",script],{windowsHide:true,env,stdio:["ignore","pipe","pipe"]});
+    let buffer="", launched=null, settled=false, finishExit;
+    const retirement=new Promise(r=>{finishExit=r;});
+    observer.stdout.setEncoding("utf8");observer.stdout.on("data",chunk=> {
+      buffer+=chunk;if(buffer.length>16384){if(!settled)reject(Error("fixture_runner_launch_unknown"));finishExit(null);return;}
+      let newline;
+      while((newline=buffer.indexOf("\n"))>=0) {
+        const line=buffer.slice(0,newline).replace(/^\uFEFF/,"").trim();buffer=buffer.slice(newline+1);if(!line)continue;
+        try {const row=JSON.parse(line);
+          if(row.type==="launch" && !launched){launched=row.process;settled=true;resolve({pid:launched.pid,process:launched,retirement});}
+          else if(row.type==="exit" && launched && ledger.same(row.process,launched))finishExit({schema:"ae-agent.native-fixture-retirement-proof.v1",process:row.process,proof:row.proof,nativeExecutionProven:false});
+          else finishExit(null);
+        } catch(_){if(!settled)reject(Error("fixture_runner_launch_unknown"));finishExit(null);}
+      }
+    });
+    // Never forward native launch environment or PowerShell stderr to logs/tools.
+    observer.stderr.resume();observer.on("error",()=>{if(!settled)reject(Error("fixture_runner_launch_unknown"));finishExit(null);});
+    observer.on("close",()=>{if(!settled)reject(Error("fixture_runner_launch_unknown"));finishExit(null);});
+  });
 }
 
 function buildArtifacts(repoRoot) {
@@ -87,6 +121,7 @@ function buildArtifacts(repoRoot) {
 function createExecutor(deps) {
   const root = path.resolve(deps.repoRoot), ownedParent = path.join(root, ".codex-runtime", "ame-native-fixtures");
   const descriptors = new Map(), launches = new Map(), capabilities = new WeakMap();
+  const privateChildren=new Map();
   const verifiedResults = new Map();
   let executing = false;
   const readProcess = deps.inspectProcess || inspectProcess;
@@ -96,16 +131,17 @@ function createExecutor(deps) {
       const known = launches.get(descriptor);
       if (!known || known.pid !== binding.pid) return false;
       const observed = await readProcess(binding.pid);
-      return Boolean(observed && observed.pid === binding.pid && observed.createdUnixMs === binding.processCreatedUnixMs &&
+      return Boolean(observed && known.process && ledger.sameProcess(observed,known.process) && observed.pid === binding.pid && observed.createdUnixMs === binding.processCreatedUnixMs &&
         observed.path.toLowerCase() === descriptor.executablePath.toLowerCase());
     },
     consumeAttempt: async attempt => {
       const descriptor = Array.from(descriptors.values()).find(value => value.stageId === attempt.stageId && value.nonce === attempt.nonce);
       if (!descriptor) fail("fixture_runner_attempt_owner_missing");
-      writeOnce(path.join(descriptor.rootPath, `server-consumed-${attempt.operation}.json`), JSON.stringify(attempt) + "\n"); return true;
+      ledger.writeOnce(ledger.fileFor(root,descriptor.stageId,`consumed-${attempt.operation}`),attempt); return true;
     }
   });
   async function authorize(context) {
+    ledger.assertAdmission(root);
     const capability = Object.freeze({});
     capabilities.set(capability, { context, issuerCapability: await issuer.authorize(context) }); return capability;
   }
@@ -117,6 +153,7 @@ function createExecutor(deps) {
   async function execute(args, capability) {
     const entry = assertAuthorization(capability, args);
     if (executing) fail("fixture_runner_busy");
+    ledger.assertAdmission(root);
     executing = true; capabilities.delete(capability);
     const children = [];
     try {
@@ -135,8 +172,8 @@ function createExecutor(deps) {
           pluginPath: artifacts.pluginPath, pluginSha256: artifacts.pluginSha256,
           executablePath: artifacts.executablePath, executableSha256: artifacts.executableSha256 });
         fs.mkdirSync(descriptor.rootPath); safeDirectory(descriptor.rootPath);
-        writeOnce(path.join(descriptor.rootPath, "server-owner.json"), JSON.stringify({ schema: "ae-agent.native-fixture-owner.v2",
-          rootPath: descriptor.rootPath, nonce, stageId, role }) + "\n");
+        ledger.writeOnce(ledger.fileFor(root,stageId,"owner"),{ schema: "ae-agent.native-fixture-owner.v2",
+          rootPath: descriptor.rootPath, nonce, stageId, role });
         if (role === "stage") {
           const baseline = readRegular(captureReceipt.baselinePath);
           if (sha(baseline) !== captureReceipt.baselineSha256) fail("fixture_runner_baseline_changed");
@@ -144,15 +181,27 @@ function createExecutor(deps) {
         }
         descriptors.set(stageId, descriptor);
         const prepared = await issuer.prepareChild(entry.issuerCapability, stageId);
+        privateChildren.set(stageId,prepared.child);
         writeOnce(path.join(descriptor.rootPath, "launch.manifest"), prepared.manifestBytes);
-        writeOnce(path.join(descriptor.rootPath, "server-launch-attempt.json"), JSON.stringify({ role, stageId, nonce, runId: entry.context.runId,
-          pluginSha256: descriptor.pluginSha256, executableSha256: descriptor.executableSha256, reservedAt: new Date().toISOString(), replayAllowed: false }) + "\n");
+        ledger.reserve(root,descriptor,entry.context,prepared.manifestBytes);
+        const manifestExpiry=Number(/(?:^|\n)expires_unix_ms=(\d+)\n/.exec(String(prepared.manifestBytes))?.[1]) || Infinity;
         const launched = await (deps.launchChild || launchChild)(descriptor, prepared.environment);
         if (!launched || !Number.isSafeInteger(launched.pid) || launched.pid < 1) { issuer.markUnknown(prepared.child); fail("fixture_runner_launch_unknown"); }
         launches.set(descriptor, { pid: launched.pid });
         const owned = { descriptor, child: prepared.child, pid: launched.pid, terminal: false }; children.push(owned);
+        const processInfo=await readProcess(launched.pid);
+        if (launched.process && !ledger.sameProcess(launched.process,processInfo)) fail("fixture_runner_launch_identity_changed");
+        // Preserve the more precise handle-bound birth string when available.
+        const trustedIdentity=launched.process || processInfo;
+        ledger.launch(root,descriptor,trustedIdentity);
+        launches.set(descriptor,{pid:launched.pid,process:trustedIdentity});
+        if (launched.retirement) launched.retirement.then(proof=> {
+          if (!proof) return;
+          try {ledger.validateRetirement(proof,trustedIdentity);ledger.writeOnce(ledger.fileFor(root,stageId,"retirement-proof"),proof);} catch (_) { /* fail closed; no retirement audit */ }
+        });
         const waitReceipt = async filename => {
-          const deadline = Date.now() + 90000;
+          // Waiting does not renew the signed manifest or manual M100 authority.
+          const deadline = Math.min(Date.now() + (filename==="signed-boot.json" ? 300000 : 90000),manifestExpiry,Date.parse(entry.context.record.proposalExpiresAt) || Infinity);
           while (Date.now() < deadline) {
             deps.assertManualIngress(entry.context);
             const file = path.join(descriptor.rootPath, filename);
@@ -182,11 +231,16 @@ function createExecutor(deps) {
             childProcesses: children.map(value => ({ pid: value.pid, rootPath: value.descriptor.rootPath, terminalReceiptVerified: value.terminal })),
             automaticRetryAllowed: false, buildId: artifacts.receipt.buildId, evidenceId: crypto.randomUUID(),
             authorization: { runId: entry.context.runId, proposalId: entry.context.record.actionId } };
+          ledger.complete(root,entry.context.runId,children,verified.receipt.outputs);
           verifiedResults.set(result.evidenceId, { hash: sha(JSON.stringify(result)), payload: JSON.parse(JSON.stringify(result)) });
           return result;
         }
       }
       fail("fixture_runner_incomplete");
+    } catch (error) {
+      for (const owned of children) {issuer.markUnknown(owned.child);ledger.unknown(root,owned.descriptor,error.code || error.message);}
+      error.nativeAttempts=children.map(owned=>({stageId:owned.descriptor.stageId,role:owned.descriptor.role,runId:entry.context.runId,replayAllowed:false}));
+      throw error;
     } finally {
       // Keep processes and roots intact for reconciliation. No general process
       // termination, recursive cleanup, project save/reopen or unknown retry.
@@ -230,9 +284,29 @@ function createExecutor(deps) {
       mediaProof: "not_inspected", ameSubmission: "not_attempted" };
   }
   function quiescence() {
-    return { executing, pendingCount: launches.size, descriptorCount: descriptors.size };
+    return { executing, pendingCount: launches.size, descriptorCount: descriptors.size,
+      outstandingAttempts:ledger.outstanding(root),replayAllowed:false };
   }
-  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, quiescence };
+  function attemptIdentity(stageId) {
+    const d=descriptors.get(stageId), p=d && launches.get(d)?.process;
+    return d && p ? {descriptor:JSON.parse(JSON.stringify(d)),process:JSON.parse(JSON.stringify(p)),executing,replayAllowed:false} : null;
+  }
+  async function inspectAttempt(args) {
+    if(!args || Object.keys(args).sort().join(",")!=="stageId" || !ledger.TOKEN.test(args.stageId || ""))fail("fixture_attempt_invalid_selector");
+    const d=descriptors.get(args.stageId),child=privateChildren.get(args.stageId);
+    const reservation=ledger.read(ledger.fileFor(root,args.stageId,"reservation")),launch=ledger.read(ledger.fileFor(root,args.stageId,"launch")),unknown=ledger.read(ledger.fileFor(root,args.stageId,"unknown"));
+    if(!reservation)fail("fixture_attempt_durable_reservation_unavailable");
+    let bootstrapRefusal=null;
+    if(d && child && launches.has(d)) {
+      const file=path.join(d.rootPath,"signed-bootstrap-refusal.json");
+      if(fs.existsSync(file))bootstrapRefusal=await issuer.verifyBootstrapRefusal(child,readRegular(file).toString("utf8"));
+    }
+    const retired=ledger.validRetirement(root,reservation.value.descriptor),completed=ledger.validCompletion(root,reservation.value.descriptor,reservation);
+    return {schema:"ae-agent.native-fixture-attempt-readback.v1",stageId:args.stageId,reservation,launch,unknown,bootstrapRefusal,
+      verificationScope:child ? "current_private_issuer_and_durable_ledger" : "durable_ledger_only_private_key_unavailable",historicalOutcome:unknown ? "unknown" : "not_inferred",nativeExecutionProven:false,
+      endpointInert:completed || bootstrapRefusal?.endpointInert===true,nativeAdmissionBlocked:!retired && !completed,processExited:retired,replayAllowed:false};
+  }
+  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, inspectAttempt,quiescence,attemptIdentity };
 }
 
 const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snapshot experiment on two server-owned empty AE children. Creates fixed test fixtures, captures current unsaved state, saves two independent variants and reopens them for read-back. Does not mutate the current user project, render, enqueue in AME, claim a production snapshot backend or replay unknown phases.",
@@ -242,4 +316,5 @@ const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snaps
 const inspectTool = { name: INSPECT, description: "Read independent evidence for one private signed native fixture result in the current daemon, rechecking saved file hashes, exact owned child birth and native images. No replay, render, AME enqueue or current-user snapshot claim.",
   inputSchema: { type: "object", additionalProperties: false, required: ["evidenceId"], properties: { evidenceId: { type: "string", format: "uuid" } } },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false } };
-module.exports = { INSPECT, createExecutor, tool, inspectTool, buildArtifacts, writeOnce, readRegular };
+const inspectAttemptTool={name:INSPECT_ATTEMPT,description:"Read one durable fixture attempt and independently verify an expired signed bootstrap refusal using the current private issuer. Does not renew authority, replay a phase, terminate a process or infer the historical mutation outcome. Process retirement requires an audited exact held-handle exit proof.",inputSchema:{type:"object",additionalProperties:false,required:["stageId"],properties:{stageId:{type:"string",pattern:"^[a-f0-9]{32}$"}}},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:false,openWorldHint:false}};
+module.exports = { INSPECT,INSPECT_ATTEMPT,createExecutor, tool, inspectTool,inspectAttemptTool, buildArtifacts, writeOnce, readRegular,inspectProcess };

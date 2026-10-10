@@ -92,7 +92,12 @@ if (!$smokeResult.offline -or $smokeResult.hostLoaded -or
     $smokeResult.destinationWriteContract -ne 'destination_write_contract_unverified' -or
     $smokeResult.guardHarnessNativeSaves -ne 0 -or $smokeResult.guardHarnessExtendScriptSaves -ne 0 -or
     $smokeResult.guardHarnessFixtureDispatches -ne 0) { throw 'Offline harness did not preserve the disabled project-write contract.' }
-if ($smokeResult.legacyProtocolChecks -ne 215 -or $smokeResult.signedFixtureChecks -lt 50) { throw 'Required legacy/signed offline protocol cases are absent.' }
+if ($smokeResult.legacyProtocolChecks -ne 215 -or $smokeResult.signedFixtureChecks -ne 65 -or
+    $smokeResult.startupDiagnosticsChecks -lt 100 -or $smokeResult.nativeRootContractChecks -lt 35 -or
+    $smokeResult.startupHarnessRefusals -ne 3 -or $smokeResult.startupHarnessHostAuthorizations -ne 0 -or
+    $smokeResult.startupHarnessScope -notmatch 'EntryPoint/Adobe suites/hooks not executed') {
+    throw 'Required unchanged legacy/signed and bounded startup/root contract cases are absent.'
+}
 $grantSmokeOutput = & node (Join-Path $repoRoot 'scripts\ame-native-fixture-grant-smoke.js') 2>&1
 $grantSmokeExit = $LASTEXITCODE
 [IO.File]::WriteAllText((Join-Path $buildRoot 'fixture-grant-smoke.log'), ($grantSmokeOutput -join "`n"), $utf8)
@@ -107,6 +112,7 @@ foreach ($relativePath in @('Examples\Headers\AE_GeneralPlug.h', 'Examples\Heade
 $receipt = [ordered]@{ schema = 'ae-agent.native-probe-build.v2'; buildId = $BuildId; offline = $true; readiness = $false; productionBackend = $false; installed = $false; loadedInAE = $false; liveSemantics = 'UNVERIFIED'; destinationWriteContract = 'legacy arbitrary-project writer remains unverified; separate signed cooperative owned-fixture path'; legacyUnsignedWrites = 'closed'; sourceProjectSaveDispatchSites = ($saveToSites + $saveAsSites); sourceDirtyRestorationDispatchSites = $dirtySites; signedFixturePathCompiled = $true; signedFixtureRuntimeAuthorized = $false; fixtureMutationAttempted = $false; phaseGrantPublished = $false; dirtyRestorationAttempted = $false; controlReceiptPublication = 'same-held-handle FileRenameInfo absolute-only no-replace; trusted stable root/ancestors; no runtime fallback; producer retained until OwnedRoot lifetime ends'; rootMetadataIsolation = 'NO_HOSTILE_SAME_USER_WRITER_CLAIM'; mediaHandoff = 'kernel asset writer release tested offline; AE import/proxy UNVERIFIED'; binaryPath = $binary; binarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $binary).Hash.ToLowerInvariant(); peMachine = 'AMD64'; peType = 'PE32+ DLL'; sdkRoot = $SdkRoot; sdkArchiveSha256 = $archiveSha; archiveHashProvenance = 'supplied prerequisite; archive not rehashed by build'; sdkFiles = $sdkEvidence; msbuildVersion = (Get-Item -LiteralPath $MsBuild).VersionInfo.FileVersion; windowsSdk = '10.0.26100.0'; suiteABI = @{ project6 = 9; comp12 = 26; register5 = 6; memory1 = 1; item9 = 14; layer9 = 15; footage5 = 11; utility6 = 13; collection2 = 2; optionalDirtyRestore2 = 2 }; sourceFiles = $sourceHashes; sourceHashesStableAcrossBuild = $true; protocolSmoke = $smokeResult; fixtureGrantSmoke = $grantSmokeResult; timestampUtc = [DateTime]::UtcNow.ToString('o') }
 $receiptPath = Join-Path $buildRoot 'build-receipt.json'
 $receipt.relativeRenameRepro = $reproResult
+$receipt.startupDiagnostics = [ordered]@{ compiled = $true; liveVerified = $false; trustedExpiredChannel = 'signed-bootstrap-refusal.json; ae-agent.native-fixture-bootstrap-refusal.v1; before suite acquisition only; no host authority'; manifestFingerprint = 'SHA256 of exact bounded launch.manifest read bytes'; untrustedLaunch = 'no Claim/refusal'; stageClaim = 'exact launch.manifest+baseline.aep; same-held read handle baseline SHA pinned before Claim and rechecked during bootstrap'; captureAndLegacyClaim = 'exact launch.manifest only'; harnessLimit = $smokeResult.startupHarnessScope }
 $receipt.protocolSmokeExitCode = $smokeExit
 $receipt.offlineValidationAccepted = ($smokeExit -eq 0 -and $smokeResult.status -eq 'passed')
 $receipt.windowsRuntimeVersion = [Environment]::OSVersion.VersionString

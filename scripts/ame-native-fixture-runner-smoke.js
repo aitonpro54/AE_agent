@@ -8,6 +8,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const Module = require("node:module");
+const ledger=require("../mcp-server/native-fixture-attempt-ledger");
 
 const hash = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const checks = [];
@@ -53,7 +54,8 @@ function fixtureGrant() {
           const expected = descriptor.role === "capture" ? ["create-fixture", "snapshot"] : ["stage-variants"];
           assert.equal(operation, expected[state.phases.filter(x => x.stageId === descriptor.stageId).length], "runner issued a phase out of order");
           state.phases.push({ stageId: descriptor.stageId, role: descriptor.role, operation });
-          const attempt = { stageId: descriptor.stageId, nonce: descriptor.nonce, operation };
+          const attempt = { schema:"ae-agent.native-fixture-attempt.v2",actionId:"offline-action",revision:1,payloadHash:`sha256:${"a".repeat(64)}`,
+            runId:"12345678-1234-4234-8234-123456789012",stageId:descriptor.stageId,nonce:descriptor.nonce,operation,status:"consumed_before_grant_publication",replayAllowed:false };
           assert.equal(await deps.consumeAttempt(attempt), true);
           state.consumed.push(attempt);
           return { filename: `signed-${operation}.grant`, bytes: Buffer.from(`grant ${operation}`), replayAllowed: false };
@@ -110,12 +112,13 @@ function createFixture() {
     assertManualIngress(context) { assert(context && context.manual === true); },
     getArtifacts() { state.artifactsCalls++; return artifacts; },
     async launchChild(descriptor) {
+      assert.deepEqual(fs.readdirSync(descriptor.rootPath).sort(),descriptor.role==="capture" ? ["launch.manifest"] : ["baseline.aep","launch.manifest"],"native Claim root must contain only its fixed input files");
       state.launches.push({ role: descriptor.role, rootPath: descriptor.rootPath });
       if (state.refuse) writeReceipt(descriptor, "refused_or_unknown", { reason: "offline signed refusal" });
       else if (!state.omitBoot) writeReceipt(descriptor, "boot");
       return { pid: 4100 + state.launches.length };
     },
-    async inspectProcess() { return null; },
+    async inspectProcess(pid) {return {pid,path:executablePath,createdUnixMs:1791648389614,createdAt:"2026-10-10T16:06:29.614591Z"};},
     // This mock models the guarded server consume callback; runner writes the durable marker.
     async consumeAttempt() { return true; }
   };
@@ -146,7 +149,7 @@ function createFixture() {
     return issuer;
   };
   const executor = runner.createExecutor(deps);
-  const context = { manual: true, args: { fixtureKind: "saved-dirty", restoreDirty: false }, runId: "offline-run",
+  const context = { manual: true, args: { fixtureKind: "saved-dirty", restoreDirty: false }, runId: "12345678-1234-4234-8234-123456789012",
     record: { actionId: "offline-action", revision: 1, payloadHash: `sha256:${"a".repeat(64)}` } };
   return { temp, root, artifacts, deps, state, executor, context, baseline };
 }
@@ -252,11 +255,15 @@ async function main() {
     });
     checked("each_phase_has_durable_prelaunch_attempt", () => {
       for (const launch of t.state.launches) {
-        assert(fs.existsSync(path.join(launch.rootPath, "server-launch-attempt.json")));
+        const owner=fs.readdirSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger")).find(id=>JSON.parse(fs.readFileSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger",id,"owner.json"))).value.rootPath===launch.rootPath);
+        assert(fs.existsSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger",owner,"reservation.json")));
+        assert(fs.existsSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger",owner,"launch.json")));
+        assert(!fs.existsSync(path.join(launch.rootPath,"server-owner.json")));
+        assert(!fs.existsSync(path.join(launch.rootPath,"server-launch-attempt.json")));
         assert(fs.existsSync(path.join(launch.rootPath, "launch.manifest")));
       }
       for (const operation of ["create-fixture", "snapshot", "stage-variants"]) {
-        const marker = t.state.launches.map(x => path.join(x.rootPath, `server-consumed-${operation}.json`)).find(fs.existsSync);
+        const marker=fs.readdirSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger")).map(id=>path.join(t.root,".codex-runtime","ame-native-fixture-ledger",id,`consumed-${operation}.json`)).find(fs.existsSync);
         assert(marker, `missing consumed marker for ${operation}`);
       }
     });
@@ -265,6 +272,20 @@ async function main() {
       assert.equal(t.state.killCalls, 0);
       assert.equal(result.automaticRetryAllowed, false);
     });
+    checked("complete_group_allows_new_attempt_without_claiming_child_exit",()=> {
+      ledger.assertAdmission(t.root);
+      const marker=ledger.read(ledger.completionFile(t.root,t.context.runId));assert.equal(marker.value.endpointInert,true);assert.equal(marker.value.processExited,false);assert.equal(marker.value.entries.length,2);
+    });
+    checked("completion_marker_or_receipt_loss_keeps_admission_closed",()=> {
+      const file=ledger.completionFile(t.root,t.context.runId),bytes=fs.readFileSync(file);
+      fs.unlinkSync(file);assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);fs.writeFileSync(file,bytes,{flag:"wx"});
+      const row=JSON.parse(bytes);row.value.producer="client_echo";row.sha256=ledger.hash(row.value);fs.writeFileSync(file,JSON.stringify(row));assert.throws(()=>ledger.assertAdmission(t.root),/completion_invalid/);fs.writeFileSync(file,bytes);
+      const child=ledger.read(file).value.entries[0],receiptFile=path.join(child.descriptor.rootPath,child.receiptName),receipt=fs.readFileSync(receiptFile);
+      fs.appendFileSync(receiptFile,"changed");assert.throws(()=>ledger.assertAdmission(t.root),/receipt_or_launch_changed/);fs.writeFileSync(receiptFile,receipt);
+      ledger.assertAdmission(t.root);
+    });
+    await t.executor.authorize({...t.context,runId:crypto.randomUUID(),record:{...t.context.record,actionId:"offline-next-action"}});
+    checks.push("completed_fixture_accepts_fresh_independent_authorization");
     checked("private_verified_result_accepts_exact_producer", () => {
       const verification = t.executor.verifyResult(result);
       assert.equal(verification.outputsHashVerified, true);
@@ -278,6 +299,17 @@ async function main() {
     });
   } finally { removeFixture(t); }
 
+  t=createFixture();
+  try {
+    const complete=ledger.complete,uuid=crypto.randomUUID,evidenceId="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",capability=await t.executor.authorize(t.context);
+    ledger.complete=()=>{throw Object.assign(Error("offline_completion_write_failed"),{code:"offline_completion_write_failed"});};crypto.randomUUID=()=>evidenceId;
+    try {
+      await rejected("completion_publication_failure_never_publishes_private_cache",()=>t.executor.execute(t.context.args,capability),"offline_completion_write_failed");
+    } finally {ledger.complete=complete;crypto.randomUUID=uuid;}
+    await rejected("failed_completion_has_no_private_result",()=>t.executor.inspectResult({evidenceId}),"fixture_runner_verified_result_unavailable");
+    checked("failed_completion_keeps_admission_closed",()=>assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/));
+  } finally {removeFixture(t);}
+
   t = createFixture(); t.state.refuse = true;
   try {
     const capability = await t.executor.authorize(t.context);
@@ -285,7 +317,7 @@ async function main() {
     checked("signed_refusal_does_not_advance_or_retry", () => {
       assert.equal(t.state.launches.length, 1);
       assert.equal(t.state.consumed, undefined);
-      assert(fs.existsSync(path.join(t.state.launches[0].rootPath, "server-launch-attempt.json")));
+      assert(fs.readdirSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger")).length===1);
     });
   } finally { removeFixture(t); }
 
@@ -300,7 +332,7 @@ async function main() {
     } finally { Date.now = start; }
     checked("unknown_child_and_launch_record_preserved", () => {
       assert.equal(t.state.launches.length, 1);
-      assert(fs.existsSync(path.join(t.state.launches[0].rootPath, "server-launch-attempt.json")));
+      assert(fs.readdirSync(path.join(t.root,".codex-runtime","ame-native-fixture-ledger")).length===1);
       assert.equal(t.state.launches[0].role, "capture");
     });
   } finally { removeFixture(t); }

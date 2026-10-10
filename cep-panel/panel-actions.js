@@ -23,6 +23,8 @@
   var HUMAN_KEY="codexAeHumanGuardSettlement20261010";
   var fixtureDisposition=null, fixtureDispositionTrusted=false, fixtureLookupPending=false;
   var FIXTURE_KEY="codexAeAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
+  var nativeAbandonments=Object.create(null),nativeAbandonmentTrusted=Object.create(null),nativeAbandonmentLookupPending=false;
+  var NATIVE_ABANDONMENT_KEY="codexAeNativeFixtureAbandonmentsV1";
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -37,7 +39,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -125,6 +127,8 @@
     snapshot.humanSettlement=humanSettlementTrusted && humanSettlement ? {settlementId:humanSettlement.value.settlementId,status:"abandoned_reviewed",guardDisposition:"released",aeExecutionProven:false,replayAllowed:false} : null;
     snapshot.ameFixtureDispositionLookupPending=fixtureLookupPending;
     snapshot.ameFixtureDisposition=fixtureDispositionValid(FIXTURE_ID,true) ? {dispositionId:fixtureDisposition.value.dispositionId,status:"abandoned_reviewed",guardDisposition:"released",historicalOutcome:"unknown",aeExecutionProven:false,replayAllowed:false} : null;
+    snapshot.nativeFixtureAbandonmentLookupPending=nativeAbandonmentLookupPending;
+    snapshot.nativeFixtureAbandonments=Object.keys(nativeAbandonments).filter(function(id){return nativeAbandonmentValid(id,true);}).map(function(id){var v=nativeAbandonments[id].value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
     return snapshot;
   }
   // Synchronous SHA-256 keeps content out of durable receipts in the CEP runtime.
@@ -223,6 +227,55 @@
       !provenance || provenance.actionId!==e.actionId || provenance.proposalRevision!==2 ||
       run.ok!==false || run.dryRun!==false || run.errorCode!=="EPERM" || trusted && !fixtureDispositionTrusted)return false;
     return !storageFailure;
+  }
+  function nativeFixtureRecord(id) {
+    var r=records[id],run=r && r.result && r.result.run;
+    return r && r.action==="plan.run" && r.effect==="protected_plan_run" && r.source==="ui" && r.state==="unknown" && r.phase==="outcome_unresolved" && r.delivery==="unknown" && r.replayAllowed===false &&
+      /^fixture_[a-z0-9_]+$/.test(r.code || "") && run && run.ok===false && run.dryRun===false && run.errorCode===r.code && run.m100Action && run.m100Action.confirmedBySurface==="cep-panel" &&
+      run.provenance && run.provenance.actionId===run.m100Action.actionId && Array.isArray(run.steps) && run.steps.length===1 && run.steps[0].tool==="ame_native_fixture_probe";
+  }
+  function readNativeFixtureGuard(value) {
+    if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || !contract.UUID_REGEX.test(value.requestId || "") || !contract.UUID_REGEX.test(value.runId || "") || !nativeFixtureRecord(value.requestId))return null;
+    var r=records[value.requestId];if(r.runId!==value.runId || typeof r.signature!=="string")return null;
+    return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor(),controllerIdle:!active && !life().busy && !rawState().recoveryTransport && !storageFailure};
+  }
+  function nativeAbandonmentValid(id,trusted) {
+    var saved=nativeAbandonments[id],v=saved && saved.value,e=v && v.entry,back=saved && saved.readBack,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,rt=back && back.runtime;
+    if(!saved || saved.schema!=="ae-agent.native-fixture-abandonment.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) || !v || v.schema!=="ae-agent.native-fixture-abandonment.v1" ||
+      !/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "") || !contract.UUID_REGEX.test(v.dispositionId || "") || !contract.UUID_REGEX.test(v.captureId || "") ||
+      !contract.UUID_REGEX.test(v.observationId || "") || !/^[a-f0-9]{64}$/.test(v.observationSha256 || "") || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") ||
+      v.status!=="abandoned_reviewed" || v.guardDisposition!=="released" || v.historicalOutcome!=="unknown" || v.nativeExecutionProven!==false || v.replayAllowed!==false ||
+      v.authorizationSource!=="explicit_user_chat" || typeof v.reason!=="string" || !v.reason.trim() || !v.selector || v.selector.requestId!==id || !nativeFixtureRecord(id) || r.runId!==v.selector.runId ||
+      !e || e.originalRequestId!==id || e.runId!==r.runId || e.action!==r.action || e.effect!==r.effect || e.actionId!==run.provenance.actionId || e.proposalRevision!==run.provenance.proposalRevision ||
+      e.privateSignatureSha256!==sha256(r.signature) || e.panelReceiptHash!==sha256(JSON.stringify(p)) || e.canonicalRunProjectionHash!==sha256(JSON.stringify(run)) || !/^[a-f0-9]{64}$/.test(e.canonicalRunRecordHash || "") ||
+      !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
+      !back || back.schema!=="ae-agent.native-fixture-abandonment.v1.read-back" || back.dispositionSha256!==saved.sha256 || back.entrySha256!==sha256(JSON.stringify(e)) ||
+      !back.currentActor || back.currentActor.panelInstanceId!==instanceId || !trusted && JSON.stringify(back.currentActor)!==JSON.stringify(currentFixtureActor()) ||
+      !rt || !/^[a-f0-9]{64}$/.test(rt.loadedRuntimeSha256 || "") || rt.currentRuntimeSha256!==rt.loadedRuntimeSha256 || !rt.panelAssetHashes ||
+      !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel-actions.js"] || "") || !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel.js"] || "") ||
+      !back.installed || JSON.stringify(back.installed.hashes)!==JSON.stringify(rt.panelAssetHashes) || trusted && nativeAbandonmentTrusted[id]!==saved.sha256)return false;
+    return !storageFailure;
+  }
+  function refreshNativeFixtureAbandonments(onDone) {
+    if(nativeAbandonmentLookupPending){if(onDone)onDone(false);return;}
+    nativeAbandonmentTrusted=Object.create(null);
+    var ids=Object.keys(records).filter(nativeFixtureRecord),startedActor=JSON.stringify(currentFixtureActor());
+    if(!ids.length){if(onDone)onDone(true);return;}
+    if(!bindings || typeof bindings.lookupNativeFixtureAbandonment!=="function"){if(onDone)onDone(false);return;}
+    nativeAbandonmentLookupPending=true;
+    function next() {
+      if(!ids.length){nativeAbandonmentLookupPending=false;if(onDone)onDone(true);return;}
+      var id=ids.shift(),r=records[id];
+      bindings.lookupNativeFixtureAbandonment({requestId:id,runId:r.runId},function(error,saved) {
+        if(error || startedActor!==JSON.stringify(currentFixtureActor())){nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
+        if(saved===null){delete nativeAbandonments[id];next();return;}
+        var prior=nativeAbandonments[id];nativeAbandonments[id]=saved && clone(saved);
+        if(active || life().busy || rawState().recoveryTransport || !nativeAbandonmentValid(id,false)){if(prior)nativeAbandonments[id]=prior;else delete nativeAbandonments[id];nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
+        try{storage.setItem(NATIVE_ABANDONMENT_KEY,JSON.stringify(nativeAbandonments));nativeAbandonmentTrusted[id]=saved.sha256;}catch(_){nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
+        next();
+      });
+    }
+    next();
   }
   function refreshAmeFixtureDisposition(onDone) {
     fixtureDispositionTrusted=false;
@@ -366,6 +419,7 @@
     if (storageFailure) return {available:false,reasonCodes:[storageFailure]};
     if(humanLookupPending && !passiveRead(name))return {available:false,reasonCodes:["human_settlement_lookup_pending"]};
     if(fixtureLookupPending && !passiveRead(name))return {available:false,reasonCodes:["fixture_disposition_lookup_pending"]};
+    if(nativeAbandonmentLookupPending && !passiveRead(name))return {available:false,reasonCodes:["native_fixture_abandonment_lookup_pending"]};
     var unresolved=unresolvedEffects();
     if(unresolved.length && !passiveRead(name) && name !== "connector.emergencyDisable" && name !== "plan.reconcile") {
       return {available:false,reasonCodes:["reconciliation_required","unresolved_effect"]};
@@ -497,6 +551,8 @@
   var api={protocolVersion:contract.PROTOCOL_VERSION,catalog:catalog,state:state,
     invoke:function(envelope) {return invoke(envelope,"programmatic");},getResult:getResult};
   Object.defineProperty(api,"readAmeFixtureUIGuard",{value:readAmeFixtureUIGuard,writable:false,configurable:false,enumerable:false});
+  Object.defineProperty(api,"readNativeFixtureGuard",{value:readNativeFixtureGuard,writable:false,configurable:false,enumerable:false});
+  Object.defineProperty(api,"refreshNativeFixtureAbandonments",{value:function(){if(arguments.length)return {accepted:false,code:"fixture_abandonment_client_evidence_forbidden"};if(nativeAbandonmentLookupPending)return {accepted:false,code:"native_fixture_abandonment_lookup_pending"};refreshNativeFixtureAbandonments();return {accepted:nativeAbandonmentLookupPending,lookupPending:nativeAbandonmentLookupPending};},writable:false,configurable:false,enumerable:false});
   Object.defineProperty(api,"refreshAmeFixtureDisposition",{value:function() {
     if(arguments.length)return {accepted:false,code:"fixture_disposition_refresh_arguments_invalid"};
     if(!records[FIXTURE_ID])return {accepted:false,code:"fixture_disposition_guard_missing"};
@@ -517,6 +573,6 @@
       }
     });
     persist();
-    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition});
+    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition,refreshNativeFixtureAbandonments:refreshNativeFixtureAbandonments});
   }};
 });

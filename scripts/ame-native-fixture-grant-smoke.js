@@ -13,7 +13,7 @@ function checked(name, fn) { fn(); checks.push(name); ++passed; }
 async function rejected(name, work) { await assert.rejects(work); checks.push(name); ++passed; }
 function hash(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function setup(kind = "saved-dirty", restoreDirty = false) {
-  const now = Date.now(), ingress = createManualPlanIngress(), files = new Map(), badLinks = new Set(), badReparse = new Set();
+  const now = Date.now(), ingress = createManualPlanIngress(), files = new Map(), badLinks = new Set(), badReparse = new Set();let clock=now;
   const ownedParent = "C:\\owned\\fixtures", pluginPath = "C:\\owned\\build\\Probe.aex", executablePath = "C:\\Adobe\\AfterFX.exe";
   files.set(pluginPath, Buffer.from("fake offline plugin")); files.set(executablePath, Buffer.from("fake offline executable"));
   const args = { fixtureKind: kind, restoreDirty }, runId = "12345678-1234-4234-8234-123456789012";
@@ -34,16 +34,18 @@ function setup(kind = "saved-dirty", restoreDirty = false) {
     const descriptor = Object.freeze({ nonce, stageId: (role === "capture" ? "d" : "e").repeat(32), role, rootPath, pluginPath,
       pluginSha256: hash(files.get(pluginPath)), executablePath, executableSha256: hash(files.get(executablePath)) });
     descriptors.set(id, descriptor);
-    files.set(path.join(rootPath, "server-owner.json"), Buffer.from(JSON.stringify({ schema: "ae-agent.native-fixture-owner.v2", rootPath, nonce, stageId: descriptor.stageId, role })));
+    const marker={ schema: "ae-agent.native-fixture-owner.v2", rootPath, nonce, stageId: descriptor.stageId, role };
+    files.set(path.join(path.dirname(ownedParent),"ame-native-fixture-ledger",descriptor.stageId,"owner.json"),Buffer.from(JSON.stringify({schema:"ae-agent.native-fixture-attempt-ledger.v1.envelope",sha256:hash(JSON.stringify(marker)),value:marker})));
   }
   const filesystem = {
     async lstat(file) { const regular = files.has(file); return { nlink: badLinks.has(file) ? 2 : 1, isFile: () => regular,
       isDirectory: () => !regular, isSymbolicLink: () => badReparse.has(file) }; },
-    async realpath(file) { return file; }, async readFile(file, encoding) { assert(files.has(file), `missing mock file: ${file}`); const b = files.get(file); return encoding ? b.toString(encoding) : b; }
+    async realpath(file) { return file; }, async readdir(dir) {return Array.from(files.keys()).filter(file=>path.dirname(file)===dir).map(file=>path.basename(file));},
+    async readFile(file, encoding) { assert(files.has(file), `missing mock file: ${file}`); const b = files.get(file); return encoding ? b.toString(encoding) : b; }
   };
   let current = record, processValid = true, consumeValid = true, consumed = 0, consumeGate = null;
   const seen = new Set();
-  const issuer = fixture.createFixtureGrantIssuer({ ownedParent, contractVersion, filesystem, now: () => now,
+  const issuer = fixture.createFixtureGrantIssuer({ ownedParent, contractVersion, filesystem, now: () => clock,
     assertManualIngress: ingress.assertContext, getCurrentRecord: () => current, getCheckpoint: () => checkpoint,
     getOwnedChild: id => descriptors.get(id), inspectProcess: async () => processValid,
     consumeAttempt: async receipt => { ++consumed; assert.equal(receipt.status, "consumed_before_grant_publication");
@@ -78,7 +80,7 @@ function setup(kind = "saved-dirty", restoreDirty = false) {
     return { cap, prepared };
   }
   return { issuer, ingress, context, record, checkpoint, files, descriptors, badLinks, badReparse, inside, send, base, boot, source, grantBody, captureReady,
-    setCurrent: value => { current = value; }, setProcess: value => { processValid = value; }, setConsume: value => { consumeValid = value; },
+    setCurrent: value => { current = value; }, setClock:value=>{clock=value;},setProcess: value => { processValid = value; }, setConsume: value => { consumeValid = value; },
     setConsumeGate: value => { consumeGate = value; }, consumed: () => consumed };
 }
 async function main() {
@@ -177,6 +179,23 @@ async function main() {
     checked("verified_native_refusal_reason_bounded", () => assert.equal(s.consumed(), 0));
     await rejected("native_refusal_terminal_no_replay", () => s.boot(prepared));
   });
+  for(const change of [null,"extra","mac","manifest","module","nonce","stage","birth","expiry","dispatch","schema"]) {
+    const t=setup();let prepared;
+    await t.inside(async()=>{const cap=await t.issuer.authorize(t.context);prepared=await t.issuer.prepareChild(cap,"capture");t.issuer.markUnknown(prepared.child);});
+    const fields=Object.fromEntries(prepared.manifestBytes.trim().split("\n").map(line=>{const n=line.indexOf("=");return [line.slice(0,n),line.slice(n+1)];}));
+    const expiry=Number(fields.expires_unix_ms);t.setClock(expiry+1000);t.setCurrent(null);
+    const b={schema:"ae-agent.native-fixture-bootstrap-refusal.v1",status:"bootstrap_refused_before_suite_acquisition",reason:"signed_launch_expired",hostLoaded:true,productionAuthorization:false,readiness:false,
+      role:"capture",fixture:"saved-dirty",stageId:fields.stage_id,rootPath:fields.root_path,nonce:fields.nonce,challenge:"f".repeat(32),pluginSha256:fields.plugin_sha256,executableSha256:fields.executable_sha256,
+      pid:101,processCreatedUnixMs:Date.parse(t.record.confirmedAt)-9000,manifestSha256:hash(prepared.manifestBytes),expiresUnixMs:expiry,refusedAtUnixMs:expiry+500,suitesAcquired:false,fixtureMutationDispatches:0,nativeSaveDispatches:0,replayAllowed:false};
+    if(change==="extra")b.clientProof=true;if(change==="manifest")b.manifestSha256="a".repeat(64);if(change==="module")b.executableSha256="a".repeat(64);if(change==="nonce")b.nonce="a".repeat(32);
+    if(change==="stage")b.stageId="a".repeat(32);if(change==="birth")t.setProcess(false);if(change==="expiry")b.refusedAtUnixMs=expiry-1;if(change==="dispatch")b.fixtureMutationDispatches=1;if(change==="schema")b.schema=fixture.SCHEMA;
+    const body=JSON.stringify(b),key=prepared.environment.AE_AGENT_NATIVE_FIXTURE_KEY,bytes=JSON.stringify({body,mac:change==="mac"?"0".repeat(64):crypto.createHmac("sha256",Buffer.from(key,"hex")).update(body).digest("hex")});
+    if(change)await rejected("bootstrap_refusal_rejects_"+change,()=>t.issuer.verifyBootstrapRefusal(prepared.child,bytes));
+    else {const result=await t.issuer.verifyBootstrapRefusal(prepared.child,bytes);checked("expired_bootstrap_refusal_independent_no_authority",()=>{assert.equal(result.endpointInert,true);assert.equal(result.processExited,false);assert(!JSON.stringify(result).includes(key));assert.equal(t.consumed(),0);});}
+    await rejected("bootstrap_refusal_never_revives_phase",()=>t.issuer.issuePhase(prepared.child,"create-fixture"));
+  }
+  s=setup();s.files.set(path.join(s.descriptors.get("capture").rootPath,"server-owner.json"),Buffer.from("foreign server metadata"));
+  await rejected("native_capture_root_rejects_server_metadata",()=>s.inside(async()=>{const cap=await s.issuer.authorize(s.context);await s.issuer.prepareChild(cap,"capture");}));
   process.stdout.write(JSON.stringify({ status: "passed", offline: true, hostLoaded: false, simulatedSignedReceipts: true, phaseGrantPublished: false, passed, checks }) + "\n");
 }
 main().catch(error => { process.stderr.write(JSON.stringify({ status: "failed", offline: true, hostLoaded: false, passed, reason: error.stack }) + "\n"); process.exitCode = 1; });
