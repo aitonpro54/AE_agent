@@ -6,15 +6,42 @@ M2: реализация `ensure_ame_running` и её offline-проверки �
 остановился на обязательной проверке проекта `project_save_required`. Полная
 цепочка двух вариантов не принята.
 
-**Последний этап, 10 октября — offline native bootstrap и durable fixture lifecycle.**
+**Последний этап, 10 октября — offline native bootstrap и bounded maintenance.**
 Build `build-30d58da3cfc14850bc2d343958e726be`, SHA-256
 `efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`; root установил
 тот же файл атомарно, read-back hash совпал. Реализованы strict root-manifest-only и
 stage-baseline-pinned проверки, отказ по истёкшему signed manifest до suites, внешний
 durable ledger, точная identity PID + 100 ns birth, immutable unknown sidecar с
 abandonment и retirement только после выхода удержанного handle. `complete` требует
-оба verified native receipts и полную цепочку. Это offline milestone: новый AE run не
-создавался, а production snapshot backend, AME submit/encoding/media и M3/M4 не приняты.
+оба verified native receipts и полную цепочку. Затем root заменил только два CEP JS;
+daemon PID44100 остановлен через exact held handle/WaitForExit, PID4484 запущен с runtime
+SHA `dc6fac7ce1afeffb32f682118bf3798338eb0f2ed9143d9b77e698a4f1a3fadb`, scoped CDP
+reload выполнен один раз. Пять остальных asset hashes совпали; в maintenance-блоке
+GUI, закрытие AE и новый native run не использовались.
+
+Backend capture `8dcbecb2-9b8e-4a23-8187-cf93d9958dff` / SHA
+`7faaa10830fe64e29fbe8d96ca70da7f6f63814c36922a0bfc36e45ab012bd7e` и immutable
+disposition `e9298e2d-7388-4459-aea9-f99351dc9d1f` / SHA
+`53c965209f95ff284c2d4e8cfb460bdfd32ebae91815a7ea1b69e1632e04d522` связали
+abandonment только со старым run `54062238-4828-453c-a115-6ddc9f302dee` / request
+`123b95d6-65e4-47e6-9918-ca67968bdec6` и подтверждённым выходом held child PID26912.
+Ledger `outstanding=[]`; typed reconcile `c49f4c0e-4de3-4b8f-8b1a-bd45199bb868`
+completed и fresh private GET принят. Panel busy/reconciliation/unresolved очищены, но
+исход run остаётся `UNKNOWN/no-replay`. Normal bridge connect `c4fef8b8-49c3-4aa5-aa17-d9c2d3d870d8`
+завершён, passive state `connected_idle`; проект `konkurs_kino_02.aep`, rev77594573,
+762 items. Dirty/undo не доказаны. Новый fixture proposal
+`act_024b5e2ef4374ed8bd8f1183e44569f1` rev2 и dry-run
+`405decb4-6812-4948-b5f6-66d056b0075c` прошли; затем пользователь вручную запустил
+plan. Run `0284d412-3fa9-414f-bf7f-6d897163e670`, child PID44260
+(`2026-10-10T17:08:07.7092507Z`), завершился `fixture_native_refusal`:
+`wait_for_plan_state` в 17:11:38Z сообщил failed/error, 50.357 с, executed0,
+failed1, needs_review. Ledger `da61c8dcb6d61d499282821e7ab8e33a` содержит
+consumed-create-fixture, consumed-snapshot и unknown. `nativeExecutionProven=false`
+означает отсутствие доказанной полной операции и не доказывает, что native execution
+не было. Capture receipt сообщает сохранение пути, dirty=true и canonical hash;
+stage receipt отказал `receipt_attempt_terminal_no_replay` после consume, до variant
+save. Эти наблюдения не заменяют отдельную проверку всей цепочки. Это не M3 acceptance; production
+snapshot backend, AME submit/encoding/media и M3/M4 не приняты.
 
 Уточнение M2: доступен отдельный ручной pin точной существующей установки с
 `HashMismatch`. В `ensure_ame_running` передают `installationId` и
@@ -43,8 +70,7 @@ runner 34, abandonment 20, old-v1 disposition 17, backend 28, CEP VM 48 actions 
 `inspect_ame_native_fixture_result` сверяет private producer cache, текущие хеши
 файлов и PID/birth двух children. Semantic pass требует этот отдельный read;
 echo результата не принимается. Root review исправил completion/cache ordering и future-birth
-identity checks. Реальный snapshot пользовательского проекта и AME export остаются впереди;
-daemon продолжает держать прежний runtime SHA, CEP assets не обновлены.
+identity checks. Реальный snapshot пользовательского проекта и AME export остаются впереди.
 
 ## Доступные инструменты
 

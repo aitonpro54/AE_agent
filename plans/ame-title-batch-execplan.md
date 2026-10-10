@@ -48,6 +48,11 @@ Flash в этой задаче. Подробное фактическое сос
   `efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`. Root
   атомарно установил тот же hash и read-back подтвердил совпадение. M3/M4 и live
   acceptance не меняются; текущая session-resident backend и AME цепочка не приняты.
+- [x] Bounded maintenance/reconciliation: заменены только два CEP JS; exact daemon
+  handle остановлен с WaitForExit, новый PID4484 проверен, одна scoped CDP reload.
+  Старый pending guard reconciled без replay; свежая fixture proposal/dry-run прошла,
+  затем пользователь вручную запустил plan: run `0284d412-3fa9-414f-bf7f-6d897163e670`
+  отказал `fixture_native_refusal` (executed 0, failed 1, needs_review).
 
 ## Decision Log
 
@@ -60,7 +65,11 @@ Flash в этой задаче. Подробное фактическое сос
   Birth identity — exact PID + 100 ns creation time; unknown sidecar неизменяем и
   abandon-only; retirement требует выхода удержанного handle. Complete принимается
   только при совпадении обоих verified native receipts/full chain. Старый EPERM-run
-  и его unknown/no-replay сохранены; Flash/Pro не использовались.
+  и его unknown/no-replay сохранены; последующее reconciliation закрывает только
+  pending state старого run. Ручной новый run ниже отказал на native fixture; ledger
+  фиксирует consumed-create-fixture, consumed-snapshot и unknown. `nativeExecutionProven=false`
+  значит отсутствие доказанной полной операции, не доказательство отсутствия native
+  исполнения. Причина отказа ожидает сверки подписанного receipt. Flash/Pro не использовались.
 - Signed v2 runner устанавливает только собственную точную AEX-сборку и не заменяет
   другой файл. Fixed fixtures имеют одну root comp `Main`, вложенную comp и media/proxy
   в отдельной папке. Process birth, MAC, source/binary SHA и receipts проверяются до
@@ -249,13 +258,30 @@ Flash в этой задаче. Подробное фактическое сос
   SDK показывает только startup entry point; требуется bounded диагностика раннего
   старта/жизненного цикла и expiry. Это технический blocker, не доказательство
   невозможности.
-- Последний offline milestone: 434 C++ checks (215 legacy + 65 signed + 115 startup +
+- Offline milestone: 434 C++ checks (215 legacy + 65 signed + 115 startup +
   39 root), 0 warnings; JS grant86, runner34, abandonment20, old-v1 disposition17,
   backend28, CEP VM48 действий/16 сценариев; полный `smoke:planning` PASS (шесть
   ранних групп и исправленный planner-guidance regression, 189 actual tools),
   `check:rules`, 13 JS syntax и diff PASS.
   Root review закрыл ordering/future-birth regressions. Установленный replacement SHA
-  совпал; backup прежней AEX сохранён. Новый AE run не создавался: текущий daemon
-  всё ещё загрузил старый SHA `97490d3b…2745`, CEP assets не обновлены. M3/M4 остаются
-  BLOCKED: production current-user snapshot backend, AME submit/encoding/media и полная
-  двухвариантная цепочка не приняты.
+  совпал; backup прежней AEX сохранён.
+- Bounded live maintenance после offline этапа: commit `789040739b6f0be71e15f0659eb7f26a59faf264`;
+  обновлены только два CEP JS, остальные пять asset hashes совпали. PID44100 остановлен
+  по held handle/WaitForExit; PID4484 стартовал с runtime SHA
+  `dc6fac7ce1afeffb32f682118bf3798338eb0f2ed9143d9b77e698a4f1a3fadb`; scoped CDP
+  reload — один раз. Capture `8dcbecb2…` / SHA `7faaa108…bd7e`; disposition
+  `e9298e2d…` / SHA `53c96520…d522` связал старый run/request и positive exit PID26912.
+  Ledger `outstanding=[]`; reconcile `c49f4c0e…` принят по fresh private GET, panel
+  idle и unresolved пусты. Старый outcome остаётся `UNKNOWN/no-replay`. Normal connect
+  `c4fef8b8…` завершён; проект `konkurs_kino_02.aep`, rev77594573/items762. Dirty/undo
+  не доказаны. Fixture `act_024b5e2e…` rev2 был вручную запущен: run
+  `0284d412-3fa9-414f-bf7f-6d897163e670`, child PID44260 born
+  `2026-10-10T17:08:07.7092507Z`; `wait_for_plan_state` в 17:11:38Z сообщил
+  `failed/error fixture_native_refusal`, 50.357 с, executed0/failed1, needs_review.
+  Ledger da61c8dcb6d61d499282821e7ab8e33a содержит consumed-create-fixture,
+  consumed-snapshot и unknown. Capture receipt сохранил path/dirty/canonical; stage
+  PID44312 born `2026-10-10T17:08:41.8259039Z` отказал `receipt_attempt_terminal_no_replay`
+  до variant save. Причина локализована как повторный idle во время открытия AEP;
+  native guard и учёт двух попыток готовятся отдельным блоком. Это не успех M3 и
+  не доказательство `nativeExecution=false`. M3/M4 BLOCKED: production snapshot backend,
+  AME submit/encoding/media и двухвариантная цепочка не приняты.
