@@ -14,16 +14,17 @@ Flash в этой задаче. Подробное фактическое сос
 - [ ] M3 BLOCKED: безопасный snapshot, durable submit, native job identity,
   собственный start и status/progress не доказаны и не зарегистрированы.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
-- [x] Native prerequisites: Build Tools установлены; локальная x64 C++/SDK
-  smoke-проверка прошла. В проверенных каталогах Adobe SDK не найден; это не
-  закрывает M3.
+- [x] SDK intake и pre-fix x64 build созданы; [ ] native probe acceptance BLOCKED:
+  review нашёл P1 destination TOCTOU до native save и P2 `.part` replacement race
+  после flush/close. Fix, новый build и independent review обязательны. Предыдущий
+  smoke39 PASS сохранён как pre-fix evidence, не acceptance.
 
 ## Decision Log
 
 - Исполнители по scope: root — единственный live controller; `ae_specialist` —
-  реализация typed-кода; `ae_architect` — API/границы; `ae_operator` — bounded
-  offline checks и документация. Flash запрещён пользователем. Frozen intake и
-  зависимости не менялись; четыре предшествующих dirty source SHA сверены.
+  native ABI и CEP async boundary; независимый Sol review ожидается; Luna/high —
+  docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
+  менялись; четыре предшествующих dirty source SHA сверены.
 - `ensure_ame_running` использует обычные proposal/dry-run/confirmed-or-autonomous
   gates и дисковый checkpoint именованного сохранённого AEP через
   `COPYFILE_EXCL`. Успех означает только готовность read-transport. Чистый файл
@@ -40,8 +41,24 @@ Flash в этой задаче. Подробное фактическое сос
   доказывает владение заданиями. UUID/GUID приложения не является native job ID.
 - Unknown исход не повторяется. Remote `EPERM` не обходится. Без доказанной
   цепочки snapshot + submit events/progress не засчитываются как статусы job.
-- SDK catalog Adobe Console дал anonymous HTTP 403; нужен обычный login/download.
-  CC2017 links дали 403/404. Заголовки SDK/лицензия не vendored, C++ stub не backend.
+- User supplied local SDK archive `C:\soft3\AfterEffectsSDK_26.5_win.zip`, SHA-256
+  `ad86bd6d66a1e1ffe8471e4618e3de4dbc9679f2ca47ae9bbe69f78805c82960`; archive
+  provenance is local, not independently verified official download. Safe intake:
+  432 files / 5,704,481 bytes; no LICENSE/README/EULA in archive; Adobe Developer
+  Terms §4.1/§4.5 and SDK headers reviewed locally. Headers/PiPLtool not vendored.
+  SDK 26.5 CompSuite13/v27 vs AE26.2 CompSuite12/v26; probe uses old header ABI.
+  Pre-fix build `build-f28c96906f7440df9bc2b71dc9d871bc`, SHA-256
+  `da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098`, PE32+
+  AMD64/PiPL16000/EntryPointFunc; own binary Authenticode NotSigned; pre-fix
+  protocol39 PASS, rejected by review race findings. readiness/production/installed/
+  loaded all false. `app.project.revision` is a supplementary fixed readonly stale
+  token, not a general revision guarantee.
+- CEP guard/raw fix source hashes were installed in regular `%APPDATA%\Adobe\CEP\extensions\com.codex.aemcpbridge`;
+  backup/result receipt: `.codex-runtime/ame-native-prerequisites/cep-guard-deployment/e582dd1a-3e48-48eb-8fd8-9874d484b1bd/`.
+  Offline guard30/refresh33/panel actions48/raw dispatch0; panel/daemon were not reloaded,
+  and child fresh bootstrap is unverified. Raw FILE lane lacks content-hash binding and
+  is not content-safe; broader M100 is out of scope. AME HashMismatch and unknown public
+  queue/start semantics remain.
 
 ## Validation
 
@@ -83,3 +100,7 @@ Flash в этой задаче. Подробное фактическое сос
 - Remote AME: `EPERM` до spawn, config SHA unchanged, service process отсутствует;
   обхода не было. AEP support и queue isolation не проверены. Двухвариантная
   live-приёмка не выполнена.
+- Current offline docs/check block: SDK archive, build inputs and source hashes match
+  receipts; four preexisting dirty-file hashes remain unchanged. Old harness checks
+  do not close the two review findings. Production/native readiness, fixture/save
+  linkage and live CEP guard activation are not claimed.

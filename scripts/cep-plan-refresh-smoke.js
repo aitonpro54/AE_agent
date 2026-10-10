@@ -184,17 +184,21 @@ function createPanelEnvironment(panelSource, options) {
   }
 
   const localStorageStore = options.storageStore || new Map();
+  const storageWrites = [];
   const localStorage = {
     getItem: function (key) {
       return localStorageStore.has(key) ? localStorageStore.get(key) : null;
     },
     setItem: function (key, val) {
+      storageWrites.push({operation:"set",key});
       localStorageStore.set(key, String(val));
     },
     removeItem: function (key) {
+      storageWrites.push({operation:"remove",key});
       localStorageStore.delete(key);
     },
     clear: function () {
+      storageWrites.push({operation:"clear"});
       localStorageStore.clear();
     }
   };
@@ -303,8 +307,17 @@ function createPanelEnvironment(panelSource, options) {
     };
   }
 
+  let hostEnvironmentCallback = null;
+  const evalScripts = [], loadedAssets = [];
   function CSInterface() {
     this.evalScript = function (script, cb) {
+      evalScripts.push(script);
+      if (script.includes('$.getenv("AE_AGENT_NATIVE_PROBE_ROOT")')) {
+        if (options.hostEnvironmentThrows) throw new Error("Synthetic host environment failure");
+        if (options.holdHostEnvironmentRead) {hostEnvironmentCallback=cb;return;}
+        if (cb) cb(options.hostEnvironmentResponse === undefined ? "ae-agent-host-startup.v1:normal" : options.hostEnvironmentResponse);
+        return;
+      }
       if (cb) cb("");
     };
   }
@@ -379,22 +392,33 @@ function createPanelEnvironment(panelSource, options) {
   })();`);
 
   getOrCreateElement("bridgeUrl").value="http://127.0.0.1:8777";
-  for(const file of ["panel-action-contract.js","panel-actions.js"]) {
+  document.head={appendChild:function(script) {
+    const file=String(script.src).replace(/^\.\//,"").split("?")[0];
+    assert(["panel-actions.js","panel.js"].includes(file),"Only fixed local startup assets");
+    loadedAssets.push(file);
+    vm.runInContext(file === "panel.js" ? executableSource : fs.readFileSync(path.join(__dirname,"../cep-panel",file),"utf8"),context,{filename:file});
+    if(script.onload)script.onload();
+  }};
+  for(const file of ["panel-action-contract.js","native-probe-startup-guard.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname,"../cep-panel",file),"utf8"),context,{filename:file});
   }
-  vm.runInContext(executableSource, context);
 
   const environment = {
     window: sandbox.window,
-    planOps: sandbox.window.__aeAgentPlanOps,
+    get planOps() {return sandbox.window.__aeAgentPlanOps;},
     inFlightRequests: inFlightRequests,
     requestHistory: requestHistory,
     document: document,
     elements: elements,
     timers: timers,
     storageStore:localStorageStore,
+    storageWrites:storageWrites,
+    evalScripts:evalScripts,
+    loadedAssets:loadedAssets,
+    completeHostEnvironmentRead:function(response) {assert(hostEnvironmentCallback,"Expected held host environment callback");hostEnvironmentCallback(response);},
+    executeDirectPanel:function() {vm.runInContext(executableSource,context,{filename:"panel.js"});},
     context:context,
-    api:sandbox.window.AEAgentPanelActions,
+    get api() {return sandbox.window.AEAgentPanelActions;},
     invoke:function(envelope) {return vm.runInContext("window.AEAgentPanelActions.invoke("+JSON.stringify(envelope)+")",context);},
     runTimer: function (predicate) {
       for (const [id, timer] of timers) {

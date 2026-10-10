@@ -75,28 +75,48 @@ reopen меняют dirty/context, а копирование только чис
 готовить только в owned staging project после доказанного baseline snapshot;
 исходную видимость слоёв и исходный проект предпочтительно не менять.
 
-## Native SDK и build tools
+## Нативный probe и SDK
 
-В проверенных локальных каталогах After Effects SDK не найден. Adobe Developer
-Console SDK catalog при anonymous запросе вернул HTTP 403; нужен обычный вход на
-[странице AE services](https://developer.adobe.com/console/servicesandapis/ae).
-Ссылки Adobe CC2017 SDK/EULA дали 403/404. SDK headers и лицензия не vendored;
-заглушка на C++ не считается backend.
+Пользователь указал `C:\soft3`; локально предоставленный архив
+`AfterEffectsSDK_26.5_win.zip` имеет SHA-256
+`ad86bd6d66a1e1ffe8471e4618e3de4dbc9679f2ca47ae9bbe69f78805c82960`.
+Безопасный intake receipt подтверждает 432 файла / 5,704,481 bytes в
+`C:\Users\Ant\AppData\Local\AEAgent\SDK\after-effects-26.5\AfterEffectsSDK_26.5_win`.
+Это подтверждает локальный архив и совпадение его hash, но не происхождение загрузки
+с официального сайта. В архиве нет LICENSE/README/EULA; локально проверены Adobe
+Developer Terms §4.1 (development/testing) и §4.5 (дополнительные условия). SDK
+headers и PiPLtool не vendored.
 
-По разрешению пользователя официальный Microsoft Build Tools bootstrapper 17.14.41
-скачан и проверен: Authenticode `Valid`, SHA-256
-`37bb0fb429d163ecebd272a865d11a37b906d152bef960da2ddb29c2e2fd6eeb`.
-Root начал установку MSBuild, MSVC x64/x86 и Windows SDK 26100 в
-`C:\Users\Ant\AppData\Local\AEAgent\BuildTools2022`; она завершилась с exit code
-0 (`install-exit.json`, PID 4236). MSVC v14.44.35207 присутствует. Это подтверждает
-завершение setup. `vswhere` сообщил `isComplete=true`, `isRebootRequired=false`;
-MSBuild `17.14.60.43110`, `cl` `19.44.35229.0`, SDK `10.0.26100.0` доступны.
-Минимальная программа с `<Windows.h>` и `GetCurrentProcessId` собрана и выполнена
-x64: `ABI pointerwidth=8 PID=20536`, exit 0; Windows SDK `Windows.h` и x64
-`kernel32.lib` присутствуют. Fixture и receipt: [build smoke](../.codex-runtime/ame-native-prerequisites/build-smoke/toolchain-receipt.txt),
-exe SHA-256 `0c6ed42d3dc18a7416e5446ec222e9c39521c496261a765a50c9da4dd9ed8822`.
-Это подтверждает локальный C++ toolchain, но не SDK backend, AEGP загрузку или
-интеграцию AE/AME.
+Disposable probe собран офлайн: pre-fix build `build-f28c96906f7440df9bc2b71dc9d871bc`,
+binary SHA-256 `da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098`,
+PE32+ AMD64 DLL, PiPL resource 16000, export `EntryPointFunc`; его protocol smoke
+39/39 не принят после review P1 destination TOCTOU и P2 `.part` replacement race.
+Ожидаются native fix, свежая сборка и независимый review; этот hash не означает acceptance.
+SDK 26.5 содержит CompSuite13/v27, а фактический AE 26.2 использует CompSuite12/v26
+из `AE_GeneralPlugOld.h`; сборка привязана к ABI AE 26.2. Authenticode `NotSigned`
+относится к собственной собранной DLL и не является проверкой подписи Adobe.
+Receipt: `.codex-runtime/ame-native-prerequisites/native-probe-build/<buildId>/`.
+
+Статусы этой сборки: `readiness=false`, `productionBackend=false`, `installed=false`,
+`loadedInAE=false`; SaveProjectToPath и сохранение path/dirty/undo/context не
+проверялись на AE fixture. Протокол и его offline guarantees описаны в
+[native snapshot contract](ame-native-snapshot-contract.md). Это ограниченный
+эксперимент, не завершение M3 и не production snapshot tool.
+
+CEP guard установлен файловым deployment в обычную папку
+`%APPDATA%\Adobe\CEP\extensions\com.codex.aemcpbridge` (без reparse/junction).
+Read-back hashes совпали с source для `index.html`, `panel.js` и
+`native-probe-startup-guard.js`; исходные `index.html`/`panel.js` сохранены в
+`.codex-runtime/ame-native-prerequisites/cep-guard-deployment/e582dd1a-3e48-48eb-8fd8-9874d484b1bd/`.
+Панель и daemon не перезагружались; loaded panel и child fresh bootstrap не проверены.
+Это подтверждает только installed files, не активный guard или live isolation.
+Source offline проверки guard30/refresh33/panel-actions48 и raw dispatch0
+не доказывают loaded behavior. Raw FILE lane пока не bound к content hash,
+поэтому это не content-safe путь; дальнейшее M100 расширение не входит в этот этап.
+Активный старый daemon PID `12528`/SHA `cb32ae91fd8af2341e35b89769425c67b3aafdb4c273871e3b66202f8ed82aa4`
+и AE процессы не перезапускались в этой работе. Ни один отдельный `-m` process,
+shared preferences/cache или guard в дочернем CEP не считается изолированным или
+проверенным; live операции остаются только под root controller и собственными gates.
 
 AEGP загружается при старте AE; текущую dirty-сессию не перезапускать. `-m`
 создаёт отдельный процесс, но preferences общие, поэтому это не изолированная

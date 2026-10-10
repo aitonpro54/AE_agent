@@ -1,6 +1,10 @@
 "use strict";
 
 (function () {
+  var hostStartupGuard = window.AEAgentHostStartupGuard;
+  // The HTML bootstrap waits before loading this closure or shared receipts.
+  // A direct/partial asset load must also fail closed before any storage effect.
+  if (!hostStartupGuard || !hostStartupGuard.isAllowed()) return;
   var APP_NAME = "AE Agent";
   var APP_VERSION = "3.3.1";
   var CHAT_MODE_CHAT = "chat";
@@ -419,6 +423,7 @@
   }
 
   function request(method, path, body, onDone) {
+    if (!bridgeHostAvailable(onDone)) return;
     var completed = false;
     var requestEpoch=panelLifecycleEpoch,requestGeneration=panelConnectionGeneration;
     var xhr = new XMLHttpRequest();
@@ -549,6 +554,7 @@
   }
 
   function connectorRequest(method, path, body, onDone) {
+    if (!bridgeHostAvailable(onDone)) return;
     var completed = false;
     var xhr = new XMLHttpRequest();
     xhr.open(method, getConnectorBaseUrl() + path, true);
@@ -4156,6 +4162,7 @@
     updateChatAvailability();
   }
   function connectRecoveryTransport(value,config) {
+    if (!bridgeHostAvailable()) return;
     if(panelLifecycleEpoch!==config.epoch || String(panelConnectionGeneration)!==config.generation || getBaseUrl()!==config.url || getToken()!==config.token || panelConnectionId!==config.panelConnectionId || value.panelConnectionId!==panelConnectionId || Date.parse(value.expiresAt)<=Date.now())return;
     recoveryTransportScope=value;recoveryTransportScope.state="connecting";recoveryTransportConnecting=true;
     running=true;panelLifecycleEpoch=value.nextBinding.panelLifecycleEpoch;panelConnectionGeneration=value.nextBinding.panelGeneration;
@@ -4174,6 +4181,7 @@
     });
   }
   function pollRecoveryTransport() {
+    if (!bridgeHostAvailable()) return;
     var scope=recoveryTransportScope,epoch=panelLifecycleEpoch,generation=panelConnectionGeneration;
     if(!scope || !running || recoveryTransportConnecting || scope.state!=="ready")return;
     if(Date.parse(scope.expiresAt)<=Date.now()){stopRecoveryTransport("generated_recovery_scope_expired");return;}
@@ -4189,6 +4197,7 @@
   }
 
   function poll(onDone) {
+    if (!bridgeHostAvailable(onDone)) return;
     if(recoveryTransportScope){pollRecoveryTransport();return;}
     if (!running) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
     if (panelLifecycleGuard) {pollTimer=setTimeout(poll,100);return;}
@@ -4244,6 +4253,7 @@
   }
 
   function connect(onDone) {
+    if (!bridgeHostAvailable(onDone)) return;
     var restoringRecovery=!!recoveryTransportScope;
     recoveryTransportScope=null;recoveryTransportConnecting=false;
     if(pollTimer)clearTimeout(pollTimer);
@@ -4381,6 +4391,7 @@
 
   function actionAvailability(name,args) {
     var reasons=[], passive=/^(logs.get|chat.sessions.list|chat.transcript.get)$/.test(name) || name === "plan.current" && !(args && args.fresh);
+    if (!passive && !hostStartupGuard.isAllowed()) reasons.push(hostStartupGuard.snapshot().code);
     if(!passive && panelActionBusy()) reasons.push("panel_busy");
     if(name === "bridge.configure" && running) reasons.push("disconnect_required");
     if(/^(autonomy|placeholder|plan)\./.test(name) && !running && name !== "plan.current" &&
@@ -4519,6 +4530,12 @@
     }
   };
   var panelActionUI=null;
+  function bridgeHostAvailable(onDone) {
+    if (hostStartupGuard.isAllowed()) return true;
+    if (onDone) onDone({rejected:true,code:hostStartupGuard.snapshot().code,
+      message:"Подключение AE Agent в этом процессе After Effects отключено."});
+    return false;
+  }
   function actionUuid() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c) {var r=Math.random()*16|0;return (c === "x"?r:(r&3|8)).toString(16);});
   }

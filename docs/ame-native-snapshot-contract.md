@@ -1,38 +1,48 @@
 # Нативный снимок AEP: контракт и тестовая проверка
 
-Статус на 2026-10-10: архитектурный контракт; backend не реализован и не проверен.
-Документ не закрывает M3 и не подтверждает AME submit, encoding или media proof.
-Рабочая цель: независимый AEP всего текущего in-memory проекта, включая unsaved edits,
-с сохранением original path, dirty, видимого контекста, состояния проекта и undo.
-Flash запрещён текущим поручением; root — единственный installer/live controller.
+Статус на 2026-10-10: disposable native probe собран из локально предоставленного
+After Effects SDK 26.5. Предварительный offline protocol smoke (39/39) не принят:
+независимый review обнаружил в native implementation P1 TOCTOU между проверкой
+destination и native save, а также P2 race между flush/close `.part` и Move.
+Текущая сборка — pre-fix evidence, не одобренная реализация; исправление и повторный
+review/build ожидаются. readiness=false, production=false, installed=false,
+loaded=false. Live-семантика SaveProjectToPath не проверена; M3, AME submit,
+encoding и media proof не подтверждены.
+CEP startup guard отдельно установлен в CEP folder; installation receipt подтверждает
+только три файла. Loaded panel, daemon reload и child fresh bootstrap не проверены;
+это не меняет статус native probe.
+Рабочая цель — независимый AEP текущего in-memory проекта, включая unsaved edits,
+с сохранением original path, dirty, видимого контекста и undo; это пока не обещание.
+Root — единственный installer/live controller.
 
 ## SDK, доступ и сборка
 
-- Официальный источник: [Adobe After Effects SDK](https://developer.adobe.com/after-effects/)
-  → [Developer Console](https://developer.adobe.com/console/servicesandapis/ae).
-- Публичный JS Console отдаётся HTTP 200. Его SDK catalog использует
-  `https://developer.adobe.com/console/graphql`: `GetSdks` возвращает version code,
-  `fileName`, `termsAndConditionsUrl`; `getDownloadLinkForSdk(versionCode)` — archive URL.
-- Анонимный `GetSdks` получил HTTP 403. Console client требует Adobe IMS login.
-  Credentials/session tokens не извлекались; альтернативные headers для обхода не пробовались.
-- Опубликованные Adobe [CC2017 SDK](https://www.adobe.com/devnet/aftereffects/sdk/cc2017.html)
-  и [CC2017 EULA](https://www.adobe.com/content/dotcom/en/devnet/aftereffects/sdk/cc2017/eula.html)
-  дали web fetch 404 и локальный anonymous HTTP 403. Guess ZIP URI не использовались.
-- Нужен обычный Console login/download либо уже полученный официальный SDK archive.
-  Exact archive URL, SDK version, Windows headers и PiPLtool пока не получены.
+- Пользователь указал локальную папку `C:\soft3`; архив
+  `C:\soft3\AfterEffectsSDK_26.5_win.zip` предоставлен локально, SHA-256
+  `ad86bd6d66a1e1ffe8471e4618e3de4dbc9679f2ca47ae9bbe69f78805c82960`.
+  Intake receipt подтверждает безопасное извлечение 432 файлов / 5,704,481 bytes в
+  `C:\Users\Ant\AppData\Local\AEAgent\SDK\after-effects-26.5\AfterEffectsSDK_26.5_win`;
+  это локальное происхождение, не независимо подтверждённая загрузка с Adobe.
+- В SDK есть headers, PiPL resources/tool и sample project; архив не содержит
+  отдельного LICENSE/README/EULA. Локально проверены headers и Adobe Developer Terms:
+  §4.1 development/testing и §4.5 дополнительные условия. Headers и PiPLtool не vendored.
 - [Adobe Developer Terms](https://www.adobe.com/go/developer-terms), 18 июня 2024:
   §4.1 разрешает development/testing; §4.5 требует учитывать дополнительные LICENSE/ReadMe.
-  После получения архива сохранить происхождение, version, SHA256 и его точные условия.
-- Современный SDK предпочтителен. Genuine legacy SDK допустим лишь после проверки
-  нужных suite definitions и успешного AE26 probe; совместимость по возрасту не предполагается.
-- Build route: взять штатный Windows AEGP sample, проверить его `.vcxproj`, headers,
-  x64 target и PiPL custom build; собрать вне Adobe install tree, затем проверить `.aex`.
-- Точный MSVC/Windows SDK target определяется фактическим sample, а не онлайн догадкой.
-  Microsoft Build Tools установлен: MSBuild, MSVC x64/x86, Windows SDK 26100; exit code 0.
-  Bootstrapper SHA256/Authenticode `Valid` проверены; MSBuild `17.14.60.43110`,
-  cl `19.44.35229.0` и Windows SDK `10.0.26100.0` подтвердили x64 build/run с exit 0.
-  Это проверка C++ toolchain, не сборка или загрузка AEGP.
-  C++ stub, headers из чужого mirror и portable compiler без проверенной ABI не являются backend.
+  Архив не содержит этих дополнительных файлов; сохранить локальное происхождение,
+  version и SHA256, не приписывая ему непроверенную официальную download provenance.
+- SDK 26.5 использует CompSuite13/v27; фактический AE 26.2 использует
+  CompSuite12/v26 из `AE_GeneralPlugOld.h`. Собранный probe связывает только suites,
+  доступные в текущем AE 26.2. Другая compatibility версия не предполагается.
+- MSBuild `17.14.60.43110`, cl `19.44.35229.0`, Windows SDK `10.0.26100.0`;
+  x64 `.aex` собран вне Adobe tree. Build `build-f28c96906f7440df9bc2b71dc9d871bc`,
+  SHA-256 `da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098`;
+  PE32+ AMD64 DLL, PiPL resource 16000, export `EntryPointFunc`. Binary — собственная
+  сборка; Authenticode `NotSigned` не является проверкой подписи Adobe.
+- Build receipt сверяет исходники, фактические headers и PiPLtool; SHA архива в нём
+  указан как полученный prerequisite, а не повторно вычисленный build helper. Старый
+  pre-fix offline protocol smoke: 39 PASS, но review выявил два race выше. Этот счёт
+  не является acceptance; необходимы исправление, новый build и независимый review.
+  Даже после них offline harness не докажет AE semantics или live AEGP load.
 
 ## Доказанные API и неизвестные гарантии
 
@@ -41,6 +51,8 @@ Flash запрещён текущим поручением; root — единс�
   Сохранность original path, dirty и undo для SaveProjectToPath не обещана документацией.
 - Публичный native SaveACopy entry не найден. `AEGP_ExecuteScript` исполняет script,
   но сам по себе не добавляет отсутствующий ExtendScript save-copy API.
+- `app.project.revision` доступен как дополнительный readonly stale token через
+  fixed script в probe; это не общий fingerprint и не гарантия revision semantics.
 - `PF_AdvAppSuite2::PF_SetProjectDirty()` помечает проект изменённым. Это кандидат
   для восстановления исходного `dirty=true`, а не доказательство сохранности undo/context.
 - Документированные set-clean, SetProjectPath и восстановление undo stack не установлены.
@@ -119,5 +131,9 @@ Flash запрещён текущим поручением; root — единс�
   Отдельный PID не доказывает изоляцию preferences/cache/CEP; их общие эффекты входят в probe audit.
 - Main AME executable `HashMismatch` и console DLL `Valid` — разные результаты подписи.
   `Valid` DLL не делает main executable launchable; transport signature gates сохраняются.
-- Завершение этого документа подтверждает только reviewable spec. SDK/build/load, path/dirty/undo
-  guarantees, production capture current memory и AME end-to-end остаются непроверенными.
+- Спецификация требует Win32 exclusive reservations, запрет overwrite,
+  hardlink/junction traversal и удержание owner/root. Нынешний harness набрал 39 PASS,
+  но implementation review выявил незакрытые destination TOCTOU и `.part` replacement
+  races; до исправления и повторного review acceptance отсутствует. Harness не
+  эмулирует AE semantics. Path/dirty/undo guarantees, production capture current
+  memory и AME end-to-end остаются непроверенными.

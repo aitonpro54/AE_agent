@@ -7410,7 +7410,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       if (stopOnError) break;
       continue;
     }
-    if ((step.tool === "run_extendscript" || step.tool === "run_extendscript_file") && !allowRawExtendscript) {
+    // The first dry run validates raw steps without dispatching them. Its receipt
+    // is required by the execution gate above, so a raw permit applies only to run.
+    if (!dryRun && (step.tool === "run_extendscript" || step.tool === "run_extendscript_file") && !allowRawExtendscript) {
       item.status = "blocked";
       item.reason = "Raw ExtendScript requires allowRawExtendscript:true.";
       run.skippedCount += 1;
