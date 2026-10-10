@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{A7875F15-E52B-48BB-9E63-3EA0467B2133}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>DynamicLibrary</ConfigurationType><PlatformToolset>v143</PlatformToolset></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="ServiceBuild.props" />
+  <PropertyGroup><TargetName>AEAgentSnapshotService</TargetName><TargetExt>.aex</TargetExt><IgnoreImportLibrary>true</IgnoreImportLibrary></PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile><PreprocessorDefinitions>MSWindows;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <Link><AdditionalDependencies>bcrypt.lib;shell32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies><GenerateDebugInformation>true</GenerateDebugInformation></Link>
+  </ItemDefinitionGroup>
+  <Target Name="ValidateSdk" BeforeTargets="PrepareForBuild"><Error Condition="'$(SdkRoot)' == '' or !Exists('$(SdkRoot)\Examples\Headers\AE_GeneralPlug.h') or !Exists('$(SdkRoot)\Examples\Resources\PiPLtool.exe')" Text="Official external SDK required, no dependency installation or fallback." /></Target>
+  <ItemGroup>
+    <ClCompile Include="ame_snapshot_service.cpp" /><ClCompile Include="service_protocol.cpp" /><ClCompile Include="service_win32.cpp" />
+    <ClInclude Include="service_protocol.h" /><ClInclude Include="service_win32.h" />
+    <CustomBuild Include="AEAgentSnapshotService_PiPL.r">
+      <Message>Build dormant AEGP PiPL inside exclusive ignored IntDir</Message>
+      <Command>"$(VCToolsInstallDir)bin\Hostx64\x64\cl.exe" /nologo /DMSWindows /I "$(SdkRoot)\Examples\Headers" /EP "%(FullPath)" &gt; "$(IntDir)AEAgentSnapshotService_PiPL.rr"
+if errorlevel 1 exit /b 1
+"$(SdkRoot)\Examples\Resources\PiPLtool.exe" "$(IntDir)AEAgentSnapshotService_PiPL.rr" "$(IntDir)AEAgentSnapshotService_PiPL.rrc"
+if errorlevel 1 exit /b 1
+"$(VCToolsInstallDir)bin\Hostx64\x64\cl.exe" /nologo /DMSWindows /EP "$(IntDir)AEAgentSnapshotService_PiPL.rrc" &gt; "$(IntDir)AEAgentSnapshotService_PiPL.rc"
+if errorlevel 1 exit /b 1
+</Command>
+      <Outputs>$(IntDir)AEAgentSnapshotService_PiPL.rc</Outputs>
+    </CustomBuild>
+    <ResourceCompile Include="$(IntDir)AEAgentSnapshotService_PiPL.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

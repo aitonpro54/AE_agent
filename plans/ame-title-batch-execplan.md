@@ -1,5 +1,21 @@
 # Пакетный экспорт вариантов титров через AME
 
+**Текущий блок — 10 октября, 18:55 UTC. Progress:** daemon-only maintenance
+завершён; два свежих brackets подтвердили PID46240 / source `05da9485…`, прежние
+AE/AME/assets и оба native UNKNOWN/no-replay guard. Exact lock PID40068 закрыт
+по отдельной consumed/disposition/retired цепочке, original receipt не изменён.
+Singleton trusted GET получил HTTP200; групповой `f306…` — `net::ERR_ABORTED`.
+Следующий шаг — устранить повторные чтения группового lookup, сохранив два свежих
+полных brackets, затем проверить реальные GET и диагностический fixture.
+
+**Progress:** готов offline foundation резидентного AEX
+(`native/ame-snapshot-service`): штатные hooks, informational OS/module identity
+и закрытый bounded protocol. **Decision Log:** production issuer/listener/capture
+ещё отсутствуют; installation/live startup не выполнялись. Root self-review;
+Sol/xhigh — foundation, Luna/high — полный build, Flash/Pro не использовались.
+**Validation:** build `e8c17338…`, 250 C++ checks PASS, x64 AEX SHA `c592cca2…`;
+project writes/exports 0. M3/M4 не приняты.
+
 Цель: несколько вариантов из одной рабочей композиции, независимые AEP-снимки,
 один существующий EPR-пресет и подтверждённые статусы AME. GUI-автоматизация,
 native AE render, aerender и ffmpeg как замена AME исключены. Пользователь запретил

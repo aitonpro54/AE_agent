@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <AllowedParent>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\.codex-runtime\ame-native-prerequisites\native-service-build\'))</AllowedParent>
+    <CanonicalRoot Condition="'$(ServiceBuildRoot)' != ''">$([System.IO.Path]::GetFullPath('$(ServiceBuildRoot)'))</CanonicalRoot>
+    <RootWithinParent>$([System.String]::Copy('$(ServiceBuildRoot)').StartsWith('$(AllowedParent)', System.StringComparison.OrdinalIgnoreCase))</RootWithinParent>
+    <OutDir>$(ServiceBuildRoot)\bin\</OutDir><IntDir>$(ServiceBuildRoot)\$(MSBuildProjectName)-obj\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ServiceBuildRoot);$(SdkRoot)\Examples\Headers;$(SdkRoot)\Examples\Headers\SP;$(SdkRoot)\Examples\Headers\Win;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;WINVER=0x0A00;UNICODE;_UNICODE;NOMINMAX;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><Optimization>MaxSpeed</Optimization>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><ObjectFileName>$(IntDir)</ObjectFileName><ProgramDataBaseFileName>$(IntDir)compile.pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link><TargetMachine>MachineX64</TargetMachine><RandomizedBaseAddress>true</RandomizedBaseAddress><DataExecutionPrevention>true</DataExecutionPrevention><ImportLibrary>$(IntDir)$(MSBuildProjectName).lib</ImportLibrary><ProgramDatabaseFile>$(IntDir)$(MSBuildProjectName).pdb</ProgramDatabaseFile></Link>
+  </ItemDefinitionGroup>
+  <Target Name="ValidateServiceBuild" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only Release|x64 is supported." />
+    <Error Condition="'$(ServiceBuildRoot)' == '' or !Exists('$(ServiceBuildRoot)\build-owner.json') or !Exists('$(ServiceBuildRoot)\service_build_identity.h')" Text="Use scripts/ame-native-service-build.ps1 with a fresh owned ignored build root." />
+    <Error Condition="'$(RootWithinParent)' != 'True' or '$(CanonicalRoot)' != '$(ServiceBuildRoot)'" Text="ServiceBuildRoot must be canonical inside the exclusive ignored service build root." />
+  </Target>
+</Project>

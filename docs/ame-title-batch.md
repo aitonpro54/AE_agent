@@ -1,5 +1,12 @@
 # Экспорт вариантов титров через AME: состояние реализации
 
+Резидентная основа находится в [native/ame-snapshot-service](../native/ame-snapshot-service/README.md).
+Полный offline build `e8c17338…` собрал x64 AEX и прошёл 250 проверок протокола.
+Это informational identity и закрытый transport seam: production issuer, listener,
+project inspection и snapshot dispatch пока отсутствуют. Плагин не установлен,
+не загружен; project writes и exports — 0. Штатная загрузка собственного AE без
+fixture ENV остаётся отдельной проверкой. Hotload рабочего AE не предусмотрен.
+
 Планирование AME разбито на четыре этапа в [плане](../plans/ame-title-batch-execplan.md).
 M1 (транспорт и каталог пресетов) завершён и зафиксирован commit `7c97574`.
 M2: реализация `ensure_ame_running` и её offline-проверки готовы; живой запуск
