@@ -4,6 +4,7 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),http=require("node:http");
 const contract=require("../cep-panel/panel-action-contract");
 const bootstrap=require("./ae-agent-panel-bootstrap");
+const readonlyOrphan=require("./cep-panel-readonly-orphan");
 const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT_TIMEOUT_MS=30000;
 const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
@@ -211,6 +212,25 @@ function responseError(error,receipt) {return {ok:false,protocolVersion:PROTOCOL
   error:error.code || "Panel control failed.",...(receipt?{receipt:contract.sanitizeReceipt(receipt)}:{})};}
 function responseReceipt(row) {return {ok:!["unknown","error","rejected"].includes(row.state),protocolVersion:PROTOCOL_VERSION,
   receipt:contract.sanitizeReceipt(row),replayed:false};}
+// Private recovery preparation from an existing exact invoke input. It neither
+// retires a lock nor changes admission; there is no MCP/CLI endpoint for it.
+function readOnlyOriginalInput(value) {
+  if(value?.schema!=="ae-agent.root-recovered-panel-input.v1")return {envelope:validateRawInvokeInput(value).envelope};
+  exact(value,["schema","producer","source","raw","envelope","signature","originalReceiptSha256","originalOutcome","aeExecutionProven"]);
+  const envelope=validateRawInvokeInput(value.raw).envelope;
+  if(JSON.stringify(envelope)!==JSON.stringify(value.envelope) || computeActionSignature(envelope)!==value.signature ||
+    !/^[a-f0-9]{64}$/.test(value.originalReceiptSha256 || "") || value.originalOutcome!=="unknown_no_replay" || value.aeExecutionProven!==false ||
+    typeof value.producer!=="string" || !value.producer || typeof value.source!=="string" || !value.source)throw problem("readonly_orphan_original_input_invalid");
+  return {envelope,originalReceiptSha256:value.originalReceiptSha256};
+}
+function captureReadOnlyOrphanIntent(directory,inputFile) {
+  const root=safeRoot(directory),sourcePath=path.resolve(inputFile),text=boundedRead(sourcePath);
+  const original=readOnlyOriginalInput(JSON.parse(text)),envelope=original.envelope,local=loadDurableReceipt(root,envelope.requestId);
+  readonlyOrphan.validEnvelope(envelope);
+  if(!local || local.phase==="receipt_storage" || local.action!==envelope.action || local.signature!==computeActionSignature(envelope))throw problem("readonly_orphan_intent_mismatch");
+  if(original.originalReceiptSha256 && original.originalReceiptSha256!==readonlyOrphan.hash(boundedRead(createReceiptPath(root,envelope.requestId))))throw problem("readonly_orphan_original_receipt_changed");
+  return readonlyOrphan.capture(root,envelope,{kind:"original-input-file",path:sourcePath,sha256:readonlyOrphan.hash(text),...(original.originalReceiptSha256?{originalReceiptSha256:original.originalReceiptSha256}:{})},local.signature).sha256;
+}
 const PASSIVE_ACTIONS=new Set(["logs.get","chat.sessions.list","chat.transcript.get","plan.current","autonomy.refresh","placeholder.refresh","connector.refresh"]);
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
@@ -229,6 +249,25 @@ function createPanelControlService(options={}) {
     if(!plain(value) || value.ok!==true || !Object.hasOwn(value,"value")) throw problem("panel_response_invalid");return value.value;
   }
   async function read(method,args,budget) {const {target}=await resolveTarget(budget);return methodAt(target,method,args,budget);}
+  function orphanContext(timeoutMs=5000) {
+    const deadline=Date.now()+timeoutMs,remaining=()=>{const left=deadline-Date.now();if(left<1)throw problem("cdp_timeout");return left;};
+    return {root:safeRoot(directory),signature:computeActionSignature,normalize:raw=>readOnlyOriginalInput(raw).envelope,
+      local:id=>loadDurableReceipt(directory,id),receiptFile:id=>createReceiptPath(directory,id),indexIdentity:id=>readIndex(directory).identities[id],readLock:()=>readLock(directory),dead:deadProcess,
+      observe:async id=>{
+        const selected=await resolveTarget(remaining()),before=remoteState(await methodAt(selected.target,"state",{},remaining()));
+        const binding={panelInstanceId:before.panelInstanceId,panelLifecycleEpoch:before.panelLifecycleEpoch,panelGeneration:before.panelGeneration};
+        const catalog=remoteCatalog(await methodAt(selected.target,"catalog",undefined,remaining(),binding));
+        const remote=await methodAt(selected.target,"getResult",id,remaining(),binding);
+        const after=remoteState(await methodAt(selected.target,"state",{},remaining(),binding)),checked=await resolveTarget(remaining());
+        if(JSON.stringify(selected.installed)!==JSON.stringify(checked.installed) || selected.target.url!==checked.target.url || selected.target.webSocketDebuggerUrl!==checked.target.webSocketDebuggerUrl ||
+          before.panelInstanceId!==after.panelInstanceId || before.panelLifecycleEpoch!==after.panelLifecycleEpoch || before.panelGeneration!==after.panelGeneration)throw problem("readonly_orphan_panel_changed");
+        const reconcile=catalog.find(row=>row.name==="plan.reconcile"),available=reconcile?.availability.available===true && reconcile.availability.reasonCodes.length===0;
+        const idle=s=>s.actionStorage==="ready" && s.activeAction===null && !s.recoveryTransport && (s.busy===false || available);
+        if(remote!==null)throw problem("readonly_orphan_remote_record_appeared");
+        if(!idle(before) || !idle(after))throw problem("readonly_orphan_panel_not_idle");
+        return {actor:binding,targetSha256:readonlyOrphan.hash({installed:selected.installed,target:{url:selected.target.url,webSocketDebuggerUrl:selected.target.webSocketDebuggerUrl}}),remoteAbsent:true,controllerIdle:true,observedAt:new Date().toISOString()};
+      }};
+  }
   // No controller lock here: a reconcile handler can run inside a held invoke.
   async function readRecoveryLinkage(id) {
     requestId(id);const local=loadDurableReceipt(directory,id);
@@ -287,7 +326,15 @@ function createPanelControlService(options={}) {
         // The historical transport bytes are evidence: no merge or persistence here.
         return {...responseReceipt(local),humanSettlement:human};
       }
-      if(remote===null) return local?responseReceipt(local):responseError(problem("receipt_not_found"));
+      const disposition=local && readonlyOrphan.read(safeRoot(directory),id,"disposition");
+      if(disposition && remote!==null)return responseError(problem("readonly_orphan_remote_record_appeared"),readonlyOrphan.effective(local,disposition));
+      if(remote===null) {
+        if(local && disposition)return responseReceipt((await readonlyOrphan.validate(orphanContext(budget),local)).receipt);
+        const owner=local && local.action==="plan.reconcile" && readLock(directory);
+        if(owner && owner.requestId===id && deadProcess(owner.pid) && readonlyOrphan.read(safeRoot(directory),id,"intent"))
+          return responseReceipt((await readonlyOrphan.retire(orphanContext(budget),local)).receipt);
+        return local?responseReceipt(local):responseError(problem("receipt_not_found"));
+      }
       const verified=remoteReceipt(remote,id,local || {});
       if(local) {
         const updated={...local,...verified,signature:local.signature,delivery:"delivered"};let lock;
@@ -327,15 +374,20 @@ function createPanelControlService(options={}) {
       if(existing) {
         if(!existing.signature)return responseError(problem(existing.code),existing);
         if(existing.action!==envelope.action || existing.signature!==signature)return responseError(problem("duplicate_request_id_conflict"),existing);
+        if(readonlyOrphan.read(safeRoot(directory),id,"disposition"))return getResult(id);
         return responseReceipt(existing);
       }
       claim=acquireControllerLock(directory,id);
       const index=readIndex(directory,true),second=loadDurableReceipt(directory,id);
       if(second)return second.signature===signature?responseReceipt(second):responseError(problem("duplicate_request_id_conflict"),second);
-      const unresolved=[];
+      const unresolved=[],readonlyDispositions=[];
       for(const previous of Object.keys(index.identities)) {
         const prior=loadDurableReceipt(directory,previous);
         const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
+        if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
+          try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
+          catch(_) {unresolved.push(prior);continue;}
+        }
         if(!prior || /^(accepted|running|unknown)$/.test(prior.state) &&
            (storageUnproven || !PASSIVE_ACTIONS.has(prior.action)) && !projectedRecoveryValid(prior)) unresolved.push(prior);
       }
@@ -343,13 +395,17 @@ function createPanelControlService(options={}) {
           !(envelope.action==="plan.reconcile" && unresolved.some(prior=>prior?.runId===envelope.args.runId))) throw problem("transport_reconciliation_required");
       record={protocolVersion:PROTOCOL_VERSION,requestId:id,action:envelope.action,signature,state:"accepted",phase:"admission",
         delivery:"not_submitted",acceptedAt:new Date().toISOString(),replayAllowed:false};persist(directory,record);
+      if(envelope.action==="plan.reconcile" && UUID.test(envelope.args.runId || ""))readonlyOrphan.capture(safeRoot(directory),envelope,{kind:"service-invoke"},signature);
       const deadline=Date.now()+input.timeoutMs,budget=()=>{const left=deadline-Date.now();if(left<1)throw problem("cdp_timeout");return left;};
       const selected=await resolveTarget(budget()),current=remoteState(await methodAt(selected.target,"state",{},budget()));
       const binding={panelInstanceId:current.panelInstanceId,panelLifecycleEpoch:current.panelLifecycleEpoch,panelGeneration:current.panelGeneration};
+      if(readonlyDispositions.some(disposition=>JSON.stringify(disposition.actor)!==JSON.stringify(binding) ||
+        disposition.targetSha256!==readonlyOrphan.hash({installed:selected.installed,target:{url:selected.target.url,webSocketDebuggerUrl:selected.target.webSocketDebuggerUrl}})))throw problem("readonly_orphan_observation_changed");
       if(envelope.expectedState && Object.keys(envelope.expectedState).some(key=>envelope.expectedState[key]!==binding[key]))throw problem("expected_state_mismatch");
       const bound={...envelope,expectedState:binding},checked=await resolveTarget(budget());
       if(JSON.stringify(checked.installed)!==JSON.stringify(selected.installed) || checked.target.url!==selected.target.url ||
          checked.target.webSocketDebuggerUrl!==selected.target.webSocketDebuggerUrl)throw problem("panel_target_changed");
+      for(const disposition of readonlyDispositions)if(await methodAt(checked.target,"getResult",disposition.saved.value.requestId,budget(),binding)!==null)throw problem("readonly_orphan_remote_record_appeared");
       record.binding=binding;record.panelInstanceId=binding.panelInstanceId;record.epoch=binding.panelLifecycleEpoch;record.generation=binding.panelGeneration;
       record.state="running";record.phase="submitted";record.delivery="submitted";persist(directory,record);sent=true;
       const value=await methodAt(checked.target,"invoke",bound,budget(),binding),verified=remoteReceipt(value,id,{action:envelope.action,binding});
@@ -385,4 +441,4 @@ function createPanelControlService(options={}) {
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
-  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,saveDurableReceipt,acquireControllerLock,createPanelControlService};
+  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,createPanelControlService};

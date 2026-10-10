@@ -314,5 +314,16 @@ Flash в этой задаче. Подробное фактическое сос
   доказан. Около 17:56–17:57 bridge unreachable/ECONNREFUSED: PID22388 отсутствовал,
   TCP3456 закрыт, stderr startup-only; причина неизвестна, root восстанавливает.
   Diagnostics AEX `40f21d3e…`/SHA `91e623d2…`, 849 C++ checks, атомарно установлена
-  PID44352 exit0; installation read-back pending, live validation absent. M3/M4
+  PID44352 exit0; receipt и независимый installed SHA совпали, live validation absent. M3/M4
   не приняты.
+- **Progress:** штатный MCP auto-start восстановил daemon PID47172 в 18:02:45.413Z,
+  прежний source `9620ddef…`; причину выхода PID22388 не установили. Root восстановил
+  только read-only orphan `plan.reconcile/1d582…`: exact исходный input совпал с
+  receipt/index, два свежих NULL/idle чтения и dead owner подтверждены; durable
+  consumption/disposition `d9b0ca0a…` предшествовали retirement controller lock.
+  **Decision Log:** original receipt сохранён побайтно, `UNKNOWN/no-replay`, AE
+  execution и native guard release не заявляются. Actor/assets drift остаётся
+  fail-closed; обновление backend требует daemon-only maintenance, CEP reload не нужен.
+  **Validation:** root self-review, 29 focused и 18 transport regression PASS;
+  specialist — transport patch, Luna — maintenance helper, root — sole live controller.
+  Backend deployment и trusted grouped GET adoption пока не завершены; M3/M4 не приняты.

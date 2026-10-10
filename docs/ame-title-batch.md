@@ -57,6 +57,17 @@ C++ checks и split stage-failure/read-back diagnostics; точная AEX ато
 независимый SHA установленного файла совпал. Live проверок нет; synthetic host facts не Adobe evidence. AME submit/
 encoding и media не выполнены.
 
+Штатный MCP auto-start восстановил daemon PID47172 в `18:02:45.413Z` с прежним
+source `9620ddef…`; причина выхода PID22388 остаётся неизвестной. Его точный
+read-only `plan.reconcile/1d582…` оставил controller lock. Root сверил исходный
+input с SHA receipt/index, получил два свежих NULL/idle чтения того же actor и
+подтвердил отсутствие owner. Write-once consumption/disposition `d9b0ca0a…`
+сохранены до retirement lock. Original receipt побайтно прежний; эффективный
+результат `unknown/noReplay`, без доказательства AE execution или release native
+guards. Это только транспортная maintenance, не приёмка снимков. Root self-review,
+29 focused и 18 transport regression PASS. Backend deployment ещё требуется;
+actor/assets drift сохраняет fail-closed ограничение, CEP reload не выполнялся.
+
 **Последний этап, 10 октября — offline native bootstrap и bounded maintenance.**
 Build `build-30d58da3cfc14850bc2d343958e726be`, SHA-256
 `efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`; root установил
