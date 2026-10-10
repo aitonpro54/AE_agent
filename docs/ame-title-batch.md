@@ -6,6 +6,16 @@ M2: реализация `ensure_ame_running` и её offline-проверки �
 остановился на обязательной проверке проекта `project_save_required`. Полная
 цепочка двух вариантов не принята.
 
+Уточнение M2: доступен отдельный ручной pin точной существующей установки с
+`HashMismatch`. В `ensure_ame_running` передают `installationId` и
+`existingInstallationTrust:{acknowledgedSignatureStatus:"HashMismatch",sha256:"<точный SHA-256>"}`.
+Это один server-owned шаг после dry-run, подтверждаемый пользователем в CEP.
+Private ingress проверяет фактический panel-role запрос `/agents/plan/run`; echo
+`confirmedBySurface` из MCP/admin/autonomous запроса не создаёт полномочий.
+Бинарник должен быть заново найден в штатной папке Adobe с тем же хешем и identity.
+Результат сохраняет `vendorSignatureVerified=false` и разрешает только проверку
+транспорта. Живой pin ещё не проверен; штатный Valid Adobe signature gate остаётся.
+
 ## Доступные инструменты
 
 `inspect_ame_transport` выполняет фиксированные чтения AME через BridgeTalk.

@@ -74,6 +74,7 @@ const nativeRenderVariant = require("./native-render-variant");
 const ameTransport = require("./ame-transport");
 const amePresets = require("./ame-presets");
 const ameRunning = require("./ame-running");
+const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanIngress();
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -158,6 +159,10 @@ const ameRunningExecutor = ameRunning.createExecutor({
   assertServerProposalContext: context => {
     currentProposalState.assertCurrent(context && context.record);
     ameRunning.assertProposalContext(context, currentProposalState.current, AUTONOMY_CONTRACT_VERSION);
+  },
+  assertManualServerProposalContext: context => {
+    currentProposalState.assertCurrent(context && context.record);
+    manualPlanIngress.assertContext(context);
   }
 });
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
@@ -7307,6 +7312,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   }
   if (!dryRun && options._m100ActionRecord) {
     try {
+      if (validation.steps.some(step => step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
+        manualPlanIngress.assertRequest(options._m100ActionRecord);
+      }
       confirmM100ActionProposal(options._m100ActionRecord, options, run);
       options._m100ActionRecord.executionState = "executing";
     } catch (error) {
@@ -7494,11 +7502,13 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,
         stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
       }) : null;
-      const ameRunningAuthorization = step.tool === ameRunning.TOOL_NAME ? ameRunningExecutor.authorize({
+      const ameRunningContext = step.tool === ameRunning.TOOL_NAME ? {
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
-      }) : null;
+      } : null;
+      if (ameRunningContext && bound.args.existingInstallationTrust) manualPlanIngress.brand(ameRunningContext);
+      const ameRunningAuthorization = ameRunningContext ? ameRunningExecutor.authorize(ameRunningContext) : null;
       const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
       () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
@@ -8784,7 +8794,8 @@ function startHttpBridge() {
       try {
         const body = await readJsonBody(req);
         runBody = body;
-        const run = await runValidatedAgentPlan(body || {});
+        const run = await manualPlanIngress.runAuthenticated({ route: url.pathname, authRole: res.authRole,
+          key: m100PlanRunLookupKey(body || {}) }, () => runValidatedAgentPlan(body || {}));
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,
           run,

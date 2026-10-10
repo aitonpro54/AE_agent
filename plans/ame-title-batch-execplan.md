@@ -20,6 +20,10 @@ Flash в этой задаче. Подробное фактическое сос
 - [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
   `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
   Encoder/exporter API отражён без submit/encode, это не готовность экспортировать.
+- [x] M2 уточнение: ручной exact-hash pin для существующего AME с `HashMismatch`
+  реализован и проверен офлайн (27 групп + 5 ingress-групп). Авторизация приходит только
+  от panel-role `/agents/plan/run`; MCP/admin/autonomous echo не выдаёт разрешение.
+  Живой ручной запуск этого пути ещё не выполнен.
 - [x] SDK intake и offline probe: build `build-63db389697a6421089900d260a1ae582`,
   AEX SHA `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`.
   Independent review PASS только offline protocol/read-only bootstrap scope: P1/P2
@@ -33,6 +37,12 @@ Flash в этой задаче. Подробное фактическое сос
   native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
+- Текущий блок: два независимых `ae_specialist` writer по native fixture и AME jobs;
+  root интегрирует private CEP ingress и сам проводит ревью. Оба helper-слота заняты;
+  общий HTTP/auth boundary остаётся у единственного root writer/controller.
+- Exact pin не исправляет подпись и не доверяет другим операциям: `vendorSignatureVerified=false`,
+  `trustScope=ensure_ame_running_transport_only`. Native discovery и хеш повторно сверяются
+  до/после тёплой проверки и перед холодным запуском; штатный Valid Adobe gate сохранён.
 - `ensure_ame_running` использует обычные proposal/dry-run/confirmed-or-autonomous
   gates и дисковый checkpoint именованного сохранённого AEP через
   `COPYFILE_EXCL`. Успех означает только готовность read-transport. Чистый файл
@@ -87,6 +97,11 @@ Flash в этой задаче. Подробное фактическое сос
   `.codex-runtime/ame-transport-probe/runtime-identity-d7746f1-20261010-004b3911-8169-4752-9916-9567dfb3107c/runtime-identity.json`.
 
 ## Validation
+
+- Текущий manual-pin milestone: `smoke:ame-running` 27 offline групп, private ingress
+  5 групп, `smoke:planning`, `check:rules`, syntax и scoped diff PASS. Ingress проверяет
+  copied/changed context, wrong role/route, autonomous, stale/changed payload и закрытый
+  async scope. Ни AME, ни AE этими проверками не запускались; это не live acceptance.
 
 - 10 октября пользователь явно отменил GPT Pro и подтвердил, что убрал очередь AME.
   [Собственное ревью](../docs/ame-title-batch-self-review.md) снимает только добавленные
