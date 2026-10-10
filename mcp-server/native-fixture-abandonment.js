@@ -5,11 +5,12 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const ledger=require("./native-fixture-attempt-ledger"),records=require("./plan-run-records"),contract=require("../cep-panel/panel-action-contract");
 const SCHEMA="ae-agent.native-fixture-abandonment.v1", OBSERVATION="ae-agent.native-fixture-recovered-observation.v1", TTL=10*60*1000;
+const GROUP="ae-agent.native-fixture-abandonment-attempt-group.v1";
 const {fail,hash,clone,same,SHA,UUID}=ledger;
 function exact(value,keys,code) {if(!value || Array.isArray(value) || Object.keys(value).sort().join(",")!==keys.sort().join(","))fail(code);}
 function selector(value) {exact(value,["requestId","runId"],"fixture_abandonment_selector_invalid");if(!UUID.test(value.requestId || "") || !UUID.test(value.runId || ""))fail("fixture_abandonment_selector_invalid");return clone(value);}
 function directory(root) {return path.join(root,"evidence","native-fixture-abandonment");}
-function fileFor(root,kind,id) {if(!["capture","consumption","audit","disposition"].includes(kind)||!UUID.test(id || ""))fail("fixture_abandonment_file_selector_invalid");return path.join(directory(root),id+"."+kind+".json");}
+function fileFor(root,kind,id) {if(!["capture","consumption","audit","disposition","group-retirement"].includes(kind)||!UUID.test(id || ""))fail("fixture_abandonment_file_selector_invalid");return path.join(directory(root),id+"."+kind+".json");}
 function read(root,kind,id) {const file=fileFor(root,kind,id);return fs.existsSync(file) ? envelope(file,SCHEMA) : null;}
 function write(file,value,metadata={}) {return ledger.writeOnce(file,value,{schema:SCHEMA+".envelope",...metadata});}
 function observationFile(repoRoot,id,retirement=false) {if(!UUID.test(id || ""))fail("fixture_observation_selector_invalid");return path.join(repoRoot,".codex-runtime","ame-native-fixtures","recovered-observations",id+(retirement?".retirement":"")+".json");}
@@ -60,7 +61,8 @@ function recovered(repoRoot,id,s,proof) {
       launch.runId!==s.runId || launch.stageId!==d.stageId || launch.nonce!==d.nonce || launch.role!==d.role || launch.pluginSha256!==d.pluginSha256 || launch.executableSha256!==d.executableSha256 || launch.replayAllowed!==false)fail("fixture_observation_historical_owner_mismatch");
   } else {
     const reservation=ledger.read(ledger.fileFor(repoRoot,d.stageId,"reservation")),launched=ledger.read(ledger.fileFor(repoRoot,d.stageId,"launch"));
-    if(!reservation || !launched || !same(reservation.value.descriptor,d) || reservation.value.runId!==s.runId || !same(launched.value.process,process))fail("fixture_observation_durable_launch_required");
+    if(!reservation || !launched || !same(reservation.value.descriptor,d) || reservation.value.runId!==s.runId || !same(launched.value.process,process) ||
+      v.attempt.reservationSha256 && v.attempt.reservationSha256!==reservation.sha256 || v.attempt.launchSha256 && v.attempt.launchSha256!==launched.sha256)fail("fixture_observation_durable_launch_required");
   }
   return {row,value:v,entry,descriptor:d,process};
 }
@@ -105,12 +107,64 @@ async function snapshot(deps,s,id,mode="capture") {
     historicalObservedRuntime:clone(obs.value.runtime),descriptor:obs.descriptor,process:obs.process,exit,child:clone(child),executor:clone(executor),transport:clone(transport)};
 }
 async function bracket(deps,s,id,mode) {const a=await snapshot(deps,s,id,mode),b=await snapshot(deps,s,id,mode);if(!same(a,b))fail("fixture_abandonment_fresh_bracket_changed");return b;}
+function inventoryContext(s,proof) {return {runId:s.runId,actionId:proof.run.provenance.actionId,proposalRevision:proof.run.provenance.proposalRevision,payloadHash:proof.run.provenance.payloadHash || null};}
+function fullInventory(deps,s,proof) {
+  const context=inventoryContext(s,proof),inventory=ledger.attemptInventory(deps.repoRoot,context),selectors=inventory.map(e=>({stageId:e.descriptor.stageId,role:e.descriptor.role,runId:s.runId,replayAllowed:false}));
+  const nested=proof.run.steps[0].result?.nativeAttempts,optional=nested!==undefined ? nested : proof.run.steps[0].nativeAttempts;
+  if(optional!==undefined && !same(optional,selectors))fail("fixture_abandonment_canonical_attempt_inventory_mismatch");
+  return {schema:GROUP,context,inventory,inventorySha256:hash(inventory)};
+}
+function observationIds(value) {return value.attemptGroup ? value.attempts.map(v=>v.observationId) : [value.observationId];}
+function attempts(value) {return value.attemptGroup ? value.attempts : [value];}
+function observationBinding(value) {return value.attemptGroup ? {attemptGroup:value.attemptGroup,observationIds:observationIds(value),observationHashes:value.attempts.map(v=>v.observationSha256)} : {observationId:value.observationId,observationSha256:value.observationSha256};}
+function sameObservationBinding(value,observed) {
+  const expected=observationBinding(observed);
+  return observed.attemptGroup ? value.observationId===undefined && value.observationSha256===undefined && same(value.attemptGroup,expected.attemptGroup) && same(value.observationIds,expected.observationIds) && same(value.observationHashes,expected.observationHashes) :
+    value.attemptGroup===undefined && value.observationIds===undefined && value.observationHashes===undefined && value.observationId===expected.observationId && value.observationSha256===expected.observationSha256;
+}
+async function setSnapshot(deps,s,ids,mode) {
+  const proof=canonical(deps.evidenceRoot,s),before=fullInventory(deps,s,proof),members=[];
+  for(const id of ids)members.push(await snapshot(deps,s,id,mode));
+  members.sort((a,b)=>a.descriptor.role.localeCompare(b.descriptor.role));
+  if(!same(before,fullInventory(deps,s,canonical(deps.evidenceRoot,s))))fail("fixture_abandonment_attempt_inventory_changed");
+  if(ids.length===1) {
+    if(before.inventory.length>1 || before.inventory.length===1 && !same(before.inventory[0].descriptor,members[0].descriptor))fail("fixture_abandonment_full_attempt_set_required");
+    return members[0];
+  }
+  if(ids.length!==2 || before.inventory.length!==2 || before.inventory.some(e=>e.legacyLayout) || !same(members.map(m=>m.descriptor),before.inventory.map(e=>e.descriptor)) ||
+    !same(members.map(m=>m.process),before.inventory.map(e=>e.process)) || members.some(m=>!m.exit))fail("fixture_abandonment_full_attempt_set_and_exit_required");
+  const first=members[0];
+  for(const member of members)for(const field of ["entry","currentActor","target","installed","runtime","executor","transport"])if(!same(member[field],first[field]))fail("fixture_abandonment_group_observation_drift");
+  return {selector:s,attemptGroup:before,attempts:members,entry:first.entry,currentActor:first.currentActor,target:first.target,installed:first.installed,runtime:first.runtime,executor:first.executor,transport:first.transport};
+}
+async function setBracket(deps,s,ids,mode) {const a=await setSnapshot(deps,s,ids,mode),b=await setSnapshot(deps,s,ids,mode);if(!same(a,b))fail("fixture_abandonment_fresh_bracket_changed");return b;}
+function publishRetirement(deps,s,observed,saved,audit) {
+  const members=[];
+  for(const member of attempts(observed)) {
+    const recoveredFile=ledger.fileFor(deps.repoRoot,member.descriptor.stageId,"recovered"),recoveredValue={schema:SCHEMA+".recovered-attempt",descriptor:member.descriptor,runId:s.runId,observationSha256:member.observationSha256,producer:"root_recovered_observation",replayAllowed:false};
+    const existing=ledger.read(recoveredFile);
+    if(!existing)ledger.writeOnce(recoveredFile,recoveredValue);else if(!same(existing.value,recoveredValue))fail("fixture_abandonment_recovered_attempt_changed");
+    if(!member.exit)continue;
+    const authority={dispositionSha256:saved.sha256,auditSha256:audit.sha256,observationSha256:member.observationSha256,
+      dispositionPath:fileFor(deps.evidenceRoot,"disposition",s.requestId),auditPath:fileFor(deps.evidenceRoot,"audit",s.requestId),observationPath:observationFile(deps.repoRoot,member.observationId)};
+    if(observed.attemptGroup)Object.assign(authority,{groupRetirementPath:fileFor(deps.evidenceRoot,"group-retirement",s.requestId),groupInventorySha256:observed.attemptGroup.inventorySha256});
+    const retired=ledger.auditRetirement(deps.repoRoot,member.descriptor,member.process,member.exit.proof,authority);
+    members.push({stageId:member.descriptor.stageId,retirementAuditSha256:retired.sha256,observationId:member.observationId,observationSha256:member.observationSha256});
+  }
+  // No member's retirement opens admission, and no grouped disposition releases
+  // its guard, until both write-once retirement audits have a final commit record.
+  if(observed.attemptGroup) {
+    if(members.length!==2)fail("fixture_retirement_group_partial");
+    write(fileFor(deps.evidenceRoot,"group-retirement",s.requestId),{schema:GROUP+".retirement",selector:s,inventorySha256:observed.attemptGroup.inventorySha256,dispositionSha256:saved.sha256,auditSha256:audit.sha256,members,
+      historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false});
+  }
+}
 function reserved(root,id) {return ["consumption","audit","disposition"].some(k=>fs.existsSync(fileFor(root,k,id)));}
 const now=deps=>deps.now ? deps.now() : Date.now();
 async function capture(input,deps) {
-  exact(input,["selector","observationId"],"fixture_abandonment_client_evidence_forbidden");const s=selector(input.selector);
-  if(!UUID.test(input.observationId || ""))fail("fixture_observation_selector_invalid");if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_already_consumed");
-  const observed=await bracket(deps,s,input.observationId,"capture"),time=now(deps),value={schema:SCHEMA+".capture",captureId:crypto.randomUUID(),createdAt:new Date(time).toISOString(),expiresAt:new Date(time+TTL).toISOString(),observed};
+  exact(input,input?.observationIds ? ["selector","observationIds"] : ["selector","observationId"],"fixture_abandonment_client_evidence_forbidden");const s=selector(input.selector),ids=input.observationIds || [input.observationId];
+  if(!Array.isArray(ids) || input.observationIds && ids.length!==2 || ids.some(id=>!UUID.test(id || "")) || new Set(ids).size!==ids.length)fail("fixture_observation_selector_invalid");if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_already_consumed");
+  const observed=await setBracket(deps,s,ids,"capture"),time=now(deps),value={schema:SCHEMA+".capture",captureId:crypto.randomUUID(),createdAt:new Date(time).toISOString(),expiresAt:new Date(time+TTL).toISOString(),observed};
   return write(fileFor(deps.evidenceRoot,"capture",value.captureId),value);
 }
 function captureValid(row,id,time) {const c=row?.value,start=Date.parse(c?.createdAt);if(!c || c.schema!==SCHEMA+".capture" || c.captureId!==id || !Number.isFinite(start) || Date.parse(c.expiresAt)!==start+TTL || time<start || time>=start+TTL)fail("fixture_abandonment_capture_stale_or_invalid");return c;}
@@ -119,23 +173,19 @@ async function authorize(input,deps) {
   if(!UUID.test(input.captureId || "") || input.confirmation!==true || input.authorizationSource!=="explicit_user_chat" || typeof input.reason!=="string" || !input.reason.trim() || input.reason.length>2000)fail("fixture_abandonment_explicit_confirmation_required");
   const captured=read(deps.evidenceRoot,"capture",input.captureId),c=captureValid(captured,input.captureId,now(deps)),s=selector(c.observed.selector);
   if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_already_consumed");
-  if(!same(await bracket(deps,s,c.observed.observationId,"capture"),c.observed))fail("fixture_abandonment_capture_drift");
+  if(!same(await setBracket(deps,s,observationIds(c.observed),"capture"),c.observed))fail("fixture_abandonment_capture_drift");
   if(typeof deps.acquireWriterLock!=="function")fail("fixture_abandonment_writer_lock_required");const lock=await deps.acquireWriterLock();if(typeof lock?.release!=="function")fail("fixture_abandonment_writer_lock_required");
   try {
     if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_already_consumed");captureValid(captured,input.captureId,now(deps));
-    if(!same(await bracket(deps,s,c.observed.observationId,"capture"),c.observed))fail("fixture_abandonment_locked_bracket_changed");
+    if(!same(await setBracket(deps,s,observationIds(c.observed),"capture"),c.observed))fail("fixture_abandonment_locked_bracket_changed");
     const createdAt=new Date(now(deps)).toISOString(),dispositionId=crypto.randomUUID();
     const consumption=write(fileFor(deps.evidenceRoot,"consumption",s.requestId),{schema:SCHEMA+".consumption",captureId:c.captureId,captureSha256:captured.sha256,selector:s,dispositionId,createdAt,replayAllowed:false});
-    const value={schema:SCHEMA,dispositionId,createdAt,captureId:c.captureId,captureSha256:captured.sha256,selector:s,observationId:c.observed.observationId,observationSha256:c.observed.observationSha256,
+    const value={schema:SCHEMA,dispositionId,createdAt,captureId:c.captureId,captureSha256:captured.sha256,selector:s,...observationBinding(c.observed),
       status:"abandoned_reviewed",guardDisposition:"released",historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false,authorizationSource:input.authorizationSource,reason:input.reason.trim(),entry:c.observed.entry};
     const audit=write(fileFor(deps.evidenceRoot,"audit",s.requestId),{schema:SCHEMA+".audit",dispositionId,createdAt,captureId:c.captureId,captureSha256:captured.sha256,consumptionSha256:consumption.sha256,
       dispositionSha256:hash(value),confirmation:true,authorizationSource:value.authorizationSource,reason:value.reason,observed:c.observed});
     const saved=write(fileFor(deps.evidenceRoot,"disposition",s.requestId),value,{auditSha256:audit.sha256,consumptionSha256:consumption.sha256});
-    // Intake is explicitly historical; it is never upgraded to a launch receipt.
-    const recoveredFile=ledger.fileFor(deps.repoRoot,c.observed.descriptor.stageId,"recovered");
-    if(!fs.existsSync(recoveredFile))ledger.writeOnce(recoveredFile,{schema:SCHEMA+".recovered-attempt",descriptor:c.observed.descriptor,runId:s.runId,observationSha256:c.observed.observationSha256,producer:"root_recovered_observation",replayAllowed:false});
-    if(c.observed.exit)ledger.auditRetirement(deps.repoRoot,c.observed.descriptor,c.observed.process,c.observed.exit.proof,{dispositionSha256:saved.sha256,auditSha256:audit.sha256,observationSha256:c.observed.observationSha256,
-      dispositionPath:fileFor(deps.evidenceRoot,"disposition",s.requestId),auditPath:fileFor(deps.evidenceRoot,"audit",s.requestId),observationPath:observationFile(deps.repoRoot,c.observed.observationId)});
+    publishRetirement(deps,s,c.observed,saved,audit);
     return saved;
   } finally {await lock.release();}
 }
@@ -148,26 +198,30 @@ function lookupAudited(input,deps) {
     audit.value.dispositionSha256!==saved.sha256 || audit.value.consumptionSha256!==consumption.sha256 || audit.value.confirmation!==true || audit.value.reason!==v.reason || audit.value.authorizationSource!==v.authorizationSource ||
     [audit.value,consumption.value].some(r=>r.dispositionId!==v.dispositionId || r.captureId!==v.captureId || r.captureSha256!==captured.sha256) || captured.sha256!==v.captureSha256 || !same(audit.value.observed,captured.value.observed) ||
     !same(v.entry,captured.value.observed.entry))fail("fixture_abandonment_audit_invalid");
-  const proof=canonical(deps.evidenceRoot,s),obs=recovered(deps.repoRoot,v.observationId,s,proof);
-  if(!same(obs.entry,v.entry) || obs.row.sha256!==v.observationSha256)fail("fixture_abandonment_original_guard_drift");
+  if(!sameObservationBinding(v,captured.value.observed))fail("fixture_abandonment_observation_binding_invalid");
+  const proof=canonical(deps.evidenceRoot,s),observed=captured.value.observed;
+  for(const member of attempts(observed)) {const obs=recovered(deps.repoRoot,member.observationId,s,proof);if(!same(obs.entry,v.entry) || obs.row.sha256!==member.observationSha256)fail("fixture_abandonment_original_guard_drift");}
+  if(observed.attemptGroup) {
+    if(!same(fullInventory(deps,s,proof),observed.attemptGroup) || attempts(observed).some(m=>!ledger.validRetirement(deps.repoRoot,m.descriptor)))fail("fixture_abandonment_group_retirement_incomplete");
+  }
   return saved;
 }
 async function lookup(input,deps) {
   const s=selector(input),saved=lookupAudited(s,deps);if(!saved)return null;const v=saved.value;
-  const fresh=await bracket(deps,s,v.observationId,"lookup");if(!same(fresh.entry,v.entry) || fresh.observationSha256!==v.observationSha256)fail("fixture_abandonment_original_guard_drift");
-  return {...saved,readBack:{schema:SCHEMA+".read-back",dispositionSha256:saved.sha256,entrySha256:hash(v.entry),currentActor:fresh.currentActor,runtime:fresh.runtime,installed:fresh.installed,nativeAdmissionBlocked:!ledger.validRetirement(deps.repoRoot,fresh.descriptor)}};
+  const ids=v.attemptGroup ? v.observationIds : [v.observationId],fresh=await setBracket(deps,s,ids,"lookup");if(!same(fresh.entry,v.entry) || !sameObservationBinding(v,fresh))fail("fixture_abandonment_original_guard_drift");
+  const groupBack=fresh.attemptGroup ? {attemptInventorySha256:fresh.attemptGroup.inventorySha256,groupRetirementSha256:read(deps.evidenceRoot,"group-retirement",s.requestId).sha256} : {};
+  return {...saved,readBack:{schema:SCHEMA+".read-back",dispositionSha256:saved.sha256,entrySha256:hash(v.entry),currentActor:fresh.currentActor,runtime:fresh.runtime,installed:fresh.installed,nativeAdmissionBlocked:attempts(fresh).some(m=>!ledger.validRetirement(deps.repoRoot,m.descriptor)),...groupBack}};
 }
 async function retire(input,deps) {
   const s=selector(input),saved=await lookup(s,deps);if(!saved)fail("fixture_retirement_audited_abandonment_required");
-  const audit=read(deps.evidenceRoot,"audit",s.requestId),fresh=await bracket(deps,s,saved.value.observationId,"lookup");
-  if(!fresh.exit)fail("fixture_retirement_positive_exit_proof_required");
+  const audit=read(deps.evidenceRoot,"audit",s.requestId),ids=saved.value.attemptGroup ? saved.value.observationIds : [saved.value.observationId],fresh=await setBracket(deps,s,ids,"lookup");
+  if(attempts(fresh).some(m=>!m.exit))fail("fixture_retirement_positive_exit_proof_required");
   const lock=await deps.acquireWriterLock();if(typeof lock?.release!=="function")fail("fixture_abandonment_writer_lock_required");
   try {
-    if(!same(await bracket(deps,s,saved.value.observationId,"lookup"),fresh))fail("fixture_abandonment_locked_bracket_changed");
-    if(ledger.validRetirement(deps.repoRoot,fresh.descriptor))return saved;
-    ledger.auditRetirement(deps.repoRoot,fresh.descriptor,fresh.process,fresh.exit.proof,{dispositionSha256:saved.sha256,auditSha256:audit.sha256,observationSha256:fresh.observationSha256,
-      dispositionPath:fileFor(deps.evidenceRoot,"disposition",s.requestId),auditPath:fileFor(deps.evidenceRoot,"audit",s.requestId),observationPath:observationFile(deps.repoRoot,saved.value.observationId)});
+    if(!same(await setBracket(deps,s,ids,"lookup"),fresh))fail("fixture_abandonment_locked_bracket_changed");
+    if(attempts(fresh).every(m=>ledger.validRetirement(deps.repoRoot,m.descriptor)))return saved;
+    publishRetirement(deps,s,fresh,saved,audit);
     return saved;
   } finally {await lock.release();}
 }
-module.exports={SCHEMA,OBSERVATION,TTL,selector,directory,fileFor,observationFile,envelope,canonical,recovered,retirement,capture,authorize,lookupAudited,lookup,retire,hash};
+module.exports={SCHEMA,OBSERVATION,GROUP,TTL,selector,directory,fileFor,observationFile,envelope,canonical,recovered,retirement,capture,authorize,lookupAudited,lookup,retire,hash};

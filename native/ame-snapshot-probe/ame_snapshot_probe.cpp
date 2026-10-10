@@ -3,6 +3,7 @@
 #include "probe_io.h"
 #include "fixture_grant.h"
 #include "fixture_program.h"
+#include "probe_idle_dispatch.h"
 #include "AEConfig.h"
 #include "AE_GeneralPlug.h" // also includes AE_GeneralPlugOld.h (CompSuite12)
 #include "AE_AdvEffectSuites.h"
@@ -97,6 +98,7 @@ struct Snapshot {
 enum class Phase { InspectAck, FixtureAck, SnapshotAck, Terminal };
 struct State {
     Suites suites;
+    probe::IdleDispatchGate idle_dispatch;
     AEGP_PluginID plugin_id = 0;
     std::unique_ptr<probe::OwnedRoot> root;
     probe::Binding binding;
@@ -396,7 +398,7 @@ struct State {
 State* g_state = nullptr;
 A_Err Idle(AEGP_GlobalRefcon, AEGP_IdleRefcon refcon, A_long* max_sleep) {
     auto s = reinterpret_cast<State*>(refcon); if (max_sleep) *max_sleep = 60;
-    try { s->Tick(); } catch (const std::exception& e) { s->Refuse(e.what()); } catch (...) { s->Refuse("unknown_native_exception"); }
+    s->idle_dispatch.Run([&] { s->Tick(); }, [&](const char* reason) noexcept { s->Refuse(reason); });
     return A_Err_NONE;
 }
 } // namespace

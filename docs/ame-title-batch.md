@@ -43,6 +43,33 @@ stage receipt отказал `receipt_attempt_terminal_no_replay` после con
 save. Эти наблюдения не заменяют отдельную проверку всей цепочки. Это не M3 acceptance; production
 snapshot backend, AME submit/encoding/media и M3/M4 не приняты.
 
+**Native idle-gate correction и установка — 10 октября.** Root self-review обнаружил
+повторный idle при открытии AEP. AEX build `4b4c314642e54a56b0c1877c0fe5d4cb`
+(SHA-256 `b77938fade33406e5c22e6dfe8f4bc42c7df1d90c0cfc2c885ab5a58afdf73a3`)
+удерживает atomic RAII gate с начала `wholeTick` до выхода из `Refuse`; 474 C++
+checks PASS (предыдущие 434 + 40 idle-gate), 17 source-file hashes совпали. Root
+атомарно установил точную AEX вместо `efad49…`, сохранив прежнюю в
+`.codex-runtime/ame-native-prerequisites/owned-plugin-install/replace-4b4c3146/`.
+Работающие AE PID31728/36520/38316 новую сборку не загрузили. CEP lifecycle helper
+подготовлен, но не запускался; daemon4484 всё ещё загружает runtime
+`dc6fac7c…f1a3fadb`, latest CEP source не deployed/reloaded.
+
+Оба child из прежнего отказавшего run (`0284d412-3fa9-414f-bf7f-6d897163e670`) закрыты
+с подтверждённым exact held-handle exit0: PID44260 и PID44312. Capture proof SHA
+`52379a15…a5d2429` и stage proof SHA `2b38d94a…f6547a5e`; это не меняет исторический
+`UNKNOWN/no-replay`. Подписанный отказ сообщает повторную обработку consumed grant;
+анализ кода локализует nested idle при open AEP. Ledger содержит consumed-create-fixture, consumed-snapshot и
+unknown. `nativeExecutionProven=false` не доказывает отсутствия native execution.
+
+Grouped lifecycle JS: 36 PASS; grant86, runner34, EPERM disposition17, backend28,
+panel VM48 actions/16 scenarios PASS; rules, четыре JS syntax checks и diff PASS.
+Группа требует ровно два canonical-matched nativeAttempts, оба held-exit proof и единый
+consume/audit/disposition/group-final marker; modern two-child run без группы и
+singleton fallback отклоняются. CEP adopt использует typed attemptGroup и fresh trusted
+GET. Root review пока не выявил material issues. Это ограниченные проверки: новые CEP JS
+ещё не загружены. Production current-user snapshot backend, AME submit/encoding/media и
+M3/M4 остаются непринятыми.
+
 Уточнение M2: доступен отдельный ручной pin точной существующей установки с
 `HashMismatch`. В `ensure_ame_running` передают `installationId` и
 `existingInstallationTrust:{acknowledgedSignatureStatus:"HashMismatch",sha256:"<точный SHA-256>"}`.

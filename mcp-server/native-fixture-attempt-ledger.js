@@ -89,6 +89,60 @@ function auditRetirement(repoRoot,d,process,proof,authority) {
   return writeOnce(fileFor(repoRoot,d.stageId,"retirement-audit"),{schema:SCHEMA+".retirement-audit",descriptor:d,process,proof,authority,
     retiredAt:new Date().toISOString(),historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false});
 }
+// The complete set is derived from durable server records, including roots that
+// have vanished. Observation UUIDs supplied by a caller never define this set.
+function attemptInventory(repoRoot,context) {
+  const parent=path.join(repoRoot,".codex-runtime","ame-native-fixture-ledger"),observations=path.join(repoRoot,".codex-runtime","ame-native-fixtures","recovered-observations"),entries=new Map();
+  if(!UUID.test(context.runId || "") || typeof context.actionId!=="string" || !Number.isInteger(context.proposalRevision))fail("fixture_inventory_context_invalid");
+  if(fs.existsSync(parent)) {
+    safeDirectory(parent);
+    for(const id of fs.readdirSync(parent)) {
+      if(!TOKEN.test(id))fail("fixture_ledger_foreign_entry");
+      const reservation=read(fileFor(repoRoot,id,"reservation")),recovered=read(fileFor(repoRoot,id,"recovered"));
+      if(reservation?.value.runId!==context.runId && recovered?.value.runId!==context.runId)continue;
+      if(!reservation) {
+        if(read(fileFor(repoRoot,id,"launch")) || read(fileFor(repoRoot,id,"unknown")))fail("fixture_inventory_orphan_launch");
+        continue; // Observations below must prove the legacy layout.
+      }
+      const r=reservation.value,d=descriptor(repoRoot,r.descriptor),owner=read(fileFor(repoRoot,id,"owner")),launch=read(fileFor(repoRoot,id,"launch")),unknown=read(fileFor(repoRoot,id,"unknown"));
+      if(r.schema!==SCHEMA+".reservation" || d.stageId!==id || r.actionId!==context.actionId || r.proposalRevision!==context.proposalRevision || r.payloadHash!==(context.payloadHash || null) || r.replayAllowed!==false ||
+        !owner || !same(owner.value,{schema:"ae-agent.native-fixture-owner.v2",rootPath:d.rootPath,nonce:d.nonce,stageId:d.stageId,role:d.role}) ||
+        !launch || launch.value.schema!==SCHEMA+".launch" || launch.value.reservationSha256!==reservation.sha256 || launch.value.descriptorSha256!==hash(d) || launch.value.producer!=="trusted_server_launch_identity" || launch.value.replayAllowed!==false ||
+        !unknown || unknown.value.schema!==SCHEMA+".unknown" || unknown.value.descriptorSha256!==hash(d) || unknown.value.historicalOutcome!=="unknown" || unknown.value.nativeExecutionProven!==false || unknown.value.replayAllowed!==false ||
+        hash(readBytes(path.join(d.rootPath,"launch.manifest")))!==r.manifestSha256)fail("fixture_inventory_durable_binding_invalid");
+      const process=processIdentity(launch.value.process,d);
+      entries.set(id,{descriptor:d,process,reservationSha256:reservation.sha256,launchSha256:launch.sha256,unknownSha256:unknown.sha256,manifestSha256:r.manifestSha256});
+    }
+  }
+  if(fs.existsSync(observations)) {
+    safeDirectory(observations);
+    for(const name of fs.readdirSync(observations)) {
+      if(/^[a-f0-9-]{36}\.retirement\.json$/i.test(name))continue;
+      if(!/^[a-f0-9-]{36}\.json$/i.test(name))fail("fixture_ledger_foreign_observation");
+      const row=JSON.parse(readBytes(path.join(observations,name))),v=row.value;
+      if(row.schema!=="ae-agent.native-fixture-recovered-observation.v1.envelope" || hash(v)!==row.sha256)fail("fixture_ledger_observation_corrupt");
+      if(v?.selector?.runId!==context.runId)continue;
+      if(v.action?.actionId!==context.actionId || v.action.proposalRevision!==context.proposalRevision)fail("fixture_inventory_observation_action_mismatch");
+      const d=descriptor(repoRoot,v.attempt?.descriptor),process=processIdentity(v.attempt?.process,d),found=entries.get(d.stageId);
+      // The historical layout participates in the union too. It cannot hide a
+      // third member, and cannot be used as a modern grouped launch receipt.
+      if(!found) {
+        const files=v.files || v.attempt.files;
+        if(!files || !same(Object.keys(files).sort(),["launch.manifest","server-launch-attempt.json","server-owner.json"]) || !same(fs.readdirSync(d.rootPath).sort(),Object.keys(files).sort()))fail("fixture_inventory_observation_launch_missing");
+        for(const [name,digest] of Object.entries(files))if(!SHA.test(digest) || hash(readBytes(path.join(d.rootPath,name)))!==digest)fail("fixture_inventory_historical_file_changed");
+        const owner=JSON.parse(readBytes(path.join(d.rootPath,"server-owner.json"))),launch=JSON.parse(readBytes(path.join(d.rootPath,"server-launch-attempt.json")));
+        if(owner.schema!=="ae-agent.native-fixture-owner.v2" || owner.rootPath!==d.rootPath || owner.stageId!==d.stageId || owner.nonce!==d.nonce || owner.role!==d.role || launch.runId!==context.runId || launch.stageId!==d.stageId ||
+          launch.nonce!==d.nonce || launch.role!==d.role || launch.pluginSha256!==d.pluginSha256 || launch.executableSha256!==d.executableSha256 || launch.replayAllowed!==false)fail("fixture_inventory_historical_owner_invalid");
+        entries.set(d.stageId,{descriptor:d,process,legacyLayout:true,manifestSha256:files["launch.manifest"],ownerSha256:files["server-owner.json"],launchAttemptSha256:files["server-launch-attempt.json"]});continue;
+      }
+      if(!same(found.descriptor,d) || !sameProcess(found.process,process) || v.attempt.retainedUnknown!==true ||
+        v.attempt.reservationSha256 && v.attempt.reservationSha256!==found.reservationSha256 || v.attempt.launchSha256 && v.attempt.launchSha256!==found.launchSha256)fail("fixture_inventory_observation_binding_invalid");
+    }
+  }
+  const result=[...entries.values()].sort((a,b)=>a.descriptor.role.localeCompare(b.descriptor.role));
+  if(result.length && (result.length>2 || result[0].descriptor.role!=="capture" || result.length===2 && result[1].descriptor.role!=="stage"))fail("fixture_inventory_fixture_roles_invalid");
+  return result;
+}
 function validRetirement(repoRoot,d) {
   const row=read(fileFor(repoRoot,d.stageId,"retirement-audit")); if (!row) return false;
   const v=row.value;
@@ -116,6 +170,27 @@ function validRetirement(repoRoot,d) {
   const consumption=JSON.parse(readBytes(path.join(base,id+".consumption.json"))),capture=JSON.parse(readBytes(path.join(base,disposition.value.captureId+".capture.json")));
   if(disposition.consumptionSha256!==consumption.sha256 || hash(consumption.value)!==consumption.sha256 || audit.value.consumptionSha256!==consumption.sha256 ||
     capture.sha256!==disposition.value.captureSha256 || hash(capture.value)!==capture.sha256 || !same(capture.value.observed,audit.value.observed))fail("fixture_retirement_partial_audit");
+  if(authority.groupRetirementPath) {
+    if(typeof authority.groupRetirementPath!=="string" || !path.resolve(authority.groupRetirementPath).toLowerCase().startsWith(path.resolve(repoRoot).toLowerCase()+path.sep))fail("fixture_retirement_authority_path_invalid");
+    if(authority.groupRetirementPath!==path.join(base,id+".group-retirement.json"))fail("fixture_retirement_authority_path_invalid");
+    if(!fs.existsSync(authority.groupRetirementPath))return false;
+    const group=JSON.parse(readBytes(authority.groupRetirementPath)),g=group.value,observed=capture.value.observed,expected=observed.attemptGroup;
+    if(group.schema!=="ae-agent.native-fixture-abandonment.v1.envelope" || hash(g)!==group.sha256 || g.schema!=="ae-agent.native-fixture-abandonment-attempt-group.v1.retirement" ||
+      !expected || g.inventorySha256!==expected.inventorySha256 || authority.groupInventorySha256!==expected.inventorySha256 || g.dispositionSha256!==disposition.sha256 || g.auditSha256!==audit.sha256 ||
+      g.historicalOutcome!=="unknown" || g.nativeExecutionProven!==false || g.replayAllowed!==false || !same(g.selector,disposition.value.selector) || !Array.isArray(g.members) || g.members.length!==2 || !same(g.members.map(m=>m.stageId),expected.inventory.map(e=>e.descriptor.stageId)) ||
+      !same(attemptInventory(repoRoot,expected.context),expected.inventory))fail("fixture_retirement_group_invalid");
+    for(const member of g.members) {
+      const retired=read(fileFor(repoRoot,member.stageId,"retirement-audit")),e=expected.inventory.find(e=>e.descriptor.stageId===member.stageId),o=observed.attempts.find(o=>o.descriptor.stageId===member.stageId);
+      if(!retired || retired.value.schema!==SCHEMA+".retirement-audit" || retired.sha256!==member.retirementAuditSha256 || !same(retired.value.descriptor,e.descriptor) || !sameProcess(retired.value.process,e.process) ||
+        retired.value.authority.groupRetirementPath!==authority.groupRetirementPath || retired.value.authority.groupInventorySha256!==g.inventorySha256 || retired.value.authority.dispositionSha256!==disposition.sha256 ||
+        retired.value.authority.dispositionPath!==authority.dispositionPath || retired.value.authority.auditPath!==authority.auditPath ||
+        retired.value.authority.auditSha256!==audit.sha256 || retired.value.authority.observationSha256!==o.observationSha256 || retired.value.authority.observationPath!==path.join(repoRoot,".codex-runtime","ame-native-fixtures","recovered-observations",o.observationId+".json") ||
+        retired.value.historicalOutcome!=="unknown" || retired.value.nativeExecutionProven!==false || retired.value.replayAllowed!==false || member.observationId!==o.observationId || member.observationSha256!==o.observationSha256)fail("fixture_retirement_group_partial");
+      const observation=JSON.parse(readBytes(retired.value.authority.observationPath));
+      if(observation.schema!=="ae-agent.native-fixture-recovered-observation.v1.envelope" || observation.sha256!==o.observationSha256 || hash(observation.value)!==o.observationSha256 || !same(observation.value.attempt?.descriptor,e.descriptor) || !sameProcess(observation.value.attempt?.process,e.process))fail("fixture_retirement_group_observation_changed");
+      validateRetirement(retired.value.proof,e.process);
+    }
+  } else if(capture.value.observed.attemptGroup)fail("fixture_retirement_group_required");
   return true;
 }
 function completionFile(repoRoot,runId) {if(!UUID.test(runId || ""))fail("fixture_completion_selector_invalid");return path.join(repoRoot,".codex-runtime","ame-native-fixture-completions",runId+".json");}
@@ -197,4 +272,4 @@ function outstanding(repoRoot,permittedRunId=null) {
   return blocked;
 }
 function assertAdmission(repoRoot,permittedRunId=null) { if (outstanding(repoRoot,permittedRunId).length) fail("fixture_runner_unretired_attempt_no_replay"); }
-module.exports={SCHEMA,SHA,TOKEN,UUID,hash,clone,same,fail,safeDirectory,ensure,readBytes,read,writeOnce,directory,fileFor,descriptor,processIdentity,birthIdentity,sameProcess,reserve,launch,unknown,validateRetirement,auditRetirement,validRetirement,completionFile,complete,validCompletion,outstanding,assertAdmission};
+module.exports={SCHEMA,SHA,TOKEN,UUID,hash,clone,same,fail,safeDirectory,ensure,readBytes,read,writeOnce,directory,fileFor,descriptor,processIdentity,birthIdentity,sameProcess,reserve,launch,unknown,validateRetirement,auditRetirement,validRetirement,attemptInventory,completionFile,complete,validCompletion,outstanding,assertAdmission};

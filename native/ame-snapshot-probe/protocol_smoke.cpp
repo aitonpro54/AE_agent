@@ -2,6 +2,7 @@
 #include "probe_io.h"
 #include "fixture_grant.h"
 #include "fixture_program.h"
+#include "probe_idle_dispatch.h"
 #include <iostream>
 #include <functional>
 #include <winioctl.h>
@@ -512,8 +513,87 @@ int wmain(int argc, wchar_t** argv) {
         Require(DeleteFileW(stage_root.Child(L"owner.lock").c_str()) == 0 && GetLastError() == ERROR_SHARING_VIOLATION,
             "claim_stage_owner_handle_still_held_after_baseline_refusal");
         const int root_contract_checks = passed - before_root_contract;
+        const int before_idle_dispatch = passed;
+        auto idle_fields = signed_good; idle_fields["operation"] = "stage-variants"; idle_fields["restore_dirty"] = "0";
+        idle_fields = seal(idle_fields);
+        const auto idle_grant = probe::ValidateFixtureGrant(idle_fields, binding, key, "stage-variants", expected, stage, "saved-dirty", now);
+        // Exercise the production gate with real durable consume/publication.
+        // OpenProjectFromPath is a callback double that pumps idle before return;
+        // no Adobe suite, idle hook, AEP opening or host mutation runs here.
+        for (int failure_mode = 0; failure_mode < 4; ++failure_mode) {
+            const auto token = probe::RandomToken();
+            const auto candidate_path = parent + L"\\probe-" + probe::Wide(token);
+            Require(CreateDirectoryW(candidate_path.c_str(), nullptr) != 0, "idle_dispatch_owned_stage_root");
+            probe::OwnedRoot candidate(candidate_path, token);
+            ExternalWriteNew(candidate.Child(L"launch.manifest"), "protocol=2\n");
+            ExternalWriteNew(candidate.Child(L"baseline.aep"), stage_baseline);
+            candidate.ClaimStage("offline idle stage owner\n", stage_baseline_sha);
+            probe::IdleDispatchGate gate;
+            int preflights = 0, consumes = 0, opens = 0, outputs = 0, refusals = 0, deferred = 0, publication_callbacks = 0;
+            bool terminal = false, refusal_publication_failed = false;
+            std::string first_reason;
+            std::function<void()> idle;
+            const auto OpenProjectFromPath = [&] {
+                ++opens;
+                Require(ExternalBytes(candidate.Child(L"baseline.aep")) == stage_baseline, "idle_dispatch_pinned_baseline_readable_offline");
+                idle(); // deterministic host message-pump reentry
+                if (failure_mode == 1) throw probe::Failure("OpenOwnedStageBaseline:17");
+                if (failure_mode == 2) throw 17;
+            };
+            idle = [&] {
+                const bool entered = gate.Run([&] {
+                    if (terminal) return;
+                    ++preflights; ++consumes;
+                    probe::ConsumeFixtureGrant(candidate, idle_grant);
+                    auto baseline_pin = probe::LockReadFile(candidate.Child(L"baseline.aep"));
+                    OpenProjectFromPath();
+                    ++outputs;
+                    candidate.WriteNew(L"signed-variants.json", probe::SignedFixtureReceipt("{\"status\":\"offline_callback_completed\"}", key));
+                    terminal = true;
+                }, [&](const char* reason) noexcept {
+                    ++refusals; terminal = true;
+                    try {
+                        first_reason = reason;
+                        candidate.WriteNew(L"signed-refusal.json", probe::SignedFixtureReceipt("{\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"replayAllowed\":false}", key));
+                    } catch (...) { refusal_publication_failed = true; }
+                });
+                if (!entered) ++deferred;
+            };
+            candidate.InterleavePublicationForTest([&](probe::PublicationStage publication, const std::wstring&, const std::wstring& final) {
+                if (publication != probe::PublicationStage::AfterFlushBeforeRename) return;
+                ++publication_callbacks; idle();
+                if (failure_mode == 3 && final == candidate.Child(L"signed-variants.json")) ExternalWriteNew(final, "untouched competing receipt");
+            });
+            idle();
+            candidate.InterleavePublicationForTest({});
+            Require(preflights == 1 && consumes == 1 && opens == 1, "idle_dispatch_nested_before_preflight_consume_or_open");
+            Require(deferred == (failure_mode == 3 ? 4 : 3) && publication_callbacks == (failure_mode == 3 ? 3 : 2), "idle_dispatch_open_and_receipt_callbacks_deferred");
+            Require(candidate.Read(L"signed-stage-variants.consumed.json").find("consumed_before_dispatch") != std::string::npos &&
+                !candidate.Exists(L"signed-stage-variants.consumed.json.part"), "idle_dispatch_consume_receipt_single_publication");
+            Require(terminal && !refusal_publication_failed && refusals == (failure_mode == 0 ? 0 : 1) &&
+                outputs == (failure_mode == 1 || failure_mode == 2 ? 0 : 1), "idle_dispatch_one_terminal_outcome");
+            if (failure_mode == 0) {
+                Require(!candidate.Exists(L"signed-refusal.json") && candidate.Exists(L"signed-variants.json"), "idle_dispatch_success_no_false_replay_refusal");
+            } else {
+                Require(failure_mode == 1 ? first_reason == "OpenOwnedStageBaseline:17" : failure_mode == 2 ?
+                    first_reason == "unknown_native_exception" : first_reason.rfind("receipt_absolute_only_publish_no_replace_no_replay:win32=", 0) == 0,
+                    "idle_dispatch_original_open_or_publication_cause_retained");
+                const auto refusal = SignedBody(candidate.Read(L"signed-refusal.json"), key);
+                Require(refusal.find(probe::Json(first_reason)) != std::string::npos && refusal.find("receipt_attempt_terminal_no_replay") == std::string::npos,
+                    "idle_dispatch_signed_first_reason_not_nested_consume");
+            }
+            if (failure_mode == 3) Require(ExternalBytes(candidate.Child(L"signed-variants.json")) == "untouched competing receipt" &&
+                candidate.Exists(L"signed-variants.json.part"), "idle_dispatch_failed_publication_preserves_outsider_and_part");
+            idle(); // gate resets after success/exception, while Terminal prevents replay
+            Require(deferred == (failure_mode == 3 ? 4 : 3) && preflights == 1 && consumes == 1 && opens == 1 &&
+                refusals == (failure_mode == 0 ? 0 : 1), "idle_dispatch_raii_reset_terminal_tick_no_replay");
+            Require(candidate.Hash(L"baseline.aep") == stage_baseline_sha, "idle_dispatch_claimed_baseline_unchanged");
+        }
+        const int idle_dispatch_checks = passed - before_idle_dispatch;
         std::cout << "{\"offline\":true,\"hostLoaded\":false,\"legacyProtocolChecks\":" << legacy_checks << ",\"signedFixtureChecks\":" << signed_checks
-            << ",\"startupDiagnosticsChecks\":" << startup_checks << ",\"nativeRootContractChecks\":" << root_contract_checks << ",\"startupHarnessScope\":\"shared C++ trust/time gates and signed refusal publication; EntryPoint/Adobe suites/hooks not executed\",\"startupHarnessRefusals\":" << startup_refusals
+            << ",\"startupDiagnosticsChecks\":" << startup_checks << ",\"nativeRootContractChecks\":" << root_contract_checks
+            << ",\"idleDispatchChecks\":" << idle_dispatch_checks << ",\"idleHarnessScope\":\"production C++ gate with callback-double OpenProjectFromPath and real receipt publication; Adobe suites/hooks not executed\""
+            << ",\"startupHarnessScope\":\"shared C++ trust/time gates and signed refusal publication; EntryPoint/Adobe suites/hooks not executed\",\"startupHarnessRefusals\":" << startup_refusals
             << ",\"startupHarnessHostAuthorizations\":" << startup_host_authorizations << ",\"passed\":" << passed << ",\"status\":\"passed\",\"adversarialInterleavings\":" << adversarial_interleavings << ",\"destinationGuardRefusals\":" << guard_refusals << ",\"guardHarnessFixtureDispatches\":" << guard_fixture_dispatches << ",\"guardHarnessExtendScriptSaves\":" << guard_script_saves << ",\"guardHarnessNativeSaves\":" << guard_native_saves << ",\"destinationWriteContract\":\"destination_write_contract_unverified\",\"liveSemantics\":\"UNVERIFIED\",\"checks\":[";
         for (size_t i = 0; i < checks.size(); ++i) { if (i) std::cout << ','; std::cout << probe::Json(checks[i]); }
         std::cout << "],\"controlReceiptPublication\":\"same-held-handle FileRenameInfo absolute-only no-replace\",\"rootMetadataIsolation\":\"UNVERIFIED\",\"win32RefusalErrors\":{";

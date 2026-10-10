@@ -243,7 +243,7 @@
     var saved=nativeAbandonments[id],v=saved && saved.value,e=v && v.entry,back=saved && saved.readBack,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,rt=back && back.runtime;
     if(!saved || saved.schema!=="ae-agent.native-fixture-abandonment.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) || !v || v.schema!=="ae-agent.native-fixture-abandonment.v1" ||
       !/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "") || !contract.UUID_REGEX.test(v.dispositionId || "") || !contract.UUID_REGEX.test(v.captureId || "") ||
-      !contract.UUID_REGEX.test(v.observationId || "") || !/^[a-f0-9]{64}$/.test(v.observationSha256 || "") || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") ||
+      !nativeAbandonmentObservationsValid(v,back,run) || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") ||
       v.status!=="abandoned_reviewed" || v.guardDisposition!=="released" || v.historicalOutcome!=="unknown" || v.nativeExecutionProven!==false || v.replayAllowed!==false ||
       v.authorizationSource!=="explicit_user_chat" || typeof v.reason!=="string" || !v.reason.trim() || !v.selector || v.selector.requestId!==id || !nativeFixtureRecord(id) || r.runId!==v.selector.runId ||
       !e || e.originalRequestId!==id || e.runId!==r.runId || e.action!==r.action || e.effect!==r.effect || e.actionId!==run.provenance.actionId || e.proposalRevision!==run.provenance.proposalRevision ||
@@ -255,6 +255,16 @@
       !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel-actions.js"] || "") || !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel.js"] || "") ||
       !back.installed || JSON.stringify(back.installed.hashes)!==JSON.stringify(rt.panelAssetHashes) || trusted && nativeAbandonmentTrusted[id]!==saved.sha256)return false;
     return !storageFailure;
+  }
+  function nativeAbandonmentObservationsValid(value,back,run) {
+    if(!value.attemptGroup)return !value.observationIds && !value.observationHashes && contract.UUID_REGEX.test(value.observationId || "") && /^[a-f0-9]{64}$/.test(value.observationSha256 || "");
+    var g=value.attemptGroup,context=g.context,inventory=g.inventory;
+    return !value.observationId && !value.observationSha256 && g.schema==="ae-agent.native-fixture-abandonment-attempt-group.v1" &&
+      Object.keys(g).sort().join(",")==="context,inventory,inventorySha256,schema" && context && Object.keys(context).sort().join(",")==="actionId,payloadHash,proposalRevision,runId" && value.selector && run && run.provenance &&
+      context.runId===value.selector.runId && context.actionId===run.provenance.actionId && context.proposalRevision===run.provenance.proposalRevision && context.payloadHash===(run.provenance.payloadHash || null) &&
+      Array.isArray(inventory) && inventory.length===2 && inventory[0].descriptor && inventory[1].descriptor && inventory[0].descriptor.role==="capture" && inventory[1].descriptor.role==="stage" && inventory[0].descriptor.stageId!==inventory[1].descriptor.stageId &&
+      g.inventorySha256===sha256(JSON.stringify(inventory)) && Array.isArray(value.observationIds) && value.observationIds.length===2 && value.observationIds[0]!==value.observationIds[1] && value.observationIds.every(function(id){return contract.UUID_REGEX.test(id || "");}) &&
+      Array.isArray(value.observationHashes) && value.observationHashes.length===2 && value.observationHashes.every(function(h){return /^[a-f0-9]{64}$/.test(h || "");}) && back && back.nativeAdmissionBlocked===false && back.attemptInventorySha256===g.inventorySha256 && /^[a-f0-9]{64}$/.test(back.groupRetirementSha256 || "");
   }
   function refreshNativeFixtureAbandonments(onDone) {
     if(nativeAbandonmentLookupPending){if(onDone)onDone(false);return;}
