@@ -110,7 +110,9 @@ async function snapshot(deps,mode="capture") {
   const executor = await deps.readExecutorQuiescence();
   if (!executor || executor.quiescent !== true || executor.executing !== false || executor.pendingCount !== 0 || !Array.isArray(executor.childProcesses) || executor.childProcesses.length) fail("fixture_disposition_executor_not_quiescent");
   const runtime = runtimeIdentity(await deps.readRuntimeIdentity());
-  if (!selected.target || typeof selected.target.id !== "string" || !selected.target.id || !selected.installed?.indexPath || !equal(selected.installed.hashes,runtime.panelAssetHashes)) fail("fixture_disposition_frame_source_mismatch");
+  if (!selected.target || typeof selected.target.url !== "string" || !selected.target.url.startsWith("file:///") ||
+      !/^ws:\/\/127\.0\.0\.1:8870\/devtools\/page\/[A-Za-z0-9_-]+$/.test(selected.target.webSocketDebuggerUrl || "") ||
+      !selected.installed?.indexPath || !equal(selected.installed.hashes,runtime.panelAssetHashes)) fail("fixture_disposition_frame_source_mismatch");
   const after = await deps.maintenanceTarget(); assertIdle(await deps.readBridgeStatus(),after.state,mode);
   if (!equal(actor(after.state),currentActor) || !equal(after.target,selected.target) || !equal(after.installed,selected.installed)) fail("fixture_disposition_actor_or_frame_changed");
   return {entry,currentActor,target:clone(selected.target),installed:clone(selected.installed),runtime,
@@ -130,7 +132,9 @@ async function lookupFrame(deps,entry) {
   const observedEntry = {...checkGuard(guard,proof.run,currentActor),canonicalRunRecordHash:proof.canonicalRunRecordHash,canonicalRunProjectionHash:proof.canonicalRunProjectionHash};
   if (!equal(observedEntry,entry)) fail("fixture_disposition_original_receipt_or_canonical_drift");
   const runtime = runtimeIdentity(await deps.readRuntimeIdentity());
-  if (!selected.target || typeof selected.target.id !== "string" || !selected.target.id || !selected.installed?.indexPath || !equal(selected.installed.hashes,runtime.panelAssetHashes)) fail("fixture_disposition_frame_source_mismatch");
+  if (!selected.target || typeof selected.target.url !== "string" || !selected.target.url.startsWith("file:///") ||
+      !/^ws:\/\/127\.0\.0\.1:8870\/devtools\/page\/[A-Za-z0-9_-]+$/.test(selected.target.webSocketDebuggerUrl || "") ||
+      !selected.installed?.indexPath || !equal(selected.installed.hashes,runtime.panelAssetHashes)) fail("fixture_disposition_frame_source_mismatch");
   const after = await deps.maintenanceTarget();assertIdle(await deps.readBridgeStatus(),after.state,"lookup");
   if (!equal(actor(after.state),currentActor) || !equal(after.target,selected.target) || !equal(after.installed,selected.installed)) fail("fixture_disposition_actor_or_frame_changed");
   return {currentActor,runtime,target:clone(selected.target),installed:clone(selected.installed)};

@@ -35,7 +35,8 @@ async function fixture(root,name) {
   let env = createPanelEnvironment(SOURCE,{storageStore:store}), status = {pendingCommands:0,inflightCommands:[],activeEditSession:null,projectLifecycle:{blocked:false,pending:null},panelBootstrap:{busy:false}}, clock = Date.now(), held = false;
   const panelAssetHashes = Object.fromEntries(["panel-actions.js","panel.js"].map(asset => [asset,disposition.hash(fs.readFileSync(path.join(__dirname,"../cep-panel",asset)))]));
   let runtime = {daemon:{pid:4123,startedAt:new Date(clock-1000).toISOString()},loadedRuntimeSha256:"d".repeat(64),currentRuntimeSha256:"d".repeat(64),panelAssetHashes};
-  let installed = {indexPath:path.join(evidenceRoot,"cep","index.html"),hashes:panelAssetHashes}, target = {id:"exact-frame",type:"page",url:"file:///exact/index.html",webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/exact-frame"};
+  // Real maintenanceTarget returns this exact binding; Page.id/type are absent.
+  let installed = {indexPath:path.join(evidenceRoot,"cep","index.html"),hashes:panelAssetHashes}, target = {url:"file:///exact/index.html",webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/exact-frame"};
   let executor = {quiescent:true,executing:false,pendingCount:0,childProcesses:[]}, transport = {requestId:EXACT.requestId,originalReceiptAbsent:true,pendingCount:0,inflightCount:0}, actorOverride = null, projectionOverride = null, signatureOverride = null;
   const deps = {evidenceRoot,now:() => clock,maintenanceTarget:async() => ({installed:clone(installed),target:clone(target),state:{...clone(env.api.state()),...(actorOverride || {}),nativeControlIdle:true}}),
     readPanelGuard:async value => {const g=clone(env.api.readAmeFixtureUIGuard(value));if(actorOverride)g.currentBinding=clone(actorOverride);if(projectionOverride)g.projection=clone(projectionOverride);if(signatureOverride)g.signatureSha256=signatureOverride;return g;},
@@ -78,6 +79,7 @@ async function main() {
   try {
     await test("authenticated capture/authorize/lookup + actual CEP trusted adoption preserve original bytes and unknown/no-replay",() => withFixture("happy",async f => {
       assert.equal(f.env.api.state().unresolvedActions.length,1);const captured=await request(f.port,"fixture-automation","/ame/fixture-ui-disposition/capture",selector);assert.equal(captured.status,200);
+      assert.deepEqual(Object.keys(captured.body.capture.value.target).sort(),["url","webSocketDebuggerUrl"]);
       const authorized=await request(f.port,"fixture-automation","/ame/fixture-ui-disposition/authorize",{captureId:captured.body.capture.value.captureId,confirmation:true,authorizationSource:"explicit_user_chat",reason});assert.equal(authorized.status,200);
       assert.equal(f.env.api.state().unresolvedActions.length,1,"disk disposition alone does not adopt");f.refresh();assert.equal(f.env.api.state().ameFixtureDispositionLookupPending,true);await f.answerLookup();
       assert.equal(f.env.api.state().unresolvedActions.length,0);assert.equal(f.env.api.state().ameFixtureDisposition.historicalOutcome,"unknown");assert.equal(f.env.api.getResult(EXACT.requestId).state,"unknown");
@@ -89,6 +91,16 @@ async function main() {
       for(const value of [{...selector,runId:crypto.randomUUID()},{...selector,requestId:crypto.randomUUID()},{...selector,tool:"save_project"},{...selector,proof:{ok:true}}])await assert.rejects(disposition.capture(value,f.deps),/selector_invalid/);
       assert.equal(f.env.api.readAmeFixtureUIGuard({...selector,proof:{}}),null);assert.equal(f.env.api.refreshAmeFixtureDisposition({proof:true}).accepted,false);f.unchanged();
     }));
+    await test("actual url/ws-only target binding rejects nonfile/nonloopback/missing bindings in capture and durable lookup",async() => {
+      const valid={url:"file:///exact/index.html",webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/exact-frame"};
+      const invalid={nonfile:{...valid,url:"https://example.test/index.html"},nonloopback:{...valid,webSocketDebuggerUrl:"ws://example.test:8870/devtools/page/exact-frame"},
+        localhost:{...valid,webSocketDebuggerUrl:"ws://localhost:8870/devtools/page/exact-frame"},wrongport:{...valid,webSocketDebuggerUrl:"ws://127.0.0.1:8871/devtools/page/exact-frame"},
+        missingtarget:null,missingurl:{webSocketDebuggerUrl:valid.webSocketDebuggerUrl},missingws:{url:valid.url}};
+      for(const mode of ["capture","lookup"])for(const [kind,target] of Object.entries(invalid))await withFixture("target-"+mode+"-"+kind,async f => {
+        if(mode === "lookup"){const c=await f.capture();await f.authorize(c);}
+        f.setTarget(target);await assert.rejects(mode === "capture" ? f.capture() : disposition.lookup(f.deps),/frame_source_mismatch/);f.unchanged();
+      });
+    });
     await test("canonical scope rejects foreign tool/dry-run/nonmanual/wrong provenance",async() => {
       for(const kind of ["tool","dryRun","manual","provenance","status"]){await withFixture("canonical-"+kind,async f => {const value=clone(f.canonical);if(kind === "tool")value.plan.steps[0].tool="save_project";if(kind === "dryRun")value.run.dryRun=true;if(kind === "manual")value.run.m100Action.confirmedBySurface="mcp";if(kind === "provenance")value.run.provenance.actionId="foreign";if(kind === "status")value.run.outcome.execution.status="not_started";records.writeRecord(f.evidenceRoot,value);await assert.rejects(f.capture(),/canonical_scope_mismatch/);});}
     });
@@ -98,7 +110,7 @@ async function main() {
         if(kind === "receipt"){const p=clone(f.original);delete p.signature;p.message="changed";f.setProjection(p);}
         if(kind === "signature")f.setSignature("a".repeat(64));
         if(kind === "actor")f.setActor({panelInstanceId:"new-panel",panelLifecycleEpoch:0,panelGeneration:"0"});
-        if(kind === "frame")f.setTarget({id:"foreign-frame"});
+        if(kind === "frame")f.setTarget({url:"file:///foreign/index.html",webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/foreign-frame"});
         if(kind === "runtime")f.setRuntime({...f.runtime,currentRuntimeSha256:"e".repeat(64)});
         if(kind === "daemon")f.setRuntime({...f.runtime,daemon:{pid:5555,startedAt:new Date().toISOString()}});
         if(kind === "assets")f.setRuntime({...f.runtime,panelAssetHashes:{"panel-actions.js":"e".repeat(64),"panel.js":"e".repeat(64)}});

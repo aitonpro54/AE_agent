@@ -126,6 +126,10 @@ Flash в этой задаче. Подробное фактическое сос
   не выполнен. Два старых AE children PID38316/36520 принадлежат Dynamic Link
   PID28468 и созданы до fixture; current host31728 неизменён. Root maintenance
   обновляет только два CEP asset и daemon, не освобождая guard и не вызывая AE/AME.
+- Live upgrade intermediate: два asset установлены, daemon42180→32828; до
+  `Page.reload` строгий check остановился из-за отсутствующего target.id в штатном
+  service contract. Root исправил binding на реальную пару URL/WS; smoke15 PASS с
+  14 отрицательными binding cases. Receipt/canonical неизменны, reload ещё не отправлен.
 
 - Own AEX установлена по прямому поручению пользователя через стандартный UAC:
   точный binary SHA совпал, receipt `owned-plugin-install/install-17e7622b/`.
