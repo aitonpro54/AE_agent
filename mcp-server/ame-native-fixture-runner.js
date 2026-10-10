@@ -229,7 +229,10 @@ function createExecutor(deps) {
       producer: "private_signed_fixture_cache", productionBackend: false, currentUserProjectMutation: false,
       mediaProof: "not_inspected", ameSubmission: "not_attempted" };
   }
-  return { authorize, assertAuthorization, execute, verifyResult, inspectResult };
+  function quiescence() {
+    return { executing, pendingCount: launches.size, descriptorCount: descriptors.size };
+  }
+  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, quiescence };
 }
 
 const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snapshot experiment on two server-owned empty AE children. Creates fixed test fixtures, captures current unsaved state, saves two independent variants and reopens them for read-back. Does not mutate the current user project, render, enqueue in AME, claim a production snapshot backend or replay unknown phases.",

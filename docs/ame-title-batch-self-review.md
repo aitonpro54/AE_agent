@@ -51,7 +51,11 @@ Manual fixture run остановился на EPERM установки AEX. Own
 receipt: текущий recovery требует его и не поддерживает fixture adoption. Root
 не создаёт фиктивный transport receipt и не объявляет историческую мутацию
 `not_started`. Исправление — отдельный audited disposition исходного unknown,
-с неизменными журналами и запретом повторения; его implementation ещё проверяется.
+с неизменными журналами и запретом повторения. Root own review сохраняет strict
+authorization capture, но lookup после будущего restart использует свежие current
+actor/runtime и неизменный original receipt. Backend проверяет loaded CDP source,
+canonical bytes, private signature и exact старые Dynamic Link hosts. Capture не
+освобождает guard; durable consumption и audit предшествуют disposition.
 
 ## Приёмка
 

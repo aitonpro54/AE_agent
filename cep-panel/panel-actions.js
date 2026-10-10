@@ -21,6 +21,8 @@
   var active = null, bindings = null, storageFailure = "", bound = false;
   var humanSettlement=null, humanSettlementTrusted=false, humanLookupPending=false;
   var HUMAN_KEY="codexAeHumanGuardSettlement20261010";
+  var fixtureDisposition=null, fixtureDispositionTrusted=false, fixtureLookupPending=false;
+  var FIXTURE_KEY="codexAeAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -35,7 +37,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -121,6 +123,8 @@
     snapshot.activeAction = active ? {requestId:active.requestId,action:active.action} : null;
     snapshot.humanSettlementLookupPending=humanLookupPending;
     snapshot.humanSettlement=humanSettlementTrusted && humanSettlement ? {settlementId:humanSettlement.value.settlementId,status:"abandoned_reviewed",guardDisposition:"released",aeExecutionProven:false,replayAllowed:false} : null;
+    snapshot.ameFixtureDispositionLookupPending=fixtureLookupPending;
+    snapshot.ameFixtureDisposition=fixtureDispositionValid(FIXTURE_ID,true) ? {dispositionId:fixtureDisposition.value.dispositionId,status:"abandoned_reviewed",guardDisposition:"released",historicalOutcome:"unknown",aeExecutionProven:false,replayAllowed:false} : null;
     return snapshot;
   }
   // Synchronous SHA-256 keeps content out of durable receipts in the CEP runtime.
@@ -183,6 +187,56 @@
       if(!humanSettlementValid("568c1a03-1eef-4f04-806a-eaa7acaa0c20",false)){humanSettlement=prior;if(onDone)onDone(false);return;}
       try{storage.setItem(HUMAN_KEY,JSON.stringify(humanSettlement));humanSettlementTrusted=true;}catch(_){humanSettlementTrusted=false;}
       if(onDone)onDone(humanSettlementTrusted);
+    });
+  }
+  function currentFixtureActor() {
+    var current=life();
+    return {panelInstanceId:instanceId,panelLifecycleEpoch:current.epoch,panelGeneration:String(current.generation)};
+  }
+  // Pure read of one exact private receipt. Neither adoption nor receipt rewriting.
+  function readAmeFixtureUIGuard(value) {
+    if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || value.requestId!==FIXTURE_ID || value.runId!==FIXTURE_RUN)return null;
+    var r=records[FIXTURE_ID];
+    if(!r || r.runId!==FIXTURE_RUN || typeof r.signature!=="string")return null;
+    return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor()};
+  }
+  function fixtureDispositionValid(id,trusted) {
+    var saved=fixtureDisposition,v=saved && saved.value,e=v && v.entry,readBack=saved && saved.readBack,runtime=readBack && readBack.runtime,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,provenance=run && run.provenance;
+    if(id!==FIXTURE_ID || !saved || saved.schema!=="ae-agent.ame-fixture-ui-disposition.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) ||
+      !/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "") || !v || v.schema!=="ae-agent.ame-fixture-ui-disposition.v1" ||
+      !contract.UUID_REGEX.test(v.dispositionId || "") || !contract.UUID_REGEX.test(v.captureId || "") || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") ||
+      v.status!=="abandoned_reviewed" || v.guardDisposition!=="released" || v.historicalOutcome!=="unknown" || v.aeExecutionProven!==false || v.replayAllowed!==false ||
+      v.authorizationSource!=="explicit_user_chat" || typeof v.reason!=="string" || !v.reason.trim() || !e || !r || r.source!=="ui" || r.state!=="unknown" || r.phase!=="outcome_unresolved" ||
+      r.code!=="EPERM" || r.delivery!=="unknown" || r.replayAllowed!==false || r.action!=="plan.run" || r.effect!=="protected_plan_run" || r.runId!==FIXTURE_RUN ||
+      e.originalRequestId!==FIXTURE_ID || e.runId!==FIXTURE_RUN || e.action!==r.action || e.effect!==r.effect || e.actionId!=="act_1e36f475c8214022b84df276cd3ca4bf" || e.proposalRevision!==2 ||
+      e.privateSignatureSha256!==sha256(r.signature) || e.panelReceiptHash!==sha256(JSON.stringify(p)) || !/^[a-f0-9]{64}$/.test(e.canonicalRunRecordHash || "") ||
+      !/^[a-f0-9]{64}$/.test(e.canonicalRunProjectionHash || "") || e.canonicalRunProjectionHash!==sha256(JSON.stringify(run)) ||
+      !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
+      !readBack || readBack.schema!=="ae-agent.ame-fixture-ui-disposition.v1.read-back" || readBack.dispositionSha256!==saved.sha256 || readBack.entrySha256!==sha256(JSON.stringify(e)) ||
+      JSON.stringify(readBack.currentActor)!==JSON.stringify(currentFixtureActor()) || !runtime || !/^[a-f0-9]{64}$/.test(runtime.loadedRuntimeSha256 || "") ||
+      runtime.currentRuntimeSha256!==runtime.loadedRuntimeSha256 || !runtime.panelAssetHashes || !/^[a-f0-9]{64}$/.test(runtime.panelAssetHashes["panel-actions.js"] || "") ||
+      !/^[a-f0-9]{64}$/.test(runtime.panelAssetHashes["panel.js"] || "") || !readBack.installed || JSON.stringify(readBack.installed.hashes)!==JSON.stringify(runtime.panelAssetHashes) ||
+      !provenance || provenance.actionId!==e.actionId || provenance.proposalRevision!==2 ||
+      run.ok!==false || run.dryRun!==false || run.errorCode!=="EPERM" || trusted && !fixtureDispositionTrusted)return false;
+    return !storageFailure;
+  }
+  function refreshAmeFixtureDisposition(onDone) {
+    fixtureDispositionTrusted=false;
+    // The existing startup lookup remains sufficient for panels without this guard.
+    if(!records[FIXTURE_ID]){fixtureDisposition=null;if(onDone)onDone(true);return;}
+    if(!bindings || typeof bindings.lookupAmeFixtureDisposition!=="function"){if(onDone)onDone(false);return;}
+    if(fixtureLookupPending){if(onDone)onDone(false);return;}
+    fixtureLookupPending=true;
+    var startedActor=JSON.stringify(currentFixtureActor());
+    bindings.lookupAmeFixtureDisposition(function(error,saved) {
+      fixtureLookupPending=false;
+      if(error || startedActor!==JSON.stringify(currentFixtureActor())){if(onDone)onDone(false);return;}
+      if(saved===null){fixtureDisposition=null;if(onDone)onDone(true);return;}
+      var previous=fixtureDisposition;fixtureDisposition=saved && clone(saved);
+      var raw=rawState(),current=life();
+      if(active || current.busy || raw.recoveryTransport || !fixtureDispositionValid(FIXTURE_ID,false)){fixtureDisposition=previous;if(onDone)onDone(false);return;}
+      try{storage.setItem(FIXTURE_KEY,JSON.stringify(fixtureDisposition));fixtureDispositionTrusted=true;}catch(_){fixtureDispositionTrusted=false;}
+      if(onDone)onDone(fixtureDispositionTrusted);
     });
   }
   function recoveryValid(id,confirmed) {
@@ -307,6 +361,7 @@
     if (!bound || !bindings.handlers[name]) return {available:false,reasonCodes:["handler_unavailable"]};
     if (storageFailure) return {available:false,reasonCodes:[storageFailure]};
     if(humanLookupPending && !passiveRead(name))return {available:false,reasonCodes:["human_settlement_lookup_pending"]};
+    if(fixtureLookupPending && !passiveRead(name))return {available:false,reasonCodes:["fixture_disposition_lookup_pending"]};
     var unresolved=unresolvedEffects();
     if(unresolved.length && !passiveRead(name) && name !== "connector.emergencyDisable" && name !== "plan.reconcile") {
       return {available:false,reasonCodes:["reconciliation_required","unresolved_effect"]};
@@ -435,8 +490,17 @@
     return contract.sanitizeReceipt(r);
   }
   load();
-  var api=Object.freeze({protocolVersion:contract.PROTOCOL_VERSION,catalog:catalog,state:state,
-    invoke:function(envelope) {return invoke(envelope,"programmatic");},getResult:getResult});
+  var api={protocolVersion:contract.PROTOCOL_VERSION,catalog:catalog,state:state,
+    invoke:function(envelope) {return invoke(envelope,"programmatic");},getResult:getResult};
+  Object.defineProperty(api,"readAmeFixtureUIGuard",{value:readAmeFixtureUIGuard,writable:false,configurable:false,enumerable:false});
+  Object.defineProperty(api,"refreshAmeFixtureDisposition",{value:function() {
+    if(arguments.length)return {accepted:false,code:"fixture_disposition_refresh_arguments_invalid"};
+    if(!records[FIXTURE_ID])return {accepted:false,code:"fixture_disposition_guard_missing"};
+    if(fixtureLookupPending)return {accepted:false,code:"fixture_disposition_lookup_pending"};
+    refreshAmeFixtureDisposition();
+    return {accepted:fixtureLookupPending,lookupPending:fixtureLookupPending};
+  },writable:false,configurable:false,enumerable:false});
+  Object.freeze(api);
   return {api:api,bind:function(value) {
     if (bound) throw new Error("Panel actions are already bound");
     bindings=value;bound=true;
@@ -449,6 +513,6 @@
       }
     });
     persist();
-    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements});
+    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition});
   }};
 });

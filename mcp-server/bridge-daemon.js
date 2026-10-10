@@ -78,6 +78,8 @@ const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanI
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
 const ameTitleJobs = require("./ame-title-jobs");
+const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
+const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -9078,6 +9080,27 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname.startsWith("/ame/fixture-ui-disposition/")) {
+      if (!requireToken(req,res,url)) return;
+      const operation = url.pathname.slice("/ame/fixture-ui-disposition/".length);
+      if (!["capture","authorize","lookup"].includes(operation) || req.method !== (operation === "lookup" ? "GET" : "POST")) {
+        writeJson(res,404,{ok:false,code:"fixture_disposition_route_invalid"}); return;
+      }
+      if (res.authRole !== (operation === "lookup" ? "panel" : "automation")) {
+        writeJson(res,403,{ok:false,code:"fixture_disposition_role_required"}); return;
+      }
+      try {
+        const readers = ameFixtureUIBackend.createReaders({evidenceRoot:LOG_DIR, projectRoot:PROJECT_ROOT,
+          panelService:panelControlService, readBridgeStatus:getBridgeStatus,
+          loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,
+          currentRuntimeSha256:() => reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
+          executorQuiescence:() => ameFixtureExecutor.quiescence()});
+        const result = operation === "lookup" ? await ameFixtureDisposition.lookup(readers) :
+          await ameFixtureDisposition[operation](await readJsonBody(req),readers);
+        writeJson(res,200,{ok:true,[operation === "capture" ? "capture" : "disposition"]:result});
+      } catch (error) { writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_disposition_failed"}); }
+      return;
+    }
     if(url.pathname==="/human-guard-settlement/lookup" && req.method==="GET"){
       if(!requireToken(req,res,url))return;
       if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"human_settlement_panel_role_required"});return;}

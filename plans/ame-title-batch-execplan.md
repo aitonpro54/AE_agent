@@ -36,6 +36,10 @@ Flash в этой задаче. Подробное фактическое сос
   status и отдельный semantic read-back зарегистрированы. Fixture outcome тоже требует
   отдельного private-cache file/process read. START остаётся закрыт без full queue proof;
   это код/offline milestone, не экспорт двух вариантов.
+- [x] Jobs milestone зафиксирован `6692fe9`; exact UI disposition реализован отдельно:
+  immutable capture/consumption/audit, original unknown/no-replay сохранены. Root own
+  review исправил восстановление guard после будущего легитимного restart: lookup
+  сверяет неизменную историческую запись и свежий текущий actor/runtime.
 - [x] SDK intake и offline probe: build `build-63db389697a6421089900d260a1ae582`,
   AEX SHA `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`.
   Independent review PASS только offline protocol/read-only bootstrap scope: P1/P2
@@ -114,6 +118,14 @@ Flash в этой задаче. Подробное фактическое сос
   `.codex-runtime/ame-transport-probe/runtime-identity-d7746f1-20261010-004b3911-8169-4752-9916-9567dfb3107c/runtime-identity.json`.
 
 ## Validation
+
+- Disposition offline: 14 scenario groups, panel-actions16, historical settlement9;
+  backend fixed readers19 PASS. Перед upgrade root read-only capture подтвердил
+  исходный canonical SHA `caf20b82…0866` и guard. Загруженный panel.js совпал с
+  Git `12f4848`, установленный — с `d7746f1`: известный cache drift, native запуск
+  не выполнен. Два старых AE children PID38316/36520 принадлежат Dynamic Link
+  PID28468 и созданы до fixture; current host31728 неизменён. Root maintenance
+  обновляет только два CEP asset и daemon, не освобождая guard и не вызывая AE/AME.
 
 - Own AEX установлена по прямому поручению пользователя через стандартный UAC:
   точный binary SHA совпал, receipt `owned-plugin-install/install-17e7622b/`.
