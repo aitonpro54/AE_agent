@@ -134,6 +134,8 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 const RUNTIME_FILES = [
+  "mcp-server/ame-transport.js",
+  "mcp-server/ame-presets.js",
   "mcp-server/human-guard-settlement.js","scripts/human-guard-settlement-maintenance.js",
   "mcp-server/bridge-daemon.js","mcp-server/cep-panel-control.js","cep-panel/panel-action-contract.js","mcp-server/semantic-verification.js","mcp-server/slideshow-tools.js","mcp-server/slideshow-plan-builder.js","mcp-server/slideshow-manifest.js","mcp-server/review-evidence.js","mcp-server/run-outcome.js","mcp-server/project-save.js","mcp-server/plan-run-records.js","mcp-server/plan-run-response.js","mcp-server/tool-error-response.js",
   "mcp-server/montage-pipeline.js","mcp-server/montage-plan-guard.js","mcp-server/montage-native.js","mcp-server/montage-postread.js","mcp-server/montage-materials.js",

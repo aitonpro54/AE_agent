@@ -71,6 +71,8 @@ const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const nativeRenderVariant = require("./native-render-variant");
+const ameTransport = require("./ame-transport");
+const amePresets = require("./ame-presets");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -5280,6 +5282,8 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  ameTransport.TOOL_NAME,
+  amePresets.listAmePresetsTool.name,
   nativeRenderVariant.INSPECT,
   nativeRenderVariant.RENDER,
   ...projectLifecycleContract.MUTATIONS,
@@ -12744,6 +12748,8 @@ const tools = [
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
   ...projectSave.createToolDefinitions(),
   ...nativeRenderVariant.createToolDefinitions(),
+  ameTransport.tool,
+  amePresets.listAmePresetsTool,
   ...projectLifecycleContract.toolDefinitions,
   projectLifecyclePlan.tool,
   projectLifecyclePlan.recoveryTool
@@ -12988,6 +12994,14 @@ async function callTool(name, args, executionContext) {
     try{const saveReceipt=await projectSaveExecutor.execute(name,args,{authorization:executionContext && executionContext.projectSaveAuthorization});
       return toolResult({ok:true,saveReceipt});
     }catch(error){return toolResult({ok:false,error:error.message,code:error.code||"PROJECT_SAVE_FAILED"},true);}
+  }
+  if (name === ameTransport.TOOL_NAME) {
+    try { const result = await ameTransport.execute(args, runExtendScriptBody); return toolResult(result, !result.ok); }
+    catch (error) { return toolResult({ ok: false, code: error.code || "ame_transport_failed", error: error.message, automaticRetryAllowed: false }, true); }
+  }
+  if (name === amePresets.listAmePresetsTool.name) {
+    try { return toolResult(amePresets.listAmePresets(args)); }
+    catch (error) { return toolResult({ ok: false, code: "ame_preset_catalog_failed", error: error.message, source: "file_catalog", nativeAvailability: "not_verified" }, true); }
   }
   if(name===nativeRenderVariant.INSPECT || name===nativeRenderVariant.RENDER){
     try { const result=name===nativeRenderVariant.INSPECT ? await nativeRenderExecutor.inspect(args) : await nativeRenderExecutor.execute(args,executionContext && executionContext.nativeRenderAuthorization);

@@ -51,6 +51,8 @@
     "smoke:placeholder-visual": "node scripts/placeholder-visual-smoke.js && node scripts/placeholder-visual-batches-smoke.js && node scripts/placeholder-visual-bridge-smoke.js",
     "report:ame-output": "node scripts/ame-passive-status.js",
     "smoke:ame-output": "node scripts/ame-passive-status-smoke.js",
+    "smoke:ame-transport": "node --expose-internals scripts/ame-transport-smoke.js",
+    "smoke:ame-presets": "node scripts/ame-presets-smoke.js",
     "report:ame-media": "node scripts/ame-media-probe.js",
     "smoke:ame-media": "node scripts/ame-media-probe-smoke.js",
     "report:ame-submit-guard": "node scripts/ame-submit-guard.js",
