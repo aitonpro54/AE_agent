@@ -11,12 +11,11 @@ Flash в этой задаче. Подробное фактическое сос
   каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
 - [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
-- [ ] M3 IN PROGRESS: пользователь поручил продолжить без GPT Pro; root проводит
-  собственное ревью. Отдельный signed v2 fixture runner зарегистрирован для ручного
-  CEP-плана: capture текущего dirty-состояния в собственном child, затем два сохранённых
-  и повторно открытых варианта в другом child. Production snapshot текущего проекта,
-  submit/start/status и реальное кодирование пока не приняты. Старый unsigned guard
-  не ослаблен; прежние ACL/guard результаты не считаются разрешением этого пути.
+- [ ] M3 BLOCKED: immutable grant `a56cae55-40c1-49f2-b79e-e4aa9f23f1b5`, SHA-256
+  `f46238c1038d7b890dc02cc314d5b22f7d0ff075385eff0ba4058b1281f72f4e`, принят
+  только актуальным CEP epoch 1 / generation 1791648133063. Свежий run
+  `54062238-4828-453c-a115-6ddc9f302dee` завершился
+  `fixture_runner_receipt_unknown_no_replay` примерно за 92.9 с; M3 не принят.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 - [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
   `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
@@ -25,13 +24,11 @@ Flash в этой задаче. Подробное фактическое сос
   реализован и проверен офлайн (27 групп + 5 ingress-групп). Авторизация приходит только
   от panel-role `/agents/plan/run`; MCP/admin/autonomous echo не выдаёт разрешение.
   Живой ручной запуск этого пути ещё не выполнен.
-- [x] Native fixture implementation, commit `a85bb26`: signed v2 capture/stage runner.
-  Manual CEP dry-run принят; run `40ddeee4-8b49-47d6-9301-03873fbe8cec` завершился
-  `EPERM` при установке AEX, до наблюдаемого запуска children. Parent fixtures пуст;
-  историческое исполнение не объявляется машинно доказанным `not_started`.
-- [ ] Текущий блокер: private manual UI receipt `67d45704-92ac-4700-9288-b7db697ea90f`
-  остался unknown; стандартный reconcile требует отсутствующий external transport receipt.
-  Требуется scoped disposition, сохраняя unknown/no-replay исходной операции.
+- [x] Native fixture: старый run `40ddeee4-8b49-47d6-9301-03873fbe8cec` / request
+  `67d45704-92ac-4700-9288-b7db697ea90f` получил `EPERM`; его disposition
+  `abandoned_reviewed`, но исходный результат остаётся unknown/no-replay.
+  Новый manual dry-run `d416667c` и action `act_ef261a108a6c44b5b668ffcd0d371c58`
+  rev 2 прошли; последующий run выше неизвестен и не переигрывался.
 - [x] Jobs implementation: fixed GUID inspection, exact EPR enqueue, retained wrapper
   status и отдельный semantic read-back зарегистрированы. Fixture outcome тоже требует
   отдельного private-cache file/process read. START остаётся закрыт без full queue proof;
@@ -53,10 +50,9 @@ Flash в этой задаче. Подробное фактическое сос
   native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
-- Текущий блок: `ae_specialist` завершил native fixture и AME jobs; отдельный specialist
-  исправляет exact manual fixture disposition. Luna/high проверил offline runner/planning;
-  root интегрировал private CEP ingress и провёл собственное ревью. Root — единственный live controller;
-  пользователь запретил Flash/Pro. Native grant не публикуется через raw/MCP/admin.
+- Текущий блок: root — sole live controller и reviewer; пользователь запретил Flash/Pro.
+  Старый EPERM-run адресно помечен `abandoned_reviewed`, сохранив original unknown/no-replay.
+  Signed grant остаётся private и был принят только свежим exact CEP actor/runtime.
 - Signed v2 runner устанавливает только собственную точную AEX-сборку и не заменяет
   другой файл. Fixed fixtures имеют одну root comp `Main`, вложенную comp и media/proxy
   в отдельной папке. Process birth, MAC, source/binary SHA и receipts проверяются до
@@ -223,8 +219,28 @@ Flash в этой задаче. Подробное фактическое сос
   PASS is limited to offline protocol/read-only bootstrap under trusted stable parents;
   `rootMetadataIsolation=UNVERIFIED`. Harness does not test native state machine or
   establish a count of real AE calls. M3/live AE load/save semantics remain blocked.
-- Current offline docs/check block: build receipt, exact 11 source hashes, AEX SHA,
-  SDK inputs and user-supplied archive hash match; 215 protocol PASS / 22 Win32
-  interleavings / 18 refusals recorded with harness limitation above. Four preexisting
-  dirty-file hashes remain unchanged. No live native load, fixture/save acceptance,
-  M3, AME end-to-end, active-panel reload or child guard bootstrap is claimed.
+- Финальный runtime/evidence: aggregate source SHA
+  `97490d3bdf2ce64b8157bb39bff3bdc90692e45b52a18fd2856581ca31682745`, commit
+  `2603e0e`; maintenance commits `54e6a26`, `e6ac3fe`, `2603e0e` затронули 2 assets
+  и 1 reader asset без закрытия AE/AME. Новый daemon PID44100 started
+  `2026-10-10T16:02:05.792Z`. Точная собственная AEX build `9a6b7110dd934bfb85982f3331b9d1fd`,
+  SHA `ba4afb624dbb29ddea905cac86a618a30de0f3b8bac1068bc85b70b923813d8a`.
+  Child PID26912 (CIM birth `2026-10-10T16:06:29.6145910Z`) — запущенный root-owned
+  второй AE; пользователь подтвердил запуск. Свежий read показывает загруженный
+  `After Effects 2026\Support Files\Plug-ins\AEAgentSnapshotProbe.aex`,
+  `UntitledProject.aep`, RAM 2187 MB. Ранний `NOAEX` был до завершения старта.
+  Capture `probe-8dcbbb2ecce6cb1697cc0b47699ea14d` по-прежнему содержит только
+  server owner, launch manifest/attempt: нет signed boot, native claim, AEP или фаз.
+  Manifest истёк `1791648689277` (~16:11:29.277Z); startup EntryPoint проверяет expiry
+  до claim и может завершиться без сообщения. Истечение — правдоподобная, но не
+  доказанная причина; pre-claim error не был выведен. Unknown run не replay/close.
+  Основной AE PID31728 не менялся; чужие
+  DL PID38316/36520 и parent28468 не тронуты. Текущий проект `konkurs_kino_02.aep`,
+  rev77594573, 762 items. PE scout подтвердил AMD64, exports и PiPL16000 kind AEgx
+  под ожидаемый SDK. AEX загружена во втором AE, но signed native protocol не стартовал.
+  SDK показывает только startup entry point; требуется bounded диагностика раннего
+  старта/жизненного цикла и expiry. Это технический blocker, не доказательство
+  невозможности.
+- Offline final: disposition 17, panel-actions 48, backend 28, rules/syntax/diff PASS;
+  четыре исходных baseline SHA без изменений. M3 и M4 не приняты; нет production
+  acceptance, live load, snapshot/save, submit/encode или полного AME результата.
