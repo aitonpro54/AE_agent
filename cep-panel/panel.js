@@ -4613,12 +4613,24 @@
   if (tokenEl.value) {
     setTimeout(loadAgents, 250);
   }
-  if (tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect") !== "0") {
-    setTimeout(function() {invokePanelUI("bridge.connect",{});}, 250);
-  }
   rememberPanelSecrets();
   panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,
     passive:{"logs.get":true,"chat.sessions.list":true,"chat.transcript.get":true,"plan.current":function(args) {return !args || !args.fresh;}},
     availability:actionAvailability,state:panelActionSnapshot,
+    lookupHumanSettlements:function(done) {
+      var url=getBaseUrl(),token=getToken();
+      if(!window.AEAgentPanelContract.validateLoopbackUrl(url) || !token){done({code:"human_settlement_bridge_unavailable"});return;}
+      request("GET","/human-guard-settlement/lookup",null,function(error,response) {
+        if(getBaseUrl()!==url || getToken()!==token || error || !response || response.ok!==true){done(error || {code:"human_settlement_lookup_failed"});return;}
+        done(null,response.settlement);
+      });
+    },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
+  function lookupHumanSettlementBeforeConnect(attempt) {
+    panelActionUI.refreshHumanSettlements(function(ready) {
+      if(ready && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0")setTimeout(function(){invokePanelUI("bridge.connect",{});},250);
+      else if(!ready && tokenEl.value && attempt<3)setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
+    });
+  }
+  lookupHumanSettlementBeforeConnect(0);
 })();

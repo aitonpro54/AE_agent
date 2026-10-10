@@ -21,6 +21,7 @@ function fixture(options={}) {
   const env=createPanelEnvironment(panel,options);
   let current=null,runSeq=0,emergencyDisabled=false;
   const bodyFor=req=>{
+    if(req.path === "/human-guard-settlement/lookup") return {ok:true,settlement:null};
     if(req.path === "/tools/call") {
       const result=req.body.name === "get_bridge_status" ? {pendingCommands:0,inflightCommands:[],activeEditSession:null,projectLifecycle:{blocked:false,pending:null}} :
         {status:"reconciled",steps:[{index:1,tool:"create_comp",mutationStatus:"applied"}],replayAllowed:false};
@@ -85,6 +86,17 @@ function fixture(options={}) {
   function setCurrent(value) {
     if(current && value && value.actionId !== current.actionId) value.revision=value.proposal.revision=current.revision+1;
     current=value;
+  }
+  // A restored configured panel performs its private passive lookup before admission.
+  // This generic fixture has no human settlement: answer that exact startup request,
+  // preserving all historical guards; do not drain unrelated action requests here.
+  const initialLookup=env.inFlightRequests.find(req=>req.path === "/human-guard-settlement/lookup");
+  if(initialLookup) {
+    const guarded=copy(env.api.state().unresolvedActions);
+    assert.equal(env.api.state().humanSettlementLookupPending,true);
+    initialLookup.respond(200,bodyFor(initialLookup));
+    assert.equal(env.api.state().humanSettlementLookupPending,false);
+    assert.deepEqual(copy(env.api.state().unresolvedActions),guarded,"Null trusted lookup preserves historical guards");
   }
   return {env,invoke,drain,connect,pins,setCurrent,getCurrent:()=>current};
 }

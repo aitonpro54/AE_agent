@@ -238,6 +238,7 @@ function createPanelControlService(options={}) {
   }
   function projectedRecoveryValid(row) {
     try {
+      if(require("./human-guard-settlement").disposition(recoveryLogDir,row))return true;
       if(row.recoveryReference?.schema===commonRecovery.SCHEMA){
         const ref=row.recoveryReference,saved=commonRecovery.read(recoveryLogDir,"recovery");
         if(!saved || ref.originalRequestId!==row.requestId || ref.runId!==row.runId || ref.sha256!==saved.sha256 || ref.recoveryId!==saved.value.recoveryId)return false;
@@ -280,6 +281,12 @@ function createPanelControlService(options={}) {
       requestId(id);const budget=timeout(timeoutMs,5000);local=loadDurableReceipt(directory,id);
       if(local && !local.signature) return responseError(problem(local.code),local);
       const remote=await read("getResult",id,budget);
+      const human=local && require("./human-guard-settlement").disposition(recoveryLogDir,local);
+      if(human) {
+        if(remote===null || remote.humanSettlement?.sha256!==human.sha256 || require("./human-guard-settlement").hash(require("./human-guard-settlement").receiptProjection(remote))!==human.value.entries.find(e=>e.originalRequestId===id).panelReceiptHash)return responseError(problem("human_settlement_panel_adoption_unproven"),local);
+        // The historical transport bytes are evidence: no merge or persistence here.
+        return {...responseReceipt(local),humanSettlement:human};
+      }
       if(remote===null) return local?responseReceipt(local):responseError(problem("receipt_not_found"));
       const verified=remoteReceipt(remote,id,local || {});
       if(local) {
@@ -372,7 +379,7 @@ function createPanelControlService(options={}) {
     if(before.panelInstanceId!==after.panelInstanceId || before.panelLifecycleEpoch!==after.panelLifecycleEpoch || before.panelGeneration!==after.panelGeneration)throw problem("maintenance_panel_binding_changed");
     const reconcile=catalog.find(row=>row.name==="plan.reconcile");
     // Public busy includes the historical guard. Existing catalog probes actual lifecycle/controller work separately.
-    return {...selected,state:{...after,nativeControlIdle:reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 && !after.activeAction}};
+    return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 || after.busy===false)}};
   }
   return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget});
 }

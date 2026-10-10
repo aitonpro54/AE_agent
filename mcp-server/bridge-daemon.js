@@ -180,6 +180,7 @@ const waitingPanels = [];
 const generatedRecoveryScopes = new Map();
 const generatedRecoveryByPanel = new Map();
 const commonTitleRecovery = require("./common-title-assembly-recovery");
+const humanGuardSettlement = require("./human-guard-settlement");
 function recoveryReadAllowed(scope,tool){return scope?.profile===commonTitleRecovery.PROFILE ? tool===commonTitleRecovery.READ : ["get_project_info","get_comp_details"].includes(tool);}
 async function reconcileCommonTitle(record,args){
   commonTitleRecovery.inputs(args);commonTitleRecovery.inspectRecord(record);
@@ -992,6 +993,7 @@ function getBridgeStatus() {
     port: PORT,
     uptimeMs: now - STARTED_AT,
     startedAt: new Date(STARTED_AT).toISOString(),
+    humanGuardRuntime: {pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),sourceSha256:RUNTIME_IDENTITY.sourceSha256},
     panelConnected: now - lastPanelSeenAt < 15000,
     panelBootstrap: panelBootstrapService.snapshot(),
     autonomousSession: autonomousSession.publicStatus(),
@@ -8925,6 +8927,33 @@ function startHttpBridge() {
       return;
     }
 
+    if(url.pathname==="/human-guard-settlement/lookup" && req.method==="GET"){
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"human_settlement_panel_role_required"});return;}
+      try{writeJson(res,200,{ok:true,settlement:humanGuardSettlement.lookup(LOG_DIR)});}
+      catch(error){writeJson(res,409,{ok:false,code:error.code || "human_settlement_lookup_failed"});}
+      return;
+    }
+    if(url.pathname==="/human-guard-settlement/maintenance" && req.method==="POST"){
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="automation"){writeJson(res,403,{ok:false,code:"human_settlement_automation_role_required"});return;}
+      const args=await readJsonBody(req);
+      if(!args || Object.keys(args).some(k=>!["reason","confirmation","authorizationSource","captureSha256"].includes(k))){writeJson(res,400,{ok:false,code:"human_settlement_client_evidence_forbidden"});return;}
+      let lock;
+      try{
+        lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"cep-panel-control"),crypto.randomUUID());
+        const maintenance=require("../scripts/human-guard-settlement-maintenance"),configuration={host:HOST,port:PORT,credentialIdentity:humanGuardSettlement.hash(TOKEN)},capture=humanGuardSettlement.validateCapture(LOG_DIR,humanGuardSettlement.read(LOG_DIR,"capture"),configuration),service=panelControl.createPanelControlService({inspectInstalledTarget:maintenance.baselineInspector(LOG_DIR,capture)}),before=getBridgeStatus(),selected=await service.maintenanceTarget();
+        humanGuardSettlement.assertRuntime(RUNTIME_IDENTITY,capture.implementationSha256,reviewEvidence.sha256(reviewEvidence.runtimeNamedHashSet(PROJECT_ROOT)));
+        humanGuardSettlement.assertIdle(before,selected.state);humanGuardSettlement.assertExactGuards(selected.state);
+        const entries=await maintenance.collectEntries(LOG_DIR,service),loadedHashes=await maintenance.loadedHashes(selected),hosts=await humanGuardSettlement.discoverHosts(),after=getBridgeStatus(),again=await service.maintenanceTarget();
+        humanGuardSettlement.assertIdle(after,again.state);
+        if(!humanGuardSettlement.equal(selected,again))throw Object.assign(Error("human_settlement_target_changed"),{code:"human_settlement_target_changed"});
+        const proof=humanGuardSettlement.authorize(LOG_DIR,args,{configuration,daemon:after.humanGuardRuntime,status:after,selected:again,entries,loadedHashes,hosts});
+        writeJson(res,200,{ok:true,settlement:proof});
+      }catch(error){writeJson(res,409,{ok:false,code:error.code || "human_settlement_maintenance_failed"});}
+      finally{if(lock)lock.release();}
+      return;
+    }
     if(url.pathname==="/common-title-recovery/maintenance" && req.method==="POST"){
       if(!requireToken(req,res,url))return;
       const args=await readJsonBody(req);commonTitleRecovery.inputs(args);

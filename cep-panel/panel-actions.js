@@ -19,6 +19,8 @@
   var instanceId = "panel-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   var records = Object.create(null), tombstones = Object.create(null), recoveries=Object.create(null), validatedRecoveries=Object.create(null);
   var active = null, bindings = null, storageFailure = "", bound = false;
+  var humanSettlement=null, humanSettlementTrusted=false, humanLookupPending=false;
+  var HUMAN_KEY="codexAeHumanGuardSettlement20261010";
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -33,7 +35,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -117,6 +119,8 @@
     snapshot.unresolvedActions = unresolved;
     snapshot.actionStorage = storageFailure ? "unavailable" : "ready";
     snapshot.activeAction = active ? {requestId:active.requestId,action:active.action} : null;
+    snapshot.humanSettlementLookupPending=humanLookupPending;
+    snapshot.humanSettlement=humanSettlementTrusted && humanSettlement ? {settlementId:humanSettlement.value.settlementId,status:"abandoned_reviewed",guardDisposition:"released",aeExecutionProven:false,replayAllowed:false} : null;
     return snapshot;
   }
   // Synchronous SHA-256 keeps content out of durable receipts in the CEP runtime.
@@ -158,6 +162,29 @@
     return sha256(JSON.stringify({action:envelope.action,args:canonical(envelope.args,def.schema),expectedState:envelope.expectedState || {}}));
   }
   function terminal(record) { return /^(completed|error|rejected)$/.test(record.state); }
+  function humanSettlementValid(id,trusted) {
+    var saved=humanSettlement,v=saved && saved.value,ids=["568c1a03-1eef-4f04-806a-eaa7acaa0c20","cb5c3b53-5443-474e-93df-aa8210758886"],runs=["eb28a045-048a-46ad-aa69-276302b38c73","c6d0acfb-5c05-4897-80a9-e509ab0a47cf"];
+    if(!saved || saved.schema!=="ae-agent-human-guard-settlement.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) || !v || v.schema!=="ae-agent-human-guard-settlement.v1" || !contract.UUID_REGEX.test(v.settlementId || "") || v.status!=="abandoned_reviewed" || v.guardDisposition!=="released" || v.aeExecutionProven!==false || v.replayAllowed!==false || v.authorizationSource!=="explicit_user_chat" || !v.reason || !Array.isArray(v.entries) || v.entries.length!==2 || ids.indexOf(id)<0 || trusted && !humanSettlementTrusted)return false;
+    return v.entries.every(function(e,i) {
+      var r=records[ids[i]],projection=r && contract.sanitizeReceipt(r);
+      if(projection){delete projection.recovery;delete projection.humanSettlement;}
+      return e.originalRequestId===ids[i] && e.runId===runs[i] && e.action==="plan.run" && e.effect==="protected_plan_run" && r && r.requestId===ids[i] && r.runId===runs[i] && r.action===e.action && r.effect===e.effect && r.state==="unknown" && r.replayAllowed===false && e.panelReceiptHash===sha256(JSON.stringify(projection)) && /^[a-f0-9]{64}$/.test(e.originalReceiptHash || "") && /^[a-f0-9]{64}$/.test(e.canonicalRunRecordHash || "") && /^[a-f0-9]{64}$/.test(e.transportSignatureHash || "") && e.originalBinding && e.originalBinding.panelInstanceId===r.panelInstanceId && e.originalBinding.panelLifecycleEpoch===r.epoch && e.originalBinding.panelGeneration===r.generation;
+    });
+  }
+  function refreshHumanSettlements(onDone) {
+    humanSettlementTrusted=false;
+    if(!bindings || typeof bindings.lookupHumanSettlements!=="function") {if(onDone)onDone(false);return;}
+    humanLookupPending=true;
+    bindings.lookupHumanSettlements(function(error,saved) {
+      humanLookupPending=false;
+      if(error){if(onDone)onDone(false);return;}
+      if(saved===null){humanSettlement=null;if(onDone)onDone(true);return;}
+      var prior=humanSettlement;humanSettlement=saved && clone(saved);
+      if(!humanSettlementValid("568c1a03-1eef-4f04-806a-eaa7acaa0c20",false)){humanSettlement=prior;if(onDone)onDone(false);return;}
+      try{storage.setItem(HUMAN_KEY,JSON.stringify(humanSettlement));humanSettlementTrusted=true;}catch(_){humanSettlementTrusted=false;}
+      if(onDone)onDone(humanSettlementTrusted);
+    });
+  }
   function recoveryValid(id,confirmed) {
     var side=recoveries[id],original=records[id],value=side && side.envelope,common=value && value.schema==="ae-agent-common-title-assembly-recovery.v1.envelope",r=value && (common ? value.value : value.receipt),p=original && original.result && original.result.run && original.result.run.provenance;
     if(!original || original.action!=="plan.run" || original.state!=="unknown" || !side || !r ||
@@ -268,7 +295,7 @@
   }
   function getResult(id) {
     if (typeof id !== "string" || !contract.UUID_REGEX.test(id)) return null;
-    if (records[id]) {var result=contract.sanitizeReceipt(records[id]);if(recoveryValid(id,true))result.recovery=clone(recoveries[id].envelope);return result;}
+    if (records[id]) {var result=contract.sanitizeReceipt(records[id]);if(recoveryValid(id,true))result.recovery=clone(recoveries[id].envelope);if(humanSettlementValid(id,true))result.humanSettlement=clone(humanSettlement);return result;}
     if (tombstones[id]) return reject({requestId:id,action:tombstones[id].action},"receipt_retained_without_detail","Request was completed earlier. Re-execution is forbidden.");
     return storageFailure ? {protocolVersion:contract.PROTOCOL_VERSION,requestId:id,state:"unknown",phase:"receipt_storage",code:storageFailure,delivery:"unknown",replayAllowed:false} : null;
   }
@@ -279,6 +306,7 @@
   function eligibility(name,args) {
     if (!bound || !bindings.handlers[name]) return {available:false,reasonCodes:["handler_unavailable"]};
     if (storageFailure) return {available:false,reasonCodes:[storageFailure]};
+    if(humanLookupPending && !passiveRead(name))return {available:false,reasonCodes:["human_settlement_lookup_pending"]};
     var unresolved=unresolvedEffects();
     if(unresolved.length && !passiveRead(name) && name !== "connector.emergencyDisable" && name !== "plan.reconcile") {
       return {available:false,reasonCodes:["reconciliation_required","unresolved_effect"]};
@@ -421,6 +449,6 @@
       }
     });
     persist();
-    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");}});
+    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements});
   }};
 });

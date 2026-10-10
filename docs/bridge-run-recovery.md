@@ -215,3 +215,67 @@ actual full-panel VM и isolated production HTTP проверяют lineage/meta
 styles/effects/animators/keys/mattes/drift, barrier/config/controller negatives,
 one-shot maintenance reservation, guard retention/restart, private adoption и
 durable projection. Эти fixtures не доказывают live recovery.
+# Human settlement двух подтверждённых старых guards
+
+Для подтверждения пользователя «всё объединено, снять блокировки» предусмотрен узкий
+maintenance маршрут только для request `568c1a03-1eef-4f04-806a-eaa7acaa0c20` /
+run `eb28a045-048a-46ad-aa69-276302b38c73` и request
+`cb5c3b53-5443-474e-93df-aa8210758886` /
+run `c6d0acfb-5c05-4897-80a9-e509ab0a47cf`. Статус sidecar —
+`abandoned_reviewed`; `guardDisposition=released`, `aeExecutionProven=false`,
+`replayAllowed=false`. Это отдельное решение человека об admission guard.
+Исходные транспортные receipts и canonical run files сохраняются побайтно.
+Их `unknown`/ошибка не превращаются в успешное выполнение AE.
+
+Перед установкой или restart выполнить `node scripts/human-guard-settlement-maintenance.js capture`
+с уже настроенными `AE_BRIDGE_HOST=127.0.0.1`, `AE_BRIDGE_PORT`, `AE_BRIDGE_TOKEN`.
+CLI не выводит token и не читает panel credential. Capture фиксирует свежие daemon
+PID/start, единственный текущий AE PID/creation, остановку исходного AE host
+PID 12528 с creation `2026-10-09T04:47:25.0963540Z`, exact CEP target/binding,
+хеши реально загруженных scripts через ограниченный Debugger read, installed baseline,
+desired assets и локальные/удалённые receipts/canonical runs. Все семь baseline assets
+копируются в `logs/evidence/human-guard-settlement-20261010/baseline-assets`.
+Разрешено обновить только `panel-actions.js` и `panel.js`; прочие assets должны совпадать.
+
+Затем внешний контроллер при idle перезапускает только daemon из текущего checkout.
+Новый daemon должен показать `humanGuardRuntime` с новым PID/start и текущим
+`sourceSha256`. Runtime fingerprint включает human settlement module и maintenance CLI.
+Capture действует 30 минут; новый capture, повторная авторизация или продление старого
+пакета после reservation автоматически не выполняются.
+
+```powershell
+node scripts/human-guard-settlement-maintenance.js authorize --reason "Пользователь подтвердил: всё объединено. Снять ровно два старых guards."
+node scripts/human-guard-settlement-maintenance.js apply
+node scripts/human-guard-settlement-maintenance.js read-back
+```
+
+`authorize` отправляет authenticated automation POST
+`/human-guard-settlement/maintenance`. Server повторно проверяет idle, current target,
+binding, loaded/disk hashes, текущий AE process и неизменность исходных файлов;
+сопоставляет captured, loaded и current runtime fingerprint. Audit записывается до
+settlement и reload authorization. Доступ к lookup
+`GET /human-guard-settlement/lookup` имеет только panel credential, с сохранением
+обычных loopback/Host/Origin границ.
+
+`apply` один раз резервирует `reload-attempt.json` до любых disk/UI действий,
+устанавливает ровно два assets и запрашивает свежий exact target/panel state/catalog
+после установки. Только после повторной проверки binding, idle и original bytes
+выполняется один `Page.reload`. Crash, ошибка установки, изменённый target или
+`reload_outcome_unknown` оставляют reservation занятой: **apply не повторять**.
+Дальше допустим только passive read-back и отдельный разбор фактического состояния.
+
+Новая панель получает sidecar из private trusted lookup до AutoConnect/admission;
+после временного отказа допустимы три passive повтора с интервалом 2 секунды.
+До успешной проверки guards сохраняются. Transport независимо читает audit/sidecar
+и проверяет hashes/binding. Reload снова требует server lookup: local cache сам по
+себе не снимает guard. Public ack/reset API не добавлен. Оригинальный requestId всегда
+возвращает его прежний результат, без повторного dispatch. Raw/destructive/save,
+checkpoint и обычные confirmation gates сохраняются.
+
+Артефакты `capture.json`, `audit.json`, `settlement.json`, `reload.json`,
+`reload-attempt.json`, `reload-result.json` — ignored runtime evidence в том же
+каталоге; удалять их или journals для повторной попытки нельзя. `read-back` проверяет
+обе стороны, новый panel instance, installed hashes и исходные байты. Он не выполняет
+native read и не доказывает художественный результат или исторический успех AE.
+Офлайн contract: `node scripts/human-guard-settlement-smoke.js` (production panel VM,
+production transport, isolated HTTP; fake process/CDP/native boundary).
