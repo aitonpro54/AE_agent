@@ -7,6 +7,12 @@ child-state и held exit proofs обоих процессов сохраняют
 inventory. Cache между rounds или запросами отсутствует, singleton не изменён.
 64 offline сценария PASS; фактический GET после deployment ещё не проверен.
 
+Diagnostic probe `2a90b554…` / AEX SHA `8bdf6507…` добавляет read-only fixture
+evidence в signed stage facts даже при dirty-refusal, когда handle/path и оба
+file hashes подтверждают собственный файл. Dirty-guard и запрет variant writes
+сохранены. 885 C++ checks и 18/18 source hashes PASS; установленный SHA и backup
+прежней `91e623d2…` проверены. Это подготовка диагностики, не live acceptance.
+
 Резидентная основа находится в [native/ame-snapshot-service](../native/ame-snapshot-service/README.md).
 Полный offline build `e8c17338…` собрал x64 AEX и прошёл 250 проверок протокола.
 Это informational identity и закрытый transport seam: production issuer, listener,

@@ -11,6 +11,15 @@ no-replay или exit gates. Sol/xhigh — код, root — self-review, Luna �
 пока не перепроверен; источник прежнего ERR_ABORTED не объявлен доказанным.
 Следующий шаг — daemon-only deployment и реальные trusted grouped GET.
 
+**Progress:** diagnostic probe теперь читает fixture evidence перед dirty-guard,
+только после совпадения собственного handle/path/file SHA/baseline SHA; dirty
+по-прежнему запрещает variant writes. **Decision Log:** root выполнил короткую
+правку двух call sites при занятых helper slots, self-review сохранил исходные
+grants/dirty/no-replay gates. **Validation:** build `2a90b554…`, 885 C++ checks,
+18/18 source SHA PASS; AEX `8bdf6507…` установлена через обычный UAC, installed и
+backup hashes проверены. Ни один работающий AE не закрывался; live stage facts
+ещё не получены. Следующий fixture должен использовать эту новую сборку.
+
 **Progress:** готов offline foundation резидентного AEX
 (`native/ame-snapshot-service`): штатные hooks, informational OS/module identity
 и закрытый bounded protocol. **Decision Log:** production issuer/listener/capture

@@ -18,6 +18,15 @@ struct StageProjectReadback {
     bool PathMatches() const { return !expected_path.empty() && expected_path == observed_path; }
     bool FileHashMatches() const { return file_hash_observed && LowerHex(expected_file_sha, 64) && expected_file_sha == observed_file_sha; }
     bool BaselineHashMatches() const { return baseline_hash_observed && LowerHex(expected_baseline_sha, 64) && expected_baseline_sha == observed_baseline_sha; }
+    // Only the exact owned file may expose fixture facts. This read-only probe
+    // does not authorize staging; Require() still refuses a dirty project.
+    template<typename ReadOnlyEvidence>
+    void VerifyFixtureEvidence(ReadOnlyEvidence&& inspect) {
+        fixture_evidence_verified = false;
+        if (!HandleMatches() || !PathMatches() || !FileHashMatches() || !BaselineHashMatches()) return;
+        inspect();
+        fixture_evidence_verified = true;
+    }
     const char* FailureReason() const {
         const bool baseline = variant == 0;
         if (!HandleMatches()) return baseline ? "stage_baseline_project_handle_mismatch" : "variant_reopen_project_handle_mismatch";

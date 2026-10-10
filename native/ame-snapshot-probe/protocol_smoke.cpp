@@ -637,8 +637,11 @@ int wmain(int argc, wchar_t** argv) {
             readback.observed_baseline_sha = failure_mode == 7 ? std::string(64, 'a') : candidate.Hash(L"baseline.aep");
             readback.file_hash_observed = failure_mode != 6; readback.baseline_hash_observed = failure_mode != 8;
             readback.graph_sha = std::string(64, 'd'); readback.revision = "104";
-            int output_callbacks = 0; bool terminal = false; std::string reason;
-            try { readback.Require(); ++output_callbacks; terminal = true; }
+            int evidence_callbacks = 0, output_callbacks = 0; bool terminal = false; std::string reason;
+            try {
+                readback.VerifyFixtureEvidence([&] { ++evidence_callbacks; });
+                readback.Require(); ++output_callbacks; terminal = true;
+            }
             catch (const probe::Failure& error) {
                 reason = error.what(); terminal = true;
                 candidate.WriteNew(L"signed-refusal.json", probe::SignedFixtureReceipt("{\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) +
@@ -646,10 +649,21 @@ int wmain(int argc, wchar_t** argv) {
             }
             Require(terminal && output_callbacks == (failure_mode == 0 ? 1 : 0), "stage_readback_refusal_before_output_callback");
             Require(reason == (variant_index == 0 ? baseline_reasons[failure_mode] : variant_reasons[failure_mode]), "stage_readback_exact_failed_predicate");
+            const bool evidence_expected = failure_mode == 0 || failure_mode == 2;
+            Require(evidence_callbacks == (evidence_expected ? 1 : 0) && readback.fixture_evidence_verified == evidence_expected,
+                "stage_readback_evidence_only_after_exact_owned_identity");
             const auto facts = readback.DiagnosticsJson();
             Require(facts.find("\"variantIndex\":" + std::to_string(variant_index)) != std::string::npos &&
-                facts.find("\"cleanRequired\":true") != std::string::npos && facts.find("\"fixtureEvidenceVerified\":false") != std::string::npos,
-                "stage_readback_fixed_variant_and_unverified_evidence_facts");
+                facts.find("\"cleanRequired\":true") != std::string::npos &&
+                facts.find(std::string("\"fixtureEvidenceVerified\":") + (evidence_expected ? "true" : "false")) != std::string::npos,
+                "stage_readback_fixed_variant_and_evidence_facts");
+            if (failure_mode == 0) {
+                auto failed_evidence = readback;
+                Reject("fixture_evidence_read_failure", [&] {
+                    failed_evidence.VerifyFixtureEvidence([] { throw probe::Failure("fixture_evidence_read_failure"); });
+                });
+                Require(!failed_evidence.fixture_evidence_verified, "stage_readback_failed_evidence_never_verified");
+            }
             Require(facts.find(key) == std::string::npos && facts.find(stage_grant.mac) == std::string::npos, "stage_readback_no_key_or_grant_mac_in_diagnostics");
             if (failure_mode != 0) {
                 const auto body = SignedBody(candidate.Read(L"signed-refusal.json"), key);

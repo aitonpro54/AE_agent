@@ -344,7 +344,8 @@ struct State {
         RecordStageReadback(baseline, opened, 0, input, baseline_sha);
         stage_readback.observed_file_sha = root->Hash(L"baseline.aep"); stage_readback.file_hash_observed = true;
         stage_readback.observed_baseline_sha = stage_readback.observed_file_sha; stage_readback.baseline_hash_observed = true;
-        stage_readback.Require(); FixtureEvidence(baseline, 0); stage_readback.fixture_evidence_verified = true;
+        stage_readback.VerifyFixtureEvidence([&] { FixtureEvidence(baseline, 0); });
+        stage_readback.Require();
         std::string outputs = "[";
         for (unsigned i = 1; i <= 2; ++i) {
             stage_readback_available = false; // never attach facts from the preceding file to a failed later dispatch
@@ -358,7 +359,8 @@ struct State {
             RecordStageReadback(readback, reopened, i, output_path, output_sha);
             stage_readback.observed_file_sha = root->Hash(name); stage_readback.file_hash_observed = true;
             stage_readback.observed_baseline_sha = root->Hash(L"baseline.aep"); stage_readback.baseline_hash_observed = true;
-            stage_readback.Require(); FixtureEvidence(readback, i); stage_readback.fixture_evidence_verified = true;
+            stage_readback.VerifyFixtureEvidence([&] { FixtureEvidence(readback, i); });
+            stage_readback.Require();
             if (i != 1) outputs += ',';
             outputs += "{\"variant\":" + Number(i) + ",\"path\":" + probe::Json(probe::Utf8(output_path)) + ",\"sha256\":" + probe::Json(output_sha) +
                 ",\"reopened\":true,\"readback\":" + readback.IdentityJson() + "}";
