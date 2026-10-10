@@ -53,6 +53,7 @@
     "smoke:ame-output": "node scripts/ame-passive-status-smoke.js",
     "smoke:ame-transport": "node --expose-internals scripts/ame-transport-smoke.js",
     "smoke:ame-presets": "node scripts/ame-presets-smoke.js",
+    "smoke:ame-running": "node --expose-internals scripts/ame-running-smoke.js",
     "report:ame-media": "node scripts/ame-media-probe.js",
     "smoke:ame-media": "node scripts/ame-media-probe-smoke.js",
     "report:ame-submit-guard": "node scripts/ame-submit-guard.js",

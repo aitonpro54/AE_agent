@@ -43,6 +43,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "ensure_ame_running",
   ...projectLifecycle.MUTATIONS,
   "reload_montage_material_source",
   "create_placeholder_review_comps",
@@ -128,6 +129,7 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "inspect_ame_transport",
   "inspect_title_variants",
   "get_montage_source_load_evidence",
   "get_bridge_status",
@@ -810,7 +812,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4128,6 +4130,19 @@ function verifyStep(checks, step, evidence) {
   const payload = payloadForStep(step);
   if (!payload || step.status !== "completed") return;
   const args = isPlainObject(step.args) ? step.args : {};
+  if (step.tool === "ensure_ame_running") {
+    const running = require("./ame-running"), verification = payload.verification;
+    let valid = false;
+    try {
+      const wanted = running.inspectionArgs(payload), attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+      valid = Boolean(payload.authorization && payload.authorization.runId === evidence.run.id && payload.authorization.proposalId === evidence.run.provenance?.actionId &&
+        verification && verification.scope === "ame_process_and_read_transport_only" && verification.ok === true && attached.length === 1 &&
+        attached.every(read => read.status === "completed" && read.tool === "inspect_ame_transport" && SERVER_ATTACHED_READS.get(read)?.valid === true &&
+          JSON.stringify(read.args) === JSON.stringify(wanted) && running.verifyReadBack(payload, payloadForStep(read), verification.before, verification.after)));
+    } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:ensure_ame_running:transport`, title: "Independent AME process and fixed read transport", expected: "stable verified process and a fresh correlated typed read", observed: valid ? "transport confirmed; queue ownership and export adapter remain unverified" : "AME process/transport unresolved", passed: valid, evidence: stepLabel(step) });
+    return;
+  }
   if(step.tool==="render_one_title_variant"){
     const native=require("./native-render-variant"),receipt=payload.renderReceipt;
     let valid=false;

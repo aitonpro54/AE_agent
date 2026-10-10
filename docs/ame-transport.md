@@ -102,3 +102,78 @@ Live результат записывается отдельно после sco
 daemon и единственного контроллера. Для первого milestone требуются cold и
 warm структурированные ответы с разными request nonce, общим session nonce и
 стабильным process identity; полная цепочка экспорта сюда не входит.
+
+## Запуск и подключение AME
+
+`ensure_ame_running` — mutating typed tool для внешнего приложения. Используется
+только в отдельном server-proposed плане из одного шага: proposal → успешный
+dry-run → действующее подтверждение CEP либо autonomous typed grant → run с
+`allowMutations:true` и обычной checkpoint/edit-session защитой. Прямой вызов,
+dev-admin, plain JSON authorization и повтор capability не разрешают запуск.
+Консервативный существующий runner требует saved named AE project и копию
+сохранённого файла (`COPYFILE_EXCL`). Эта копия не вызывает `app.project.save`,
+не фиксирует dirty memory и не является снимком варианта. Путь и содержимое
+рабочего AEP этим инструментом не изменяются.
+
+Пример одного шага:
+
+```json
+{
+  "summary": "Проверить запуск и read transport AME",
+  "targetProject": { "file": "точный текущий сохранённый AEP" },
+  "steps": [{ "tool": "ensure_ame_running", "args": { "timeoutMs": 10000 } }]
+}
+```
+
+Installed metadata читается из bounded Adobe Program Files и registry App Paths;
+проверяются canonical Adobe exe path, product/company metadata, действующая
+Adobe Authenticode signature, file version и SHA-256. Несколько подходящих
+установок требуют точного `installationId` из diagnostic результата. Несколько
+AME процессов, неизвестные process paths и смена PID/времени старта блокируют
+ready. Для существующего экземпляра вызов делает fixed inspect и проверяет
+process identity до и после; запуска нет. Дополнительно можно передать ранее
+проверенный `expectedSessionNonce`.
+
+Если AME отсутствует, повторно проверяются отсутствие процессов и exe identity.
+До start сохраняются fsync reservation и exclusive launch lock в ignored
+`.codex-runtime/ame-running/`, затем собственный fixed startup JSX. Запуск
+использует только `--console es.processFile` и этот файл; caller exe/args/code
+невозможны. Startup пишет только собственный session nonce и свой result file;
+не регистрирует listeners, не меняет очередь и не закрывает приложение.
+Между последней проверкой отсутствия и process start остаётся внешняя гонка;
+multiple-process read-back блокирует её принятие.
+
+Unknown сохраняет reservation/lock и запрещает новую попытку. Для явной
+сверки того же запуска создайте новый bounded proposal с
+`reconcileAttemptId` из ответа и прежним `installationId`: проверяются original
+process identity/session и свежий transport, без start. Если original процесс
+сменился или результат неизвестен, блокировка остаётся. После подтверждённого
+transport lock освобождается по exact attempt ownership; последующее
+самостоятельное закрытие приложения не стирает историю попытки.
+
+`ready:true` означает только `transportVerified:true`. После выполнения runner
+отдельно вызывает `inspect_ame_transport` с новым request nonce и проверяет
+стабильность процесса; server-attached read является обязательным semantic
+proof. Поля `nativeQueueOwnershipVerified:false`, `adapterReady:false`,
+`externalApplicationMutation:true`, `projectContentMutation:false` и
+`checkpointScope:"on_disk_saved_file"` остаются явными.
+
+`npm.cmd run smoke:ame-running` — offline fake adapters/strict ES3, включая
+authorization negatives, absent/existing/ambiguous/races, durable unknown,
+read-only reconciliation и startup scope. Он не запускает AME или AE.
+
+Windows metadata queries запускают штатный Windows PowerShell 5.1 с отдельным
+окружением: унаследованный `PSModulePath` удаляется только у ребёнка, затем
+используются `$PSHOME\Modules` и native Security manifest. Это исключает
+несовместимые модули pwsh 7 из Codex runtime. Execution policy сохраняется;
+ошибка native import или неподтверждённая Adobe signature блокирует discovery.
+
+ProductName допускает точные `Adobe Media Encoder` и `Adobe Media Encoder YYYY`,
+если год совпадает с непосредственной папкой установки внутри canonical Adobe
+root. Только signature `Valid` с Adobe signer даёт launchable installation.
+`discoverInstalled()` сохраняет массив trusted installations; отдельное свойство
+`.diagnostics` содержит только non-launchable metadata (path/version/SHA/identity,
+signature status/message). Для JSON чтения передавайте его отдельным полем.
+Подходящий exe с `HashMismatch`/`UnknownError` даёт
+`ame_running_installation_unverified` и `installationDiagnostics` в typed ответе,
+а не `installation_missing`; attach/start в этом случае блокируются.

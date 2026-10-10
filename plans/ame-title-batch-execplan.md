@@ -1,56 +1,64 @@
 # Пакетный экспорт вариантов титров через AME
 
-Цель: одна рабочая композиция, независимые AEP-снимки вариантов, один существующий
-EPR-пресет, отправка и подтверждённые статусы Adobe Media Encoder. GUI-автоматизация,
-native AE render, aerender и ffmpeg как замена AME исключены. Flash исключён прямым
-указанием пользователя в этой задаче. Исходный запрос — приложенный текст от 10.10.2026.
+Цель: несколько вариантов из одной рабочей композиции, независимые AEP-снимки,
+один существующий EPR-пресет и подтверждённые статусы AME. GUI-автоматизация,
+native AE render, aerender и ffmpeg как замена AME исключены. Пользователь запретил
+Flash в этой задаче. Подробное фактическое состояние: [AME](../docs/ame-title-batch.md).
 
 ## Progress
 
-- [x] M1: доказать структурированный программный транспорт AME, включая команду в
-  уже работающем экземпляре. Только после этого выбирать основной adapter.
-- [ ] M2: каталог существующих пресетов с точными путями/форматами/SHA-256 и
-  разрешением одинаковых имён; безопасное сохранение независимых состояний AEP.
-- [ ] M3: durable reservations до submit, связь нашего job ID с AME, один preset
-  для серии, диапазон, защита чужой очереди при запуске, реальные status/progress.
-- [ ] M4: offline проверки и live цепочка двух различимых тестовых вариантов;
-  закрытый/открытый AME, отсутствующий/неоднозначный preset, unknown и чужая очередь.
+- [x] M1, commit `7c97574`: BridgeTalk transport, cold launch + warm delivery;
+  каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
+- [x] M2 implementation: `ensure_ame_running` + offline smoke. **Live guard:**
+  runner остановился до исполнения на `project_save_required`; live ensure не принят.
+- [ ] M3 BLOCKED: безопасный snapshot, durable submit, native job identity,
+  собственный start и status/progress не доказаны и не зарегистрированы.
+- [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 
 ## Decision Log
 
-- Блок M1: `ae_scout` — read-only карта source/установки; `ae_architect` — transport
-  и API границы; `ae_specialist` — scoped typed diagnostic; root — единственный
-  live controller. Причина: новый транспорт и внешняя очередь требуют проверки
-  системных границ; Flash явно запрещён. Один writer на ресурс, два helper slots.
-- Baseline: `codex/release-3.3.1`, `a8ddb50`. Четыре ранее изменённых tracked файла
-  не входят в задачу; их SHA-256 сохранены в ignored runtime до разработки.
-- Пользовательский `titr_all.aep` не изменялся. Первые сведения об unsaved edits
-  были историческими; live read в M1 показал `dirty=false`. Перед snapshot нужен
-  новый preflight; копия saved AEP при dirty=true не фиксирует текущие edits.
-- Unknown outcome запрещает повтор команды; транспортный ACK, локальный UUID и
-  рост файла не заменяют native job identity/terminal evidence.
-- Runtime evidence хранится в `.codex-runtime/ame-transport-probe/`; архивы и
-  generated logs не добавляются в Git. Frozen intake и зависимости не меняются.
+- Исполнители по scope: root — единственный live controller; `ae_specialist` —
+  реализация typed-кода; `ae_architect` — API/границы; `ae_operator` — bounded
+  offline checks и документация. Flash запрещён пользователем. Frozen intake и
+  зависимости не менялись; четыре предшествующих dirty source SHA сверены.
+- `ensure_ame_running` использует обычные proposal/dry-run/confirmed-or-autonomous
+  gates и дисковый checkpoint именованного сохранённого AEP через
+  `COPYFILE_EXCL`. Успех означает только готовность read-transport. Чистый файл
+  не заменяет snapshot текущих unsaved edits.
+- Discovery не исполняет exe с неподтверждённой подписью: `HashMismatch` даёт
+  `ame_running_installation_unverified`; штатные PowerShell modules/UTF-8
+  исправлены без изменения execution policy или ослабления Adobe signature gate.
+- Публичный AE Project API не показывает `saveCopy`/`saveAsCopy`; Save As/reopen
+  меняют dirty/context. SDK SaveCopy не реализован/не проверен. AME26 wrapper не
+  документирует individual start и полный queue list; общий `runBatch` не
+  доказывает владение заданиями. UUID/GUID приложения не является native job ID.
+- Unknown исход не повторяется. Remote `EPERM` не обходится. Без доказанной
+  цепочки snapshot + submit events/progress не засчитываются как статусы job.
 
 ## Validation
 
-- 10.10.2026: AME был закрыт; установлен 26.2.0.52. Один cold launch
-  `--console es.processFile` выполнил read-only probe и создал nonce-bound JSON:
-  `buildNumber=52`, `BridgeTalk.appSpecifier=ame-26.0`, `isBatchRunning=false`.
-  AME PID12492. Этот результат пока доказывает только startup script execution.
-- AE bridge: panel connected, pending/inflight=0, edit session отсутствует;
-  native project identity прочитана. Мутации/сохранение AEP не выполнялись.
-- M1 warm PASS: `inspect_ame_transport`, request `bd54e5cc-7673-497f-b305-b29bafad58c0`,
-  новый response nonce, прежний boot nonce, тот же AME PID12492/start. BridgeTalk
-  доставил команду без нового AME launch. GUI/queue/project writes=0.
-- Read-only reflection AME: frontend13/host13/batch3 methods, без truncation;
-  нет публичного queue-list/native-job-ID метода. `stopped` не доказывает empty.
-  AE save metadata: `save`/`saveWithDialog`, saveCopy/saveAsCopy отсутствуют.
-- Offline M1: transport17 groups (strict ES3/VM), presets с explicit completeness,
-  review-evidence12 groups, syntax6JS/diff PASS. File symlink fixture недоступна;
-  directory junction проверен. Реальный каталог:11 EPR,issues0,complete=true;
-  source=file_catalog/nativeAvailability=not_verified.
-- Daemon заменён только после idle/controller checks:12260, sourceSHA
-  `5fe5f6f6d66e8f3901aa41b7cbbe2b2015673b6bdcf3094ef66a964862b9c29f`.
-  CEP/AME/AE не перезагружались. Предшествующие четыре dirty source SHA совпадают.
-- M2 snapshots и M3 submit/start/status ещё не реализованы; полный экспорт не заявляется.
+- Offline PASS: running 19 групп; transport 17; presets; полный `smoke:planning`;
+  `check:rules`; семь
+  `node --check`; `git diff --check`. Все четыре исходных dirty-file SHA совпали
+  с сохранённым baseline. Preset scan: 11, complete, issues 0,
+  `nativeAvailability=not_verified`; file-symlink fixture недоступна, junction
+  проверен. Это не live proof.
+- M1 live: cold startup и отдельный warm transport с тем же boot nonce; AME queue
+  не менялась. Warm2 request `2fb6d5e3-db3c-4269-8be1-fa695c0029b2` подтвердил
+  delivery/warm в том же boot session.
+  Финальный warm3 `390529d4-756a-4026-bbdc-981d6cbd6bc5` также PASS, queue writes=0.
+- Live runner: `get_project_info` показал уже открытое состояние `file=null`,
+  59 items, `activeFootage`; inspect показал `dirty=true`. Исполнение не началось:
+  `project_save_required`. Мы не создавали/не сохраняли/не открывали проект.
+  `titr_all.aep` SHA `e55edfd680a6f4bad222389ffcf5b6d08a18ff4afd2a15a27f944bdcf8856754`
+  совпал до/после отклонённого proposal.
+- Final native discovery: AME26.2.0.52/годовой productName распознаны,
+  `HashMismatch`/`launchable=false`, прежний PID12492/start; запуск не выполнялся.
+  Финальный native read показал другой именованный проект, `dirty=true`.
+- Daemon source: PID `12528`, started `2026-10-10T10:59:29.107Z`, SHA-256
+  `cb32ae91fd8af2341e35b89769425c67b3aafdb4c273871e3b66202f8ed82aa4`; panel
+  connected/idle. Reload helper получил `EEXIST` после stop; stop сверён, daemon
+  восстановлен с отдельным log. CEP/AE/AME reload не было.
+- Remote AME: `EPERM` до spawn, config SHA unchanged, service process отсутствует;
+  обхода не было. AEP support и queue isolation не проверены. Двухвариантная
+  live-приёмка не выполнена.

@@ -128,7 +128,7 @@ check("BridgeTalk error never claims success", () => { const f = senderFixture({
 check("registration uses exact typed name; raw and unknown gates intact", () => {
   const source = fs.readFileSync(path.join(__dirname, "../mcp-server/bridge-daemon.js"), "utf8");
   assert(source.includes('const ameTransport = require("./ame-transport");')); assert(source.includes("  ameTransport.tool,"));
-  assert(source.includes("  if (name === ameTransport.TOOL_NAME) {")); assert(/const PLANNING_TOOL_NAMES = \[\r?\n  ameTransport\.TOOL_NAME,/.test(source));
+  assert(source.includes("  if (name === ameTransport.TOOL_NAME) {")); assert(/const PLANNING_TOOL_NAMES = \[[\s\S]*?\r?\n  ameTransport\.TOOL_NAME,/.test(source));
   assert(source.includes('const amePresets = require("./ame-presets");')); assert(source.includes("  amePresets.listAmePresetsTool,"));
   assert(source.includes("  if (name === amePresets.listAmePresetsTool.name) {"));
   const start = source.indexOf("function classifyM100ToolRisk(name) {"), end = source.indexOf("\nfunction m100DirectEscapeHatchAllowed", start);
