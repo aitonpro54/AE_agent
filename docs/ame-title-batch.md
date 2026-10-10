@@ -39,12 +39,16 @@ VM.
 
 ## Проверенное live-состояние и ограничения
 
-Окончательный source AE Agent bridge-daemon активирован как PID `12528`, запущенный в
-`2026-10-10T10:59:29.107Z`, SHA-256
-`cb32ae91fd8af2341e35b89769425c67b3aafdb4c273871e3b66202f8ed82aa4`.
-Панель показывала `connected`, idle. Reload helper получил `EEXIST` на собственном
-log после stop; остановка была сверена, daemon восстановлен с отдельным log.
-CEP, AE и AME не перезагружались.
+После commit `d7746f1` root перезапустил только bridge daemon: PID `12528` сменился
+на `24440`, `startedAt=2026-10-10T12:35:16.585Z`. Загруженная runtime identity
+`sourceSha256=36d448cd4f3e01df940e06e4f1b4cc4dc7604b96e3b6b2733b8094e0424480fc`
+совпала с текущим вычислением `review-evidence.runtimeIdentity` по 38 модулям.
+Это aggregate fingerprint; raw SHA `bridge-daemon.js` (`be59480b…fda4534`) имеет
+другую основу и с ним не сравнивается. Root сообщил свежие `connected_idle`,
+pending/inflight `0` и прежний panel connection ID. Read-only `get_project_info`
+успешен: `Bylina_Muniver_русский_оркестр_konkurs_kino.aep`, 752 items,
+revision `77577884`. Это текущее чтение; сохранность прежнего project path/hash
+не утверждается. CEP/AE/AME не перезагружались, GUI не использовался.
 
 В момент отклонённого proposal native `get_project_info` прочитал проект: `file=null`, 59 items,
 `activeFootage`; последующий фиксированный inspect показал `dirty=true`.
@@ -87,19 +91,25 @@ reopen меняют dirty/context, а копирование только чис
 Developer Terms §4.1 (development/testing) и §4.5 (дополнительные условия). SDK
 headers и PiPLtool не vendored.
 
-Disposable probe собран офлайн: pre-fix build `build-f28c96906f7440df9bc2b71dc9d871bc`,
-binary SHA-256 `da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098`,
-PE32+ AMD64 DLL, PiPL resource 16000, export `EntryPointFunc`; его protocol smoke
-39/39 не принят после review P1 destination TOCTOU и P2 `.part` replacement race.
-Ожидаются native fix, свежая сборка и независимый review; этот hash не означает acceptance.
-SDK 26.5 содержит CompSuite13/v27, а фактический AE 26.2 использует CompSuite12/v26
+Новый disposable probe собран офлайн: `build-63db389697a6421089900d260a1ae582`,
+AEX SHA-256 `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`,
+PE32+ AMD64 DLL, PiPL 16000, export `EntryPointFunc`. Независимый Sol review PASS
+для offline protocol/read-only bootstrap candidate: 215 PASS, включая 22 Win32
+interleavings и 18 ранних отказов; точные 11 source hashes и binary hash сверены.
+Harness вызывает общий closed guard напрямую, не native state machine; его счётчики
+не доказывают отсутствие реальных AE calls. P1 безопасно отказывает до fixture
+mutation; P2 использует absolute same-held-handle rename без replace/fallback/replay.
+Допущение trusted stable parents; `rootMetadataIsolation=UNVERIFIED`.
+Старый build `build-f28c96906f7440df9bc2b71dc9d871bc` / SHA
+`da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098` остаётся
+отклонённым pre-fix evidence (39 PASS). SDK 26.5 содержит CompSuite13/v27, а AE 26.2 использует CompSuite12/v26
 из `AE_GeneralPlugOld.h`; сборка привязана к ABI AE 26.2. Authenticode `NotSigned`
 относится к собственной собранной DLL и не является проверкой подписи Adobe.
 Receipt: `.codex-runtime/ame-native-prerequisites/native-probe-build/<buildId>/`.
 
-Статусы этой сборки: `readiness=false`, `productionBackend=false`, `installed=false`,
-`loadedInAE=false`; SaveProjectToPath и сохранение path/dirty/undo/context не
-проверялись на AE fixture. Протокол и его offline guarantees описаны в
+Текущие статусы: `readiness=false`, `productionBackend=false`, `installed=false`,
+`loadedInAE=false`; live load, SaveProjectToPath и сохранение path/dirty/undo/context не
+проверялись в AE. M3/production snapshot tool не приняты. Протокол и границы offline review описаны в
 [native snapshot contract](ame-native-snapshot-contract.md). Это ограниченный
 эксперимент, не завершение M3 и не production snapshot tool.
 
@@ -108,13 +118,17 @@ CEP guard установлен файловым deployment в обычную п�
 Read-back hashes совпали с source для `index.html`, `panel.js` и
 `native-probe-startup-guard.js`; исходные `index.html`/`panel.js` сохранены в
 `.codex-runtime/ame-native-prerequisites/cep-guard-deployment/e582dd1a-3e48-48eb-8fd8-9874d484b1bd/`.
-Панель и daemon не перезагружались; loaded panel и child fresh bootstrap не проверены.
-Это подтверждает только installed files, не активный guard или live isolation.
+Bridge daemon после этого был перезапущен и его server runtime identity подтверждена.
+CEP-панель не перезагружалась; installed guard в активной панели и child fresh
+bootstrap не проверены. После штатного restart bridge aggregate runtime identity совпала
+с root-reported loaded hash, а root сообщил `connected_idle`, pending/inflight 0 и
+успешный свежий `get_project_info` для текущего проекта. Это подтверждает installed files и server source runtime,
+но не активный CEP guard или live isolation. Runtime identity receipt:
+`.codex-runtime/ame-transport-probe/runtime-identity-d7746f1-20261010-004b3911-8169-4752-9916-9567dfb3107c/runtime-identity.json`.
 Source offline проверки guard30/refresh33/panel-actions48 и raw dispatch0
 не доказывают loaded behavior. Raw FILE lane пока не bound к content hash,
 поэтому это не content-safe путь; дальнейшее M100 расширение не входит в этот этап.
-Активный старый daemon PID `12528`/SHA `cb32ae91fd8af2341e35b89769425c67b3aafdb4c273871e3b66202f8ed82aa4`
-и AE процессы не перезапускались в этой работе. Ни один отдельный `-m` process,
+CEP-панель и AE-процессы не перезапускались. Ни один отдельный `-m` process,
 shared preferences/cache или guard в дочернем CEP не считается изолированным или
 проверенным; live операции остаются только под root controller и собственными gates.
 

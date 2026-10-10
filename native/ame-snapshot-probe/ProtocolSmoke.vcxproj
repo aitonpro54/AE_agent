@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{E68EE8D8-88B9-49CC-8DF9-A125945F8015}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v143</PlatformToolset></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup><ProbeAllowedParent>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\.codex-runtime\ame-native-prerequisites\native-probe-build\'))</ProbeAllowedParent><ProbeCanonicalRoot Condition="'$(ProbeBuildRoot)' != ''">$([System.IO.Path]::GetFullPath('$(ProbeBuildRoot)'))</ProbeCanonicalRoot><ProbeRootWithinParent>$([System.String]::Copy('$(ProbeBuildRoot)').StartsWith('$(ProbeAllowedParent)', System.StringComparison.OrdinalIgnoreCase))</ProbeRootWithinParent><OutDir>$(ProbeBuildRoot)\bin\</OutDir><IntDir>$(ProbeBuildRoot)\smoke-obj\</IntDir><TargetName>ProtocolSmoke</TargetName></PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile><PreprocessorDefinitions>PROBE_OFFLINE_HARNESS;%(PreprocessorDefinitions)</PreprocessorDefinitions><LanguageStandard>stdcpp17</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><RuntimeLibrary>MultiThreaded</RuntimeLibrary><WarningLevel>Level4</WarningLevel><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><ObjectFileName>$(IntDir)</ObjectFileName><ProgramDataBaseFileName>$(IntDir)compile.pdb</ProgramDataBaseFileName></ClCompile>
+    <Link><AdditionalDependencies>bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies><TargetMachine>MachineX64</TargetMachine><SubSystem>Console</SubSystem><ImportLibrary>$(IntDir)ProtocolSmoke.lib</ImportLibrary></Link>
+  </ItemDefinitionGroup>
+  <Target Name="ValidateProbePaths" BeforeTargets="PrepareForBuild"><Error Condition="'$(ProbeBuildRoot)' == '' or !Exists('$(ProbeBuildRoot)\build-owner.json')" Text="Use the exclusive ignored build helper." /><Error Condition="'$(ProbeRootWithinParent)' != 'True' or '$(ProbeCanonicalRoot)' != '$(ProbeBuildRoot)'" Text="ProbeBuildRoot escaped its canonical ignored root." /></Target>
+  <ItemGroup><ClCompile Include="protocol_smoke.cpp" /><ClCompile Include="probe_io.cpp" /><ClInclude Include="probe_io.h" /></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

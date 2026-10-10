@@ -1,16 +1,21 @@
 # Нативный снимок AEP: контракт и тестовая проверка
 
-Статус на 2026-10-10: disposable native probe собран из локально предоставленного
-After Effects SDK 26.5. Предварительный offline protocol smoke (39/39) не принят:
-независимый review обнаружил в native implementation P1 TOCTOU между проверкой
-destination и native save, а также P2 race между flush/close `.part` и Move.
-Текущая сборка — pre-fix evidence, не одобренная реализация; исправление и повторный
-review/build ожидаются. readiness=false, production=false, installed=false,
-loaded=false. Live-семантика SaveProjectToPath не проверена; M3, AME submit,
-encoding и media proof не подтверждены.
+Статус на 2026-10-10: новый disposable build `build-63db389697a6421089900d260a1ae582`,
+AEX SHA-256 `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`,
+прошёл независимый Sol review в ограниченном offline protocol/read-only bootstrap scope.
+Review подтвердил 11 source hashes, PE/PiPL16000 и отсутствие P1/P2 findings в этом
+scope. P1 fixture mutation теперь отказывается до осмотра проекта, JSX dispatch,
+создания media/import и записи; P2 использует абсолютный rename через тот же удержанный
+handle без replace/fallback/replay. Trusted stable parents предполагаются, а
+`rootMetadataIsolation=UNVERIFIED`. Это не production acceptance: readiness=false,
+productionBackend=false, installed=false, loadedInAE=false; M3 и live semantics
+SaveProjectToPath, AME submit, encoding и media proof не подтверждены. Старый build
+`build-f28c96906f7440df9bc2b71dc9d871bc` с 39 checks сохранён как отклонённый pre-fix.
 CEP startup guard отдельно установлен в CEP folder; installation receipt подтверждает
-только три файла. Loaded panel, daemon reload и child fresh bootstrap не проверены;
-это не меняет статус native probe.
+три файла. После commit `d7746f1` root перезапустил только bridge daemon: загруженный
+runtime aggregate `36d448cd4f3e01df940e06e4f1b4cc4dc7604b96e3b6b2733b8094e0424480fc`
+совпал с текущим hash-set из 38 модулей. CEP panel не перезагружалась; guard в active
+panel и child fresh bootstrap не проверены. Это не меняет статус native probe.
 Рабочая цель — независимый AEP текущего in-memory проекта, включая unsaved edits,
 с сохранением original path, dirty, видимого контекста и undo; это пока не обещание.
 Root — единственный installer/live controller.
@@ -34,15 +39,16 @@ Root — единственный installer/live controller.
   CompSuite12/v26 из `AE_GeneralPlugOld.h`. Собранный probe связывает только suites,
   доступные в текущем AE 26.2. Другая compatibility версия не предполагается.
 - MSBuild `17.14.60.43110`, cl `19.44.35229.0`, Windows SDK `10.0.26100.0`;
-  x64 `.aex` собран вне Adobe tree. Build `build-f28c96906f7440df9bc2b71dc9d871bc`,
-  SHA-256 `da6efc3c162f1bcedda27cd6ff51f6790d489a5e8d7a06b25883460b0b73f098`;
-  PE32+ AMD64 DLL, PiPL resource 16000, export `EntryPointFunc`. Binary — собственная
+  x64 `.aex` собран вне Adobe tree. Текущий build `build-63db389697a6421089900d260a1ae582`,
+  SHA-256 `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`;
+  PE32+ AMD64 DLL, PiPL 16000, export `EntryPointFunc`. Binary — собственная
   сборка; Authenticode `NotSigned` не является проверкой подписи Adobe.
-- Build receipt сверяет исходники, фактические headers и PiPLtool; SHA архива в нём
-  указан как полученный prerequisite, а не повторно вычисленный build helper. Старый
-  pre-fix offline protocol smoke: 39 PASS, но review выявил два race выше. Этот счёт
-  не является acceptance; необходимы исправление, новый build и независимый review.
-  Даже после них offline harness не докажет AE semantics или live AEGP load.
+- Build receipt сверяет 11 исходников и SDK inputs; независимый review подтвердил
+  точные source hashes, бинарный SHA и PiPL16000. Offline protocol smoke: 215 PASS,
+  из них 22 реальные Win32 interleavings (18 P1 + 4 P2) и 18 ранних отказов.
+  Harness вызывает общий closed guard напрямую, а не native state machine; эти числа
+  не доказывают отсутствие real AE calls и не заменяют live load/semantics. Старый
+  build с 39 checks остаётся отклонённым pre-fix evidence.
 
 ## Доказанные API и неизвестные гарантии
 
@@ -131,9 +137,9 @@ Root — единственный installer/live controller.
   Отдельный PID не доказывает изоляцию preferences/cache/CEP; их общие эффекты входят в probe audit.
 - Main AME executable `HashMismatch` и console DLL `Valid` — разные результаты подписи.
   `Valid` DLL не делает main executable launchable; transport signature gates сохраняются.
-- Спецификация требует Win32 exclusive reservations, запрет overwrite,
-  hardlink/junction traversal и удержание owner/root. Нынешний harness набрал 39 PASS,
-  но implementation review выявил незакрытые destination TOCTOU и `.part` replacement
-  races; до исправления и повторного review acceptance отсутствует. Harness не
-  эмулирует AE semantics. Path/dirty/undo guarantees, production capture current
-  memory и AME end-to-end остаются непроверенными.
+- Offline review принял исправления P1/P2 только как protocol/read-only bootstrap
+  candidate под допущением trusted stable parents. Harness: 215 PASS, 22 Win32
+  interleavings и 18 ранних отказов; он вызывает общий closed guard, не native state
+  machine. Live AE calls/load не выполнялись и не тестировались. Root metadata
+  isolation остаётся UNVERIFIED. Path/dirty/undo guarantees, production capture current
+  memory, M3 и AME end-to-end остаются непроверенными.

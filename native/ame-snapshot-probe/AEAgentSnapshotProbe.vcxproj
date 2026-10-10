@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{ED7E9D80-699A-450E-BDE6-905FD110857F}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType><PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <ProbeAllowedParent>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\.codex-runtime\ame-native-prerequisites\native-probe-build\'))</ProbeAllowedParent>
+    <ProbeCanonicalRoot Condition="'$(ProbeBuildRoot)' != ''">$([System.IO.Path]::GetFullPath('$(ProbeBuildRoot)'))</ProbeCanonicalRoot>
+    <ProbeRootWithinParent>$([System.String]::Copy('$(ProbeBuildRoot)').StartsWith('$(ProbeAllowedParent)', System.StringComparison.OrdinalIgnoreCase))</ProbeRootWithinParent>
+    <OutDir>$(ProbeBuildRoot)\bin\</OutDir><IntDir>$(ProbeBuildRoot)\plugin-obj\</IntDir>
+    <TargetName>AEAgentSnapshotProbe</TargetName><TargetExt>.aex</TargetExt>
+    <IgnoreImportLibrary>true</IgnoreImportLibrary>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProbeBuildRoot);$(SdkRoot)\Examples\Headers;$(SdkRoot)\Examples\Headers\SP;$(SdkRoot)\Examples\Headers\Win;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>MSWindows;WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary><WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError><Optimization>MaxSpeed</Optimization>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <ObjectFileName>$(IntDir)</ObjectFileName><ProgramDataBaseFileName>$(IntDir)compile.pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TargetMachine>MachineX64</TargetMachine><GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(IntDir)AEAgentSnapshotProbe.pdb</ProgramDatabaseFile>
+      <ImportLibrary>$(IntDir)AEAgentSnapshotProbe.lib</ImportLibrary><RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <Target Name="ValidateProbePaths" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only Release|x64 is supported." />
+    <Error Condition="'$(ProbeBuildRoot)' == '' or '$(SdkRoot)' == ''" Text="Use scripts/ame-native-probe-build.ps1; SDK and exclusive ignored build paths are mandatory." />
+    <Error Condition="'$(ProbeRootWithinParent)' != 'True' or '$(ProbeCanonicalRoot)' != '$(ProbeBuildRoot)'" Text="ProbeBuildRoot must be canonical and inside the repository ignored native build root." />
+    <Error Condition="!Exists('$(ProbeBuildRoot)\probe_build_identity.h') or !Exists('$(ProbeBuildRoot)\build-owner.json')" Text="Missing exclusive build identity/owner receipt." />
+    <Error Condition="!Exists('$(SdkRoot)\Examples\Headers\AE_GeneralPlug.h') or !Exists('$(SdkRoot)\Examples\Resources\PiPLtool.exe')" Text="Official external SDK files unavailable." />
+  </Target>
+  <ItemGroup>
+    <ClCompile Include="ame_snapshot_probe.cpp" /><ClCompile Include="probe_io.cpp" />
+    <ClInclude Include="probe_io.h" />
+    <CustomBuild Include="AEAgentSnapshotProbe_PiPL.r">
+      <Message>Build disposable AEGP PiPL inside owned ignored IntDir</Message>
+      <Command>"$(VCToolsInstallDir)bin\Hostx64\x64\cl.exe" /nologo /DMSWindows /I "$(SdkRoot)\Examples\Headers" /EP "%(FullPath)" &gt; "$(IntDir)AEAgentSnapshotProbe_PiPL.rr"
+if errorlevel 1 exit /b 1
+"$(SdkRoot)\Examples\Resources\PiPLtool.exe" "$(IntDir)AEAgentSnapshotProbe_PiPL.rr" "$(IntDir)AEAgentSnapshotProbe_PiPL.rrc"
+if errorlevel 1 exit /b 1
+"$(VCToolsInstallDir)bin\Hostx64\x64\cl.exe" /nologo /DMSWindows /EP "$(IntDir)AEAgentSnapshotProbe_PiPL.rrc" &gt; "$(IntDir)AEAgentSnapshotProbe_PiPL.rc"
+if errorlevel 1 exit /b 1
+</Command>
+      <Outputs>$(IntDir)AEAgentSnapshotProbe_PiPL.rc</Outputs>
+    </CustomBuild>
+    <ResourceCompile Include="$(IntDir)AEAgentSnapshotProbe_PiPL.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
