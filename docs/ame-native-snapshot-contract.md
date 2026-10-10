@@ -113,6 +113,42 @@ Root — единственный installer/live controller.
   до их реализации production capture заблокирован. Probe действует только на owned fixtures
   через действующие разрешения; отсутствие сохранённого файла не разрешает bypass.
 
+## Новая проверка границы writer — 2026-10-10
+
+Предыдущий ACL-тест `run-ae6c99d7aabe41a4a2dadedd608e7421` завершился
+`acl_asymmetry_failed`: из 12 AccessCheck десять запрошенных записей были отклонены,
+два owner `READ_CONTROL` разрешены. Хеш receipt `35c924d3…1575a62` относится к прошлой
+версии исходников. Проверка P2 выявила привязку executable только по basename, поэтому
+этот бинарник нельзя запускать повторно. Дескриптор созданного child закрыт; удаление
+точно созданного профиля вернуло S_OK, но наличие профиля на диске отдельно не проверялось.
+Это не подтверждённое чтением файловой системы завершение очистки.
+
+Новый итоговый run `run-39442a5bbcad41d8b5daafea8c85d429` проверял только ранние отказы
+на текущих 8 исходниках. Независимый ae_reviewer подтвердил исходники и четыре случая:
+неверный скопированный root (13), отсутствующий marker (2), изменённый marker (13) и
+существующий claim (80). P2 закрыт в этих границах; замечаний P1/P2 не осталось.
+Каждый процесс завершился кодом 10; stdout совпал с receipt; хеши дерева и ACL SDDL
+root/child не изменились; вызовов native write, создания профиля, изменения ACL, child,
+private write или `SetThreadToken` не было. Сверены 19 хешей исходников, включая 11
+прежних probe-файлов. Положительный AppContainer/AccessCheck, успешный claim/flush, вызов
+AE и разрешение writer не проверялись. `readiness=false`, `production=false`,
+`rootMetadataIsolation=UNVERIFIED`; интеграция с host, MIC, AE и AME не доказана.
+Результат прошлого ACL-теста нельзя переносить на текущие исходники.
+Receipt: `.codex-runtime/ame-native-prerequisites/native-writer-feasibility/run-39442a5bbcad41d8b5daafea8c85d429/`.
+
+В M1 действительно выполнялись холодный запуск AME, typed delivery и отдельное последующее
+чтение транспорта. Позднее proposal M2 `ensure_ame_running` не исполнялся из-за
+`project_save_required`; последующее обнаружение вернуло `HashMismatch`. M1 и новый run
+не доказывают доверие к подписи, атомарность обнаружения/запуска, владение очередью или
+готовность экспорта. Локальный пакет [для GPT Pro](../pro-review-bundles/ame-native-child-grant-and-existing-installation/bundle.md)
+предназначен только для проектного анализа. Parent ACK не даёт полномочий child; M100
+связывает план с текущим проектом, startup guard блокирует обычные действия panel в native
+child. Разрешение fixture и исключение по hash не устраняют пробелы полной цепочки: AME
+`runBatch` действует на общую очередь; полный список заданий, отдельный запуск и native job
+identity/status не доказаны. Снимок текущей памяти требует plugin в исходном AE host, а
+hot-load туда не подтверждён. Исходный dirty-проект не перезапускать. Полный путь для двух
+вариантов не принят.
+
 ## Тестовая проверка и критерии приёмки
 
 - Только три owned fixtures: saved clean, saved dirty с unsaved sentinel, untitled dirty.

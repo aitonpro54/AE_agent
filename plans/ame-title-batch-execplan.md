@@ -11,8 +11,10 @@ Flash в этой задаче. Подробное фактическое сос
   каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
 - [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
-- [ ] M3 BLOCKED: безопасный snapshot, durable submit, native job identity,
-  собственный start и status/progress не доказаны и не зарегистрированы.
+- [ ] M3 BLOCKED: snapshot/submit/native job identity/start/status не доказаны и не
+  зарегистрированы. Текущий guard-run `run-39442a5bbcad41d8b5daafea8c85d429` прошёл
+  независимую проверку: 4 ранних отказа; допуск, claim flush, AppContainer и AE не проверялись.
+  Предыдущий ACL failure относится только к прошлой версии исходников.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 - [x] SDK intake и offline probe: build `build-63db389697a6421089900d260a1ae582`,
   AEX SHA `232c59d8db6376e4ab67cbdb9199f1e530cdc64bddb1b784d029168209912b55`.
@@ -41,8 +43,19 @@ Flash в этой задаче. Подробное фактическое сос
   [native snapshot](../docs/ame-native-snapshot-contract.md). AME26 wrapper не
   документирует individual start и полный queue list; общий `runBatch` не
   доказывает владение заданиями. UUID/GUID приложения не является native job ID.
-- Unknown исход не повторяется. Remote `EPERM` не обходится. Без доказанной
-  цепочки snapshot + submit events/progress не засчитываются как статусы job.
+- Неизвестный исход не повторяется; удалённая `EPERM` не обходится. Без доказанной
+  цепочки snapshot и submit events/progress статусы заданий не подтверждены. Пользователь
+  потребовал работать без официального установщика AME; не предлагать загрузку, ремонт,
+  установку, обновление или принудительное закрытие. Осмотр существующей установки остаётся
+  read-only; исходный код `ensure_ame_running` сохраняет signature gate при `HashMismatch`.
+  M1 включал холодный запуск/delivery/warm read; позднее M2 ensure остановился на
+  `project_save_required`. M100 связан с текущим проектом панели; raw ACK не является child
+  grant, raw FILE не поддерживается. Полная очередь, отдельный запуск, native job identity/status
+  и загрузка native plugin в исходный host не доказаны; `runBatch` действует на общую очередь.
+  Локальный пакет GPT Pro — только review; исключение по hash или разрешение fixture не решают
+  всю цепочку. Исходник daemon регистрирует три AME tools; adapter получает `tools/list` по
+  запросу и направляет `tools/call`; `tools/list_changed` отсутствует. Эти имена отсутствуют
+  в текущем root snapshot `ALL_TOOLS`; обновление метаданных host не подтверждено.
 - User supplied local SDK archive `C:\soft3\AfterEffectsSDK_26.5_win.zip`, SHA-256
   `ad86bd6d66a1e1ffe8471e4618e3de4dbc9679f2ca47ae9bbe69f78805c82960`; archive
   provenance is local, not independently verified official download. Safe intake:
@@ -81,6 +94,17 @@ Flash в этой задаче. Подробное фактическое сос
   не менялась. Warm2 request `2fb6d5e3-db3c-4269-8be1-fa695c0029b2` подтвердил
   delivery/warm в том же boot session.
   Финальный warm3 `390529d4-756a-4026-bbdc-981d6cbd6bc5` также PASS, queue writes=0.
+- Offline feasibility writer: прежний ACL receipt `run-ae6c…` / SHA `35c924d3…1575a62`
+  относится к прошлым исходникам и завершился `acl_asymmetry_failed`; вызов удаления точного
+  профиля вернул S_OK, но отсутствие профиля не проверялось. Текущий run
+  `run-39442a5bbcad41d8b5daafea8c85d429` прошёл независимую проверку только как набор ранних
+  отказов: 4 случая, stdout совпал с receipt, хеши дерева/ACL SDDL неизменны, 19 хешей исходников
+  сверены. Claim flush, успешные AppContainer/AccessCheck, AE и допуск не проверялись;
+  readiness/production=false, rootMetadataIsolation=UNVERIFIED. P2 закрыт только в этой области.
+  Локальный пакет review: `pro-review-bundles/ame-native-child-grant-and-existing-installation/`.
+  Исходник daemon регистрирует 3 AME tools; adapter получает `tools/list` по запросу и
+  направляет `tools/call`; `tools/list_changed` в исходнике нет. Эти имена отсутствуют в
+  текущем root snapshot `ALL_TOOLS`; обновление метаданных host не подтверждено.
 - Live runner: `get_project_info` показал уже открытое состояние `file=null`,
   59 items, `activeFootage`; inspect показал `dirty=true`. Исполнение не началось:
   `project_save_required`. Мы не создавали/не сохраняли/не открывали проект.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <AllowedParent>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\.codex-runtime\ame-native-prerequisites\native-writer-feasibility\'))</AllowedParent>
+    <CanonicalRunRoot Condition="'$(FeasibilityRunRoot)' != ''">$([System.IO.Path]::GetFullPath('$(FeasibilityRunRoot)'))</CanonicalRunRoot>
+    <RootWithinParent>$([System.String]::Copy('$(FeasibilityRunRoot)').StartsWith('$(AllowedParent)', System.StringComparison.OrdinalIgnoreCase))</RootWithinParent>
+    <OutDir>$(FeasibilityRunRoot)\</OutDir><IntDir>$(FeasibilityRunRoot)\$(MSBuildProjectName)-obj\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(FeasibilityRunRoot);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;WINVER=0x0A00;UNICODE;_UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><Optimization>MaxSpeed</Optimization>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><ObjectFileName>$(IntDir)</ObjectFileName><ProgramDataBaseFileName>$(IntDir)compile.pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link><AdditionalDependencies>advapi32.lib;userenv.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies><TargetMachine>MachineX64</TargetMachine><SubSystem>Console</SubSystem><ImportLibrary>$(IntDir)$(MSBuildProjectName).lib</ImportLibrary><RandomizedBaseAddress>true</RandomizedBaseAddress><DataExecutionPrevention>true</DataExecutionPrevention></Link>
+  </ItemDefinitionGroup>
+  <Target Name="ValidateFreshOwnedRun" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only Release x64 is supported." />
+    <Error Condition="'$(FeasibilityRunRoot)' == '' or !Exists('$(FeasibilityRunRoot)\run-owner.json') or !Exists('$(FeasibilityRunRoot)\feasibility_identity.h')" Text="Use scripts/ame-native-writer-feasibility.ps1 with a fresh owned run." />
+    <Error Condition="'$(RootWithinParent)' != 'True' or '$(CanonicalRunRoot)' != '$(FeasibilityRunRoot)'" Text="Run root escaped its canonical ignored parent." />
+  </Target>
+</Project>

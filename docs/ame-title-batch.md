@@ -169,3 +169,36 @@ M1 offline: `smoke:ame-transport` — 17 групп strict ES3/fake VM; `smoke:a
 `connected=true`, pending/inflight/edit отсутствуют, lifecycle generation 7 без
 block/pending; daemon PID `12528` и source SHA не менялись. AE/AME/CEP не
 перезагружались, live actions не выполнялись.
+
+## Обновление границ — 2026-10-10
+
+Пользователь потребовал продолжать без официального установщика AME; не предлагать ремонт,
+загрузку, установку, обновление или принудительное закрытие. M1 включал холодный запуск AME,
+подтверждённую typed delivery и отдельное последующее чтение транспорта. Предложение M2
+`ensure_ame_running` не исполнилось из-за `project_save_required`; последующее обнаружение
+вернуло `HashMismatch`. Реализация `inspect_ame_transport` выполняет read-only чтение
+существующей установки без проверки подписи; BridgeTalk discovery не атомарен с будущим
+запуском. Исходный код `ensure_ame_running` сохраняет `signatureValid` gate и для warm-процесса.
+Не менять executable, подпись или существующие gates. Ручное исключение по hash — только
+вопрос для review, не разрешение и не решение полной цепочки.
+
+Исходник `mcp-server/bridge-daemon.js:12784` регистрирует три AME tools:
+`inspect_ame_transport`, `list_ame_presets`, `ensure_ame_running`. Исходник
+`mcp-server/mcp-adapter.js:166,222` при каждом запросе получает от daemon `tools/list`,
+а строка 183 направляет `tools/call` по имени; `tools/list_changed` в source нет. В текущем
+root snapshot `ALL_TOOLS` этих имён нет; обновление метаданных подключённого host не
+подтверждено. Регистрация и маршрутизация в исходниках не доказывают, что host объявил эти
+инструменты чату.
+
+Локальный пакет GPT Pro содержит задание на русском и точные фрагменты исходников. Независимый
+ae_reviewer подтвердил 8 текущих feasibility sources и четыре ранних отказа: неверный root,
+отсутствующий или изменённый marker, существующий claim. P2 закрыт только в этой области.
+Положительные AppContainer/AccessCheck, claim flush и разрешение writer не проверялись;
+`acl_asymmetry_failed` относится к прежней версии исходников. M100 связывает изменяющий план
+с текущим сохранённым проектом; startup guard блокирует действия panel в native child; parent
+ACK не даёт ему полномочий, raw FILE не поддерживается. AME26 не подтверждает полный список
+очереди, отдельный запуск и native job identity/status; общий `runBatch` действует на общую
+очередь. Снимок текущей памяти требует native plugin в исходном host, hot-load туда не
+подтверждён. Ни исключение по hash, ни разрешение fixture не образуют полного решения.
+Цепочка для двух вариантов не принята; четыре snapshot/submit/start/status tools не
+зарегистрированы.
