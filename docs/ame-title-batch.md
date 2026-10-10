@@ -1,11 +1,23 @@
 # Экспорт вариантов титров через AME: состояние реализации
 
-Grouped abandonment lookup выполняет два свежих полных rounds; в каждом общие
-runtime/loaded-assets/executor факты читаются один раз для всей группы. Независимые
-child-state и held exit proofs обоих процессов сохраняются, на границах повторно
-проверяются guard, bridge status, transport, actor, canonical/member/files и полный
-inventory. Cache между rounds или запросами отсутствует, singleton не изменён.
-64 offline сценария PASS; фактический GET после deployment ещё не проверен.
+**Текущее состояние — 11 октября, daemon-only deployment. Progress:** daemon
+PID46240 заменён PID29132; загруженный runtime SHA
+`793480e403334fc7462afbef4fdcd49667b50bdefa5cfe13c3b34386b40a818b`. Два fresh
+read-back подтвердили сохранность AE PID31728/36520/38316, AME PID35400, panel,
+original 1d chain и native guards. Singleton и обе group lookup получили HTTP 200;
+fresh `get_panel_state`: idle, reconciliation не требуется, unresolved пуст.
+Свежий primary basic-info read: `konkurs_kino_02.aep`, revision 77594587,
+763 items, active comp `Kino_konkurs`; это не доказывает неизменность project graph.
+**Decision Log:** root — единственный live controller; CEP reload не выполнялся.
+Исходный результат остаётся `UNKNOWN/no-replay`, native execution не доказан;
+исторический UNKNOWN сохранён. Точные latency и причина прежних timeout/ERR_ABORTED
+не измерены. **Validation:**
+64 offline lookup scenarios, singleton HTTP 200; `f306…` HTTP 200 с disposition
+`58d2be7d…`, `82…` HTTP 200 с `967a32cb…`; passive observer и fresh reconciliation
+`44fd2191…` PASS. Diagnostic AEX `8bdf6507…` установлена,
+но новый native fixture ещё не запускался; foundation build `e8c17338…` остаётся
+offline foundation, не production backend. Следующий шаг — свежий ручной fixture
+с установленной diagnostic AEX; AME export/M4 не принят.
 
 Diagnostic probe `2a90b554…` / AEX SHA `8bdf6507…` добавляет read-only fixture
 evidence в signed stage facts даже при dirty-refusal, когда handle/path и оба
@@ -16,8 +28,8 @@ file hashes подтверждают собственный файл. Dirty-guar
 Резидентная основа находится в [native/ame-snapshot-service](../native/ame-snapshot-service/README.md).
 Полный offline build `e8c17338…` собрал x64 AEX и прошёл 250 проверок протокола.
 Это informational identity и закрытый transport seam: production issuer, listener,
-project inspection и snapshot dispatch пока отсутствуют. Плагин не установлен,
-не загружен; project writes и exports — 0. Штатная загрузка собственного AE без
+project inspection и snapshot dispatch пока отсутствуют. Именно foundation AEX не
+установлен/не загружен; project writes и exports — 0. Штатная загрузка собственного AE без
 fixture ENV остаётся отдельной проверкой. Hotload рабочего AE не предусмотрен.
 
 Планирование AME разбито на четыре этапа в [плане](../plans/ame-title-batch-execplan.md).
@@ -26,7 +38,7 @@ M2: реализация `ensure_ame_running` и её offline-проверки �
 остановился на обязательной проверке проекта `project_save_required`. Полная
 цепочка двух вариантов не принята.
 
-**Текущее live-состояние — 10 октября, после grouped lifecycle maintenance.**
+**Историческое live-состояние — 10 октября, после grouped lifecycle maintenance.**
 Код idle-reentrancy fix и grouped two-attempt retirement вошёл в HEAD
 `ac55e3f98dfc0bd3f33b69f7cfa9b5524441e8d9`; установленная AEX build
 `4b4c314642e54a56b0c1877c0fe5d4cb` не менялась. Root один раз применил helper:

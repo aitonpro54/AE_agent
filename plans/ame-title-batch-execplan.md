@@ -1,15 +1,20 @@
 # Пакетный экспорт вариантов титров через AME
 
-**Текущий блок — 10 октября, 19:10 UTC. Progress:** grouped lookup использует
-один общий runtime/executor bundle на каждый из двух свежих полных rounds.
-Оба child-state, signed held exit proof, guard/status/transport/actor и
-canonical/member/files/inventory проверяются отдельно и на границах; singleton
-порядок и durable layout сохранены. **Decision Log:** это scoped оптимизация
-дублирующихся чтений, без cache между rounds/requests и без ослабления UNKNOWN,
-no-replay или exit gates. Sol/xhigh — код, root — self-review, Luna — checks.
-**Validation:** 64 offline сценария, rules, 2 JS syntax и diff PASS. Live GET
-пока не перепроверен; источник прежнего ERR_ABORTED не объявлен доказанным.
-Следующий шаг — daemon-only deployment и реальные trusted grouped GET.
+**Текущий блок — 11 октября, grouped lookup после daemon-only deployment. Progress:**
+root заменил daemon PID46240 на PID29132; loaded runtime SHA
+`793480e403334fc7462afbef4fdcd49667b50bdefa5cfe13c3b34386b40a818b`, checkpoint
+`d32eb48`. Fresh GET singleton и групп `f306…`/`82…` вернул HTTP 200; fresh panel
+state idle, unresolved пуст, reconciliation не требуется. **Decision Log:** два
+read-back сохранили ровно три AE, AME, panel, исходную 1d цепь и guards; CEP reload
+не выполнялся. Свежий primary basic-info read вернул `konkurs_kino_02.aep`, revision
+77594587, 763 items, active `Kino_konkurs`; это не доказывает неизменность графа.
+Исходный результат `UNKNOWN/no-replay` и `nativeExecutionProven=false` сохранены.
+Причина/latency прежних timeout не измерены. Root — sole live controller, Luna —
+docs/offline checks. **Validation:**
+64 offline lookup сценария и 39 helper checks PASS; пассивный observer + fresh
+reconcile `44fd2191…` и все три trusted GET PASS. Следующий шаг — новый ручной
+fixture на установленной diagnostic AEX `8bdf6507…`; M3/M4 и production backend
+не приняты.
 
 **Progress:** diagnostic probe теперь читает fixture evidence перед dirty-guard,
 только после совпадения собственного handle/path/file SHA/baseline SHA; dirty
