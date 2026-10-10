@@ -68,8 +68,40 @@ Native discovery нашёл установленный AME26.2.0.52, но Window
 
 Публичный AE Project API не предлагает `saveCopy`/`saveAsCopy`. Save As и
 reopen меняют dirty/context, а копирование только чистого сохранённого файла не
-сохраняет текущие edits. Путь сохранения копии через native SDK требует отдельной
-реализации и проверки сохранности path/dirty; его гарантии здесь не установлены.
+сохраняет текущие edits. Native-кандидат `AEGP_SaveProjectToPath` с условным
+`PF_SetProjectDirty` не доказывает `SaveCopy`: сохранность path, dirty и undo
+требует disposable-fixture probe. Контракт и критерии — в
+[native snapshot contract](ame-native-snapshot-contract.md). Варианты следует
+готовить только в owned staging project после доказанного baseline snapshot;
+исходную видимость слоёв и исходный проект предпочтительно не менять.
+
+## Native SDK и build tools
+
+В проверенных локальных каталогах After Effects SDK не найден. Adobe Developer
+Console SDK catalog при anonymous запросе вернул HTTP 403; нужен обычный вход на
+[странице AE services](https://developer.adobe.com/console/servicesandapis/ae).
+Ссылки Adobe CC2017 SDK/EULA дали 403/404. SDK headers и лицензия не vendored;
+заглушка на C++ не считается backend.
+
+По разрешению пользователя официальный Microsoft Build Tools bootstrapper 17.14.41
+скачан и проверен: Authenticode `Valid`, SHA-256
+`37bb0fb429d163ecebd272a865d11a37b906d152bef960da2ddb29c2e2fd6eeb`.
+Root начал установку MSBuild, MSVC x64/x86 и Windows SDK 26100 в
+`C:\Users\Ant\AppData\Local\AEAgent\BuildTools2022`; она завершилась с exit code
+0 (`install-exit.json`, PID 4236). MSVC v14.44.35207 присутствует. Это подтверждает
+завершение setup. `vswhere` сообщил `isComplete=true`, `isRebootRequired=false`;
+MSBuild `17.14.60.43110`, `cl` `19.44.35229.0`, SDK `10.0.26100.0` доступны.
+Минимальная программа с `<Windows.h>` и `GetCurrentProcessId` собрана и выполнена
+x64: `ABI pointerwidth=8 PID=20536`, exit 0; Windows SDK `Windows.h` и x64
+`kernel32.lib` присутствуют. Fixture и receipt: [build smoke](../.codex-runtime/ame-native-prerequisites/build-smoke/toolchain-receipt.txt),
+exe SHA-256 `0c6ed42d3dc18a7416e5446ec222e9c39521c496261a765a50c9da4dd9ed8822`.
+Это подтверждает локальный C++ toolchain, но не SDK backend, AEGP загрузку или
+интеграцию AE/AME.
+
+AEGP загружается при старте AE; текущую dirty-сессию не перезапускать. `-m`
+создаёт отдельный процесс, но preferences общие, поэтому это не изолированная
+среда probe. AME main executable `HashMismatch` остаётся отдельным от `Valid` DLL;
+строки `--help` из бинарника без запуска не подтверждают поведение/exit code.
 
 Для AME26 wrapper не документирует запуск одного выбранного задания или полный
 список очереди. `runBatch` действует на общую очередь; безопасный запуск только
@@ -97,3 +129,9 @@ M1 offline: `smoke:ame-transport` — 17 групп strict ES3/fake VM; `smoke:a
 недоступен в Windows host, junction-каталог проверен. Ни один offline smoke не
 является доказательством live запуска или кодирования видео. Полный
 `smoke:planning`, rules, семь JS syntax checks и diff checks прошли.
+
+Финальный bounded review snapshot contract подтвердил три safeguards на уровне
+спецификации; это не проверка backend. Последний passive bridge read root показал
+`connected=true`, pending/inflight/edit отсутствуют, lifecycle generation 7 без
+block/pending; daemon PID `12528` и source SHA не менялись. AE/AME/CEP не
+перезагружались, live actions не выполнялись.

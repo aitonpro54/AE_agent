@@ -9,11 +9,14 @@ Flash в этой задаче. Подробное фактическое сос
 
 - [x] M1, commit `7c97574`: BridgeTalk transport, cold launch + warm delivery;
   каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
-- [x] M2 implementation: `ensure_ame_running` + offline smoke. **Live guard:**
+- [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
 - [ ] M3 BLOCKED: безопасный snapshot, durable submit, native job identity,
   собственный start и status/progress не доказаны и не зарегистрированы.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
+- [x] Native prerequisites: Build Tools установлены; локальная x64 C++/SDK
+  smoke-проверка прошла. В проверенных каталогах Adobe SDK не найден; это не
+  закрывает M3.
 
 ## Decision Log
 
@@ -28,12 +31,17 @@ Flash в этой задаче. Подробное фактическое сос
 - Discovery не исполняет exe с неподтверждённой подписью: `HashMismatch` даёт
   `ame_running_installation_unverified`; штатные PowerShell modules/UTF-8
   исправлены без изменения execution policy или ослабления Adobe signature gate.
-- Публичный AE Project API не показывает `saveCopy`/`saveAsCopy`; Save As/reopen
-  меняют dirty/context. SDK SaveCopy не реализован/не проверен. AME26 wrapper не
+- Публичный AE Project API не показывает `saveCopy`/`saveAsCopy`; кандидат
+  `AEGP_SaveProjectToPath` + условный `PF_SetProjectDirty` не доказывает
+  path/dirty/undo semantics и требует disposable-fixture probe. Варианты готовить
+  в owned staging project только после baseline snapshot; контракт —
+  [native snapshot](../docs/ame-native-snapshot-contract.md). AME26 wrapper не
   документирует individual start и полный queue list; общий `runBatch` не
   доказывает владение заданиями. UUID/GUID приложения не является native job ID.
 - Unknown исход не повторяется. Remote `EPERM` не обходится. Без доказанной
   цепочки snapshot + submit events/progress не засчитываются как статусы job.
+- SDK catalog Adobe Console дал anonymous HTTP 403; нужен обычный login/download.
+  CC2017 links дали 403/404. Заголовки SDK/лицензия не vendored, C++ stub не backend.
 
 ## Validation
 
@@ -55,6 +63,19 @@ Flash в этой задаче. Подробное фактическое сос
 - Final native discovery: AME26.2.0.52/годовой productName распознаны,
   `HashMismatch`/`launchable=false`, прежний PID12492/start; запуск не выполнялся.
   Финальный native read показал другой именованный проект, `dirty=true`.
+- Build Tools 17.14.41 bootstrapper имеет Authenticode `Valid`, SHA-256
+  `37bb0fb429d163ecebd272a865d11a37b906d152bef960da2ddb29c2e2fd6eeb`.
+  Root подтвердил завершение установки MSBuild/MSVC x64-x86/WinSDK 26100 в
+  `C:\Users\Ant\AppData\Local\AEAgent\BuildTools2022`: PID 4236 exit code 0,
+  `vswhere isComplete=true`, reboot false. MSBuild `17.14.60.43110`, cl
+  `19.44.35229.0`, MSVC `14.44.35207`, Windows SDK `10.0.26100.0`; owned x64
+  smoke собран/запущен, `pointerwidth=8`, exit 0, `Windows.h` и x64 `kernel32.lib`
+  присутствуют (receipt в ignored `.codex-runtime/.../build-smoke/`). Это не доказывает
+  Adobe SDK backend или AE/AME интеграцию.
+- Final review native snapshot contract: три safeguards прошли review на уровне
+  спецификации, backend не реализован/не принят. Последний passive bridge read
+  root: connected, pending/inflight/edit отсутствуют, lifecycle generation 7 без
+  block/pending; PID `12528` и source SHA неизменны. AE/AME/CEP reload/actions не было.
 - Daemon source: PID `12528`, started `2026-10-10T10:59:29.107Z`, SHA-256
   `cb32ae91fd8af2341e35b89769425c67b3aafdb4c273871e3b66202f8ed82aa4`; panel
   connected/idle. Reload helper получил `EEXIST` после stop; stop сверён, daemon
