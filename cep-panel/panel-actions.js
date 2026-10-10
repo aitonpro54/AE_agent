@@ -198,10 +198,13 @@
     if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || value.requestId!==FIXTURE_ID || value.runId!==FIXTURE_RUN)return null;
     var r=records[FIXTURE_ID];
     if(!r || r.runId!==FIXTURE_RUN || typeof r.signature!=="string")return null;
-    return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor()};
+    return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor(),
+      controllerIdle:!active && !life().busy && !rawState().recoveryTransport && !storageFailure};
   }
   function fixtureDispositionValid(id,trusted) {
     var saved=fixtureDisposition,v=saved && saved.value,e=v && v.entry,readBack=saved && saved.readBack,runtime=readBack && readBack.runtime,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,provenance=run && run.provenance;
+    // First private adoption pins the full actor. Subsequent connect/disconnect
+    // generations in this trusted instance preserve the historical disposition.
     if(id!==FIXTURE_ID || !saved || saved.schema!=="ae-agent.ame-fixture-ui-disposition.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) ||
       !/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "") || !v || v.schema!=="ae-agent.ame-fixture-ui-disposition.v1" ||
       !contract.UUID_REGEX.test(v.dispositionId || "") || !contract.UUID_REGEX.test(v.captureId || "") || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") ||
@@ -213,7 +216,8 @@
       !/^[a-f0-9]{64}$/.test(e.canonicalRunProjectionHash || "") || e.canonicalRunProjectionHash!==sha256(JSON.stringify(run)) ||
       !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
       !readBack || readBack.schema!=="ae-agent.ame-fixture-ui-disposition.v1.read-back" || readBack.dispositionSha256!==saved.sha256 || readBack.entrySha256!==sha256(JSON.stringify(e)) ||
-      JSON.stringify(readBack.currentActor)!==JSON.stringify(currentFixtureActor()) || !runtime || !/^[a-f0-9]{64}$/.test(runtime.loadedRuntimeSha256 || "") ||
+      !readBack.currentActor || readBack.currentActor.panelInstanceId!==instanceId || !trusted && JSON.stringify(readBack.currentActor)!==JSON.stringify(currentFixtureActor()) ||
+      !runtime || !/^[a-f0-9]{64}$/.test(runtime.loadedRuntimeSha256 || "") ||
       runtime.currentRuntimeSha256!==runtime.loadedRuntimeSha256 || !runtime.panelAssetHashes || !/^[a-f0-9]{64}$/.test(runtime.panelAssetHashes["panel-actions.js"] || "") ||
       !/^[a-f0-9]{64}$/.test(runtime.panelAssetHashes["panel.js"] || "") || !readBack.installed || JSON.stringify(readBack.installed.hashes)!==JSON.stringify(runtime.panelAssetHashes) ||
       !provenance || provenance.actionId!==e.actionId || provenance.proposalRevision!==2 ||

@@ -130,6 +130,13 @@ Flash в этой задаче. Подробное фактическое сос
   `Page.reload` строгий check остановился из-за отсутствующего target.id в штатном
   service contract. Root исправил binding на реальную пару URL/WS; smoke15 PASS с
   14 отрицательными binding cases. Receipt/canonical неизменны, reload ещё не отправлен.
+- Upgrade продолжен после read-back: daemon32828→39408, CEP reload отправлен один раз;
+  loaded/current runtime SHA `a0e67e96…6176` совпали. Capture `315ecdc8…`, audited
+  disposition `a56cae55…` / SHA `f46238c1…2f4e` сохранили original canonical/private
+  signature/projection. Исторический outcome unknown, execution не доказано, replay=false.
+  Live pending GET выявил круговой idle check; исправлен только LOOKUP: fresh private
+  controllerIdle до/после, строгая capture authorization сохранена. Trusted release
+  переживает legit same-instance epoch/gen; первая adoption требует fresh full actor.
 
 - Own AEX установлена по прямому поручению пользователя через стандартный UAC:
   точный binary SHA совпал, receipt `owned-plugin-install/install-17e7622b/`.

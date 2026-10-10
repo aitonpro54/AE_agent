@@ -91,6 +91,35 @@ async function main() {
       for(const value of [{...selector,runId:crypto.randomUUID()},{...selector,requestId:crypto.randomUUID()},{...selector,tool:"save_project"},{...selector,proof:{ok:true}}])await assert.rejects(disposition.capture(value,f.deps),/selector_invalid/);
       assert.equal(f.env.api.readAmeFixtureUIGuard({...selector,proof:{}}),null);assert.equal(f.env.api.refreshAmeFixtureDisposition({proof:true}).accepted,false);f.unchanged();
     }));
+    await test("private controllerIdle ignores pending trusted lookup admission but detects actual lifecycle work",() => withFixture("controller-idle",async f => {
+      const before=clone(f.env.api.readAmeFixtureUIGuard(selector));assert.equal(before.controllerIdle,true);const c=await f.capture();await f.authorize(c);f.refresh();
+      assert.equal(f.env.api.state().ameFixtureDispositionLookupPending,true);assert.equal(f.env.api.state().activeAction,null);
+      const pending=clone(f.env.api.readAmeFixtureUIGuard(selector));assert.equal(pending.controllerIdle,true);
+      assert.deepEqual(pending.projection,before.projection);assert.equal(pending.signatureSha256,before.signatureSha256);
+      const reconcile=clone(f.env.api.catalog()).find(row => row.name === "plan.reconcile");assert.equal(reconcile.availability.available,false);
+      assert(reconcile.availability.reasonCodes.includes("fixture_disposition_lookup_pending"),"pending GET still blocks action admission");
+      const maintenanceReader=f.deps.maintenanceTarget;
+      f.deps.maintenanceTarget=async() => {const selected=await maintenanceReader(),row=clone(f.env.api.catalog()).find(item => item.name === "plan.reconcile"),s=selected.state;
+        selected.state.nativeControlIdle=!s.activeAction && !s.recoveryTransport && s.actionStorage === "ready" && (row.availability.available && !row.availability.reasonCodes.length || s.busy === false);return selected;};
+      assert.equal((await f.deps.maintenanceTarget()).state.nativeControlIdle,false,"actual catalog-derived idle is blocked by the trusted GET itself");
+      await f.answerLookup();assert.equal(f.env.api.state().unresolvedActions.length,0);assert.equal(f.env.api.readAmeFixtureUIGuard(selector).controllerIdle,true);
+      assert(f.env.runTimer(timer => timer.delay === 300),"actual panel passive connector refresh starts lifecycle work");
+      assert.equal(f.env.api.state().activeAction,null,"passive timer work has no active panel action");
+      const busy=clone(f.env.api.readAmeFixtureUIGuard(selector));assert.equal(busy.controllerIdle,false,"actual lifecycle busy must fail private idle proof");
+      assert.deepEqual(busy.projection,before.projection);assert.equal(busy.signatureSha256,before.signatureSha256);
+      await assert.rejects(disposition.lookup(f.deps),/writer_not_idle/);
+      const connector=f.env.inFlightRequests.find(req => req.path.startsWith("/status?"));assert(connector);connector.respond(200,{status:{connector:{connected:true}}});
+      assert.equal(f.env.api.readAmeFixtureUIGuard(selector).controllerIdle,true);f.unchanged();
+    }));
+    await test("trusted historical release survives legitimate same-instance connect epoch/generation change",() => withFixture("connect-epoch",async f => {
+      const c=await f.capture();await f.authorize(c);f.refresh();await f.answerLookup();const before=clone(f.env.api.state());assert.equal(before.unresolvedActions.length,0);
+      const action={protocolVersion:contract.PROTOCOL_VERSION,requestId:crypto.randomUUID(),action:"bridge.connect",args:{}};assert.equal(f.env.invoke(action).state,"running");
+      const idle=f.env.inFlightRequests.find(req => req.path === "/tools/call" && req.body.name === "get_bridge_status");assert(idle);
+      idle.respond(200,{result:{content:[{text:JSON.stringify({pendingCommands:0,inflightCommands:[],activeEditSession:null,projectLifecycle:{blocked:false,pending:null}})}]}});
+      const current=f.env.inFlightRequests.find(req => req.path === "/agents/plan/current");assert(current);current.respond(200,{ok:true,current:null});
+      const after=clone(f.env.api.state());assert.equal(after.panelInstanceId,before.panelInstanceId);assert.notEqual(after.panelLifecycleEpoch,before.panelLifecycleEpoch);assert.notEqual(after.panelGeneration,before.panelGeneration);
+      assert.equal(after.unresolvedActions.length,0);assert.equal(after.ameFixtureDisposition.status,"abandoned_reviewed");assert.equal(f.env.api.getResult(EXACT.requestId).state,"unknown");f.unchanged();
+    }));
     await test("actual url/ws-only target binding rejects nonfile/nonloopback/missing bindings in capture and durable lookup",async() => {
       const valid={url:"file:///exact/index.html",webSocketDebuggerUrl:"ws://127.0.0.1:8870/devtools/page/exact-frame"};
       const invalid={nonfile:{...valid,url:"https://example.test/index.html"},nonloopback:{...valid,webSocketDebuggerUrl:"ws://example.test:8870/devtools/page/exact-frame"},
@@ -158,7 +187,7 @@ async function main() {
     });
     await test("fake lookup body, local sidecar and unauthenticated/foreign credential cannot adopt",() => withFixture("untrusted",async f => {
       const c=await f.capture();await f.authorize(c);const proof=await disposition.lookup(f.deps);f.store.set("codexAeAmeFixtureUIDispositionV1",JSON.stringify(proof));assert.equal(f.env.api.state().unresolvedActions.length,1);
-      for(const field of ["historicalOutcome","currentActor","entry","auditSha256","readBack","readBackEntry","readBackRuntime","readBackAssets"]){const fake=clone(proof);if(field === "historicalOutcome")fake.value.historicalOutcome="completed";if(field === "currentActor")fake.readBack.currentActor.panelInstanceId="foreign";if(field === "entry")fake.value.entry.privateSignatureSha256="a".repeat(64);if(field === "auditSha256")delete fake.auditSha256;
+      for(const field of ["historicalOutcome","currentActor","readBackEpoch","readBackGeneration","entry","auditSha256","readBack","readBackEntry","readBackRuntime","readBackAssets"]){const fake=clone(proof);if(field === "historicalOutcome")fake.value.historicalOutcome="completed";if(field === "currentActor")fake.readBack.currentActor.panelInstanceId="foreign";if(field === "readBackEpoch")fake.readBack.currentActor.panelLifecycleEpoch+=1;if(field === "readBackGeneration")fake.readBack.currentActor.panelGeneration="foreign-generation";if(field === "entry")fake.value.entry.privateSignatureSha256="a".repeat(64);if(field === "auditSha256")delete fake.auditSha256;
         if(field === "readBack")delete fake.readBack;if(field === "readBackEntry")fake.readBack.entrySha256="a".repeat(64);if(field === "readBackRuntime")fake.readBack.runtime.currentRuntimeSha256="e".repeat(64);if(field === "readBackAssets")fake.readBack.installed.hashes={};fake.sha256=disposition.hash(fake.value);
         f.refresh();await f.answerLookup({ok:true,disposition:fake});assert.equal(f.env.api.state().unresolvedActions.length,1,field);
       }

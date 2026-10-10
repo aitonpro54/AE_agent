@@ -127,15 +127,19 @@ async function bracket(deps,mode) {
 async function lookupFrame(deps,entry) {
   for (const name of ["maintenanceTarget","readPanelGuard","readBridgeStatus","readRuntimeIdentity"]) if (typeof deps[name] !== "function") fail("fixture_disposition_backend_reader_required");
   const selected = await deps.maintenanceTarget(), currentActor = actor(selected.state), proof = canonical(deps.evidenceRoot);
-  assertIdle(await deps.readBridgeStatus(),selected.state,"lookup");
   const guard = await deps.readPanelGuard({requestId:EXACT.requestId,runId:EXACT.runId});
+  // The private GET itself blocks plan.reconcile availability. Read the actual
+  // controller activity from the exact private getter instead of its catalog.
+  assertIdle(await deps.readBridgeStatus(),{...selected.state,nativeControlIdle:guard?.controllerIdle===true},"lookup");
   const observedEntry = {...checkGuard(guard,proof.run,currentActor),canonicalRunRecordHash:proof.canonicalRunRecordHash,canonicalRunProjectionHash:proof.canonicalRunProjectionHash};
   if (!equal(observedEntry,entry)) fail("fixture_disposition_original_receipt_or_canonical_drift");
   const runtime = runtimeIdentity(await deps.readRuntimeIdentity());
   if (!selected.target || typeof selected.target.url !== "string" || !selected.target.url.startsWith("file:///") ||
       !/^ws:\/\/127\.0\.0\.1:8870\/devtools\/page\/[A-Za-z0-9_-]+$/.test(selected.target.webSocketDebuggerUrl || "") ||
       !selected.installed?.indexPath || !equal(selected.installed.hashes,runtime.panelAssetHashes)) fail("fixture_disposition_frame_source_mismatch");
-  const after = await deps.maintenanceTarget();assertIdle(await deps.readBridgeStatus(),after.state,"lookup");
+  const after = await deps.maintenanceTarget(), afterGuard=await deps.readPanelGuard({requestId:EXACT.requestId,runId:EXACT.runId});
+  assertIdle(await deps.readBridgeStatus(),{...after.state,nativeControlIdle:afterGuard?.controllerIdle===true},"lookup");
+  if (!equal({...checkGuard(afterGuard,proof.run,currentActor),canonicalRunRecordHash:proof.canonicalRunRecordHash,canonicalRunProjectionHash:proof.canonicalRunProjectionHash},entry)) fail("fixture_disposition_original_receipt_or_canonical_drift");
   if (!equal(actor(after.state),currentActor) || !equal(after.target,selected.target) || !equal(after.installed,selected.installed)) fail("fixture_disposition_actor_or_frame_changed");
   return {currentActor,runtime,target:clone(selected.target),installed:clone(selected.installed)};
 }
