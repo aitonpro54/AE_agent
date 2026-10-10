@@ -53,18 +53,25 @@ class Hasher {
     BCRYPT_HASH_HANDLE hash_ = nullptr;
     std::vector<unsigned char> object_;
 public:
-    Hasher() {
-        Require(BCryptOpenAlgorithmProvider(&algorithm_, BCRYPT_SHA256_ALGORITHM, nullptr, 0) >= 0, "sha_provider");
+    explicit Hasher(const std::string& key = {}) {
+        Require(BCryptOpenAlgorithmProvider(&algorithm_, BCRYPT_SHA256_ALGORITHM, nullptr, key.empty() ? 0 : BCRYPT_ALG_HANDLE_HMAC_FLAG) >= 0, "sha_provider");
         DWORD size = 0, got = 0;
         if (BCryptGetProperty(algorithm_, BCRYPT_OBJECT_LENGTH, reinterpret_cast<PUCHAR>(&size), sizeof(size), &got, 0) < 0) { BCryptCloseAlgorithmProvider(algorithm_, 0); throw Failure("sha_object"); }
         object_.resize(size);
-        if (BCryptCreateHash(algorithm_, &hash_, object_.data(), size, nullptr, 0, 0) < 0) { BCryptCloseAlgorithmProvider(algorithm_, 0); throw Failure("sha_create"); }
+        if (BCryptCreateHash(algorithm_, &hash_, object_.data(), size, key.empty() ? nullptr : reinterpret_cast<PUCHAR>(const_cast<char*>(key.data())), static_cast<ULONG>(key.size()), 0) < 0) { BCryptCloseAlgorithmProvider(algorithm_, 0); throw Failure("sha_create"); }
     }
     ~Hasher() { if (hash_) BCryptDestroyHash(hash_); if (algorithm_) BCryptCloseAlgorithmProvider(algorithm_, 0); }
     void Add(const void* bytes, DWORD count) { Require(BCryptHashData(hash_, reinterpret_cast<PUCHAR>(const_cast<void*>(bytes)), count, 0) >= 0, "sha_add"); }
     std::string Finish() { unsigned char digest[32]; Require(BCryptFinishHash(hash_, digest, 32, 0) >= 0, "sha_finish"); return Hex(digest, 32); }
 };
 std::string Sha256(const std::string& bytes) { Require(bytes.size() <= MAXDWORD, "sha_too_large"); Hasher h; h.Add(bytes.data(), static_cast<DWORD>(bytes.size())); return h.Finish(); }
+std::string Hmac256(const std::string& hex, const std::string& bytes) {
+    Require(LowerHex(hex, 64) && bytes.size() <= MAXDWORD, "hmac_input");
+    std::string key; key.reserve(32);
+    auto nibble = [](char c) { return c <= '9' ? c - '0' : c - 'a' + 10; };
+    for (size_t i = 0; i < hex.size(); i += 2) key += static_cast<char>((nibble(hex[i]) << 4) | nibble(hex[i + 1]));
+    Hasher h(key); h.Add(bytes.data(), static_cast<DWORD>(bytes.size())); return h.Finish();
+}
 std::string RandomToken() { unsigned char b[16]; Require(BCryptGenRandom(nullptr, b, sizeof(b), BCRYPT_USE_SYSTEM_PREFERRED_RNG) >= 0, "nonce_rng"); return Hex(b, sizeof(b)); }
 std::uint64_t NowMs() { FILETIME t; GetSystemTimeAsFileTime(&t); ULARGE_INTEGER u; u.LowPart = t.dwLowDateTime; u.HighPart = t.dwHighDateTime; return u.QuadPart / 10000 - 11644473600000ULL; }
 bool LowerHex(const std::string& value, size_t length) { return value.size() == length && std::all_of(value.begin(), value.end(), [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }); }
@@ -173,6 +180,15 @@ static void WriteAndFlush(HANDLE handle, const std::string& bytes) {
     Require(bytes.size() <= MAXDWORD, "receipt_size");
     DWORD wrote = 0; Require(WriteFile(handle, bytes.data(), static_cast<DWORD>(bytes.size()), &wrote, nullptr) && wrote == bytes.size(), "receipt_write");
     Require(FlushFileBuffers(handle) != 0, "receipt_flush");
+}
+void OwnedRoot::WriteFixtureAsset(const std::wstring& basename, const std::string& bytes) {
+    Require(basename == L"fixture.bmp" || basename == L"proxy.bmp", "fixed_fixture_asset_only");
+    Require(attempted_publications_.emplace(basename).second && !Exists(basename), "asset_exists_no_replay");
+    const auto target = Child(basename);
+    Handle h(CreateFileW(target.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_WRITE_THROUGH, nullptr));
+    VerifyHandle(h.value, target, false); WriteAndFlush(h.value, bytes);
+    Require(HashHandle(h.value) == Sha256(bytes), "asset_same_handle_bytes");
 }
 void OwnedRoot::WriteNew(const std::wstring& basename, const std::string& bytes) {
     Require(attempted_publications_.emplace(basename).second, "receipt_attempt_terminal_no_replay");

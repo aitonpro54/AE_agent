@@ -31,6 +31,7 @@ std::string Utf8(const std::wstring& value);
 std::wstring Wide(const std::string& value);
 std::string Json(const std::string& value);
 std::string Sha256(const std::string& bytes);
+std::string Hmac256(const std::string& key_hex, const std::string& bytes);
 std::string RandomToken();
 std::uint64_t NowMs();
 bool LowerHex(const std::string& value, size_t length);
@@ -42,7 +43,8 @@ std::wstring ModulePath(HMODULE module);
 std::string FileHash(const std::wstring& path);
 Handle LockReadFile(const std::wstring& path);
 // Path-only host save has no verified continuously held safe destination writer.
-// This build has no override and dispatches neither fixture mutations nor AEP saves.
+// The legacy unsigned protocol has no override. Separate signed fixtures do not
+// establish a safe writer contract for arbitrary user projects.
 [[noreturn]] void RequireProjectWriteContract();
 
 struct FileIdentity {
@@ -75,6 +77,9 @@ public:
     bool Exists(const std::wstring& basename) const;
     std::string Read(const std::wstring& basename) const;
     void WriteNew(const std::wstring& basename, const std::string& bytes);
+    // Fixed fixture media only; release the writer before AE imports the asset.
+    // Requires trusted cooperative ownership of the root, not hostile-writer isolation.
+    void WriteFixtureAsset(const std::wstring& basename, const std::string& bytes);
     std::string Hash(const std::wstring& basename) const;
     void Claim(const std::string& receipt);
 #ifdef PROBE_OFFLINE_HARNESS

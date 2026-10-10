@@ -1,5 +1,7 @@
 // Real Win32 safety checks; no Adobe host, plugin loading or project actions.
 #include "probe_io.h"
+#include "fixture_grant.h"
+#include "fixture_program.h"
 #include <iostream>
 #include <functional>
 #include <winioctl.h>
@@ -204,7 +206,64 @@ int wmain(int argc, wchar_t** argv) {
         root.InterleavePublicationForTest({});
         Require(FileId(root.Child(L"linked.json.part")) == linked_part_id && ExternalBytes(root.Child(L"linked.json.part")) == "single producer bytes", "hardlink_refusal_retained_original_identity_bytes");
         Require(!root.Exists(L"linked.json"), "hardlink_refusal_no_publication");
-        std::cout << "{\"offline\":true,\"hostLoaded\":false,\"passed\":" << passed << ",\"status\":\"passed\",\"adversarialInterleavings\":" << adversarial_interleavings << ",\"destinationGuardRefusals\":" << guard_refusals << ",\"guardHarnessFixtureDispatches\":" << guard_fixture_dispatches << ",\"guardHarnessExtendScriptSaves\":" << guard_script_saves << ",\"guardHarnessNativeSaves\":" << guard_native_saves << ",\"destinationWriteContract\":\"destination_write_contract_unverified\",\"liveSemantics\":\"UNVERIFIED\",\"checks\":[";
+        const int legacy_checks = passed;
+        if (legacy_checks != 215) throw probe::Failure("legacy_215_guard_cases_changed");
+        const std::string key(64, '0'), stage(32, 'e');
+        Require(probe::Hmac256(key, "native-fixture-v2") == "8ec3a95879a19162478dde827e38cba929853ea8ceb36d55d6a067e29316b311", "signed_js_cpp_hmac_vector");
+        probe::Fields signed_good{{"protocol","2"},{"nonce",binding.nonce},{"challenge",binding.challenge},{"pid","1234"},
+            {"process_created_unix_ms",std::to_string(binding.process_created_ms)},{"plugin_sha256",binding.build_sha},
+            {"root_path",binding.root_path},{"operation","snapshot"},{"expected_sha256",expected},{"fixture","saved-dirty"},
+            {"restore_dirty","0"},{"stage_id",stage},{"action_id","action-fixture"},{"revision","2"},
+            {"payload_sha256",std::string(64,'f')},{"run_id","12345678-1234-1234-1234-123456789012"},
+            {"checkpoint_sha256",std::string(64,'1')},{"contract_version","ae-agent.3.3.1"},{"expires_unix_ms",std::to_string(now+60000)}};
+        auto seal = [&](probe::Fields f) { f["mac"] = probe::Hmac256(key, probe::CanonicalSignedFields(f)); return f; };
+        auto signed_validate = [&](const probe::Fields& f) { return probe::ValidateFixtureGrant(f, binding, key, "snapshot", expected, stage, "saved-dirty", now); };
+        signed_good = seal(signed_good);
+        Require(signed_validate(signed_good).revision == 2, "signed_valid_bound_grant");
+        Reject("unsigned_ack_cannot_authorize_v2", [&] { signed_validate(good); });
+        for (const auto& entry : signed_good) {
+            auto changed = signed_good; changed[entry.first] += "x";
+            Reject(("signed_tamper_" + entry.first).c_str(), [&] { signed_validate(changed); });
+        }
+        for (const auto& name : {"nonce", "challenge", "pid", "process_created_unix_ms", "plugin_sha256", "root_path", "operation", "expected_sha256", "stage_id", "fixture"}) {
+            auto changed = signed_good;
+            changed[name] = (std::string(name) == "pid" || std::string(name) == "process_created_unix_ms") ? "999" : "other";
+            changed = seal(changed);
+            Reject(("signed_resigned_stale_" + std::string(name)).c_str(), [&] { signed_validate(changed); });
+        }
+        for (const auto& name : {"action_id", "revision", "payload_sha256", "run_id", "checkpoint_sha256", "contract_version"}) {
+            auto changed = signed_good; changed[name] = "?"; changed = seal(changed);
+            Reject(("signed_bad_provenance_" + std::string(name)).c_str(), [&] { signed_validate(changed); });
+        }
+        for (const auto expiry : {now, now + 300001}) {
+            auto changed = signed_good; changed["expires_unix_ms"] = std::to_string(expiry); changed = seal(changed);
+            Reject("signed_invalid_expiry", [&] { signed_validate(changed); });
+        }
+        auto extra = signed_good; extra["script"] = "caller jsx"; extra = seal(extra);
+        Reject("signed_caller_script_schema", [&] { signed_validate(extra); });
+        extra = signed_good; extra["output_path"] = "C:\\caller.aep"; extra = seal(extra);
+        Reject("signed_caller_path_schema", [&] { signed_validate(extra); });
+        for (const auto& kind : {"saved-clean", "saved-dirty", "untitled-dirty"}) for (const auto& op : {"create-fixture", "snapshot", "stage-variants"}) {
+            auto f = signed_good; f["fixture"] = kind; f["operation"] = op; f = seal(f);
+            auto g = probe::ValidateFixtureGrant(f, binding, key, op, expected, stage, kind, now);
+            Require(g.fixture == kind && g.operation == op, "signed_fixed_fixture_phase");
+            if (std::string(op) != "snapshot") {
+                f["restore_dirty"] = "1"; f = seal(f);
+                Reject("signed_dirty_only_snapshot", [&] { probe::ValidateFixtureGrant(f, binding, key, op, expected, stage, kind, now); });
+            }
+        }
+        auto consumed = signed_validate(signed_good);
+        probe::ConsumeFixtureGrant(root, consumed);
+        Require(root.Read(L"signed-snapshot.consumed.json").find("consumed_before_dispatch") != std::string::npos, "signed_durable_consume_receipt");
+        Reject("signed_consume_replay_terminal", [&] { probe::ConsumeFixtureGrant(root, consumed); });
+        Require(DeleteFileW(root.Child(L"signed-snapshot.consumed.json").c_str()) == 0 && GetLastError() == ERROR_SHARING_VIOLATION, "signed_consumed_receipt_held");
+        root.WriteFixtureAsset(L"fixture.bmp", fixture_program::Bitmap(false));
+        Require(root.Hash(L"fixture.bmp") == probe::Sha256(fixture_program::Bitmap(false)), "signed_owned_bmp_hash");
+        { probe::Handle imported(CreateFileW(root.Child(L"fixture.bmp").c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+          Require(imported.value != INVALID_HANDLE_VALUE, "signed_asset_writer_released_for_host_import"); }
+        Reject("signed_asset_no_overwrite", [&] { root.WriteFixtureAsset(L"fixture.bmp", "overwrite"); });
+        Reject("signed_asset_no_arbitrary_name", [&] { root.WriteFixtureAsset(L"caller.bmp", "caller"); });
+        std::cout << "{\"offline\":true,\"hostLoaded\":false,\"legacyProtocolChecks\":" << legacy_checks << ",\"signedFixtureChecks\":" << passed - legacy_checks << ",\"passed\":" << passed << ",\"status\":\"passed\",\"adversarialInterleavings\":" << adversarial_interleavings << ",\"destinationGuardRefusals\":" << guard_refusals << ",\"guardHarnessFixtureDispatches\":" << guard_fixture_dispatches << ",\"guardHarnessExtendScriptSaves\":" << guard_script_saves << ",\"guardHarnessNativeSaves\":" << guard_native_saves << ",\"destinationWriteContract\":\"destination_write_contract_unverified\",\"liveSemantics\":\"UNVERIFIED\",\"checks\":[";
         for (size_t i = 0; i < checks.size(); ++i) { if (i) std::cout << ','; std::cout << probe::Json(checks[i]); }
         std::cout << "],\"controlReceiptPublication\":\"same-held-handle FileRenameInfo absolute-only no-replace\",\"rootMetadataIsolation\":\"UNVERIFIED\",\"win32RefusalErrors\":{";
         size_t error_index = 0;

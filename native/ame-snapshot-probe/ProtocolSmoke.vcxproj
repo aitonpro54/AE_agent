@@ -13,6 +13,6 @@
     <Link><AdditionalDependencies>bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies><TargetMachine>MachineX64</TargetMachine><SubSystem>Console</SubSystem><ImportLibrary>$(IntDir)ProtocolSmoke.lib</ImportLibrary></Link>
   </ItemDefinitionGroup>
   <Target Name="ValidateProbePaths" BeforeTargets="PrepareForBuild"><Error Condition="'$(ProbeBuildRoot)' == '' or !Exists('$(ProbeBuildRoot)\build-owner.json')" Text="Use the exclusive ignored build helper." /><Error Condition="'$(ProbeRootWithinParent)' != 'True' or '$(ProbeCanonicalRoot)' != '$(ProbeBuildRoot)'" Text="ProbeBuildRoot escaped its canonical ignored root." /></Target>
-  <ItemGroup><ClCompile Include="protocol_smoke.cpp" /><ClCompile Include="probe_io.cpp" /><ClInclude Include="probe_io.h" /></ItemGroup>
+  <ItemGroup><ClCompile Include="protocol_smoke.cpp" /><ClCompile Include="probe_io.cpp" /><ClCompile Include="fixture_grant.cpp" /><ClInclude Include="probe_io.h" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

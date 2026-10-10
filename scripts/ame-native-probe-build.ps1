@@ -15,6 +15,9 @@ function Get-ProbeSourceHashes {
         $hashes += [ordered]@{ path = $file.FullName.Substring($repoRoot.Length + 1); sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant() }
     }
     $hashes += [ordered]@{ path = 'scripts\ame-native-probe-build.ps1'; sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $PSCommandPath).Hash.ToLowerInvariant() }
+    foreach ($relativePath in @('mcp-server\ame-native-fixture-grant.js', 'scripts\ame-native-fixture-grant-smoke.js')) {
+        $hashes += [ordered]@{ path = $relativePath; sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $repoRoot $relativePath)).Hash.ToLowerInvariant() }
+    }
     return $hashes
 }
 if ($BuildId -notmatch '^build-[a-f0-9]{32}$') { throw 'BuildId must be build- followed by 32 lowercase hex characters.' }
@@ -39,8 +42,15 @@ foreach ($relativePath in @('Examples\Headers\AE_GeneralPlug.h', 'Examples\Heade
 }
 if (!(Test-Path -LiteralPath $MsBuild -PathType Leaf)) { throw 'MSBuild prerequisite missing; this script does not install dependencies.' }
 $nativeSource = Get-Content -Encoding UTF8 -LiteralPath (Join-Path $sourceRoot 'ame_snapshot_probe.cpp') -Raw
-if ($nativeSource -match '->\s*(AEGP_SaveProjectToPath|PF_SetProjectDirty)\s*\(' -or $nativeSource -match '\bp\.(save|saveWithDialog|saveAs)\s*\(') {
-    throw 'Current disabled destination contract must contain zero native/ExtendScript project save or dirty restoration dispatch sites.'
+$saveToSites = [regex]::Matches($nativeSource, '->\s*AEGP_SaveProjectToPath\s*\(').Count
+$saveAsSites = [regex]::Matches($nativeSource, '->\s*AEGP_SaveProjectAs\s*\(').Count
+$dirtySites = [regex]::Matches($nativeSource, '->\s*PF_SetProjectDirty\s*\(').Count
+if ($saveToSites -ne 1 -or $saveAsSites -ne 1 -or $dirtySites -ne 1 -or
+    $nativeSource -notmatch '(?s)void CreateFixture\(const probe::Ack& ack\).*?probe::RequireProjectWriteContract\(\);' -or
+    $nativeSource -notmatch '(?s)void Save\(const probe::Ack&\).*?probe::RequireProjectWriteContract\(\);' -or
+    $nativeSource -notmatch 'probe::ConsumeFixtureGrant' -or $nativeSource -notmatch 'signed_fixture' -or
+    $nativeSource -match '(queueInAME\s*\(|\.render\s*\(|executeCommand\s*\(|\bp\.(save|saveWithDialog|saveAs)\s*\()') {
+    throw 'Unexpected fixture save/dirty/JSX dispatch sites or removed legacy guard; inspect source before building.'
 }
 $sourceHashes = @(Get-ProbeSourceHashes)
 $headers = Get-Content -Encoding UTF8 -LiteralPath (Join-Path $SdkRoot 'Examples\Headers\AE_GeneralPlug.h') -Raw
@@ -82,13 +92,19 @@ if (!$smokeResult.offline -or $smokeResult.hostLoaded -or
     $smokeResult.destinationWriteContract -ne 'destination_write_contract_unverified' -or
     $smokeResult.guardHarnessNativeSaves -ne 0 -or $smokeResult.guardHarnessExtendScriptSaves -ne 0 -or
     $smokeResult.guardHarnessFixtureDispatches -ne 0) { throw 'Offline harness did not preserve the disabled project-write contract.' }
+if ($smokeResult.legacyProtocolChecks -ne 215 -or $smokeResult.signedFixtureChecks -lt 50) { throw 'Required legacy/signed offline protocol cases are absent.' }
+$grantSmokeOutput = & node (Join-Path $repoRoot 'scripts\ame-native-fixture-grant-smoke.js') 2>&1
+$grantSmokeExit = $LASTEXITCODE
+[IO.File]::WriteAllText((Join-Path $buildRoot 'fixture-grant-smoke.log'), ($grantSmokeOutput -join "`n"), $utf8)
+if ($grantSmokeExit -ne 0) { throw "Offline private grant smoke failed: $grantSmokeOutput" }
+$grantSmokeResult = ($grantSmokeOutput -join "`n") | ConvertFrom-Json
 $afterHashes = @(Get-ProbeSourceHashes)
 if (($sourceHashes | ConvertTo-Json -Depth 4 -Compress) -cne ($afterHashes | ConvertTo-Json -Depth 4 -Compress)) {
     throw 'Source files changed during the build; binary/source provenance is unknown. Do not reuse this build id.'
 }
 $sdkEvidence = @()
 foreach ($relativePath in @('Examples\Headers\AE_GeneralPlug.h', 'Examples\Headers\AE_GeneralPlugOld.h', 'Examples\Headers\AE_AdvEffectSuites.h', 'Examples\Resources\PiPLtool.exe')) { $sdkEvidence += [ordered]@{ path = $relativePath; sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $SdkRoot $relativePath)).Hash.ToLowerInvariant() } }
-$receipt = [ordered]@{ schema = 'ae-agent.native-probe-build.v1'; buildId = $BuildId; offline = $true; readiness = $false; productionBackend = $false; installed = $false; loadedInAE = $false; liveSemantics = 'UNVERIFIED'; destinationWriteContract = 'destination_write_contract_unverified'; sourceProjectSaveDispatchSites = 0; fixtureMutationsEnabled = $false; dirtyRestorationEnabled = $false; controlReceiptPublication = 'same-held-handle FileRenameInfo absolute-only no-replace; trusted stable root/ancestors; no runtime fallback; producer retained until OwnedRoot lifetime ends'; rootMetadataIsolation = 'UNVERIFIED'; mediaHandoff = 'NOT_ATTEMPTED'; binaryPath = $binary; binarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $binary).Hash.ToLowerInvariant(); peMachine = 'AMD64'; peType = 'PE32+ DLL'; sdkRoot = $SdkRoot; sdkArchiveSha256 = $archiveSha; archiveHashProvenance = 'supplied prerequisite; archive not rehashed by build'; sdkFiles = $sdkEvidence; msbuildVersion = (Get-Item -LiteralPath $MsBuild).VersionInfo.FileVersion; windowsSdk = '10.0.26100.0'; suiteABI = @{ project6 = 9; comp12 = 26; register5 = 6; memory1 = 1; item9 = 14; layer9 = 15; footage5 = 11; utility6 = 13; collection2 = 2 }; sourceFiles = $sourceHashes; sourceHashesStableAcrossBuild = $true; protocolSmoke = $smokeResult; timestampUtc = [DateTime]::UtcNow.ToString('o') }
+$receipt = [ordered]@{ schema = 'ae-agent.native-probe-build.v2'; buildId = $BuildId; offline = $true; readiness = $false; productionBackend = $false; installed = $false; loadedInAE = $false; liveSemantics = 'UNVERIFIED'; destinationWriteContract = 'legacy arbitrary-project writer remains unverified; separate signed cooperative owned-fixture path'; legacyUnsignedWrites = 'closed'; sourceProjectSaveDispatchSites = ($saveToSites + $saveAsSites); sourceDirtyRestorationDispatchSites = $dirtySites; signedFixturePathCompiled = $true; signedFixtureRuntimeAuthorized = $false; fixtureMutationAttempted = $false; phaseGrantPublished = $false; dirtyRestorationAttempted = $false; controlReceiptPublication = 'same-held-handle FileRenameInfo absolute-only no-replace; trusted stable root/ancestors; no runtime fallback; producer retained until OwnedRoot lifetime ends'; rootMetadataIsolation = 'NO_HOSTILE_SAME_USER_WRITER_CLAIM'; mediaHandoff = 'kernel asset writer release tested offline; AE import/proxy UNVERIFIED'; binaryPath = $binary; binarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $binary).Hash.ToLowerInvariant(); peMachine = 'AMD64'; peType = 'PE32+ DLL'; sdkRoot = $SdkRoot; sdkArchiveSha256 = $archiveSha; archiveHashProvenance = 'supplied prerequisite; archive not rehashed by build'; sdkFiles = $sdkEvidence; msbuildVersion = (Get-Item -LiteralPath $MsBuild).VersionInfo.FileVersion; windowsSdk = '10.0.26100.0'; suiteABI = @{ project6 = 9; comp12 = 26; register5 = 6; memory1 = 1; item9 = 14; layer9 = 15; footage5 = 11; utility6 = 13; collection2 = 2; optionalDirtyRestore2 = 2 }; sourceFiles = $sourceHashes; sourceHashesStableAcrossBuild = $true; protocolSmoke = $smokeResult; fixtureGrantSmoke = $grantSmokeResult; timestampUtc = [DateTime]::UtcNow.ToString('o') }
 $receiptPath = Join-Path $buildRoot 'build-receipt.json'
 $receipt.relativeRenameRepro = $reproResult
 $receipt.protocolSmokeExitCode = $smokeExit

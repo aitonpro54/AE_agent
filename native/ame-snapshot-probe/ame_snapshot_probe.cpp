@@ -1,8 +1,11 @@
 // Disposable, offline-buildable experiment. NOT a production snapshot backend.
-// No menus, UI callbacks, executeCommand, open/new project, or caller-provided JSX.
+// No menus, UI callbacks, executeCommand, render/AME, or caller-provided JSX.
 #include "probe_io.h"
+#include "fixture_grant.h"
+#include "fixture_program.h"
 #include "AEConfig.h"
 #include "AE_GeneralPlug.h" // also includes AE_GeneralPlugOld.h (CompSuite12)
+#include "AE_AdvEffectSuites.h"
 #include "SPBasic.h"
 #include "probe_build_identity.h" // generated in ignored build directory
 #include <algorithm>
@@ -42,6 +45,7 @@ struct Suites {
     const AEGP_FootageSuite5* footage = nullptr;
     const AEGP_UtilitySuite6* utility = nullptr;
     const AEGP_CollectionSuite2* collection = nullptr;
+    const PF_AdvAppSuite2* dirty = nullptr;
     std::vector<std::pair<const char*, A_long>> acquired;
     template<typename T> void Get(const char* name, A_long version, const T*& destination) {
         const void* suite = nullptr;
@@ -82,12 +86,12 @@ struct Memory {
 };
 struct Snapshot {
     AEGP_ProjectH handle = nullptr;
-    std::string path, graph_json, graph_sha, revision;
+    std::string path, graph_json, graph_sha, revision, evidence;
     bool dirty = false;
     size_t items = 0, comps = 0, layers = 0;
     std::vector<std::string> names, comments, media_paths;
     std::vector<A_long> sources;
-    std::string IdentityJson() const { return "{\"projectHandle\":" + probe::Json(Pointer(handle)) + ",\"path\":" + probe::Json(path) + ",\"dirty\":" + Bool(dirty) + ",\"fixtureCanonicalSha256\":" + probe::Json(graph_sha) + ",\"extendscriptRevisionObserved\":" + probe::Json(revision) + ",\"observedState\":" + graph_json + "}"; }
+    std::string IdentityJson() const { return "{\"projectHandle\":" + probe::Json(Pointer(handle)) + ",\"path\":" + probe::Json(path) + ",\"dirty\":" + Bool(dirty) + ",\"fixtureCanonicalSha256\":" + probe::Json(graph_sha) + ",\"extendscriptRevisionObserved\":" + probe::Json(revision) + ",\"observedState\":" + graph_json + (evidence.empty() ? "" : ",\"fixtureEvidence\":" + probe::Json(evidence) + ",\"fixedMainName\":\"Main\",\"fixedNestedName\":\"AEAgent Fixture Nested\",\"rootCompositionCount\":1") + "}"; }
     std::string ApprovalSha() const { return probe::Sha256(IdentityJson()); }
 };
 enum class Phase { InspectAck, FixtureAck, SnapshotAck, Terminal };
@@ -102,16 +106,46 @@ struct State {
     std::string fixture_kind;
     std::uint64_t deadline = 0;
     A_long driver_major = 0, driver_minor = 0;
+    bool signed_fixture = false, mutation_dispatched = false, dirty_restored = false;
+    std::string session_key, stage_id, role, source_root_path, baseline_sha;
+    std::unique_ptr<probe::OwnedRoot> source_root;
+    probe::Handle original_source_pin;
+    std::string original_source_sha;
+    probe::FixtureGrant first_grant;
+    unsigned variant = 0, native_saves = 0, fixture_dispatches = 0;
     std::string Base() const {
+        if (signed_fixture) return "\"schema\":\"ae-agent.native-fixture-probe.v2\",\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + probe::Json(role) + ",\"fixture\":" + probe::Json(fixture_kind) + ",\"stageId\":" + probe::Json(stage_id) + ",\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"rootPath\":" + probe::Json(binding.root_path) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"nativeSaveDispatches\":" + Number(native_saves) + ",\"fixtureMutationDispatches\":" + Number(fixture_dispatches) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
         return "\"schema\":\"ae-agent.native-snapshot-probe.v1\",\"offlineProbe\":true,\"readiness\":false,\"productionAuthorization\":false,\"destinationWriteContract\":\"destination_write_contract_unverified\",\"rootMetadataIsolation\":\"UNVERIFIED\",\"saveCalled\":false,\"projectMutationDispatchCount\":0,\"outputProofAvailable\":false,\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginPath\":" + probe::Json(plugin_path) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"sdkArchiveSha256\":" + probe::Json(PROBE_SDK_ARCHIVE_SHA256) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
     }
-    void Receipt(const wchar_t* name, const std::string& json) { root->WriteNew(name, "{" + Base() + "," + json + "}\n"); }
+    void Receipt(const wchar_t* name, const std::string& json) {
+        const auto body = "{" + Base() + "," + json + "}";
+        root->WriteNew(name, signed_fixture ? "{\"body\":" + probe::Json(body) + ",\"mac\":" + probe::Json(probe::Hmac256(session_key, body)) + "}\n" : body + "\n");
+    }
     std::string Revision() {
         const char* compiled = "(function(){if(!app.project||typeof app.project.revision!=='number')throw Error('revision unavailable');return String(app.project.revision);})()";
         A_Boolean available = FALSE; AE(suites.utility->AEGP_IsScriptingAvailable(&available), "IsScriptingAvailable"); Need(available, "scripting_unavailable");
         Memory result(suites.memory), error(suites.memory);
         AE(suites.utility->AEGP_ExecuteScript(plugin_id, compiled, FALSE, &result.handle, &error.handle), "ExecuteReadOnlyRevisionScript");
         Need(error.Text(false).empty(), "fixed_script_host_error"); return result.Text(false);
+    }
+    std::string FixedScript(const std::string& compiled, bool mutates) {
+        A_Boolean available = FALSE; AE(suites.utility->AEGP_IsScriptingAvailable(&available), "IsScriptingAvailable"); Need(available, "scripting_unavailable");
+        if (mutates) { mutation_dispatched = true; ++fixture_dispatches; }
+        Memory result(suites.memory), error(suites.memory);
+        AE(suites.utility->AEGP_ExecuteScript(plugin_id, compiled.c_str(), FALSE, &result.handle, &error.handle), "ExecuteFixedFixtureScript");
+        Need(error.Text(false).empty(), "fixed_fixture_script_host_error"); return result.Text(false);
+    }
+    void FixtureEvidence(Snapshot& snapshot, unsigned expected_variant) {
+        snapshot.evidence = FixedScript(fixture_program::Evidence(fixture_kind, expected_variant), false);
+        auto e = probe::ParseFields(snapshot.evidence);
+        probe::ExactKeys(e, {"sentinel", "variant", "media_path", "proxy_path", "use_proxy", "main_name", "nested_name", "root_comp_count"});
+        Need(e.at("main_name") == "Main" && e.at("nested_name") == "AEAgent Fixture Nested" && e.at("root_comp_count") == "1", "fixture_unique_root_comp_required");
+        Need(e.at("media_path") == source_root_path + "\\fixture.bmp", "fixture_media_outside_owned_source");
+        Need(e.at("proxy_path") == "NONE" || e.at("proxy_path") == source_root_path + "\\proxy.bmp", "fixture_proxy_outside_owned_source");
+        Need(e.at("proxy_path") == "NONE" ? e.at("use_proxy") == "0" : e.at("use_proxy") == "1", "fixture_proxy_flag_mismatch");
+        auto& media_root = source_root ? *source_root : *root;
+        Need(media_root.Hash(L"fixture.bmp") == probe::Sha256(fixture_program::Bitmap(false)) &&
+            media_root.Hash(L"proxy.bmp") == probe::Sha256(fixture_program::Bitmap(true)), "fixture_media_bytes_changed");
     }
     std::string ItemText(AEGP_ItemH item, bool comment) {
         Memory name(suites.memory);
@@ -148,11 +182,16 @@ struct State {
                 AEGP_ItemType type = AEGP_ItemType_NONE; AEGP_ItemFlags flags = 0; A_Boolean selected = FALSE;
                 A_long width = 0, height = 0; A_Time duration{}, time{}; AEGP_ItemH parent = nullptr; AEGP_ItemViewP view = nullptr;
                 AE(suites.item->AEGP_GetItemType(current, &type), "GetItemType");
-                Need(type == AEGP_ItemType_COMP || type == AEGP_ItemType_FOOTAGE, "fixture_has_foreign_item_type");
+                const bool fixture_folder = signed_fixture && type == AEGP_ItemType_FOLDER;
+                Need(type == AEGP_ItemType_COMP || type == AEGP_ItemType_FOOTAGE || fixture_folder, "fixture_has_foreign_item_type");
                 AE(suites.item->AEGP_GetItemFlags(current, &flags), "GetItemFlags"); AE(suites.item->AEGP_IsItemSelected(current, &selected), "IsItemSelected");
-                AE(suites.item->AEGP_GetItemDimensions(current, &width, &height), "GetItemDimensions"); AE(suites.item->AEGP_GetItemDuration(current, &duration), "GetItemDuration"); AE(suites.item->AEGP_GetItemCurrentTime(current, &time), "GetItemCurrentTime");
-                AE(suites.item->AEGP_GetItemParentFolder(current, &parent), "GetItemParentFolder"); AE(suites.item->AEGP_GetItemMRUView(current, &view), "GetItemMRUView");
+                if (!fixture_folder) {
+                    AE(suites.item->AEGP_GetItemDimensions(current, &width, &height), "GetItemDimensions"); AE(suites.item->AEGP_GetItemDuration(current, &duration), "GetItemDuration"); AE(suites.item->AEGP_GetItemCurrentTime(current, &time), "GetItemCurrentTime");
+                    AE(suites.item->AEGP_GetItemMRUView(current, &view), "GetItemMRUView");
+                }
+                AE(suites.item->AEGP_GetItemParentFolder(current, &parent), "GetItemParentFolder");
                 std::string name = ItemText(current, false), comment = ItemText(current, true); out.names.push_back(name); out.comments.push_back(comment);
+                Need(!fixture_folder || (name == "AEAgent Fixture Dependencies" && parent == project_root), "fixture_folder_exact_identity_required");
                 graph += "{\"id\":" + Number(ItemId(current)) + ",\"type\":" + Number(type) + ",\"name\":" + probe::Json(name) + ",\"comment\":" + probe::Json(comment) + ",\"parentId\":" + Number(parent == project_root ? 0 : ItemId(parent)) + ",\"flags\":" + Number(flags) + ",\"selected\":" + Bool(selected != FALSE) + ",\"width\":" + Number(width) + ",\"height\":" + Number(height) + ",\"duration\":" + Time(duration) + ",\"time\":" + Time(time) + ",\"mruViewHandle\":" + probe::Json(Pointer(view));
                 if (type == AEGP_ItemType_FOOTAGE) {
                     AEGP_FootageH main = nullptr; AE(suites.footage->AEGP_GetMainFootageFromItem(current, &main), "GetMainFootageFromItem");
@@ -216,9 +255,117 @@ struct State {
         // A supported safe writer route must be reviewed before any AEP dispatch.
         probe::RequireProjectWriteContract();
     }
+    probe::FixtureGrant SignedGrant(const wchar_t* name, const std::string& operation, const std::string& fingerprint) {
+        auto g = probe::ValidateFixtureGrant(probe::ParseFields(root->Read(name)), binding, session_key,
+            operation, fingerprint, stage_id, fixture_kind, probe::NowMs());
+        if (!first_grant.action_id.empty()) Need(g.action_id == first_grant.action_id && g.revision == first_grant.revision &&
+            g.run_id == first_grant.run_id && g.payload_sha == first_grant.payload_sha &&
+            g.checkpoint_sha == first_grant.checkpoint_sha && g.contract_version == first_grant.contract_version, "fixture_grant_execution_changed");
+        return g;
+    }
+    void NativeSaveAs(const Snapshot& snapshot, const wchar_t* basename) {
+        Need(!root->Exists(basename), "owned_save_destination_exists_no_replay");
+        const auto path = root->Child(basename); mutation_dispatched = true; ++native_saves;
+        AE(suites.project->AEGP_SaveProjectAs(snapshot.handle, reinterpret_cast<const A_UTF16Char*>(path.c_str())), "SaveOwnedFixtureAs");
+        (void)root->Hash(basename); // regular, non-reparse, single-link same-path file
+    }
+    void StartSigned() {
+        boot = Capture(); Need(boot.path.empty() && !boot.dirty && boot.items == 0, "signed_child_requires_empty_clean_untitled");
+        const auto fingerprint = role == "capture" ? boot.ApprovalSha() : probe::Sha256(boot.ApprovalSha() + ":" + baseline_sha);
+        Receipt(L"signed-boot.json", "\"status\":\"empty_owned_child_waiting_signed_grant\",\"baseline\":" + boot.IdentityJson() +
+            ",\"approvalSha256\":" + probe::Json(fingerprint) + ",\"baselineInputSha256\":" + probe::Json(baseline_sha));
+        phase = Phase::FixtureAck;
+    }
+    void CreateSignedFixture(const probe::FixtureGrant& grant) {
+        Need(role == "capture" && Capture().ApprovalSha() == boot.ApprovalSha(), "fixture_boot_changed");
+        // No filesystem asset, script, save or dirty dispatch before durable consume.
+        probe::ConsumeFixtureGrant(*root, grant); first_grant = grant;
+        root->WriteFixtureAsset(L"fixture.bmp", fixture_program::Bitmap(false));
+        root->WriteFixtureAsset(L"proxy.bmp", fixture_program::Bitmap(true));
+        FixedScript(fixture_program::Create(binding.root_path), true);
+        auto fixture = Capture();
+        if (fixture_kind != "untitled-dirty") NativeSaveAs(fixture, L"source.aep");
+        if (fixture_kind != "saved-clean") FixedScript(fixture_program::SetSentinel(fixture_kind), true);
+        boot = Capture(); FixtureEvidence(boot, 0);
+        Need(boot.path == (fixture_kind == "untitled-dirty" ? "" : probe::Utf8(root->Child(L"source.aep"))) &&
+            boot.dirty == (fixture_kind != "saved-clean"), "fixture_source_identity_or_dirty_mismatch");
+        if (!boot.path.empty()) { original_source_pin = probe::LockReadFile(probe::Wide(boot.path)); original_source_sha = root->Hash(L"source.aep"); }
+        Receipt(L"signed-fixture.json", "\"status\":\"source_fixture_ready\",\"grant\":" + grant.ReceiptJson() +
+            ",\"source\":" + boot.IdentityJson() + ",\"sourceFileSha256\":" + probe::Json(original_source_sha) +
+            ",\"approvalSha256\":" + probe::Json(boot.ApprovalSha()) + ",\"layerSwitchDispatches\":0");
+        phase = Phase::SnapshotAck;
+    }
+    void SnapshotSignedFixture(const probe::FixtureGrant& grant) {
+        Need(role == "capture", "snapshot_capture_role_required");
+        auto before = Capture(); FixtureEvidence(before, 0);
+        Need(before.ApprovalSha() == boot.ApprovalSha(), "fixture_source_changed_before_snapshot");
+        Need(!root->Exists(L"baseline.aep"), "snapshot_destination_exists_no_replay");
+        probe::ConsumeFixtureGrant(*root, grant);
+        const auto path = root->Child(L"baseline.aep"); mutation_dispatched = true; ++native_saves;
+        AE(suites.project->AEGP_SaveProjectToPath(before.handle, reinterpret_cast<const A_UTF16Char*>(path.c_str())), "SaveFixtureBaselineToPath");
+        auto after = Capture(); FixtureEvidence(after, 0);
+        // Never repair path drift by save-as or reload: that would destroy dirty memory.
+        Need(before.handle == after.handle && before.path == after.path && before.graph_sha == after.graph_sha &&
+            before.evidence == after.evidence, "snapshot_changed_source_path_or_observed_state");
+        if (before.dirty && !after.dirty && grant.restore_dirty) {
+            suites.Get(kPFAdvAppSuite, kPFAdvAppSuiteVersion2, suites.dirty);
+            mutation_dispatched = true;
+            AE(suites.dirty->PF_SetProjectDirty(), "RestoreOwnedFixtureDirtyFlag"); dirty_restored = true;
+            after = Capture(); FixtureEvidence(after, 0);
+        }
+        Need(before.handle == after.handle && before.path == after.path && before.dirty == after.dirty &&
+            before.graph_sha == after.graph_sha && before.evidence == after.evidence, "snapshot_source_preservation_failed");
+        Need(original_source_sha.empty() || root->Hash(L"source.aep") == original_source_sha, "snapshot_overwrote_source_file");
+        const auto output_sha = root->Hash(L"baseline.aep");
+        Receipt(L"signed-snapshot.json", "\"status\":\"fixture_baseline_saved_source_preserved\",\"grant\":" + grant.ReceiptJson() +
+            ",\"sourceBefore\":" + before.IdentityJson() + ",\"sourceAfter\":" + after.IdentityJson() +
+            ",\"baselineSha256\":" + probe::Json(output_sha) + ",\"baselinePath\":" + probe::Json(probe::Utf8(path)) +
+            ",\"dirtyRestored\":" + Bool(dirty_restored) + ",\"layerSwitchDispatches\":0,\"undoHistoryPreservation\":\"NOT_CLAIMED\"");
+        phase = Phase::Terminal;
+    }
+    void StageSignedVariants(const probe::FixtureGrant& grant) {
+        Need(role == "stage" && Capture().ApprovalSha() == boot.ApprovalSha() && root->Hash(L"baseline.aep") == baseline_sha,
+            "stage_boot_or_baseline_changed");
+        Need(!root->Exists(L"variant-01.aep") && !root->Exists(L"variant-02.aep"), "variant_destination_exists_no_replay");
+        probe::ConsumeFixtureGrant(*root, grant); first_grant = grant;
+        auto baseline_pin = probe::LockReadFile(root->Child(L"baseline.aep"));
+        AEGP_ProjectH opened = nullptr; const auto input = root->Child(L"baseline.aep"); mutation_dispatched = true;
+        AE(suites.project->AEGP_OpenProjectFromPath(reinterpret_cast<const A_UTF16Char*>(input.c_str()), &opened), "OpenOwnedStageBaseline");
+        auto baseline = Capture(); Need(baseline.handle == opened && !baseline.dirty, "stage_baseline_not_clean"); FixtureEvidence(baseline, 0);
+        std::string outputs = "[";
+        for (unsigned i = 1; i <= 2; ++i) {
+            variant = i; FixedScript(fixture_program::SelectVariant(i), true);
+            auto current = Capture(); FixtureEvidence(current, i);
+            const wchar_t* name = i == 1 ? L"variant-01.aep" : L"variant-02.aep";
+            NativeSaveAs(current, name); const auto output_sha = root->Hash(name);
+            AEGP_ProjectH reopened = nullptr; const auto output_path = root->Child(name);
+            AE(suites.project->AEGP_OpenProjectFromPath(reinterpret_cast<const A_UTF16Char*>(output_path.c_str()), &reopened), "ReopenOwnedFixtureVariant");
+            auto readback = Capture(); FixtureEvidence(readback, i);
+            Need(readback.handle == reopened && !readback.dirty && readback.path == probe::Utf8(output_path) &&
+                root->Hash(name) == output_sha && root->Hash(L"baseline.aep") == baseline_sha, "variant_reopen_or_baseline_preservation_failed");
+            if (i != 1) outputs += ',';
+            outputs += "{\"variant\":" + Number(i) + ",\"path\":" + probe::Json(probe::Utf8(output_path)) + ",\"sha256\":" + probe::Json(output_sha) +
+                ",\"reopened\":true,\"readback\":" + readback.IdentityJson() + "}";
+        }
+        Receipt(L"signed-variants.json", "\"status\":\"two_owned_variants_reopened\",\"grant\":" + grant.ReceiptJson() +
+            ",\"baselineSha256\":" + probe::Json(baseline_sha) + ",\"outputs\":" + outputs + "],\"ameSubmissionAttempted\":false");
+        phase = Phase::Terminal;
+    }
     void Tick() {
         if (phase == Phase::Terminal) return;
         Need(probe::NowMs() < deadline, "probe_idle_deadline");
+        if (signed_fixture) {
+            // Unsigned legacy ACKs never authorize a signed-fixture write.
+            Need(!root->Exists(L"fixture.ack") && !root->Exists(L"snapshot.ack") && !root->Exists(L"native.ack"), "unsigned_ack_forbidden_in_signed_child");
+            if (phase == Phase::InspectAck) StartSigned();
+            else if (phase == Phase::FixtureAck && role == "capture" && root->Exists(L"signed-create-fixture.grant"))
+                CreateSignedFixture(SignedGrant(L"signed-create-fixture.grant", "create-fixture", boot.ApprovalSha()));
+            else if (phase == Phase::SnapshotAck && root->Exists(L"signed-snapshot.grant"))
+                SnapshotSignedFixture(SignedGrant(L"signed-snapshot.grant", "snapshot", boot.ApprovalSha()));
+            else if (phase == Phase::FixtureAck && role == "stage" && root->Exists(L"signed-stage-variants.grant"))
+                StageSignedVariants(SignedGrant(L"signed-stage-variants.grant", "stage-variants", probe::Sha256(boot.ApprovalSha() + ":" + baseline_sha)));
+            return;
+        }
         if (phase == Phase::InspectAck && root->Exists(L"native.ack")) Inspect(ReadAck(L"native.ack", "inspect-empty", probe::Sha256("native-handshake:" + binding.challenge)));
         else if (phase == Phase::FixtureAck && root->Exists(L"fixture.ack")) CreateFixture(ReadAck(L"fixture.ack", "create-fixture", boot.ApprovalSha()));
         // No transition to SnapshotAck exists while the destination writer is unverified.
@@ -226,7 +373,7 @@ struct State {
     }
     void Refuse(const std::string& reason) noexcept {
         phase = Phase::Terminal;
-        try { Receipt(L"refusal.json", "\"status\":\"refused_or_unknown_inspect_only\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":false,\"replayAllowed\":false"); } catch (...) { /* no retry or dialog */ }
+        try { Receipt(signed_fixture ? L"signed-refusal.json" : L"refusal.json", "\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":" + Bool(mutation_dispatched) + ",\"replayAllowed\":false"); } catch (...) { /* no retry or dialog */ }
     }
 };
 // Process-lifetime state; AE unload never runs work. The hook becomes inert at Terminal.
@@ -251,15 +398,40 @@ extern "C" __declspec(dllexport) A_Err EntryPointFunc(SPBasicSuite* basic, A_lon
         HMODULE module = nullptr; Need(GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(&EntryPointFunc), &module) != 0, "own_module_handle");
         state->plugin_path = probe::Utf8(probe::ModulePath(module)); state->binding.build_sha = probe::FileHash(probe::Wide(state->plugin_path));
         auto manifest = probe::ParseFields(state->root->Read(L"launch.manifest"));
-        probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path"});
-        Need(manifest.at("protocol") == "1" && manifest.at("nonce") == state->binding.nonce && manifest.at("plugin_path") == state->plugin_path && manifest.at("plugin_sha256") == state->binding.build_sha && manifest.at("root_path") == probe::Utf8(state->root->path()), "launch_manifest_binding_mismatch");
+        state->signed_fixture = manifest.at("protocol") == "2";
+        if (state->signed_fixture) {
+            probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path", "stage_id", "role", "fixture",
+                "executable_path", "executable_sha256", "source_root", "baseline_sha256", "expires_unix_ms", "mac"});
+            state->session_key = probe::Utf8(Env(L"AE_AGENT_NATIVE_FIXTURE_KEY"));
+            Need(probe::LowerHex(state->session_key, 64), "child_session_key_required");
+            SetEnvironmentVariableW(L"AE_AGENT_NATIVE_FIXTURE_KEY", nullptr); // retain only in this state
+            probe::VerifySignedFields(manifest, state->session_key);
+            const auto expiry = probe::Decimal(manifest.at("expires_unix_ms")), now = probe::NowMs();
+            Need(expiry > now && expiry - now <= 300000, "signed_launch_expired");
+            Need(manifest.at("executable_path") == probe::Utf8(executable) && manifest.at("executable_sha256") == probe::FileHash(executable), "signed_host_image_mismatch");
+            state->stage_id = manifest.at("stage_id"); state->role = manifest.at("role"); state->fixture_kind = manifest.at("fixture");
+            state->source_root_path = manifest.at("source_root"); state->baseline_sha = manifest.at("baseline_sha256");
+            Need(probe::LowerHex(state->stage_id, 32) && (state->role == "capture" || state->role == "stage") &&
+                (state->fixture_kind == "saved-clean" || state->fixture_kind == "saved-dirty" || state->fixture_kind == "untitled-dirty") &&
+                probe::LowerHex(state->baseline_sha, 64), "signed_launch_scope");
+            if (state->role == "capture") Need(state->source_root_path == probe::Utf8(state->root->path()) &&
+                state->baseline_sha == std::string(64, '0'), "capture_launch_source");
+            else {
+                const auto source_path = probe::Canonical(probe::Wide(state->source_root_path));
+                const auto leaf = source_path.substr(source_path.find_last_of(L'\\') + 1);
+                Need(leaf.size() == 38 && leaf.substr(0, 6) == L"probe-" && source_path != state->root->path(), "stage_source_owned_leaf");
+                state->source_root = std::make_unique<probe::OwnedRoot>(source_path, probe::Utf8(leaf.substr(6)));
+                Need(state->root->Hash(L"baseline.aep") == state->baseline_sha && state->source_root->Hash(L"baseline.aep") == state->baseline_sha, "stage_baseline_binding_mismatch");
+            }
+        } else probe::ExactKeys(manifest, {"protocol", "nonce", "plugin_path", "plugin_sha256", "root_path"});
+        Need((manifest.at("protocol") == "1" || state->signed_fixture) && manifest.at("nonce") == state->binding.nonce && manifest.at("plugin_path") == state->plugin_path && manifest.at("plugin_sha256") == state->binding.build_sha && manifest.at("root_path") == probe::Utf8(state->root->path()), "launch_manifest_binding_mismatch");
         state->binding.challenge = probe::RandomToken(); state->binding.pid = GetCurrentProcessId(); state->binding.process_created_ms = ProcessCreated(); state->binding.root_path = probe::Utf8(state->root->path());
         state->plugin_id = plugin_id; state->driver_major = major; state->driver_minor = minor; state->deadline = probe::NowMs() + 1800000;
         state->root->Claim("{" + state->Base() + ",\"status\":\"exclusive_native_owner\"}\n");
         state->suites.basic = basic;
         try { state->suites.Required(); }
         catch (const std::exception& e) { state->Refuse(e.what()); return A_Err_NONE; }
-        state->Receipt(L"handshake.json", "\"status\":\"native_identity_waiting_ack_no_project_actions\",\"driverMajor\":" + Number(major) + ",\"driverMinor\":" + Number(minor) + ",\"rootPath\":" + probe::Json(state->binding.root_path) + ",\"inspectApprovalSha256\":" + probe::Json(probe::Sha256("native-handshake:" + state->binding.challenge)) + ",\"suites\":{\"ProjSuite6\":9,\"CompSuite12\":26,\"MemorySuite1\":1,\"RegisterSuite5\":6,\"ItemSuite9\":14,\"LayerSuite9\":15,\"FootageSuite5\":11,\"UtilitySuite6\":13,\"CollectionSuite2\":2}");
+        if (!state->signed_fixture) state->Receipt(L"handshake.json", "\"status\":\"native_identity_waiting_ack_no_project_actions\",\"driverMajor\":" + Number(major) + ",\"driverMinor\":" + Number(minor) + ",\"rootPath\":" + probe::Json(state->binding.root_path) + ",\"inspectApprovalSha256\":" + probe::Json(probe::Sha256("native-handshake:" + state->binding.challenge)) + ",\"suites\":{\"ProjSuite6\":9,\"CompSuite12\":26,\"MemorySuite1\":1,\"RegisterSuite5\":6,\"ItemSuite9\":14,\"LayerSuite9\":15,\"FootageSuite5\":11,\"UtilitySuite6\":13,\"CollectionSuite2\":2}");
         AE(state->suites.registration->AEGP_RegisterIdleHook(plugin_id, Idle, reinterpret_cast<AEGP_IdleRefcon>(state.get())), "RegisterIdleHook");
         g_state = state.release(); if (global) *global = reinterpret_cast<AEGP_GlobalRefcon>(g_state);
     } catch (...) { /* fail closed before registration; never display host dialogs */ }

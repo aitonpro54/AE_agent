@@ -46,7 +46,7 @@
     <Error Condition="!Exists('$(SdkRoot)\Examples\Headers\AE_GeneralPlug.h') or !Exists('$(SdkRoot)\Examples\Resources\PiPLtool.exe')" Text="Official external SDK files unavailable." />
   </Target>
   <ItemGroup>
-    <ClCompile Include="ame_snapshot_probe.cpp" /><ClCompile Include="probe_io.cpp" />
+    <ClCompile Include="ame_snapshot_probe.cpp" /><ClCompile Include="probe_io.cpp" /><ClCompile Include="fixture_grant.cpp" />
     <ClInclude Include="probe_io.h" />
     <CustomBuild Include="AEAgentSnapshotProbe_PiPL.r">
       <Message>Build disposable AEGP PiPL inside owned ignored IntDir</Message>

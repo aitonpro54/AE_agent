@@ -12,10 +12,11 @@ Flash в этой задаче. Подробное фактическое сос
 - [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
 - [ ] M3 IN PROGRESS: пользователь поручил продолжить без GPT Pro; root проводит
-  собственное ревью. Snapshot/submit/native job identity/start/status не доказаны и не
-  зарегистрированы. Текущий guard-run `run-39442a5bbcad41d8b5daafea8c85d429` прошёл
-  независимую проверку: 4 ранних отказа; допуск, claim flush, AppContainer и AE не проверялись.
-  Предыдущий ACL failure относится только к прошлой версии исходников.
+  собственное ревью. Отдельный signed v2 fixture runner зарегистрирован для ручного
+  CEP-плана: capture текущего dirty-состояния в собственном child, затем два сохранённых
+  и повторно открытых варианта в другом child. Production snapshot текущего проекта,
+  submit/start/status и реальное кодирование пока не приняты. Старый unsigned guard
+  не ослаблен; прежние ACL/guard результаты не считаются разрешением этого пути.
 - [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 - [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
   `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
@@ -37,9 +38,14 @@ Flash в этой задаче. Подробное фактическое сос
   native ABI и CEP async boundary; root — собственное ревью по поручению; Luna/high —
   docs и bounded offline checks. Flash запрещён. Frozen intake и зависимости не
   менялись; четыре предшествующих dirty source SHA сверены.
-- Текущий блок: два независимых `ae_specialist` writer по native fixture и AME jobs;
-  root интегрирует private CEP ingress и сам проводит ревью. Оба helper-слота заняты;
-  общий HTTP/auth boundary остаётся у единственного root writer/controller.
+- Текущий блок: `ae_specialist` реализовал native fixture; второй `ae_specialist`
+  завершает AME jobs. Luna/high проверяет offline runner/planning, root интегрирует
+  private CEP ingress и сам проводит ревью. Root — единственный live controller;
+  пользователь запретил Flash/Pro. Native grant не публикуется через raw/MCP/admin.
+- Signed v2 runner устанавливает только собственную точную AEX-сборку и не заменяет
+  другой файл. Fixed fixtures имеют одну root comp `Main`, вложенную comp и media/proxy
+  в отдельной папке. Process birth, MAC, source/binary SHA и receipts проверяются до
+  следующей фазы. Captured source path/dirty сохраняются; undo history не заявляется.
 - Exact pin не исправляет подпись и не доверяет другим операциям: `vendorSignatureVerified=false`,
   `trustScope=ensure_ame_running_transport_only`. Native discovery и хеш повторно сверяются
   до/после тёплой проверки и перед холодным запуском; штатный Valid Adobe gate сохранён.
@@ -97,6 +103,14 @@ Flash в этой задаче. Подробное фактическое сос
   `.codex-runtime/ame-transport-probe/runtime-identity-d7746f1-20261010-004b3911-8169-4752-9916-9567dfb3107c/runtime-identity.json`.
 
 ## Validation
+
+- Signed v2 build `build-9a6b7110dd934bfb85982f3331b9d1fd`, AEX SHA
+  `ba4afb624dbb29ddea905cac86a618a30de0f3b8bac1068bc85b70b923813d8a`:
+  215 legacy + 65 signed C++ checks, 63 JS grant checks, 28 runner checks PASS.
+  Build selector повторно сверил current source/binary и установленный CEP guard;
+  smoke:evidence reader — 12 групп PASS. Все эти результаты offline; native fixture
+  ещё не запущен, AME jobs не отправлены. Extracted planning VM обновлён новой
+  actual dependency; весь `smoke:planning`, rules, syntax и diff PASS.
 
 - Текущий manual-pin milestone: `smoke:ame-running` 27 offline групп, private ingress
   5 групп, `smoke:planning`, `check:rules`, syntax и scoped diff PASS. Ingress проверяет

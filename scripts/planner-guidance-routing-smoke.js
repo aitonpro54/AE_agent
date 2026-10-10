@@ -12,6 +12,7 @@ const projectSave = require("../mcp-server/project-save");
 const ameTransport = require("../mcp-server/ame-transport");
 const amePresets = require("../mcp-server/ame-presets");
 const ameRunning = require("../mcp-server/ame-running");
+const ameFixtureGrant = require("../mcp-server/ame-native-fixture-grant");
 const nativeRenderVariant = require("../mcp-server/native-render-variant");
 const slideshowTools = require("../mcp-server/slideshow-tools");
 const montageTools = require("../mcp-server/montage-tools");
@@ -119,6 +120,7 @@ function productionPlannerFixture(catalog) {
     ameTransport: { TOOL_NAME: ameTransport.TOOL_NAME },
     amePresets: { listAmePresetsTool: amePresets.listAmePresetsTool },
     ameRunning: { TOOL_NAME: ameRunning.TOOL_NAME },
+    ameFixtureGrant: { TOOL_NAME: ameFixtureGrant.TOOL_NAME },
     nativeRenderVariant,
     slideshowTools: { TOOL_NAMES: slideshowTools.TOOL_NAMES },
     montageTools: { TOOL_NAMES: montageTools.TOOL_NAMES },
