@@ -6,6 +6,57 @@ M2: реализация `ensure_ame_running` и её offline-проверки �
 остановился на обязательной проверке проекта `project_save_required`. Полная
 цепочка двух вариантов не принята.
 
+**Текущее live-состояние — 10 октября, после grouped lifecycle maintenance.**
+Код idle-reentrancy fix и grouped two-attempt retirement вошёл в HEAD
+`ac55e3f98dfc0bd3f33b69f7cfa9b5524441e8d9`; установленная AEX build
+`4b4c314642e54a56b0c1877c0fe5d4cb` не менялась. Root один раз применил helper:
+старый daemon PID4484 завершён, новый PID22388 стартовал в
+`2026-10-10T17:38:00.558Z`; runtime aggregate SHA
+`9620ddef7f61313b43cf12a32cd6bdf6581b2246bc050b8a809a2fd9619b5fea`.
+Изменён только `panel-actions`; остальные шесть asset hashes совпали, CDP reload
+выполнен один раз. Точные guards, старый canonical request, обе exit proofs,
+источники и loaded hashes, AE PID31728/36520/38316 и AME PID35400 сохранены.
+Первый read-back был `controller-not-idle`; последующий независимый read-back —
+PASS.
+
+Новая grouped capture `9895a6cc-48bf-42e1-a8f5-941392ab464a` / SHA `034a5fb6…`,
+actual HTTP 200 disposition `967a32cb-1b7e-43a1-a07a-b4b947a38c9b` / SHA
+`da4d7c2b3c2a1eed9150d47c3cc27845a2fe4683fdb226912992e047b1fc4839` и group-final
+`2490b6316d51f64390f6477bfd3615760cba0e73733bd74467e8ad9ef521ae15` (2 members,
+`outstanding=[]`) сохранены. Typed reconcile `bfe5b762…` завершён, но fresh
+trusted panel GET adoption не подтвердил: прежняя группа `f306…` и новая `82…`
+остались unresolved. Passive network events содержат только два прежних GET
+duration ~6.5/9.75 с; response body не захвачен. Ранее connect/project reads
+показывали path/revision `77594573`/762 items; dirty/undo не доказаны. Старый run
+`0284d412…` остаётся `UNKNOWN/no-replay`.
+Новый ручной CEP run `act_cd97635d65e64d10b9becf77fe84b8f8`, rev2, instance
+`89f7ba8c-1260-4d7c-8f87-98b1f0931bad`, завершился как run
+`172deffe-d568-4554-9c19-5d3980ead603`: `fixture_native_refusal`, 55.049 с,
+`UNKNOWN/no-replay`. Signed capture сообщает
+`fixture_baseline_saved_source_preserved`, project path dirty=true/revision104,
+project handle до/после одинаков, canonical `5d5b2843…`; stage signed reason —
+`stage_baseline_not_clean`, `nativeSaveDispatches=0`, `fixtureMutationDispatches=0`,
+`MayHaveOccurred=true` из-за попытки `OpenProject`. Guard объединяет
+`capturedhandle==opened && !dirty`; по receipt нельзя определить, какая часть
+проверки отказала. Passive brackets: `302f73e7-8e11-4a5b-8b8b-66f9fff610ca` /
+SHA `9fb10d62…` и `c0f9e75e-bdb6-4da4-a457-ccdd5f3e7fd4` / SHA `9ffa0f85…`;
+private guard `0c316108…`, canonical raw SHA `e958f65a…`. Источники совпали с
+загруженным daemon PID22388/runtime `9620ddef…`; это не подтверждает live acceptance
+idle fix. Пользователь закрыл capture PID47792 и stage PID37588; root подтвердил
+held-handle exit0: capture `2026-10-10T17:47:47.3448011Z` / SHA
+`6e783c2aec30ebd413f36cc6a5c4d2977c46eec02053fe25de0bdee66bf3f785`, stage
+`2026-10-10T17:47:43.5583240Z` / SHA
+`2e437911996cb352f21aba39b4517b4e31f37c9be24001e0814a608d1c078552`. Replay
+запрещён. Около 17:56–17:57 root получил `bridge_unreachable/ECONNREFUSED` на 3456;
+PID22388 отсутствовал, TCP 3456 не слушал, stderr содержит только startup без
+exception. Причина недоступности не установлена; root восстанавливает daemon.
+Diagnostics build `40f21d3ea12f4dbd8c0d743502367c1a` / SHA
+`91e623d27ba5839afea93f983a699d0d7a7f1d7fea9c0245f1116fdf9ba41334` содержит 849
+C++ checks и split stage-failure/read-back diagnostics; точная AEX атомарно
+установлена root, admin process PID44352 exit0; receipt `installed=true/error=null`,
+независимый SHA установленного файла совпал. Live проверок нет; synthetic host facts не Adobe evidence. AME submit/
+encoding и media не выполнены.
+
 **Последний этап, 10 октября — offline native bootstrap и bounded maintenance.**
 Build `build-30d58da3cfc14850bc2d343958e726be`, SHA-256
 `efad49c638432a257db7488aecd9164845f62710f7f9544b8e2c8ca19b2ff35b`; root установил

@@ -96,8 +96,9 @@ if ($smokeResult.legacyProtocolChecks -ne 215 -or $smokeResult.signedFixtureChec
     $smokeResult.startupDiagnosticsChecks -lt 100 -or $smokeResult.nativeRootContractChecks -lt 35 -or
     $smokeResult.startupHarnessRefusals -ne 3 -or $smokeResult.startupHarnessHostAuthorizations -ne 0 -or
     $smokeResult.idleDispatchChecks -lt 35 -or $smokeResult.idleHarnessScope -notmatch 'production C\+\+ gate.*Adobe suites/hooks not executed' -or
+    $smokeResult.stageBaselineChecks -lt 300 -or $smokeResult.stageReadbackHarnessScope -notmatch 'production C\+\+ readback guard.*Adobe suites/hooks not executed' -or
     $smokeResult.startupHarnessScope -notmatch 'EntryPoint/Adobe suites/hooks not executed') {
-    throw 'Required unchanged legacy/signed and bounded startup/root/idle dispatch contract cases are absent.'
+    throw 'Required unchanged legacy/signed and bounded startup/root/idle/readback contract cases are absent.'
 }
 $grantSmokeOutput = & node (Join-Path $repoRoot 'scripts\ame-native-fixture-grant-smoke.js') 2>&1
 $grantSmokeExit = $LASTEXITCODE

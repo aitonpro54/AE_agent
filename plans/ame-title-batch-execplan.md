@@ -56,7 +56,8 @@ Flash в этой задаче. Подробное фактическое сос
 - [x] Root self-review idle-gate fix: build `4b4c314642e54a56b0c1877c0fe5d4cb`,
   AEX SHA `b77938fade33406e5c22e6dfe8f4bc42c7df1d90c0cfc2c885ab5a58afdf73a3`,
   474 C++ checks PASS; root atomically installed exact build with previous AEX backup.
-  Grouped lifecycle suites: 36 PASS; latest CEP/runtime deployment is still pending.
+  Grouped lifecycle suites: 36 PASS; на этом историческом checkpoint новый
+  CEP/runtime deployment ещё ожидал выполнения (см. актуальный live-блок ниже).
 
 ## Decision Log
 
@@ -287,12 +288,31 @@ Flash в этой задаче. Подробное фактическое сос
   не загрузили.
 - Grouped lifecycle: 36 PASS; grant86, runner34, EPERM disposition17, backend28,
   panel VM48 actions/16 scenarios PASS; rules, 4 JS syntax и diff PASS. Полный planning
-  smoke не повторялся. Root закрыл оба fixture child: PID44260 и PID44312 — exact held
-  handle exit0; capture proof SHA `52379a15…a5d242e` в 17:20:30.4155291Z, stage proof
+  smoke не повторялся. Пользователь закрыл оба fixture child; root подтвердил exact held
+  handle exit0 для PID44260 и PID44312 —
+  capture proof SHA `52379a15…a5d242e` в 17:20:30.4155291Z, stage proof
   SHA `2b38d94a…f6547a5e` в 17:20:37.5898964Z. Run `0284d412…` и причина
   `fixture_native_refusal` остаются historical `UNKNOWN/no-replay`, несмотря на exit
   proofs; ledger `da61c8dcb6d61d499282821e7ab8e33a` фиксирует consumed-create-fixture,
-  consumed-snapshot и unknown. В подписанном receipt причина — nested idle при open AEP;
-  source guard сохраняет исходную причину. Это не M3 acceptance и не доказательство
+  consumed-snapshot и unknown. Подписанная причина отказа —
+  `receipt_attempt_terminal_no_replay`; nested idle при открытии AEP локализован
+  анализом кода, не receipt trace. Это не M3 acceptance и не доказательство
   отсутствия native execution. M3/M4 BLOCKED: production snapshot backend, AME
   submit/encoding/media и полная двухвариантная цепочка не приняты.
+- **Live maintenance, 10 октября. Progress:** root применил helper один раз; daemon
+  PID22388/runtime `9620ddef…`, изменён только `panel-actions`, остальные 6 hashes
+  совпали, один CDP reload. Manual run `172deffe…` завершился
+  `fixture_native_refusal`, `UNKNOWN/no-replay` (55.049 с).
+  **Decision Log:** пользователь закрыл capture/stage PID47792/37588; root проверил
+  held-handle exit0 (proof SHA `6e783c2a…f3f785`, `2e437911…c078552`). Новая
+  capture/disposition HTTP200/group-final сохранены, ledger `outstanding=[]`, typed
+  reconcile завершён, но trusted GET adoption не подтверждён (прежняя `f306…` и
+  новая `82…` unresolved). **Validation:** signed stage reason
+  `stage_baseline_not_clean`; capture dirty=true/rev104, handle прежний; combined
+  guard не локализует причину. `MayHaveOccurred=true` из-за attempted `OpenProject`,
+  при нулевых save/mutation dispatches. Runtime/source совпали, но live idle-fix не
+  доказан. Около 17:56–17:57 bridge unreachable/ECONNREFUSED: PID22388 отсутствовал,
+  TCP3456 закрыт, stderr startup-only; причина неизвестна, root восстанавливает.
+  Diagnostics AEX `40f21d3e…`/SHA `91e623d2…`, 849 C++ checks, атомарно установлена
+  PID44352 exit0; installation read-back pending, live validation absent. M3/M4
+  не приняты.

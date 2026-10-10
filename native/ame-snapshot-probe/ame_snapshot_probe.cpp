@@ -4,6 +4,7 @@
 #include "fixture_grant.h"
 #include "fixture_program.h"
 #include "probe_idle_dispatch.h"
+#include "probe_stage_readback.h"
 #include "AEConfig.h"
 #include "AE_GeneralPlug.h" // also includes AE_GeneralPlugOld.h (CompSuite12)
 #include "AE_AdvEffectSuites.h"
@@ -118,6 +119,8 @@ struct State {
     probe::Handle original_source_pin;
     std::string original_source_sha;
     probe::FixtureGrant first_grant;
+    probe::StageProjectReadback stage_readback;
+    bool stage_readback_available = false;
     unsigned variant = 0, native_saves = 0, fixture_dispatches = 0;
     std::string Base() const {
         if (signed_fixture) return "\"schema\":\"ae-agent.native-fixture-probe.v2\",\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + probe::Json(role) + ",\"fixture\":" + probe::Json(fixture_kind) + ",\"stageId\":" + probe::Json(stage_id) + ",\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"rootPath\":" + probe::Json(binding.root_path) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"nativeSaveDispatches\":" + Number(native_saves) + ",\"fixtureMutationDispatches\":" + Number(fixture_dispatches) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
@@ -337,18 +340,25 @@ struct State {
         auto baseline_pin = probe::LockReadFile(root->Child(L"baseline.aep"));
         AEGP_ProjectH opened = nullptr; const auto input = root->Child(L"baseline.aep"); mutation_dispatched = true;
         AE(suites.project->AEGP_OpenProjectFromPath(reinterpret_cast<const A_UTF16Char*>(input.c_str()), &opened), "OpenOwnedStageBaseline");
-        auto baseline = Capture(); Need(baseline.handle == opened && !baseline.dirty, "stage_baseline_not_clean"); FixtureEvidence(baseline, 0);
+        auto baseline = Capture();
+        RecordStageReadback(baseline, opened, 0, input, baseline_sha);
+        stage_readback.observed_file_sha = root->Hash(L"baseline.aep"); stage_readback.file_hash_observed = true;
+        stage_readback.observed_baseline_sha = stage_readback.observed_file_sha; stage_readback.baseline_hash_observed = true;
+        stage_readback.Require(); FixtureEvidence(baseline, 0); stage_readback.fixture_evidence_verified = true;
         std::string outputs = "[";
         for (unsigned i = 1; i <= 2; ++i) {
+            stage_readback_available = false; // never attach facts from the preceding file to a failed later dispatch
             variant = i; FixedScript(fixture_program::SelectVariant(i), true);
             auto current = Capture(); FixtureEvidence(current, i);
             const wchar_t* name = i == 1 ? L"variant-01.aep" : L"variant-02.aep";
             NativeSaveAs(current, name); const auto output_sha = root->Hash(name);
             AEGP_ProjectH reopened = nullptr; const auto output_path = root->Child(name);
             AE(suites.project->AEGP_OpenProjectFromPath(reinterpret_cast<const A_UTF16Char*>(output_path.c_str()), &reopened), "ReopenOwnedFixtureVariant");
-            auto readback = Capture(); FixtureEvidence(readback, i);
-            Need(readback.handle == reopened && !readback.dirty && readback.path == probe::Utf8(output_path) &&
-                root->Hash(name) == output_sha && root->Hash(L"baseline.aep") == baseline_sha, "variant_reopen_or_baseline_preservation_failed");
+            auto readback = Capture();
+            RecordStageReadback(readback, reopened, i, output_path, output_sha);
+            stage_readback.observed_file_sha = root->Hash(name); stage_readback.file_hash_observed = true;
+            stage_readback.observed_baseline_sha = root->Hash(L"baseline.aep"); stage_readback.baseline_hash_observed = true;
+            stage_readback.Require(); FixtureEvidence(readback, i); stage_readback.fixture_evidence_verified = true;
             if (i != 1) outputs += ',';
             outputs += "{\"variant\":" + Number(i) + ",\"path\":" + probe::Json(probe::Utf8(output_path)) + ",\"sha256\":" + probe::Json(output_sha) +
                 ",\"reopened\":true,\"readback\":" + readback.IdentityJson() + "}";
@@ -356,6 +366,16 @@ struct State {
         Receipt(L"signed-variants.json", "\"status\":\"two_owned_variants_reopened\",\"grant\":" + grant.ReceiptJson() +
             ",\"baselineSha256\":" + probe::Json(baseline_sha) + ",\"outputs\":" + outputs + "],\"ameSubmissionAttempted\":false");
         phase = Phase::Terminal;
+    }
+    void RecordStageReadback(const Snapshot& snapshot, AEGP_ProjectH opened, unsigned variant_index,
+        const std::wstring& expected_path, const std::string& expected_file_sha) {
+        stage_readback = {}; stage_readback.variant = variant_index;
+        stage_readback.opened_handle = reinterpret_cast<std::uintptr_t>(opened);
+        stage_readback.observed_handle = reinterpret_cast<std::uintptr_t>(snapshot.handle);
+        stage_readback.expected_path = probe::Utf8(expected_path); stage_readback.observed_path = snapshot.path;
+        stage_readback.expected_file_sha = expected_file_sha; stage_readback.expected_baseline_sha = baseline_sha;
+        stage_readback.dirty = snapshot.dirty; stage_readback.graph_sha = snapshot.graph_sha; stage_readback.revision = snapshot.revision;
+        stage_readback_available = true; // preserve completed Capture facts even if a following pinned hash read fails
     }
     void Tick() {
         if (phase == Phase::Terminal) return;
@@ -379,7 +399,8 @@ struct State {
     }
     void Refuse(const std::string& reason) noexcept {
         phase = Phase::Terminal;
-        try { Receipt(signed_fixture ? L"signed-refusal.json" : L"refusal.json", "\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":" + Bool(mutation_dispatched) + ",\"replayAllowed\":false"); } catch (...) { /* no retry or dialog */ }
+        try { Receipt(signed_fixture ? L"signed-refusal.json" : L"refusal.json", "\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":" + Bool(mutation_dispatched) + ",\"replayAllowed\":false" +
+            (signed_fixture && role == "stage" && stage_readback_available ? ",\"stageReadback\":" + stage_readback.DiagnosticsJson() : "")); } catch (...) { /* no retry or dialog */ }
     }
     void RefuseStartup(const std::string& reason) noexcept {
         phase = Phase::Terminal;

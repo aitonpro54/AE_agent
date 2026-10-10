@@ -3,6 +3,7 @@
 #include "fixture_grant.h"
 #include "fixture_program.h"
 #include "probe_idle_dispatch.h"
+#include "probe_stage_readback.h"
 #include <iostream>
 #include <functional>
 #include <winioctl.h>
@@ -590,9 +591,88 @@ int wmain(int argc, wchar_t** argv) {
             Require(candidate.Hash(L"baseline.aep") == stage_baseline_sha, "idle_dispatch_claimed_baseline_unchanged");
         }
         const int idle_dispatch_checks = passed - before_idle_dispatch;
+        const int before_stage_readback = passed;
+        // Use the production readback guard and real owned-file/grant/receipt
+        // barriers. Host facts below are synthetic; no Adobe API runs here.
+        // Baseline and both fixed variants must distinguish handle/dirty/path
+        // refusals without converting any consumed phase into a retry.
+        const char* baseline_reasons[] = {"", "stage_baseline_project_handle_mismatch", "stage_baseline_dirty",
+            "stage_baseline_project_handle_mismatch", "stage_baseline_project_path_mismatch", "stage_baseline_bytes_changed",
+            "stage_baseline_file_hash_unobserved", "stage_baseline_preservation_failed", "stage_baseline_preservation_hash_unobserved",
+            "stage_baseline_project_handle_mismatch"};
+        const char* variant_reasons[] = {"", "variant_reopen_project_handle_mismatch", "variant_reopen_dirty",
+            "variant_reopen_project_handle_mismatch", "variant_reopen_project_path_mismatch", "variant_reopen_output_bytes_changed",
+            "variant_reopen_output_hash_unobserved", "variant_reopen_baseline_preservation_failed", "variant_reopen_baseline_hash_unobserved",
+            "variant_reopen_project_handle_mismatch"};
+        for (unsigned variant_index = 0; variant_index <= 2; ++variant_index) for (int failure_mode = 0; failure_mode < 10; ++failure_mode) {
+            const auto token = probe::RandomToken();
+            const auto candidate_path = parent + L"\\probe-" + probe::Wide(token);
+            Require(CreateDirectoryW(candidate_path.c_str(), nullptr) != 0, "stage_readback_owned_root");
+            probe::OwnedRoot candidate(candidate_path, token);
+            ExternalWriteNew(candidate.Child(L"launch.manifest"), "protocol=2\n");
+            ExternalWriteNew(candidate.Child(L"baseline.aep"), stage_baseline);
+            candidate.ClaimStage("offline stage readback owner\n", stage_baseline_sha);
+            const auto baseline_id = FileId(candidate.Child(L"baseline.aep"));
+            probe::OwnedRoot contender(candidate_path, token);
+            Reject("stage_readback_single_owner_before_host_facts", [&] { contender.ClaimStage("unexpected second owner\n", stage_baseline_sha); });
+            auto stage_binding = binding; stage_binding.root_path = probe::Utf8(candidate_path); stage_binding.nonce = token;
+            auto stage_fields = idle_fields; stage_fields["root_path"] = stage_binding.root_path; stage_fields["nonce"] = token;
+            stage_fields = seal(stage_fields);
+            auto stale = stage_fields; stale["expected_sha256"] = std::string(64, 'e'); stale = seal(stale);
+            Reject("stage_readback_stale_signed_grant_before_consume", [&] {
+                probe::ValidateFixtureGrant(stale, stage_binding, key, "stage-variants", expected, stage, "saved-dirty", now);
+            });
+            Require(!candidate.Exists(L"signed-stage-variants.consumed.json"), "stage_readback_stale_grant_no_consume");
+            const auto stage_grant = probe::ValidateFixtureGrant(stage_fields, stage_binding, key, "stage-variants", expected, stage, "saved-dirty", now);
+            probe::ConsumeFixtureGrant(candidate, stage_grant);
+            auto pinned = probe::LockReadFile(candidate.Child(L"baseline.aep"));
+            probe::StageProjectReadback readback; readback.variant = variant_index;
+            readback.opened_handle = failure_mode == 9 ? 0 : 19;
+            readback.observed_handle = failure_mode == 9 ? 0 : (failure_mode == 1 || failure_mode == 3 ? 17 : 19);
+            readback.expected_path = probe::Utf8(candidate.Child(variant_index == 0 ? L"baseline.aep" : variant_index == 1 ? L"variant-01.aep" : L"variant-02.aep"));
+            readback.observed_path = readback.expected_path + (failure_mode == 4 ? ".foreign" : "");
+            readback.dirty = failure_mode == 2 || failure_mode == 3;
+            readback.expected_file_sha = readback.expected_baseline_sha = stage_baseline_sha;
+            readback.observed_file_sha = failure_mode == 5 ? std::string(64, 'f') : candidate.Hash(L"baseline.aep");
+            readback.observed_baseline_sha = failure_mode == 7 ? std::string(64, 'a') : candidate.Hash(L"baseline.aep");
+            readback.file_hash_observed = failure_mode != 6; readback.baseline_hash_observed = failure_mode != 8;
+            readback.graph_sha = std::string(64, 'd'); readback.revision = "104";
+            int output_callbacks = 0; bool terminal = false; std::string reason;
+            try { readback.Require(); ++output_callbacks; terminal = true; }
+            catch (const probe::Failure& error) {
+                reason = error.what(); terminal = true;
+                candidate.WriteNew(L"signed-refusal.json", probe::SignedFixtureReceipt("{\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) +
+                    ",\"fixtureMutationMayHaveOccurred\":true,\"replayAllowed\":false,\"stageReadback\":" + readback.DiagnosticsJson() + "}", key));
+            }
+            Require(terminal && output_callbacks == (failure_mode == 0 ? 1 : 0), "stage_readback_refusal_before_output_callback");
+            Require(reason == (variant_index == 0 ? baseline_reasons[failure_mode] : variant_reasons[failure_mode]), "stage_readback_exact_failed_predicate");
+            const auto facts = readback.DiagnosticsJson();
+            Require(facts.find("\"variantIndex\":" + std::to_string(variant_index)) != std::string::npos &&
+                facts.find("\"cleanRequired\":true") != std::string::npos && facts.find("\"fixtureEvidenceVerified\":false") != std::string::npos,
+                "stage_readback_fixed_variant_and_unverified_evidence_facts");
+            Require(facts.find(key) == std::string::npos && facts.find(stage_grant.mac) == std::string::npos, "stage_readback_no_key_or_grant_mac_in_diagnostics");
+            if (failure_mode != 0) {
+                const auto body = SignedBody(candidate.Read(L"signed-refusal.json"), key);
+                Require(body.find("\"stageReadback\":" + facts) != std::string::npos && body.find(probe::Json(reason)) != std::string::npos &&
+                    body.find("\"replayAllowed\":false") != std::string::npos, "stage_readback_signed_precise_facts_no_replay");
+            }
+            if (failure_mode == 1 || failure_mode == 2 || failure_mode == 3 || failure_mode == 9)
+                Require(facts.find(std::string("\"projectHandleMatches\":") + (failure_mode == 2 ? "true" : "false")) != std::string::npos &&
+                    facts.find(std::string("\"dirty\":") + (failure_mode == 2 || failure_mode == 3 ? "true" : "false")) != std::string::npos,
+                    "stage_readback_handle_and_dirty_independent_facts");
+            if (failure_mode == 6 || failure_mode == 8)
+                Require(facts.find(failure_mode == 6 ? "\"fileSha256Observed\":null" : "\"baselineSha256Observed\":null") != std::string::npos,
+                    "stage_readback_failed_hash_not_fabricated");
+            Reject("stage_readback_consumed_phase_no_replay", [&] { probe::ConsumeFixtureGrant(candidate, stage_grant); });
+            Require(candidate.Hash(L"baseline.aep") == stage_baseline_sha && FileId(candidate.Child(L"baseline.aep")) == baseline_id &&
+                !candidate.Exists(L"variant-01.aep") && !candidate.Exists(L"variant-02.aep"), "stage_readback_baseline_bytes_identity_preserved_no_aep_outputs");
+            KernelRefusal(DeleteFileW(candidate.Child(L"owner.lock").c_str()) != 0, "stage_readback_owner_held_after_terminal_refusal");
+        }
+        const int stage_baseline_checks = passed - before_stage_readback;
         std::cout << "{\"offline\":true,\"hostLoaded\":false,\"legacyProtocolChecks\":" << legacy_checks << ",\"signedFixtureChecks\":" << signed_checks
             << ",\"startupDiagnosticsChecks\":" << startup_checks << ",\"nativeRootContractChecks\":" << root_contract_checks
             << ",\"idleDispatchChecks\":" << idle_dispatch_checks << ",\"idleHarnessScope\":\"production C++ gate with callback-double OpenProjectFromPath and real receipt publication; Adobe suites/hooks not executed\""
+            << ",\"stageBaselineChecks\":" << stage_baseline_checks << ",\"stageReadbackHarnessScope\":\"production C++ readback guard with synthetic host facts and real grant/Claim/publication barriers; Adobe suites/hooks not executed\""
             << ",\"startupHarnessScope\":\"shared C++ trust/time gates and signed refusal publication; EntryPoint/Adobe suites/hooks not executed\",\"startupHarnessRefusals\":" << startup_refusals
             << ",\"startupHarnessHostAuthorizations\":" << startup_host_authorizations << ",\"passed\":" << passed << ",\"status\":\"passed\",\"adversarialInterleavings\":" << adversarial_interleavings << ",\"destinationGuardRefusals\":" << guard_refusals << ",\"guardHarnessFixtureDispatches\":" << guard_fixture_dispatches << ",\"guardHarnessExtendScriptSaves\":" << guard_script_saves << ",\"guardHarnessNativeSaves\":" << guard_native_saves << ",\"destinationWriteContract\":\"destination_write_contract_unverified\",\"liveSemantics\":\"UNVERIFIED\",\"checks\":[";
         for (size_t i = 0; i < checks.size(); ++i) { if (i) std::cout << ','; std::cout << probe::Json(checks[i]); }
