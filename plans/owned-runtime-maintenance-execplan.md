@@ -2,7 +2,11 @@
 
 **Статус:** исходники и offline engineering checks завершены; R1 подтверждён. R2 panel proof получен, server adoption заблокирован; R3 aggregate acceptance заблокирована. Live acceptance и M3/M4 не заявляются. Root — единственный live controller.
 
+**Текущий блок R4:** пользователь поручил устранить восстановление панели и проверить автоматический lifecycle без Flash и новых подтверждений. Исправления готовятся в isolated worktree от `85d0c23`; actual ROOT/source74 остаётся неизменным до доказанного выхода текущего daemon.
+
 ## Progress
+
+- **R4 issuer:** рабочий commit `36d7c93` в worktree отделил reviewed CURRENT issuer `2bc` от исторического `158f`; exact loaded=disk=approved CURRENT, original proof и private/manual gates сохранены. Sol/xhigh — writer, Sol/high — read-only review PASS; recovery smoke 50, maintenance smoke 15, syntax4/diff PASS, 14 archive fixtures совпали с ROOT. В живой ROOT эта правка ещё не применена.
 
 - **R1:** закрыты ровно два owned fixture children; их original native outcome остаётся `UNKNOWN/noReplay`, `nativeExecutionProven=false`. Отдельный never-admitted startup retirement подтвердил PID 35300 через тот же held HANDLE (`WAIT_OBJECT_0`, exit 0, `2026-10-11T13:19:56.496Z`). Исходный unified exec 97441 естественно завершился с exit 0, stdout совпал, sealed completion подтверждён; controller force не применялся. Сохранён immutable historical snapshot подписанного source 71.
 - **Successor:** reviewed patch 5 применён к ROOT74. С текущим S1 `d0c414…` запущен owned PID 26540, generation `896f2ae3…`; launch естественно завершился с exit 0 при живом daemon около 13:24, stdio изолирован. Read-back PID/kernel identity/image SHA и четыре protected identities совпал; процесс остался жив, эффектов над ними не было.
@@ -12,6 +16,8 @@
 - **R3:** immutable public no-args `refreshNativeFixtureAbandonments` recipe и wrapper review PASS; live aggregate остаётся заблокирован тем же actor/issuer cycle. R2 panel proof observed, server adoption not accepted.
 
 ## Decision Log
+
+- Для R4 Sol/ultra подтвердил отдельный `drained_idle_maintenance_retirement`: genuine drain ACK + fresh current draining/idle state, exact held Node HANDLE и фактический exit barrier. `executionFenced=true`, `ingressFenced=false`; это не `NEVER_ADMITTED` и не обычный graceful shutdown. `launches.size` — сохранённые lifetime entries; вместо выдуманного Map=0 требуется полный неизменный pre-start native census, включая probe roots/owner/reservation/manifest, вместе с idle/job/exit proofs. Native effect/receipt/succession ещё не выполнены.
 
 - R1 закрывает только exact disposable fixture children; их exit proofs не меняют исходный `UNKNOWN/noReplay` и не доказывают native operation success/admission release.
 - Never-admitted startup retirement — отдельная authority для immutable signed source 71, same-held-handle exit, sealed completion original exec 97441 и post-exit inventory. Его startup CAP привязан к PID 35300 и не переносится на successor PID 26540.
