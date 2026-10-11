@@ -25,6 +25,8 @@
   var FIXTURE_KEY="codexAeAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
   var nativeAbandonments=Object.create(null),nativeAbandonmentTrusted=Object.create(null),nativeAbandonmentLookupPending=false;
   var NATIVE_ABANDONMENT_KEY="codexAeNativeFixtureAbandonmentsV1";
+  var PREPHASE_ID="4f06da6d-4b76-40b2-b70b-a77db3e1e9c7",PREPHASE_RUN="5a4ac6eb-7b2e-42ce-8af9-7d03e52c17c5",PREPHASE_KEY="codexAeNativeFixturePrephaseRecoveryV1";
+  var prephaseCertificate=null,prephaseTrusted=false,prephaseLookupPending=false,guardRefreshPending=false,guardRefreshSequence=0,guardRefreshResult=null;
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -39,7 +41,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !prephaseValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -129,6 +131,8 @@
     snapshot.ameFixtureDisposition=fixtureDispositionValid(FIXTURE_ID,true) ? {dispositionId:fixtureDisposition.value.dispositionId,status:"abandoned_reviewed",guardDisposition:"released",historicalOutcome:"unknown",aeExecutionProven:false,replayAllowed:false} : null;
     snapshot.nativeFixtureAbandonmentLookupPending=nativeAbandonmentLookupPending;
     snapshot.nativeFixtureAbandonments=Object.keys(nativeAbandonments).filter(function(id){return nativeAbandonmentValid(id,true);}).map(function(id){var v=nativeAbandonments[id].value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
+    snapshot.trustedGuardRefresh={pending:guardRefreshPending,sequence:guardRefreshSequence,result:guardRefreshResult && clone(guardRefreshResult)};
+    snapshot.nativeFixturePrephaseRecovery=prephaseValid(PREPHASE_ID,true) ? {requestId:PREPHASE_ID,runId:PREPHASE_RUN,status:"prephase_admission_certified",certificateSha256:prephaseCertificate.sha256,entrySha256:prephaseCertificate.readBack.entrySha256,currentActor:clone(prephaseCertificate.readBack.currentActor),scope:"new_disjoint_fixture_only",historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
     return snapshot;
   }
   // Synchronous SHA-256 keeps content out of durable receipts in the CEP runtime.
@@ -306,6 +310,46 @@
       if(onDone)onDone(fixtureDispositionTrusted);
     });
   }
+  function prephaseValid(id,trusted) {
+    var saved=prephaseCertificate,v=saved && saved.value,e=v && v.entry,back=saved && saved.readBack,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,rt=back && back.runtime;
+    var actorMatches=back && JSON.stringify(back.currentActor)===JSON.stringify(currentFixtureActor());
+    // A completed lookup remains valid only for its exact current actor. Once
+    // an epoch/generation changes, restoring cached state cannot re-adopt it;
+    // the fixed passive server lookup must renew the same immutable certificate.
+    if(!actorMatches)prephaseTrusted=false;
+    if(id!==PREPHASE_ID || !nativeFixtureRecord(id) || r.runId!==PREPHASE_RUN || r.code!=="fixture_runner_launch_identity_changed" || !saved || saved.schema!=="ae-agent.native-fixture-prephase-recovery.v1.envelope" || saved.sha256!==sha256(JSON.stringify(v)) ||
+      !/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "") || !v || v.schema!=="ae-agent.native-fixture-prephase-recovery.v1" || v.status!=="prephase_admission_certified" || v.authority!=="server_proof_phase_authority_exhausted" ||
+      !contract.UUID_REGEX.test(v.certificateId || "") || !contract.UUID_REGEX.test(v.captureId || "") || !/^[a-f0-9]{64}$/.test(v.captureSha256 || "") || !v.selector || v.selector.requestId!==id || v.selector.runId!==PREPHASE_RUN || v.scope!=="new_disjoint_fixture_only" ||
+      v.historicalOutcome!=="unknown" || v.nativeExecutionProven!==false || v.processExitProven!==false || v.nativeEndpointInertProven!==false || v.replayAllowed!==false || v.phaseAuthorityNeverIssued!==true ||
+      !e || e.originalRequestId!==id || e.runId!==PREPHASE_RUN || e.action!==r.action || e.effect!==r.effect || e.actionId!==run.provenance.actionId || e.proposalRevision!==run.provenance.proposalRevision || e.privateSignatureSha256!==sha256(r.signature) || e.panelReceiptHash!==sha256(JSON.stringify(p)) || e.canonicalRunProjectionHash!==sha256(JSON.stringify(run)) || e.canonicalRunRecordHash!=="ffc0271d8a36a092fb68ada898905e00e96c243d9b0ed8ce50dc0d5d57306634" ||
+      !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
+      !back || back.schema!=="ae-agent.native-fixture-prephase-recovery.v1.read-back" || back.certificateSha256!==saved.sha256 || back.entrySha256!==sha256(JSON.stringify(e)) || back.scope!==v.scope || back.historicalOutcome!=="unknown" || back.nativeExecutionProven!==false || back.processExitProven!==false || back.nativeEndpointInertProven!==false || back.replayAllowed!==false || back.phaseAuthorityNeverIssued!==true ||
+      !back.currentActor || back.currentActor.panelInstanceId!==instanceId || !actorMatches || !rt || !/^[a-f0-9]{64}$/.test(rt.loadedRuntimeSha256 || "") || rt.currentRuntimeSha256!==rt.loadedRuntimeSha256 || !rt.panelAssetHashes || !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel-actions.js"] || "") || !/^[a-f0-9]{64}$/.test(rt.panelAssetHashes["panel.js"] || "") || !back.installed || JSON.stringify(back.installed.hashes)!==JSON.stringify(rt.panelAssetHashes) || trusted && !prephaseTrusted)return false;
+    return !storageFailure;
+  }
+  function refreshPrephaseCertificate(onDone) {
+    prephaseTrusted=false;
+    if(!records[PREPHASE_ID]){prephaseCertificate=null;if(onDone)onDone(true);return;}
+    if(prephaseLookupPending || !bindings || typeof bindings.lookupNativeFixturePrephaseRecovery!=="function"){if(onDone)onDone(false);return;}
+    prephaseLookupPending=true;var startedActor=JSON.stringify(currentFixtureActor());
+    bindings.lookupNativeFixturePrephaseRecovery(function(error,saved) {
+      prephaseLookupPending=false;
+      if(error || startedActor!==JSON.stringify(currentFixtureActor())){if(onDone)onDone(false);return;}
+      if(saved===null){prephaseCertificate=null;if(onDone)onDone(true);return;}
+      var prior=prephaseCertificate;prephaseCertificate=saved && clone(saved);
+      if(active || life().busy || rawState().recoveryTransport || !prephaseValid(PREPHASE_ID,false)){prephaseCertificate=prior;if(onDone)onDone(false);return;}
+      try{storage.setItem(PREPHASE_KEY,JSON.stringify(prephaseCertificate));prephaseTrusted=true;}catch(_){prephaseTrusted=false;}
+      if(onDone)onDone(prephaseTrusted);
+    });
+  }
+  function refreshTrustedGuards(onDone) {
+    if(guardRefreshPending || humanLookupPending || fixtureLookupPending || nativeAbandonmentLookupPending || prephaseLookupPending || active || life().busy || rawState().recoveryTransport || storageFailure)return {accepted:false,code:"trusted_guard_refresh_not_idle"};
+    guardRefreshPending=true;guardRefreshResult=null;guardRefreshSequence++;
+    var sequence=guardRefreshSequence,actor=JSON.stringify(currentFixtureActor());
+    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);prephaseTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
+    refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(finish);});});});
+    return {accepted:true,sequence:sequence,lookupPending:guardRefreshPending};
+  }
   function recoveryValid(id,confirmed) {
     var side=recoveries[id],original=records[id],value=side && side.envelope,common=value && value.schema==="ae-agent-common-title-assembly-recovery.v1.envelope",r=value && (common ? value.value : value.receipt),p=original && original.result && original.result.run && original.result.run.provenance;
     if(!original || original.action!=="plan.run" || original.state!=="unknown" || !side || !r ||
@@ -427,6 +471,7 @@
   function eligibility(name,args) {
     if (!bound || !bindings.handlers[name]) return {available:false,reasonCodes:["handler_unavailable"]};
     if (storageFailure) return {available:false,reasonCodes:[storageFailure]};
+    if((guardRefreshPending || prephaseLookupPending) && !passiveRead(name))return {available:false,reasonCodes:["trusted_guard_refresh_pending"]};
     if(humanLookupPending && !passiveRead(name))return {available:false,reasonCodes:["human_settlement_lookup_pending"]};
     if(fixtureLookupPending && !passiveRead(name))return {available:false,reasonCodes:["fixture_disposition_lookup_pending"]};
     if(nativeAbandonmentLookupPending && !passiveRead(name))return {available:false,reasonCodes:["native_fixture_abandonment_lookup_pending"]};
@@ -562,6 +607,7 @@
     invoke:function(envelope) {return invoke(envelope,"programmatic");},getResult:getResult};
   Object.defineProperty(api,"readAmeFixtureUIGuard",{value:readAmeFixtureUIGuard,writable:false,configurable:false,enumerable:false});
   Object.defineProperty(api,"readNativeFixtureGuard",{value:readNativeFixtureGuard,writable:false,configurable:false,enumerable:false});
+  Object.defineProperty(api,"refreshTrustedGuards",{value:function(){if(arguments.length)return {accepted:false,code:"trusted_guard_refresh_arguments_forbidden"};return refreshTrustedGuards();},writable:false,configurable:false,enumerable:false});
   Object.defineProperty(api,"refreshNativeFixtureAbandonments",{value:function(){if(arguments.length)return {accepted:false,code:"fixture_abandonment_client_evidence_forbidden"};if(nativeAbandonmentLookupPending)return {accepted:false,code:"native_fixture_abandonment_lookup_pending"};refreshNativeFixtureAbandonments();return {accepted:nativeAbandonmentLookupPending,lookupPending:nativeAbandonmentLookupPending};},writable:false,configurable:false,enumerable:false});
   Object.defineProperty(api,"refreshAmeFixtureDisposition",{value:function() {
     if(arguments.length)return {accepted:false,code:"fixture_disposition_refresh_arguments_invalid"};
@@ -583,6 +629,6 @@
       }
     });
     persist();
-    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition,refreshNativeFixtureAbandonments:refreshNativeFixtureAbandonments});
+    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition,refreshNativeFixtureAbandonments:refreshNativeFixtureAbandonments,refreshTrustedGuards:refreshTrustedGuards});
   }};
 });

@@ -267,4 +267,5 @@ async function retire(input,deps) {
     return saved;
   } finally {await lock.release();}
 }
-module.exports={SCHEMA,OBSERVATION,GROUP,TTL,selector,directory,fileFor,observationFile,envelope,canonical,recovered,retirement,capture,authorize,lookupAudited,lookup,retire,hash};
+module.exports={SCHEMA,OBSERVATION,GROUP,TTL,selector,directory,fileFor,observationFile,envelope,canonical,recovered,retirement,capture,authorize,lookupAudited,lookup,retire,hash,
+  actor,guardEntry,guardState,runtime,transportEvidence,frameEvidence,sameTarget};

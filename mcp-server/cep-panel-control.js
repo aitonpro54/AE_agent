@@ -11,7 +11,7 @@ const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|runnin
 // Retired identity accepted only from persisted history, never by the callable catalog.
 const HISTORICAL_RECEIPT_ACTION="recovery.bootstrap";
 const TERMINAL=/^(completed|error|rejected)$/, UUID=contract.UUID_REGEX, MAX_BYTES=1024*1024, MAX_IDENTITIES=1000;
-const PANEL_CONTROL_TOOL_NAMES=new Set(["list_panel_actions","get_panel_state","invoke_panel_action","get_panel_action_result"]);
+const PANEL_CONTROL_TOOL_NAMES=new Set(["list_panel_actions","get_panel_state","invoke_panel_action","get_panel_action_result","refresh_panel_guards"]);
 const isPanelControlTool=name=>PANEL_CONTROL_TOOL_NAMES.has(name);
 const emptySchema={type:"object",additionalProperties:false,properties:{}};
 const invokeSchema={type:"object",additionalProperties:false,required:["requestId","action","args"],properties:{
@@ -25,7 +25,8 @@ const panelControlTools=Object.freeze([
   ["list_panel_actions","Read the fixed CEP action catalog and availability.",emptySchema,true],
   ["get_panel_state","Read redacted CEP state; no native connectivity proof.",emptySchema,true],
   ["invoke_panel_action","Invoke a named CEP action with durable request identity and existing panel gates.",invokeSchema,false],
-  ["get_panel_action_result","Passively read the same request result; never resend.",{type:"object",additionalProperties:false,required:["requestId"],properties:{requestId:{type:"string",pattern:UUID.source}}},true]
+  ["get_panel_action_result","Passively read the same request result; never resend.",{type:"object",additionalProperties:false,required:["requestId"],properties:{requestId:{type:"string",pattern:UUID.source}}},true],
+  ["refresh_panel_guards","Refresh fixed trusted server guard lookups in the idle CEP panel. No selectors/evidence, connect, proposal, native or project execution.",emptySchema,true]
 ].map(([name,description,inputSchema,readOnlyHint])=>Object.freeze({name,description,inputSchema,annotations:{
   readOnlyHint,destructiveHint:!readOnlyHint,idempotentHint:readOnlyHint,openWorldHint:!readOnlyHint
 }})));
@@ -201,7 +202,8 @@ function evaluateViaWebSocket(wsUrl,expression,timeoutMs,WebSocketCtor=global.We
   });
 }
 function fixedExpression(method,args,binding) {
-  if(!["catalog","state","invoke","getResult"].includes(method)) throw problem("method_forbidden");
+  if(!["catalog","state","invoke","getResult","refreshTrustedGuards"].includes(method)) throw problem("method_forbidden");
+  if(method==="refreshTrustedGuards" && args!==undefined)throw problem("refresh_arguments_forbidden");
   const guard=binding ? "var current=api.state();if(current.panelInstanceId!=="+JSON.stringify(binding.panelInstanceId)+
     "||current.panelLifecycleEpoch!=="+JSON.stringify(binding.panelLifecycleEpoch)+"||current.panelGeneration!=="+JSON.stringify(binding.panelGeneration)+")return {ok:false,code:\"panel_binding_changed\"};":"";
   return "(function(){var api=window.AEAgentPanelActions;if(!api||api.protocolVersion!=="+JSON.stringify(PROTOCOL_VERSION)+
@@ -314,6 +316,33 @@ function createPanelControlService(options={}) {
     actions:remoteCatalog(await read("catalog",undefined,budget))};}catch(error){return responseError(error);}}
   async function state(args={},timeoutMs=5000) {try {exact(args,[]);const budget=timeout(timeoutMs,5000);return {ok:true,
     state:remoteState(await read("state",args,budget))};}catch(error){return responseError(error);}}
+  async function maintenanceTransportState() {
+    const index=readIndex(directory),requestIds=[];
+    for(const id of Object.keys(index.identities)) {
+      const prior=loadDurableReceipt(directory,id),unproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
+      if(prior && !unproven && readonlyOrphan.read(safeRoot(directory),id,"disposition")) {
+        try{await readonlyOrphan.validate(orphanContext(),prior);continue;}catch(_){requestIds.push(id);continue;}
+      }
+      if(!prior || /^(accepted|running|unknown)$/.test(prior.state) && (unproven || !PASSIVE_ACTIONS.has(prior.action)) && !projectedRecoveryValid(prior))requestIds.push(id);
+    }
+    return {unresolvedCount:requestIds.length,requestIds:requestIds.sort(),replayAllowed:false};
+  }
+  async function refreshTrustedGuards(args={},timeoutMs=30000) {
+    let claim;
+    try {
+      exact(args,[]);const budget=timeout(timeoutMs,30000),deadline=Date.now()+budget,remaining=()=>{const left=deadline-Date.now();if(left<1)throw problem("trusted_guard_refresh_timeout_no_replay");return left;};
+      claim=acquireControllerLock(directory,crypto.randomUUID());
+      const selected=await resolveTarget(remaining()),before=remoteState(await methodAt(selected.target,"state",{},remaining())),binding={panelInstanceId:before.panelInstanceId,panelLifecycleEpoch:before.panelLifecycleEpoch,panelGeneration:before.panelGeneration};
+      if(before.activeAction!==null || before.recoveryTransport || before.actionStorage!=="ready" || before.trustedGuardRefresh?.pending)throw problem("trusted_guard_refresh_not_idle");
+      const started=await methodAt(selected.target,"refreshTrustedGuards",undefined,remaining(),binding);
+      if(!started || started.accepted!==true || !Number.isSafeInteger(started.sequence))throw problem(started?.code || "trusted_guard_refresh_rejected");
+      let after;
+      do {after=remoteState(await methodAt(selected.target,"state",{},remaining(),binding));if(after.trustedGuardRefresh?.pending)await new Promise(resolve=>setTimeout(resolve,100));}while(after.trustedGuardRefresh?.pending);
+      const checked=await resolveTarget(remaining()),result=after.trustedGuardRefresh?.result;
+      if(JSON.stringify(selected)!==JSON.stringify(checked) || after.activeAction!==null || after.recoveryTransport || after.actionStorage!=="ready" || result?.sequence!==started.sequence || result.ok!==true)throw problem("trusted_guard_refresh_changed_or_failed");
+      return {ok:true,protocolVersion:PROTOCOL_VERSION,state:after,transport:await maintenanceTransportState(),replayAllowed:false};
+    }catch(error){return responseError(error);}finally{if(claim)claim.release();}
+  }
   async function getResult(id,timeoutMs=5000) {
     let local;
     try {
@@ -425,6 +454,7 @@ function createPanelControlService(options={}) {
     try {
       if(name==="list_panel_actions"){exact(args,[]);return catalog();}
       if(name==="get_panel_state")return state(args);
+      if(name==="refresh_panel_guards")return refreshTrustedGuards(args);
       if(name==="invoke_panel_action")return invoke(args);
       if(name==="get_panel_action_result"){exact(args,["requestId"]);requestId(args.requestId);return getResult(args.requestId);}
       throw problem("unknown_tool");
@@ -437,7 +467,7 @@ function createPanelControlService(options={}) {
     // Public busy includes the historical guard. Existing catalog probes actual lifecycle/controller work separately.
     return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 || after.busy===false)}};
   }
-  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget});
+  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards});
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],

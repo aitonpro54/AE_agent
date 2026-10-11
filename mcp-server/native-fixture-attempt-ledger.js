@@ -271,5 +271,14 @@ function outstanding(repoRoot,permittedRunId=null) {
   }
   return blocked;
 }
-function assertAdmission(repoRoot,permittedRunId=null) { if (outstanding(repoRoot,permittedRunId).length) fail("fixture_runner_unretired_attempt_no_replay"); }
+function assertAdmission(repoRoot,permittedRunId=null,admission=null) {
+  let blocked=outstanding(repoRoot,permittedRunId);
+  if(admission?.brand) {
+    const p=require("./native-fixture-prephase-recovery").assertAdmission(admission.brand,admission.context,repoRoot);
+    // History remains visible through outstanding(). Only this exact validated
+    // pre-phase member is removed from admission blockers for a private context.
+    blocked=blocked.filter(row=>!(row.stageId===p.stageId && row.runId===p.runId && row.rootPath===p.rootPath));
+  }
+  if(blocked.length)fail("fixture_runner_unretired_attempt_no_replay");
+}
 module.exports={SCHEMA,SHA,TOKEN,UUID,hash,clone,same,fail,safeDirectory,ensure,readBytes,read,writeOnce,directory,fileFor,descriptor,processIdentity,birthIdentity,sameProcess,reserve,launch,unknown,validateRetirement,auditRetirement,validRetirement,attemptInventory,completionFile,complete,validCompletion,outstanding,assertAdmission};

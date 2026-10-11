@@ -4666,15 +4666,22 @@
         done(null,response.disposition);
       });
     },
+    lookupNativeFixturePrephaseRecovery:function(done) {
+      var url=getBaseUrl(),token=getToken();
+      if(!window.AEAgentPanelContract.validateLoopbackUrl(url) || !token){done({code:"fixture_prephase_bridge_unavailable"});return;}
+      request("GET","/ame/native-fixture-prephase-recovery/lookup",null,function(error,response) {
+        if(getBaseUrl()!==url || getToken()!==token || error || !response || response.ok!==true || !Object.prototype.hasOwnProperty.call(response,"certificate")){done(error || {code:"fixture_prephase_lookup_failed"});return;}
+        done(null,response.certificate);
+      });
+    },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
   function lookupHumanSettlementBeforeConnect(attempt) {
-    panelActionUI.refreshHumanSettlements(function(ready) {
+    panelActionUI.refreshTrustedGuards(function(ready) {
       function finishLookup(allReady) {
         if(allReady && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0")setTimeout(function(){invokePanelUI("bridge.connect",{});},250);
         else if(!allReady && tokenEl.value && attempt<3)setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
       }
-      if(ready)panelActionUI.refreshAmeFixtureDisposition(function(fixtureReady){if(fixtureReady)panelActionUI.refreshNativeFixtureAbandonments(finishLookup);else finishLookup(false);});
-      else finishLookup(false);
+      finishLookup(ready);
     });
   }
   lookupHumanSettlementBeforeConnect(0);

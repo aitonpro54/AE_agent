@@ -193,9 +193,11 @@ function createExecutor(deps) {
     }
   });
   async function authorize(context) {
-    ledger.assertAdmission(root);
+    deps.assertManualIngress(context);
+    const recovery=require("./native-fixture-prephase-recovery"),brand=typeof deps.prephaseRecoveryReaders==="function" ? await recovery.bindAdmission(context,deps.prephaseRecoveryReaders()) : null;
+    ledger.assertAdmission(root,null,{brand,context});
     const capability = Object.freeze({});
-    capabilities.set(capability, { context, issuerCapability: await issuer.authorize(context) }); return capability;
+    capabilities.set(capability, { context, recoveryBrand:brand,issuerCapability: await issuer.authorize(context) }); return capability;
   }
   function assertAuthorization(capability, args) {
     const entry = capabilities.get(capability);
@@ -205,7 +207,7 @@ function createExecutor(deps) {
   async function execute(args, capability) {
     const entry = assertAuthorization(capability, args);
     if (executing) fail("fixture_runner_busy");
-    ledger.assertAdmission(root);
+    ledger.assertAdmission(root,null,{brand:entry.recoveryBrand,context:entry.context});
     executing = true; capabilities.delete(capability);
     const children = [];
     try {
@@ -223,6 +225,7 @@ function createExecutor(deps) {
         const descriptor = Object.freeze({ nonce, stageId, role, rootPath: path.join(ownedParent, `probe-${nonce}`),
           pluginPath: artifacts.pluginPath, pluginSha256: artifacts.pluginSha256,
           executablePath: artifacts.executablePath, executableSha256: artifacts.executableSha256 });
+        require("./native-fixture-prephase-recovery").assertDescriptor(entry.recoveryBrand,entry.context,root,descriptor);
         fs.mkdirSync(descriptor.rootPath); safeDirectory(descriptor.rootPath);
         ledger.writeOnce(ledger.fileFor(root,stageId,"owner"),{ schema: "ae-agent.native-fixture-owner.v2",
           rootPath: descriptor.rootPath, nonce, stageId, role });
@@ -346,6 +349,7 @@ function createExecutor(deps) {
     const d=descriptors.get(stageId), p=d && launches.get(d)?.process;
     return d && p ? {descriptor:JSON.parse(JSON.stringify(d)),process:JSON.parse(JSON.stringify(p)),executing,replayAllowed:false} : null;
   }
+  function hasAttempt(stageId) {return descriptors.has(stageId) || privateChildren.has(stageId);}
   async function inspectAttempt(args) {
     if(!args || Object.keys(args).sort().join(",")!=="stageId" || !ledger.TOKEN.test(args.stageId || ""))fail("fixture_attempt_invalid_selector");
     const d=descriptors.get(args.stageId),child=privateChildren.get(args.stageId);
@@ -361,7 +365,7 @@ function createExecutor(deps) {
       verificationScope:child ? "current_private_issuer_and_durable_ledger" : "durable_ledger_only_private_key_unavailable",historicalOutcome:unknown ? "unknown" : "not_inferred",nativeExecutionProven:false,
       endpointInert:completed || bootstrapRefusal?.endpointInert===true,nativeAdmissionBlocked:!retired && !completed,processExited:retired,replayAllowed:false};
   }
-  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, inspectAttempt,quiescence,attemptIdentity };
+  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, inspectAttempt,quiescence,attemptIdentity,hasAttempt };
 }
 
 const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snapshot experiment on two server-owned empty AE children. Creates fixed test fixtures, captures current unsaved state, saves two independent variants and reopens them for read-back. Does not mutate the current user project, render, enqueue in AME, claim a production snapshot backend or replay unknown phases.",

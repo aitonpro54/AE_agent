@@ -182,8 +182,8 @@ async function authorize(input,deps) {
     return writeOnce(deps.evidenceRoot,"disposition",EXACT.requestId,value,{auditSha256:audit.sha256,consumptionSha256:consumed.sha256});
   } finally { await lock.release(); }
 }
-async function lookup(deps) {
-  const root = deps.evidenceRoot, saved = read(root,"disposition");
+function lookupAudited(root) {
+  const saved = read(root,"disposition");
   if (!saved) {if (reserved(root)) fail("fixture_disposition_partial_audit");return null;}
   const v = saved.value, audit = read(root,"audit"), consumption = read(root,"consumption"), captured = records.ID.test(v?.captureId || "") && read(root,"capture",v.captureId);
   if (!audit || !consumption || !captured || v.schema !== SCHEMA || !records.ID.test(v.dispositionId || "") || v.status !== "abandoned_reviewed" || v.guardDisposition !== "released" ||
@@ -195,6 +195,12 @@ async function lookup(deps) {
   const c = captured.value, expected = {entry:c.entry,currentActor:c.currentActor,target:c.target,installed:c.installed,runtime:c.runtime,transport:c.transport,executor:c.executor};
   validateCapture(captured,{captureId:v.captureId},Date.parse(v.createdAt));
   if (c.schema !== SCHEMA+".capture" || c.captureId !== v.captureId || !equal(audit.value.observed,expected) || ["entry","currentActor","target","installed","runtime"].some(k => !equal(v[k],c[k]))) fail("fixture_disposition_lookup_drift");
+  const original=canonical(root);
+  if(v.entry.canonicalRunRecordHash!==original.canonicalRunRecordHash || v.entry.canonicalRunProjectionHash!==original.canonicalRunProjectionHash)fail("fixture_disposition_original_receipt_or_canonical_drift");
+  return saved;
+}
+async function lookup(deps) {
+  const saved=lookupAudited(deps.evidenceRoot);if(!saved)return null;const v=saved.value;
   // Долговечный grant относится к неизменяемой исторической записи. Новый actor,
   // runtime и последующие собственные children не меняют факт human disposition.
   // Текущие pins приходят только через authenticated lookup, вне исходного value.
@@ -202,4 +208,4 @@ async function lookup(deps) {
   if (!equal(before,after)) fail("fixture_disposition_lookup_bracket_changed");
   return {...saved,readBack:{schema:SCHEMA+".read-back",dispositionSha256:saved.sha256,entrySha256:hash(v.entry),...after}};
 }
-module.exports = {SCHEMA,ENVELOPE,TTL,EXACT,hash,equal,selector,directory,fileFor,regularBytes,read,capture,authorize,lookup};
+module.exports = {SCHEMA,ENVELOPE,TTL,EXACT,hash,equal,selector,directory,fileFor,regularBytes,read,capture,authorize,lookupAudited,lookup};

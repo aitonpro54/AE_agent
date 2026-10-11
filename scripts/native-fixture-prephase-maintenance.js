@@ -1,0 +1,160 @@
+#!/usr/bin/env node
+"use strict";
+// Exact-profile maintenance only. No daemon/host restart, native dispatch,
+// abandonment, authority issuance or generic reload gate changes.
+const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),ledger=require("../mcp-server/native-fixture-attempt-ledger"),proof=require("../mcp-server/native-fixture-prephase-recovery-proof"),recovery=require("../mcp-server/native-fixture-prephase-recovery"),transport=require("./common-title-assembly-maintenance");
+const control=require("../mcp-server/cep-panel-control"),bootstrap=require("../mcp-server/ae-agent-panel-bootstrap"),human=require("../mcp-server/human-guard-settlement"),ame=require("../mcp-server/ame-fixture-ui-disposition"),native=require("../mcp-server/native-fixture-abandonment"),records=require("../mcp-server/plan-run-records"),contract=require("../cep-panel/panel-action-contract"),runtimeEvidence=require("../mcp-server/review-evidence"),humanMaintenance=require("./human-guard-settlement-maintenance");
+const {hash,same,clone,SHA,fail}=ledger,SCHEMA="ae-agent.native-fixture-prephase-maintenance.v1",TTL=10*60*1000,ASSETS=human.ASSETS,COPY_ASSETS=Object.freeze(["panel-actions.js","panel.js"]),LOADED_ASSETS=Object.freeze(["panel-action-contract.js","panel-actions.js","panel.js"]);
+const EXACT=Object.freeze([
+  ...human.EXACT.map(e=>({requestId:e.originalRequestId,runId:e.runId,kind:"human"})),
+  {requestId:ame.EXACT.requestId,runId:ame.EXACT.runId,kind:"ame"},
+  {requestId:"123b95d6-65e4-47e6-9918-ca67968bdec6",runId:"54062238-4828-453c-a115-6ddc9f302dee",kind:"native"},
+  {requestId:"f306d71e-6dc1-4e65-b8e3-fc726f30048e",runId:"0284d412-3fa9-414f-bf7f-6d897163e670",kind:"native"},
+  {requestId:"82f62ed0-892b-4835-b29f-996ae5148d71",runId:"172deffe-d568-4554-9c19-5d3980ead603",kind:"native"},
+  {...proof.selector(),kind:"prephase"}
+]);
+const KINDS=Object.freeze(["capture","apply-attempt","backup-index","reload-attempt","reload-result","read-back"]);
+function parse(argv) {const a=argv.slice(2),command=a.shift() || "help";if(["help","capture","audit","capture-maintenance","apply-once","read-back"].includes(command) && !a.length)return {command};if(command==="publish" && a.length===1 && ledger.UUID.test(a[0]))return {command,captureId:a[0]};fail("fixture_prephase_cli_fixed_scope_required");}
+function directory(root) {return path.join(root,"evidence","native-fixture-prephase-maintenance-20261011");}
+function fileFor(root,kind) {if(!KINDS.includes(kind))fail("fixture_prephase_maintenance_kind_invalid");return path.join(directory(root),kind+".json");}
+function read(root,kind) {const file=fileFor(root,kind);if(!fs.existsSync(file))return null;const saved=JSON.parse(ledger.readBytes(file));if(saved.schema!==SCHEMA+".envelope" || !SHA.test(saved.sha256 || "") || saved.sha256!==hash(saved.value) || saved.value?.schema!==SCHEMA+"."+kind)fail("fixture_prephase_maintenance_envelope_invalid");return saved;}
+function write(root,kind,value) {return ledger.writeOnce(fileFor(root,kind),{schema:SCHEMA+"."+kind,...value},{schema:SCHEMA+".envelope"});}
+function inventory(root) {const dir=directory(root);if(!fs.existsSync(dir))return [];ledger.safeDirectory(dir);const allowed=KINDS.map(k=>k+".json").concat("backups"),names=fs.readdirSync(dir);if(names.some(n=>!allowed.includes(n)))fail("fixture_prephase_maintenance_extra_files");for(const name of names){if(name==="backups")ledger.safeDirectory(path.join(dir,name));else read(root,name.slice(0,-5));}return names.sort();}
+function ensure(dir) {if(!fs.existsSync(dir)){ensure(path.dirname(dir));fs.mkdirSync(dir);}ledger.safeDirectory(dir);}
+function writeBytesOnce(file,bytes) {ensure(path.dirname(file));const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}if(hash(ledger.readBytes(file))!==hash(bytes))fail("fixture_prephase_maintenance_backup_changed");}
+function assetHashes(root) {ledger.safeDirectory(root);return Object.fromEntries(ASSETS.map(asset=>[asset,hash(ledger.readBytes(path.join(root,asset)))]));}
+function normalizedHashes(root) {return Object.fromEntries(LOADED_ASSETS.map(asset=>[asset,hash(ledger.readBytes(path.join(root,asset)).toString("utf8").replace(/^\uFEFF/,"").replace(/\r\n/g,"\n"))]));}
+function oldInstalled() {const selected=humanMaintenance.oldInstalled();if(!same(assetHashes(path.dirname(selected.indexPath)),selected.hashes))fail("fixture_prephase_maintenance_installed_changed");return selected;}
+function targetPin(selected) {const t=selected.target;if(!t || t.type!=="page" || !t.id || !/^ws:\/\/127\.0\.0\.1:8870\/devtools\/page\/[A-Za-z0-9_-]+$/.test(t.webSocketDebuggerUrl || "") || typeof t.url!=="string" || !t.url.startsWith("file:///"))fail("fixture_prephase_maintenance_target_invalid");return {id:t.id,type:t.type,url:t.url,webSocketDebuggerUrl:t.webSocketDebuggerUrl};}
+function configuration(c) {return {host:c.host,port:c.port,credentialIdentity:hash(c.token)};}
+function receiptProjection(row) {const value=contract.sanitizeReceipt(row);for(const key of ["recovery","humanSettlement","ameFixtureDisposition","nativeFixtureAbandonment","nativeFixturePrephaseRecovery"])delete value[key];return value;}
+function assertGuards(panel,released=false) {const rows=panel.unresolvedActions;if(!Array.isArray(rows) || released && (rows.length || panel.reconciliationRequired!==false) || !released && (rows.length!==EXACT.length || EXACT.some(s=>rows.filter(r=>r.requestId===s.requestId && r.runId===s.runId && r.action==="plan.run" && r.effect==="protected_plan_run").length!==1)))fail("fixture_prephase_maintenance_exact_guard_scope");}
+function assertIdle(status,panel,current,released=false) {
+  if(status?.pendingCommands!==0 || !Array.isArray(status.inflightCommands) || status.inflightCommands.length || status.activeEditSession!==null || status.projectLifecycle?.blocked || status.projectLifecycle?.pending || status.panelBootstrap?.busy || current?.current!==null ||
+    panel?.nativeControlIdle!==true || panel.activeAction!==null || panel.recoveryTransport || panel.actionStorage!=="ready" || panel.chat?.inFlight===true || panel.plan?.pins || /^(running|executing|submitted)$/.test(panel.plan?.state || "") || !released && panel.running!==false ||
+    panel.trustedGuardRefresh?.pending===true || ["humanSettlementLookupPending","ameFixtureDispositionLookupPending","nativeFixtureAbandonmentLookupPending","nativeFixturePrephaseRecoveryLookupPending"].some(k=>panel[k]===true))fail("fixture_prephase_maintenance_not_idle");
+}
+function runtimePin(status,current) {const r=status.humanGuardRuntime;if(!r || !Number.isInteger(r.pid) || r.pid<1 || !Number.isFinite(Date.parse(r.startedAt)) || status.startedAt!==r.startedAt || !SHA.test(current || "") || r.sourceSha256!==current)fail("fixture_prephase_maintenance_runtime_drift");return {daemon:{pid:r.pid,startedAt:r.startedAt},loadedRuntimeSha256:r.sourceSha256,currentRuntimeSha256:current};}
+function outcome(v) {if(Object.entries(recovery.OUTCOME).some(([k,x])=>v?.[k]!==x))fail("fixture_prephase_maintenance_certificate_claims_invalid");}
+function envelopePin(row) {if(!row || !SHA.test(row.sha256 || "") || hash(row.value)!==row.sha256)fail("fixture_prephase_maintenance_trusted_audit_required");return {schema:row.schema,sha256:row.sha256,...(row.auditSha256?{auditSha256:row.auditSha256}:{}),...(row.consumptionSha256?{consumptionSha256:row.consumptionSha256}:{})};}
+function assertFreshCertificate(saved,trusted,observed) {const b=saved?.readBack;outcome(saved?.value);outcome(b);if(saved?.sha256!==trusted.certificate.sha256 || hash(saved.value)!==saved.sha256 || b?.schema!==recovery.SCHEMA+".read-back" || b.certificateSha256!==saved.sha256 || b.entrySha256!==hash(saved.value.entry) || !same(b.currentActor,observed.actor) || !same(b.installed,observed.installed) || !same({...observed.runtime,panelAssetHashes:observed.installed.hashes},b.runtime))fail("fixture_prephase_maintenance_fresh_certificate_drift");const e=b.executor,t=b.transport;if(e?.executing!==false || !Number.isInteger(e.pendingCount) || e.pendingCount<0 || !Number.isInteger(e.descriptorCount) || e.descriptorCount<0 || t?.requestId!==proof.PROFILE.requestId || t.originalReceiptAbsent!==true || t.pendingCount!==0 || t.inflightCount!==0)fail("fixture_prephase_maintenance_executor_or_transport_not_quiescent");}
+function assertQuiescence(b) {const e=b?.executor,i=b?.issuerIsolation;if(e?.executing!==false || !Number.isInteger(e.pendingCount) || e.pendingCount<0 || !Number.isInteger(e.descriptorCount) || e.descriptorCount<0 || !Array.isArray(e.outstandingAttempts) || e.outstandingAttempts.some(r=>r.runId!==proof.PROFILE.runId || r.stageId!==proof.PROFILE.stageId || r.rootPath!==proof.PROFILE.rootPath) || i?.originalAttemptPresent!==false || i.originalAuthorityImportAvailable!==false || i.loadedIssuerSha256!==proof.SOURCES["ame-native-fixture-grant.js"] || i.currentIssuerSha256!==i.loadedIssuerSha256 || b.transport?.requestId!==proof.PROFILE.requestId || b.transport.originalReceiptAbsent!==true || b.transport.pendingCount!==0 || b.transport.inflightCount!==0)fail("fixture_prephase_maintenance_executor_or_transport_not_quiescent");}
+function assertMaintenanceQuiescence(response,observed) {const q=response?.inspection;assertQuiescence(q);if(q.schema!==recovery.SCHEMA+".maintenance-quiescence" || q.scope!=="inspection_only" || q.admissionGuardReleased!==false || q.replayAllowed!==false || q.currentProposalPresent!==false || q.bridge?.pendingCount!==0 || q.bridge.inflightCount!==0 || q.bridge.activeEditSession!==null || !same({daemon:q.daemon,...q.runtime},observed.runtime) || !same(q.currentActor,observed.actor))fail("fixture_prephase_maintenance_presend_quiescence_drift");}
+async function privateGuard(selected,s,evaluate=control.evaluateViaWebSocket) {if(!["ame","native","prephase"].includes(s.kind) || !EXACT.some(e=>same(e,s)))fail("fixture_prephase_maintenance_private_scope_invalid");const method=s.kind==="ame"?"readAmeFixtureUIGuard":"readNativeFixtureGuard",input={requestId:s.requestId,runId:s.runId};return evaluate(selected.target.webSocketDebuggerUrl,"(function(){var api=window.AEAgentPanelActions;if(!api||typeof api."+method+"!=='function')return null;return api."+method+"("+JSON.stringify(input)+");})()",5000);}
+async function trustedDispositions(ctx,observed) {
+  const certificate=recovery.lookupAudited(proof.selector(),{repoRoot:ctx.root,evidenceRoot:ctx.logDir}),humanSaved=human.lookup(ctx.logDir);if(!certificate || !humanSaved)fail("fixture_prephase_maintenance_trusted_audit_required");
+  const ameSaved=ame.lookupAudited(ctx.logDir);
+  const nativeSaved=EXACT.filter(s=>s.kind==="native").map(s=>native.lookupAudited({requestId:s.requestId,runId:s.runId},{repoRoot:ctx.root,evidenceRoot:ctx.logDir}));
+  if(!ameSaved || nativeSaved.some(s=>!s))fail("fixture_prephase_maintenance_trusted_audit_required");return {certificate,human:humanSaved,ame:ameSaved,native:nativeSaved};
+}
+function trustPin(trusted) {outcome(trusted.certificate?.value);if(!same(trusted.certificate.value.selector,proof.selector()) || trusted.certificate.value.schema!==recovery.SCHEMA || trusted.certificate.value.status!=="prephase_admission_certified" || trusted.human?.schema!==human.ENVELOPE || trusted.human.value.status!=="abandoned_reviewed" || trusted.human.value.entries?.length!==2 || trusted.ame?.schema!==ame.ENVELOPE || trusted.ame.value.entry?.originalRequestId!==EXACT[2].requestId || !Array.isArray(trusted.native) || trusted.native.length!==3 || trusted.native.some((row,i)=>row.schema!==native.SCHEMA+".envelope" || !same(row.value.selector,{requestId:EXACT[i+3].requestId,runId:EXACT[i+3].runId})))fail("fixture_prephase_maintenance_exact_audit_scope");return {certificate:{...envelopePin(trusted.certificate),entrySha256:hash(trusted.certificate.value.entry)},human:{...envelopePin(trusted.human),settlementId:trusted.human.value.settlementId},ame:{...envelopePin(trusted.ame),dispositionId:trusted.ame.value.dispositionId},native:trusted.native.map(row=>({...envelopePin(row),dispositionId:row.value.dispositionId}))};}
+function expectedEntries(trusted) {return [...trusted.human.value.entries,trusted.ame.value.entry,...trusted.native.map(s=>s.value.entry),trusted.certificate.value.entry];}
+async function originals(ctx,observed,trusted) {
+  const expected=expectedEntries(trusted),indexFile=path.join(ctx.logDir,"cep-panel-control","identities.json"),index=JSON.parse(ledger.readBytes(indexFile));if(index.schema!=="ae-agent.cep-panel-transport.v1" || !index.identities)fail("fixture_prephase_maintenance_transport_index_invalid");const rows=[];
+  for(let i=0;i<EXACT.length;i++){
+    const s=EXACT[i],e=expected[i],bytes=ledger.readBytes(records.fileFor(ctx.logDir,s.runId)),record=records.readRecord(ctx.logDir,s.runId,{throwOnError:true});
+    if(!e || e.originalRequestId!==s.requestId || e.runId!==s.runId || e.action!=="plan.run" || e.effect!=="protected_plan_run" || record.run.ok!==false || hash(bytes)!==e.canonicalRunRecordHash)fail("fixture_prephase_maintenance_canonical_original_drift");
+    if(s.kind==="human") {const linked=await ctx.service.readRecoveryLinkage(s.requestId),identity=human.EXACT[i],entry=human.entry(ctx.logDir,identity,linked.local,linked.remote);if(!same(entry,e))fail("fixture_prephase_maintenance_human_original_drift");rows.push({selector:{requestId:s.requestId,runId:s.runId},entry:clone(e),canonicalBytesSha256:hash(bytes),transportBytesSha256:hash(ledger.readBytes(path.join(ctx.logDir,"cep-panel-control",s.requestId+".json"))),panelProjectionSha256:hash(receiptProjection(linked.remote))});}
+    else {if(Object.hasOwn(index.identities,s.requestId) || fs.existsSync(path.join(ctx.logDir,"cep-panel-control",s.requestId+".json")))fail("fixture_prephase_maintenance_original_transport_present");const guard=await ctx.privateGuard(observed.selected,s),p=guard?.projection;if(guard?.controllerIdle!==true || !same(guard.currentBinding,observed.actor) || guard.signatureSha256!==e.privateSignatureSha256 || !p || p.state!=="unknown" || p.replayAllowed!==false || p.requestId!==s.requestId || p.runId!==s.runId || p.action!==e.action || p.effect!==e.effect || hash(p)!==e.panelReceiptHash || !same(p,contract.sanitizeReceipt(p)) || !same(p.result?.run,contract.redactState(record.run)) || !same(native.actor({panelInstanceId:p.panelInstanceId,panelLifecycleEpoch:p.epoch,panelGeneration:p.generation}),e.originalBinding))fail("fixture_prephase_maintenance_private_original_drift");rows.push({selector:{requestId:s.requestId,runId:s.runId},entry:clone(e),canonicalBytesSha256:hash(bytes),transportOriginalAbsent:true,panelProjectionSha256:hash(p)});}
+  }
+  return rows;
+}
+function context(deps) {const root=deps.repoRoot || path.resolve(__dirname,".."),logDir=deps.evidenceRoot || path.join(root,"logs"),source=deps.source || path.join(root,"cep-panel"),c=deps.config || transport.config(),service=deps.service || control.createPanelControlService({stateDir:path.join(logDir,"cep-panel-control"),inspectInstalledTarget:oldInstalled}),request=deps.request || ((route,body)=>transport.request(c,route,body));return {deps,root,logDir,source,c,service,request,privateGuard:deps.privateGuard || privateGuard,now:deps.now || Date.now,currentSource:deps.currentSource || (()=>runtimeEvidence.runtimeIdentity(root).sourceSha256),loaded:deps.loadedHashes || ((selected,expectedHashes)=>transport.loadedOldHashes(selected.target,selected.installed,expectedHashes)),lock:deps.lock || (()=>control.acquireControllerLock(path.join(logDir,"cep-panel-control"),crypto.randomUUID()))};}
+async function observe(ctx,{released=false,freshCertificate=false,installedHashes=null,loadedHashes=null}={}) {
+  const before=await ctx.request("/dev/status"),selected=await ctx.service.maintenanceTarget(),current=await ctx.request("/agents/plan/current");assertIdle(before,selected.state,current,released);assertGuards(selected.state,released);
+  const observed={actor:native.actor(selected.state),target:targetPin(selected),installed:clone(selected.installed),runtime:runtimePin(before,ctx.currentSource()),loadedHashes:await ctx.loaded(selected,loadedHashes || normalizedHashes(path.dirname(selected.installed.indexPath))),desiredAssetHashes:assetHashes(ctx.source),selected};
+  if(!same(assetHashes(path.dirname(selected.installed.indexPath)),selected.installed.hashes) || installedHashes && !same(selected.installed.hashes,installedHashes) || loadedHashes && !same(observed.loadedHashes,loadedHashes) || Object.keys(observed.loadedHashes).sort().join(",")!==LOADED_ASSETS.slice().sort().join(",") || Object.values(observed.loadedHashes).some(h=>!SHA.test(h)))fail("fixture_prephase_maintenance_asset_drift");
+  const trusted=await (ctx.deps.trustedDispositions || trustedDispositions)(ctx,observed),pins=trustPin(trusted),originalRows=await (ctx.deps.originals || originals)(ctx,observed,trusted);
+  if(!Array.isArray(originalRows) || originalRows.length!==7 || originalRows.some((row,i)=>!same(row.selector,{requestId:EXACT[i].requestId,runId:EXACT[i].runId})))fail("fixture_prephase_maintenance_original_inventory_invalid");
+  let quiescence;if(freshCertificate){const fresh=(await ctx.request("/ame/native-fixture-prephase-recovery/maintenance-read-back")).certificate;assertFreshCertificate(fresh,trusted,observed);const inspection=await ctx.request("/ame/native-fixture-prephase-recovery/maintenance-quiescence");assertMaintenanceQuiescence(inspection,observed);quiescence={executor:inspection.inspection.executor,transport:inspection.inspection.transport,issuerIsolation:inspection.inspection.issuerIsolation};}
+  if(typeof ctx.service.maintenanceTransportState!=="function")fail("fixture_prephase_maintenance_transport_reader_unavailable");const transportState=await ctx.service.maintenanceTransportState();if(transportState?.unresolvedCount!==0 || !Array.isArray(transportState.requestIds) || transportState.requestIds.length)fail("fixture_prephase_maintenance_transport_guards_remain");
+  const after=await ctx.request("/dev/status"),again=await ctx.service.maintenanceTarget(),proposal=await ctx.request("/agents/plan/current");assertIdle(after,again.state,proposal,released);assertGuards(again.state,released);
+  if(!same(observed.actor,native.actor(again.state)) || !same(observed.target,targetPin(again)) || !same(selected.installed,again.installed) || !same(observed.runtime,runtimePin(after,ctx.currentSource())) || !same(observed.desiredAssetHashes,assetHashes(ctx.source)))fail("fixture_prephase_maintenance_observation_bracket_drift");
+  return {...observed,selected:undefined,trust:pins,originals:originalRows,historicalOriginal:clone(trusted.certificate.value.original || {}),...(quiescence?{quiescence}:{})};
+}
+function compare(observed,captured,{installedChanged=false,reloaded=false}={}) {for(const key of ["target","runtime","desiredAssetHashes","trust","originals"]){if(!same(observed[key],captured[key]))fail("fixture_prephase_maintenance_pins_changed");}if(!reloaded && !same(observed.actor,captured.actor) || reloaded && same(observed.actor,captured.actor) || observed.installed.indexPath!==captured.installed.indexPath || !same(observed.installed.hashes,installedChanged?captured.desiredAssetHashes:captured.installed.hashes) || !same(observed.loadedHashes,reloaded?captured.desiredLoadedHashes:captured.loadedHashes))fail("fixture_prephase_maintenance_frame_or_assets_changed");}
+function captureValid(ctx,row,fresh=true) {const c=row?.value,t=Date.parse(c?.createdAt);if(!c || c.schema!==SCHEMA+".capture" || !Number.isFinite(t) || !same(c.configuration,configuration(ctx.c)) || fresh && (ctx.now()<t || ctx.now()>=t+TTL) || Date.parse(c.expiresAt)!==t+TTL)fail("fixture_prephase_maintenance_capture_invalid_or_stale");return c;}
+function backupsValid(ctx,capture,index) {if(!index || index.value.captureSha256!==capture.sha256 || !same(index.value.hashes,Object.fromEntries(COPY_ASSETS.map(a=>[a,capture.value.observed.installed.hashes[a]]))))fail("fixture_prephase_maintenance_backup_chain_invalid");const dir=path.join(directory(ctx.logDir),"backups");ledger.safeDirectory(dir);if(!same(fs.readdirSync(dir).sort(),COPY_ASSETS.slice().sort()) || COPY_ASSETS.some(a=>hash(ledger.readBytes(path.join(dir,a)))!==index.value.hashes[a]))fail("fixture_prephase_maintenance_backup_changed");}
+function releasedDispositions(panel,pins) {const p=panel.nativeFixturePrephaseRecovery,h=panel.humanSettlement,a=panel.ameFixtureDisposition,n=panel.nativeFixtureAbandonments;if(!h || h.settlementId!==pins.human.settlementId || h.status!=="abandoned_reviewed" || h.guardDisposition!=="released" || h.aeExecutionProven!==false || h.replayAllowed!==false || !a || a.dispositionId!==pins.ame.dispositionId || a.status!=="abandoned_reviewed" || a.guardDisposition!=="released" || a.historicalOutcome!=="unknown" || a.aeExecutionProven!==false || a.replayAllowed!==false || !Array.isArray(n) || n.length!==3 || EXACT.filter(s=>s.kind==="native").some((s,i)=>n.filter(r=>r.requestId===s.requestId && r.runId===s.runId && r.dispositionId===pins.native[i].dispositionId && r.status==="abandoned_reviewed" && r.guardDisposition==="released" && r.historicalOutcome==="unknown" && r.nativeExecutionProven===false && r.replayAllowed===false).length!==1) || !p || p.requestId!==proof.PROFILE.requestId || p.runId!==proof.PROFILE.runId || p.status!=="prephase_admission_certified" || p.certificateSha256!==pins.certificate.sha256 || p.entrySha256!==pins.certificate.entrySha256 || Object.entries(recovery.OUTCOME).some(([k,v])=>k!=="phaseAuthorityNeverIssued" && p[k]!==v))fail("fixture_prephase_maintenance_all_dispositions_unproven");if(!same(p.currentActor,native.actor(panel)))fail("fixture_prephase_maintenance_trusted_actor_drift");}
+async function deployment(args,deps) {
+  const ctx=context(deps),names=inventory(ctx.logDir);
+  if(args.command==="capture-maintenance") {
+    if(names.length)fail("fixture_prephase_maintenance_capture_exists_or_partial");
+    const lock=ctx.lock();
+    try {
+      if(inventory(ctx.logDir).length)fail("fixture_prephase_maintenance_capture_exists_or_partial");
+      const observed=await observe(ctx,{freshCertificate:true}),again=await observe(ctx,{freshCertificate:true});
+      if(!same(observed,again))fail("fixture_prephase_maintenance_capture_bracket_drift");
+      if(ASSETS.some(a=>!COPY_ASSETS.includes(a) && observed.desiredAssetHashes[a]!==observed.installed.hashes[a]))fail("fixture_prephase_maintenance_other_assets_changed");
+      const timestamp=ctx.now(),saved=write(ctx.logDir,"capture",{
+        createdAt:new Date(timestamp).toISOString(),expiresAt:new Date(timestamp+TTL).toISOString(),configuration:configuration(ctx.c),
+        observed:{...observed,desiredLoadedHashes:normalizedHashes(ctx.source)},
+        historicalHostIdentities:{humanOriginal:human.ORIGINAL_HOST,prephaseOriginal:observed.historicalOriginal},
+        hostIdentityPolicy:"informational_only_no_current_project_equality",replayAllowed:false
+      });
+      return {ok:true,status:"maintenance_capture_saved",captureSha256:saved.sha256,certificateSha256:observed.trust.certificate.sha256,guardReleased:false,...recovery.OUTCOME};
+    } finally {lock.release();}
+  }
+  const captured=read(ctx.logDir,"capture"),c=captureValid(ctx,captured,args.command!=="read-back"),old=c.observed;
+  if(args.command==="apply-once") {
+    if(!same(names,["capture.json"]))fail("fixture_prephase_maintenance_apply_consumed_or_partial");
+    const lock=ctx.lock();
+    try {
+      if(!same(inventory(ctx.logDir),["capture.json"]))fail("fixture_prephase_maintenance_apply_consumed_or_partial");
+      captureValid(ctx,captured);
+      const before=await observe(ctx,{freshCertificate:true,installedHashes:old.installed.hashes,loadedHashes:old.loadedHashes});compare(before,old);
+      // The first reservation consumes this deployment, even if backup/copy fails.
+      const attempt=write(ctx.logDir,"apply-attempt",{createdAt:new Date(ctx.now()).toISOString(),captureSha256:captured.sha256,certificateSha256:old.trust.certificate.sha256,target:old.target,actor:old.actor,runtime:old.runtime,replayAllowed:false});
+      const installedRoot=path.dirname(old.installed.indexPath),backupHashes={};
+      for(const asset of COPY_ASSETS){const bytes=ledger.readBytes(path.join(installedRoot,asset));if(hash(bytes)!==old.installed.hashes[asset])fail("fixture_prephase_maintenance_backup_baseline_drift");writeBytesOnce(path.join(directory(ctx.logDir),"backups",asset),bytes);backupHashes[asset]=hash(bytes);}
+      const backups=write(ctx.logDir,"backup-index",{createdAt:new Date(ctx.now()).toISOString(),captureSha256:captured.sha256,applyAttemptSha256:attempt.sha256,hashes:backupHashes});backupsValid(ctx,captured,backups);
+      const copyBefore=await observe(ctx,{freshCertificate:true,installedHashes:old.installed.hashes,loadedHashes:old.loadedHashes});compare(copyBefore,old);captureValid(ctx,captured);
+      for(const asset of COPY_ASSETS) {
+        const to=path.join(installedRoot,asset),bytes=ledger.readBytes(path.join(ctx.source,asset));
+        if(hash(bytes)!==old.desiredAssetHashes[asset] || hash(ledger.readBytes(to))!==old.installed.hashes[asset])fail("fixture_prephase_maintenance_copy_baseline_drift");
+        const beforeOpen=fs.lstatSync(to),fd=fs.openSync(to,"r+");
+        try {const opened=fs.fstatSync(fd);if(beforeOpen.dev!==opened.dev || beforeOpen.ino!==opened.ino || !opened.isFile() || opened.nlink!==1)fail("fixture_prephase_maintenance_copy_file_changed");fs.writeFileSync(fd,bytes);fs.ftruncateSync(fd,bytes.length);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+      }
+      if(!same(assetHashes(installedRoot),old.desiredAssetHashes))fail("fixture_prephase_maintenance_install_mismatch");
+      const presend=await observe(ctx,{installedHashes:old.desiredAssetHashes,loadedHashes:old.loadedHashes});compare(presend,old,{installedChanged:true});
+      assertMaintenanceQuiescence(await ctx.request("/ame/native-fixture-prephase-recovery/maintenance-quiescence"),old);
+      const sendBracket=await observe(ctx,{installedHashes:old.desiredAssetHashes,loadedHashes:old.loadedHashes});compare(sendBracket,old,{installedChanged:true});
+      backupsValid(ctx,captured,backups);captureValid(ctx,captured);
+      const reload=write(ctx.logDir,"reload-attempt",{createdAt:new Date(ctx.now()).toISOString(),captureSha256:captured.sha256,applyAttemptSha256:attempt.sha256,backupSha256:backups.sha256,certificateSha256:old.trust.certificate.sha256,target:old.target,actor:old.actor,runtime:old.runtime,status:"reserved_before_sole_send",replayAllowed:false});
+      let result="reload_outcome_unknown",connection;
+      try {connection=(deps.cdp || transport.cdp)(old.target.webSocketDebuggerUrl);await connection.send("Page.reload",{ignoreCache:true});result="reload_submitted";}
+      catch(_) {/* A failed/unknown send is consumed forever. */}
+      finally {if(connection)connection.close();}
+      write(ctx.logDir,"reload-result",{createdAt:new Date(ctx.now()).toISOString(),reloadAttemptSha256:reload.sha256,status:result,replayAllowed:false});
+      return {ok:result==="reload_submitted",status:result,guardReleased:false,...recovery.OUTCOME,next:"read-back only; never repeat apply-once"};
+    } finally {lock.release();}
+  }
+  const attempt=read(ctx.logDir,"apply-attempt"),backups=read(ctx.logDir,"backup-index"),reload=read(ctx.logDir,"reload-attempt"),result=read(ctx.logDir,"reload-result");
+  if(!attempt || !backups || !reload || attempt.value.captureSha256!==captured.sha256 || backups.value.applyAttemptSha256!==attempt.sha256 || reload.value.captureSha256!==captured.sha256 || reload.value.applyAttemptSha256!==attempt.sha256 || reload.value.backupSha256!==backups.sha256 || reload.value.certificateSha256!==old.trust.certificate.sha256 || result && result.value.reloadAttemptSha256!==reload.sha256)fail("fixture_prephase_maintenance_partial_deployment_readback_only");
+  backupsValid(ctx,captured,backups);
+  if(typeof ctx.service.refreshTrustedGuards!=="function" || typeof ctx.service.maintenanceTransportState!=="function")fail("fixture_prephase_maintenance_fixed_refresh_unavailable");
+  // The fixed service owns its controller lock during its asynchronous refresh.
+  const refreshed=await ctx.service.refreshTrustedGuards();if(refreshed?.ok!==true)fail("fixture_prephase_maintenance_fixed_refresh_failed");
+  const lock=ctx.lock();
+  try {
+    const options={released:true,freshCertificate:true,installedHashes:old.desiredAssetHashes,loadedHashes:old.desiredLoadedHashes};
+    const observed=await observe(ctx,options);compare(observed,old,{installedChanged:true,reloaded:true});
+    const selected=await ctx.service.maintenanceTarget();releasedDispositions(selected.state,old.trust);
+    if(!same(native.actor(selected.state),observed.actor) || !same(targetPin(selected),observed.target))fail("fixture_prephase_maintenance_readback_actor_changed");
+    const again=await observe(ctx,options);if(!same(observed,again))fail("fixture_prephase_maintenance_readback_bracket_drift");
+    const value={createdAt:new Date(ctx.now()).toISOString(),captureSha256:captured.sha256,reloadAttemptSha256:reload.sha256,certificateSha256:old.trust.certificate.sha256,currentActor:observed.actor,runtime:observed.runtime,installedHashes:observed.installed.hashes,loadedScriptHashes:observed.loadedHashes,originalReceiptsUnchanged:true,unresolvedPanel:0,unresolvedTransport:0,...recovery.OUTCOME},previous=read(ctx.logDir,"read-back");
+    if(previous){if(previous.value.captureSha256!==captured.sha256 || previous.value.reloadAttemptSha256!==reload.sha256 || previous.value.certificateSha256!==old.trust.certificate.sha256 || !same(previous.value.currentActor,observed.actor))fail("fixture_prephase_maintenance_readback_identity_changed");}else write(ctx.logDir,"read-back",value);
+    return {ok:true,status:"guards_released",certificateSha256:old.trust.certificate.sha256,currentActor:observed.actor,originalReceiptsUnchanged:true,unresolvedPanel:0,unresolvedTransport:0,guardReleased:true,...recovery.OUTCOME};
+  } finally {lock.release();}
+}
+async function run(argv,deps={}) {
+  const args=parse(argv),root=deps.repoRoot || path.resolve(__dirname,".."),evidenceRoot=deps.evidenceRoot || path.join(root,"logs");
+  if(args.command==="help")return {ok:true,commands:["capture","publish <capture-uuid>","audit","capture-maintenance","apply-once","read-back"],scope:"fixed pre-phase UNKNOWN; new disjoint fixture only; deployment consumes one attempt; no replay/retirement/cleanup"};
+  if(["capture-maintenance","apply-once","read-back"].includes(args.command))return deployment(args,deps);
+  if(args.command==="audit") {const saved=recovery.lookupAudited(proof.selector(),{repoRoot:root,evidenceRoot});return {ok:true,present:!!saved,certificateSha256:saved?.sha256 || null,...recovery.OUTCOME};}
+  const request=deps.request || ((route,body)=>transport.request(transport.config(),route,body));
+  const response=await request("/ame/native-fixture-prephase-recovery/"+args.command,args.command==="capture" ? {selector:proof.selector()} : {captureId:args.captureId}),row=response[args.command==="capture" ? "capture" : "certificate"];
+  return {ok:true,status:row.value.status || "captured",captureId:row.value.captureId,sha256:row.sha256,...recovery.OUTCOME};
+}
+if(require.main===module)run(process.argv).then(value=>process.stdout.write(JSON.stringify(value)+"\n")).catch(error=>{process.stdout.write(JSON.stringify({ok:false,code:error.code || "fixture_prephase_maintenance_failed",replayAllowed:false})+"\n");process.exitCode=1;});
+module.exports={run,parse,EXACT,ASSETS,COPY_ASSETS,LOADED_ASSETS,SCHEMA,directory,fileFor,read,assetHashes,normalizedHashes,assertIdle,assertGuards,assertQuiescence,assertFreshCertificate,privateGuard,trustPin,originals,observe,compare};

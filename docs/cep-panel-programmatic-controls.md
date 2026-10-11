@@ -16,7 +16,7 @@
 1. **CEP Action Service (`window.AEAgentPanelActions`)**:
    Защищённый frozen-сервис внутри доверенного контекста CEP панели (`cep-panel/panel-actions.js`,
    `cep-panel/panel-action-contract.js`). Экспортирует фиксированный контракт:
-   `protocolVersion`, `catalog()`, `state(options?)`, `invoke(envelope)`, `getResult(requestId)`.
+   `protocolVersion`, `catalog()`, `state(options?)`, `invoke(envelope)`, `getResult(requestId)`, `refreshTrustedGuards()`.
 
 2. **Scoped CDP Transport (`mcp-server/cep-panel-control.js`)**:
    Изолированный сервис взаимодействия с CEP через loopback Chrome DevTools Protocol (`127.0.0.1:8870`).
@@ -28,11 +28,22 @@
    Секреты (API ключи) передаются исключительно через защищённый входной JSON-файл и маскируются на выводе.
 
 4. **Типизированные MCP-инструменты (`mcp-server/bridge-daemon.js`)**:
-   Четыре инструмента, зарегистрированные в динамическом каталоге daemon:
+   Инструменты, зарегистрированные в динамическом каталоге daemon:
    - `list_panel_actions`
    - `get_panel_state`
    - `invoke_panel_action`
    - `get_panel_action_result`
+   - `refresh_panel_guards`
+
+`refresh_panel_guards` и CLI `node scripts/cep-panel-control.js refresh-guards`
+принимают только пустые аргументы. При idle controller выполняется последовательная
+вычитка доверенных human, AME, native abandonment и fixed pre-phase GET lookup.
+Actor/frame проверяются до и после; activeAction не создаётся, connect и планы не
+запускаются. Исторические receipts и transport index остаются неизменными. Ошибка
+или смена actor закрывает adoption; неизвестный send не повторяется автоматически.
+Transport blockers возвращаются отдельным read-only summary и продолжают блокировать
+обычный invoke. У pre-phase допуска только scope `new_disjoint_fixture_only`:
+старый исход UNKNOWN, execution/exit/inert proof false, replay запрещён.
 
 ---
 

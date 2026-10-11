@@ -181,7 +181,7 @@ async function main() {
         if(kind === "receipt"){const p=clone(f.original);delete p.signature;p.message="changed";f.setProjection(p);}
         if(kind === "signature")f.setSignature("a".repeat(64));
         if(kind === "runtime")f.setRuntime({...f.runtime,currentRuntimeSha256:"e".repeat(64)});
-        if(kind === "canonical")fs.appendFileSync(records.fileFor(f.evidenceRoot,EXACT.runId)," ");
+        if(kind === "canonical"){fs.appendFileSync(records.fileFor(f.evidenceRoot,EXACT.runId)," ");assert.throws(()=>disposition.lookupAudited(f.evidenceRoot),/original_receipt_or_canonical_drift/);}
         await assert.rejects(disposition.lookup(f.deps),/original_receipt_or_canonical_drift|runtime_changed/);f.refresh();await f.answerLookup();assert.equal(f.env.api.state().unresolvedActions.length,1);
       });}
     });

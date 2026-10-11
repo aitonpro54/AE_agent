@@ -8,8 +8,8 @@ function fail(code) {throw Object.assign(new Error(code),{code});}
 function parseCliArgs(argv) {
   const args=argv.slice(2);if(args.some(value=>typeof value!=="string"))fail("invalid_cli_argument");
   const command=args.shift() || "help";
-  if(!["help","catalog","state","invoke","result"].includes(command))fail("unknown_command");
-  const allowed={help:[],catalog:["--timeout"],state:["--timeout"],invoke:["--input","--wait","--timeout"],result:["--request-id","--timeout"]}[command];
+  if(!["help","catalog","state","invoke","result","refresh-guards"].includes(command))fail("unknown_command");
+  const allowed={help:[],catalog:["--timeout"],state:["--timeout"],invoke:["--input","--wait","--timeout"],result:["--request-id","--timeout"],"refresh-guards":["--timeout"]}[command];
   const options={command},seen=new Set();
   while(args.length) {
     const flag=args.shift();
@@ -52,13 +52,14 @@ async function run(argv,serviceFactory=control.createPanelControlService) {
   if(options.command==="help")return {ok:true,protocolVersion:control.PROTOCOL_VERSION,command:"help",commands:{
     help:"help (offline)",catalog:"catalog [--timeout <ms>]",state:"state [--timeout <ms>]",
     invoke:"invoke --input <json-file> [--wait] [--timeout <ms>]",
-    result:"result --request-id <uuid> [--timeout <ms>]"
+    result:"result --request-id <uuid> [--timeout <ms>]","refresh-guards":"refresh-guards [--timeout <ms>]"
   },notes:"Fixed loopback CDP 127.0.0.1:8870. Existing panel gates and receipts apply; input UUID is required. No daemon start or panel bootstrap."};
   // Input validation precedes service construction, filesystem receipts and CDP.
   const input=options.command==="invoke"?readInput(options.inputFile):null,service=serviceFactory();
   if(options.command==="catalog")return service.catalog(options.timeoutMs);
   if(options.command==="state")return service.state({},options.timeoutMs);
   if(options.command==="result")return service.getResult(options.requestId,options.timeoutMs);
+  if(options.command==="refresh-guards")return service.refreshTrustedGuards({},options.timeoutMs);
   const extra={};if(options.wait!==undefined)extra.wait=options.wait;if(options.timeoutMs!==undefined)extra.timeoutMs=options.timeoutMs;
   return service.invoke(input,extra);
 }

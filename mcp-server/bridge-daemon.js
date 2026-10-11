@@ -82,6 +82,9 @@ const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
 const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const nativeFixtureAbandonment = require("./native-fixture-abandonment");
 const nativeFixtureAbandonmentBackend = require("./native-fixture-abandonment-backend");
+const nativeFixturePrephaseRecovery = require("./native-fixture-prephase-recovery");
+const nativeFixturePrephaseBackend = require("./native-fixture-prephase-recovery-backend");
+const nativeFixturePrephaseProof = require("./native-fixture-prephase-recovery-proof");
 const {
   buildRawExtendscriptFallbackCandidateInput
 } = require("./raw-fallback-candidate");
@@ -175,6 +178,7 @@ const ameRunningExecutor = ameRunning.createExecutor({
 const ameFixtureCheckpoints = new Map();
 const ameFixtureExecutor = ameFixtureRunner.createExecutor({
   repoRoot: PROJECT_ROOT, contractVersion: AUTONOMY_CONTRACT_VERSION,
+  prephaseRecoveryReaders:()=>nativePrephaseReaders(),
   getCurrentRecord: () => currentProposalState.current,
   getCheckpoint: (record, runId) => {
     const entry = ameFixtureCheckpoints.get(runId);
@@ -9083,6 +9087,20 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname.startsWith("/ame/native-fixture-prephase-recovery/")) {
+      if(!requireToken(req,res,url))return;
+      const operation=url.pathname.slice("/ame/native-fixture-prephase-recovery/".length);
+      if(!["capture","publish","lookup","maintenance-read-back","maintenance-quiescence"].includes(operation) || req.method!==(["lookup","maintenance-read-back","maintenance-quiescence"].includes(operation) ? "GET" : "POST")){writeJson(res,404,{ok:false,code:"fixture_prephase_route_invalid"});return;}
+      if(res.authRole!==(operation==="lookup" ? "panel" : "automation")){writeJson(res,403,{ok:false,code:"fixture_prephase_role_required"});return;}
+      try {
+        if(url.searchParams.size || ["lookup","maintenance-read-back","maintenance-quiescence"].includes(operation) && (Number(req.headers["content-length"] || 0)!==0 || req.headers["transfer-encoding"]))throw Object.assign(Error("fixture_prephase_client_evidence_forbidden"),{code:"fixture_prephase_client_evidence_forbidden"});
+        if(operation==="maintenance-quiescence"){writeJson(res,200,{ok:true,inspection:await nativeFixturePrephaseRecovery.maintenanceQuiescence(nativePrephaseReaders())});return;}
+        const input=["lookup","maintenance-read-back"].includes(operation) ? nativeFixturePrephaseProof.selector() : await readJsonBody(req);
+        const result=await nativeFixturePrephaseRecovery[operation==="maintenance-read-back" ? "lookup" : operation](input,nativePrephaseReaders());
+        writeJson(res,200,{ok:true,[operation==="capture" ? "capture" : "certificate"]:result});
+      }catch(error){writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_prephase_failed"});}
+      return;
+    }
     if (url.pathname.startsWith("/ame/native-fixture-abandonment/")) {
       if (!requireToken(req,res,url)) return;
       const operation=url.pathname.slice("/ame/native-fixture-abandonment/".length);
@@ -13008,6 +13026,12 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
 const panelControlService = panelControl.createPanelControlService();
+function nativePrephaseReaders() {
+  return nativeFixturePrephaseBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,readBridgeStatus:getBridgeStatus,
+    loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,loadedRuntimeModules:RUNTIME_IDENTITY.modules,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
+    executorQuiescence:()=>ameFixtureExecutor.quiescence(),hasAttempt:stageId=>ameFixtureExecutor.hasAttempt(stageId),hasCurrentProposal:()=>currentProposalState.current!==null,
+    assertManualIngress:context=>{currentProposalState.assertCurrent(context && context.record);manualPlanIngress.assertContext(context);}});
+}
 
 async function callTool(name, args, executionContext) {
   if (name === panelBootstrap.TOOL_NAME) {
@@ -13094,6 +13118,11 @@ async function callTool(name, args, executionContext) {
     if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
     if(record.plan.steps?.length===1 && record.plan.steps[0].tool===ameFixtureGrant.TOOL_NAME && args.originalRequestId!==undefined) {
       try {
+        if(runId===nativeFixturePrephaseProof.PROFILE.runId) {
+          const saved=nativeFixturePrephaseRecovery.lookupAudited({requestId:args.originalRequestId,runId},{evidenceRoot:LOG_DIR,repoRoot:PROJECT_ROOT});
+          return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:saved ? "prephase_admission_certified" : "unknown",steps:[],reasonCode:saved ? "native_fixture_prephase_trusted_lookup_required" : "native_fixture_prephase_certificate_required",
+            nativeFixturePrephaseRecoveryAvailable:!!saved,originalRequestId:args.originalRequestId,historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,admissionGuardReleased:false,replayAllowed:false});
+        }
         const saved=nativeFixtureAbandonment.lookupAudited({requestId:args.originalRequestId,runId},{evidenceRoot:LOG_DIR,repoRoot:PROJECT_ROOT});
         return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:saved ? "abandoned_reviewed" : "unknown",steps:[],
           reasonCode:saved ? "native_fixture_fresh_trusted_lookup_required" : "native_fixture_abandonment_audit_required",nativeFixtureAbandonmentAvailable:!!saved,
