@@ -21,7 +21,8 @@ function parseCliArgs(argv) {
     if(flag==="--input")options.inputFile=value;
     if(flag==="--request-id"){if(!contract.UUID_REGEX.test(value))fail("invalid_request_id");options.requestId=value;}
     if(flag==="--timeout"){
-      if(!/^[1-9][0-9]*$/.test(value) || Number(value)>60000)fail("invalid_timeout");
+      const maximum=command==="refresh-guards"?control.TRUSTED_GUARD_REFRESH_TIMEOUT_MS:60000;
+      if(!/^[1-9][0-9]*$/.test(value) || Number(value)>maximum)fail("invalid_timeout");
       options.timeoutMs=Number(value);
     }
   }

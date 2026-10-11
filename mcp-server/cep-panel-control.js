@@ -6,6 +6,8 @@ const contract=require("../cep-panel/panel-action-contract");
 const bootstrap=require("./ae-agent-panel-bootstrap");
 const readonlyOrphan=require("./cep-panel-readonly-orphan");
 const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT_TIMEOUT_MS=30000;
+// Six serial fixed guard GETs, each bounded at 60s, plus final inspection.
+const TRUSTED_GUARD_REFRESH_TIMEOUT_MS=7*60000;
 const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
 // Retired identity accepted only from persisted history, never by the callable catalog.
@@ -42,6 +44,11 @@ function exact(value,keys) {
 function timeout(value,fallback=DEFAULT_TIMEOUT_MS) {
   if(value===undefined) return fallback;
   if(!Number.isInteger(value) || value<1 || value>60000) throw problem("invalid_timeout");
+  return value;
+}
+function guardRefreshTimeout(value) {
+  if(value===undefined)return TRUSTED_GUARD_REFRESH_TIMEOUT_MS;
+  if(!Number.isInteger(value) || value<1 || value>TRUSTED_GUARD_REFRESH_TIMEOUT_MS)throw problem("invalid_timeout");
   return value;
 }
 function requestId(value) {if(typeof value!=="string" || !UUID.test(value) || value!==value.toLowerCase()) throw problem("invalid_request_id");return value;}
@@ -327,10 +334,10 @@ function createPanelControlService(options={}) {
     }
     return {unresolvedCount:requestIds.length,requestIds:requestIds.sort(),replayAllowed:false};
   }
-  async function refreshTrustedGuards(args={},timeoutMs=30000) {
+  async function refreshTrustedGuards(args={},timeoutMs) {
     let claim;
     try {
-      exact(args,[]);const budget=timeout(timeoutMs,30000),deadline=Date.now()+budget,remaining=()=>{const left=deadline-Date.now();if(left<1)throw problem("trusted_guard_refresh_timeout_no_replay");return left;};
+      exact(args,[]);const budget=guardRefreshTimeout(timeoutMs),deadline=Date.now()+budget,remaining=()=>{const left=deadline-Date.now();if(left<1)throw problem("trusted_guard_refresh_timeout_no_replay");return Math.min(left,60000);};
       claim=acquireControllerLock(directory,crypto.randomUUID());
       const selected=await resolveTarget(remaining()),before=remoteState(await methodAt(selected.target,"state",{},remaining())),binding={panelInstanceId:before.panelInstanceId,panelLifecycleEpoch:before.panelLifecycleEpoch,panelGeneration:before.panelGeneration};
       if(before.activeAction!==null || before.recoveryTransport || before.actionStorage!=="ready" || before.trustedGuardRefresh?.pending)throw problem("trusted_guard_refresh_not_idle");
@@ -340,7 +347,8 @@ function createPanelControlService(options={}) {
       do {after=remoteState(await methodAt(selected.target,"state",{},remaining(),binding));if(after.trustedGuardRefresh?.pending)await new Promise(resolve=>setTimeout(resolve,100));}while(after.trustedGuardRefresh?.pending);
       const checked=await resolveTarget(remaining()),result=after.trustedGuardRefresh?.result;
       if(JSON.stringify(selected)!==JSON.stringify(checked) || after.activeAction!==null || after.recoveryTransport || after.actionStorage!=="ready" || result?.sequence!==started.sequence || result.ok!==true)throw problem("trusted_guard_refresh_changed_or_failed");
-      return {ok:true,protocolVersion:PROTOCOL_VERSION,state:after,transport:await maintenanceTransportState(),replayAllowed:false};
+      const transport=await maintenanceTransportState();remaining();
+      return {ok:true,protocolVersion:PROTOCOL_VERSION,state:after,transport,replayAllowed:false};
     }catch(error){return responseError(error);}finally{if(claim)claim.release();}
   }
   async function getResult(id,timeoutMs=5000) {
@@ -469,6 +477,6 @@ function createPanelControlService(options={}) {
   }
   return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards});
 }
-module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
+module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,TRUSTED_GUARD_REFRESH_TIMEOUT_MS,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
   computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,createPanelControlService};

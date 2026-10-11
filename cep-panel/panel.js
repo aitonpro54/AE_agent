@@ -422,6 +422,13 @@
     return lines.join("\n");
   }
 
+  function isFixedGuardLookup(method, path, body) {
+    if (method !== "GET" || body !== null && body !== undefined) return false;
+    if (path === "/human-guard-settlement/lookup" || path === "/ame/fixture-ui-disposition/lookup" || path === "/ame/native-fixture-prephase-recovery/lookup") return true;
+    var nativeSelector = /^\/ame\/native-fixture-abandonment\/lookup\?requestId=([^&]+)&runId=([^&]+)$/.exec(path);
+    return !!nativeSelector && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[1]) && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[2]);
+  }
+
   function request(method, path, body, onDone) {
     if (!bridgeHostAvailable(onDone)) return;
     var completed = false;
@@ -430,7 +437,7 @@
     if (!window.AEAgentPanelContract.validateLoopbackUrl(getBaseUrl())) { onDone({rejected:true,code:"invalid_loopback_url",message:"Bridge origin is not loopback."}); return; }
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
-    xhr.timeout = path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
+    xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
     if (body !== null && body !== undefined) {
