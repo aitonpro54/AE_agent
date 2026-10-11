@@ -4,7 +4,7 @@
 // A fresh one-shot reload recipe beside the frozen runtime. The historical
 // capsule remains an immutable provenance anchor, never a renewed effect grant.
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
-const maintenance=require("./native-fixture-retained-maintenance"),pure=require("./native-fixture-prephase-maintenance"),authority=require("../mcp-server/owned-runtime-authority"),supervisor=require("../mcp-server/owned-runtime-supervisor"),retained=require("../mcp-server/native-fixture-retained"),ledger=require("../mcp-server/native-fixture-attempt-ledger");
+const maintenance=require("./native-fixture-retained-maintenance"),pure=require("./native-fixture-prephase-maintenance"),authority=require("../mcp-server/owned-runtime-authority"),supervisor=require("../mcp-server/owned-runtime-supervisor"),retained=require("../mcp-server/native-fixture-retained"),ledger=require("../mcp-server/native-fixture-attempt-ledger"),maintenanceRetirement=require("./owned-runtime-maintenance-retire");
 const ROOT=path.resolve(__dirname,".."),SCHEMA="ae-agent.owned-runtime-panel-reload.v1",TTL=10*60000,COPY=maintenance.COPY,KINDS=["capture","intent","backup","reload-intent","reload-result","refresh-intent","refresh-result","read-back"];
 const {hash,same,clone,fail}=ledger;
 function parse(argv){const args=argv.slice(2),command=args.shift() || "help";if(!["help","capture","apply-once","read-back"].includes(command) || args.length)fail("owned_panel_reload_fixed_commands_only");return {command};}
@@ -15,6 +15,10 @@ function write(dir,kind,value){return ledger.writeOnce(fileFor(dir,kind),{schema
 function inventory(dir){if(!fs.existsSync(dir))return [];ledger.safeDirectory(dir);const names=fs.readdirSync(dir).sort();if(names.some(name=>name!=="backups" && !KINDS.some(kind=>name===kind+".json")))fail("owned_panel_reload_foreign_journal");for(const name of names)if(name!=="backups")read(dir,name.slice(0,-5));return names;}
 function toolPayload(response){const texts=response?.result?.content?.filter(row=>row.type==="text");if(response?.ok!==true || response.tool!=="get_panel_action_result" || texts?.length!==1)fail("owned_panel_reload_server_readback_invalid");try{return JSON.parse(texts[0].text);}catch(_){fail("owned_panel_reload_server_readback_invalid");}}
 function implementationPin(file){const stat=fs.lstatSync(file,{bigint:true}),rawSha256=hash(ledger.readBytes(file));return {rawSha256,assertUnchanged(){const now=fs.lstatSync(file,{bigint:true});if(now.dev!==stat.dev || now.ino!==stat.ino || now.size!==stat.size || now.mtimeNs!==stat.mtimeNs || hash(ledger.readBytes(file))!==rawSha256)fail("owned_panel_reload_implementation_changed");}};}
+function privateRequester(ctx){
+  if(path.resolve(ctx.root)!==ROOT)fail("owned_panel_reload_private_requester_required");const trusted=authority.runtimeControlFor(ctx.root),read=maintenanceRetirement.createFreshReadTransport({credential:sha=>trusted.credential({daemon:{port:3456,credentialSha256:sha}})});
+  return (route,body)=>{const registration=ctx.readRegistration();if(!registration)fail("owned_panel_reload_registered_generation_required");const profile={daemon:{port:3456,credentialSha256:registration.credentialSha256}};return maintenanceRetirement.FRESH_READ_POLICY.routes.includes(route)?read({credentialSha256:registration.credentialSha256},route,body):trusted.request(profile,route,body);};
+}
 async function officialServerResult(ctx,{createClient=require("./autonomous-plan-client").createMcpClient}={}){
   if(path.resolve(ctx.root)!==path.resolve(__dirname,".."))fail("owned_panel_reload_private_official_root_required");supervisor.verifyNodePolicy();
   const registration=ctx.readRegistration(),env={...process.env};for(const k of Object.keys(env))if(/^AE_BRIDGE_|^AE_OWNED_RUNTIME_/i.test(k))delete env[k];
@@ -24,7 +28,7 @@ async function officialServerResult(ctx,{createClient=require("./autonomous-plan
 function context(deps={}){
   const ctx=maintenance.context(deps);ctx.scriptFile=deps.scriptFile || __filename;
   ctx.readRegistration=deps.readRegistration || (()=>supervisor.readDaemonRegistration(ctx.root));ctx.loadLegacy=deps.loadLegacyProfile || (()=>supervisor.loadHistoricalLegacyProfile(ctx.root));
-  if(!deps.request){if(path.resolve(ctx.root)!==ROOT)fail("owned_panel_reload_private_requester_required");ctx.request=(route,body)=>{const registration=ctx.readRegistration();if(!registration)fail("owned_panel_reload_registered_generation_required");return require("./owned-runtime-control").request({daemon:{port:3456,credentialSha256:registration.credentialSha256}},route,body);};}
+  if(!deps.request)ctx.request=privateRequester(ctx);
   // Only the sole MCP controller may supply the genuine official result.
   // A developer HTTP transport cannot assert that official caller gate.
   ctx.getServerResult=deps.getServerResult || (()=>officialServerResult(ctx));ctx.readPredecessorAudit=deps.readPredecessorAudit || ((runtime,current)=>authority.readPredecessorAudit(ctx.root,runtime,current));
@@ -94,4 +98,4 @@ async function run(argv,deps={}){
   }finally{lock.release();}
 }
 if(require.main===module)run(process.argv).then(value=>process.stdout.write(JSON.stringify(value)+"\n")).catch(error=>{process.stdout.write(JSON.stringify({ok:false,code:/^(owned_|retained_|fixture_)[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_panel_reload_refused",guardReleased:false,...retained.OUTCOME})+"\n");process.exitCode=1;});
-module.exports={run,parse,context,authorityPins,readPriorInstalledStage,officialServerResult,observe,verify,verifyServerResult,toolPayload,directory,fileFor,read,SCHEMA,TTL,COPY};
+module.exports={run,parse,context,privateRequester,authorityPins,readPriorInstalledStage,officialServerResult,observe,verify,verifyServerResult,toolPayload,directory,fileFor,read,SCHEMA,TTL,COPY};
