@@ -4,9 +4,9 @@ const path = require("path");
 const readline = require("readline");
 const {spawn} = require("child_process");
 
-function createMcpClient() {
-  const child = spawn(process.execPath, [path.resolve(__dirname, "../mcp-server/mcp-adapter.js")],
-    {env: {...process.env, AE_DAEMON_AUTO_START: "0"}, windowsHide: true, stdio: ["pipe", "pipe", "ignore"]});
+function createMcpClient({env=process.env, adapterPath=path.resolve(__dirname, "../mcp-server/mcp-adapter.js"), executable=process.execPath}={}) {
+  const child = spawn(executable, [adapterPath],
+    {env: {...env, AE_DAEMON_AUTO_START: "0"}, windowsHide: true, stdio: ["pipe", "pipe", "ignore"]});
   let serial = 0;
   const pending = new Map();
   readline.createInterface({input: child.stdout}).on("line", (line) => {

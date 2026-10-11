@@ -4,6 +4,11 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const ledger=require("./native-fixture-attempt-ledger"),abandonment=require("./native-fixture-abandonment"),proof=require("./native-fixture-prephase-recovery-proof");
 const {fail,hash,same,clone,UUID}=ledger,SCHEMA="ae-agent.native-fixture-prephase-recovery.v1",TTL=600000,brands=new WeakMap();
+// Reviewed CURRENT issuer bytes: closed WeakMap/WeakSet capabilities, no
+// authority import/restore. Historical proof.SOURCES remains archive-only.
+// Exact bytes are required; neither equal arbitrary hashes nor normalization
+// can approve another issuer revision.
+const CURRENT_ISSUER_POLICY=Object.freeze({module:"mcp-server/ame-native-fixture-grant.js",sha256:"2bc1b47c752d042c0961994a300441fe0239ddb55f05a0400a7b5725f4669b87"});
 const OUTCOME=Object.freeze({scope:"new_disjoint_fixture_only",historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false,processExitProven:false,nativeEndpointInertProven:false,phaseAuthorityNeverIssued:true});
 const now=deps=>deps.now ? deps.now() : Date.now();
 function exact(value,keys) {if(!value || Array.isArray(value) || !same(Object.keys(value).sort(),keys.slice().sort()))fail("fixture_prephase_client_evidence_forbidden");}
@@ -11,11 +16,14 @@ function fileFor(root,kind,id) {if(!["capture","consumption","audit","certificat
 function read(root,kind,id) {const file=fileFor(root,kind,id);return fs.existsSync(file) ? abandonment.envelope(file,SCHEMA) : null;}
 function write(root,kind,id,value,metadata={}) {return ledger.writeOnce(fileFor(root,kind,id),value,{schema:SCHEMA+".envelope",...metadata});}
 function partial(root) {return ["consumption","audit","certificate"].some(k=>fs.existsSync(fileFor(root,k,proof.PROFILE.requestId)));}
+function issuerIsIsolated(isolation) {
+  return isolation?.originalAttemptPresent===false && isolation.originalAuthorityImportAvailable===false && isolation.loadedIssuerSha256===CURRENT_ISSUER_POLICY.sha256 && isolation.currentIssuerSha256===CURRENT_ISSUER_POLICY.sha256;
+}
 function executorIdle(executor,isolation) {
   // Runner Map sizes retain terminal children. Their count is not an in-flight
   // count: executing and the durable retirement/completion inventory decide.
   if(executor?.executing!==false || !Number.isInteger(executor.pendingCount) || executor.pendingCount<0 || !Number.isInteger(executor.descriptorCount) || executor.descriptorCount<0 || !Array.isArray(executor.outstandingAttempts) ||
-    executor.outstandingAttempts.some(row=>row.runId!==proof.PROFILE.runId || row.stageId!==proof.PROFILE.stageId || row.rootPath!==proof.PROFILE.rootPath) || isolation?.originalAttemptPresent!==false || isolation.originalAuthorityImportAvailable!==false || isolation.loadedIssuerSha256!==proof.SOURCES["ame-native-fixture-grant.js"] || isolation.currentIssuerSha256!==isolation.loadedIssuerSha256)fail("fixture_prephase_issuer_not_isolated");
+    executor.outstandingAttempts.some(row=>row.runId!==proof.PROFILE.runId || row.stageId!==proof.PROFILE.stageId || row.rootPath!==proof.PROFILE.rootPath) || !issuerIsIsolated(isolation))fail("fixture_prephase_issuer_not_isolated");
 }
 function liveGuard(s,p,guard,status,mode,context,deps,protection) {
   if(mode!=="admission") {abandonment.guardState(s,p,guard,status,mode);return;}
@@ -135,4 +143,4 @@ async function maintenanceQuiescence(deps) {
   }
   const a=await once(),b=await once();if(!same(a,b))fail("fixture_prephase_maintenance_bracket_changed");return b;
 }
-module.exports={SCHEMA,TTL,OUTCOME,fileFor,capture,publish,lookupAudited,lookup,bindAdmission,recheckAdmission,assertAdmission,assertDescriptor,maintenanceQuiescence};
+module.exports={SCHEMA,TTL,CURRENT_ISSUER_POLICY,OUTCOME,issuerIsIsolated,fileFor,capture,publish,lookupAudited,lookup,bindAdmission,recheckAdmission,assertAdmission,assertDescriptor,maintenanceQuiescence};

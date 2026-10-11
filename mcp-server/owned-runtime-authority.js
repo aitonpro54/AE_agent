@@ -8,6 +8,14 @@ const POLICY="ae-agent.owned-runtime-policy.v1",RETAINED="ae-agent.native-fixtur
 const PROFILE="migration-fixture-children-v1";
 const CAPABILITIES=Object.freeze(["native_fixture_disposition","panel_retained_reload","owned_daemon_lifecycle"]);
 const PIN_KEYS=Object.freeze(["canonicalRawSha256","transportReceiptRawSha256","transportIndexRawSha256","transportIdentitySha256","privateRecordSha256","privateIndexEntrySha256","panelReceiptSha256","privateSignatureSha256"]);
+const ACTUAL_RUNTIME_ROOT=path.resolve("C:/Users/Ant/Documents/Codex/AE_agent"),FIXED_CONTROL_SHA256="0914cbd9cdcdc941d3548ef0133523b6326ce15b3e98479f5c358ef203dcf738";
+function runtimeControlFor(root=path.resolve(__dirname,"..")) {
+  // Staged maintenance must use the genuine ROOT's strict fixed-config reader.
+  // No credential path, environment token or fallback is accepted from a caller.
+  if(path.resolve(root)===ACTUAL_RUNTIME_ROOT){const file=path.join(ACTUAL_RUNTIME_ROOT,"scripts","owned-runtime-control.js");if(ledger.hash(ledger.readBytes(file))!==FIXED_CONTROL_SHA256)ledger.fail("owned_runtime_fixed_control_source_changed");return require(file);}
+  // Existing private dependency fixtures replace this module's methods offline.
+  return require("../scripts/owned-runtime-control");
+}
 function exact(v,keys,code="owned_authority_contract_invalid") {
   if(!v || typeof v!=="object" || Array.isArray(v) || Object.keys(v).sort().join(",")!==keys.slice().sort().join(",") || Object.getOwnPropertySymbols(v).length || Object.values(Object.getOwnPropertyDescriptors(v)).some(d=>!Object.hasOwn(d,"value")))ledger.fail(code);
 }
@@ -132,8 +140,8 @@ function readPredecessorTransportInventory(root,pair,current,{supervisor=require
     const seal=privateFile(path.join(base(root),"supervisor-operations",edge.operationId,"final-stop-inventory.json"));
     if(seal.value.sha256!==edge.operation.finalInventorySha256)ledger.fail("owned_cutover_predecessor_inventory_changed");pins.push(seal);
     const generation=edge.predecessorGeneration,prefix="logs/cep-panel-control/owned/"+generation+"/",transport=path.join(root,"logs","cep-panel-control","owned",generation),files=new Map(seal.value.value.files.filter(f=>f.path.startsWith(prefix)).map(f=>[f.path,f.rawSha256]));
-    if(edge.operation.evidenceKind==="prior_verified_startup_retirement"){
-      const retired=supervisor.readVerifiedStartupRetirement(root,generation);if(!retired || retired.operationId!==edge.operation.sourceOperationId || retired.row.sha256!==edge.operation.source?.startupRetirementReceiptSha256 || !ledger.same(retired.source,edge.operation.source) || !["absent","initialized_empty"].includes(retired.namespace?.kind))ledger.fail("owned_cutover_startup_retirement_required");
+    if(["prior_verified_startup_retirement","prior_verified_maintenance_retirement"].includes(edge.operation.evidenceKind)){
+      const maintenance=edge.operation.evidenceKind==="prior_verified_maintenance_retirement",retired=maintenance?supervisor.readVerifiedMaintenanceRetirement(root,generation):supervisor.readVerifiedStartupRetirement(root,generation);if(!retired || retired.operationId!==edge.operation.sourceOperationId || retired.row.sha256!==edge.operation.source?.[maintenance?"maintenanceRetirementReceiptSha256":"startupRetirementReceiptSha256"] || !ledger.same(retired.source,edge.operation.source) || !["absent","initialized_empty"].includes(retired.namespace?.kind))ledger.fail("owned_cutover_startup_retirement_required");
       const witnessed=new Map(retired.namespace.files.map(f=>[f.path,f.rawSha256]));if(!ledger.same([...files.entries()].sort(),[...witnessed.entries()].sort()))ledger.fail("owned_cutover_startup_namespace_inventory_changed");namespaceChecks.push(retired.assertUnchanged);
       if(retired.namespace.kind==="absent"){
         if(files.size || fs.existsSync(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");namespaceChecks.push(()=>{if(fs.existsSync(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");});continue;
@@ -192,6 +200,20 @@ function readOriginalTransportInventory(root,{supervisor=require("./owned-runtim
   function assertUnchanged(){manifest.assertUnchanged();profile.assertUnchanged();keyFile.assertUnchanged();capsule.assertUnchanged();index.assertUnchanged();journalPins.forEach(p=>p.assertUnchanged());receiptPins.forEach(p=>p.assertUnchanged());predecessors.assertUnchanged();const latest=supervisor.readDaemonRegistration(root);if(!ledger.same(latest,current))ledger.fail("owned_cutover_current_generation_changed");}
   assertUnchanged();return {generation:current.generation,operationId,finalInventorySha256:seal.sha256,rows:allRows,assertUnchanged};
 }
+// An old audited runtime is usable only as an exact registration on the
+// unique, fully HMAC-verified path from the immutable anchor to current.
+function readPredecessorAudit(root,auditedRuntime,current){
+  const supervisor=require("./owned-runtime-supervisor"),manifest=privateFile(path.join(base(root),"retained-authority.json")),m=validateManifest(manifest.value),pairs=m.acceptedRuntimePairs.filter(p=>p.daemon?.ownedGeneration);
+  if(pairs.length!==1 || !current)ledger.fail("owned_panel_reload_current_r2_audit_required");const pair=pairs[0],runtime={daemon:{pid:current.kernelIdentity.pid,startedAt:current.serviceStartedAt},loadedRuntimeSha256:current.sourceSha256,currentRuntimeSha256:current.sourceSha256};
+  function chain(){if(!ledger.same(supervisor.resolveRetainedSuccession(root,pair,runtime),current))ledger.fail("owned_panel_reload_current_r2_audit_required");}chain();
+  const dir=path.join(base(root),"daemon-succession"),names=fs.readdirSync(dir).sort(),pins=names.map(n=>privateFile(path.join(dir,n))),edges=supervisor.validateSuccessionPath(pins.map(p=>p.value.value),pair.daemon.ownedGeneration,current.generation),matches=[];
+  for(const e of edges){const candidate=supervisor.readCandidate(root,e.predecessorGeneration).candidate.value,reg=supervisor.loadCurrentDaemonRegistration(root,{generation:candidate.generation,bootNonce:candidate.bootNonce,pid:candidate.kernelIdentity.pid,argv:candidate.argv,sourceSha256:candidate.sourceSha256});
+    if(auditedRuntime?.daemon?.pid===reg.kernelIdentity.pid && auditedRuntime.daemon.startedAt===reg.serviceStartedAt && auditedRuntime.loadedRuntimeSha256===reg.sourceSha256 && auditedRuntime.currentRuntimeSha256===reg.sourceSha256)matches.push({reg,edge:e});}
+  if(matches.length!==1)ledger.fail("owned_panel_reload_current_r2_audit_required");const match=matches[0];if(match.edge.operation.evidenceKind!=="prior_verified_maintenance_retirement")ledger.fail("owned_panel_reload_current_r2_audit_required");
+  const retirement=supervisor.readVerifiedMaintenanceRetirement(root,match.reg.generation);if(!retirement || retirement.row.sha256!==match.edge.operation.source.maintenanceRetirementReceiptSha256)ledger.fail("owned_panel_reload_current_r2_audit_required");
+  function assertUnchanged(){manifest.assertUnchanged();pins.forEach(p=>p.assertUnchanged());retirement.assertUnchanged();if(!ledger.same(names,fs.readdirSync(dir).sort()))ledger.fail("owned_panel_reload_predecessor_chain_changed");chain();}
+  assertUnchanged();return {generation:match.reg.generation,registration:match.reg,retirementReceiptSha256:retirement.row.sha256,successionPathSha256:ledger.hash(edges),stageRefs:retirement.acquisition.state.panelReloadStage.files,assertUnchanged};
+}
 function inspectRetainedInstalledTarget(root) {
   if(path.resolve(root)!==path.resolve(__dirname,"..") || !process.env.APPDATA)ledger.fail("owned_retained_installed_namespace_required");
   const manifest=privateFile(path.join(base(root),"retained-authority.json")),m=validateManifest(manifest.value),owned=loadRetained(root,m.selector);
@@ -203,4 +225,4 @@ function inspectRetainedInstalledTarget(root) {
   for(const [asset,digest] of Object.entries(selected.hashes))if(ledger.hash(ledger.readBytes(path.join(selected.root,asset)))!==digest)ledger.fail("owned_retained_installed_preimage_changed");
   manifest.assertUnchanged();owned.assertUnchanged();return selected;
 }
-module.exports={POLICY,RETAINED,PROFILE,CAPABILITIES,PIN_KEYS,base,privateFile,validatePolicy,validateManifest,loadPolicy,loadRetained,resolveRuntimePair,readCleanupNativeResult,currentTransportDirectory,selectTransportDirectory,receiptTransportDirectory,readPredecessorTransportInventory,readOriginalTransportInventory,inspectRetainedInstalledTarget,exact};
+module.exports={POLICY,RETAINED,PROFILE,CAPABILITIES,PIN_KEYS,runtimeControlFor,base,privateFile,validatePolicy,validateManifest,loadPolicy,loadRetained,resolveRuntimePair,readCleanupNativeResult,currentTransportDirectory,selectTransportDirectory,receiptTransportDirectory,readPredecessorTransportInventory,readOriginalTransportInventory,inspectRetainedInstalledTarget,readPredecessorAudit,exact};
