@@ -7,7 +7,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="ServiceBuild.props" />
   <PropertyGroup><TargetName>OfflineProtocolSmoke</TargetName></PropertyGroup>
-  <ItemDefinitionGroup><Link><SubSystem>Console</SubSystem></Link></ItemDefinitionGroup>
-  <ItemGroup><ClCompile Include="offline_protocol_smoke.cpp" /><ClCompile Include="service_protocol.cpp" /></ItemGroup>
+  <ItemDefinitionGroup><Link><SubSystem>Console</SubSystem><AdditionalDependencies>bcrypt.lib;ncrypt.lib;advapi32.lib;shell32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies></Link></ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="offline_protocol_smoke.cpp" /><ClCompile Include="offline_transport_smoke.cpp" /><ClCompile Include="service_protocol.cpp" /><ClCompile Include="service_authorization.cpp" /><ClCompile Include="service_crypto.cpp" /><ClCompile Include="service_win32.cpp" /><ClCompile Include="service_transport.cpp" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

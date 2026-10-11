@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{F91D065C-CFA3-4C1D-B448-5BC73A108471}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>DynamicLibrary</ConfigurationType><PlatformToolset>v143</PlatformToolset></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="ServiceBuild.props" />
+  <PropertyGroup><TargetName>NativeSnapshotAdapter</TargetName><TargetExt>.node</TargetExt><IgnoreImportLibrary>true</IgnoreImportLibrary></PropertyGroup>
+  <ItemDefinitionGroup><Link><AdditionalDependencies>bcrypt.lib;ncrypt.lib;advapi32.lib;shell32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies></Link></ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="native_snapshot_adapter.cpp" /><ClCompile Include="service_protocol.cpp" /><ClCompile Include="service_authorization.cpp" /><ClCompile Include="service_crypto.cpp" /><ClCompile Include="service_win32.cpp" /><ClCompile Include="service_transport.cpp" /></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

@@ -9,12 +9,14 @@
   <PropertyGroup><TargetName>AEAgentSnapshotService</TargetName><TargetExt>.aex</TargetExt><IgnoreImportLibrary>true</IgnoreImportLibrary></PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile><PreprocessorDefinitions>MSWindows;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
-    <Link><AdditionalDependencies>bcrypt.lib;shell32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies><GenerateDebugInformation>true</GenerateDebugInformation></Link>
+    <Link><AdditionalDependencies>bcrypt.lib;ncrypt.lib;advapi32.lib;shell32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies><GenerateDebugInformation>true</GenerateDebugInformation></Link>
   </ItemDefinitionGroup>
   <Target Name="ValidateSdk" BeforeTargets="PrepareForBuild"><Error Condition="'$(SdkRoot)' == '' or !Exists('$(SdkRoot)\Examples\Headers\AE_GeneralPlug.h') or !Exists('$(SdkRoot)\Examples\Resources\PiPLtool.exe')" Text="Official external SDK required, no dependency installation or fallback." /></Target>
   <ItemGroup>
     <ClCompile Include="ame_snapshot_service.cpp" /><ClCompile Include="service_protocol.cpp" /><ClCompile Include="service_win32.cpp" />
+    <ClCompile Include="service_authorization.cpp" /><ClCompile Include="service_crypto.cpp" /><ClCompile Include="service_transport.cpp" /><ClCompile Include="service_inspector.cpp" />
     <ClInclude Include="service_protocol.h" /><ClInclude Include="service_win32.h" />
+    <ClInclude Include="service_authorization.h" /><ClInclude Include="service_crypto.h" /><ClInclude Include="service_transport.h" /><ClInclude Include="service_inspector.h" />
     <CustomBuild Include="AEAgentSnapshotService_PiPL.r">
       <Message>Build dormant AEGP PiPL inside exclusive ignored IntDir</Message>
       <Command>"$(VCToolsInstallDir)bin\Hostx64\x64\cl.exe" /nologo /DMSWindows /I "$(SdkRoot)\Examples\Headers" /EP "%(FullPath)" &gt; "$(IntDir)AEAgentSnapshotService_PiPL.rr"
