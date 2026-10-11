@@ -2,6 +2,16 @@
 // Fixed server readers only; no process inventory, close, native grants or keys.
 const fs=require("node:fs"),path=require("node:path");
 const existing=require("./native-fixture-abandonment-backend"),proof=require("./native-fixture-prephase-recovery-proof"),ledger=require("./native-fixture-attempt-ledger"),bootstrap=require("./ae-agent-panel-bootstrap"),control=require("./cep-panel-control");
+const lifecycleState=require("./project-lifecycle-state"),{normalizeProject}=require("./proposal-state");
+function primaryProject(value,expectedFile) {
+  const p=lifecycleState.normalizeProjectLifecycleState(value),expected=normalizeProject(expectedFile);
+  if(p.projectPresent!==true || p.supported.file!==true || p.supported.dirty!==true || p.supported.revision!==true || p.project!=="named" || !expected)ledger.fail("fixture_prephase_primary_state_required");
+  if(normalizeProject(p.file)!==expected)ledger.fail("fixture_prephase_primary_state_changed");
+  return Object.freeze({file:expected,dirty:p.dirty,revision:p.revision});
+}
+function checkpointProjection(cp) {
+  return {label:cp?.label || null,sourceFile:normalizeProject(cp?.sourceFile),checkpointFile:normalizeProject(cp?.checkpointFile),bytes:cp?.bytes || null,createdAt:cp?.createdAt || null};
+}
 // Exact approved installed 3.3.1 bytes before this bounded panel update. Both
 // script bodies match fb29a72 after line-ending normalization; authority here
 // uses these original byte hashes, never normalized text or a Git label.
@@ -34,7 +44,32 @@ function installedHistoricalTarget() {
 }
 function createReaders(deps) {
   const panelService=deps.panelService || control.createPanelControlService({inspectInstalledTarget:installedHistoricalTarget}),base=existing.createReaders({...deps,panelService});
+  const protections=new WeakMap();
+  function ownedProtection(context) {
+    deps.assertManualIngress(context);
+    if(typeof deps.getAdmissionProtection!=="function")ledger.fail("fixture_prephase_owned_protection_required");
+    const observed=deps.getAdmissionProtection(context),entry=observed?.entry,session=observed?.activeEditSession,cp=context?.checkpoint;
+    if(!entry || entry.record!==context.record || entry.run?.id!==context.runId || entry.checkpoint!==cp || entry.run.safety?.activeEditSessionAtStart!==false || entry.run.safety.protection!=="auto_edit_session" ||
+      !entry.ownedEditSessionId || !session || session.id!==entry.ownedEditSessionId || session.status!=="active" || session.checkpoint!==cp || !Array.isArray(session.operations) || session.operations.length!==0 ||
+      !cp || !normalizeProject(cp.checkpointFile) || normalizeProject(cp.sourceFile)!==normalizeProject(context.record.project?.expectedFile) || !normalizeProject(context.record.project?.expectedFile))ledger.fail("fixture_prephase_owned_protection_required");
+    const baseline=entry.primaryBaseline;
+    if(!baseline || baseline.file!==normalizeProject(context.record.project.expectedFile) || typeof baseline.dirty!=="boolean" || !Number.isSafeInteger(baseline.revision) || baseline.revision<0)ledger.fail("fixture_prephase_primary_state_required");
+    return {entry,session,projection:{schema:"ae-agent.native-fixture-admission-protection.v1",runId:context.runId,actionId:context.record.actionId,ownedEditSessionId:session.id,checkpoint:checkpointProjection(cp),primary:ledger.clone(baseline)}};
+  }
   return {...base,assertManualIngress:deps.assertManualIngress,currentRuntimeSha256:deps.currentRuntimeSha256,hasCurrentProposal:deps.hasCurrentProposal,
+    async readAdmissionProtection(context) {
+      const before=ownedProtection(context);
+      if(typeof deps.readPrimaryProjectLifecycle!=="function")ledger.fail("fixture_prephase_primary_state_required");
+      const primary=primaryProject(await deps.readPrimaryProjectLifecycle(),context.record.project.expectedFile),after=ownedProtection(context);
+      if(before.entry!==after.entry || before.session!==after.session || !ledger.same(before.projection,after.projection))ledger.fail("fixture_prephase_owned_protection_changed");
+      if(!ledger.same(primary,after.projection.primary))ledger.fail("fixture_prephase_primary_state_changed");
+      const witness=Object.freeze(after.projection);protections.set(witness,{context,entry:after.entry,session:after.session,projection:ledger.clone(witness)});return witness;
+    },
+    assertAdmissionProtection(context,witness,statusSession) {
+      const saved=witness && protections.get(witness),current=ownedProtection(context);
+      if(!saved || saved.context!==context || saved.entry!==current.entry || saved.session!==current.session || !ledger.same(saved.projection,witness) || !ledger.same(witness,current.projection))ledger.fail("fixture_prephase_owned_protection_changed");
+      if(arguments.length>=3 && (!statusSession || statusSession.id!==witness.ownedEditSessionId || statusSession.status!=="active" || statusSession.operationCount!==0 || statusSession.latestOperation!==null || !ledger.same(checkpointProjection(statusSession.checkpoint),witness.checkpoint)))ledger.fail("fixture_prephase_owned_protection_changed");
+    },
     readDaemonRuntime() {const v=deps.readBridgeStatus().humanGuardRuntime;return {daemon:{pid:v.pid,startedAt:v.startedAt},loadedRuntimeSha256:deps.loadedRuntimeSha256,currentRuntimeSha256:deps.currentRuntimeSha256()};},
     readIssuerIsolation() {
       const loaded=deps.loadedRuntimeModules.filter(m=>m.name==="mcp-server/ame-native-fixture-grant.js");
@@ -44,4 +79,4 @@ function createReaders(deps) {
     }
   };
 }
-module.exports={createReaders,APPROVED_OLD_ASSETS,assertApprovedInstalledHashes};
+module.exports={createReaders,APPROVED_OLD_ASSETS,assertApprovedInstalledHashes,primaryProject};

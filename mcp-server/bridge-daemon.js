@@ -177,6 +177,24 @@ const ameRunningExecutor = ameRunning.createExecutor({
   }
 });
 const ameFixtureCheckpoints = new Map();
+async function readNativeFixturePrimaryLifecycle() {
+  const result=await callToolLogged("native-fixture-admission-read","get_project_lifecycle_state",{});
+  if(result.isError)throw Object.assign(new Error("fixture_prephase_primary_state_required"),{code:"fixture_prephase_primary_state_required"});
+  return firstToolPayload(result);
+}
+async function readNativeFixturePrimaryBaseline(record) {
+  currentProposalState.assertCurrent(record);manualPlanIngress.assertRequest(record);
+  if(activeEditSession!==null)throw Object.assign(new Error("fixture_prephase_owned_protection_required"),{code:"fixture_prephase_owned_protection_required"});
+  const primary=await readNativeFixturePrimaryLifecycle();
+  currentProposalState.assertCurrent(record);manualPlanIngress.assertRequest(record);
+  if(activeEditSession!==null)throw Object.assign(new Error("fixture_prephase_owned_protection_required"),{code:"fixture_prephase_owned_protection_required"});
+  return nativeFixturePrephaseBackend.primaryProject(primary,record.project.expectedFile);
+}
+function rememberNativeFixtureProtection(context,run,primaryBaseline) {
+  currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);
+  ameFixtureCheckpoints.set(context.runId,Object.freeze({record:context.record,run,checkpoint:context.checkpoint,
+    ownedEditSessionId:run.safety.protection==="auto_edit_session" && activeEditSession && activeEditSession.id || null,primaryBaseline}));
+}
 const ameFixtureExecutor = ameFixtureRunner.createExecutor({
   repoRoot: PROJECT_ROOT, contractVersion: AUTONOMY_CONTRACT_VERSION,
   prephaseRecoveryReaders:()=>nativePrephaseReaders(),
@@ -7090,6 +7108,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
   const checkpointStepPresent = hasCheckpointStep(validation);
   const activeEditSessionAtStart = Boolean(activeEditSession);
+  let ameFixturePrimaryBaseline = null;
 
   const actionBinding = options._m100ActionRecord;
   const expectedProject = actionBinding && actionBinding.project.expectedFile || prepared.plan.targetProject && prepared.plan.targetProject.file || null;
@@ -7435,6 +7454,11 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       return finishRun();
     }
 
+    if(validation.steps.length===1 && validation.steps[0].tool===ameFixtureGrant.TOOL_NAME) {
+      try {ameFixturePrimaryBaseline=await readNativeFixturePrimaryBaseline(options._m100ActionRecord);}
+      catch(error) {run.ok=false;run.errorCode=error.code || "fixture_prephase_primary_state_required";run.error=error.message;return finishRun();}
+    }
+
     const guard = options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
       actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
     const started = await autonomousCommandContext.run(guard, () => startPlanRunEditSession(run, validation));
@@ -7610,7 +7634,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
       }) : null;
-      if (ameFixtureContext) ameFixtureCheckpoints.set(run.id, { record: ameFixtureContext.record, checkpoint: ameFixtureContext.checkpoint });
+      if (ameFixtureContext) rememberNativeFixtureProtection(ameFixtureContext,run,ameFixturePrimaryBaseline);
       let ameFixtureAuthorization = null;
       if (ameFixtureContext) {
         try { ameFixtureAuthorization = await ameFixtureExecutor.authorize(ameFixtureContext); }
@@ -13031,6 +13055,7 @@ function nativePrephaseReaders() {
   return nativeFixturePrephaseBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,readBridgeStatus:getBridgeStatus,
     loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,loadedRuntimeModules:RUNTIME_IDENTITY.modules,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
     executorQuiescence:()=>ameFixtureExecutor.quiescence(),hasAttempt:stageId=>ameFixtureExecutor.hasAttempt(stageId),hasCurrentProposal:()=>currentProposalState.current!==null,
+    getAdmissionProtection:context=>({entry:ameFixtureCheckpoints.get(context && context.runId),activeEditSession}),readPrimaryProjectLifecycle:readNativeFixturePrimaryLifecycle,
     assertManualIngress:context=>{currentProposalState.assertCurrent(context && context.record);manualPlanIngress.assertContext(context);}});
 }
 function nativePrephaseMaintenanceReaders() {

@@ -196,8 +196,11 @@ function createExecutor(deps) {
     deps.assertManualIngress(context);
     const recovery=require("./native-fixture-prephase-recovery"),brand=typeof deps.prephaseRecoveryReaders==="function" ? await recovery.bindAdmission(context,deps.prephaseRecoveryReaders()) : null;
     ledger.assertAdmission(root,null,{brand,context});
+    await recovery.recheckAdmission(brand,context,root);
+    const issuerCapability=await issuer.authorize(context);
+    await recovery.recheckAdmission(brand,context,root);
     const capability = Object.freeze({});
-    capabilities.set(capability, { context, recoveryBrand:brand,issuerCapability: await issuer.authorize(context) }); return capability;
+    capabilities.set(capability, { context, recoveryBrand:brand,issuerCapability }); return capability;
   }
   function assertAuthorization(capability, args) {
     const entry = capabilities.get(capability);
@@ -211,6 +214,8 @@ function createExecutor(deps) {
     executing = true; capabilities.delete(capability);
     const children = [];
     try {
+      const recovery=require("./native-fixture-prephase-recovery");
+      await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);
       const artifacts = (deps.getArtifacts || buildArtifacts)(root);
       if (!fs.existsSync(ownedParent)) fs.mkdirSync(ownedParent);
       safeDirectory(ownedParent);
@@ -240,6 +245,10 @@ function createExecutor(deps) {
         writeOnce(path.join(descriptor.rootPath, "launch.manifest"), prepared.manifestBytes);
         ledger.reserve(root,descriptor,entry.context,prepared.manifestBytes);
         const manifestExpiry=Number(/(?:^|\n)expires_unix_ms=(\d+)\n/.exec(String(prepared.manifestBytes))?.[1]) || Infinity;
+        // The owner/root/manifest/reservation already exist. A refusal here is
+        // a retained prelaunch attempt, never a zero-filesystem-effect claim.
+        try {await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);}
+        catch(error) {issuer.markUnknown(prepared.child);throw error;}
         const launched = await (deps.launchChild || launchChild)(descriptor, prepared.environment);
         if (!launched || !Number.isSafeInteger(launched.pid) || launched.pid < 1) { issuer.markUnknown(prepared.child); fail("fixture_runner_launch_unknown"); }
         launches.set(descriptor, { pid: launched.pid });
@@ -274,7 +283,11 @@ function createExecutor(deps) {
         const phases = role === "capture" ? [["create-fixture", "signed-fixture.json"], ["snapshot", "signed-snapshot.json"]] : [["stage-variants", "signed-variants.json"]];
         let verified;
         for (const [operation, receiptName] of phases) {
+          await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);
           const phase = await issuer.issuePhase(prepared.child, operation);
+          // issuePhase contains checkpoint/process/consume awaits. Check fresh
+          // primary protection again before publishing native phase authority.
+          await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);
           writeOnce(path.join(descriptor.rootPath, phase.filename), phase.bytes);
           verified = await waitReceipt(receiptName);
         }

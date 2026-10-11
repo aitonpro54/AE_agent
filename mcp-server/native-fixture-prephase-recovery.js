@@ -17,18 +17,28 @@ function executorIdle(executor,isolation) {
   if(executor?.executing!==false || !Number.isInteger(executor.pendingCount) || executor.pendingCount<0 || !Number.isInteger(executor.descriptorCount) || executor.descriptorCount<0 || !Array.isArray(executor.outstandingAttempts) ||
     executor.outstandingAttempts.some(row=>row.runId!==proof.PROFILE.runId || row.stageId!==proof.PROFILE.stageId || row.rootPath!==proof.PROFILE.rootPath) || isolation?.originalAttemptPresent!==false || isolation.originalAuthorityImportAvailable!==false || isolation.loadedIssuerSha256!==proof.SOURCES["ame-native-fixture-grant.js"] || isolation.currentIssuerSha256!==isolation.loadedIssuerSha256)fail("fixture_prephase_issuer_not_isolated");
 }
-function liveGuard(s,p,guard,status,mode,context,deps) {
+function liveGuard(s,p,guard,status,mode,context,deps,protection) {
   if(mode!=="admission") {abandonment.guardState(s,p,guard,status,mode);return;}
   deps.assertManualIngress(context);
-  if(status.pendingCommands!==0 || status.inflightCommands?.length!==0 || status.activeEditSession!==null || status.projectLifecycle?.blocked || status.projectLifecycle?.pending || status.panelBootstrap?.busy || guard.controllerIdle!==false ||
+  deps.assertAdmissionProtection(context,protection,status.activeEditSession);
+  if(status.pendingCommands!==0 || status.inflightCommands?.length!==0 || status.projectLifecycle?.blocked || status.projectLifecycle?.pending || status.panelBootstrap?.busy || guard.controllerIdle!==false ||
     !p.activeAction || p.activeAction.action!=="plan.run" || p.activeAction.requestId===s.requestId || p.recoveryTransport || p.actionStorage!=="ready")fail("fixture_prephase_new_manual_action_required");
+}
+async function freshProtection(deps,context,witness) {
+  deps.assertAdmissionProtection(context,witness);
+  const fresh=await deps.readAdmissionProtection(context);
+  // Keep the original WeakMap witness and its exact private Map/session/CP
+  // identities across the read, rather than replacing it with caller evidence.
+  deps.assertAdmissionProtection(context,witness);deps.assertAdmissionProtection(context,fresh);
+  if(!same(witness,fresh))fail("fixture_prephase_owned_protection_changed");
 }
 async function snapshot(deps,mode="capture",context=null) {
   for(const name of ["maintenanceTarget","readPanelGuard","readBridgeStatus","readRuntimeIdentity","readTransportAbsence","readExecutorQuiescence","readIssuerIsolation"])if(typeof deps[name]!=="function")fail("fixture_prephase_fixed_reader_required");
-  const s=proof.selector(),historical=proof.classify(deps.repoRoot,deps.evidenceRoot),selected=await deps.maintenanceTarget(),actor=abandonment.actor(selected.state),guard=await deps.readPanelGuard(s),entry=abandonment.guardEntry(s,guard,historical.proof,actor),status=await deps.readBridgeStatus();
+  if(mode==="admission" && ["readAdmissionProtection","assertAdmissionProtection"].some(name=>typeof deps[name]!=="function"))fail("fixture_prephase_owned_protection_required");
+  const s=proof.selector(),historical=proof.classify(deps.repoRoot,deps.evidenceRoot),selected=await deps.maintenanceTarget(),actor=abandonment.actor(selected.state),guard=await deps.readPanelGuard(s),entry=abandonment.guardEntry(s,guard,historical.proof,actor),protection=mode==="admission" ? await deps.readAdmissionProtection(context) : null,status=await deps.readBridgeStatus();
   // Only the existing private manual ingress can supply admission mode. A busy
   // exact plan.run is expected while authorizing a new server context.
-  liveGuard(s,selected.state,guard,status,mode,context,deps);
+  liveGuard(s,selected.state,guard,status,mode,context,deps,protection);
   const transport=await deps.readTransportAbsence(s);abandonment.transportEvidence(s,transport);
   const executor=await deps.readExecutorQuiescence(),isolation=await deps.readIssuerIsolation();
   executorIdle(executor,isolation);
@@ -36,9 +46,10 @@ async function snapshot(deps,mode="capture",context=null) {
   const runtime=abandonment.runtime(await deps.readRuntimeIdentity());abandonment.frameEvidence(selected,runtime);
   if(Date.parse(runtime.daemon.startedAt)<=Date.parse(historical.proof.run.finishedAt))fail("fixture_prephase_original_daemon_not_isolated");
   const after=await deps.maintenanceTarget();abandonment.sameTarget(selected,after,actor);
-  const endGuard=await deps.readPanelGuard(s),endStatus=await deps.readBridgeStatus();liveGuard(s,after.state,endGuard,endStatus,mode,context,deps);
-  if(!same(abandonment.guardEntry(s,endGuard,historical.proof,actor),entry) || !same(await deps.readExecutorQuiescence(),executor) || !same(await deps.readIssuerIsolation(),isolation) || !same(await deps.readTransportAbsence(s),transport))fail("fixture_prephase_fresh_bracket_changed");
-  return {selector:s,entry,currentActor:actor,target:clone(selected.target),installed:clone(selected.installed),runtime,executor:clone(executor),transport:clone(transport),issuerIsolation:clone(isolation),original:historical.binding,inventorySha256:historical.inventorySha256};
+  const endGuard=await deps.readPanelGuard(s),endProtection=mode==="admission" ? await deps.readAdmissionProtection(context) : null,endStatus=await deps.readBridgeStatus();liveGuard(s,after.state,endGuard,endStatus,mode,context,deps,endProtection);
+  if(!same(protection,endProtection) || !same(abandonment.guardEntry(s,endGuard,historical.proof,actor),entry) || !same(await deps.readExecutorQuiescence(),executor) || !same(await deps.readIssuerIsolation(),isolation) || !same(await deps.readTransportAbsence(s),transport))fail("fixture_prephase_fresh_bracket_changed");
+  if(mode==="admission")await freshProtection(deps,context,endProtection);
+  return {selector:s,entry,currentActor:actor,target:clone(selected.target),installed:clone(selected.installed),runtime,executor:clone(executor),transport:clone(transport),issuerIsolation:clone(isolation),original:historical.binding,inventorySha256:historical.inventorySha256,...(mode==="admission" ? {admissionProtection:protection} : {})};
 }
 async function bracket(deps,mode,context) {const a=await snapshot(deps,mode,context),b=await snapshot(deps,mode,context);if(!same(a,b))fail("fixture_prephase_fresh_bracket_changed");return b;}
 function captureValid(row,id,time) {const c=row?.value,t=Date.parse(c?.createdAt);if(!c || c.schema!==SCHEMA+".capture" || c.captureId!==id || !Number.isFinite(t) || Date.parse(c.expiresAt)!==t+TTL || time<t || time>=t+TTL)fail("fixture_prephase_capture_stale_or_invalid");return c;}
@@ -90,11 +101,21 @@ async function bindAdmission(context,deps) {
   const saved=lookupAudited(proof.selector(),deps);if(!saved)return null;newContext(context,saved,deps);
   const fresh=await bracket(deps,"admission",context);if(!same(fresh.entry,saved.value.entry))fail("fixture_prephase_original_guard_drift");
   if(typeof deps.currentRuntimeSha256!=="function" || deps.currentRuntimeSha256()!==fresh.runtime.loadedRuntimeSha256)fail("fixture_prephase_runtime_reader_required");
-  const brand=Object.freeze({});brands.set(brand,{context,record:context.record,fingerprint:fingerprint(context),certificateSha256:saved.sha256,repoRoot:deps.repoRoot,evidenceRoot:deps.evidenceRoot,assertManualIngress:deps.assertManualIngress,now:deps.now,currentRuntimeSha256:deps.currentRuntimeSha256,loadedRuntimeSha256:fresh.runtime.loadedRuntimeSha256});return brand;
+  const brand=Object.freeze({});brands.set(brand,{context,record:context.record,fingerprint:fingerprint(context),certificateSha256:saved.sha256,repoRoot:deps.repoRoot,evidenceRoot:deps.evidenceRoot,assertManualIngress:deps.assertManualIngress,assertAdmissionProtection:deps.assertAdmissionProtection,readAdmissionProtection:deps.readAdmissionProtection,admissionProtection:fresh.admissionProtection,now:deps.now,currentRuntimeSha256:deps.currentRuntimeSha256,loadedRuntimeSha256:fresh.runtime.loadedRuntimeSha256});return brand;
+}
+function admissionBinding(brand,context,repoRoot) {
+  const b=brand && brands.get(brand);if(!b || b.context!==context || b.record!==context.record || b.repoRoot!==repoRoot || b.fingerprint!==fingerprint(context))fail("fixture_prephase_private_context_required");
+  b.assertManualIngress(context);return b;
+}
+async function recheckAdmission(brand,context,repoRoot) {
+  if(!brand)return;
+  const b=admissionBinding(brand,context,repoRoot);await freshProtection(b,context,b.admissionProtection);
+  admissionBinding(brand,context,repoRoot);
+  if(b.currentRuntimeSha256()!==b.loadedRuntimeSha256)fail("fixture_prephase_runtime_changed");
 }
 function assertAdmission(brand,context,repoRoot) {
-  const b=brand && brands.get(brand);if(!b || b.context!==context || b.record!==context.record || b.repoRoot!==repoRoot || b.fingerprint!==fingerprint(context))fail("fixture_prephase_private_context_required");
-  b.assertManualIngress(context);const saved=lookupAudited(proof.selector(),b);if(!saved || saved.sha256!==b.certificateSha256)fail("fixture_prephase_certificate_changed");newContext(context,saved,b);
+  const b=admissionBinding(brand,context,repoRoot);
+  b.assertAdmissionProtection(context,b.admissionProtection);const saved=lookupAudited(proof.selector(),b);if(!saved || saved.sha256!==b.certificateSha256)fail("fixture_prephase_certificate_changed");newContext(context,saved,b);
   if(b.currentRuntimeSha256()!==b.loadedRuntimeSha256)fail("fixture_prephase_runtime_changed");
   return proof.PROFILE;
 }
@@ -114,4 +135,4 @@ async function maintenanceQuiescence(deps) {
   }
   const a=await once(),b=await once();if(!same(a,b))fail("fixture_prephase_maintenance_bracket_changed");return b;
 }
-module.exports={SCHEMA,TTL,OUTCOME,fileFor,capture,publish,lookupAudited,lookup,bindAdmission,assertAdmission,assertDescriptor,maintenanceQuiescence};
+module.exports={SCHEMA,TTL,OUTCOME,fileFor,capture,publish,lookupAudited,lookup,bindAdmission,recheckAdmission,assertAdmission,assertDescriptor,maintenanceQuiescence};
