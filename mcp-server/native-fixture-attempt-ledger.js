@@ -78,7 +78,7 @@ function unknown(repoRoot,d,code) {
 function validateRetirement(proof,expected) {
   const p=proof?.process, w=proof?.proof;
   if (proof?.schema!=="ae-agent.native-fixture-retirement-proof.v1" || !sameProcess(p,expected) || w?.kind!=="held_process_handle_signaled" ||
-      w.waitResult!=="WAIT_OBJECT_0" || !Number.isInteger(w.exitCode) || w.exitCode===259 || !Number.isFinite(Date.parse(w.handleOpenedAt)) ||
+      w.waitResult!=="WAIT_OBJECT_0" || !Number.isInteger(w.exitCode) || !Number.isFinite(Date.parse(w.handleOpenedAt)) ||
       !Number.isFinite(Date.parse(w.identityVerifiedAt)) || !Number.isFinite(Date.parse(w.observedAt)) || Date.parse(w.handleOpenedAt)<p.createdUnixMs ||
       Date.parse(w.identityVerifiedAt)<Date.parse(w.handleOpenedAt) || Date.parse(w.observedAt)<Date.parse(w.identityVerifiedAt) || proof.nativeExecutionProven!==false) fail("fixture_retirement_positive_exit_proof_required");
   return clone(proof);

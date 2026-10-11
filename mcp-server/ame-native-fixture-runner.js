@@ -9,6 +9,59 @@ const ledger = require("./native-fixture-attempt-ledger");
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const INSPECT = "inspect_ame_native_fixture_result";
 const INSPECT_ATTEMPT="inspect_native_fixture_attempt";
+// Both launch and later reads use the exact same kernel handle source. FILETIME
+// remains an Int64/decimal string until its lossless seven-digit UTC rendering;
+// neither Process.StartTime nor CIM's shorter birth value participates.
+const KERNEL_PROCESS_IDENTITY = `
+using System;
+using System.ComponentModel;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
+public sealed class FixtureKernelIdentity {
+  public int pid { get; set; }
+  public string path { get; set; }
+  public long createdUnixMs { get; set; }
+  public string createdAt { get; set; }
+  public string createdFileTime { get; set; }
+}
+public static class FixtureKernelProcess {
+  [DllImport("kernel32.dll", SetLastError=true)]
+  private static extern uint GetProcessId(IntPtr handle);
+  [DllImport("kernel32.dll", SetLastError=true)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  private static extern bool GetProcessTimes(IntPtr handle, out long created, out long exited, out long kernel, out long user);
+  [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  private static extern bool QueryFullProcessImageName(IntPtr handle, uint flags, StringBuilder name, ref uint size);
+  [DllImport("kernel32.dll", SetLastError=true)]
+  public static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+  [DllImport("kernel32.dll", SetLastError=true)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  private static extern bool GetExitCodeProcess(IntPtr handle, out uint code);
+  public static FixtureKernelIdentity ReadIdentity(IntPtr handle) {
+    uint pid = GetProcessId(handle);
+    if (pid == 0 || pid > Int32.MaxValue) throw new Win32Exception(Marshal.GetLastWin32Error());
+    long created, exited, kernel, user;
+    if (!GetProcessTimes(handle, out created, out exited, out kernel, out user)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    StringBuilder image = new StringBuilder(32768); uint size = (uint)image.Capacity;
+    if (!QueryFullProcessImageName(handle, 0, image, ref size)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    DateTime birth = DateTime.FromFileTimeUtc(created);
+    return new FixtureKernelIdentity { pid = (int)pid, path = image.ToString(),
+      createdUnixMs = new DateTimeOffset(birth).ToUnixTimeMilliseconds(),
+      createdAt = birth.ToString("o", CultureInfo.InvariantCulture),
+      createdFileTime = created.ToString(CultureInfo.InvariantCulture) };
+  }
+  public static int ReadExitCode(IntPtr handle) {
+    // An application may itself exit with 259. Only the signaled held handle,
+    // rather than that ambiguous numeric value, establishes termination.
+    if (WaitForSingleObject(handle, 0) != 0) throw new InvalidOperationException("fixture_exit_handle_not_signaled");
+    uint code;
+    if (!GetExitCodeProcess(handle, out code)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    return unchecked((int)code);
+  }
+}`;
+const KERNEL_PROCESS_SETUP = "Add-Type -TypeDefinition '" + KERNEL_PROCESS_IDENTITY.replace(/'/g,"''") + "'";
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function writeOnce(file, bytes) {
   const fd = fs.openSync(file, "wx");
@@ -38,7 +91,7 @@ function queryWindows(script, env = process.env) {
 }
 async function inspectProcess(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) fail("fixture_runner_pid_invalid");
-  return queryWindows(`$ErrorActionPreference='Stop'; $p=Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if(!$p){'null';exit}; try{$h=$p.Handle; $b=[DateTimeOffset]$p.StartTime.ToUniversalTime(); @{pid=[int]$p.Id;path=[string]$p.MainModule.FileName;createdUnixMs=$b.ToUnixTimeMilliseconds();createdAt=$b.ToString('o')} | ConvertTo-Json -Compress}finally{$p.Dispose()}`);
+  return queryWindows(`$ErrorActionPreference='Stop'; ${KERNEL_PROCESS_SETUP}; $p=Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if(!$p){'null';exit}; try{$h=$p.Handle; [FixtureKernelProcess]::ReadIdentity($h) | ConvertTo-Json -Compress}finally{$p.Dispose()}`);
 }
 async function launchChild(descriptor, environment) {
   // A new AE instance, hidden at launch. No -r, arbitrary JSX, GUI actions or
@@ -49,12 +102,11 @@ async function launchChild(descriptor, environment) {
   // A lost observer or daemon crash leaves admission closed; PID absence/reuse
   // never becomes an exit proof. It performs no termination or project action.
   const script=["$ErrorActionPreference='Stop'",
-    "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class FixtureExitWait { [DllImport(\"kernel32.dll\",SetLastError=true)] public static extern uint WaitForSingleObject(IntPtr h,uint ms); }'",
+    KERNEL_PROCESS_SETUP,
     "$p=Start-Process -FilePath $env:AE_AGENT_NATIVE_FIXTURE_EXECUTABLE -ArgumentList '-m' -WindowStyle Hidden -PassThru",
-    "$h=$p.Handle; $opened=[DateTimeOffset]::UtcNow; $birth=[DateTimeOffset]$p.StartTime.ToUniversalTime(); $image=[string]$p.MainModule.FileName; $verified=[DateTimeOffset]::UtcNow",
-    "$identity=@{pid=[int]$p.Id;createdUnixMs=$birth.ToUnixTimeMilliseconds();createdAt=$birth.ToString('o');path=$image}",
+    "$h=$p.Handle; $opened=[DateTimeOffset]::UtcNow; $identity=[FixtureKernelProcess]::ReadIdentity($h); $verified=[DateTimeOffset]::UtcNow",
     "@{type='launch';process=$identity} | ConvertTo-Json -Compress; [Console]::Out.Flush()",
-    "$wait=[FixtureExitWait]::WaitForSingleObject($h,[uint32]::MaxValue); if($wait -ne 0){throw 'fixture_wait_failed'}; $p.Refresh(); $code=$p.ExitCode",
+    "$wait=[FixtureKernelProcess]::WaitForSingleObject($h,[uint32]::MaxValue); if($wait -ne 0){throw 'fixture_wait_failed'}; $code=[FixtureKernelProcess]::ReadExitCode($h)",
     "@{type='exit';process=$identity;proof=@{kind='held_process_handle_signaled';handleOpenedAt=$opened.ToString('o');identityVerifiedAt=$verified.ToString('o');observedAt=[DateTimeOffset]::UtcNow.ToString('o');waitResult='WAIT_OBJECT_0';exitCode=[int]$code}} | ConvertTo-Json -Depth 4 -Compress; [Console]::Out.Flush(); $p.Dispose()"
   ].join(";\n");
   const executable=path.join(process.env.SystemRoot || "C:\\Windows","System32","WindowsPowerShell","v1.0","powershell.exe");
@@ -189,16 +241,19 @@ function createExecutor(deps) {
         if (!launched || !Number.isSafeInteger(launched.pid) || launched.pid < 1) { issuer.markUnknown(prepared.child); fail("fixture_runner_launch_unknown"); }
         launches.set(descriptor, { pid: launched.pid });
         const owned = { descriptor, child: prepared.child, pid: launched.pid, terminal: false }; children.push(owned);
-        const processInfo=await readProcess(launched.pid);
-        if (launched.process && !ledger.sameProcess(launched.process,processInfo)) fail("fixture_runner_launch_identity_changed");
-        // Preserve the more precise handle-bound birth string when available.
-        const trustedIdentity=launched.process || processInfo;
-        ledger.launch(root,descriptor,trustedIdentity);
+        // A post-launch lookup cannot reconstruct the original held identity.
+        // Keep its lossless canonical ISO7 witness and exit listener before any
+        // later read/refusal, so identity drift still leaves recoverable evidence.
+        if (!launched.process || launched.process.pid!==launched.pid) fail("fixture_runner_launch_identity_required");
+        const trustedIdentity=ledger.processIdentity(launched.process,descriptor);
         launches.set(descriptor,{pid:launched.pid,process:trustedIdentity});
-        if (launched.retirement) launched.retirement.then(proof=> {
+        if (launched.retirement) Promise.resolve(launched.retirement).then(proof=> {
           if (!proof) return;
           try {ledger.validateRetirement(proof,trustedIdentity);ledger.writeOnce(ledger.fileFor(root,stageId,"retirement-proof"),proof);} catch (_) { /* fail closed; no retirement audit */ }
-        });
+        },()=>{ /* A lost observer never becomes an exit proof. */ });
+        ledger.launch(root,descriptor,trustedIdentity);
+        const processInfo=await readProcess(launched.pid);
+        if (!ledger.sameProcess(trustedIdentity,processInfo)) fail("fixture_runner_launch_identity_changed");
         const waitReceipt = async filename => {
           // Waiting does not renew the signed manifest or manual M100 authority.
           const deadline = Math.min(Date.now() + (filename==="signed-boot.json" ? 300000 : 90000),manifestExpiry,Date.parse(entry.context.record.proposalExpiresAt) || Infinity);

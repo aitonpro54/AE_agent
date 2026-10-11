@@ -1,16 +1,6 @@
 # Пакетный экспорт вариантов титров через AME
 
-**Остановлено на сегодня по поручению пользователя — 11 октября. Progress:**
-manual run `5a4ac6eb…` отказал `fixture_runner_launch_identity_changed` до phase
-grants; panel снова busy/reconciliationRequired, unresolved только этот run.
-Остался тестовый AE40476 (`Untitled Project.aep`) и broker21888; primary31728,
-DL38316/36520 и AME35400 сохранены. Все helpers остановлены, WIP скопирован с SHA.
-**Decision Log:** UNKNOWN/no-replay и guards сохраняются; новые тесты, закрытие
-непроверенного child, restart/reload не выполняются. **Validation:** свежая
-инвентаризация и redacted panel read, 4/4 protected SHA совпали; новых tests/builds
-нет. Следующий шаг после возобновления — восстановить exact launch/held-exit
-evidence, затем закрыть только доказанный тестовый child и исправить durable
-launch identity. [Полный checkpoint и безопасное завершение](ame-title-batch-stop-20261011.md).
+**Офлайн-блок восстановления AME runner — 11 октября. Ход:** runner/kernel fixes завершены только в исходниках; daemon загружен со старым SHA `793480e4…`. Последнее чтение root: старые процессы не обнаружены; held-exit proof утрачен. AE33840/AME42840/daemon15440, panel disconnected, unresolved=7; MCP reconcile вернул `native_fixture_abandonment_audit_required`, `admissionReleased=false`. Run `5a4ac6eb…` (request `4f06…`, stage `3fed…`) остаётся `UNKNOWN/no-replay`. **Решения:** ae_specialist — runner/kernel implementation, ae_scout — read-only evidence, ae_architect — pre-phase contract, root — sole live controller; Flash исключён пользователем. **Проверки:** runner49, kernel own-child, abandonment64, fixture-grant86; syntax4, rules и diff PASS, только offline. M3/M4 остаются BLOCKED/не приняты. [Checkpoint остановки](ame-title-batch-stop-20261011.md).
 
 **Предыдущий завершённый блок — 11 октября, grouped lookup после daemon-only deployment. Progress:**
 root заменил daemon PID46240 на PID29132; loaded runtime SHA

@@ -102,6 +102,7 @@ function createFixture() {
     binarySha256, pluginPath, pluginSha256: binarySha256, executablePath, executableSha256: hash(fs.readFileSync(executablePath)) };
   const baseline = Buffer.from("mock captured baseline project");
   const state = { launches: [], killCalls: 0, artifactsCalls: 0, mutateBaselineAfterSnapshot: false, badVariantHash: false, omitBoot: false, refuse: false };
+  const identity = pid => ({pid,path:executablePath,createdUnixMs:1791648389614,createdAt:"2026-10-10T16:06:29.6145910Z"});
   function writeReceipt(descriptor, phase, extra = {}) {
     const names = { boot: "signed-boot.json", "create-fixture": "signed-fixture.json", snapshot: "signed-snapshot.json", "stage-variants": "signed-variants.json", "refused_or_unknown": "signed-refusal.json" };
     const name = names[phase]; assert(name, `unknown mock phase: ${phase}`);
@@ -113,12 +114,15 @@ function createFixture() {
     getArtifacts() { state.artifactsCalls++; return artifacts; },
     async launchChild(descriptor) {
       assert.deepEqual(fs.readdirSync(descriptor.rootPath).sort(),descriptor.role==="capture" ? ["launch.manifest"] : ["baseline.aep","launch.manifest"],"native Claim root must contain only its fixed input files");
-      state.launches.push({ role: descriptor.role, rootPath: descriptor.rootPath });
+      const process=identity(4101+state.launches.length);
+      let finishExit;
+      const retirement=new Promise(resolve=>{finishExit=resolve;});
+      state.launches.push({ role: descriptor.role, rootPath: descriptor.rootPath, stageId:descriptor.stageId,process,finishExit });
       if (state.refuse) writeReceipt(descriptor, "refused_or_unknown", { reason: "offline signed refusal" });
       else if (!state.omitBoot) writeReceipt(descriptor, "boot");
-      return { pid: 4100 + state.launches.length };
+      return { pid:process.pid,process:state.omitLaunchIdentity ? undefined : process,retirement };
     },
-    async inspectProcess(pid) {return {pid,path:executablePath,createdUnixMs:1791648389614,createdAt:"2026-10-10T16:06:29.614591Z"};},
+    async inspectProcess(pid) {return state.onInspect ? state.onInspect(pid) : identity(pid);},
     // This mock models the guarded server consume callback; runner writes the durable marker.
     async consumeAttempt() { return true; }
   };
@@ -154,6 +158,12 @@ function createFixture() {
   return { temp, root, artifacts, deps, state, executor, context, baseline };
 }
 function removeFixture(test) { fs.rmSync(test.temp, { recursive: true, force: true }); }
+function exitProof(launch) {
+  const born=launch.process.createdUnixMs;
+  return {schema:"ae-agent.native-fixture-retirement-proof.v1",process:{...launch.process},nativeExecutionProven:false,
+    proof:{kind:"held_process_handle_signaled",handleOpenedAt:new Date(born+1000).toISOString(),identityVerifiedAt:new Date(born+2000).toISOString(),
+      observedAt:new Date(born+3000).toISOString(),waitResult:"WAIT_OBJECT_0",exitCode:0}};
+}
 
 function testBuildArtifactsGuards(test) {
   const support = "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files";
@@ -308,6 +318,108 @@ async function main() {
     } finally {ledger.complete=complete;crypto.randomUUID=uuid;}
     await rejected("failed_completion_has_no_private_result",()=>t.executor.inspectResult({evidenceId}),"fixture_runner_verified_result_unavailable");
     checked("failed_completion_keeps_admission_closed",()=>assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/));
+  } finally {removeFixture(t);}
+
+  t=createFixture();
+  try {
+    t.state.onInspect=async pid=> {
+      const launched=t.state.launches[0],saved=ledger.read(ledger.fileFor(t.root,launched.stageId,"launch"));
+      assert(saved,"original launch witness must exist before the second identity read");
+      assert(ledger.sameProcess(saved.value.process,launched.process));
+      return {...launched.process,pid,createdAt:"2026-10-10T16:06:29.6145911Z"};
+    };
+    const capability=await t.executor.authorize(t.context);
+    await rejected("same_millisecond_100ns_identity_drift_refuses_before_phase",()=>t.executor.execute(t.context.args,capability),"fixture_runner_launch_identity_changed");
+    const launched=t.state.launches[0],unknownFile=ledger.fileFor(t.root,launched.stageId,"unknown"),unknownHash=hash(fs.readFileSync(unknownFile));
+    checked("identity_refusal_retains_exact_launch_and_no_phase_authority",()=> {
+      assert.equal(t.state.launches.length,1);assert.equal(t.state.consumed,undefined);
+      assert.equal(t.executor.attemptIdentity(launched.stageId).process.createdAt,"2026-10-10T16:06:29.6145910Z");
+      assert.equal(ledger.read(unknownFile).value.replayAllowed,false);
+      assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);
+    });
+    launched.finishExit(exitProof(launched));await Promise.resolve();
+    checked("identity_refusal_keeps_original_held_exit_observer_without_retiring",()=> {
+      const proof=ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof"));
+      assert(proof);ledger.validateRetirement(proof.value,launched.process);
+      assert.equal(hash(fs.readFileSync(unknownFile)),unknownHash);
+      assert.equal(ledger.validRetirement(t.root,ledger.read(ledger.fileFor(t.root,launched.stageId,"reservation")).value.descriptor),false);
+      assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);
+    });
+    await rejected("identity_refusal_capability_and_fresh_admission_cannot_replay",()=>t.executor.execute(t.context.args,capability),"fixture_runner_authorization_required");
+    await rejected("identity_refusal_blocks_new_authorization",()=>t.executor.authorize(t.context),"fixture_runner_unretired_attempt_no_replay");
+  } finally {removeFixture(t);}
+
+  t=createFixture();
+  try {
+    t.state.onInspect=async()=> {
+      const launched=t.state.launches[0];launched.finishExit(exitProof(launched));await Promise.resolve();
+      assert(ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof")),"held exit listener must be registered before the second identity read");
+      throw Object.assign(Error("offline_identity_query_failed"),{code:"offline_identity_query_failed"});
+    };
+    const capability=await t.executor.authorize(t.context);
+    await rejected("second_identity_query_failure_retains_launch_witness",()=>t.executor.execute(t.context.args,capability),"offline_identity_query_failed");
+    const launched=t.state.launches[0];
+    checked("second_identity_query_failure_retains_held_exit_listener",()=> {
+      assert(ledger.read(ledger.fileFor(t.root,launched.stageId,"launch")));
+      assert(ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof")));
+      assert.equal(t.state.consumed,undefined);
+    });
+  } finally {removeFixture(t);}
+
+  t=createFixture();
+  try {
+    const capability=await t.executor.authorize(t.context),publish=ledger.launch;
+    ledger.launch=()=>{throw Object.assign(Error("offline_launch_publication_failed"),{code:"offline_launch_publication_failed"});};
+    try {await rejected("launch_publication_failure_preserves_original_exit_observer",()=>t.executor.execute(t.context.args,capability),"offline_launch_publication_failed");}
+    finally {ledger.launch=publish;}
+    const launched=t.state.launches[0];launched.finishExit(exitProof(launched));await Promise.resolve();
+    checked("failed_launch_publication_cannot_erase_exit_evidence_or_open_admission",()=> {
+      assert(ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof")));
+      assert.equal(ledger.read(ledger.fileFor(t.root,launched.stageId,"launch")),null);
+      assert.equal(ledger.read(ledger.fileFor(t.root,launched.stageId,"unknown")).value.replayAllowed,false);
+      assert.equal(t.state.consumed,undefined);assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);
+    });
+  } finally {removeFixture(t);}
+
+  t=createFixture();t.state.omitLaunchIdentity=true;
+  try {
+    t.state.onInspect=()=>{throw Error("post_launch_lookup_must_not_invent_original_identity");};
+    const capability=await t.executor.authorize(t.context);
+    await rejected("missing_original_handle_identity_rejects_without_lookup_fallback",()=>t.executor.execute(t.context.args,capability),"fixture_runner_launch_identity_required");
+    checked("missing_original_identity_retains_reservation_unknown_and_no_launch_claim",()=> {
+      const launched=t.state.launches[0];assert.equal(ledger.read(ledger.fileFor(t.root,launched.stageId,"launch")),null);
+      assert.equal(ledger.read(ledger.fileFor(t.root,launched.stageId,"unknown")).value.replayAllowed,false);
+      assert.equal(t.state.consumed,undefined);assert.equal(t.executor.attemptIdentity(launched.stageId),null);
+    });
+  } finally {removeFixture(t);}
+
+  t=createFixture();
+  try {
+    const capability=await t.executor.authorize(t.context);
+    t.state.onInspect=async pid=>({...t.state.launches[0].process,pid,createdAt:"2026-10-10T16:06:29.6145911Z"});
+    await rejected("terminal_259_still_requires_exact_held_handle_identity",()=>t.executor.execute(t.context.args,capability),"fixture_runner_launch_identity_changed");
+    const launched=t.state.launches[0],proof=exitProof(launched);proof.proof.exitCode=259;
+    launched.finishExit(proof);await Promise.resolve();
+    checked("signaled_held_handle_terminal_259_is_valid_exit_evidence",()=> {
+      const saved=ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof"));assert(saved);
+      assert.equal(saved.value.proof.exitCode,259);ledger.validateRetirement(saved.value,launched.process);
+      const unsignaled=JSON.parse(JSON.stringify(saved.value));unsignaled.proof.waitResult="WAIT_TIMEOUT";
+      assert.throws(()=>ledger.validateRetirement(unsignaled,launched.process),/positive_exit_proof_required/);
+      assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);
+    });
+  } finally {removeFixture(t);}
+
+  t=createFixture();
+  try {
+    t.state.onInspect=async pid=>({...t.state.launches[0].process,pid,createdAt:"2026-10-10T16:06:29.6145911Z"});
+    const capability=await t.executor.authorize(t.context);
+    await rejected("identity_refusal_is_not_recovered_by_mismatched_exit_proof",()=>t.executor.execute(t.context.args,capability),"fixture_runner_launch_identity_changed");
+    const launched=t.state.launches[0],proof=exitProof(launched);proof.process.createdAt="2026-10-10T16:06:29.6145911Z";
+    launched.finishExit(proof);await Promise.resolve();
+    checked("100ns_mismatched_exit_proof_never_publishes_retirement",()=> {
+      assert.equal(ledger.read(ledger.fileFor(t.root,launched.stageId,"retirement-proof")),null);
+      assert.throws(()=>ledger.assertAdmission(t.root),/unretired_attempt/);
+    });
   } finally {removeFixture(t);}
 
   t = createFixture(); t.state.refuse = true;
