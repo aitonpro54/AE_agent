@@ -37,12 +37,12 @@ function identity(context,row){const current=context.local(row.requestId);if(!cu
 }
 function same(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function sameBinding(a,b){return a && b && a.panelInstanceId===b.panelInstanceId && a.panelLifecycleEpoch===b.panelLifecycleEpoch && a.panelGeneration===b.panelGeneration;}
-function validSnapshot(value){if(!value || value.remoteAbsent!==true || value.controllerIdle!==true || !value.actor ||
-  typeof value.actor.panelInstanceId!=="string" || !Number.isInteger(value.actor.panelLifecycleEpoch) || typeof value.actor.panelGeneration!=="string" ||
+function validActor(value){return value && typeof value.panelInstanceId==="string" && value.panelInstanceId.length>0 &&
+  Number.isInteger(value.panelLifecycleEpoch) && value.panelLifecycleEpoch>=0 && typeof value.panelGeneration==="string" && value.panelGeneration.length>0;}
+function validSnapshot(value){if(!value || value.remoteAbsent!==true || value.controllerIdle!==true || !validActor(value.actor) ||
   !/^[a-f0-9]{64}$/.test(value.targetSha256 || ""))fail("readonly_orphan_panel_not_idle");return value;}
-async function snapshots(context,id,binding){const first=validSnapshot(await context.observe(id)),second=validSnapshot(await context.observe(id));
+async function snapshots(context,id){const first=validSnapshot(await context.observe(id)),second=validSnapshot(await context.observe(id));
   if(!sameBinding(first.actor,second.actor) || first.targetSha256!==second.targetSha256)fail("readonly_orphan_panel_changed");
-  if(!sameBinding(first.actor,binding) || !sameBinding(second.actor,binding))fail("readonly_orphan_historical_actor_changed");
   return {...second,observations:{count:2,timestamps:[first.observedAt,second.observedAt]}};
 }
 function fileId(stat){return {dev:String(stat.dev),ino:String(stat.ino)};}
@@ -57,29 +57,40 @@ function heldOwner(context,row){const file=path.join(context.root,"controller.lo
 }
 function effective(row,saved){return {...row,state:"unknown",phase:"readonly_owner_exited",code:"readonly_transport_owner_exited",delivery:"unknown",replayAllowed:false,
   transportDisposition:{schema:SCHEMA,sha256:saved.sha256,historicalOutcome:"unknown",aeExecutionProven:false,projectGuardsReleased:false,replayAllowed:false}};}
-async function validate(context,row){const saved=read(context.root,row.requestId,"disposition");if(!saved)return null;const v=saved.value,captured=intent(context,row),current=identity(context,row),consumed=read(context.root,row.requestId,"consumed");
+function auditedRetirement(context,row){const saved=read(context.root,row.requestId,"disposition");if(!saved)return null;const v=saved.value,captured=intent(context,row),current=identity(context,row),consumed=read(context.root,row.requestId,"consumed");
   if(v.schema!==SCHEMA || v.requestId!==row.requestId || v.action!=="plan.reconcile" || v.runId!==captured.value.envelope.args.runId ||
     v.signature!==row.signature || v.intentSha256!==captured.sha256 || !consumed || v.consumedSha256!==consumed.sha256 ||
     v.receiptSha256!==current.receiptSha256 || v.indexIdentitySha256!==current.indexIdentitySha256 || v.state!=="unknown" || v.delivery!=="unknown" ||
     v.replayAllowed!==false || v.aeExecutionProven!==false || v.projectGuardsReleased!==false || consumed.value.schema!==SCHEMA+".consumed" ||
     consumed.value.requestId!==row.requestId || consumed.value.status!=="consumed_before_controller_retirement" || consumed.value.replayAllowed!==false ||
-    v.witness?.owner?.requestId!==row.requestId || !/^[a-f0-9]{64}$/.test(v.witness?.owner?.tokenSha256 || "") || !same(consumed.value.witness,v.witness) ||
+    v.witness?.owner?.requestId!==row.requestId || !Number.isInteger(v.witness?.owner?.pid) || v.witness.owner.pid<1 ||
+    !/^[a-f0-9]{64}$/.test(v.witness?.owner?.tokenSha256 || "") || !/^\d+$/.test(v.witness?.owner?.fileIdentity?.dev || "") ||
+    !/^\d+$/.test(v.witness?.owner?.fileIdentity?.ino || "") || !same(consumed.value.witness,v.witness) ||
+    !validActor(v.witness?.actor) || !sameBinding(v.witness.actor,row.binding) || !/^[a-f0-9]{64}$/.test(v.witness?.targetSha256 || "") ||
     v.witness?.observations?.count!==2 || !Array.isArray(v.witness.observations.timestamps) || v.witness.observations.timestamps.length!==2 ||
     v.witness.observations.timestamps.some(t=>typeof t!=="string" || !Number.isFinite(Date.parse(t))) ||
     !context.dead(v.witness?.owner?.pid))fail("readonly_orphan_disposition_invalid");
   const owner=context.readLock();if(owner && owner.requestId===row.requestId)fail("readonly_orphan_retirement_unknown_no_replay");
-  const observed=await snapshots(context,row.requestId,row.binding);if(!sameBinding(observed.actor,v.witness.actor) || observed.targetSha256!==v.witness.targetSha256)fail("readonly_orphan_observation_changed");
-  const after=identity(context,row);if(!same(current,after))fail("readonly_orphan_transport_changed");return {saved,receipt:effective(row,saved),actor:observed.actor,targetSha256:observed.targetSha256};
+  return {saved,identity:{...current,intentSha256:captured.sha256,consumedSha256:consumed.sha256,dispositionSha256:saved.sha256}};
+}
+async function validate(context,row){const original=auditedRetirement(context,row);if(!original)return null;
+  // Completed retirement is historical evidence. A legitimate reload can replace
+  // its actor/target; only a fresh stable pair from the fixed service reader can
+  // supply the current admission binding. Never rewrite the historical chain.
+  const observed=await snapshots(context,row.requestId),after=auditedRetirement(context,row);
+  if(!after || !same(original.identity,after.identity))fail("readonly_orphan_transport_changed");
+  return {saved:original.saved,receipt:effective(row,original.saved),actor:observed.actor,targetSha256:observed.targetSha256};
 }
 async function retire(context,row){const existing=read(context.root,row.requestId,"disposition");if(existing)return validate(context,row);
   if(read(context.root,row.requestId,"consumed"))fail("readonly_orphan_retirement_unknown_no_replay");
   const captured=intent(context,row),original=identity(context,row),held=heldOwner(context,row);
-  try{const observed=await snapshots(context,row.requestId,row.binding);held.check();if(!same(original,identity(context,row)))fail("readonly_orphan_transport_changed");
+  try{const observed=await snapshots(context,row.requestId);if(!sameBinding(observed.actor,row.binding))fail("readonly_orphan_historical_actor_changed");
+    held.check();if(captured.sha256!==intent(context,row).sha256 || !same(original,identity(context,row)))fail("readonly_orphan_transport_changed");
     const witness={owner:held.witness,actor:observed.actor,targetSha256:observed.targetSha256,observations:observed.observations};
     const consumed=writeOnce(context.root,row.requestId,"consumed",{schema:SCHEMA+".consumed",requestId:row.requestId,status:"consumed_before_controller_retirement",witness,replayAllowed:false});
     const saved=writeOnce(context.root,row.requestId,"disposition",{schema:SCHEMA,requestId:row.requestId,action:row.action,runId:captured.value.envelope.args.runId,signature:row.signature,
       ...original,intentSha256:captured.sha256,consumedSha256:consumed.sha256,witness,state:"unknown",delivery:"unknown",replayAllowed:false,aeExecutionProven:false,projectGuardsReleased:false});
-    held.check();if(!same(original,identity(context,row)))fail("readonly_orphan_transport_changed");
+    held.check();if(captured.sha256!==intent(context,row).sha256 || !same(original,identity(context,row)))fail("readonly_orphan_transport_changed");
     // Node lacks delete-by-held-handle. This sync tuple/file-id recheck + unlink
     // is a cooperative sole-controller contract, not hostile-writer isolation.
     fs.unlinkSync(held.file);return {saved,receipt:effective(row,saved),actor:observed.actor,targetSha256:observed.targetSha256};

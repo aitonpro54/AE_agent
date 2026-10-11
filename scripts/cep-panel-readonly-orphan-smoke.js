@@ -26,6 +26,22 @@ function fixture(name,hook=()=>{}){
 function audit(f,kind){return orphan.read(f.directory,f.row.requestId,kind);}
 function effect(){return {requestId:id(),action:"ui.sidebar.set",args:{collapsed:true}};}
 function unchanged(f){assert.equal(fs.readFileSync(f.receiptFile,"utf8"),f.original);assert.equal(f.sends(),0);}
+function evidence(f){return {receipt:fs.readFileSync(f.receiptFile,"utf8"),input:fs.readFileSync(f.inputFile,"utf8"),
+  index:JSON.stringify(JSON.parse(fs.readFileSync(path.join(f.directory,"identities.json"))).identities[f.row.requestId]),
+  ...Object.fromEntries(["intent","consumed","disposition"].map(kind=>[kind,fs.readFileSync(orphan.filename(f.directory,f.row.requestId,kind),"utf8")]))};}
+function alter(f,mode){
+  if(mode==="original")fs.appendFileSync(f.receiptFile," ");
+  if(mode==="index"){const file=path.join(f.directory,"identities.json"),v=JSON.parse(fs.readFileSync(file));v.identities[f.row.requestId].manualRevision=true;fs.writeFileSync(file,JSON.stringify(v));}
+  if(mode==="intent" || mode==="consumed")fs.appendFileSync(orphan.filename(f.directory,f.row.requestId,mode)," ");
+  if(mode==="source")fs.appendFileSync(f.inputFile," ");
+  if(mode==="disposition"){const file=orphan.filename(f.directory,f.row.requestId,"disposition"),v=JSON.parse(fs.readFileSync(file));v.projectGuardsReleased=true;fs.writeFileSync(file,JSON.stringify(v));}
+  if(mode==="disposition-bytes")fs.appendFileSync(orphan.filename(f.directory,f.row.requestId,"disposition")," ");
+  if(mode==="historical-actor"){
+    const file=orphan.filename(f.directory,f.row.requestId,"consumed"),consumed=JSON.parse(fs.readFileSync(file));consumed.witness.actor.panelInstanceId="another-historical-actor";fs.writeFileSync(file,JSON.stringify(consumed));
+    const dispositionFile=orphan.filename(f.directory,f.row.requestId,"disposition"),v=JSON.parse(fs.readFileSync(dispositionFile));v.witness=consumed.witness;v.consumedSha256=orphan.hash(fs.readFileSync(file,"utf8"));fs.writeFileSync(dispositionFile,JSON.stringify(v));
+  }
+  if(mode==="matching-lock")fs.writeFileSync(f.lock,JSON.stringify(f.owner));
+}
 async function main(){
   await test("exact legacy input, dead owner, two fresh null/idle snapshots; original bytes and unknown/noReplay preserved",async()=>{
     const f=fixture("success"),fingerprint=control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);assert.match(fingerprint,/^[a-f0-9]{64}$/);
@@ -64,7 +80,19 @@ async function main(){
     const f=fixture("historical-actor");control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);f.reload();
     const r=await f.service.getResult(f.row.requestId);assert.equal(r.code,"readonly_orphan_historical_actor_changed");assert(fs.existsSync(f.lock));assert(!audit(f,"consumed"));unchanged(f);
   });
-  for(const mode of ["token-drift","lock-file-replaced","owner-became-live","actor-drift","target-drift","installed-drift","remote-record","panel-active","recovery-active"]){
+  for(const mode of ["actor","target","actor-and-target"]){
+    await test("completed retirement survives stable current "+mode+" reload with immutable audit",async()=>{
+      const f=fixture("retired-reload-"+mode);control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);await f.service.getResult(f.row.requestId);const before=evidence(f),historical=clone(audit(f,"disposition"));
+      if(mode.includes("actor"))f.reload();
+      if(mode.includes("target")){f.page.webSocketDebuggerUrl="ws://127.0.0.1:8870/devtools/page/reloaded";f.installed.hashes.source="updated-installed-source";}
+      const again=await f.service.getResult(f.row.requestId);assert.equal(again.receipt.phase,"readonly_owner_exited",JSON.stringify(again));assert.equal(again.receipt.replayAllowed,false);assert.deepEqual(evidence(f),before);
+      assert.deepEqual(audit(f,"disposition"),historical);assert(!fs.existsSync(f.lock));assert.equal(f.queries(),6);unchanged(f);
+      assert.deepEqual(await f.service.maintenanceTransportState(),{unresolvedCount:0,requestIds:[],replayAllowed:false});assert.deepEqual(evidence(f),before);
+      const replay=await f.service.invoke(f.raw);assert.equal(replay.receipt.phase,"readonly_owner_exited");assert.equal(replay.replayed,false);unchanged(f);
+      const next=await f.service.invoke(effect());assert.equal(next.ok,true,JSON.stringify(next));assert.equal(f.sends(),1);assert.deepEqual(evidence(f),before);
+    });
+  }
+  for(const mode of ["token-drift","lock-file-replaced","owner-became-live","actor-drift","target-drift","installed-drift","remote-record","panel-active","recovery-active","input-drift","intent-drift"]){
     await test(mode+" during second observation never retires",async()=>{
       const f=fixture(mode,async(f,expression,queries,value)=>{
         if(queries===3 && expression.includes("api.getResult(")){
@@ -74,6 +102,8 @@ async function main(){
           if(mode==="actor-drift")f.reload();
           if(mode==="target-drift")f.page.webSocketDebuggerUrl="ws://127.0.0.1:8870/devtools/page/changed";
           if(mode==="installed-drift")f.installed.hashes.source="changed";
+          if(mode==="input-drift")fs.appendFileSync(f.inputFile," ");
+          if(mode==="intent-drift")fs.appendFileSync(orphan.filename(f.directory,f.row.requestId,"intent")," ");
           if(mode==="remote-record")value.value={protocolVersion:control.PROTOCOL_VERSION,requestId:f.row.requestId,action:"plan.reconcile",state:"completed",phase:"completed",replayAllowed:false};
         }
         if(queries>=2 && expression.includes("api.state(")){
@@ -81,7 +111,20 @@ async function main(){
           if(mode==="recovery-active")value.value.recoveryTransport={state:"ready"};
         }
       });control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);
-      const r=await f.service.getResult(f.row.requestId);assert.equal(r.ok,false,mode);assert(fs.existsSync(f.lock));assert(!audit(f,"disposition"));unchanged(f);
+      const r=await f.service.getResult(f.row.requestId);assert.equal(r.ok,false,mode);assert(fs.existsSync(f.lock));assert(!audit(f,"disposition"));assert(!audit(f,"consumed"));unchanged(f);
+      if(mode==="input-drift" || mode==="intent-drift")assert.equal(r.code,mode==="input-drift"?"readonly_orphan_input_changed":"readonly_orphan_transport_changed");
+    });
+  }
+  for(const mode of ["input","intent"]){
+    await test(mode+" drift after sidecar writes preserves the lock and terminal no-replay audit",async()=>{
+      const f=fixture("before-unlink-"+mode);control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);const write=fs.writeFileSync;let changed=false;
+      try{fs.writeFileSync=(file,data,...args)=>{const result=write(file,data,...args);
+        if(typeof file==="number" && typeof data==="string" && JSON.parse(data).schema===orphan.SCHEMA){changed=true;fs.appendFileSync(mode==="input"?f.inputFile:orphan.filename(f.directory,f.row.requestId,"intent")," ");}return result;};
+        const r=await f.service.getResult(f.row.requestId);assert(changed);assert.equal(r.code,mode==="input"?"readonly_orphan_input_changed":"readonly_orphan_transport_changed");
+      }finally{fs.writeFileSync=write;}
+      assert(fs.existsSync(f.lock));assert(audit(f,"consumed"));const disposition=audit(f,"disposition");assert.equal(disposition.value.state,"unknown");assert.equal(disposition.value.replayAllowed,false);
+      assert.equal(disposition.value.aeExecutionProven,false);assert.equal(disposition.value.projectGuardsReleased,false);unchanged(f);
+      const before=evidence(f);assert((await f.service.getResult(f.row.requestId)).code);assert((await f.service.invoke(f.raw)).code);assert(fs.existsSync(f.lock));assert.deepEqual(evidence(f),before);unchanged(f);
     });
   }
   await test("write-once consumed crash barrier is terminal; no repeat retirement",async()=>{
@@ -89,14 +132,45 @@ async function main(){
     fs.writeFileSync(orphan.filename(f.directory,f.row.requestId,"consumed"),JSON.stringify({schema:"offline interrupted attempt"}));
     const r=await f.service.getResult(f.row.requestId);assert.equal(r.code,"readonly_orphan_retirement_unknown_no_replay");assert(fs.existsSync(f.lock));assert(!audit(f,"disposition"));unchanged(f);
   });
-  for(const mode of ["later-actor","later-record","later-original","later-disposition"]){
+  for(const mode of ["record","original","index","intent","source","consumed","disposition","historical-actor","matching-lock"]){
     await test(mode+" invalidates exact admission exception",async()=>{
-      let drift=false;const f=fixture(mode,async(_f,expression,_queries,value)=>{if(drift && mode==="later-record" && expression.includes("api.getResult("))value.value={state:"completed"};});
+      let drift=false;const f=fixture("later-"+mode,async(_f,expression,_queries,value)=>{if(drift && mode==="record" && expression.includes("api.getResult("))value.value={state:"completed"};});
       control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);assert.equal((await f.service.getResult(f.row.requestId)).receipt.state,"unknown");drift=true;
-      if(mode==="later-actor")f.reload();
-      if(mode==="later-original")fs.appendFileSync(f.receiptFile," ");
-      if(mode==="later-disposition"){const file=orphan.filename(f.directory,f.row.requestId,"disposition"),v=JSON.parse(fs.readFileSync(file));v.requestId=id();fs.writeFileSync(file,JSON.stringify(v));}
-      const next=await f.service.invoke(effect());assert.equal(next.ok,false,JSON.stringify(next));assert.equal(next.code,"transport_reconciliation_required");assert.equal(f.sends(),0);
+      alter(f,mode);const before=evidence(f);
+      const passive=await f.service.getResult(f.row.requestId);assert(passive.code,JSON.stringify(passive));assert.deepEqual(evidence(f),before);
+      assert.deepEqual(await f.service.maintenanceTransportState(),{unresolvedCount:1,requestIds:[f.row.requestId],replayAllowed:false});
+      const next=await f.service.invoke(effect());assert.equal(next.ok,false,JSON.stringify(next));assert.equal(next.code,mode==="matching-lock"?"transport_busy":"transport_reconciliation_required");assert.equal(f.sends(),0);
+      assert.deepEqual(evidence(f),before);
+    });
+  }
+  await test("persisted owner becoming live invalidates completed retirement without changing evidence",async()=>{
+    const f=fixture("later-owner-live");control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);await f.service.getResult(f.row.requestId);const before=evidence(f),kill=process.kill;
+    // Scoped fake process-probe result; no process is started or signalled.
+    try{process.kill=(pid,...args)=>pid===f.owner.pid?true:kill(pid,...args);
+      assert.equal((await f.service.getResult(f.row.requestId)).code,"readonly_orphan_disposition_invalid");
+      assert.deepEqual(await f.service.maintenanceTransportState(),{unresolvedCount:1,requestIds:[f.row.requestId],replayAllowed:false});
+      assert.equal((await f.service.invoke(effect())).code,"transport_reconciliation_required");assert.equal(f.sends(),0);assert.deepEqual(evidence(f),before);
+    }finally{process.kill=kill;}
+  });
+  for(const mode of ["actor-drift","target-drift","installed-drift","remote-record","panel-active","recovery-active","original","index","intent","source","consumed","disposition","disposition-bytes","matching-lock","owner-live"]){
+    await test(mode+" during completed-retirement revalidation fails closed",async()=>{
+      let revalidate=false,changedEvidence;const kill=process.kill,f=fixture("revalidate-"+mode,async(f,expression,queries,value)=>{
+        if(!revalidate)return;
+        if(queries===6 && expression.includes("api.getResult(")){
+          if(mode==="actor-drift")f.reload();
+          if(mode==="target-drift")f.page.webSocketDebuggerUrl="ws://127.0.0.1:8870/devtools/page/drift";
+          if(mode==="installed-drift")f.installed.hashes.source="drift";
+          if(mode==="remote-record")value.value={state:"completed"};
+          if(mode==="owner-live")process.kill=(pid,...args)=>pid===f.owner.pid?true:kill(pid,...args);
+          alter(f,mode);changedEvidence=evidence(f);
+        }
+        if(queries>=5 && expression.includes("api.state(")){
+          if(mode==="panel-active")value.value.activeAction={requestId:id(),action:"plan.run"};
+          if(mode==="recovery-active")value.value.recoveryTransport={state:"ready"};
+        }
+      });control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);await f.service.getResult(f.row.requestId);const before=evidence(f);revalidate=true;
+      try{const result=await f.service.getResult(f.row.requestId);assert(result.code,JSON.stringify(result));assert.equal(f.sends(),0);assert.deepEqual(evidence(f),changedEvidence || before);}
+      finally{process.kill=kill;}
     });
   }
   await test("other mutating UNKNOWN stays blocked and unchanged after read-only orphan retirement",async()=>{
@@ -111,6 +185,16 @@ async function main(){
     });control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);await f.service.getResult(f.row.requestId);admission=true;
     const next=await f.service.invoke(effect());assert.equal(next.code,"readonly_orphan_remote_record_appeared");assert.equal(f.sends(),0);assert.equal(fs.readFileSync(f.receiptFile,"utf8"),f.original);
   });
+  for(const mode of ["actor","target"]){
+    await test("current "+mode+" drift between revalidation and presend remains blocked",async()=>{
+      let admission=false;const f=fixture("presend-"+mode,async(f,expression,queries)=>{
+        if(admission && queries===5 && expression.includes("api.state(")){
+          if(mode==="actor")f.reload();else f.page.webSocketDebuggerUrl="ws://127.0.0.1:8870/devtools/page/presend";
+        }
+      });control.captureReadOnlyOrphanIntent(f.directory,f.inputFile);await f.service.getResult(f.row.requestId);const before=evidence(f);admission=true;
+      const next=await f.service.invoke(effect());assert.equal(next.ok,false,JSON.stringify(next));assert.equal(f.sends(),0);assert.deepEqual(evidence(f),before);
+    });
+  }
   await test("allowlist is exact plan.reconcile; protected/lifecycle/provider/local intent actions rejected",async()=>{
     for(const action of ["plan.run","plan.dryRun","agent.hardcore","bridge.connect","bridge.disconnect","panel.reload","autonomy.set","provider.setup","logs.get"])
       assert.throws(()=>orphan.validEnvelope({protocolVersion:control.PROTOCOL_VERSION,requestId:id(),action,args:{}}),/readonly_orphan_action_not_allowed/);
