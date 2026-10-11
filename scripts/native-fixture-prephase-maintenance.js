@@ -157,4 +157,5 @@ async function run(argv,deps={}) {
   return {ok:true,status:row.value.status || "captured",captureId:row.value.captureId,sha256:row.sha256,...recovery.OUTCOME};
 }
 if(require.main===module)run(process.argv).then(value=>process.stdout.write(JSON.stringify(value)+"\n")).catch(error=>{process.stdout.write(JSON.stringify({ok:false,code:error.code || "fixture_prephase_maintenance_failed",replayAllowed:false})+"\n");process.exitCode=1;});
-module.exports={run,parse,EXACT,ASSETS,COPY_ASSETS,LOADED_ASSETS,SCHEMA,directory,fileFor,read,assetHashes,normalizedHashes,assertIdle,assertGuards,assertQuiescence,assertFreshCertificate,privateGuard,trustPin,originals,observe,compare};
+module.exports={run,parse,EXACT,ASSETS,COPY_ASSETS,LOADED_ASSETS,SCHEMA,directory,fileFor,read,assetHashes,normalizedHashes,assertIdle,assertGuards,assertQuiescence,assertFreshCertificate,privateGuard,trustPin,originals,observe,compare,
+  context,trustedDispositions,targetPin,runtimePin,assertMaintenanceQuiescence,releasedDispositions};

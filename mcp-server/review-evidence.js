@@ -146,6 +146,7 @@ const RUNTIME_FILES = [
   "mcp-server/native-fixture-prephase-recovery-proof.js",
   "mcp-server/native-fixture-prephase-recovery.js",
   "mcp-server/native-fixture-prephase-recovery-backend.js",
+  "mcp-server/fixed-guard-timeout-maintenance-proof.js",
   "scripts/native-fixture-prephase-maintenance.js",
   "mcp-server/ame-title-jobs.js",
   "mcp-server/ame-fixture-ui-disposition.js",

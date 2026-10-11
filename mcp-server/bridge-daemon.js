@@ -84,6 +84,7 @@ const nativeFixtureAbandonment = require("./native-fixture-abandonment");
 const nativeFixtureAbandonmentBackend = require("./native-fixture-abandonment-backend");
 const nativeFixturePrephaseRecovery = require("./native-fixture-prephase-recovery");
 const nativeFixturePrephaseBackend = require("./native-fixture-prephase-recovery-backend");
+const fixedGuardTimeoutMaintenanceProof = require("./fixed-guard-timeout-maintenance-proof");
 const nativeFixturePrephaseProof = require("./native-fixture-prephase-recovery-proof");
 const {
   buildRawExtendscriptFallbackCandidateInput
@@ -9094,7 +9095,7 @@ function startHttpBridge() {
       if(res.authRole!==(operation==="lookup" ? "panel" : "automation")){writeJson(res,403,{ok:false,code:"fixture_prephase_role_required"});return;}
       try {
         if(url.searchParams.size || ["lookup","maintenance-read-back","maintenance-quiescence"].includes(operation) && (Number(req.headers["content-length"] || 0)!==0 || req.headers["transfer-encoding"]))throw Object.assign(Error("fixture_prephase_client_evidence_forbidden"),{code:"fixture_prephase_client_evidence_forbidden"});
-        if(operation==="maintenance-quiescence"){writeJson(res,200,{ok:true,inspection:await nativeFixturePrephaseRecovery.maintenanceQuiescence(nativePrephaseReaders())});return;}
+        if(operation==="maintenance-quiescence"){writeJson(res,200,{ok:true,inspection:await nativeFixturePrephaseRecovery.maintenanceQuiescence(nativePrephaseMaintenanceReaders())});return;}
         const input=["lookup","maintenance-read-back"].includes(operation) ? nativeFixturePrephaseProof.selector() : await readJsonBody(req);
         const result=await nativeFixturePrephaseRecovery[operation==="maintenance-read-back" ? "lookup" : operation](input,nativePrephaseReaders());
         writeJson(res,200,{ok:true,[operation==="capture" ? "capture" : "certificate"]:result});
@@ -13031,6 +13032,13 @@ function nativePrephaseReaders() {
     loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,loadedRuntimeModules:RUNTIME_IDENTITY.modules,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
     executorQuiescence:()=>ameFixtureExecutor.quiescence(),hasAttempt:stageId=>ameFixtureExecutor.hasAttempt(stageId),hasCurrentProposal:()=>currentProposalState.current!==null,
     assertManualIngress:context=>{currentProposalState.assertCurrent(context && context.record);manualPlanIngress.assertContext(context);}});
+}
+function nativePrephaseMaintenanceReaders() {
+  // Only this inspection route can observe the exact consumed predecessor
+  // during timer repair. Runtime identity, lookup and admission stay strict.
+  const strict=nativePrephaseReaders(),panelService=panelControl.createPanelControlService({inspectInstalledTarget:()=>fixedGuardTimeoutMaintenanceProof.inspectInstalledTarget({repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR})});
+  const inspection=nativeFixtureAbandonmentBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService});
+  return {...strict,maintenanceTarget:inspection.maintenanceTarget,readPanelGuard:inspection.readPanelGuard};
 }
 
 async function callTool(name, args, executionContext) {
