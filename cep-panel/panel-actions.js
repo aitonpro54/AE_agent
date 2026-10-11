@@ -27,6 +27,8 @@
   var NATIVE_ABANDONMENT_KEY="codexAeNativeFixtureAbandonmentsV1";
   var PREPHASE_ID="4f06da6d-4b76-40b2-b70b-a77db3e1e9c7",PREPHASE_RUN="5a4ac6eb-7b2e-42ce-8af9-7d03e52c17c5",PREPHASE_KEY="codexAeNativeFixturePrephaseRecoveryV1";
   var prephaseCertificate=null,prephaseTrusted=false,prephaseLookupPending=false,guardRefreshPending=false,guardRefreshSequence=0,guardRefreshResult=null;
+  var REFUSAL_ID="0c33f0f5-a452-47c4-b2d0-204d96cb8fef",REFUSAL_RUN="8674d583-e151-47fc-9c2b-374584b2faa8",REFUSAL_ERROR="fixture_prephase_new_manual_action_required";
+  var refusal=null,refusalTrusted=false,refusalLookupPending=false,refusalContext="";
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -41,7 +43,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !prephaseValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -133,6 +135,8 @@
     snapshot.nativeFixtureAbandonments=Object.keys(nativeAbandonments).filter(function(id){return nativeAbandonmentValid(id,true);}).map(function(id){var v=nativeAbandonments[id].value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
     snapshot.trustedGuardRefresh={pending:guardRefreshPending,sequence:guardRefreshSequence,result:guardRefreshResult && clone(guardRefreshResult)};
     snapshot.nativeFixturePrephaseRecovery=prephaseValid(PREPHASE_ID,true) ? {requestId:PREPHASE_ID,runId:PREPHASE_RUN,status:"prephase_admission_certified",certificateSha256:prephaseCertificate.sha256,entrySha256:prephaseCertificate.readBack.entrySha256,currentActor:clone(prephaseCertificate.readBack.currentActor),scope:"new_disjoint_fixture_only",historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
+    snapshot.nativeFixtureAdmissionRefusalLookupPending=refusalLookupPending;
+    snapshot.nativeFixtureAdmissionRefusal=refusalValid(REFUSAL_ID,true) ? {requestId:REFUSAL_ID,runId:REFUSAL_RUN,authority:refusal.authority,scope:refusal.scope,historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
     return snapshot;
   }
   // Synchronous SHA-256 keeps content out of durable receipts in the CEP runtime.
@@ -239,9 +243,51 @@
       run.provenance && run.provenance.actionId===run.m100Action.actionId && Array.isArray(run.steps) && run.steps.length===1 && run.steps[0].tool==="ame_native_fixture_probe";
   }
   function readNativeFixtureGuard(value) {
-    if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || !contract.UUID_REGEX.test(value.requestId || "") || !contract.UUID_REGEX.test(value.runId || "") || !nativeFixtureRecord(value.requestId))return null;
+    if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || !contract.UUID_REGEX.test(value.requestId || "") || !contract.UUID_REGEX.test(value.runId || "") ||
+      !(value.requestId===REFUSAL_ID && value.runId===REFUSAL_RUN && refusalRecord() || nativeFixtureRecord(value.requestId)))return null;
     var r=records[value.requestId];if(r.runId!==value.runId || typeof r.signature!=="string")return null;
     return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor(),controllerIdle:!active && !life().busy && !rawState().recoveryTransport && !storageFailure};
+  }
+  function refusalRecord() {
+    var r=records[REFUSAL_ID],run=r && r.result && r.result.run,p=run && run.provenance;
+    return r && r.runId===REFUSAL_RUN && r.action==="plan.run" && r.effect==="protected_plan_run" && r.source==="programmatic" && r.state==="unknown" && r.phase==="outcome_unresolved" && r.delivery==="unknown" && r.replayAllowed===false && r.code===REFUSAL_ERROR &&
+      run && run.id===REFUSAL_RUN && run.ok===false && run.dryRun===false && run.errorCode===REFUSAL_ERROR && run.validation && run.validation.validationId==="7a8fa436-2a81-4cd9-880d-50ed81851011" &&
+      p && p.actionId==="act_03f2cb9f57634c9197cd10cb86ee255e" && p.proposalRevision===2 && p.payloadHash==="sha256:0c1f8f84cd1f4c220b3e72bb5116c442170f5c9151e7cadb6d11a04763e6db94" &&
+      run.m100Action && run.m100Action.actionId===p.actionId && run.m100Action.confirmedBySurface==="cep-panel" && Array.isArray(run.steps) && run.steps.length===1 && run.steps[0].tool==="ame_native_fixture_probe" && run.steps[0].errorCode===REFUSAL_ERROR;
+  }
+  function refusalLookupContext() {
+    return sha256(JSON.stringify({actor:currentFixtureActor(),connection:bindings && typeof bindings.nativeFixtureAdmissionRefusalContext==="function" ? bindings.nativeFixtureAdmissionRefusalContext() : rawState().bridgeConnection || null}));
+  }
+  function refusalValid(id,trusted) {
+    var v=refusal,e=v && v.entry,b=v && v.readBack,rt=b && b.runtime,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run;
+    var actorMatches=b && JSON.stringify(b.currentActor)===JSON.stringify(currentFixtureActor());
+    if(!actorMatches || refusalContext!==refusalLookupContext())refusalTrusted=false;
+    if(id!==REFUSAL_ID || !refusalRecord() || !v || v.schema!=="ae-agent.native-fixture-admission-refusal.v1" || v.primaryStateObserved!==false || !v.selector || v.selector.requestId!==id || v.selector.runId!==REFUSAL_RUN ||
+      v.authority!=="server_proof_authorize_never_entered" || v.scope!=="exact_run_transport_guard_only" || v.historicalOutcome!=="unknown" || v.issuerAuthorizationNeverIssued!==true || v.nativeExecutorNeverEntered!==true ||
+      v.nativeExecutionProven!==false || v.processExitProven!==false || v.endpointInert!==false || v.nativeEndpointInertProven!==false || v.replay!==false || v.replayAllowed!==false ||
+      !e || e.originalRequestId!==id || e.runId!==REFUSAL_RUN || e.action!==r.action || e.effect!==r.effect || e.actionId!==run.provenance.actionId || e.proposalRequestId!==run.validation.validationId || e.proposalRevision!==2 || e.payloadHash!==run.provenance.payloadHash ||
+      e.privateSignatureSha256!==sha256(r.signature) || e.panelReceiptHash!==sha256(JSON.stringify(p)) || e.panelRunProjectionHash!==sha256(JSON.stringify(run)) || !/^[a-f0-9]{64}$/.test(e.projectedPinnedReceiptSha256 || "") ||
+      e.canonicalRunRecordHash!=="fe222c8119df1c99b3003572637d0f2424af8d402ddfe624a5c826ab0e9a02d7" || e.canonicalRecordSha256!=="96d8cfdfda400f8a86f89aa6f5e98140befe745653a10dcba204d0fcabe9c201" ||
+      !/^[a-f0-9]{64}$/.test(e.canonicalRunProjectionHash || "") || !/^[a-f0-9]{64}$/.test(e.transportSignatureSha256 || "") ||
+      !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
+      !b || b.schema!=="ae-agent.native-fixture-admission-refusal.v1.read-back" || b.entrySha256!==sha256(JSON.stringify(e)) || !actorMatches || b.pendingCount!==0 || b.inflightCount!==0 || b.activeSession!==null || b.controllerIdle!==true ||
+      !rt || rt.loadedPanelSourcesVerified!==true || !/^[a-f0-9]{64}$/.test(rt.loadedRuntimeSha256 || "") || rt.currentRuntimeSha256!==rt.loadedRuntimeSha256 || !rt.panelAssetHashes || !b.installed || JSON.stringify(b.installed.hashes)!==JSON.stringify(rt.panelAssetHashes) ||
+      !v.proofPins || !v.proofPins.run || v.proofPins.run.sha256!==e.canonicalRunRecordHash || !v.proofPins.receipt || v.proofPins.receipt.sha256!=="45f392b79f08cf7cd91e83ad643037f186fc47677ac5373342052e39777558d5" ||
+      trusted && !refusalTrusted)return false;
+    return !storageFailure;
+  }
+  function refreshAdmissionRefusal(onDone) {
+    refusalTrusted=false;
+    if(!records[REFUSAL_ID]){refusal=null;if(onDone)onDone(true);return;}
+    if(refusalLookupPending || !bindings || typeof bindings.lookupNativeFixtureAdmissionRefusal!=="function"){if(onDone)onDone(false);return;}
+    refusalLookupPending=true;var context=refusalLookupContext();
+    bindings.lookupNativeFixtureAdmissionRefusal(function(error,saved) {
+      refusalLookupPending=false;
+      if(error || context!==refusalLookupContext()){if(onDone)onDone(false);return;}
+      refusal=saved && clone(saved);refusalContext=context;
+      if(active || life().busy || rawState().recoveryTransport || !refusalValid(REFUSAL_ID,false)){refusal=null;if(onDone)onDone(false);return;}
+      refusalTrusted=true;if(onDone)onDone(true);
+    });
   }
   function nativeAbandonmentValid(id,trusted) {
     var saved=nativeAbandonments[id],v=saved && saved.value,e=v && v.entry,back=saved && saved.readBack,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,rt=back && back.runtime;
@@ -343,11 +389,11 @@
     });
   }
   function refreshTrustedGuards(onDone) {
-    if(guardRefreshPending || humanLookupPending || fixtureLookupPending || nativeAbandonmentLookupPending || prephaseLookupPending || active || life().busy || rawState().recoveryTransport || storageFailure)return {accepted:false,code:"trusted_guard_refresh_not_idle"};
+    if(guardRefreshPending || humanLookupPending || fixtureLookupPending || nativeAbandonmentLookupPending || prephaseLookupPending || refusalLookupPending || active || life().busy || rawState().recoveryTransport || storageFailure)return {accepted:false,code:"trusted_guard_refresh_not_idle"};
     guardRefreshPending=true;guardRefreshResult=null;guardRefreshSequence++;
     var sequence=guardRefreshSequence,actor=JSON.stringify(currentFixtureActor());
-    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);prephaseTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
-    refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(finish);});});});
+    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);prephaseTrusted=false;refusalTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
+    refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(function(prephaseReady){if(!prephaseReady){finish(false);return;}refreshAdmissionRefusal(finish);});});});});
     return {accepted:true,sequence:sequence,lookupPending:guardRefreshPending};
   }
   function recoveryValid(id,confirmed) {
@@ -471,7 +517,7 @@
   function eligibility(name,args) {
     if (!bound || !bindings.handlers[name]) return {available:false,reasonCodes:["handler_unavailable"]};
     if (storageFailure) return {available:false,reasonCodes:[storageFailure]};
-    if((guardRefreshPending || prephaseLookupPending) && !passiveRead(name))return {available:false,reasonCodes:["trusted_guard_refresh_pending"]};
+    if((guardRefreshPending || prephaseLookupPending || refusalLookupPending) && !passiveRead(name))return {available:false,reasonCodes:["trusted_guard_refresh_pending"]};
     if(humanLookupPending && !passiveRead(name))return {available:false,reasonCodes:["human_settlement_lookup_pending"]};
     if(fixtureLookupPending && !passiveRead(name))return {available:false,reasonCodes:["fixture_disposition_lookup_pending"]};
     if(nativeAbandonmentLookupPending && !passiveRead(name))return {available:false,reasonCodes:["native_fixture_abandonment_lookup_pending"]};
@@ -515,6 +561,7 @@
     var available=eligibility(envelope.action,envelope.args);
     if (!available.available) return rejectNew(envelope,available.reasonCodes[0] || "action_unavailable",
       available.reasonCodes[0] === "reconciliation_required" ? "An earlier effect has an unknown outcome. Read state().unresolvedActions and obtain terminal evidence for the exact request/run identity; do not resubmit under a new request ID." : "Action is unavailable.",true);
+    if(/^(bridge.configure|bridge.connect|bridge.disconnect|panel.reload)$/.test(envelope.action))refusalTrusted=false;
     var r=receipt(envelope,"accepted"), key=envelope.requestId, isPassive=passive(envelope.action,envelope.args);
     r.signature=signature(envelope); r.source=source === "ui" ? "ui" : "programmatic"; records[key]=r;
     // Durable admission before any handler effect. Arguments and credentials are never stored.

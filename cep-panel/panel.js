@@ -424,7 +424,7 @@
 
   function isFixedGuardLookup(method, path, body) {
     if (method !== "GET" || body !== null && body !== undefined) return false;
-    if (path === "/human-guard-settlement/lookup" || path === "/ame/fixture-ui-disposition/lookup" || path === "/ame/native-fixture-prephase-recovery/lookup") return true;
+    if (path === "/human-guard-settlement/lookup" || path === "/ame/fixture-ui-disposition/lookup" || path === "/ame/native-fixture-prephase-recovery/lookup" || path === "/ame/native-fixture-admission-refusal/lookup") return true;
     var nativeSelector = /^\/ame\/native-fixture-abandonment\/lookup\?requestId=([^&]+)&runId=([^&]+)$/.exec(path);
     return !!nativeSelector && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[1]) && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[2]);
   }
@@ -4679,6 +4679,15 @@
       request("GET","/ame/native-fixture-prephase-recovery/lookup",null,function(error,response) {
         if(getBaseUrl()!==url || getToken()!==token || error || !response || response.ok!==true || !Object.prototype.hasOwnProperty.call(response,"certificate")){done(error || {code:"fixture_prephase_lookup_failed"});return;}
         done(null,response.certificate);
+      });
+    },
+    nativeFixtureAdmissionRefusalContext:function() {return {url:getBaseUrl(),token:getToken(),epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),panelConnectionId:panelConnectionId,running:running,connected:running && badgeEl.textContent==="online"};},
+    lookupNativeFixtureAdmissionRefusal:function(done) {
+      var url=getBaseUrl(),token=getToken(),epoch=panelLifecycleEpoch,generation=String(panelConnectionGeneration),connection=panelConnectionId;
+      if(!window.AEAgentPanelContract.validateLoopbackUrl(url) || !token){done({code:"fixture_refusal_bridge_unavailable"});return;}
+      request("GET","/ame/native-fixture-admission-refusal/lookup",null,function(error,response) {
+        if(getBaseUrl()!==url || getToken()!==token || panelLifecycleEpoch!==epoch || String(panelConnectionGeneration)!==generation || panelConnectionId!==connection || error || !response || response.ok!==true || response.credentialRole!=="panel" || !Object.prototype.hasOwnProperty.call(response,"refusal")){done(error || {code:"fixture_refusal_lookup_failed"});return;}
+        done(null,response.refusal);
       });
     },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});

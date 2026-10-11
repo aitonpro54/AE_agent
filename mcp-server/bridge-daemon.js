@@ -83,6 +83,7 @@ const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const nativeFixtureAbandonment = require("./native-fixture-abandonment");
 const nativeFixtureAbandonmentBackend = require("./native-fixture-abandonment-backend");
 const nativeFixturePrephaseRecovery = require("./native-fixture-prephase-recovery");
+const nativeFixtureAdmissionRefusal = require("./native-fixture-admission-refusal");
 const nativeFixturePrephaseBackend = require("./native-fixture-prephase-recovery-backend");
 const fixedGuardTimeoutMaintenanceProof = require("./fixed-guard-timeout-maintenance-proof");
 const nativeFixturePrephaseProof = require("./native-fixture-prephase-recovery-proof");
@@ -9112,6 +9113,17 @@ function startHttpBridge() {
       return;
     }
 
+    if (url.pathname.startsWith("/ame/native-fixture-admission-refusal/")) {
+      res.setHeader("Cache-Control","no-store");
+      if(!requireToken(req,res,url))return;
+      if(url.pathname!=="/ame/native-fixture-admission-refusal/lookup" || req.method!=="GET"){writeJson(res,404,{ok:false,code:"fixture_refusal_route_invalid"});return;}
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"fixture_refusal_panel_role_required"});return;}
+      try {
+        if(url.searchParams.size || Number(req.headers["content-length"] || 0)!==0 || req.headers["transfer-encoding"])throw Object.assign(Error("fixture_refusal_client_evidence_forbidden"),{code:"fixture_refusal_client_evidence_forbidden"});
+        writeJson(res,200,{ok:true,credentialRole:"panel",refusal:await nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders())});
+      }catch(error){writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_refusal_lookup_failed"});}
+      return;
+    }
     if (url.pathname.startsWith("/ame/native-fixture-prephase-recovery/")) {
       if(!requireToken(req,res,url))return;
       const operation=url.pathname.slice("/ame/native-fixture-prephase-recovery/".length);
@@ -13050,7 +13062,11 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
 
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
-const panelControlService = panelControl.createPanelControlService();
+const panelControlService = panelControl.createPanelControlService({lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders())});
+function nativeRefusalReaders() {
+  return nativeFixtureAdmissionRefusal.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControlService,readBridgeStatus:getBridgeStatus,
+    loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256});
+}
 function nativePrephaseReaders() {
   return nativeFixturePrephaseBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,readBridgeStatus:getBridgeStatus,
     loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,loadedRuntimeModules:RUNTIME_IDENTITY.modules,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,
@@ -13151,6 +13167,11 @@ async function callTool(name, args, executionContext) {
     if(record.unavailable) return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",reasonCode:record.reasonCode,steps:[],replayAllowed:false});
     if(record.plan.steps?.length===1 && record.plan.steps[0].tool===ameFixtureGrant.TOOL_NAME && args.originalRequestId!==undefined) {
       try {
+        if(runId===nativeFixtureAdmissionRefusal.selector().runId) {
+          if(args.originalRequestId!==nativeFixtureAdmissionRefusal.selector().requestId)throw Object.assign(Error("fixture_refusal_fixed_selector_required"),{code:"fixture_refusal_fixed_selector_required"});
+          return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:"unknown",steps:[],reasonCode:"native_fixture_admission_refusal_fresh_lookup_required",
+            nativeFixtureAdmissionRefusalAvailable:true,originalRequestId:args.originalRequestId,historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,admissionGuardReleased:false,replayAllowed:false});
+        }
         if(runId===nativeFixturePrephaseProof.PROFILE.runId) {
           const saved=nativeFixturePrephaseRecovery.lookupAudited({requestId:args.originalRequestId,runId},{evidenceRoot:LOG_DIR,repoRoot:PROJECT_ROOT});
           return toolResult({schema:"ae-agent-plan-run-reconciliation.v1",runId,status:saved ? "prephase_admission_certified" : "unknown",steps:[],reasonCode:saved ? "native_fixture_prephase_trusted_lookup_required" : "native_fixture_prephase_certificate_required",

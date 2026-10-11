@@ -6,8 +6,8 @@ const contract=require("../cep-panel/panel-action-contract");
 const bootstrap=require("./ae-agent-panel-bootstrap");
 const readonlyOrphan=require("./cep-panel-readonly-orphan");
 const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT_TIMEOUT_MS=30000;
-// Six serial fixed guard GETs, each bounded at 60s, plus final inspection.
-const TRUSTED_GUARD_REFRESH_TIMEOUT_MS=7*60000;
+// Seven serial fixed guard GETs, each bounded at 60s, plus final inspection.
+const TRUSTED_GUARD_REFRESH_TIMEOUT_MS=8*60000;
 const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
 // Retired identity accepted only from persisted history, never by the callable catalog.
@@ -243,7 +243,8 @@ function captureReadOnlyOrphanIntent(directory,inputFile) {
 const PASSIVE_ACTIONS=new Set(["logs.get","chat.sessions.list","chat.transcript.get","plan.current","autonomy.refresh","placeholder.refresh","connector.refresh"]);
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
-  exact(options,["stateDir","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt"]);
+  exact(options,["stateDir","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal"]);
+  if(options.lookupNativeFixtureAdmissionRefusal!==undefined && typeof options.lookupNativeFixtureAdmissionRefusal!=="function")throw problem("fixture_refusal_lookup_callback_invalid");
   if(options.cdpPort!==undefined && options.cdpPort!==DEFAULT_CDP_PORT) throw problem("fixed_cdp_port_required");
   const directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
   const recoveryLogDir=path.dirname(directory),recovery=require("./generated-export-recovery"),commonRecovery=require("./common-title-assembly-recovery"),runRecords=require("./plan-run-records");
@@ -283,6 +284,11 @@ function createPanelControlService(options={}) {
     if(!local || local.phase==="receipt_storage")throw problem("recovery_original_transport_missing_or_corrupt");
     const remote=remoteReceipt(await read("getResult",id,5000),id,local);
     return {local,remote};
+  }
+  async function freshRefusalValid(row) {
+    const refusal=require("./native-fixture-admission-refusal");
+    if(!refusal.isExactReceipt(row) || !options.lookupNativeFixtureAdmissionRefusal)return false;
+    try {return refusal.validatesTransport(await options.lookupNativeFixtureAdmissionRefusal(),row);}catch(_){return false;}
   }
   function projectedRecoveryValid(row) {
     try {
@@ -327,6 +333,7 @@ function createPanelControlService(options={}) {
     const index=readIndex(directory),requestIds=[];
     for(const id of Object.keys(index.identities)) {
       const prior=loadDurableReceipt(directory,id),unproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
+      if(!unproven && await freshRefusalValid(prior))continue;
       if(prior && !unproven && readonlyOrphan.read(safeRoot(directory),id,"disposition")) {
         try{await readonlyOrphan.validate(orphanContext(),prior);continue;}catch(_){requestIds.push(id);continue;}
       }
@@ -357,6 +364,15 @@ function createPanelControlService(options={}) {
       requestId(id);const budget=timeout(timeoutMs,5000);local=loadDurableReceipt(directory,id);
       if(local && !local.signature) return responseError(problem(local.code),local);
       const remote=await read("getResult",id,budget);
+      const refusal=require("./native-fixture-admission-refusal");
+      if(local && id===refusal.selector().requestId) {
+        // Exact historical bytes remain evidence, even if a fresh exclusion
+        // is unavailable. No merge, adoption or persist in this passive branch.
+        if(!refusal.isExactReceipt(local) || remote===null)return responseError(problem("fixture_refusal_original_transport_mismatch"),local);
+        const verified=remoteReceipt(remote,id,local);
+        if(!refusal.matchesPanelOriginal(local,verified))return responseError(problem("fixture_refusal_original_transport_mismatch"),local);
+        return responseReceipt(local);
+      }
       const human=local && require("./human-guard-settlement").disposition(recoveryLogDir,local);
       if(human) {
         if(remote===null || remote.humanSettlement?.sha256!==human.sha256 || require("./human-guard-settlement").hash(require("./human-guard-settlement").receiptProjection(remote))!==human.value.entries.find(e=>e.originalRequestId===id).panelReceiptHash)return responseError(problem("human_settlement_panel_adoption_unproven"),local);
@@ -421,6 +437,7 @@ function createPanelControlService(options={}) {
       for(const previous of Object.keys(index.identities)) {
         const prior=loadDurableReceipt(directory,previous);
         const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
+        if(!storageUnproven && await freshRefusalValid(prior))continue;
         if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
           try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
           catch(_) {unresolved.push(prior);continue;}
