@@ -79,6 +79,10 @@ $binaryBytes = [IO.File]::ReadAllBytes($binary)
 if ($binaryBytes.Length -lt 256 -or [Text.Encoding]::ASCII.GetString($binaryBytes, 0, 2) -ne 'MZ') { throw 'Missing PE binary.' }
 $peOffset = [BitConverter]::ToInt32($binaryBytes, 0x3c)
 if ($peOffset -lt 0 -or $peOffset + 26 -gt $binaryBytes.Length -or [BitConverter]::ToUInt32($binaryBytes, $peOffset) -ne 0x4550 -or [BitConverter]::ToUInt16($binaryBytes, $peOffset + 4) -ne 0x8664 -or !([BitConverter]::ToUInt16($binaryBytes, $peOffset + 22) -band 0x2000) -or [BitConverter]::ToUInt16($binaryBytes, $peOffset + 24) -ne 0x20b) { throw 'Binary is not a Windows x64 PE32+ DLL.' }
+$compiledText = [Text.Encoding]::ASCII.GetString($binaryBytes)
+foreach ($marker in @($BuildId, 'ae-agent.native-owned-fixture-reopen.v1', 'ae-agent.native-owned-fixture-readback.v1', 'ae-agent.native-fixed-fixture-evidence.v1')) {
+    if (!$compiledText.Contains($marker)) { throw 'Exact build/versioned fixed-fixture schema marker missing from compiled binary.' }
+}
 $reproOutput = & (Join-Path $buildRoot 'bin\RelativeRenameRepro.exe') $buildRoot 2>&1
 $reproExit = $LASTEXITCODE
 [IO.File]::WriteAllText((Join-Path $buildRoot 'relative-rename-repro.json'), ($reproOutput -join "`n"), $utf8)
@@ -97,6 +101,7 @@ if ($smokeResult.legacyProtocolChecks -ne 215 -or $smokeResult.signedFixtureChec
     $smokeResult.startupHarnessRefusals -ne 3 -or $smokeResult.startupHarnessHostAuthorizations -ne 0 -or
     $smokeResult.idleDispatchChecks -lt 35 -or $smokeResult.idleHarnessScope -notmatch 'production C\+\+ gate.*Adobe suites/hooks not executed' -or
     $smokeResult.stageBaselineChecks -lt 300 -or $smokeResult.stageReadbackHarnessScope -notmatch 'production C\+\+ readback guard.*Adobe suites/hooks not executed' -or
+    $smokeResult.ownedFixtureReopenChecks -lt 50 -or $smokeResult.ownedFixtureReopenContract -ne 'ae-agent.native-owned-fixture-reopen.v1' -or
     $smokeResult.startupHarnessScope -notmatch 'EntryPoint/Adobe suites/hooks not executed') {
     throw 'Required unchanged legacy/signed and bounded startup/root/idle/readback contract cases are absent.'
 }
@@ -105,6 +110,7 @@ $grantSmokeExit = $LASTEXITCODE
 [IO.File]::WriteAllText((Join-Path $buildRoot 'fixture-grant-smoke.log'), ($grantSmokeOutput -join "`n"), $utf8)
 if ($grantSmokeExit -ne 0) { throw "Offline private grant smoke failed: $grantSmokeOutput" }
 $grantSmokeResult = ($grantSmokeOutput -join "`n") | ConvertFrom-Json
+if ($grantSmokeResult.ownedFixtureReopenChecks -lt 20) { throw 'Required exact-build/versioned-reopen issuer checks are absent.' }
 $afterHashes = @(Get-ProbeSourceHashes)
 if (($sourceHashes | ConvertTo-Json -Depth 4 -Compress) -cne ($afterHashes | ConvertTo-Json -Depth 4 -Compress)) {
     throw 'Source files changed during the build; binary/source provenance is unknown. Do not reuse this build id.'
@@ -113,6 +119,11 @@ $sdkEvidence = @()
 foreach ($relativePath in @('Examples\Headers\AE_GeneralPlug.h', 'Examples\Headers\AE_GeneralPlugOld.h', 'Examples\Headers\AE_AdvEffectSuites.h', 'Examples\Resources\PiPLtool.exe')) { $sdkEvidence += [ordered]@{ path = $relativePath; sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $SdkRoot $relativePath)).Hash.ToLowerInvariant() } }
 $receipt = [ordered]@{ schema = 'ae-agent.native-probe-build.v2'; buildId = $BuildId; offline = $true; readiness = $false; productionBackend = $false; installed = $false; loadedInAE = $false; liveSemantics = 'UNVERIFIED'; destinationWriteContract = 'legacy arbitrary-project writer remains unverified; separate signed cooperative owned-fixture path'; legacyUnsignedWrites = 'closed'; sourceProjectSaveDispatchSites = ($saveToSites + $saveAsSites); sourceDirtyRestorationDispatchSites = $dirtySites; signedFixturePathCompiled = $true; signedFixtureRuntimeAuthorized = $false; fixtureMutationAttempted = $false; phaseGrantPublished = $false; dirtyRestorationAttempted = $false; controlReceiptPublication = 'same-held-handle FileRenameInfo absolute-only no-replace; trusted stable root/ancestors; no runtime fallback; producer retained until OwnedRoot lifetime ends'; rootMetadataIsolation = 'NO_HOSTILE_SAME_USER_WRITER_CLAIM'; mediaHandoff = 'kernel asset writer release tested offline; AE import/proxy UNVERIFIED'; binaryPath = $binary; binarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $binary).Hash.ToLowerInvariant(); peMachine = 'AMD64'; peType = 'PE32+ DLL'; sdkRoot = $SdkRoot; sdkArchiveSha256 = $archiveSha; archiveHashProvenance = 'supplied prerequisite; archive not rehashed by build'; sdkFiles = $sdkEvidence; msbuildVersion = (Get-Item -LiteralPath $MsBuild).VersionInfo.FileVersion; windowsSdk = '10.0.26100.0'; suiteABI = @{ project6 = 9; comp12 = 26; register5 = 6; memory1 = 1; item9 = 14; layer9 = 15; footage5 = 11; utility6 = 13; collection2 = 2; optionalDirtyRestore2 = 2 }; sourceFiles = $sourceHashes; sourceHashesStableAcrossBuild = $true; protocolSmoke = $smokeResult; fixtureGrantSmoke = $grantSmokeResult; timestampUtc = [DateTime]::UtcNow.ToString('o') }
 $receiptPath = Join-Path $buildRoot 'build-receipt.json'
+$receipt.ownedFixtureReopenContract = 'ae-agent.native-owned-fixture-reopen.v1'
+$receipt.ownedFixtureReadbackSchema = 'ae-agent.native-owned-fixture-readback.v1'
+$receipt.fixedFixtureEvidenceSchema = 'ae-agent.native-fixed-fixture-evidence.v1'
+$receipt.ownedFixtureReopenContractCompiled = $true
+$receipt.ownedFixtureDirtyPolicy = 'observed after native open and read-only inspection; fixed file/handle/hash/full semantics required; legacy clean-only contract unchanged'
 $receipt.relativeRenameRepro = $reproResult
 $receipt.startupDiagnostics = [ordered]@{ compiled = $true; liveVerified = $false; trustedExpiredChannel = 'signed-bootstrap-refusal.json; ae-agent.native-fixture-bootstrap-refusal.v1; before suite acquisition only; no host authority'; manifestFingerprint = 'SHA256 of exact bounded launch.manifest read bytes'; untrustedLaunch = 'no Claim/refusal'; stageClaim = 'exact launch.manifest+baseline.aep; same-held read handle baseline SHA pinned before Claim and rechecked during bootstrap'; captureAndLegacyClaim = 'exact launch.manifest only'; harnessLimit = $smokeResult.startupHarnessScope }
 $receipt.protocolSmokeExitCode = $smokeExit

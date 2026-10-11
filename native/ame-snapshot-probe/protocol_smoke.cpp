@@ -683,10 +683,76 @@ int wmain(int argc, wchar_t** argv) {
             KernelRefusal(DeleteFileW(candidate.Child(L"owner.lock").c_str()) != 0, "stage_readback_owner_held_after_terminal_refusal");
         }
         const int stage_baseline_checks = passed - before_stage_readback;
+        const int before_owned_reopen = passed;
+        const auto evidence = [&](unsigned variant) {
+            return probe::Fields{{"sentinel", "UNSAVED_SENTINEL_saved-dirty"}, {"variant", std::to_string(variant)}, {"main_name", "Main"},
+                {"nested_name", "AEAgent Fixture Nested"}, {"root_comp_count", "1"}, {"item_count", "4"}, {"nested_layer_count", "3"}, {"main_layer_count", "2"},
+                {"title_01_text", "Fixture title 01"}, {"title_02_text", "Fixture title 02"}, {"title_01_enabled", variant == 2 ? "0" : "1"},
+                {"title_02_enabled", variant == 2 ? "1" : "0"}, {"sentinel_enabled", "1"}, {"nested_enabled", "1"}, {"image_enabled", "1"},
+                {"media_path", binding.root_path + "\\fixture.bmp"}, {"proxy_path", binding.root_path + "\\proxy.bmp"}, {"use_proxy", "1"},
+                {"main_id", "21"}, {"nested_id", "22"}, {"media_id", "23"}, {"folder_id", "24"}, {"nested_source_id", "22"}, {"image_source_id", "23"}};
+        };
+        const auto media_sha = probe::Sha256(fixture_program::Bitmap(false)), proxy_sha = probe::Sha256(fixture_program::Bitmap(true));
+        for (unsigned variant_index = 0; variant_index <= 2; ++variant_index) {
+            const auto valid_evidence = evidence(variant_index);
+            probe::RequireFixedFixtureEvidence(valid_evidence, "saved-dirty", variant_index, binding.root_path, media_sha, proxy_sha);
+            Require(valid_evidence.size() == 24, "owned_reopen_full_fixed_evidence_24_fields");
+            for (const auto& entry : valid_evidence) {
+                auto changed = valid_evidence; changed[entry.first] = "changed";
+                const auto check_name = "owned_reopen_altered_fixed_semantic_" + entry.first;
+                Reject(check_name.c_str(), [&] {
+                    probe::RequireFixedFixtureEvidence(changed, "saved-dirty", variant_index, binding.root_path, media_sha, proxy_sha);
+                });
+            }
+            auto incomplete = valid_evidence; incomplete.erase("title_01_text");
+            Reject("owned_reopen_incomplete_fixed_semantics", [&] { probe::RequireFixedFixtureEvidence(incomplete, "saved-dirty", variant_index, binding.root_path, media_sha, proxy_sha); });
+            Reject("owned_reopen_changed_media_bytes", [&] { probe::RequireFixedFixtureEvidence(valid_evidence, "saved-dirty", variant_index, binding.root_path, std::string(64, '0'), proxy_sha); });
+            Reject("owned_reopen_changed_proxy_bytes", [&] { probe::RequireFixedFixtureEvidence(valid_evidence, "saved-dirty", variant_index, binding.root_path, media_sha, std::string(64, '0')); });
+            for (unsigned failure_mode = 0; failure_mode < 14; ++failure_mode) {
+                probe::StageProjectReadback readback; readback.variant = variant_index;
+                readback.opened_handle = readback.observed_handle = readback.inspected_handle = 19;
+                readback.expected_path = readback.observed_path = readback.inspected_path = binding.root_path + (variant_index == 0 ? "\\baseline.aep" : variant_index == 1 ? "\\variant-01.aep" : "\\variant-02.aep");
+                readback.expected_file_sha = readback.observed_file_sha = readback.expected_baseline_sha = readback.observed_baseline_sha = stage_baseline_sha;
+                readback.file_hash_observed = readback.baseline_hash_observed = readback.inspection_observed = true;
+                readback.dirty = failure_mode != 0; readback.dirty_after_inspection = true;
+                readback.graph_sha = std::string(64, 'a'); readback.revision = "104";
+                if (failure_mode == 2) readback.observed_handle = 17;
+                if (failure_mode == 3) readback.observed_path += ".foreign";
+                if (failure_mode == 4) readback.observed_file_sha = std::string(64, 'b');
+                if (failure_mode == 5) readback.observed_baseline_sha = std::string(64, 'c');
+                if (failure_mode == 6) readback.file_hash_observed = false;
+                if (failure_mode == 7) readback.baseline_hash_observed = false;
+                if (failure_mode == 10) readback.inspection_observed = false;
+                if (failure_mode == 11) readback.inspected_handle = 17;
+                if (failure_mode == 12) readback.inspected_path += ".foreign";
+                if (failure_mode == 13) readback.graph_sha.clear();
+                unsigned inspections = 0, variant_dispatches = 0;
+                try {
+                    if (failure_mode != 8) readback.VerifyFixtureEvidence([&] {
+                        ++inspections; auto fields = valid_evidence;
+                        if (failure_mode == 9) fields.erase("sentinel");
+                        probe::RequireFixedFixtureEvidence(fields, "saved-dirty", variant_index, binding.root_path, media_sha, proxy_sha);
+                    });
+                    readback.RequireOwnedFixture(); ++variant_dispatches;
+                } catch (const probe::Failure&) { }
+                Require(variant_dispatches == (failure_mode <= 1 ? 1u : 0u), "owned_reopen_identity_and_semantics_before_variant_dispatch");
+                Require(inspections == (failure_mode >= 2 && failure_mode <= 8 ? 0u : 1u), "owned_reopen_no_inspection_of_changed_identity");
+                if (failure_mode == 1) {
+                    Reject("owned_reopen_legacy_guard_still_rejects_dirty", [&] { readback.Require(); });
+                    Require(readback.OwnedFixtureDiagnosticsJson().find("\"cleanRequired\":false") != std::string::npos &&
+                        readback.OwnedFixtureDiagnosticsJson().find("\"dirtyAfterOpen\":true") != std::string::npos &&
+                        readback.OwnedFixtureDiagnosticsJson().find("\"dirtyAfterReadOnlyInspection\":true") != std::string::npos,
+                        "owned_reopen_truthful_dirty_facts_separate_version");
+                }
+                if (failure_mode == 8 || failure_mode == 9) Require(!readback.fixture_evidence_verified, "owned_reopen_unverified_evidence_cannot_dispatch");
+            }
+        }
+        const int owned_reopen_checks = passed - before_owned_reopen;
         std::cout << "{\"offline\":true,\"hostLoaded\":false,\"legacyProtocolChecks\":" << legacy_checks << ",\"signedFixtureChecks\":" << signed_checks
             << ",\"startupDiagnosticsChecks\":" << startup_checks << ",\"nativeRootContractChecks\":" << root_contract_checks
             << ",\"idleDispatchChecks\":" << idle_dispatch_checks << ",\"idleHarnessScope\":\"production C++ gate with callback-double OpenProjectFromPath and real receipt publication; Adobe suites/hooks not executed\""
             << ",\"stageBaselineChecks\":" << stage_baseline_checks << ",\"stageReadbackHarnessScope\":\"production C++ readback guard with synthetic host facts and real grant/Claim/publication barriers; Adobe suites/hooks not executed\""
+            << ",\"ownedFixtureReopenChecks\":" << owned_reopen_checks << ",\"ownedFixtureReopenContract\":" << probe::Json(probe::OwnedFixtureReopenContract)
             << ",\"startupHarnessScope\":\"shared C++ trust/time gates and signed refusal publication; EntryPoint/Adobe suites/hooks not executed\",\"startupHarnessRefusals\":" << startup_refusals
             << ",\"startupHarnessHostAuthorizations\":" << startup_host_authorizations << ",\"passed\":" << passed << ",\"status\":\"passed\",\"adversarialInterleavings\":" << adversarial_interleavings << ",\"destinationGuardRefusals\":" << guard_refusals << ",\"guardHarnessFixtureDispatches\":" << guard_fixture_dispatches << ",\"guardHarnessExtendScriptSaves\":" << guard_script_saves << ",\"guardHarnessNativeSaves\":" << guard_native_saves << ",\"destinationWriteContract\":\"destination_write_contract_unverified\",\"liveSemantics\":\"UNVERIFIED\",\"checks\":[";
         for (size_t i = 0; i < checks.size(); ++i) { if (i) std::cout << ','; std::cout << probe::Json(checks[i]); }

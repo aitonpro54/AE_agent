@@ -8,6 +8,20 @@
 MCP/gates. SDK headers/PiPLtool остаются во внешнем лицензированном SDK.
 
 Сборка: `& .\scripts\ame-native-probe-build.ps1` в разрешённом workspace PowerShell.
+
+Отдельный контракт `ae-agent.native-owned-fixture-reopen.v1` относится только к
+fixed owned fixture нового exact build. SDK не обещает clean dirty flag после
+`OpenProjectFromPath`: здесь dirty остаётся наблюдением после open и после
+read-only inspection. До первого variant dispatch требуются точные handle/path,
+SHA входного baseline, его неизменные bytes и полный verified semantic proof.
+В signed результате обязательны те же proof для baseline и двух reopened variants:
+sentinel, оба текста и switches, fixed graph/links, media/proxy paths и bytes.
+Issuer независимо проверяет native graph, семантику, files и pinned build/source
+receipt. Expected buildId выводится из descriptor-pinned бинарника до boot, затем
+сверяется с signed receipts. Старый `native-stage-readback.v1`/legacy result
+сохраняет clean-only отказ; неизвестная версия или incomplete proof запрещены.
+Это не primary-project capture backend, не установка и не новая интерпретация
+старых UNKNOWN attempts. Offline harness не подтверждает live AE semantics.
 Helper не меняет ExecutionPolicy. Он создаёт новый owned build id внутри
 `.codex-runtime/ame-native-prerequisites/native-probe-build/`, собирает настоящий
 Windows x64 `.aex` с PiPL resource 16000 и export `EntryPointFunc`, запускает только

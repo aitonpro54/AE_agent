@@ -20,7 +20,7 @@ inline std::string Sentinel(const std::string& kind) {
 inline std::string Create(const std::string& root) {
     return "(function(){var p=app.project;if(!p||p.numItems!==0)throw Error('fixture boot changed');"
         "var media=p.importFile(new ImportOptions(new File(" + probe::Json(root + "\\fixture.bmp") + ")));media.name='AEAgent Fixture Image';"
-        "if(typeof media.setProxy==='function'){media.setProxy(new File(" + probe::Json(root + "\\proxy.bmp") + "));media.useProxy=true;}"
+        "if(typeof media.setProxy!=='function')throw Error('fixture proxy unsupported');media.setProxy(new File(" + probe::Json(root + "\\proxy.bmp") + "));media.useProxy=true;"
         "var folder=p.items.addFolder('AEAgent Fixture Dependencies');media.parentFolder=folder;"
         "var n=p.items.addComp('AEAgent Fixture Nested',640,360,1,2,25);n.parentFolder=folder;"
         "var a=n.layers.addText('Fixture title 01');a.name='TITLE_01';a.enabled=true;"
@@ -46,14 +46,18 @@ inline std::string Evidence(const std::string& kind, unsigned variant) {
     return "(function(){var p=app.project,n=null,m=null,f=null,folder=null,roots=0;if(!p||p.numItems!==4)throw Error('fixture item count');"
         "for(var i=1;i<=p.numItems;i++){var x=p.item(i);if(x instanceof CompItem&&x.parentFolder===p.rootFolder)roots++;"
         "if(x.name==='AEAgent Fixture Nested')n=x;else if(x.name==='Main')m=x;else if(x.name==='AEAgent Fixture Image')f=x;else if(x.name==='AEAgent Fixture Dependencies')folder=x;else throw Error('foreign fixture item');}"
-        "if(!n||!m||!f||!folder||!(folder instanceof FolderItem)||folder.parentFolder!==p.rootFolder||m.parentFolder!==p.rootFolder||n.parentFolder!==folder||f.parentFolder!==folder||roots!==1||"
+        "if(!n||!m||!f||!folder||!(n instanceof CompItem)||!(m instanceof CompItem)||!(f instanceof FootageItem)||!(folder instanceof FolderItem)||folder.parentFolder!==p.rootFolder||m.parentFolder!==p.rootFolder||n.parentFolder!==folder||f.parentFolder!==folder||roots!==1||"
         "n.numLayers!==3||m.numLayers!==2||m.layer('NESTED').source!==n||m.layer('IMAGE').source!==f)throw Error('fixture graph mismatch');"
         "var text=n.layer('SENTINEL').property('ADBE Text Properties').property('ADBE Text Document').value.text;"
         "if(text!==" + probe::Json(Sentinel(kind)) + "||n.layer('TITLE_01').enabled!==" + std::string(first ? "true" : "false") +
         "||n.layer('TITLE_02').enabled!==" + std::string(second ? "true" : "false") + ")throw Error('fixture sentinel or visibility mismatch');"
         "if(n.layer('TITLE_01').property('ADBE Text Properties').property('ADBE Text Document').value.text!=='Fixture title 01'||"
         "n.layer('TITLE_02').property('ADBE Text Properties').property('ADBE Text Document').value.text!=='Fixture title 02')throw Error('fixture text mismatch');"
-        "if(!f.file)throw Error('fixture media missing');var proxy=(f.proxySource&&f.proxySource.file)?f.proxySource.file.fsName:'NONE';"
-        "return 'sentinel='+text+'\\nvariant=" + std::to_string(variant) + "\\nmain_name=Main\\nnested_name=AEAgent Fixture Nested\\nroot_comp_count='+roots+'\\nmedia_path='+f.file.fsName+'\\nproxy_path='+proxy+'\\nuse_proxy='+(f.useProxy?'1':'0')+'\\n';})()";
+        "if(!n.layer('SENTINEL').enabled||!m.layer('NESTED').enabled||!m.layer('IMAGE').enabled)throw Error('fixture supporting visibility mismatch');"
+        "if(!f.file||!f.proxySource||!f.proxySource.file||!f.useProxy)throw Error('fixture media or proxy missing');var proxy=f.proxySource.file.fsName;"
+        "return 'sentinel='+text+'\\nvariant=" + std::to_string(variant) + "\\nmain_name=Main\\nnested_name=AEAgent Fixture Nested\\nroot_comp_count='+roots+'\\nmedia_path='+f.file.fsName+'\\nproxy_path='+proxy+'\\nuse_proxy='+(f.useProxy?'1':'0')+'\\n'"
+        "+'item_count='+p.numItems+'\\nnested_layer_count='+n.numLayers+'\\nmain_layer_count='+m.numLayers+'\\ntitle_01_text=Fixture title 01\\ntitle_02_text=Fixture title 02\\n'"
+        "+'title_01_enabled='+(n.layer('TITLE_01').enabled?'1':'0')+'\\ntitle_02_enabled='+(n.layer('TITLE_02').enabled?'1':'0')+'\\nsentinel_enabled=1\\nnested_enabled=1\\nimage_enabled=1\\n'"
+        "+'main_id='+m.id+'\\nnested_id='+n.id+'\\nmedia_id='+f.id+'\\nfolder_id='+folder.id+'\\nnested_source_id='+m.layer('NESTED').source.id+'\\nimage_source_id='+m.layer('IMAGE').source.id+'\\n';})()";
 }
 } // namespace fixture_program

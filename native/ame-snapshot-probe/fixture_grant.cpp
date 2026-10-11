@@ -1,4 +1,5 @@
 #include "fixture_grant.h"
+#include "fixture_reopen_contract.h"
 #include <algorithm>
 
 namespace probe {
@@ -55,7 +56,7 @@ void WriteFixtureStartupRefusal(OwnedRoot& root, const Binding& b, const Fixture
     Need(root.Claimed(), "startup_refusal_exclusive_claim_required");
     Need(LowerHex(b.nonce, 32) && LowerHex(b.challenge, 32) && LowerHex(b.build_sha, 64) &&
         b.pid != 0 && b.process_created_ms != 0 && b.root_path == Utf8(root.path()), "startup_refusal_child_binding");
-    const auto body = "{\"schema\":\"ae-agent.native-fixture-probe.v2\",\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + Json(launch.role) +
+    const auto body = "{\"schema\":\"ae-agent.native-fixture-probe.v2\",\"ownedFixtureReopenContract\":" + Json(OwnedFixtureReopenContract) + ",\"productionBackend\":false,\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + Json(launch.role) +
         ",\"fixture\":" + Json(launch.fixture) + ",\"stageId\":" + Json(launch.stage_id) + ",\"nonce\":" + Json(b.nonce) +
         ",\"challenge\":" + Json(b.challenge) + ",\"pid\":" + std::to_string(b.pid) + ",\"processCreatedUnixMs\":" + std::to_string(b.process_created_ms) +
         ",\"pluginSha256\":" + Json(b.build_sha) + ",\"rootPath\":" + Json(b.root_path) + ",\"buildId\":" + Json(build_id) +

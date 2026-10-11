@@ -88,12 +88,12 @@ struct Memory {
 };
 struct Snapshot {
     AEGP_ProjectH handle = nullptr;
-    std::string path, graph_json, graph_sha, revision, evidence;
+    std::string path, graph_json, graph_sha, revision, evidence, evidence_proof;
     bool dirty = false;
     size_t items = 0, comps = 0, layers = 0;
     std::vector<std::string> names, comments, media_paths;
     std::vector<A_long> sources;
-    std::string IdentityJson() const { return "{\"projectHandle\":" + probe::Json(Pointer(handle)) + ",\"path\":" + probe::Json(path) + ",\"dirty\":" + Bool(dirty) + ",\"fixtureCanonicalSha256\":" + probe::Json(graph_sha) + ",\"extendscriptRevisionObserved\":" + probe::Json(revision) + ",\"observedState\":" + graph_json + (evidence.empty() ? "" : ",\"fixtureEvidence\":" + probe::Json(evidence) + ",\"fixedMainName\":\"Main\",\"fixedNestedName\":\"AEAgent Fixture Nested\",\"rootCompositionCount\":1") + "}"; }
+    std::string IdentityJson() const { return "{\"projectHandle\":" + probe::Json(Pointer(handle)) + ",\"path\":" + probe::Json(path) + ",\"dirty\":" + Bool(dirty) + ",\"fixtureCanonicalSha256\":" + probe::Json(graph_sha) + ",\"extendscriptRevisionObserved\":" + probe::Json(revision) + ",\"observedState\":" + graph_json + (evidence.empty() ? "" : ",\"fixtureEvidence\":" + probe::Json(evidence) + ",\"fixedMainName\":\"Main\",\"fixedNestedName\":\"AEAgent Fixture Nested\",\"rootCompositionCount\":1,\"fixedFixtureEvidence\":" + evidence_proof) + "}"; }
     std::string ApprovalSha() const { return probe::Sha256(IdentityJson()); }
 };
 enum class Phase { InspectAck, FixtureAck, SnapshotAck, Terminal };
@@ -123,7 +123,7 @@ struct State {
     bool stage_readback_available = false;
     unsigned variant = 0, native_saves = 0, fixture_dispatches = 0;
     std::string Base() const {
-        if (signed_fixture) return "\"schema\":\"ae-agent.native-fixture-probe.v2\",\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + probe::Json(role) + ",\"fixture\":" + probe::Json(fixture_kind) + ",\"stageId\":" + probe::Json(stage_id) + ",\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"rootPath\":" + probe::Json(binding.root_path) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"nativeSaveDispatches\":" + Number(native_saves) + ",\"fixtureMutationDispatches\":" + Number(fixture_dispatches) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
+        if (signed_fixture) return "\"schema\":\"ae-agent.native-fixture-probe.v2\",\"ownedFixtureReopenContract\":" + probe::Json(probe::OwnedFixtureReopenContract) + ",\"productionBackend\":false,\"hostLoaded\":true,\"readiness\":false,\"productionAuthorization\":false,\"legacyUnsignedWrites\":\"closed\",\"ownershipContract\":\"trusted cooperative owned root and stable ancestors\",\"replayAllowed\":false,\"role\":" + probe::Json(role) + ",\"fixture\":" + probe::Json(fixture_kind) + ",\"stageId\":" + probe::Json(stage_id) + ",\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"rootPath\":" + probe::Json(binding.root_path) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"nativeSaveDispatches\":" + Number(native_saves) + ",\"fixtureMutationDispatches\":" + Number(fixture_dispatches) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
         return "\"schema\":\"ae-agent.native-snapshot-probe.v1\",\"offlineProbe\":true,\"readiness\":false,\"productionAuthorization\":false,\"destinationWriteContract\":\"destination_write_contract_unverified\",\"rootMetadataIsolation\":\"UNVERIFIED\",\"saveCalled\":false,\"projectMutationDispatchCount\":0,\"outputProofAvailable\":false,\"nonce\":" + probe::Json(binding.nonce) + ",\"challenge\":" + probe::Json(binding.challenge) + ",\"pid\":" + Number(binding.pid) + ",\"processCreatedUnixMs\":" + Number(binding.process_created_ms) + ",\"pluginPath\":" + probe::Json(plugin_path) + ",\"pluginSha256\":" + probe::Json(binding.build_sha) + ",\"buildId\":" + probe::Json(PROBE_BUILD_ID) + ",\"sdkArchiveSha256\":" + probe::Json(PROBE_SDK_ARCHIVE_SHA256) + ",\"timestampUnixMs\":" + Number(probe::NowMs());
     }
     void Receipt(const wchar_t* name, const std::string& json) {
@@ -147,14 +147,10 @@ struct State {
     void FixtureEvidence(Snapshot& snapshot, unsigned expected_variant) {
         snapshot.evidence = FixedScript(fixture_program::Evidence(fixture_kind, expected_variant), false);
         auto e = probe::ParseFields(snapshot.evidence);
-        probe::ExactKeys(e, {"sentinel", "variant", "media_path", "proxy_path", "use_proxy", "main_name", "nested_name", "root_comp_count"});
-        Need(e.at("main_name") == "Main" && e.at("nested_name") == "AEAgent Fixture Nested" && e.at("root_comp_count") == "1", "fixture_unique_root_comp_required");
-        Need(e.at("media_path") == source_root_path + "\\fixture.bmp", "fixture_media_outside_owned_source");
-        Need(e.at("proxy_path") == "NONE" || e.at("proxy_path") == source_root_path + "\\proxy.bmp", "fixture_proxy_outside_owned_source");
-        Need(e.at("proxy_path") == "NONE" ? e.at("use_proxy") == "0" : e.at("use_proxy") == "1", "fixture_proxy_flag_mismatch");
         auto& media_root = source_root ? *source_root : *root;
-        Need(media_root.Hash(L"fixture.bmp") == probe::Sha256(fixture_program::Bitmap(false)) &&
-            media_root.Hash(L"proxy.bmp") == probe::Sha256(fixture_program::Bitmap(true)), "fixture_media_bytes_changed");
+        const auto media_sha = media_root.Hash(L"fixture.bmp"), proxy_sha = media_root.Hash(L"proxy.bmp");
+        probe::RequireFixedFixtureEvidence(e, fixture_kind, expected_variant, source_root_path, media_sha, proxy_sha);
+        snapshot.evidence_proof = probe::FixedFixtureEvidenceJson(snapshot.evidence, media_sha, proxy_sha);
     }
     std::string ItemText(AEGP_ItemH item, bool comment) {
         Memory name(suites.memory);
@@ -345,7 +341,11 @@ struct State {
         stage_readback.observed_file_sha = root->Hash(L"baseline.aep"); stage_readback.file_hash_observed = true;
         stage_readback.observed_baseline_sha = stage_readback.observed_file_sha; stage_readback.baseline_hash_observed = true;
         stage_readback.VerifyFixtureEvidence([&] { FixtureEvidence(baseline, 0); });
-        stage_readback.Require();
+        RecordStageInspection();
+        stage_readback.observed_file_sha = root->Hash(L"baseline.aep");
+        stage_readback.observed_baseline_sha = stage_readback.observed_file_sha;
+        stage_readback.RequireOwnedFixture();
+        const auto baseline_readback = "{\"readback\":" + baseline.IdentityJson() + ",\"proof\":" + stage_readback.OwnedFixtureDiagnosticsJson() + "}";
         std::string outputs = "[";
         for (unsigned i = 1; i <= 2; ++i) {
             stage_readback_available = false; // never attach facts from the preceding file to a failed later dispatch
@@ -360,13 +360,16 @@ struct State {
             stage_readback.observed_file_sha = root->Hash(name); stage_readback.file_hash_observed = true;
             stage_readback.observed_baseline_sha = root->Hash(L"baseline.aep"); stage_readback.baseline_hash_observed = true;
             stage_readback.VerifyFixtureEvidence([&] { FixtureEvidence(readback, i); });
-            stage_readback.Require();
+            RecordStageInspection();
+            stage_readback.observed_file_sha = root->Hash(name); stage_readback.observed_baseline_sha = root->Hash(L"baseline.aep");
+            stage_readback.RequireOwnedFixture();
             if (i != 1) outputs += ',';
             outputs += "{\"variant\":" + Number(i) + ",\"path\":" + probe::Json(probe::Utf8(output_path)) + ",\"sha256\":" + probe::Json(output_sha) +
-                ",\"reopened\":true,\"readback\":" + readback.IdentityJson() + "}";
+                ",\"reopened\":true,\"readback\":" + readback.IdentityJson() + ",\"proof\":" + stage_readback.OwnedFixtureDiagnosticsJson() + "}";
         }
         Receipt(L"signed-variants.json", "\"status\":\"two_owned_variants_reopened\",\"grant\":" + grant.ReceiptJson() +
-            ",\"baselineSha256\":" + probe::Json(baseline_sha) + ",\"outputs\":" + outputs + "],\"ameSubmissionAttempted\":false");
+            ",\"fixtureResultSchema\":" + probe::Json(probe::OwnedFixtureReopenContract) + ",\"baselineSha256\":" + probe::Json(baseline_sha) +
+            ",\"baselineReadback\":" + baseline_readback + ",\"outputs\":" + outputs + "],\"ameSubmissionAttempted\":false");
         phase = Phase::Terminal;
     }
     void RecordStageReadback(const Snapshot& snapshot, AEGP_ProjectH opened, unsigned variant_index,
@@ -378,6 +381,17 @@ struct State {
         stage_readback.expected_file_sha = expected_file_sha; stage_readback.expected_baseline_sha = baseline_sha;
         stage_readback.dirty = snapshot.dirty; stage_readback.graph_sha = snapshot.graph_sha; stage_readback.revision = snapshot.revision;
         stage_readback_available = true; // preserve completed Capture facts even if a following pinned hash read fails
+    }
+    void RecordStageInspection() {
+        // Fresh native observations after all read-only script/graph inspection.
+        // Never set/clear the dirty flag or replace the baseline to satisfy this.
+        AEGP_ProjectH current = nullptr; A_long count = 0;
+        AE(suites.project->AEGP_GetNumProjects(&count), "GetNumProjectsAfterInspection"); Need(count == 1, "fixture_inspection_project_count");
+        AE(suites.project->AEGP_GetProjectByIndex(0, &current), "GetProjectAfterInspection");
+        Memory path(suites.memory); AE(suites.project->AEGP_GetProjectPath(current, &path.handle), "GetPathAfterInspection");
+        A_Boolean dirty = FALSE; AE(suites.project->AEGP_ProjectIsDirty(current, &dirty), "ProjectIsDirtyAfterInspection");
+        stage_readback.inspected_handle = reinterpret_cast<std::uintptr_t>(current); stage_readback.inspected_path = path.Text(true);
+        stage_readback.dirty_after_inspection = dirty != FALSE; stage_readback.inspection_observed = true;
     }
     void Tick() {
         if (phase == Phase::Terminal) return;
@@ -402,7 +416,7 @@ struct State {
     void Refuse(const std::string& reason) noexcept {
         phase = Phase::Terminal;
         try { Receipt(signed_fixture ? L"signed-refusal.json" : L"refusal.json", "\"status\":\"refused_or_unknown\",\"reason\":" + probe::Json(reason) + ",\"fixtureMutationMayHaveOccurred\":" + Bool(mutation_dispatched) + ",\"replayAllowed\":false" +
-            (signed_fixture && role == "stage" && stage_readback_available ? ",\"stageReadback\":" + stage_readback.DiagnosticsJson() : "")); } catch (...) { /* no retry or dialog */ }
+            (signed_fixture && role == "stage" && stage_readback_available ? ",\"stageReadback\":" + stage_readback.OwnedFixtureDiagnosticsJson() : "")); } catch (...) { /* no retry or dialog */ }
     }
     void RefuseStartup(const std::string& reason) noexcept {
         phase = Phase::Terminal;
