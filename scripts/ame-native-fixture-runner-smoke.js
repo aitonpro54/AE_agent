@@ -135,10 +135,11 @@ function createFixture() {
       const issued = await originalIssue(child, operation);
       const descriptor = issuer.state.prepared.find(item => item.id === child.id)?.descriptor;
       assert(descriptor, "phase child descriptor should be known");
-      let fields = {};
+      const launched=state.launches.find(x=>x.stageId===descriptor.stageId);
+      let fields = {pid:launched.process.pid,processCreatedUnixMs:launched.process.createdUnixMs};
       if (operation === "snapshot") {
         const baselinePath = path.join(descriptor.rootPath, "baseline.aep"); fs.writeFileSync(baselinePath, baseline, { flag: "wx" });
-        fields = { baselinePath, baselineSha256: hash(baseline) };
+        fields = { ...fields,baselinePath, baselineSha256: hash(baseline) };
       } else if (operation === "stage-variants") {
         fields.outputs = [1, 2].map(variant => {
           const file = path.join(descriptor.rootPath, `variant-0${variant}.aep`), bytes = Buffer.from(`variant-${variant}`);
@@ -479,6 +480,80 @@ async function main() {
   t = createFixture();
   try { testBuildArtifactsGuards(t); }
   finally { removeFixture(t); }
+
+  function finalRecord(test,status,finished=true){const logs=path.join(test.root,"logs");fs.mkdirSync(logs,{recursive:true});require("../mcp-server/plan-run-records").writeRecord(logs,{schema:"ae-agent-plan-run-record.v1",runId:test.context.runId,plan:{steps:[{tool:"ame_native_fixture_probe",args:test.context.args}]},run:{id:test.context.runId,finishedAt:finished?new Date().toISOString():null,steps:[{tool:"ame_native_fixture_probe",status:status==="completed"?"completed":"failed"}],outcome:{execution:{status}}}});}
+  t=createFixture();
+  try {
+    const prepared=[],finished=[],registered=[];
+    t.deps.ownedRuntime={registerLaunch:async(c,w)=>{assert.equal(c,t.context);assert(ledger.read(ledger.fileFor(t.root,w.descriptor.stageId,"launch")));registered.push(w);},prepareCleanup:async job=>prepared.push(job),finishCleanup:async(job,pin)=>{assert(pin.record.run.finishedAt);assert.equal(pin.nativeReadback?.ok,true);finished.push(job);return {status:"cleanup_audited",replayAllowed:false};}};
+    const result=await t.executor.execute(t.context.args,await t.executor.authorize(t.context));
+    checked("cleanup_finally_prepares_only_after_launch_registration",()=>{assert.equal(prepared.length,1);assert.equal(prepared[0].children.length,2);assert.equal(prepared[0].outcome,"succeeded");assert.equal(registered.length,2);assert.equal(finished.length,0);});
+    await rejected("cleanup_before_durable_canonical_refused",()=>t.executor.flushCleanup(t.context.runId));finalRecord(t,"completed",false);
+    await rejected("cleanup_before_final_canonical_refused",()=>t.executor.flushCleanup(t.context.runId),"fixture_cleanup_final_canonical_required");finalRecord(t,"completed");
+    checked("cleanup_success_still_waits_for_native_readback",()=>assert.equal(finished.length,0));assert.equal((await t.executor.flushCleanup(t.context.runId)).status,"cleanup_pending_native_readback");checks.push("cleanup_success_canonical_alone_cannot_close");
+    await t.executor.inspectResult({evidenceId:result.evidenceId});assert.equal((await t.executor.flushCleanup(t.context.runId)).status,"cleanup_audited");checks.push("cleanup_after_native_readback_and_canonical");assert.equal((await t.executor.flushCleanup(t.context.runId)).status,"no_cleanup_job");checks.push("cleanup_audited_job_not_replayed");
+  }finally{removeFixture(t);}
+  for(const cancelled of [false,true]){
+    t=createFixture();try{const prepared=[],finished=[];t.deps.ownedRuntime={prepareCleanup:async job=>prepared.push(job),finishCleanup:async job=>{finished.push(job);return {status:"cleanup_pending_group_audit",historicalOutcome:"unknown",replayAllowed:false};}};if(cancelled)t.state.onInspect=async()=>{throw Object.assign(Error("fixture_cancelled"),{code:"fixture_cancelled"});};else t.state.refuse=true;
+      await rejected(cancelled?"cancel_cleanup_prepared":"failure_cleanup_prepared",async()=>t.executor.execute(t.context.args,await t.executor.authorize(t.context)));
+      checked(cancelled?"cancel_uses_same_deferred_partial_queue":"failure_uses_same_deferred_partial_queue",()=>{assert.equal(prepared.length,1);assert.equal(prepared[0].children.length,1);assert.equal(prepared[0].outcome,cancelled?"cancelled":"failed");assert.equal(prepared[0].historicalOutcome,"unknown");assert.equal(finished.length,0);});finalRecord(t,"failed");assert.equal((await t.executor.flushCleanup(t.context.runId)).status,"cleanup_pending_group_audit");assert.equal(finished[0].nativeExecutionProven,false);checks.push(cancelled?"cancel_partial_cleanup_cannot_claim_audit":"failure_partial_cleanup_cannot_claim_audit");
+    }finally{removeFixture(t);}
+  }
+
+  function reconciliationFixture(overrides={}) {
+    const runId=crypto.randomUUID(),requestId=crypto.randomUUID(),calls={flush:0,readIdle:0,refresh:0,getResult:0,sleep:0},state={clock:0,enabled:true},brands=new WeakSet(),saved={schema:"managed_mock",selector:{runId,requestId}};brands.add(saved);
+    const result={ok:false,replayed:false,receipt:{requestId,runId,state:"unknown",replayAllowed:false},nativeFixtureManaged:saved};
+    const deps={getSelector:id=>id===runId?{runId,requestId}:null,flush:async id=>{assert.equal(id,runId);calls.flush++;return {status:calls.flush===1?"children_closed_audit_pending":"cleanup_audited",replayAllowed:false};},readIdle:async s=>{assert.deepEqual(s,{runId,requestId});return ++calls.readIdle>=3;},refresh:async()=>{calls.refresh++;},getResult:async id=>{assert.equal(id,requestId);calls.getResult++;return result;},validateAdoption:(s,r)=>r?.ok===false && r.receipt?.requestId===s.requestId && r.receipt.runId===s.runId && brands.has(r.nativeFixtureManaged) && r.nativeFixtureManaged.selector.runId===s.runId && r.nativeFixtureManaged.selector.requestId===s.requestId,assertPolicy:()=>{if(!state.enabled)throw Error("owned_policy_disabled");},now:()=>state.clock,sleep:async ms=>{calls.sleep++;state.clock+=ms;},deadlineMs:150,...overrides};
+    return {runId,requestId,calls,state,deps,result,create:()=>runner.createCleanupReconciler(deps)};
+  }
+  {
+    const r=reconciliationFixture();assert.equal((await r.create().resume(r.runId)).status,"cleanup_audited");
+    checked("cleanup_reconciliation_waits_for_delayed_terminal_receipt",()=>{assert.equal(r.calls.readIdle,3);assert.equal(r.calls.sleep,2);assert.equal(r.calls.refresh,1);assert.equal(r.calls.getResult,1);assert.equal(r.calls.flush,2);});
+  }
+  {
+    const r=reconciliationFixture({readIdle:async()=>false});assert.equal((await r.create().resume(r.runId)).status,"children_closed_panel_adoption_pending");
+    checked("cleanup_missing_terminal_receipt_stays_unknown_without_effect_retry",()=>{assert.equal(r.calls.flush,1);assert.equal(r.calls.refresh,0);assert.equal(r.calls.getResult,0);assert.equal(r.state.clock,150);});
+  }
+  {
+    const r=reconciliationFixture();r.deps.getResult=async()=>{r.calls.getResult++;return {ok:true};};assert.equal((await r.create().resume(r.runId)).status,"children_closed_panel_adoption_pending");
+    checked("cleanup_refresh_without_corresponding_managed_adoption_cannot_release",()=>assert.equal(r.calls.flush,1));
+  }
+  {
+    const r=reconciliationFixture();assert.equal((await r.create().resume(r.runId)).status,"cleanup_audited");
+    checked("cleanup_genuine_unknown_with_private_fresh_adoption_remains_unknown",()=>{assert.equal(r.result.ok,false);assert.equal(r.result.receipt.state,"unknown");assert.equal(r.result.receipt.replayAllowed,false);assert.equal(r.calls.flush,2);});
+  }
+  {
+    const r=reconciliationFixture();r.deps.getResult=async()=>JSON.parse(JSON.stringify(r.result));assert.equal((await r.create().resume(r.runId)).status,"children_closed_panel_adoption_pending");
+    checked("cleanup_stored_cloned_managed_sidecar_cannot_cover_unknown",()=>assert.equal(r.calls.flush,1));
+  }
+  {
+    const r=reconciliationFixture();r.result.receipt.runId=crypto.randomUUID();assert.equal((await r.create().resume(r.runId)).status,"children_closed_panel_adoption_pending");
+    checked("cleanup_corresponding_request_cannot_borrow_foreign_run_sidecar",()=>assert.equal(r.calls.flush,1));
+  }
+  {
+    const r=reconciliationFixture();r.result.nativeFixtureRetained=r.result.nativeFixtureManaged;delete r.result.nativeFixtureManaged;assert.equal((await r.create().resume(r.runId)).status,"children_closed_panel_adoption_pending");
+    checked("cleanup_historical_retained_sidecar_cannot_cover_managed_unknown",()=>assert.equal(r.calls.flush,1));
+  }
+  {
+    const r=reconciliationFixture();r.deps.refresh=async()=>{r.calls.refresh++;throw Error("delivery_unknown");};assert.equal((await r.create().resume(r.runId)).status,"cleanup_audited");
+    checked("cleanup_unknown_single_refresh_uses_readback_without_replay",()=>{assert.equal(r.calls.refresh,1);assert.equal(r.calls.getResult,1);assert.equal(r.calls.flush,2);});
+  }
+  {
+    const r=reconciliationFixture();r.deps.readIdle=async()=>{r.state.enabled=false;return true;};await rejected("cleanup_policy_disable_after_readiness_await_prevents_refresh",()=>r.create().resume(r.runId));
+    checked("disabled_cleanup_preserves_closed_pending_job",()=>{assert.equal(r.calls.flush,1);assert.equal(r.calls.refresh,0);assert.equal(r.calls.getResult,0);});
+  }
+  {
+    const r=reconciliationFixture();r.deps.getResult=async()=>{r.state.enabled=false;return {ok:true,nativeFixtureManaged:{}};};await rejected("cleanup_policy_disable_after_adoption_readback_prevents_audit_finish",()=>r.create().resume(r.runId));
+    checked("late_disable_does_not_repeat_consumed_close",()=>assert.equal(r.calls.flush,1));
+  }
+  {
+    const r=reconciliationFixture({getSelector:()=>null});assert.equal((await r.create().resume(r.runId)).status,"no_full_cleanup_job");
+    checked("partial_cleanup_does_not_borrow_an_unrelated_full_selector",()=>{assert.equal(r.calls.flush,0);assert.equal(r.calls.refresh,0);});
+  }
+  {
+    const r=reconciliationFixture();let release;const held=new Promise(resolve=>release=resolve);r.deps.readIdle=async()=>{await held;return true;};const reconciler=r.create(),first=reconciler.resume(r.runId);await Promise.resolve();assert.equal((await reconciler.resume(r.runId)).status,"cleanup_reconciliation_pending");release();assert.equal((await first).status,"cleanup_audited");
+    checked("concurrent_cleanup_reconciliation_has_one_refresh_and_continuation",()=>{assert.equal(r.calls.flush,2);assert.equal(r.calls.refresh,1);assert.equal(r.calls.getResult,1);});
+  }
 
   process.stdout.write(JSON.stringify({ status: "passed", offline: true, hostLoaded: false, realProcessSpawned: false,
     mockGrantIssuer: true, passed: checks.length, checks }) + "\n");

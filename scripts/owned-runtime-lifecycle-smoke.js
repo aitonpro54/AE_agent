@@ -2,7 +2,7 @@
 
 // Offline authority/one-shot contracts. Invented witnesses are test authority,
 // never provisioned into the product profile and never evidence about AE.
-const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),os=require("node:os"),crypto=require("node:crypto");
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),os=require("node:os"),crypto=require("node:crypto"),{spawnSync}=require("node:child_process");
 const core=require("../mcp-server/owned-runtime-lifecycle"),ledger=require("../mcp-server/native-fixture-attempt-ledger"),native=require("../mcp-server/owned-runtime-win32"),cli=require("./owned-runtime-control");
 const raw=b=>crypto.createHash("sha256").update(b).digest("hex"),copy=v=>JSON.parse(JSON.stringify(v)),token=()=>crypto.randomBytes(16).toString("hex");
 const birth="2026-10-11T07:41:52.9381820Z",filetime=String(BigInt(Date.parse(birth))*10000n+116444736000000000n+1820n);
@@ -58,7 +58,30 @@ function credentialCases(){
 }
 async function withFixture(opts,fn){const f=fixture(opts);try{await fn(f);}finally{f.cleanup();}}
 async function refused(f,pattern){await assert.rejects(f.run(),pattern);assert.equal(f.counts.force,0);}
+function coldCliEntrypoint(reorder=false,command="restart-bridge-once"){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"owned-cli-entry-")),entry=path.resolve(__dirname,"owned-runtime-control.js"),preload=path.join(root,"preload.cjs"),operationId=crypto.randomUUID();
+  // Execute the actual main entry in a cold child. The supervisor's synchronous
+  // require recreates the circular initialization edge without OS/HTTP effects.
+  fs.writeFileSync(preload,`"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),Module=require("node:module");
+const entry=${JSON.stringify(entry)},supervisor=${JSON.stringify(path.resolve(__dirname,"../mcp-server/owned-runtime-supervisor.js"))},native=${JSON.stringify(path.resolve(__dirname,"../mcp-server/owned-runtime-win32.js"))};
+let blockedEffects=0;function blocked(){blockedEffects++;throw Object.assign(Error("owned_cold_effect_forbidden"),{code:"owned_cold_effect_forbidden"});}
+require("node:http").request=blocked;for(const name of ["spawn","spawnSync","exec","execSync","execFile","execFileSync","fork"])require("node:child_process")[name]=blocked;
+require.cache[native]={id:native,filename:native,loaded:true,exports:{createWin32Backend:blocked}};
+if(${JSON.stringify(reorder)}){const load=Module._extensions[".js"];Module._extensions[".js"]=(m,file)=>{if(file!==entry)return load(m,file);const source=fs.readFileSync(file,"utf8").replace(/\\r\\n/g,"\\n"),exportsLine=source.match(/^module\\.exports=.*$/m)?.[0],mainLine=source.match(/^if\\(require\\.main===module\\).*$/m)?.[0];assert.ok(exportsLine && mainLine);m._compile(source.replace(exportsLine+"\\n"+mainLine,mainLine+"\\n"+exportsLine),file);};}
+require.cache[supervisor]={id:supervisor,filename:supervisor,loaded:true,exports:{createOwnedRuntimeSupervisor(){
+ const api=require(entry),names=["credential","request","run","parse","loadTrustedProfile","checkOriginalRegistration","statusVerified","credentialFingerprint","parseCredentialConfig","disablePolicy"];
+ if(names.some(name=>typeof api[name]!=="function") || typeof api.PROFILE!=="string" || typeof api.PROFILE_FILE!=="string")throw Object.assign(Error("owned_cold_exports_incomplete"),{code:"owned_cold_exports_incomplete"});
+ const result=operationId=>({ok:true,status:"cold_exports_ready",operationId:operationId || null,exportCount:names.length,blockedEffects,noNativeEffects:true});
+ return {status:()=>result(),ensure:result,restart:result,shutdown:result,readBack:result};
+}}};
+`);
+  try{const env={...process.env};for(const name of Object.keys(env))if(/^AE_BRIDGE_.*TOKEN$|^AE_OWNED_RUNTIME_|^NODE_OPTIONS$/i.test(name))delete env[name];const args=["-r",preload,entry,command,...(command==="status"?[]:["--operation-id",operationId])],result=spawnSync(process.execPath,args,{cwd:path.resolve(__dirname,".."),env,windowsHide:true,encoding:"utf8",timeout:5000,maxBuffer:65536});assert.equal(result.error,undefined);assert.equal(result.signal,null);return {exitCode:result.status,value:JSON.parse(result.stdout.trim()),stderr:result.stderr,operationId};
+  }finally{assert.equal(path.dirname(path.resolve(root)),path.resolve(os.tmpdir()));assert.match(path.basename(root),/^owned-cli-entry-/);fs.rmSync(root,{recursive:true});}
+}
 async function main(){
+  await check("cold actual CLI exposes helpers before synchronous supervisor require",async()=>{for(const command of ["status","ensure-bridge","restart-bridge-once","shutdown-bridge-once","read-back"]){const result=coldCliEntrypoint(false,command);assert.equal(result.exitCode,0);assert.equal(result.value.status,"cold_exports_ready");assert.equal(result.value.exportCount,10);assert.equal(result.value.blockedEffects,0);assert.equal(result.value.noNativeEffects,true);assert.equal(result.value.operationId,command==="status"?null:result.operationId);assert.equal(result.stderr,"");}});
+  await check("cold entry test detects previous exports-after-main defect",async()=>{const result=coldCliEntrypoint(true);assert.equal(result.exitCode,1);assert.equal(result.value.ok,false);assert.equal(result.value.code,"owned_cold_exports_incomplete");assert.match(result.stderr,/non-existent property 'credential'.*circular dependency/);});
   for(const c of credentialCases())await check("strict credential parser: "+c.name,async()=>{if(c.code)assert.throws(()=>cli.parseCredentialConfig(c.text),e=>e.code===c.code && !e.message.includes("synthetic-automation"));else assert.equal(cli.parseCredentialConfig(c.text),c.token);});
   await check("transport rejects foreign routes before credential read",async()=>{assert.throws(()=>cli.request({},"http://foreign/"),/owned_fixed_route_required/);});
   await check("closed selectors",async()=>{for(const extra of ["pid","path","executable","cmd","disposable","tree"]){assert.throws(()=>core.selector({command:"inspect",profile:"x",runId:crypto.randomUUID(),stageId:token(),[extra]:true}),/owned_selector_invalid/);}assert.throws(()=>cli.parse(["node","cli","close-once","--profile","arbitrary","--run-id",crypto.randomUUID(),"--stage-id",token()]),/fixed_profile/);assert.throws(()=>cli.parse(["node","cli","close-once","--profile-path","x"]),/closed_schema/);});

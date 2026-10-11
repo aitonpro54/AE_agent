@@ -135,13 +135,50 @@ function loadDurableReceipt(directory,id) {
   if(!fs.existsSync(file)) return unknown(id,"receipt_record_missing",identity);
   try {const row=JSON.parse(boundedRead(file));validateStored(row,id,identity);return row;}catch(_) {return unknown(id,"receipt_corrupt",identity);}
 }
-function saveDurableReceipt(directory,row) {
+// Unlike loadDurableReceipt, this reader never fabricates an UNKNOWN record.
+// Retained mutation evidence must be backed by the actual indexed file bytes.
+function ownedIndexContext(directory,privateDeps={}) {
+  const dir=path.resolve(directory),generation=path.basename(dir);if(path.basename(path.dirname(dir))!=="owned")return null;
+  if(!UUID.test(generation))throw problem("owned_receipt_generation_invalid");
+  const root=path.dirname(path.dirname(path.dirname(path.dirname(dir))));
+  if(dir!==path.join(root,"logs","cep-panel-control","owned",generation))throw problem("owned_receipt_namespace_invalid");
+  const supervisor=require("./owned-runtime-supervisor"),chain=(privateDeps.readCandidate || supervisor.readCandidate)(root,generation),v=chain.reservation.value;
+  if(v.generation!==generation || chain.candidate.value.generation!==generation)throw problem("owned_receipt_generation_mismatch");
+  const key=privateDeps.key || require("../scripts/owned-runtime-control").credential({daemon:{port:3456,credentialSha256:v.credentialSha256}});
+  return {root,generation,chain,key,registered:()=> (privateDeps.readRegistration || supervisor.readDaemonRegistration)(root)};
+}
+function checkpointSignature(value,key){const {authentication,...data}=value;return crypto.createHmac("sha256",key).update(require("./owned-runtime-lifecycle").canonical(data)).digest("hex");}
+function checkpointPath(directory,id){requestId(id);return path.join(safeRoot(directory),"index-checkpoints",id+".json");}
+function readCheckpoint(directory,id,identity,owned){
+  const file=checkpointPath(directory,id),bytes=boundedRead(file),row=JSON.parse(bytes),v=row.value,r1=require("./owned-runtime-lifecycle");
+  if(!plain(row) || row.schema!==r1.SCHEMA+".envelope" || row.sha256!==r1.hash(v) || !plain(v) || Object.keys(v).sort().join(",")!=="authentication,emission,generation,identity,identitySha256,nativeCandidateSha256,replayAllowed,requestId,reservationSha256,schema,startupTicketSha256" || v.schema!==STORE_VERSION+".owned-index-checkpoint" || v.generation!==owned.generation || v.requestId!==id || JSON.stringify(v.identity)!==JSON.stringify(identity) || v.identitySha256!==crypto.createHash("sha256").update(JSON.stringify(identity)).digest("hex") || v.reservationSha256!==owned.chain.reservation.sha256 || v.startupTicketSha256!==owned.chain.ticket.sha256 || v.nativeCandidateSha256!==owned.chain.candidate.sha256 || v.emission?.source!=="trusted_local_transport" || v.emission.phase!=="submitted_before_cdp" || !Number.isFinite(Date.parse(v.emission.at)) || v.replayAllowed!==false || !/^[a-f0-9]{64}$/.test(v.authentication || "") || v.authentication!==checkpointSignature(v,owned.key))throw problem("owned_receipt_checkpoint_invalid");
+  return {bytes,row};
+}
+function readIndexedReceipt(directory,id,privateDeps) {
+  requestId(id);const index=readIndex(directory),identity=index.identities[id];
+  if(!identity)throw problem("indexed_receipt_identity_missing");
+  const file=createReceiptPath(index.root,id),bytes=boundedRead(file),row=JSON.parse(bytes);
+  validateStored(row,id,identity);
+  const indexBytes=boundedRead(path.join(index.root,"identities.json"));
+  const second=readIndex(directory);
+  if(JSON.stringify(second.identities)!==JSON.stringify(index.identities) || boundedRead(file)!==bytes || boundedRead(path.join(index.root,"identities.json"))!==indexBytes)throw problem("indexed_receipt_changed");
+  const owned=ownedIndexContext(directory,privateDeps),checkpoint=owned && readCheckpoint(directory,id,identity,owned);
+  return {row,identity,rawReceiptSha256:crypto.createHash("sha256").update(bytes).digest("hex"),
+    rawIndexSha256:crypto.createHash("sha256").update(checkpoint?checkpoint.bytes:indexBytes).digest("hex"),identitySha256:crypto.createHash("sha256").update(JSON.stringify(identity)).digest("hex"),...(owned?{ownedGeneration:owned.generation,indexKind:"owned_receipt_checkpoint"}:{})};
+}
+function saveDurableReceipt(directory,row,privateDeps) {
   requestId(row?.requestId);const index=readIndex(directory,true),id=row.requestId;
   if(!contract.getActionDefinition(row.action) || !/^[a-f0-9]{64}$/.test(row.signature || "")) throw problem("receipt_identity_invalid");
   const previous=index.identities[id];
   if(previous && (previous.action!==row.action || previous.signature!==row.signature)) throw problem("receipt_identity_conflict");
   if(!previous && Object.keys(index.identities).length>=MAX_IDENTITIES) throw problem("receipt_capacity_exceeded");
   const identity={action:row.action,signature:row.signature,...(row.binding?{binding:row.binding}:{})};validateStored(row,id,identity);
+  const owned=ownedIndexContext(directory,privateDeps);
+  if(owned){const file=checkpointPath(directory,id);if(fs.existsSync(file))readCheckpoint(directory,id,identity,owned);else if(row.binding){
+    const registered=owned.registered();if(registered?.generation!==owned.generation || registered.reservationSha256!==owned.chain.reservation.sha256 || registered.startupTicketSha256!==owned.chain.ticket.sha256)throw problem("owned_receipt_current_registered_issuer_required");
+    if(row.state!=="running" || row.phase!=="submitted" || row.delivery!=="submitted")throw problem("owned_receipt_actual_emission_checkpoint_required");
+    const value={schema:STORE_VERSION+".owned-index-checkpoint",generation:owned.generation,requestId:id,identity,identitySha256:crypto.createHash("sha256").update(JSON.stringify(identity)).digest("hex"),reservationSha256:owned.chain.reservation.sha256,startupTicketSha256:owned.chain.ticket.sha256,nativeCandidateSha256:owned.chain.candidate.sha256,emission:{source:"trusted_local_transport",phase:"submitted_before_cdp",at:new Date().toISOString()},replayAllowed:false,authentication:"0".repeat(64)};value.authentication=checkpointSignature(value,owned.key);require("./owned-runtime-lifecycle").writeJournalOnce(path.dirname(file),id,value);
+  }}
   const stored={...contract.sanitizeReceipt(row),signature:row.signature};
   // Reserve identity first: a missing record after a crash is unknown, never absent.
   atomicWrite(index.root,path.join(index.root,"identities.json"),{schema:STORE_VERSION,identities:{...index.identities,[id]:identity}});
@@ -241,14 +278,29 @@ function captureReadOnlyOrphanIntent(directory,inputFile) {
   return readonlyOrphan.capture(root,envelope,{kind:"original-input-file",path:sourcePath,sha256:readonlyOrphan.hash(text),...(original.originalReceiptSha256?{originalReceiptSha256:original.originalReceiptSha256}:{})},local.signature).sha256;
 }
 const PASSIVE_ACTIONS=new Set(["logs.get","chat.sessions.list","chat.transcript.get","plan.current","autonomy.refresh","placeholder.refresh","connector.refresh"]);
+function cutoverReceiptSemantics(row) {
+  const definition=contract.getActionDefinition(row.action);
+  if(definition && row.effect!==undefined && row.effect!==definition.effect)throw problem("owned_cutover_receipt_effect_mismatch");
+  if(definition?.confirmationRequired===false && (definition.effect==="bridge_read" || row.action==="logs.get" && definition.effect==="local_ui"))return "read_only";
+  const mutation=row.result?.run?.outcome?.mutation?.status;
+  if(TERMINAL.test(row.state) && mutation!=="unknown" && (row.delivery==="not_submitted" || row.phase===row.state))return "closed";
+  return "protected_outstanding";
+}
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
-  exact(options,["stateDir","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal"]);
+  exact(options,["stateDir","evidenceRoot","resolveStateDirectory","resolveReceiptDirectory","readCutoverInventory","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal","lookupRetainedNativeFixture","assertRetainedAdmissionCurrent"]);
   if(options.lookupNativeFixtureAdmissionRefusal!==undefined && typeof options.lookupNativeFixtureAdmissionRefusal!=="function")throw problem("fixture_refusal_lookup_callback_invalid");
+  if(options.lookupRetainedNativeFixture!==undefined && typeof options.lookupRetainedNativeFixture!=="function")throw problem("retained_lookup_callback_invalid");
+  if(options.assertRetainedAdmissionCurrent!==undefined && typeof options.assertRetainedAdmissionCurrent!=="function")throw problem("retained_admission_callback_invalid");
+  if(options.readCutoverInventory!==undefined && (typeof options.readCutoverInventory!=="function" || typeof options.assertRetainedAdmissionCurrent!=="function"))throw problem("owned_cutover_private_reader_required");
   if(options.cdpPort!==undefined && options.cdpPort!==DEFAULT_CDP_PORT) throw problem("fixed_cdp_port_required");
-  const directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
-  const recoveryLogDir=path.dirname(directory),recovery=require("./generated-export-recovery"),commonRecovery=require("./common-title-assembly-recovery"),runRecords=require("./plan-run-records");
+  let directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
+  const recoveryLogDir=path.resolve(options.evidenceRoot || path.dirname(directory)),recovery=require("./generated-export-recovery"),commonRecovery=require("./common-title-assembly-recovery"),runRecords=require("./plan-run-records");
+  for(const name of ["resolveStateDirectory","resolveReceiptDirectory"])if(options[name]!==undefined && typeof options[name]!=="function")throw problem("owned_receipt_private_resolver_required");
+  function refreshDirectory(){if(options.resolveStateDirectory)directory=path.resolve(options.resolveStateDirectory());}
+  function receiptDirectory(id){return options.resolveReceiptDirectory?path.resolve(options.resolveReceiptDirectory(id)):directory;}
   const inspect=options.inspectInstalledTarget || bootstrap.inspectInstalledTarget,fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
+  let cutoverWitness=null,cutoverFailure=null;
   const evaluate=options.evaluateViaCdp || evaluateViaWebSocket,persist=options.persistReceipt || saveDurableReceipt;
   async function resolveTarget(budget) {
     const installed=inspect(),pages=await fetchTargets(DEFAULT_CDP_PORT,budget),target=bootstrap.exactCdpTarget(pages,installed);
@@ -290,6 +342,74 @@ function createPanelControlService(options={}) {
     if(!refusal.isExactReceipt(row) || !options.lookupNativeFixtureAdmissionRefusal)return false;
     try {return refusal.validatesTransport(await options.lookupNativeFixtureAdmissionRefusal(),row);}catch(_){return false;}
   }
+  async function freshRetainedValid(row,remote) {
+    const retained=require("./native-fixture-retained");if(!retained.isRetainedReceipt(row) || !options.lookupRetainedNativeFixture)return null;
+    const original=readIndexedReceipt(receiptDirectory(row.requestId),row.requestId),saved=await options.lookupRetainedNativeFixture({requestId:row.requestId,runId:row.runId});
+    if(!saved)return null;
+    const projected=remote===undefined ? await read("getResult",row.requestId,5000) : remote;
+    if(saved.value.schema===retained.MANAGED){
+      if(original.rawReceiptSha256!==saved.value.entry.transportReceiptRawSha256 || original.rawIndexSha256!==saved.value.entry.transportIndexRawSha256 || projected?.nativeFixtureManaged?.sha256!==saved.sha256 || projected.nativeFixtureManaged.entrySha256!==require("./native-fixture-attempt-ledger").hash(saved.value.entry) || projected.nativeFixtureManaged.groupRetirementSha256!==saved.value.groupSha256 || JSON.stringify(projected.nativeFixtureManaged.currentActor)!==JSON.stringify(saved.readBack.currentActor) || JSON.stringify(projected.result?.run)!==JSON.stringify(original.row.result?.run))throw problem("owned_managed_panel_adoption_unproven");
+      if(options.assertRetainedAdmissionCurrent)retained.confirmManagedAdoption(saved,projected,{repoRoot:path.dirname(recoveryLogDir),evidenceRoot:recoveryLogDir,assertCurrent:options.assertRetainedAdmissionCurrent});return saved;
+    }
+    if(original.rawReceiptSha256!==saved.value.entry.transportReceiptRawSha256 || original.rawIndexSha256!==saved.value.entry.transportIndexRawSha256 || !retained.matchesPanel(original.row,saved,projected) || JSON.stringify(projected.nativeFixtureRetained.currentActor)!==JSON.stringify(saved.readBack.currentActor))throw problem("retained_panel_adoption_unproven");
+    if(options.assertRetainedAdmissionCurrent)retained.confirmPanelAdoption(saved,projected,{repoRoot:path.dirname(recoveryLogDir),evidenceRoot:recoveryLogDir,assertCurrent:options.assertRetainedAdmissionCurrent});
+    if(options.readCutoverInventory)await refreshCutoverReadiness(saved);
+    return saved;
+  }
+  async function refreshCutoverReadiness(saved) {
+    cutoverWitness=null;cutoverFailure=null;
+    try {
+      const authority=require("./owned-runtime-authority"),retained=require("./native-fixture-retained"),root=path.dirname(recoveryLogDir),policy=authority.loadPolicy(root,"native_fixture_disposition"),inventory=options.readCutoverInventory(),expected={currentActor:saved.readBack.currentActor,runtime:saved.readBack.runtime},before=remoteState(await read("state",{},5000)),checks=[],blocked=[];
+      const actor=s=>({panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch,panelGeneration:s.panelGeneration});
+      if(JSON.stringify(actor(before))!==JSON.stringify(expected.currentActor))throw problem("owned_cutover_current_actor_changed");
+      for(const indexed of inventory.rows) {
+        const row=indexed.row,semantics=cutoverReceiptSemantics(row);if(semantics!=="protected_outstanding")continue;
+        let remote;try{remote=remoteReceipt(await read("getResult",row.requestId,5000),row.requestId,row);}catch(error){blocked.push({requestId:row.requestId,runId:row.runId || null,action:row.action,reasonCode:error.code || "owned_cutover_corresponding_panel_record_unproven"});continue;}
+        const human=require("./human-guard-settlement"),humanSaved=human.disposition(recoveryLogDir,row);
+        if(row.requestId===saved.value.selector.requestId && row.runId===saved.value.selector.runId && indexed.rawReceiptSha256===saved.value.entry.transportReceiptRawSha256 && indexed.rawIndexSha256===saved.value.entry.transportIndexRawSha256 && retained.matchesPanel(row,saved,remote)) {
+          checks.push(()=>{if(!retained.currentAdmission(root))throw problem("owned_cutover_original_adoption_changed");});continue;
+        }
+        if(indexed.ownedGeneration && remote.nativeFixtureManaged) {
+          try{const managed=await freshRetainedValid(row,remote),response={...responseReceipt(row),nativeFixtureManaged:managed};if(managed?.value.schema===retained.MANAGED && retained.isFreshManagedCleanupAdoption(managed,indexed,response,{repoRoot:root})){checks.push(()=>{if(!retained.isFreshManagedCleanupAdoption(managed,indexed,response,{repoRoot:root}))throw problem("owned_cutover_managed_adoption_changed");});continue;}}catch(_){/* Unproven predecessor receipts stay protected. */}
+        }
+        if(humanSaved && remote.humanSettlement?.sha256===humanSaved.sha256 && human.hash(human.receiptProjection(remote))===humanSaved.value.entries.find(e=>e.originalRequestId===row.requestId)?.panelReceiptHash) {
+          checks.push(()=>{if(human.disposition(recoveryLogDir,row)?.sha256!==humanSaved.sha256)throw problem("owned_cutover_human_disposition_changed");});continue;
+        }
+        const common=commonRecovery.read(recoveryLogDir,"recovery");
+        if(common && remote.recovery?.sha256===common.sha256 && remote.recovery.schema===commonRecovery.ENVELOPE) {
+          const record=runRecords.readRecord(recoveryLogDir,row.runId,{throwOnError:true});commonRecovery.validateRecovery(common,record,row);
+          checks.push(()=>{const latest=commonRecovery.read(recoveryLogDir,"recovery");if(latest?.sha256!==common.sha256)throw problem("owned_cutover_typed_disposition_changed");commonRecovery.validateRecovery(latest,runRecords.readRecord(recoveryLogDir,row.runId,{throwOnError:true}),row);});continue;
+        }
+        const refusal=require("./native-fixture-admission-refusal");
+        if(refusal.isExactReceipt(row) && options.lookupNativeFixtureAdmissionRefusal) {
+          const fresh=await options.lookupNativeFixtureAdmissionRefusal(),adopted=before.nativeFixtureAdmissionRefusal;
+          if(refusal.validatesTransport(fresh,row) && JSON.stringify(fresh.readBack.currentActor)===JSON.stringify(expected.currentActor) && adopted?.requestId===row.requestId && adopted.runId===row.runId && adopted.historicalOutcome==="unknown" && adopted.nativeExecutionProven===false && adopted.replayAllowed===false) {
+            const proof=require("./native-fixture-admission-refusal-proof"),historical=proof.classify(root,recoveryLogDir);
+            checks.push(()=>{if(JSON.stringify(proof.classify(root,recoveryLogDir))!==JSON.stringify(historical) || !refusal.validatesTransport(fresh,row))throw problem("owned_cutover_refusal_proof_changed");});continue;
+          }
+        }
+        blocked.push({requestId:row.requestId,runId:row.runId || null,action:row.action,reasonCode:"owned_cutover_protected_outcome_unresolved"});
+      }
+      const after=remoteState(await read("state",{},5000));inventory.assertUnchanged();policy.assertUnchanged();options.assertRetainedAdmissionCurrent(expected);
+      if(JSON.stringify(actor(after))!==JSON.stringify(expected.currentActor) || before.activeAction!==null || after.activeAction!==null || before.recoveryTransport || after.recoveryTransport || before.actionStorage!=="ready" || after.actionStorage!=="ready")throw problem("owned_cutover_current_actor_or_controller_changed");
+      const witness={generation:inventory.generation,finalInventorySha256:inventory.finalInventorySha256,blocked,assertFresh(){inventory.assertUnchanged();policy.assertUnchanged();options.assertRetainedAdmissionCurrent(expected);checks.forEach(check=>check());}};
+      witness.assertFresh();cutoverWitness=witness;
+    }catch(error){cutoverFailure={reasonCode:error.code || "owned_cutover_inventory_or_fresh_disposition_unproven"};}
+    return cutoverReadiness();
+  }
+  function cutoverReadiness() {
+    if(!options.readCutoverInventory)return {ready:true,scope:"unmanaged_runtime",replayAllowed:false};
+    if(!cutoverWitness)return {ready:false,reasonCode:cutoverFailure?.reasonCode || "owned_cutover_fresh_observation_required",outstanding:[],replayAllowed:false};
+    try {cutoverWitness.assertFresh();return {ready:cutoverWitness.blocked.length===0,generation:cutoverWitness.generation,finalInventorySha256:cutoverWitness.finalInventorySha256,reasonCode:cutoverWitness.blocked.length?"owned_cutover_protected_outcome_unresolved":null,outstanding:cutoverWitness.blocked,replayAllowed:false};}
+    catch(error){cutoverWitness=null;cutoverFailure={reasonCode:error.code || "owned_cutover_inventory_or_fresh_disposition_unproven"};return {ready:false,...cutoverFailure,outstanding:[],replayAllowed:false};}
+  }
+  function validateManagedCleanupAdoption(selector,result) {
+    try {
+      if(!selector || selector.requestId!==result?.receipt?.requestId || selector.runId!==result.receipt.runId)return false;
+      const original=readIndexedReceipt(receiptDirectory(selector.requestId),selector.requestId);
+      return require("./native-fixture-retained").isFreshManagedCleanupAdoption(result.nativeFixtureManaged,original,result,{repoRoot:path.dirname(recoveryLogDir)});
+    }catch(_){return false;}
+  }
   function projectedRecoveryValid(row) {
     try {
       if(require("./human-guard-settlement").disposition(recoveryLogDir,row))return true;
@@ -330,10 +450,12 @@ function createPanelControlService(options={}) {
   async function state(args={},timeoutMs=5000) {try {exact(args,[]);const budget=timeout(timeoutMs,5000);return {ok:true,
     state:remoteState(await read("state",args,budget))};}catch(error){return responseError(error);}}
   async function maintenanceTransportState() {
+    refreshDirectory();
     const index=readIndex(directory),requestIds=[];
     for(const id of Object.keys(index.identities)) {
       const prior=loadDurableReceipt(directory,id),unproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
       if(!unproven && await freshRefusalValid(prior))continue;
+      if(!unproven && await freshRetainedValid(prior))continue;
       if(prior && !unproven && readonlyOrphan.read(safeRoot(directory),id,"disposition")) {
         try{await readonlyOrphan.validate(orphanContext(),prior);continue;}catch(_){requestIds.push(id);continue;}
       }
@@ -342,6 +464,7 @@ function createPanelControlService(options={}) {
     return {unresolvedCount:requestIds.length,requestIds:requestIds.sort(),replayAllowed:false};
   }
   async function refreshTrustedGuards(args={},timeoutMs) {
+    refreshDirectory();
     let claim;
     try {
       exact(args,[]);const budget=guardRefreshTimeout(timeoutMs),deadline=Date.now()+budget,remaining=()=>{const left=deadline-Date.now();if(left<1)throw problem("trusted_guard_refresh_timeout_no_replay");return Math.min(left,60000);};
@@ -361,9 +484,19 @@ function createPanelControlService(options={}) {
   async function getResult(id,timeoutMs=5000) {
     let local;
     try {
-      requestId(id);const budget=timeout(timeoutMs,5000);local=loadDurableReceipt(directory,id);
+      requestId(id);refreshDirectory();const budget=timeout(timeoutMs,5000);local=loadDurableReceipt(receiptDirectory(id),id);
       if(local && !local.signature) return responseError(problem(local.code),local);
       const remote=await read("getResult",id,budget);
+      const retained=require("./native-fixture-retained");
+      if(retained.isRetainedReceipt(local)) {
+        // Keep exact original transport bytes even BEFORE disposition. This
+        // passive branch precedes the generic delivery=delivered merge.
+        const original=readIndexedReceipt(receiptDirectory(id),id);
+        if(remote===null || !retained.isRetainedReceipt(remote) || remote.requestId!==id || remote.runId!==local.runId || JSON.stringify(remote.result?.run)!==JSON.stringify(local.result?.run))return responseError(problem("retained_original_panel_receipt_mismatch"),local);
+        remoteReceipt(remote,id,original.row);
+        const saved=await freshRetainedValid(original.row,remote);
+        return {...responseReceipt(original.row),...(saved?{[saved.value.schema===retained.MANAGED?"nativeFixtureManaged":"nativeFixtureRetained"]:saved}:{})};
+      }
       const refusal=require("./native-fixture-admission-refusal");
       if(local && id===refusal.selector().requestId) {
         // Exact historical bytes remain evidence, even if a fresh exclusion
@@ -418,12 +551,13 @@ function createPanelControlService(options={}) {
     }catch(error){return responseError(error);}
   }
   async function invoke(raw,callOptions={}) {
+    refreshDirectory();
     let input,record,claim,sent=false;
     try {
       input=validateRawInvokeInput(raw,callOptions);const envelope=input.envelope,id=envelope.requestId;
       for(const field of contract.getActionDefinition(envelope.action).writeOnly || []) contract.rememberSecret(envelope.args[field]);
       const signature=computeActionSignature(envelope);
-      const existing=loadDurableReceipt(directory,id);
+      const existing=loadDurableReceipt(receiptDirectory(id),id);
       if(existing) {
         if(!existing.signature)return responseError(problem(existing.code),existing);
         if(existing.action!==envelope.action || existing.signature!==signature)return responseError(problem("duplicate_request_id_conflict"),existing);
@@ -438,6 +572,7 @@ function createPanelControlService(options={}) {
         const prior=loadDurableReceipt(directory,previous);
         const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
         if(!storageUnproven && await freshRefusalValid(prior))continue;
+        if(!storageUnproven && await freshRetainedValid(prior))continue;
         if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
           try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
           catch(_) {unresolved.push(prior);continue;}
@@ -492,8 +627,9 @@ function createPanelControlService(options={}) {
     // Public busy includes the historical guard. Existing catalog probes actual lifecycle/controller work separately.
     return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 || after.busy===false)}};
   }
-  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards});
+  function controllerIdle(){refreshDirectory();return readLock(directory)===null;}
+  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards,controllerIdle,cutoverReadiness,validateManagedCleanupAdoption});
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,TRUSTED_GUARD_REFRESH_TIMEOUT_MS,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
-  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,createPanelControlService};
+  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,readIndexedReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,cutoverReceiptSemantics,createPanelControlService};

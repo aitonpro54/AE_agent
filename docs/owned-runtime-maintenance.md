@@ -224,3 +224,256 @@ original daemon registration или original observer proofs.
 Нормативные API: [PostMessageW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postmessagew),
 [TerminateProcess](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-terminateprocess),
 [WaitForSingleObject](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject).
+
+## R3: внешний owned daemon supervisor
+
+`createOwnedRuntimeSupervisor()` предоставляет закрытые `status()`, `ensure()`,
+`restart()`, `shutdown()`, `readBack(operationId)`. Публичные MCP операции не
+принимают selectors; CLI принимает только следующие формы:
+
+```powershell
+node scripts/owned-runtime-control.js status
+node scripts/owned-runtime-control.js ensure-bridge --operation-id <UUID>
+node scripts/owned-runtime-control.js restart-bridge-once --operation-id <UUID>
+node scripts/owned-runtime-control.js shutdown-bridge-once --operation-id <UUID>
+node scripts/owned-runtime-control.js read-back --operation-id <UUID>
+node scripts/owned-runtime-control.js cleanup-fixtures-once --run-id <UUID>
+node scripts/owned-runtime-control.js disable-owned-maintenance
+```
+
+Fixed `BASE` остаётся `.codex-runtime/owned-runtime-maintenance`. Policy файл
+`BASE/policy.json` имеет schema `ae-agent.owned-runtime-policy.v1`, generation,
+enabled, authorization `{source:"explicit_user_chat",reference:<исходный chat>}`
+и acceptedServerCoverage. Выключение сохраняется атомарно с fsync и immutable
+disable receipt; оно не выдаёт новых grants. Enabled policy перечитывается перед
+каждой фазой. Native pre-effect lease удерживает read locks на policy/config,
+profile, source и witnesses; отказ lock/API/auth запрещает effect. Уже наблюдённый
+exit остаётся фактом после отзыва policy. Credentials берутся только из fixed
+`.codex/config.toml`; token не сохраняется в profiles, receipts или выводе.
+
+Node executable и его SHA заданы в `supervisor.POLICY`; argv в точности
+`[fixedNode, ROOT/mcp-server/bridge-daemon.js]`, cwd ROOT, запуск скрытый.
+Native helper source и portable PS7 также pinned. Caller не задаёт PID/path/argv,
+force, profile filepath или disposable flag. `/health`, PID и producer rows не
+дают ownership. Process без startup ticket не получает owned maintenance
+authority; при активном reservation не допускается unreserved listen.
+
+Immutable startup files находятся в `BASE/daemon-reservations/<generation>/`:
+
+```text
+reservation.json: {schema:supervisor.v1.reservation, generation, operationId,
+ bootNonce, command:{executable,executableSha256,argv,cwd}, sourceSha256,
+ sourcePins:[{name,sha256}], credentialSha256, authorizationRef, createdAt,
+ replayAllowed:false}
+startup-ticket.json: {schema:supervisor.v1.startup-ticket, generation, bootNonce,
+ reservationSha256, issuedAt, expiresAt, replayAllowed:false}
+native-candidate.json: {schema:supervisor.v1.native-candidate, generation,
+ bootNonce, reservationSha256, startupTicketSha256, kernelIdentity, argv,
+ sourceSha256, heldLaunchWitness:{kind:"native_launch_held_process_handle",
+ handleOpenedAt,identityVerifiedAt}, authentication:HMAC_SHA256}
+registration.json: {schema:supervisor.v1.registration, generation, bootNonce,
+ reservationSha256, startupTicketSha256, nativeCandidateSha256,
+ serviceStartedAt, registeredAt, requiresRetainedAdoption:true,
+ replayAllowed:false}
+```
+
+В этом блоке `supervisor.v1.*` означает полный prefix
+`ae-agent.owned-runtime-supervisor.v1.*`; каждый файл — R1 envelope
+`{schema:"ae-agent.owned-runtime-shutdown.v1.envelope",sha256,value}`. Startup TTL
+фиксирован в 600000 ms. Candidate HMAC подписывает canonical value без поля
+authentication через общий fixed credential reader. Он создаётся только native
+launcher после проверенного actual launch и held HANDLE; plain row/SHA не
+заменяет этот private origin. Registration проверяет actual own pid/argv/source,
+boot nonce и STARTED_AT. Service startedAt имеет миллисекунды и проверяется между
+kernel birth и registration time; его не приравнивают к kernel birth.
+
+Отдельная ветка retirement относится только к исходному ROOT71 startup, который
+никогда не был admitted. До завершения kernel retirement и исходной операции
+97441 её замороженный source `9e9` остаётся неизменным. Retirement требует
+подписанный acquisition именно этого исходного source, доказанный exit того же
+удерживаемого kernel HANDLE, post-exit inventory и фактическое завершение
+исходной операции 97441. Обычный ACK, registration, отсутствие PID или вывод о
+результате операции не заменяют ни одно из этих свидетельств и не разрешают
+admission. Исторический reader вызывается явно и принимает только completed
+original signed source; `sourceStable:false` не отключает проверку.
+
+Persistent enabled policy сохраняет исходную явную авторизацию и допускает
+будущую автоматическую уборку только точного owned disposable profile либо
+подтверждённого never-admitted startup. Она не распространяется на primary AE,
+AME project window или неизвестные процессы. Поддерживаемые команды остаются
+`status`, `ensure-bridge`, `restart-bridge-once`, `shutdown-bridge-once` и
+`cleanup-fixtures-once`; последний ограничен указанным run и его owned fixtures.
+Границы policy, source pins, protected inventory и UNKNOWN guards сохраняются.
+
+`loadCurrentDaemonRegistration(root,actual)` возвращает frozen projection
+`{generation,bootNonce,reservationSha256,startupTicketSha256,kernelIdentity,argv,
+sourceSha256,serviceStartedAt}`. Actual содержит pid/argv/sourceSha256/generation/
+bootNonce и, если доступно, serviceStartedAt. `registerCurrentDaemon` принимает
+только `{generation,startupTicketSha256}` плюс private actual facts.
+`readDaemonRegistration(root)` читает fixed `BASE/current-daemon.json` и добавляет
+credentialSha256 из sealed reservation. `assertStartupReservation(root,actual)`
+вызывается до listen и возвращает managed/requiresRetainedAdoption. Эти private
+JS seams не публикуются как caller authority.
+
+Owned future daemon закрывается штатно. Supervisor открывает и проверяет один
+kernel HANDLE до drain, резервирует durable intent, вызывает authenticated
+drain-once и shutdown-once, читает durable ACKs, затем ждёт WAIT_OBJECT_0 на том же
+handle. Future daemon force отсутствует. Drain deadline оставляет daemon живым
+с закрытым admission. Потерянный drain ACK, partial spawn и unknown consume key;
+новый UUID или alias ensure/restart не разрешают повтор. Healthy ensure читает
+состояние без consuming effect key. Read-back не повторяет effects.
+
+Service использует `BASE/daemon-operation-keys/<hash>.json` и
+`BASE/daemon-operations/<operationId>/{intent,drain-ack,shutdown-ack}.json`;
+supervisor — `supervisor-operation-keys`, `supervisor-operations`,
+`daemon-launch-keys`. Keys создаются wx/fsync до effects и не удаляются.
+Observed exit-result fsync выполняется до следующего await; subsequent отказ
+policy сохраняет positive proof в unknown. Данный exit не доказывает выполнение
+native AE mutation или освобождение retained admission.
+
+## Подготовка root legacy migration
+
+Distinct root profile `BASE/profiles/bridge-daemon-migration-v1.json` содержит
+следующие exact поля. Никакие исторические PID не зашиты в product code.
+
+```text
+{schema:"ae-agent.owned-runtime-supervisor.v1.legacy-profile",
+ profileId:"bridge-daemon-migration-v1", generation:<legacy-cap UUID>,
+ issuedAt,expiresAt,authorizationRef,
+ daemon:{identity:<lossless kernelIdentity>,argv:<fixed argv>,startedAt,
+ loadedRuntimeSha256,port:3456,credentialSha256},
+ sourcePair:{loadedSourceSha256,currentSourceSha256},
+ sourcePins:[{name,sha256}],
+ successor:{generation,bootNonce,reservationSha256,startupTicketSha256},
+ launchReceipt:{path,rawSha256,envelopeSha256},
+ capsule:{path,rawSha256,envelopeSha256},
+ children:[{stageId,launch:{path,rawSha256,envelopeSha256},
+ retirementProof:{path,rawSha256,envelopeSha256}}],
+ protected:[<fresh lossless kernelIdentity>,...],
+ policy:{transition:"native_forced_legacy_transition",waitMs:1..10000}}
+```
+
+Требуется ровно два independently pinned original-launch retirement proofs;
+R1 shutdown handle result не заменяет original observer. Launch receipt имеет
+fixed путь `.codex-runtime/fixture-refusal-lookup-deploy-20261011-r2/daemon-start-result.json`;
+capsule — `logs/evidence/native-fixture-retained-maintenance/capture.json`;
+child launch/proof — original ledger paths. Raw pins связывают весь файл,
+envelope pins — original value. Native original-retirement проверяет общий
+pid/createdUnixMs/full birth/image identity, held observer kind/WAIT_OBJECT_0,
+целый exitCode и chronology. Дополнительный `process.createdFileTime` в proof
+проверяется точно против full 100ns birth; launch row с четырьмя полями остаётся
+валидным. Original proof/launch bytes и raw/envelope pins сохраняются.
+Original R1 profile и consumed stage journals
+не продлевают и не переигрывают. New legacy cap имеет собственный fresh TTL и
+source pair. Protected snapshot дополняется actual full kernel identities всех
+root обнаруженных primary процессов; caller не добавляет close targets.
+
+Порядок root provisioning после final source freeze:
+
+1. Проверить source hashes, original launch receipt и два original proofs,
+   provision fixed policy с исходным persistent human authorization reference.
+2. В private ignored provision script вызвать
+   `prepareSuccessorReservation(ROOT,{operationId,generation,bootNonce,targetGeneration})`.
+   targetGeneration — будущий legacy-cap UUID. Этот export создаёт reservation,
+   ticket и immutable `BASE/prepared-successor.json`, без launch/HTTP/close.
+3. По returned refs добавить exact prospective owned pair в retained-authority
+   до R2 capture. Source pins берутся из sealed reservation; sourceSha256 — digest
+   полного evidence module set. Старый loaded runtime pair сохраняется.
+4. Выполнить root fresh authenticated R2 capture/read-back brackets и pin весь
+   actual capsule. Создать distinct legacy profile с successor refs, actual
+   protected inventory и separately retained legitimate launch witnesses.
+5. Dry private `loadLegacyProfile(ROOT)` проверяет schema/pins/policy/TTL без
+   effects; обычный `status` также не запускает daemon. Затем выполнить
+   `restart-bridge-once --operation-id` с тем же operationId из preparation.
+
+Effect sequence: native exact held HANDLE → fresh auth/lease → exclusive intent
+и pre-stop inventory → один TerminateProcess по distinct legacy authority →
+WAIT_OBJECT_0 и durable exit → immutable final inventory → hidden fixed successor
+launch → full birth/image/argv/candidate HMAC → authenticated register с same nonce
+→ sealed current registration. Pre-stop quiescence не считается ingress fence;
+race cutoff сохраняет UNKNOWN. Original daemon exit является actual barrier.
+Новый daemon удерживает write admission закрытым до fresh R2 audit/adoption.
+Unknown stop/launch сохраняется для read-back; old consumed transition/helper
+никогда не повторяется. TTL не продлевается внутри операции.
+
+`readProtectedInventory(root)` возвращает identities/assertUnchanged из fixed
+root migration acquisition. Он не требует актуального source pair после будущего
+restart и не выдаёт stop authority. Cleanup reader проверяет эти identities в
+kernel заново и добавляет текущий validated managed daemon.
+
+## Автоматическая очистка будущих fixtures и succession
+
+`createFixtureLifecycleController({repoRoot,getCurrentActor,getRuntimeIdentity,
+renewRetainedAdmission,assertRetainedAdmission,readNativeResult})` предоставляет
+renewAdmission/assertAdmission/registerLaunch/prepareCleanup/finishCleanup и
+quiescence. Original runner context и actual ledger.launch hook создают private
+memory witness. Durable job/row не восстанавливают этот brand. Prepare выполняет
+только journal; finish требует finished canonical envelope, whole raw hash и
+private native read-back после inspectResult. Он генерирует fixed
+`BASE/fixture-profiles/<runId>/profile.json` typed managed-disposable-fixture
+с 1/2 реально registered children, context/canonical/original launch pins,
+protected inventory и managedAuthority `{daemonGeneration,bootNonce,
+reservationSha256,startupTicketSha256,policyRawSha256,jobPath,jobRawSha256,
+registeredStagesSha256,authentication}`. HMAC связывает private origin и весь
+profile. Native lease проверяет этот же chain/job/policy и current authenticated
+issuer непосредственно перед R1 effects. Historical validator ровно двух children
+остаётся отдельным. Новый CLI не принимает generated profile path.
+
+Очистка использует существующий R1 Win32 backend; original observer proofs после
+закрытия остаются отдельным требованием. Уже positive original proof пропускает
+новый close. Partial child закрывается точно, но остаётся
+children_closed_audit_pending. Cleanup/quiescence не освобождает admission без
+покрытого audited disposition; неизвестные/unbranded children блокируют shutdown.
+
+Permanent restart создаёт append-only `BASE/daemon-succession/<successor>.json`.
+`mintSuccession(root,operationId,successorGeneration)` требует durable positive
+operation result, полную predecessor registration и signed exit evidence,
+successor reservation/ticket/candidate/registration и fresh policy. Evidence
+создаётся до launch: `observed_owned_exit` означает фактический WAIT_OBJECT_0
+того же открытого HANDLE без fictional graceful ACK; `graceful_owned_shutdown`
+дополнительно связывает durable drain/shutdown ACKs. Обе ветки сохраняют
+`supervisor-operations/<operationId>/exit-result.json`, затем immutable
+`final-stop-inventory.json` и HMAC `predecessor-exit.json`. Полный outstanding
+inventory сохраняет `historicalOutcome:unknown`, `ingressFenced:false` и no replay.
+
+Успешный отдельный штатный shutdown создаёт append-only
+`BASE/daemon-verified-shutdown/<generation>.json`:
+`{schema:supervisor.v1+".verified-shutdown",targetGeneration,operationId,
+predecessorExitSha256,resultSha256,replayAllowed:false,authentication}`.
+Следующий ensure проверяет оригинальные registration, ACKs, held exit и result
+по этому HMAC receipt до native open/новой reservation. Evidence kind
+`prior_verified_shutdown` ссылается на исходный operationId и receipt; gone/reused
+PID не открывается и не трогается. Missing/corrupt/UNKNOWN/cross-generation proof
+не даёт этой ветки; отказ native open не считается exit. Observe-only shutdown
+уже вышедшего процесса не создаёт graceful verified-shutdown receipt.
+
+`predecessor-exit` содержит schema/kind/operationId/targetGeneration,
+predecessor refs, sourceOperationId,
+`source:{intentSha256,exitResultSha256,drainAckSha256,shutdownAckSha256,
+priorShutdownReceiptSha256}`, finalInventorySha256, historicalOutcome/ingressFenced,
+replayAllowed и authentication. ACK refs равны null только для independently
+observed exit; prior receipt обязателен для prior_verified_shutdown. Полная
+подпись не позволяет producer rows с пересчитанным plain SHA создать exit proof.
+
+Amendment HMAC связывает anchor `{retainedManifestRawSha256,
+capsuleRawSha256,capsuleEnvelopeSha256,initialGeneration}`, predecessor refs,
+operation `{intentSha256,evidenceKind,predecessorExitSha256,sourceOperationId,
+source,finalInventorySha256,resultSha256}`, successor refs/source/nonce и
+policyRawSha256. Predecessor/successor refs включают nativeCandidateSha256.
+Current pointer публикуется только после durable amendment; invalid chain
+отвергается до launch, partial/UNKNOWN launch остаётся consumed для read-back.
+Original authority,
+capsule и receipts остаются неизменными. `resolveRetainedSuccession(root,
+pairAnchor,runtime)` проверяет полный linear chain, rejects forks/cycles/orphans/
+UNKNOWN и возвращает validated current registration. Amendment не mint-ит lease
+или panel adoption; fresh retained/panel gates выполняются отдельно.
+
+Native legacy pre-effect BootstrapIdle использует принятую R1 projection:
+terminal `stage:verified` без поля busy разрешён; explicit busy:true и любой
+nonverified stage отвергаются даже при busy:false. Эта проверка повторяется
+в самом native lease перед effect, отдельно от JS status observation.
+
+Focused offline suite: `node scripts/owned-runtime-supervisor-smoke.js`.
+Real own hidden Node suite: `node scripts/owned-runtime-supervisor-native-smoke.js`.
+Обе проверки не являются live AE/AME acceptance. Integration-dependent acceptance
+выполняется root после независимого review и final source freeze.

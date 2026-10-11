@@ -176,13 +176,61 @@ function ReleaseLeaseLocks {
   if ($null -ne $script:effectLease) { $script:effectLease.Dispose();$script:effectLease=$null }
   $script:effectKind=$null
 }
+function ManagedCanonical($v) {
+  if ($null -eq $v) { return 'null' }
+  if ($v -is [string]) { return ($v | ConvertTo-Json -Compress) }
+  if ($v -is [bool]) { if ($v) { return 'true' } else { return 'false' } }
+  if ($v -is [ValueType]) { return [Convert]::ToString($v,[Globalization.CultureInfo]::InvariantCulture) }
+  if ($v -is [Collections.IDictionary]) { $keys=[string[]]@($v.Keys);[Array]::Sort($keys,[StringComparer]::Ordinal);return '{'+(($keys | ForEach-Object { (ManagedCanonical $_)+':'+(ManagedCanonical $v[$_]) }) -join ',')+'}' }
+  if ($v -is [Collections.IEnumerable]) { return '['+(($v | ForEach-Object { ManagedCanonical $_ }) -join ',')+']' }
+  $values=@{};foreach ($p in $v.PSObject.Properties) { $values[$p.Name]=$p.Value };return ManagedCanonical $values
+}
+function ManagedFile([string]$file,[string]$rawPin) {
+  $ancestor=$file
+  while ($ancestor -ne '') { if (((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'owned_managed_file_identity' };$ancestor=[IO.Path]::GetDirectoryName($ancestor);if ($null -eq $ancestor) { break } }
+  $stream=[IO.FileStream]::new($file,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try { [void][OwnedNative]::FileIdentity($stream);if ($rawPin -and [OwnedNative]::Hash($stream) -cne $rawPin) { throw 'owned_managed_file_changed' };$stream.Position=0;$reader=[IO.StreamReader]::new($stream,[Text.UTF8Encoding]::new($false),$true,4096,$true);try { $row=$reader.ReadToEnd() | ConvertFrom-Json -DateKind String } finally { $reader.Dispose() };if ($null -ne $script:effectKind) { $script:witnessLocks+=@($stream);$stream=$null };return $row } finally { if ($null -ne $stream) { $stream.Dispose() } }
+}
+function ManagedEnvelope([string]$file) {
+  $row=ManagedFile $file $null
+  $stream=[IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes((ManagedCanonical $row.value)))
+  try { $digest=[OwnedNative]::Hash($stream) } finally { $stream.Dispose() }
+  if ($row.schema -cne 'ae-agent.owned-runtime-shutdown.v1.envelope' -or $row.sha256 -cne $digest) { throw 'owned_managed_envelope_invalid' };return $row
+}
+function ManagedOrigin($profile,[string]$repo,[string]$token) {
+  $a=$profile.managedAuthority;$base=Join-Path $repo '.codex-runtime/owned-runtime-maintenance'
+  if ($profile.kind -cne 'managed-disposable-fixture' -or $profile.profileId -cne 'managed-disposable-fixture' -or @($profile.stages).Count -lt 1 -or @($profile.stages).Count -gt 2 -or $a.daemonGeneration -cnotmatch '^[a-f0-9-]{36}$' -or $a.bootNonce -cnotmatch '^[a-f0-9-]{36}$') { throw 'owned_managed_origin_required' }
+  $copy=$profile | ConvertTo-Json -Depth 30 -Compress | ConvertFrom-Json -DateKind String
+  $copy.managedAuthority.PSObject.Properties.Remove('authentication')
+  $mac=[Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($token))
+  try { $signature=[Convert]::ToHexString($mac.ComputeHash([Text.Encoding]::UTF8.GetBytes((ManagedCanonical $copy)))).ToLowerInvariant() } finally { $mac.Dispose() }
+  if ($signature -cne $a.authentication) { throw 'owned_managed_origin_authentication_required' }
+  $jobFile=Join-Path $base ('fixture-cleanup-jobs/'+$profile.context.runId+'/prepared.json')
+  if ($a.jobPath -ine $jobFile) { throw 'owned_managed_job_path' };$job=ManagedFile $jobFile $a.jobRawSha256
+  if ($job.value.job.runId -cne $profile.context.runId -or !@($job.value.job.children | Where-Object { $_.descriptor.stageId -ceq $script:lease.stageId -and $_.kernelIdentity.pid -eq $script:expected.pid -and $_.kernelIdentity.birthFileTime -ceq $script:expected.birthFileTime }).Count) { throw 'owned_managed_job_binding_invalid' }
+  $registration=ManagedEnvelope (Join-Path $base ('daemon-reservations/'+$a.daemonGeneration+'/registration.json'))
+  $candidate=ManagedEnvelope (Join-Path $base ('daemon-reservations/'+$a.daemonGeneration+'/native-candidate.json'))
+  $reservation=ManagedEnvelope (Join-Path $base ('daemon-reservations/'+$a.daemonGeneration+'/reservation.json'))
+  $ticket=ManagedEnvelope (Join-Path $base ('daemon-reservations/'+$a.daemonGeneration+'/startup-ticket.json'))
+  $pointer=ManagedEnvelope (Join-Path $base 'current-daemon.json')
+  $candidateData=@{};foreach ($p in $candidate.value.PSObject.Properties) { if ($p.Name -cne 'authentication') { $candidateData[$p.Name]=$p.Value } }
+  $mac=[Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($token))
+  try { $candidateSignature=[Convert]::ToHexString($mac.ComputeHash([Text.Encoding]::UTF8.GetBytes((ManagedCanonical $candidateData)))).ToLowerInvariant() } finally { $mac.Dispose() }
+  if ($candidateSignature -cne $candidate.value.authentication -or $pointer.value.generation -cne $a.daemonGeneration -or $pointer.value.registrationSha256 -cne $registration.sha256 -or $reservation.sha256 -cne $a.reservationSha256 -or $ticket.sha256 -cne $a.startupTicketSha256 -or $ticket.value.reservationSha256 -cne $a.reservationSha256 -or $ticket.value.bootNonce -cne $a.bootNonce -or $candidate.value.bootNonce -cne $a.bootNonce -or $candidate.value.reservationSha256 -cne $a.reservationSha256 -or $candidate.value.startupTicketSha256 -cne $a.startupTicketSha256) { throw 'owned_managed_launch_chain_changed' }
+  if ($registration.value.generation -cne $a.daemonGeneration -or $registration.value.bootNonce -cne $a.bootNonce -or $registration.value.reservationSha256 -cne $a.reservationSha256 -or $registration.value.startupTicketSha256 -cne $a.startupTicketSha256 -or $registration.value.nativeCandidateSha256 -cne $candidate.sha256 -or $registration.value.serviceStartedAt -cne $profile.daemon.startedAt -or $candidate.value.kernelIdentity.birthFileTime -cne $profile.daemon.identity.birthFileTime -or $candidate.value.kernelIdentity.pid -ne $profile.daemon.identity.pid -or $candidate.value.sourceSha256 -cne $profile.daemon.loadedRuntimeSha256) { throw 'owned_managed_daemon_registration_changed' }
+  $policy=ManagedFile (Join-Path $base 'policy.json') $a.policyRawSha256
+  if ($policy.schema -cne 'ae-agent.owned-runtime-policy.v1' -or $policy.enabled -cne $true -or $policy.acceptedServerCoverage -cnotcontains 'native_fixture_disposition') { throw 'owned_managed_policy_disabled' }
+  $canonical=ManagedFile $profile.canonicalRecord.path $profile.canonicalRecord.rawSha256
+  if ($canonical.schema -cne 'ae-agent-plan-run-record-envelope.v1' -or $canonical.sha256 -cne $profile.canonicalRecord.envelopeSha256 -or $canonical.record.runId -cne $profile.context.runId -or !$canonical.record.run.finishedAt -or $canonical.record.run.outcome.execution.status -cnotin @('completed','failed')) { throw 'owned_managed_finished_canonical_required' }
+}
 function ProfileFile {
   $resolved=[IO.Path]::GetFullPath($script:lease.profilePath)
   $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
   $base=Join-Path $repo '.codex-runtime/owned-runtime-maintenance'
   $migration=Join-Path $base 'profiles/migration-fixture-children-v1.json'
+  $managed=$script:lease.runId -cmatch '^[a-f0-9-]{36}$' -and $resolved -ieq (Join-Path $base ('fixture-profiles/'+$script:lease.runId+'/profile.json'))
   $synthetic=$resolved.StartsWith($base+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -and $resolved -match '[\\/]synthetic-[a-f0-9]{32}[\\/]profiles[\\/]fixture.json$'
-  if ($resolved -ine $migration -and !$synthetic) { throw 'owned_profile_fixed_source_required' }
+  if ($resolved -ine $migration -and !$synthetic -and !$managed) { throw 'owned_profile_fixed_source_required' }
   if ($synthetic -and $script:expected.imagePath -ine [Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) { throw 'owned_synthetic_image_required' }
   $current=$resolved
   while ($null -ne $current) {
@@ -198,13 +246,15 @@ function ProfileFile {
     if ([OwnedNative]::Hash($stream) -cne $script:lease.profileRawSha256) { throw 'owned_profile_source_changed' }
     $stream.Position=0;$reader=[IO.StreamReader]::new($stream,[Text.UTF8Encoding]::new($false),$true,4096,$true)
     try { $profile=$reader.ReadToEnd() | ConvertFrom-Json -DateKind String } finally { $reader.Dispose() }
-    if ($profile.schema -cne 'ae-agent.owned-runtime-profile.v1' -or $profile.generation -cne $script:lease.generation -or $profile.context.runId -cne $script:lease.runId -or $profile.expiresAt -cne $script:lease.expiresAt -or [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($profile.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($profile.issuedAt)) { throw 'owned_native_lease_stale' }
+    $requiredSchema=if ($managed) { 'ae-agent.owned-managed-fixture-profile.v1' } else { 'ae-agent.owned-runtime-profile.v1' }
+    if ($profile.schema -cne $requiredSchema -or $profile.generation -cne $script:lease.generation -or $profile.context.runId -cne $script:lease.runId -or $profile.expiresAt -cne $script:lease.expiresAt -or [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($profile.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($profile.issuedAt)) { throw 'owned_native_lease_stale' }
     $stage=@($profile.stages | Where-Object { $_.stageId -ceq $script:lease.stageId })
     if ($stage.Count -ne 1 -or $stage[0].identity.pid -ne $script:expected.pid -or $stage[0].identity.birthFileTime -cne $script:expected.birthFileTime -or $stage[0].identity.imagePath -ine $script:expected.imagePath -or $stage[0].identity.executableSha256 -cne $script:expected.executableSha256 -or !$profile.policy.disposableFixture -or ($script:effectKind -eq 'force' -and !$profile.policy.allowForce)) { throw 'owned_native_policy_refused' }
     # Every synthetic lease also exercises the same parser/locked file reader,
     # using its own fixed nonce-root source; it cannot substitute repo credentials.
     if ($synthetic) { $credentialRoot=[IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName($resolved)) } else { $credentialRoot=$repo }
     $token=FixedCredential $credentialRoot $profile.daemon.credentialSha256
+    if ($managed) { ManagedOrigin $profile $repo $token }
     if (!$synthetic) {
       if ($profile.daemon.port -ne 3456) { throw 'owned_native_auth_changed' }
       $canonicalPath=Join-Path $repo ('logs/evidence/plan-runs/'+$profile.context.runId+'.json')
@@ -246,6 +296,7 @@ function ProfileFile {
       try {
         [void]$client.DefaultRequestHeaders.Add('x-ae-bridge-token',$token)
         $baseUrl='http://127.0.0.1:3456'
+        if ($managed) { $ownedStatus=$client.GetStringAsync($baseUrl+'/runtime/owned/status').GetAwaiter().GetResult() | ConvertFrom-Json -DateKind String;if (!$ownedStatus.ok -or !$ownedStatus.owned -or $ownedStatus.generation -cne $profile.managedAuthority.daemonGeneration) { throw 'owned_managed_original_issuer_changed' } }
         $status=$client.GetStringAsync($baseUrl+'/dev/status').GetAwaiter().GetResult() | ConvertFrom-Json -DateKind String
         if (!$status.ok -or $status.humanGuardRuntime.pid -ne $profile.daemon.identity.pid -or $status.startedAt -cne $profile.daemon.startedAt -or $status.humanGuardRuntime.sourceSha256 -cne $profile.daemon.loadedRuntimeSha256 -or $status.pendingCommands -ne 0 -or @($status.inflightCommands).Count -ne 0 -or $null -ne $status.activeEditSession -or $status.projectLifecycle.blocked -cne $false -or $status.projectLifecycle.pending -or !(BootstrapIdle $status.panelBootstrap)) { throw 'owned_native_daemon_status_refused' }
         $body=@{name='inspect_native_fixture_attempt';arguments=@{stageId=$script:lease.stageId}} | ConvertTo-Json -Compress

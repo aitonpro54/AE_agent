@@ -379,8 +379,11 @@
   }
 
   function bridgeNextPath(projectFile) {
+    var actionState = window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     return "/bridge/next?panelConnectionId=" + encodeURIComponent(panelConnectionId)
       + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0))
+      + "&panelInstanceId=" + encodeURIComponent(actionState && actionState.panelInstanceId || "")
+      + "&panelLifecycleEpoch=" + encodeURIComponent(String(panelLifecycleEpoch))
       + "&projectFile=" + encodeURIComponent(projectFile || "");
   }
 

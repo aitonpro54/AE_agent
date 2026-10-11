@@ -4,7 +4,7 @@
 // caller. Durable files and hashes bind evidence; they cannot mint ownership.
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const ledger=require("./native-fixture-attempt-ledger"),{validateIdentity}=require("./owned-runtime-win32");
-const SCHEMA="ae-agent.owned-runtime-shutdown.v1",PROFILE_SCHEMA="ae-agent.owned-runtime-profile.v1";
+const SCHEMA="ae-agent.owned-runtime-shutdown.v1",PROFILE_SCHEMA="ae-agent.owned-runtime-profile.v1",MANAGED_SCHEMA="ae-agent.owned-managed-fixture-profile.v1";
 const OUTCOME=Object.freeze({historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false,admissionReleased:false,originalLaunchRetirementProven:false});
 function fail(code){throw Object.assign(Error(code),{code});}
 function exact(v,keys,code="owned_contract_invalid"){if(!v || typeof v!=="object" || Array.isArray(v) || Object.keys(v).sort().join(",")!==keys.slice().sort().join(","))fail(code);}
@@ -14,9 +14,11 @@ const copy=v=>JSON.parse(JSON.stringify(v));
 function freeze(v){if(v && typeof v==="object"){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
 function selector(v){exact(v,["command","profile","runId","stageId"],"owned_selector_invalid");if(!["inspect","close-once","read-back"].includes(v.command) || !/^[a-z][a-z0-9-]{0,63}$/.test(v.profile || "") || !ledger.UUID.test(v.runId || "") || !ledger.TOKEN.test(v.stageId || ""))fail("owned_selector_invalid");return freeze(copy(v));}
 function binding(p){const c=p.context;return {runId:c.runId,requestId:c.requestId,actionId:c.actionId,instanceId:c.instanceId,proposalRevision:c.proposalRevision,payloadHash:c.payloadHash};}
-function validateProfile(p,s) {
-  exact(p,["schema","profileId","generation","issuedAt","expiresAt","context","canonicalBindingSha256","canonicalRecord","daemon","protected","protectedInventorySha256","stages","policy"]);
-  if(p.schema!==PROFILE_SCHEMA || p.profileId!==s.profile || !/^[a-zA-Z0-9_-]{1,128}$/.test(p.generation || "") || !Number.isFinite(Date.parse(p.issuedAt)) || !Number.isFinite(Date.parse(p.expiresAt)) || Date.parse(p.expiresAt)<=Date.parse(p.issuedAt))fail("owned_profile_invalid");
+function validateProfile(p,s){return validateProfileKind(p,s,false);}
+function validateManagedProfile(p,s){return validateProfileKind(p,s,true);}
+function validateProfileKind(p,s,managed) {
+  exact(p,["schema","profileId","generation","issuedAt","expiresAt","context","canonicalBindingSha256","canonicalRecord","daemon","protected","protectedInventorySha256","stages","policy",...(managed?["kind","managedAuthority"]:[])]);
+  if(p.schema!==(managed?MANAGED_SCHEMA:PROFILE_SCHEMA) || managed && (p.kind!=="managed-disposable-fixture" || p.profileId!=="managed-disposable-fixture") || p.profileId!==s.profile || !/^[a-zA-Z0-9_-]{1,128}$/.test(p.generation || "") || !Number.isFinite(Date.parse(p.issuedAt)) || !Number.isFinite(Date.parse(p.expiresAt)) || Date.parse(p.expiresAt)<=Date.parse(p.issuedAt))fail("owned_profile_invalid");
   exact(p.context,["runId","requestId","actionId","instanceId","proposalRevision","payloadHash"]);
   if(p.context.runId!==s.runId || !ledger.UUID.test(p.context.requestId || "") || !ledger.UUID.test(p.context.instanceId || "") || !/^act_[a-f0-9]{32}$/.test(p.context.actionId || "") || !Number.isInteger(p.context.proposalRevision) || p.context.proposalRevision<1 || !/^sha256:[a-f0-9]{64}$/.test(p.context.payloadHash || "") || hash(binding(p))!==p.canonicalBindingSha256)fail("owned_canonical_binding_invalid");
   exact(p.canonicalRecord,["path","rawSha256","envelopeSha256"]);
@@ -26,22 +28,32 @@ function validateProfile(p,s) {
   if(!Array.isArray(p.protected) || !p.protected.length || p.protected.length>64 || hash(p.protected)!==p.protectedInventorySha256)fail("owned_protected_inventory_invalid");
   p.protected.forEach(validateIdentity);
   if(!p.protected.some(x=>canonical(x)===canonical(p.daemon.identity)) || new Set(p.protected.map(x=>x.pid)).size!==p.protected.length)fail("owned_protected_inventory_invalid");
-  if(!Array.isArray(p.stages) || p.stages.length!==2 || new Set(p.stages.map(x=>x.stageId)).size!==2 || p.stages.map(x=>x.role).sort().join(",")!=="capture,stage")fail("owned_stage_inventory_invalid");
+  if(!Array.isArray(p.stages) || (managed?![1,2].includes(p.stages.length):p.stages.length!==2) || new Set(p.stages.map(x=>x.stageId)).size!==p.stages.length || (managed?(p.stages.some(w=>!["capture","stage"].includes(w.role)) || new Set(p.stages.map(w=>w.role)).size!==p.stages.length):p.stages.map(x=>x.role).sort().join(",")!=="capture,stage"))fail("owned_stage_inventory_invalid");
   for(const w of p.stages){exact(w,["stageId","role","identity","descriptor","pins"]);validateIdentity(w.identity);
     if(!ledger.TOKEN.test(w.stageId || "") || w.descriptor?.stageId!==w.stageId || w.descriptor?.role!==w.role || w.descriptor.executablePath?.toLowerCase()!==w.identity.imagePath.toLowerCase() || w.descriptor.executableSha256!==w.identity.executableSha256 || p.protected.some(x=>x.pid===w.identity.pid))fail("owned_stage_identity_invalid");
-    exact(w.pins,["reservation","launch","manifest","unknown"]);
+    exact(w.pins,managed?["reservation","launch","manifest"]:["reservation","launch","manifest","unknown"]);
     for(const key of Object.keys(w.pins)){exact(w.pins[key],["path","rawSha256","valueSha256"]);if(typeof w.pins[key].path!=="string" || !path.isAbsolute(w.pins[key].path) || !ledger.SHA.test(w.pins[key].rawSha256 || "") || key!=="manifest" && !ledger.SHA.test(w.pins[key].valueSha256 || "") || key==="manifest" && w.pins[key].valueSha256!==null)fail("owned_witness_pin_invalid");}
   }
-  if(p.stages[0].identity.pid===p.stages[1].identity.pid || !p.stages.some(w=>w.stageId===s.stageId))fail("owned_stage_not_allowed");
+  if(new Set(p.stages.map(w=>w.identity.pid)).size!==p.stages.length || !p.stages.some(w=>w.stageId===s.stageId))fail("owned_stage_not_allowed");
   exact(p.policy,["disposableFixture","allowForce","gracefulDeadlineMs","forceDeadlineMs"]);
   if(p.policy.disposableFixture!==true || typeof p.policy.allowForce!=="boolean" || !Number.isInteger(p.policy.gracefulDeadlineMs) || p.policy.gracefulDeadlineMs<1 || p.policy.gracefulDeadlineMs>30000 || !Number.isInteger(p.policy.forceDeadlineMs) || p.policy.forceDeadlineMs<1 || p.policy.forceDeadlineMs>30000)fail("owned_policy_invalid");
+  if(managed){const a=p.managedAuthority;exact(a,["daemonGeneration","bootNonce","reservationSha256","startupTicketSha256","policyRawSha256","jobPath","jobRawSha256","registeredStagesSha256","authentication"]);if(!ledger.UUID.test(a.daemonGeneration || "") || p.generation!==a.daemonGeneration || !ledger.UUID.test(a.bootNonce || "") || typeof a.jobPath!=="string" || !path.isAbsolute(a.jobPath) || [a.reservationSha256,a.startupTicketSha256,a.policyRawSha256,a.jobRawSha256,a.registeredStagesSha256,a.authentication].some(v=>!ledger.SHA.test(v || "")) || a.registeredStagesSha256!==hash(p.stages))fail("owned_managed_authority_invalid");}
   return freeze(copy(p));
+}
+function managedAuthentication(p,key){const value=copy(p);delete value.managedAuthority.authentication;return crypto.createHmac("sha256",key).update(canonical(value)).digest("hex");}
+function verifyManagedAuthority(p,repoRoot){
+  const a=p.managedAuthority,supervisor=require("./owned-runtime-supervisor"),registration=supervisor.readDaemonRegistration(repoRoot);
+  if(!registration || registration.generation!==a.daemonGeneration || registration.bootNonce!==a.bootNonce || registration.reservationSha256!==a.reservationSha256 || registration.startupTicketSha256!==a.startupTicketSha256 || canonical(registration.kernelIdentity)!==canonical(p.daemon.identity) || registration.sourceSha256!==p.daemon.loadedRuntimeSha256 || registration.serviceStartedAt!==p.daemon.startedAt)fail("owned_managed_daemon_registration_changed");
+  const key=require("../scripts/owned-runtime-control").credential(p),expected=managedAuthentication(p,key);if(!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(a.authentication,"hex")))fail("owned_managed_origin_authentication_required");
+  const jobFile=path.join(repoRoot,".codex-runtime","owned-runtime-maintenance","fixture-cleanup-jobs",p.context.runId,"prepared.json");if(a.jobPath!==jobFile || hash(ledger.readBytes(jobFile))!==a.jobRawSha256)fail("owned_managed_job_changed");const row=JSON.parse(ledger.readBytes(jobFile));if(row.schema!==SCHEMA+".envelope" || hash(row.value)!==row.sha256 || row.value.job?.runId!==p.context.runId || !p.stages.every(w=>row.value.job.children.some(c=>c.descriptor?.stageId===w.stageId && canonical(c.kernelIdentity)===canonical(w.identity))))fail("owned_managed_job_binding_invalid");
+  if(require("./owned-runtime-authority").loadPolicy(repoRoot,"native_fixture_disposition").rawSha256!==a.policyRawSha256)fail("owned_managed_policy_changed");
 }
 function pinFiles(p,repoRoot) {
   const canonicalPath=path.join(repoRoot,"logs","evidence","plan-runs",p.context.runId+".json");
   if(p.canonicalRecord.path!==canonicalPath)fail("owned_canonical_record_path_invalid");
   const bytes=ledger.readBytes(canonicalPath),envelope=JSON.parse(bytes),record=envelope.record;
   if(crypto.createHash("sha256").update(bytes).digest("hex")!==p.canonicalRecord.rawSha256 || envelope.schema!=="ae-agent-plan-run-record-envelope.v1" || envelope.sha256!==p.canonicalRecord.envelopeSha256 || ledger.hash(record)!==envelope.sha256 || record?.schema!=="ae-agent-plan-run-record.v1" || record.runId!==p.context.runId || record.run?.id!==p.context.runId || record.run.provenance?.actionId!==p.context.actionId || record.run.provenance?.proposalRevision!==p.context.proposalRevision || record.run.provenance?.payloadHash!==p.context.payloadHash)fail("owned_canonical_record_changed");
+  if(p.schema===MANAGED_SCHEMA && (!record.run.finishedAt || !["completed","failed"].includes(record.run.outcome?.execution?.status)))fail("owned_managed_finished_canonical_required");
   for(const w of p.stages){
     const d=ledger.descriptor(repoRoot,w.descriptor);
     const expected={reservation:ledger.fileFor(repoRoot,w.stageId,"reservation"),launch:ledger.fileFor(repoRoot,w.stageId,"launch"),unknown:ledger.fileFor(repoRoot,w.stageId,"unknown"),manifest:path.join(d.rootPath,"launch.manifest")};
@@ -54,7 +66,7 @@ function pinFiles(p,repoRoot) {
     const r=values.reservation,l=values.launch,u=values.unknown;
     if(r.schema!==ledger.SCHEMA+".reservation" || canonical(r.descriptor)!==canonical(d) || r.runId!==p.context.runId || r.actionId!==p.context.actionId || r.proposalRevision!==p.context.proposalRevision || r.payloadHash!==p.context.payloadHash || r.manifestSha256!==w.pins.manifest.rawSha256 || r.replayAllowed!==false ||
       l.schema!==ledger.SCHEMA+".launch" || l.reservationSha256!==w.pins.reservation.valueSha256 || l.descriptorSha256!==ledger.hash(d) || l.replayAllowed!==false || !ledger.sameProcess(l.process,{pid:w.identity.pid,createdAt:w.identity.birthUtc,createdUnixMs:Date.parse(w.identity.birthUtc),path:w.identity.imagePath}) ||
-      u.schema!==ledger.SCHEMA+".unknown" || u.descriptorSha256!==ledger.hash(d) || u.historicalOutcome!=="unknown" || u.nativeExecutionProven!==false || u.replayAllowed!==false)fail("owned_original_witness_binding_invalid");
+      p.schema!==MANAGED_SCHEMA && (u.schema!==ledger.SCHEMA+".unknown" || u.descriptorSha256!==ledger.hash(d) || u.historicalOutcome!=="unknown" || u.nativeExecutionProven!==false || u.replayAllowed!==false))fail("owned_original_witness_binding_invalid");
   }
 }
 function journalDirectory(root,s){return path.join(root,s.runId,s.stageId);}
@@ -68,7 +80,7 @@ function createOwnedRuntimeLifecycle({repoRoot,journalRoot,loadTrustedProfile,ch
     if(baseline)baseline.assertUnchanged();
     const loaded=await loadTrustedProfile(s.profile);
     if(!loaded || typeof loaded.assertUnchanged!=="function")fail("owned_trusted_provision_required");
-    const p=validateProfile(loaded.profile,s),pin=hash(p);loaded.assertUnchanged();
+    const managed=loaded.profile?.schema===MANAGED_SCHEMA,p=managed?validateManagedProfile(loaded.profile,s):validateProfile(loaded.profile,s),pin=hash(p);if(managed)verifyManagedAuthority(p,repoRoot);loaded.assertUnchanged();
     if(baseline && pin!==baseline.pin)fail("owned_policy_generation_changed");
     if(now()<Date.parse(p.issuedAt) || now()>=Date.parse(p.expiresAt))fail("owned_profile_stale");
     checkWitnesses(p,repoRoot);loaded.assertUnchanged();
@@ -150,4 +162,4 @@ function createOwnedRuntimeLifecycle({repoRoot,journalRoot,loadTrustedProfile,ch
     }finally{await handle.dispose();}
   }});
 }
-module.exports={createOwnedRuntimeLifecycle,validateProfile,pinFiles,selector,binding,canonical,hash,freeze,SCHEMA,PROFILE_SCHEMA,OUTCOME,journalDirectory,readJournal,writeJournalOnce:writeOnce,exitProof};
+module.exports={createOwnedRuntimeLifecycle,validateProfile,validateManagedProfile,verifyManagedAuthority,managedAuthentication,pinFiles,selector,binding,canonical,hash,freeze,SCHEMA,PROFILE_SCHEMA,MANAGED_SCHEMA,OUTCOME,journalDirectory,readJournal,writeJournalOnce:writeOnce,exitProof};

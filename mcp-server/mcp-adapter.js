@@ -3,8 +3,6 @@
 
 const http = require("http");
 const readline = require("readline");
-const path = require("path");
-const { spawn } = require("child_process");
 const { TEXT_LAYOUT_POLICY } = require("./text-layout-policy");
 const { decorateToolResult, sanitizeHttpFailure } = require("./tool-error-response");
 const { isPanelControlTool } = require("./cep-panel-control");
@@ -21,8 +19,15 @@ const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
-const DAEMON_START_TIMEOUT_MS = Number(process.env.AE_DAEMON_START_TIMEOUT_MS || 8000);
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
+const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
+const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
+async function handleOwnedRuntimeTool(name,args,controller) {
+  if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
+  require("./owned-runtime-authority").exact(args,[],"owned_adapter_arguments_forbidden");
+  const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
+  try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
+}
 
 let daemonEnsurePromise = null;
 
@@ -101,40 +106,6 @@ async function getDaemonHealth(timeoutMs) {
   return response.body;
 }
 
-function startDaemonDetached() {
-  const daemonPath = path.join(__dirname, "bridge-daemon.js");
-  const child = spawn(process.execPath, [daemonPath], {
-    cwd: path.resolve(__dirname, ".."),
-    detached: true,
-    env: {
-      ...process.env,
-      AE_BRIDGE_HOST: DAEMON_HOST,
-      AE_BRIDGE_PORT: String(DAEMON_PORT),
-      AE_BRIDGE_TOKEN: TOKEN
-    },
-    stdio: "ignore",
-    windowsHide: true
-  });
-  child.unref();
-  log(`Started bridge daemon process ${child.pid} at http://${DAEMON_HOST}:${DAEMON_PORT}`);
-}
-
-async function waitForDaemon(timeoutMs) {
-  const startedAt = Date.now();
-  let lastError = null;
-
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      return await getDaemonHealth(1200);
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-  }
-
-  throw new Error(`Bridge daemon did not become healthy after ${timeoutMs}ms: ${lastError ? lastError.message : "unknown error"}`);
-}
-
 async function ensureDaemonRunning() {
   if (daemonEnsurePromise) return daemonEnsurePromise;
 
@@ -146,9 +117,10 @@ async function ensureDaemonRunning() {
         throw firstError;
       }
 
-      log(`Bridge daemon is not reachable; auto-starting it. Reason: ${firstError.message}`);
-      startDaemonDetached();
-      return await waitForDaemon(DAEMON_START_TIMEOUT_MS);
+      if(DAEMON_HOST!=="127.0.0.1" || DAEMON_PORT!==3456)throw Object.assign(Error("owned_adapter_fixed_endpoint_required"),{code:"owned_adapter_fixed_endpoint_required"});
+      const result=await require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor().ensure();
+      if(result.ok!==true)throw Object.assign(Error("owned_adapter_ensure_readback_only"),{code:"owned_adapter_ensure_readback_only"});
+      return await getDaemonHealth(1200);
     }
   })();
 
@@ -160,7 +132,7 @@ async function ensureDaemonRunning() {
 }
 
 async function getTools() {
-  const localTools = [...productionUsageTools];
+  const localTools = [...productionUsageTools,...ownedRuntimeTools];
   try {
     await ensureDaemonRunning();
     const response = await daemonRequest("GET", "/tools", undefined, 5000);
@@ -242,6 +214,7 @@ async function handleRpc(message) {
         }
         return;
       }
+      if(Object.hasOwn(OWNED_TOOL_METHODS,toolName)){ok(id,await handleOwnedRuntimeTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}));return;}
       try {
         ok(id, await callDaemonTool(toolName, toolArgs));
       } catch (error) {
@@ -313,5 +286,6 @@ module.exports = {
   getTools,
   handleRpc,
   startStdioMcp,
-  toolResult
+  toolResult,
+  ownedRuntimeTools,handleOwnedRuntimeTool,ensureDaemonRunning
 };

@@ -56,6 +56,8 @@
     "smoke:ame-running": "node --expose-internals scripts/ame-running-smoke.js",
     "smoke:ame-title-jobs": "node --expose-internals scripts/ame-title-jobs-smoke.js && node scripts/ame-title-semantic-smoke.js",
     "smoke:ame-native-fixture": "node scripts/ame-native-fixture-grant-smoke.js && node scripts/ame-native-fixture-runner-smoke.js",
+    "smoke:native-fixture-retained": "node scripts/native-fixture-retained-smoke.js && node scripts/native-fixture-retained-maintenance-smoke.js",
+    "smoke:owned-runtime-service": "node scripts/owned-runtime-service-smoke.js",
     "report:ame-media": "node scripts/ame-media-probe.js",
     "smoke:ame-media": "node scripts/ame-media-probe-smoke.js",
     "report:ame-submit-guard": "node scripts/ame-submit-guard.js",

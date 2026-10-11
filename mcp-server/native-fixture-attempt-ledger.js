@@ -144,7 +144,14 @@ function attemptInventory(repoRoot,context) {
   return result;
 }
 function validRetirement(repoRoot,d) {
-  const row=read(fileFor(repoRoot,d.stageId,"retirement-audit")); if (!row) return false;
+  const row=read(fileFor(repoRoot,d.stageId,"retirement-audit"));
+  if (!row) {
+    // A retained programmatic UNKNOWN has a separate immutable audit chain.
+    // Only the process-private fresh panel-adoption lease may validate it;
+    // stored sidecars, R1 shutdown receipts and PID absence are insufficient.
+    const retained=require("./native-fixture-retained");
+    return retained.validLedgerRetirement(repoRoot,d) || retained.validManagedRetirement(repoRoot,d);
+  }
   const v=row.value;
   if (v.schema!==SCHEMA+".retirement-audit" || !same(v.descriptor,d) || v.historicalOutcome!=="unknown" || v.nativeExecutionProven!==false || v.replayAllowed!==false ||
       !SHA.test(v.authority?.dispositionSha256 || "") || !SHA.test(v.authority?.auditSha256 || "") || !SHA.test(v.authority?.observationSha256 || "")) fail("fixture_retirement_audit_invalid");

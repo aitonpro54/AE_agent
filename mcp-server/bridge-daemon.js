@@ -198,6 +198,7 @@ function rememberNativeFixtureProtection(context,run,primaryBaseline) {
 }
 const ameFixtureExecutor = ameFixtureRunner.createExecutor({
   repoRoot: PROJECT_ROOT, contractVersion: AUTONOMY_CONTRACT_VERSION,
+  ownedRuntime:{renewAdmission:c=>ownedFixtureLifecycle.renewAdmission(c),assertAdmission:c=>ownedFixtureLifecycle.assertAdmission(c),registerLaunch:(c,v)=>ownedFixtureLifecycle.registerLaunch(c,v),prepareCleanup:j=>ownedFixtureLifecycle.prepareCleanup(j),finishCleanup:(j,v)=>ownedFixtureLifecycle.finishCleanup(j,v)},
   prephaseRecoveryReaders:()=>nativePrephaseReaders(),
   getCurrentRecord: () => currentProposalState.current,
   getCheckpoint: (record, runId) => {
@@ -3820,6 +3821,7 @@ function drainWaitingPanels() {
 }
 
 function enqueueAeCommand(script, timeoutMs) {
+  try{ownedRuntimeService.assertCommandTicket();}catch(error){return Promise.reject(error);}
   if (panelBootstrapService.isBusy() && !panelBootstrapReadContext.getStore()) {
     return Promise.reject(Object.assign(new Error("Panel bootstrap admission is active; retry after its reconciliation."), {code:"panel_bootstrap_busy",phase:"before_delivery"}));
   }
@@ -7064,7 +7066,10 @@ async function runValidatedAgentPlan(options, executionContext) {
     () => runValidatedAgentPlanWithEvidence(options, executionContext));
 }
 
-async function runValidatedAgentPlanWithEvidence(options, executionContext) {
+function runValidatedAgentPlanWithEvidence(options, executionContext) {
+  return ownedRuntimeService.run("execution",()=>runValidatedAgentPlanWithEvidenceImpl(options,executionContext));
+}
+async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) {
   const responseView = planRunResponse.assertValidResponseView(options && options.responseView);
   options = resolveM100PlanRunOptions(options || {});
   const autonomous = executionContext && executionContext.autonomousSession
@@ -7185,7 +7190,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     run.repairedPlan = prepared.plan;
   }
 
-  function finishRun() {
+  async function finishRun() {
     run.finishedAt = new Date().toISOString();
     if (typeof run.ok !== "boolean") {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
@@ -7304,6 +7309,9 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
     try { persistRun(null, true); } catch (_error) { run.recordWarning="run_record_update_failed"; }
     if (currentProposalState.publishRunResult(options._m100ActionRecord, run, lastRunSummary) && run.m100Action) {
       run.m100Action.confirmationState = m100ActionRecordState(options._m100ActionRecord);
+    }
+    if(!dryRun && prepared.plan.steps?.length===1 && prepared.plan.steps[0].tool===ameFixtureGrant.TOOL_NAME && !run.recordWarning){
+      try{await ameFixtureExecutor.flushCleanup(run.id);}catch(error){recordEvent("owned_fixture_cleanup_pending",{runId:run.id,code:error.code || "owned_fixture_cleanup_pending",historicalOutcome:"unknown",replayAllowed:false});}
     }
     return responseView === "summary" ? planRunResponse.projectPlanRunSummary(run) : run;
   }
@@ -7632,6 +7640,7 @@ async function runValidatedAgentPlanWithEvidence(options, executionContext) {
       const ameRunningAuthorization = ameRunningContext ? ameRunningExecutor.authorize(ameRunningContext) : null;
       const ameFixtureContext = step.tool === ameFixtureGrant.TOOL_NAME ? manualPlanIngress.brand({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
+        requestId:options.requestId || options._m100ActionRecord.requestId,instanceId:currentProposalState.snapshot().instanceId,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
       }) : null;
@@ -8576,8 +8585,9 @@ async function trustedPlaceholderAction(body) {
 }
 
 function startHttpBridge() {
+  ownedRuntimeStartup=require("./owned-runtime-supervisor").assertStartupReservation(PROJECT_ROOT,{generation:process.env.AE_OWNED_RUNTIME_GENERATION,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256});
   const server = http.createServer((req, res) => {
-    Promise.resolve().then(async () => {
+    try{ownedRuntimeService.ingress(req,()=>Promise.resolve().then(async () => {
     httpBoundary.validate(req);
     res.allowedOrigin = req.headers.origin || null;
     res.authRole = httpBoundary.role(req);
@@ -8606,6 +8616,20 @@ function startHttpBridge() {
       return;
     }
     if (req.method === "POST" && res.authRole) req.parsedJsonBody = await readJsonObject(req, HTTP_BODY_LIMIT);
+
+    if(url.pathname.startsWith("/runtime/owned/")) {
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="automation"){writeJson(res,403,{ok:false,code:"owned_runtime_automation_role_required"});return;}
+      try {
+        if(url.pathname==="/runtime/owned/status" && req.method==="GET"){writeJson(res,200,{...ownedRuntimeService.status(),readiness:ownedRuntimeService.readiness()});return;}
+        if(url.pathname==="/runtime/owned/register" && req.method==="POST"){const input=await readJsonBody(req),registration=require("./owned-runtime-supervisor").registerCurrentDaemon(PROJECT_ROOT,input,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,serviceStartedAt:new Date(STARTED_AT).toISOString()});writeJson(res,200,{ok:true,registration});return;}
+        if(url.pathname==="/runtime/owned/cleanup-fixtures-once" && req.method==="POST"){const input=await readJsonBody(req);ownedRuntimeAuthority.exact(input,["runId"]);if(!require("./native-fixture-attempt-ledger").UUID.test(input.runId || ""))throw Object.assign(Error("owned_fixture_cleanup_run_selector_invalid"),{code:"owned_fixture_cleanup_run_selector_invalid"});const result=await ownedRuntimeService.run("completion",()=>ameFixtureExecutor.flushCleanup(input.runId));writeJson(res,200,{ok:true,...result});return;}
+        if(req.method!=="POST" || !["/runtime/owned/drain-once","/runtime/owned/shutdown-once"].includes(url.pathname)){writeJson(res,404,{ok:false,code:"owned_runtime_route_invalid"});return;}
+        const input=await readJsonBody(req),result=url.pathname.endsWith("drain-once")?ownedRuntimeService.drainOnce(input):ownedRuntimeService.shutdownOnce(input,res);
+        writeJson(res,result.ok?200:409,result);
+      }catch(error){writeJson(res,409,{ok:false,code:error.code || "owned_runtime_operation_refused",replayAllowed:false});}
+      return;
+    }
 
     if (url.pathname === "/placeholder/protection") {
       if (!requireToken(req, res, url)) return;
@@ -8934,6 +8958,7 @@ function startHttpBridge() {
         runBody = body;
         const run = await manualPlanIngress.runAuthenticated({ route: url.pathname, authRole: res.authRole,
           key: m100PlanRunLookupKey(body || {}) }, () => runValidatedAgentPlan(body || {}));
+        if(ameFixtureExecutor.cleanupSelector(run.id))res.once("finish",()=>{Promise.resolve().then(()=>ownedRuntimeService.run("completion",()=>ownedFixtureCleanupReconciler.resume(run.id))).catch(error=>recordEvent("owned_fixture_cleanup_pending",{runId:run.id,code:error.code || "owned_fixture_cleanup_pending",historicalOutcome:"unknown",replayAllowed:false}));});
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,
           run,
@@ -9154,7 +9179,9 @@ function startHttpBridge() {
           if(Array.from(url.searchParams.keys()).sort().join(",")!=="requestId,runId")throw Object.assign(Error("fixture_abandonment_selector_invalid"),{code:"fixture_abandonment_selector_invalid"});
           input={requestId:url.searchParams.get("requestId"),runId:url.searchParams.get("runId")};
         } else input=await readJsonBody(req);
-        const result=await nativeFixtureAbandonment[operation](input,readers);
+        const retainedBranch=operation==="capture" && Object.keys(input).join(",")==="selector" || operation==="authorize" && Object.keys(input).join(",")==="captureId" || operation==="retire" && require("./native-fixture-retained").read(LOG_DIR,"disposition",input.requestId);
+        const retainedLookup=operation==="lookup" && (require("./native-fixture-retained").read(LOG_DIR,"disposition",input.requestId) || fs.existsSync(require("./native-fixture-retained").managedFile(PROJECT_ROOT,input.runId)));
+        const result=await ownedRuntimeService.run(operation==="lookup" || retainedBranch?"completion":"execution",()=>nativeFixtureAbandonment[operation](input,retainedBranch || retainedLookup?nativeRetainedReaders():readers));
         writeJson(res,200,{ok:true,[operation==="capture" ? "capture" : "disposition"]:result});
       } catch(error){writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_abandonment_failed"});}
       return;
@@ -9258,6 +9285,8 @@ function startHttpBridge() {
         userAgent: req.headers["user-agent"] || null,
         panelConnectionId: url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"] || null,
         panelGeneration: url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"] || null,
+        panelInstanceId: url.searchParams.get("panelInstanceId") || null,
+        panelLifecycleEpoch: /^\d+$/.test(url.searchParams.get("panelLifecycleEpoch") || "") ? Number(url.searchParams.get("panelLifecycleEpoch")) : null,
         at: lastPanelSeenAt
       };
       if(recoveryTransport && url.searchParams.get("recoveryHandshake")==="1"){
@@ -9457,8 +9486,10 @@ function startHttpBridge() {
     }
 
     writeJson(res, 404, { ok: false, error: "Not found" });
-    }).catch((error) => { writeJson(res, error.status || 400, {ok:false, error: error.message || "Request failed."}); });
+    }).catch((error) => { writeJson(res, error.status || 400, {ok:false, error: error.message || "Request failed."}); }));}
+    catch(error){writeJson(res,409,{ok:false,code:error.code || "owned_runtime_ingress_refused",replayAllowed:false});}
   });
+  ownedRuntimeHttpServer=server;
 
   server.listen(PORT, HOST, () => {
     log(`HTTP bridge listening on http://${HOST}:${PORT}`);
@@ -13062,7 +13093,37 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
 
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
-const panelControlService = panelControl.createPanelControlService({lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders())});
+const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>ownedRuntimeStartup.managed?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>ownedRuntimeStartup.managed?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
+  const status=getBridgeStatus();
+  if(status.lastPanelInfo?.panelGeneration!==expected.currentActor.panelGeneration || status.lastPanelInfo?.panelInstanceId!==expected.currentActor.panelInstanceId || status.lastPanelInfo?.panelLifecycleEpoch!==expected.currentActor.panelLifecycleEpoch || status.humanGuardRuntime.pid!==expected.runtime.daemon.pid || status.humanGuardRuntime.startedAt!==expected.runtime.daemon.startedAt || RUNTIME_IDENTITY.sourceSha256!==expected.runtime.loadedRuntimeSha256 || reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256!==expected.runtime.currentRuntimeSha256)throw Object.assign(Error("retained_admission_actor_or_runtime_changed"),{code:"retained_admission_actor_or_runtime_changed"});
+}});
+function nativeRetainedReaders(){return nativeFixtureAbandonmentBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControl.createPanelControlService({stateDir:path.join(LOG_DIR,"cep-panel-control"),inspectInstalledTarget:()=>require("./owned-runtime-authority").inspectRetainedInstalledTarget(PROJECT_ROOT)}),readBridgeStatus:getBridgeStatus,loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,executorQuiescence:()=>ameFixtureExecutor.quiescence()});}
+let ownedRuntimeHttpServer=null;
+let ownedRuntimeStartup={managed:!!process.env.AE_OWNED_RUNTIME_GENERATION,requiresRetainedAdoption:!!process.env.AE_OWNED_RUNTIME_GENERATION};
+const ownedRuntimeAuthority=require("./owned-runtime-authority");
+const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
+  readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
+  readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption || require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+  readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
+  readReadiness:()=>{
+    const status=getBridgeStatus();let children=false,capsule=false;
+    try{const manifest=ownedRuntimeAuthority.privateFile(path.join(ownedRuntimeAuthority.base(PROJECT_ROOT),"retained-authority.json")),s=ownedRuntimeAuthority.validateManifest(manifest.value).selector,saved=require("./native-fixture-retained").lookupAudited(s,{repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR});children=!!saved;capsule=!!require("../scripts/native-fixture-retained-maintenance").read(LOG_DIR,"capture");}catch(_){/* Missing/partial authority remains blocked. */}
+    const fixtureState=ownedFixtureLifecycle.quiescence(),runnerState=ameFixtureExecutor.quiescence();
+    return {...status,protectedTransportReadiness:panelControlService.cutoverReadiness(),bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:children && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:capsule};
+  },
+  closeIdleWaiters:()=>{for(const waiter of waitingPanels.splice(0)){clearTimeout(waiter.timer);if(!waiter.done && !waiter.res.destroyed && !waiter.res.writableEnded){waiter.done=true;writeJson(waiter.res,200,{ok:true,command:null,draining:true});}}},
+  closeServer:()=>{if(ownedRuntimeHttpServer){ownedRuntimeHttpServer.close();if(typeof ownedRuntimeHttpServer.closeIdleConnections==="function")ownedRuntimeHttpServer.closeIdleConnections();}}
+});
+const ownedFixtureLifecycle=require("./owned-fixture-lifecycle").createFixtureLifecycleController({
+  repoRoot:PROJECT_ROOT,
+  getCurrentActor:()=>{const s=getBridgeStatus().lastPanelInfo;return {panelInstanceId:s?.panelInstanceId,panelLifecycleEpoch:s?.panelLifecycleEpoch,panelGeneration:s?.panelGeneration};},
+  getRuntimeIdentity:()=>({daemon:{pid:process.pid,startedAt:new Date(STARTED_AT).toISOString()},loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256}),
+  renewRetainedAdmission:c=>require("./native-fixture-retained").renewAdmission(PROJECT_ROOT,{context:c,assertManualIngress:context=>{currentProposalState.assertCurrent(context?.record);manualPlanIngress.assertContext(context);},readPanelGuard:s=>nativeRetainedReaders().readPanelGuard(s),readRuntimeIdentity:()=>nativeRetainedReaders().readRuntimeIdentity()}),
+  assertRetainedAdmission:c=>{if(!require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) || !panelControlService.cutoverReadiness().ready)return false;require("./native-fixture-attempt-ledger").assertAdmission(PROJECT_ROOT,c.runId);return true;},
+  readNativeResult:(job,input)=>ownedRuntimeAuthority.readCleanupNativeResult(PROJECT_ROOT,job,input),
+  auditCleanup:(job,input)=>require("./native-fixture-retained").auditManagedCleanup(PROJECT_ROOT,job,input,nativeRetainedReaders())
+});
+const ownedFixtureCleanupReconciler=ameFixtureRunner.createCleanupReconciler({getSelector:runId=>ameFixtureExecutor.cleanupSelector(runId),flush:runId=>ameFixtureExecutor.flushCleanup(runId),readIdle:async s=>{if(!panelControlService.controllerIdle())return false;const target=await panelControlService.maintenanceTarget();if(target.state.nativeControlIdle!==true)return false;try{const readers=nativeRetainedReaders(),local=readers.readTransportRetained(s),guard=await readers.readPanelGuard(s),retained=require("./native-fixture-retained");return retained.isRetainedReceipt(local.row) && guard.controllerIdle===true && retained.isRetainedReceipt(guard.projection) && JSON.stringify(local.row.result?.run)===JSON.stringify(guard.projection.result?.run);}catch(_){return false;}},refresh:budget=>panelControlService.refreshTrustedGuards({},budget),getResult:id=>panelControlService.getResult(id),validateAdoption:(selector,result)=>panelControlService.validateManagedCleanupAdoption(selector,result),assertPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"native_fixture_disposition")});
 function nativeRefusalReaders() {
   return nativeFixtureAdmissionRefusal.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControlService,readBridgeStatus:getBridgeStatus,
     loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256});
@@ -22730,7 +22791,11 @@ async function callTool(name, args, executionContext) {
   return toolResult(`Unknown tool: ${name}`, true);
 }
 
-async function callToolLogged(source, name, args, executionContext) {
+function callToolLogged(source, name, args, executionContext) {
+  const tool=toolByName(name),read=tool?.annotations?.readOnlyHint===true || !!tool && !MUTATING_TOOL_NAMES.has(name) && /^(get_|list_|inspect_|find_|search_|ping_|wait_for_)/.test(name) || ["get_panel_state","list_panel_actions","get_panel_action_result","refresh_panel_guards","reconcile_plan_run","reconcile_project_lifecycle"].includes(name);
+  return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
+}
+async function callToolLoggedImpl(source, name, args, executionContext) {
   if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
   }

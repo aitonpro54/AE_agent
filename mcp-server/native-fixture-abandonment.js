@@ -205,6 +205,7 @@ function publishRetirement(deps,s,observed,saved,audit) {
 function reserved(root,id) {return ["consumption","audit","disposition"].some(k=>fs.existsSync(fileFor(root,k,id)));}
 const now=deps=>deps.now ? deps.now() : Date.now();
 async function capture(input,deps) {
+  if(input && Object.keys(input).length===1 && input.selector)return require("./native-fixture-retained").capture(input,deps);
   exact(input,input?.observationIds ? ["selector","observationIds"] : ["selector","observationId"],"fixture_abandonment_client_evidence_forbidden");const s=selector(input.selector),ids=input.observationIds || [input.observationId];
   if(!Array.isArray(ids) || input.observationIds && ids.length!==2 || ids.some(id=>!UUID.test(id || "")) || new Set(ids).size!==ids.length)fail("fixture_observation_selector_invalid");if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_already_consumed");
   const observed=await setBracket(deps,s,ids,"capture"),time=now(deps),value={schema:SCHEMA+".capture",captureId:crypto.randomUUID(),createdAt:new Date(time).toISOString(),expiresAt:new Date(time+TTL).toISOString(),observed};
@@ -212,6 +213,7 @@ async function capture(input,deps) {
 }
 function captureValid(row,id,time) {const c=row?.value,start=Date.parse(c?.createdAt);if(!c || c.schema!==SCHEMA+".capture" || c.captureId!==id || !Number.isFinite(start) || Date.parse(c.expiresAt)!==start+TTL || time<start || time>=start+TTL)fail("fixture_abandonment_capture_stale_or_invalid");return c;}
 async function authorize(input,deps) {
+  if(input && Object.keys(input).length===1 && input.captureId)return require("./native-fixture-retained").authorize(input,deps);
   exact(input,["captureId","confirmation","authorizationSource","reason"],"fixture_abandonment_explicit_confirmation_required");
   if(!UUID.test(input.captureId || "") || input.confirmation!==true || input.authorizationSource!=="explicit_user_chat" || typeof input.reason!=="string" || !input.reason.trim() || input.reason.length>2000)fail("fixture_abandonment_explicit_confirmation_required");
   const captured=read(deps.evidenceRoot,"capture",input.captureId),c=captureValid(captured,input.captureId,now(deps)),s=selector(c.observed.selector);
@@ -233,6 +235,8 @@ async function authorize(input,deps) {
   } finally {await lock.release();}
 }
 function lookupAudited(input,deps) {
+  const retained=require("./native-fixture-retained");
+  if(retained.read(deps.evidenceRoot,"disposition",selector(input).requestId))return retained.lookupAudited(input,deps);
   const s=selector(input),saved=read(deps.evidenceRoot,"disposition",s.requestId);
   if(!saved){if(reserved(deps.evidenceRoot,s.requestId))fail("fixture_abandonment_partial_audit");return null;}
   const v=saved.value,audit=read(deps.evidenceRoot,"audit",s.requestId),consumption=read(deps.evidenceRoot,"consumption",s.requestId),captured=UUID.test(v?.captureId || "") && read(deps.evidenceRoot,"capture",v.captureId);
@@ -250,12 +254,17 @@ function lookupAudited(input,deps) {
   return saved;
 }
 async function lookup(input,deps) {
+  const managed=await require("./native-fixture-retained").lookupManaged(input,deps);if(managed)return managed;
+  const retained=require("./native-fixture-retained");
+  if(retained.read(deps.evidenceRoot,"disposition",selector(input).requestId))return retained.lookup(input,deps);
   const s=selector(input),saved=lookupAudited(s,deps);if(!saved)return null;const v=saved.value;
   const ids=v.attemptGroup ? v.observationIds : [v.observationId],fresh=await setBracket(deps,s,ids,"lookup");if(!same(fresh.entry,v.entry) || !sameObservationBinding(v,fresh))fail("fixture_abandonment_original_guard_drift");
   const groupBack=fresh.attemptGroup ? {attemptInventorySha256:fresh.attemptGroup.inventorySha256,groupRetirementSha256:read(deps.evidenceRoot,"group-retirement",s.requestId).sha256} : {};
   return {...saved,readBack:{schema:SCHEMA+".read-back",dispositionSha256:saved.sha256,entrySha256:hash(v.entry),currentActor:fresh.currentActor,runtime:fresh.runtime,installed:fresh.installed,nativeAdmissionBlocked:attempts(fresh).some(m=>!ledger.validRetirement(deps.repoRoot,m.descriptor)),...groupBack}};
 }
 async function retire(input,deps) {
+  const retained=require("./native-fixture-retained");
+  if(retained.read(deps.evidenceRoot,"disposition",selector(input).requestId))return retained.lookup(input,deps);
   const s=selector(input),saved=await lookup(s,deps);if(!saved)fail("fixture_retirement_audited_abandonment_required");
   const audit=read(deps.evidenceRoot,"audit",s.requestId),ids=saved.value.attemptGroup ? saved.value.observationIds : [saved.value.observationId],fresh=await setBracket(deps,s,ids,"lookup");
   if(attempts(fresh).some(m=>!m.exit))fail("fixture_retirement_positive_exit_proof_required");

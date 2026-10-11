@@ -25,6 +25,7 @@
   var FIXTURE_KEY="codexAeAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
   var nativeAbandonments=Object.create(null),nativeAbandonmentTrusted=Object.create(null),nativeAbandonmentLookupPending=false;
   var NATIVE_ABANDONMENT_KEY="codexAeNativeFixtureAbandonmentsV1";
+  var nativeRetained=Object.create(null),nativeRetainedTrusted=Object.create(null),NATIVE_RETAINED_KEY="codexAeNativeFixtureRetainedDispositionsV1";
   var PREPHASE_ID="4f06da6d-4b76-40b2-b70b-a77db3e1e9c7",PREPHASE_RUN="5a4ac6eb-7b2e-42ce-8af9-7d03e52c17c5",PREPHASE_KEY="codexAeNativeFixturePrephaseRecoveryV1";
   var prephaseCertificate=null,prephaseTrusted=false,prephaseLookupPending=false,guardRefreshPending=false,guardRefreshSequence=0,guardRefreshResult=null;
   var REFUSAL_ID="0c33f0f5-a452-47c4-b2d0-204d96cb8fef",REFUSAL_RUN="8674d583-e151-47fc-9c2b-374584b2faa8",REFUSAL_ERROR="fixture_prephase_new_manual_action_required";
@@ -43,7 +44,7 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -133,6 +134,7 @@
     snapshot.ameFixtureDisposition=fixtureDispositionValid(FIXTURE_ID,true) ? {dispositionId:fixtureDisposition.value.dispositionId,status:"abandoned_reviewed",guardDisposition:"released",historicalOutcome:"unknown",aeExecutionProven:false,replayAllowed:false} : null;
     snapshot.nativeFixtureAbandonmentLookupPending=nativeAbandonmentLookupPending;
     snapshot.nativeFixtureAbandonments=Object.keys(nativeAbandonments).filter(function(id){return nativeAbandonmentValid(id,true);}).map(function(id){var v=nativeAbandonments[id].value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
+    snapshot.nativeFixtureRetainedDispositions=Object.keys(nativeRetained).filter(function(id){return nativeRetainedValid(id,true);}).map(function(id){var s=nativeRetained[id],v=s.value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,sha256:s.sha256,groupRetirementSha256:s.readBack.groupRetirementSha256,currentActor:clone(s.readBack.currentActor),status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
     snapshot.trustedGuardRefresh={pending:guardRefreshPending,sequence:guardRefreshSequence,result:guardRefreshResult && clone(guardRefreshResult)};
     snapshot.nativeFixturePrephaseRecovery=prephaseValid(PREPHASE_ID,true) ? {requestId:PREPHASE_ID,runId:PREPHASE_RUN,status:"prephase_admission_certified",certificateSha256:prephaseCertificate.sha256,entrySha256:prephaseCertificate.readBack.entrySha256,currentActor:clone(prephaseCertificate.readBack.currentActor),scope:"new_disjoint_fixture_only",historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
     snapshot.nativeFixtureAdmissionRefusalLookupPending=refusalLookupPending;
@@ -242,9 +244,30 @@
       /^fixture_[a-z0-9_]+$/.test(r.code || "") && run && run.ok===false && run.dryRun===false && run.errorCode===r.code && run.m100Action && run.m100Action.confirmedBySurface==="cep-panel" &&
       run.provenance && run.provenance.actionId===run.m100Action.actionId && Array.isArray(run.steps) && run.steps.length===1 && run.steps[0].tool==="ame_native_fixture_probe";
   }
+  function retainedFixtureRecord(id) {
+    var r=records[id],run=r && r.result && r.result.run;
+    return r && r.action==="plan.run" && r.effect==="protected_plan_run" && r.source==="programmatic" && r.state==="unknown" && r.phase==="outcome_unresolved" && r.delivery==="unknown" && r.replayAllowed===false &&
+      /^fixture_[a-z0-9_]+$/.test(r.code || "") && run && run.ok===false && run.dryRun===false && run.errorCode===r.code && run.m100Action && run.m100Action.confirmedBySurface==="cep-panel" && run.provenance && run.provenance.actionId===run.m100Action.actionId && Array.isArray(run.steps) && run.steps.length===1 && run.steps[0].tool==="ame_native_fixture_probe";
+  }
+  function nativeRetainedValid(id,trusted) {
+    var saved=nativeRetained[id],v=saved && saved.value,e=v && v.entry,b=saved && saved.readBack,r=records[id],p=r && contract.sanitizeReceipt(r),run=p && p.result && p.result.run,g=v && v.attemptGroup,rt=b && b.runtime;
+    var managed=v && v.schema==="ae-agent.native-fixture-managed-disposition.v1",schema=managed ? "ae-agent.native-fixture-managed-disposition.v1" : "ae-agent.native-fixture-retained-disposition.v1";
+    var actorMatches=b && JSON.stringify(b.currentActor)===JSON.stringify(currentFixtureActor());if(!actorMatches)delete nativeRetainedTrusted[id];
+    if(!retainedFixtureRecord(id) || !saved || saved.schema!==schema+".envelope" || saved.sha256!==sha256(JSON.stringify(v)) || !v || v.schema!==schema ||
+      (!managed && (!/^[a-f0-9]{64}$/.test(saved.auditSha256 || "") || !/^[a-f0-9]{64}$/.test(saved.consumptionSha256 || "")) || managed && (!/^[a-f0-9]{64}$/.test(v.groupSha256 || "") || b && b.groupRetirementSha256!==v.groupSha256)) || v.status!=="abandoned_reviewed" || v.guardDisposition!=="released" || v.historicalOutcome!=="unknown" || v.nativeExecutionProven!==false || v.replayAllowed!==false ||
+      v.authorizationSource!=="owned_runtime_policy" || !v.authorizationRef || v.authorizationRef.source!=="explicit_user_chat" || typeof v.authorizationRef.reference!=="string" || !v.authorizationRef.reference || JSON.stringify(v.acceptedServerCoverage)!==JSON.stringify(["native_fixture_disposition","panel_retained_reload","owned_daemon_lifecycle"]) ||
+      !v.selector || v.selector.requestId!==id || v.selector.runId!==r.runId || !e || e.originalRequestId!==id || e.runId!==r.runId || e.action!==r.action || e.effect!==r.effect || e.actionId!==run.provenance.actionId || e.proposalRevision!==run.provenance.proposalRevision || e.payloadHash!==run.provenance.payloadHash ||
+      e.privateSignatureSha256!==sha256(r.signature) || e.privateRecordSha256!==sha256(JSON.stringify(r)) || e.panelReceiptHash!==sha256(JSON.stringify(p)) || e.canonicalRunProjectionHash!==sha256(JSON.stringify(run)) || !/^[a-f0-9]{64}$/.test(e.canonicalRunRecordHash || "") || !/^[a-f0-9]{64}$/.test(e.transportSignature || "") ||
+      !e.originalBinding || e.originalBinding.panelInstanceId!==r.panelInstanceId || e.originalBinding.panelLifecycleEpoch!==r.epoch || e.originalBinding.panelGeneration!==r.generation ||
+      !g || !g.context || g.context.runId!==r.runId || g.context.actionId!==e.actionId || g.context.proposalRevision!==e.proposalRevision || g.context.payloadHash!==e.payloadHash || !Array.isArray(g.inventory) || g.inventory.length!==2 || g.inventory[0].descriptor.role!=="capture" || g.inventory[1].descriptor.role!=="stage" || g.inventory[0].descriptor.stageId===g.inventory[1].descriptor.stageId || g.inventorySha256!==sha256(JSON.stringify(g.inventory)) ||
+      !b || b.schema!==schema+".read-back" || b.dispositionSha256!==saved.sha256 || b.entrySha256!==sha256(JSON.stringify(e)) || !actorMatches || b.nativeAdmissionBlocked!==false || b.attemptInventorySha256!==g.inventorySha256 || !/^[a-f0-9]{64}$/.test(b.groupRetirementSha256 || "") ||
+      !rt || !/^[a-f0-9]{64}$/.test(rt.loadedRuntimeSha256 || "") || !/^[a-f0-9]{64}$/.test(rt.currentRuntimeSha256 || "") || !rt.panelAssetHashes || !b.installed || JSON.stringify(b.installed.hashes)!==JSON.stringify(rt.panelAssetHashes) || trusted && nativeRetainedTrusted[id]!==saved.sha256)return false;
+    try {var index=JSON.parse(storage.getItem(INDEX_KEY));if(!index || e.privateIndexEntrySha256!==sha256(JSON.stringify(index[id])))return false;}catch(_){return false;}
+    return !storageFailure;
+  }
   function readNativeFixtureGuard(value) {
     if(!value || Object.keys(value).sort().join(",")!=="requestId,runId" || !contract.UUID_REGEX.test(value.requestId || "") || !contract.UUID_REGEX.test(value.runId || "") ||
-      !(value.requestId===REFUSAL_ID && value.runId===REFUSAL_RUN && refusalRecord() || nativeFixtureRecord(value.requestId)))return null;
+      !(value.requestId===REFUSAL_ID && value.runId===REFUSAL_RUN && refusalRecord() || nativeFixtureRecord(value.requestId) || retainedFixtureRecord(value.requestId)))return null;
     var r=records[value.requestId];if(r.runId!==value.runId || typeof r.signature!=="string")return null;
     return {projection:contract.sanitizeReceipt(r),signatureSha256:sha256(r.signature),currentBinding:currentFixtureActor(),controllerIdle:!active && !life().busy && !rawState().recoveryTransport && !storageFailure};
   }
@@ -319,7 +342,8 @@
   function refreshNativeFixtureAbandonments(onDone) {
     if(nativeAbandonmentLookupPending){if(onDone)onDone(false);return;}
     nativeAbandonmentTrusted=Object.create(null);
-    var ids=Object.keys(records).filter(nativeFixtureRecord),startedActor=JSON.stringify(currentFixtureActor());
+    nativeRetainedTrusted=Object.create(null);
+    var ids=Object.keys(records).filter(function(id){return nativeFixtureRecord(id) || retainedFixtureRecord(id);}),startedActor=JSON.stringify(currentFixtureActor());
     if(!ids.length){if(onDone)onDone(true);return;}
     if(!bindings || typeof bindings.lookupNativeFixtureAbandonment!=="function"){if(onDone)onDone(false);return;}
     nativeAbandonmentLookupPending=true;
@@ -328,7 +352,12 @@
       var id=ids.shift(),r=records[id];
       bindings.lookupNativeFixtureAbandonment({requestId:id,runId:r.runId},function(error,saved) {
         if(error || startedActor!==JSON.stringify(currentFixtureActor())){nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
-        if(saved===null){delete nativeAbandonments[id];next();return;}
+        if(saved===null){delete nativeAbandonments[id];delete nativeRetained[id];next();return;}
+        if(retainedFixtureRecord(id)){
+          var old=nativeRetained[id];nativeRetained[id]=saved && clone(saved);
+          if(active || life().busy || rawState().recoveryTransport || !nativeRetainedValid(id,false)){if(old)nativeRetained[id]=old;else delete nativeRetained[id];nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
+          try{storage.setItem(NATIVE_RETAINED_KEY,JSON.stringify(nativeRetained));nativeRetainedTrusted[id]=saved.sha256;}catch(_){nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}next();return;
+        }
         var prior=nativeAbandonments[id];nativeAbandonments[id]=saved && clone(saved);
         if(active || life().busy || rawState().recoveryTransport || !nativeAbandonmentValid(id,false)){if(prior)nativeAbandonments[id]=prior;else delete nativeAbandonments[id];nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
         try{storage.setItem(NATIVE_ABANDONMENT_KEY,JSON.stringify(nativeAbandonments));nativeAbandonmentTrusted[id]=saved.sha256;}catch(_){nativeAbandonmentLookupPending=false;if(onDone)onDone(false);return;}
@@ -392,7 +421,7 @@
     if(guardRefreshPending || humanLookupPending || fixtureLookupPending || nativeAbandonmentLookupPending || prephaseLookupPending || refusalLookupPending || active || life().busy || rawState().recoveryTransport || storageFailure)return {accepted:false,code:"trusted_guard_refresh_not_idle"};
     guardRefreshPending=true;guardRefreshResult=null;guardRefreshSequence++;
     var sequence=guardRefreshSequence,actor=JSON.stringify(currentFixtureActor());
-    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);prephaseTrusted=false;refusalTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
+    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);nativeRetainedTrusted=Object.create(null);prephaseTrusted=false;refusalTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
     refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(function(prephaseReady){if(!prephaseReady){finish(false);return;}refreshAdmissionRefusal(finish);});});});});
     return {accepted:true,sequence:sequence,lookupPending:guardRefreshPending};
   }
@@ -506,7 +535,7 @@
   }
   function getResult(id) {
     if (typeof id !== "string" || !contract.UUID_REGEX.test(id)) return null;
-    if (records[id]) {var result=contract.sanitizeReceipt(records[id]);if(recoveryValid(id,true))result.recovery=clone(recoveries[id].envelope);if(humanSettlementValid(id,true))result.humanSettlement=clone(humanSettlement);return result;}
+    if (records[id]) {var result=contract.sanitizeReceipt(records[id]);if(recoveryValid(id,true))result.recovery=clone(recoveries[id].envelope);if(humanSettlementValid(id,true))result.humanSettlement=clone(humanSettlement);if(nativeRetainedValid(id,true)){var saved=nativeRetained[id],property=saved.value.schema==="ae-agent.native-fixture-managed-disposition.v1" ? "nativeFixtureManaged" : "nativeFixtureRetained";result[property]={schema:saved.value.schema,sha256:saved.sha256,entrySha256:sha256(JSON.stringify(saved.value.entry)),groupRetirementSha256:saved.readBack.groupRetirementSha256,currentActor:clone(saved.readBack.currentActor)};}return result;}
     if (tombstones[id]) return reject({requestId:id,action:tombstones[id].action},"receipt_retained_without_detail","Request was completed earlier. Re-execution is forbidden.");
     return storageFailure ? {protocolVersion:contract.PROTOCOL_VERSION,requestId:id,state:"unknown",phase:"receipt_storage",code:storageFailure,delivery:"unknown",replayAllowed:false} : null;
   }
@@ -650,6 +679,8 @@
     return contract.sanitizeReceipt(r);
   }
   load();
+  // Persisted sidecars are caches. A reload never restores their trust bits.
+  try{var cached=JSON.parse(storage.getItem(NATIVE_RETAINED_KEY) || "{}");if(cached && typeof cached==="object" && !Array.isArray(cached))nativeRetained=cached;}catch(_){nativeRetained=Object.create(null);}
   var api={protocolVersion:contract.PROTOCOL_VERSION,catalog:catalog,state:state,
     invoke:function(envelope) {return invoke(envelope,"programmatic");},getResult:getResult};
   Object.defineProperty(api,"readAmeFixtureUIGuard",{value:readAmeFixtureUIGuard,writable:false,configurable:false,enumerable:false});

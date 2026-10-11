@@ -1,6 +1,5 @@
 "use strict";
 
-const childProcess = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
@@ -98,8 +97,6 @@ const MUTATING_PREFIX = "Codex Test Safe Run";
 const AGENT_SCENARIO_PREFIX = process.env.CEP_PANEL_AGENT_SCENARIO_PREFIX || "Codex QA 1.2";
 const AGENT_SCENARIO_WAIT_MS = Number(process.env.CEP_PANEL_AGENT_SCENARIO_WAIT_MS || 180000);
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const DAEMON_PATH = path.join(PROJECT_ROOT, "mcp-server", "bridge-daemon.js");
-const ENSURE_DAEMON_TIMEOUT_MS = Number(process.env.CEP_PANEL_ENSURE_DAEMON_TIMEOUT_MS || 8000);
 
 function defaultAgentScenarioConfig() {
   return {
@@ -1384,23 +1381,6 @@ async function readBridgeHealth(timeoutMs) {
   return health;
 }
 
-function startLocalBridgeDaemon(endpoint) {
-  const child = childProcess.spawn(process.execPath, [DAEMON_PATH], {
-    cwd: PROJECT_ROOT,
-    detached: true,
-    env: {
-      ...process.env,
-      AE_BRIDGE_HOST: endpoint.host || "127.0.0.1",
-      AE_BRIDGE_PORT: String(endpoint.port || 3456),
-      AE_BRIDGE_TOKEN: BRIDGE_TOKEN
-    },
-    stdio: "ignore",
-    windowsHide: true
-  });
-  child.unref();
-  return child.pid;
-}
-
 async function ensureBridgeDaemonRunning(reason) {
   if (process.env.CEP_PANEL_ENSURE_DAEMON === "0") {
     return { ok: true, skipped: true, reason: "disabled_by_env" };
@@ -1415,27 +1395,11 @@ async function ensureBridgeDaemonRunning(reason) {
       throw new Error(`Bridge daemon is unreachable and ${BRIDGE_URL} is not a local auto-start endpoint: ${initialError.message}`);
     }
 
-    const startedPid = startLocalBridgeDaemon(endpoint);
-    const startedAt = Date.now();
-    let lastError = initialError;
-    while (Date.now() - startedAt < ENSURE_DAEMON_TIMEOUT_MS) {
-      await sleep(250);
-      try {
-        const health = await readBridgeHealth(1200);
-        return {
-          ok: true,
-          alreadyRunning: false,
-          health,
-          reason,
-          startedPid,
-          waitedMs: Date.now() - startedAt
-        };
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw new Error(`Bridge daemon did not become healthy after ${ENSURE_DAEMON_TIMEOUT_MS}ms; startedPid=${startedPid}; lastError=${lastError.message}`);
+    if(endpoint.host!=="127.0.0.1" || endpoint.port!==3456)throw new Error("owned_cdp_fixed_endpoint_required");
+    const lifecycle=await require("../mcp-server/owned-runtime-supervisor").createOwnedRuntimeSupervisor().ensure();
+    if(lifecycle.ok!==true)throw new Error("owned_cdp_ensure_readback_only");
+    const health=await readBridgeHealth(1200);
+    return {ok:true,alreadyRunning:false,health,reason,lifecycle,replayAllowed:false};
   }
 }
 
@@ -9258,6 +9222,7 @@ if (require.main === module) {
 
 module.exports = {
   connectToPanel,
+  ensureBridgeDaemonRunning,
   DEFAULT_PORT,
   EXTENSION_ID
 };

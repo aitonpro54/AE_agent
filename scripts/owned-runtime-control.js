@@ -10,6 +10,10 @@ const rawHash=b=>crypto.createHash("sha256").update(b).digest("hex");
 function fail(code){throw Object.assign(Error(code),{code});}
 function parse(argv){
   const a=argv.slice(2),command=a.shift();if(!command || command==="help" && !a.length)return {command:"help"};
+  if(command==="status" && !a.length)return {command};
+  if(command==="disable-owned-maintenance" && !a.length)return {command};
+  if(["ensure-bridge","restart-bridge-once","shutdown-bridge-once","read-back"].includes(command) && a.length===2 && a[0]==="--operation-id" && ledger.UUID.test(a[1] || ""))return {command,operationId:a[1]};
+  if(command==="cleanup-fixtures-once" && a.length===2 && a[0]==="--run-id" && ledger.UUID.test(a[1] || ""))return {command,runId:a[1]};
   if(!["inspect","close-once","read-back"].includes(command) || a.length!==6)fail("owned_cli_closed_schema_required");
   const v={command};for(let i=0;i<a.length;i+=2){const key={"--profile":"profile","--run-id":"runId","--stage-id":"stageId"}[a[i]];if(!key || v[key]!==undefined)fail("owned_cli_closed_schema_required");v[key]=a[i+1];}
   if(v.profile!==PROFILE)fail("owned_cli_fixed_profile_required");return lifecycle.selector(v);
@@ -62,8 +66,12 @@ async function checkOriginalRegistration(p){
   const after=await request(p,"/dev/status");if(!statusVerified(after,p))fail("owned_original_daemon_status_changed");
   return {registered:true,originalDaemonVerified:true,idle:true,generation:p.generation,canonicalBindingSha256:p.canonicalBindingSha256,protectedInventorySha256:p.protectedInventorySha256};
 }
-async function run(argv){const s=parse(argv);if(s.command==="help")return {ok:true,commands:["inspect","close-once","read-back"],profile:PROFILE,required:["--profile","--run-id","--stage-id"],trustedProvisionRequired:true,...lifecycle.OUTCOME};
+function disablePolicy(){const authority=require("../mcp-server/owned-runtime-authority"),file=path.join(BASE,"policy.json"),loaded=authority.privateFile(file),p=authority.validatePolicy(loaded.value);if(p.enabled===false)return {ok:true,status:"owned_maintenance_disabled",replayAllowed:false};const next={...p,enabled:false},id=crypto.randomUUID(),temp=path.join(BASE,".disabled-policy-"+id+".json"),fd=fs.openSync(temp,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify(next));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}loaded.assertUnchanged();const events=path.join(BASE,"policy-disable-events");ledger.ensure(events);lifecycle.writeJournalOnce(events,id,{schema:"ae-agent.owned-runtime-policy-disable.v1",previousRawSha256:loaded.rawSha256,nextRawSha256:rawHash(Buffer.from(JSON.stringify(next))),createdAt:new Date().toISOString(),replayAllowed:false});fs.renameSync(temp,file);if(authority.validatePolicy(authority.privateFile(file).value).enabled!==false)fail("owned_policy_disable_readback_failed");return {ok:true,status:"owned_maintenance_disabled",replayAllowed:false};}
+async function run(argv){const s=parse(argv);if(s.command==="help")return {ok:true,commands:["inspect","close-once","read-back","status","ensure-bridge","restart-bridge-once","shutdown-bridge-once","cleanup-fixtures-once","disable-owned-maintenance"],profile:PROFILE,required:["--profile","--run-id","--stage-id"],trustedProvisionRequired:true,...lifecycle.OUTCOME};
+  if(s.command==="disable-owned-maintenance")return disablePolicy();
+  if(s.command==="status" || s.operationId){const factory=require("../mcp-server/owned-runtime-supervisor").createOwnedRuntimeSupervisor();if(s.command==="status")return factory.status();if(s.command==="read-back")return factory.readBack(s.operationId);return factory[{"ensure-bridge":"ensure","restart-bridge-once":"restart","shutdown-bridge-once":"shutdown"}[s.command]](s.operationId);}
+  if(s.command==="cleanup-fixtures-once"){const registration=require("../mcp-server/owned-runtime-supervisor").readDaemonRegistration(ROOT);if(!registration)fail("owned_fixture_registered_daemon_required");return request({daemon:{port:3456,credentialSha256:registration.credentialSha256}},"/runtime/owned/cleanup-fixtures-once",{runId:s.runId});}
   return lifecycle.createOwnedRuntimeLifecycle({repoRoot:ROOT,journalRoot:path.join(BASE,"journal"),loadTrustedProfile,checkOriginalRegistration,native:createWin32Backend()}).run(s);
 }
+module.exports={run,parse,loadTrustedProfile,checkOriginalRegistration,statusVerified,credential,credentialFingerprint,request,parseCredentialConfig,disablePolicy,PROFILE,PROFILE_FILE};
 if(require.main===module)run(process.argv).then(v=>process.stdout.write(JSON.stringify(v)+"\n")).catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:/^owned_[a-z0-9_]+$/.test(e.code || "")?e.code:"owned_runtime_control_refused",...lifecycle.OUTCOME})+"\n");process.exitCode=1;});
-module.exports={run,parse,loadTrustedProfile,checkOriginalRegistration,statusVerified,credential,credentialFingerprint,request,parseCredentialConfig,PROFILE,PROFILE_FILE};

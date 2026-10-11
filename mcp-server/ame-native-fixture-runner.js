@@ -174,6 +174,8 @@ function createExecutor(deps) {
   const root = path.resolve(deps.repoRoot), ownedParent = path.join(root, ".codex-runtime", "ame-native-fixtures");
   const descriptors = new Map(), launches = new Map(), capabilities = new WeakMap();
   const privateChildren=new Map();
+  const cleanupJobs=new Map(),cleanupSelectors=new Map();
+  const nativeReadbacks=new Map();
   const verifiedResults = new Map();
   let executing = false;
   const readProcess = deps.inspectProcess || inspectProcess;
@@ -194,11 +196,14 @@ function createExecutor(deps) {
   });
   async function authorize(context) {
     deps.assertManualIngress(context);
+    if(deps.ownedRuntime?.renewAdmission)await deps.ownedRuntime.renewAdmission(context);
+    if(deps.ownedRuntime?.assertAdmission)deps.ownedRuntime.assertAdmission(context);
     const recovery=require("./native-fixture-prephase-recovery"),brand=typeof deps.prephaseRecoveryReaders==="function" ? await recovery.bindAdmission(context,deps.prephaseRecoveryReaders()) : null;
     ledger.assertAdmission(root,null,{brand,context});
     await recovery.recheckAdmission(brand,context,root);
     const issuerCapability=await issuer.authorize(context);
     await recovery.recheckAdmission(brand,context,root);
+    if(deps.ownedRuntime?.assertAdmission)deps.ownedRuntime.assertAdmission(context);
     const capability = Object.freeze({});
     capabilities.set(capability, { context, recoveryBrand:brand,issuerCapability }); return capability;
   }
@@ -213,6 +218,7 @@ function createExecutor(deps) {
     ledger.assertAdmission(root,null,{brand:entry.recoveryBrand,context:entry.context});
     executing = true; capabilities.delete(capability);
     const children = [];
+    let cleanupOutcome="unknown";
     try {
       const recovery=require("./native-fixture-prephase-recovery");
       await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);
@@ -249,6 +255,7 @@ function createExecutor(deps) {
         // a retained prelaunch attempt, never a zero-filesystem-effect claim.
         try {await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);}
         catch(error) {issuer.markUnknown(prepared.child);throw error;}
+        if(deps.ownedRuntime?.assertAdmission)deps.ownedRuntime.assertAdmission(entry.context);
         const launched = await (deps.launchChild || launchChild)(descriptor, prepared.environment);
         if (!launched || !Number.isSafeInteger(launched.pid) || launched.pid < 1) { issuer.markUnknown(prepared.child); fail("fixture_runner_launch_unknown"); }
         launches.set(descriptor, { pid: launched.pid });
@@ -264,6 +271,10 @@ function createExecutor(deps) {
           try {ledger.validateRetirement(proof,trustedIdentity);ledger.writeOnce(ledger.fileFor(root,stageId,"retirement-proof"),proof);} catch (_) { /* fail closed; no retirement audit */ }
         },()=>{ /* A lost observer never becomes an exit proof. */ });
         ledger.launch(root,descriptor,trustedIdentity);
+        owned.process=trustedIdentity;
+        owned.kernelIdentity=launched.process.createdFileTime ? {pid:trustedIdentity.pid,birthFileTime:String(launched.process.createdFileTime),birthUtc:trustedIdentity.createdAt,imagePath:trustedIdentity.path,executableSha256:descriptor.executableSha256}:null;
+        launches.get(descriptor).kernelIdentity=owned.kernelIdentity;
+        if(deps.ownedRuntime?.registerLaunch)await deps.ownedRuntime.registerLaunch(entry.context,{descriptor,process:trustedIdentity,kernelIdentity:owned.kernelIdentity});
         const processInfo=await readProcess(launched.pid);
         if (!ledger.sameProcess(trustedIdentity,processInfo)) fail("fixture_runner_launch_identity_changed");
         const waitReceipt = async filename => {
@@ -288,6 +299,7 @@ function createExecutor(deps) {
           // issuePhase contains checkpoint/process/consume awaits. Check fresh
           // primary protection again before publishing native phase authority.
           await recovery.recheckAdmission(entry.recoveryBrand,entry.context,root);
+          if(deps.ownedRuntime?.assertAdmission)deps.ownedRuntime.assertAdmission(entry.context);
           writeOnce(path.join(descriptor.rootPath, phase.filename), phase.bytes);
           verified = await waitReceipt(receiptName);
         }
@@ -304,19 +316,36 @@ function createExecutor(deps) {
             authorization: { runId: entry.context.runId, proposalId: entry.context.record.actionId } };
           ledger.complete(root,entry.context.runId,children,verified.receipt.outputs);
           verifiedResults.set(result.evidenceId, { hash: sha(JSON.stringify(result)), payload: JSON.parse(JSON.stringify(result)) });
+          cleanupOutcome="succeeded";
           return result;
         }
       }
       fail("fixture_runner_incomplete");
     } catch (error) {
+      cleanupOutcome=/cancel/i.test(error.code || "")?"cancelled":"failed";
       for (const owned of children) {issuer.markUnknown(owned.child);ledger.unknown(root,owned.descriptor,error.code || error.message);}
       error.nativeAttempts=children.map(owned=>({stageId:owned.descriptor.stageId,role:owned.descriptor.role,runId:entry.context.runId,replayAllowed:false}));
       throw error;
     } finally {
-      // Keep processes and roots intact for reconciliation. No general process
-      // termination, recursive cleanup, project save/reopen or unknown retry.
+      // Prepare only. The native read-back still expects live exact children.
+      // Cleanup cannot execute before the durable canonical final record.
       executing = false;
+      if(children.length){const job={schema:"ae-agent.owned-fixture-cleanup-job.v1",runId:entry.context.runId,status:"prepared_waiting_canonical_and_native_readback",outcome:cleanupOutcome,children:children.map(c=>({descriptor:JSON.parse(JSON.stringify(c.descriptor)),process:c.process || null,kernelIdentity:c.kernelIdentity || null,terminalReceiptVerified:c.terminal})),historicalOutcome:cleanupOutcome==="succeeded"?"not_inferred":"unknown",nativeExecutionProven:false,replayAllowed:false};cleanupJobs.set(entry.context.runId,job);if(ledger.UUID.test(entry.context.requestId || ""))cleanupSelectors.set(entry.context.runId,{requestId:entry.context.requestId,runId:entry.context.runId});if(deps.ownedRuntime?.prepareCleanup)try{await deps.ownedRuntime.prepareCleanup(job);}catch(_){/* Pending job never changes native outcome. */}}
     }
+  }
+  async function flushCleanup(runId) {
+    const job=cleanupJobs.get(runId);if(!job || !deps.ownedRuntime?.finishCleanup)return {status:job?"cleanup_pending_no_controller":"no_cleanup_job",replayAllowed:false};
+    const records=require("./plan-run-records"),file=records.fileFor(path.join(root,"logs"),runId),before=ledger.readBytes(file),canonical=records.readRecord(path.join(root,"logs"),runId,{throwOnError:true});
+    if(canonical.runId!==runId || !canonical.run.finishedAt || canonical.run.steps?.length!==1 || canonical.run.steps[0].tool!==grant.TOOL_NAME || !["completed","failed"].includes(canonical.run.outcome?.execution?.status))fail("fixture_cleanup_final_canonical_required");
+    if(sha(ledger.readBytes(file))!==sha(before))fail("fixture_cleanup_canonical_changed");
+    const nativeReadback=nativeReadbacks.get(runId) || null;
+    if(job.outcome==="succeeded" && !nativeReadback)return {status:"cleanup_pending_native_readback",replayAllowed:false};
+    // The private controller performs a fresh native identity/read-back, then
+    // R1 close, original observer proof wait and R2 audit. It cannot replay JSX.
+    const result=await deps.ownedRuntime.finishCleanup(job,{record:canonical,rawSha256:sha(before),canonicalPath:file,nativeReadback});
+    if(sha(ledger.readBytes(file))!==sha(before))fail("fixture_cleanup_canonical_changed");
+    if(result?.status==="cleanup_audited"){cleanupJobs.delete(runId);cleanupSelectors.delete(runId);nativeReadbacks.delete(runId);}
+    return result || {status:"cleanup_pending",replayAllowed:false};
   }
   function verifyResult(payload) {
     if (!payload || verifiedResults.get(payload.evidenceId)?.hash !== sha(JSON.stringify(payload))) fail("fixture_runner_unverified_result");
@@ -336,7 +365,7 @@ function createExecutor(deps) {
       const child = payload.childProcesses.find(value => value.pid === receipt.pid);
       const descriptor = Array.from(descriptors.values()).find(value => value.rootPath === child?.rootPath);
       const processInfo = await readProcess(receipt.pid);
-      if (!descriptor || !processInfo || processInfo.pid !== receipt.pid || processInfo.createdUnixMs !== receipt.processCreatedUnixMs ||
+      if (!descriptor || !processInfo || !ledger.sameProcess(launches.get(descriptor)?.process,processInfo) || processInfo.pid !== receipt.pid || processInfo.createdUnixMs !== receipt.processCreatedUnixMs ||
           processInfo.path.toLowerCase() !== descriptor.executablePath.toLowerCase() ||
           sha(readRegular(descriptor.pluginPath)) !== descriptor.pluginSha256 ||
           sha(readRegular(descriptor.executablePath)) !== descriptor.executableSha256) fail("fixture_runner_evidence_process_changed");
@@ -346,21 +375,23 @@ function createExecutor(deps) {
     // This separate read verifies current files/processes; it proves the owned
     // snapshot operation at its native receipts, not a current-user capture.
     verifyResult(payload);
-    return { ok: true, schema: "ae-agent.native-fixture-readback.v1", evidenceId: payload.evidenceId,
+    const result={ ok: true, schema: "ae-agent.native-fixture-readback.v1", evidenceId: payload.evidenceId,
       authorization: payload.authorization, buildId: payload.buildId, fixtureKind: payload.fixtureKind,
       verification, sourceBefore: payload.nativeFixtureSnapshot.sourceBefore, sourceAfter: payload.nativeFixtureSnapshot.sourceAfter,
       baselinePath: payload.nativeFixtureSnapshot.baselinePath, baselineSha256: payload.nativeFixtureSnapshot.baselineSha256,
       outputs: payload.outputFiles, childProcesses: observed, observedAt: new Date().toISOString(),
       producer: "private_signed_fixture_cache", productionBackend: false, currentUserProjectMutation: false,
       mediaProof: "not_inspected", ameSubmission: "not_attempted" };
+    nativeReadbacks.set(payload.authorization.runId,JSON.parse(JSON.stringify(result)));
+    return result;
   }
   function quiescence() {
-    return { executing, pendingCount: launches.size, descriptorCount: descriptors.size,
+    return { executing, pendingCount: launches.size, descriptorCount: descriptors.size,pendingCleanupJobs:cleanupJobs.size,
       outstandingAttempts:ledger.outstanding(root),replayAllowed:false };
   }
   function attemptIdentity(stageId) {
     const d=descriptors.get(stageId), p=d && launches.get(d)?.process;
-    return d && p ? {descriptor:JSON.parse(JSON.stringify(d)),process:JSON.parse(JSON.stringify(p)),executing,replayAllowed:false} : null;
+    return d && p ? {descriptor:JSON.parse(JSON.stringify(d)),process:JSON.parse(JSON.stringify(p)),kernelIdentity:JSON.parse(JSON.stringify(launches.get(d).kernelIdentity || null)),executing,replayAllowed:false} : null;
   }
   function hasAttempt(stageId) {return descriptors.has(stageId) || privateChildren.has(stageId);}
   async function inspectAttempt(args) {
@@ -378,7 +409,21 @@ function createExecutor(deps) {
       verificationScope:child ? "current_private_issuer_and_durable_ledger" : "durable_ledger_only_private_key_unavailable",historicalOutcome:unknown ? "unknown" : "not_inferred",nativeExecutionProven:false,
       endpointInert:completed || bootstrapRefusal?.endpointInert===true,nativeAdmissionBlocked:!retired && !completed,processExited:retired,replayAllowed:false};
   }
-  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, inspectAttempt,quiescence,attemptIdentity,hasAttempt };
+  function cleanupSelector(runId){const job=cleanupJobs.get(runId),s=cleanupSelectors.get(runId);return job?.children.length===2 && s?{...s}:null;}
+  return { authorize, assertAuthorization, execute, verifyResult, inspectResult, inspectAttempt,quiescence,attemptIdentity,hasAttempt,flushCleanup,cleanupSelector };
+}
+function createCleanupReconciler({getSelector,flush,readIdle,refresh,getResult,validateAdoption,assertPolicy,now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),deadlineMs=5000}={}){
+  if([getSelector,flush,readIdle,refresh,getResult,validateAdoption,assertPolicy].some(fn=>typeof fn!=="function") || !Number.isInteger(deadlineMs) || deadlineMs<1 || deadlineMs>30000)fail("fixture_cleanup_reconciler_private_dependencies_required");
+  const active=new Set();
+  return Object.freeze({async resume(runId){if(active.has(runId))return {status:"cleanup_reconciliation_pending",replayAllowed:false};const s=getSelector(runId);if(!s)return {status:"no_full_cleanup_job",replayAllowed:false};if(!ledger.UUID.test(s.runId || "") || !ledger.UUID.test(s.requestId || "") || s.runId!==runId)fail("fixture_cleanup_private_selector_required");active.add(runId);
+    try{assertPolicy();const initial=await flush(runId);assertPolicy();if(initial?.status!=="children_closed_audit_pending")return initial;
+      const deadline=now()+deadlineMs;while(!await readIdle(s)){assertPolicy();if(now()>=deadline)return {status:"children_closed_panel_adoption_pending",replayAllowed:false};await sleep(50);}assertPolicy();
+      try{await refresh(deadlineMs);}catch(_){/* Read back the one submitted refresh. */}assertPolicy();
+      // One fixed trusted refresh; an unknown response is observed through this
+      // exact getResult. The consumed R1 close is never repeated.
+      const adopted=await getResult(s.requestId);assertPolicy();if(validateAdoption(s,adopted)!==true)return {status:"children_closed_panel_adoption_pending",replayAllowed:false};assertPolicy();return await flush(runId);
+    }finally{active.delete(runId);}
+  }});
 }
 
 const tool = { name: grant.TOOL_NAME, description: "Manual CEP-only native snapshot experiment on two server-owned empty AE children. Creates fixed test fixtures, captures current unsaved state, saves two independent variants and reopens them for read-back. Does not mutate the current user project, render, enqueue in AME, claim a production snapshot backend or replay unknown phases.",
@@ -389,4 +434,4 @@ const inspectTool = { name: INSPECT, description: "Read independent evidence for
   inputSchema: { type: "object", additionalProperties: false, required: ["evidenceId"], properties: { evidenceId: { type: "string", format: "uuid" } } },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false } };
 const inspectAttemptTool={name:INSPECT_ATTEMPT,description:"Read one durable fixture attempt and independently verify an expired signed bootstrap refusal using the current private issuer. Does not renew authority, replay a phase, terminate a process or infer the historical mutation outcome. Process retirement requires an audited exact held-handle exit proof.",inputSchema:{type:"object",additionalProperties:false,required:["stageId"],properties:{stageId:{type:"string",pattern:"^[a-f0-9]{32}$"}}},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:false,openWorldHint:false}};
-module.exports = { INSPECT,INSPECT_ATTEMPT,createExecutor, tool, inspectTool,inspectAttemptTool, buildArtifacts, writeOnce, readRegular,inspectProcess };
+module.exports = { INSPECT,INSPECT_ATTEMPT,createExecutor,createCleanupReconciler, tool, inspectTool,inspectAttemptTool, buildArtifacts, writeOnce, readRegular,inspectProcess };
