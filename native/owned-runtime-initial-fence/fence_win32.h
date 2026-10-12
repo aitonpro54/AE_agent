@@ -1,0 +1,109 @@
+#pragma once
+
+#ifndef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
+#error This prerequisite has no production factory or authority port.
+#endif
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace initial_fence {
+
+// Correlation/evidence only. There is no exported OS handle or issuer capability.
+struct Identity {
+    std::wstring volumeGuid;
+    std::wstring canonicalPath;
+    std::string volumeSerialHex;
+    std::string fileIdHex;
+};
+
+struct BindingProofStep {
+    std::string operation;
+    bool ok = false;
+    std::string code;
+    std::string fenceState;
+};
+
+struct Result {
+    bool ok = false;
+    bool terminal = false;
+    std::string code;
+    std::string fenceState = "CLOSED";
+    std::uint32_t win32Error = 0;
+    std::uint32_t ntStatus = 0;
+    bool hasRootIdentity = false;
+    bool hasLockIdentity = false;
+    Identity rootIdentity;
+    Identity lockIdentity;
+    std::string sessionRef;
+    // Test-only observations, never authority. Useful for pre-WRITE refusals.
+    std::uint64_t lockWriteOpenAttempts = 0;
+    std::uint64_t publishedAcquisitions = 0;
+    std::vector<BindingProofStep> bindingProof;
+};
+
+class Factory;
+
+class RootLease final {
+public:
+    RootLease();
+    ~RootLease();
+    RootLease(RootLease&&) noexcept;
+    RootLease& operator=(RootLease&&) noexcept;
+    RootLease(const RootLease&) = delete;
+    RootLease& operator=(const RootLease&) = delete;
+private:
+    struct Data;
+    std::unique_ptr<Data> data_;
+    friend class Factory;
+};
+
+class FenceLease final {
+public:
+    FenceLease();
+    ~FenceLease();
+    FenceLease(FenceLease&&) noexcept;
+    FenceLease& operator=(FenceLease&&) noexcept;
+    FenceLease(const FenceLease&) = delete;
+    FenceLease& operator=(const FenceLease&) = delete;
+private:
+    struct Data;
+    std::unique_ptr<Data> data_;
+    friend class Factory;
+};
+
+class Factory final {
+public:
+    ~Factory();
+    Factory(const Factory&) = delete;
+    Factory& operator=(const Factory&) = delete;
+    // The sole test entry: strings select immutable slots/pins in a build header.
+    // Missing header/pins cannot be supplied by argv, ENV, JSON, MCP or HTTP.
+    static std::unique_ptr<Factory> CreateApprovedTestFactory(
+        const std::wstring& rootSpelling, const std::string& instance, Result& result);
+    Result OpenRoot(RootLease& root, FenceLease& fence);
+    Result Observe(RootLease& root, FenceLease& fence);
+    Result TryAcquire(RootLease& root, FenceLease& fence);
+    Result LiveCheck(RootLease& root, FenceLease& fence, const std::string& ref);
+    Result Release(RootLease& root, FenceLease& fence, const std::string& ref);
+    Result Dispose(RootLease& root, FenceLease& fence);
+    bool CrashProofEnabled() const noexcept;
+    bool SuppressFirstAcquireAck() const noexcept;
+    bool BindingProofEnabled() const noexcept;
+    Result RunBindingProof(RootLease& root, FenceLease& fence);
+private:
+    struct RootConfig;
+    struct Data;
+    explicit Factory(std::unique_ptr<RootConfig> config);
+    std::unique_ptr<Data> data_;
+    Result Validate(RootLease& root, FenceLease& fence, bool checkFence);
+    Result Fail(RootLease& root, FenceLease& fence, const Result& failure);
+    Result Describe(RootLease& root, FenceLease& fence) const;
+    Result CheckBinding(RootLease& root, FenceLease& fence) const;
+};
+
+std::string JsonResult(const std::string& operation, const Result& result);
+
+} // namespace initial_fence

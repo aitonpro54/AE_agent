@@ -78,6 +78,11 @@ User EPR DXV3_titles_NQ и FHD_HQ_alfa_nosound имеют DXVTYPE 1/3 соотв
 Format DXV3, Compression выбирает quality и alpha отдельно. Это подтверждает смысл
 user request, но не mapping DXVTYPE enum и не сохранённый preset/current AME state.
 Exact два варианта, actual project/media/queue и полученные видео не проверены.
+Bounded `ae_scout` filesystem inventory подтвердил `DXV3MediaCoreExport.prm` и
+import/AEX modules в `C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\Resolume DXV`.
+Export PRM version metadata отсутствует; AEX version 1,0,0,1. File hashes сохранены
+ignored `dxv-module-evidence.json` рядом с preset evidence. Adjacent ffmpeg.manifest
+не задаёт DXVTYPE mapping. Plugin loading и actual AME export settings не проверялись.
 
 ## Validation
 

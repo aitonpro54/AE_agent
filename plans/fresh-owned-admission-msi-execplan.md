@@ -1,6 +1,6 @@
 # План: первый fresh OWNED admission нового компьютера и чата
 
-Статус: **ISOLATED MODEL GO / NATIVE PREREQUISITES IN PROGRESS / LIVE INTEGRATION BLOCKED**.
+Статус: **ISOLATED MODEL GO / NATIVE SOURCE GO, PARTIAL PROOF / LIVE INTEGRATION BLOCKED**.
 13 октября M1–M8 закрыты в изолированной модели, self/independent bounded review — GO.
 Live activation ещё не принята. Следующая работа — Windows physical-root/fence prerequisite.
 Пользователь отменил hard handoff: продолжать в текущем чате milestone за milestone.
@@ -15,6 +15,12 @@ Live activation ещё не принята. Следующая работа — 
 - Native specification REVISE закрыт: pin ожидаемых IDs до lock, child-bound refs и
   безопасный cleanup. Independent spec GO получен; `ae_specialist` реализует только
   новые core/test helper/driver. Parent — sole native proof controller после source review.
+- Native core findings закрыты по source: directory sharing и active lease binding.
+  Whole driver source GO; PS shape/null compatibility исправлена и BuildOnly PASS.
+  CLI EOF, parking и symlink BOOLEAN ABI исправлены; independent source GO получен.
+  Final normal matrix77 PASS/0FAIL/3UNVERIFIED, 101 children exact CLOSED; final barrier
+  PASS/exit0. SUBST safe setup, symlink privilege1314 и ambient unsupported query
+  остаются gaps. Full native acceptance отсутствует, production wiring не выполнен.
 - [Durability/journal prerequisite](../docs/owned-runtime-initial-durability-contract.md):
   `ae_architect` подготовил минимальный контракт, independent `ae_reviewer` дал spec GO
   после исправлений pending-append/floor и GENESIS/takeover guards. Implementation ждёт
@@ -152,6 +158,12 @@ Live activation ещё не принята. Следующая работа — 
   Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- Test-only native source/partial Windows proof фиксируются отдельным reviewable commit;
+  три UNVERIFIED сохраняются без ослабления mandatory acceptance. Durability implementation
+  ждёт полной fence приёмки; genuine host issuer остаётся внешним integration gap.
+- Parking original driver descendants допускается только по reviewed negative pre-open
+  rename scope; target/parent continuously held, original IDs/header не обновляются,
+  rehold требует те же IDs. Core sharing и exact ERROR32 held-rename proofs сохраняются.
 - Реальный temporary SUBST setup не имеет no-replace primitive в DefineDosDeviceW;
   race с concurrent foreign mapping нельзя устранить check-before-create. Unsafe effect
   не выполняется; actual SUBST proof остаётся UNVERIFIED, partial matrix не full acceptance.
@@ -182,6 +194,34 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Final normal `fence-3079c70bbf424ff7bc5d10d4a68a3ee6`: 77PASS/0FAIL/3UNVERIFIED,
+  driver fault отсутствует; all101 original children exact CLOSED, termination0.
+  Parking9/ownMoves14, original IDs/restore/rehold/root replacement+cleanup PASS.
+  UNVERIFIED: SUBST(no effect), symlink API error1314(no child), ambient unsupported query.
+- Final independent read-back verdict: SOURCE GO / PARTIAL NATIVE PROOF, findings0;
+  source/build/header/binary hashes, unique children/exits, manifests и sentinels сверены.
+  productionAuthority=false, issuer unavailable, admission=false. Full acceptance закрыт.
+- Final barrier `fence-d87b1c72d0f64a4b9e99c5a48c8d6733`: PASS, timeout4040ms,
+  late acquired ACK1open/1publish, counters1/1/41 unchanged, same-channel EOF/exact exit0.
+  Parent source/executable hashes совпали с обоими receipts; PS SHA654dfff8… frozen.
+- Parking candidate `2b3e3ac4…`: independent source GO. Fresh normal
+  `fence-2d5f6b05aab44410a2e31e5a35269c8e`: 70PASS/1FAIL/9UNVERIFIED;
+  symlink assertion FAIL, acquire refused relative_open_failed/error2, publish0.
+  All98 original children exact CLOSED, termination0; actual symlink absent.
+- Final EOF barrier `fence-9d511e659ff84009b4bc37587dfd2c72`: PASS, timeout4043ms,
+  late ACK1/1, counters1 child/1 channel/41 boundaries unchanged, EOF/exact exit0.
+- Normal `fence-39599020db484b6ca05c7520aad7b3dc`: 51PASS/0FAIL/29UNVERIFIED,
+  stopped fixture MoveFileEx error5; all82 children exact CLOSED без termination.
+  Normal EOF и partial-command EOF PASS; source/body receipts сохранены, replay отсутствует.
+- Новый BuildOnly `fence-9df813da3a8e4b8e87b4f562902d3422`: build exit0, v14314.44,
+  /W4 /WX, pins/source/binary/toolchain receipts; children0, native cases79 UNVERIFIED.
+- Barrier `fence-56fba09f847742489904f7d7eb08d37f`: FAIL exit2 на normal EOF; timeout4063ms,
+  late acquired ACK open/publication1, counters unchanged, original exact child CLOSED,
+  termination отсутствует. Receipt сохранён; новый acquire не отправлялся.
+- Native first BuildOnly: exit1 до compiler/children, diagnostic `Argument types do not match`;
+  `fence-cb4384edaa984b7cac999f182662bd70` сохранён. Parent passive child inventory пуст.
+  Windows PowerShell запускается с process-only `-ExecutionPolicy RemoteSigned`:
+  initial all scopes Undefined, default File invocation refused до выполнения.
 - Durability spec independent GO на SHA84c91f65e4d012b78321baf5d48563dc7344c11328dae1a974ca7d5cacf3b472;
   два P1/P2 закрыты, driver-death/vanished-tail/first-epoch/reacquire cases добавлены.
   Это doc-only proof; implementation/native/power-loss/production admission не приняты.

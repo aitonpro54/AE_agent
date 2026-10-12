@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{15C20C92-5111-478F-8B14-5666E1A8F395}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType><PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries><CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <TargetName>FencePrerequisiteProof</TargetName>
+    <OutDir>$(FenceProofOutputDir)\bin\</OutDir><IntDir>$(FenceProofOutputDir)\obj\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError>
+      <LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY=1;WIN32_LEAN_AND_MEAN;NOMINMAX;UNICODE;_UNICODE;_WIN32_WINNT=0x0A00;NTDDI_VERSION=0x0A000007;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(FenceProofPinsDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary><ExceptionHandling>Sync</ExceptionHandling>
+    </ClCompile>
+    <Link><SubSystem>Console</SubSystem><TargetMachine>MachineX64</TargetMachine></Link>
+  </ItemDefinitionGroup>
+  <Target Name="RequireIsolatedTestPins" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only Release/x64 prerequisite proof is supported." />
+    <Error Condition="'$(FenceProofOutputDir)' == '' Or '$(FenceProofPinsDir)' == ''" Text="Explicit isolated proof output and independently generated pins are mandatory." />
+    <Error Condition="!Exists('$(FenceProofPinsDir)\fence_expected_pins.h')" Text="Missing immutable original driver-handle pins; no fallback header." />
+  </Target>
+  <ItemGroup><ClCompile Include="fence_win32.cpp" /><ClCompile Include="fence_proof_main.cpp" /><ClInclude Include="fence_win32.h" /></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
