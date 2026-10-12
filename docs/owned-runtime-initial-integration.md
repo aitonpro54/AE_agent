@@ -73,6 +73,10 @@ SHA-256 e55edfd680a6f4bad222389ffcf5b6d08a18ff4afd2a15a27f944bdcf8856754.
 CognacC.ttf найден в user Fonts; это не доказательство actual AE font binding.
 User EPR DXV3_titles_NQ и FHD_HQ_alfa_nosound имеют DXVTYPE 1/3 соответственно,
 1920×1080, video=true/audio=false. Enum quality/alpha ещё не удостоверены через AME.
+13 октября parent при двух занятых helper slots проверил official
+[Resolume rendering guide](https://resolume.com/support/en/rendering-to-dxv): для AME
+Format DXV3, Compression выбирает quality и alpha отдельно. Это подтверждает смысл
+user request, но не mapping DXVTYPE enum и не сохранённый preset/current AME state.
 Exact два варианта, actual project/media/queue и полученные видео не проверены.
 
 ## Validation

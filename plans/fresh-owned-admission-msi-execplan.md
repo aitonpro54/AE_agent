@@ -15,8 +15,11 @@ Live activation ещё не принята. Следующая работа — 
 - Native specification REVISE закрыт: pin ожидаемых IDs до lock, child-bound refs и
   безопасный cleanup. Independent spec GO получен; `ae_specialist` реализует только
   новые core/test helper/driver. Parent — sole native proof controller после source review.
-- `ae_architect` готовит отдельный durability/journal prerequisite proposal, без исполнения;
-  ownership непересекающийся, два helpers. Daemon/AE/AME не запускались.
+- [Durability/journal prerequisite](../docs/owned-runtime-initial-durability-contract.md):
+  `ae_architect` подготовил минимальный контракт, independent `ae_reviewer` дал spec GO
+  после исправлений pending-append/floor и GENESIS/takeover guards. Implementation ждёт
+  native fence acceptance и reviewed same-process facade; все storage proofs UNVERIFIED.
+  Ownership непересекающийся, максимум два helpers. Daemon/AE/AME не запускались.
 - 13 октября: создана активная долгосрочная цель текущего чата; фактические branch/HEAD
   `codex/laptop-dev-20261012` / `910ba0c` совпали с поручением. Исправление M1–M8
   выполняет `ae_specialist` (writer четырёх isolated model/contract файлов); `ae_architect`
@@ -149,6 +152,11 @@ Live activation ещё не принята. Следующая работа — 
   Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- Реальный temporary SUBST setup не имеет no-replace primitive в DefineDosDeviceW;
+  race с concurrent foreign mapping нельзя устранить check-before-create. Unsafe effect
+  не выполняется; actual SUBST proof остаётся UNVERIFIED, partial matrix не full acceptance.
+- Durability pending append закрепляется private driver до FILE_CREATE; vanished/lost-ACK
+  tail не освобождает key. Continuity после driver death и power-loss survival не доказаны.
 - [block: Windows identity/fence prerequisite] [executor: ae_specialist / configured XHigh]
   [reason: сложные Win32 safety/handle/race interactions] [ownership: новые native core/helper/driver].
   Parent проверяет source handback и один запускает build/proofs/Git; свой scratch сохраняет,
@@ -174,6 +182,9 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Durability spec independent GO на SHA84c91f65e4d012b78321baf5d48563dc7344c11328dae1a974ca7d5cacf3b472;
+  два P1/P2 закрыты, driver-death/vanished-tail/first-epoch/reacquire cases добавлены.
+  Это doc-only proof; implementation/native/power-loss/production admission не приняты.
 - Native spec independent GO на SHA e118da7cfbb25f59abfe6f471fc29cf304bdfc53059f1368eab55478adb0a6c4;
   expected-ID timing, foreign refs, cleanup/query mapping/matrix проверены. Native cases UNVERIFIED.
 - Final model: focused smoke150, independent queued-proof counterexample/serial positives/
