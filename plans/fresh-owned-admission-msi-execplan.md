@@ -11,9 +11,12 @@ Live activation ещё не принята. Следующая работа — 
 ## Progress
 - M1–M8: final source frozen, independent `ae_reviewer` GO на exact hashes из review;
   smoke150 и повтор parent PASS. Реализацию вёл `ae_specialist`, Git/планы — parent.
-- Native specification получила REVISE: pin ожидаемых physical IDs до открытия lock,
-  child-bound lease refs и безопасный cleanup traversal. `ae_architect` уточняет контракт;
-  implementation ждёт повторного bounded GO, daemon/AE/AME не запускались.
+- M1–M8 committed: `d7e8905a5294d7d472f6f2991b1160ac82253aa6`.
+- Native specification REVISE закрыт: pin ожидаемых IDs до lock, child-bound refs и
+  безопасный cleanup. Independent spec GO получен; `ae_specialist` реализует только
+  новые core/test helper/driver. Parent — sole native proof controller после source review.
+- `ae_architect` готовит отдельный durability/journal prerequisite proposal, без исполнения;
+  ownership непересекающийся, два helpers. Daemon/AE/AME не запускались.
 - 13 октября: создана активная долгосрочная цель текущего чата; фактические branch/HEAD
   `codex/laptop-dev-20261012` / `910ba0c` совпали с поручением. Исправление M1–M8
   выполняет `ae_specialist` (writer четырёх isolated model/contract файлов); `ae_architect`
@@ -100,8 +103,9 @@ Live activation ещё не принята. Следующая работа — 
   После GO M1–M8 следующий независимый этап — native physical-root/held-fence prerequisite
   на временных каталогах; затем durable storage/namespace/first-daemon lifecycle.
 - [Native fence specification](../docs/owned-runtime-initial-fence-contract.md) подготовлена
-  `ae_architect`; independent `ae_reviewer` проверяет только этот документ. Implementation
-  и реальные Windows proofs ждут GO модели и спецификации; это не permission на daemon/AE.
+  `ae_architect`; independent `ae_reviewer` дал spec GO после двух адресных исправлений.
+  Implementation начата после GO модели/спецификации. Windows proofs ещё UNVERIFIED;
+  это не permission на daemon/AE.
 - A: trusted transport/broker удостоверяет chat principal и immutable dispatch binding.
   Это требует интеграции с настоящим источником identity; доступность ещё не доказана.
 - B: private issuer создаёт exclusive session capability и atomic controller handover,
@@ -145,6 +149,10 @@ Live activation ещё не принята. Следующая работа — 
   Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- [block: Windows identity/fence prerequisite] [executor: ae_specialist / configured XHigh]
+  [reason: сложные Win32 safety/handle/race interactions] [ownership: новые native core/helper/driver].
+  Parent проверяет source handback и один запускает build/proofs/Git; свой scratch сохраняет,
+  path-based recursive cleanup отсутствует. Existing native/product targets не меняются.
 - Final journal grammar закрепляет каждый post-consumption caller guard за текущим
   unmatched command; новые enqueue/dispatch/adopt закрыты до completion. Factual completion
   и independent lifecycle сохраняются. Один offline GO не снимает integration blockers.
@@ -166,6 +174,8 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Native spec independent GO на SHA e118da7cfbb25f59abfe6f471fc29cf304bdfc53059f1368eab55478adb0a6c4;
+  expected-ID timing, foreign refs, cleanup/query mapping/matrix проверены. Native cases UNVERIFIED.
 - Final model: focused smoke150, independent queued-proof counterexample/serial positives/
   pending refusal/completion/teardown, syntax3/rules/diff — PASS. Parent smoke150/hashes PASS.
   Exact hashes и границы GO: [source review](fresh-owned-admission-msi-review-20261012.md).
