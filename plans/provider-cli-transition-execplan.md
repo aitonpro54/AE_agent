@@ -90,7 +90,7 @@ baseline updates при каждой активной правке; UI-only hide
 без удаления кода. После этого серверная freeze policy вводится отдельным commit.
 При недоступной выбранной AntiGravity-задаче возвращать явную ошибку, не исполнять
 её через Codex или API. Отдельно сохраняется проектный маршрут замены *исполнителя
-code-блока* после доказанной недоступности Flash и завершения прежнего процесса;
+code-блока* на Sol/high после неудачи Flash и сверки завершения процесса/эффектов;
 это не provider fallback продукта.
 
 ## Инварианты всех блоков
@@ -143,8 +143,8 @@ Auth/cancel/schema пробелы явно обозначены. Родител�
 
 ### 2. Защитить автономную сессию до удаления Hardcore
 
-**Исполнитель:** Flash/high через профиль `ae-agent`; `ae_specialist` только для
-локального инженерного блокера после двух содержательных исправлений критерия.
+**Исполнитель:** `ae_specialist` (Sol/xhigh) для security/safety/authority блока;
+при ясной границе не ждать двух неудачных исправлений.
 **Ownership:** целевые fixtures в `scripts/{autonomous-session,autonomous-mcp,
 persistent-autonomy-bridge,autonomy-revocation,panel-heartbeat,run-boundary,
 hardcore-authority}-smoke.js`, отдельно `scripts/smoke-test.js`,
@@ -162,7 +162,8 @@ run evidence и reconciliation. Успехи и отказы не зависят
 
 ### 3. Серверная заморозка и каталог двух активных CLI
 
-**Исполнитель:** Flash/high, один writer.
+**Исполнитель:** `ae_implementer` (Sol/high), один writer; XHigh по сложности
+взаимодействий компонентов или safety/authority.
 **Ownership:** `mcp-server/ai-agents.js`, provider входы в `bridge-daemon.js`,
 целевые provider preference/secret-store handlers; `scripts/provider-contract-smoke.js`,
 изолированные active/frozen fixtures и нужный package routing.
@@ -180,7 +181,8 @@ calls и неизменность secrets/preferences; legacy API success fixtur
 
 ### 4. Настоящий task transport AntiGravity CLI
 
-**Исполнитель:** Flash/high; архитектурный пробел — `ae_architect`, узкий —
+**Исполнитель:** `ae_implementer` (Sol/high); архитектурный пробел — `ae_architect`,
+сложное взаимодействие или safety/authority —
 `ae_specialist`. Не привлекать Ultra для каждой небольшой правки.
 **Ownership:** новый узкий server module (имя выбрать по текущим patterns),
 seam в `mcp-server/{ai-agents,bridge-daemon}.js`, task contract fixtures.
@@ -204,7 +206,9 @@ Rules/syntax/diff, local adapter commit.
 
 ### 5. Две вкладки и совместимый CEP state
 
-**Исполнитель:** Flash/high; родитель принимает UI по DOM snapshots, live пока нет.
+**Исполнитель:** `ae_implementer` (Sol/high); родитель принимает UI по DOM snapshots,
+live пока нет. Flash configured High — только ограниченные правки с ясной приёмкой
+в категориях с подтверждённой пользой.
 **Ownership:** `cep-panel/{index.html,panel.js}` и existing style tokens при нужде,
 offline panel/state fixtures, provider self-tests, targeted dev-request routing.
 
@@ -221,7 +225,7 @@ seams; rules/syntax/diff. Local UI commit.
 
 ### 6. Удалить Hardcore backend и dedicated artifacts
 
-**Исполнитель:** Flash/high по принятой dependency map; `ae_operator` для последующей
+**Исполнитель:** `ae_implementer` (Sol/high) по принятой dependency map; `ae_operator` для последующей
 ясной docs/test-routing правки. Writers идут последовательно.
 **Ownership:** Hardcore функции/routes/tool declarations/flags в `bridge-daemon.js`,
 MCP adapter/schema по фактической карте; `recipes/agent-hardcore-autopilot.md`,
@@ -306,8 +310,9 @@ provider fallback. Последний checkpoint и порядок возвра�
 токенов, окна или compaction. После compaction сверить план, HEAD, процессы и
 незавершённый ownership и продолжить ту же работу. При блокере остановить только
 зависимую операцию; не обходить отказ другой моделью, transport или GUI.
-Два исправления критерия Flash → specialist для локального либо architect для
-системного пробела. Astra только после содержательной неудачи Sol/ultra с
+После неудачи Flash сверить процесс/эффекты; допустим Sol/high в прежнем scope.
+Нерешённая инженерная сложность Sol/high → XHigh, архитектура/системные границы
+→ Ultra. Не ждать двух попыток при ясном safety/system blocker. Astra только после содержательной неудачи Sol/ultra с
 перечнем проверенных гипотез и оставшимся gap; auth/quota не лечатся escalation.
 
 Progress: все блоки 1–9 pending. Decision Log: task adapter существующего AGY bridge,

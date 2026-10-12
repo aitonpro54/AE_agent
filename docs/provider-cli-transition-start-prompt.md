@@ -47,12 +47,17 @@ run evidence/reconciliation/idempotency. Известный synthetic Hardcore f
 release-3.3.0, не назначай новую версию и не перемещай старые refs. Добавляй в Git
 только точные scope-файлы. Не выполняй push, PR, merge или release.
 
-Используй соответствующих исполнителей, включая реальный Flash через существующий
-agy-bridge с config/agy-bridge.json и profile ae-agent. Прочитай ae-task-routing,
+Используй соответствующих scope исполнителей: основной — Sol/high; Flash только
+для ограниченных правок в подтверждённых категориях через существующий agy-bridge
+с config/agy-bridge.json и profile ae-agent. Прочитай ae-task-routing,
 cep-panel-controls и antigravity-cli + references/ae-agent.md перед их применением.
 Luna/high ae_scout — bounded evidence; ae_operator — понятные правки/сводки/checks;
-Flash/high — средние implementation blocks; ae_specialist Sol/xhigh — локальный
-блокер после двух исправлений критерия; ae_architect Sol/ultra — системный пробел;
+ae_implementer Sol/high — scoped реализация, отладка и содержательная техническая
+валидация; Flash/configured High — ограниченные правки с ясной приёмкой в категориях
+с подтверждённой пользой, без повторного разрешения; ae_specialist Sol/xhigh — сложные
+взаимодействия компонентов, safety/security/authority и устойчивые дефекты;
+ae_architect Sol/ultra — архитектура и системные границы. Не ждать двух неудачных
+исправлений при ясном safety/system blocker;
 ae_reviewer Sol/high — ограниченное review блока 7. Astra только после доказанной
 содержательной неудачи Sol/ultra. Terra/paid API/скрытая подмена запрещены.
 Максимум два активных helpers вместе с AGY и помощником Ultra, один writer на
@@ -68,8 +73,10 @@ actual files и read-back; не повторяй mutation и не передав
 AGY status не является cancel. Не выдумывай cancel CLI или доказательство остановки
 descendants. Выбранная пользователем AntiGravity provider-задача при недоступности
 AGY явно blocked/failed и не переходит в Codex/API. Разрешённое проектом замещение
-исполнителя code-блока допустимо только после проверки недоступности/завершения
-Flash в том же bounded scope с записанной причиной; это не product fallback.
+исполнителя code-блока на Sol/high допустимо после неудачи Flash и сверки
+завершения процесса/эффектов в том же bounded scope с записанной причиной; это не
+product fallback. Нерешённая инженерная сложность Sol/high — XHigh, системные
+границы — Ultra; auth/quota/network/permissions диагностируются отдельно.
 
 Не меняй frozen intake/importer/supervisors или их baseline manifest, не запускай
 Full Intaker. Не редактируй sibling agy-bridge/global config/grants, auth/secrets,
