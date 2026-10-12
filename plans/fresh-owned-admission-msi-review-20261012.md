@@ -119,3 +119,98 @@ Source review подтвердило R1 и указанные boundary shapes. R
 Documentation validation: `npm.cmd run check:rules` и `git diff --check` — PASS.
 Live tests не запускались. Следующий шаг — один offline контрактный блок из пункта 1,
 с конкретными interface/схемами и доказательствами вместо ещё одного внешнего Pro запроса.
+
+## Follow-up: offline-контракт
+Исходный REVISE выше сохраняется как результат проверки прежнего proposal.
+[Новый контракт](../docs/owned-runtime-initial-contract.md) прошёл architect и независимый
+bounded review: **GO для isolated offline model**, новых P1/P2 в спецификации нет.
+
+- R1: prelaunch lifecycle grant и teardown без read lease; ACK не является exit proof.
+- R2: private verified caller port, phase/request binding и fail-closed unavailable.
+  Настоящий host issuer текущего ingress этим не создан и остаётся blocker интеграции.
+- R3: два exact reads с пустыми args, bootstrap ticket до adoption, immutable completion;
+  execution=false, без boolean OR, annotations/prefixes/Connect.
+- R4: stable physical lineage, consumption до effect, fence/CAS и phase namespace matrix;
+  source/config/chat/UUID не дают повторить initial launch или consumed shutdown.
+
+Это принятие спецификации, не source acceptance или Windows/AE evidence. Следующий
+review проверяет исполняемую модель и adversarial tests; production wiring отсутствует.
+
+## Первое source review isolated model — REVISE
+Root и независимый reviewer воспроизвели восемь контрпримеров на memory fixtures.
+Production side effects/default authority не найдены; smoke48 не покрывал эти случаи.
+
+| ID | Priority | Пробел | Требуемое исправление |
+| --- | --- | --- | --- |
+| M1 | P1 | launchKey зависит от canonical spelling, не physicalRootId | Physical lineage key; alias regression |
+| M2 | P1 | После launch_unknown нельзя связать поздний original witness | Только observational binding, без launch/admission/rewrite UNKNOWN |
+| M3 | P1 | Lifecycle witness требует panel actor | Null actor разрешён для teardown; reads закрыты |
+| M4 | P1 | Новый fence owner завершает target с old controller grant | Same-controller check; completion/read-back отдельно |
+| M5 | P2 | reserve/adopt игнорируют dispatch revocationEpoch | Phase consistency до consumption/lease |
+| M6 | P2 | Drift после dispatch consumption не закрывает modeled effect | Fresh final guards; consumed UNKNOWN, effect0 |
+| M7 | P2 | Hash-valid impossible exit journal принимается | Closed op/outcome и transition/dependency grammar |
+| M8 | P2 | abortUnadmitted после AE dispatch | Предикат до любого dispatch; позднее только shutdown |
+
+M1/M2/M4/M8 root проверил отдельными минимальными repro. Остальные подтверждены
+независимым reviewer; исходники также просмотрены root. Исправления и targeted regressions
+не приняты. 13 октября пользователь отменил правило hard handoff; исправления продолжаются
+в текущем чате. До повторного review и smoke milestone не принят.
+
+## Повторная реализация и bounded review — 13 октября
+
+`ae_specialist` исправил M1–M8; parent сверил сохранённые файлы после provider403:
+focused offline smoke110 PASS. Ошибка доступа не была эскалацией reasoning; неизвестных
+live effects не было. Это промежуточный результат до final GO.
+
+Self/independent source review потребовали дополнительные адресные исправления:
+
+| Finding | Scope | Воспроизведённый пробел | Исправление до GO |
+| --- | --- | --- | --- |
+| M7 runtime link | parent, подтверждён автором | Coherent permit/events с чужим runtime/actor digest | Exact pinned initial actor и witness links, adversarial reconstruction |
+| M4 stop freshness | self-review автора | Handover после stop_reserve даёт modeled stop до отказа ACK | Fresh lifecycle frame/guards после consumption, UNKNOWN effect0 |
+| M7 read eligibility | независимый ae_reviewer | Hash-valid enqueue при null actor/disconnected либо без capability | Connected non-null witness и exact authorization capability в journal grammar |
+| Reserve freshness | независимый ae_reviewer | Expiry/partial inventory после caller_dispatch игнорируются old frame | Fresh clock/fence/inventory/caller guards до launch consumption |
+
+Source snapshot до последних исправлений сохранён только ignored:
+`.codex-runtime/initial-owned-longrun-20261013/pre-stop-review-fix/`.
+Reviewer воспроизводил контрпримеры на этом snapshot; writer получил source после
+явной передачи. Final review должен сверить окончательные байты, не старый smoke110.
+Reviewer: node--check3/rules/diff PASS на промежуточном snapshot; production/live proof=false.
+
+Итог независимого `ae_reviewer` для этого snapshot: **REVISE**. Дополнительные M7
+контрпримеры: dispatch после expiry permit/foreign clock boot; adopt без READ capability
+или без своих caller phases; второй dispatch переиспользует caller evidence первого
+read с тем же requestHash. Также adopt возвращал ACTIVE уже после expiry, используя
+старый clock frame. Исправления должны связывать права, время/boot и отдельные phase
+proofs с соответствующей операцией; independent lifecycle/completion после read expiry
+остаются разрешены. Source review не подтверждает actual process effects: reserve/register
+здесь только modeled candidate/observation, а не native launch.
+
+Candidate smoke146 прошёл повторное independent review остальных исправлений, но
+остался один M7 P2, найденный parent и подтверждённый reviewer: два заранее queued
+одинаковых reads позволяют journal второго dispatch взять post-consumption final
+caller proof первого. Source146 **REVISE**, не GO. Узкий финальный scope — explicit
+finalguard consumption для активного dispatched permit и отсутствие нового enqueue/
+dispatch/adopt при unmatched dispatch, с сохранением factual completion/drain.
+
+## Финальное source review — GO, 13 октября
+
+`ae_specialist` закрыл queued-proof reuse, source/doc заморожены. Независимый
+`ae_reviewer` дал **GO для isolated offline model**: открытых P1/P2 M1–M8 в bounded
+scope нет. Проверены прежний queued-two counterexample (отказ), genuine serial two
+queued reads, pending refusal, factual completion и teardown без живого caller.
+
+Focused smoke150, syntax3, rules и diff-check — PASS; parent повторил smoke150 и
+сверил exact hashes. GO относится к этим bytes:
+
+| Файл | SHA256 |
+| --- | --- |
+| mcp-server/owned-runtime-initial-contract.js | E5D07972F2E6EE43AF610B3C20953BAC84FEB22565B7BAD2AE84B59FDF7197FA |
+| mcp-server/owned-runtime-initial-model.js | C4788250D545992B80C047F7908874AFE0F4167B8599291B8FC5D9C0E07B5D94 |
+| scripts/owned-runtime-initial-contract-smoke.js | 256A278160F79988FB3D148921BDFF1E067BBADA972C44E5094868C3C965AC1F |
+| docs/owned-runtime-initial-contract.md | 9C3271F142B0AAB22B35ED209F2EE4966E576C3361891CEB93178376582F9048 |
+
+`productionAuthority:false`, `liveProof:false`. Genuine host issuer, Windows fence/
+durability, held-process lifecycle и actual AE/project/AME acceptance не подтверждены.
+Следующий независимый этап — reviewed native physical-root/fence prerequisite;
+runtime modules, historical authority и frozen intake в этом этапе не менялись.

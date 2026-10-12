@@ -1,12 +1,28 @@
 # План: первый fresh OWNED admission нового компьютера и чата
 
-Статус: **PROPOSAL REVISED / SELF REVIEW COMPLETE / IMPLEMENTATION BLOCKED BY DESIGN GAPS**.
-Реализация и live activation ещё не приняты.
+Статус: **ISOLATED MODEL GO / NATIVE PREREQUISITES IN PROGRESS / LIVE INTEGRATION BLOCKED**.
+13 октября M1–M8 закрыты в изолированной модели, self/independent bounded review — GO.
+Live activation ещё не принята. Следующая работа — Windows physical-root/fence prerequisite.
+Пользователь отменил hard handoff: продолжать в текущем чате milestone за milestone.
 По поручению пользователя от 12 октября внешний Pro заменён ревью текущего агента.
 Вердикт исходному proposal — **REVISE**: [findings и revised scope](fresh-owned-admission-msi-review-20261012.md).
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- M1–M8: final source frozen, independent `ae_reviewer` GO на exact hashes из review;
+  smoke150 и повтор parent PASS. Реализацию вёл `ae_specialist`, Git/планы — parent.
+- Native specification получила REVISE: pin ожидаемых physical IDs до открытия lock,
+  child-bound lease refs и безопасный cleanup traversal. `ae_architect` уточняет контракт;
+  implementation ждёт повторного bounded GO, daemon/AE/AME не запускались.
+- 13 октября: создана активная долгосрочная цель текущего чата; фактические branch/HEAD
+  `codex/laptop-dev-20261012` / `910ba0c` совпали с поручением. Исправление M1–M8
+  выполняет `ae_specialist` (writer четырёх isolated model/contract файлов); `ae_architect`
+  независимо исследует genuine host issuer/interfaces. Parent — sole Git/runtime/live controller.
+- MCP status текущего MSI: `owned_registration_absent`, owned=false, replayAllowed=false.
+  Каталог предоставляет только local owned/usage tools; search_solutions/project reads отсутствуют.
+  Daemon не запускался. AE/AME процессы наблюдались, это не native/project/queue proof.
+- Пользователь уточнил финальный export: **DXV, alpha, High**. Два конкретных варианта
+  должны быть установлены по фактическому AEP/поручению; preset ещё требует проверки.
 - На MSI восстановлены checkout, CEP, assets, checkpoint, SDK и scoped skills/roles.
 - Проверены все файлы пакета, snapshot parent, bundles/refs, raw WIP6 и восстановленные bytes.
 - Старый MSI checkout и пять неопубликованных commits сохранены вне активного пути.
@@ -17,6 +33,9 @@
 - Project-local MCP содержит разные fresh credentials; global AE-дубликат удалён.
 - `AE_DAEMON_AUTO_START=0`. Историческая authority, grants и очереди не активированы.
 - Offline восстановление проверено; live AE/project read и admission **не проверены**.
+- [Offline-контракт](../docs/owned-runtime-initial-contract.md) фиксирует issuer boundary,
+  точные read capabilities, independent teardown, stable lineage/fence и phase inventory.
+  Architect и независимый reviewer дали GO только для модели, без production authority.
 
 ## Проверенный пробел baseline
 - `mcp-server/owned-runtime-supervisor.js`: first ensure допускает launch/register,
@@ -50,7 +69,7 @@
    Сначала зафиксировать threat model и доказательство issuer interface. Exclusive
    controller session нельзя молча назвать удостоверенным чатом; это отдельное решение.
 6. Разрешить при closed startup только reviewed bootstrap observation/control path.
-   Установить allowlist reads/Connect, их issuer и noReplay до реализации; избежать
+   Установить exact allowlist reads, их issuer и noReplay до реализации; избежать
    circular dependency trusted control/adoption/cutover. Existing classification уже
    допускает observation/completion, GET/poll и read-only typed reads при closed admission;
    это не write entitlement или подтверждение их live доступности на MSI.
@@ -74,14 +93,24 @@
     не поддержаны и не приняты. Read-only lease не становится универсальным write lease.
 
 ## Варианты issuer и открытые blockers
+- Bounded host/SDK/ingress evidence 13 октября: [интеграционные границы MSI](../docs/owned-runtime-initial-integration.md).
+  Installed Windows upstream attestation не связывает chat/challenge/request и не даёт
+  нужного verifier. Внутренние dynamic app tools знают thread/call identity, но доступный
+  trusted registration/verifier port для stdio AE MCP не найден. Current admission закрыт.
+  После GO M1–M8 следующий независимый этап — native physical-root/held-fence prerequisite
+  на временных каталогах; затем durable storage/namespace/first-daemon lifecycle.
+- [Native fence specification](../docs/owned-runtime-initial-fence-contract.md) подготовлена
+  `ae_architect`; independent `ae_reviewer` проверяет только этот документ. Implementation
+  и реальные Windows proofs ждут GO модели и спецификации; это не permission на daemon/AE.
 - A: trusted transport/broker удостоверяет chat principal и immutable dispatch binding.
   Это требует интеграции с настоящим источником identity; доступность ещё не доказана.
 - B: private issuer создаёт exclusive session capability и atomic controller handover,
   отзывая прежний ingress и queued work. Только если issuer доказуемо связывает capability
   с реальным чатом; один секрет или caller UUID сам по себе недостаточен.
 - Machine-only lease не выполняет требование нового чата и не является скрытым fallback.
-- Выбрать A/B по фактическому issuer evidence: issuer/schema, chat identity,
-  полный namespace inventory, durable fence и exact bootstrap allowlist пока не закрыты.
+- Offline schema, namespace matrix, fence/CAS ordering и exact bootstrap allowlist
+  определены контрактом. Genuine host issuer, физический Windows inventory/fence,
+  durable persistence и held-handle lifecycle proof остаются integration blockers.
 
 ## Reviews и ownership
 - [block: fresh admission architecture] [executor: ae_architect / Sol6.1 ultra]
@@ -116,15 +145,31 @@
   Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- Final journal grammar закрепляет каждый post-consumption caller guard за текущим
+  unmatched command; новые enqueue/dispatch/adopt закрыты до completion. Factual completion
+  и independent lifecycle сохраняются. Один offline GO не снимает integration blockers.
+- Активный лонгран продолжает этапы после compaction в текущем чате; завершение isolated
+  milestone не означает завершение цели. Оба helper слота заняты: bounded passive inventory
+  assets/font/preset выполнил parent; установку/transfer verifier не повторял.
+- User-installed `CognacC.ttf`, локальный `titr_all.aep` и EPR `DXV3_titles_NQ` /
+  `FHD_HQ_alfa_nosound` найдены на диске. Наличие/имя не доказывает AE font binding,
+  содержимое двух вариантов, качество DXV/alpha или завершение AME.
 - Первое рассмотрение ограничено новым initial admission; historical authority не переносится.
 - Не включать autostart/unmanaged fallback для получения видимости или успешного smoke.
 - Frozen manifest, providers/model/context/auth и старые UNKNOWN не меняются incidental.
 - Изменения общих модулей laptop/desktop возможны только после фиксации непересекающегося scope.
-- Implementation не начата; приёмка transfer bytes не разрешает live architecture.
+- Implementation изолированной модели начата после contract GO; transfer bytes и
+  fixture evidence не разрешают live architecture. Existing runtime modules не меняются.
 - Self-review заменил ожидание внешнего Pro по явному поручению пользователя. Самое
   существенное исправление: first-daemon teardown входит в первый milestone до launch.
+- BOOTSTRAP_READ выдаётся на exact call до adoption; execution всегда false. Lifecycle
+  grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Final model: focused smoke150, independent queued-proof counterexample/serial positives/
+  pending refusal/completion/teardown, syntax3/rules/diff — PASS. Parent smoke150/hashes PASS.
+  Exact hashes и границы GO: [source review](fresh-owned-admission-msi-review-20261012.md).
+  productionAuthority=false, liveProof=false; настоящая Windows durability/AE не доказана.
 - Transfer verifier: 21 104 files / sizes / SHA256, 3 bundles/refs, snapshot parent, WIP6 PASS.
 - Restore: checkout877, CEP9, assets46, checkpoint1, SDK432, Node8529, PowerShell658 PASS.
 - Rules PASS через system Node/npm-cli и прямой npm.cmd с process-local PATH/prefix;
@@ -137,5 +182,8 @@
   historical native artifacts остаются productionReady=false / liveSemantics=UNVERIFIED.
 - Codeburn compatible Python3.12.14/SDK stdio PASS с nonexistent temp DB; exact3.12.10
   не установлен. Real usage/history и AGY readiness/login/grants не проверены.
-- Следующий безопасный шаг: offline threat model + issuer evidence + state/capability/
-  namespace matrix + initial teardown/fence contract; внешнего Pro ответа не ожидаем.
+- Contract review GO: R1–R4 закрыты как требования isolated model. Следующий шаг —
+  adversarial smoke и независимый diff review, затем отдельная интеграционная приёмка
+  genuine issuer/native fence/lifecycle. Внешнего Pro ответа не ожидаем.
+- Root повторил existing offline service33 и supervisor91 checks — PASS; это mocked
+  regression proof, без запуска настоящего daemon/AE и без изменения retained gates.
