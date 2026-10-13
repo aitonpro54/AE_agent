@@ -9,10 +9,14 @@ Live activation ещё не принята. Следующая работа — 
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- 13 октября: V3–V5 bounded PDB/PE исследования уточнили private-map DESIGN-HOLD.
+  On-disk class23 length8, NULL-name capture/allocation и прямой name-hook до HANDLE
+  подтверждены в source-only scope. Остался ObpInsertOrLocateNamedObject → private
+  parent/flags; native запуск не разрешён этими данными. [Границы](../docs/owned-runtime-initial-integration.md).
 - 13 октября: exact volume-target classifier заменил prefix-only policy, 27 compile-time
   regressions и independent Source/Doc GO. Fresh native matrix77/0/3 и barrier PASS;
   parent сверил original children/executable/source/pins. Private-map схема DESIGN-HOLD
-  после Ultra: user-mode ABI/scope/lifetime не доказаны; alternate-drive factory refusal
+  после Ultra/V5: native scope/lifetime и full acceptance не доказаны; alternate-drive factory refusal
   до QueryDosDevice не закрывает SUBST. [Решение](../docs/owned-runtime-initial-fence-contract.md).
 - M1–M8: final source frozen, independent `ae_reviewer` GO на exact hashes из review;
   smoke150 и повтор parent PASS. Реализацию вёл `ae_specialist`, Git/планы — parent.

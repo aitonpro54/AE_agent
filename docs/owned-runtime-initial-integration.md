@@ -129,6 +129,45 @@ Exact PDB spans ObCreateObjectEx RVA8B7900/length1857 и ObInsertObjectEx
 missing edges заменяют прежний более широкий пробел; дальнейшие тела и native
 setter не исследовались автоматически. Это не полный Windows API контракт.
 
+**Ограниченный проход V5:** добавлены только fixed exact-name запросы
+ObpCaptureObjectCreateInformation, ObpAllocateObject и ObpCreateHandle.
+`ae_implementer` — writer ignored reader, `ae_reviewer` — source/result review,
+`ae_specialist` — read-only dataflow; parent — sole build/proof/Git controller.
+Independent source GO; C++17/W4/WX build и reader exit0; независимый read-back:
+214 records, emittedSymbols=85/13 (76/13 symbol records плюс 9/0 RVA results),
+attempts14/0, две identity=true, caps0/queryError=false/stderr0.
+Source SHA256 `68ddb8cdd57878818e45fec9f1ef709b8e24f5d565659711a1b7d4a30ec97eb9`;
+exe SHA256 `ec7afa1cacef4b91cfc57675ad860ed011e98745b2a05412276e6a2d4d5ff355`;
+ignored receipt `proof-v5.json` в прежнем runtime-каталоге.
+
+V5 закрывает два прежних source-пробела:
+
+- Capture обнуляет captured name (8B8073), ObjectName=NULL/RootDirectory=NULL
+  ведут к status0 (8B8200–8248). Allocation при captured Length=0 выбирает
+  отсутствие NameInfo (8B67E7–67F2) и возвращает новый object header/status0
+  (8B6A32–6A3D). Показанная unnamed insertion не использует named path.
+  Это source acceptance корректного NULL-name вызова с обычными возможными
+  allocation/access failures; отдельный anonymous probe для этого вопроса не нужен.
+- Для исходного symbolic link после успешной named insertion прямой вызов
+  ObpCreateSymbolicLinkName (87540B) предшествует заполнению handle-table entry
+  (874770–477C) и output HANDLE (8748F4) в показанном control flow.
+
+**Оставшийся technical NO-GO ограничен одним insertion edge:**
+ObpInsertOrLocateNamedObject (call87532D). Сравнение returnedObject с original
+(875340–5343) не удостоверяет привязку NameInfo к удерживаемому private directory
+и состояние link flags/bit0x20 при входе в hook. Эти данные нужны для полного
+cache-before-ACK вывода; новый helper body автоматически не исследовался.
+Общий native proof, матрица77/0/3 и genuine issuer/admission не закрыты.
+
+Официальный [API directory object](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-zwcreatedirectoryobject)
+подтверждает user-mode имя NtCreateDirectoryObject и закрытие HANDLE;
+[OBJECT_ATTRIBUTES](https://learn.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-_object_attributes)
+не содержит самостоятельной гарантии NULL-name acceptance. Описанный вывод V5
+получен из конкретного on-disk PE dataflow, не расширен до универсального API обещания.
+При повторном read-only MCP status: owned_registration_absent/owned=false/replay=false;
+trusted host issuer/verifier по-прежнему отсутствует. Его предоставляет host,
+а изменения repository не создают удостоверенную identity текущего Desktop chat.
+
 ## Следующий независимый prerequisite после GO M1–M8
 
 Native Windows physical-root identity и held exclusive fence, без wiring в daemon:
