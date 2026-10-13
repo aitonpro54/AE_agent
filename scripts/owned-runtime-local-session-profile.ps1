@@ -1,10 +1,10 @@
 ﻿#requires -Version 5.1
-# Supporting source for the sole reviewed synthetic launch_eof parent action.
+# Supporting source for the reviewed fixed synthetic parent actions.
 # Dot-sourcing declares functions only; Add-Type/native/build happen inside that
 # explicit action. No profile, PID, root, Node or controller selector is accepted.
 Set-StrictMode -Version Latest
 
-function Invoke-LocalSessionInstalledBaseline {
+function Initialize-LocalSessionSyntheticCapture {
     [CmdletBinding()]
     param()
     $ErrorActionPreference='Stop'
@@ -22,6 +22,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace LocalSessionSyntheticCapture {
@@ -54,6 +55,27 @@ namespace LocalSessionSyntheticCapture {
     internal readonly Witness Image,Fixture;internal readonly string ImageHash;
     internal LaunchPaths(string executable,string workingDirectory,Witness image,Witness fixture){Executable=executable;WorkingDirectory=workingDirectory;Image=image;Fixture=fixture;ImageHash=image.Sha256();}
   }
+  // Observe only original returned/duplicated HANDLEs. No PID lookup or stop.
+  public sealed class OriginalChild : IDisposable {
+    readonly SafeWaitHandle held;readonly Witness image;
+    public readonly ulong Birth;public readonly string UserSid,ImagePath,ImageHash;
+    public bool Exited {get;private set;}public uint ExitCode {get;private set;}
+    internal OriginalChild(Process child,Witness binary,string sid){
+      SafeWaitHandle captured;var self=Native.GetCurrentProcess();if(!Native.DuplicateHandle(self,child.Handle,self,out captured,0x101000,false,0))throw new Win32Exception(Marshal.GetLastWin32Error(),"duplicate original child observer");held=captured;image=binary;
+      try{Birth=Native.Birth(held);UserSid=Native.Sid(held);ImagePath=Native.ProcessImage(held);ImageHash=image.Sha256();if(Birth==0||UserSid!=sid)throw new IOException("original child birth/SID refused");}catch{held.Dispose();throw;}
+    }
+    public bool PollExit(){if(Exited)return true;uint wait=Native.WaitForSingleObject(held,0);if(wait==258)return false;if(wait!=0)throw new Win32Exception(Marshal.GetLastWin32Error(),"original child wait UNKNOWN");uint code;if(Native.Birth(held)!=Birth||!Native.GetExitCodeProcess(held,out code))throw new IOException("original child exact exit/birth UNKNOWN");image.Fresh();if(image.Sha256()!=ImageHash)throw new IOException("original child binary drift");ExitCode=code;Exited=true;return true;}
+    public void Dispose(){held.Dispose();}
+  }
+  public sealed class BoundedText {
+    readonly object gate=new object();readonly StringBuilder text=new StringBuilder();readonly int limit;
+    readonly Task pending;bool eof,overflow;long count;string error;
+    public BoundedText(TextReader reader,int maximum){if(maximum<1||maximum>32768)throw new IOException("closed text bound");limit=maximum;pending=Read(reader);}
+    async Task Read(TextReader reader){try{var buffer=new char[1024];for(;;){int n=await reader.ReadAsync(buffer,0,buffer.Length).ConfigureAwait(false);lock(gate){if(n==0){eof=true;return;}count=count>long.MaxValue-n?long.MaxValue:count+n;int keep=Math.Min(n,limit-text.Length);if(keep>0)text.Append(buffer,0,keep);if(keep!=n)overflow=true;}}}catch(Exception failure){lock(gate){error=failure.GetType().Name+": "+failure.Message;if(error.Length>1024)error=error.Substring(0,1024);}}}
+    public bool Complete {get{return pending.IsCompleted;}}public bool Eof {get{lock(gate)return eof;}}
+    public bool Overflow {get{lock(gate)return overflow;}}public long Characters {get{lock(gate)return count;}}
+    public string Text {get{lock(gate)return text.ToString();}}public string Error {get{lock(gate)return error;}}
+  }
   internal static class Native {
     internal const uint ReadAttributes=0x80, Sync=0x100000;
     [StructLayout(LayoutKind.Sequential)] struct UnicodeString {public ushort Length,MaximumLength;public IntPtr Buffer;}
@@ -67,12 +89,13 @@ namespace LocalSessionSyntheticCapture {
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern uint GetFinalPathNameByHandleW(SafeFileHandle handle,StringBuilder path,uint length,uint flags);
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool GetVolumeInformationByHandleW(SafeFileHandle handle,IntPtr volume,uint volumeLength,IntPtr serial,IntPtr maximum,IntPtr flags,StringBuilder fs,uint fsLength);
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool GetVolumeNameForVolumeMountPointW(string fixedLocator,StringBuilder volume,uint length);
-    [DllImport("kernel32.dll",SetLastError=true)] static extern bool SetHandleInformation(SafeFileHandle handle,uint mask,uint flags);
+    [DllImport("kernel32.dll",SetLastError=true)] internal static extern bool SetHandleInformation(SafeFileHandle handle,uint mask,uint flags);
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool ReadFile(SafeFileHandle handle,byte[] bytes,uint wanted,out uint read,IntPtr overlap);
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool WriteFile(SafeFileHandle handle,byte[] bytes,uint wanted,out uint written,IntPtr overlap);
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool FlushFileBuffers(SafeFileHandle handle);
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool SetFilePointerEx(SafeFileHandle handle,long offset,out long position,uint method);
     [DllImport("kernel32.dll")] internal static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll")] internal static extern ulong GetTickCount64();
     [DllImport("kernel32.dll",SetLastError=true)] internal static extern bool DuplicateHandle(IntPtr sourceProcess,IntPtr source,IntPtr destination,out SafeWaitHandle result,uint access,bool inherit,uint options);
     [DllImport("kernel32.dll",SetLastError=true)] internal static extern uint WaitForSingleObject(SafeWaitHandle process,uint timeout);
     [DllImport("kernel32.dll",SetLastError=true)] internal static extern bool GetProcessTimes(SafeWaitHandle process,out long birth,out long exit,out long kernel,out long user);
@@ -125,6 +148,10 @@ namespace LocalSessionSyntheticCapture {
       var chain=new Chain();try{chain.Held.Add(new Witness(anchor,true));if(chain.Leaf.Original.CanonicalPath!=chain.Leaf.Original.VolumeAnchor)throw new IOException("directory volume anchor required");foreach(string part in absolute.Substring(3).Split(new[]{'\\'},StringSplitOptions.RemoveEmptyEntries))chain.Held.Add(new Witness(Relative(chain.Leaf,part,true,1,false,false,false),true));return chain;}
       catch{foreach(var w in chain.Held.AsEnumerable().Reverse())w.Dispose();throw;}
     }
+    internal static Chain OpenOriginalChain(Witness original){
+      var pin=original.Fresh();var anchor=CreateFileW(pin.VolumeAnchor,1|ReadAttributes|Sync,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);if(anchor.IsInvalid)throw new Win32Exception(Marshal.GetLastWin32Error(),"held original volume open");Check(SetHandleInformation(anchor,1,0),"original anchor inheritance");var chain=new Chain();
+      try{chain.Held.Add(new Witness(anchor,true));var root=chain.Leaf.Original;if(root.CanonicalPath!=pin.VolumeAnchor||root.Serial!=pin.Serial||!root.VolumeGuid.SequenceEqual(pin.VolumeGuid))throw new IOException("original canonical volume drift");foreach(string part in pin.CanonicalPath.Substring(49).Split(new[]{'\\'},StringSplitOptions.RemoveEmptyEntries))chain.Held.Add(new Witness(Relative(chain.Leaf,part,true,1,false,false,false),true));if(!Same(chain.Leaf.Original,original.Fresh()))throw new IOException("original canonical chain drift");return chain;}catch{foreach(var w in chain.Held.AsEnumerable().Reverse())w.Dispose();throw;}
+    }
     internal static Witness OpenFile(Witness parent,string name,bool stable,bool metadataOnly){return new Witness(Relative(parent,name,false,1,false,stable,metadataOnly),false);}
     internal static byte[] ReadBytes(SafeFileHandle h){var p=ReadPin(h,false);if(p.Length>134217728)throw new IOException("bounded file required");long position;Check(SetFilePointerEx(h,0,out position,0),"read seek");byte[] bytes=new byte[(int)p.Length];uint got;Check(ReadFile(h,bytes,(uint)bytes.Length,out got,IntPtr.Zero),"read exact");if(got!=bytes.Length)throw new IOException("short read");return bytes;}
     internal static Witness NewText(Witness parent,string name,string text){byte[] bytes=new UTF8Encoding(false,true).GetBytes(text);Pin original;using(var h=Relative(parent,name,false,2,true,false,false)){original=ReadPin(h,false);if(original.Length!=0)throw new IOException("original FILE_CREATE not empty");uint n;Check(WriteFile(h,bytes,(uint)bytes.Length,out n,IntPtr.Zero),"single new-file write");if(n!=bytes.Length)throw new IOException("short write UNKNOWN; no replay");Check(FlushFileBuffers(h),"new-file flush");if(!Same(ReadPin(h,false),original)||!ReadBytes(h).SequenceEqual(bytes))throw new IOException("new-file readback UNKNOWN");}var witness=OpenFile(parent,name,true,false);if(!Same(witness.Original,original)){witness.Dispose();throw new IOException("original created ID changed");}return witness;}
@@ -139,19 +166,22 @@ namespace LocalSessionSyntheticCapture {
     readonly List<Witness> owned=new List<Witness>();readonly List<Chain> chains=new List<Chain>();readonly List<Witness> namespaces=new List<Witness>();
     readonly SafeWaitHandle controller;readonly string originalImage;public readonly ulong ControllerBirth;public readonly string UserSid;
     SafeWaitHandle enrollmentCreator;Witness enrollmentImage;string enrollmentImagePath;ulong enrollmentBirth;byte[] enrollmentNonce,enrollmentObservationHash;
-    bool creationPinsMatched,ackConsumed,enrollmentExitObserved;
+    bool creationPinsMatched,ackConsumed,enrollmentExitObserved,enrollmentRefusalObserved;
     public ulong EnrollmentCreatorBirth {get{return enrollmentBirth;}}
     public string EnrollmentNonceHex {get{return enrollmentNonce==null?null:Native.Hex(enrollmentNonce);}}
     public string EnrollmentObservationSha256 {get{return enrollmentObservationHash==null?null:Native.Hex(enrollmentObservationHash);}}
     readonly byte[] installation=Random(16),lineage=Random(16),launch=Random(16),stop=Random(16),actor=Random(16),audit=Random(32);
     public readonly string RunPath,FixturePath;public readonly Chain Repository,Runtime;public readonly Witness Run,Evidence,Node,ControllerImage;
+    public readonly string ProofCase;public readonly Witness OrdinarySibling,OrdinaryAlias;public readonly string NormalizationOrdinaryLocator;
     public Witness Bridge,Marker,InstallationFile,PolicyFile,LockFile,Journal;readonly List<Witness> knownSlots=new List<Witness>();
     Witness enrollmentHeader,finalHeader,enrollmentOutput,finalOutput,enrollmentExecutable,finalExecutable;
     LaunchPaths enrollmentLaunch,finalLaunch;
     public bool LastBuildOutputComplete {get;private set;}
     static byte[] Random(int n){byte[] b=new byte[n];using(var rng=RandomNumberGenerator.Create())rng.GetBytes(b);if(b.All(x=>x==0))throw new IOException("empty RNG");return b;}
     Witness Own(Witness w){owned.Add(w);return w;} Chain OwnChain(string path){var c=Native.OpenFixedChain(path);chains.Add(c);return c;}
-    public Session(string fixedRepository,string fixedNode){
+    public Session(string fixedRepository,string fixedNode):this(fixedRepository,fixedNode,"launch_eof"){}
+    public Session(string fixedRepository,string fixedNode,string proofCase){
+      if(proofCase!="launch_eof"&&proofCase!="controller_invalid_frame"&&proofCase!="creator_wrong_ack"&&proofCase!="ordinary_fixture_dot"&&proofCase!="ordinary_fixture_space")throw new IOException("closed fixed synthetic case");ProofCase=proofCase;
       SafeWaitHandle captured;var self=Native.GetCurrentProcess();if(!Native.DuplicateHandle(self,self,self,out captured,0x101000,false,0))throw new Win32Exception(Marshal.GetLastWin32Error(),"held original controller duplicate");controller=captured;ControllerBirth=Native.Birth(controller);UserSid=Native.Sid(controller);originalImage=Native.ProcessImage(controller);
       // Reject incompatible original read-only captures before any FILE_CREATE
       // or FILE_OPEN_IF. Existing UNKNOWN namespaces are never reopened here.
@@ -159,18 +189,29 @@ namespace LocalSessionSyntheticCapture {
       var nodeParent=OwnChain(Path.GetDirectoryName(fixedNode));Node=Own(Native.OpenFile(nodeParent.Leaf,Path.GetFileName(fixedNode),true,false));var controllerParent=OwnChain(Path.GetDirectoryName(originalImage));ControllerImage=Own(Native.OpenFile(controllerParent.Leaf,Path.GetFileName(originalImage),true,false));
       if(!repo.Leaf.Original.VolumeGuid.SequenceEqual(Node.Original.VolumeGuid)||!repo.Leaf.Original.VolumeGuid.SequenceEqual(ControllerImage.Original.VolumeGuid))throw new IOException("one canonical captured volume required; no fallback");AssertFresh();
       var scratch=Own(Native.EnsureScratchContainer(repo.Leaf,".codex-runtime"));scratch=Own(Native.EnsureScratchContainer(scratch,"local-session-proof"));Run=Own(Native.NewDirectory(scratch,"installed-launch-eof-"+Guid.NewGuid().ToString("N")));RunPath=Run.Original.CanonicalPath;
-      var fixture=Own(Native.NewDirectory(Run,"fixture"));FixturePath=fixture.Original.CanonicalPath;Own(Native.NewDirectory(fixture,"mcp-server"));Own(Native.NewDirectory(fixture,"initial-local"));Evidence=Own(Native.NewDirectory(Run,"evidence"));
+      string fixtureName=proofCase=="ordinary_fixture_dot"?"fixture.":proofCase=="ordinary_fixture_space"?"fixture ":"fixture";
+      var fixture=Own(Native.NewDirectory(Run,fixtureName));FixturePath=fixture.Original.CanonicalPath;if(!FixturePath.EndsWith("\\"+fixtureName,StringComparison.Ordinal))throw new IOException("exact NT fixture spelling unproven");Own(Native.NewDirectory(fixture,"mcp-server"));var runtime=Own(Native.NewDirectory(fixture,"initial-local"));Evidence=Own(Native.NewDirectory(Run,"evidence"));
       foreach(string name in new[]{"initial","daemon","panel","plan","fixtures","retained"})namespaces.Add(Own(Native.NewDirectory(fixture,name)));
-      Repository=OwnChain(FixturePath.Replace(Run.Original.VolumeAnchor,Path.GetPathRoot(fixedRepository)));Runtime=OwnChain(Repository.Leaf.Original.CanonicalPath.Replace(Run.Original.VolumeAnchor,Path.GetPathRoot(fixedRepository))+"\\initial-local");
+      Repository=Native.OpenOriginalChain(fixture);chains.Add(Repository);Runtime=Native.OpenOriginalChain(runtime);chains.Add(Runtime);
       if(!Repository.Leaf.Original.VolumeGuid.SequenceEqual(Node.Original.VolumeGuid)||!Repository.Leaf.Original.VolumeGuid.SequenceEqual(ControllerImage.Original.VolumeGuid))throw new IOException("one canonical captured volume required; no fallback");AssertFresh();
+      if(proofCase=="ordinary_fixture_dot"||proofCase=="ordinary_fixture_space"){
+        OrdinarySibling=Own(Native.NewDirectory(Run,"fixture"));if(Native.Same(OrdinarySibling.Fresh(),fixture.Fresh())||OrdinarySibling.Original.FileIdHex==fixture.Original.FileIdHex)throw new IOException("exact fixture/sibling identities not distinct");
+        NormalizationOrdinaryLocator=Path.GetPathRoot(originalImage)+FixturePath.Substring(49);var alias=Native.CreateFileW(NormalizationOrdinaryLocator,1|Native.ReadAttributes|Native.Sync,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);if(alias.IsInvalid)throw new Win32Exception(Marshal.GetLastWin32Error(),"existing ordinary normalization diagnostic");if(!Native.SetHandleInformation(alias,1,0)){alias.Dispose();throw new Win32Exception(Marshal.GetLastWin32Error(),"normalization diagnostic inheritance");}OrdinaryAlias=Own(new Witness(alias,true));AssertNormalizationPair();
+      }
     }
-    public void CreateSyntheticSource(string source){if(Bridge!=null||Marker!=null)throw new IOException("source already created; no replay");var parent=Own(new Witness(Native.Relative(Repository.Leaf,"mcp-server",true,1,false,false,false),true));Bridge=Own(Native.NewText(parent,"bridge-daemon.js",source));Marker=Own(Native.NewText(Repository.Leaf,"synthetic-fixture.scope","launch_eof"));}
+    public static ulong MonotonicMs {get{return Native.GetTickCount64();}}
+    public static ulong FixedSessionMs {get{return 30000;}}public static ulong FixedDispositionGraceMs {get{return 600000;}}
+    public void AssertNormalizationPair(){AssertFresh();if((ProofCase!="ordinary_fixture_dot"&&ProofCase!="ordinary_fixture_space")||OrdinarySibling==null||OrdinaryAlias==null||!Native.Same(OrdinaryAlias.Fresh(),OrdinarySibling.Fresh())||Native.Same(OrdinaryAlias.Fresh(),Repository.Leaf.Fresh()))throw new IOException("actual ordinary sibling normalization unproven");}
+    public string ReadSyntheticEvents(){AssertFresh();var names=Native.Inventory(Repository.Leaf);if(!names.Contains("synthetic-events.jsonl"))return null;var file=Own(Native.OpenFile(Repository.Leaf,"synthetic-events.jsonl",true,false));var bytes=file.Bytes();if(bytes.Length>32768)throw new IOException("synthetic event evidence overflow");return new UTF8Encoding(false,true).GetString(bytes);}
+    public OriginalChild HoldOriginalChild(Process child,Witness binary){AssertFresh();if(!Object.ReferenceEquals(binary,enrollmentExecutable)&&!Object.ReferenceEquals(binary,finalExecutable))throw new IOException("closed original child binary required");var observer=new OriginalChild(child,binary,UserSid);try{string path=observer.ImagePath;string locator=path.StartsWith(Run.Original.VolumeAnchor,StringComparison.OrdinalIgnoreCase)?Path.GetPathRoot(originalImage)+path.Substring(49):path;var parent=OwnChain(Path.GetDirectoryName(locator));var image=Own(Native.OpenFile(parent.Leaf,Path.GetFileName(locator),true,false));if(!Native.Same(image.Fresh(),binary.Fresh())||image.Sha256()!=observer.ImageHash)throw new IOException("original returned child image physical binding refused");return observer;}catch{observer.Dispose();throw;}}
+    public void CreateSyntheticSource(string source){if(Bridge!=null||Marker!=null)throw new IOException("source already created; no replay");var parent=Own(new Witness(Native.Relative(Repository.Leaf,"mcp-server",true,1,false,false,false),true));Bridge=Own(Native.NewText(parent,"bridge-daemon.js",source));Marker=Own(Native.NewText(Repository.Leaf,"synthetic-fixture.scope",ProofCase));}
     public void AssertFresh(){if(Native.WaitForSingleObject(controller,0)!=258||Native.Birth(controller)!=ControllerBirth||Native.Sid(controller)!=UserSid||Native.ProcessImage(controller)!=originalImage)throw new IOException("original controller lifetime changed");foreach(var chain in chains)foreach(var w in chain.Held)w.Fresh();foreach(var w in owned)w.Fresh();}
     void AssertCreatorHeld(){AssertFresh();if(enrollmentCreator==null||Native.WaitForSingleObject(enrollmentCreator,0)!=258||Native.Birth(enrollmentCreator)!=enrollmentBirth||Native.Sid(enrollmentCreator)!=UserSid||Native.ProcessImage(enrollmentCreator)!=enrollmentImagePath)throw new IOException("original creator no longer held/live");enrollmentImage.Fresh();}
     static void MatchBytes(BinaryReader reader,byte[] expected,string kind){if(!reader.ReadBytes(expected.Length).SequenceEqual(expected))throw new IOException("creator observation "+kind+" mismatch");}
     static void MatchPin(BinaryReader reader,Pin expected){MatchBytes(reader,expected.VolumeGuid,"volume");if(reader.ReadUInt64()!=expected.Serial)throw new IOException("creator observation serial mismatch");MatchBytes(reader,expected.FileId,"original FILE_CREATE ID");}
     byte[] InstallationBytes(){var b=new List<byte>(Encoding.ASCII.GetBytes("OWNLINS2"));Put(b,installation);Put(b,lineage);PutPin(b,Repository.Leaf.Original);PutPin(b,Runtime.Leaf.Original);PutPin(b,LockFile.Original);PutPin(b,Journal.Original);return b.ToArray();}
     void AssertEnrollmentBytes(){if(LockFile.Fresh().Length!=0||Native.Inventory(Journal).Length!=0||!PolicyFile.Bytes().SequenceEqual(PolicyBytes())||!InstallationFile.Bytes().SequenceEqual(InstallationBytes()))throw new IOException("original enrollment bytes/inventory changed");}
+    public void AssertRootRefusalJournalEmpty(){if((ProofCase!="ordinary_fixture_dot"&&ProofCase!="ordinary_fixture_space")||!creationPinsMatched||!ackConsumed||!enrollmentExitObserved)throw new IOException("closed original root-refusal proof stage required");AssertFresh();AssertEnrollmentBytes();AssertFresh();}
     public void CaptureEnrollmentWhileCreatorHeld(Process original,Witness binary,byte[] observation){
       AssertFresh();if(enrollmentCreator!=null||InstallationFile!=null||PolicyFile!=null||LockFile!=null||Journal!=null)throw new IOException("original creation readback already attempted; no replay");
       SafeWaitHandle captured;var self=Native.GetCurrentProcess();if(!Native.DuplicateHandle(self,original.Handle,self,out captured,0x101000,false,0))throw new Win32Exception(Marshal.GetLastWin32Error(),"duplicate original creator HANDLE");enrollmentCreator=captured;enrollmentBirth=Native.Birth(captured);enrollmentImagePath=Native.ProcessImage(captured);
@@ -193,6 +234,8 @@ namespace LocalSessionSyntheticCapture {
       if(!creationPinsMatched||ackConsumed||enrollmentExitObserved)throw new IOException("one original creator ACK only");AssertCreatorHeld();AssertEnrollmentBytes();ackConsumed=true;
       var b=new List<byte>(Encoding.ASCII.GetBytes("OWNLCA01"));U16(b,1);U16(b,2);Put(b,BitConverter.GetBytes((uint)80));Put(b,enrollmentNonce);U64(b,enrollmentBirth);Put(b,enrollmentObservationHash);U64(b,0);if(b.Count!=80)throw new IOException("ACK internal size");return b.ToArray();
     }
+    public byte[] CreateCorruptedEnrollmentAcknowledgement(){if(ProofCase!="creator_wrong_ack")throw new IOException("closed wrong-ACK case required");var ack=CreateEnrollmentAcknowledgement();ack[16]^=1;return ack;}
+    public void ConfirmEnrollmentRefusal(){AssertFresh();uint code;if(ProofCase!="creator_wrong_ack"||!creationPinsMatched||!ackConsumed||enrollmentExitObserved||enrollmentRefusalObserved||Native.WaitForSingleObject(enrollmentCreator,0)!=0||Native.Birth(enrollmentCreator)!=enrollmentBirth||!Native.GetExitCodeProcess(enrollmentCreator,out code)||code!=2)throw new IOException("original creator refusal exact exit unproven");AssertEnrollmentBytes();enrollmentRefusalObserved=true;}
     public void ConfirmEnrollmentExactExit(){
       AssertFresh();uint code;if(!creationPinsMatched||!ackConsumed||enrollmentExitObserved||Native.WaitForSingleObject(enrollmentCreator,0)!=0||Native.Birth(enrollmentCreator)!=enrollmentBirth||!Native.GetExitCodeProcess(enrollmentCreator,out code)||code!=0)throw new IOException("exact original creator exit not proven");
       var stableInstallation=Own(Native.OpenFile(Runtime.Leaf,".initial-owned-local.installation",true,false));var stablePolicy=Own(Native.OpenFile(Runtime.Leaf,".initial-owned-local.policy",true,false));if(!Native.Same(stableInstallation.Original,InstallationFile.Fresh())||!Native.Same(stablePolicy.Original,PolicyFile.Fresh()))throw new IOException("original created IDs changed at close");InstallationFile=stableInstallation;PolicyFile=stablePolicy;AssertEnrollmentBytes();AssertFresh();enrollmentExitObserved=true;
@@ -248,16 +291,18 @@ namespace LocalSessionSyntheticCapture {
       else throw new IOException("one closed original child stage required; no caller executable/working-directory selector");
       // Ordinary locators are only Process.Start compatibility arguments. Both
       // resolve to exact held physical witnesses; profile authority stays canonical.
-      var paths=new LaunchPaths(HeldOrdinaryLocator(executable),HeldOrdinaryLocator(Repository.Leaf),executable,Repository.Leaf);
+      var directory=ProofCase=="ordinary_fixture_dot"||ProofCase=="ordinary_fixture_space"?Run:Repository.Leaf;
+      var paths=new LaunchPaths(HeldOrdinaryLocator(executable),HeldOrdinaryLocator(directory),executable,directory);
       if(enrolled)finalLaunch=paths;else enrollmentLaunch=paths;AssertOriginalLaunch(paths,executable,verb);return paths;
     }
     public void AssertOriginalLaunch(LaunchPaths paths,Witness executable,string verb){
       AssertFresh();bool exact=verb=="--enroll-fixed"&&Object.ReferenceEquals(paths,enrollmentLaunch)&&Object.ReferenceEquals(executable,enrollmentExecutable);
       exact=exact||(verb=="--broker"&&Object.ReferenceEquals(paths,finalLaunch)&&Object.ReferenceEquals(executable,finalExecutable));
-      if(paths==null||!exact||!Object.ReferenceEquals(paths.Image,executable)||!Object.ReferenceEquals(paths.Fixture,Repository.Leaf))throw new IOException("original launch binding drift");
+      var directory=ProofCase=="ordinary_fixture_dot"||ProofCase=="ordinary_fixture_space"?Run:Repository.Leaf;
+      if(paths==null||!exact||!Object.ReferenceEquals(paths.Image,executable)||!Object.ReferenceEquals(paths.Fixture,directory))throw new IOException("original launch binding drift");
       // Resolve and hold each current ordinary alias again at the final precreate
       // guard. No filesystem HANDLE is passed to Process.Start or its child.
-      if(paths.Executable!=HeldOrdinaryLocator(executable)||paths.WorkingDirectory!=HeldOrdinaryLocator(Repository.Leaf)||paths.ImageHash!=executable.Sha256())throw new IOException("original launch locator/held bytes drift");AssertFresh();
+      if(paths.Executable!=HeldOrdinaryLocator(executable)||paths.WorkingDirectory!=HeldOrdinaryLocator(directory)||paths.ImageHash!=executable.Sha256())throw new IOException("original launch locator/held bytes drift");AssertFresh();
     }
     public void WriteEvidence(string name,string text){if(name!="receipt.json"&&name!="failure.json"&&name!="enrollment.json")throw new IOException("fixed evidence selector required");Own(Native.NewText(Evidence,name,text));}
     public JournalFrame[] VerifyJournal(int expectedCount){AssertFresh();if(expectedCount!=2&&expectedCount!=3)throw new IOException("closed journal proof stage");var names=Native.Inventory(Journal);if(names.Length!=expectedCount)throw new IOException("journal count drift");var frames=new List<JournalFrame>();string previous=new string('0',64),genesis=null,owner=null;string expectedScope=Native.Hex(Native.Hash(ScopeBytes()));for(int index=0;index<expectedCount;++index){ulong sequence=(ulong)index+1;string name=sequence.ToString("D20")+".rec";if(names[index]!=name)throw new IOException("journal inventory gap");var file=Own(Native.OpenFile(Journal,name,true,false));byte[] bytes=file.Bytes();if(bytes.Length<228||bytes.Length>16384)throw new IOException("frame size");string hash=Native.Hex(Native.Hash(bytes.Take(bytes.Length-32).ToArray()));using(var reader=new BinaryReader(new MemoryStream(bytes),Encoding.UTF8)){if(!reader.ReadBytes(8).SequenceEqual(Encoding.ASCII.GetBytes("OWNJRN01"))||reader.ReadUInt16()!=1)throw new IOException("frame version");ushort type=reader.ReadUInt16();if(reader.ReadUInt32()!=bytes.Length)throw new IOException("frame declared length");string scope=Native.Hex(reader.ReadBytes(32)),frameLineage=Native.Hex(reader.ReadBytes(16)),frameGenesis=Native.Hex(reader.ReadBytes(32));ulong seq=reader.ReadUInt64(),epoch=reader.ReadUInt64();string frameOwner=Native.Hex(reader.ReadBytes(16)),prior=Native.Hex(reader.ReadBytes(32)),key=Native.Hex(reader.ReadBytes(32));uint length=reader.ReadUInt32();if(length>4096||reader.BaseStream.Position+length+32!=bytes.Length)throw new IOException("payload length");byte[] payload=reader.ReadBytes((int)length);if(Native.Hex(reader.ReadBytes(32))!=hash||scope!=expectedScope||frameLineage!=Native.Hex(lineage)||seq!=sequence||prior!=previous)throw new IOException("frame physical/hash/chain/scope binding");
@@ -273,6 +318,15 @@ namespace LocalSessionSyntheticCapture {
 '@
     if('LocalSessionSyntheticCapture.Session'-as [type]){throw 'Capture type уже загружен: новый controller/run обязателен, повтор UNKNOWN запрещён.'}
     Add-Type -TypeDefinition $captureSource -Language CSharp
+    return [pscustomobject]@{node=$fixedNode;msbuild=$fixedMsBuild}
+}
+
+function Invoke-LocalSessionInstalledBaseline {
+    [CmdletBinding()]
+    param()
+    $ErrorActionPreference='Stop'
+    $fixed=Initialize-LocalSessionSyntheticCapture
+    $fixedNode=$fixed.node;$fixedMsBuild=$fixed.msbuild
     $baseline=$null;$originalEnrollment=$null;$originalBroker=$null;$brokerErrors=$null;$brokerOutput=$null;$line=$null;$channel=$null;$knownExit=$false;$script:LocalSessionBaselinePendingChild=$null
     $audit=[ordered]@{schema='ae-agent.local-session.synthetic-baseline.v1';scope='isolated_installed_private_seams';scenario='launch_eof';productionAuthority=$false;productionReady=$false;genuineChatIdentity=$false;executionAdmission=$false;sourcePins=$sourcePins;status='UNKNOWN';stage='capture';replayAllowed=$false}
     function Assert-BaselineSources {

@@ -6,6 +6,9 @@ param(
     [switch]$BuildOnly,
     [switch]$RunSyntheticProof,
     [switch]$RunInstalledSyntheticBaseline,
+    [switch]$RunInstalledSyntheticNegativeProof,
+    [ValidateSet('controller_invalid_frame','creator_wrong_ack','ordinary_fixture_dot','ordinary_fixture_space')]
+    [string]$NegativeCase='controller_invalid_frame',
     [switch]$ParentSourceGo,
     [string]$FixtureRoot,
     [string]$ReviewedProfileHeader,
@@ -18,14 +21,16 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
-$actions=[int]$ValidateSource.IsPresent+[int]$PrepareSyntheticFixture.IsPresent+[int]$BuildOnly.IsPresent+[int]$RunSyntheticProof.IsPresent+[int]$RunInstalledSyntheticBaseline.IsPresent
+$actions=[int]$ValidateSource.IsPresent+[int]$PrepareSyntheticFixture.IsPresent+[int]$BuildOnly.IsPresent+[int]$RunSyntheticProof.IsPresent+[int]$RunInstalledSyntheticBaseline.IsPresent+[int]$RunInstalledSyntheticNegativeProof.IsPresent
 if($actions-ne 1){throw 'Выберите одно точное действие. Скрипт не имеет default build/run.'}
 $repoRoot=Split-Path -Parent $PSScriptRoot
-$ownedSource=@('native/owned-runtime-local-session/enrollment_win32.h','native/owned-runtime-local-session/enrollment_win32.cpp','native/owned-runtime-local-session/local_session_win32.h','native/owned-runtime-local-session/local_session_win32.cpp','native/owned-runtime-local-session/original_daemon_win32.h','native/owned-runtime-local-session/original_daemon_win32.cpp','native/owned-runtime-local-session/local_session_main.cpp','native/owned-runtime-local-session/LocalSessionBroker.vcxproj','native/owned-runtime-initial-fence/fence_win32.h','native/owned-runtime-initial-fence/fence_win32.cpp','native/owned-runtime-initial-durability/store_win32.h','native/owned-runtime-initial-durability/store_win32.cpp','scripts/owned-runtime-local-session-proof.ps1','scripts/owned-runtime-local-session-profile.ps1')
+$ownedSource=@('native/owned-runtime-local-session/enrollment_win32.h','native/owned-runtime-local-session/enrollment_win32.cpp','native/owned-runtime-local-session/local_session_win32.h','native/owned-runtime-local-session/local_session_win32.cpp','native/owned-runtime-local-session/original_daemon_win32.h','native/owned-runtime-local-session/original_daemon_win32.cpp','native/owned-runtime-local-session/local_session_main.cpp','native/owned-runtime-local-session/LocalSessionBroker.vcxproj','native/owned-runtime-initial-fence/fence_win32.h','native/owned-runtime-initial-fence/fence_win32.cpp','native/owned-runtime-initial-durability/store_win32.h','native/owned-runtime-initial-durability/store_win32.cpp','scripts/owned-runtime-local-session-proof.ps1','scripts/owned-runtime-local-session-profile.ps1','scripts/owned-runtime-local-session-negative-proof.ps1')
 $sourcePins=@($ownedSource|ForEach-Object{$file=Join-Path $repoRoot $_;[pscustomobject]@{name=$_;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}})
 if($ValidateSource){
     $parseTokens=$null;$parseErrors=$null
     [void][System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$parseTokens,[ref]$parseErrors)
+    if($parseErrors.Count){throw ($parseErrors|Out-String)}
+    [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'owned-runtime-local-session-negative-proof.ps1'),[ref]$parseTokens,[ref]$parseErrors)
     if($parseErrors.Count){throw ($parseErrors|Out-String)}
     [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'owned-runtime-local-session-profile.ps1'),[ref]$parseTokens,[ref]$parseErrors)
     if($parseErrors.Count){throw ($parseErrors|Out-String)}
@@ -43,6 +48,14 @@ if($ValidateSource){
     return
 }
 if(-not $ParentSourceGo){throw 'Build/provision/proof выполняет parent после точного source GO; это технический gate скрипта.'}
+if($RunInstalledSyntheticNegativeProof){
+    if($FixtureRoot-or $ReviewedProfileHeader-or $OutputDirectory-or $BrokerExecutable-or $Scenario-ne 'launch_eof'-or $PSBoundParameters.ContainsKey('ExpectedSessionMs')){throw 'Installed negatives имеют closed fixed cases; runtime selectors запрещены.'}
+    . (Join-Path $PSScriptRoot 'owned-runtime-local-session-profile.ps1')
+    . (Join-Path $PSScriptRoot 'owned-runtime-local-session-negative-proof.ps1')
+    Invoke-LocalSessionInstalledNegativeProof -Case $NegativeCase
+    return
+}
+if($PSBoundParameters.ContainsKey('NegativeCase')){throw 'NegativeCase доступен только в named installed-negative action.'}
 if($RunInstalledSyntheticBaseline){
     if($FixtureRoot-or $ReviewedProfileHeader-or $OutputDirectory-or $BrokerExecutable-or $Scenario-ne 'launch_eof'-or $PSBoundParameters.ContainsKey('ExpectedSessionMs')){throw 'Installed baseline имеет один fixed synthetic profile; runtime selectors запрещены.'}
     . (Join-Path $PSScriptRoot 'owned-runtime-local-session-profile.ps1')
