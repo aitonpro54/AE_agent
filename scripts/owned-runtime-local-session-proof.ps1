@@ -1,10 +1,11 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 [CmdletBinding()]
 param(
     [switch]$ValidateSource,
     [switch]$PrepareSyntheticFixture,
     [switch]$BuildOnly,
     [switch]$RunSyntheticProof,
+    [switch]$RunInstalledSyntheticBaseline,
     [switch]$ParentSourceGo,
     [string]$FixtureRoot,
     [string]$ReviewedProfileHeader,
@@ -17,22 +18,37 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
-$actions=[int]$ValidateSource.IsPresent+[int]$PrepareSyntheticFixture.IsPresent+[int]$BuildOnly.IsPresent+[int]$RunSyntheticProof.IsPresent
+$actions=[int]$ValidateSource.IsPresent+[int]$PrepareSyntheticFixture.IsPresent+[int]$BuildOnly.IsPresent+[int]$RunSyntheticProof.IsPresent+[int]$RunInstalledSyntheticBaseline.IsPresent
 if($actions-ne 1){throw 'Выберите одно точное действие. Скрипт не имеет default build/run.'}
 $repoRoot=Split-Path -Parent $PSScriptRoot
-$ownedSource=@('native/owned-runtime-local-session/enrollment_win32.h','native/owned-runtime-local-session/enrollment_win32.cpp','native/owned-runtime-local-session/local_session_win32.h','native/owned-runtime-local-session/local_session_win32.cpp','native/owned-runtime-local-session/original_daemon_win32.h','native/owned-runtime-local-session/original_daemon_win32.cpp','native/owned-runtime-local-session/local_session_main.cpp','native/owned-runtime-local-session/LocalSessionBroker.vcxproj','scripts/owned-runtime-local-session-proof.ps1')
+$ownedSource=@('native/owned-runtime-local-session/enrollment_win32.h','native/owned-runtime-local-session/enrollment_win32.cpp','native/owned-runtime-local-session/local_session_win32.h','native/owned-runtime-local-session/local_session_win32.cpp','native/owned-runtime-local-session/original_daemon_win32.h','native/owned-runtime-local-session/original_daemon_win32.cpp','native/owned-runtime-local-session/local_session_main.cpp','native/owned-runtime-local-session/LocalSessionBroker.vcxproj','native/owned-runtime-initial-fence/fence_win32.h','native/owned-runtime-initial-fence/fence_win32.cpp','native/owned-runtime-initial-durability/store_win32.h','native/owned-runtime-initial-durability/store_win32.cpp','scripts/owned-runtime-local-session-proof.ps1','scripts/owned-runtime-local-session-profile.ps1')
 $sourcePins=@($ownedSource|ForEach-Object{$file=Join-Path $repoRoot $_;[pscustomobject]@{name=$_;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}})
 if($ValidateSource){
     $parseTokens=$null;$parseErrors=$null
     [void][System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$parseTokens,[ref]$parseErrors)
     if($parseErrors.Count){throw ($parseErrors|Out-String)}
+    [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'owned-runtime-local-session-profile.ps1'),[ref]$parseTokens,[ref]$parseErrors)
+    if($parseErrors.Count){throw ($parseErrors|Out-String)}
     $projectPath=Join-Path $repoRoot 'native/owned-runtime-local-session/LocalSessionBroker.vcxproj'
     [xml]$project=[System.IO.File]::ReadAllText($projectPath)
     if($project.Project.DefaultTargets-ne 'Build'){throw 'Неизвестный XML project contract.'}
-    [pscustomobject]@{scope='local_session_source_only';ok=$true;nativeBuild=$false;nativeExecuted=$false;productionReady=$false;sourcePins=$sourcePins}|ConvertTo-Json -Depth 5
+    $definitions=[string]$project.Project.ItemDefinitionGroup.ClCompile.PreprocessorDefinitions
+    if($definitions-notmatch '(^|;)AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS=1(;|$)'-or $definitions-match 'PREREQUISITE_TEST_ONLY'){throw 'Installed и test-only compiler profiles смешаны.'}
+    foreach($relative in $ownedSource){
+        $text=[System.IO.File]::ReadAllText((Join-Path $repoRoot $relative))
+        if($text-match '(?m)[ \t]+\r?$'){throw "Trailing whitespace: $relative"}
+        if($text-match '(?m)^(?:<<<<<<< |=======\r?$|>>>>>>> )'){throw "Conflict marker: $relative"}
+    }
+    [pscustomobject]@{scope='local_session_source_only';sourceBlock='L3c1_original_creator_pin_handshake';ok=$true;powerShellAst=$true;projectXml=$true;whitespace=$true;nativeBuild=$false;nativeExecuted=$false;productionReady=$false;nativeMatrix='NOT_RUN';sourcePins=$sourcePins}|ConvertTo-Json -Depth 5
     return
 }
 if(-not $ParentSourceGo){throw 'Build/provision/proof выполняет parent после точного source GO; это технический gate скрипта.'}
+if($RunInstalledSyntheticBaseline){
+    if($FixtureRoot-or $ReviewedProfileHeader-or $OutputDirectory-or $BrokerExecutable-or $Scenario-ne 'launch_eof'-or $PSBoundParameters.ContainsKey('ExpectedSessionMs')){throw 'Installed baseline имеет один fixed synthetic profile; runtime selectors запрещены.'}
+    . (Join-Path $PSScriptRoot 'owned-runtime-local-session-profile.ps1')
+    Invoke-LocalSessionInstalledBaseline
+    return
+}
 $scratchBase=[System.IO.Path]::GetFullPath((Join-Path $repoRoot '.codex-runtime/local-session-proof'))
 function Assert-Scratch([string]$candidate){
     if([string]::IsNullOrWhiteSpace($candidate)){throw 'Нужен явный own scratch path.'}
@@ -85,7 +101,7 @@ if($BuildOnly){
     if(-not (Test-Path -LiteralPath $ReviewedProfileHeader)){throw 'Missing reviewed embedded profile.'}
     $profile=[System.IO.Path]::GetFullPath($ReviewedProfileHeader)
     if([System.IO.Path]::GetFileName($profile)-ne 'local_session_installation_pins.h'){throw 'Exact private header basename required.'}
-    $msbuild='C:/Program Files/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/MSBuild.exe'
+    $msbuild='C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/MSBuild.exe'
     if(-not (Test-Path -LiteralPath $msbuild)){throw 'Pinned MSBuild unavailable; no fallback.'}
     $project=Join-Path $repoRoot 'native/owned-runtime-local-session/LocalSessionBroker.vcxproj'
     & $msbuild $project /nologo /m:1 /p:Configuration=Release /p:Platform=x64 /p:LocalSessionInstalledSeamsReviewed=true "/p:LocalSessionPinsDir=$([System.IO.Path]::GetDirectoryName($profile))" "/p:LocalSessionOutputDir=$output"

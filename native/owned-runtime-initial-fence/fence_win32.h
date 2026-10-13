@@ -1,7 +1,10 @@
 #pragma once
 
-#ifndef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
+#if !defined(AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY) && !defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
 #error This prerequisite has no production factory or authority port.
+#endif
+#if defined(AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY) && defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
+#error Installed and prerequisite proof profiles must never be mixed.
 #endif
 
 #include <cstdint>
@@ -10,6 +13,7 @@
 #include <vector>
 
 namespace initial_durability { class Store; }
+namespace local_session { class InstalledEnrollment; class ContinuityPort; class Broker; }
 namespace initial_fence {
 
 // Correlation/evidence only. There is no exported OS handle or issuer capability.
@@ -97,12 +101,14 @@ public:
     Factory& operator=(const Factory&) = delete;
     // The sole test entry: strings select immutable slots/pins in a build header.
     // Missing header/pins cannot be supplied by argv, ENV, JSON, MCP or HTTP.
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
     static std::unique_ptr<Factory> CreateApprovedTestFactory(
         const std::wstring& rootSpelling, const std::string& instance, Result& result);
     // Private proof entry: instance selects only immutable generated pins.
     // No runtime root, GUID, drive, policy or serialized identity input.
     static std::unique_ptr<Factory> CreateApprovedCanonicalTestFactory(
         const std::string& instance, Result& result);
+#endif
     Result OpenRoot(RootLease& root, FenceLease& fence);
     Result Observe(RootLease& root, FenceLease& fence);
     Result TryAcquire(RootLease& root, FenceLease& fence);
@@ -115,6 +121,13 @@ public:
     Result RunBindingProof(RootLease& root, FenceLease& fence);
     Result RunCanonicalLockPropertyProof(RootLease& root, FenceLease& fence);
 private:
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+    // The original retained native enrollment is the sole entry. No selector,
+    // copied pin, PID, root spelling or serialized evidence can create a factory.
+    static std::unique_ptr<Factory> CreateInstalledFactory(
+        local_session::InstalledEnrollment& enrollment, Result& result);
+    friend class local_session::Broker;
+#endif
     struct RootConfig;
     struct Data;
     explicit Factory(std::unique_ptr<RootConfig> config);
@@ -142,8 +155,10 @@ private:
     std::unique_ptr<Data> data_;
     Result StageGuard();
     void* BorrowedRoot(); // Never owned, duplicated, inherited or returned by Store.
+    bool MatchesBinding(Factory& factory, RootLease& root, FenceLease& fence);
     friend class Factory;
     friend class initial_durability::Store;
+    friend class local_session::ContinuityPort;
 };
 
 std::string JsonResult(const std::string& operation, const Result& result);

@@ -1,6 +1,9 @@
 #pragma once
-#ifndef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+#if !defined(AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY) && !defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
 #error No production factory, issuer, effect permit or admission exists in this prerequisite.
+#endif
+#if defined(AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY) && defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
+#error Installed and prerequisite proof profiles must never be mixed.
 #endif
 #include "../owned-runtime-initial-fence/fence_win32.h"
 #include <array>
@@ -41,9 +44,11 @@ public:
     ~Store();
     Store(const Store&)=delete; Store& operator=(const Store&)=delete;
     // Immutable generated fixture selection. No runtime pathname/pins/floor/PID.
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
     static std::unique_ptr<Store> CreateApprovedTestStore(const std::string& instance,
         initial_fence::Factory& factory, initial_fence::RootLease& root,
         initial_fence::FenceLease& fence, Result& result);
+#endif
     Result Inspect();
     Result InitializeGenesis(const Cas& expected);
     Result AcquireOwnerEpoch(const Cas& expected);
@@ -53,6 +58,13 @@ public:
     Result RunPrivateMoveProof(bool destination);
     Result RunPrivateBoundsProof();
 private:
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+    static std::unique_ptr<Store> CreateInstalledStore(
+        local_session::InstalledEnrollment& enrollment, local_session::ContinuityPort& continuity,
+        initial_fence::Factory& factory, initial_fence::RootLease& root,
+        initial_fence::FenceLease& fence, Result& result);
+    friend class local_session::Broker;
+#endif
     struct Data;
     explicit Store(std::unique_ptr<Data> data);
     std::unique_ptr<Data> data_;

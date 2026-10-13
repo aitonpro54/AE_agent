@@ -9,6 +9,7 @@ struct FloorSnapshot {
     std::uint64_t sequence=0, epoch=0;
     Id owner{};
     std::vector<Id> originalSlotIds;
+    std::vector<Digest> originalFrameHashes;
     struct Pending {
         bool exists=false;
         std::uint64_t sequence=0, epoch=0, slot=0;
@@ -29,6 +30,8 @@ private:
     struct Data;
     ContinuityPort(InstalledEnrollment& enrollment,initial_fence::Factory& factory,
         initial_fence::RootLease& root,initial_fence::FenceLease& fence);
+    bool MatchesBinding(InstalledEnrollment& enrollment,initial_fence::Factory& factory,
+        initial_fence::RootLease& root,initial_fence::FenceLease& fence) const;
     bool Guard(initial_fence::InternalFencedIo& io);
     const FloorSnapshot& Floor() const;
     const Id& AcquisitionOwner() const;

@@ -37,17 +37,17 @@ OriginalDaemon::OriginalDaemon(std::unique_ptr<Data> data):data_(std::move(data)
 std::unique_ptr<OriginalDaemon> OriginalDaemon::Launch(InstalledEnrollment& enrollment,const Id& generation,const Id& bootNonce,const Id& channelNonce,const std::wstring& daemonPipe,std::unique_ptr<PreparedLifecycleGrant> lifecycleGrant,Result& result){
     auto data=std::make_unique<Data>(enrollment,generation,bootNonce,std::move(lifecycleGrant));auto target=std::unique_ptr<OriginalDaemon>(new OriginalDaemon(std::move(data)));auto& d=*target->data_;
     try{const auto& p=enrollment.Profile();const auto now=GetTickCount64();if(!d.grant||d.grant->generation_!=generation||d.grant->boot_!=bootNonce||detail::Zero(d.grant->consumed_)||detail::Zero(channelNonce)||!d.grant->EffectClockLive()||now>=d.grant->sessionDeadline_||!enrollment.Fresh(true).ok)Refuse("prepared_lifecycle_grant_refused");
-        const std::wstring node=p.node.pin.canonicalPath,script=enrollment.CheckedBridgeEntry();
+        const std::wstring canonicalScript=enrollment.CheckedBridgeEntry();const auto& locators=enrollment.PrepareFixedLaunchLocators();const std::wstring node=locators.node,script=locators.bridge;
         // Synthetic proof enrolls its own repository containing a fixed fixture
         // script at this exact name. It never points this entry at the real daemon.
         const std::wstring command=Quote(node)+L" "+Quote(script);
         std::vector<wchar_t> mutableCommand(command.begin(),command.end());mutableCommand.push_back(L'\0');auto environment=Environment(generation,bootNonce,channelNonce,daemonPipe);STARTUPINFOW startup{};startup.cb=sizeof(startup);PROCESS_INFORMATION original{};
         // Consumption and bounded lifecycle grant exist already. No root/fence/
         // journal/stdin HANDLE inheritance, shell, ambient argv or PATH resolution.
-        if(!enrollment.Fresh(true).ok||enrollment.CheckedBridgeEntry()!=script||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_precreate_guard_closed",0,true);
-        if(!CreateProcessW(node.c_str(),mutableCommand.data(),nullptr,nullptr,FALSE,CREATE_SUSPENDED|CREATE_UNICODE_ENVIRONMENT|CREATE_NO_WINDOW,environment.data(),p.repository.canonicalPath.c_str(),&startup,&original))Refuse("create_process_consumed_failure",GetLastError(),true);
+        enrollment.CheckFixedLaunchLocators();if(!enrollment.Fresh(true).ok||enrollment.CheckedBridgeEntry()!=canonicalScript||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_precreate_guard_closed",0,true);
+        if(!CreateProcessW(node.c_str(),mutableCommand.data(),nullptr,nullptr,FALSE,CREATE_SUSPENDED|CREATE_UNICODE_ENVIRONMENT|CREATE_NO_WINDOW,environment.data(),locators.repository.c_str(),&startup,&original))Refuse("create_process_consumed_failure",GetLastError(),true);
         d.process=detail::Held(original.hProcess);d.thread=detail::Held(original.hThread);d.originalPid=original.dwProcessId;
-        d.birth=detail::ProcessBirth(d.process.Get());d.sid=detail::ProcessSid(d.process.Get());d.image=detail::ProcessImage(d.process.Get());if(d.sid!=p.userSid||d.image!=node||!detail::ProcessLive(d.process.Get())||!enrollment.Fresh(true).ok||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_creation_identity_or_late_guard",0,true);
+        d.birth=detail::ProcessBirth(d.process.Get());d.sid=detail::ProcessSid(d.process.Get());d.image=enrollment.CheckedOriginalLaunchImage(d.process.Get());enrollment.CheckFixedLaunchLocators();if(!d.birth||d.sid!=p.userSid||d.image!=p.node.pin.canonicalPath||!detail::ProcessLive(d.process.Get())||!enrollment.Fresh(true).ok||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_creation_identity_or_late_guard",0,true);
         if(ResumeThread(d.thread.Get())==static_cast<DWORD>(-1))Refuse("original_resume_unknown",GetLastError(),true);result.ok=true;result.code="original_creation_handles_held";
     }catch(const detail::Failure& failure){d.unknown=true;result={false,true,failure.unavailable,failure.code,failure.error};if(!d.process.Valid())return nullptr;}
     // A successful CreateProcess with later UNKNOWN retains both original handles

@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <sddl.h>
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <iomanip>
 #include <limits>
@@ -17,6 +18,16 @@
 namespace local_session {
 namespace {
 using detail::Held;using detail::Refuse;using Bytes=std::vector<unsigned char>;
+std::string AsciiPipeLocator(const std::wstring& name){
+    std::string result;result.reserve(name.size());
+    for(wchar_t c:name){const auto value=static_cast<std::uint32_t>(c);if(value<0x20||value>0x7e)Refuse("internal_pipe_name_not_printable_ascii");result.push_back(static_cast<char>(c));}
+    return result;
+}
+void FailureDiagnostic(const char* stage,const Result& result) noexcept{
+    // Diagnostic observations cannot change disposition or the original failure.
+    // Two fixed call sites emit at most one short record each; no locator/nonce.
+    try{const std::string text="{\"schema\":\"ae-agent.local-broker.failure-observation.v1\",\"brokerDisposition\":\"UNKNOWN\",\"stage\":\""+std::string(stage)+"\",\"result\":"+ResultJson(result)+"}\n";if(text.size()>2048)return;DWORD written=0;WriteFile(GetStdHandle(STD_ERROR_HANDLE),text.data(),static_cast<DWORD>(text.size()),&written,nullptr);}catch(...){}
+}
 template<class A> void Put(Bytes& b,const A& a){b.insert(b.end(),a.begin(),a.end());}
 void U32(Bytes& b,std::uint32_t n){for(unsigned i=0;i<4;++i)b.push_back(static_cast<unsigned char>(n>>(8*i)));}
 struct Reader {
@@ -29,6 +40,16 @@ struct SlotObservation {std::uint16_t type=0;std::uint64_t sequence=0,epoch=0;Id
 std::wstring SlotName(std::uint64_t n){if(!n||n>256)Refuse("floor_slot_limit");std::wostringstream name;name<<std::setfill(L'0')<<std::setw(20)<<n<<L".rec";return name.str();}
 SlotObservation IndependentlyRead(void* journal,std::uint64_t n){
     Held witness=detail::Relative(journal,SlotName(n),false);SlotObservation slot;slot.fileId=detail::ReadPin(witness.Get(),false).fileId;const Bytes bytes=detail::ReadExact(witness.Get(),16384);if(bytes.size()<228)Refuse("floor_partial_slot",0,true);Reader read{bytes};if(read.Fixed<8>()!=std::array<unsigned char,8>{'O','W','N','J','R','N','0','1'}||read.Number(2)!=1)Refuse("floor_frame_version",0,true);slot.type=static_cast<std::uint16_t>(read.Number(2));if(slot.type<1||slot.type>5||read.Number(4)!=bytes.size())Refuse("floor_frame_type_length",0,true);slot.scope=read.Fixed<32>();slot.lineage=read.Fixed<16>();slot.genesis=read.Fixed<32>();slot.sequence=read.Number(8);slot.epoch=read.Number(8);slot.owner=read.Fixed<16>();slot.previous=read.Fixed<32>();slot.key=read.Fixed<32>();const auto payload=read.Number(4);if(payload>4096||read.offset+payload+32!=bytes.size())Refuse("floor_frame_payload",0,true);read.offset+=static_cast<std::size_t>(payload);slot.hash=read.Fixed<32>();read.End();if(slot.sequence!=n||detail::Hash(Bytes(bytes.begin(),bytes.end()-32))!=slot.hash)Refuse("floor_frame_hash_or_slot",0,true);return slot;
+}
+void CheckFloorInventory(void* journal,const FloorSnapshot& floor){
+    alignas(FILE_ID_BOTH_DIR_INFO) std::array<unsigned char,65536> buffer{};std::vector<std::wstring> names;bool restart=true;
+    for(;;){const auto kind=restart?FileIdBothDirectoryRestartInfo:FileIdBothDirectoryInfo;restart=false;if(!GetFileInformationByHandleEx(journal,kind,buffer.data(),static_cast<DWORD>(buffer.size()))){if(GetLastError()==ERROR_NO_MORE_FILES)break;Refuse("floor_inventory_query_failed",GetLastError());}
+        std::size_t offset=0;for(;;){if(offset+offsetof(FILE_ID_BOTH_DIR_INFO,FileName)>buffer.size())Refuse("floor_inventory_malformed");const auto* entry=reinterpret_cast<const FILE_ID_BOTH_DIR_INFO*>(buffer.data()+offset);if(entry->FileNameLength%2||entry->FileNameLength>buffer.size()-offset - offsetof(FILE_ID_BOTH_DIR_INFO,FileName))Refuse("floor_inventory_malformed");const std::wstring name(entry->FileName,entry->FileNameLength/2);
+            if(name!=L"."&&name!=L".."){if(names.size()>=256||std::find(names.begin(),names.end(),name)!=names.end())Refuse("floor_inventory_limit_or_duplicate");names.push_back(name);}if(!entry->NextEntryOffset)break;if(entry->NextEntryOffset<offsetof(FILE_ID_BOTH_DIR_INFO,FileName)||entry->NextEntryOffset>buffer.size()-offset)Refuse("floor_inventory_malformed");offset+=entry->NextEntryOffset;}
+    }
+    for(std::uint64_t n=1;n<=floor.sequence;++n){const auto exact=SlotName(n);const auto found=std::find(names.begin(),names.end(),exact);if(found==names.end())Refuse("floor_inventory_missing_original");names.erase(found);}
+    if(!names.empty()&&(!floor.pending.exists||names.size()!=1||names.front()!=SlotName(floor.pending.slot)))Refuse("floor_inventory_unexplained_tail");
+    if(floor.pending.exists&&!detail::Zero(floor.pending.createdFileId)&&names.empty())Refuse("floor_inventory_missing_created_slot");
 }
 constexpr std::size_t kWireSize=128;
 Bytes Encode(const Message& m){Bytes b={'L','C','S','B'};detail::PutU16(b,2);detail::PutU16(b,m.verb);detail::PutU64(b,m.ordinal);Put(b,m.channelNonce);Put(b,m.generation);Put(b,m.bootNonce);Put(b,m.reference);Put(b,m.digest);detail::PutU64(b,m.readinessEpoch);U32(b,m.readinessMask);U32(b,0);if(b.size()!=kWireSize)Refuse("internal_wire_size");return b;}
@@ -69,15 +90,40 @@ struct ContinuityPort::Data {
 };
 ContinuityPort::ContinuityPort(InstalledEnrollment& e,initial_fence::Factory& f,initial_fence::RootLease& r,initial_fence::FenceLease& l):data_(std::make_unique<Data>(e,f,r,l)){}
 ContinuityPort::~ContinuityPort()=default;
-bool ContinuityPort::Guard(initial_fence::InternalFencedIo& io){auto& d=*data_;if(d.closed||d.entered||d.thread!=GetCurrentThreadId()){d.closed=true;return false;}d.entered=true;try{const auto guarded=io.StageGuard();void* borrowed=io.BorrowedRoot();const auto original=d.factory.Observe(d.root,d.fence);if(!guarded.ok||!borrowed||!io.MatchesBinding(d.factory,d.root,d.fence)||!original.ok||original.sessionRef!=d.originalFenceRef||!d.enrollment.Fresh(true).ok||!detail::SamePin(detail::ReadPin(borrowed,true),d.enrollment.Profile().runtime))Refuse("production_continuity_fence_changed");Held journal=detail::Relative(borrowed,L"journal",true);if(!detail::SamePin(detail::ReadPin(journal.Get(),true),d.enrollment.Profile().journal)||d.floor.originalSlotIds.size()!=d.floor.sequence||d.floor.sequence>256)Refuse("production_floor_changed");Digest previous{};for(std::uint64_t n=1;n<=d.floor.sequence;++n){const auto slot=IndependentlyRead(journal.Get(),n);if(slot.fileId!=d.floor.originalSlotIds[static_cast<std::size_t>(n-1)]||slot.scope!=d.floor.scope||slot.lineage!=d.enrollment.Profile().lineage||slot.previous!=previous||(n==1?slot.type!=1:slot.genesis!=d.floor.genesis))Refuse("production_floor_prefix_changed");previous=slot.hash;if(n==d.floor.sequence&&(slot.hash!=d.floor.head||slot.epoch!=d.floor.epoch||slot.owner!=d.floor.owner))Refuse("production_floor_head_changed");}d.entered=false;return true;}catch(const detail::Failure&){d.entered=false;d.closed=true;return false;}}
+bool ContinuityPort::MatchesBinding(InstalledEnrollment& enrollment,initial_fence::Factory& factory,initial_fence::RootLease& root,initial_fence::FenceLease& fence)const{
+    const auto& d=*data_;return !d.closed && d.thread==GetCurrentThreadId()
+        && &d.enrollment==&enrollment && &d.factory==&factory && &d.root==&root && &d.fence==&fence;
+}
+bool ContinuityPort::Guard(initial_fence::InternalFencedIo& io){auto& d=*data_;if(d.closed||d.entered||d.thread!=GetCurrentThreadId()){d.closed=true;return false;}d.entered=true;
+    try{const auto guarded=io.StageGuard();void* borrowed=io.BorrowedRoot();const auto original=d.factory.Observe(d.root,d.fence);if(!guarded.ok||!borrowed||!io.MatchesBinding(d.factory,d.root,d.fence)||!original.ok||original.sessionRef!=d.originalFenceRef||!d.enrollment.Fresh(true).ok||!detail::SamePin(detail::ReadPin(borrowed,true),d.enrollment.Profile().runtime))Refuse("production_continuity_fence_changed");
+        Held journal=detail::Relative(borrowed,L"journal",true);if(!detail::SamePin(detail::ReadPin(journal.Get(),true),d.enrollment.Profile().journal)||d.floor.scope!=d.enrollment.Scope()||d.floor.originalSlotIds.size()!=d.floor.sequence||d.floor.originalFrameHashes.size()!=d.floor.sequence||d.floor.sequence>256)Refuse("production_floor_changed");
+        if(!d.floor.sequence&&(d.floor.epoch||!detail::Zero(d.floor.head)||!detail::Zero(d.floor.genesis)||!detail::Zero(d.floor.owner)))Refuse("production_empty_floor_changed");
+        CheckFloorInventory(journal.Get(),d.floor);Digest previous{};Id owner{};std::uint64_t epoch=0;
+        for(std::uint64_t n=1;n<=d.floor.sequence;++n){if(!io.StageGuard().ok)Refuse("production_prefix_guard_lost");const auto slot=IndependentlyRead(journal.Get(),n);const auto index=static_cast<std::size_t>(n-1);if(slot.fileId!=d.floor.originalSlotIds[index]||slot.hash!=d.floor.originalFrameHashes[index]||slot.scope!=d.floor.scope||slot.lineage!=d.enrollment.Profile().lineage||slot.previous!=previous)Refuse("production_floor_prefix_changed");
+            if(n==1){if(slot.type!=1||slot.epoch||!detail::Zero(slot.owner)||!detail::Zero(slot.genesis)||slot.hash!=d.floor.genesis)Refuse("production_genesis_changed");}
+            else{if(slot.genesis!=d.floor.genesis)Refuse("production_genesis_reference_changed");if(slot.type==2){if(epoch==std::numeric_limits<std::uint64_t>::max()||slot.epoch!=epoch+1||detail::Zero(slot.owner))Refuse("production_owner_epoch_changed");}else if(slot.type==1||!epoch||slot.epoch!=epoch||slot.owner!=owner)Refuse("production_committed_epoch_changed");}
+            previous=slot.hash;epoch=slot.epoch;owner=slot.owner;if(n==d.floor.sequence&&(slot.hash!=d.floor.head||slot.epoch!=d.floor.epoch||slot.owner!=d.floor.owner))Refuse("production_floor_head_changed");}
+        if(!io.StageGuard().ok||!d.enrollment.Fresh(true).ok)Refuse("production_final_floor_guard_lost");d.entered=false;return true;
+    }catch(const detail::Failure&){d.entered=false;d.closed=true;return false;}catch(...){d.entered=false;d.closed=true;throw;}
+}
 const FloorSnapshot& ContinuityPort::Floor()const{return data_->floor;}
 const Id& ContinuityPort::AcquisitionOwner()const{return data_->acquisitionOwner;}
-bool ContinuityPort::RegisterPending(initial_fence::InternalFencedIo& io,const FloorSnapshot::Pending& pending){auto& d=*data_;if(!Guard(io)||d.floor.pending.exists||d.floor.sequence==256||pending.sequence!=d.floor.sequence||pending.epoch!=d.floor.epoch||pending.head!=d.floor.head||pending.slot!=d.floor.sequence+1||pending.type<1||pending.type>5||!detail::Zero(pending.createdFileId)||detail::Zero(pending.frameHash)||detail::Zero(pending.semanticKey)||IsSpent(pending.semanticKey)||(pending.type==1?!detail::Zero(pending.owner):pending.owner!=d.acquisitionOwner))return false;d.floor.pending=pending;if(pending.type==3)d.spent.push_back(pending.semanticKey);return true;}
-bool ContinuityPort::BindCreatedSlot(initial_fence::InternalFencedIo& io,void* originalFile){auto& d=*data_;if(!Guard(io)||!d.floor.pending.exists||!detail::Zero(d.floor.pending.createdFileId))return false;try{std::uint64_t length=0;const auto pin=detail::ReadPin(originalFile,false,&length);const auto& journal=d.enrollment.Profile().journal;if(length||pin.volumeGuid!=journal.volumeGuid||pin.serial!=journal.serial||pin.canonicalPath!=journal.canonicalPath+L"\\"+SlotName(d.floor.pending.slot))return false;Held independent=detail::Relative(d.enrollment.BorrowedJournal(),SlotName(d.floor.pending.slot),false);if(!detail::SamePin(detail::ReadPin(independent.Get(),false),pin)||!io.StageGuard().ok)return false;d.floor.pending.createdFileId=pin.fileId;return true;}catch(const detail::Failure&){return false;}}
-bool ContinuityPort::ObserveAndAdvance(initial_fence::InternalFencedIo& io,bool originalFlushObserved){auto& d=*data_;if(!Guard(io)||!d.floor.pending.exists||detail::Zero(d.floor.pending.createdFileId))return false;const auto pending=d.floor.pending;try{Held journal=detail::Relative(io.BorrowedRoot(),L"journal",true);const auto slot=IndependentlyRead(journal.Get(),pending.slot);if(slot.fileId!=pending.createdFileId||slot.scope!=d.floor.scope||slot.lineage!=d.enrollment.Profile().lineage||slot.hash!=pending.frameHash||slot.key!=pending.semanticKey||slot.type!=pending.type||slot.previous!=d.floor.head||slot.owner!=pending.owner)Refuse("production_pending_conflict");if(pending.type==1){if(d.floor.sequence||slot.epoch||!detail::Zero(slot.genesis)||!detail::Zero(slot.owner))Refuse("production_genesis_conflict");}else if(pending.type==2){if(!d.floor.sequence||d.floor.epoch==std::numeric_limits<std::uint64_t>::max()||slot.epoch!=d.floor.epoch+1||detail::Zero(slot.owner))Refuse("production_owner_conflict");}else if(!d.floor.epoch||slot.epoch!=d.floor.epoch||slot.owner!=d.floor.owner)Refuse("production_epoch_conflict");if(!io.StageGuard().ok||!d.enrollment.Fresh(true).ok)Refuse("production_readback_guard_lost");
+bool ContinuityPort::RegisterPending(initial_fence::InternalFencedIo& io,const FloorSnapshot::Pending& pending){auto& d=*data_;if(!Guard(io)||!pending.exists||d.floor.pending.exists||d.floor.sequence==256||pending.sequence!=d.floor.sequence||pending.epoch!=d.floor.epoch||pending.head!=d.floor.head||pending.slot!=d.floor.sequence+1||pending.type<1||pending.type>5||!detail::Zero(pending.createdFileId)||detail::Zero(pending.frameHash)||detail::Zero(pending.semanticKey)||IsSpent(pending.semanticKey))return false;
+    if(pending.type==1){if(d.floor.sequence||d.floor.epoch||!detail::Zero(pending.owner))return false;}
+    else if(pending.type==2){if(!d.floor.sequence||d.floor.epoch==std::numeric_limits<std::uint64_t>::max()||pending.owner!=d.acquisitionOwner||pending.owner==d.floor.owner)return false;}
+    else if(!d.floor.epoch||pending.owner!=d.acquisitionOwner||pending.owner!=d.floor.owner)return false;
+    if(!io.StageGuard().ok)return false;d.floor.pending=pending;if(pending.type==3)d.spent.push_back(pending.semanticKey);return true;
+}
+bool ContinuityPort::BindCreatedSlot(initial_fence::InternalFencedIo& io,void* originalFile){auto& d=*data_;if(!Guard(io)||!d.floor.pending.exists||!detail::Zero(d.floor.pending.createdFileId))return false;try{std::uint64_t length=0;const auto pin=detail::ReadPin(originalFile,false,&length);const auto& journal=d.enrollment.Profile().journal;if(length||detail::Zero(pin.fileId)||pin.volumeGuid!=journal.volumeGuid||pin.serial!=journal.serial||pin.canonicalPath!=journal.canonicalPath+L"\\"+SlotName(d.floor.pending.slot))return false;
+        if(!io.StageGuard().ok)return false;Held independent=detail::Relative(d.enrollment.BorrowedJournal(),SlotName(d.floor.pending.slot),false);if(!detail::SamePin(detail::ReadPin(independent.Get(),false),pin)||!io.StageGuard().ok||!d.enrollment.Fresh(true).ok)return false;d.floor.pending.createdFileId=pin.fileId;return true;
+    }catch(const detail::Failure&){return false;}}
+bool ContinuityPort::ObserveAndAdvance(initial_fence::InternalFencedIo& io,bool originalFlushObserved){auto& d=*data_;if(!Guard(io)||!d.floor.pending.exists||detail::Zero(d.floor.pending.createdFileId))return false;const auto pending=d.floor.pending;try{Held journal=detail::Relative(io.BorrowedRoot(),L"journal",true);if(!detail::SamePin(detail::ReadPin(journal.Get(),true),d.enrollment.Profile().journal)||!io.StageGuard().ok)Refuse("production_readback_journal_changed");const auto slot=IndependentlyRead(journal.Get(),pending.slot);if(slot.fileId!=pending.createdFileId||slot.scope!=d.floor.scope||slot.lineage!=d.enrollment.Profile().lineage||slot.hash!=pending.frameHash||slot.key!=pending.semanticKey||slot.type!=pending.type||slot.previous!=d.floor.head||slot.owner!=pending.owner||slot.sequence!=d.floor.sequence+1)Refuse("production_pending_conflict");if(pending.type==1){if(d.floor.sequence||slot.epoch||!detail::Zero(slot.genesis)||!detail::Zero(slot.owner))Refuse("production_genesis_conflict");}else if(pending.type==2){if(!d.floor.sequence||slot.genesis!=d.floor.genesis||d.floor.epoch==std::numeric_limits<std::uint64_t>::max()||slot.epoch!=d.floor.epoch+1||slot.owner!=d.acquisitionOwner)Refuse("production_owner_conflict");}else if(slot.genesis!=d.floor.genesis||!d.floor.epoch||slot.epoch!=d.floor.epoch||slot.owner!=d.floor.owner)Refuse("production_epoch_conflict");if(!io.StageGuard().ok||!d.enrollment.Fresh(true).ok)Refuse("production_readback_guard_lost");
         // Independent native observation, then floor advancement+pending clear in
         // one same-thread critical section. No client ACK, wait, callback or IO here.
-        d.floor.originalSlotIds.push_back(slot.fileId);d.floor.sequence=slot.sequence;d.floor.epoch=slot.epoch;d.floor.head=slot.hash;d.floor.owner=slot.owner;if(slot.type==1)d.floor.genesis=slot.hash;d.floor.pending=FloorSnapshot::Pending{};
+        // Reserve bounded vectors before changing either list, then commit the
+        // original ID and exact frame hash together with the new head.
+        d.floor.originalSlotIds.reserve(static_cast<std::size_t>(slot.sequence));d.floor.originalFrameHashes.reserve(static_cast<std::size_t>(slot.sequence));
+        d.floor.originalSlotIds.push_back(slot.fileId);d.floor.originalFrameHashes.push_back(slot.hash);d.floor.sequence=slot.sequence;d.floor.epoch=slot.epoch;d.floor.head=slot.hash;d.floor.owner=slot.owner;if(slot.type==1)d.floor.genesis=slot.hash;d.floor.pending=FloorSnapshot::Pending{};
         (void)originalFlushObserved;return true;
     }catch(const detail::Failure&){return false;} // pending/spent remain intact
 }
@@ -93,6 +139,11 @@ struct Broker::Data {
     std::unique_ptr<OriginalDaemon> daemon;
     Id controllerNonce=detail::RandomId(),daemonNonce=detail::RandomId(),generation=detail::RandomId(),bootNonce=detail::RandomId(),actor{},stopRef{};
     State state=State::Closed;bool controllerRevoked=false,everActor=false,stopConsumed=false,drainSent=false,drainAcknowledged=false;
+    // UNKNOWN is an irreversible disposition, independent of a later factual
+    // exit of the one original HANDLE. An abort consumes protocol observation;
+    // only that HANDLE and the original prepared clock remain while awaiting it.
+    bool unknownDisposition=false,originalExitObserved=false,awaitingOriginalExit=false;
+    std::uint32_t originalExitCode=0;
     // Filled only by the future private L4 panel phase port. Daemon registration
     // and ensure-daemon never mint this separate grant; no caller bool can set it.
     bool panelGrantIssued=false;std::uint64_t panelGrantDeadline=0;
@@ -104,7 +155,11 @@ struct Broker::Data {
         controllerPipe=std::make_unique<PrivatePipe>(PipeName(enrollment->LaunchKey(),controllerNonce,L"controller"),enrollment->Profile().userSid);daemonPipe=std::make_unique<PrivatePipe>(PipeName(enrollment->LaunchKey(),daemonNonce,L"daemon"),enrollment->Profile().userSid);
     }
     bool Guard(){const auto observed=factory->Observe(root,fence);if(!observed.ok||!factory->LiveCheck(root,fence,observed.sessionRef).ok||!enrollment->Fresh(true).ok)return false;const auto checked=store->Inspect();return checked.ok&&!checked.unknown&&!checked.unavailable&&checked.current.sequence==cas.sequence&&checked.current.epoch==cas.epoch&&checked.current.head==cas.head;}
-    void Revoke(){controllerRevoked=true;if(state!=State::Unknown&&state!=State::ExactExited)state=State::Revoked;}
+    void Unknown(){unknownDisposition=true;state=State::Unknown;}
+    void Revoke(){controllerRevoked=true;if(!unknownDisposition&&!originalExitObserved)state=State::Revoked;}
+    bool ObserveOriginalExit(){if(originalExitObserved)return true;if(!daemon||!daemon->ExactExit(originalExitCode))return false;originalExitObserved=true;if(!unknownDisposition)state=State::ExactExited;return true;}
+    // Zero is only this broker's terminal observation; it grants no admission.
+    int ExitDisposition()const{return unknownDisposition?2:0;}
     bool ControllerLive(){if(controllerRevoked||!controller||controllerPipe->Closed()||!controller->Live(controllerPipe->Handle())){Revoke();return false;}if(openedAt&&GetTickCount64()>=sessionDeadline){Revoke();return false;}return true;}
     Message Reply(std::uint16_t verb,std::uint64_t ordinal){Message message;message.verb=verb;message.ordinal=ordinal;message.channelNonce=controllerNonce;message.generation=generation;message.bootNonce=bootNonce;message.readinessEpoch=static_cast<std::uint64_t>(state);return message;}
     void ControllerMessage(const Message& m){if(m.channelNonce!=controllerNonce||m.ordinal==0||controllerOrdinal==std::numeric_limits<std::uint64_t>::max()||m.ordinal!=controllerOrdinal+1||!detail::Zero(m.generation)||!detail::Zero(m.bootNonce)||!detail::Zero(m.reference)||!detail::Zero(m.digest)||m.readinessEpoch||m.readinessMask)Refuse("controller_closed_message_refused");controllerOrdinal=m.ordinal;
@@ -113,39 +168,58 @@ struct Broker::Data {
         if(!ControllerLive()||!Guard())Refuse("controller_guard_closed");
         if(m.verb==static_cast<std::uint16_t>(ControllerVerb::Open)){if(state!=State::Closed||openedAt)Refuse("controller_open_already_consumed");openedAt=GetTickCount64();const auto limit=enrollment->Profile().maximumSessionMs;if(openedAt>std::numeric_limits<std::uint64_t>::max()-limit)Refuse("session_deadline_overflow");sessionDeadline=openedAt+limit;state=State::SessionOpen;}
         else if(m.verb==static_cast<std::uint16_t>(ControllerVerb::ReserveInitialLaunch)){
-            if(state!=State::SessionOpen||daemon)Refuse("initial_launch_not_available");initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Launch;record.target=enrollment->Profile().launchTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;if(!consumed.ok||!consumed.consumptionRecorded||consumed.unknown){state=State::Unknown;Refuse("initial_launch_consumption_unknown",consumed.win32Error,true);}launchRecord=consumed.recordHash;state=State::LaunchReserved;
+            if(state!=State::SessionOpen||daemon)Refuse("initial_launch_not_available");initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Launch;record.target=enrollment->Profile().launchTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;if(!consumed.ok||!consumed.consumptionRecorded||consumed.unknown){Unknown();Refuse("initial_launch_consumption_unknown",consumed.win32Error,true);}launchRecord=consumed.recordHash;state=State::LaunchReserved;
             // Durable consumption precedes this one prepared original grant.
             // Its fixed 10-minute disposition grace survives READ/session expiry
             // and EOF. No renew/token/activity or replacement controller changes it.
             auto lifecycle=PreparedLifecycleGrant::Prepare(generation,bootNonce,launchRecord,sessionDeadline);
-            if(!ControllerLive()||!Guard()){state=State::Unknown;Refuse("consumed_launch_late_guard_closed",0,true);}Result launched;daemon=OriginalDaemon::Launch(*enrollment,generation,bootNonce,daemonNonce,daemonPipe->Name(),std::move(lifecycle),launched);if(!daemon||!launched.ok){state=State::Unknown;Refuse("original_launch_unknown",launched.win32Error,true);}state=State::TargetHeld;
+            if(!ControllerLive()||!Guard()){Unknown();Refuse("consumed_launch_late_guard_closed",0,true);}Result launched;daemon=OriginalDaemon::Launch(*enrollment,generation,bootNonce,daemonNonce,daemonPipe->Name(),std::move(lifecycle),launched);if(!daemon||!launched.ok){Unknown();FailureDiagnostic("original_launch_result",launched);Refuse("original_launch_unknown",launched.win32Error,true);}state=State::TargetHeld;
         }else Refuse("controller_verb_refused");controllerPipe->Send(Reply(m.verb,m.ordinal));
     }
     void DaemonMessage(const Message& m){if(!daemon||!daemon->MatchesPeer(daemonPipe->Handle())||m.channelNonce!=daemonNonce||m.generation!=generation||m.bootNonce!=bootNonce||!m.ordinal||daemonOrdinal==std::numeric_limits<std::uint64_t>::max()||m.ordinal!=daemonOrdinal+1||!Guard())Refuse("original_daemon_message_refused");daemonOrdinal=m.ordinal;
         if(m.verb==static_cast<std::uint16_t>(DaemonVerb::BootHello)){if(state!=State::TargetHeld||!detail::Zero(m.reference)||!detail::Zero(m.digest)||m.readinessEpoch||m.readinessMask)Refuse("daemon_boot_refused");state=State::RegisteredReadClosed;}
         else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::ReadySnapshot)){if(state==State::TargetHeld||m.readinessEpoch<=readinessEpoch||m.readinessMask&~kAllQuiescent||!detail::Zero(m.reference)||!detail::Zero(m.digest))Refuse("daemon_readiness_refused");readinessEpoch=m.readinessEpoch;readinessMask=m.readinessMask;}
-        else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::FirstActorObserved)){if(controllerRevoked||state!=State::RegisteredReadClosed||!panelGrantIssued||GetTickCount64()>=panelGrantDeadline||everActor||detail::Zero(m.reference)||detail::Zero(m.digest)||m.readinessEpoch||m.readinessMask)Refuse("first_actor_refused");everActor=true;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Dispatch;record.target=enrollment->Profile().actorTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;if(!consumed.ok||consumed.unknown){state=State::Unknown;Refuse("first_actor_consumption_unknown",consumed.win32Error,true);}record={};record.type=initial_durability::RecordType::Note;record.sourceDigest=m.digest;Bytes binding;Put(binding,generation);Put(binding,bootNonce);Put(binding,m.reference);record.configDigest=detail::Hash(binding);const auto observed=store->AppendOnce(cas,record);cas=observed.current;if(!observed.ok||observed.unknown){state=State::Unknown;Refuse("first_actor_observation_unknown",observed.win32Error,true);}actor=m.reference;state=State::ActorBound;
+        else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::FirstActorObserved)){if(controllerRevoked||state!=State::RegisteredReadClosed||!panelGrantIssued||GetTickCount64()>=panelGrantDeadline||everActor||detail::Zero(m.reference)||detail::Zero(m.digest)||m.readinessEpoch||m.readinessMask)Refuse("first_actor_refused");everActor=true;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Dispatch;record.target=enrollment->Profile().actorTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;if(!consumed.ok||consumed.unknown){Unknown();Refuse("first_actor_consumption_unknown",consumed.win32Error,true);}record={};record.type=initial_durability::RecordType::Note;record.sourceDigest=m.digest;Bytes binding;Put(binding,generation);Put(binding,bootNonce);Put(binding,m.reference);record.configDigest=detail::Hash(binding);const auto observed=store->AppendOnce(cas,record);cas=observed.current;if(!observed.ok||observed.unknown){Unknown();Refuse("first_actor_observation_unknown",observed.win32Error,true);}actor=m.reference;state=State::ActorBound;
             // No READ/execution grant is minted here. L4 requires a fresh bracket.
         }else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::Complete)){Refuse("completion_port_unavailable_before_l4");}
         else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::DrainAck)){if(!drainSent||drainAcknowledged||m.reference!=stopRef||m.readinessEpoch<=readinessEpoch||m.readinessMask!=kAllQuiescent||!detail::Zero(m.digest))Refuse("drain_ack_refused");readinessEpoch=m.readinessEpoch;readinessMask=m.readinessMask;drainAcknowledged=true;}
         else if(m.verb==static_cast<std::uint16_t>(DaemonVerb::ShutdownAck)){if(!stopConsumed||m.reference!=stopRef||m.readinessEpoch||m.readinessMask||!detail::Zero(m.digest))Refuse("shutdown_ack_refused"); /* ACK is not exit. */}
         else Refuse("daemon_verb_refused");
     }
-    bool Teardown(){if(!daemon)return controllerRevoked;std::uint32_t exit=0;if(daemon->ExactExit(exit)){state=State::ExactExited;return true;}if(!controllerRevoked)return false;
+    bool Teardown(){if(!daemon)return controllerRevoked;if(awaitingOriginalExit||!controllerRevoked)return false;
         // L3 never admits AE work. Abort only the original unadmitted daemon;
         // future L4 admission uses independent drain/readiness/consumed shutdown.
-        Result aborted;if(Guard()&&daemon->AbortUnadmitted(aborted))return false;
-        if(!aborted.unavailable){state=State::Unknown;return false;}
-        if(!daemon->LifecycleEffectAllowed()||daemonPipe->Closed()||!daemon->MatchesPeer(daemonPipe->Handle())||!Guard()){state=State::Unknown;return false;}
-        if(!drainSent){stopRef=detail::RandomId();drainSent=true;readinessMask=0;Message drain;drain.verb=33;drain.ordinal=1;drain.channelNonce=daemonNonce;drain.generation=generation;drain.bootNonce=bootNonce;drain.reference=stopRef;if(!daemon->LifecycleEffectAllowed()||!daemonPipe->Send(drain)){state=State::Unknown;return false;}return false;}
-        if(!drainAcknowledged||readinessMask!=kAllQuiescent||stopConsumed)return false;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Stop;record.target=enrollment->Profile().stopTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;stopConsumed=true;stopRecord=consumed.recordHash;if(!consumed.ok||consumed.unknown||!Guard()||!daemon->LifecycleEffectAllowed()){state=State::Unknown;return false;}Message stop;stop.verb=34;stop.ordinal=2;stop.channelNonce=daemonNonce;stop.generation=generation;stop.bootNonce=bootNonce;stop.reference=stopRef;stop.digest=stopRecord;if(!daemon->LifecycleEffectAllowed()||!daemonPipe->Send(stop))state=State::Unknown;return false;
+        Result aborted;if(Guard()&&daemon->AbortUnadmitted(aborted)){awaitingOriginalExit=true;return false;}
+        if(!aborted.unavailable){Unknown();return false;}
+        if(!daemon->LifecycleEffectAllowed()||daemonPipe->Closed()||!daemon->MatchesPeer(daemonPipe->Handle())||!Guard()){Unknown();return false;}
+        if(!drainSent){stopRef=detail::RandomId();drainSent=true;readinessMask=0;Message drain;drain.verb=33;drain.ordinal=1;drain.channelNonce=daemonNonce;drain.generation=generation;drain.bootNonce=bootNonce;drain.reference=stopRef;if(!daemon->LifecycleEffectAllowed()||!daemonPipe->Send(drain)){Unknown();return false;}return false;}
+        if(!drainAcknowledged||readinessMask!=kAllQuiescent||stopConsumed)return false;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Stop;record.target=enrollment->Profile().stopTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;stopConsumed=true;stopRecord=consumed.recordHash;if(!consumed.ok||consumed.unknown||!Guard()||!daemon->LifecycleEffectAllowed()){Unknown();return false;}Message stop;stop.verb=34;stop.ordinal=2;stop.channelNonce=daemonNonce;stop.generation=generation;stop.bootNonce=bootNonce;stop.reference=stopRef;stop.digest=stopRecord;if(!daemon->LifecycleEffectAllowed()||!daemonPipe->Send(stop))Unknown();return false;
     }
 };
 Broker::Broker(std::unique_ptr<Data> d):data_(std::move(d)){}Broker::~Broker()=default;
-int Broker::RunFixed(){try{auto data=std::make_unique<Data>();data->Initialize();Broker broker(std::move(data));auto& d=*broker.data_;const std::wstring name=d.controllerPipe->Name();const std::string locator(name.begin(),name.end());const std::string nonce=detail::Hex(d.controllerNonce);std::string hello="{\"schema\":\"ae-agent.local-broker.locator.v2\",\"pipe\":\"";for(char c:locator){if(c=='\\')hello+='\\';hello+=c;}hello+="\",\"nonce\":\""+nonce+"\",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"executionAdmission\":false}\n";DWORD n=0;if(!WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),hello.data(),static_cast<DWORD>(hello.size()),&n,nullptr)||n!=hello.size())Refuse("broker_locator_send_unknown",GetLastError(),true);
-        const auto waitingAt=GetTickCount64();for(;;){try{if(d.controllerPipe->PollConnect()&&!d.controller)d.controller=std::make_unique<OriginalController>(d.controllerPipe->Handle(),d.enrollment->Profile());if(d.controller){d.ControllerLive();Message m;if(d.controllerPipe->Poll(m))d.ControllerMessage(m);if(d.controllerPipe->Closed())d.Revoke();}else if(GetTickCount64()-waitingAt>=60000)d.Revoke();
-            if(d.daemonPipe->PollConnect()){if(!d.daemon||!d.daemon->MatchesPeer(d.daemonPipe->Handle()))Refuse("unbound_daemon_pipe_peer");Message m;if(d.daemonPipe->Poll(m))d.DaemonMessage(m);}if(d.daemonPipe->Closed()&&d.daemon)d.state=State::Unknown;if(d.Teardown())return 0;
-        }catch(const detail::Failure&){d.Revoke();d.state=State::Unknown;if(!d.daemon)return 2;}Sleep(5);}
+int Broker::RunFixed(){try{auto data=std::make_unique<Data>();data->Initialize();Broker broker(std::move(data));auto& d=*broker.data_;const std::wstring name=d.controllerPipe->Name();const std::string locator=AsciiPipeLocator(name);const std::string nonce=detail::Hex(d.controllerNonce);std::string hello="{\"schema\":\"ae-agent.local-broker.locator.v2\",\"pipe\":\"";for(char c:locator){if(c=='\\')hello+='\\';hello+=c;}hello+="\",\"nonce\":\""+nonce+"\",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"executionAdmission\":false}\n";DWORD n=0;if(!WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),hello.data(),static_cast<DWORD>(hello.size()),&n,nullptr)||n!=hello.size())Refuse("broker_locator_send_unknown",GetLastError(),true);
+        const auto waitingAt=GetTickCount64();bool failureReported=false;
+        const auto caughtFailure=[&](const detail::Failure& failure){d.Unknown();d.Revoke();if(!failureReported){failureReported=true;FailureDiagnostic("broker_loop_caught_failure",Result{false,failure.unknown,failure.unavailable,failure.code,failure.error});}};
+        const auto originalDisposition=[&](){
+            // Never depends on pipe admission, controller liveness or a fresh
+            // enrollment/floor guard. Exact exit remains observable after expiry.
+            try{if(d.ObserveOriginalExit())return d.ExitDisposition();}catch(const detail::Failure& failure){caughtFailure(failure);}
+            // This existing query is backed solely by the immutable preissued
+            // disposition clock. Expiry ends only this broker, with no target IO.
+            if(d.daemon&&!d.daemon->LifecycleEffectAllowed()){d.Unknown();d.Revoke();return 2;}return -1;
+        };
+        for(;;){int terminal=originalDisposition();if(terminal>=0)return terminal;
+            try{if(d.controllerPipe->PollConnect()&&!d.controller)d.controller=std::make_unique<OriginalController>(d.controllerPipe->Handle(),d.enrollment->Profile());if(d.controller){d.ControllerLive();Message m;if(d.controllerPipe->Poll(m))d.ControllerMessage(m);if(d.controllerPipe->Closed())d.Revoke();}else if(GetTickCount64()-waitingAt>=60000)d.Revoke();
+                // No daemon protocol can restore authority after our once-only
+                // abort. Its expected dead peer/EOF is not a protocol failure;
+                // the independent original HANDLE observation decides exit.
+                if(!d.awaitingOriginalExit){if(d.daemonPipe->PollConnect()){if(!d.daemon||!d.daemon->MatchesPeer(d.daemonPipe->Handle()))Refuse("unbound_daemon_pipe_peer");Message m;if(d.daemonPipe->Poll(m))d.DaemonMessage(m);}if(d.daemonPipe->Closed()&&d.daemon)d.Unknown();}
+            }catch(const detail::Failure& failure){caughtFailure(failure);}
+            // Protocol failure cannot starve lifecycle observation or teardown.
+            terminal=originalDisposition();if(terminal>=0)return terminal;
+            try{if(d.Teardown())return d.ExitDisposition();}catch(const detail::Failure& failure){caughtFailure(failure);}
+            terminal=originalDisposition();if(terminal>=0)return terminal;Sleep(5);
+        }
     }catch(const detail::Failure& failure){const Result result{false,failure.unknown,failure.unavailable,failure.code,failure.error};const std::string text=ResultJson(result)+"\n";DWORD n=0;WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),text.data(),static_cast<DWORD>(text.size()),&n,nullptr);return 2;}}
 std::string ResultJson(const Result& result){std::ostringstream out;out<<"{\"schema\":\"ae-agent.local-broker.result.v2\",\"ok\":"<<(result.ok?"true":"false")<<",\"unknown\":"<<(result.unknown?"true":"false")<<",\"unavailable\":"<<(result.unavailable?"true":"false")<<",\"code\":\""<<result.code<<"\",\"win32Error\":"<<result.win32Error<<",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"executionAdmission\":false,\"replayAllowed\":false}";return out.str();}
 } // namespace local_session

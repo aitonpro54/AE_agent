@@ -60,13 +60,19 @@ private:
     struct Data;
     explicit InstalledEnrollment(std::unique_ptr<Data> data);
     static std::unique_ptr<InstalledEnrollment> OpenFixed(Result& result);
-    static Result ProvisionFixed();
+    static Result ProvisionFixedCreator();
     Result Fresh(bool lockHeld) const;
     const reviewed::Profile& Profile() const;
     void* BorrowedRuntime() const;
     void* BorrowedJournal() const;
     // Exact launched script, selected only from the mandatory original held pin.
     const std::wstring& CheckedBridgeEntry() const;
+    // Compatibility strings are derived only from the three original witnesses.
+    // Retained no-follow aliases do not replace canonical profile authority.
+    struct LaunchLocators { std::wstring node,bridge,repository; };
+    const LaunchLocators& PrepareFixedLaunchLocators();
+    void CheckFixedLaunchLocators() const;
+    std::wstring CheckedOriginalLaunchImage(void* originalProcess) const;
     // Copied strings/digests are diagnostics. Only this original live object can
     // be passed to installed fence/store factories; JSON cannot reconstruct it.
     Digest Scope() const;
@@ -77,9 +83,12 @@ private:
     friend class OriginalDaemon;
     friend class initial_fence::Factory;
     friend class initial_durability::Store;
-    friend Result ProvisionFixedEnrollment();
+    friend Result ProvisionFixedEnrollmentOverOriginalStdio();
 };
-Result ProvisionFixedEnrollment();
+// Closed --enroll-fixed creator entry: no input selectors or serialized authority.
+// A bounded binary observation is emitted while all FILE_CREATE handles remain
+// held. One nonce/birth/frame-hash ACK on original stdin permits their closure.
+Result ProvisionFixedEnrollmentOverOriginalStdio();
 
 namespace detail {
 class Held final {

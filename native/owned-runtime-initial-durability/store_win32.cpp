@@ -14,7 +14,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
 #include "durability_expected_pins.h"
+#else
+#include "../owned-runtime-local-session/local_session_win32.h"
+#endif
 
 namespace initial_durability {
 namespace {
@@ -41,8 +45,10 @@ private: HANDLE h_=nullptr;
 };
 std::string Hex(const unsigned char* p,std::size_t n){static constexpr char d[]="0123456789abcdef";std::string s(n*2,'0');for(std::size_t i=0;i<n;++i){s[2*i]=d[p[i]>>4];s[2*i+1]=d[p[i]&15];}return s;}
 template<std::size_t N> std::string Hex(const std::array<unsigned char,N>& a){return Hex(a.data(),N);}
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
 Bytes Unhex(const std::string& s){if(s.size()%2||s.size()>2*kFrameLimit)Refuse("wire_hex_invalid");Bytes b(s.size()/2);for(std::size_t i=0;i<s.size();++i){const char c=s[i];unsigned char v;if(c>='0'&&c<='9')v=static_cast<unsigned char>(c-'0');else if(c>='a'&&c<='f')v=static_cast<unsigned char>(c-'a'+10);else Refuse("wire_hex_invalid");b[i/2]=static_cast<unsigned char>((b[i/2]<<4)|v);}return b;}
 template<std::size_t N> std::array<unsigned char,N> Fixed(const std::string& s){Bytes b=Unhex(s);if(b.size()!=N)Refuse("pin_length_invalid");std::array<unsigned char,N>a{};std::copy(b.begin(),b.end(),a.begin());return a;}
+#endif
 template<class A> bool Zero(const A& a){return std::all_of(a.begin(),a.end(),[](unsigned char c){return c==0;});}
 void U16(Bytes& b,std::uint16_t n){b.push_back(static_cast<unsigned char>(n));b.push_back(static_cast<unsigned char>(n>>8));}
 void U32(Bytes& b,std::uint32_t n){for(int i=0;i<4;++i)b.push_back(static_cast<unsigned char>(n>>(8*i)));}
@@ -77,7 +83,11 @@ Pin ReadPin(HANDLE h,bool directory,std::uint64_t* length=nullptr){
     const std::wstring guid=p.path.substr(10,38);GUID native{};if(CLSIDFromString(guid.c_str(),&native)!=S_OK)Refuse("guid_refused");std::memcpy(p.guid.data(),&native,16);p.serial=id.VolumeSerialNumber;std::memcpy(p.id.data(),id.FileId.Identifier,16);
     if(s.EndOfFile.QuadPart<0)Refuse("negative_file_length");if(length)*length=static_cast<std::uint64_t>(s.EndOfFile.QuadPart);return p;
 }
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
 template<class P> Pin ApprovedPin(const P& p){Pin out;out.path=p.canonicalPath;out.id=Fixed<16>(p.fileIdHex);out.serial=std::stoull(p.serialHex,nullptr,16);GUID g{};if(out.path.size()<49||CLSIDFromString(out.path.substr(10,38).c_str(),&g)!=S_OK)Refuse("pin_guid_invalid");std::memcpy(out.guid.data(),&g,16);return out;}
+#else
+Pin ApprovedPin(const local_session::ObjectPin& p){return Pin{p.volumeGuid,p.fileId,p.serial,p.canonicalPath};}
+#endif
 bool SamePin(const Pin& a,const Pin& b){return a.guid==b.guid&&a.serial==b.serial&&a.id==b.id&&SamePath(a.path,b.path);}
 void PutPin(Bytes& b,const Pin& p){Put(b,p.guid);U64(b,p.serial);Put(b,p.id);}
 using NtCreate=NTSTATUS(NTAPI*)(PHANDLE,ACCESS_MASK,POBJECT_ATTRIBUTES,PIO_STATUS_BLOCK,PLARGE_INTEGER,ULONG,ULONG,ULONG,ULONG,PVOID,ULONG);
@@ -102,6 +112,7 @@ Frame Decode(const Bytes& b){if(b.size()<kMinimumLength||b.size()>kFrameLimit)Re
 struct Pending {bool exists=false,createdBound=false;Cas expected;std::uint64_t slot=0;RecordType type{};Digest semantic{},hash{};Id owner{},createdId{};};
 struct Floor {Digest scope{},genesis{},head{};std::uint64_t sequence=0,epoch=0;std::vector<Id> ids;Pending pending;Id owner{};};
 bool SamePending(const Pending& a,const Pending& b){return a.exists==b.exists&&(!a.exists||(a.createdBound==b.createdBound&&a.createdId==b.createdId&&a.slot==b.slot&&a.type==b.type&&a.semantic==b.semantic&&a.hash==b.hash&&a.owner==b.owner&&a.expected.sequence==b.expected.sequence&&a.expected.epoch==b.expected.epoch&&a.expected.head==b.expected.head));}
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
 Floor DecodeFloor(const std::string& text){Bytes b=Unhex(text);Reader r{b};Floor f;f.scope=r.Array<32>();f.genesis=r.Array<32>();f.sequence=r.Num(8);f.epoch=r.Num(8);f.head=r.Array<32>();const auto n=r.Num(2);if(n>kSlotLimit||n!=f.sequence)Refuse("floor_count_invalid");for(std::uint64_t i=0;i<n;++i)f.ids.push_back(r.Array<16>());f.owner=r.Array<16>();const auto pending=r.Num(1);if(pending>1)Refuse("floor_pending_invalid");if(pending){f.pending.exists=true;f.pending.expected.sequence=r.Num(8);f.pending.expected.epoch=r.Num(8);f.pending.expected.head=r.Array<32>();f.pending.slot=r.Num(8);const auto type=r.Num(2);if(type<1||type>5)Refuse("floor_pending_invalid");f.pending.type=static_cast<RecordType>(type);f.pending.semantic=r.Array<32>();f.pending.hash=r.Array<32>();f.pending.owner=r.Array<16>();const auto bound=r.Num(1);if(bound>1)Refuse("floor_created_binding_invalid");f.pending.createdBound=bound!=0;if(bound){f.pending.createdId=r.Array<16>();if(Zero(f.pending.createdId))Refuse("floor_created_binding_invalid");}}r.End();return f;}
 class Continuity final {
 public:
@@ -116,28 +127,74 @@ public:
     void Live(){const DWORD wait=WaitForSingleObject(driver_,0);if(wait!=WAIT_TIMEOUT)Refuse("original_driver_not_live",wait==WAIT_FAILED?GetLastError():0,true);}
 private:HANDLE driver_;bool closed_=false;std::uint64_t counter_=0;
 };
+#endif
 bool SameCas(const Cas& a,const Cas& b){return a.sequence==b.sequence&&a.epoch==b.epoch&&a.head==b.head;}
 Digest Stable(RecordType type,const Digest& scope,const Id& lineage,const Bytes& payload,std::uint64_t previousEpoch){Bytes b; if(type!=RecordType::Consume)U16(b,static_cast<std::uint16_t>(type));Put(b,scope);if(type!=RecordType::Genesis)Put(b,lineage);if(type==RecordType::OwnerEpoch)U64(b,previousEpoch);Put(b,payload);return Hash(b);}
 } // namespace
 
 struct Store::Data {
     initial_fence::Factory& factory;initial_fence::RootLease& root;initial_fence::FenceLease& fence;
-    const durability_pins::Slot& slot;Pin journal;Bytes scopeBytes,selectors;Digest scope{};Id lineage{};
-    Continuity port;bool unknown=false,entered=false;int operation=0;Cas expected;ClosedRecord request;Result result;
+    Pin journal;Bytes scopeBytes,selectors;Digest scope{};Id lineage{};
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+    const durability_pins::Slot& slot;Continuity port;
+#else
+    local_session::InstalledEnrollment& enrollment;local_session::ContinuityPort& port;
+#endif
+    bool unknown=false,entered=false;int operation=0;Cas expected;ClosedRecord request;Result result;
     std::vector<Frame> chain;std::vector<Pin> pins;std::vector<Digest> conservativeKeys;Floor floor;bool pendingAttempted=false;Id activeCreatedId{};std::uint64_t activeCreatedSequence=0;
-    Data(initial_fence::Factory& f,initial_fence::RootLease& r,initial_fence::FenceLease& l,const durability_pins::Slot& s):factory(f),root(r),fence(l),slot(s),journal(ApprovedPin(durability_pins::kJournals[s.fixtureIndex])),port(s.withoutPort?nullptr:reinterpret_cast<HANDLE>(s.originalDriverHandle)){
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+    Data(initial_fence::Factory& f,initial_fence::RootLease& r,initial_fence::FenceLease& l,const durability_pins::Slot& s):factory(f),root(r),fence(l),journal(ApprovedPin(durability_pins::kJournals[s.fixtureIndex])),slot(s),port(s.withoutPort?nullptr:reinterpret_cast<HANDLE>(s.originalDriverHandle)){
         Put(scopeBytes,Fixed<16>(durability_pins::kInstallationIds[s.fixtureIndex]));PutPin(scopeBytes,ApprovedPin(durability_pins::kRunRoots[s.fixtureIndex]));PutPin(scopeBytes,ApprovedPin(durability_pins::kFixtures[s.fixtureIndex]));PutPin(scopeBytes,journal);PutPin(scopeBytes,ApprovedPin(durability_pins::kLocks[s.fixtureIndex]));scope=Hash(scopeBytes);
         selectors=Unhex(durability_pins::kSelectors[s.fixtureIndex]);Reader sr{selectors};sr.Array<16>();const auto count=sr.Num(2);if(count>16||selectors.size()!=18+count*18)Refuse("selector_table_invalid");Bytes previous;for(std::uint64_t i=0;i<count;++i){Bytes entry=sr.Part(18);Reader er{entry};const auto effect=er.Num(2);if(effect<2||effect>3||(!previous.empty()&&entry<=previous))Refuse("selector_table_invalid");previous=entry;}sr.End();lineage=Fixed<16>(durability_pins::kLineages[s.fixtureIndex]);if(Zero(lineage))Refuse("lineage_pin_invalid");
     }
+#else
+    Data(local_session::InstalledEnrollment& e,local_session::ContinuityPort& c,initial_fence::Factory& f,initial_fence::RootLease& r,initial_fence::FenceLease& l):factory(f),root(r),fence(l),journal(ApprovedPin(e.Profile().journal)),enrollment(e),port(c){
+        const auto& p=e.Profile();Put(scopeBytes,p.installation);PutPin(scopeBytes,ApprovedPin(p.repository));PutPin(scopeBytes,ApprovedPin(p.runtime));PutPin(scopeBytes,journal);PutPin(scopeBytes,ApprovedPin(p.lockFile));scope=Hash(scopeBytes);lineage=p.lineage;
+        Put(selectors,p.launchTarget);U16(selectors,2);U16(selectors,2);Put(selectors,p.actorTarget);U16(selectors,3);Put(selectors,p.stopTarget);
+        if(!port.MatchesBinding(e,f,r,l)||scope!=e.Scope()||Zero(scope)||Zero(lineage)||port.Floor().scope!=scope||Zero(port.AcquisitionOwner()))Refuse("installed_store_binding_refused");
+    }
+    Floor NativeFloor() const {
+        const auto& native=port.Floor();Floor out;out.scope=native.scope;out.genesis=native.genesis;out.head=native.head;out.sequence=native.sequence;out.epoch=native.epoch;out.owner=native.owner;out.ids=native.originalSlotIds;
+        const auto& p=native.pending;out.pending.exists=p.exists;out.pending.expected={p.sequence,p.epoch,p.head};out.pending.slot=p.slot;out.pending.type=static_cast<RecordType>(p.type);out.pending.semantic=p.semanticKey;out.pending.hash=p.frameHash;out.pending.owner=p.owner;out.pending.createdId=p.createdFileId;out.pending.createdBound=!Zero(p.createdFileId);return out;
+    }
+#endif
+    Digest StableKey(RecordType type,const Bytes& payload,std::uint64_t previousEpoch) const {
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+        // Fixed installation/SID/physical-root/lineage key, independent of source,
+        // config, controller, request ID and generation. Journal scope is separate.
+        if(type==RecordType::Consume&&payload.size()==18&&payload[0]==1&&payload[1]==0)return enrollment.LaunchKey();
+#endif
+        return Stable(type,scope,lineage,payload,previousEpoch);
+    }
+    std::string CrashStage() const {
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+        return slot.crashStage;
+#else
+        return {};
+#endif
+    }
+    std::string IoFault() const {
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+        return slot.ioFault;
+#else
+        return {};
+#endif
+    }
     void Guard(initial_fence::InternalFencedIo& io,const char* stage){const auto f=io.StageGuard();if(!f.ok)Refuse("live_fence_lost",f.win32Error);const auto observed=factory.Observe(root,fence);if(!observed.ok||observed.sessionRef.empty())Refuse("live_fence_lost",observed.win32Error);
         Held currentJournal=Journal(io);
-        const Floor previous=floor;floor=DecodeFloor(port.Exchange("guard",std::string(stage)+" "+observed.sessionRef+" "+Hex(scope)+" "+std::to_string(result.createAttempts)+" "+std::to_string(result.writeAttempts)+" "+std::to_string(result.flushAttempts)));if(floor.scope!=scope)Refuse("floor_scope_mismatch");
+        const Floor previous=floor;
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+        floor=DecodeFloor(port.Exchange("guard",std::string(stage)+" "+observed.sessionRef+" "+Hex(scope)+" "+std::to_string(result.createAttempts)+" "+std::to_string(result.writeAttempts)+" "+std::to_string(result.flushAttempts)));
+#else
+        if(!io.MatchesBinding(factory,root,fence)||!port.Guard(io))Refuse("installed_continuity_guard_closed",0,true);floor=NativeFloor();
+#endif
+        if(floor.scope!=scope)Refuse("floor_scope_mismatch");
         if(!Zero(previous.scope)){if(floor.sequence<previous.sequence||floor.ids.size()<previous.ids.size()||!std::equal(previous.ids.begin(),previous.ids.end(),floor.ids.begin()))Refuse("live_floor_rollback");if(floor.sequence==previous.sequence&&(floor.head!=previous.head||floor.epoch!=previous.epoch||floor.genesis!=previous.genesis))Refuse("live_floor_changed");if(std::string(stage)!="input"&&(floor.sequence!=previous.sequence||floor.owner!=previous.owner||!SamePending(floor.pending,previous.pending)))Refuse("live_floor_stage_changed");}
         if(activeCreatedSequence){if(floor.pending.exists&&floor.pending.slot==activeCreatedSequence){if(!floor.pending.createdBound&&std::string(stage)=="before_created_witness")return;if(!floor.pending.createdBound||floor.pending.createdId!=activeCreatedId)Refuse("pending_created_binding_changed");}else if(floor.sequence<activeCreatedSequence||floor.ids.size()<activeCreatedSequence||floor.ids[static_cast<std::size_t>(activeCreatedSequence-1)]!=activeCreatedId)Refuse("created_slot_floor_changed");}}
     bool ConsumeFault() const {return operation==3&&request.type==RecordType::Consume;}
-    void Fault(const char* stage){if(ConsumeFault()&&std::string(slot.crashStage)==stage)ExitProcess(73);}
+    void Fault(const char* stage){if(ConsumeFault()&&CrashStage()==stage)ExitProcess(73);}
     Held Journal(initial_fence::InternalFencedIo& io){const HANDLE parent=static_cast<HANDLE>(io.BorrowedRoot());if(!parent)Refuse("live_fence_lost");
-        if(std::string(slot.ioFault)=="identity_query_failure"){FILE_ID_INFO id{};const BOOL queried=GetFileInformationByHandleEx(INVALID_HANDLE_VALUE,FileIdInfo,&id,sizeof(id));const DWORD error=queried?0:GetLastError();result.actualHandleError=true;if(queried)Refuse("test_invalid_query_unexpected_success");Refuse("identity_query_failed",error);}
+        if(IoFault()=="identity_query_failure"){FILE_ID_INFO id{};const BOOL queried=GetFileInformationByHandleEx(INVALID_HANDLE_VALUE,FileIdInfo,&id,sizeof(id));const DWORD error=queried?0:GetLastError();result.actualHandleError=true;if(queried)Refuse("test_invalid_query_unexpected_success");Refuse("identity_query_failed",error);}
         Held h=Relative(parent,kJournal,false,true,false);if(!SamePin(ReadPin(h.Get(),true),journal))Refuse("journal_identity_changed");return h;}
     Bytes Payload(const ClosedRecord& r){Bytes p;if(r.type==RecordType::Consume){if(!Zero(r.consumedHash)||!Zero(r.sourceDigest)||!Zero(r.configDigest)||r.outcome!=Outcome::Unknown)Refuse("closed_record_extra_fields");const auto cl=static_cast<std::uint16_t>(r.effect);if(cl<1||cl>3||Zero(r.target))Refuse("consume_selector_invalid");U16(p,cl);Put(p,r.target);bool allowed=false;if(cl==1){allowed=std::equal(r.target.begin(),r.target.end(),selectors.begin());}else{for(std::size_t offset=18;offset<selectors.size();offset+=18){if(std::equal(p.begin(),p.end(),selectors.begin()+static_cast<std::ptrdiff_t>(offset)))allowed=true;}}if(!allowed)Refuse("consume_selector_unapproved");}
         else if(r.type==RecordType::Observation){if(!Zero(r.target)||!Zero(r.sourceDigest)||!Zero(r.configDigest)||r.effect!=EffectClass::Launch)Refuse("closed_record_extra_fields");const auto outcome=static_cast<std::uint16_t>(r.outcome);if(outcome<1||outcome>3)Refuse("observation_invalid");Put(p,r.consumedHash);U16(p,outcome);bool found=false;for(const auto& f:chain)if(f.type==RecordType::Consume&&f.hash==r.consumedHash)found=true;if(!found)Refuse("observation_unknown_consumption");}
@@ -146,7 +203,7 @@ struct Store::Data {
         if(f.type==RecordType::Genesis){Bytes p=scopeBytes;Put(p,selectors);if(!chain.empty()||f.sequence!=1||f.epoch||!Zero(f.genesis)||!Zero(f.owner)||f.payload!=p)Refuse("genesis_invalid");}
         else {if(chain.empty()||f.genesis!=chain.front().hash)Refuse("genesis_reference_invalid");const auto& old=chain.back();if(f.type==RecordType::OwnerEpoch){if(old.epoch==std::numeric_limits<std::uint64_t>::max()||f.epoch!=old.epoch+1||Zero(f.owner)||f.payload!=Bytes(f.owner.begin(),f.owner.end()))Refuse("owner_epoch_invalid");for(const auto& earlier:chain)if(earlier.type==RecordType::OwnerEpoch&&earlier.owner==f.owner)Refuse("owner_reused");}
             else {if(!old.epoch||f.epoch!=old.epoch||f.owner!=old.owner)Refuse("stale_record_owner");ClosedRecord r;r.type=f.type;Reader pr{f.payload};if(f.type==RecordType::Consume){r.effect=static_cast<EffectClass>(pr.Num(2));r.target=pr.Array<16>();}else if(f.type==RecordType::Observation){r.consumedHash=pr.Array<32>();r.outcome=static_cast<Outcome>(pr.Num(2));}else if(f.type==RecordType::Note){r.sourceDigest=pr.Array<32>();r.configDigest=pr.Array<32>();}else Refuse("record_type_invalid");pr.End();if(Payload(r)!=f.payload)Refuse("closed_payload_invalid");}}
-        const Digest key=Stable(f.type,scope,lineage,f.type==RecordType::Genesis?Bytes{}:f.payload,chain.empty()?0:chain.back().epoch);if(f.key!=key)Refuse("stable_key_invalid");for(const auto& old:chain)if(old.key==f.key)Refuse("duplicate_key_in_inventory");
+        const Digest key=StableKey(f.type,f.type==RecordType::Genesis?Bytes{}:f.payload,chain.empty()?0:chain.back().epoch);if(f.key!=key)Refuse("stable_key_invalid");for(const auto& old:chain)if(old.key==f.key)Refuse("duplicate_key_in_inventory");
     }
     void Inventory(HANDLE journalHandle,std::vector<Held>& witnesses){chain.clear();pins.clear();std::set<std::uint64_t> names;alignas(FILE_ID_BOTH_DIR_INFO) std::array<unsigned char,65536> buffer{};bool restart=true;std::size_t aggregate=0,enumerated=0;
         for(;;){const auto cls=restart?FileIdBothDirectoryRestartInfo:FileIdBothDirectoryInfo;restart=false;if(!GetFileInformationByHandleEx(journalHandle,cls,buffer.data(),static_cast<DWORD>(buffer.size()))){const DWORD error=GetLastError();if(error==ERROR_NO_MORE_FILES)break;Refuse("inventory_query_failed",error);}std::size_t offset=0;
@@ -164,7 +221,17 @@ struct Store::Data {
 };
 
 Store::Store(std::unique_ptr<Data> d):data_(std::move(d)){} Store::~Store()=default;
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
 std::unique_ptr<Store> Store::CreateApprovedTestStore(const std::string& instance,initial_fence::Factory& factory,initial_fence::RootLease& root,initial_fence::FenceLease& fence,Result& result){try{for(const auto& s:durability_pins::kSlots)if(instance==s.instanceId){if(s.fixtureIndex>=std::size(durability_pins::kJournals)||s.fixtureIndex>=std::size(durability_pins::kFixtures)||s.fixtureIndex>=std::size(durability_pins::kLocks)||s.fixtureIndex>=std::size(durability_pins::kRunRoots)||s.fixtureIndex>=std::size(durability_pins::kInstallationIds)||s.fixtureIndex>=std::size(durability_pins::kLineages)||s.fixtureIndex>=std::size(durability_pins::kSelectors))Refuse("missing_original_pins");return std::unique_ptr<Store>(new Store(std::make_unique<Data>(factory,root,fence,s)));}Refuse("unapproved_store_instance");}catch(const Failure& f){result.code=f.code;result.win32Error=f.error;result.unavailable=f.unavailable;}return nullptr;}
+#else
+std::unique_ptr<Store> Store::CreateInstalledStore(local_session::InstalledEnrollment& enrollment,local_session::ContinuityPort& continuity,initial_fence::Factory& factory,initial_fence::RootLease& root,initial_fence::FenceLease& fence,Result& result){
+    result=Result{};
+    try{const auto observed=factory.Observe(root,fence);if(!observed.ok||observed.sessionRef.empty()||!enrollment.Fresh(true).ok)Refuse("installed_original_fence_required",observed.win32Error,true);auto store=std::unique_ptr<Store>(new Store(std::make_unique<Data>(enrollment,continuity,factory,root,fence)));const auto checked=store->Inspect();if(!checked.ok||checked.unknown||checked.unavailable){result=checked;return nullptr;}result=checked;return store;}
+    catch(const Failure& failure){result.code=failure.code;result.win32Error=failure.error;result.unavailable=failure.unavailable;}
+    catch(const local_session::detail::Failure& failure){result.code=failure.code;result.win32Error=failure.error;result.unknown=failure.unknown;result.unavailable=failure.unavailable;}
+    return nullptr;
+}
+#endif
 Result Store::Inspect(){return Execute(0,{},{});}Result Store::InitializeGenesis(const Cas& c){return Execute(1,c,{});}Result Store::AcquireOwnerEpoch(const Cas& c){return Execute(2,c,{});}Result Store::AppendOnce(const Cas& c,const ClosedRecord& r){return Execute(3,c,r);}Result Store::ReconcilePending(){return Execute(4,{},{});}Result Store::RunPrivateSeamProof(){return Execute(5,{},{});}Result Store::RunPrivateMoveProof(bool destination){return Execute(destination?7:6,{},{});}Result Store::RunPrivateBoundsProof(){return Execute(8,{},{});}
 Result Store::Execute(int operation,const Cas& expected,const ClosedRecord& request){auto& d=*data_;if(d.entered){Result r;r.code="store_reentrant";return r;}d.entered=true;d.operation=operation;d.expected=expected;d.request=request;d.result=Result{};d.result.scope=d.scope;
     try{const auto fenced=d.factory.WithLiveFence(d.root,d.fence,*this);if(!fenced.ok){d.result.ok=false;d.result.code=fenced.code;d.result.win32Error=fenced.win32Error;if(d.result.createAttempts)d.unknown=true;}}catch(const Failure& f){d.result.ok=false;d.result.code=f.code;d.result.win32Error=f.error;d.result.unavailable=f.unavailable;if(d.result.createAttempts||d.floor.pending.exists)d.unknown=true;}catch(...){d.entered=false;throw;}d.Fill();d.result.unknown=d.unknown;d.entered=false;return d.result;}
@@ -179,28 +246,61 @@ initial_fence::Result Store::Run(initial_fence::InternalFencedIo& io){auto& d=*d
     }
     if(d.operation==8){d.result.ok=!CounterCanAdvance(std::numeric_limits<std::uint64_t>::max())&&!AggregateFits(kAggregateLimit,1)&&AggregateFits(kAggregateLimit-kFrameLimit,kFrameLimit);d.result.code="bounds_unit_checked";d.result.syntheticFault=true;return accepted;}
     d.FloorCheck(d.operation==4);d.Fill();
-    if(d.operation==4){if(!d.floor.pending.exists){if(d.pendingAttempted)Refuse("local_pending_without_exact_reconciliation");d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.result.ok=true;d.result.code="no_pending";d.result.persistence="readback_only";return accepted;}d.Guard(io,"before_reconcile");const std::string reply=d.port.Exchange("reconcile",Hex(d.chain.back().hash));d.floor=DecodeFloor(reply);d.FloorCheck(false);d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.unknown=false;d.pendingAttempted=false;d.result.ok=true;d.result.code="reconciled";d.result.recordHash=d.chain.back().hash;d.result.persistence="recovered_readback_only";return accepted;}
+    if(d.operation==4){if(!d.floor.pending.exists){if(d.pendingAttempted)Refuse("local_pending_without_exact_reconciliation");d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.result.ok=true;d.result.code="no_pending";d.result.persistence="readback_only";return accepted;}d.Guard(io,"before_reconcile");
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+        const std::string reply=d.port.Exchange("reconcile",Hex(d.chain.back().hash));d.floor=DecodeFloor(reply);
+#else
+        if(!d.port.Reconcile(io))Refuse("installed_pending_reconciliation_closed",0,true);d.floor=d.NativeFloor();
+#endif
+        d.FloorCheck(false);d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.unknown=false;d.pendingAttempted=false;d.result.ok=true;d.result.code="reconciled";d.result.recordHash=d.chain.back().hash;d.result.persistence="recovered_readback_only";return accepted;}
     if(d.operation==0){d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.result.ok=true;d.result.code=d.chain.empty()?"unprovisioned":"inspected";d.result.persistence="readback_only";return accepted;}
     if(d.unknown)Refuse("store_unknown_no_replay");
     Frame frame;frame.scope=d.scope;frame.lineage=d.lineage;frame.previous=d.Current().head;frame.sequence=d.Current().sequence+1;frame.epoch=d.Current().epoch;frame.genesis=d.chain.empty()?Digest{}:d.chain.front().hash;frame.owner=d.floor.owner;
     if(d.operation==1){if(!d.chain.empty())Refuse("already_provisioned");if(d.floor.pending.exists||d.floor.sequence||d.floor.epoch||!Zero(d.floor.genesis))Refuse("genesis_precondition_failed");frame.type=RecordType::Genesis;frame.owner={};frame.payload=d.scopeBytes;Put(frame.payload,d.selectors);}
-    else if(d.operation==2){if(d.chain.empty()||Zero(d.floor.owner))Refuse("owner_precondition_failed");for(const auto& old:d.chain)if(old.type==RecordType::OwnerEpoch&&old.owner==d.floor.owner)Refuse("acquisition_already_committed");if(!CounterCanAdvance(frame.epoch))Refuse("epoch_overflow");++frame.epoch;frame.type=RecordType::OwnerEpoch;Put(frame.payload,frame.owner);}
-    else{if(d.chain.empty()||!frame.epoch||Zero(d.floor.owner)||d.chain.back().owner!=d.floor.owner)Refuse("stale_owner");frame.type=d.request.type;frame.payload=d.Payload(d.request);}
-    frame.key=Stable(frame.type,d.scope,d.lineage,frame.type==RecordType::Genesis?Bytes{}:frame.payload,d.Current().epoch);
+    else if(d.operation==2){
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+        frame.owner=d.port.AcquisitionOwner();
+#endif
+        if(d.chain.empty()||Zero(frame.owner))Refuse("owner_precondition_failed");for(const auto& old:d.chain)if(old.type==RecordType::OwnerEpoch&&old.owner==frame.owner)Refuse("acquisition_already_committed");if(!CounterCanAdvance(frame.epoch))Refuse("epoch_overflow");++frame.epoch;frame.type=RecordType::OwnerEpoch;Put(frame.payload,frame.owner);}
+    else{if(d.chain.empty()||!frame.epoch||Zero(d.floor.owner)||d.chain.back().owner!=d.floor.owner)Refuse("stale_owner");
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+        if(d.floor.owner!=d.port.AcquisitionOwner())Refuse("stale_owner");
+#endif
+        frame.type=d.request.type;frame.payload=d.Payload(d.request);}
+    frame.key=d.StableKey(frame.type,frame.type==RecordType::Genesis?Bytes{}:frame.payload,d.Current().epoch);
     for(const auto& old:d.chain)if(old.key==frame.key){if(old.type!=frame.type||old.payload!=frame.payload)Refuse("stable_key_conflict");d.Guard(io,"before_readonly_ack");d.FloorCheck(false);d.result.ok=true;d.result.code="duplicate_readback";d.result.recordHash=old.hash;d.result.consumptionRecorded=old.type==RecordType::Consume;d.result.persistence="readback_only";return accepted;}
     if(!SameCas(d.expected,d.Current()))Refuse("stale_cas");if(!CounterCanAdvance(d.Current().sequence)||frame.sequence>kSlotLimit)Refuse("sequence_limit_or_overflow");d.Semantics(frame);Bytes bytes=Encode(frame);frame=Decode(bytes);
-    d.Guard(io,"before_pending");d.Fault("before_pending");d.pendingAttempted=true;if(frame.type==RecordType::Consume&&std::find(d.conservativeKeys.begin(),d.conservativeKeys.end(),frame.key)==d.conservativeKeys.end())d.conservativeKeys.push_back(frame.key);d.floor=DecodeFloor(d.port.Exchange("pending",Hex(bytes.data(),bytes.size())));if(!d.floor.pending.exists||d.floor.pending.hash!=frame.hash||d.floor.pending.slot!=frame.sequence||d.floor.pending.semantic!=frame.key||!SameCas(d.floor.pending.expected,d.Current()))Refuse("pending_registration_mismatch");d.Fault("registered_before_create");
+    d.Guard(io,"before_pending");d.Fault("before_pending");d.pendingAttempted=true;if(frame.type==RecordType::Consume&&std::find(d.conservativeKeys.begin(),d.conservativeKeys.end(),frame.key)==d.conservativeKeys.end())d.conservativeKeys.push_back(frame.key);
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+    d.floor=DecodeFloor(d.port.Exchange("pending",Hex(bytes.data(),bytes.size())));
+#else
+    local_session::FloorSnapshot::Pending pending;pending.exists=true;pending.sequence=d.Current().sequence;pending.epoch=d.Current().epoch;pending.head=d.Current().head;pending.slot=frame.sequence;pending.type=static_cast<std::uint16_t>(frame.type);pending.semanticKey=frame.key;pending.frameHash=frame.hash;pending.owner=frame.owner;
+    if(!d.port.RegisterPending(io,pending))Refuse("installed_pending_registration_closed",0,true);d.floor=d.NativeFloor();
+#endif
+    if(!d.floor.pending.exists||d.floor.pending.hash!=frame.hash||d.floor.pending.slot!=frame.sequence||d.floor.pending.semantic!=frame.key||!SameCas(d.floor.pending.expected,d.Current()))Refuse("pending_registration_mismatch");d.Fault("registered_before_create");
     d.Guard(io,"before_create");++d.result.createAttempts;Held file=Relative(journal.Get(),SlotName(frame.sequence),true,false,true);d.Guard(io,"created_open");d.Fault("unbound_create");const Pin originalCreated=ReadPin(file.Get(),false);d.activeCreatedId=originalCreated.id;d.activeCreatedSequence=frame.sequence;
-    d.Guard(io,"before_created_witness");d.floor=DecodeFloor(d.port.Exchange("created",Hex(frame.hash)+" "+Hex(originalCreated.id)));if(!d.floor.pending.exists||d.floor.pending.hash!=frame.hash||!d.floor.pending.createdBound||d.floor.pending.createdId!=originalCreated.id)Refuse("created_slot_observation_mismatch");d.Guard(io,"after_create");d.Fault("after_create");
-    d.Guard(io,"before_write");++d.result.writeAttempts;DWORD written=0;const bool partial=d.ConsumeFault()&&std::string(d.slot.crashStage)=="partial";const bool syntheticShort=d.ConsumeFault()&&std::string(d.slot.ioFault)=="synthetic_short_write";d.result.syntheticFault=syntheticShort;const DWORD wanted=static_cast<DWORD>((partial||syntheticShort)?bytes.size()/2:bytes.size());
+    d.Guard(io,"before_created_witness");
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+    d.floor=DecodeFloor(d.port.Exchange("created",Hex(frame.hash)+" "+Hex(originalCreated.id)));
+#else
+    if(!d.port.BindCreatedSlot(io,file.Get()))Refuse("installed_original_created_slot_unbound",0,true);d.floor=d.NativeFloor();
+#endif
+    if(!d.floor.pending.exists||d.floor.pending.hash!=frame.hash||!d.floor.pending.createdBound||d.floor.pending.createdId!=originalCreated.id)Refuse("created_slot_observation_mismatch");d.Guard(io,"after_create");d.Fault("after_create");
+    d.Guard(io,"before_write");++d.result.writeAttempts;DWORD written=0;const bool partial=d.ConsumeFault()&&d.CrashStage()=="partial";const bool syntheticShort=d.ConsumeFault()&&d.IoFault()=="synthetic_short_write";d.result.syntheticFault=syntheticShort;const DWORD wanted=static_cast<DWORD>((partial||syntheticShort)?bytes.size()/2:bytes.size());
     const BOOL wrote=WriteFile(file.Get(),bytes.data(),wanted,&written,nullptr);const DWORD writeError=wrote?0:GetLastError();d.result.actualPartialWrite=partial&&wrote&&written==wanted;d.Guard(io,"after_write");if(partial)ExitProcess(73);if(!wrote||written!=bytes.size())Refuse("write_unknown",writeError);d.Fault("full_write");
     d.Guard(io,"before_flush");d.Fault("pre_flush");++d.result.flushAttempts;BOOL flushed=FALSE;DWORD flushError=0;
-    if(d.ConsumeFault()&&std::string(d.slot.ioFault)=="invalid_flush_handle"){HANDLE invalid=file.Take();if(!CloseHandle(invalid))std::terminate();flushed=FlushFileBuffers(invalid);flushError=flushed?0:GetLastError();d.result.actualHandleError=true;}
-    else if(d.ConsumeFault()&&std::string(d.slot.ioFault)=="synthetic_flush_failure"){d.result.syntheticFault=true;flushError=ERROR_WRITE_FAULT;}
+    if(d.ConsumeFault()&&d.IoFault()=="invalid_flush_handle"){HANDLE invalid=file.Take();if(!CloseHandle(invalid))std::terminate();flushed=FlushFileBuffers(invalid);flushError=flushed?0:GetLastError();d.result.actualHandleError=true;}
+    else if(d.ConsumeFault()&&d.IoFault()=="synthetic_flush_failure"){d.result.syntheticFault=true;flushError=ERROR_WRITE_FAULT;}
     else{flushed=FlushFileBuffers(file.Get());flushError=flushed?0:GetLastError();}
     d.Guard(io,"after_flush");if(!flushed)Refuse("flush_unknown",flushError);d.Fault("post_flush");
-    d.Guard(io,"before_readback");if(d.ConsumeFault()&&std::string(d.slot.ioFault)=="synthetic_readback_failure"){d.result.syntheticFault=true;Refuse("readback_unknown",ERROR_READ_FAULT);}std::uint64_t length=0;const Pin pin=ReadPin(file.Get(),false,&length);if(!SamePin(pin,originalCreated)||length!=bytes.size()||ReadBytes(file.Get(),length)!=bytes)Refuse("readback_unknown");d.Guard(io,"after_readback");d.Fault("pre_ack");
-    d.Guard(io,"before_witness");d.floor=DecodeFloor(d.port.Exchange("witness",Hex(frame.hash)+" "+Hex(pin.id)));d.Guard(io,"after_witness");d.Inventory(journal.Get(),witnesses);d.FloorCheck(false);
+    d.Guard(io,"before_readback");if(d.ConsumeFault()&&d.IoFault()=="synthetic_readback_failure"){d.result.syntheticFault=true;Refuse("readback_unknown",ERROR_READ_FAULT);}std::uint64_t length=0;const Pin pin=ReadPin(file.Get(),false,&length);if(!SamePin(pin,originalCreated)||length!=bytes.size()||ReadBytes(file.Get(),length)!=bytes)Refuse("readback_unknown");d.Guard(io,"after_readback");d.Fault("pre_ack");
+    d.Guard(io,"before_witness");
+#ifdef AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY
+    d.floor=DecodeFloor(d.port.Exchange("witness",Hex(frame.hash)+" "+Hex(pin.id)));
+#else
+    if(!d.port.ObserveAndAdvance(io,true))Refuse("installed_independent_readback_closed",0,true);d.floor=d.NativeFloor();
+#endif
+    d.Guard(io,"after_witness");d.Inventory(journal.Get(),witnesses);d.FloorCheck(false);
     d.Guard(io,"before_ack");d.Fault("publication");d.pendingAttempted=false;d.result.ok=true;d.result.code="appended";d.result.recordHash=frame.hash;d.result.consumptionRecorded=frame.type==RecordType::Consume;d.result.persistence="os_flush_ack_and_readback";return accepted;
     } catch(const Failure& failure) {
         // Local journal/file/read witnesses have unwound before the facade exits.

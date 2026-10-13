@@ -14,7 +14,11 @@
 
 // Generated exclusively by the parent proof driver from independent live handles.
 // No checked-in default, configuration reader or production fallback exists.
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
 #include "fence_expected_pins.h"
+#else
+#include "../owned-runtime-local-session/enrollment_win32.h"
+#endif
 
 namespace initial_fence {
 namespace {
@@ -185,10 +189,18 @@ bool EqualIdentity(const Identity& left, const Identity& right) {
         && EqualPath(left.canonicalPath, right.canonicalPath);
 }
 
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
 bool MatchesPin(const Identity& identity, const test_pins::Pin& pin) {
     return identity.volumeSerialHex == pin.serialHex && identity.fileIdHex == pin.fileIdHex
         && EqualPath(identity.canonicalPath, pin.canonicalPath);
 }
+#else
+bool MatchesPin(const Identity& identity, const local_session::ObjectPin& pin) {
+    return identity.volumeSerialHex == HexSerial(pin.serial)
+        && identity.fileIdHex == HexBytes(pin.fileId.data(), pin.fileId.size())
+        && EqualPath(identity.canonicalPath, pin.canonicalPath);
+}
+#endif
 
 Result ReadIdentity(HANDLE handle, Identity& identity) {
     SetLastError(ERROR_SUCCESS);
@@ -441,10 +453,33 @@ struct Factory::RootConfig {
     ParsedPath expectedRunPath;
     bool canonical = false;
     std::wstring volumeAnchor;
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
     const test_pins::Pin* runRoot = &test_pins::kRunRoot;
     const test_pins::Pin* fixture = nullptr;
     const test_pins::Pin* originalLock = nullptr;
     const test_pins::Slot* slot = nullptr;
+    bool MatchesDirectory(const Identity& identity, std::size_t index) const {
+        return !(index == 0 && canonical && !MatchesPin(identity, test_pins::kVolumeRoot))
+            && !(index == expectedRunPath.components.size() && !MatchesPin(identity, *runRoot))
+            && !(index == path.components.size() && !MatchesPin(identity, *fixture));
+    }
+    bool MatchesLock(const Identity& identity) const { return !canonical || MatchesPin(identity, *originalLock); }
+    std::string Instance() const { return slot->instanceId; }
+    bool InvalidCaseQuery(bool leaf) const { return leaf && slot->invalidateCaseQuery; }
+    bool InvalidLockQuery() const { return slot->invalidateLockQuery; }
+#else
+    local_session::InstalledEnrollment* enrollment = nullptr;
+    std::vector<local_session::ObjectPin> originalDirectories;
+    local_session::ObjectPin originalLock;
+    std::string instance;
+    bool MatchesDirectory(const Identity& identity, std::size_t index) const {
+        return index < originalDirectories.size() && MatchesPin(identity, originalDirectories[index]);
+    }
+    bool MatchesLock(const Identity& identity) const { return MatchesPin(identity, originalLock); }
+    std::string Instance() const { return instance; }
+    bool InvalidCaseQuery(bool) const { return false; }
+    bool InvalidLockQuery() const { return false; }
+#endif
 };
 struct Factory::Data {
     explicit Data(std::unique_ptr<RootConfig> value) : config(std::move(value)) {}
@@ -461,6 +496,7 @@ struct Factory::Data {
     bool cleanupUnknown = false;
     bool hookUsed = false;
     Result Pause(const char* stage, const std::wstring& component = L"") {
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
         const auto& slot = *config->slot;
         if (hookUsed || std::string(slot.pauseStage) != stage
             || (!std::wstring(slot.pauseComponent).empty() && !EqualPath(component, slot.pauseComponent))) {
@@ -475,6 +511,9 @@ struct Factory::Data {
         const DWORD wait = WaitForSingleObject(resume.Get(), 15000);
         if (wait != WAIT_OBJECT_0) { return Error("test_pause_wait_failed", wait == WAIT_FAILED ? GetLastError() : ERROR_TIMEOUT); }
         return Result{};
+#else
+        static_cast<void>(stage); static_cast<void>(component); return Result{};
+#endif
     }
 };
 
@@ -529,6 +568,12 @@ Result InternalFencedIo::StageGuard() {
 void* InternalFencedIo::BorrowedRoot() {
     return StageGuard().ok ? data_->root.data_->witnesses.back().handle.Get() : nullptr;
 }
+bool InternalFencedIo::MatchesBinding(Factory& factory, RootLease& root, FenceLease& fence) {
+    // Addresses, stable live object tokens and the actual acquired fence all
+    // have to be the original callback's objects. Similar serialized IDs fail.
+    return &data_->factory == &factory && &data_->root == &root && &data_->fence == &fence
+        && StageGuard().ok;
+}
 Result Factory::WithLiveFence(RootLease& root, FenceLease& fence, InternalFencedAction& action) {
     if (data_->token->callbackActive) { return Error("fenced_callback_reentrant"); }
     Result binding = CheckBinding(root, fence);
@@ -556,6 +601,7 @@ Result Factory::WithLiveFence(RootLease& root, FenceLease& fence, InternalFenced
     return result;
 }
 
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
 std::unique_ptr<Factory> Factory::CreateApprovedTestFactory(
     const std::wstring& spelling, const std::string& instance, Result& result) {
     if (test_pins::kCanonicalProofEnabled) {
@@ -594,6 +640,51 @@ std::unique_ptr<Factory> Factory::CreateApprovedTestFactory(
     return std::unique_ptr<Factory>(new Factory(std::move(config)));
 }
 
+#else
+std::unique_ptr<Factory> Factory::CreateInstalledFactory(
+    local_session::InstalledEnrollment& enrollment, Result& result) {
+    result = Error("installed_enrollment_refused");
+    const auto fresh = enrollment.Fresh(true);
+    if (!fresh.ok) { result = Error(fresh.code.c_str(), fresh.win32Error); result.terminal = true; return nullptr; }
+    const auto& profile = enrollment.Profile();
+    auto config = std::make_unique<RootConfig>();
+    config->canonical = true; config->enrollment = &enrollment;
+    config->volumeAnchor = profile.canonicalVolumeAnchor;
+    config->originalDirectories = profile.runtimeAncestors;
+    config->originalLock = profile.lockFile;
+    std::wstring parsedAnchor;
+    result = ParseCanonicalPath(profile.runtime.canonicalPath, config->path, parsedAnchor);
+    if (!result.code.empty() || !IsCanonicalVolumeAnchor(config->volumeAnchor)
+        || parsedAnchor != config->volumeAnchor || config->path.components != profile.runtimeComponents
+        || config->path.components.empty() || config->originalDirectories.size() != config->path.components.size() + 1
+        || config->originalDirectories.front().canonicalPath != config->volumeAnchor
+        || !local_session::detail::SamePin(config->originalDirectories.back(), profile.runtime)
+        || profile.lockFile.canonicalPath != profile.runtime.canonicalPath + L"\\" + kLockName
+        || profile.lockFile.serial != profile.runtime.serial || profile.lockFile.volumeGuid != profile.runtime.volumeGuid
+        || local_session::detail::Zero(profile.lockFile.fileId)) {
+        result = Error("installed_original_root_contract_invalid"); result.terminal = true; return nullptr;
+    }
+    for (const auto& pin : config->originalDirectories) {
+        if (!pin.serial || local_session::detail::Zero(pin.fileId) || pin.volumeGuid != profile.runtime.volumeGuid) {
+            result = Error("installed_original_pin_missing"); result.terminal = true; return nullptr;
+        }
+    }
+    Identity heldRoot;
+    const Result heldRead = DirectoryIdentity(static_cast<HANDLE>(enrollment.BorrowedRuntime()), heldRoot, false);
+    if (!heldRead.code.empty()) { result = heldRead; result.terminal = true; return nullptr; }
+    if (!MatchesPin(heldRoot, profile.runtime)) {
+        result = Error("installed_held_root_changed"); result.terminal = true; return nullptr;
+    }
+    try { config->instance = "installed:" + local_session::detail::Hex(local_session::detail::RandomId()); }
+    catch (const local_session::detail::Failure& failure) {
+        result = Error(failure.code.c_str(), failure.error); result.terminal = true; return nullptr;
+    }
+    result = Result{}; result.ok = true; result.code = "installed_factory_bound";
+    return std::unique_ptr<Factory>(new Factory(std::move(config)));
+}
+#endif
+
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
 std::unique_ptr<Factory> Factory::CreateApprovedCanonicalTestFactory(
     const std::string& instance, Result& result) {
     if (!test_pins::kCanonicalProofEnabled) {
@@ -654,6 +745,8 @@ std::unique_ptr<Factory> Factory::CreateApprovedCanonicalTestFactory(
     }
     return std::unique_ptr<Factory>(new Factory(std::move(config)));
 }
+
+#endif
 
 Result Factory::Describe(RootLease& root, FenceLease& fence) const {
     // Supplied references never define the actual resource state. In particular
@@ -784,7 +877,7 @@ Result Factory::OpenRoot(RootLease& root, FenceLease& fence) {
     if (!result.code.empty()) { return Fail(root, fence, result); }
     if (!EqualPath(anchor.identity.canonicalPath, anchor.identity.volumeGuid)
         || !EqualPath(anchor.identity.volumeGuid, volume)
-        || (data_->config->canonical && !MatchesPin(anchor.identity, test_pins::kVolumeRoot))) {
+        || !data_->config->MatchesDirectory(anchor.identity, 0)) {
         return Fail(root, fence, Error("not_directory_volume_root"));
     }
     root.data_->witnesses.push_back(std::move(anchor));
@@ -798,15 +891,11 @@ Result Factory::OpenRoot(RootLease& root, FenceLease& fence) {
         if (!result.code.empty()) { return Fail(root, fence, result); }
         const bool leaf = root.data_->witnesses.size() == data_->config->path.components.size();
         result = DirectoryIdentity(witness.handle.Get(), witness.identity,
-            leaf && data_->config->slot->invalidateCaseQuery);
+            data_->config->InvalidCaseQuery(leaf));
         if (!result.code.empty()) { return Fail(root, fence, result); }
         root.data_->witnesses.push_back(std::move(witness));
         const auto& actual = root.data_->witnesses.back().identity;
-        if (root.data_->witnesses.size() - 1 == root.data_->runRootIndex
-            && !MatchesPin(actual, *data_->config->runRoot)) {
-            return Fail(root, fence, Error("root_identity_changed"));
-        }
-        if (leaf && !MatchesPin(actual, *data_->config->fixture)) {
+        if (!data_->config->MatchesDirectory(actual, root.data_->witnesses.size() - 1)) {
             return Fail(root, fence, Error("root_identity_changed"));
         }
         result = data_->Pause("after_component", component);
@@ -824,14 +913,16 @@ Result Factory::Validate(RootLease& root, FenceLease& fence, bool checkFence) {
         || root.data_->factoryToken.get() != data_->token.get()) {
         return Fail(root, fence, Error("invalid_root_reference"));
     }
+#ifdef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
+    const auto enrolled = data_->config->enrollment->Fresh(true);
+    if (!enrolled.ok) { return Fail(root, fence, Error(enrolled.code.c_str(), enrolled.win32Error)); }
+#endif
     for (std::size_t i = 0; i < root.data_->witnesses.size(); ++i) {
         Identity fresh;
         Result result = DirectoryIdentity(root.data_->witnesses[i].handle.Get(), fresh, false);
         if (!result.code.empty()) { return Fail(root, fence, result); }
         if (!EqualIdentity(fresh, root.data_->witnesses[i].identity)
-            || (i == 0 && data_->config->canonical && !MatchesPin(fresh, test_pins::kVolumeRoot))
-            || (i == root.data_->runRootIndex && !MatchesPin(fresh, *data_->config->runRoot))
-            || (i == root.data_->witnesses.size() - 1 && !MatchesPin(fresh, *data_->config->fixture))) {
+            || !data_->config->MatchesDirectory(fresh, i)) {
             return Fail(root, fence, Error("root_identity_changed"));
         }
     }
@@ -845,7 +936,7 @@ Result Factory::Validate(RootLease& root, FenceLease& fence, bool checkFence) {
         Result result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity, fresh, false);
         if (!result.code.empty()) { return Fail(root, fence, result); }
         if (!EqualIdentity(fresh, fence.data_->identity)
-            || (data_->config->canonical && !MatchesPin(fresh, *data_->config->originalLock))) {
+            || !data_->config->MatchesLock(fresh)) {
             return Fail(root, fence, Error("lock_identity_changed"));
         }
     }
@@ -898,9 +989,9 @@ Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
     result = data_->Pause("after_lock");
     if (!result.code.empty()) { return Fail(root, fence, result); }
     result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity,
-        fence.data_->identity, data_->config->slot->invalidateLockQuery);
+        fence.data_->identity, data_->config->InvalidLockQuery());
     if (!result.code.empty()) { return Fail(root, fence, result); }
-    if (data_->config->canonical && !MatchesPin(fence.data_->identity, *data_->config->originalLock)) {
+    if (!data_->config->MatchesLock(fence.data_->identity)) {
         return Fail(root, fence, Error("lock_identity_changed"));
     }
     result = data_->Pause("before_publish");
@@ -911,11 +1002,11 @@ Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
     result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity, fresh, false);
     if (!result.code.empty()) { return Fail(root, fence, result); }
     if (!EqualIdentity(fresh, fence.data_->identity)
-        || (data_->config->canonical && !MatchesPin(fresh, *data_->config->originalLock))) {
+        || !data_->config->MatchesLock(fresh)) {
         return Fail(root, fence, Error("lock_identity_changed"));
     }
     ++data_->counter;
-    fence.data_->ref = std::string(data_->config->slot->instanceId) + ":" + std::to_string(data_->counter);
+    fence.data_->ref = data_->config->Instance() + ":" + std::to_string(data_->counter);
     ++data_->publishedAcquisitions;
     result = Validate(root, fence, true);
     if (result.ok) { result.code = "acquired"; }
@@ -923,7 +1014,7 @@ Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
 }
 
 Result Factory::LiveCheck(RootLease& root, FenceLease& fence, const std::string& ref) {
-    const std::string prefix = std::string(data_->config->slot->instanceId) + ":";
+    const std::string prefix = data_->config->Instance() + ":";
     if (ref.compare(0, prefix.size(), prefix) != 0) {
         Result result = Describe(root, fence); result.code = "foreign_session_ref"; return result;
     }
@@ -953,9 +1044,15 @@ Result Factory::Release(RootLease& root, FenceLease& fence, const std::string& r
     return result;
 }
 
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
 bool Factory::CrashProofEnabled() const noexcept { return data_->config->slot->crashProof; }
 bool Factory::SuppressFirstAcquireAck() const noexcept { return data_->config->slot->lostAcquireAck; }
 bool Factory::BindingProofEnabled() const noexcept { return data_->config->slot->bindingProof; }
+#else
+bool Factory::CrashProofEnabled() const noexcept { return false; }
+bool Factory::SuppressFirstAcquireAck() const noexcept { return false; }
+bool Factory::BindingProofEnabled() const noexcept { return false; }
+#endif
 
 Result Factory::RunBindingProof(RootLease& root, FenceLease& fence) {
     if (!BindingProofEnabled()) {
@@ -999,6 +1096,7 @@ Result Factory::RunBindingProof(RootLease& root, FenceLease& fence) {
 }
 
 Result Factory::RunCanonicalLockPropertyProof(RootLease& root, FenceLease& fence) {
+#ifdef AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY
     if (!data_->config->canonical || !data_->config->slot->lockPropertyProof || fence.data_) {
         Result result = Describe(root, fence); result.code = "lock_property_proof_unavailable"; return result;
     }
@@ -1037,6 +1135,9 @@ Result Factory::RunCanonicalLockPropertyProof(RootLease& root, FenceLease& fence
     result.lockReparseTag = attributes.ReparseTag;
     result.lockVerifierCode = refusal.code;
     return result;
+#else
+    Result result = Describe(root, fence); result.code = "lock_property_proof_unavailable"; return result;
+#endif
 }
 
 std::string JsonResult(const std::string& operation, const Result& result) {
