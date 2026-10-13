@@ -40,7 +40,14 @@ struct Result {
     std::string sessionRef;
     // Test-only observations, never authority. Useful for pre-WRITE refusals.
     std::uint64_t lockWriteOpenAttempts = 0;
+    std::uint64_t volumeAnchorOpenAttempts = 0;
     std::uint64_t publishedAcquisitions = 0;
+    // Layered property proof, not a positive root/fence capability.
+    bool hasLockPropertyProof = false;
+    Identity lockPropertyIdentity;
+    std::uint32_t lockFileAttributes = 0;
+    std::uint32_t lockReparseTag = 0;
+    std::string lockVerifierCode;
     std::vector<BindingProofStep> bindingProof;
 };
 
@@ -83,6 +90,10 @@ public:
     // Missing header/pins cannot be supplied by argv, ENV, JSON, MCP or HTTP.
     static std::unique_ptr<Factory> CreateApprovedTestFactory(
         const std::wstring& rootSpelling, const std::string& instance, Result& result);
+    // Private proof entry: instance selects only immutable generated pins.
+    // No runtime root, GUID, drive, policy or serialized identity input.
+    static std::unique_ptr<Factory> CreateApprovedCanonicalTestFactory(
+        const std::string& instance, Result& result);
     Result OpenRoot(RootLease& root, FenceLease& fence);
     Result Observe(RootLease& root, FenceLease& fence);
     Result TryAcquire(RootLease& root, FenceLease& fence);
@@ -93,6 +104,7 @@ public:
     bool SuppressFirstAcquireAck() const noexcept;
     bool BindingProofEnabled() const noexcept;
     Result RunBindingProof(RootLease& root, FenceLease& fence);
+    Result RunCanonicalLockPropertyProof(RootLease& root, FenceLease& fence);
 private:
     struct RootConfig;
     struct Data;

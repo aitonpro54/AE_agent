@@ -4,14 +4,16 @@ param(
     [switch]$RunNativeProof,
     [switch]$BuildOnly,
     [switch]$TimeoutBarrierProof,
+    [switch]$CanonicalRootProof,
     [switch]$AllowTemporaryDosDeviceProof
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-if (([int]$RunNativeProof.IsPresent + [int]$BuildOnly.IsPresent + [int]$TimeoutBarrierProof.IsPresent) -ne 1) {
-    throw 'Choose exactly one explicit parent action: -BuildOnly, -RunNativeProof or -TimeoutBarrierProof (after independent source GO).'
+if (([int]$RunNativeProof.IsPresent + [int]$BuildOnly.IsPresent + [int]$TimeoutBarrierProof.IsPresent + [int]$CanonicalRootProof.IsPresent) -ne 1) {
+    throw 'Choose exactly one explicit parent action: -BuildOnly, -RunNativeProof, -TimeoutBarrierProof or -CanonicalRootProof (after independent source GO).'
 }
+if($CanonicalRootProof -and $AllowTemporaryDosDeviceProof){throw 'Canonical proof has no DOS-device mapping operation.'}
 
 # Test-only APIs, no AE/daemon/service/config access. All writable paths are new
 # descendants of one independently pinned scratch container. There is no cleanup.
@@ -38,6 +40,12 @@ namespace InitialFenceProof {
   public sealed class Raw {
     public bool ok; public int win32Error; public uint ntStatus;
     public Raw(bool value, int error) { ok=value; win32Error=error; }
+  }
+  public sealed class HeldLockJunction : IDisposable {
+    internal SafeFileHandle Handle;
+    internal Witness Parent;
+    public LockSymlinkReadback Fresh() { return Native.ReadHeldLockJunction(Handle,Parent); }
+    public void Dispose() { Handle.Dispose(); }
   }
   public sealed class Witness : IDisposable {
     internal SafeFileHandle Handle;
@@ -74,10 +82,13 @@ namespace InitialFenceProof {
       }
       text.Append('\\',slashes*2);text.Append('"');return text.ToString();
     }
-    public Channel(string executable, string root, string instance) {
+    public Channel(string executable, string root, string instance, bool canonical) {
       if(root.IndexOf('"')>=0 || instance.IndexOf('"')>=0) throw new ArgumentException("unsafe argv");
       InstanceId=instance;
-      var info=new ProcessStartInfo(executable, "--fixture-root "+QuoteArg(root)+" --factory-instance "+QuoteArg(instance));
+      string arguments=canonical ? "--canonical-factory-instance "+QuoteArg(instance) : "--fixture-root "+QuoteArg(root)+" --factory-instance "+QuoteArg(instance);
+      // Nonempty root is a deliberately forbidden public selector proof only.
+      if(canonical && root.Length!=0)arguments+=" --fixture-root "+QuoteArg(root);
+      var info=new ProcessStartInfo(executable, arguments);
       info.UseShellExecute=false; info.CreateNoWindow=true; info.WindowStyle=ProcessWindowStyle.Hidden;
       info.RedirectStandardInput=true; info.RedirectStandardOutput=true; info.RedirectStandardError=true;
       info.StandardOutputEncoding=new UTF8Encoding(false,true); info.StandardErrorEncoding=new UTF8Encoding(false,true);
@@ -268,6 +279,26 @@ namespace InitialFenceProof {
         return new LockSymlinkReadback{identity=new Snapshot{volumeGuid=parent.Original.volumeGuid,volumeSerialHex=serial,fileIdHex=fileId,canonicalPath=path.ToString()},fileAttributes=flags,reparseTag=tag,noFollow=true};
       }
     }
+    public static HeldLockJunction HoldLockJunctionProof(Witness parent) {
+      AssertFresh(parent.DrivePath,parent);
+      var h=Relative(parent.Handle,".initial-owned-fence.lock",ReadAttributes|Sync,ShareAll,1,0x00200020);
+      try {ReadHeldLockJunction(h,parent);return new HeldLockJunction{Handle=h,Parent=parent};}
+      catch {h.Dispose();throw;}
+    }
+    internal static LockSymlinkReadback ReadHeldLockJunction(SafeFileHandle h,Witness parent) {
+      RequireHeld(parent);
+      if(h.IsClosed || h.IsInvalid || GetFileType(h)!=1)throw new InvalidOperationException("original held junction HANDLE required");
+      IntPtr attr=Query(h,9,8);uint flags,tag;
+      try {flags=unchecked((uint)Marshal.ReadInt32(attr));tag=unchecked((uint)Marshal.ReadInt32(attr,4));}finally{Marshal.FreeHGlobal(attr);}
+      if((flags&0x410)!=0x410 || (flags&0x00441000)!=0 || tag!=0xA0000003u)throw new InvalidOperationException("actual directory REPARSE_POINT/mount-point tag required");
+      IntPtr id=Query(h,18,24);string serial,fileId;
+      try {serial=unchecked((ulong)Marshal.ReadInt64(id)).ToString("x16");byte[] bytes=new byte[16];Marshal.Copy(IntPtr.Add(id,8),bytes,0,16);fileId=BitConverter.ToString(bytes).Replace("-","").ToLowerInvariant();}finally{Marshal.FreeHGlobal(id);}
+      var path=new StringBuilder(32761);uint n=GetFinalPathNameByHandleW(h,path,32761,1);
+      if(n==0||n>=32761)throw new Win32Exception(Marshal.GetLastWin32Error(),"held junction canonical query");
+      string expected=parent.Original.canonicalPath+"\\.initial-owned-fence.lock";
+      if(serial!=parent.Original.volumeSerialHex || !String.Equals(path.ToString(),expected,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("held junction escaped original parent");
+      return new LockSymlinkReadback{identity=new Snapshot{volumeGuid=parent.Original.volumeGuid,volumeSerialHex=serial,fileIdHex=fileId,canonicalPath=path.ToString()},fileAttributes=flags,reparseTag=tag,noFollow=true};
+    }
     public static Witness NewDirectory(Witness parent,string name) {
       AssertFresh(parent.DrivePath,parent);
       var h=Relative(parent.Handle,name,ReadAttributes|Sync,ShareAll,2,0x21);
@@ -454,6 +485,7 @@ function Assert-True([bool]$value, [string]$message) { if (-not $value) { Stop-S
 function Register-Case([string]$id) { $cases[$id] = [ordered]@{id=$id; status='UNVERIFIED'; reason='not executed'; evidence=@()} }
 function Evidence([string]$id, $item) { $cases[$id].evidence += $item }
 function Run-Case([string]$id, [scriptblock]$body) {
+    if($CanonicalRootProof -and -not $cases.Contains($id)){return}
     Assert-EffectWindow
     try { Guard-Effects; & $body; $cases[$id].status='PASS'; $cases[$id].reason='exact assertions passed' }
     catch {
@@ -479,7 +511,7 @@ function Read-Ack($child, [string]$operation) {
         if ($null -eq $line) {
             $reason="UNKNOWN: pending $operation ACK on held child $($child.Slot.instanceId); no replay/replacement"
             Stop-Suite $reason
-            if($TimeoutBarrierProof -and $timeoutBarrier.armed -and [object]::ReferenceEquals($child,$timeoutBarrier.child) -and $operation -ceq 'acquire' -and $null -ne $child.Channel.Pending) {
+            if(($TimeoutBarrierProof -or $CanonicalRootProof) -and $timeoutBarrier.armed -and [object]::ReferenceEquals($child,$timeoutBarrier.child) -and $operation -ceq 'acquire' -and $null -ne $child.Channel.Pending) {
                 $timeoutBarrier.timedOut=$true; $timeoutBarrier.timeoutCounters=Controller-Counters
             }
             throw $reason
@@ -511,10 +543,10 @@ function Start-Child([string]$fixture, [string]$kind='normal', [string]$spelling
     $slot = $allSlots | Where-Object {$_.fixture -eq $fixture -and $_.kind -eq $kind -and -not $usedSlots.ContainsKey($_.instanceId)} | Select-Object -First 1
     if ($null -eq $slot) { throw 'No unused immutable approved child slot; no slot recycle' }
     $usedSlots[$slot.instanceId] = $true
-    if ([string]::IsNullOrEmpty($spelling)) { $spelling=$fixtures[$fixture].witness.DrivePath }
+    if ([string]::IsNullOrEmpty($spelling) -and -not $CanonicalRootProof) { $spelling=$fixtures[$fixture].witness.DrivePath }
     Guard-Effects
     $controller.childStartAttempts++
-    $channel = New-Object InitialFenceProof.Channel($executable, $spelling, $slot.instanceId)
+    $channel = New-Object InitialFenceProof.Channel($executable, $spelling, $slot.instanceId, [bool]$CanonicalRootProof)
     $child=[pscustomobject]@{Slot=$slot; Channel=$channel; Transcript=(New-Object 'System.Collections.Generic.List[object]'); Startup=$null; Exit=$null}
     $channels.Add($child)
     if ($kind -notin @('before_component','after_component')) { $child.Startup=Read-Ack $child 'startup' }
@@ -605,8 +637,31 @@ $caseIds = @(
     'binding-command-unapproved-slot'
 )
 if($TimeoutBarrierProof){$caseIds=@('controller-timeout-barrier')}
+if($CanonicalRootProof) {
+    # Independent finite matrix: excluded legacy prerequisites stay in their
+    # original receipts. No old UNVERIFIED case is relabelled by this mode.
+    $caseIds=@(
+        'root-observation','lock-observation','same-root-busy','after-release-acquire','same-root-cross-ref',
+        'different-roots-independent','first-refs-distinct','cross-a-check-b','cross-b-check-a','cross-a-release-b','cross-b-release-a',
+        'runroot-ordinary-replacement','runroot-reparse-replacement','fixture-ordinary-replacement','reparse-final-junction','reparse-intermediate-junction',
+        'case-query-real-invalid-handle','input-drive-relative','input-relative','input-ads','input-device','input-unc',
+        'input-dot','input-dotdot','input-trailing-dot','input-trailing-space','input-empty-component',
+        'canonical-public-guid-selector','canonical-private-wrong-guid','canonical-private-drive-root',
+        'race-held-ancestor-rename','race-held-ancestor-delete-access','race-preopen-reparse','race-before-lock','race-after-lock','race-before-publication',
+        'lock-hardlink','lock-deletion-pending','hardlink-after-acquire','hardlink-alias-read-write','held-lock-delete','held-lock-rename','held-lock-second-read-write',
+        'canonical-lock-replacement','canonical-lock-directory','canonical-lock-nonempty','canonical-lock-missing','canonical-lock-junction',
+        'unit-file-only-reparse-predicate','unit-required-query-return',
+        'reacquire-new-reference','stale-check','stale-release','exit-eof','exit-normal','exit-abrupt',
+        'missing-root','partial-acquisition-closure',
+        'protocol-extra-token','protocol-unknown-command','protocol-invalid-encoding','protocol-overlong-line','protocol-partial-command-eof',
+        'cleanup-runroot-replaced','cleanup-fixture-replaced','cleanup-reparse-outside','cleanup-runroot-reparse-outside','cleanup-unknown-entry-preserved',
+        'binding-alternate-observe','binding-alternate-dispose','binding-moved-from-root-observe','binding-moved-from-root-dispose',
+        'binding-moved-from-fence-observe','binding-moved-from-fence-dispose','binding-move-live-check','binding-other-child-busy','binding-after-verified-release',
+        'binding-command-unapproved-slot','controller-timeout-barrier'
+    )
+}
 foreach ($id in $caseIds) { Register-Case $id }
-if(-not $TimeoutBarrierProof) {
+if(-not $TimeoutBarrierProof -and -not $CanonicalRootProof) {
     $cases['unsupported-query-real-api'].reason='Ambient unsupported FileCaseSensitiveInfo API is not induced by this driver; closed-handle fault injection is a separate case, not ambient support proof.'
     Evidence 'unsupported-query-real-api' @{caseScope='ambient unsupported API';faultInjectionIsSeparate=$true;actualUnsupportedApiProven=$false}
 }
@@ -626,10 +681,15 @@ try {
     Guard-Effects; [InitialFenceProof.Native]::WriteNewText($container,'owner.json',($owner|ConvertTo-Json -Depth 8))
 
     $fixtureNames=@('normalA','normalB','fixtureReplace','reparseFinal','reparseIntermediate','caseLeaf','caseIntermediate','queryFault','partialFault','missingRoot','missingLock','deniedLock','hardlinkLock','postHardlink','symlinkLock','directoryLock','nonemptyLock','pendingLock','raceHeld','raceBefore','pauseLock','pauseAfter','pausePublish','runrootProbe')
+    if($CanonicalRootProof) {
+        $canonicalTimeoutRoot=New-Dir $roots 'canonical-timeout-workspace'
+        $fixtureNames+=@('canonicalReplaceLock','canonicalDirectoryLock','canonicalNonemptyLock','canonicalMissingLock','canonicalJunctionLock','canonicalTimeout')
+    }
     foreach ($name in $fixtureNames) {
-        $parent=$workspace
+        $fixtureRunRoot=if($name -eq 'canonicalTimeout'){$canonicalTimeoutRoot}else{$workspace}
+        $parent=$fixtureRunRoot
         if ($name -in @('reparseIntermediate','caseIntermediate')) { $parent=New-Dir $workspace ($name+'-ancestor'); $w=New-Dir $parent 'leaf' }
-        else { $w=New-Dir $workspace $name }
+        else { $w=New-Dir $parent $name }
         $lock=$null
         if ($name -eq 'directoryLock') { $null=New-Dir $w '.initial-owned-fence.lock' }
         elseif ($name -notin @('missingLock','caseLeaf')) {
@@ -638,7 +698,7 @@ try {
             if($name -eq 'nonemptyLock'){$bytes=[Text.Encoding]::UTF8.GetBytes('must remain unchanged')}
             $lock=Own-Witness ([InitialFenceProof.Native]::NewFile($w,'.initial-owned-fence.lock',$bytes))
         }
-        $fixtures[$name]=[pscustomobject]@{index=$fixtures.Count; witness=$w; parent=$parent; lock=$lock}
+        $fixtures[$name]=[pscustomobject]@{index=$fixtures.Count; witness=$w; parent=$parent; lock=$lock; runRoot=$fixtureRunRoot}
         $normalCount=if($name -eq 'normalA'){100}elseif($name -eq 'normalB'){32}else{8}
         for($i=0;$i -lt $normalCount;$i++){ $null=New-Slot $name }
     }
@@ -658,21 +718,35 @@ try {
     $null=New-Slot 'pausePublish' 'before_publish'
     $null=New-Slot 'runrootProbe' 'before_component' 'workspace'
     $null=New-Slot 'runrootProbe' 'before_component' 'workspace'
+    if($CanonicalRootProof) {
+        $null=New-Slot 'normalA' 'canonical-wrong-guid'
+        $null=New-Slot 'normalA' 'canonical-drive-root'
+        $null=New-Slot 'canonicalJunctionLock' 'lock-property-proof'
+        $null=New-Slot 'canonicalTimeout' 'before_publish'
+    }
 
     $header=New-Object Text.StringBuilder
     $null=$header.AppendLine('#pragma once')
     $null=$header.AppendLine('// Immutable original independent driver-handle pins; prerequisite only.')
     $null=$header.AppendLine('namespace initial_fence { namespace test_pins {')
     $null=$header.AppendLine('struct Pin { const wchar_t* drivePath; const wchar_t* canonicalPath; const char* serialHex; const char* fileIdHex; };')
-    $null=$header.AppendLine('struct Slot { const char* instanceId; unsigned int fixtureIndex; const char* pauseStage; const wchar_t* pauseComponent; const wchar_t* eventBase; bool invalidateCaseQuery; bool invalidateLockQuery; bool crashProof; bool lostAcquireAck; bool bindingProof; };')
+    $null=$header.AppendLine('struct Slot { const char* instanceId; unsigned int fixtureIndex; const char* pauseStage; const wchar_t* pauseComponent; const wchar_t* eventBase; bool invalidateCaseQuery; bool invalidateLockQuery; bool crashProof; bool lostAcquireAck; bool bindingProof; unsigned int canonicalFault; bool lockPropertyProof; };')
+    $null=$header.AppendLine(('inline constexpr bool kCanonicalProofEnabled = '+$(if($CanonicalRootProof){'true'}else{'false'})+';'))
+    $null=$header.AppendLine(('inline const Pin kVolumeRoot = '+(Pin-Initializer $repoChain.Held[0])+';'))
     $null=$header.AppendLine(('inline const Pin kRunRoot = '+(Pin-Initializer $workspace)+';'))
     $null=$header.AppendLine('inline const Pin kFixtures[] = {')
     foreach($entry in $fixtures.Values){$null=$header.AppendLine((Pin-Initializer $entry.witness)+',')}
+    $null=$header.AppendLine('}; inline const Pin kOriginalLocks[] = {')
+    foreach($entry in $fixtures.Values){$null=$header.AppendLine($(if($null -ne $entry.lock){(Pin-Initializer $entry.lock)+','}else{'{L"",L"","",""},'}))}
+    $null=$header.AppendLine('}; inline const Pin kCanonicalRunRoots[] = {')
+    foreach($entry in $fixtures.Values){$null=$header.AppendLine((Pin-Initializer $entry.runRoot)+',')}
     $null=$header.AppendLine('}; inline const Slot kSlots[] = {')
     foreach($slot in $allSlots) {
         $stage=if($slot.kind -in @('before_component','after_component','before_lock','after_lock','before_publish')){$slot.kind}else{''}
         $flags=@(($slot.kind -eq 'invalid-case-query'),($slot.kind -eq 'invalid-lock-query'),($slot.kind -eq 'crash'),($slot.kind -eq 'lost-ack'),($slot.kind -eq 'binding-proof'))|ForEach-Object {if($_){'true'}else{'false'}}
-        $null=$header.AppendLine(('{'+(Cpp-Ascii $slot.instanceId)+','+$slot.fixtureIndex+','+(Cpp-Ascii $stage)+','+(Cpp-Wide $slot.component)+','+(Cpp-Wide $slot.eventBase)+','+($flags -join ',')+'},'))
+        $canonicalFault=if($slot.kind -eq 'canonical-wrong-guid'){1}elseif($slot.kind -eq 'canonical-drive-root'){2}else{0}
+        $propertyFlag=if($slot.kind -eq 'lock-property-proof'){'true'}else{'false'}
+        $null=$header.AppendLine(('{'+(Cpp-Ascii $slot.instanceId)+','+$slot.fixtureIndex+','+(Cpp-Ascii $stage)+','+(Cpp-Wide $slot.component)+','+(Cpp-Wide $slot.eventBase)+','+($flags -join ',')+','+$canonicalFault+','+$propertyFlag+'},'))
         if($stage -ne '') {
             $created=$false
             $ready=New-Object Threading.EventWaitHandle($false,[Threading.EventResetMode]::ManualReset,($slot.eventBase+'-ready'),[ref]$created)
@@ -721,7 +795,7 @@ try {
                 $timeoutBarrier.clock.Stop();$timeoutBarrier.elapsedMilliseconds=$timeoutBarrier.clock.ElapsedMilliseconds
             }
         }
-    } elseif($RunNativeProof) {
+    } elseif($RunNativeProof -or $CanonicalRootProof) {
         Run-Case 'root-observation' {
             $c=Start-Child 'normalA'; Assert-True $c.Startup.ok 'startup root query'; Assert-Identity $c.Startup.rootIdentity $fixtures.normalA.witness.Original
             $r=Command $c 'observe'; Assert-Identity $r.rootIdentity $fixtures.normalA.witness.Original
@@ -875,7 +949,7 @@ try {
             @{id='input-trailing-dot';path=$basePath+'.'},@{id='input-trailing-space';path=$basePath+' '},@{id='input-empty-component';path=$workspace.DrivePath+'\\normalA'}
         )
         foreach($inputCase in $invalidInputs) {
-            Run-Case $inputCase.id {$c=Start-Child 'normalA' 'normal' $inputCase.path;$r=Refused-Startup $c @('invalid_root_spelling');Evidence $inputCase.id @{input=$inputCase.path;result=$r}}
+            Run-Case $inputCase.id {$c=Start-Child 'normalA' 'normal' $inputCase.path;$r=Refused-Startup $c $(if($CanonicalRootProof){@('invalid_argv')}else{@('invalid_root_spelling')});if($CanonicalRootProof){Assert-True ($r.testTrace.volumeAnchorOpenAttempts -eq 0) 'public selector refused before anchor opens'};Evidence $inputCase.id @{input=$inputCase.path;result=$r}}
         }
         Run-Case 'input-subst' {
             if(-not $AllowTemporaryDosDeviceProof){throw 'UNVERIFIED: explicit -AllowTemporaryDosDeviceProof required for ephemeral per-logon test mapping'}
@@ -1055,6 +1129,92 @@ try {
                 if($r.fenceState -eq 'CLOSED'){Exact-Exit $c 2}else{Stop-Child $c}
             } finally{$pending.Dispose()}
         }
+        if($CanonicalRootProof) {
+            Run-Case 'same-root-cross-ref' {
+                $a=Start-Child 'normalA';$b=Start-Child 'normalA';$ar=Acquire $a
+                foreach($op in @('check','release')) {
+                    $refusal=Command $b "$op $($ar.sessionRef)"
+                    Assert-True (-not $refusal.ok -and $refusal.code -eq 'foreign_session_ref' -and $refusal.fenceState -eq 'ROOT_HELD') 'same physical root does not transfer private controller reference'
+                    Evidence 'same-root-cross-ref' $refusal
+                }
+                $null=Check-Own $a $ar.sessionRef;$release=Command $a "release $($ar.sessionRef)";Assert-True $release.ok 'same root original release'
+                $br=Acquire $b;Assert-Identity $br.rootIdentity $ar.rootIdentity;Assert-Identity $br.lockIdentity $ar.lockIdentity
+                $foreign=Command $a "release $($br.sessionRef)";Assert-True (-not $foreign.ok -and $foreign.code -eq 'foreign_session_ref') 'prior controller cannot release new same-root owner'
+                Evidence 'same-root-cross-ref' @{nextOwner=$br;priorRefusal=$foreign;nextStillLive=(Check-Own $b $br.sessionRef)};Stop-Child $a;Stop-Child $b
+            }
+            foreach($item in @(@{id='canonical-private-wrong-guid';kind='canonical-wrong-guid';code='canonical_anchor_pin_mismatch'},@{id='canonical-private-drive-root';kind='canonical-drive-root';code='invalid_canonical_root'})) {
+                Run-Case $item.id {
+                    $c=Start-Child 'normalA' $item.kind;$r=Refused-Startup $c @($item.code)
+                    Assert-True ($r.testTrace.volumeAnchorOpenAttempts -eq 0 -and $r.testTrace.publishedAcquisitions -eq 0) 'immutable bad slot refuses before any anchor/lock opens'
+                    Evidence $item.id @{inputScope='immutable generated test slot; not public root input';result=$r}
+                }
+            }
+            Run-Case 'canonical-public-guid-selector' {
+                $c=Start-Child 'normalA' 'normal' '\\?\Volume{00000000-0000-0000-0000-000000000000}\'
+                $r=Refused-Startup $c @('invalid_argv');Assert-True ($r.testTrace.volumeAnchorOpenAttempts -eq 0) 'public GUID selector refuses before open'
+                Evidence 'canonical-public-guid-selector' $r
+            }
+            foreach($item in @(@{id='canonical-lock-replacement';fixture='canonicalReplaceLock';kind='empty'},@{id='canonical-lock-directory';fixture='canonicalDirectoryLock';kind='directory'},@{id='canonical-lock-nonempty';fixture='canonicalNonemptyLock';kind='nonempty'},@{id='canonical-lock-missing';fixture='canonicalMissingLock';kind='missing'})) {
+                Run-Case $item.id {
+                    $f=$fixtures[$item.fixture];Guard-Effects
+                    [InitialFenceProof.Native]::AssertFresh($f.witness.DrivePath,$f.witness)
+                    [InitialFenceProof.Native]::AssertFreshFile($f.lock.DrivePath,$f.lock)
+                    $saved=Join-Path $f.witness.DrivePath 'original-lock-preserved'
+                    $raw=[InitialFenceProof.Native]::TryMove($f.lock.DrivePath,$saved);Assert-True $raw.ok 'original lock preserved by verified own move'
+                    Record-KnownMove $f.lock $f.lock.CurrentKnownPath $saved
+                    $replacement=$null
+                    if($item.kind -eq 'directory'){$replacement=New-Dir $f.witness '.initial-owned-fence.lock'}
+                    elseif($item.kind -ne 'missing') {
+                        [byte[]]$bytes=[byte[]]@();if($item.kind -eq 'nonempty'){$bytes=[Text.Encoding]::UTF8.GetBytes('replacement remains unchanged')}
+                        Guard-Effects;$replacement=Own-Witness ([InitialFenceProof.Native]::NewFile($f.witness,'.initial-owned-fence.lock',$bytes))
+                    }
+                    $c=Start-Child $item.fixture;Assert-True $c.Startup.ok 'original root is held before lock refusal'
+                    $r=Command $c 'acquire';Assert-True (-not $r.ok -and $r.fenceState -eq 'CLOSED' -and $r.testTrace.publishedAcquisitions -eq 0 -and $r.testTrace.lockWriteOpenAttempts -eq 1) 'replacement never publishes original lock pin'
+                    if($item.kind -eq 'empty'){Assert-True ($r.code -eq 'lock_identity_changed') 'ordinary empty replacement refuses original ID mismatch'}
+                    elseif($item.kind -eq 'nonempty'){Assert-True ($r.code -eq 'lock_standard_refused') 'nonempty replacement refused';Assert-True ([IO.File]::ReadAllText($replacement.DrivePath) -eq 'replacement remains unchanged') 'replacement not truncated'}
+                    elseif($item.kind -eq 'directory'){Assert-True ($r.code -in @('lock_attributes_refused','relative_open_failed')) 'directory refusal before publication'}
+                    else{Assert-True ($r.code -eq 'relative_open_failed' -and $r.win32Error -in @(2,3)) 'missing fixed lock not recreated'}
+                    Exact-Exit $c 2
+                    $originalAfter=[InitialFenceProof.Native]::VerifyOwnHeldPinAt($f.lock,$saved)
+                    Evidence $item.id @{originalLockPin=$f.lock.Original;preservedOriginal=$originalAfter;replacementOriginal=if($replacement){$replacement.Original}else{$null};result=$r;exactExit=$c.Exit}
+                }
+            }
+            Run-Case 'canonical-lock-junction' {
+                $f=$fixtures.canonicalJunctionLock;Guard-Effects
+                [InitialFenceProof.Native]::AssertFreshFile($f.lock.DrivePath,$f.lock)
+                $saved=Join-Path $f.witness.DrivePath 'original-lock-preserved'
+                $raw=[InitialFenceProof.Native]::TryMove($f.lock.DrivePath,$saved);Assert-True $raw.ok 'preserve original fixed lock without repinning'
+                Record-KnownMove $f.lock $f.lock.CurrentKnownPath $saved
+                $junction=New-Dir $f.witness '.initial-owned-fence.lock'
+                Guard-Effects;[InitialFenceProof.Native]::AssertFresh($outsideLeaf.DrivePath,$outsideLeaf)
+                $raw=[InitialFenceProof.Native]::Junction($junction.DrivePath,$outsideLeaf.DrivePath);Evidence 'canonical-lock-junction' $raw
+                Assert-True $raw.ok 'actual own mount-point junction created at fixed lock basename'
+                $held=[InitialFenceProof.Native]::HoldLockJunctionProof($f.witness)
+                try {
+                    $before=$held.Fresh();Assert-True ($before.noFollow -and ($before.fileAttributes -band 0x410) -eq 0x410 -and $before.reparseTag -eq 2684354563) 'independent original no-follow HANDLE queried REPARSE_POINT and actual tag'
+                    Assert-True ($before.identity.fileIdHex -cne $f.lock.Original.fileIdHex -and $before.identity.fileIdHex -cne $outsideLeaf.Original.fileIdHex) 'junction is its own physical node'
+                    $c=Start-Child 'canonicalJunctionLock' 'lock-property-proof';Assert-True $c.Startup.ok 'original canonical root before layered lock proof'
+                    $property=Command $c 'lock-property-proof'
+                    Assert-True ($property.ok -and $property.code -eq 'lock_property_checked' -and $property.lockPropertyProof.noFollow -and $property.lockPropertyProof.metadataOnly -and $property.lockPropertyProof.verifierCode -eq 'lock_attributes_refused' -and $property.testTrace.lockWriteOpenAttempts -eq 0 -and $property.testTrace.publishedAcquisitions -eq 0) 'exact LockIdentity metadata verifier refuses actual junction before any WRITE_DATA proof'
+                    Assert-Identity $property.lockPropertyProof.identity $before.identity
+                    $r=Command $c 'acquire';Assert-True (-not $r.ok -and $r.fenceState -eq 'CLOSED' -and $r.code -in @('lock_attributes_refused','relative_open_failed') -and $r.testTrace.publishedAcquisitions -eq 0) 'actual acquire cannot publish junction lock'
+                    Exact-Exit $c 2;$after=$held.Fresh();Assert-Identity $after.identity $before.identity
+                    $preserved=[InitialFenceProof.Native]::VerifyOwnHeldPinAt($f.lock,$saved)
+                    Assert-True ([IO.File]::ReadAllText($outsideMarker.DrivePath) -eq 'owned outside-fixture sentinel; never helper effects' -and [IO.File]::ReadAllText($outsideLock.DrivePath) -eq 'foreign-to-fixture nonempty sentinel') 'junction target and sentinel unchanged'
+                    Evidence 'canonical-lock-junction' @{before=$before;directLockIdentity=$property;acquire=$r;afterExactExit=$after;originalLockPreserved=$preserved;exactExit=$c.Exit;fileSymlinkEndToEndProven=$false}
+                } finally {$held.Dispose()}
+            }
+            Run-Case 'unit-file-only-reparse-predicate' {
+                $source=[IO.File]::ReadAllText((Join-Path $projectRoot 'native/owned-runtime-initial-fence/fence_win32.cpp'))
+                Assert-True ($source.Contains('static_assert(!LockAttributesPermitted(FILE_ATTRIBUTE_REPARSE_POINT),') -and $source.Contains('static_assert(!LockAttributesPermitted(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_NORMAL),')) 'compiled source assertions independently refuse file-only reparse flags'
+                Evidence 'unit-file-only-reparse-predicate' @{caseScope='pure compile-time predicate plus independent source review';productionAuthority=$false;compiledInFreshBuild=$true;actualFileSymlinkProven=$false}
+            }
+            Run-Case 'unit-required-query-return' {
+                $source=[IO.File]::ReadAllText((Join-Path $projectRoot 'native/owned-runtime-initial-fence/fence_win32.cpp'))
+                Assert-True ($source.Contains('static_assert(!RequiredQuerySucceeded(FALSE),') -and $source.Contains('RequiredQuerySucceeded(GetFileInformationByHandleEx(')) 'compiled false-return required-query predicate refuses unsupported/error returns'
+                Evidence 'unit-required-query-return' @{caseScope='unit false return; native error 6 is separate mandatory case';compiledInFreshBuild=$true;ambientUnsupportedFilesystemProven=$false}
+            }
+        }
         Run-Case 'denied-access' {
             $f=$fixtures.deniedLock;Guard-Effects;[InitialFenceProof.Native]::AssertFresh($f.witness.DrivePath,$f.witness)
             [InitialFenceProof.Native]::AssertFreshFile($f.lock.DrivePath,$f.lock)
@@ -1107,6 +1267,19 @@ try {
                 Assert-True ([IO.File]::ReadAllText($outsideMarker.DrivePath) -eq 'owned outside-fixture sentinel; never helper effects') 'outside target untouched; no cleanup removal'
             }
         }
+        if($CanonicalRootProof) {
+            # Last finite case: terminal UNKNOWN forbids every later start/effect
+            # until finally reconciles this original child/channel and exact exit.
+            Run-Case 'controller-timeout-barrier' {
+                $c=Start-Child 'canonicalTimeout' 'before_publish'
+                Assert-True $c.Startup.ok 'separate original canonical runRoot held before delayed acquire'
+                $c.Channel.Send('acquire');Wait-Hook $c
+                $timeoutBarrier.child=$c;$timeoutBarrier.pausedCounters=Controller-Counters
+                $timeoutBarrier.clock=[Diagnostics.Stopwatch]::StartNew();$timeoutBarrier.armed=$true
+                try {$null=Read-Ack $c 'acquire';Assert-True $false 'canonical pending acquire must outlast 4000ms'}
+                finally {$timeoutBarrier.clock.Stop();$timeoutBarrier.elapsedMilliseconds=$timeoutBarrier.clock.ElapsedMilliseconds}
+            }
+        }
     }
 } catch {
     # Terminal case errors unwind the suite before any subsequent case/effect.
@@ -1120,7 +1293,7 @@ try {
     $reconciliation=New-Object 'System.Collections.Generic.List[object]'
     $allChildrenExited=$true
     $barrierFailure=$null
-    if($TimeoutBarrierProof -and $timeoutBarrier.armed) {
+    if(($TimeoutBarrierProof -or $CanonicalRootProof) -and $timeoutBarrier.armed) {
         try {
             Assert-True ($timeoutBarrier.timedOut -and $controller.suiteStopped -and $timeoutBarrier.elapsedMilliseconds -ge 4000) 'actual acquire ACK timeout beyond 4000ms caused terminal barrier'
             Assert-SameCounters $timeoutBarrier.pausedCounters $timeoutBarrier.timeoutCounters
@@ -1130,7 +1303,7 @@ try {
     }
     foreach($event in $events.Values){$null=$event.Resume.Set()}
     foreach($child in $channels) {
-        $focused=$TimeoutBarrierProof -and [object]::ReferenceEquals($child,$timeoutBarrier.child)
+        $focused=($TimeoutBarrierProof -or $CanonicalRootProof) -and [object]::ReferenceEquals($child,$timeoutBarrier.child)
         $item=[ordered]@{factoryInstanceId=$child.Slot.instanceId;boundToOriginalHeldProcessAndStdio=$true;pendingAckReconciled=$false;eofRequested=$false;exactExited=$false;exitCode=$null;termination=$null;state='UNKNOWN';diagnostic=$null}
         try {
             # A timeout retained this exact Channel.Pending task. Consume that ACK,
@@ -1142,8 +1315,8 @@ try {
                     $child.Transcript.Add($lateResult);$item.pendingAckReconciled=$true
                     if($focused) {
                         Assert-True ($lateResult.operation -ceq 'acquire' -and $lateResult.ok -and $lateResult.code -ceq 'acquired' -and $lateResult.fenceState -ceq 'FENCE_HELD' -and $lateResult.sessionRef -ceq ($child.Slot.instanceId+':1') -and $lateResult.activeSessionRef -ceq $lateResult.sessionRef -and $lateResult.testTrace.lockWriteOpenAttempts -eq 1 -and $lateResult.testTrace.publishedAcquisitions -eq 1) 'late ACK proves actual single successful acquire, no replay'
-                        Assert-Identity $lateResult.rootIdentity $fixtures.pausePublish.witness.Original
-                        Assert-Identity $lateResult.lockIdentity $fixtures.pausePublish.lock.Original
+                        Assert-Identity $lateResult.rootIdentity $fixtures[$child.Slot.fixture].witness.Original
+                        Assert-Identity $lateResult.lockIdentity $fixtures[$child.Slot.fixture].lock.Original
                         $timeoutBarrier.lateAck=$lateResult;$timeoutBarrier.lateAckCounters=Controller-Counters
                         Assert-SameCounters $timeoutBarrier.timeoutCounters $timeoutBarrier.lateAckCounters
                     }
@@ -1188,9 +1361,10 @@ try {
         $reconciliation.Add($item)
     }
     $controller.reconciliationComplete=$allChildrenExited
-    if($TimeoutBarrierProof -and $timeoutBarrier.armed) {
+    if(($TimeoutBarrierProof -or $CanonicalRootProof) -and $timeoutBarrier.armed) {
         Evidence 'controller-timeout-barrier' @{expectedTimeoutMilliseconds=4000;actualTimeoutMilliseconds=$timeoutBarrier.elapsedMilliseconds;terminalStop=$controller.suiteStopped;stopReason=$controller.stopReason;pausedCounters=$timeoutBarrier.pausedCounters;timeoutCounters=$timeoutBarrier.timeoutCounters;reconciliationEntryCounters=$timeoutBarrier.reconciliationEntryCounters;lateAckCounters=$timeoutBarrier.lateAckCounters;exactExitCounters=$timeoutBarrier.exitCounters;lateAcquireAck=$timeoutBarrier.lateAck;counterScope='child start attempts / registered held channels / guarded filesystem effect boundary entries; final receipt excluded';barrierFailure=$barrierFailure}
-        if($null -eq $barrierFailure -and $allChildrenExited -and $channels.Count -eq 1 -and $timeoutBarrier.timedOut -and $null -ne $timeoutBarrier.lateAck) {
+        $exactMatrixChannels=if($CanonicalRootProof){$channels.Count -eq $timeoutBarrier.pausedCounters.childrenRegistered}else{$channels.Count -eq 1}
+        if($null -eq $barrierFailure -and $allChildrenExited -and $exactMatrixChannels -and $timeoutBarrier.timedOut -and $null -ne $timeoutBarrier.lateAck) {
             $cases['controller-timeout-barrier'].status='PASS';$cases['controller-timeout-barrier'].reason='actual delayed acquired ACK reconciled on original channel, then EOF/exact exit=0; no intervening child/filesystem effect boundary'
             $driverFault=$null # Only this verified, intentionally induced timeout.
         } else {
@@ -1199,7 +1373,12 @@ try {
         }
     }
     $proofStatus=if(-not $allChildrenExited){'UNKNOWN'}elseif(@($cases.Values|Where-Object{$_.status -eq 'FAIL'}).Count -gt 0){'FAIL'}elseif($driverFault){'UNVERIFIED'}elseif(@($cases.Values|Where-Object{$_.status -ne 'PASS'}).Count -gt 0){'UNVERIFIED'}else{'PASS'}
-    $receipt=[ordered]@{schema='ae-agent.initial-fence-prerequisite.proof.v1';scope='windows_identity_fence_prerequisite';productionAuthority=$false;issuerStatus='unavailable';admission=$false;runId=$runId;mode=if($TimeoutBarrierProof){'parent-timeout-barrier-proof'}elseif($RunNativeProof){'parent-native-proof'}else{'build-only'};status=$proofStatus;driverFault=$driverFault;initialDriverFault=$initialDriverFaultEvidence;sources=$sourceHashes;build=$buildReceipt;cases=@($cases.Values);parking=$parkingReceipts.ToArray();verifiedOwnMoves=$knownMoves.ToArray();children=@($channels|ForEach-Object{@{instanceId=$_.Slot.instanceId;commands=$_.Transcript.ToArray();proofExit=$_.Exit}});reconciliation=$reconciliation.ToArray();allExactChildrenExited=$allChildrenExited;controller=@{suiteStopped=$controller.suiteStopped;stopReason=$controller.stopReason;countersBeforeFinalReceipt=(Controller-Counters);counterScope='guarded effect boundaries, not a claim that every boundary wrote a file'};cleanup=@{filesystem='preserve all scratch';recursiveDelete=$false;pathnameCleanup=$false;unknownObjects='preserved';dosDeviceCreated=$false}}
+    $receipt=[ordered]@{schema='ae-agent.initial-fence-prerequisite.proof.v1';scope='windows_identity_fence_prerequisite';productionAuthority=$false;issuerStatus='unavailable';admission=$false;runId=$runId;mode=if($CanonicalRootProof){'parent-canonical-root-proof'}elseif($TimeoutBarrierProof){'parent-timeout-barrier-proof'}elseif($RunNativeProof){'parent-native-proof'}else{'build-only'};status=$proofStatus;driverFault=$driverFault;initialDriverFault=$initialDriverFaultEvidence;sources=$sourceHashes;build=$buildReceipt;cases=@($cases.Values);parking=$parkingReceipts.ToArray();verifiedOwnMoves=$knownMoves.ToArray();children=@($channels|ForEach-Object{@{instanceId=$_.Slot.instanceId;commands=$_.Transcript.ToArray();proofExit=$_.Exit}});reconciliation=$reconciliation.ToArray();allExactChildrenExited=$allChildrenExited;controller=@{suiteStopped=$controller.suiteStopped;stopReason=$controller.stopReason;countersBeforeFinalReceipt=(Controller-Counters);counterScope='guarded effect boundaries, not a claim that every boundary wrote a file'};cleanup=@{filesystem='preserve all scratch';recursiveDelete=$false;pathnameCleanup=$false;unknownObjects='preserved';dosDeviceCreated=$false}}
+    if($CanonicalRootProof) {
+        $receipt.matrix='canonical_pinned_local_root_v1'
+        $receipt.requiredCases=$caseIds
+        $receipt.legacyEvidence=@{preserved=$true;subst=$false;fileSymlinkEndToEnd=$false;ambientUnsupportedFilesystem=$false;unitEvidenceIsSeparate=$true}
+    }
     if($null -ne $evidence) {
         try {
             Guard-Effects -FinalReceipt
@@ -1220,5 +1399,5 @@ try {
 
 [pscustomobject]@{schema='ae-agent.initial-fence-prerequisite.summary.v1';scope='windows_identity_fence_prerequisite';productionAuthority=$false;issuerStatus='unavailable';admission=$false;runId=$runId;status=$proofStatus;receipt=$receiptPath;driverFault=$driverFault;initialDriverFault=$initialDriverFaultEvidence;terminalStopReason=$controller.stopReason;cases=$cases.Count;pass=@($cases.Values|Where-Object{$_.status -eq 'PASS'}).Count;fail=@($cases.Values|Where-Object{$_.status -eq 'FAIL'}).Count;unverified=@($cases.Values|Where-Object{$_.status -eq 'UNVERIFIED'}).Count;allExactChildrenExited=$allChildrenExited;scratchPreserved=$true}|ConvertTo-Json -Compress -Depth 4
 if($driverFault -or -not $allChildrenExited){exit 1}
-if(($RunNativeProof -or $TimeoutBarrierProof) -and $proofStatus -ne 'PASS'){exit 2}
+if(($RunNativeProof -or $TimeoutBarrierProof -or $CanonicalRootProof) -and $proofStatus -ne 'PASS'){exit 2}
 exit 0

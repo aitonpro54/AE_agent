@@ -25,6 +25,43 @@ constexpr ULONG kNtSynchronousNonalert = 0x00000020;
 constexpr ULONG kObjectCaseInsensitive = 0x00000040;
 constexpr std::size_t kMaxPathChars = 32760;
 
+constexpr bool IsCanonicalVolumeAnchor(std::wstring_view value) noexcept {
+    if (value.size() != 49 || value.substr(0, 11) != L"\\\\?\\Volume{"
+        || value[47] != L'}' || value[48] != L'\\') { return false; }
+    for (std::size_t i = 11; i < 47; ++i) {
+        const wchar_t ch = value[i];
+        if (i == 19 || i == 24 || i == 29 || i == 34) {
+            if (ch != L'-') { return false; }
+        } else if (!((ch >= L'0' && ch <= L'9') || (ch >= L'a' && ch <= L'f')
+            || (ch >= L'A' && ch <= L'F'))) { return false; }
+    }
+    return true;
+}
+
+constexpr bool LockAttributesPermitted(DWORD flags) noexcept {
+    constexpr DWORD forbidden = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT
+        | FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_OPEN | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS;
+    return (flags & forbidden) == 0;
+}
+constexpr bool RequiredQuerySucceeded(BOOL returned) noexcept { return returned != FALSE; }
+static_assert(!RequiredQuerySucceeded(FALSE), "unit unsupported-return refuses required query");
+static_assert(RequiredQuerySucceeded(TRUE), "unit successful required query");
+
+// File-only REPARSE_POINT is refused independently of DIRECTORY. Unit evidence
+// does not claim an actual file symlink or ambient unsupported filesystem.
+static_assert(!LockAttributesPermitted(FILE_ATTRIBUTE_REPARSE_POINT), "file-only reparse refusal");
+static_assert(!LockAttributesPermitted(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_NORMAL), "regular/reparse refusal");
+static_assert(!LockAttributesPermitted(FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT), "junction refusal");
+static_assert(LockAttributesPermitted(FILE_ATTRIBUTE_NORMAL), "regular attributes permitted");
+static_assert(IsCanonicalVolumeAnchor(L"\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdef}\\"), "canonical GUID grammar");
+static_assert(!IsCanonicalVolumeAnchor(L"C:\\"), "drive is not a canonical anchor");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdef}\\folder"), "mounted folder is not an anchor");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdeg}\\"), "invalid GUID digit");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\?\\Volume{01234567_89ab-cdef-0123-456789abcdef}\\"), "invalid GUID separator");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdef}/"), "slash refused");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\server\\share\\"), "UNC refused");
+static_assert(!IsCanonicalVolumeAnchor(L"\\\\.\\C:\\"), "device spelling refused");
+
 // Supported baseline: a complete native volume name, not a directory mapping.
 // Preserve the previous guard's exact ASCII case; no locale-dependent folding.
 constexpr bool IsSupportedNativeVolumeTarget(std::wstring_view target) noexcept {
@@ -187,7 +224,7 @@ Result ReadIdentity(HANDLE handle, Identity& identity) {
 
 Result DirectoryIdentity(HANDLE handle, Identity& identity, bool invalidCaseQuery) {
     FILE_ATTRIBUTE_TAG_INFO attributes{};
-    if (!GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &attributes, sizeof(attributes))) {
+    if (!RequiredQuerySucceeded(GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &attributes, sizeof(attributes)))) {
         return Error("attribute_query_failed", GetLastError());
     }
     constexpr DWORD forbidden = FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_OFFLINE
@@ -237,12 +274,10 @@ Result LockIdentity(HANDLE handle, const Identity& root, Identity& identity, boo
         }
         return Error("test_invalid_handle_unexpected_success");
     }
-    if (!GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &attributes, sizeof(attributes))) {
+    if (!RequiredQuerySucceeded(GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &attributes, sizeof(attributes)))) {
         return Error("attribute_query_failed", GetLastError());
     }
-    constexpr DWORD forbidden = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT
-        | FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_OPEN | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS;
-    if ((attributes.FileAttributes & forbidden) != 0) { return Error("lock_attributes_refused"); }
+    if (!LockAttributesPermitted(attributes.FileAttributes)) { return Error("lock_attributes_refused"); }
     FILE_STANDARD_INFO standard{};
     if (!GetFileInformationByHandleEx(handle, FileStandardInfo, &standard, sizeof(standard))) {
         return Error("standard_query_failed", GetLastError());
@@ -261,6 +296,20 @@ Result LockIdentity(HANDLE handle, const Identity& root, Identity& identity, boo
 }
 
 struct ParsedPath { std::wstring drivePath; std::vector<std::wstring> components; };
+Result ParsePath(const std::wstring& input, ParsedPath& parsed);
+
+Result ParseCanonicalPath(const std::wstring& input, ParsedPath& parsed, std::wstring& anchor) {
+    if (input.size() <= 49 || input.size() > kMaxPathChars
+        || input.find(L'\0') != std::wstring::npos || !IsCanonicalVolumeAnchor(std::wstring_view(input).substr(0, 49))) {
+        return Error("invalid_canonical_root");
+    }
+    anchor = input.substr(0, 49);
+    // Reuse the exact single-component grammar; this spelling is never opened.
+    Result result = ParsePath(L"C:\\" + input.substr(49), parsed);
+    if (!result.code.empty()) { return Error("invalid_canonical_component"); }
+    parsed.drivePath = input;
+    return Result{};
+}
 
 Result ParsePath(const std::wstring& input, ParsedPath& parsed) {
     if (input.empty() || input.size() > kMaxPathChars || input.find(L'\0') != std::wstring::npos) {
@@ -390,7 +439,11 @@ struct FenceLease::Data {
 struct Factory::RootConfig {
     ParsedPath path;
     ParsedPath expectedRunPath;
+    bool canonical = false;
+    std::wstring volumeAnchor;
+    const test_pins::Pin* runRoot = &test_pins::kRunRoot;
     const test_pins::Pin* fixture = nullptr;
+    const test_pins::Pin* originalLock = nullptr;
     const test_pins::Slot* slot = nullptr;
 };
 struct Factory::Data {
@@ -401,6 +454,7 @@ struct Factory::Data {
     std::weak_ptr<Token> activeFenceToken;
     std::uint64_t counter = 0;
     std::uint64_t lockWriteOpenAttempts = 0;
+    std::uint64_t volumeAnchorOpenAttempts = 0;
     std::uint64_t publishedAcquisitions = 0;
     bool opened = false;
     bool closed = false;
@@ -437,6 +491,9 @@ Factory::~Factory() { data_->token->live = false; }
 
 std::unique_ptr<Factory> Factory::CreateApprovedTestFactory(
     const std::wstring& spelling, const std::string& instance, Result& result) {
+    if (test_pins::kCanonicalProofEnabled) {
+        result = Error("runtime_root_selector_refused"); result.terminal = true; return nullptr;
+    }
     auto config = std::make_unique<RootConfig>();
     result = ParsePath(spelling, config->path);
     if (!result.code.empty()) { result.terminal = true; return nullptr; }
@@ -470,6 +527,67 @@ std::unique_ptr<Factory> Factory::CreateApprovedTestFactory(
     return std::unique_ptr<Factory>(new Factory(std::move(config)));
 }
 
+std::unique_ptr<Factory> Factory::CreateApprovedCanonicalTestFactory(
+    const std::string& instance, Result& result) {
+    if (!test_pins::kCanonicalProofEnabled) {
+        result = Error("canonical_factory_unavailable"); result.terminal = true; return nullptr;
+    }
+    auto config = std::make_unique<RootConfig>();
+    config->canonical = true;
+    for (const auto& slot : test_pins::kSlots) {
+        if (instance == slot.instanceId) { config->slot = &slot; break; }
+    }
+    if (config->slot == nullptr || config->slot->fixtureIndex >= std::size(test_pins::kFixtures)
+        || config->slot->fixtureIndex >= std::size(test_pins::kOriginalLocks)
+        || config->slot->fixtureIndex >= std::size(test_pins::kCanonicalRunRoots)) {
+        result = Error("unapproved_factory_instance"); result.terminal = true; return nullptr;
+    }
+    config->fixture = &test_pins::kFixtures[config->slot->fixtureIndex];
+    config->runRoot = &test_pins::kCanonicalRunRoots[config->slot->fixtureIndex];
+    config->originalLock = &test_pins::kOriginalLocks[config->slot->fixtureIndex];
+    if (config->slot->canonicalFault > 2) {
+        result = Error("unapproved_canonical_fault"); result.terminal = true; return nullptr;
+    }
+    // Faults belong to immutable approved proof slots, never runtime selectors.
+    const std::wstring rootPath = config->slot->canonicalFault == 2
+        ? config->fixture->drivePath : config->fixture->canonicalPath;
+    result = ParseCanonicalPath(rootPath, config->path, config->volumeAnchor);
+    if (!result.code.empty()) { result.terminal = true; return nullptr; }
+    if (config->slot->canonicalFault == 1) {
+        // The immutable bad slot changes exactly one valid GUID digit; the
+        // resulting locator is guaranteed to differ from its original pin.
+        config->volumeAnchor[11] = config->volumeAnchor[11] == L'0' ? L'1' : L'0';
+    }
+    if (!IsCanonicalVolumeAnchor(config->volumeAnchor)
+        || !EqualPath(config->volumeAnchor, test_pins::kVolumeRoot.canonicalPath)) {
+        result = Error("canonical_anchor_pin_mismatch"); result.terminal = true; return nullptr;
+    }
+    std::wstring runAnchor;
+    result = ParseCanonicalPath(config->runRoot->canonicalPath, config->expectedRunPath, runAnchor);
+    if (!result.code.empty() || !EqualPath(runAnchor, config->volumeAnchor)
+        || config->expectedRunPath.components.empty()
+        || config->path.components.size() <= config->expectedRunPath.components.size()) {
+        result = Error("fixture_outside_run_root"); result.terminal = true; return nullptr;
+    }
+    for (std::size_t i = 0; i < config->expectedRunPath.components.size(); ++i) {
+        if (config->path.components[i] != config->expectedRunPath.components[i]) {
+            result = Error("fixture_outside_run_root"); result.terminal = true; return nullptr;
+        }
+    }
+    for (const auto* pin : {&test_pins::kVolumeRoot, config->runRoot, config->fixture, config->originalLock}) {
+        if (std::strlen(pin->serialHex) != 16 || std::strlen(pin->fileIdHex) != 32
+            || pin->canonicalPath[0] == L'\0') {
+            result = Error("missing_original_pins"); result.terminal = true; return nullptr;
+        }
+    }
+    const std::wstring lockPath = std::wstring(config->fixture->canonicalPath) + L"\\" + kLockName;
+    if (!EqualPath(lockPath, config->originalLock->canonicalPath)
+        || std::string(config->originalLock->serialHex) != config->fixture->serialHex) {
+        result = Error("original_lock_pin_mismatch"); result.terminal = true; return nullptr;
+    }
+    return std::unique_ptr<Factory>(new Factory(std::move(config)));
+}
+
 Result Factory::Describe(RootLease& root, FenceLease& fence) const {
     // Supplied references never define the actual resource state. In particular
     // an alternate empty/moved-from lease cannot hide the original live fence.
@@ -477,6 +595,7 @@ Result Factory::Describe(RootLease& root, FenceLease& fence) const {
     static_cast<void>(fence);
     Result result;
     result.lockWriteOpenAttempts = data_->lockWriteOpenAttempts;
+    result.volumeAnchorOpenAttempts = data_->volumeAnchorOpenAttempts;
     result.publishedAcquisitions = data_->publishedAcquisitions;
     const auto actualRoot = data_->openedRootToken.lock();
     const auto actualFence = data_->activeFenceToken.lock();
@@ -550,6 +669,7 @@ Result Factory::Fail(RootLease& root, FenceLease& fence, const Result& failure) 
     result.hasLockIdentity = false;
     result.sessionRef.clear();
     result.lockWriteOpenAttempts = data_->lockWriteOpenAttempts;
+    result.volumeAnchorOpenAttempts = data_->volumeAnchorOpenAttempts;
     result.publishedAcquisitions = data_->publishedAcquisitions;
     return result;
 }
@@ -566,29 +686,35 @@ Result Factory::OpenRoot(RootLease& root, FenceLease& fence) {
     root.data_->rootToken = std::make_shared<Token>();
     data_->openedRootToken = root.data_->rootToken;
     root.data_->runRootIndex = data_->config->expectedRunPath.components.size();
-    const std::wstring driveRoot = data_->config->path.drivePath.substr(0, 3);
-    std::array<wchar_t, 1024> device{};
-    const std::wstring drive = driveRoot.substr(0, 2);
-    if (QueryDosDeviceW(drive.c_str(), device.data(), static_cast<DWORD>(device.size())) == 0) {
-        return Fail(root, fence, Error("drive_query_failed", GetLastError()));
-    }
-    if (!IsSupportedNativeVolumeTarget(std::wstring_view(device.data()))
-        || GetDriveTypeW(driveRoot.c_str()) == DRIVE_REMOTE) {
-        return Fail(root, fence, Error("subst_or_remote_root"));
-    }
-    std::array<wchar_t, 64> volume{};
-    if (!GetVolumeNameForVolumeMountPointW(driveRoot.c_str(), volume.data(), static_cast<DWORD>(volume.size()))) {
-        return Fail(root, fence, Error("volume_anchor_query_failed", GetLastError()));
+    std::wstring volume = data_->config->volumeAnchor;
+    if (!data_->config->canonical) {
+        const std::wstring driveRoot = data_->config->path.drivePath.substr(0, 3);
+        std::array<wchar_t, 1024> device{};
+        const std::wstring drive = driveRoot.substr(0, 2);
+        if (QueryDosDeviceW(drive.c_str(), device.data(), static_cast<DWORD>(device.size())) == 0) {
+            return Fail(root, fence, Error("drive_query_failed", GetLastError()));
+        }
+        if (!IsSupportedNativeVolumeTarget(std::wstring_view(device.data()))
+            || GetDriveTypeW(driveRoot.c_str()) == DRIVE_REMOTE) {
+            return Fail(root, fence, Error("subst_or_remote_root"));
+        }
+        std::array<wchar_t, 64> legacyVolume{};
+        if (!GetVolumeNameForVolumeMountPointW(driveRoot.c_str(), legacyVolume.data(), static_cast<DWORD>(legacyVolume.size()))) {
+            return Fail(root, fence, Error("volume_anchor_query_failed", GetLastError()));
+        }
+        volume = legacyVolume.data();
     }
     Witness anchor;
-    anchor.handle = Handle(CreateFileW(volume.data(), FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+    ++data_->volumeAnchorOpenAttempts;
+    anchor.handle = Handle(CreateFileW(volume.c_str(), FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
         FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
     if (!anchor.handle.Valid()) { return Fail(root, fence, Error("volume_anchor_open_failed", GetLastError())); }
     Result result = DirectoryIdentity(anchor.handle.Get(), anchor.identity, false);
     if (!result.code.empty()) { return Fail(root, fence, result); }
     if (!EqualPath(anchor.identity.canonicalPath, anchor.identity.volumeGuid)
-        || !EqualPath(anchor.identity.volumeGuid, volume.data())) {
+        || !EqualPath(anchor.identity.volumeGuid, volume)
+        || (data_->config->canonical && !MatchesPin(anchor.identity, test_pins::kVolumeRoot))) {
         return Fail(root, fence, Error("not_directory_volume_root"));
     }
     root.data_->witnesses.push_back(std::move(anchor));
@@ -607,7 +733,7 @@ Result Factory::OpenRoot(RootLease& root, FenceLease& fence) {
         root.data_->witnesses.push_back(std::move(witness));
         const auto& actual = root.data_->witnesses.back().identity;
         if (root.data_->witnesses.size() - 1 == root.data_->runRootIndex
-            && !MatchesPin(actual, test_pins::kRunRoot)) {
+            && !MatchesPin(actual, *data_->config->runRoot)) {
             return Fail(root, fence, Error("root_identity_changed"));
         }
         if (leaf && !MatchesPin(actual, *data_->config->fixture)) {
@@ -633,7 +759,8 @@ Result Factory::Validate(RootLease& root, FenceLease& fence, bool checkFence) {
         Result result = DirectoryIdentity(root.data_->witnesses[i].handle.Get(), fresh, false);
         if (!result.code.empty()) { return Fail(root, fence, result); }
         if (!EqualIdentity(fresh, root.data_->witnesses[i].identity)
-            || (i == root.data_->runRootIndex && !MatchesPin(fresh, test_pins::kRunRoot))
+            || (i == 0 && data_->config->canonical && !MatchesPin(fresh, test_pins::kVolumeRoot))
+            || (i == root.data_->runRootIndex && !MatchesPin(fresh, *data_->config->runRoot))
             || (i == root.data_->witnesses.size() - 1 && !MatchesPin(fresh, *data_->config->fixture))) {
             return Fail(root, fence, Error("root_identity_changed"));
         }
@@ -647,7 +774,10 @@ Result Factory::Validate(RootLease& root, FenceLease& fence, bool checkFence) {
         Identity fresh;
         Result result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity, fresh, false);
         if (!result.code.empty()) { return Fail(root, fence, result); }
-        if (!EqualIdentity(fresh, fence.data_->identity)) { return Fail(root, fence, Error("lock_identity_changed")); }
+        if (!EqualIdentity(fresh, fence.data_->identity)
+            || (data_->config->canonical && !MatchesPin(fresh, *data_->config->originalLock))) {
+            return Fail(root, fence, Error("lock_identity_changed"));
+        }
     }
     Result result = Describe(root, fence);
     result.ok = true;
@@ -699,6 +829,9 @@ Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
     result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity,
         fence.data_->identity, data_->config->slot->invalidateLockQuery);
     if (!result.code.empty()) { return Fail(root, fence, result); }
+    if (data_->config->canonical && !MatchesPin(fence.data_->identity, *data_->config->originalLock)) {
+        return Fail(root, fence, Error("lock_identity_changed"));
+    }
     result = data_->Pause("before_publish");
     if (!result.code.empty()) { return Fail(root, fence, result); }
     result = Validate(root, fence, false);
@@ -706,7 +839,10 @@ Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
     Identity fresh;
     result = LockIdentity(fence.data_->handle.Get(), root.data_->witnesses.back().identity, fresh, false);
     if (!result.code.empty()) { return Fail(root, fence, result); }
-    if (!EqualIdentity(fresh, fence.data_->identity)) { return Fail(root, fence, Error("lock_identity_changed")); }
+    if (!EqualIdentity(fresh, fence.data_->identity)
+        || (data_->config->canonical && !MatchesPin(fresh, *data_->config->originalLock))) {
+        return Fail(root, fence, Error("lock_identity_changed"));
+    }
     ++data_->counter;
     fence.data_->ref = std::string(data_->config->slot->instanceId) + ":" + std::to_string(data_->counter);
     ++data_->publishedAcquisitions;
@@ -790,6 +926,47 @@ Result Factory::RunBindingProof(RootLease& root, FenceLease& fence) {
     return result;
 }
 
+Result Factory::RunCanonicalLockPropertyProof(RootLease& root, FenceLease& fence) {
+    if (!data_->config->canonical || !data_->config->slot->lockPropertyProof || fence.data_) {
+        Result result = Describe(root, fence); result.code = "lock_property_proof_unavailable"; return result;
+    }
+    Result result = Validate(root, fence, false);
+    if (!result.ok) { return result; }
+    // An independent no-follow metadata handle, no WRITE_DATA and no publication.
+    Handle node;
+    result = RelativeOpen(root.data_->witnesses.back().handle.Get(), kLockName,
+        FILE_READ_ATTRIBUTES | SYNCHRONIZE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, node);
+    if (!result.code.empty()) { return Fail(root, fence, result); }
+    FILE_ATTRIBUTE_TAG_INFO attributes{};
+    if (!GetFileInformationByHandleEx(node.Get(), FileAttributeTagInfo, &attributes, sizeof(attributes))) {
+        return Fail(root, fence, Error("attribute_query_failed", GetLastError()));
+    }
+    Identity nodeIdentity;
+    result = ReadIdentity(node.Get(), nodeIdentity);
+    if (!result.code.empty()) { return Fail(root, fence, result); }
+    Identity unused;
+    const Result refusal = LockIdentity(node.Get(), root.data_->witnesses.back().identity, unused, false);
+    if ((attributes.FileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT))
+        != (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)
+        || attributes.ReparseTag != IO_REPARSE_TAG_MOUNT_POINT
+        || refusal.code != "lock_attributes_refused"
+        || !EqualPath(nodeIdentity.canonicalPath, data_->config->originalLock->canonicalPath)
+        || nodeIdentity.volumeSerialHex != data_->config->originalLock->serialHex) {
+        return Fail(root, fence, Error("lock_property_proof_failed"));
+    }
+    const DWORD closeError = node.Close();
+    if (closeError != ERROR_SUCCESS) { data_->cleanupUnknown = true; return Fail(root, fence, Error("cleanup_unknown", closeError)); }
+    result = Validate(root, fence, false);
+    if (!result.ok) { return result; }
+    result.code = "lock_property_checked";
+    result.hasLockPropertyProof = true;
+    result.lockPropertyIdentity = std::move(nodeIdentity);
+    result.lockFileAttributes = attributes.FileAttributes;
+    result.lockReparseTag = attributes.ReparseTag;
+    result.lockVerifierCode = refusal.code;
+    return result;
+}
+
 std::string JsonResult(const std::string& operation, const Result& result) {
     std::ostringstream output;
     output << "{\"schema\":\"ae-agent.initial-fence-prerequisite.v1\","
@@ -799,6 +976,7 @@ std::string JsonResult(const std::string& operation, const Result& result) {
         << ",\"fenceState\":" << JsonString(result.fenceState)
         << ",\"win32Error\":" << result.win32Error << ",\"ntStatus\":" << result.ntStatus
         << ",\"testTrace\":{\"lockWriteOpenAttempts\":" << result.lockWriteOpenAttempts
+        << ",\"volumeAnchorOpenAttempts\":" << result.volumeAnchorOpenAttempts
         << ",\"publishedAcquisitions\":" << result.publishedAcquisitions << "}";
     if (result.ok && result.hasRootIdentity) { output << ",\"rootIdentity\":" << JsonIdentity(result.rootIdentity); }
     if (result.ok && result.hasLockIdentity) { output << ",\"lockIdentity\":" << JsonIdentity(result.lockIdentity); }
@@ -816,6 +994,11 @@ std::string JsonResult(const std::string& operation, const Result& result) {
                 << ",\"code\":" << JsonString(step.code) << ",\"fenceState\":" << JsonString(step.fenceState) << '}';
         }
         output << ']';
+    }
+    if (result.ok && result.hasLockPropertyProof) {
+        output << ",\"lockPropertyProof\":{\"identity\":" << JsonIdentity(result.lockPropertyIdentity)
+            << ",\"fileAttributes\":" << result.lockFileAttributes << ",\"reparseTag\":" << result.lockReparseTag
+            << ",\"noFollow\":true,\"metadataOnly\":true,\"verifierCode\":" << JsonString(result.lockVerifierCode) << '}';
     }
     output << '}';
     return output.str();

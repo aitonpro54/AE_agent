@@ -54,7 +54,8 @@ bool Ascii(const std::wstring& value, std::string& output) {
 }
 
 bool ParseCommand(const std::string& line, std::string& operation, std::string& ref) {
-    if (line == "observe" || line == "acquire" || line == "dispose" || line == "crash" || line == "binding-proof") {
+    if (line == "observe" || line == "acquire" || line == "dispose" || line == "crash" || line == "binding-proof"
+        || line == "lock-property-proof") {
         operation = line; return true;
     }
     const auto space = line.find(' ');
@@ -79,11 +80,16 @@ int wmain(int argc, wchar_t** argv) {
         creation.terminal = true;
         creation.code = "invalid_argv";
         std::string instance;
-        if (argc != 5 || std::wstring(argv[1]) != L"--fixture-root"
-            || std::wstring(argv[3]) != L"--factory-instance" || !Ascii(argv[4], instance)) {
-            WriteResult("startup", creation); return 2;
+        std::unique_ptr<initial_fence::Factory> factory;
+        if (argc == 3 && std::wstring(argv[1]) == L"--canonical-factory-instance" && Ascii(argv[2], instance)) {
+            factory = initial_fence::Factory::CreateApprovedCanonicalTestFactory(instance, creation);
+        } else {
+            if (argc != 5 || std::wstring(argv[1]) != L"--fixture-root"
+                || std::wstring(argv[3]) != L"--factory-instance" || !Ascii(argv[4], instance)) {
+                WriteResult("startup", creation); return 2;
+            }
+            factory = initial_fence::Factory::CreateApprovedTestFactory(argv[2], instance, creation);
         }
-        auto factory = initial_fence::Factory::CreateApprovedTestFactory(argv[2], instance, creation);
         if (!factory) { WriteResult("startup", creation); return 2; }
         initial_fence::RootLease root;
         initial_fence::FenceLease fence;
@@ -113,6 +119,7 @@ int wmain(int argc, wchar_t** argv) {
             else if (operation == "check") { result = factory->LiveCheck(root, fence, ref); }
             else if (operation == "release") { result = factory->Release(root, fence, ref); }
             else if (operation == "binding-proof") { result = factory->RunBindingProof(root, fence); }
+            else if (operation == "lock-property-proof") { result = factory->RunCanonicalLockPropertyProof(root, fence); }
             else { result = factory->Dispose(root, fence); }
             // Lost-ACK proof suppresses exactly one successful acquisition ACK.
             // It leaves the same child/lease available for observe reconciliation.

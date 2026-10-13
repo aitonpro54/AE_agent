@@ -1,14 +1,20 @@
 # План: первый fresh OWNED admission нового компьютера и чата
 
-Статус: **LOCAL CONTROLLER SESSION: L1 COMPLETE / L2 IMPLEMENTATION / LIVE НЕ ПРИНЯТ**.
+Статус: **LOCAL CONTROLLER SESSION: L1–L2 COMPLETE / L3 PREPARATION / LIVE НЕ ПРИНЯТ**.
 13 октября M1–M8 закрыты в изолированной модели, self/independent bounded review — GO.
-Live activation ещё не принята. L1 source принят; активен L2 canonical native factory нового профиля.
+Live activation ещё не принята. L1 verifier и L2 canonical native proof приняты; далее L3 durable broker.
 Пользователь отменил hard handoff: продолжать в текущем чате milestone за milestone.
 По поручению пользователя от 12 октября внешний Pro заменён ревью текущего агента.
 Вердикт исходному proposal — **REVISE**: [findings и revised scope](fresh-owned-admission-msi-review-20261012.md).
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- L2 завершён: private canonical factory/original root+lock pins и отдельный
+  `canonical_pinned_local_root_v1`; `ae_specialist` source, independent reviewer GO
+  на exact4files, parent sole build/run/read-back. Actual79PASS/0FAIL/0UNVERIFIED,
+  99 original children CLOSED, forced0; C++17/W4/WX/x64 build0. Старый расширенный
+  профиль77/0/3 не переписан; current productionAuthority/admission=false.
+  `ae_architect` готовит bounded L3 facade/store/broker packet, без host/kernel scope.
 - L1 завершён: новый closed local-session verifier и focused smoke, writer
   `ae_specialist`, independent `ae_reviewer` GO на exact source hashes. Private
   WeakMap refs, fresh guards/phase nonces, sticky revoke/EOF/overflow и consumed
@@ -197,6 +203,10 @@ Live activation ещё не принята. L1 source принят; активе
   подтвердить read-back. Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- L2 принимает конечный canonical профиль с runtime drive selectors закрытыми до
+  opens. Lock-junction actual attrs/tag/no-follow/LockIdentity refusal и synthetic
+  file-only predicate разделены; symlink/SUBST/ambient unsupported old UNVERIFIED
+  не названы PASS. Journal pin/store/continuity/native production остаются L3.
 - L1 сохраняется отдельным offline-кандидатом нового local schema, а не расширением
   chat-shaped v1. Положительный production factory не включается через DI/JSON;
   actual async native ports и execution grant относятся к L3–L6.
@@ -248,6 +258,13 @@ Live activation ещё не принята. L1 source принят; активе
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- L2 actual receipt `.codex-runtime/initial-owned-fence-prerequisite/fence-0dfbdce01b1b460bb12ca863edb98183/evidence/proof-receipt.json`:
+  required79/79 PASS, source5/current unchanged, executable SHA256
+  `35180fffdbad7c603e98418c5ba11f140741c0ee58c38626548b576c23d7f889`.
+  All99 reconciliation boundToOriginalHeldProcessAndStdio/exactExited/CLOSED, no
+  termination. Last timeout4032ms→actual acquired lateACK→originalEOF/exactexit0;
+  paused/timeout/reconciliation/lateACK/exit counters99/99/273 unchanged, no replay.
+  Scratch preserved, recursive/pathname cleanup=false, dosDeviceCreated=false.
 - L1: focused smoke106/15 groups и JS syntax2 — PASS writer и independent reviewer;
   scope synthetic in-memory, productionAuthority=false/nativeExecutionProven=false.
   Reviewed hashes: verifier `7529880b346aace9ebee1210af7ea7240bcc65e46044b154ea5152e7b5c5805c`,
