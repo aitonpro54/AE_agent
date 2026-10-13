@@ -20,11 +20,13 @@ const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
+const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
 const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
 async function handleOwnedRuntimeTool(name,args,controller) {
   if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
   require("./owned-runtime-authority").exact(args,[],"owned_adapter_arguments_forbidden");
+  if(initialRuntime){const method=OWNED_TOOL_METHODS[name],result=method==="status"?initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,true);}
   const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
   try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
 }
@@ -107,6 +109,7 @@ async function getDaemonHealth(timeoutMs) {
 }
 
 async function ensureDaemonRunning() {
+  if(initialRuntime)initialRuntime.assertIngress();
   if (daemonEnsurePromise) return daemonEnsurePromise;
 
   daemonEnsurePromise = (async () => {
@@ -133,6 +136,7 @@ async function ensureDaemonRunning() {
 
 async function getTools() {
   const localTools = [...productionUsageTools,...ownedRuntimeTools];
+  if(initialRuntime)return localTools;
   try {
     await ensureDaemonRunning();
     const response = await daemonRequest("GET", "/tools", undefined, 5000);
@@ -151,6 +155,7 @@ async function getTools() {
 }
 
 async function callDaemonTool(name, args) {
+  if(initialRuntime)return toolResult(initialRuntime.status(),true);
   if (!isPanelControlTool(name)) await ensureDaemonRunning();
   const response = await daemonRequest("POST", "/mcp/tools/call", {
     name,
@@ -199,6 +204,7 @@ async function handleRpc(message) {
     if (message.method === "tools/call") {
       const params = message.params || {};
       const toolName = params.name;
+      if(initialRuntime){ok(id,Object.hasOwn(OWNED_TOOL_METHODS,toolName)?await handleOwnedRuntimeTool(toolName,params.arguments):toolResult(initialRuntime.status(),true));return;}
       const toolArgs = isPanelControlTool(toolName)
         ? (Object.prototype.hasOwnProperty.call(params, "arguments") ? params.arguments : {})
         : (params.arguments || {});
@@ -239,7 +245,7 @@ async function handleRpc(message) {
 
 function startStdioMcp() {
   log(`Using bridge daemon at http://${DAEMON_HOST}:${DAEMON_PORT}`);
-  ensureDaemonRunning()
+  if(!initialRuntime)ensureDaemonRunning()
     .then((health) => {
       log(`Bridge daemon ready: ${health.server || "unknown"} ${health.version || "unknown"}`);
     })
@@ -272,10 +278,12 @@ function startStdioMcp() {
     handleRpc(message);
   });
 
-  rl.on("close", () => {
+  rl.on("close", async () => {
     log("stdin closed");
+    if(initialRuntime)await initialRuntime.revoke();
     process.exit(0);
   });
+  if(initialRuntime)process.stdin.on("error",async()=>{await initialRuntime.revoke();process.exit(1);});
 }
 
 if (require.main === module) {

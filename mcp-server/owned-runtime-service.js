@@ -26,7 +26,14 @@ function ingressKind(req){
   if(req.method==="POST" && ["/ame/native-fixture-abandonment/capture","/ame/native-fixture-abandonment/authorize","/ame/native-fixture-abandonment/retire"].includes(p))return "intake";
   return "execution";
 }
-function createOwnedRuntimeService({generation=null,readRegistration,readAdmission,journalRoot,readPolicy,readReadiness,closeServer,closeIdleWaiters,now=Date.now}={}) {
+function createOwnedRuntimeService({initialRuntime=null,generation=null,readRegistration,readAdmission,journalRoot,readPolicy,readReadiness,closeServer,closeIdleWaiters,now=Date.now}={}) {
+  const initialApi=require("./owned-runtime-initial-runtime"),initial=initialRuntime===null?initialApi.createInitialRuntime():initialApi.assertInitialRuntime(initialRuntime);
+  if(initial){
+    initialApi.assertInitialRuntime(initial);
+    // No retained registration/admission OR, HTTP method heuristic or nested
+    // executionContext can reach a handler while the native protocol is absent.
+    return Object.freeze({run:()=>{initial.assertIngress();},ingress:()=>{initial.assertIngress();},assertExecutionTicket:initial.assertCommand,assertCommandTicket:initial.assertCommand,status:initial.status,readiness:initial.readiness,drainOnce:()=>{initial.assertIngress();},shutdownOnce:()=>{initial.assertIngress();}});
+  }
   if(typeof journalRoot!=="string" || typeof readPolicy!=="function" || typeof readReadiness!=="function")fail("owned_service_private_dependencies_required");
   if(generation!==null && !ledger.UUID.test(generation || ""))fail("owned_service_generation_invalid");
   const context=new AsyncLocalStorage(),tickets=new Set();let draining=false,closing=false,drainOperation=null,shutdownEffectPending=null;

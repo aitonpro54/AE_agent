@@ -48,6 +48,7 @@ function readCandidate(root,generation,{fresh=false,now=Date.now,keyReader=v=>cr
 }
 function projection(c){return r1.freeze(Object.fromEntries(["generation","bootNonce","reservationSha256","startupTicketSha256","kernelIdentity","argv","sourceSha256","serviceStartedAt"].map(k=>[k,c[k]])));}
 function assertStartupReservation(root,actual){
+  const initial=require("./owned-runtime-initial-runtime").createInitialRuntime();if(initial)initial.assertStartup();
   if(!actual?.generation && !actual?.bootNonce){const b=base(root);if(["current-daemon.json","daemon-launch-keys","daemon-reservations",path.join("profiles",LEGACY+".json")].some(p=>fs.existsSync(path.join(b,p))))fail("owned_supervisor_unreserved_startup_refused");return {managed:false,requiresRetainedAdoption:false};}
   if(!uuid(actual.generation) || !uuid(actual.bootNonce))fail("owned_supervisor_startup_environment_invalid");
   const reservation=readRow(root,actual.generation,"reservation"),v=validateReservation(reservation.value,root),ticket=readRow(root,actual.generation,"startup-ticket");validateStartupTicket(ticket.value,reservation);
@@ -56,6 +57,7 @@ function assertStartupReservation(root,actual){
   return {managed:true,generation:v.generation,requiresRetainedAdoption:true};
 }
 function registerCurrentDaemon(root,input,actual){
+  const initial=require("./owned-runtime-initial-runtime").createInitialRuntime();if(initial)initial.assertStartup();
   exact(input,["generation","startupTicketSha256"]);assertStartupReservation(root,{...actual,generation:input.generation});
   const chain=readCandidate(root,input.generation,{fresh:true}),c=chain.candidate.value;
   if(input.startupTicketSha256!==chain.ticket.sha256 || actual.pid!==c.kernelIdentity.pid || actual.bootNonce!==c.bootNonce || actual.sourceSha256!==c.sourceSha256 || !same(actual.argv,c.argv))fail("owned_supervisor_registration_self_binding_invalid");
@@ -65,6 +67,7 @@ function registerCurrentDaemon(root,input,actual){
   return loadCurrentDaemonRegistration(root,{...actual,generation:input.generation});
 }
 function loadCurrentDaemonRegistration(root,actual){
+  const initial=require("./owned-runtime-initial-runtime").createInitialRuntime();if(initial)initial.assertStartup();
   if(!uuid(actual?.generation) || !uuid(actual?.bootNonce))fail("owned_supervisor_registered_generation_required");
   const chain=readCandidate(root,actual.generation),c=chain.candidate.value,record=readRow(root,actual.generation,"registration").value;
   exact(record,["schema","generation","bootNonce","reservationSha256","startupTicketSha256","nativeCandidateSha256","serviceStartedAt","registeredAt","requiresRetainedAdoption","replayAllowed"]);
@@ -264,6 +267,8 @@ function resolveRetainedSuccession(root,pairAnchor,runtime){
   if(current.kernelIdentity.pid!==runtime.daemon?.pid || current.serviceStartedAt!==runtime.daemon?.startedAt || current.sourceSha256!==runtime.loadedRuntimeSha256 || current.sourceSha256!==runtime.currentRuntimeSha256)fail("owned_supervisor_succession_runtime_changed");authority.loadPolicy(root,"owned_daemon_lifecycle");return current;
 }
 function createOwnedRuntimeSupervisor(deps={}){
+  const initial=require("./owned-runtime-initial-runtime").createInitialRuntime();
+  if(initial)return Object.freeze({status:async()=>initial.status(),ensure:args=>initial.ensure(args===undefined?{}:args),restart:args=>initial.restart(args===undefined?{}:args),shutdown:args=>initial.shutdown(args===undefined?{}:args),readBack:()=>{initial.assertIngress();}});
   const root=path.resolve(deps.repoRoot || ROOT),now=deps.now || Date.now,readPolicy=deps.readPolicy || (()=>authority.loadPolicy(root,"owned_daemon_lifecycle")),current=deps.readRegistration || (()=>readDaemonRegistration(root)),sources=deps.readSources || (()=>evidence.runtimeIdentity(root)),native=deps.native || createDaemonNativeBackend(),transport=deps.request || ((p,route,body)=>authority.runtimeControlFor(root).request(p,route,body)),sleep=deps.sleep || (ms=>new Promise(r=>setTimeout(r,ms)));
   function allowed(reference){const loaded=readPolicy(),p=loaded.policy || loaded;authority.validatePolicy(p);if(!p.enabled || !p.acceptedServerCoverage.includes("owned_daemon_lifecycle") || reference && !same(p.authorization,reference))fail("owned_supervisor_policy_disabled_or_changed");loaded.assertUnchanged?.();return p;}
   function profile(reg){return {daemon:{port:3456,credentialSha256:reg.credentialSha256}};}

@@ -7,6 +7,8 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
+const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
+if(require.main===module && initialRuntime)initialRuntime.assertStartup();
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const planCommandContext = new AsyncLocalStorage();
@@ -3824,6 +3826,7 @@ function removeWaitingPanel(waiter) {
 }
 
 function drainWaitingPanels() {
+  if(initialRuntime)initialRuntime.assertDispatch();
   expireQueuedCommands(Date.now(), "drain_waiting_panels");
   while (waitingPanels.length && pendingCommands.length) {
     const waiter = waitingPanels.shift();
@@ -4122,6 +4125,7 @@ function generatedRecoveryLeaseScope(req,url){
   return scope;
 }
 function leaseNextQueuedCommand(req, url) {
+  if(initialRuntime)initialRuntime.assertDispatch();
   const recoveryScope=generatedRecoveryLeaseScope(req,url);
   if(recoveryScope && (url.searchParams.get("recoveryHandshake")==="1" || recoveryScope.state!=="ready"))return null;
   expireQueuedCommands(Date.now(), "bridge_next");
@@ -4258,6 +4262,7 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  if(initialRuntime)initialRuntime.assertCommand();
   const lifecycleScope = lifecycleCommandContext.getStore();
   if (lifecycleScope) lifecycle.validateCommand(lifecycleScope.capability, body);
   const protection = placeholderMutationContext.getStore();
@@ -8613,6 +8618,7 @@ async function trustedPlaceholderAction(body) {
 }
 
 function startHttpBridge() {
+  if(initialRuntime)initialRuntime.assertStartup();
   ownedRuntimeStartup=require("./owned-runtime-supervisor").assertStartupReservation(PROJECT_ROOT,{generation:process.env.AE_OWNED_RUNTIME_GENERATION,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256});
   const server = http.createServer((req, res) => {
     try{ownedRuntimeService.ingress(req,()=>Promise.resolve().then(async () => {
@@ -13151,6 +13157,7 @@ let ownedRuntimeHttpServer=null;
 let ownedRuntimeStartup={managed:!!process.env.AE_OWNED_RUNTIME_GENERATION,requiresRetainedAdoption:!!process.env.AE_OWNED_RUNTIME_GENERATION};
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
 const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
+  initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
   readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption || require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
   readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
@@ -13193,6 +13200,7 @@ function nativePrephaseMaintenanceReaders() {
 }
 
 async function callTool(name, args, executionContext) {
+  if(initialRuntime)initialRuntime.assertTool();
   if (name === panelBootstrap.TOOL_NAME) {
     const result = await panelBootstrapService.ensure(args || {});
     return toolResult(result, !result.ok);
@@ -22852,6 +22860,7 @@ async function callTool(name, args, executionContext) {
 }
 
 function callToolLogged(source, name, args, executionContext) {
+  if(initialRuntime)initialRuntime.assertTool();
   const tool=toolByName(name),read=tool?.annotations?.readOnlyHint===true || !!tool && !MUTATING_TOOL_NAMES.has(name) && /^(get_|list_|inspect_|find_|search_|ping_|wait_for_)/.test(name) || ["get_panel_state","list_panel_actions","get_panel_action_result","refresh_panel_guards","reconcile_plan_run","reconcile_project_lifecycle"].includes(name);
   return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
 }
