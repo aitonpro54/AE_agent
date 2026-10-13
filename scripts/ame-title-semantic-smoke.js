@@ -99,7 +99,10 @@ async function signedFixture() {
   const executor = runner.createExecutor({ repoRoot, contractVersion, getArtifacts: () => artifacts, getCurrentRecord: () => record, getCheckpoint: () => checkpoint,
     assertManualIngress: value => { assert(contexts.has(value)); }, inspectProcess: async pid => processes.get(pid) || null,
     launchChild: async (descriptor, environment) => {
-      const pid = 5100 + ++launches, createdUnixMs = Date.now(); processes.set(pid, { pid, createdUnixMs, path: descriptor.executablePath });
+      const pid = 5100 + ++launches, createdUnixMs = Date.now();
+      // Offline identity shared by fake launch and inspection; no kernel origin.
+      const processIdentity = { pid, createdUnixMs, createdAt: new Date(createdUnixMs).toISOString().replace(/Z$/, "0000Z"), path: descriptor.executablePath };
+      processes.set(pid, processIdentity);
       const key = Buffer.from(environment.AE_AGENT_NATIVE_FIXTURE_KEY, "hex"), seen = new Set();
       const receiptBase = () => ({ schema: grant.SCHEMA, role: descriptor.role, fixture: args.fixtureKind, stageId: descriptor.stageId, nonce: descriptor.nonce,
         rootPath: descriptor.rootPath, challenge: descriptor.nonce, pid, processCreatedUnixMs: createdUnixMs, pluginSha256: descriptor.pluginSha256,
@@ -141,7 +144,7 @@ async function signedFixture() {
           }
         } catch (error) { failures.push(error); clearInterval(timer); publish("signed-refusal.json", { status: "refused_or_unknown", reason: "offline fixture emulator failure" }); }
       }, 10);
-      timers.push(timer); return { pid };
+      timers.push(timer); return { pid, process: processIdentity };
     } });
   try {
     const result = await executor.execute(args, await executor.authorize(context)); assert.equal(failures.length, 0, String(failures[0]));

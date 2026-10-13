@@ -232,6 +232,7 @@ function createExecutor(deps) {
         // is no await between this synchronous guard and native assertion/send.
         if (finalGuard) {
           const guarded = finalGuard();
+          if (guarded === false) fail("ame_title_native_dispatch_final_guard_denied");
           if (guarded && typeof guarded.then === "function") {
             if (typeof guarded.catch === "function") guarded.catch(() => {});
             fail("ame_title_native_dispatch_synchronous_guard_required");

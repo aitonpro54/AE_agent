@@ -9,6 +9,25 @@ const batchId = "11111111-1111-4111-8111-111111111111", born = new Date().toISOS
 const sha = file => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 let groups = 0;
 async function check(name, fn) { await fn(); groups++; }
+// Exercise the actual private sender body without adding a production test API.
+// Native authorization/delivery below are injected counters, never live calls.
+function senderGuardFixture() {
+  const source = fs.readFileSync(path.join(__dirname, "../mcp-server/ame-title-jobs.js"), "utf8");
+  const begin = source.indexOf("  async function send(a, context, finalGuard, refreshBeforeGuard) {"), end = source.indexOf("  function associated(job, native) {", begin);
+  assert(begin >= 0 && end > begin, "private sender source boundaries required");
+  const counts = { authorizations: 0, assertions: 0, dispatches: 0, effects: 0 }, context = Object.freeze({}), cap = Object.freeze({});
+  const now = Date.now(), args = { operation: "enqueue", requestNonce: crypto.randomUUID(), processBinding: "a".repeat(64), operationBinding: "b".repeat(64),
+    targetSpecifier: "ame-26.0", expectedProcess: { pid: 77, startedAt: born }, expectedSessionNonce: "session", minimumObservedAt: now };
+  const deps = { nativeDispatchPort: {
+    authorize: async () => { counts.authorizations++; return cap; },
+    assertAuthorization: (actualCap, _metadata, actualContext) => { counts.assertions++; assert.equal(actualCap, cap); assert.equal(actualContext, context); },
+    dispatch: async () => { counts.dispatches++; counts.effects++; return { schema: "ae-agent-ame-title-send.v1", requestNonce: args.requestNonce, code: "result", callback: "result",
+      responseBody: JSON.stringify({ schema: adapter.NATIVE_SCHEMA, requestNonce: args.requestNonce, operationBinding: args.operationBinding, appSpecifier: args.targetSpecifier, sessionNonce: args.expectedSessionNonce, observedAt: now, code: "job_enqueued" }) }; }
+  } };
+  const send = vm.runInNewContext("(" + source.slice(begin, end).trim() + ")", { deps, crypto, commandScript: adapter.commandScript, NATIVE_SCHEMA: adapter.NATIVE_SCHEMA,
+    now: () => now, fail: code => { throw Object.assign(new Error(code), { code }); } });
+  return { run: guard => send(args, context, guard), counts };
+}
 function fixture(label, options = {}) {
   const dir = path.join(root, label), sourcePath = path.join(dir, "source.aep"), presetDir = path.join(dir, "presets"), outputDir = path.join(dir, "outputs"), stateDir = path.join(dir, "state");
   fs.mkdirSync(presetDir, { recursive: true }); fs.writeFileSync(sourcePath, "fixed saved AEP bytes");
@@ -98,6 +117,24 @@ function fixture(label, options = {}) {
     restart: () => adapter.createExecutor(dependency), advance: ms => { clock += ms; } };
 }
 (async () => {
+  await check("synchronous final guard false thrown and Promise refusals never reach native assertion or dispatch", async () => {
+    const cases = [
+      { guard: () => false, code: "ame_title_native_dispatch_final_guard_denied" },
+      { guard: () => { throw Error("offline final guard refusal"); }, code: "ae_delivery_unknown" },
+      { guard: () => Promise.resolve(true), code: "ame_title_native_dispatch_synchronous_guard_required" },
+      { guard: () => Promise.reject(Error("offline rejected guard")), code: "ame_title_native_dispatch_synchronous_guard_required" }
+    ];
+    for (const { guard, code } of cases) {
+      const f = senderGuardFixture(), result = await f.run(guard);
+      assert.equal(result.resolved, false); assert.equal(result.native, null); assert.equal(result.code, code);
+      assert.deepEqual(f.counts, { authorizations: 1, assertions: 0, dispatches: 0, effects: 0 });
+    }
+    for (const guard of [() => true, () => undefined]) {
+      const f = senderGuardFixture(), result = await f.run(guard);
+      assert.equal(result.resolved, true); assert.equal(result.code, "job_enqueued");
+      assert.deepEqual(f.counts, { authorizations: 1, assertions: 1, dispatches: 1, effects: 1 });
+    }
+  });
   await check("closed exact inputs, GUID, preset, output and time range", () => {
     const f = fixture("input"), a = f.enqueueArgs;
     for (const changed of [{ code: "app.quit()" }, { executable: "evil.exe" }, { format: "arbitrary" }, { presetPath: f.presetPath }, { outputPath: "C:\\arbitrary.mov" }, { batchId: "current" }, { presetId: "name" },
