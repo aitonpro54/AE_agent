@@ -440,7 +440,7 @@
     if (!window.AEAgentPanelContract.validateLoopbackUrl(getBaseUrl())) { onDone({rejected:true,code:"invalid_loopback_url",message:"Bridge origin is not loopback."}); return; }
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
-    xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
+    xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path === "/agents/ame/title-start/run" || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
     if (body !== null && body !== undefined) {
@@ -2223,8 +2223,8 @@
     dryRunButton.addEventListener("click", function () {
       uiPlanAction(true,entry.actionProposal.actionId);
     });
-    runButton.addEventListener("click", function () {
-      uiPlanAction(false,entry.actionProposal.actionId);
+    runButton.addEventListener("click", function (event) {
+      uiPlanAction(false,entry.actionProposal.actionId,event);
     });
 
     inlinePlanActionRows.push(entry);
@@ -3851,6 +3851,12 @@
     });
   }
 
+  var activeAmeQueueFrame=null;
+  var AME_QUEUE_DECLARATION="Сейчас проверил всю очередь AME: содержит только показанное 1 готовое задание и перечисленные завершённые owned-задания; других готовых, ожидающих или неизвестных заданий нет; понимаю, API полный состав не проверяет, запуск общий.";
+  function ameQueueFrameCurrent(frame) {
+    return frame && frame===activeAmeQueueFrame && frame.alive && Date.now()>=frame.issuedAt && Date.now()-frame.issuedAt<120000 &&
+      frame.epoch===panelLifecycleEpoch && frame.generation===String(panelConnectionGeneration) && frame.url===getBaseUrl() && frame.token===getToken() && currentBridgePlanMatchesPins(currentBridgePlan,frame.pins);
+  }
   function runLastPlan(dryRun, fresh, onDone, policy) {
     policy=policy || {prepare:true};
     function fail(code,message,unknown) {
@@ -3911,6 +3917,31 @@
     if(!dryRun && classificationBlocksRun(validation) && !rawExtendscriptDryRunGateReady(validation)) {
       fail("raw_dry_run_required","Protected raw execution requires the matching accepted raw dry-run.");return;
     }
+    var steps=lastPlanResult.plan.steps || [],queueArgs=steps.length===1 && steps[0].tool==="start_ame_title_batch" && steps[0].args;
+    var queueRun=!dryRun && queueArgs && queueArgs.manualQueueMode==="cep_user_declaration_v2",queueFrame=policy.ameQueueFrame;
+    if(queueRun) {
+      if(!ameQueueFrameCurrent(queueFrame)) {fail("ame_manual_queue_trusted_gesture_required","Для AME требуется настоящий щелчок Run plan и проверка всей очереди в защищённом подтверждении.");return;}
+      if(!accepted || !accepted.ok || !accepted.runId || accepted.planKey!==currentPlanKey() || !currentBridgePlanMatchesPins(currentBridgePlan,accepted.pins)) {fail("matching_dry_run_required","Для AME требуется принятый dry-run текущего плана.");return;}
+      if(!queueFrame.manifestConfirmed) {
+        request("POST","/tools/call",{name:"inspect_ame_title_queue_manifest",arguments:{targetSpecifier:queueArgs.targetSpecifier,expectedProcess:queueArgs.expectedProcess,
+          expectedSessionNonce:queueArgs.expectedSessionNonce,batchId:queueArgs.batchId,manualQueueMode:queueArgs.manualQueueMode,completedOwnedPrefix:queueArgs.completedOwnedPrefix}},function(error,response) {
+          var observed=null;try {if(response && response.result && !response.result.isError) observed=JSON.parse(response.result.content[0].text);} catch(_ameParse) {}
+          if(error || !ameQueueFrameCurrent(queueFrame) || !observed || observed.ok!==true || observed.manifestHash!==queueArgs.manualQueueManifestSha25664 || observed.declaration!==AME_QUEUE_DECLARATION || !observed.manifest || observed.manifest.schema!=="ae-agent-ame-manual-queue-manifest.v2" || observed.manifest.jobs.length!==1) {
+            queueFrame.alive=false;fail("ame_manual_queue_manifest_changed","Очередь или привязки изменились. START не отправлен.");return;
+          }
+          var lines=["Проверьте всю очередь в AME перед общим запуском:","Manifest: "+observed.manifestHash];
+          if(observed.manifest.process) lines.push("AME: "+observed.manifest.process.path,"PID / started: "+observed.manifest.process.pid+" / "+observed.manifest.process.startedAt,"Native session: "+observed.manifest.nativeSessionNonce,"Wrapper session: "+observed.manifest.retainedWrapperSessionNonce);
+          function shown(job,label) {lines.push(label+" · "+job.jobId,"AEP: "+job.source.path,"AEP SHA-256: "+job.source.sha25664,"GUID: "+job.source.guid,"EPR: "+job.preset.path,"EPR SHA-256: "+job.preset.sha25664,"Output: "+job.outputPath);if(job.range) lines.push("Range: "+job.range.startSeconds+" – "+job.range.endSeconds);}
+          shown(observed.manifest.jobs[0],"Готовое задание");
+          observed.manifest.completedOwnedPrefix.forEach(function(job) {shown(job,"Завершённое owned-задание");});
+          lines.push("",AME_QUEUE_DECLARATION);
+          if(!window.confirm(lines.join("\n"))) {queueFrame.alive=false;fail("ame_manual_queue_declaration_cancelled","Подтверждение AME отменено.");return;}
+          if(!ameQueueFrameCurrent(queueFrame)) {queueFrame.alive=false;fail("ame_manual_queue_binding_changed","Контекст панели изменился. START не отправлен.");return;}
+          queueFrame.manifestConfirmed=true;queueFrame.manifestHash=observed.manifestHash;queueFrame.acceptedDryRunId=accepted.runId;
+          runLastPlan(false,true,onDone,policy);
+        });return;
+      }
+    }
     var mutatingCount=Number(validation.mutatingCount || 0), allowMutations=!dryRun && mutatingCount>0;
     var allowRawExtendscript=!dryRun && rawExtendscriptDryRunGateReady(validation);
     var body={actionId:proposal.actionId,payloadRef:proposal.action.payloadRef,payloadHash:proposal.action.payloadHash,
@@ -3919,10 +3950,12 @@
     if(!dryRun) {body.confirmationToken=proposal.confirmation.confirmationToken;body.confirmedBySurface=proposal.confirmation.surface;
       body.confirmedBySession=proposal.confirmation.sessionId || m100ConfirmationSessionId();}
     if(allowRawExtendscript) {body.allowRawExtendscript=true;body.rawExtendscriptDryRunId=accepted.runId;}
+    if(queueRun) {body.ameManualQueueWitness={manifestHash:queueFrame.manifestHash,acceptedDryRunId:queueFrame.acceptedDryRunId,declaration:AME_QUEUE_DECLARATION,
+      panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),trustedGesture:true};queueFrame.alive=false;}
     if(policy.context && !policy.context.submit()) return;
     var runEpoch=panelLifecycleEpoch,runGeneration=panelConnectionGeneration;
     planRunInFlightMode=dryRun?"dry-run":"run";rememberPlanRun(null);setChatBusy(true,dryRun?"Dry run":"Running");
-    request("POST","/agents/plan/run",body,function(error,response) {
+    request("POST",queueRun?"/agents/ame/title-start/run":"/agents/plan/run",body,function(error,response) {
       if(runEpoch !== panelLifecycleEpoch || runGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during execution.",true);return;}
       planRunInFlightMode="";setChatBusy(false);currentPlanSyncAt=0;
       var run=response && response.run || error && error.body && error.body.run || null;
@@ -4560,10 +4593,18 @@
     if(receipt.state === "rejected" || receipt.state === "error") log("Panel action "+action+": "+receipt.code);
     return receipt;
   }
-  function uiPlanAction(dryRun,actionId) {
+  function uiPlanAction(dryRun,actionId,event) {
     var pins=currentBridgePlanPins(currentBridgePlan),proposal=m100ActionProposalForResult(lastPlanResult);
     if(actionId && pins) pins=Object.assign({},pins,{actionId:actionId});
     var action=proposal && !proposal.confirmation.confirmationToken ? "plan.prepare" : dryRun ? "plan.dryRun" : "plan.run";
+    var steps=lastPlanResult && lastPlanResult.plan && lastPlanResult.plan.steps || [],queue=steps.length===1 && steps[0].tool==="start_ame_title_batch" && steps[0].args && steps[0].args.manualQueueMode==="cep_user_declaration_v2";
+    if(action==="plan.run" && queue) {
+      if(!event || event.isTrusted!==true || !pins || actionId && actionId!==proposal.actionId) {setPlanRunStatus("Для AME нужен настоящий щелчок Run plan.","blocked");return;}
+      if(activeAmeQueueFrame && activeAmeQueueFrame.alive) {setPlanRunStatus("Подтверждение AME уже выполняется.","blocked");return;}
+      activeAmeQueueFrame={alive:true,issuedAt:Date.now(),pins:pins,epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),url:getBaseUrl(),token:getToken()};
+      var frame=activeAmeQueueFrame;
+      runLastPlan(false,false,function(error) {frame.alive=false;if(error) log("AME protected start: "+error.code);},{prepare:false,strict:true,pins:pins,ameQueueFrame:frame});return;
+    }
     invokePanelUI(action,action === "plan.run" ? {pins:pins,confirm:true} : {pins:pins});
   }
   function providerActionArgs() {return {agentId:agentSelect.value,model:selectedModel()};}
@@ -4611,7 +4652,7 @@
   onControl(promptOptimizationEl,"change","chat.optimization.set",function() {return {enabled:promptOptimizationEl.checked};});
   onControl(recoverLastPlanButton,"click","plan.recover");
   dryRunPlanButton.addEventListener("click",function() {uiPlanAction(true);});
-  runPlanButton.addEventListener("click",function() {uiPlanAction(false);});
+  runPlanButton.addEventListener("click",function(event) {uiPlanAction(false,null,event);});
   onControl(reconcilePlanRunButton,"click","plan.reconcile",function() {return {runId:lastPlanRunResult && lastPlanRunResult.id || ""};});
   onControl(prepareDevRequestButton,"click","plan.devRequest");
   onControl(newChatButton,"click","chat.new");

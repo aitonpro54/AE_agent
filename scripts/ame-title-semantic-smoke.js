@@ -4,7 +4,8 @@ const assert = require("node:assert/strict"), fs = require("node:fs"), os = requ
 const crypto = require("node:crypto"), vm = require("node:vm");
 const jobs = require("../mcp-server/ame-title-jobs"), presets = require("../mcp-server/ame-presets");
 const semantic = require("../mcp-server/semantic-verification");
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "ae-ame-title-semantic-"));
+const scratchRoot = path.resolve(__dirname, "../.codex-runtime/ame-single-job-gate/fixtures"); fs.mkdirSync(scratchRoot, { recursive: true });
+const root = fs.mkdtempSync(path.join(scratchRoot, "ae-ame-title-semantic-"));
 const copy = value => JSON.parse(JSON.stringify(value));
 const digest = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const fileHash = file => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
@@ -231,6 +232,7 @@ async function signedFixture() {
     assert.equal(semantic.isMutatingStep({ tool: jobs.ENQUEUE }), true); assert.equal(semantic.isMutatingStep({ tool: jobs.START }), true);
     assert.equal(semantic.isMutatingStep({ tool: "ame_native_fixture_probe" }), true);
   });
+  if (process.argv.includes("--ame-only")) { console.log(JSON.stringify({ status: "passed", groups, scope: "AME association and default START fail-closed only; native fixture groups excluded" })); return; }
   const native = await signedFixture();
   const nativeVerdict = step => verdict(step, [], native.run), rejectedNative = step => rejected(step, [], native.run);
   check("actual signed issuer runner and private cache read pass owned fixture scope", () => {
@@ -315,7 +317,7 @@ async function signedFixture() {
   console.log(JSON.stringify({ status: "passed", groups, proof: "offline fixed AME adapter VM + signed fixture issuer/runner/cache + real semantic module; no live AE/AME" }));
 })().catch(error => { console.error(error.stack || error); process.exitCode = 1; }).finally(() => {
   // Verify the exact directory created by this test before recursive cleanup.
-  assert.equal(path.dirname(path.resolve(root)), path.resolve(os.tmpdir()));
+  assert.equal(path.dirname(path.resolve(root)), scratchRoot);
   assert(path.basename(root).startsWith("ae-ame-title-semantic-"));
   fs.rmSync(root, { recursive: true, force: true });
 });

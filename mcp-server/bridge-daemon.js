@@ -79,6 +79,7 @@ const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanI
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
 const ameTitleJobs = require("./ame-title-jobs");
+const ameManualQueue = require("./ame-manual-queue-grant");
 const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
 const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const nativeFixtureAbandonment = require("./native-fixture-abandonment");
@@ -225,12 +226,22 @@ function assertAmeTitleContext(context, binding) {
     throw Object.assign(new Error("ame_title_exact_manual_plan_required"), { code: "ame_title_exact_manual_plan_required" });
   }
 }
+const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
+  stateDir: path.join(LOG_DIR, "ame-title-jobs"),
+  assertManualIngress: context => manualPlanIngress.assertContext(context),
+  assertServerContext: context => assertAmeTitleContext(context, { name: ameTitleJobs.START, argsHash: ameTitleJobs.operationArgsHash(ameTitleJobs.START, context.args) }),
+  assertPanelIdentity: meta => Boolean(lastPanelInfo && Date.now() - lastPanelSeenAt < 10000 && lastPanelInfo.panelConnectionId === meta.panelConnectionId && lastPanelInfo.panelGeneration === meta.panelGeneration)
+});
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
   resolveOutputFilePath,
   assertManualIngress: context => manualPlanIngress.assertContext(context),
   assertServerContext: assertAmeTitleContext,
-  runExtendScriptBody: (body, timeoutMs, metadata) => withPlanCommandRole(metadata.mutating ? "mutation" : "readback", () => runExtendScriptBody(body, timeoutMs))
+  manualQueueGrant: ameManualQueueIssuer,
+  // L4 installs the real origin-bound native dispatch port. Generic plan roles
+  // and caller flags cannot create native read/start/completion rights.
+  nativeDispatchPort: null,
+  runExtendScriptBody: () => { throw Object.assign(new Error("ame_title_native_dispatch_port_unavailable"), { code: "ame_title_native_dispatch_port_unavailable" }); }
 });
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
@@ -2907,8 +2918,21 @@ async function verifyMutationResult(toolName, args, payload) {
       scope: "ame_native_wrapper_association_only", independentReadBack: { tool: ameTitleJobs.STATUS, args: readArgs, result: read },
       nativeJobId: null, nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
   }
-  if (toolName === ameTitleJobs.START) return { ok: false, scope: "ame_native_queue_composition",
-    reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
+  if (toolName === ameTitleJobs.START) {
+    if (args.manualQueueMode !== "cep_user_declaration_v2") return { ok: false, scope: "ame_native_queue_composition", reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
+    const reads = [], context = planCommandContext.getStore(), manifest = payload?.startReservation?.manualQueueReceipt?.manifest;
+    for (const job of manifest?.jobs || []) {
+      const readArgs = { targetSpecifier: args.targetSpecifier, expectedProcess: args.expectedProcess, batchId: args.batchId, jobId: job.jobId,
+        ...(args.expectedSessionNonce ? { expectedSessionNonce: args.expectedSessionNonce } : {}) };
+      const readResult = await callToolLogged("verification-readback", ameTitleJobs.STATUS, readArgs);
+      reads.push({ index: 2 + reads.length, tool: ameTitleJobs.STATUS, args: readArgs, status: readResult.isError ? "failed" : "completed", result: firstToolPayload(readResult), source: "server_typed_readback", observedAt: new Date().toISOString() });
+    }
+    if (context?.item) { context.item.independentReadBack = reads; context.persist(); }
+    const record = currentProposalState.current;
+    const proofRun = context?.run && record && { ...context.run, m100Action: { previewHash: record.previewHash, confirmedBySession: record.confirmedBySession, confirmedBySurface: record.confirmedBySurface, confirmedAt: record.confirmedAt } };
+    const valid = ameManualQueue.verifyStartEvidence(args, payload, proofRun, reads);
+    return { ok: valid, scope: "ame_authenticated_cep_declaration_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+  }
   if(toolName===nativeRenderVariant.RENDER){
     const receipt=payload && payload.renderReceipt;
     nativeRenderVariant.verifyReceipt(receipt,args);
@@ -3640,7 +3664,7 @@ async function readJsonBody(req) {
 function requireToken(req, res, url) {
   const role = httpBoundary.role(req);
   const route = url.pathname.replace(/^\/dev\/agents\//, "/agents/");
-  const panelOnly = route.startsWith("/bridge/") || route === "/agents/plan/adopt" || route === "/agents/plan/run"
+  const panelOnly = route.startsWith("/bridge/") || route === "/agents/plan/adopt" || route === "/agents/plan/run" || route === ameManualQueue.ROUTE
     || route === "/agents/key" || route === "/agents/setup"
     || route === "/agents/hardcore/run" || route === "/usage/refresh" || (route === "/autonomy/session" && req.method === "POST");
   if (url.searchParams.has("token") || !role || (panelOnly && role !== "panel") || (role === "admin" && !route.startsWith("/dev/tool/"))) {
@@ -7252,6 +7276,9 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         actionRecord.dryRunCompletedAt = run.finishedAt;
         actionRecord.dryRunReceipt = {payloadHash: actionRecord.payloadHash, contractVersion: AUTONOMY_CONTRACT_VERSION,
           stepCount: validation.steps.length, projectFile: actionRecord.project.expectedFile};
+        if (validation.steps.length === 1 && validation.steps[0].tool === ameTitleJobs.START && validation.steps[0].safeArgs?.manualQueueMode === "cep_user_declaration_v2") {
+          actionRecord.dryRunReceipt.runId = run.id; actionRecord.dryRunReceipt.previewHash = actionRecord.previewHash;
+        }
       }
       run.m100Action = {
         actionId: options._m100ActionProposal.actionId,
@@ -7657,7 +7684,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
       }) : null;
       const ameTitleAuthorization = ameTitleContext ? ameTitleExecutor.authorize(step.tool, bound.args, ameTitleContext) : null;
-      const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+      const result = await planCommandContext.run({item,run,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
       () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
@@ -8950,15 +8977,31 @@ function startHttpBridge() {
       return;
     }
 
-    if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run") && req.method === "POST") {
+    if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run" || url.pathname === ameManualQueue.ROUTE) && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       const requestedAt = Date.now();
       let runBody;
       try {
         const body = await readJsonBody(req);
         runBody = body;
-        const run = await manualPlanIngress.runAuthenticated({ route: url.pathname, authRole: res.authRole,
+        const queueRoute = url.pathname === ameManualQueue.ROUTE;
+        const execute = () => manualPlanIngress.runAuthenticated({ route: queueRoute ? "/agents/plan/run" : url.pathname, authRole: res.authRole,
           key: m100PlanRunLookupKey(body || {}) }, () => runValidatedAgentPlan(body || {}));
+        let run;
+        if (queueRoute) {
+          const witness = body.ameManualQueueWitness;
+          if (!witness || Object.keys(witness).sort().join(",") !== "acceptedDryRunId,declaration,manifestHash,panelConnectionId,panelGeneration,trustedGesture") throw Object.assign(new Error("ame_manual_queue_witness_required"), { code: "ame_manual_queue_witness_required" });
+          const record = currentProposalState.current, steps = record?.payload?.plan?.steps;
+          if (!Array.isArray(steps) || steps.length !== 1 || steps[0].tool !== ameTitleJobs.START || body.dryRun !== false || body.confirm !== true ||
+              ameTitleJobs.validateInput(ameTitleJobs.START, steps[0].args || {}).manualQueueMode !== "cep_user_declaration_v2" || steps[0].args.manualQueueManifestSha25664 !== witness.manifestHash) {
+            throw Object.assign(new Error("ame_manual_queue_exact_start_plan_required"), { code: "ame_manual_queue_exact_start_plan_required" });
+          }
+          run = await ameManualQueueIssuer.runAuthenticated({ ...witness, route: url.pathname, authRole: res.authRole,
+            panelIdentityValid: Boolean(lastPanelInfo && lastPanelInfo.panelConnectionId === witness.panelConnectionId && lastPanelInfo.panelGeneration === witness.panelGeneration) }, execute);
+        } else {
+          if (body.ameManualQueueWitness) throw Object.assign(new Error("ame_manual_queue_protected_route_required"), { code: "ame_manual_queue_protected_route_required" });
+          run = await execute();
+        }
         if(ameFixtureExecutor.cleanupSelector(run.id))res.once("finish",()=>{Promise.resolve().then(()=>ownedRuntimeService.run("completion",()=>ownedFixtureCleanupReconciler.resume(run.id))).catch(error=>recordEvent("owned_fixture_cleanup_pending",{runId:run.id,code:error.code || "owned_fixture_cleanup_pending",historicalOutcome:"unknown",replayAllowed:false}));});
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,

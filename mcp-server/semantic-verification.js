@@ -8,6 +8,7 @@ const projectSave = require("./project-save");
 const projectLifecycle = require("./project-lifecycle-contract");
 const lifecycleVerification = require("./project-lifecycle-verification");
 const sourceRecovery = require("./placeholder-source-recovery");
+const ameManualQueue = require("./ame-manual-queue-grant");
 
 function getAuthoritativeExportRoot(options = {}) {
   if (options && typeof options.generatedExportDir === "string" && options.generatedExportDir.trim()) {
@@ -4267,6 +4268,21 @@ function verifyStep(checks, step, evidence) {
     return;
   }
   if (step.tool === "start_ame_title_batch") {
+    if (args.manualQueueMode === "cep_user_declaration_v2") {
+      const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+      let valid = false;
+      try {
+        valid = payload.authorization?.runId === evidence.run?.id && payload.authorization?.proposalId === evidence.run?.provenance?.actionId &&
+          payload.verification?.ok === true && payload.verification.scope === "ame_authenticated_cep_declaration_dispatch_only" &&
+          attached.every(read => SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === "get_ame_title_job_status" && read.status === "completed") &&
+          ameManualQueue.verifyStartEvidence(args, payload, evidence.run, attached);
+      } catch (_) {}
+      pushCheck(checks, { id: `${step.index}:${step.tool}:manual-queue-dispatch`, title: "Authenticated CEP single-job declaration and durable START dispatch",
+        expected: "private server-attached wrapper read matching consumed manifest, current run and final guard",
+        observed: valid ? "START accepted under authenticated CEP declaration; native whole queue, completion and media proof remain separate" : "authenticated CEP START evidence unavailable",
+        passed: valid, status: valid ? "passed" : "needs_review", evidence: stepLabel(step) });
+      return;
+    }
     pushCheck(checks, { id: `${step.index}:${step.tool}:native-queue-composition`, title: "Entire native AME queue ownership before start",
       expected: "independent server proof of the entire native queue composition", observed: "queue_composition_unavailable",
       passed: false, status: "needs_review", evidence: "Retained wrappers, job status and an injected gate assertion do not prove the entire native queue." });
