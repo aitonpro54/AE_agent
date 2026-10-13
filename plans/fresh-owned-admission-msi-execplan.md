@@ -1,14 +1,19 @@
 # План: первый fresh OWNED admission нового компьютера и чата
 
-Статус: **LOCAL CONTROLLER SESSION: CONTRACT GO / L1–L2 IMPLEMENTATION / LIVE НЕ ПРИНЯТ**.
+Статус: **LOCAL CONTROLLER SESSION: L1 COMPLETE / L2 IMPLEMENTATION / LIVE НЕ ПРИНЯТ**.
 13 октября M1–M8 закрыты в изолированной модели, self/independent bounded review — GO.
-Live activation ещё не принята. Активны L1 verifier и L2 canonical native factory нового профиля.
+Live activation ещё не принята. L1 source принят; активен L2 canonical native factory нового профиля.
 Пользователь отменил hard handoff: продолжать в текущем чате milestone за milestone.
 По поручению пользователя от 12 октября внешний Pro заменён ревью текущего агента.
 Вердикт исходному proposal — **REVISE**: [findings и revised scope](fresh-owned-admission-msi-review-20261012.md).
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- L1 завершён: новый closed local-session verifier и focused smoke, writer
+  `ae_specialist`, independent `ae_reviewer` GO на exact source hashes. Private
+  WeakMap refs, fresh guards/phase nonces, sticky revoke/EOF/overflow и consumed
+  UNKNOWN без replay проверены; bootstrap/renew/production unavailable. Adapter,
+  daemon, native и AE этим этапом не подключались. Далее L2 native, L3 broker.
 - 13 октября пользователь ответил «сделай» на предложение пересмотреть bootstrap:
   удостоверять локальную управляющую сессию вместо Desktop-чата и убрать зависимость
   native-теста от ProcessDeviceMap. Это явный новый scope; genuine chat identity
@@ -192,6 +197,9 @@ Live activation ещё не принята. Активны L1 verifier и L2 can
   подтвердить read-back. Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- L1 сохраняется отдельным offline-кандидатом нового local schema, а не расширением
+  chat-shaped v1. Положительный production factory не включается через DI/JSON;
+  actual async native ports и execution grant относятся к L3–L6.
 - 13 октября новый local profile принят по явному «сделай»: scope удостоверяет
   Windows operator/controller transport, `genuineChatIdentity=false`; cross-chat
   isolation не обещается. Historical genuine-host/ProcessDeviceMap HOLD не блокирует
@@ -240,6 +248,10 @@ Live activation ещё не принята. Активны L1 verifier и L2 can
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- L1: focused smoke106/15 groups и JS syntax2 — PASS writer и independent reviewer;
+  scope synthetic in-memory, productionAuthority=false/nativeExecutionProven=false.
+  Reviewed hashes: verifier `7529880b346aace9ebee1210af7ea7240bcc65e46044b154ea5152e7b5c5805c`,
+  smoke `be0c9b49d17bc943cb6fa09ffbc36e8e491e41ee8641cbbfc82b8dbd9ee8d5a4`.
 - Local-session contract: independent GO L1; два integration findings исправлены
   и прочитаны parent в конечных sections; separate bootstrap/read ветка записана.
   `check:rules` и `git diff --check` PASS. Первый rules FAIL по 185 строкам главного
