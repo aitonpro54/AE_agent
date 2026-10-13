@@ -152,7 +152,7 @@ V5 закрывает два прежних source-пробела:
   ObpCreateSymbolicLinkName (87540B) предшествует заполнению handle-table entry
   (874770–477C) и output HANDLE (8748F4) в показанном control flow.
 
-**Оставшийся technical NO-GO ограничен одним insertion edge:**
+**На этапе V5 technical NO-GO был ограничен одним insertion edge:**
 ObpInsertOrLocateNamedObject (call87532D). Сравнение returnedObject с original
 (875340–5343) не удостоверяет привязку NameInfo к удерживаемому private directory
 и состояние link flags/bit0x20 при входе в hook. Эти данные нужны для полного
@@ -167,6 +167,94 @@ cache-before-ACK вывода; новый helper body автоматически
 При повторном read-only MCP status: owned_registration_absent/owned=false/replay=false;
 trusted host issuer/verifier по-прежнему отсутствует. Его предоставляет host,
 а изменения repository не создают удостоверенную identity текущего Desktop chat.
+
+**Завершённые проходы V6/V7:** V6 добавил fixed exact-name query
+ObpInsertOrLocateNamedObject; V7 — только fixed RVA A26B58 с Public/Function
+lookup. PDB подтвердил exact ObpInsertDirectoryEntry, displacement0, length171;
+Function lookup вернул S_FALSE, что не заменялось nearest-symbol предположением.
+Оба reader прошли independent source GO, parent C++17/W4/WX build/reader exit0
+и independent output review. V6: 219 records, emitted86/13 (symbols77/13,
+RVA results9/0), attempts14/0. V7: 207 records, emitted78/13 (symbols77/13,
+RVA results1/0), attempts2/0. Для обоих две identity=true, caps0,
+queryError=false, budgetReached=false, stderr0.
+V6 source SHA256 `d77b405b700bc57c9c0bff0167154aad21d9e3f2e34b912388de702a86c2ffb1`,
+exe `acb4a0dc60de90d1b8013ee660fa5025b6fd962262d1b0df71c7cc1b4a128301`;
+V7 source `b4366bbed8de47295def7a6f4cbf2322dbda43edf919ebebca0653ee7a5b2bdb`,
+exe `3440c710a15b6973964ac005ca378f7c7e33f8d9c515457ae77865373d7d9eee`.
+Ignored receipts: proof-v6.json/proof-v7.json в прежнем runtime-каталоге.
+
+Совместный read-only dataflow V3–V7 (`ae_specialist`) закрывает прежний insertion edge:
+
+- Captured RootDirectory передан в lookup (9A07EC/9A0827), HANDLE referenced
+  на 8B877B. Для new insertion fallback bit1 не устанавливается (8B86CA–DC);
+  miss проходит 8B9AF0–F4→8B971D мимо GLOBAL fallback. Без OPENIF существующий
+  другой object отклоняется с C0000035 (9A0C4C–64).
+- Lookup вызывает точный helper на 8B9F7D. Helper сохраняет original object,
+  references supplied directory (A26BC4–C7) и записывает его в
+  NameInfo.parent (A26BE7). В 56 строках просмотренного helper нет linkFlags write.
+- Обычный NtCreateSymbolicLinkObject передаёт internal flags4; его linkFlags
+  и DriveIndex исходно0. Поэтому bit0x20=0 на рассматриваемом входе в name-hook,
+  а 74E63F выбирает original link. Cache writer и target-prefix/suffix относятся
+  к этой фиксированной ветке. Нельзя переносить вывод на произвольные flags
+  или утверждать, что один suffix всегда сбрасывает bit0x20.
+- V5 установил hook-before-output-HANDLE по control flow. Cleanup остаётся
+  process-object deletion: exact exit и закрытие всех собственных process/thread
+  handles необходимы; signaled exit сам по себе не доказывает последний reference.
+
+**Итог: SOURCE TECHNICAL DESIGN GO для подготовки отдельно проверяемого test-only
+proof на этих on-disk бинарных файлах. IMPLEMENTATION/EXECUTION HOLD.** Independent
+V7 reviewer подтвердил helper-local facts и reader evidence; полный caller/flags/
+cleanup вывод — совместный specialist analysis V3–V7, а не второй полный native proof.
+Свежие parent SHA256 ntoskrnl.exe и KernelBase.dll совпали с исходными
+`d90c69cfa925d42037ef1cdba3ff5b3f13cc14e16060938073b97e396fdde2f2` и
+`becad014fb8efa8cb5e314931cca92778ad42c649b12a6909632cacd68af4f40`.
+Это текущая on-disk consistency, не attestation выполняемого kernel image.
+
+Минимальный будущий native proof требует отдельного source/spec review:
+подтвердить loaded-kernel correspondence и отсутствие drift на всём интервале;
+один own child, NULL-name directory, один self-only class23 HANDLE/length8 setter;
+одна ordinary relative Z link без OPENIF/PERMANENT с exact canonical physical-root
+target. Directory/link HANDLE удерживаются до QueryDosDevice и сверки physical IDs
+с original root pins **до core writes**. Любая ошибка/несовпадение — abort без fallback
+или retry. Нужен reviewed negative alias factory slot, чтобы actual core дошёл до
+QueryDosDevice и subst_or_remote_root: ранний unapproved_fixture не закрывает SUBST.
+Timeout/UNKNOWN сверяются по исходному child/channel; teardown закрывает только own
+handles после exact exit. Child не меняет primary token, impersonation или silo.
+Сам setter/alias не запускался. Матрица77/0/3, genuine issuer, durability, production
+admission и AE/AME по-прежнему не приняты; проверенных видео0/2.
+
+**Loaded-kernel boundary — конечный read-only архитектурный проход:**
+`ae_architect` проверил документированные Windows APIs/stock tools и installed SDK;
+первый capacity failure сверён как infrastructure, повтор выполнен той же ролью.
+Native queries, privileges, debugger и изменения окружения не выполнялись.
+Среди проверенных маршрутов не установлен способ удостоверить текущий исполняемый
+kernel code и удержать отсутствие drift на интервале child. Это scoped NO-GO для
+setter на нынешней workstation, а не утверждение об отсутствии всех возможных способов.
+
+[EnumDeviceDrivers](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-enumdevicedrivers)
+даёт addresses, не loaded content hash; с Windows11 24H2 без enabled SeDebugPrivilege
+может успешно вернуть NULL addresses. Read-only inventory/checksum/version не
+заменяют соответствие кода. [Tbsi_Get_TCG_Log_Ex](https://learn.microsoft.com/en-us/windows/win32/api/tbs/nf-tbs-tbsi_get_tcg_log_ex)
+даёт current boot/resume либо clean-boot log. SDK wbcl.h содержит loaded-module
+aggregation/Authenticode digest: это кандидат на boot-baseline evidence,
+не actual текущий memory digest. Authenticode digest отличается от raw SHA256
+([PE image hash](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#appendix-a-calculating-authenticode-pe-image-hash)).
+[Hotpatch меняет код в памяти](https://learn.microsoft.com/en-us/windows-server/get-started/hotpatch);
+boot evidence или disabled policy не доказывают отсутствие уже применённого patch.
+
+Внешний prerequisite: независимо полученное evidence исполняемых кодовых диапазонов
+и переходов, использованных V3–V7, с pinned PE и удерживаемое no-drift условие до
+exact child exit. [WinDbg !chkimg](https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-chkimg)
+существует, но debugger вне текущего scope; default comparison пропускает диапазоны,
+поэтому «0 differences» без покрытия не admission receipt. Возможная альтернатива —
+отдельное изолированное pinned-boot окружение с проверенным WBCL Authenticode digest
+и внешним запретом servicing/hotpatch на интервале теста. Принятие этой альтернативы
+требует отдельного архитектурного решения; она не называется прямым memory hash
+и не удостоверяет текущий ноутбук. Receipt должен быть связан с текущей boot session
+и единственным child, с fail-closed expiry/unknown/no-reuse. Реализация следующего
+setter proof при отсутствующих evidence/stability условиях не начинается.
+Дальнейшее чтение kernel bodies этот внешний пробел не закрывает; genuine host
+issuer/verifier остаётся вторым независимым внешним prerequisite.
 
 ## Следующий независимый prerequisite после GO M1–M8
 

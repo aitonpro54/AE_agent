@@ -9,14 +9,22 @@ Live activation ещё не принята. Следующая работа — 
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
-- 13 октября: V3–V5 bounded PDB/PE исследования уточнили private-map DESIGN-HOLD.
-  On-disk class23 length8, NULL-name capture/allocation и прямой name-hook до HANDLE
-  подтверждены в source-only scope. Остался ObpInsertOrLocateNamedObject → private
-  parent/flags; native запуск не разрешён этими данными. [Границы](../docs/owned-runtime-initial-integration.md).
+- 13 октября: V3–V7 bounded PDB/PE исследования закрыли source insertion edge:
+  private NameInfo.parent, ordinary link flags0 и cache-before-HANDLE.
+  SOURCE TECHNICAL DESIGN GO только для подготовки отдельного test-only proof;
+  IMPLEMENTATION/EXECUTION HOLD до loaded-kernel correspondence/no-drift и review.
+  Independent reader/result review GO; V6 219/V7 207 records, caps/errors0,
+  fresh on-disk SHA unchanged. Матрица77/0/3 и issuer не закрыты, renders0/2.
+  [Границы](../docs/owned-runtime-initial-integration.md).
+- Конечный read-only architecture pass: PSAPI/ETW не loaded-code hash, WBCL только
+  boot baseline; current loaded correspondence/no-drift не установлены. Setter NO-GO
+  на текущей workstation, требуется внешний runtime evidence либо отдельно принятое
+  изолированное pinned-boot окружение. Дальнейший PE поиск этот пробел не закрывает.
+  Genuine host issuer/verifier остаётся независимым внешним prerequisite.
 - 13 октября: exact volume-target classifier заменил prefix-only policy, 27 compile-time
   regressions и independent Source/Doc GO. Fresh native matrix77/0/3 и barrier PASS;
-  parent сверил original children/executable/source/pins. Private-map схема DESIGN-HOLD
-  после Ultra/V5: native scope/lifetime и full acceptance не доказаны; alternate-drive factory refusal
+  parent сверил original children/executable/source/pins. Private-map native EXECUTION HOLD
+  после V7: loaded-kernel identity, native scope/lifetime и full acceptance не доказаны; alternate-drive factory refusal
   до QueryDosDevice не закрывает SUBST. [Решение](../docs/owned-runtime-initial-fence-contract.md).
 - M1–M8: final source frozen, independent `ae_reviewer` GO на exact hashes из review;
   smoke150 и повтор parent PASS. Реализацию вёл `ae_specialist`, Git/планы — parent.
