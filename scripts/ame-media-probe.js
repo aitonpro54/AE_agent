@@ -50,7 +50,7 @@ function probeMediaFile(job, options = {}) {
     textIdentityVerified: false };
   const before = fs.statSync(job.outputPath);
   const probed = runner(ffprobe, ["-v", "error", "-count_frames", "-show_entries",
-    "format=duration,format_name:stream=index,codec_type,codec_name,width,height,pix_fmt,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames,duration",
+    "format=duration,format_name:stream=index,codec_type,codec_name,width,height,pix_fmt,color_space,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames,duration",
     "-of", "json", job.outputPath], 30000);
   if (probed.error || probed.status !== 0) return { technicalMediaVerified: false,
     reason: probed.error ? "ffprobe_unavailable_or_timeout" : "ffprobe_failed", mediaEvidence: evidence };
@@ -76,7 +76,7 @@ function probeMediaFile(job, options = {}) {
       .filter(line => /compression with .* texture \(version|Unsupported header|Incomplete or invalid file/.test(line)).slice(0, 8);
   }
   const decoded = runner(ffmpeg, ["-nostdin", "-v", "error", "-xerror", "-i", job.outputPath,
-    "-map", "0:v:0", "-map", "0:a?", "-vsync", "0", "-progress", "pipe:1", "-f", "null", "-"], 120000);
+    "-map", "0:v:0", "-map", "0:a?", "-fps_mode", "passthrough", "-progress", "pipe:1", "-f", "null", "-"], 120000);
   const counts = [...String(decoded.stdout || "").matchAll(/^frame=(\d+)\s*$/gm)];
   evidence.fullDecode = { exitCode: decoded.status, error: decoded.error ? String(decoded.error.message) : null,
     stderr: String(decoded.stderr || "").slice(0, 8192),
@@ -92,9 +92,14 @@ function probeMediaFile(job, options = {}) {
       evidence.alphaFrames = []; evidence.alphaProbeReason = "invalid_or_oversize_alpha_sample";
     } else {
       const selected = [...indices].sort((a, b) => a - b);
+      // DXV YG10 reports YCgCo; swscale cannot negotiate that matrix in FFmpeg 9.
+      // zscale converts it explicitly through planar RGBA, retaining alpha.
+      const rgbaFilter = video.codec_name === "dxv" && video.color_space === "ycgco"
+        ? "zscale=matrixin=ycgco:matrix=gbr,format=gbrap,format=rgba" : "format=rgba";
+      evidence.alphaColorConversion = rgbaFilter;
       const samples = runner(ffmpeg, ["-nostdin", "-v", "error", "-xerror", "-i", job.outputPath,
-        "-map", "0:v:0", "-vf", `select=${selected.map(i => `eq(n\\,${i})`).join("+")},format=rgba`,
-        "-vsync", "0", "-frames:v", String(selected.length), "-f", "rawvideo", "pipe:1"],
+        "-map", "0:v:0", "-vf", `select=${selected.map(i => `eq(n\\,${i})`).join("+")},${rgbaFilter}`,
+        "-fps_mode", "passthrough", "-frames:v", String(selected.length), "-f", "rawvideo", "pipe:1"],
       120000, true, frameBytes * selected.length + 1024 * 1024);
       evidence.alphaFrames = samples.status === 0 && !samples.error && Buffer.isBuffer(samples.stdout)
         && samples.stdout.length === frameBytes * selected.length
