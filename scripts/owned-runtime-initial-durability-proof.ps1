@@ -273,6 +273,9 @@ namespace InitialDurabilityProof {
       for(int count=0;queue.Count>0&&count<8;count++){Exception current=queue.Dequeue();string message=current.Message??"";text.Append(current.GetType().FullName).Append(" hresult=").Append(current.HResult.ToString("x8")).Append(": ").Append(message.Substring(0,Math.Min(message.Length,1024))).Append('\n');var aggregate=current as AggregateException;if(aggregate!=null){foreach(Exception inner in aggregate.InnerExceptions.Take(8))queue.Enqueue(inner);}else if(current.InnerException!=null)queue.Enqueue(current.InnerException);}
       return text.ToString(0,Math.Min(text.Length,8192));
     }
+    public static string DiagnosticAscii(string text,int limit) {
+      var bounded=new StringBuilder();foreach(char c in text??""){string part=c>=32&&c<=126?c.ToString():"\\u"+((int)c).ToString("x4");if(bounded.Length+part.Length>limit)break;bounded.Append(part);}return bounded.ToString();
+    }
     public sealed class OriginalProcessObservation {public bool originalHandleHeld,exactExited;public uint waitResult;public uint? exactExit;public int win32Error;public string disposition;}
     public static OriginalProcessObservation ObserveOriginalProcess(SafeProcessHandle original) {
       var result=new OriginalProcessObservation{disposition="UNVERIFIED",waitResult=0xffffffff};if(original==null||original.IsInvalid||original.IsClosed)return result;result.originalHandleHeld=true;result.waitResult=WaitForSingleObject(original,0);
@@ -336,6 +339,8 @@ namespace InitialDurabilityProof {
     async Task DrainStderr(){byte[] bytes=new byte[256];try{for(;;){int n=await error.ReadAsync(bytes,0,bytes.Length).ConfigureAwait(false);if(n==0)break;lock(errorGate){int keep=Math.Min(n,errorPrefix.Length-errorLength);Array.Copy(bytes,0,errorPrefix,errorLength,keep);errorLength+=keep;if(keep<n)errorTruncated=true;}}}catch(Exception e){lock(errorGate){errorFault=Native.ErrorDetails(e);}}finally{lock(errorGate){errorComplete=true;}}}
     public sealed class StderrEvidence {public int capturedBytes;public bool truncated,drainComplete;public string rawHexPrefix,utf8DiagnosticText,readerFailure;}
     public StderrEvidence ObserveStderr(){lock(errorGate){byte[] bytes=errorPrefix.Take(errorLength).ToArray();return new StderrEvidence{capturedBytes=errorLength,truncated=errorTruncated,drainComplete=errorComplete&&errorDrain!=null&&errorDrain.IsCompleted,rawHexPrefix=BitConverter.ToString(bytes).Replace("-","").ToLowerInvariant(),utf8DiagnosticText=Encoding.UTF8.GetString(bytes),readerFailure=errorFault};}}
+    public sealed class TaskEvidence {public bool pendingReader,pendingComplete,stderrDrainStarted,stderrDrainComplete;public string pendingStatus,stderrDrainStatus,fatalReadFault;}
+    public TaskEvidence ObserveTasks(){var pending=Pending;var drain=errorDrain;return new TaskEvidence{pendingReader=pending!=null,pendingComplete=pending!=null&&pending.IsCompleted,pendingStatus=pending==null?"none":pending.Status.ToString(),stderrDrainStarted=drain!=null,stderrDrainComplete=drain!=null&&drain.IsCompleted,stderrDrainStatus=drain==null?"none":drain.Status.ToString(),fatalReadFault=FatalReadFault};}
     public void SendCommand(string command){RequireReaderHealthy();if(Pending!=null)throw new IOException("unknown pending result; no replay");if(command.Length>256||command.IndexOf('\n')>=0)throw new ArgumentException();Input.WriteLine(command);Pending=ReadBounded();}
     public void ReplyPort(string response){RequireReaderHealthy();if(Pending!=null)throw new IOException("port has pending read");Input.WriteLine(response);Pending=ReadBounded();}
     public string Receive(int ms){RequireReaderHealthy();if(Pending==null)throw new IOException("no pending read");try{if(!Pending.Wait(ms))return null;string value=Pending.GetAwaiter().GetResult();Pending=null;return value;}catch(Exception e){FatalReadFault=Native.ErrorDetails(e);throw new IOException("original reader fault; no retry: "+FatalReadFault,e);}}
@@ -451,6 +456,14 @@ if($InternalDeathDriver){
             if(-not $line.StartsWith('R ',[StringComparison]::Ordinal)){throw 'private helper frame refused'};return $line.Substring(2)|ConvertFrom-Json
         }
     }
+    function Private-ExitPhase([string]$phase){
+        # Observe existing tasks only. Each ASCII marker is <=512 bytes; the
+        # two markers plus the <=6184-byte throw diagnostic fit the 8192 prefix.
+        $stderr=$helper.ObserveStderr()
+        $snapshot=@{tasks=$helper.ObserveTasks();stderrCapturedBytes=$stderr.capturedBytes;stderrDrainComplete=$stderr.drainComplete;stderrTruncated=$stderr.truncated}
+        $text='PRIVATE_EXIT_PHASE phase='+$phase+' expectedExit=84 '+($snapshot|ConvertTo-Json -Compress -Depth 4)
+        [Console]::Error.WriteLine([InitialDurabilityProof.Native]::DiagnosticAscii($text,512));[Console]::Error.Flush()
+    }
     try {
         $helper=New-Object InitialDurabilityProof.Channel($packet.approvedInstance)
         $helper.StartTransferHelper($packet.executable,$privateDriver)
@@ -462,8 +475,15 @@ if($InternalDeathDriver){
             $helper.SendCommand('acquire');$r=Private-Pump;if(-not $r.ok){throw 'replacement private fence refused'}
             foreach($command in @('inspect','epoch','consume-launch')){$helper.SendCommand($command);$r=Private-Pump;if($r.ok -or $r.createAttempts -cne '0'){throw 'replacement driver attempted positive recovery'};[Console]::Out.WriteLine('REFUSED '+$packet.nonce+' '+$command+' '+$r.createAttempts+' '+$r.code);[Console]::Out.Flush()}
             $helper.CloseInput();if(-not $helper.ExactExited(6000)-or $helper.ExactExit()-ne 0){throw 'replacement helper exact exit unavailable'}
-            [Console]::Out.WriteLine('CLOSED '+$packet.nonce+' 0');[Console]::Out.Flush();if((Private-Line 10000)-cne ('CLOSE_ACK '+$packet.nonce)){throw 'replacement observer ACK refused'}
-            [Environment]::Exit(84)
+            [Console]::Out.WriteLine('CLOSED '+$packet.nonce+' 0');[Console]::Out.Flush()
+            Private-ExitPhase 'BEFORE_CLOSE_ACK_WAIT'
+            if((Private-Line 10000)-cne ('CLOSE_ACK '+$packet.nonce)){throw 'replacement observer ACK refused'}
+            Private-ExitPhase 'CLOSE_ACK_ACCEPTED_ABOUT_TO_EXIT84'
+            try{[Environment]::Exit(84)}catch{
+                $errorText=[InitialDurabilityProof.Native]::DiagnosticAscii([InitialDurabilityProof.Native]::ErrorDetails($_.Exception),4096)
+                $stackText=[InitialDurabilityProof.Native]::DiagnosticAscii(([string]$_.Exception.GetBaseException().StackTrace+' '+[string]$_.ScriptStackTrace),2048)
+                [Console]::Error.WriteLine('PRIVATE_EXIT84_THROW error='+$errorText+' stack='+$stackText);[Console]::Error.Flush();throw
+            }
         }
         foreach($command in @('acquire','genesis','epoch')){$currentCommand=$command;$helper.SendCommand($command);$r=Private-Pump;if(-not $r.ok){throw "private $command refused"}}
         $privateFloor.StageHook=[Action[string]]{
@@ -592,14 +612,16 @@ function Rename-FixtureDirectory([string]$id,$f,$own,$parent,[string]$name){
 }
 function Run-Death($d,[switch]$Replacement){
     Guard-Effects
+    if($Replacement){$d.stageEvidence=@{replacementRefusals=@();emptyReplacementFloor=$true;floorRestored=$false;closedFrame=$null;originalH2ClosedReported=$false;reportedHelperExit=$null;closeAckState='not_started';closeAckSent=$false;expectedDriverExit=84;actualDriverExit=$null;actualHelperExit=$null}}
     $packet=[ordered]@{schema='ae-agent.private-death-fixture.v1';nonce=$d.nonce;parentHandle=$driverHandle.DangerousGetHandle().ToInt64().ToString();driverHandle=$d.driverHandle.ToString();journalHandle=$d.journalHandle.ToString();journalDrivePath=$d.fixture.journal.DrivePath;journalPin=$d.fixture.journal.Original;scopeBytes=[InitialDurabilityProof.Frame]::Hex($d.fixture.floor.ScopeBytes);lineage=[InitialDurabilityProof.Frame]::Hex($d.fixture.lineage);selectors=[InitialDurabilityProof.Frame]::Hex($d.fixture.selector);approvedInstance=$d.slot.instance;executable=$executable;killStage=$d.stage;partial=$d.partial}
     $d.channel.Bootstrap(($packet|ConvertTo-Json -Compress -Depth 6));$d.resumed=$true;$d.channel.ResumeOriginal()
     $ready=$d.channel.Receive(60000);Assert ($null -ne $ready) 'bounded original D READY';$p=$ready.Split(' ');Assert ($p.Count -eq 4 -and $p[0] -ceq 'READY' -and $p[1] -ceq $d.nonce) 'one original private READY'
     $d.observer=New-Object InitialDurabilityProof.OriginalHelperObserver([long]$p[2],[long]$p[3]);$d.readyAccepted=$true;$d.channel.SendCommand('READY_ACK '+$d.nonce)
     if($Replacement){
-        $refusals=@();foreach($command in @('inspect','epoch','consume-launch')){$line=$d.channel.Receive(10000);Assert ($null -ne $line) 'bounded D2 original refusal';$p=$line.Split(' ');Assert ($p.Count -eq 5 -and $p[0] -ceq 'REFUSED' -and $p[1] -ceq $d.nonce -and $p[2] -ceq $command -and $p[3] -ceq '0') 'replacement D2/H2 zero creates';$refusals+=@{operation=$command;code=$p[4];createAttempts='0'};$d.channel.ContinueRead()}
-        $closed=$d.channel.Receive(10000);Assert ($closed -ceq ('CLOSED '+$d.nonce+' 0')) 'D2 original H2 exact exit report';$d.channel.SendCommand('CLOSE_ACK '+$d.nonce)
-        Assert ($d.channel.ExactExited(10000)) 'original D2 exact exit';$d.driverExit=$d.channel.ExactExit();Assert ($d.driverExit -eq 84) 'D2 planned exit84';Assert ($d.observer.ExactExited(6000)) 'original H2 exact exit';$d.helperExit=$d.observer.ExactExit();Assert ($d.helperExit -eq 0) 'H2 clean closed';$d.stageEvidence=@{replacementRefusals=$refusals;emptyReplacementFloor=$true;floorRestored=$false};return
+        foreach($command in @('inspect','epoch','consume-launch')){$line=$d.channel.Receive(10000);Assert ($null -ne $line) 'bounded D2 original refusal';$p=$line.Split(' ');Assert ($p.Count -eq 5 -and $p[0] -ceq 'REFUSED' -and $p[1] -ceq $d.nonce -and $p[2] -ceq $command -and $p[3] -ceq '0') 'replacement D2/H2 zero creates';$d.stageEvidence.replacementRefusals+=@{operation=$command;code=$p[4];createAttempts='0';rawFrame=$line};$d.channel.ContinueRead()}
+        $closed=$d.channel.Receive(10000);$d.stageEvidence.closedFrame=$closed;Assert ($closed -ceq ('CLOSED '+$d.nonce+' 0')) 'D2 original H2 exact exit report';$d.stageEvidence.originalH2ClosedReported=$true;$d.stageEvidence.reportedHelperExit=0
+        $d.stageEvidence.closeAckState='send_started';$d.channel.SendCommand('CLOSE_ACK '+$d.nonce);$d.stageEvidence.closeAckState='send_returned';$d.stageEvidence.closeAckSent=$true
+        Assert ($d.channel.ExactExited(10000)) 'original D2 exact exit';$d.driverExit=$d.channel.ExactExit();$d.stageEvidence.actualDriverExit=$d.driverExit;Assert ($d.driverExit -eq 84) 'D2 planned exit84';Assert ($d.observer.ExactExited(6000)) 'original H2 exact exit';$d.helperExit=$d.observer.ExactExit();$d.stageEvidence.actualHelperExit=$d.helperExit;Assert ($d.helperExit -eq 0) 'H2 clean closed';return
     }
     $stage=$d.channel.Receive(20000);Assert ($null -ne $stage) 'bounded original driver stage';$p=$stage.Split(' ');Assert ($p.Count -eq 9 -and $p[0] -ceq 'STAGE' -and $p[1] -ceq $d.nonce -and $p[2] -ceq $d.stage) 'exact observer stage';$d.stageEvidence=@{stage=$p[2];createAttempts=$p[3];writeAttempts=$p[4];flushAttempts=$p[5];pendingHash=$p[6];floorSequence=$p[7];originalObservedSlotId=$p[8]}
     $d.channel.SendCommand('DIE_ACK '+$d.nonce);Assert ($d.channel.ExactExited(10000)) 'original D exact signaled';$d.driverExit=$d.channel.ExactExit();Assert ($d.driverExit -eq 83) 'planned exact D death83'
