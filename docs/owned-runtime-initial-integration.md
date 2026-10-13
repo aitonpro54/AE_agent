@@ -112,6 +112,23 @@ PDB v3 установил `ObpCreateDirectoryObject` RVA A5DA40,
 Nearest symbol, PDB hot-span length и успешная компиляция не дают native admission.
 Privileged API, DOS alias, AE/AME и production wiring в этом блоке не выполнялись.
 
+**Следующий ограниченный проход V4:** в том же source-only reader добавлены только
+точные имена ObCreateObjectEx/ObInsertObjectEx; independent source GO, parent
+C++17/W4/WX build и reader exit0. Независимый read-back подтвердил 199 JSONL records,
+emittedSymbols=82/13 (73/13 symbol records плюс 9/0 RVA results), identity=true для
+двух PDB, attempts14/0, caps0/queryError=false/stderr0. Source SHA256
+`e54eafb48ff43029bde3d5707364002ddde70796e10b01cf8d86a3a54a6e3f4f`;
+exe SHA256 `f3f77db8189a37120e47434e7741d5ff88653dff65f9eef3a98e723d772e8fe0`;
+ignored receipt `proof-v4.json` в том же runtime-каталоге.
+Exact PDB spans ObCreateObjectEx RVA8B7900/length1857 и ObInsertObjectEx
+87DA20/length2300 просмотрены `ae_specialist`; technical NO-GO сохраняется.
+Первый передаёт OBJECT_ATTRIBUTES в ObpCaptureObjectCreateInformation (8B79DE),
+затем captured name в ObpAllocateObject (8B7A48): NULL-name acceptance остаётся
+за этими телами. Named insertion второго вызывает ObpCreateHandle (87DE63),
+но цепь к name-hook/cache write до HANDLE ACK не показана. Эти конкретные
+missing edges заменяют прежний более широкий пробел; дальнейшие тела и native
+setter не исследовались автоматически. Это не полный Windows API контракт.
+
 ## Следующий независимый prerequisite после GO M1–M8
 
 Native Windows physical-root identity и held exclusive fence, без wiring в daemon:
