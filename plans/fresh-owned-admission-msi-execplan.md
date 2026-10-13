@@ -1,14 +1,27 @@
 # План: первый fresh OWNED admission нового компьютера и чата
 
-Статус: **ISOLATED MODEL GO / NATIVE SOURCE GO, PARTIAL PROOF / LIVE INTEGRATION BLOCKED**.
+Статус: **LOCAL CONTROLLER SESSION: CONTRACT GO / L1–L2 IMPLEMENTATION / LIVE НЕ ПРИНЯТ**.
 13 октября M1–M8 закрыты в изолированной модели, self/independent bounded review — GO.
-Live activation ещё не принята. Следующая работа — Windows physical-root/fence prerequisite.
+Live activation ещё не принята. Активны L1 verifier и L2 canonical native factory нового профиля.
 Пользователь отменил hard handoff: продолжать в текущем чате milestone за milestone.
 По поручению пользователя от 12 октября внешний Pro заменён ревью текущего агента.
 Вердикт исходному proposal — **REVISE**: [findings и revised scope](fresh-owned-admission-msi-review-20261012.md).
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- 13 октября пользователь ответил «сделай» на предложение пересмотреть bootstrap:
+  удостоверять локальную управляющую сессию вместо Desktop-чата и убрать зависимость
+  native-теста от ProcessDeviceMap. Это явный новый scope; genuine chat identity
+  больше не является требованием нового local-профиля и не будет заявляться.
+  [Local-session контракт](../docs/owned-runtime-local-session-contract.md) готов:
+  `ae_architect` writer, `ae_reviewer` independent GO L1, parent — sole Git/runtime.
+  Review gaps исправлены: отдельные controller/daemon peer bindings, одноразовый
+  durable first-actor observation; ensure bootstrap отделён от read allowlist.
+  `ae_specialist` L1 owns два новых JS; отдельный `ae_specialist` L2 owns native fence
+  и proof driver. Два helpers, непересекающиеся writers; native runs только parent.
+  Старый offline initial model/M1–M8 и UNKNOWN остаются неизменными доказательствами;
+  новая production authority пока не создана. Далее L3 durable broker, L4 wiring,
+  L5 actual registration и L6 два рендера; чужие state/UNKNOWN не переигрываются.
 - 13 октября: V3–V7 bounded PDB/PE исследования закрыли source insertion edge:
   private NameInfo.parent, ordinary link flags0 и cache-before-HANDLE.
   SOURCE TECHNICAL DESIGN GO только для подготовки отдельного test-only proof;
@@ -179,6 +192,12 @@ Live activation ещё не принята. Следующая работа — 
   подтвердить read-back. Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- 13 октября новый local profile принят по явному «сделай»: scope удостоверяет
+  Windows operator/controller transport, `genuineChatIdentity=false`; cross-chat
+  isolation не обещается. Historical genuine-host/ProcessDeviceMap HOLD не блокирует
+  этот отдельный профиль. Original lineage/launch consumption, held native fence,
+  same-process store/lifecycle, noReplay и CEP/project gates сохранены. L1–L6 —
+  последовательный implementation path без нового чата и повторного approval.
 - Classifier принимает только точный case-sensitive native volume target с ASCII decimal
   ID, без folder/junk suffix. Static_assert — offline policy proof, не DOS mapping.
   Native запуск/сверка остаются у parent (sole controller); реализация ae_implementer,
@@ -221,6 +240,11 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Local-session contract: independent GO L1; два integration findings исправлены
+  и прочитаны parent в конечных sections; separate bootstrap/read ветка записана.
+  `check:rules` и `git diff --check` PASS. Первый rules FAIL по 185 строкам главного
+  плана исправлен до компактных180 без смены validator. Это spec/source evidence,
+  не native/admission/render proof; verified renders0/2.
 - Уточнение пользователя 13 октября: одна композиция, последовательные text-layer states.
   Только два Markdown-файла; rules/diff проверки PASS. AE/AME/AEP/queue не менялись,
   фактические variant identities и видео не проверены; общий goal остаётся blocked.
