@@ -9,6 +9,13 @@ Live activation ещё не принята. L1 verifier и L2 canonical native p
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- L3a+b: `ae_specialist` owns новый native store/proof project/driver и private
+  WithLiveFence seam в fence core; source implementation активна, native не запущен.
+  Lifetime уточнение `ae_architect`/independent reviewer GO: offline L1 v1 не wiring
+  в production; L4 v2 разделит original finite session deadline до8h и READ lease60s,
+  fresh restricted renewal bracket без сдвига deadline и без execution entitlement.
+  Return checkpoint `C:/AE-Agent-MSI-Return-20261013-f1f8708` bundle verify PASS,
+  SHA256 `52748d71a077ad4ab0a5b7b6567a57651bcbc53fc48baeec1ff4983b398c5b63`.
 - L2 завершён: private canonical factory/original root+lock pins и отдельный
   `canonical_pinned_local_root_v1`; `ae_specialist` source, independent reviewer GO
   на exact4files, parent sole build/run/read-back. Actual79PASS/0FAIL/0UNVERIFIED,
@@ -203,6 +210,11 @@ Live activation ещё не принята. L1 verifier и L2 canonical native p
   подтвердить read-back. Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- Общий local-session deadline выбирается policy (max8h), фиксируется на opening и
+  не сдвигается token/activity/renew/completion. READ expiry требует отдельный closed
+  BOOTSTRAP_READ bracket и нового lease epoch; total expiry/EOF/revoke/UNKNOWN/drift
+  закрывают renew. Original completion/lifecycle независимы, нового export не дают.
+  Native broker/store scope этим уточнением не расширяется; L1 v1 остаётся offline.
 - L2 принимает конечный canonical профиль с runtime drive selectors закрытыми до
   opens. Lock-junction actual attrs/tag/no-follow/LockIdentity refusal и synthetic
   file-only predicate разделены; symlink/SUBST/ambient unsupported old UNVERIFIED
@@ -258,8 +270,11 @@ Live activation ещё не принята. L1 verifier и L2 canonical native p
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Lifetime contract independent GO; wording corrected: configured original deadline,
+  а8h только maximum. L4 acceptance добавлена для >60s bootstrap/job, expired READ,
+  stale permits и renew до/на original deadline. Код/production этим не доказаны.
 - L2 actual receipt `.codex-runtime/initial-owned-fence-prerequisite/fence-0dfbdce01b1b460bb12ca863edb98183/evidence/proof-receipt.json`:
-  required79/79 PASS, source5/current unchanged, executable SHA256
+  required79/79 PASS, source5/checkpoint `f1f8708` сверены до L3 edits, executable SHA256
   `35180fffdbad7c603e98418c5ba11f140741c0ee58c38626548b576c23d7f889`.
   All99 reconciliation boundToOriginalHeldProcessAndStdio/exactExited/CLOSED, no
   termination. Last timeout4032ms→actual acquired lateACK→originalEOF/exactexit0;

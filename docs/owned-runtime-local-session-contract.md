@@ -88,11 +88,27 @@ Call evidence выдаётся только private verifier для живой t
 У каждой фазы свежий одноразовый nonce и short monotonic expiry; wrong phase/body/session/
 epoch/runtime, replay, clock rollback, EOF и queued-after-revoke отказываются.
 Bounded ledger overflow закрывает новые calls, unresolved consumption не вытесняется.
-Начальные call/ticket/lease/bracket пределы — существующий initial-contract.js:TTL.
-Renew требует fresh policy/controller/fence и adoption bracket, выпускает новый read
-authorization; original launch key/grant неизменны. Token/activity не продлевают права.
+Короткие call/ticket/bracket пределы — существующий initial-contract.js:TTL.
 Общий bridge token/marker сохраняют только транспортную роль; private phase fields
 не попадают в tool args/public status/logs.
+
+## Общая длительность и READ authorization
+
+Production maximumSessionMs — независимый local longrun предел до 8 часов; maximumLeaseMs <= 60000.
+Общий monotonic deadline фиксируется при открытии; renew, token/activity и completion его не сдвигают.
+READ expiry даёт REVALIDATION_REQUIRED и закрывает новые READ/dispatch; это не EOF/revocation.
+До общего deadline непрерывный original controller/channel/fence при тех же generation,
+policy/actor и quiescence проходит отдельную closed BOOTSTRAP_READ ветку status→project→status.
+Свежий adoption bracket выдаёт private ReadAuthorization с новым lease epoch и expiry
+min(now + maximumLeaseMs, original session deadline); прежние permits/bracket недействительны.
+Hash связывает original controller/fence/generation/actor, policy/revocation epochs, bracket
+и сроки. Новый actor, drift, UNKNOWN, overflow, revoked/expired session исключают renew.
+Original principal/launch key/grant сохраняются. Dispatch/completion не продлевают execution grant.
+Первый panel bootstrap может длиться >60s по original bounded panel grant; one-time actor
+observation и fresh bracket затем дают READ. Exact dispatched job может завершиться после
+READ expiry по original completion/lifecycle contract; completion не разрешает новый export/replay.
+L4 вводит explicit schema ae-agent.owned-runtime-local-session.v2 и private ReadAuthorization;
+closed READ LocalCall требует readAuthorizationHash. Offline L1 v1 (PASS106, <=60s, noRenew) неизменен и без этой отдельной реализации не подключается к production.
 
 ## Canonical native surface и конечная acceptance
 
@@ -188,7 +204,7 @@ protected save/raw/destructive/project/native export gates остаются об
 | **L1 сейчас:** новый mcp-server/owned-runtime-local-session.js + scripts/owned-runtime-local-session-smoke.js; pure exact/hash/request/ready/TTL reuse, без daemon/config/native changes | Closed schemas/private verifier; forged/replay/phase/hash/expiry/drift/EOF/revocation/overflow tests; production unavailable. Independent scoped review; первый обратимый commit parent |
 | L2: native/owned-runtime-initial-fence/fence_win32.h/.cpp, test entry, scripts/owned-runtime-initial-fence-proof.ps1 | Private canonical pinned factory/original lock pin/property proof; fresh revised native matrix. Existing test-only guard не снимать; legacy UNVERIFIED сохранить |
 | L3: planned native/owned-runtime-initial-durability/* + proof driver; native/owned-runtime-local-session/local_session_win32.h/.cpp, local_session_main.cpp/project | Agreed same-process facade/store; fixed enrollment/private channels, synthetic held-target lifecycle, crash/cancel/late-guard/two-controller proof, без daemon/AE |
-| L4: новый mcp-server/owned-runtime-initial-runtime.js; exact branches в owned-runtime-supervisor.js, owned-runtime-service.js, mcp-adapter.js, bridge-daemon.js | Async native gate, actual phase seams/allowlist/alternate-route refusals/lifecycle split; PASS150 и bounded retained regressions. Offline fixture model не wiring в async IO |
+| L4: новый mcp-server/owned-runtime-initial-runtime.js; exact branches в owned-runtime-supervisor.js, owned-runtime-service.js, mcp-adapter.js, bridge-daemon.js | Async native gate/phase seams/allowlist/lifecycle split; production v2 + ReadAuthorization hash; >60s first panel/job completion при закрытых новых READ, fresh bracket renew после 60s и отказ старым permits; repeated renew не сдвигает original fixed session deadline, maximumSessionMs <= 8h; после configured deadline renew запрещён; EOF/revoke/drift/UNKNOWN/overflow отказываются. PASS150 + bounded retained regressions; offline fixture не async production wiring |
 | L5: fixed scripts/owned-runtime-local-provision.js вызывает native enrollment, не пишет fenced records из Node; parent sole config/native controller | Reviewed source/install pins; actual first registration initial_owned/local_operator/genuineChatIdentity=false/execution closed; approved panel grant + fresh reads |
 | L6: existing typed execution/export + separate local project/plan execution grant | Actual comp/layer/variant/settings preflight; два sequential DXV3 High Quality alpha outputs, media read-back и восстановление enabled state |
 
