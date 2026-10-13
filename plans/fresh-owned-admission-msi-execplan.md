@@ -9,6 +9,11 @@ Live activation ещё не принята. Следующая работа — 
 Общая база laptop/desktop: `e530adbc461c3713dcbe44d4a912831d1dcb8252` — WIP snapshot, не release.
 
 ## Progress
+- 13 октября: exact volume-target classifier заменил prefix-only policy, 27 compile-time
+  regressions и independent Source/Doc GO. Fresh native matrix77/0/3 и barrier PASS;
+  parent сверил original children/executable/source/pins. Private-map схема DESIGN-HOLD
+  после Ultra: user-mode ABI/scope/lifetime не доказаны; alternate-drive factory refusal
+  до QueryDosDevice не закрывает SUBST. [Решение](../docs/owned-runtime-initial-fence-contract.md).
 - M1–M8: final source frozen, independent `ae_reviewer` GO на exact hashes из review;
   smoke150 и повтор parent PASS. Реализацию вёл `ae_specialist`, Git/планы — parent.
 - M1–M8 committed: `d7e8905a5294d7d472f6f2991b1160ac82253aa6`.
@@ -158,6 +163,10 @@ Live activation ещё не принята. Следующая работа — 
   Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
+- Classifier принимает только точный case-sensitive native volume target с ASCII decimal
+  ID, без folder/junk suffix. Static_assert — offline policy proof, не DOS mapping.
+  Native запуск/сверка остаются у parent (sole controller); реализация ae_implementer,
+  независимое review ae_reviewer. Full acceptance/durability/live gates сохранены.
 - Test-only native source/partial Windows proof фиксируются отдельным reviewable commit;
   три UNVERIFIED сохраняются без ослабления mandatory acceptance. Durability implementation
   ждёт полной fence приёмки; genuine host issuer остаётся внешним integration gap.
@@ -194,6 +203,12 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Fresh classifier normal `fence-6691151182174251bb09ac68a78c8676`: 77PASS/0FAIL/3UNVERIFIED,
+  101 original held children CLOSED, termination0, parking9/verified own moves14.
+  Barrier `fence-d16cc84a67114c9fa6c54f6ccbd4a305` PASS: timeout4026ms, late ACK1/1,
+  counters1/1/41 unchanged, EOF/exact exit0. Оба build exit0 C++17/W4/WX;
+  CPP468b175…4561e7, source/generated pins/executable hashes actual match.
+  SUBST/no safe atomic setup, symlink1314 и ambient unsupported API остаются UNVERIFIED.
 - Final normal `fence-3079c70bbf424ff7bc5d10d4a68a3ee6`: 77PASS/0FAIL/3UNVERIFIED,
   driver fault отсутствует; all101 original children exact CLOSED, termination0.
   Parking9/ownMoves14, original IDs/restore/rehold/root replacement+cleanup PASS.

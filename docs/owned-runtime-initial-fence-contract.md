@@ -358,3 +358,56 @@ raw success без созданного link не становится PASS. П�
 взаимоисключающие, каждый создаёт новый runId и build. Global execution policy не менялась.
 Source GO и эти 77 proofs пригодны для review, но не открывают durability implementation,
 production authority, daemon/AE/AME или initial admission при трёх UNVERIFIED.
+
+## Точный volume target и SUBST DESIGN-HOLD — 13 октября 2026
+
+После XHigh-аудита отдельная Ultra-эскалация проверила private object directory
+с child-local device-map binding. Решение: **NO-GO для реализации этой private-map схемы
+и её native запуска**
+на имеющихся доказательствах. Создание временного object directory относительно
+HANDLE не устанавливает точный user-mode setter ABI, self-only scope,
+fallback/impersonation semantics и lifetime device-map references при exit.
+Export presence или successful setter ACK не заменяют эти гарантии.
+Это технический DESIGN-HOLD внутри уже порученного архитектурного scope.
+
+Дополнительно обнаружены два отдельных участка:
+
+- Test factory допускает только compile-time original fixture spellings/drive и
+  компоненты runRoot. Настоящий alternate-drive alias сейчас получил бы
+  `unapproved_fixture` до фактической core `QueryDosDeviceW`. Такой отказ не является
+  доказательством SUBST; текущий case остаётся UNVERIFIED. Будущий reviewed test-only
+  negative spelling slot должен разрешать только заранее закреплённый alias и
+  проверять его actual resolution в original pinned root до проверки core refusal.
+- Старый classifier проверял только префикс `\Device\HarddiskVolume`; folder/junk
+  suffix мог пройти эту строковую проверку. Actual mapping counterexample не
+  создавался. Узкая source-правка требует точного supported target:
+  `\Device\HarddiskVolume` и непустой ASCII decimal ID без suffix или separator.
+  Case-sensitive поведение сохранено. Private constexpr predicate и 27 literal
+  regressions/static_assert проверяют политику, включая explicit-length NUL;
+  они не создают DOS mapping и не закрывают actual SUBST coverage.
+
+Будущий private-map proof требует подтверждённого ABI и native read-back alias,
+physical identity и actual QueryDosDeviceW; same-child timeout reconciliation и
+exact exit обязательны. Global/local foreign mappings и fallback исключены;
+self-cycle и искусственный отказ factory не дают PASS. Durability implementation
+продолжает ждать полного native acceptance и same-process held-fence facade.
+
+Основания: [ZwCreateDirectoryObject](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-zwcreatedirectoryobject),
+[OBJECT_ATTRIBUTES](https://learn.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-_object_attributes),
+[DOS namespaces](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/local-and-global-ms-dos-device-names),
+[QueryDosDeviceW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-querydosdevicew),
+[NtQueryInformationProcess](https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntqueryinformationprocess).
+
+Правка classifier получила independent Source/Doc GO; parent fresh normal run
+`fence-6691151182174251bb09ac68a78c8676`: **77 PASS / 0 FAIL / 3 UNVERIFIED**,
+101 original held children exact CLOSED, termination отсутствует, девять parking
+manifests и 14 own moves сверены. Fresh barrier
+`fence-d16cc84a67114c9fa6c54f6ccbd4a305`: **PASS**, actual timeout4026ms,
+late acquired ACK1/1, counters1 child/1 channel/41 boundaries неизменны,
+EOF/exact exit0; initial UNKNOWN сохранён. Оба build exit0, Release/x64 C++17
+/W4 /WX, включая static_assert. CPP SHA256
+`468b17507567201e030b911503b8d441945738434109412b0b1ea6b27f4561e7`;
+source/generated pins/executable hashes parent сверил с actual files.
+Эти fresh результаты дополняют исторические receipts; три gaps и admission=false
+сохраняются. Parent выполнял native proof как единственный controller;
+scoped реализация — ae_implementer, независимое review — ae_reviewer.

@@ -8,6 +8,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -23,6 +24,61 @@ constexpr ULONG kNtOpenReparsePoint = 0x00200000;
 constexpr ULONG kNtSynchronousNonalert = 0x00000020;
 constexpr ULONG kObjectCaseInsensitive = 0x00000040;
 constexpr std::size_t kMaxPathChars = 32760;
+
+// Supported baseline: a complete native volume name, not a directory mapping.
+// Preserve the previous guard's exact ASCII case; no locale-dependent folding.
+constexpr bool IsSupportedNativeVolumeTarget(std::wstring_view target) noexcept {
+    constexpr std::wstring_view prefix = L"\\Device\\HarddiskVolume";
+    if (target.size() <= prefix.size()) { return false; }
+    for (std::size_t i = 0; i < prefix.size(); ++i) {
+        if (target[i] != prefix[i]) { return false; }
+    }
+    for (std::size_t i = prefix.size(); i < target.size(); ++i) {
+        if (target[i] < L'0' || target[i] > L'9') { return false; }
+    }
+    return true;
+}
+
+// Offline classifier regressions only; these do not prove a live DOS mapping.
+constexpr bool NativeVolumeTargetRegressionCasesPass() noexcept {
+    using namespace std::literals::string_view_literals;
+    struct Case { std::wstring_view target; bool supported; };
+    constexpr Case cases[] = {
+        {L"\\Device\\HarddiskVolume1"sv, true},
+        {L"\\Device\\HarddiskVolume12"sv, true},
+        {L"\\Device\\HarddiskVolume123"sv, true},
+        {L"\\Device\\HarddiskVolume0"sv, true},
+        {L"\\Device\\HarddiskVolume001"sv, true},
+        {L""sv, false},
+        {L"\\Device\\HarddiskVolume"sv, false},
+        {L"\\Device\\HarddiskVolumeJunk"sv, false},
+        {L"\\Device\\HarddiskVolumes1"sv, false},
+        {L"\\Device\\HarddiskVolume1junk"sv, false},
+        {L"\\Device\\HarddiskVolume1\\folder"sv, false},
+        {L"\\Device\\HarddiskVolume12\\folder\\child"sv, false},
+        {L"\\Device\\HarddiskVolume1\\"sv, false},
+        {L"\\Device\\HarddiskVolume1/"sv, false},
+        {L"\\Device\\HarddiskVolume1."sv, false},
+        {L"\\Device\\HarddiskVolume1 "sv, false},
+        {L"\\Device\\HarddiskVolume-1"sv, false},
+        {L"\\Device\\HarddiskVolume\u0661"sv, false},
+        {L"\\??\\C:\\folder"sv, false},
+        {L"\\GLOBAL??\\C:\\folder"sv, false},
+        {L"\\??\\Device\\HarddiskVolume1"sv, false},
+        {L"\\GLOBAL??\\Device\\HarddiskVolume1"sv, false},
+        {L"\\device\\harddiskvolume1"sv, false},
+        {L"\\Device\\harddiskVolume1"sv, false},
+        // The sv literal keeps explicit lengths, including embedded/trailing NUL.
+        {L"\\Device\\HarddiskVolume1\0folder"sv, false},
+        {L"\\Device\\HarddiskVolume1\0"sv, false},
+        {L"\\Device\\Harddisk\0Volume1"sv, false},
+    };
+    for (const auto& item : cases) {
+        if (IsSupportedNativeVolumeTarget(item.target) != item.supported) { return false; }
+    }
+    return true;
+}
+static_assert(NativeVolumeTargetRegressionCasesPass(), "native volume target classifier regressions");
 
 class Handle final {
 public:
@@ -516,7 +572,7 @@ Result Factory::OpenRoot(RootLease& root, FenceLease& fence) {
     if (QueryDosDeviceW(drive.c_str(), device.data(), static_cast<DWORD>(device.size())) == 0) {
         return Fail(root, fence, Error("drive_query_failed", GetLastError()));
     }
-    if (std::wstring(device.data()).compare(0, 22, L"\\Device\\HarddiskVolume") != 0
+    if (!IsSupportedNativeVolumeTarget(std::wstring_view(device.data()))
         || GetDriveTypeW(driveRoot.c_str()) == DRIVE_REMOTE) {
         return Fail(root, fence, Error("subst_or_remote_root"));
     }
