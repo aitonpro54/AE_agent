@@ -71,6 +71,7 @@ const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const nativeRenderVariant = require("./native-render-variant");
+const compDynamicLinkRead = require("./comp-dynamic-link-read");
 const ameTransport = require("./ame-transport");
 const amePresets = require("./ame-presets");
 const ameRunning = require("./ame-running");
@@ -10652,6 +10653,11 @@ const tools = [
           type: "boolean",
           description: "Whether to include composition marker read-back from comp.markerProperty. Defaults to false."
         },
+        includeDynamicLinkGUID: {
+          type: "boolean",
+          default: false,
+          description: "Opt-in native Dynamic Link GUID read. Requires explicit compItemId and a saved project with native revision; returns exact GUID and same-read project evidence, or capability_unavailable. Before AME use, require fresh evidence for the saved AEP and exactly one matching getDLItemList GUID. Defaults to false."
+        },
         markerLimit: {
           type: "number",
           description: "Maximum number of composition markers to include. Defaults to 50, maximum 1000."
@@ -15789,6 +15795,9 @@ async function callTool(name, args, executionContext) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const compItemId = optionalPositiveInteger(args,"compItemId");
+    if (args.includeDynamicLinkGUID !== undefined && typeof args.includeDynamicLinkGUID !== "boolean") throw new Error("includeDynamicLinkGUID must be a boolean.");
+    const includeDynamicLinkGUID = optionalBoolean(args, "includeDynamicLinkGUID", false);
+    if (includeDynamicLinkGUID && compItemId === null) throw new Error("dynamic_link_comp_item_id_required");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
     const includeMarkers = optionalBoolean(args, "includeMarkers", false);
@@ -15797,6 +15806,12 @@ async function callTool(name, args, executionContext) {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
+      ${includeDynamicLinkGUID ? `
+        if (${compItemIndex === null ? "false" : `__codexProjectIndexForItem(comp) !== ${compItemIndex}`} || ${compName ? `comp.name !== ${aeLiteral(compName)}` : "false"}) throw new Error("stable_comp_identity_mismatch");
+        ${compDynamicLinkRead.aeReadSupport}
+        var dynamicLinkEvidence = __codexCompDynamicLinkEvidence(comp);
+        if (!dynamicLinkEvidence.ok) return dynamicLinkEvidence;
+      ` : ""}
       var includeLayers = ${includeLayers ? "true" : "false"};
       var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
@@ -15821,7 +15836,7 @@ async function callTool(name, args, executionContext) {
         }
       }
 
-      return {
+      var details = {
         itemIndex: __codexProjectIndexForItem(comp),
         itemId: comp.id,
         name: comp.name,
@@ -15848,8 +15863,10 @@ async function callTool(name, args, executionContext) {
         markers: includeMarkers ? __codexCompMarkers(comp, markerLimit) : null,
         layers: layers
       };
+      ${includeDynamicLinkGUID ? `details.dynamicLinkGUID = dynamicLinkEvidence.dynamicLinkGUID; details.project = dynamicLinkEvidence.project;` : ""}
+      return details;
     `);
-    return toolResult(result.result);
+    return toolResult(result.result, result.result && result.result.ok === false);
   }
 
   if (name === "get_property_value") {
