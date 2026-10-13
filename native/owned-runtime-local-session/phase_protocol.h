@@ -1,0 +1,192 @@
+#pragma once
+
+// LCP2 is a separate, CLOSED protocol. Nothing in this file selects, upgrades,
+// auto-detects or grants authority to the frozen 128-byte LCSB protocol.
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) && defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
+#error Synthetic LCP2 proof must never be combined with installed broker seams.
+#endif
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) && AE_AGENT_PHASE_SYNTHETIC_PROOF != 1
+#error Synthetic proof requires the exact isolated macro value 1; no boolean fallback.
+#endif
+
+namespace local_session { class Broker; }
+namespace local_session::phase {
+
+using Id = std::array<std::uint8_t, 16>;
+using Digest = std::array<std::uint8_t, 32>;
+constexpr std::size_t kHeaderBytes = 96;
+constexpr std::size_t kMaximumFrameBytes = 4096;
+constexpr std::size_t kMaximumPayloadBytes = 2048;
+constexpr std::uint64_t kCallTtlMs = 30000;
+constexpr std::uint64_t kSessionMaximumMs = 8ULL*60*60*1000;
+constexpr std::size_t kCallRows = 32;
+constexpr bool kProductionRuntimeEntryAvailable = false;
+constexpr std::string_view kSchema = "ae-agent.owned-runtime-local-session.v2";
+
+enum class Direction : std::uint8_t { ControllerToBroker=1, DaemonToBroker=2,
+    BrokerToController=3, BrokerToDaemon=4 };
+enum class FrameKind : std::uint8_t { Request=1, Reply=2, Event=3 };
+enum class Status : std::uint16_t { Ok=0, Denied=1, RevalidationRequired=2,
+    Unknown=3, Unavailable=4, Revoked=5, ExactExited=6 };
+enum class Verb : std::uint16_t { Open=1, ReserveInitialLaunch=2, Status=3,
+    Revoke=4, BeginCall=5, BeginBracket=6, AdoptBracket=7, RequestDrain=8,
+    BootHello=17, ReadySnapshot=18, FirstActorObserved=19, Complete=20,
+    DrainAck=21, ShutdownAck=22, Drain=33, Shutdown=34, VerifyIngress=40,
+    BindCommand=41, ConsumeDispatch=42, GuardDelivery=43, RecordDelivery=44,
+    ObserveServerGates=46, BindOriginalJob=47, BeginCompletionPoll=48,
+    ObserveJobTerminal=49, ObserveMedia=50, FinishServerOnly=52,
+    ObserveSameActorState=53, ReservePanelEffect=54, ObserveChallenge=65 };
+enum class CallKind : std::uint8_t { ServerOnly=1, Panel=2, BootstrapRead=3,
+    Read=4, ExecutionPrep=5, Execute=6, Completion=7 };
+enum class ToolCode : std::uint16_t { GetOwnedRuntimeStatus=1,
+    EnsureOwnedRuntimeDaemon=2, SearchSolutions=3, GetSolution=4,
+    EnsureAgentPanel=5, GetBridgeStatus=6, GetProjectInfo=7 };
+enum class RouteCode : std::uint16_t { McpToolsCall=1 };
+enum class ChildRole : std::uint16_t { BootstrapRead=1, Read=2,
+    ExecutionPrep=3, Execute=4, Completion=5, PanelBootstrap=6 };
+enum class DeliveryClass : std::uint8_t { BootstrapRead=1, Read=2,
+    ExecutionPrep=3, Execute=4, Completion=5, PanelBootstrap=6 };
+enum class DeliveryOutcome : std::uint8_t { Delivered=1, Unknown=2 };
+enum class EffectDisposition : std::uint8_t { FreshCommitted=1,
+    DuplicateReadback=2, ConsumedUnknown=3 };
+enum class TerminalCode : std::uint16_t { Completed=1, Failed=2, Cancelled=3 };
+enum class CompletionOperation : std::uint16_t { OriginalWrapperStatus=1, RetainedBridgeTalk=2 };
+enum class ChallengePurpose : std::uint16_t { Readiness=1, SameActor=2, ServerGates=3, Completion=4 };
+
+struct Header {
+    Direction direction=Direction::ControllerToBroker;
+    FrameKind kind=FrameKind::Request;
+    Verb verb=Verb::Open;
+    Status status=Status::Ok;
+    std::uint32_t payloadBytes=0;
+    std::uint64_t senderOrdinal=0, replyToOrdinal=0;
+    Id channelNonce{}, sessionRef{}, generation{}, bootNonce{};
+};
+struct Frame {
+    Header header{};
+    std::array<std::uint8_t, kMaximumPayloadBytes> payload{};
+};
+enum class CodecError : std::uint8_t { None, NullBuffer, FrameLength, Magic,
+    Version, Direction, Kind, Verb, Status, PayloadLength, Tag, Reserved,
+    Ordinal, ReplyTo, Binding, Closed, Pending, Correlation };
+struct VerbSpec {
+    Verb verb;
+    Direction requestDirection;
+    FrameKind initiatingKind;
+    std::uint16_t requestBytes; // BeginCall uses a closed tagged branch.
+    std::uint16_t okReplyBytes;
+};
+struct ToolSpec {
+    ToolCode tool;
+    std::string_view exactName;
+    CallKind kind;
+    bool serverOnlyHandler; // Classification only; never production authority.
+};
+const VerbSpec* FindVerb(Verb verb) noexcept;
+const ToolSpec* FindTool(ToolCode tool) noexcept;
+CodecError ValidateFrame(const Frame& frame) noexcept;
+CodecError DecodeFrame(const std::uint8_t* bytes, std::size_t length, Frame& out) noexcept;
+CodecError EncodeFrame(const Frame& frame, std::uint8_t* bytes,
+    std::size_t capacity, std::size_t& written) noexcept;
+
+struct WireBindings { Id channelNonce{}, sessionRef{}, generation{}, bootNonce{}; };
+enum class BindingStage : std::uint8_t { BeforeOpen, Open };
+
+// Pure byte/correlation state, NOT a transport, Session, issuer or peer proof.
+// A successful reply here conveys no OS/policy/ledger authority.
+class WireChannel final {
+public:
+    WireChannel(Direction incoming, const WireBindings& bindings, BindingStage stage) noexcept;
+    CodecError AcceptIncoming(const std::uint8_t* bytes, std::size_t length, Frame& out) noexcept;
+    CodecError TrackOutgoing(const Frame& frame) noexcept;
+    bool Closed() const noexcept { return closed_; }
+    bool PendingBecameUnknown() const noexcept { return pendingUnknown_; }
+private:
+    struct Pending { bool present=false; Verb verb=Verb::Open; std::uint64_t ordinal=0; };
+    CodecError CheckBindings(const Header& header) const noexcept;
+    CodecError Close(CodecError error) noexcept;
+    Direction incoming_, outgoing_;
+    WireBindings bindings_;
+    BindingStage stage_;
+    std::uint64_t incomingOrdinal_=0, outgoingOrdinal_=0;
+    Pending incomingPending_{}, outgoingPending_{};
+    bool closed_=false, pendingUnknown_=false;
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
+    friend class SyntheticPhaseProof;
+#endif
+};
+
+struct BeginCallPayload {
+    ToolCode tool=ToolCode::GetOwnedRuntimeStatus;
+    CallKind kind=CallKind::ServerOnly;
+    RouteCode route=RouteCode::McpToolsCall;
+    Digest canonicalBodyHash{};
+};
+struct VerifyIngressPayload { Id callRef{}, ingressNonce{}; BeginCallPayload body{}; };
+struct CallReply { Id callRef{}, ingressNonce{}; std::uint64_t expiresMono=0; Digest bindingHash{}; };
+struct HandlerReply { Id permitRef{}, permitNonce{}; std::uint64_t expiresMono=0; Digest bindingHash{}; };
+CodecError ReadServerOnlyBegin(const Frame& frame, BeginCallPayload& out) noexcept;
+CodecError ReadServerOnlyIngress(const Frame& frame, VerifyIngressPayload& out) noexcept;
+
+// No public constructor/factory/setter or JSON/env input. Broker friendship is
+// a future integration seam, not an issuer: the production constructor is
+// permanently unavailable in this first block. No script/grant/effect ports.
+class VolatileServerLedger final {
+public:
+    ~VolatileServerLedger()=default;
+    VolatileServerLedger(const VolatileServerLedger&)=delete;
+    VolatileServerLedger& operator=(const VolatileServerLedger&)=delete;
+    VolatileServerLedger(VolatileServerLedger&&)=delete;
+    VolatileServerLedger& operator=(VolatileServerLedger&&)=delete;
+private:
+    enum class PeerRole : std::uint8_t { Controller, Daemon };
+    struct PeerWitness final {
+        PeerWitness()=default;
+        PeerWitness(const PeerWitness&)=delete;
+        PeerWitness& operator=(const PeerWitness&)=delete;
+        PeerRole role=PeerRole::Controller;
+        Id privateChannel{}, originalInstance{};
+        Digest witnessHash{};
+        bool alive=false;
+    };
+    enum class RowState : std::uint8_t { Empty, Begun, Verified, Finished, Unknown };
+    struct CallRow {
+        RowState state=RowState::Empty;
+        BeginCallPayload body{};
+        CallReply call{};
+        HandlerReply handler{};
+        Digest resultHash{};
+        std::uint64_t counter=0, policyEpoch=0, revocationEpoch=0;
+    };
+    VolatileServerLedger() noexcept;
+    Status Begin(const PeerWitness& controller, const BeginCallPayload& body,
+        std::uint64_t now, CallReply& out) noexcept;
+    Status Verify(const PeerWitness& daemon, const VerifyIngressPayload& body,
+        std::uint64_t now, HandlerReply& out) noexcept;
+    Status Finish(const PeerWitness& daemon, const Id& permit, const Digest& result,
+        std::uint64_t now) noexcept;
+    Status Guard(const PeerWitness& peer, PeerRole role, std::uint64_t now) noexcept;
+    Status DenyAndClose(Status status) noexcept;
+    void Close() noexcept;
+    Digest BindingHash(const CallRow& row, bool handler) const noexcept;
+    bool available_=false, closed_=false;
+    PeerWitness controller_{}, daemon_{};
+    WireBindings session_{};
+    std::uint64_t sessionDeadline_=0, lastMono_=0, callCounter_=0;
+    std::uint64_t policyEpoch_=0, revocationEpoch_=0;
+    std::size_t usedRows_=0, handlerAdmissions_=0;
+    std::array<CallRow, kCallRows> rows_{}; // Never recycle or evict, even Finished.
+    friend class ::local_session::Broker;
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
+    void InitializeSynthetic(std::uint64_t now) noexcept;
+    Id SyntheticId(std::uint8_t domain, std::uint64_t counter) const noexcept;
+    static Digest SyntheticDigest(const std::uint8_t* bytes, std::size_t length) noexcept;
+    friend class SyntheticPhaseProof;
+#endif
+};
+} // namespace local_session::phase
