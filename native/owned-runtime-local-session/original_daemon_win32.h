@@ -14,6 +14,7 @@ private:
     static std::unique_ptr<PreparedLifecycleGrant> Prepare(const Id& generation,
         const Id& boot,const Digest& consumed,std::uint64_t originalSessionDeadline);
     bool EffectClockLive() const;
+    Digest BindingHash() const;
     const Id generation_,boot_;
     const Digest consumed_;
     const std::uint64_t issuedAt_,sessionDeadline_,dispositionDeadline_;
@@ -32,6 +33,9 @@ private:
     explicit OriginalDaemon(std::unique_ptr<Data> data);
     static std::unique_ptr<OriginalDaemon> Launch(InstalledEnrollment& enrollment,
         const Id& generation,const Id& bootNonce,const Id& channelNonce,const std::wstring& daemonPipe,
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+        const Id& phaseSession,
+#endif
         std::unique_ptr<PreparedLifecycleGrant> lifecycleGrant,Result& result);
     bool MatchesPeer(void* pipe) const;
     bool Live() const;
@@ -41,6 +45,8 @@ private:
     void MarkAdmitted() noexcept;
     void* BorrowedOriginalProcess() const;
     std::uint64_t Birth() const;
+    const Id& OriginalInstance() const;
+    Digest PhaseWitness(void* originalPipe,const Id& session,const Id& channel) const;
     std::unique_ptr<Data> data_;
     friend class Broker;
 };

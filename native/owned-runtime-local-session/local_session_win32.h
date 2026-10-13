@@ -1,5 +1,6 @@
 #pragma once
 #include "enrollment_win32.h"
+#include "phase_protocol.h"
 #include <deque>
 
 namespace initial_fence { class RootLease; class FenceLease; }
@@ -72,6 +73,10 @@ public:
     static int RunFixed();
 private:
     struct Data;
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+    struct PhaseData;
+    static int RunPhaseFixed();
+#endif
     explicit Broker(std::unique_ptr<Data> data);
     std::unique_ptr<Data> data_;
 };

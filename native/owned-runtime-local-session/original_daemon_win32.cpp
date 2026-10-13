@@ -9,9 +9,17 @@ namespace {
 using detail::Refuse;
 std::wstring WideHex(const Id& value){const auto text=detail::Hex(value);return std::wstring(text.begin(),text.end());}
 std::wstring Quote(const std::wstring& value){if(value.empty()||value.find(L'\0')!=std::wstring::npos)Refuse("fixed_argument_invalid");std::wstring quoted=L"\"";std::size_t slashes=0;for(wchar_t c:value){if(c==L'\\'){++slashes;continue;}if(c==L'\"'){quoted.append(slashes*2+1,L'\\');quoted+=c;}else{quoted.append(slashes,L'\\');quoted+=c;}slashes=0;}quoted.append(slashes*2,L'\\');quoted+=L'\"';return quoted;}
-std::vector<wchar_t> Environment(const Id& generation,const Id& boot,const Id& nonce,const std::wstring& pipe){
+std::vector<wchar_t> Environment(const Id& generation,const Id& boot,const Id& nonce,const std::wstring& pipe
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+    ,const Id& phaseSession
+#endif
+){
     wchar_t system[32761]{};const UINT n=GetWindowsDirectoryW(system,32761);if(!n||n>=32761)Refuse("windows_directory_unavailable",GetLastError());
     std::vector<std::wstring> values={L"AE_AGENT_LOCAL_SESSION_BOOT="+WideHex(boot),L"AE_AGENT_LOCAL_SESSION_GENERATION="+WideHex(generation),L"AE_AGENT_LOCAL_SESSION_NONCE="+WideHex(nonce),L"AE_AGENT_LOCAL_SESSION_PIPE="+pipe,L"SystemRoot="+std::wstring(system,n)};
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+    if(detail::Zero(phaseSession))Refuse("phase_session_locator_absent");
+    values.push_back(L"AE_AGENT_LOCAL_SESSION_REF="+WideHex(phaseSession));
+#endif
     std::sort(values.begin(),values.end());std::vector<wchar_t> block;for(const auto& value:values){block.insert(block.end(),value.begin(),value.end());block.push_back(L'\0');}block.push_back(L'\0');return block;
 }
 }
@@ -25,23 +33,38 @@ std::unique_ptr<PreparedLifecycleGrant> PreparedLifecycleGrant::Prepare(const Id
     return std::unique_ptr<PreparedLifecycleGrant>(new PreparedLifecycleGrant(generation,boot,consumed,now,originalSessionDeadline,originalSessionDeadline+kFixedDispositionGraceMs));
 }
 bool PreparedLifecycleGrant::EffectClockLive()const{const auto now=GetTickCount64();return now>=issuedAt_&&now<dispositionDeadline_;}
+Digest PreparedLifecycleGrant::BindingHash()const{
+    std::vector<unsigned char> bytes;const char* domain="native-original-lifecycle.v2";
+    for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));
+    bytes.insert(bytes.end(),generation_.begin(),generation_.end());bytes.insert(bytes.end(),boot_.begin(),boot_.end());
+    bytes.insert(bytes.end(),consumed_.begin(),consumed_.end());detail::PutU64(bytes,issuedAt_);
+    detail::PutU64(bytes,sessionDeadline_);detail::PutU64(bytes,dispositionDeadline_);return detail::Hash(bytes);
+}
 struct OriginalDaemon::Data {
     InstalledEnrollment& enrollment;detail::Held process,thread;
     DWORD originalPid=0;std::uint64_t birth=0;
     std::unique_ptr<PreparedLifecycleGrant> grant;
-    Id generation{},boot{};Digest consumed{};std::wstring sid,image;
+    Id generation{},boot{},originalInstance=detail::RandomId();Digest consumed{};std::wstring sid,image;
     bool admitted=false,abortConsumed=false,unknown=false;
     Data(InstalledEnrollment& e,const Id& g,const Id& b,std::unique_ptr<PreparedLifecycleGrant> prepared):enrollment(e),grant(std::move(prepared)),generation(g),boot(b){if(grant)consumed=grant->consumed_;}
 };
 OriginalDaemon::OriginalDaemon(std::unique_ptr<Data> data):data_(std::move(data)){}OriginalDaemon::~OriginalDaemon()=default;
-std::unique_ptr<OriginalDaemon> OriginalDaemon::Launch(InstalledEnrollment& enrollment,const Id& generation,const Id& bootNonce,const Id& channelNonce,const std::wstring& daemonPipe,std::unique_ptr<PreparedLifecycleGrant> lifecycleGrant,Result& result){
+std::unique_ptr<OriginalDaemon> OriginalDaemon::Launch(InstalledEnrollment& enrollment,const Id& generation,const Id& bootNonce,const Id& channelNonce,const std::wstring& daemonPipe,
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+    const Id& phaseSession,
+#endif
+    std::unique_ptr<PreparedLifecycleGrant> lifecycleGrant,Result& result){
     auto data=std::make_unique<Data>(enrollment,generation,bootNonce,std::move(lifecycleGrant));auto target=std::unique_ptr<OriginalDaemon>(new OriginalDaemon(std::move(data)));auto& d=*target->data_;
     try{const auto& p=enrollment.Profile();const auto now=GetTickCount64();if(!d.grant||d.grant->generation_!=generation||d.grant->boot_!=bootNonce||detail::Zero(d.grant->consumed_)||detail::Zero(channelNonce)||!d.grant->EffectClockLive()||now>=d.grant->sessionDeadline_||!enrollment.Fresh(true).ok)Refuse("prepared_lifecycle_grant_refused");
         const std::wstring canonicalScript=enrollment.CheckedBridgeEntry();const auto& locators=enrollment.PrepareFixedLaunchLocators();const std::wstring node=locators.node,script=locators.bridge;
         // Synthetic proof enrolls its own repository containing a fixed fixture
         // script at this exact name. It never points this entry at the real daemon.
         const std::wstring command=Quote(node)+L" "+Quote(script);
-        std::vector<wchar_t> mutableCommand(command.begin(),command.end());mutableCommand.push_back(L'\0');auto environment=Environment(generation,bootNonce,channelNonce,daemonPipe);STARTUPINFOW startup{};startup.cb=sizeof(startup);PROCESS_INFORMATION original{};
+        std::vector<wchar_t> mutableCommand(command.begin(),command.end());mutableCommand.push_back(L'\0');auto environment=Environment(generation,bootNonce,channelNonce,daemonPipe
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+            ,phaseSession
+#endif
+        );STARTUPINFOW startup{};startup.cb=sizeof(startup);PROCESS_INFORMATION original{};
         // Consumption and bounded lifecycle grant exist already. No root/fence/
         // journal/stdin HANDLE inheritance, shell, ambient argv or PATH resolution.
         enrollment.CheckFixedLaunchLocators();if(!enrollment.Fresh(true).ok||enrollment.CheckedBridgeEntry()!=canonicalScript||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_precreate_guard_closed",0,true);
@@ -65,4 +88,16 @@ bool OriginalDaemon::AbortUnadmitted(Result& result){auto& d=*data_;if(d.admitte
 void OriginalDaemon::MarkAdmitted()noexcept{data_->admitted=true;}
 void* OriginalDaemon::BorrowedOriginalProcess()const{return data_->process.Get();}
 std::uint64_t OriginalDaemon::Birth()const{return data_->birth;}
+const Id& OriginalDaemon::OriginalInstance()const{return data_->originalInstance;}
+Digest OriginalDaemon::PhaseWitness(void* pipe,const Id& session,const Id& channel)const{
+    const auto& d=*data_;if(!MatchesPeer(pipe)||detail::Zero(session)||detail::Zero(channel)||!d.enrollment.Fresh(true).ok)
+        Refuse("original_daemon_phase_witness_closed");
+    std::vector<unsigned char> bytes;const char* domain="native-original-daemon-peer.v2";
+    for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));
+    detail::PutU64(bytes,d.originalPid);detail::PutU64(bytes,d.birth);
+    for(const auto* value:{&d.originalInstance,&session,&channel,&d.generation,&d.boot})bytes.insert(bytes.end(),value->begin(),value->end());
+    bytes.insert(bytes.end(),d.consumed.begin(),d.consumed.end());
+    for(const auto* text:{&d.sid,&d.image}){detail::PutU16(bytes,static_cast<std::uint16_t>(text->size()));for(wchar_t c:*text)detail::PutU16(bytes,static_cast<std::uint16_t>(c));}
+    return detail::Hash(bytes);
+}
 } // namespace local_session

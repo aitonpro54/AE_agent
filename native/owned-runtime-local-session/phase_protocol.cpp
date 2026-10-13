@@ -451,9 +451,38 @@ CodecError WireChannel::TrackOutgoing(const Frame& frame) noexcept {
         incomingPending_.ordinal!=h.replyToOrdinal)) return Close(CodecError::Correlation);
     outgoingOrdinal_=h.senderOrdinal;
     if (h.kind==FrameKind::Request) outgoingPending_={true,h.verb,h.senderOrdinal};
-    else if (h.kind==FrameKind::Reply) incomingPending_={};
+    else if (h.kind==FrameKind::Reply) {
+        incomingPending_={};settledVerb_=h.verb;settledReplyTo_=h.replyToOrdinal;
+        settledOutgoing_=h.senderOrdinal;
+    }
     if (ReplyIsUnknown(frame)) { pendingUnknown_=true;closed_=true; }
     return CodecError::None;
+}
+
+bool WireChannel::BindOpened(const Frame& sent,const Id& session,const Digest& installedScope) noexcept {
+    const auto& h=sent.header;
+    if (closed_ || openedBindingUsed_ || stage_!=BindingStage::BeforeOpen || Zero(session) || Zero(installedScope) ||
+        h.payloadBytes!=176 || !std::equal(session.begin(),session.end(),sent.payload.begin()) ||
+        !std::equal(installedScope.begin(),installedScope.end(),sent.payload.begin()+144) ||
+        incomingPending_.present || outgoingPending_.present || h.kind!=FrameKind::Reply ||
+        h.status!=Status::Ok || h.verb!=Verb::Open || settledVerb_!=h.verb ||
+        h.replyToOrdinal!=settledReplyTo_ || h.replyToOrdinal!=incomingOrdinal_ ||
+        h.senderOrdinal!=settledOutgoing_ || h.senderOrdinal!=outgoingOrdinal_ ||
+        CheckBindings(h)!=CodecError::None) { Close(CodecError::Binding);return false; }
+    bindings_.sessionRef=session;stage_=BindingStage::Open;openedBindingUsed_=true;return true;
+}
+bool WireChannel::AttachRuntime(const Frame& sent,const Id& generation,const Id& boot) noexcept {
+    const auto& h=sent.header;
+    if (closed_ || runtimeBindingUsed_ || stage_!=BindingStage::Open || !openedBindingUsed_ ||
+        h.payloadBytes!=161 || !std::equal(generation.begin(),generation.end(),sent.payload.begin()+97) ||
+        !std::equal(boot.begin(),boot.end(),sent.payload.begin()+113) ||
+        !Zero(bindings_.generation) || !Zero(bindings_.bootNonce) || Zero(generation) || Zero(boot) ||
+        incomingPending_.present || outgoingPending_.present || h.kind!=FrameKind::Reply ||
+        h.status!=Status::Ok || h.verb!=Verb::ReserveInitialLaunch || settledVerb_!=h.verb ||
+        h.replyToOrdinal!=settledReplyTo_ || h.replyToOrdinal!=incomingOrdinal_ ||
+        h.senderOrdinal!=settledOutgoing_ || h.senderOrdinal!=outgoingOrdinal_ ||
+        CheckBindings(h)!=CodecError::None) { Close(CodecError::Binding);return false; }
+    bindings_.generation=generation;bindings_.bootNonce=boot;runtimeBindingUsed_=true;return true;
 }
 
 CodecError ReadServerOnlyBegin(const Frame& frame,BeginCallPayload& out) noexcept {
@@ -482,27 +511,74 @@ CodecError ReadServerOnlyIngress(const Frame& frame,VerifyIngressPayload& out) n
 }
 
 VolatileServerLedger::VolatileServerLedger() noexcept=default;
+bool VolatileServerLedger::InitializeNative(const NativeBinding& binding,const NativeRefreshPort& port,
+    const Id& controllerInstance,const Digest& controllerWitness) noexcept {
+    if (available_ || closed_ || nativeBound_ || usedRows_ || !port.originalBroker || !port.refresh ||
+        !port.randomId || Zero(binding.session.channelNonce) || Zero(binding.session.sessionRef) ||
+        !Zero(binding.session.generation) || !Zero(binding.session.bootNonce) ||
+        Zero(binding.brokerInstance) || Zero(binding.installation) || Zero(binding.lineage) ||
+        Zero(binding.scopeHash) || Zero(binding.policyHash) || Zero(binding.transportHash) ||
+        Zero(controllerInstance) || Zero(controllerWitness) || !binding.policyEpoch ||
+        binding.deadline<=binding.openedMono || binding.deadline-binding.openedMono>kSessionMaximumMs) {
+        Close();return false;
+    }
+    nativeBinding_=binding;nativePort_=port;session_=binding.session;
+    controller_.role=PeerRole::Controller;controller_.privateChannel=binding.session.channelNonce;
+    controller_.originalInstance=controllerInstance;controller_.witnessHash=controllerWitness;
+    policyEpoch_=binding.policyEpoch;revocationEpoch_=binding.revocationEpoch;
+    sessionDeadline_=binding.deadline;lastMono_=binding.openedMono;nativeBound_=true;available_=true;
+    return true;
+}
+bool VolatileServerLedger::AttachNativeRuntime(const Id& generation,const Id& boot) noexcept {
+    if (!nativeBound_ || closed_ || nativeRuntimeAttached_ || usedRows_ || Zero(generation) || Zero(boot)) {
+        Close();return false;
+    }
+    session_.generation=generation;session_.bootNonce=boot;nativeRuntimeAttached_=true;return true;
+}
+bool VolatileServerLedger::AttachNativeDaemon(const Id& channel,const Id& instance,const Digest& witness) noexcept {
+    if (!nativeBound_ || !nativeRuntimeAttached_ || closed_ || nativeDaemonAttached_ || usedRows_ ||
+        Zero(channel) || Zero(instance) || Zero(witness)) { Close();return false; }
+    daemon_.role=PeerRole::Daemon;daemon_.privateChannel=channel;
+    daemon_.originalInstance=instance;daemon_.witnessHash=witness;nativeDaemonAttached_=true;return true;
+}
+bool VolatileServerLedger::HasUnresolved() const noexcept {
+    for (const auto& row:rows_) if (row.state==RowState::Begun || row.state==RowState::Verified ||
+        row.state==RowState::Unknown) return true;
+    return false;
+}
+const HandlerReply* VolatileServerLedger::FinishedHandler(const Id& permit) const noexcept {
+    for (const auto& row:rows_) if (row.state==RowState::Finished && row.handler.permitRef==permit)
+        return &row.handler;
+    return nullptr;
+}
 void VolatileServerLedger::Close() noexcept {
     closed_=true;
     for (auto& row:rows_) if (row.state==RowState::Begun || row.state==RowState::Verified) row.state=RowState::Unknown;
 }
 Status VolatileServerLedger::DenyAndClose(Status status) noexcept { Close();return status; }
-Status VolatileServerLedger::Guard(const PeerWitness& peer,PeerRole role,std::uint64_t now) noexcept {
-#if !defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
-    (void)peer;(void)role;(void)now;
-    return Status::Unavailable; // No production original-held-peer issuer yet.
-#else
+Status VolatileServerLedger::Guard(const PeerWitness& peer,PeerRole role,std::uint64_t& now) noexcept {
     if (!available_) return Status::Unavailable;
     if (closed_) return Status::Revoked;
     const auto* original=role==PeerRole::Controller ? &controller_ : &daemon_;
     if (&peer!=original || peer.role!=role || Zero(peer.privateChannel) ||
         Zero(peer.originalInstance) || Zero(peer.witnessHash)) return DenyAndClose(Status::Denied);
-    if (!controller_.alive || !daemon_.alive) return DenyAndClose(Status::Revoked);
+    if (nativeBound_) {
+        if (!nativeRuntimeAttached_ || !nativeDaemonAttached_) return Status::Unavailable;
+        std::uint64_t fresh=0;
+        if (!nativePort_.originalBroker || !nativePort_.refresh ||
+            !nativePort_.refresh(nativePort_.originalBroker,fresh)) return DenyAndClose(Status::Unknown);
+        now=fresh; // OS clock, never the method argument, is authoritative here.
+    } else {
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
+        if (!controller_.alive || !daemon_.alive) return DenyAndClose(Status::Revoked);
+#else
+        return Status::Unavailable;
+#endif
+    }
     if (now<lastMono_) return DenyAndClose(Status::Unknown);
     if (now>=sessionDeadline_) return DenyAndClose(Status::RevalidationRequired);
     lastMono_=now;
     return Status::Ok;
-#endif
 }
 Status VolatileServerLedger::Begin(const PeerWitness& controller,const BeginCallPayload& body,
     std::uint64_t now,CallReply& out) noexcept {
@@ -514,17 +590,30 @@ Status VolatileServerLedger::Begin(const PeerWitness& controller,const BeginCall
     if (!tool->serverOnlyHandler) return Status::Unavailable;
     if (usedRows_==kCallRows || callCounter_==std::numeric_limits<std::uint64_t>::max() ||
         now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs) return DenyAndClose(Status::Unknown);
-#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
     CallRow row{};row.state=RowState::Begun;row.body=body;row.counter=callCounter_+1;
     row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
-    row.call.callRef=SyntheticId(0x40,row.counter);row.call.ingressNonce=SyntheticId(0x41,row.counter);
+    if (nativeBound_) {
+        if (!nativePort_.randomId(nativePort_.originalBroker,row.call.callRef) ||
+            !nativePort_.randomId(nativePort_.originalBroker,row.call.ingressNonce) ||
+            Zero(row.call.callRef) || Zero(row.call.ingressNonce) || row.call.callRef==row.call.ingressNonce)
+            return DenyAndClose(Status::Unknown);
+        for (const auto& previous:rows_) if (previous.state!=RowState::Empty &&
+            (previous.call.callRef==row.call.callRef || previous.call.ingressNonce==row.call.ingressNonce))
+            return DenyAndClose(Status::Unknown);
+    } else {
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
+        row.call.callRef=SyntheticId(0x40,row.counter);row.call.ingressNonce=SyntheticId(0x41,row.counter);
+#else
+        (void)out;return Status::Unavailable;
+#endif
+    }
     row.call.expiresMono=std::min(now+kCallTtlMs,sessionDeadline_);
     row.call.bindingHash=BindingHash(row,false);
+    const auto finalGuard=Guard(controller,PeerRole::Controller,now);
+    if(finalGuard!=Status::Ok)return finalGuard;
+    if(now>=row.call.expiresMono)return DenyAndClose(Status::Denied);
     rows_[usedRows_]=row;++usedRows_;++callCounter_;out=row.call;
     return Status::Ok;
-#else
-    (void)out;return Status::Unavailable; // No production nonce/held-peer issuer exists.
-#endif
 }
 Status VolatileServerLedger::Verify(const PeerWitness& daemon,const VerifyIngressPayload& body,
     std::uint64_t now,HandlerReply& out) noexcept {
@@ -538,16 +627,29 @@ Status VolatileServerLedger::Verify(const PeerWitness& daemon,const VerifyIngres
         matched->policyEpoch!=policyEpoch_ || matched->revocationEpoch!=revocationEpoch_ ||
         matched->call.bindingHash!=BindingHash(*matched,false) ||
         now>=matched->call.expiresMono) return DenyAndClose(Status::Denied);
+    if (nativeBound_) {
+        if (!nativePort_.randomId(nativePort_.originalBroker,matched->handler.permitRef) ||
+            !nativePort_.randomId(nativePort_.originalBroker,matched->handler.permitNonce) ||
+            Zero(matched->handler.permitRef) || Zero(matched->handler.permitNonce) ||
+            matched->handler.permitRef==matched->handler.permitNonce) return DenyAndClose(Status::Unknown);
+        for (const auto& previous:rows_) if (&previous!=matched && previous.state!=RowState::Empty &&
+            (previous.handler.permitRef==matched->handler.permitRef ||
+             previous.handler.permitNonce==matched->handler.permitNonce)) return DenyAndClose(Status::Unknown);
+    } else {
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
-    matched->handler.permitRef=SyntheticId(0x42,matched->counter);
-    matched->handler.permitNonce=SyntheticId(0x43,matched->counter);
+        matched->handler.permitRef=SyntheticId(0x42,matched->counter);
+        matched->handler.permitNonce=SyntheticId(0x43,matched->counter);
+#else
+        (void)out;return Status::Unavailable;
+#endif
+    }
     matched->handler.expiresMono=matched->call.expiresMono;
     matched->handler.bindingHash=BindingHash(*matched,true);
+    const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);
+    if(finalGuard!=Status::Ok)return finalGuard;
+    if(now>=matched->call.expiresMono)return DenyAndClose(Status::Denied);
     matched->state=RowState::Verified;++handlerAdmissions_;out=matched->handler;
     return Status::Ok;
-#else
-    (void)out;return Status::Unavailable;
-#endif
 }
 Status VolatileServerLedger::Finish(const PeerWitness& daemon,const Id& permit,const Digest& result,
     std::uint64_t now) noexcept {
@@ -561,14 +663,18 @@ Status VolatileServerLedger::Finish(const PeerWitness& daemon,const Id& permit,c
             row.handler.expiresMono!=row.call.expiresMono ||
             now>=row.call.expiresMono || now>=row.handler.expiresMono || Zero(result))
             return DenyAndClose(Status::Denied);
+        const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);
+        if(finalGuard!=Status::Ok)return finalGuard;
+        if(now>=row.call.expiresMono)return DenyAndClose(Status::Denied);
         row.resultHash=result;row.state=RowState::Finished;return Status::Ok;
     }
     return DenyAndClose(Status::Denied);
 }
 Digest VolatileServerLedger::BindingHash(const CallRow& row,bool handler) const noexcept {
-    std::array<std::uint8_t,512> binary{};
+    std::array<std::uint8_t,1024> binary{};
     std::size_t at=0;
-    const std::string_view domain=handler ? "lcp2.synthetic.handler.v1" : "lcp2.synthetic.call.v1";
+    const std::string_view domain=nativeBound_ ? (handler ? "lcp2.native.handler.v2" : "lcp2.native.call.v2") :
+        (handler ? "lcp2.synthetic.handler.v1" : "lcp2.synthetic.call.v1");
     // u16-length domain, fixed explicit LE fields. No struct casts/padding.
     W16(binary.data(),static_cast<std::uint16_t>(domain.size()));at=2;
     for (const auto c:domain) binary[at++]=static_cast<std::uint8_t>(c);
@@ -578,6 +684,11 @@ Digest VolatileServerLedger::BindingHash(const CallRow& row,bool handler) const 
     append(session_.channelNonce);append(session_.sessionRef);append(session_.generation);append(session_.bootNonce);
     append(controller_.privateChannel);append(controller_.originalInstance);append(controller_.witnessHash);
     append(daemon_.privateChannel);append(daemon_.originalInstance);append(daemon_.witnessHash);
+    if (nativeBound_) {
+        append(nativeBinding_.brokerInstance);append(nativeBinding_.installation);append(nativeBinding_.lineage);
+        append(nativeBinding_.scopeHash);append(nativeBinding_.policyHash);append(nativeBinding_.transportHash);
+        W64(binary.data()+at,nativeBinding_.openedMono);at+=8;
+    }
     append(row.call.callRef);append(row.call.ingressNonce);append(row.body.canonicalBodyHash);
     W16(binary.data()+at,static_cast<std::uint16_t>(row.body.tool));at+=2;
     binary[at++]=static_cast<std::uint8_t>(row.body.kind);

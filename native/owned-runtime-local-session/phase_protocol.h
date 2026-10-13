@@ -13,6 +13,17 @@
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) && AE_AGENT_PHASE_SYNTHETIC_PROOF != 1
 #error Synthetic proof requires the exact isolated macro value 1; no boolean fallback.
 #endif
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+#if AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE != 1 || !defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS) || AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS != 1
+#error Native phase proof requires exact installed seams and profile value 1.
+#endif
+#if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) || defined(AE_AGENT_FENCE_PREREQUISITE_TEST_ONLY) || defined(AE_AGENT_DURABILITY_PREREQUISITE_TEST_ONLY)
+#error Native OS phase proof cannot use pure or prerequisite authority substitutes.
+#endif
+#endif
+#if defined(AE_AGENT_PHASE_PRODUCTION_TARGET) && (defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE) || defined(AE_AGENT_PHASE_SYNTHETIC_PROOF))
+#error Ordinary LocalSessionBroker target cannot compile a phase proof profile.
+#endif
 
 namespace local_session { class Broker; }
 namespace local_session::phase {
@@ -110,12 +121,20 @@ private:
     struct Pending { bool present=false; Verb verb=Verb::Open; std::uint64_t ordinal=0; };
     CodecError CheckBindings(const Header& header) const noexcept;
     CodecError Close(CodecError error) noexcept;
+    // Broker calls these only after the exact tracked reply was successfully
+    // sent on the original pipe. Neither transition resets ordinals/pending.
+    bool BindOpened(const Frame& sentReply, const Id& session, const Digest& installedScope) noexcept;
+    bool AttachRuntime(const Frame& sentReply, const Id& generation, const Id& boot) noexcept;
     Direction incoming_, outgoing_;
     WireBindings bindings_;
     BindingStage stage_;
     std::uint64_t incomingOrdinal_=0, outgoingOrdinal_=0;
     Pending incomingPending_{}, outgoingPending_{};
     bool closed_=false, pendingUnknown_=false;
+    Verb settledVerb_=Verb::Status;
+    std::uint64_t settledReplyTo_=0, settledOutgoing_=0;
+    bool openedBindingUsed_=false, runtimeBindingUsed_=false;
+    friend class ::local_session::Broker;
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
     friend class SyntheticPhaseProof;
 #endif
@@ -134,8 +153,8 @@ CodecError ReadServerOnlyBegin(const Frame& frame, BeginCallPayload& out) noexce
 CodecError ReadServerOnlyIngress(const Frame& frame, VerifyIngressPayload& out) noexcept;
 
 // No public constructor/factory/setter or JSON/env input. Broker friendship is
-// a future integration seam, not an issuer: the production constructor is
-// permanently unavailable in this first block. No script/grant/effect ports.
+// an issuer only when bound privately to the original broker's OS refresh port.
+// The ordinary production entry never binds it. No script/grant/effect ports.
 class VolatileServerLedger final {
 public:
     ~VolatileServerLedger()=default;
@@ -163,18 +182,38 @@ private:
         Digest resultHash{};
         std::uint64_t counter=0, policyEpoch=0, revocationEpoch=0;
     };
+    struct NativeBinding {
+        WireBindings session{};
+        Id brokerInstance{}, installation{}, lineage{};
+        Digest scopeHash{}, policyHash{}, transportHash{};
+        std::uint64_t openedMono=0, deadline=0, policyEpoch=0, revocationEpoch=0;
+    };
+    struct NativeRefreshPort {
+        void* originalBroker=nullptr;
+        bool (*refresh)(void*, std::uint64_t&) noexcept=nullptr;
+        bool (*randomId)(void*, Id&) noexcept=nullptr;
+    };
     VolatileServerLedger() noexcept;
+    bool InitializeNative(const NativeBinding& binding, const NativeRefreshPort& port,
+        const Id& controllerInstance, const Digest& controllerWitness) noexcept;
+    bool AttachNativeRuntime(const Id& generation, const Id& boot) noexcept;
+    bool AttachNativeDaemon(const Id& channel, const Id& instance, const Digest& witness) noexcept;
+    bool HasUnresolved() const noexcept;
+    const HandlerReply* FinishedHandler(const Id& permit) const noexcept;
     Status Begin(const PeerWitness& controller, const BeginCallPayload& body,
         std::uint64_t now, CallReply& out) noexcept;
     Status Verify(const PeerWitness& daemon, const VerifyIngressPayload& body,
         std::uint64_t now, HandlerReply& out) noexcept;
     Status Finish(const PeerWitness& daemon, const Id& permit, const Digest& result,
         std::uint64_t now) noexcept;
-    Status Guard(const PeerWitness& peer, PeerRole role, std::uint64_t now) noexcept;
+    Status Guard(const PeerWitness& peer, PeerRole role, std::uint64_t& now) noexcept;
     Status DenyAndClose(Status status) noexcept;
     void Close() noexcept;
     Digest BindingHash(const CallRow& row, bool handler) const noexcept;
     bool available_=false, closed_=false;
+    bool nativeBound_=false, nativeRuntimeAttached_=false, nativeDaemonAttached_=false;
+    NativeBinding nativeBinding_{};
+    NativeRefreshPort nativePort_{};
     PeerWitness controller_{}, daemon_{};
     WireBindings session_{};
     std::uint64_t sessionDeadline_=0, lastMono_=0, callCounter_=0;
