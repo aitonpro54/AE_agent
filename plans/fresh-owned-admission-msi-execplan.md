@@ -38,8 +38,10 @@ Live activation ещё не принята. Следующая работа — 
 - MCP status текущего MSI: `owned_registration_absent`, owned=false, replayAllowed=false.
   Каталог предоставляет только local owned/usage tools; search_solutions/project reads отсутствуют.
   Daemon не запускался. AE/AME процессы наблюдались, это не native/project/queue proof.
-- Пользователь уточнил финальный export: **DXV, alpha, High**. Два конкретных варианта
-  должны быть установлены по фактическому AEP/поручению; preset ещё требует проверки.
+- Пользователь уточнил финальный export: **DXV3, High Quality, alpha**. Варианты идут
+  из одной композиции с последовательно включаемыми текстовыми слоями. Точные comp/layer
+  identities, тексты и mapping двух исходных deliverables требуют фактического AE read-back;
+  фактические AME настройки/output paths также остаются к проверке.
 - На MSI восстановлены checkout, CEP, assets, checkpoint, SDK и scoped skills/roles.
 - Проверены все файлы пакета, snapshot parent, bundles/refs, raw WIP6 и восстановленные bytes.
 - Старый MSI checkout и пять неопубликованных commits сохранены вне активного пути.
@@ -158,9 +160,11 @@ Live activation ещё не принята. Следующая работа — 
 - Read acceptance: genuine actor poll + actual typed project-info и exact runtime/panel binding.
 - Write acceptance: fresh lease + execution guards; это ещё не доказательство AE mutation.
 - После отдельной приёмки нужных lifecycle/AME ветвей исходная задача: открыть локальный
-  сохранённый AEP, проверить CognacC,
-  существенные media-ссылки, comps/варианты, preset/outputs и получить два проверенных AME-видео.
-  Save/raw/destructive/render gates и визуальный read-back сохраняются.
+  сохранённый AEP, проверить CognacC, существенные media-ссылки, одну композицию и
+  последовательные text-layer states; сверить DXV3 High Quality alpha и outputs и получить
+  два проверенных AME-видео. Для каждого варианта нужен state read-back перед render,
+  отдельный output и проверка фактического media; исходное enabled state восстановить и
+  подтвердить read-back. Save/raw/destructive/render gates и визуальный read-back сохраняются.
 
 ## Decision Log
 - Classifier принимает только точный case-sensitive native volume target с ASCII decimal
@@ -190,7 +194,9 @@ Live activation ещё не принята. Следующая работа — 
   assets/font/preset выполнил parent; установку/transfer verifier не повторял.
 - User-installed `CognacC.ttf`, локальный `titr_all.aep` и EPR `DXV3_titles_NQ` /
   `FHD_HQ_alfa_nosound` найдены на диске. Наличие/имя не доказывает AE font binding,
-  содержимое двух вариантов, качество DXV/alpha или завершение AME.
+  идентичности и содержимое последовательно включаемых текстовых слоёв, их mapping на два
+  deliverables, фактические AME settings или завершение AME. Requested preset задан как
+  DXV3 High Quality alpha; фактический export state требует проверки.
 - Первое рассмотрение ограничено новым initial admission; historical authority не переносится.
 - Не включать autostart/unmanaged fallback для получения видимости или успешного smoke.
 - Frozen manifest, providers/model/context/auth и старые UNKNOWN не меняются incidental.
@@ -203,6 +209,9 @@ Live activation ещё не принята. Следующая работа — 
   grant готов до launch и переживает expiry/revoke read lease, но не повторяет consumed stop.
 
 ## Validation
+- Уточнение пользователя 13 октября: одна композиция, последовательные text-layer states.
+  Только два Markdown-файла; rules/diff проверки PASS. AE/AME/AEP/queue не менялись,
+  фактические variant identities и видео не проверены; общий goal остаётся blocked.
 - Fresh classifier normal `fence-6691151182174251bb09ac68a78c8676`: 77PASS/0FAIL/3UNVERIFIED,
   101 original held children CLOSED, termination0, parking9/verified own moves14.
   Barrier `fence-d16cc84a67114c9fa6c54f6ccbd4a305` PASS: timeout4026ms, late ACK1/1,

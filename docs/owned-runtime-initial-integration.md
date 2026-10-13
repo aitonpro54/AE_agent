@@ -68,7 +68,8 @@ transfer package, retained state и настройки не затрагиваю
 
 ## Export scope и текущие наблюдения
 
-Пользователь уточнил: DXV, alpha, High. Локальный saved titr_all.aep имеет переданный
+Пользователь уточнил export: DXV, alpha, High; requested preset — DXV3 High Quality с alpha.
+Локальный saved titr_all.aep имеет переданный
 SHA-256 e55edfd680a6f4bad222389ffcf5b6d08a18ff4afd2a15a27f944bdcf8856754.
 CognacC.ttf найден в user Fonts; это не доказательство actual AE font binding.
 User EPR DXV3_titles_NQ и FHD_HQ_alfa_nosound имеют DXVTYPE 1/3 соответственно,
@@ -76,8 +77,16 @@ User EPR DXV3_titles_NQ и FHD_HQ_alfa_nosound имеют DXVTYPE 1/3 соотв
 13 октября parent при двух занятых helper slots проверил official
 [Resolume rendering guide](https://resolume.com/support/en/rendering-to-dxv): для AME
 Format DXV3, Compression выбирает quality и alpha отдельно. Это подтверждает смысл
-user request, но не mapping DXVTYPE enum и не сохранённый preset/current AME state.
-Exact два варианта, actual project/media/queue и полученные видео не проверены.
+user request, но не mapping DXVTYPE enum или фактические настройки конкретного AME export.
+Пользователь уточнил состав deliverables: одна композиция, её варианты рендерятся
+последовательно включаемыми текстовыми слоями. Точные composition/layer identities,
+содержимое и mapping вариантов на два исходных deliverables требуют фактического AE read-back.
+Actual project/media/queue и полученные видео не проверены.
+После принятия соответствующих контрактов и текущих AE gates предполагаемый live flow:
+прочитать target и исходное enabled state; для каждого варианта сверить состояние и
+сделать read-back; последовательно рендерить идентифицированные состояния в разные
+outputs; проверить фактические media-файлы и восстановление исходного состояния через
+read-back. Снимок очереди не считается фиксацией состояния композиции.
 Bounded `ae_scout` filesystem inventory подтвердил `DXV3MediaCoreExport.prm` и
 import/AEX modules в `C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\Resolume DXV`.
 Export PRM version metadata отсутствует; AEX version 1,0,0,1. File hashes сохранены
