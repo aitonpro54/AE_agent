@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+namespace initial_durability { class Store; }
 namespace initial_fence {
 
 // Correlation/evidence only. There is no exported OS handle or issuer capability.
@@ -52,6 +53,12 @@ struct Result {
 };
 
 class Factory;
+class InternalFencedIo;
+class InternalFencedAction {
+public:
+    virtual ~InternalFencedAction() = default;
+    virtual Result Run(InternalFencedIo& io) = 0;
+};
 
 class RootLease final {
 public:
@@ -65,6 +72,7 @@ private:
     struct Data;
     std::unique_ptr<Data> data_;
     friend class Factory;
+    friend class InternalFencedIo;
 };
 
 class FenceLease final {
@@ -79,6 +87,7 @@ private:
     struct Data;
     std::unique_ptr<Data> data_;
     friend class Factory;
+    friend class InternalFencedIo;
 };
 
 class Factory final {
@@ -114,6 +123,27 @@ private:
     Result Fail(RootLease& root, FenceLease& fence, const Result& failure);
     Result Describe(RootLease& root, FenceLease& fence) const;
     Result CheckBinding(RootLease& root, FenceLease& fence) const;
+    // Same-process synchronous serial port; callers must not use these leases
+    // concurrently. Reentry/move/release/dispose/reacquire are rejected while
+    // the callback is active. The borrowed context is absent from the CLI.
+    Result WithLiveFence(RootLease& root, FenceLease& fence, InternalFencedAction& action);
+    friend class InternalFencedIo;
+    friend class initial_durability::Store;
+};
+
+class InternalFencedIo final {
+public:
+    InternalFencedIo(const InternalFencedIo&) = delete;
+    InternalFencedIo& operator=(const InternalFencedIo&) = delete;
+private:
+    InternalFencedIo(Factory& factory, RootLease& root, FenceLease& fence);
+    ~InternalFencedIo();
+    struct Data;
+    std::unique_ptr<Data> data_;
+    Result StageGuard();
+    void* BorrowedRoot(); // Never owned, duplicated, inherited or returned by Store.
+    friend class Factory;
+    friend class initial_durability::Store;
 };
 
 std::string JsonResult(const std::string& operation, const Result& result);

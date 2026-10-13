@@ -144,7 +144,7 @@ private:
 
 // Stable logical object identity across moves. Lifetime cannot be reconstructed
 // from an OS handle number, pathname, string ref or serialized identity.
-struct Token final { bool live = true; };
+struct Token final { bool live = true; bool callbackActive = false; bool callbackViolated = false; };
 struct Witness final { Handle handle; Identity identity; };
 
 Result Error(const char* code, DWORD win32 = 0, NTSTATUS status = 0) {
@@ -479,15 +479,82 @@ struct Factory::Data {
 };
 
 RootLease::RootLease() = default;
-RootLease::~RootLease() = default;
-RootLease::RootLease(RootLease&&) noexcept = default;
-RootLease& RootLease::operator=(RootLease&&) noexcept = default;
+RootLease::~RootLease() { if (data_ && data_->rootToken->callbackActive) { std::terminate(); } }
+RootLease::RootLease(RootLease&& other) noexcept {
+    if (other.data_ && other.data_->rootToken->callbackActive) { other.data_->rootToken->callbackViolated = true; }
+    else { data_ = std::move(other.data_); }
+}
+RootLease& RootLease::operator=(RootLease&& other) noexcept {
+    if ((data_ && data_->rootToken->callbackActive) || (other.data_ && other.data_->rootToken->callbackActive)) {
+        if (data_) { data_->rootToken->callbackViolated = true; }
+        if (other.data_) { other.data_->rootToken->callbackViolated = true; }
+    } else if (this != &other) { data_ = std::move(other.data_); }
+    return *this;
+}
 FenceLease::FenceLease() = default;
-FenceLease::~FenceLease() = default;
-FenceLease::FenceLease(FenceLease&&) noexcept = default;
-FenceLease& FenceLease::operator=(FenceLease&&) noexcept = default;
+FenceLease::~FenceLease() { if (data_ && data_->rootToken->callbackActive) { std::terminate(); } }
+FenceLease::FenceLease(FenceLease&& other) noexcept {
+    if (other.data_ && other.data_->rootToken->callbackActive) { other.data_->rootToken->callbackViolated = true; }
+    else { data_ = std::move(other.data_); }
+}
+FenceLease& FenceLease::operator=(FenceLease&& other) noexcept {
+    if ((data_ && data_->rootToken->callbackActive) || (other.data_ && other.data_->rootToken->callbackActive)) {
+        if (data_) { data_->rootToken->callbackViolated = true; }
+        if (other.data_) { other.data_->rootToken->callbackViolated = true; }
+    } else if (this != &other) { data_ = std::move(other.data_); }
+    return *this;
+}
 Factory::Factory(std::unique_ptr<RootConfig> config) : data_(std::make_unique<Data>(std::move(config))) {}
-Factory::~Factory() { data_->token->live = false; }
+Factory::~Factory() { if (data_->token->callbackActive) { std::terminate(); } data_->token->live = false; }
+
+struct InternalFencedIo::Data {
+    Factory& factory; RootLease& root; FenceLease& fence;
+    std::shared_ptr<Token> factoryToken, rootToken, fenceToken;
+    bool live = true;
+    Data(Factory& f, RootLease& r, FenceLease& l) : factory(f), root(r), fence(l),
+        factoryToken(f.data_->token), rootToken(r.data_->rootToken), fenceToken(l.data_->fenceToken) {}
+};
+InternalFencedIo::InternalFencedIo(Factory& f, RootLease& r, FenceLease& l) : data_(std::make_unique<Data>(f,r,l)) {}
+InternalFencedIo::~InternalFencedIo() { data_->live = false; }
+Result InternalFencedIo::StageGuard() {
+    auto& d = *data_;
+    if (!d.live || !d.factoryToken->live || !d.rootToken->live || !d.fenceToken->live
+        || !d.factoryToken->callbackActive || !d.rootToken->callbackActive || d.rootToken->callbackViolated
+        || !d.root.data_ || !d.fence.data_ || d.fence.data_->ref.empty() || !d.fence.data_->handle.Valid()
+        || d.factory.data_->token.get() != d.factoryToken.get()
+        || d.root.data_->rootToken.get() != d.rootToken.get()
+        || d.fence.data_->fenceToken.get() != d.fenceToken.get()) { return Error("fenced_callback_invalid"); }
+    return d.factory.Validate(d.root, d.fence, true);
+}
+void* InternalFencedIo::BorrowedRoot() {
+    return StageGuard().ok ? data_->root.data_->witnesses.back().handle.Get() : nullptr;
+}
+Result Factory::WithLiveFence(RootLease& root, FenceLease& fence, InternalFencedAction& action) {
+    if (data_->token->callbackActive) { return Error("fenced_callback_reentrant"); }
+    Result binding = CheckBinding(root, fence);
+    if (!binding.code.empty()) { return binding; }
+    // Validate(true) alone is deliberately insufficient for a root-without-fence.
+    if (!fence.data_ || !fence.data_->fenceToken->live || fence.data_->ref.empty()
+        || !fence.data_->handle.Valid()) { return Error("actual_fence_required"); }
+    Result result = Validate(root, fence, true);
+    if (!result.ok) { return result; }
+    data_->token->callbackActive = true; root.data_->rootToken->callbackActive = true;
+    root.data_->rootToken->callbackViolated = false;
+    const auto rootToken = root.data_->rootToken;
+    try {
+        InternalFencedIo io(*this, root, fence);
+        result = io.StageGuard();
+        if (result.ok) { result = action.Run(io); }
+        const Result after = io.StageGuard();
+        if (!after.ok) { result = after; }
+    } catch (...) {
+        rootToken->callbackActive = false; data_->token->callbackActive = false;
+        Dispose(root, fence); throw;
+    }
+    rootToken->callbackActive = false; data_->token->callbackActive = false;
+    if (!result.ok && result.terminal) { Dispose(root, fence); }
+    return result;
+}
 
 std::unique_ptr<Factory> Factory::CreateApprovedTestFactory(
     const std::wstring& spelling, const std::string& instance, Result& result) {
@@ -629,6 +696,7 @@ Result Factory::CheckBinding(RootLease& root, FenceLease& fence) const {
 }
 
 Result Factory::Dispose(RootLease& root, FenceLease& fence) {
+    if (data_->token->callbackActive) { return Error("fenced_callback_active"); }
     Result binding = CheckBinding(root, fence);
     if (!binding.code.empty()) { return binding; }
     // Invalidate references before closing any native handle. Never rebind/retry.
@@ -661,7 +729,9 @@ Result Factory::Dispose(RootLease& root, FenceLease& fence) {
 }
 
 Result Factory::Fail(RootLease& root, FenceLease& fence, const Result& failure) {
-    const Result cleanup = Dispose(root, fence);
+    // Validation within the private borrowed callback cannot release its pins.
+    // WithLiveFence closes after the callback and local IO witnesses unwind.
+    const Result cleanup = data_->token->callbackActive ? Describe(root, fence) : Dispose(root, fence);
     Result result = failure;
     result.terminal = true;
     result.fenceState = cleanup.fenceState;
@@ -795,6 +865,7 @@ Result Factory::Validate(RootLease& root, FenceLease& fence, bool checkFence) {
 Result Factory::Observe(RootLease& root, FenceLease& fence) { return Validate(root, fence, true); }
 
 Result Factory::TryAcquire(RootLease& root, FenceLease& fence) {
+    if (data_->token->callbackActive) { return Error("fenced_callback_active"); }
     Result result = Validate(root, fence, true);
     if (!result.ok) { return result; }
     if (fence.data_) {
@@ -865,6 +936,7 @@ Result Factory::LiveCheck(RootLease& root, FenceLease& fence, const std::string&
 }
 
 Result Factory::Release(RootLease& root, FenceLease& fence, const std::string& ref) {
+    if (data_->token->callbackActive) { return Error("fenced_callback_active"); }
     Result result = LiveCheck(root, fence, ref);
     if (!result.ok) { return result; }
     fence.data_->ref.clear();
