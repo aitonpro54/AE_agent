@@ -509,6 +509,36 @@ CodecError ReadServerOnlyIngress(const Frame& frame,VerifyIngressPayload& out) n
     std::copy_n(frame.payload.data()+37,32,body.body.canonicalBodyHash.begin());out=body;
     return CodecError::None;
 }
+CodecError ReadPanelBegin(const Frame& frame,BeginCallPayload& out) noexcept {
+    const auto error=ValidateFrame(frame);if(error!=CodecError::None)return error;
+    if(frame.header.direction!=Direction::ControllerToBroker||frame.header.verb!=Verb::BeginCall||
+        frame.header.kind!=FrameKind::Request||frame.header.payloadBytes!=37||
+        U16(frame.payload.data())!=static_cast<std::uint16_t>(ToolCode::EnsureAgentPanel)||
+        frame.payload[2]!=static_cast<std::uint8_t>(CallKind::Panel)||
+        U16(frame.payload.data()+3)!=static_cast<std::uint16_t>(RouteCode::McpToolsCall))return CodecError::Tag;
+    BeginCallPayload body{};body.tool=ToolCode::EnsureAgentPanel;body.kind=CallKind::Panel;
+    std::copy_n(frame.payload.data()+5,32,body.canonicalBodyHash.begin());out=body;return CodecError::None;
+}
+CodecError ReadPanelIngress(const Frame& frame,VerifyIngressPayload& out) noexcept {
+    const auto error=ValidateFrame(frame);if(error!=CodecError::None)return error;
+    if(frame.header.direction!=Direction::DaemonToBroker||frame.header.verb!=Verb::VerifyIngress||
+        frame.header.kind!=FrameKind::Request||frame.header.payloadBytes!=69||
+        U16(frame.payload.data()+32)!=static_cast<std::uint16_t>(ToolCode::EnsureAgentPanel)||
+        frame.payload[34]!=static_cast<std::uint8_t>(CallKind::Panel)||
+        U16(frame.payload.data()+35)!=static_cast<std::uint16_t>(RouteCode::McpToolsCall))return CodecError::Tag;
+    VerifyIngressPayload body{};body.body.tool=ToolCode::EnsureAgentPanel;body.body.kind=CallKind::Panel;
+    std::copy_n(frame.payload.data(),16,body.callRef.begin());std::copy_n(frame.payload.data()+16,16,body.ingressNonce.begin());
+    std::copy_n(frame.payload.data()+37,32,body.body.canonicalBodyHash.begin());out=body;return CodecError::None;
+}
+CodecError ReadFirstActor(const Frame& frame,FirstActorPayload& out) noexcept {
+    const auto error=ValidateFrame(frame);if(error!=CodecError::None)return error;
+    if(frame.header.direction!=Direction::DaemonToBroker||frame.header.kind!=FrameKind::Request||
+        frame.header.verb!=Verb::FirstActorObserved||frame.header.payloadBytes!=144)return CodecError::Tag;
+    FirstActorPayload body{};std::copy_n(frame.payload.data(),16,body.grantRef.begin());
+    std::copy_n(frame.payload.data()+16,16,body.grantNonce.begin());std::copy_n(frame.payload.data()+32,16,body.actorRef.begin());
+    std::copy_n(frame.payload.data()+48,32,body.actorHash.begin());std::copy_n(frame.payload.data()+80,32,body.installedPanelHash.begin());
+    std::copy_n(frame.payload.data()+112,32,body.observationHash.begin());out=body;return CodecError::None;
+}
 
 VolatileServerLedger::VolatileServerLedger() noexcept=default;
 bool VolatileServerLedger::InitializeNative(const NativeBinding& binding,const NativeRefreshPort& port,
@@ -656,7 +686,7 @@ Status VolatileServerLedger::Finish(const PeerWitness& daemon,const Id& permit,c
     const auto guarded=Guard(daemon,PeerRole::Daemon,now);
     if (guarded!=Status::Ok) return guarded;
     for (auto& row:rows_) if (row.state!=RowState::Empty && row.handler.permitRef==permit) {
-        if (row.state!=RowState::Verified || row.policyEpoch!=policyEpoch_ ||
+        if (row.body.kind!=CallKind::ServerOnly || row.state!=RowState::Verified || row.policyEpoch!=policyEpoch_ ||
             row.revocationEpoch!=revocationEpoch_ ||
             row.call.bindingHash!=BindingHash(row,false) ||
             row.handler.bindingHash!=BindingHash(row,true) ||
@@ -669,6 +699,104 @@ Status VolatileServerLedger::Finish(const PeerWitness& daemon,const Id& permit,c
         row.resultHash=result;row.state=RowState::Finished;return Status::Ok;
     }
     return DenyAndClose(Status::Denied);
+}
+Status VolatileServerLedger::BeginPanel(const PeerWitness& controller,const BeginCallPayload& body,
+    std::uint64_t now,CallReply& out) noexcept {
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    const auto guarded=Guard(controller,PeerRole::Controller,now);if(guarded!=Status::Ok)return guarded;
+    if(!nativeBound_||firstPanelAttempt_||firstActorAttemptSpent_||HasUnresolved()||
+        body.tool!=ToolCode::EnsureAgentPanel||body.kind!=CallKind::Panel||body.route!=RouteCode::McpToolsCall||
+        Zero(body.canonicalBodyHash)||Zero(panelDefinition_.actorRef)||Zero(panelDefinition_.actorHash)||
+        Zero(panelDefinition_.installedHash)||Zero(panelDefinition_.definitionHash))return DenyAndClose(Status::Denied);
+    if(usedRows_==kCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||
+        now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)return DenyAndClose(Status::Unknown);
+    CallRow row{};row.state=RowState::Begun;row.body=body;row.counter=callCounter_+1;
+    row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row.call.callRef)||
+        !nativePort_.randomId(nativePort_.originalBroker,row.call.ingressNonce)||Zero(row.call.callRef)||
+        Zero(row.call.ingressNonce)||row.call.callRef==row.call.ingressNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(previous.state!=RowState::Empty&&
+        (previous.call.callRef==row.call.callRef||previous.call.ingressNonce==row.call.ingressNonce))return DenyAndClose(Status::Unknown);
+    row.call.expiresMono=std::min(now+kCallTtlMs,sessionDeadline_);row.call.bindingHash=BindingHash(row,false);
+    const auto finalGuard=Guard(controller,PeerRole::Controller,now);if(finalGuard!=Status::Ok)return finalGuard;
+    if(now>=row.call.expiresMono)return DenyAndClose(Status::Denied);
+    rows_[usedRows_]=row;++usedRows_;++callCounter_;out=row.call;return Status::Ok;
+#else
+    (void)controller;(void)body;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::IssuePanel(const PeerWitness& daemon,const VerifyIngressPayload& body,
+    std::uint64_t now,HandlerReply& out) noexcept {
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;
+    CallRow* row=nullptr;std::size_t index=0;for(;index<usedRows_;++index)if(rows_[index].call.callRef==body.callRef){row=&rows_[index];break;}
+    if(!nativeBound_||firstPanelAttempt_||firstActorAttemptSpent_||!row||row->state!=RowState::Begun||
+        row->body.kind!=CallKind::Panel||row->body.tool!=ToolCode::EnsureAgentPanel||row->body.route!=RouteCode::McpToolsCall||
+        row->call.ingressNonce!=body.ingressNonce||row->body.tool!=body.body.tool||row->body.kind!=body.body.kind||
+        row->body.route!=body.body.route||row->body.canonicalBodyHash!=body.body.canonicalBodyHash||
+        row->policyEpoch!=policyEpoch_||row->revocationEpoch!=revocationEpoch_||row->call.bindingHash!=BindingHash(*row,false)||
+        now>=row->call.expiresMono)return DenyAndClose(Status::Denied);
+    for(const auto& other:rows_)if(&other!=row&&(other.state==RowState::Begun||other.state==RowState::Verified||other.state==RowState::Unknown))return DenyAndClose(Status::Denied);
+    if(now>std::numeric_limits<std::uint64_t>::max()-600000)return DenyAndClose(Status::Unknown);
+    firstPanelAttempt_=true; // Irreversible before IDs, association or send.
+    if(!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitRef)||
+        !nativePort_.randomId(nativePort_.originalBroker,row->handler.permitNonce)||Zero(row->handler.permitRef)||
+        Zero(row->handler.permitNonce)||row->handler.permitRef==row->handler.permitNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& other:rows_)if(&other!=row&&other.state!=RowState::Empty&&
+        (other.handler.permitRef==row->handler.permitRef||other.handler.permitNonce==row->handler.permitNonce))return DenyAndClose(Status::Unknown);
+    row->handler.expiresMono=row->call.expiresMono;panel_.ref=row->handler.permitRef;panel_.nonce=row->handler.permitNonce;
+    panel_.rowIndex=index;panel_.issuedMono=now;panel_.deadline=std::min(now+600000,sessionDeadline_);
+    panel_.authorizationHash=PanelAuthorizationHash(panel_);row->handler.bindingHash=PanelHandlerHash(*row,panel_);
+    const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);if(finalGuard!=Status::Ok)return finalGuard;
+    if(now>=row->call.expiresMono||now>=panel_.deadline)return DenyAndClose(Status::Denied);
+    row->state=RowState::Verified;panel_.stage=ActorStage::Issued;++handlerAdmissions_;out=row->handler;return Status::Ok;
+#else
+    (void)daemon;(void)body;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Digest VolatileServerLedger::PanelAuthorizationHash(const PanelGrant& grant) const noexcept {
+    if(!nativeBound_||grant.rowIndex>=usedRows_)return {};
+    const auto& row=rows_[grant.rowIndex];std::array<std::uint8_t,1024> binary{};std::size_t at=0;
+    const std::string_view domain="lcp2.native.panel-grant.v2";W16(binary.data(),static_cast<std::uint16_t>(domain.size()));at=2;
+    for(char c:domain)binary[at++]=static_cast<std::uint8_t>(c);
+    const auto append=[&](const auto& value)noexcept{std::copy(value.begin(),value.end(),binary.begin()+static_cast<std::ptrdiff_t>(at));at+=value.size();};
+    append(nativeBinding_.brokerInstance);append(nativeBinding_.installation);append(nativeBinding_.lineage);
+    append(nativeBinding_.scopeHash);append(nativeBinding_.policyHash);append(nativeBinding_.transportHash);append(nativeBinding_.sourceHash);
+    append(session_.channelNonce);append(session_.sessionRef);append(session_.generation);append(session_.bootNonce);
+    append(controller_.privateChannel);append(controller_.originalInstance);append(controller_.witnessHash);
+    append(daemon_.privateChannel);append(daemon_.originalInstance);append(daemon_.witnessHash);
+    append(row.call.callRef);append(row.call.ingressNonce);append(row.call.bindingHash);append(row.body.canonicalBodyHash);
+    append(grant.ref);append(grant.nonce);append(panelDefinition_.definitionHash);append(panelDefinition_.installedHash);
+    append(panelDefinition_.actorRef);append(panelDefinition_.actorHash);
+    for(auto value:{row.counter,policyEpoch_,revocationEpoch_,nativeBinding_.openedMono,sessionDeadline_,grant.issuedMono,grant.deadline}){W64(binary.data()+at,value);at+=8;}
+    return Sha256(binary.data(),at);
+}
+Digest VolatileServerLedger::PanelHandlerHash(const CallRow& row,const PanelGrant& grant) const noexcept {
+    std::array<std::uint8_t,160> binary{};const std::string_view domain="lcp2.native.panel-handler.v2";std::size_t at=2;
+    W16(binary.data(),static_cast<std::uint16_t>(domain.size()));for(char c:domain)binary[at++]=static_cast<std::uint8_t>(c);
+    for(const auto& value:{row.call.bindingHash,grant.authorizationHash}){std::copy(value.begin(),value.end(),binary.begin()+static_cast<std::ptrdiff_t>(at));at+=value.size();}
+    return Sha256(binary.data(),at);
+}
+Digest VolatileServerLedger::PanelObservationHash(const FirstActorPayload& actor) const noexcept {
+    std::array<std::uint8_t,400> binary{};const std::string_view domain="lcp2.native.first-actor.observation.v2";std::size_t at=2;
+    W16(binary.data(),static_cast<std::uint16_t>(domain.size()));for(char c:domain)binary[at++]=static_cast<std::uint8_t>(c);
+    const auto append=[&](const auto& value)noexcept{std::copy(value.begin(),value.end(),binary.begin()+static_cast<std::ptrdiff_t>(at));at+=value.size();};
+    append(nativeBinding_.scopeHash);append(nativeBinding_.policyHash);append(session_.sessionRef);append(session_.generation);append(session_.bootNonce);
+    append(actor.grantRef);append(actor.grantNonce);append(actor.actorRef);append(actor.actorHash);append(actor.installedPanelHash);return Sha256(binary.data(),at);
+}
+bool VolatileServerLedger::PanelExact(const FirstActorPayload& actor) const noexcept {
+    return nativeBound_&&firstPanelAttempt_&&panel_.stage!=ActorStage::Absent&&actor.grantRef==panel_.ref&&actor.grantNonce==panel_.nonce&&
+        actor.actorRef==panelDefinition_.actorRef&&actor.actorHash==panelDefinition_.actorHash&&actor.installedPanelHash==panelDefinition_.installedHash&&
+        actor.observationHash==PanelObservationHash(actor)&&PanelRowExact();
+}
+bool VolatileServerLedger::PanelRowExact() const noexcept {
+    if(!nativeBound_||closed_||panel_.rowIndex>=usedRows_||panel_.authorizationHash!=PanelAuthorizationHash(panel_))return false;
+    const auto& row=rows_[panel_.rowIndex];if(row.body.kind!=CallKind::Panel||row.body.tool!=ToolCode::EnsureAgentPanel||
+        row.body.route!=RouteCode::McpToolsCall||row.policyEpoch!=policyEpoch_||row.revocationEpoch!=revocationEpoch_||
+        row.call.bindingHash!=BindingHash(row,false)||row.handler.permitRef!=panel_.ref||row.handler.permitNonce!=panel_.nonce||
+        row.handler.expiresMono!=row.call.expiresMono||row.handler.bindingHash!=PanelHandlerHash(row,panel_))return false;
+    for(std::size_t i=0;i<usedRows_;++i)if(i!=panel_.rowIndex&&(rows_[i].state==RowState::Begun||rows_[i].state==RowState::Verified||rows_[i].state==RowState::Unknown))return false;
+    return row.state==RowState::Verified||row.state==RowState::ActorObserved;
 }
 Digest VolatileServerLedger::BindingHash(const CallRow& row,bool handler) const noexcept {
     std::array<std::uint8_t,1024> binary{};

@@ -10,6 +10,11 @@
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) && defined(AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS)
 #error Synthetic LCP2 proof must never be combined with installed broker seams.
 #endif
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+#if AE_AGENT_PHASE_NATIVE_PANEL_PROFILE != 1 || !defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE) || AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE != 1
+#error Native PANEL requires the separate exact synthetic native profile; no production panel issuer.
+#endif
+#endif
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF) && AE_AGENT_PHASE_SYNTHETIC_PROOF != 1
 #error Synthetic proof requires the exact isolated macro value 1; no boolean fallback.
 #endif
@@ -149,8 +154,13 @@ struct BeginCallPayload {
 struct VerifyIngressPayload { Id callRef{}, ingressNonce{}; BeginCallPayload body{}; };
 struct CallReply { Id callRef{}, ingressNonce{}; std::uint64_t expiresMono=0; Digest bindingHash{}; };
 struct HandlerReply { Id permitRef{}, permitNonce{}; std::uint64_t expiresMono=0; Digest bindingHash{}; };
+struct FirstActorPayload { Id grantRef{}, grantNonce{}, actorRef{};
+    Digest actorHash{}, installedPanelHash{}, observationHash{}; };
 CodecError ReadServerOnlyBegin(const Frame& frame, BeginCallPayload& out) noexcept;
 CodecError ReadServerOnlyIngress(const Frame& frame, VerifyIngressPayload& out) noexcept;
+CodecError ReadPanelBegin(const Frame& frame, BeginCallPayload& out) noexcept;
+CodecError ReadPanelIngress(const Frame& frame, VerifyIngressPayload& out) noexcept;
+CodecError ReadFirstActor(const Frame& frame, FirstActorPayload& out) noexcept;
 
 // No public constructor/factory/setter or JSON/env input. Broker friendship is
 // an issuer only when bound privately to the original broker's OS refresh port.
@@ -173,7 +183,7 @@ private:
         Digest witnessHash{};
         bool alive=false;
     };
-    enum class RowState : std::uint8_t { Empty, Begun, Verified, Finished, Unknown };
+    enum class RowState : std::uint8_t { Empty, Begun, Verified, Finished, Unknown, ActorObserved };
     struct CallRow {
         RowState state=RowState::Empty;
         BeginCallPayload body{};
@@ -185,7 +195,7 @@ private:
     struct NativeBinding {
         WireBindings session{};
         Id brokerInstance{}, installation{}, lineage{};
-        Digest scopeHash{}, policyHash{}, transportHash{};
+        Digest scopeHash{}, policyHash{}, transportHash{}, sourceHash{};
         std::uint64_t openedMono=0, deadline=0, policyEpoch=0, revocationEpoch=0;
     };
     struct NativeRefreshPort {
@@ -193,6 +203,29 @@ private:
         bool (*refresh)(void*, std::uint64_t&) noexcept=nullptr;
         bool (*randomId)(void*, Id&) noexcept=nullptr;
     };
+    // Private native-only authorization. Alias bytes locate this distinct
+    // record; neither a HandlerReply nor a pure synthetic factory creates it.
+    enum class ActorStage : std::uint8_t { Absent, Issued, AttemptSpent, Consumed, Noted, Published, ReplySent };
+    struct PanelDefinition { Id actorRef{}; Digest actorHash{}, installedHash{}, definitionHash{}; };
+    struct PanelGrant {
+        Id ref{}, nonce{}; Digest authorizationHash{};
+        std::size_t rowIndex=kCallRows;
+        std::uint64_t issuedMono=0, deadline=0;
+        ActorStage stage=ActorStage::Absent;
+        FirstActorPayload operation{};
+        Id observationRef{};
+        Digest consumeHash{}, noteHash{}, noteSource{}, noteConfig{};
+        std::uint64_t consumeSequence=0, noteSequence=0;
+    };
+    Status BeginPanel(const PeerWitness& controller,const BeginCallPayload& body,
+        std::uint64_t now,CallReply& out) noexcept;
+    Status IssuePanel(const PeerWitness& daemon,const VerifyIngressPayload& body,
+        std::uint64_t now,HandlerReply& out) noexcept;
+    Digest PanelAuthorizationHash(const PanelGrant& grant) const noexcept;
+    Digest PanelHandlerHash(const CallRow& row,const PanelGrant& grant) const noexcept;
+    Digest PanelObservationHash(const FirstActorPayload& actor) const noexcept;
+    bool PanelExact(const FirstActorPayload& actor) const noexcept;
+    bool PanelRowExact() const noexcept;
     VolatileServerLedger() noexcept;
     bool InitializeNative(const NativeBinding& binding, const NativeRefreshPort& port,
         const Id& controllerInstance, const Digest& controllerWitness) noexcept;
@@ -220,6 +253,9 @@ private:
     std::uint64_t policyEpoch_=0, revocationEpoch_=0;
     std::size_t usedRows_=0, handlerAdmissions_=0;
     std::array<CallRow, kCallRows> rows_{}; // Never recycle or evict, even Finished.
+    PanelDefinition panelDefinition_{};
+    PanelGrant panel_{};
+    bool firstPanelAttempt_=false, firstActorAttemptSpent_=false;
     friend class ::local_session::Broker;
 #if defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
     void InitializeSynthetic(std::uint64_t now) noexcept;

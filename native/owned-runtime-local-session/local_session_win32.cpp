@@ -2,7 +2,11 @@
 #include "original_daemon_win32.h"
 #include "native_dispatch_commit.h"
 #if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+#include "local_session_native_panel_case.h"
+#else
 #include "local_session_native_phase_case.h"
+#endif
 #endif
 #ifndef AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS
 #error Private installed fence/store seams must be reviewed before this target builds.
@@ -17,6 +21,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <type_traits>
 #include <utility>
 
 namespace local_session {
@@ -91,6 +96,9 @@ class OriginalController final {
 public:
     OriginalController(void* pipe,const reviewed::Profile& p){ULONG pid=0;if(!GetNamedPipeClientProcessId(pipe,&pid)||!pid)Refuse("controller_peer_query_failed",GetLastError());original_=Held(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION|SYNCHRONIZE,FALSE,pid));if(!original_.Valid())Refuse("original_controller_open_failed",GetLastError());pid_=pid;birth_=detail::ProcessBirth(original_.Get());sid_=detail::ProcessSid(original_.Get());image_=detail::ProcessImage(original_.Get());if(sid_!=p.userSid||image_!=p.controllerImage.pin.canonicalPath||!detail::ProcessLive(original_.Get()))Refuse("controller_peer_binding_refused");ULONG still=0;if(!GetNamedPipeClientProcessId(pipe,&still)||still!=pid_||detail::ProcessBirth(original_.Get())!=birth_)Refuse("controller_peer_race");}
     bool Live(void* pipe)const{ULONG peer=0;return GetNamedPipeClientProcessId(pipe,&peer)&&peer==pid_&&detail::ProcessLive(original_.Get())&&detail::ProcessBirth(original_.Get())==birth_&&detail::ProcessSid(original_.Get())==sid_&&detail::ProcessImage(original_.Get())==image_;}
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    bool DifferentOriginalPeer(void* pipe)const{ULONG peer=0;return GetNamedPipeClientProcessId(pipe,&peer)&&peer&&peer!=pid_;}
+#endif
     const Id& Instance()const{return instance_;}
     Digest PhaseWitness(void* pipe,const Id& channel,const Digest& approvedImageHash)const{if(!Live(pipe)||detail::Zero(channel)||detail::Zero(approvedImageHash))Refuse("original_controller_phase_witness_closed");Bytes bytes;const char* domain="native-original-controller-peer.v2";for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));detail::PutU64(bytes,pid_);detail::PutU64(bytes,birth_);Put(bytes,instance_);Put(bytes,channel);Put(bytes,approvedImageHash);for(const auto* text:{&sid_,&image_}){detail::PutU16(bytes,static_cast<std::uint16_t>(text->size()));for(wchar_t c:*text)detail::PutU16(bytes,static_cast<std::uint16_t>(c));}return detail::Hash(bytes);}
 private:Held original_;ULONG pid_=0;std::uint64_t birth_=0;std::wstring sid_,image_;Id instance_=detail::RandomId();
@@ -218,6 +226,13 @@ struct Broker::Data {
 };
 #if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
 namespace {
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+namespace fixture_case=local_session_native_panel_case;
+constexpr std::uint16_t NativeCaseValue(){return static_cast<std::uint16_t>(fixture_case::kCase);}
+static_assert(NativeCaseValue()>=1&&NativeCaseValue()<=8,"Closed native panel compile case required.");
+static_assert(fixture_case::kSessionMs==900000&&fixture_case::kGrantMs==600000&&fixture_case::kPositiveMs==65000&&
+    fixture_case::kExpiredMs==601000&&fixture_case::kBody=="{\"args\":{},\"name\":\"ensure_ae_agent_panel\"}","Reviewed fixed panel fixture changed.");
+#else
 namespace fixture_case=local_session_native_phase_case;
 using NativeCase=fixture_case::Case;
 constexpr std::uint16_t NativeCaseValue(){return static_cast<std::uint16_t>(fixture_case::kCase);}
@@ -233,8 +248,15 @@ static_assert(fixture_case::kBodies.size()==3&&fixture_case::kBodies[0].tool==1&
     fixture_case::kBodies[1].canonical=="{\"args\":{\"limit\":1,\"query\":\"guarded project lifecycle\"},\"name\":\"search_solutions\"}"&&
     fixture_case::kBodies[2].canonical=="{\"args\":{\"id\":\"guarded-project-lifecycle\"},\"name\":\"get_solution\"}","Exact reviewed canonical fixture bodies required.");
 const fixture_case::Body& SelectedBody(){const auto value=NativeCaseValue();return fixture_case::kBodies[static_cast<std::size_t>(value>=1&&value<=3?value-1:0)];}
+#endif
 Digest TextHash(std::string_view value){return detail::Hash(Bytes(value.begin(),value.end()));}
 Digest NativeHash(const char* domain,const Bytes& fields){Bytes bytes;for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));bytes.insert(bytes.end(),fields.begin(),fields.end());return detail::Hash(bytes);}
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+Digest PanelDomainHash(std::string_view domain,const Bytes& fields){Bytes bytes;detail::PutU16(bytes,static_cast<std::uint16_t>(domain.size()));
+    bytes.insert(bytes.end(),domain.begin(),domain.end());Put(bytes,fields);return detail::Hash(bytes);}
+static_assert(!std::is_default_constructible_v<phase::VolatileServerLedger>&&!std::is_copy_constructible_v<phase::VolatileServerLedger>&&
+    !std::is_move_constructible_v<phase::VolatileServerLedger>,"No public issuer/authority copies.");
+#endif
 void Payload(phase::Frame& frame,const Bytes& bytes){if(bytes.size()>phase::kMaximumPayloadBytes)Refuse("native_phase_payload_overflow");frame.header.payloadBytes=static_cast<std::uint32_t>(bytes.size());std::copy(bytes.begin(),bytes.end(),frame.payload.begin());}
 Bytes StatusPayload(State state,const Id& session){Bytes bytes;detail::PutU16(bytes,static_cast<std::uint16_t>(state));Put(bytes,session);return bytes;}
 Bytes CallPayload(const phase::CallReply& call){Bytes bytes;Put(bytes,call.callRef);Put(bytes,call.ingressNonce);detail::PutU64(bytes,call.expiresMono);Put(bytes,call.bindingHash);return bytes;}
@@ -249,10 +271,72 @@ struct Broker::PhaseData final : Broker::Data {
     Digest controllerWitness{},daemonWitness{},transportBinding{},expectedSource{},lifecycleBinding{};
     std::uint64_t phaseLastMono=0,nativeGuardChecks=0;
     bool openedBound=false,runtimeBound=false,daemonBound=false,finished=false,endpointCloseAttempted=false;
-    void InitializePhase(){Initialize();phase::WireBindings binding{};binding.channelNonce=controllerNonce;
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    std::uint64_t actorOrdinal=0,actorObservedMono=0;std::size_t acceptedActorReplies=0;
+    std::size_t panelCodecChecks=0,panelPrivatePredicateChecks=0;
+    bool syntheticActorFault=false,actorConsumeAck=false,actorNoteAck=false,actorPublished=false;
+    void PanelCodecContractChecks(){
+        const auto require=[&](bool exact){if(!exact)Refuse("native_panel_codec_contract_closed");++panelCodecChecks;};
+        phase::Frame call{};call.header.verb=phase::Verb::BeginCall;call.header.senderOrdinal=1;call.header.channelNonce.fill(1);
+        call.header.payloadBytes=37;call.payload[0]=5;call.payload[2]=2;call.payload[3]=1;
+        const auto bodyHash=TextHash(fixture_case::kBody);std::copy(bodyHash.begin(),bodyHash.end(),call.payload.begin()+5);
+        phase::BeginCallPayload parsed{};require(phase::ReadPanelBegin(call,parsed)==phase::CodecError::None&&parsed.canonicalBodyHash==bodyHash);
+        for(const auto offset:{0u,2u,3u}){auto wrong=call;wrong.payload[offset]=0xff;require(phase::ReadPanelBegin(wrong,parsed)!=phase::CodecError::None);}
+        auto wrong=call;wrong.header.direction=phase::Direction::DaemonToBroker;require(phase::ReadPanelBegin(wrong,parsed)!=phase::CodecError::None);
+        wrong=call;wrong.header.payloadBytes=38;require(phase::ReadPanelBegin(wrong,parsed)!=phase::CodecError::None);
+        wrong=call;wrong.header.verb=static_cast<phase::Verb>(65535);require(phase::ReadPanelBegin(wrong,parsed)!=phase::CodecError::None);
+        phase::Frame ingress{};ingress.header=call.header;ingress.header.direction=phase::Direction::DaemonToBroker;
+        ingress.header.verb=phase::Verb::VerifyIngress;ingress.header.payloadBytes=69;std::fill_n(ingress.payload.begin(),32,std::uint8_t{1});
+        std::copy_n(call.payload.begin(),37,ingress.payload.begin()+32);phase::VerifyIngressPayload verified{};
+        require(phase::ReadPanelIngress(ingress,verified)==phase::CodecError::None&&verified.body.canonicalBodyHash==bodyHash);
+        for(const auto offset:{32u,34u,35u}){wrong=ingress;wrong.payload[offset]=0xff;require(phase::ReadPanelIngress(wrong,verified)!=phase::CodecError::None);}
+        wrong=ingress;wrong.header.payloadBytes=70;require(phase::ReadPanelIngress(wrong,verified)!=phase::CodecError::None);
+        wrong=ingress;wrong.header.direction=phase::Direction::ControllerToBroker;require(phase::ReadPanelIngress(wrong,verified)!=phase::CodecError::None);
+        phase::Frame observe{};observe.header=ingress.header;observe.header.verb=phase::Verb::FirstActorObserved;observe.header.payloadBytes=144;
+        std::fill_n(observe.payload.begin(),144,std::uint8_t{1});phase::FirstActorPayload actorBody{};require(phase::ReadFirstActor(observe,actorBody)==phase::CodecError::None);
+        for(const auto range:{std::pair<std::size_t,std::size_t>{0,16},{16,16},{32,16},{48,32},{80,32},{112,32}}){wrong=observe;
+            std::fill_n(wrong.payload.begin()+static_cast<std::ptrdiff_t>(range.first),range.second,std::uint8_t{0});require(phase::ReadFirstActor(wrong,actorBody)!=phase::CodecError::None);}
+        wrong=observe;wrong.header.payloadBytes=145;require(phase::ReadFirstActor(wrong,actorBody)!=phase::CodecError::None);
+        wrong=observe;wrong.header.direction=phase::Direction::ControllerToBroker;require(phase::ReadFirstActor(wrong,actorBody)!=phase::CodecError::None);
+        wrong=observe;wrong.header.senderOrdinal=std::numeric_limits<std::uint64_t>::max();require(phase::ReadFirstActor(wrong,actorBody)!=phase::CodecError::None);
+        std::array<std::uint8_t,phase::kMaximumFrameBytes> bytes{};std::size_t length=0;require(phase::EncodeFrame(observe,bytes.data(),bytes.size(),length)==phase::CodecError::None);
+        phase::Frame decoded{};require(phase::DecodeFrame(bytes.data(),length+1,decoded)!=phase::CodecError::None);require(phase::DecodeFrame(bytes.data(),length-1,decoded)!=phase::CodecError::None);
+        phase::WireBindings binding{};binding.channelNonce.fill(1);binding.sessionRef.fill(2);binding.generation.fill(3);binding.bootNonce.fill(4);
+        observe.header.channelNonce=binding.channelNonce;observe.header.sessionRef=binding.sessionRef;observe.header.generation=binding.generation;observe.header.bootNonce=binding.bootNonce;
+        for(std::size_t i=0;i<4;++i){wrong=observe;if(i==0)wrong.header.channelNonce[0]^=1;if(i==1)wrong.header.sessionRef[0]^=1;
+            if(i==2)wrong.header.generation[0]^=1;if(i==3)wrong.header.bootNonce[0]^=1;phase::WireChannel wire(phase::Direction::DaemonToBroker,binding,phase::BindingStage::Open);
+            require(phase::EncodeFrame(wrong,bytes.data(),bytes.size(),length)==phase::CodecError::None&&wire.AcceptIncoming(bytes.data(),length,decoded)==phase::CodecError::Binding);}
+        // This separate unbound private object exercises absence, not authority.
+        // It never receives InitializeNative/InitializeSynthetic or OS ports.
+        phase::VolatileServerLedger unbound;phase::CallReply noCall{};phase::HandlerReply noHandler{};
+        require(unbound.BeginPanel(unbound.controller_,parsed,0,noCall)==phase::Status::Unavailable);
+        require(unbound.IssuePanel(unbound.daemon_,verified,0,noHandler)==phase::Status::Unavailable);
+        require(!unbound.PanelExact(actorBody)&&!unbound.firstPanelAttempt_&&!unbound.firstActorAttemptSpent_);
+    }
+    void PanelPrivatePredicateChecks(){phase::FirstActorPayload expected{};expected.grantRef=ledger.panel_.ref;expected.grantNonce=ledger.panel_.nonce;
+        expected.actorRef=ledger.panelDefinition_.actorRef;expected.actorHash=ledger.panelDefinition_.actorHash;expected.installedPanelHash=ledger.panelDefinition_.installedHash;
+        expected.observationHash=ledger.PanelObservationHash(expected);if(!ledger.PanelExact(expected))Refuse("native_panel_private_predicate_closed",0,true);
+        ++panelPrivatePredicateChecks;
+        for(std::size_t i=0;i<6;++i){auto wrong=expected;if(i==0)wrong.grantRef[0]^=1;if(i==1)wrong.grantNonce[0]^=1;if(i==2)wrong.actorRef[0]^=1;
+            if(i==3)wrong.actorHash[0]^=1;if(i==4)wrong.installedPanelHash[0]^=1;if(i==5)wrong.observationHash[0]^=1;
+            if(ledger.PanelExact(wrong))Refuse("native_panel_private_substitution_accepted",0,true);++panelPrivatePredicateChecks;}
+    }
+#endif
+    void InitializePhase(){
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        PanelCodecContractChecks();
+#endif
+        Initialize();phase::WireBindings binding{};binding.channelNonce=controllerNonce;
         controllerWire=std::make_unique<phase::WireChannel>(phase::Direction::ControllerToBroker,binding,phase::BindingStage::BeforeOpen);
         for(const auto& file:enrollment->Profile().sourceFiles)if(file.components==std::vector<std::wstring>{L"mcp-server",L"bridge-daemon.js"})expectedSource=file.sha256;
         if(detail::Zero(expectedSource)||controllerWire->Closed())Refuse("native_phase_original_source_or_channel_closed");
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        if(enrollment->Profile().maximumSessionMs!=fixture_case::kSessionMs)Refuse("native_panel_fixed_session_closed");
+        ledger.panelDefinition_.actorRef=fixture_case::kActorRef;ledger.panelDefinition_.actorHash=TextHash(fixture_case::kActorDefinition);
+        ledger.panelDefinition_.installedHash=TextHash(fixture_case::kPanelDefinition);
+        Bytes definition;Put(definition,ledger.panelDefinition_.actorRef);Put(definition,ledger.panelDefinition_.actorHash);Put(definition,ledger.panelDefinition_.installedHash);
+        Put(definition,expectedSource);ledger.panelDefinition_.definitionHash=PanelDomainHash("lcp2.native.synthetic-panel-definition.v2",definition);
+#endif
     }
     bool FreshController(){if(unknownDisposition||!ControllerLive()||!Guard())return false;
         const auto now=GetTickCount64();if(now<phaseLastMono||(openedAt&&now>=sessionDeadline))return false;phaseLastMono=now;
@@ -265,14 +349,55 @@ struct Broker::PhaseData final : Broker::Data {
             floor.head==cas.head&&floor.scope==enrollment->Scope()&&continuity->MatchesBinding(*enrollment,*factory,root,fence)&&
             (!openedAt||GetTickCount64()<sessionDeadline);
     }
-    bool FreshBoth(){if(!openedBound||!runtimeBound||!daemon||!daemonPipe->Connected()||daemonPipe->Closed()||
-            !FreshController()||!daemon->MatchesPeer(daemonPipe->Handle())||!daemon->LifecycleEffectAllowed()||
-            (state!=State::TargetHeld&&state!=State::RegisteredReadClosed)||everActor||panelGrantIssued)return false;
+    bool SharedOriginalPeersFloor(){if(!openedBound||!runtimeBound||!daemon||!daemonPipe->Connected()||daemonPipe->Closed()||
+            !FreshController()||!daemon->MatchesPeer(daemonPipe->Handle())||!daemon->LifecycleEffectAllowed())return false;
         if(generation!=ledger.session_.generation||bootNonce!=ledger.session_.bootNonce)return false;
         if(daemonBound&&(daemon->OriginalInstance()!=ledger.daemon_.originalInstance||daemonNonce!=ledger.daemon_.privateChannel||
             daemon->PhaseWitness(daemonPipe->Handle(),phaseSession,daemonNonce)!=daemonWitness))return false;
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        if(!controller->DifferentOriginalPeer(daemonPipe->Handle())||nativeGuardChecks==std::numeric_limits<std::uint64_t>::max())return false;
+        ++nativeGuardChecks;
+#endif
         return true;
     }
+    bool FreshBoth(){return SharedOriginalPeersFloor()&&(state==State::TargetHeld||state==State::RegisteredReadClosed)&&!everActor&&!panelGrantIssued;}
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    bool PanelChannelsCurrent(phase::Verb verb,std::uint64_t ordinal)const{
+        if(!controllerWire||!daemonWire||controllerWire->Closed()||daemonWire->Closed()||controllerWire->PendingBecameUnknown()||
+            daemonWire->PendingBecameUnknown()||controllerWire->incomingPending_.present||controllerWire->outgoingPending_.present||
+            daemonWire->outgoingPending_.present||daemonWire->incomingOrdinal_!=ordinal)return false;
+        const phase::WireBindings c{controllerNonce,phaseSession,generation,bootNonce},d{daemonNonce,phaseSession,generation,bootNonce};
+        const auto exact=[](const phase::WireBindings& a,const phase::WireBindings& b){return a.channelNonce==b.channelNonce&&a.sessionRef==b.sessionRef&&a.generation==b.generation&&a.bootNonce==b.bootNonce;};
+        if(!exact(controllerWire->bindings_,c)||!exact(daemonWire->bindings_,d))return false;
+        return daemonWire->incomingPending_.present?(daemonWire->incomingPending_.verb==verb&&daemonWire->incomingPending_.ordinal==ordinal):
+            (daemonWire->settledVerb_==verb&&daemonWire->settledReplyTo_==ordinal&&daemonWire->settledOutgoing_==daemonWire->outgoingOrdinal_);
+    }
+    bool PanelIssuedGuard(){const auto& p=ledger.panel_;if(!daemonBound||!SharedOriginalPeersFloor()||ledger.closed_||
+        state!=State::RegisteredReadClosed||everActor||!panelGrantIssued||!ledger.firstPanelAttempt_||ledger.firstActorAttemptSpent_||
+        p.stage!=phase::VolatileServerLedger::ActorStage::Issued||!ledger.PanelRowExact()||GetTickCount64()>=p.deadline||
+        panelGrantDeadline!=p.deadline||enrollment->Profile().sourceSetHash!=ledger.nativeBinding_.sourceHash)return false;
+        return true;
+    }
+    bool PanelIssuePresend(){if(!PanelIssuedGuard()||!PanelChannelsCurrent(phase::Verb::VerifyIngress,daemonWire->incomingOrdinal_))return false;
+        const auto now=GetTickCount64();const auto wait=NativeCaseValue()==4?fixture_case::kExpiredMs:NativeCaseValue()==1?fixture_case::kPositiveMs:0;
+        return now<ledger.rows_[ledger.panel_.rowIndex].call.expiresMono&&sessionDeadline>now&&sessionDeadline-now>wait+5000&&
+            ledger.panel_.deadline-ledger.panel_.issuedMono==fixture_case::kGrantMs;}
+    bool PanelCurrentActorGuard(){const auto& p=ledger.panel_;if(!actorOrdinal||!daemonBound||!SharedOriginalPeersFloor()||ledger.closed_||
+        !panelGrantIssued||panelGrantDeadline!=p.deadline||!ledger.firstActorAttemptSpent_||!ledger.PanelExact(p.operation)||
+        !PanelChannelsCurrent(phase::Verb::FirstActorObserved,actorOrdinal)||GetTickCount64()>=p.deadline||
+        enrollment->Profile().sourceSetHash!=ledger.nativeBinding_.sourceHash)return false;
+        using Stage=phase::VolatileServerLedger::ActorStage;
+        if(p.stage==Stage::AttemptSpent)return state==State::RegisteredReadClosed&&!everActor&&!actorPublished;
+        const auto& floor=continuity->Floor();if(!actorConsumeAck||detail::Zero(p.consumeHash)||p.consumeSequence!=4||
+            floor.originalFrameHashes.size()<4||floor.originalFrameHashes[3]!=p.consumeHash)return false;
+        if(p.stage==Stage::Consumed)return state==State::RegisteredReadClosed&&!everActor&&!actorPublished&&cas.sequence==4&&cas.head==p.consumeHash;
+        if(!actorNoteAck||detail::Zero(p.noteHash)||p.noteSequence!=5||cas.sequence!=5||cas.head!=p.noteHash||
+            floor.originalFrameHashes.size()!=5||floor.originalFrameHashes[4]!=p.noteHash)return false;
+        if(p.stage==Stage::Noted)return state==State::RegisteredReadClosed&&!everActor&&!actorPublished;
+        return p.stage==Stage::Published&&state==State::ActorBound&&everActor&&actorPublished&&actor==p.operation.actorRef&&
+            ledger.rows_[p.rowIndex].state==phase::VolatileServerLedger::RowState::ActorObserved;
+    }
+#endif
     static bool Refresh(void* original,std::uint64_t& now)noexcept{try{auto& d=*static_cast<PhaseData*>(original);
         if(!d.daemonBound||!d.FreshBoth()||d.controllerWire->Closed()||!d.daemonWire||d.daemonWire->Closed()||
             d.nativeGuardChecks==std::numeric_limits<std::uint64_t>::max())return false;
@@ -302,7 +427,12 @@ struct Broker::PhaseData final : Broker::Data {
         auto& pipe=controllerPeer?*controllerPipe:*daemonPipe;std::array<std::uint8_t,phase::kMaximumFrameBytes> encoded{};std::size_t size=0;
         if(phase::EncodeFrame(reply,encoded.data(),encoded.size(),size)!=phase::CodecError::None||wire.TrackOutgoing(reply)!=phase::CodecError::None)
             Refuse("native_phase_reply_codec_closed",0,true);
-        if(positiveGuard){if(daemonBound?!FreshBoth():!FreshController())Refuse("native_phase_presend_guard_closed",0,true);
+        if(positiveGuard){bool guarded=daemonBound?FreshBoth():FreshController();
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+            if(reply.header.verb==phase::Verb::VerifyIngress)guarded=PanelIssuePresend();
+            if(reply.header.verb==phase::Verb::FirstActorObserved)guarded=PanelCurrentActorGuard();
+#endif
+            if(!guarded)Refuse("native_phase_presend_guard_closed",0,true);
             const auto now=GetTickCount64();if(now>=sessionDeadline)Refuse("native_phase_presend_deadline_closed",0,true);
             if(reply.header.verb==phase::Verb::BeginCall||reply.header.verb==phase::Verb::VerifyIngress||reply.header.verb==phase::Verb::FinishServerOnly){
                 Id ref{};std::copy_n(reply.payload.begin(),16,ref.begin());bool exact=false;
@@ -335,6 +465,9 @@ struct Broker::PhaseData final : Broker::Data {
             binding.session.sessionRef=phaseSession;binding.brokerInstance=brokerInstance;binding.installation=enrollment->Profile().installation;
             binding.lineage=enrollment->Profile().lineage;binding.scopeHash=scope;binding.policyHash=enrollment->Profile().policyHash;
             binding.transportHash=transportBinding;binding.openedMono=openedAt;binding.deadline=sessionDeadline;binding.policyEpoch=enrollment->Profile().policyEpoch;
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+            binding.sourceHash=enrollment->Profile().sourceSetHash;
+#endif
             if(!FreshController()||scope!=enrollment->Scope()||!ledger.InitializeNative(binding,{this,Refresh,Random},controller->Instance(),controllerWitness)||
                 !controllerWire->BindOpened(reply,phaseSession,scope))Refuse("native_phase_open_binding_unknown",0,true);
             openedBound=true;state=State::SessionOpen;return;
@@ -359,15 +492,21 @@ struct Broker::PhaseData final : Broker::Data {
         }
         if(verb==phase::Verb::BeginCall){phase::BeginCallPayload body{};phase::CallReply call{};phase::Status status=phase::Status::Unavailable;
             if(!daemonBound)status=phase::Status::Unavailable;
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+            else if(phase::ReadPanelBegin(request,body)!=phase::CodecError::None||body.canonicalBodyHash!=TextHash(fixture_case::kBody))status=phase::Status::Denied;
+            else status=ledger.BeginPanel(ledger.controller_,body,GetTickCount64(),call);
+#else
             else if(phase::ReadServerOnlyBegin(request,body)!=phase::CodecError::None)status=phase::Status::Denied;
             else if(body.tool!=static_cast<phase::ToolCode>(SelectedBody().tool)||body.canonicalBodyHash!=TextHash(SelectedBody().canonical))status=phase::Status::Denied;
             else status=ledger.Begin(ledger.controller_,body,GetTickCount64(),call);
+#endif
             auto reply=Reply(request,true,status);if(status==phase::Status::Ok)Payload(reply,CallPayload(call));Send(reply,true,status==phase::Status::Ok);
             if(status==phase::Status::Denied||status==phase::Status::Unknown||status==phase::Status::Revoked)CloseLedger(status==phase::Status::Unknown);return;
         }
         // No PANEL/READ/execution/completion/lifecycle phase issuer is implemented.
         auto reply=Reply(request,true,phase::Status::Unavailable);Send(reply,true,false);
     }
+#if !defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
     void ExercisePrivateNote(){if(NativeCaseValue()<17)return;
         NativeDispatchCommit::Binding binding{};binding.broker=brokerInstance;binding.installation=enrollment->Profile().installation;
         binding.lineage=enrollment->Profile().lineage;binding.session=phaseSession;binding.generation=generation;binding.boot=bootNonce;
@@ -387,13 +526,73 @@ struct Broker::PhaseData final : Broker::Data {
         noteObservation=privateCommit->Commit(fault);if(NativeCaseValue()==18&&!noteObservation.unknown)noteObservation=privateCommit->ObserveDuplicate();
         if(noteObservation.unknown)Unknown();
     }
+#endif
     void FinishOriginalFixture(){if(endpointCloseAttempted)Refuse("native_phase_fixture_endpoint_close_once",0,true);
         endpointCloseAttempted=true;finished=true;ledger.Close();daemonWire->Close(phase::CodecError::Closed);
         // The pinned zero-effect fixture waits for this original endpoint EOF,
         // then exits itself. No Drain/Shutdown wire or AbortUnadmitted is issued.
         daemonPipe->CloseOriginalEndpoint();awaitingOriginalExit=true;
     }
-    void DaemonFrame(const phase::Frame& request){if(!FreshBoth())Refuse("native_phase_original_daemon_guard_closed");
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+    bool ActorAppendExact(const initial_durability::Cas& before,const initial_durability::Result& result,bool consume){
+        if(!before.sequence||before.sequence==std::numeric_limits<std::uint64_t>::max()||!result.ok||result.unknown||result.unavailable||
+            result.code!="appended"||result.persistence!="os_flush_ack_and_readback"||result.consumptionRecorded!=consume||
+            result.current.sequence!=before.sequence+1||result.current.epoch!=before.epoch||detail::Zero(result.recordHash)||
+            result.current.head!=result.recordHash||result.scope!=enrollment->Scope()||result.lineage!=enrollment->Profile().lineage)return false;
+        const auto& f=continuity->Floor();return !f.pending.exists&&f.sequence==result.current.sequence&&f.epoch==result.current.epoch&&
+            f.head==result.recordHash&&f.owner==result.owner&&f.genesis==result.genesis&&f.originalSlotIds.size()==f.sequence&&
+            f.originalFrameHashes.size()==f.sequence&&f.originalFrameHashes.back()==result.recordHash&&
+            f.originalFrameHashes[static_cast<std::size_t>(before.sequence-1)]==before.head;
+    }
+    void ObservePanelActor(const phase::Frame& request){phase::FirstActorPayload body{};
+        actorObservedMono=GetTickCount64();
+        const bool exact=phase::ReadFirstActor(request,body)==phase::CodecError::None&&PanelIssuedGuard()&&ledger.PanelExact(body)&&
+            PanelChannelsCurrent(phase::Verb::FirstActorObserved,request.header.senderOrdinal)&&!actorOrdinal&&!actorPublished;
+        if(!exact){auto reply=Reply(request,false,phase::Status::Denied);Send(reply,false,false);FinishOriginalFixture();return;}
+        // No payload-selected guard/fault/state. Seal the one original request
+        // and spend the actor attempt before the first irreversible append.
+        auto& p=ledger.panel_;actorOrdinal=request.header.senderOrdinal;p.operation=body;
+        ledger.firstActorAttemptSpent_=true;p.stage=phase::VolatileServerLedger::ActorStage::AttemptSpent;
+        if(!PanelCurrentActorGuard())Refuse("native_panel_actor_preconsume_guard_unknown",0,true);
+        initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;
+        record.effect=initial_durability::EffectClass::Dispatch;record.target=enrollment->Profile().actorTarget;
+        auto before=cas;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;
+        if(!ActorAppendExact(before,consumed,true))Refuse("native_panel_actor_consume_unknown",consumed.win32Error,true);
+        p.consumeHash=consumed.recordHash;p.consumeSequence=cas.sequence;actorConsumeAck=true;p.stage=phase::VolatileServerLedger::ActorStage::Consumed;
+        if(NativeCaseValue()==6){syntheticActorFault=true;Refuse("synthetic_panel_guard_loss_after_consume",0,true);}
+        if(!PanelCurrentActorGuard())Refuse("native_panel_actor_afterconsume_guard_unknown",0,true);
+        const auto& row=ledger.rows_[p.rowIndex];Bytes descriptor;Put(descriptor,enrollment->Scope());Put(descriptor,enrollment->Profile().policyHash);
+        Put(descriptor,controllerWitness);Put(descriptor,daemonWitness);Put(descriptor,transportBinding);Put(descriptor,phaseSession);Put(descriptor,generation);
+        Put(descriptor,bootNonce);Put(descriptor,row.call.callRef);Put(descriptor,row.body.canonicalBodyHash);Put(descriptor,p.ref);Put(descriptor,p.nonce);
+        Put(descriptor,p.authorizationHash);Put(descriptor,body.actorRef);Put(descriptor,body.actorHash);Put(descriptor,body.installedPanelHash);
+        Put(descriptor,body.observationHash);Put(descriptor,p.consumeHash);detail::PutU64(descriptor,p.issuedMono);detail::PutU64(descriptor,p.deadline);
+        p.noteSource=PanelDomainHash("lcp2.native.first-actor.note.v2",descriptor);Bytes binding;Put(binding,p.noteSource);Put(binding,p.consumeHash);
+        Put(binding,launchRecord);Put(binding,continuity->Floor().genesis);detail::PutU64(binding,cas.epoch);Put(binding,continuity->Floor().owner);
+        p.noteConfig=PanelDomainHash("lcp2.native.first-actor.consumed.v2",binding);
+        p.observationRef=detail::RandomId();if(detail::Zero(p.observationRef)||!PanelCurrentActorGuard())Refuse("native_panel_actor_prenote_guard_unknown",0,true);
+        record={};record.type=initial_durability::RecordType::Note;record.sourceDigest=p.noteSource;record.configDigest=p.noteConfig;
+        before=cas;const auto observed=store->AppendOnce(cas,record);cas=observed.current;
+        if(!ActorAppendExact(before,observed,false))Refuse("native_panel_actor_note_unknown",observed.win32Error,true);
+        p.noteHash=observed.recordHash;p.noteSequence=cas.sequence;actorNoteAck=true;p.stage=phase::VolatileServerLedger::ActorStage::Noted;
+        if(!PanelCurrentActorGuard())Refuse("native_panel_actor_postnote_guard_unknown",0,true);
+        if(NativeCaseValue()==7){syntheticActorFault=true;Refuse("synthetic_panel_reply_loss_after_note",0,true);}
+        // Publication is once-only and keeps all READ/command/effect paths closed.
+        actor=body.actorRef;everActor=true;actorPublished=true;state=State::ActorBound;
+        ledger.rows_[p.rowIndex].state=phase::VolatileServerLedger::RowState::ActorObserved;p.stage=phase::VolatileServerLedger::ActorStage::Published;
+        readinessEpoch=0;readinessMask=0; // No actor-dependent permit/bracket exists in this profile.
+        if(!PanelCurrentActorGuard())Refuse("native_panel_actor_published_guard_unknown",0,true);
+        auto reply=Reply(request,false,phase::Status::Ok);Bytes payload;payload.push_back(1);Put(payload,p.observationRef);Put(payload,p.noteHash);
+        detail::PutU64(payload,p.noteSequence);detail::PutU64(payload,cas.epoch);Put(payload,cas.head);Put(payload,actor);Put(payload,body.actorHash);
+        Payload(reply,payload);Send(reply,false,true);++acceptedActorReplies;p.stage=phase::VolatileServerLedger::ActorStage::ReplySent;
+        if(NativeCaseValue()!=5&&NativeCaseValue()!=8)FinishOriginalFixture(); // Two independent N4 variants.
+    }
+#endif
+    void DaemonFrame(const phase::Frame& request){
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        if(request.header.verb==phase::Verb::FirstActorObserved){if(!SharedOriginalPeersFloor())Refuse("native_panel_original_actor_peer_closed",0,true);ObservePanelActor(request);return;}
+        if(request.header.verb==phase::Verb::FinishServerOnly){auto reply=Reply(request,false,phase::Status::Denied);Send(reply,false,false);CloseLedger(false);return;}
+#endif
+        if(!FreshBoth())Refuse("native_phase_original_daemon_guard_closed");
         if(request.header.verb==phase::Verb::BootHello){if(daemonBound||state!=State::TargetHeld||request.header.payloadBytes!=32||
                 !std::equal(expectedSource.begin(),expectedSource.end(),request.payload.begin()))Refuse("native_phase_boot_source_binding_closed");
             daemonWitness=daemon->PhaseWitness(daemonPipe->Handle(),phaseSession,daemonNonce);
@@ -402,11 +601,19 @@ struct Broker::PhaseData final : Broker::Data {
             auto reply=Reply(request,false,phase::Status::Ok);Payload(reply,StatusPayload(state,phaseSession));Send(reply,false,true);return;
         }
         if(request.header.verb==phase::Verb::VerifyIngress){phase::VerifyIngressPayload body{};phase::HandlerReply handler{};
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+            const auto status=phase::ReadPanelIngress(request,body)==phase::CodecError::None&&body.body.canonicalBodyHash==TextHash(fixture_case::kBody)?
+                ledger.IssuePanel(ledger.daemon_,body,GetTickCount64(),handler):phase::Status::Denied;
+            if(status==phase::Status::Ok){panelGrantIssued=true;panelGrantDeadline=ledger.panel_.deadline;}
+            if(status==phase::Status::Ok)PanelPrivatePredicateChecks();
+#else
             const auto status=phase::ReadServerOnlyIngress(request,body)==phase::CodecError::None?
                 ledger.Verify(ledger.daemon_,body,GetTickCount64(),handler):phase::Status::Denied;
+#endif
             auto reply=Reply(request,false,status);if(status==phase::Status::Ok)Payload(reply,HandlerPayload(handler));Send(reply,false,status==phase::Status::Ok);
             if(status!=phase::Status::Ok)CloseLedger(status==phase::Status::Unknown);return;
         }
+#if !defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
         if(request.header.verb==phase::Verb::FinishServerOnly){Id permit{};Digest result{};
             std::copy_n(request.payload.begin(),16,permit.begin());std::copy_n(request.payload.begin()+16,32,result.begin());
             const auto status=ledger.Finish(ledger.daemon_,permit,result,GetTickCount64());auto reply=Reply(request,false,status);
@@ -418,9 +625,28 @@ struct Broker::PhaseData final : Broker::Data {
             // successful reply does the independent private Note exercise begin.
             ExercisePrivateNote();FinishOriginalFixture();return;
         }
+#endif
         auto reply=Reply(request,false,phase::Status::Unavailable);Send(reply,false,false);
     }
-    void TerminalObservation(){std::size_t completed=0;for(const auto& row:ledger.rows_)if(row.state==phase::VolatileServerLedger::RowState::Finished)++completed;
+    void TerminalObservation(){
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        const auto& p=ledger.panel_;std::size_t completed=0;for(const auto& row:ledger.rows_)if(row.state==phase::VolatileServerLedger::RowState::ActorObserved)++completed;
+        std::ostringstream out;out<<"{\"schema\":\"ae-agent.native-panel.synthetic-terminal.v1\",\"protocol\":\"LCP2\",\"proofCase\":"<<NativeCaseValue()
+            <<",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"productionAdmission\":false,\"executionAdmission\":false,\"readAdmission\":false,\"replayAllowed\":false"
+            <<",\"brokerDisposition\":\""<<(unknownDisposition?"UNKNOWN":"EXACT_EXITED")<<"\",\"issuedPanelGrant\":"<<(panelGrantIssued?"true":"false")
+            <<",\"actorAttemptSpent\":"<<(ledger.firstActorAttemptSpent_?"true":"false")<<",\"actorBound\":"<<(actorPublished?"true":"false")
+            <<",\"acceptedActorReplies\":"<<acceptedActorReplies<<",\"terminalPanelRows\":"<<completed<<",\"callRows\":"<<ledger.usedRows_
+            <<",\"nativeGuardChecks\":"<<nativeGuardChecks<<",\"originalDaemonExactExit\":"<<(originalExitObserved?"true":"false")<<",\"originalDaemonExitCode\":"<<originalExitCode
+            <<",\"panelCodecChecks\":"<<panelCodecChecks<<",\"panelPrivatePredicateChecks\":"<<panelPrivatePredicateChecks
+            <<",\"journalSequence\":"<<cas.sequence<<",\"journalHead\":\""<<detail::Hex(cas.head)<<"\",\"actorConsumeAck\":"<<(actorConsumeAck?"true":"false")
+            <<",\"actorNoteAck\":"<<(actorNoteAck?"true":"false")<<",\"syntheticFault\":"<<(syntheticActorFault?"true":"false")
+            <<",\"actualProcessCrash\":false,\"actualPipeLoss\":false,\"effects\":0,\"sessionOpenedMono\":"<<openedAt<<",\"sessionDeadline\":"<<sessionDeadline
+            <<",\"grantIssuedMono\":"<<p.issuedMono<<",\"grantDeadline\":"<<p.deadline<<",\"actorObservedMono\":"<<actorObservedMono
+            <<",\"callExpiry\":"<<(ledger.usedRows_?ledger.rows_[0].call.expiresMono:0)<<",\"handlerExpiry\":"<<(ledger.usedRows_?ledger.rows_[0].handler.expiresMono:0)
+            <<",\"consumeHash\":\""<<detail::Hex(p.consumeHash)<<"\",\"noteHash\":\""<<detail::Hex(p.noteHash)<<"\",\"noteSource\":\""<<detail::Hex(p.noteSource)
+            <<"\",\"noteConfig\":\""<<detail::Hex(p.noteConfig)<<"\",\"daemonStdioCoverage\":\"NOT_CAPTURED\"}\n";
+#else
+        std::size_t completed=0;for(const auto& row:ledger.rows_)if(row.state==phase::VolatileServerLedger::RowState::Finished)++completed;
         std::ostringstream out;out<<"{\"schema\":\"ae-agent.native-phase.synthetic-terminal.v1\",\"protocol\":\"LCP2\",\"proofCase\":"<<NativeCaseValue()
             <<",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"executionAdmission\":false,\"productionAdmission\":false"
             <<",\"brokerDisposition\":\""<<(unknownDisposition?"UNKNOWN":"EXACT_EXITED")<<"\",\"handlerAdmissions\":"<<ledger.handlerAdmissions_
@@ -432,6 +658,7 @@ struct Broker::PhaseData final : Broker::Data {
             <<",\"syntheticFault\":"<<(noteObservation.syntheticFault?"true":"false")<<",\"descriptorHash\":\""<<detail::Hex(noteObservation.descriptorHash)
             <<"\",\"configDigest\":\""<<detail::Hex(noteObservation.configDigest)<<"\",\"recordHash\":\""<<detail::Hex(noteObservation.recordHash)
             <<"\",\"deliveryPermitIssued\":false,\"actualPartialWrite\":false,\"actualProcessCrash\":false},\"replayAllowed\":false}\n";
+#endif
         const auto text=out.str();DWORD written=0;if(text.size()>4096||!WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),text.data(),static_cast<DWORD>(text.size()),&written,nullptr)||written!=text.size())
             Refuse("native_phase_terminal_observation_send_unknown",GetLastError(),true);
     }
