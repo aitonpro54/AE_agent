@@ -46,6 +46,72 @@ chat/controller/per-call binding, expiry/revocation на ingress/enqueue/dispatc
 Без него initial launch/read admission закрыты. UUID/env/clientInfo/private JSON,
 подпись locally supplied identity или exclusive session не заменяют требуемую гарантию.
 
+### Дополнительная Ultra-проверка host interfaces — 13 октября
+
+Installed `app.asar` SHA256
+`c5fdef328cfa2ad9095786f9c3a7aaa447e68834d31299d6ef2592da02029038`.
+В том же `main-BklS_2Y2.js` проверен `dynamic-app-tools-native-pipe`:
+`cp()` offset304850 на non-Darwin возвращает authorized:true; startup offset3795233
+использует этот default. Schema offset307359 принимает callerSource/hostId/threadId/
+turnId/callId из params. Это не удостоверение внешнего вызывающего чата.
+`Vae()` подписывает browser/access и taskProject/taskWorkspace responses, но не
+tools/call. Downstream offset727078 проверяет conversation ownership/follower/dedup,
+затем создаёт origin:native request из входящих params. Runtime-доступность pipe
+и эксплуатация не проверялись; из этих source reads нельзя получить issuer GO.
+
+[Codex hooks](https://learn.chatgpt.com/docs/hooks) передают session/turn/tool-call
+данные, но исследованный MCP callback использует templated arguments и не закрывает
+операцию при callback error. Private origin verifier/revocation port не установлен.
+App Server dynamicTools — возможная будущая host-side точка, но собственный App Server
+создал бы другую controller boundary. Нужен поставляемый host интерфейс для текущего
+Desktop: authenticated bootstrap, host pending-call ledger и phase proofs с exact
+digest/audience/controller/expiry/revocation на ingress/enqueue/dispatch.
+Это предлагаемый контракт, не обнаруженное API; локальный signer/stub его не создаёт.
+
+### Ограниченная проверка Windows device-map — 13 октября
+
+После содержательных XHigh/Ultra NO-GO `ae_escalation` предложил проверить
+точные локальные бинарники и соответствующие Microsoft PDB без вызова setter.
+`ae_implementer` подготовил ignored DIA reader v3; независимый `ae_reviewer`
+дал source-only GO. Parent собрал C++17 `/W4 /WX` и прочитал PDB: build/reader exit0,
+GUID/age обоих PDB совпали, emittedSymbols=79/13 (70/13 symbol records плюс
+9/0 успешных RVA lookup results), 14/0 RVA lookup attempts,
+188 JSONL records, stderr0, capped0/budgetReached=false/queryError=false.
+Source SHA256 `dc2e194e19d12b458e388b1359e00ad4b0af9498692ed3209548bed72bc3ef53`;
+exe SHA256 `a49c2d66f111e968d7737133a3baf1db2c93d6a60f16a2f1e280cc02e90ddd8f`.
+Ignored receipt: `.codex-runtime/windows-device-map-20261013-offline/proof-v3.json`.
+
+On-disk `ntoskrnl.exe` 10.0.26100.9457 SHA256
+`d90c69cfa925d42037ef1cdba3ff5b3f13cc14e16060938073b97e396fdde2f2`:
+class23 branch читает HANDLE при length8. Это закрывает ABI-вопрос только для
+исследованного образа; disk identity не удостоверяет загруженный kernel.
+`ObpLookupObjectName` содержит отдельный файловый DriveObject cache и fallback
+в GlobalDeviceMap. Успешный named QueryDosDeviceW по private directory сам по себе
+не доказывает private resolution файлового пути. Link-before-binding схема
+остаётся NO-GO. В self-binding-before-link варианте готовый
+`ObpCreateSymbolicLinkName` берёт map из parentDirectory+0x130 (74E59B–74E5A5)
+и обновляет её DriveObject[index] через ObFastReplaceObject (74E693–74E6C0).
+В просмотренной ветке раскрытия промежуточного symbolic link сбрасывается
+bit0x20 (74E555), выбор на 74E63F сохраняет исходный link.
+`ObpParseSymbolicLinkEx` копирует target-prefix и remaining suffix
+(84B514–84B561). Это подтверждает cache writer и копирование в данной parse-ветке;
+end-to-end private-path и successful creator ACK ещё не приняты.
+Конечный NO-GO данного bounded прохода: вызов ObInsertObjectEx на A3B7F9
+не прослежен до name-hook до возврата handle; допустимость NULL ObjectName
+в generic directory creator не установлена. Новые namespace/setter операции
+не разрешаются по частичному source evidence.
+PDB v3 установил `ObpCreateDirectoryObject` RVA A5DA40,
+`ObCreateSymbolicLink` A3B668, `IoFileObjectType` FC6B20 и
+`ObpCreateSymbolicLinkName` 74E350. Call sites `ObClearProcessDeviceMap`
+7838E1/8943A3 находятся в `PspAssignPrimaryToken`/`PspProcessDelete`;
+очистка при удалении process object не равна очистке в момент signaled exit.
+Первый call относится к успешной смене primary token, а не к выходу;
+будущий bounded child не должен менять token. Второй call при удалении
+процесса требует закрытия всех принадлежащих parent process/thread HANDLE
+после exact exit read-back; отсутствие чужих/дублированных handles отдельно.
+Nearest symbol, PDB hot-span length и успешная компиляция не дают native admission.
+Privileged API, DOS alias, AE/AME и production wiring в этом блоке не выполнялись.
+
 ## Следующий независимый prerequisite после GO M1–M8
 
 Native Windows physical-root identity и held exclusive fence, без wiring в daemon:
