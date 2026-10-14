@@ -186,3 +186,17 @@ observed getter и фактические capability/lifetime этим тест�
 Root выполнил этот блок как единственный держатель исходных процессов;
 ограниченный source review — `ae_reviewer`, production writer — `ae_specialist`.
 Полное выполнение, M/C1, задания AME, просмотр кадров и два видео остаются впереди.
+
+Integrated observed-range блок получил Source GO `F4172B9F…881F4D`:
+72/72 source hashes и 56 независимых VM checks совпали. Actual getter precision17,
+strict native parser, selection/graph/baseline/dry joins и private Manifest p/q/N
+проверены в этом scope. Freeze60 `ns-7375f217008e` → `ic-997ccf6195ec`, TU9/13/3,
+compile/link PASS; originals6 CLOSED/exit0/EOF, handles закрыты, owner1584 exit0.
+Build acceptance SHA256 `F55738DD…E9A5D5EB`.
+
+Actual C++ proof: scope15/15, observed parser33/33, freeze18 `ns-8383fa028a15`
+→ `tp-119a96cd77ce`, TU2/2. Originals6 CLOSED/exit0/EOF, handles закрыты,
+owner20732 exit0; acceptance SHA256 `441CDB6B…B69619F6`. Parser принимает
+синтетические факты original getter; actual host observation и capability не
+заявляются. Execute/copy/stage/restore/AME/media/debt пока не закончены;
+addon/factory/C1 не запускались, результат остаётся 0/2.
