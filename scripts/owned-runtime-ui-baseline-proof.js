@@ -2,7 +2,16 @@
 // VM mocks only. No AE/CEP/native authority, project reopen, build or live proof.
 const assert = require("node:assert/strict");
 const vm = require("node:vm");
-const baseline = require("../mcp-server/owned-runtime-ui-baseline");
+// A fresh physical-file import must not construct dynamic scripts. Blocking
+// Function catches the previous embedded() factory rather than merely testing
+// its source spelling. This is not native script-census admission evidence.
+const baselinePath = require.resolve("../mcp-server/owned-runtime-ui-baseline");
+const originalFunction = globalThis.Function;
+let generatedAtImport = 0, baseline;
+delete require.cache[baselinePath];
+globalThis.Function = function blockedUiImportFunction() { generatedAtImport++; throw Error("ui_import_dynamic_function_refused"); };
+try { baseline = require(baselinePath); }
+finally { globalThis.Function = originalFunction; }
 const sourceFile = "C:\\owned-fixture\\source.aep";
 const clone = value => JSON.parse(JSON.stringify(value));
 let checks = 0;
@@ -69,7 +78,7 @@ function host(offset = 0, options = {}) {
   const context = {app: {project, activeViewer: new Viewer(items[1], ViewerType.VIEWER_COMPOSITION)}, ViewerType,
     CompItem, FootageItem, FolderItem, AVLayer, TextLayer, ShapeLayer, CameraLayer, LightLayer};
   vm.createContext(context);
-  for (const [name, fn] of Object.entries(baseline)) vm.runInContext("this." + name + "=(" + fn.toString() + ");", context);
+  for (const name of options.functions || Object.keys(baseline)) vm.runInContext("this." + name + "=(" + baseline[name].toString() + ");", context);
   return {context, project, items, state};
 }
 function capture(fixture) { return fixture.context.captureUiBaseline(); }
@@ -85,6 +94,22 @@ function disturb(fixture) {
   fixture.project.activeItem = fixture.items[2]; fixture.context.app.activeViewer.type = fixture.context.ViewerType.VIEWER_FOOTAGE;
 }
 function main() {
+  check(() => assert.equal(generatedAtImport, 0));
+  check(() => assert.deepEqual(Object.keys(baseline), ["captureUiBaseline", "supportedOperand", "restoreUiBaseline"]));
+  check(() => assert.equal(require.cache[baselinePath].filename, baselinePath));
+  const staticPrograms = Object.values(baseline).map(fn => {
+    const source = fn.toString();
+    return source.slice(source.indexOf("function uiBaselineProgram("), source.lastIndexOf(')("'));
+  });
+  check(() => assert.equal(staticPrograms[0], staticPrograms[1]));
+  check(() => assert.equal(staticPrograms[0], staticPrograms[2]));
+  const onlyCapture = host(0, {functions: ["captureUiBaseline"]});
+  check(() => assert.equal(capture(onlyCapture).comps.length, 2));
+  const onlyRestore = host(100, {functions: ["restoreUiBaseline"]}); disturb(onlyRestore);
+  check(() => assert.equal(restore(onlyRestore, original()).after.activeItem.id, 102));
+  const onlySupport = vm.createContext({});
+  vm.runInContext("this.supportedOperand=(" + baseline.supportedOperand.toString() + ");", onlySupport);
+  check(() => assert.equal(onlySupport.supportedOperand(original()), true));
   const immutable = freeze(original()), pristine = JSON.stringify(immutable), fixture = host(100);
   disturb(fixture);
   const result = restore(fixture, immutable);

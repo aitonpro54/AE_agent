@@ -315,3 +315,33 @@ fsName selector не заявлен physical proof. [block: UI baseline componen
 [executor: ae_implementer; review: ae_reviewer] [ownership: новый pure module/proof].
 Native reopen/pin/hash/parser/SourceM/preissued program/floor/debt интеграция ещё
 не принята; P1 Stage без usable Restore остаётся открытым до этой приёмки.
+
+Restoration-only C6 decision: production Tool7 получает optional
+`ownedReadCurrent:{schema:"ae-agent.owned-read-current.v1",state:<postSave-shaped>}`
+в том же original C6 project terminal. State содержит graph/timing/inventory/UI,
+GUID/root/comp/revision/file/dirty; basic project поля совпадают. Mode/slot/targets
+не выбираются caller JSON. Broker debt связан с own Stage5 D20/D41/actor/result,
+native — с held saved snapshot и preissued Restore8. Старый Stage evidence
+исторический, его expiry не продлевается. После завершения jobs/media/children,
+при отсутствии in-flight/UNKNOWN, существующий status→project→status bracket
+сверяет own staged state/pin/hash. Только затем C7 выдаёт fresh READ60s private
+restriction на тот же slot/Restore8. При debt basic fallback или иной EXEC закрыты.
+Очистка debt — только successful Restore8 D20 с полным независимым read-back;
+затем fresh normal bracket, original READ/manifest неизменны. Wire/Call/leaf/vector
+не расширяются; budget FIT условен и C6 занимает существующий renewal.
+[block: restoration-only C6] [executor: ae_architect] [ownership: read-only decision].
+C6/parser/broker/SourceM ещё в работе, production CLOSED.
+
+SourceM integration нашла runtime `new Function` в UI module import: VM199 не
+доказывал native loaded-script admission. Исправление сохраняет API/ES3 semantics
+статическими self-contained exports, без нового generic dynamic-source category.
+Новые bytes ещё не приняты; предыдущий module GO остаётся только source/offline.
+
+Статическая UI версия получила scoped Source GO: manifest `273BAD91…232F5A`,
+module `9DD0AB54…B88A2F`, proof `E5187629…69A43`. Три embedded программы
+byte-identical ранее принятой ES3 программе; API/schema/bounds/remap/read-back
+не менялись. Runtime Function factory и внешние closure dependencies отсутствуют.
+Независимый VM207/207, import с заблокированным Function — 0 вызовов;
+syntax2/rules/diff PASS. [block: static UI exports] [executor: ae_implementer]
+[review: ae_reviewer] [ownership: прежние module/proof]. Native ScriptParsed/census,
+transitive SourceM и пригодность Stage/Restore этим scope не приняты; C1 CLOSED.
