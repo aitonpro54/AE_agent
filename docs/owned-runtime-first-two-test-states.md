@@ -400,3 +400,60 @@ Native95 требует новый совместимый isolated proof owner �
 closure: placeholder-geometry отсутствует в snapshot96; старый runner hardcodes50.
 Root готовит ограниченный fork; native writer отдельно начал AME/D47 после Source
 GO. Runtime addon/factory/C1/wholeSourceM/FIT/effects не запускались, renders0/2.
+
+AME/D47 operand decision: ae_architect разрешил source-only bounded delta доC1.
+ExecutionPolicy получает обязательный private ASCII ameTargetSpecifier `ame-X.Y`,
+без default/alias/fallback; изменение invalidates old preparation/proposal.
+Root factual file-version userAME PID22812/birth09:00:28: Product26.2.0,
+File26.2.0.52. `ame-26.2` — candidate, actual BridgeTalk.appSpecifier UNVERIFIED.
+Authentic source/enqueue/START/status должны exact-match target и same original
+process PID/birth/SID/image pin/hash/module guards; строка не доказывает PID.
+Observed expectedSessionNonce — explicit null или string1–128; missing/invalid
+закрыты. Generic validator получает поле только для string; private original
+boundNativeSessionNonce безусловно сравнивает nullable Probe до первого эффекта,
+после него и при subsequent checks. Truthy wildcard запрещён. Probe может остаться
+null; own native session/generation/boot и one-shot retainedWrapperSessionNonce
+отдельны. Foreign/preexisting wrapper slot закрыт до addDLToBatch; slot2 использует
+тот же own wrapper/lifetime без adoption/reset. Nonce observation не authority.
+Own successful Stage final snapshot/source/process/script-hash joins и manual
+START7 сохраняются; wire112/60/C5/scopes6–7/payloadHash0/Calls/Store неизменны.
+Unknown-after-send сохраняет debt/noReplay. No startup nonce bootstrap или live;
+unsupported26 binding закрыт. Scope реализуется native writer, новый STOP/review
+и actual footprint/runtime prerequisites ещё обязательны. [block: AME operands]
+[executor: ae_architect decision; ae_specialist implementation] [ownership: root
+sole policy/build/live controller; native writer private source delta].
+
+Native95 controls: initial candidate `4F218A60…` получил REVISE двух P2 freezer
+(fixture-input/control joins и capturedBytes). Исправленный `0209C713…F103B`
+получил control GO: same retained Node Process/handle/tasks/image доfreeze,
+exact fixture8/runner/freeze joins, positive byte equality, partial-output refusal.
+Root независимо37/37 hashes+bytes PASS, pureguards20 PASS; four dependency imports
+отдельно приняты. Positive terminated-process Birth/Image+same-owner freeze NOTRUN.
+Actual capture `ns-461b8b1644a3`: native16/fixture8, fixturefreeze `49D44246…`,
+capture `A23FC2D7…`. Original Node `fg-8fbcb8106dde/receipt0004/6487EBDB…`
+**CLOSED_FAILED**: exit1/оба EOF, header0, stderr1005 — fixture VM не определяет
+ownedReadonlyObservedRangePreparation из нового actual getter. Root в original
+owner10332/PTY32273 сверил closed handle/all11 streams и explicitexit0.
+Record `native95-fixture-diagnostic-8fbcb8106dde.json/E509CEB7…7E5017` локальный.
+Compiler/Native95/freeze/factory/C1/AE effects не запускались. Один fixture script
+передан ae_implementer для explicit ordinary-mode predicate fix; bridge/runtime
+не менять. Старые ns/fg/header0 неизменны, следующий run — новое source review,
+pins и namespace/output/original owner, без replay. Native writer отдельно AME/D47.
+
+**Native95 — завершённый pure milestone, 14.10.** Fixture context fix `62af4ee`
+добавляет explicit ordinary-mode predicate; independent Source/control GO.
+Actual successful generation `fg-e7d5522ace57/BB7B5E95…`: exit0/EOF,
+header4743945/`54A3D035…`. Same original owner14192 сохранён до freeze.
+Post-exit Image=null сверяется с historical0002 и actual held references;
+control `92E2325F…` сохраняет строковые JSON dates без timestamp normalization.
+Первый вызов отклонён до latch/outputs из-за автоматического DateTime parsing;
+Root подтвердил отсутствие частичных outputs и продолжил тот же original.
+Actual freeze `ns-7c126de9ee89/C42AC826…`, approval `4724B0E2…`, native17 hashes
+PASS; original handle/all11 streams closed, owner14192 explicitexit0.
+Новый compile/proof owner8632: `tp-526171c05a9e/D289102F…`, XML2/2 PP/build0;
+proof `6C05C4F9…` — **Scope15/JSON95, failed0/effects0**. Root сверил same-owner
+originals6 CLOSED0/EOF/taskscompleted/handlesclosed и explicitexit0.
+Local acceptance `native95-proof-acceptance-526171c05a9e.json/0041052C…`.
+Это synthetic predicates для Restore57F source, не actual AE facts, новый AME
+build, loaded modules/descendants, whole M/FIT или production admission.
+Render0/2; следующий блок — AME/D47 source STOP/review/build, затем D48–50.
