@@ -26,13 +26,14 @@ void RetainUnknown(const std::shared_ptr<HttpSocketLifetime>& lifetime)noexcept{
     if(!lifetime->unknown.exchange(true))lifetime->retainedUnknown=lifetime;
 }
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
-enum class CleanupFault {None,CreateSocket,BeforeUnique,AfterUnique,AfterShared,AfterVector,AcceptedClose,End};
+enum class CleanupFault {None,CreateSocket,BeforeUnique,AfterUnique,AfterShared,AfterVector,AcceptedClose,End,InspectClosing};
 enum class RevokePoint {None,BeforeAccept,AfterAccept,BeforeRead,AfterRead,BeforeWrite,AfterWrite};
 RevokePoint revokePoint=RevokePoint::None;std::atomic<bool>* revokeTarget=nullptr;
 void RevokeAt(RevokePoint point){if(revokePoint==point&&revokeTarget){*revokeTarget=true;revokePoint=RevokePoint::None;}}
 #define HTTP_REVOKE_AT(point) RevokeAt(RevokePoint::point)
 struct CleanupCount {std::atomic<std::uint64_t> accepted{0},acceptedSucceeded{0},startup{0},cleanup{0},ended{0},listener{0},acceptIo{0},recvIo{0},sendIo{0};};
 CleanupFault cleanupFault=CleanupFault::None;CleanupCount cleanupCount;
+bool closingObservation=false;
 void Fault(CleanupFault point){if(cleanupFault==point){cleanupFault=CleanupFault::None;Refuse("http_proof_cleanup_injected");}}
 #define HTTP_CLEANUP_FAULT(point) Fault(CleanupFault::point)
 #define HTTP_IO_ATTEMPT(name) (++cleanupCount.name)
@@ -83,6 +84,25 @@ bool Same(const SocketPeer& a,const SocketPeer& b){return a.localAddress==b.loca
 AcceptedConnection::AcceptedConnection(HttpTransportOwner& owner,const std::shared_ptr<HttpSocketLifetime>& lifetime,const std::shared_ptr<HttpAcceptedOriginal>& original,const SocketPeer& peer):owner_(owner),peer_(peer),socket_(original->socket),lifetime_(lifetime),original_(original){}
 AcceptedConnection::~AcceptedConnection(){CloseOnce();}
 bool AcceptedConnection::Unknown()const noexcept{return unknown_.load()||lifetime_->unknown.load();}
+HttpRequestIoSnapshot AcceptedConnection::CaptureRequestIoSnapshot()const{std::lock_guard<std::mutex> lock(metadata_);
+    return {writeAttemptOrdinal_,pendingWrite_,closed_.load(std::memory_order_acquire),closeConfirmed_.load(std::memory_order_acquire),Unknown(),
+        &owner_,original_.get(),lifetime_.get(),original_->socket,static_cast<std::uint8_t>(original_->stage.load(std::memory_order_acquire))};}
+bool AcceptedConnection::ConfirmOriginalRequestIoSnapshot(const HttpRequestIoSnapshot& snapshot,std::uint64_t atRetain)const noexcept{try{
+    const auto current=CaptureRequestIoSnapshot();return snapshot.owner==&owner_&&snapshot.original==original_.get()&&snapshot.lifetime==lifetime_.get()&&
+        snapshot.originalSocket==original_->socket&&snapshot.closed&&snapshot.closeConfirmed&&!snapshot.unknown&&snapshot.pendingWrite==0&&
+        snapshot.writeAttemptOrdinal==atRetain&&snapshot.originalStage==static_cast<std::uint8_t>(CloseStage::Closed)&&
+        current.owner==snapshot.owner&&current.original==snapshot.original&&current.lifetime==snapshot.lifetime&&current.originalSocket==snapshot.originalSocket&&
+        current.closed&&current.closeConfirmed&&!current.unknown&&current.pendingWrite==0&&current.writeAttemptOrdinal==atRetain&&
+        current.originalStage==static_cast<std::uint8_t>(CloseStage::Closed);
+}catch(...){return false;}}
+void AcceptedConnection::ReserveWriteWork(){std::lock_guard<std::mutex> lock(metadata_);
+    if(closed_.load()||closeConfirmed_.load()||Unknown()||original_->stage.load()!=CloseStage::Open)Refuse("trusted_original_write_work_refused",0,Unknown());
+    if(pendingWrite_==std::numeric_limits<std::uint64_t>::max()){RetainIoUnknown();Refuse("trusted_original_write_work_overflow",0,true);}++pendingWrite_;}
+void AcceptedConnection::ReconcileWriteWork()noexcept{std::lock_guard<std::mutex> lock(metadata_);
+    if(Unknown())return;if(!pendingWrite_){RetainIoUnknown();return;}--pendingWrite_;}
+void AcceptedConnection::BeginPayloadWriteAttempt(){std::lock_guard<std::mutex> lock(metadata_);
+    if(closed_.load()||closeConfirmed_.load()||Unknown())Refuse("trusted_original_payload_after_close",0,Unknown());
+    if(writeAttemptOrdinal_==std::numeric_limits<std::uint64_t>::max()){RetainIoUnknown();Refuse("trusted_original_write_ordinal_overflow",0,true);}++writeAttemptOrdinal_;}
 void AcceptedConnection::RetainIoUnknown()noexcept{unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}
 void AcceptedConnection::AssertCurrent(){if(closed_.load()||Unknown())Refuse("trusted_original_socket_closed",0,Unknown());
     try{owner_.AssertCurrent();if(!Same(peer_,Observe(Exact(socket_))))Refuse("trusted_original_socket_changed",0,true);}
@@ -99,7 +119,7 @@ std::vector<unsigned char> AcceptedConnection::Read(){std::lock_guard<std::mutex
     catch(...){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);throw;}}
 void AcceptedConnection::Write(const std::vector<unsigned char>& bytes){std::lock_guard<std::mutex> lock(writeIo_);AssertCurrent();if(bytes.empty()||bytes.size()>kChunk||ended_)Refuse("trusted_socket_write_shape");
     const auto deadline=GetTickCount64()+kIoMs;std::size_t sent=0;try{while(sent<bytes.size()){WaitSocket(Exact(socket_),true,deadline,&owner_);HTTP_REVOKE_AT(BeforeWrite);AssertCurrent();
-        HTTP_IO_ATTEMPT(sendIo);const int count=send(Exact(socket_),reinterpret_cast<const char*>(bytes.data()+sent),static_cast<int>(bytes.size()-sent),0);const int error=count==SOCKET_ERROR?WSAGetLastError():0;HTTP_REVOKE_AT(AfterWrite);
+        BeginPayloadWriteAttempt();HTTP_IO_ATTEMPT(sendIo);const int count=send(Exact(socket_),reinterpret_cast<const char*>(bytes.data()+sent),static_cast<int>(bytes.size()-sent),0);const int error=count==SOCKET_ERROR?WSAGetLastError():0;HTTP_REVOKE_AT(AfterWrite);
         if(count==SOCKET_ERROR&&error==WSAEWOULDBLOCK){AssertCurrent();continue;}
         if(count<=0)Refuse("trusted_socket_write_unknown",static_cast<std::uint32_t>(error),true);sent+=static_cast<std::size_t>(count);AssertCurrent();}
     }catch(const detail::Failure& failure){if(failure.unknown||(!owner_.ReadRevokedKnown()&&(sent||failure.error!=WSAETIMEDOUT))){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}throw;}
@@ -118,14 +138,20 @@ void AcceptedConnection::End(){std::lock_guard<std::mutex> lock(writeIo_);
 std::uint64_t AcceptedConnection::NextRequest(){std::lock_guard<std::mutex> lock(requestIo_);AssertCurrent();if(requests_>=kRequests)Refuse("trusted_socket_request_budget",0,true);return ++requests_;}
 void AcceptedConnection::CloseOnce()noexcept{std::lock_guard<std::mutex> closeLock(closeIo_);if(closed_.load())return;std::scoped_lock lock(readIo_,writeIo_,requestIo_);
     if(Unknown())return;
+    {std::lock_guard<std::mutex> metadataLock(metadata_);if(pendingWrite_)return;}
     if(socket_!=original_->socket||original_->stage.load()!=CloseStage::Open){RetainIoUnknown();return;}
     if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){
         if(!owner_.ReadRevokedKnown()){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}return;}
     // Only a permitted actual attempt consumes CloseOnce. Waiting for B33
     // leaves the original open; UNKNOWN never permits a close bypass.
-    closed_=true;original_->stage=CloseStage::Closing;
+    {std::lock_guard<std::mutex> metadataLock(metadata_);if(pendingWrite_)return;closed_=true;original_->stage=CloseStage::Closing;}
+#if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
+    if(cleanupFault==CleanupFault::InspectClosing){cleanupFault=CleanupFault::None;const auto snapshot=CaptureRequestIoSnapshot();
+        closingObservation=snapshot.closed&&!snapshot.closeConfirmed&&snapshot.originalStage==static_cast<std::uint8_t>(CloseStage::Closing)&&
+            !ConfirmOriginalRequestIoSnapshot(snapshot,snapshot.writeAttemptOrdinal);}
+#endif
     if(CloseAccepted(Exact(socket_))!=0){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}
-    else{socket_=static_cast<std::uintptr_t>(INVALID_SOCKET);original_->stage=CloseStage::Closed;}}
+    else{socket_=static_cast<std::uintptr_t>(INVALID_SOCKET);original_->stage=CloseStage::Closed;closeConfirmed_.store(true,std::memory_order_release);}}
 FixedHttpListener::FixedHttpListener(HttpTransportOwner& owner):owner_(owner),socket_(static_cast<std::uintptr_t>(INVALID_SOCKET)),lifetime_(std::make_shared<HttpSocketLifetime>()){
     owner_.AssertCurrent();WSADATA data{};if(WSAStartup(MAKEWORD(2,2),&data)!=0)Refuse("trusted_winsock_unavailable");winsock_=true;
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
@@ -323,6 +349,63 @@ bool RunHttpRevokeFaultsFixed(const std::shared_ptr<HttpTransportOwner>& origina
         client.Close();listener->CloseOnce();listener->CloseOnce();if(listener->Unknown()||!listener->Closed())Refuse("http_proof_revoke_listener_not_closed");listener.reset();
         const auto expected=scenario==Case::BeforeAccept?0u:1u;
         if(cleanupCount.startup.load()!=starts+1||cleanupCount.cleanup.load()!=ends+1||cleanupCount.accepted.load()!=closes+expected||cleanupCount.listener.load()!=listeners+1)Refuse("http_proof_revoke_close_once_or_balance");
+    }return true;
+}
+bool RunHttpIdleWriteFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner){
+    if(!originalOwner)Refuse("http_proof_idle_write_original_owner_required");
+    struct Owner final:HttpTransportOwner {std::shared_ptr<HttpTransportOwner> original;const std::uint16_t port;
+        Owner(std::shared_ptr<HttpTransportOwner> value,std::uint16_t fixedPort):original(std::move(value)),port(fixedPort){}
+        void AssertCurrent()override{original->AssertCurrent();}std::uint16_t HttpFixedPort()const noexcept override{return port;}
+        bool OriginalCleanupCurrent(HttpCleanupOperation op)noexcept override{return original->OriginalCleanupCurrent(op);}
+        bool ReadRevokedKnown()const noexcept override{return original->ReadRevokedKnown();}};
+    struct ClientSocket final {SOCKET original=INVALID_SOCKET;~ClientSocket(){if(original!=INVALID_SOCKET)closesocket(original);}
+        void Close(){if(original!=INVALID_SOCKET){const auto exact=original;original=INVALID_SOCKET;if(closesocket(exact)!=0)Refuse("http_proof_idle_write_client_close");}}};
+    enum class Case {Idle,Queued,ExecutedUnreconciled,QueuedUnknown,CloseFailure,LateCallbackUnknown,OrdinalOverflow};
+    std::uint16_t port=23480;
+    for(const auto scenario:{Case::Idle,Case::Queued,Case::ExecutedUnreconciled,Case::QueuedUnknown,Case::CloseFailure,Case::LateCallbackUnknown,Case::OrdinalOverflow}){
+        const auto closes=cleanupCount.accepted.load(),ends=cleanupCount.cleanup.load(),sends=cleanupCount.sendIo.load();
+        auto owner=std::make_shared<Owner>(originalOwner,port++);auto listener=std::unique_ptr<FixedHttpListener>(new FixedHttpListener(*owner));ClientSocket client;
+        client.original=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);if(client.original==INVALID_SOCKET)Refuse("http_proof_idle_write_client_create");
+        u_long nonblocking=1;if(ioctlsocket(client.original,FIONBIO,&nonblocking)!=0)Refuse("http_proof_idle_write_client_mode");
+        sockaddr_in target{};target.sin_family=AF_INET;target.sin_addr.s_addr=htonl(INADDR_LOOPBACK);target.sin_port=htons(owner->HttpFixedPort());
+        if(connect(client.original,reinterpret_cast<const sockaddr*>(&target),sizeof(target))==SOCKET_ERROR){if(WSAGetLastError()!=WSAEWOULDBLOCK)Refuse("http_proof_idle_write_client_connect");WaitSocket(client.original,true,GetTickCount64()+kIoMs);}
+        auto connection=listener->Accept();const auto retained=connection->CaptureRequestIoSnapshot();
+        if(retained.pendingWrite||retained.writeAttemptOrdinal||retained.closed||retained.closeConfirmed||retained.unknown||connection->ConfirmOriginalRequestIoSnapshot(retained,0))Refuse("http_proof_idle_write_initial_snapshot");
+        if(scenario==Case::Queued||scenario==Case::ExecutedUnreconciled||scenario==Case::QueuedUnknown){
+            connection->ReserveWriteWork();const auto queued=connection->CaptureRequestIoSnapshot();
+            if(queued.pendingWrite!=1||queued.writeAttemptOrdinal!=0)Refuse("http_proof_idle_write_queue_not_reserved");
+            connection->CloseOnce();if(connection->Closed()||connection->CaptureRequestIoSnapshot().closeConfirmed||cleanupCount.accepted.load()!=closes)Refuse("http_proof_idle_write_close_while_queued");
+            if(scenario==Case::ExecutedUnreconciled){connection->Write(std::vector<unsigned char>{'a','c','t','u','a','l'});const auto executed=connection->CaptureRequestIoSnapshot();
+                if(executed.pendingWrite!=1||executed.writeAttemptOrdinal!=1||cleanupCount.sendIo.load()!=sends+1)Refuse("http_proof_idle_write_execution_not_unreconciled");
+                connection->CloseOnce();if(connection->Closed()||cleanupCount.accepted.load()!=closes)Refuse("http_proof_idle_write_close_before_completion");}
+            if(scenario==Case::QueuedUnknown)connection->RetainIoUnknown();
+            connection->ReconcileWriteWork();const auto settled=connection->CaptureRequestIoSnapshot();
+            if(scenario==Case::QueuedUnknown){if(settled.pendingWrite!=1||!settled.unknown)Refuse("http_proof_idle_write_unknown_reservation_lost");}
+            else if(settled.pendingWrite)Refuse("http_proof_idle_write_known_completion_not_settled");
+        }
+        if(scenario==Case::OrdinalOverflow){connection->writeAttemptOrdinal_=std::numeric_limits<std::uint64_t>::max();bool denied=false;
+            try{connection->Write(std::vector<unsigned char>{'x'});}catch(const detail::Failure& failure){denied=failure.unknown&&failure.code=="trusted_original_write_ordinal_overflow";}
+            if(!denied||cleanupCount.sendIo.load()!=sends||connection->CaptureRequestIoSnapshot().writeAttemptOrdinal!=std::numeric_limits<std::uint64_t>::max())Refuse("http_proof_idle_write_ordinal_wrap_or_effect");}
+        if(scenario==Case::CloseFailure)cleanupFault=CleanupFault::AcceptedClose;
+        if(scenario==Case::Idle){closingObservation=false;cleanupFault=CleanupFault::InspectClosing;}
+        connection->CloseOnce();connection->CloseOnce();const auto terminal=connection->CaptureRequestIoSnapshot();
+        const bool unknown=scenario==Case::QueuedUnknown||scenario==Case::CloseFailure||scenario==Case::OrdinalOverflow;
+        if(unknown){(void)new std::shared_ptr<HttpTransportOwner>(owner);
+            if(!terminal.unknown||terminal.closeConfirmed||connection->ConfirmOriginalRequestIoSnapshot(terminal,retained.writeAttemptOrdinal))Refuse("http_proof_idle_write_unknown_confirmed");}
+        else{if(!terminal.closed||!terminal.closeConfirmed||terminal.unknown||terminal.pendingWrite||!connection->ConfirmOriginalRequestIoSnapshot(terminal,terminal.writeAttemptOrdinal))Refuse("http_proof_idle_write_success_not_confirmed");
+            if(scenario==Case::Idle&&!closingObservation)Refuse("http_proof_idle_write_closing_was_terminal");
+            auto foreign=terminal;foreign.owner=nullptr;if(connection->ConfirmOriginalRequestIoSnapshot(foreign,terminal.writeAttemptOrdinal))Refuse("http_proof_idle_write_foreign_owner_confirmed");
+            foreign=terminal;foreign.original=nullptr;if(connection->ConfirmOriginalRequestIoSnapshot(foreign,terminal.writeAttemptOrdinal))Refuse("http_proof_idle_write_foreign_record_confirmed");
+            foreign=terminal;foreign.lifetime=nullptr;if(connection->ConfirmOriginalRequestIoSnapshot(foreign,terminal.writeAttemptOrdinal))Refuse("http_proof_idle_write_foreign_lifetime_confirmed");
+            if(scenario==Case::ExecutedUnreconciled&&connection->ConfirmOriginalRequestIoSnapshot(terminal,retained.writeAttemptOrdinal))Refuse("http_proof_idle_write_changed_ordinal_confirmed");
+            bool denied=false;try{connection->ReserveWriteWork();}catch(const detail::Failure&){denied=true;}if(!denied)Refuse("http_proof_idle_write_after_confirmed_close_queued");}
+        if(scenario==Case::LateCallbackUnknown){(void)new std::shared_ptr<HttpTransportOwner>(owner);connection->RetainIoUnknown();
+            if(connection->ConfirmOriginalRequestIoSnapshot(terminal,terminal.writeAttemptOrdinal))Refuse("http_proof_idle_write_late_failure_confirmed");}
+        client.Close();connection.reset();listener->CloseOnce();listener->CloseOnce();
+        if(unknown||scenario==Case::LateCallbackUnknown){if(!listener->Unknown()||cleanupCount.cleanup.load()!=ends)Refuse("http_proof_idle_write_unknown_cleanup_bypass");}
+        else if(listener->Unknown()||!listener->Closed()||cleanupCount.cleanup.load()!=ends+1)Refuse("http_proof_idle_write_listener_cleanup_missing");
+        listener.reset();const auto expected=scenario==Case::QueuedUnknown||scenario==Case::OrdinalOverflow?0u:1u;
+        if(cleanupCount.accepted.load()!=closes+expected||cleanupFault!=CleanupFault::None)Refuse("http_proof_idle_write_finalizer_replay");
     }return true;
 }
 #endif

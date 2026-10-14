@@ -12,5 +12,8 @@ public:
     // C++ composition only; not a JavaScript export.
     static std::shared_ptr<FixedHttpListener> Listen(HttpTransportOwner& owner);
     static void RetainUnknown(const std::shared_ptr<AcceptedConnection>& connection,const std::shared_ptr<FixedHttpListener>& listener)noexcept;
+    static void ReserveWriteWork(const std::shared_ptr<AcceptedConnection>& connection);
+    static void ReconcileWriteWork(const std::shared_ptr<AcceptedConnection>& connection)noexcept;
+    static bool CloseConfirmed(const std::shared_ptr<AcceptedConnection>& connection)noexcept;
 };
 }
