@@ -156,3 +156,15 @@ SHA256 `55FEE5B6D8F57BE2912DA109C45EFE48CFD346D72D09208A1FBA110912533DEA`.
 Это проверка фактического C++ predicate на synthetic inventories. Actual AE
 inventory/FontObjects, новый полный addon, D46–50, финальный M/C1 и два видео
 этим блоком не подтверждены. Production остаётся CLOSED, результат — 0/2.
+
+Portable observed-timing resolver реализован отдельно и принят independent
+review: exact IEEE754 whitelist, two-limb dyadic multiplication, RN-even и
+unique N4..8191 без зависимости от текущего floating rounding mode. Независимый
+Node oracle проверил 81 920 rounding cells, 81 880 unique-grid и 80 negative
+случаев. Actual C++ proof прошёл 285/285; scope Pin40 encoding — 12/12.
+Freeze11 `ns-289831993411` → `tp-dec9ff0c5c9b`, TU2/1; четыре исходных MSBuild
+и два proof process завершены CLOSED/exit0/EOF, handles закрыты, исходный
+owner23012 завершён с exit0. Acceptance SHA256 `F6698FFE…5A11D9` в
+`.codex-runtime/resume-msi-20261014/isolated-scope-timing-acceptance-dec9ff0c5c9b.json`.
+Scope proof проверяет actual C++ preimage encoding с accepted ABI headers;
+actual SHA256 authority, полный current NAPI, actual host timing и AME не доказаны.
