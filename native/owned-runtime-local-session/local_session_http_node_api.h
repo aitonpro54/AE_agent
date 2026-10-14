@@ -11,5 +11,6 @@ public:
     static void AssertRequestStream(napi_env env,napi_value role,napi_value cap,napi_value request);
     // C++ composition only; not a JavaScript export.
     static std::shared_ptr<FixedHttpListener> Listen(HttpTransportOwner& owner);
+    static void RetainUnknown(const std::shared_ptr<AcceptedConnection>& connection,const std::shared_ptr<FixedHttpListener>& listener)noexcept;
 };
 }

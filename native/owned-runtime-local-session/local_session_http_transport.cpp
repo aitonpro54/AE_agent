@@ -13,6 +13,7 @@ struct HttpAcceptedOriginal final {
 };
 struct HttpSocketLifetime final {
     std::atomic<bool> unknown{false};std::vector<std::shared_ptr<HttpAcceptedOriginal>> originals;
+    std::uintptr_t listenerOriginal=static_cast<std::uintptr_t>(INVALID_SOCKET);
     // UNKNOWN originals survive connection/listener destruction. Only the
     // original process exit releases their OS identities; no close is replayed.
     std::shared_ptr<HttpSocketLifetime> retainedUnknown;
@@ -25,13 +26,20 @@ void RetainUnknown(const std::shared_ptr<HttpSocketLifetime>& lifetime)noexcept{
     if(!lifetime->unknown.exchange(true))lifetime->retainedUnknown=lifetime;
 }
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
-enum class CleanupFault {None,CreateSocket,BeforeUnique,AfterUnique,AfterShared,AfterVector,AcceptedClose};
-struct CleanupCount {std::atomic<std::uint64_t> accepted{0},acceptedSucceeded{0},startup{0},cleanup{0};};
+enum class CleanupFault {None,CreateSocket,BeforeUnique,AfterUnique,AfterShared,AfterVector,AcceptedClose,End};
+enum class RevokePoint {None,BeforeAccept,AfterAccept,BeforeRead,AfterRead,BeforeWrite,AfterWrite};
+RevokePoint revokePoint=RevokePoint::None;std::atomic<bool>* revokeTarget=nullptr;
+void RevokeAt(RevokePoint point){if(revokePoint==point&&revokeTarget){*revokeTarget=true;revokePoint=RevokePoint::None;}}
+#define HTTP_REVOKE_AT(point) RevokeAt(RevokePoint::point)
+struct CleanupCount {std::atomic<std::uint64_t> accepted{0},acceptedSucceeded{0},startup{0},cleanup{0},ended{0},listener{0},acceptIo{0},recvIo{0},sendIo{0};};
 CleanupFault cleanupFault=CleanupFault::None;CleanupCount cleanupCount;
 void Fault(CleanupFault point){if(cleanupFault==point){cleanupFault=CleanupFault::None;Refuse("http_proof_cleanup_injected");}}
 #define HTTP_CLEANUP_FAULT(point) Fault(CleanupFault::point)
+#define HTTP_IO_ATTEMPT(name) (++cleanupCount.name)
 #else
 #define HTTP_CLEANUP_FAULT(point) ((void)0)
+#define HTTP_REVOKE_AT(point) ((void)0)
+#define HTTP_IO_ATTEMPT(name) ((void)0)
 #endif
 int CloseAccepted(SOCKET original)noexcept{
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
@@ -46,15 +54,17 @@ int CloseAccepted(SOCKET original)noexcept{
 }
 class AcceptedSocketGuard final {
 public:
-    AcceptedSocketGuard(SOCKET original,const std::shared_ptr<HttpSocketLifetime>& lifetime,const std::shared_ptr<HttpAcceptedOriginal>& record):original_(original),lifetime_(lifetime),record_(record){}
-    ~AcceptedSocketGuard(){if(original_!=INVALID_SOCKET){if(CloseAccepted(original_)!=0){record_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}else record_->stage=CloseStage::Closed;}}
+    AcceptedSocketGuard(HttpTransportOwner& owner,SOCKET original,const std::shared_ptr<HttpSocketLifetime>& lifetime,const std::shared_ptr<HttpAcceptedOriginal>& record):owner_(owner),original_(original),lifetime_(lifetime),record_(record){}
+    ~AcceptedSocketGuard(){if(original_!=INVALID_SOCKET){if(lifetime_->unknown.load())return;
+        if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){if(!owner_.ReadRevokedKnown()){record_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}return;}
+        record_->stage=CloseStage::Closing;if(CloseAccepted(original_)!=0){record_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}else record_->stage=CloseStage::Closed;}}
     void Transfer()noexcept{original_=INVALID_SOCKET;}
     AcceptedSocketGuard(const AcceptedSocketGuard&)=delete;
-private:SOCKET original_;std::shared_ptr<HttpSocketLifetime> lifetime_;std::shared_ptr<HttpAcceptedOriginal> record_;
+private:HttpTransportOwner& owner_;SOCKET original_;std::shared_ptr<HttpSocketLifetime> lifetime_;std::shared_ptr<HttpAcceptedOriginal> record_;
 };
 SOCKET Exact(std::uintptr_t value){return static_cast<SOCKET>(value);}
-void WaitSocket(SOCKET socket,bool write,std::uint64_t deadline){
-    for(;;){const auto now=GetTickCount64();if(now>=deadline)Refuse("trusted_socket_timeout",WSAETIMEDOUT,true);
+void WaitSocket(SOCKET socket,bool write,std::uint64_t deadline,HttpTransportOwner* owner=nullptr){
+    for(;;){if(owner)owner->AssertCurrent();const auto now=GetTickCount64();if(now>=deadline)Refuse("trusted_socket_timeout",WSAETIMEDOUT);
         fd_set ready{},errors{};FD_ZERO(&ready);FD_ZERO(&errors);FD_SET(socket,&ready);FD_SET(socket,&errors);
         const auto left=std::min<std::uint64_t>(deadline-now,100);timeval timeout{};timeout.tv_usec=static_cast<long>(left*1000);
         const int result=select(0,write?nullptr:&ready,write?&ready:nullptr,&errors,&timeout);
@@ -72,24 +82,48 @@ bool Same(const SocketPeer& a,const SocketPeer& b){return a.localAddress==b.loca
 }
 AcceptedConnection::AcceptedConnection(HttpTransportOwner& owner,const std::shared_ptr<HttpSocketLifetime>& lifetime,const std::shared_ptr<HttpAcceptedOriginal>& original,const SocketPeer& peer):owner_(owner),peer_(peer),socket_(original->socket),lifetime_(lifetime),original_(original){}
 AcceptedConnection::~AcceptedConnection(){CloseOnce();}
-void AcceptedConnection::AssertCurrent(){if(closed_.load()||unknown_.load())Refuse("trusted_original_socket_closed",0,unknown_.load());owner_.AssertCurrent();
-    if(!Same(peer_,Observe(Exact(socket_)))){unknown_=true;Refuse("trusted_original_socket_changed",0,true);}}
+bool AcceptedConnection::Unknown()const noexcept{return unknown_.load()||lifetime_->unknown.load();}
+void AcceptedConnection::RetainIoUnknown()noexcept{unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}
+void AcceptedConnection::AssertCurrent(){if(closed_.load()||Unknown())Refuse("trusted_original_socket_closed",0,Unknown());
+    try{owner_.AssertCurrent();if(!Same(peer_,Observe(Exact(socket_))))Refuse("trusted_original_socket_changed",0,true);}
+    catch(const detail::Failure& failure){if(failure.unknown||!owner_.ReadRevokedKnown()){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}throw;}
+    catch(...){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);throw;}}
 std::vector<unsigned char> AcceptedConnection::Read(){std::lock_guard<std::mutex> lock(readIo_);AssertCurrent();std::vector<unsigned char> bytes(kChunk);
-    try{WaitSocket(Exact(socket_),false,GetTickCount64()+kIoMs);AssertCurrent();const int count=recv(Exact(socket_),reinterpret_cast<char*>(bytes.data()),static_cast<int>(bytes.size()),0);
+    try{WaitSocket(Exact(socket_),false,GetTickCount64()+kIoMs,&owner_);HTTP_REVOKE_AT(BeforeRead);AssertCurrent();
+        HTTP_IO_ATTEMPT(recvIo);const int count=recv(Exact(socket_),reinterpret_cast<char*>(bytes.data()),static_cast<int>(bytes.size()),0);HTTP_REVOKE_AT(AfterRead);
         if(count==SOCKET_ERROR)Refuse("trusted_socket_read_unknown",static_cast<std::uint32_t>(WSAGetLastError()),true);
-        if(count==0){bytes.clear();return bytes;}bytes.resize(static_cast<std::size_t>(count));AssertCurrent();return bytes;
-    }catch(const detail::Failure& failure){if(!closed_.load()&&failure.error!=WSAETIMEDOUT)unknown_=true;throw;}}
+        // Reconcile the actual recv before the normal guard. A known revoke
+        // discards consumed bytes (including EOF), never returns a payload.
+        AssertCurrent();bytes.resize(static_cast<std::size_t>(count));return bytes;
+    }catch(const detail::Failure& failure){if(failure.unknown||(failure.error!=WSAETIMEDOUT&&!owner_.ReadRevokedKnown())){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}throw;}
+    catch(...){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);throw;}}
 void AcceptedConnection::Write(const std::vector<unsigned char>& bytes){std::lock_guard<std::mutex> lock(writeIo_);AssertCurrent();if(bytes.empty()||bytes.size()>kChunk||ended_)Refuse("trusted_socket_write_shape");
-    const auto deadline=GetTickCount64()+kIoMs;std::size_t sent=0;try{while(sent<bytes.size()){WaitSocket(Exact(socket_),true,deadline);AssertCurrent();
-        const int count=send(Exact(socket_),reinterpret_cast<const char*>(bytes.data()+sent),static_cast<int>(bytes.size()-sent),0);
-        if(count==SOCKET_ERROR&&WSAGetLastError()==WSAEWOULDBLOCK)continue;
-        if(count<=0)Refuse("trusted_socket_write_unknown",static_cast<std::uint32_t>(WSAGetLastError()),true);sent+=static_cast<std::size_t>(count);}AssertCurrent();
-    }catch(...){unknown_=true;throw;}}
-void AcceptedConnection::End(){std::lock_guard<std::mutex> lock(writeIo_);AssertCurrent();if(ended_)return;ended_=true;
-    if(shutdown(Exact(socket_),SD_SEND)!=0){unknown_=true;Refuse("trusted_socket_end_unknown",static_cast<std::uint32_t>(WSAGetLastError()),true);}}
+    const auto deadline=GetTickCount64()+kIoMs;std::size_t sent=0;try{while(sent<bytes.size()){WaitSocket(Exact(socket_),true,deadline,&owner_);HTTP_REVOKE_AT(BeforeWrite);AssertCurrent();
+        HTTP_IO_ATTEMPT(sendIo);const int count=send(Exact(socket_),reinterpret_cast<const char*>(bytes.data()+sent),static_cast<int>(bytes.size()-sent),0);const int error=count==SOCKET_ERROR?WSAGetLastError():0;HTTP_REVOKE_AT(AfterWrite);
+        if(count==SOCKET_ERROR&&error==WSAEWOULDBLOCK){AssertCurrent();continue;}
+        if(count<=0)Refuse("trusted_socket_write_unknown",static_cast<std::uint32_t>(error),true);sent+=static_cast<std::size_t>(count);AssertCurrent();}
+    }catch(const detail::Failure& failure){if(failure.unknown||(!owner_.ReadRevokedKnown()&&(sent||failure.error!=WSAETIMEDOUT))){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}throw;}
+    catch(...){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);throw;}}
+void AcceptedConnection::End(){std::lock_guard<std::mutex> lock(writeIo_);
+    if(Unknown())Refuse("trusted_original_socket_closed",0,true);if(ended_)return;
+    if(closed_.load())Refuse("trusted_original_socket_closed");
+    if(socket_!=original_->socket||original_->stage.load()!=CloseStage::Open){RetainIoUnknown();Refuse("trusted_original_end_identity_unknown",0,true);}
+    if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::EndNoPayload)){
+        if(!owner_.ReadRevokedKnown()){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}Refuse("trusted_original_end_cleanup_refused",0,Unknown());}
+    ended_=true;
+#if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
+    ++cleanupCount.ended;if(cleanupFault==CleanupFault::End){cleanupFault=CleanupFault::None;unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);Refuse("trusted_socket_end_unknown",WSAEFAULT,true);}
+#endif
+    if(shutdown(Exact(socket_),SD_SEND)!=0){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);Refuse("trusted_socket_end_unknown",static_cast<std::uint32_t>(WSAGetLastError()),true);}}
 std::uint64_t AcceptedConnection::NextRequest(){std::lock_guard<std::mutex> lock(requestIo_);AssertCurrent();if(requests_>=kRequests)Refuse("trusted_socket_request_budget",0,true);return ++requests_;}
-void AcceptedConnection::CloseOnce()noexcept{std::lock_guard<std::mutex> closeLock(closeIo_);if(closed_.exchange(true))return;original_->stage=CloseStage::Closing;std::scoped_lock lock(readIo_,writeIo_,requestIo_);
-    // A failed close retains the exact original value and is never repeated.
+void AcceptedConnection::CloseOnce()noexcept{std::lock_guard<std::mutex> closeLock(closeIo_);if(closed_.load())return;std::scoped_lock lock(readIo_,writeIo_,requestIo_);
+    if(Unknown())return;
+    if(socket_!=original_->socket||original_->stage.load()!=CloseStage::Open){RetainIoUnknown();return;}
+    if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){
+        if(!owner_.ReadRevokedKnown()){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}return;}
+    // Only a permitted actual attempt consumes CloseOnce. Waiting for B33
+    // leaves the original open; UNKNOWN never permits a close bypass.
+    closed_=true;original_->stage=CloseStage::Closing;
     if(CloseAccepted(Exact(socket_))!=0){unknown_=true;original_->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}
     else{socket_=static_cast<std::uintptr_t>(INVALID_SOCKET);original_->stage=CloseStage::Closed;}}
 FixedHttpListener::FixedHttpListener(HttpTransportOwner& owner):owner_(owner),socket_(static_cast<std::uintptr_t>(INVALID_SOCKET)),lifetime_(std::make_shared<HttpSocketLifetime>()){
@@ -98,7 +132,7 @@ FixedHttpListener::FixedHttpListener(HttpTransportOwner& owner):owner_(owner),so
     ++cleanupCount.startup;
 #endif
     try{if(data.wVersion!=MAKEWORD(2,2))Refuse("trusted_winsock_unavailable");HTTP_CLEANUP_FAULT(CreateSocket);
-        SOCKET original=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);if(original==INVALID_SOCKET)Refuse("trusted_listener_create_failed",static_cast<std::uint32_t>(WSAGetLastError()));socket_=static_cast<std::uintptr_t>(original);
+        SOCKET original=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);if(original==INVALID_SOCKET)Refuse("trusted_listener_create_failed",static_cast<std::uint32_t>(WSAGetLastError()));socket_=static_cast<std::uintptr_t>(original);lifetime_->listenerOriginal=socket_;
         const BOOL exclusive=TRUE;if(setsockopt(original,SOL_SOCKET,SO_EXCLUSIVEADDRUSE,reinterpret_cast<const char*>(&exclusive),sizeof(exclusive))!=0)Refuse("trusted_listener_exclusive_failed",static_cast<std::uint32_t>(WSAGetLastError()));
         sockaddr_in address{};address.sin_family=AF_INET;address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);address.sin_port=htons(owner_.HttpFixedPort());
         if(bind(original,reinterpret_cast<const sockaddr*>(&address),sizeof(address))!=0||listen(original,16)!=0)Refuse("trusted_fixed_listener_unavailable",static_cast<std::uint32_t>(WSAGetLastError()));
@@ -106,34 +140,55 @@ FixedHttpListener::FixedHttpListener(HttpTransportOwner& owner):owner_(owner),so
     }catch(...){CloseOnce();throw;}}
 FixedHttpListener::~FixedHttpListener(){CloseOnce();}
 bool FixedHttpListener::Unknown()const noexcept{return unknown_.load()||lifetime_->unknown.load();}
-void FixedHttpListener::AssertCurrent(){if(closed_||Unknown())Refuse("trusted_native_listener_closed",0,Unknown());owner_.AssertCurrent();sockaddr_in local{};int length=sizeof(local);
-    if(getsockname(Exact(socket_),reinterpret_cast<sockaddr*>(&local),&length)!=0||length!=sizeof(local)||local.sin_family!=AF_INET||local.sin_addr.s_addr!=htonl(INADDR_LOOPBACK)||ntohs(local.sin_port)!=owner_.HttpFixedPort())Refuse("trusted_native_listener_changed",0,true);}
+void FixedHttpListener::RetainIoUnknown()noexcept{unknown_=true;RetainUnknown(lifetime_);}
+void FixedHttpListener::AssertCurrent(){if(closed_||Unknown())Refuse("trusted_native_listener_closed",0,Unknown());
+    try{owner_.AssertCurrent();sockaddr_in local{};int length=sizeof(local);
+        if(getsockname(Exact(socket_),reinterpret_cast<sockaddr*>(&local),&length)!=0||length!=sizeof(local)||local.sin_family!=AF_INET||local.sin_addr.s_addr!=htonl(INADDR_LOOPBACK)||ntohs(local.sin_port)!=owner_.HttpFixedPort())Refuse("trusted_native_listener_changed",0,true);}
+    catch(const detail::Failure& failure){if(failure.unknown||!owner_.ReadRevokedKnown()){unknown_=true;RetainUnknown(lifetime_);}throw;}
+    catch(...){unknown_=true;RetainUnknown(lifetime_);throw;}}
 std::shared_ptr<AcceptedConnection> FixedHttpListener::Accept(){std::lock_guard<std::mutex> lock(io_);AssertCurrent();
     auto& originals=lifetime_->originals;originals.erase(std::remove_if(originals.begin(),originals.end(),[](const auto& original){return original->stage.load()==CloseStage::Closed;}),originals.end());if(originals.size()>=kConnections)Refuse("trusted_native_connection_budget");
-    WaitSocket(Exact(socket_),false,GetTickCount64()+kIoMs);AssertCurrent();sockaddr_in remote{};int length=sizeof(remote);
-    // The retention slot exists before accept, so allocation failure after the
-    // OS accepts cannot discard a failed-close original identity.
-    auto record=std::make_shared<HttpAcceptedOriginal>(static_cast<std::uintptr_t>(INVALID_SOCKET));lifetime_->originals.push_back(record);
-    const SOCKET original=accept(Exact(socket_),reinterpret_cast<sockaddr*>(&remote),&length);
-    if(original==INVALID_SOCKET){record->stage=CloseStage::Closed;Refuse("trusted_native_accept_failed",static_cast<std::uint32_t>(WSAGetLastError()));}
-    record->socket=static_cast<std::uintptr_t>(original);AcceptedSocketGuard guard(original,lifetime_,record);
-    u_long nonblocking=1;if(ioctlsocket(original,FIONBIO,&nonblocking)!=0)Refuse("trusted_native_accepted_mode_failed",static_cast<std::uint32_t>(WSAGetLastError()));
-        const auto observed=Observe(original);if(observed.localPort!=owner_.HttpFixedPort())Refuse("trusted_native_accept_port");
+    try{WaitSocket(Exact(socket_),false,GetTickCount64()+kIoMs,&owner_);HTTP_REVOKE_AT(BeforeAccept);AssertCurrent();sockaddr_in remote{};int length=sizeof(remote);
+        auto record=std::make_shared<HttpAcceptedOriginal>(static_cast<std::uintptr_t>(INVALID_SOCKET));lifetime_->originals.push_back(record);
+        HTTP_IO_ATTEMPT(acceptIo);const SOCKET original=accept(Exact(socket_),reinterpret_cast<sockaddr*>(&remote),&length);const int error=original==INVALID_SOCKET?WSAGetLastError():0;HTTP_REVOKE_AT(AfterAccept);
+        if(original==INVALID_SOCKET){record->stage=CloseStage::Closed;if(error==WSAEWOULDBLOCK){AssertCurrent();Refuse("trusted_native_accept_failed",static_cast<std::uint32_t>(error));}Refuse("trusted_native_accept_unknown",static_cast<std::uint32_t>(error),true);}
+        record->socket=static_cast<std::uintptr_t>(original);AcceptedSocketGuard guard(owner_,original,lifetime_,record);
+        AssertCurrent();u_long nonblocking=1;if(ioctlsocket(original,FIONBIO,&nonblocking)!=0){record->stage=CloseStage::Unknown;RetainUnknown(lifetime_);Refuse("trusted_native_accepted_mode_failed",static_cast<std::uint32_t>(WSAGetLastError()),true);}
+        SocketPeer observed{};try{observed=Observe(original);if(observed.localPort!=owner_.HttpFixedPort())Refuse("trusted_native_accept_port",0,true);}
+        catch(...){record->stage=CloseStage::Unknown;RetainUnknown(lifetime_);throw;}
         HTTP_CLEANUP_FAULT(BeforeUnique);auto unique=std::unique_ptr<AcceptedConnection>(new AcceptedConnection(owner_,lifetime_,record,observed));guard.Transfer();
         HTTP_CLEANUP_FAULT(AfterUnique);auto value=std::shared_ptr<AcceptedConnection>(std::move(unique));HTTP_CLEANUP_FAULT(AfterShared);
-        record->connection=value;HTTP_CLEANUP_FAULT(AfterVector);AssertCurrent();return value;}
-void FixedHttpListener::CloseOnce()noexcept{if(closed_.exchange(true))return;std::lock_guard<std::mutex> lock(io_);
-    for(const auto& record:lifetime_->originals){if(auto value=record->connection.lock())value->CloseOnce();if(record->stage.load()!=CloseStage::Closed)RetainUnknown(lifetime_);}
-    if(Exact(socket_)!=INVALID_SOCKET){if(closesocket(Exact(socket_))!=0)unknown_=true;else socket_=static_cast<std::uintptr_t>(INVALID_SOCKET);}if(winsock_&&!Unknown()){
-        if(WSACleanup()!=0)unknown_=true;else{winsock_=false;
+        record->connection=value;HTTP_CLEANUP_FAULT(AfterVector);AssertCurrent();return value;
+    }catch(const detail::Failure& failure){if(failure.unknown||(failure.error!=WSAETIMEDOUT&&failure.error!=WSAEWOULDBLOCK&&!owner_.ReadRevokedKnown()&&failure.code!="http_proof_cleanup_injected")){unknown_=true;RetainUnknown(lifetime_);}throw;}
+    catch(...){unknown_=true;RetainUnknown(lifetime_);throw;}}
+void FixedHttpListener::CloseOnce()noexcept{std::lock_guard<std::mutex> lock(io_);if(closed_.load()||Unknown())return;
+    if(Exact(socket_)!=INVALID_SOCKET&&socket_!=lifetime_->listenerOriginal){RetainIoUnknown();return;}
+    if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){if(!owner_.ReadRevokedKnown()){unknown_=true;RetainUnknown(lifetime_);}return;}
+    for(const auto& record:lifetime_->originals){if(auto value=record->connection.lock())value->CloseOnce();
+        else if(record->stage.load()==CloseStage::Open){
+            if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){if(!owner_.ReadRevokedKnown()){record->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}return;}
+            record->stage=CloseStage::Closing;if(CloseAccepted(Exact(record->socket))!=0){record->stage=CloseStage::Unknown;RetainUnknown(lifetime_);}else record->stage=CloseStage::Closed;}
+        if(record->stage.load()!=CloseStage::Closed)return;}
+    if(Unknown())return;
+    if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){if(!owner_.ReadRevokedKnown()){unknown_=true;RetainUnknown(lifetime_);}return;}
+    if(Exact(socket_)!=INVALID_SOCKET){
+#if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
+        ++cleanupCount.listener;
+#endif
+        if(closesocket(Exact(socket_))!=0){unknown_=true;RetainUnknown(lifetime_);return;}socket_=static_cast<std::uintptr_t>(INVALID_SOCKET);}
+    if(winsock_&&!Unknown()){
+        if(!owner_.OriginalCleanupCurrent(HttpCleanupOperation::Close)){if(!owner_.ReadRevokedKnown()){unknown_=true;RetainUnknown(lifetime_);}return;}
+        if(WSACleanup()!=0){unknown_=true;RetainUnknown(lifetime_);}else{winsock_=false;
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
             ++cleanupCount.cleanup;
 #endif
-        }}}
+        }}closed_=true;}
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
 bool RunHttpCleanupFaultsFixed(HttpTransportOwner& originalOwner){
     struct CleanupOwner final:HttpTransportOwner{HttpTransportOwner& original;explicit CleanupOwner(HttpTransportOwner& value):original(value){}
-        void AssertCurrent()override{original.AssertCurrent();}std::uint16_t HttpFixedPort()const noexcept override{return 23457;}} owner(originalOwner);
+        void AssertCurrent()override{original.AssertCurrent();}std::uint16_t HttpFixedPort()const noexcept override{return 23457;}
+        bool OriginalCleanupCurrent(HttpCleanupOperation op)noexcept override{return original.OriginalCleanupCurrent(op);}
+        bool ReadRevokedKnown()const noexcept override{return original.ReadRevokedKnown();}} owner(originalOwner);
     struct ClientSocket final{SOCKET original=INVALID_SOCKET;~ClientSocket(){if(original!=INVALID_SOCKET)closesocket(original);}};
     for(const auto point:{CleanupFault::CreateSocket,CleanupFault::BeforeUnique,CleanupFault::AfterUnique,CleanupFault::AfterShared,CleanupFault::AfterVector}){
         const auto starts=cleanupCount.startup.load(),ends=cleanupCount.cleanup.load(),closes=cleanupCount.accepted.load(),successes=cleanupCount.acceptedSucceeded.load();
@@ -159,6 +214,8 @@ bool RunHttpCloseFailureFaultsFixed(const std::shared_ptr<HttpTransportOwner>& o
         std::shared_ptr<HttpTransportOwner> original;const std::uint16_t port;
         CloseOwner(std::shared_ptr<HttpTransportOwner> value,std::uint16_t fixedPort):original(std::move(value)),port(fixedPort){}
         void AssertCurrent()override{original->AssertCurrent();}std::uint16_t HttpFixedPort()const noexcept override{return port;}
+        bool OriginalCleanupCurrent(HttpCleanupOperation op)noexcept override{return original->OriginalCleanupCurrent(op);}
+        bool ReadRevokedKnown()const noexcept override{return original->ReadRevokedKnown();}
     };
     struct Retained final {std::shared_ptr<HttpTransportOwner> owner;std::shared_ptr<HttpAcceptedOriginal> original;};
     struct ClientSocket final{SOCKET original=INVALID_SOCKET;~ClientSocket(){if(original!=INVALID_SOCKET)closesocket(original);}};
@@ -184,6 +241,88 @@ bool RunHttpCloseFailureFaultsFixed(const std::shared_ptr<HttpTransportOwner>& o
         if(lifetime.expired()||record->stage.load()!=CloseStage::Unknown||record->socket!=exactOriginal||cleanupFault!=CleanupFault::None||cleanupCount.startup.load()!=starts+1||cleanupCount.cleanup.load()!=ends||cleanupCount.accepted.load()!=closes+1||cleanupCount.acceptedSucceeded.load()!=successes)Refuse("http_proof_close_unknown_once_or_balance_failed");
         // Fixed authority=false injection skipped the OS accepted close. Keep
         // the original owner and SOCKET identity until this exact child exits.
+    }return true;
+}
+bool RunHttpRevokeFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner){
+    if(!originalOwner)Refuse("http_proof_revoke_original_owner_required");
+    // This fixed authority=false owner models the transferred predicate only.
+    // It never authenticates B33, a broker floor, or a production enrollment.
+    struct RevokeOwner final:HttpTransportOwner {
+        std::shared_ptr<HttpTransportOwner> original;std::atomic<bool> revoked{false};const std::uint16_t port;
+        bool b33=true,source=true,clock=true,generation=true,own=true;
+        RevokeOwner(std::shared_ptr<HttpTransportOwner> value,std::uint16_t fixedPort):original(std::move(value)),port(fixedPort){}
+        bool OriginalValid()const noexcept{return source&&clock&&generation&&own&&original->OriginalCleanupCurrent(HttpCleanupOperation::Close);}
+        void AssertCurrent()override{original->AssertCurrent();if(!OriginalValid())Refuse("http_proof_revoke_original_changed");if(revoked)Refuse("http_proof_read_revoked_known");}
+        std::uint16_t HttpFixedPort()const noexcept override{return port;}
+        bool OriginalCleanupCurrent(HttpCleanupOperation op)noexcept override{return
+            (op==HttpCleanupOperation::EndNoPayload||op==HttpCleanupOperation::Close)&&OriginalValid()&&(!revoked||b33);}
+        bool ReadRevokedKnown()const noexcept override{return OriginalValid()&&revoked;}
+    };
+    struct ClientSocket final{SOCKET original=INVALID_SOCKET;~ClientSocket(){if(original!=INVALID_SOCKET)closesocket(original);}
+        void Close(){if(original!=INVALID_SOCKET){const auto exact=original;original=INVALID_SOCKET;if(closesocket(exact)!=0)Refuse("http_proof_revoke_client_close");}}};
+    enum class Case {Idle,BeforeAccept,AfterAccept,BeforeRead,AfterRead,BeforeWrite,AfterWrite,NoB33,FinalizerNoB33,FinalizerRevoked,Source,Clock,Generation,ForeignOwner,EndUnknown};
+    std::uint16_t port=23460;
+    for(const auto scenario:{Case::Idle,Case::BeforeAccept,Case::AfterAccept,Case::BeforeRead,Case::AfterRead,Case::BeforeWrite,Case::AfterWrite,Case::NoB33,Case::FinalizerNoB33,Case::FinalizerRevoked,Case::Source,Case::Clock,Case::Generation,Case::ForeignOwner,Case::EndUnknown}){
+        const auto starts=cleanupCount.startup.load(),ends=cleanupCount.cleanup.load(),closes=cleanupCount.accepted.load(),endings=cleanupCount.ended.load(),listeners=cleanupCount.listener.load();
+        auto owner=std::make_shared<RevokeOwner>(originalOwner,port++);auto listener=std::unique_ptr<FixedHttpListener>(new FixedHttpListener(*owner));ClientSocket client;
+        client.original=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);if(client.original==INVALID_SOCKET)Refuse("http_proof_revoke_client_create");
+        u_long nonblocking=1;if(ioctlsocket(client.original,FIONBIO,&nonblocking)!=0)Refuse("http_proof_revoke_client_mode");
+        sockaddr_in target{};target.sin_family=AF_INET;target.sin_addr.s_addr=htonl(INADDR_LOOPBACK);target.sin_port=htons(owner->HttpFixedPort());
+        if(connect(client.original,reinterpret_cast<const sockaddr*>(&target),sizeof(target))==SOCKET_ERROR){if(WSAGetLastError()!=WSAEWOULDBLOCK)Refuse("http_proof_revoke_client_connect");WaitSocket(client.original,true,GetTickCount64()+kIoMs);}
+        std::shared_ptr<AcceptedConnection> connection;bool denied=false;
+        const bool acceptStage=scenario==Case::BeforeAccept||scenario==Case::AfterAccept;
+        const bool readStage=scenario==Case::BeforeRead||scenario==Case::AfterRead;
+        const bool writeStage=scenario==Case::BeforeWrite||scenario==Case::AfterWrite;
+        if(acceptStage){revokeTarget=&owner->revoked;revokePoint=scenario==Case::BeforeAccept?RevokePoint::BeforeAccept:RevokePoint::AfterAccept;
+            const auto attempts=cleanupCount.acceptIo.load();try{connection=listener->Accept();}catch(const detail::Failure& failure){denied=!failure.unknown&&failure.code=="http_proof_read_revoked_known";}
+            const auto expected=scenario==Case::BeforeAccept?0u:1u;if(connection||!denied||cleanupCount.acceptIo.load()!=attempts+expected)Refuse("http_proof_revoke_accept_effect_mismatch");}
+        else{connection=listener->Accept();if(!connection||connection->NextRequest()!=1)Refuse("http_proof_revoke_normal_request_missing");}
+        if(readStage){const char bytes[]="original-owned-read";WaitSocket(client.original,true,GetTickCount64()+kIoMs);
+            if(send(client.original,bytes,static_cast<int>(sizeof(bytes)),0)!=static_cast<int>(sizeof(bytes)))Refuse("http_proof_revoke_client_send");
+            revokeTarget=&owner->revoked;revokePoint=scenario==Case::BeforeRead?RevokePoint::BeforeRead:RevokePoint::AfterRead;
+            const auto attempts=cleanupCount.recvIo.load();try{(void)connection->Read();}catch(const detail::Failure& failure){denied=!failure.unknown&&failure.code=="http_proof_read_revoked_known";}
+            const auto expected=scenario==Case::BeforeRead?0u:1u;if(!denied||cleanupCount.recvIo.load()!=attempts+expected)Refuse("http_proof_revoke_recv_effect_mismatch");}
+        if(writeStage){revokeTarget=&owner->revoked;revokePoint=scenario==Case::BeforeWrite?RevokePoint::BeforeWrite:RevokePoint::AfterWrite;
+            const auto attempts=cleanupCount.sendIo.load();try{connection->Write(std::vector<unsigned char>(kChunk,'x'));}catch(const detail::Failure& failure){denied=!failure.unknown&&failure.code=="http_proof_read_revoked_known";}
+            const auto expected=scenario==Case::BeforeWrite?0u:1u;if(!denied||cleanupCount.sendIo.load()!=attempts+expected)Refuse("http_proof_revoke_send_effect_mismatch");}
+        revokeTarget=nullptr;if(revokePoint!=RevokePoint::None)Refuse("http_proof_revoke_point_not_consumed");
+        if(scenario==Case::Source||scenario==Case::Clock||scenario==Case::Generation||scenario==Case::ForeignOwner||scenario==Case::EndUnknown){
+            // All negatives retain the real originals. The fixture never
+            // repairs a source/clock/owner failure to replay a close.
+            (void)new std::shared_ptr<HttpTransportOwner>(owner);
+            auto record=listener->lifetime_->originals.front();const auto exactAccepted=record->socket,exactListener=listener->lifetime_->listenerOriginal;
+            std::weak_ptr<HttpSocketLifetime> retained=listener->lifetime_;
+            if(scenario==Case::Source)owner->source=false;if(scenario==Case::Clock)owner->clock=false;
+            if(scenario==Case::Generation)owner->generation=false;if(scenario==Case::ForeignOwner)owner->own=false;
+            if(scenario==Case::EndUnknown){cleanupFault=CleanupFault::End;try{connection->End();}catch(const detail::Failure& failure){denied=failure.unknown;}
+                if(!denied||cleanupFault!=CleanupFault::None)Refuse("http_proof_revoke_end_unknown_missing");
+                denied=false;try{connection->End();}catch(const detail::Failure& failure){denied=failure.unknown;}if(!denied)Refuse("http_proof_revoke_end_unknown_replay");}
+            connection->CloseOnce();connection->CloseOnce();listener->CloseOnce();listener->CloseOnce();
+            if(!connection->Unknown()||!listener->Unknown()||connection->Closed()||listener->Closed()||
+                cleanupCount.accepted.load()!=closes||cleanupCount.listener.load()!=listeners||cleanupCount.cleanup.load()!=ends||
+                cleanupCount.ended.load()!=endings+(scenario==Case::EndUnknown?1u:0u))Refuse("http_proof_revoke_negative_close_bypass");
+            // Repeated destructor/finalizer equivalents must not add effects.
+            connection.reset();listener.reset();client.Close();
+            auto held=retained.lock();if(!held||held->listenerOriginal!=exactListener||record->socket!=exactAccepted||record->stage.load()!=CloseStage::Unknown)Refuse("http_proof_revoke_original_identity_not_retained");
+            if(cleanupCount.accepted.load()!=closes||cleanupCount.listener.load()!=listeners||cleanupCount.cleanup.load()!=ends)Refuse("http_proof_revoke_unknown_finalizer_replay");continue;
+        }
+        owner->revoked=true;
+        if(listener->Unknown()||(connection&&connection->Unknown()))Refuse("http_proof_revoke_fabricated_unknown");
+        if(connection){denied=false;try{(void)connection->NextRequest();}catch(const detail::Failure& failure){denied=!failure.unknown&&failure.code=="http_proof_read_revoked_known";}
+            if(!denied)Refuse("http_proof_revoke_new_request_accepted");}
+        if(scenario==Case::NoB33||scenario==Case::FinalizerNoB33){owner->b33=false;
+            denied=false;try{connection->End();}catch(const detail::Failure& failure){denied=!failure.unknown&&failure.code=="trusted_original_end_cleanup_refused";}
+            connection->CloseOnce();connection->CloseOnce();listener->CloseOnce();listener->CloseOnce();
+            if(!denied||connection->Unknown()||listener->Unknown()||connection->Closed()||listener->Closed()||cleanupCount.ended.load()!=endings||
+                cleanupCount.accepted.load()!=closes||cleanupCount.listener.load()!=listeners||cleanupCount.cleanup.load()!=ends)Refuse("http_proof_revoke_no_b33_effect_or_unknown");
+            if(scenario==Case::FinalizerNoB33){connection.reset();listener->CloseOnce();if(listener->Unknown()||cleanupCount.accepted.load()!=closes)Refuse("http_proof_revoke_pending_finalizer_effect");}
+            owner->b33=true;
+        }
+        if(connection){connection->End();connection->End();if(cleanupCount.ended.load()!=endings+1)Refuse("http_proof_revoke_end_replay");
+            if(scenario==Case::FinalizerRevoked)connection.reset();else{connection->CloseOnce();connection->CloseOnce();if(!connection->Closed()||connection->Unknown())Refuse("http_proof_revoke_cleanup_not_closed");connection.reset();}}
+        client.Close();listener->CloseOnce();listener->CloseOnce();if(listener->Unknown()||!listener->Closed())Refuse("http_proof_revoke_listener_not_closed");listener.reset();
+        const auto expected=scenario==Case::BeforeAccept?0u:1u;
+        if(cleanupCount.startup.load()!=starts+1||cleanupCount.cleanup.load()!=ends+1||cleanupCount.accepted.load()!=closes+expected||cleanupCount.listener.load()!=listeners+1)Refuse("http_proof_revoke_close_once_or_balance");
     }return true;
 }
 #endif

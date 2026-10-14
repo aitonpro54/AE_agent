@@ -39,7 +39,7 @@ class NativeDuplex extends Duplex {
   _read() {
     const s=streams.get(this);if (s.closed) return;if (s.reading) {s.readingAgain=true;return;}s.reading=true;
     const read=async()=>{try {for (;;) {
-      if (s.closed || this.destroyed) return;
+      if (s.closed || this.destroyed || native.readRevokedKnown(s.role)) return;
       let bytes;try {bytes=await native.connectionRead(s.role,s.connection);}catch(error) {
         if (error.code === "trusted_socket_timeout" && !s.closed) continue;throw error;
       }
@@ -54,6 +54,7 @@ class NativeDuplex extends Duplex {
     const s=streams.get(this);if (s.closed) return callback(Object.assign(Error("owned_initial_socket_closed"),{code:"owned_initial_socket_closed"}));
     const bytes=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk,encoding);
     const write=async()=>{s.writing=true;try {for (let at=0;at<bytes.length;at+=MAX_CHUNK) {
+      if (s.closed || native.readRevokedKnown(s.role)) fail("owned_initial_http_read_revoked_known");
       await native.connectionWrite(s.role,s.connection,bytes.subarray(at,at+MAX_CHUNK));native.assertCurrent(s.role);
     }this._unrefTimer();callback();}catch(error){s.writeError=error;callback(error);}finally{s.writing=false;}};
     // Retain the one already consumed write outcome. Parser error handling writes
@@ -97,9 +98,10 @@ async function bindFixedServer(role, server) {
     res.once("close",()=>{if (!item.finished && item.authenticated) void Promise.resolve().then(()=>native.failAuthenticatedResponse(role,item.authenticated)).catch(error=>req.socket.destroy(error));});
   });
   const accept=async()=>{while (!state.closed) {let connection;
-    try {connection=await native.acceptFixed(role,listener);}catch(error) {if (error.code==="trusted_socket_timeout" && !state.closed) continue;
+    try {connection=await native.acceptFixed(role,listener);}catch(error) {if (error.code==="trusted_socket_timeout" && !state.closed && !native.readRevokedKnown(role)) continue;
+      if (native.readRevokedKnown(role) && error.unknown!==true) break;
       if (!state.closed) server.emit("error",error);break;}
-    if (state.closed) {await native.connectionClose(role,connection);break;}native.assertCurrent(role);
+    if (state.closed || native.readRevokedKnown(role)) {await native.connectionClose(role,connection);break;}native.assertCurrent(role);
     const socket=new NativeDuplex(transportKey,role,connection);state.sockets.add(socket);socket.once("close",()=>state.sockets.delete(socket));
     // Exact pinned parser listener; no synthetic listening/address/handle state.
     Reflect.apply(httpInternals._connectionListener,server,[socket]);
@@ -120,6 +122,10 @@ function requestCapability(role, req) {const item=requests.get(req);if (!item ||
 function closeFixedServer(server) {
   const state=servers.get(server);if (!state) fail("owned_initial_original_server_required");if (state.closePromise) return state.closePromise;
   state.closed=true;httpInternals.httpServerPreClose(server);for (const socket of state.sockets) socket.destroy();
-  state.closePromise=(async()=>{await native.closeHttpListenerFixed(state.role,state.listener);await state.acceptPromise;await Promise.allSettled([...state.pending]);server.emit("close");})();return state.closePromise;
+  state.closePromise=(async()=>{await native.closeHttpListenerFixed(state.role,state.listener);await state.acceptPromise;await Promise.allSettled([...state.pending]);server.emit("close");})();
+  // A deterministic no-B33 refusal attempted no close. Keep originals and let
+  // the disposition controller explicitly call again after its exact transfer.
+  void state.closePromise.catch(error=>{if(error.unknown!==true&&native.readRevokedKnown(state.role)&&
+    error.code==="trusted_original_listener_cleanup_pending")state.closePromise=null;});return state.closePromise;
 }
 module.exports=Object.freeze({bindFixedServer,retainAuthenticatedRequest,requestCapability,closeFixedServer});

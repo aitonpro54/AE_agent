@@ -8,11 +8,14 @@ namespace local_session::trusted_read {
 class NativeClient;
 struct HttpSocketLifetime;
 struct HttpAcceptedOriginal;
+enum class HttpCleanupOperation : std::uint8_t { EndNoPayload=1,Close=2 };
 class HttpTransportOwner {
 public:
     virtual ~HttpTransportOwner()=default;
     virtual void AssertCurrent()=0;
     virtual std::uint16_t HttpFixedPort()const noexcept=0;
+    virtual bool OriginalCleanupCurrent(HttpCleanupOperation operation)noexcept=0;
+    virtual bool ReadRevokedKnown()const noexcept=0;
 protected:
     HttpTransportOwner()=default;
 };
@@ -31,9 +34,10 @@ public:
     void AssertCurrent();
     const SocketPeer& Peer()const noexcept{return peer_;}
     std::uint64_t NextRequest();
-    bool Unknown()const noexcept{return unknown_.load();}
+    bool Unknown()const noexcept;
     bool Closed()const noexcept{return closed_.load();}
 private:
+    void RetainIoUnknown()noexcept;
     AcceptedConnection(HttpTransportOwner& owner,const std::shared_ptr<HttpSocketLifetime>& lifetime,
         const std::shared_ptr<HttpAcceptedOriginal>& original,const SocketPeer& peer);
     HttpTransportOwner& owner_;const SocketPeer peer_;std::uintptr_t socket_;
@@ -41,6 +45,7 @@ private:
     std::mutex closeIo_,readIo_,writeIo_,requestIo_;std::atomic<bool> closed_{false},unknown_{false};
     bool ended_=false;std::uint64_t requests_=0;
     friend class FixedHttpListener;
+    friend class HttpTransportBinding;
 };
 class FixedHttpListener final {
 public:
@@ -51,7 +56,9 @@ public:
     void AssertCurrent();
     void CloseOnce()noexcept;
     bool Unknown()const noexcept;
+    bool Closed()const noexcept{return closed_.load();}
 private:
+    void RetainIoUnknown()noexcept;
     explicit FixedHttpListener(HttpTransportOwner& owner);
     HttpTransportOwner& owner_;std::uintptr_t socket_;std::mutex io_;
     bool winsock_=false;std::atomic<bool> closed_{false},unknown_{false};
@@ -61,6 +68,7 @@ private:
 #if defined(AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF) && AE_AGENT_HTTP_TRANSPORT_ISOLATED_PROOF == 1
     friend bool RunHttpCleanupFaultsFixed(HttpTransportOwner& originalOwner);
     friend bool RunHttpCloseFailureFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner);
+    friend bool RunHttpRevokeFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner);
 #endif
 };
 } // namespace local_session::trusted_read
@@ -69,5 +77,6 @@ namespace local_session::trusted_read {
 // One fixed, finite authority=false cleanup probe; no caller fault selector.
 bool RunHttpCleanupFaultsFixed(HttpTransportOwner& originalOwner);
 bool RunHttpCloseFailureFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner);
+bool RunHttpRevokeFaultsFixed(const std::shared_ptr<HttpTransportOwner>& originalOwner);
 }
 #endif

@@ -21,11 +21,12 @@ async function main(){
   const role=addon.openFixedProofTransport(),requestCaps=new Set(),closedConnections=new Set(),sockets=new Set(),cases=progress.cases;let captures=0,terminals=0,transportError=null;
   const guard=r=>{assert(r===role,"proof_original_role_required");role.assertCurrent();};
   const bridge={assertCurrent:guard,
+    readRevokedKnown:r=>{assert(r===role,"proof_original_role_required");return role.readRevokedKnown();},
     openHttpListenerFixed:async r=>{guard(r);return role.openHttpListenerFixed();},acceptFixed:(r,c)=>{guard(r);return role.acceptFixed(c);},
     connectionPeer:(r,c)=>{guard(r);return role.connectionPeer(c);},brandHttpStream:(r,c,s)=>{guard(r);role.brandHttpStream(c,s);},
     connectionRead:(r,c)=>{guard(r);return role.connectionRead(c);},connectionWrite:(r,c,b)=>{guard(r);return role.connectionWrite(c,b);},
-    connectionEnd:(r,c)=>{guard(r);return role.connectionEnd(c);},connectionClose:async(r,c)=>{guard(r);await role.connectionClose(c);closedConnections.add(c);},
-    closeHttpListenerFixed:(r,c)=>{guard(r);return role.closeHttpListenerFixed(c);},
+    connectionEnd:(r,c)=>{assert(r===role,"proof_original_role_required");return role.connectionEnd(c);},connectionClose:async(r,c)=>{assert(r===role,"proof_original_role_required");await role.connectionClose(c);closedConnections.add(c);},
+    closeHttpListenerFixed:(r,c)=>{assert(r===role,"proof_original_role_required");return role.closeHttpListenerFixed(c);},
     retainAuthenticatedRequest:async(r,c,req)=>{guard(r);const cap=role.retainAuthenticatedRequest(c,req);assert(!requestCaps.has(cap),"proof_request_cap_reused");requestCaps.add(cap);captures++;progress.capturedRequests=captures;return cap;},
     completeAuthenticatedResponse:async(r,c,status,bytes)=>{guard(r);role.completeAuthenticatedResponse(c,status,bytes);terminals++;progress.terminalResponses=terminals;},
     failAuthenticatedResponse:async()=>{throw Object.assign(Error("proof_lost_response"),{code:"proof_lost_response"});}};
@@ -72,10 +73,15 @@ async function main(){
     await run("eof_error_parser_cleanup",async()=>{await exchange(["GET /unfinished HTTP/1.1\r\n"],{end:true});const malformed=await exchange(["not-http\r\n\r\n"]);assert(malformed.includes(Buffer.from("400")),"proof_parser_error_missing");});
     await run("close_cleanup",async()=>{await control.close();control=null;assert(server.listenerCount("request")>=1&&!server.listening&&sockets.size===0,"proof_close_cleanup_failed");});
     await run("fixed_injected_close_failure_retained_unknown",async()=>{assert(role.closeFailureFaultsFixed()===true,"proof_close_failure_failed");let duplicate=false;try{role.closeFailureFaultsFixed();}catch{duplicate=true;}assert(duplicate,"proof_close_failure_replay_accepted");});
+    await run("fixed_original_cleanup_revoke_boundaries_and_negatives",async()=>{assert(role.revokeFaultsFixed()===true,"proof_revoke_faults_failed");let duplicate=false;try{role.revokeFaultsFixed();}catch{duplicate=true;}assert(duplicate,"proof_revoke_fault_replay_accepted");});
     assert(!transportError,"proof_unexpected_transport_error");assert(captures>=6&&terminals===captures,"proof_terminal_callback_count_mismatch");
   }finally{clearTimeout(deadline);if(control)await control.close();for(const socket of sockets)socket.destroy();}
   return {schema:"ae-agent.initial-http-transport-proof.v1",productionAuthority:false,ownLoopback:true,port:PORT,nodeVersion:process.version,
     adapterSourceSha256:sha(source),addonSha256:addonSha.toLowerCase(),cases,capturedRequests:captures,terminalResponses:terminals,transportError:false,cleanupComplete:true,
-    injectedCloseFailure:{authority:false,scenarios:2,closeAttemptOnce:true,persistentUnknown:true,newAcceptDenied:true,winsockCleanupAbsent:true,retainedUntilOriginalChildExit:true},ok:cases.every(c=>c.result==="PASS")};
+    injectedCloseFailure:{authority:false,scenarios:2,closeAttemptOnce:true,persistentUnknown:true,newAcceptDenied:true,winsockCleanupAbsent:true,retainedUntilOriginalChildExit:true},
+    originalCleanupFixture:{authority:false,scenarios:15,originalSocketIo:true,predicate:"fixed isolated owner model",
+      productionB33OrBrokerFloorProved:false,cases:["idle_revoke","before_accept","after_accept","before_recv","after_recv","before_send","after_send",
+        "no_b33","pending_finalizer_no_b33","revoked_finalizer","source_negative","clock_negative","generation_negative","foreign_owner_negative","end_unknown_no_replay"]},
+    ok:cases.every(c=>c.result==="PASS")};
 }
 main().then(result=>process.stdout.write(JSON.stringify(result)+"\n"),error=>{process.stdout.write(JSON.stringify({schema:"ae-agent.initial-http-transport-proof.v1",productionAuthority:false,ownLoopback:true,ok:false,code:error.code||"proof_failed",...progress})+"\n");process.exitCode=2;});
