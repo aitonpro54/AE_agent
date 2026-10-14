@@ -248,3 +248,15 @@ Completed native dry receipt допускается вернуть вместе 
 Это разрешение scoped реализации; production GO и фактический budget FIT ещё
 не получены. Media child/collector Source GO принят отдельно; CPP/OS и визуальная
 проверка этих новых producers пока не выполнены.
+
+CEP caller milestone принят в source/offline scope: manifest `3D157B14…7F20E0`,
+panel `566B2DEE…80F8B7`, focused smoke `AD0FEC94…A3C1D7`. Current GET и Adopt
+возвращают same canonical completed native dry projection; следующий Run остаётся
+отдельным Execute. Finite scheduling сохраняет bridge command polling и исключает
+повторные current/autonomy refresh. Cache связан с validation/tokenless proposal,
+actor/lifecycle/pins; nativeDelivery проверяет exact keys и primitive string refs.
+REVISE двух P2 закрыт независимыми контрпримерами и snapshot VM39/39.
+Existing refresh33/actions48, syntax2/rules/diff PASS. [block: CEP caller]
+[executor: ae_implementer; review: ae_reviewer] [ownership: panel.js и focused smoke].
+Установленная CEP-копия, backend/native execution, whole budget FIT, M/C1 и видео
+этим milestone не приняты; root не выполнял reload или live-действия.

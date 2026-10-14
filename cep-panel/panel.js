@@ -146,6 +146,9 @@
   var recoveryTransportScope = null;
   var recoveryTransportConnecting = false;
   var lastAcceptedDryRun = null;
+  // Scheduling only: the backend still owns all fresh execution guards.
+  var ownedPlanPreparationMode = "";
+  var ownedCompletedDryRunCache = null;
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
   var operationUsageReports = [];
@@ -1901,6 +1904,76 @@
     return true;
   }
 
+  function ownedCompletedDryRunPromised(value) {
+    return !!(value && value.ownedPlanPreparation && value.ownedPlanPreparation.mode === "completed_native_dry_run_v1");
+  }
+
+  function ownedPanelActor() {
+    var state = window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),
+      panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch,
+      confirmationSessionId:m100ConfirmationSessionId()};
+  }
+
+  function ownedTokenlessProposalKey(value) {
+    var proposal=normalizeM100ActionProposal(value);
+    if(!proposal) return "";
+    var publicProposal=JSON.parse(JSON.stringify(proposal));
+    delete publicProposal.confirmation.confirmationToken;
+    return planKeyFor(publicProposal);
+  }
+
+  function ownedCompletedDryRunCacheMatches(pins) {
+    var cached=ownedCompletedDryRunCache,actor=ownedPanelActor();
+    if(!cached || !ownedCompletedDryRunPromised(currentBridgePlan) || !lastAcceptedDryRun || lastAcceptedDryRun.runId!==cached.runId ||
+        !currentBridgePlanMatchesPins(currentBridgePlan,cached.pins) ||
+        pins && !currentBridgePlanMatchesPins(currentBridgePlan,pins) ||
+        cached.planKey!==currentPlanKey() || cached.planKey!==planKeyFor(currentBridgePlan && currentBridgePlan.plan) ||
+        cached.validationKey!==planKeyFor(currentBridgePlan.validation) || cached.validationKey!==planKeyFor(lastPlanResult && lastPlanResult.planValidation) ||
+        cached.proposalKey!==ownedTokenlessProposalKey(currentBridgePlan.proposal) ||
+        cached.proposalKey!==ownedTokenlessProposalKey(m100ActionProposalForResult(lastPlanResult)) ||
+        currentBridgePlan.proposal.confirmation.confirmationToken) return false;
+    for(var key in actor) if(actor[key]!==cached.actor[key]) return false;
+    return true;
+  }
+
+  function ownedCompletedDryRunValid(response, originalPins, originalPlanKey, originalValidationKey, originalProposalKey, actor) {
+    var current=response && response.current,run=response && response.completedDryRun;
+    var proposal=normalizeM100ActionProposal(response && response.proposal),binding=run && run.binding,delivery=run && run.nativeDelivery;
+    if(!response || response.ok!==true || !ownedCompletedDryRunPromised(current) || !proposal ||
+        !proposal.confirmation.confirmationToken || !currentBridgePlanMatchesPins(current,originalPins) ||
+        current.proposal.confirmation.confirmationToken || response.revision!==originalPins.revision ||
+        proposal.actionId!==originalPins.actionId || proposal.revision!==originalPins.revision ||
+        planKeyFor(response.plan)!==originalPlanKey || planKeyFor(current.plan)!==originalPlanKey ||
+        planKeyFor(response.validation)!==originalValidationKey || planKeyFor(current.validation)!==originalValidationKey ||
+        ownedTokenlessProposalKey(current.proposal)!==originalProposalKey || ownedTokenlessProposalKey(proposal)!==originalProposalKey ||
+        current.state!=="dry_run_passed" || !run || run.schema!=="ae-agent.owned-native-dry-projection.v1" ||
+        run.ok!==true || run.dryRun!==true || run.nativeAuthority!==false ||
+        run.requestId!==originalPins.requestId || run.actionId!==originalPins.actionId ||
+        run.revision!==originalPins.revision || run.instanceId!==originalPins.instanceId ||
+        typeof run.finishedAt!=="string" || isNaN(Date.parse(run.finishedAt)) ||
+        !current.dryRunCompletedAt || isNaN(Date.parse(current.dryRunCompletedAt)) ||
+        !current.lastRun || current.lastRun.id!==run.id || current.lastRun.ok!==true || current.lastRun.dryRun!==true ||
+        !binding || planKeyFor(binding.pins)!==planKeyFor(originalPins) || !isPlainObject(delivery) || run.id!==delivery.executionRef) return false;
+    var currentActor=ownedPanelActor();
+    for(var key in actor) if(!actor[key] && actor[key]!==0 || binding[key]!==actor[key] || currentActor[key]!==actor[key]) return false;
+    if(originalPins.surface!=="cep-panel" || originalPins.sessionId!==actor.confirmationSessionId) return false;
+    var refs=["commandRef","executionRef","leaseRef"],hashes=["receiptSha25664","scriptSha25664","resultSha25664"];
+    if(Object.keys(delivery).sort().join(",")!==refs.concat(hashes).sort().join(",")) return false;
+    for(var r=0;r<refs.length;r++) if(typeof delivery[refs[r]]!=="string" || !/^[a-f0-9]{32}$/.test(delivery[refs[r]]) || /^0+$/.test(delivery[refs[r]])) return false;
+    for(var h=0;h<hashes.length;h++) if(typeof delivery[hashes[h]]!=="string" || !/^[a-f0-9]{64}$/.test(delivery[hashes[h]]) || /^0+$/.test(delivery[hashes[h]])) return false;
+    return true;
+  }
+
+  function invalidateCurrentPlanSyncAfterOwnedAdoption() {
+    // A late pre-adopt GET must never replace the completed native snapshot.
+    currentPlanSyncActiveReqId=0;currentPlanSyncActiveEpoch=0;currentPlanSyncInFlight=false;
+    var waiters=currentPlanSyncWaiters;currentPlanSyncWaiters=[];
+    for(var i=0;i<waiters.length;i++) {
+      try {waiters[i].onDone({rejected:true,code:"plan_pins_mismatch",message:"Current read preceded completed native adoption."});} catch(_waiterError) {}
+    }
+  }
+
   function dispatchCurrentBridgePlanSync() {
     if (currentPlanSyncInFlight) return;
     currentPlanSyncInFlight = true;
@@ -1932,10 +2005,12 @@
 
       var canonicalChanged = false;
       var incoming = response && response.current || null;
+      if(ownedCompletedDryRunPromised(incoming)) ownedPlanPreparationMode="completed_native_dry_run_v1";
 
       if (!hasFreshFollowupWaiters) {
         if (error) {
           currentBridgePlan = null;
+          ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;
         } else {
           if (incoming) {
             var oldProposal = m100ActionProposalForResult(lastPlanResult);
@@ -1961,16 +2036,21 @@
               var replaced = !currentBridgePlan || incoming.actionId !== currentBridgePlan.actionId;
               currentBridgePlan = incoming;
               if (incoming.proposal && incoming.proposal.confirmation) {
-                incoming.proposal.confirmation.confirmationToken = localToken;
+                if(!ownedCompletedDryRunPromised(incoming)) incoming.proposal.confirmation.confirmationToken = localToken;
+              }
+              var incomingProposal=incoming.proposal;
+              if(ownedCompletedDryRunPromised(incoming) && localToken) {
+                incomingProposal=JSON.parse(JSON.stringify(incoming.proposal));incomingProposal.confirmation.confirmationToken=localToken;
               }
               lastPlanResult = {
                 plan: incoming.plan,
                 planValidation: incoming.validation,
                 requestId: incoming.proposal ? incoming.proposal.requestId : "",
-                m100ActionProposal: incoming.proposal,
+                m100ActionProposal: incomingProposal,
                 bridgePlanPins: localToken ? localPins : null
               };
               if (replaced) {
+                ownedCompletedDryRunCache=null;
                 lastAcceptedDryRun = null;
                 appendChatMessage("assistant", "Текущий план Bridge v" + incoming.revision + ": " + (incoming.plan && incoming.plan.summary || incoming.actionId),
                   {actionProposal: incoming.proposal, planResult: lastPlanResult});
@@ -1980,8 +2060,10 @@
             currentBridgePlan = null;
             lastPlanResult = null;
             lastAcceptedDryRun = null;
+            ownedCompletedDryRunCache=null;
           }
         }
+        if(ownedCompletedDryRunCache && !ownedCompletedDryRunCacheMatches()) {ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;}
         renderCurrentBridgePlan();
         updateChatAvailability();
       }
@@ -3492,6 +3574,7 @@
   }
 
   function rememberPlanRun(run) {
+    ownedCompletedDryRunCache = null;
     lastPlanRunResult = run || null;
     window.__aeAgentLastPlanRunResult = lastPlanRunResult;
     lastAcceptedDryRun = null;
@@ -3870,10 +3953,12 @@
   function runLastPlan(dryRun, fresh, onDone, policy) {
     policy=policy || {prepare:true};
     function fail(code,message,unknown) {
+      if(planRunInFlightMode==="prepare") planRunInFlightMode="";
+      if(ownedPlanPreparationMode) {ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;}
       setPlanRunStatus(message || code,"blocked");
       if(onDone) onDone({code:code,message:message || code,rejected:!unknown,isUnknown:!!unknown});
     }
-    if (!fresh) {
+    if (!fresh && !(!dryRun && ownedCompletedDryRunCacheMatches(policy.pins))) {
       var clicked=m100ActionProposalForResult(lastPlanResult);
       if (!clicked) {fail("proposal_missing","No backend action proposal ready");return;}
       refreshCurrentBridgePlan({fresh:true,expectedActionId:clicked.actionId,expectedPlanPins:policy.pins},function(error) {
@@ -3896,11 +3981,44 @@
     if(!proposal.confirmation.confirmationToken) {
       if(!policy.prepare) {fail("proposal_adoption_required","Prepare the proposal and inspect the resulting new pins before execution.");return;}
       var adoptEpoch=panelLifecycleEpoch, adoptGeneration=panelConnectionGeneration, adoptInstanceId=currentBridgePlan.instanceId;
+      var ownedPreparation=ownedCompletedDryRunPromised(currentBridgePlan),originalPins=currentBridgePlanPins(currentBridgePlan),
+        originalPlanKey=currentPlanKey(),originalValidationKey=planKeyFor(currentBridgePlan.validation),
+        originalProposalKey=ownedTokenlessProposalKey(currentBridgePlan.proposal),originalActor=ownedPreparation && ownedPanelActor();
       if(policy.context && !policy.context.submit()) return;
-      request("POST","/agents/plan/adopt",{actionId:proposal.actionId,revision:currentBridgePlan.revision,
-        panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),confirmationSessionId:m100ConfirmationSessionId()},function(error,response) {
+      var adoptionBody={actionId:proposal.actionId,revision:currentBridgePlan.revision,
+        panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),confirmationSessionId:m100ConfirmationSessionId()};
+      if(ownedPreparation) {adoptionBody.panelInstanceId=originalActor.panelInstanceId;adoptionBody.panelLifecycleEpoch=originalActor.panelLifecycleEpoch;
+        rememberPlanRun(null);planRunInFlightMode="prepare";}
+      request("POST","/agents/plan/adopt",adoptionBody,function(error,response) {
         if(adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during adoption.",true);return;}
-        if(error) {setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
+        if(error) {planRunInFlightMode="";setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
+        if(ownedPreparation) {
+          if(!currentBridgePlanMatchesPins(currentBridgePlan,originalPins) || currentPlanKey()!==originalPlanKey ||
+              !ownedCompletedDryRunValid(response,originalPins,originalPlanKey,originalValidationKey,originalProposalKey,originalActor)) {
+            fail("completed_native_dry_run_invalid","Завершённый native dry-run не совпадает с исходным proposal. Подготовка закрыта.");return;
+          }
+          planRunInFlightMode="";invalidateCurrentPlanSyncAfterOwnedAdoption();
+          if(adoptEpoch!==panelLifecycleEpoch || adoptGeneration!==panelConnectionGeneration ||
+              !ownedCompletedDryRunValid(response,originalPins,originalPlanKey,originalValidationKey,originalProposalKey,originalActor)) {
+            fail("lifecycle_interrupted","Connection changed while closing the earlier current read.",true);return;
+          }
+          currentBridgePlan=response.current;currentPlanSyncAt=Date.now();
+          lastPlanResult={plan:response.plan,planValidation:response.validation,requestId:response.proposal.requestId,
+            m100ActionProposal:response.proposal,bridgePlanPins:originalPins};
+          var completedRun=response.completedDryRun;
+          rememberPlanRun(completedRun);
+          ownedCompletedDryRunCache={runId:completedRun.id,pins:JSON.parse(JSON.stringify(originalPins)),
+            planKey:originalPlanKey,validationKey:originalValidationKey,proposalKey:originalProposalKey,
+            actor:JSON.parse(JSON.stringify(originalActor))};
+          renderCurrentBridgePlan();updateChatAvailability();appendChatMessage("assistant",formatPlanRun(completedRun));
+          showPlanRunFinishedStatus(true,completedRun,false);
+          if(onDone) onDone(null,{run:completedRun,runId:completedRun.id,executionRequested:false,executed:false,
+            acceptedDryRunId:completedRun.id,pins:currentBridgePlanPins(currentBridgePlan)});
+          return;
+        }
+        if(response && (ownedCompletedDryRunPromised(response.current) || response.completedDryRun)) {
+          fail("completed_native_dry_run_unexpected","Native dry-run не был обещан текущим proposal. Подготовка закрыта.");return;
+        }
         var adoptedProposal=normalizeM100ActionProposal(response && response.proposal),adoptedPlan=response && response.plan;
         var adoptedPins=currentBridgePlanPins({instanceId:adoptInstanceId,revision:adoptedProposal && adoptedProposal.revision,
           actionId:adoptedProposal && adoptedProposal.actionId,proposal:adoptedProposal,plan:adoptedPlan,validation:response && response.validation,
@@ -4213,6 +4331,7 @@
     // Cancels every response from the failed transport, including a held P2.
     // Historical receipts keep their original binding; no context is rebased.
     panelLifecycleEpoch += 1;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     running=false;pollInFlight=false;recoveryTransportConnecting=false;
     if(recoveryTransportScope)recoveryTransportScope.state="failed";
     if(pollTimer)clearTimeout(pollTimer);
@@ -4225,6 +4344,7 @@
     if(panelLifecycleEpoch!==config.epoch || String(panelConnectionGeneration)!==config.generation || getBaseUrl()!==config.url || getToken()!==config.token || panelConnectionId!==config.panelConnectionId || value.panelConnectionId!==panelConnectionId || Date.parse(value.expiresAt)<=Date.now())return;
     recoveryTransportScope=value;recoveryTransportScope.state="connecting";recoveryTransportConnecting=true;
     running=true;panelLifecycleEpoch=value.nextBinding.panelLifecycleEpoch;panelConnectionGeneration=value.nextBinding.panelGeneration;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     pollInFlight=false;activeEvalScriptCommandId="";
     if(pollTimer)clearTimeout(pollTimer);
     var epoch=panelLifecycleEpoch,generation=panelConnectionGeneration;
@@ -4334,12 +4454,13 @@
       if (startup) startup.state = "succeeded";
       lastPollErrorMessage = "";
       setBridgeConnected();
+      if(ownedCompletedDryRunPromised(response)) ownedPlanPreparationMode="completed_native_dry_run_v1";
       if(onDone) onDone(null,{connected:true,generation:String(panelConnectionGeneration)});
       if (!running || pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
-      if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
+      if (!ownedPlanPreparationMode && !currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
-        refreshAutonomousSession();
+        if(!ownedPlanPreparationMode) refreshAutonomousSession();
         refreshPlaceholderProtection();
       }
 
@@ -4368,6 +4489,7 @@
     pollInFlight = false;
     panelConnectionGeneration = Date.now();
     panelLifecycleEpoch += 1;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
     currentPlanSyncInFlight = false;
     currentPlanSyncActiveReqId = 0;
@@ -4398,6 +4520,7 @@
   }
 
   function disconnect() {
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     recoveryTransportConnecting=false;recoveryTransportScope=null;
     running = false;
     pollInFlight = false;
@@ -4444,6 +4567,7 @@
   }
 
   function reloadApp() {
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
