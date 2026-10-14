@@ -1,5 +1,7 @@
 "use strict";
 
+const { inspectDxv3HqAlphaInventory } = require("./dxv-media-evidence");
+
 function frameRate(value) {
   if (typeof value === "number") return Number.isFinite(value) && value > 0 ? value : null;
   if (typeof value !== "string" || !/^\d+(?:\.\d+)?(?:\/\d+(?:\.\d+)?)?$/.test(value)) return null;
@@ -94,6 +96,8 @@ function validateAmeMedia(job, metadata, decode, evidence = {}) {
   const measured = validateAmeMetadata(job, metadata);
   if (!measured.technicalMediaVerified) return measured;
   const fail = reason => ({ ...measured, technicalMediaVerified: false, highQualityVerified: false,
+    encodedFormatHqAlphaVerified: false, hqConfigurationVerified: false, frozenParametersVerified: false,
+    exporterQualityEnumMappingVerified: false, productionAuthority: false, nativeProvenanceVerified: false,
     highQualityMapping: "UNVERIFIED", hqComparisonEligible: false, reason, mediaEvidence: evidence });
   if (!decode || decode.status !== 0 || decode.error) return { ...fail("decode_failed"), decodeExitCode: decode && decode.status };
   const dxv = evidence.dxv;
@@ -108,13 +112,35 @@ function validateAmeMedia(job, metadata, decode, evidence = {}) {
     && evidence.mediaStable === true;
   if (measured.videoCodec === "dxv" && !hashVerified) return fail("stable_media_hash_required");
   const result = { ...measured, fullDecodeVerified: true, actualAlphaVerified: alphaVerified,
-    highQualityVerified: false, highQualityMapping: "UNVERIFIED",
+    highQualityVerified: false, highQualityMapping: "UNVERIFIED", encodedFormatHqAlphaVerified: false,
+    hqConfigurationVerified: false, frozenParametersVerified: false, exporterQualityEnumMappingVerified: false,
+    productionAuthority: false, nativeProvenanceVerified: false,
     hqComparisonEligible: measured.videoCodec === "dxv" && hashVerified && dxv.supported
       && dxv.allPacketsInspected && dxv.alphaChannel && alphaVerified,
     mediaEvidence: evidence };
-  // Packet modes describe decoder behavior. No exporter enum/HQ calibration is
-  // admitted here; even an alpha-bearing YG10 result must retain this refusal.
-  if (job.requireDxvHighQuality) return { ...result, technicalMediaVerified: false, reason: "dxv_hq_calibration_required" };
+  if (job.requireDxvHighQuality) {
+    const classification = inspectDxv3HqAlphaInventory(dxv, measured.frameCount);
+    if (!classification.eligible) return { ...result, technicalMediaVerified: false, reason: classification.reason };
+    if (!hashVerified) return fail("stable_media_hash_required");
+    const full = evidence.fullDecode;
+    if (!full || full.exitCode !== 0 || full.error !== null || full.decodedFrames !== measured.frameCount || full.progressEnd !== true)
+      return fail("dxv_hq_complete_decode_required");
+    const expected = job.alphaFrameIndices === undefined
+      ? [...new Set([0.25, 0.5, 0.75].map(fraction => Math.min(measured.frameCount - 1, Math.floor(measured.frameCount * fraction))))]
+      : job.alphaFrameIndices;
+    if (!Array.isArray(expected) || !expected.length || expected.length > 8 || new Set(expected).size !== expected.length
+      || expected.some(index => !Number.isSafeInteger(index) || index < 0 || index >= measured.frameCount)
+      || !Array.isArray(frames) || frames.length !== expected.length) return fail("dxv_hq_alpha_coverage_required");
+    const seen = new Set();
+    for (const frame of frames) {
+      if (!frame || !expected.includes(frame.frameIndex) || seen.has(frame.frameIndex) || frame.width !== measured.width || frame.height !== measured.height
+        || frame.ok !== true || frame.transparentBackgroundAndForeground !== true || !(frame.transparentPixels > 0) || !(frame.foregroundPixels > 0)
+        || frame.alphaMin !== 0 || !(frame.alphaMax > 0)) return fail("dxv_hq_alpha_coverage_required");
+      seen.add(frame.frameIndex);
+    }
+    return { ...result, highQualityVerified: true, encodedFormatHqAlphaVerified: true, highQualityMapping: "ENCODED_FORMAT_VERIFIED",
+      encodedFormatMapping: classification.mapping, hqComparisonEligible: true, reason: null };
+  }
   return result;
 }
 

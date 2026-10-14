@@ -1,9 +1,16 @@
 "use strict";
 
-// Decoder syntax, not a calibration of Adobe's exporter quality enums:
-// https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/dxv.c
-// https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/dxv.h
+// Encoded format mapping from the reviewed FFmpeg n9.0.2 FATE HQwa sample
+// and decoder. This does not identify Adobe exporter settings or issue a job
+// capability. Native media acceptance additionally requires its own provenance.
+// https://github.com/FFmpeg/FFmpeg/blob/n9.0.2/tests/fate/video.mak
+// https://github.com/FFmpeg/FFmpeg/blob/n9.0.2/libavcodec/dxv.c
 // MKBETAG constants are read as little-endian uint32 by the decoder.
+const DXV3_HQ_ALPHA_MAPPING = Object.freeze({
+  version: "FFmpeg-n9.0.2-DXV3-YG10-HQ-alpha-v1",
+  descriptorSha256: "45fd6a5f73669acded391518c29c1be1a171a2bedd44edb20b9ce5c4b8942fa9",
+  exporterEnumMappingVerified: false
+});
 const MODES = new Map([
   [0x44585431, { textureMode: "DXT1", alphaChannel: false }],
   [0x44585435, { textureMode: "DXT5", alphaChannel: true }],
@@ -25,9 +32,34 @@ function inspectDxvPacketHeader(header, packetBytes) {
   const payloadBytes = header.readUInt32LE(8);
   if (payloadBytes !== packetBytes - 12) return fail("dxv_packet_size_mismatch");
   return { supported: true, reason: null, versionMajor, versionMinor, ...mode,
-    compression: header[6] ? "RAW" : "texture_specific", unknownHeaderByte: header[7], payloadBytes,
+    compression: header[6] ? "RAW" : "texture_specific", rawCopyByte: header[6], unknownHeaderByte: header[7], payloadBytes,
     headerHex: header.subarray(0, 12).toString("hex"), highQualityVerified: false,
-    highQualityMapping: "UNVERIFIED" };
+    highQualityMapping: "UNVERIFIED", encodedHqAlphaPacket: mode.textureMode === "YG10" };
+}
+
+function inspectDxv3HqAlphaInventory(dxv, expectedPacketCount) {
+  const fail = reason => ({ eligible: false, reason });
+  if (!Number.isSafeInteger(expectedPacketCount) || expectedPacketCount < 1 || !dxv || dxv.supported !== true
+    || dxv.allPacketsInspected !== true || dxv.packetCount !== expectedPacketCount || !Array.isArray(dxv.modes)
+    || !dxv.modes.length || dxv.modes.length > expectedPacketCount) return fail("dxv_hq_complete_packet_inventory_required");
+  let count = 0;
+  const keys = new Set();
+  for (const row of dxv.modes) {
+    if (!row || !Number.isSafeInteger(row.packetCount) || row.packetCount < 1 || row.packetCount > expectedPacketCount - count
+      || typeof row.firstHeaderHex !== "string" || !/^[a-f0-9]{24}$/.test(row.firstHeaderHex)) return fail("dxv_hq_packet_inventory_invalid");
+    const header = Buffer.from(row.firstHeaderHex, "hex"), parsed = inspectDxvPacketHeader(header, header.readUInt32LE(8) + 12);
+    if (!parsed.supported || parsed.versionMajor !== 3 || parsed.textureMode !== "YG10" || !parsed.alphaChannel
+      || row.versionMajor !== parsed.versionMajor || row.versionMinor !== parsed.versionMinor || row.textureMode !== parsed.textureMode
+      || row.alphaChannel !== parsed.alphaChannel || row.rawCopyByte !== parsed.rawCopyByte || row.unknownHeaderByte !== parsed.unknownHeaderByte)
+      return fail("dxv_hq_alpha_format_required");
+    const key = `${parsed.versionMajor}.${parsed.versionMinor}/${parsed.textureMode}/${parsed.rawCopyByte}/${parsed.unknownHeaderByte}`;
+    if (keys.has(key)) return fail("dxv_hq_packet_inventory_duplicate");
+    keys.add(key); count += row.packetCount;
+  }
+  if (count !== expectedPacketCount || dxv.alphaChannel !== true) return fail("dxv_hq_complete_packet_inventory_required");
+  // Headers alone establish eligibility. Complete decode/alpha/file checks are
+  // deliberately performed by the media validator, not a caller HQ boolean.
+  return { eligible: true, reason: null, mapping: DXV3_HQ_ALPHA_MAPPING };
 }
 
 function inspectRgbaFrame(rgba, width, height, frameIndex) {
@@ -55,4 +87,4 @@ function inspectRgbaFrame(rgba, width, height, frameIndex) {
     textIdentityVerified: false };
 }
 
-module.exports = { inspectDxvPacketHeader, inspectRgbaFrame };
+module.exports = { inspectDxvPacketHeader, inspectDxv3HqAlphaInventory, inspectRgbaFrame, DXV3_HQ_ALPHA_MAPPING };

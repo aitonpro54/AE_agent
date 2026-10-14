@@ -22,21 +22,23 @@ function hashFile(file) {
 function inspectPackets(file, packets) {
   if (!Array.isArray(packets) || !packets.length) return { supported: false, reason: "dxv_packets_missing" };
   const fd = fs.openSync(file, "r"), fileBytes = fs.fstatSync(fd).size;
-  const modes = new Map(); let alphaChannel = true;
+  const modes = new Map(); let alphaChannel = true, priorPacketEnd = 0;
   try {
     for (let index = 0; index < packets.length; index++) {
       const position = Number(packets[index].pos), bytes = Number(packets[index].size);
       if (!Number.isSafeInteger(position) || position < 0 || !Number.isSafeInteger(bytes) || bytes < 13
-        || position + bytes > fileBytes) return { supported: false, reason: "dxv_packet_location_invalid", index };
+        || bytes > fileBytes - position || position < priorPacketEnd) return { supported: false, reason: "dxv_packet_location_invalid", index };
+      priorPacketEnd = position + bytes;
       const header = Buffer.alloc(12), read = fs.readSync(fd, header, 0, 12, position);
       const inspected = inspectDxvPacketHeader(header.subarray(0, read), bytes);
       if (!inspected.supported) return { ...inspected, packetIndex: index };
       alphaChannel = alphaChannel && inspected.alphaChannel;
-      const key = `${inspected.versionMajor}.${inspected.versionMinor}/${inspected.textureMode}`;
+      const key = `${inspected.versionMajor}.${inspected.versionMinor}/${inspected.textureMode}/${inspected.rawCopyByte}/${inspected.unknownHeaderByte}`;
       const prior = modes.get(key);
       if (prior) prior.packetCount++;
       else modes.set(key, { versionMajor: inspected.versionMajor, versionMinor: inspected.versionMinor,
-        textureMode: inspected.textureMode, alphaChannel: inspected.alphaChannel,
+        textureMode: inspected.textureMode, alphaChannel: inspected.alphaChannel, rawCopyByte: inspected.rawCopyByte,
+        unknownHeaderByte: inspected.unknownHeaderByte,
         firstHeaderHex: inspected.headerHex, packetCount: 1 });
     }
   } finally { fs.closeSync(fd); }
@@ -46,9 +48,10 @@ function inspectPackets(file, packets) {
 
 function probeMediaFile(job, options = {}) {
   const ffprobe = options.ffprobe || "ffprobe", ffmpeg = options.ffmpeg || "ffmpeg", runner = options.run || run;
-  const evidence = { mediaSha256: hashFile(job.outputPath), mediaStable: false, evidenceKind: "file_decode",
-    textIdentityVerified: false };
   const before = fs.statSync(job.outputPath);
+  const evidence = { mediaSha256: hashFile(job.outputPath), mediaStable: false, evidenceKind: "file_decode",
+    productionAuthority: false, nativeProvenanceVerified: false,
+    textIdentityVerified: false };
   const probed = runner(ffprobe, ["-v", "error", "-count_frames", "-show_entries",
     "format=duration,format_name:stream=index,codec_type,codec_name,width,height,pix_fmt,color_space,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames,duration",
     "-of", "json", job.outputPath], 30000);
@@ -80,7 +83,8 @@ function probeMediaFile(job, options = {}) {
   const counts = [...String(decoded.stdout || "").matchAll(/^frame=(\d+)\s*$/gm)];
   evidence.fullDecode = { exitCode: decoded.status, error: decoded.error ? String(decoded.error.message) : null,
     stderr: String(decoded.stderr || "").slice(0, 8192),
-    decodedFrames: counts.length ? Number(counts[counts.length - 1][1]) : null };
+    decodedFrames: counts.length ? Number(counts[counts.length - 1][1]) : null,
+    progressEnd: /^progress=end\s*$/m.test(String(decoded.stdout || "")) };
   if (decoded.status === 0 && !decoded.error && (job.requireAlpha || video.codec_name === "dxv")) {
     const count = Number(video.nb_read_frames), frameBytes = Number(video.width) * Number(video.height) * 4;
     const indices = job.alphaFrameIndices === undefined
@@ -109,7 +113,8 @@ function probeMediaFile(job, options = {}) {
     }
   }
   const after = fs.statSync(job.outputPath), finalHash = hashFile(job.outputPath);
-  evidence.mediaStable = before.size === after.size && before.mtimeMs === after.mtimeMs && evidence.mediaSha256 === finalHash;
+  evidence.mediaStable = before.size === after.size && before.mtimeMs === after.mtimeMs && before.dev === after.dev
+    && before.ino === after.ino && before.birthtimeMs === after.birthtimeMs && evidence.mediaSha256 === finalHash;
   if (!evidence.mediaStable) return { ...precheck, technicalMediaVerified: false, reason: "media_changed_during_probe", mediaEvidence: evidence };
   if (video.codec_name === "dxv" && decoded.status === 0 && evidence.fullDecode.decodedFrames !== Number(video.nb_read_frames)) {
     return { ...precheck, technicalMediaVerified: false, reason: "full_decode_frame_count_mismatch", mediaEvidence: evidence };
