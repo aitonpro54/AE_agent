@@ -57,6 +57,14 @@ caller echo variants и один экспортированный hash authority
 или GUID при копировании не предполагается. Checkpoint, stage, enqueue, START,
 dry-run, confirmation, read-back и restoration используют exact own bindings.
 
+До первого seal/C1 фиксируется имя checkpoint `titr_all-source-checkpoint.aep`
+в разрешённом snapshot root, отдельно от двух variant snapshots. Native policy
+проверяет exact leaf и отсутствие совпадений с ними без учёта регистра; fixed
+execution scope связывает имя с canonical snapshot root и его physical identity.
+Новый UUID или произвольный caller path имя checkpoint не заменяют. Root
+подготавливает и удерживает snapshot root до C1; сохранение требует actual own
+effect receipt и read-back, наличие descriptor само по себе не означает save.
+
 Source M до C1 включает всю программу выбора, parser/normalizer, inventory,
 manifest sealing, copy reconciliation, immutable-text guards и restoration.
 Actual IDs заполняют операнды этой уже принятой программы внутри единственного
@@ -94,3 +102,23 @@ native/offline, closure/M/build/seal приёмки production остаётся 
 Решение подготовлено read-only `ae_architect`; файлы/runtime исполнителем не
 изменялись, runtime model/effort metadata не получены. Root принимает отдельный
 тестовый режим и сохраняет explicit evidence limits.
+
+## Проверенный блок реализации
+
+Исправлены три source-пробела: режим приходит из native embedded policy и
+сохраняется facade; text rows сверяются с полным all-layer census и исходными
+данными композиций; полный project-item census закрывает одинаковые имена
+кандидатов. Новый getter schema — `ae-agent.owned-first-two-text-inventory.v2`.
+Данные получаются в тех же READ deliveries. Число dispatch/Store rows не увеличено;
+ограничения полного ответа сохраняются, silent truncation не допускается.
+
+Independent Source GO: `4E73F419…`, facade `23726E9D…`, qualification `AE9BF001…`.
+Portable C++ predicate проверен на 29 случаях, vendor predicate — на 35;
+все прошли. Root удерживал исходные четыре MSBuild и два proof process,
+подтвердил CLOSED/exit0/EOF, закрыл handles и завершил owner25696 с exit0.
+Acceptance: `.codex-runtime/resume-msi-20261014/isolated-predicate-acceptance-d724c080916e.json`,
+SHA256 `55FEE5B6D8F57BE2912DA109C45EFE48CFD346D72D09208A1FBA110912533DEA`.
+
+Это проверка фактического C++ predicate на synthetic inventories. Actual AE
+inventory/FontObjects, новый полный addon, D46–50, финальный M/C1 и два видео
+этим блоком не подтверждены. Production остаётся CLOSED, результат — 0/2.
