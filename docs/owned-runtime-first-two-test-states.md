@@ -71,6 +71,40 @@ Actual IDs заполняют операнды этой уже принятой 
 original lifetime. Ранний отдельный production READ, disposal и policy hot-upgrade
 не разрешены.
 
+## Полная длительность и контрольные кадры
+
+Для first-two теста до C1 принять отдельную frozen программу
+`FullObservedRootRangeV1` + `QuartileFramesV1`, только при actual root=target.
+Literal режим сохраняется. Authentic comp READ доставляет duration,
+frameDuration, frameRate и displayStartTime как round-trip binary64 строки
+`toPrecision(17)`; caller range/fps/sample overrides отвергаются. Новых READ
+deliveries для этих полей нет.
+
+Native resolver выбирает ровно одну строку конечной exact IEEE754 FPS table;
+произвольное 29.97 и epsilon comparison не поддерживаются. Frame count N —
+единственный integer 4..8191, для которого actual duration равна точному
+round-to-nearest-even binary64 произведению N и actual frameDuration. Полный
+локальный диапазон — [0,N); displayStart проверяется отдельно и не сдвигает
+экспорт. Три indices — integer N/4, N/2 и 3N/4, distinct и меньше N.
+
+Ceiling8191 связан с packet capture1MiB: root envelope128 bytes и maximum
+packet entry span128 bytes, только pos/size. Actual writer footprint, отсутствие
+truncation, file bounds и packet/frame coverage ещё должны пройти implementation
+proof. Existing RGBA/PNG ceilings и six decoder children/job сохраняются.
+
+Observed-mode AME producer использует Entire0, literal producer — Custom3.
+Пользовательские workArea, comp FPS и Source Text не меняются. Source timing и
+output expectation раздельны: первый Metadata child обязан подтвердить actual
+output rational FPS и countN до связывания output sample indices. Видимый EPR
+29.97 не доказывает совместимость другого source FPS; mismatch закрывает media.
+Entire0/Custom3 различаются в [legacy EncoderWrapper reference](https://ame-scripting.docsforadobe.dev/reference/#encoderwrapper);
+actual behaviour установленного AME26 этим reference не подтверждено.
+
+Это Source GO на конкретную программу, а не на текущую реализацию: exact table,
+parser/arithmetic, immutable manifest, copy/START/AME/media/PNG consumers и
+restoration входят в общий Source M до C1. Actual host timing, RuntimeFIT и
+export acceptance остаются непроверенными. До их проверки production CLOSED.
+
 ## RAM, шрифты и стоимость
 
 Требовать фактическое `typeof app.project.dirty === "boolean"` и false, текущий
