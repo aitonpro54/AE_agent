@@ -168,3 +168,21 @@ owner23012 завершён с exit0. Acceptance SHA256 `F6698FFE…5A11D9` в
 `.codex-runtime/resume-msi-20261014/isolated-scope-timing-acceptance-dec9ff0c5c9b.json`.
 Scope proof проверяет actual C++ preimage encoding с accepted ABI headers;
 actual SHA256 authority, полный current NAPI, actual host timing и AME не доказаны.
+
+Следующая ограниченная сборка подготовки прошла для всех трёх компонентов:
+freeze58 `ns-01119d2e95fc` → `ic-bb380ddc24c0`, TU9/13/3. Шесть исходных
+MSBuild завершены CLOSED/exit0/EOF, handles закрыты, owner25756 завершён с exit0.
+Acceptance SHA256 `ECD42C14…50F213AB`; это снимок подготовки, без последующих
+изменений observed timing и без приёмки checkpoint/file-effect kernel.
+
+Исправленный scope codec прошёл 13/13, native JSON — 50/50:
+freeze15 `ns-9ab8795893dd` → `tp-6ddfb29a6897`, TU2/2. Четыре исходных MSBuild
+и два proof process завершены CLOSED/exit0/EOF; handles закрыты, owner26892
+завершён с exit0. Acceptance SHA256 `A28013B4…146B48BC`. JSON использует прежние
+13 getter fixtures и 10 parser checks плюс 27 проверок quiescence; актуальный
+observed getter и фактические capability/lifetime этим тестом не подтверждены.
+
+Оба acceptance-файла находятся в ignored `.codex-runtime/resume-msi-20261014/`.
+Root выполнил этот блок как единственный держатель исходных процессов;
+ограниченный source review — `ae_reviewer`, production writer — `ae_specialist`.
+Полное выполнение, M/C1, задания AME, просмотр кадров и два видео остаются впереди.
