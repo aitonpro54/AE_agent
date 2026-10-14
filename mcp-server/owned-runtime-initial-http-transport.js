@@ -186,6 +186,33 @@ async function retainAuthenticatedRequest(role, req, body) {
 }
 function requestCapability(role, req) {const item=requests.get(req);if (!item || item.role!==role || !item.authenticated)
   fail("owned_initial_authenticated_request_required");return item.authenticated;}
+function waitOriginalCompletionProducerResponse(role,req){const item=requests.get(req),socket=req&&req.socket,socketState=socket&&streams.get(socket);
+  if(!item||item.role!==role||!item.authenticated||item.finished||item.completionProducerCleanup||!socketState||socketState!==item.socketState||socketState.role!==role||
+      req.method!=="POST"||req.url!=="/bridge/result")fail("owned_initial_completion_original_producer_response");
+  const original={attempted:false,promise:null};item.completionProducerCleanup=original;
+  original.promise=new Promise((resolve,reject)=>{socket.once("close",()=>{if(original.attempted)return;original.attempted=true;
+    const work=(async()=>{if(requests.get(req)!==item||item.completionProducerCleanup!==original||req.socket!==socket||streams.get(socket)!==socketState||!item.finished||!item.terminalPromise||!socketState.closePromise)
+        fail("owned_initial_completion_producer_cleanup_missing");
+      await item.terminalPromise;await socketState.closePromise;
+      if(requests.get(req)!==item||req.socket!==socket||streams.get(socket)!==socketState||!item.terminal||!socketState.closeConfirmed||socketState.closeFailure||socketState.readError||socketState.writeError)
+        fail("owned_initial_completion_producer_cleanup_unknown");
+    })();void work.then(resolve,reject);
+  });});void original.promise.catch(()=>{});return original.promise;
+}
+function bindOriginalCompletionResponse(role,req,handler){const item=requests.get(req),socketState=req&&streams.get(req.socket);
+  if(!item||item.role!==role||!item.authenticated||item.finished||item.completionBinding||!socketState||socketState!==item.socketState||socketState.role!==role||!handler)
+    fail("owned_initial_completion_original_response_binding");
+  const original={handler,attempted:false};item.completionBinding=original;
+  req.socket.once("close",()=>{if(original.attempted)return;original.attempted=true;
+    const work=(async()=>{if(requests.get(req)!==item||item.completionBinding!==original||streams.get(req.socket)!==socketState||!item.finished||!item.terminalPromise||!socketState.closePromise)
+        fail("owned_initial_completion_original_response_cleanup_missing");
+      await item.terminalPromise;await socketState.closePromise;
+      if(!item.terminal||!socketState.closeConfirmed||socketState.closeFailure||socketState.readError)
+        fail("owned_initial_completion_original_response_cleanup_unknown");
+      await native.completeOriginalCompletionResponseFixed(role,original.handler);
+    })();void observe(socketState.serverState,work).catch(error=>retainFailure(socketState.serverState,error));
+  });
+}
 function closeFixedServer(server) {
   const state=servers.get(server);if (!state) fail("owned_initial_original_server_required");if (state.closePromise) return state.closePromise;
   state.closed=true;httpInternals.httpServerPreClose(server);for (const socket of state.sockets) socket.destroy();
@@ -203,4 +230,4 @@ function closeFixedServer(server) {
     (error.code==="trusted_original_listener_cleanup_pending"||error.code==="trusted_original_close_cleanup_pending"||
      error.code==="trusted_original_idle_cleanup_pending"))state.closePromise=null;});return state.closePromise;
 }
-module.exports=Object.freeze({bindFixedServer,retainAuthenticatedRequest,requestCapability,closeFixedServer});
+module.exports=Object.freeze({bindFixedServer,retainAuthenticatedRequest,requestCapability,closeFixedServer,bindOriginalCompletionResponse,waitOriginalCompletionProducerResponse});

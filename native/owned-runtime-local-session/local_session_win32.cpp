@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iomanip>
+#include <set>
 #include <limits>
 #include <sstream>
 #include <type_traits>
@@ -380,6 +381,8 @@ struct Broker::Data::Trusted final : Broker::Data {
         std::uint64_t issued=0,deadline=0,nextOrdinal=1,activeOrdinal=0,nextPollAt=0;std::uint32_t maximumPolls=0;std::uint16_t slot=0;
         Id actor{},terminal{};Digest observationCommit{},terminalJoin{},reservation{};
         bool pollAttempted=false,terminalAttempted=false,mediaReserved=false;
+        enum class Official:std::uint8_t{Unused,Begun,Verified,Finished,Unknown};Official official=Official::Unused;
+        bool publicationSpent=false,published=false,noticeSpent=false,terminalResultHashKnown=false;Digest terminalResultHash{};
         struct PollAttempt final {Id ref{},nonce{};Digest input{},binding{};std::uint64_t ordinal=0,expiry=0;bool observed=false;
             std::array<std::unique_ptr<NativeDispatchCommit>,2> commits{};std::array<NativeDispatchCommit::Observation,2> notes{};};
         std::vector<std::unique_ptr<PollAttempt>> polls;
@@ -388,6 +391,30 @@ struct Broker::Data::Trusted final : Broker::Data {
         std::array<Digest,6> mediaKeys{};
         std::uint64_t reservationSequence=0,reservationEpoch=0;Digest reservationHead{};};
     std::array<std::unique_ptr<OriginalJobRow>,2> originalJobs{};
+    Digest CompletionSelector(std::uint16_t slot)const{Bytes bytes;constexpr char domain[]="lcp2.production.broker-selected-completion-selector.v1";bytes.insert(bytes.end(),domain,domain+sizeof(domain));const auto& policy=trusted_read::EmbeddedProfile().execution;
+        Put(bytes,controllerNonce);Put(bytes,session);Put(bytes,generation);Put(bytes,bootNonce);Put(bytes,policy.policyHash);Put(bytes,policy.typedProducerHash);
+        const std::string canonical=slot==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}";Put(bytes,detail::Hash(Bytes(canonical.begin(),canonical.end())));detail::PutU16(bytes,slot);detail::PutU64(bytes,1);return detail::Hash(bytes);}
+    bool CompletionCurrent(const OriginalJobRow& job,bool requirePublished=true){const auto now=GetTickCount64();if(job.slot<1||job.slot>2||originalJobs[job.slot-1].get()!=&job||
+        (job.stage!=OriginalJobRow::Stage::Terminal&&job.stage!=OriginalJobRow::Stage::Media)||!job.mediaReserved||!job.terminalAttempted||job.polls.empty()||!job.polls.back()->observed||
+        job.polls.back()->ref!=job.poll||job.polls.back()->binding!=job.pollBinding||job.polls.back()->ordinal!=job.activeOrdinal||job.activeOrdinal<1||job.activeOrdinal>10||job.actor!=actor||
+        detail::Zero(job.terminal)||detail::Zero(job.terminalReceipt)||job.terminalJoin!=OriginalTerminalJoin(job,job.terminalReceipt,true)||effects.unknown||!OriginalFloor(false)||
+        now>=job.deadline||now>=sessionDeadline||(requirePublished&&(!job.published||!job.terminalResultHashKnown||detail::Zero(job.terminalResultHash))))return false;
+        auto& start=Ticket(job.startTicket);auto* row=Handler(job.handler);if(!row||row->state!=phase::VolatileServerLedger::RowState::Finished||row->body.tool!=phase::ToolCode::RunAiAgentPlan||row->body.kind!=phase::CallKind::Execute||
+            start.handler!=job.handler||start.stage!=Project::Stage::Terminal||start.result!=job.startReceipt||row->resultHash!=job.startReceipt||start.variantSlot!=job.slot||start.effectOperation!=7||
+            row->executionScope!=trusted_read::FixedExecutionScope(trusted_read::EmbeddedProfile().execution,job.slot,trusted_read::ExecutionLeaf::StartAme))return false;
+        const auto& hashes=continuity->Floor().originalFrameHashes;std::set<Digest> unique;
+        for(std::size_t index=0;index<7;++index){const auto& note=job.terminalNotes[index];if(!job.terminalCommits[index]||!note.latched||!note.freshAppend||note.unknown||!note.priorFloorVerified||!note.appendAckVerified||
+            !note.sequence||note.sequence>hashes.size()||hashes[static_cast<std::size_t>(note.sequence-1)]!=note.recordHash||note.head!=note.recordHash||detail::Zero(note.recordHash)||!unique.insert(note.recordHash).second)return false;}
+        return job.reservationSequence==job.terminalNotes.back().sequence&&job.reservationEpoch==job.terminalNotes.back().epoch&&job.reservationHead==job.terminalNotes.back().head&&cas.sequence>=job.reservationSequence&&cas.epoch>=job.reservationEpoch;
+    }
+    std::array<std::uint8_t,586> CompletionBinding(const OriginalJobRow& job){if(!CompletionCurrent(job))Refuse("trusted_completion_private_lineage_closed",0,true);Bytes bytes;detail::PutU16(bytes,job.slot);Put(bytes,job.ref);Put(bytes,job.hash);Put(bytes,job.startTicket);Put(bytes,job.startReceipt);Put(bytes,job.actor);Put(bytes,ledger.panelDefinition_.actorHash);Put(bytes,ledger.nativeBinding_.sourceHash);
+        Put(bytes,job.poll);Put(bytes,job.pollBinding);detail::PutU64(bytes,job.activeOrdinal);Put(bytes,job.terminal);Put(bytes,job.terminalReceipt);Put(bytes,job.terminalResultHash);detail::PutU64(bytes,job.reservationSequence);detail::PutU64(bytes,job.reservationEpoch);Put(bytes,job.reservationHead);for(const auto& note:job.terminalNotes)Put(bytes,note.recordHash);
+        std::array<std::uint8_t,586> result{};if(bytes.size()!=result.size())Refuse("trusted_completion_binding_width",0,true);std::copy(bytes.begin(),bytes.end(),result.begin());return result;}
+    static Bytes CompletionProjection(std::uint16_t slot){constexpr char first[]="{\"schema\":\"ae-agent.owned-original-completion-result.v1\",\"ok\":true,\"variantSlot\":1,\"state\":\"own_job_completed\",\"nativeResult\":\"True\",\"completionVerified\":true,\"nativeAssociationVerified\":true,\"mediaVerified\":false,\"settingsVerified\":false,\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"nativeAuthority\":false,\"replayAllowed\":false}";
+        constexpr char second[]="{\"schema\":\"ae-agent.owned-original-completion-result.v1\",\"ok\":true,\"variantSlot\":2,\"state\":\"own_job_completed\",\"nativeResult\":\"True\",\"completionVerified\":true,\"nativeAssociationVerified\":true,\"mediaVerified\":false,\"settingsVerified\":false,\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"nativeAuthority\":false,\"replayAllowed\":false}";static_assert(sizeof(first)==357&&sizeof(second)==357);if(slot<1||slot>2)Refuse("trusted_completion_projection_slot");const auto* text=slot==1?first:second;return Bytes(text,text+356);}
+    Digest CompletionFinishBinding(const phase::VolatileServerLedger::CallRow& row,const OriginalJobRow& job,const Digest& projection){Bytes bytes;constexpr char domain[]="lcp2.production.broker-selected-completion-finish.v1";bytes.insert(bytes.end(),domain,domain+sizeof(domain));Put(bytes,row.handler.bindingHash);Put(bytes,row.call.callRef);Put(bytes,job.hash);detail::PutU64(bytes,job.activeOrdinal);Put(bytes,job.terminal);Put(bytes,job.terminalReceipt);Put(bytes,job.terminalResultHash);Put(bytes,projection);Put(bytes,session);Put(bytes,trusted_read::EmbeddedProfile().execution.policyHash);return detail::Hash(bytes);}
+    void CompletionNotice(OriginalJobRow& job,std::uint16_t outcome){if(job.noticeSpent||outcome<1||outcome>2)Refuse("trusted_completion_notice_once",0,true);job.noticeSpent=true;auto* start=Handler(job.handler);if(!start)Refuse("trusted_completion_original_start_row",0,true);phase::Frame event{};event.header.direction=phase::Direction::BrokerToController;event.header.kind=phase::FrameKind::Event;event.header.verb=phase::Verb::CompletionResultNotice;event.header.senderOrdinal=controlWire->outgoingOrdinal_+1;event.header.channelNonce=controllerNonce;event.header.sessionRef=session;event.header.generation=generation;event.header.bootNonce=bootNonce;
+        Bytes bytes;detail::PutU16(bytes,job.slot);detail::PutU16(bytes,outcome);Put(bytes,start->call.callRef);Put(bytes,CompletionSelector(job.slot));TrustedPayload(event,bytes);Send(event,true,true);}
     struct RestoreDebt final {enum class State:std::uint8_t{Selected,StageTerminal,Restored,Unknown};State state=State::Selected;Id stageTicket{},actor{};Digest scope{},stageResult{},stageReceipt{};std::uint16_t slot=0;};
     std::array<std::unique_ptr<RestoreDebt>,2> restoreDebts{};
     struct RestrictedRead final {Id readRef{},bracket{},stageTicket{},projectTicket{};Digest readHash{},scope{},stageResult{},projectResult{};std::uint64_t epoch=0;std::uint16_t slot=0;};
@@ -575,7 +602,9 @@ struct Broker::Data::Trusted final : Broker::Data {
     void CloseAdmission(bool unknown)noexcept{if(unknown||effects.unknown||ledger.HasUnresolved()){Unknown();effects.unknown=true;}
         Revoke();ledger.Close();challenge.pending=false;sameActor=false;controllerDeferred=false;}
     void ControllerFrame(const phase::Frame& request){const auto verb=request.header.verb;
-        if(verb==phase::Verb::Status){auto reply=Reply(request,true,phase::Status::Ok);TrustedPayload(reply,TrustedStatus(state,opened?session:Id{}));Send(reply,true,false);return;}
+        if(verb==phase::Verb::Status){auto reply=Reply(request,true,phase::Status::Ok);auto status=TrustedStatus(state,opened?session:Id{});std::uint16_t word=static_cast<std::uint16_t>(state);
+            if(state==State::ActorBound&&ControllerCurrent()&&WorkerCurrent()&&!controllerDeferred&&!ledger.HasUnresolved())for(const auto& job:originalJobs)if(job&&job->official==OriginalJobRow::Official::Unused&&CompletionCurrent(*job))word=static_cast<std::uint16_t>(word|(job->slot==1?0x100u:0x200u));
+            status[0]=static_cast<unsigned char>(word);status[1]=static_cast<unsigned char>(word>>8);TrustedPayload(reply,status);Send(reply,true,false);return;}
         if(verb==phase::Verb::Revoke||verb==phase::Verb::RequestDrain){drainRequested=true;
             // Reply is tracked before revocation. It cannot restore admission.
             auto reply=Reply(request,true,phase::Status::Ok);Bytes bytes=verb==phase::Verb::RequestDrain?Bytes(129,0):TrustedStatus(state,opened?session:Id{});
@@ -596,6 +625,10 @@ struct Broker::Data::Trusted final : Broker::Data {
                 else if((body.kind==phase::CallKind::BootstrapRead||body.kind==phase::CallKind::Read)&&ReadCurrent(observation.target)){
                     Id bracket{};Digest read{};std::uint8_t index=0;if(body.kind==phase::CallKind::BootstrapRead){bracket=TrustedField<16>(request,37);index=request.payload[53];}
                     else{read=TrustedField<32>(request,37);if(Restriction(read))Refuse("trusted_restoration_read_ordinary_tool_refused");}status=ledger.BeginRead(ledger.controller_,body,bracket,index,read,GetTickCount64(),call);}
+                else if(body.kind==phase::CallKind::Completion&&request.header.payloadBytes==77&&body.tool==phase::ToolCode::GetAmeTitleJobStatus&&body.route==phase::RouteCode::McpToolsCall&&TrustedNumber(request,69,8)==1){OriginalJobRow* selected=nullptr;
+                    for(const auto& candidate:originalJobs)if(candidate){const std::string canonical=candidate->slot==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}";
+                        if(body.canonicalBodyHash==detail::Hash(Bytes(canonical.begin(),canonical.end()))&&TrustedField<32>(request,37)==CompletionSelector(candidate->slot)){if(selected)Refuse("trusted_completion_selector_ambiguous",0,true);selected=candidate.get();}}
+                    if(selected&&selected->official==OriginalJobRow::Official::Unused){selected->official=OriginalJobRow::Official::Begun;if(CompletionCurrent(*selected)&&LedgerIdle())status=ledger.BeginCompletion(ledger.controller_,body,CompletionSelector(selected->slot),selected->slot,CompletionBinding(*selected),selected->deadline,GetTickCount64(),call);if(status!=phase::Status::Ok)selected->official=OriginalJobRow::Official::Unknown;}}
                 else if(body.kind==phase::CallKind::ExecutionPrep||body.kind==phase::CallKind::Execute){trusted_read::ExecutionCost worst;
                     if(trusted_read::EmbeddedProfile().execution.Validate(worst)&&ReadCurrent(observation.target)){
                         const auto scope=TrustedField<32>(request,37);const auto* restriction=Restriction(TrustedField<32>(request,69));if(restriction){const auto& debt=restoreDebts[restriction->slot-1];if(scope!=restriction->scope||!debt||debt->state!=RestoreDebt::State::StageTerminal||debt->stageTicket!=restriction->stageTicket||debt->stageResult!=restriction->stageResult||restriction->epoch!=ledger.read_.epoch||restriction->readRef!=ledger.read_.ref||EligibleRestoreBracket()!=restriction->slot)Refuse("trusted_restoration_read_exact_scope_refused");}
@@ -698,6 +731,8 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
         else if(body.body.kind==phase::CallKind::Panel&&phase::ReadPanelIngress(request,body)==phase::CodecError::None)status=ledger.IssuePanel(ledger.daemon_,body,GetTickCount64(),handler);
         else if(body.body.kind==phase::CallKind::BootstrapRead||body.body.kind==phase::CallKind::Read)status=ledger.VerifyRead(ledger.daemon_,body,GetTickCount64(),handler);
         else if(body.body.kind==phase::CallKind::ExecutionPrep||body.body.kind==phase::CallKind::Execute)status=ledger.IssueExecution(ledger.daemon_,body,GetTickCount64(),handler);
+        else if(body.body.kind==phase::CallKind::Completion){phase::VolatileServerLedger::CallRow* row=nullptr;for(auto& candidate:ledger.rows_)if(candidate.call.callRef==body.callRef&&candidate.state==phase::VolatileServerLedger::RowState::Begun){if(row)Refuse("trusted_completion_ingress_ambiguous",0,true);row=&candidate;}
+            if(row&&row->completionSlot>=1&&row->completionSlot<=2){auto& job=originalJobs[row->completionSlot-1];if(job&&job->official==OriginalJobRow::Official::Begun&&CompletionCurrent(*job)&&row->completionSelector==CompletionSelector(job->slot)){status=ledger.IssueCompletion(ledger.daemon_,body,CompletionBinding(*job),GetTickCount64(),handler);job->official=status==phase::Status::Ok?OriginalJobRow::Official::Verified:OriginalJobRow::Official::Unknown;}}}
         if(status==phase::Status::Ok&&body.body.kind==phase::CallKind::Panel){panelGrantIssued=true;panelGrantDeadline=ledger.panel_.deadline;}
         const bool readonlyPreparation=body.body.kind==phase::CallKind::ExecutionPrep&&(body.body.tool==phase::ToolCode::GetCompDetails||body.body.tool==phase::ToolCode::GetLayerDetails||body.body.tool==phase::ToolCode::InspectTitleVariants||body.body.tool==phase::ToolCode::InspectAmeTitleSources||body.body.tool==phase::ToolCode::InspectAmeTitleQueueManifest||body.body.tool==phase::ToolCode::RunAiAgentPlan);
         if(status==phase::Status::Ok&&(body.body.kind==phase::CallKind::BootstrapRead||body.body.kind==phase::CallKind::Read||readonlyPreparation))ChallengeTarget(handler.permitRef,phase::ChallengePurpose::Readiness);
@@ -838,6 +873,11 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
         ticket.receipt=TrustedHash(ticket.nativeFile?"lcp2.production.native-file-effect-delivered.v1":"lcp2.production.project-delivered.v1",receipt);auto reply=Reply(request,false,phase::Status::Ok);auto bytes=EffectAck(ticket.ref,ticket.note);
         std::copy(ticket.receipt.begin(),ticket.receipt.end(),bytes.begin()+17);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
     if(verb==phase::Verb::Complete){auto* preparedRow=Handler(TrustedField<16>(request,0));
+        if(preparedRow&&preparedRow->body.kind==phase::CallKind::Completion){if(preparedRow->completionSlot<1||preparedRow->completionSlot>2)Refuse("trusted_completion_finish_slot",0,true);auto& job=originalJobs[preparedRow->completionSlot-1];
+            if(!job||job->official!=OriginalJobRow::Official::Verified||!CompletionCurrent(*job)||preparedRow->call.callRef!=TrustedField<16>(request,16)||TrustedNumber(request,64,2)!=1)Refuse("trusted_completion_finish_original_row",0,true);
+            const auto projection=detail::Hash(CompletionProjection(job->slot));if(TrustedField<32>(request,32)!=projection||TrustedField<32>(request,66)!=CompletionFinishBinding(*preparedRow,*job,projection))Refuse("trusted_completion_finish_full_lineage",0,true);
+            const auto status=ledger.FinishCompletion(ledger.daemon_,preparedRow->handler.permitRef,projection,CompletionBinding(*job),GetTickCount64());if(status!=phase::Status::Ok){job->official=OriginalJobRow::Official::Unknown;Refuse("trusted_completion_finish_unknown",0,true);}job->official=OriginalJobRow::Official::Finished;
+            auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;bytes.push_back(1);Put(bytes,preparedRow->handler.permitRef);Put(bytes,projection);detail::PutU64(bytes,cas.sequence);detail::PutU64(bytes,cas.epoch);Put(bytes,cas.head);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
         if(preparedRow&&preparedRow->body.kind==phase::CallKind::ExecutionPrep){const auto result=TrustedField<32>(request,32);const auto terminal=static_cast<std::uint16_t>(TrustedNumber(request,64,2));
             if(preparedRow->call.callRef!=TrustedField<16>(request,16)||(terminal!=1&&terminal!=2)||detail::Zero(result)||!ledger.ExecutionRowCurrent(*preparedRow,GetTickCount64())||
                 TrustedField<32>(request,66)!=PreparationTerminal(*preparedRow,result,terminal))Refuse("trusted_preparation_original_terminal_refused");
@@ -900,6 +940,12 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
             else{if(join!=OriginalTerminalJoin(*job,receipt,false))Refuse("trusted_d49_foreign_terminal_join",0,true);job->stage=OriginalJobRow::Stage::Armed;job->nextPollAt=now+trusted_read::EmbeddedProfile().execution.completionCadenceMs;bytes=EffectAck(job->poll,poll.notes.back());std::copy(receipt.begin(),receipt.end(),bytes.begin()+17);}
             if(!OriginalFloor(false))Refuse("trusted_d49_original_reply_floor_unknown",0,true);TrustedPayload(reply,bytes);Send(reply,false,true);return;
         }catch(...){job->stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;throw;}}
+    if(verb==phase::Verb::PublishOwnCompletionReady){const auto slot=TrustedNumber(request,0,2);auto* job=slot>=1&&slot<=2?originalJobs[static_cast<std::size_t>(slot-1)].get():nullptr;
+        if(!job||job->publicationSpent||TrustedNumber(request,2,2)!=1||TrustedField<16>(request,4)!=job->terminal||TrustedField<32>(request,20)!=job->terminalReceipt)Refuse("trusted_completion_publication_original_terminal",0,true);job->publicationSpent=true;
+        try{const auto now=GetTickCount64();if(!CompletionCurrent(*job,false)||!LedgerIdle()||job->deadline-now<574000||sessionDeadline-now<574000||TrustedField<32>(request,180)!=job->pollBinding)Refuse("trusted_completion_publication_closed",0,true);
+            const Bytes opening(request.payload.begin()+52,request.payload.begin()+324);if(TrustedHash("lcp2.production.original-poll-factual-receipt.v1",opening)!=job->terminalReceipt||detail::Zero(TrustedField<32>(request,52))||TrustedNumber(request,316,8)==0)Refuse("trusted_completion_publication_factual_membership",0,true);
+            job->terminalResultHash=TrustedField<32>(request,52);job->terminalResultHashKnown=true;auto* start=Handler(job->handler);if(!start)Refuse("trusted_completion_publication_start_row",0,true);Bytes bytes;detail::PutU16(bytes,job->slot);detail::PutU16(bytes,1);Put(bytes,start->call.callRef);auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,bytes);Send(reply,false,true);job->published=true;CompletionNotice(*job,1);return;
+        }catch(...){job->published=false;job->official=OriginalJobRow::Official::Unknown;job->stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;try{if(!job->noticeSpent&&ControllerCurrent())CompletionNotice(*job,2);}catch(...){unknownDisposition=true;}throw;}}
     if(verb==phase::Verb::FinishServerOnly){const auto ref=TrustedField<16>(request,0);const auto result=TrustedField<32>(request,16);auto* row=Handler(ref);phase::Status status=phase::Status::Denied;
         if(row&&row->body.kind==phase::CallKind::ServerOnly)status=ledger.Finish(ledger.daemon_,ref,result,GetTickCount64());
         else if(row&&row->body.tool==phase::ToolCode::GetBridgeStatus&&(row->body.kind==phase::CallKind::BootstrapRead||row->body.kind==phase::CallKind::Read)&&ReadCurrent(ref))

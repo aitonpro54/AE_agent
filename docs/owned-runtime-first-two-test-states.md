@@ -541,3 +541,36 @@ completed capture tasks/no truncation/handlesclosed и locks0; explicitexit0.
 Readback `52CC900C…`, local acceptance `9B1DEFCA…`. Это bounded compile/source,
 не loaded module/descendant/M/FIT/runtime доказательство. Official77 writer
 начал отдельный блок по принятому контракту; D50/children/C1 ещё CLOSED, renders0/2.
+
+Completion77 raw-result seam: design `EF10C6EB…/035FE795…` получил independent GO.
+NEW66 strict324 = metadata52 + exact successful factual opening272; broker
+проверяет own saved D49 receipt/final poll join/full chain и existing domain+NUL SHA,
+затем сохраняет opening[0..31] как private D49 resultHash. D49/96→97 и Notes прежние.
+Handoff1368bytes (+544), frames6/IO12/work4/cancel2; whole FIT UNKNOWN.
+Пользователь поручил завершить именно текущий код Completion77/review/build/commit,
+затем PAUSE. D50/M/C1/render до нового возобновления не начинать.
+
+Completion77 SourceSTOP `native-completion77-source-df96a422c9c1/BE627DB2…`:
+100/native63, TU11/15/3, 13 owned deltas; Root snapshot/current100/100 и VM67 PASS.
+Independent Source **REVISE одного P2**: publisher starts после writeJson/state.resolve,
+но до исходного /bridge/result HTTP terminal/socket cleanup; Node owner.pending
+блокирует Assert/CompleteResponse. Source-derived контрпример получил
+trusted_node_original_reader_or_operation_busy и terminal не вызван.
+Capture147E923B получил отдельно CONTROL GO, но не исполнялся; CPP NOTRUN.
+Writer исправляет только producer HTTP/publication ordering и regression,
+сохраняя common pending guards/once/noReplay. Нужен correction STOP/review/build.
+
+**Completion77 — текущий блок завершён перед паузой, 15.10.** Ordering STOP
+`428D5858…` получил focused Source GO: NEW66 ждёт terminal+socket cleanup того же
+/bridge/result; common native pending guards сохранены, independent VM110 PASS.
+Первый CPP `ic-aa76701e2cb6/A737FC4A…`: node PP0/build1, C2220/C4456 из shadow `error`;
+original2 CLOSED0/1/EOF/handlesclosed/locks0, owner29048 explicitexit0, diagnostic4E597FC2.
+Identifier-only correction `EA30815F…` Source GO, 100/native63, CPP06D7FD76, остальные99 unchanged.
+Actual freeze `ns-362c0b0ec4bf/77B78D81…`, approval62F25366 → all-role CPP
+`ic-63d904a77fb0/566C783E…`, TU11/15/3, все PP/build0. Root в original owner22828/
+PTY89625 сверил original6 CLOSED0/exact exit/EOF/tasks completed/no truncation/
+handlesclosed и locks0, затем explicitexit0. Readback965E7271, acceptanceCC043227.
+Syntax6/rules/scoped diff PASS. Runtime/native IO lifecycle, actual MCP cancellation,
+loaded modules/descendants, whole M/FIT и C1 НЕ проверены этим блоком; renders0/2.
+Пользователь выбрал завершить текущий блок кода и затем PAUSE: Source/build результат
+фиксируется отдельным commit, D50/whole admission/render до возобновления не запускать.

@@ -161,6 +161,15 @@ public:
     phase::Frame Open();
     phase::Frame Ensure();
     phase::Frame Status();
+    // Original START continuation only; none of these observations issue a cap.
+    void ArmOriginalCompletionWaitFixed(const std::shared_ptr<Capability>& originalStart);
+    phase::Frame WaitOriginalCompletionNoticeFixed(std::uint16_t slot);
+    void CancelOriginalCompletionWaitFixed(std::uint16_t slot)noexcept;
+    phase::Frame PublishOwnCompletionReadyFixed(const std::shared_ptr<Capability>& ownTerminal);
+    std::shared_ptr<Capability> BeginCompletionFixed(std::uint16_t slot,const std::vector<unsigned char>& exactCanonicalBody);
+    std::shared_ptr<Capability> VerifyCompletionToolFixed(const std::shared_ptr<AuthenticatedRequest>& originalRequest);
+    std::vector<unsigned char> FinishOriginalCompletionFixed(const std::shared_ptr<Capability>& ownHandler);
+    void CompleteOriginalCompletionResponseFixed(const std::shared_ptr<Capability>& ownHandler);
     std::shared_ptr<Capability> BeginPanel();
     std::shared_ptr<Capability> BeginBracket();
     std::shared_ptr<Capability> BeginRead(phase::ToolCode tool,const std::shared_ptr<Capability>& authorization);
@@ -283,6 +292,8 @@ private:
     friend class ::local_session::OriginalDaemon;
     explicit NativeClient(std::unique_ptr<Data> data);
     phase::Frame Exchange(phase::Verb verb,const std::vector<unsigned char>& payload,bool lifecycle=false);
+    void RetainOriginalCompletionNoticeLocked(const phase::Frame& notice);
+    std::vector<unsigned char> OriginalCompletionProjectionFixed(std::uint16_t slot)const;
     std::shared_ptr<Capability> Own(CapKind kind,const phase::Frame& frame);
     Capability& Require(const std::shared_ptr<Capability>& cap,CapKind kind);
     void RequireRole(Role role);

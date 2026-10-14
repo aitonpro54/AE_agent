@@ -6,7 +6,13 @@
 namespace local_session::phase {
 namespace {
 constexpr std::uint16_t kVariableBytes=0xffff;
-constexpr std::array<VerbSpec, 30> kVerbs{{
+constexpr std::array<VerbSpec,
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+32
+#else
+30
+#endif
+> kVerbs{{
     {Verb::Open,Direction::ControllerToBroker,FrameKind::Request,0,176},
     {Verb::ReserveInitialLaunch,Direction::ControllerToBroker,FrameKind::Request,0,161},
     {Verb::Status,Direction::ControllerToBroker,FrameKind::Request,0,18},
@@ -37,6 +43,10 @@ constexpr std::array<VerbSpec, 30> kVerbs{{
     {Verb::ObserveSameActorState,Direction::DaemonToBroker,FrameKind::Request,112,18},
     {Verb::ReservePanelEffect,Direction::DaemonToBroker,FrameKind::Request,72,113},
     {Verb::ObserveChallenge,Direction::BrokerToDaemon,FrameKind::Event,34,0},
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    {Verb::PublishOwnCompletionReady,Direction::DaemonToBroker,FrameKind::Request,324,20},
+    {Verb::CompletionResultNotice,Direction::BrokerToController,FrameKind::Event,52,0},
+#endif
     // No spare verb slots, aliases or protocol negotiation entries.
 }};
 constexpr std::array<ToolSpec,
@@ -161,7 +171,13 @@ CodecError CheckPayload(const Frame& frame) noexcept {
             }
         }
         switch (verb) {
-        case Verb::Status:case Verb::Revoke:case Verb::BootHello:case Verb::DrainAck:
+        case Verb::Status:
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+            if ((U16(p)&0xfc00u)!=0 || (U16(p)&0xffu)>8 ||
+                ((U16(p)&0x300u)!=0 && ((U16(p)&0xffu)!=5 || Zero(p+2,16)))) return CodecError::Tag;
+            break;
+#endif
+        case Verb::Revoke:case Verb::BootHello:case Verb::DrainAck:
         case Verb::ShutdownAck:case Verb::ObserveSameActorState:
             if (U16(p)>8) return CodecError::Tag;
             break;
@@ -198,6 +214,9 @@ CodecError CheckPayload(const Frame& frame) noexcept {
             break;
         case Verb::FinishServerOnly:
             if (Zero(p,16) || Zero(p+16,16) || Zero(p+32,32)) return CodecError::Tag;
+            break;
+        case Verb::PublishOwnCompletionReady:
+            if (U16(p)<1 || U16(p)>2 || U16(p+2)!=1 || Zero(p+4,16)) return CodecError::Tag;
             break;
         default:break;
         }
@@ -291,6 +310,13 @@ CodecError CheckPayload(const Frame& frame) noexcept {
         break;
     case Verb::ObserveChallenge:
         if (U16(p+16)<1 || U16(p+16)>4) return CodecError::Tag;
+        break;
+    case Verb::PublishOwnCompletionReady:
+        if (U16(p)<1 || U16(p)>2 || U16(p+2)!=1 || Zero(p+4,16) || Zero(p+20,32) ||
+            Zero(p+52,32) || Zero(p+180,32) || Zero(p+284,32) || U64(p+316)==0) return CodecError::Tag;
+        break;
+    case Verb::CompletionResultNotice:
+        if (U16(p)<1 || U16(p)>2 || (U16(p+2)!=1 && U16(p+2)!=2) || Zero(p+4,16) || Zero(p+20,32)) return CodecError::Tag;
         break;
     case Verb::FinishServerOnly:
         if (Zero(p,16) || Zero(p+16,32)) return CodecError::Tag;
@@ -996,6 +1022,61 @@ Status VolatileServerLedger::FinishExecution(const PeerWitness& daemon,const Id&
     row->resultHash=result;row->state=RowState::Finished;return Status::Ok;
 #else
     (void)daemon;(void)handler;(void)result;(void)now;return Status::Unavailable;
+#endif
+}
+Digest VolatileServerLedger::CompletionRowHash(const CallRow& row,bool handler)const noexcept {
+    std::array<std::uint8_t,1024> bytes{};std::size_t at=0;constexpr char domain[]="lcp2.native.broker-selected-completion-row.v1";
+    for(const char c:domain)bytes[at++]=static_cast<std::uint8_t>(c);
+    const auto put=[&](const auto& field)noexcept{std::copy(field.begin(),field.end(),bytes.begin()+static_cast<std::ptrdiff_t>(at));at+=field.size();};
+    put(BindingHash(row,handler));put(row.completionSelector);W16(bytes.data()+at,row.completionSlot);at+=2;W64(bytes.data()+at,1);at+=8;put(row.completionBinding);return Sha256(bytes.data(),at);
+}
+bool VolatileServerLedger::CompletionRowCurrent(const CallRow& row,std::uint64_t now)const noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    return nativeBound_&&!closed_&&row.body.tool==ToolCode::GetAmeTitleJobStatus&&row.body.kind==CallKind::Completion&&row.body.route==RouteCode::McpToolsCall&&
+        row.completionSlot>=1&&row.completionSlot<=2&&!Zero(row.completionSelector)&&row.actorHash==panelDefinition_.actorHash&&row.sourceHash==nativeBinding_.sourceHash&&
+        row.policyEpoch==policyEpoch_&&row.revocationEpoch==revocationEpoch_&&now<row.call.expiresMono&&now<sessionDeadline_&&row.call.bindingHash==CompletionRowHash(row,false);
+#else
+    (void)row;(void)now;return false;
+#endif
+}
+Status VolatileServerLedger::BeginCompletion(const PeerWitness& controller,const BeginCallPayload& body,const Digest& selector,std::uint16_t slot,
+    const std::array<std::uint8_t,586>& binding,std::uint64_t jobDeadline,std::uint64_t now,CallReply& out)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(controller,PeerRole::Controller,now);if(guarded!=Status::Ok)return guarded;
+    if(body.tool!=ToolCode::GetAmeTitleJobStatus||body.kind!=CallKind::Completion||body.route!=RouteCode::McpToolsCall||Zero(body.canonicalBodyHash)||Zero(selector)||slot<1||slot>2||
+        HasUnresolved()||now>=jobDeadline||usedRows_>=kLifetimeCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)return Status::Denied;
+    CallRow row{};row.state=RowState::Begun;row.body=body;row.completionSlot=slot;row.completionSelector=selector;row.completionBinding=binding;row.actorHash=panelDefinition_.actorHash;row.sourceHash=nativeBinding_.sourceHash;
+    row.counter=callCounter_+1;row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row.call.callRef)||!nativePort_.randomId(nativePort_.originalBroker,row.call.ingressNonce)||Zero(row.call.callRef)||Zero(row.call.ingressNonce)||row.call.callRef==row.call.ingressNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(previous.state!=RowState::Empty&&(previous.call.callRef==row.call.callRef||previous.call.ingressNonce==row.call.ingressNonce))return DenyAndClose(Status::Unknown);
+    row.call.expiresMono=std::min(now+kCallTtlMs,std::min(jobDeadline,sessionDeadline_));row.call.bindingHash=CompletionRowHash(row,false);
+    const auto finalGuard=Guard(controller,PeerRole::Controller,now);if(finalGuard!=Status::Ok)return finalGuard;if(!CompletionRowCurrent(row,now))return DenyAndClose(Status::Unknown);
+    rows_[usedRows_]=row;++usedRows_;++callCounter_;out=row.call;return Status::Ok;
+#else
+    (void)controller;(void)body;(void)selector;(void)slot;(void)binding;(void)jobDeadline;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::IssueCompletion(const PeerWitness& daemon,const VerifyIngressPayload& body,const std::array<std::uint8_t,586>& binding,std::uint64_t now,HandlerReply& out)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;CallRow* row=nullptr;
+    for(auto& candidate:rows_)if(candidate.state!=RowState::Empty&&candidate.call.callRef==body.callRef){if(row)return DenyAndClose(Status::Unknown);row=&candidate;}
+    if(!row||row->state!=RowState::Begun||row->completionBinding!=binding||row->call.ingressNonce!=body.ingressNonce||row->body.tool!=body.body.tool||row->body.kind!=body.body.kind||row->body.route!=body.body.route||row->body.canonicalBodyHash!=body.body.canonicalBodyHash||!CompletionRowCurrent(*row,now))return Status::Denied;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitRef)||!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitNonce)||Zero(row->handler.permitRef)||Zero(row->handler.permitNonce)||row->handler.permitRef==row->handler.permitNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(&previous!=row&&previous.state!=RowState::Empty&&(previous.handler.permitRef==row->handler.permitRef||previous.handler.permitNonce==row->handler.permitNonce))return DenyAndClose(Status::Unknown);
+    row->handler.expiresMono=row->call.expiresMono;row->handler.bindingHash=CompletionRowHash(*row,true);const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);if(finalGuard!=Status::Ok)return finalGuard;if(!CompletionRowCurrent(*row,now))return DenyAndClose(Status::Unknown);
+    row->state=RowState::Verified;++handlerAdmissions_;out=row->handler;return Status::Ok;
+#else
+    (void)daemon;(void)body;(void)binding;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::FinishCompletion(const PeerWitness& daemon,const Id& handler,const Digest& projection,const std::array<std::uint8_t,586>& binding,std::uint64_t now)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;CallRow* row=nullptr;
+    for(auto& candidate:rows_)if(candidate.state==RowState::Verified&&candidate.handler.permitRef==handler){if(row)return DenyAndClose(Status::Unknown);row=&candidate;}
+    if(!row||row->completionBinding!=binding||Zero(projection)||!CompletionRowCurrent(*row,now)||row->handler.bindingHash!=CompletionRowHash(*row,true)||row->handler.expiresMono!=row->call.expiresMono)return Status::Denied;
+    const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);if(finalGuard!=Status::Ok)return finalGuard;if(!CompletionRowCurrent(*row,now))return DenyAndClose(Status::Unknown);row->resultHash=projection;row->state=RowState::Finished;return Status::Ok;
+#else
+    (void)daemon;(void)handler;(void)projection;(void)binding;(void)now;return Status::Unavailable;
 #endif
 }
 Status VolatileServerLedger::FinishLocalStatusRead(const PeerWitness& daemon,const Id& permit,const Digest& result,

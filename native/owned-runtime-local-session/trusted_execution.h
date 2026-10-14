@@ -128,6 +128,9 @@ private:
         std::uint64_t sequence=0,epoch=0;bool complete=false,unknown=false;};
     std::unique_ptr<MediaReservation> mediaReservation_;detail::Held output_;ObjectPin outputPin_;Digest outputHash_{};
     std::shared_ptr<Capability> pendingPoll_,acceptedTerminal_;Id pollRef_{},pollNonce_{},pollRequestNonce_{};Digest pollBinding_{},pollCommit_{};
+    std::array<unsigned char,272> acceptedTerminalFactualOpening_{};Digest terminalResultHash_{};
+    bool publicationSpent_=false,published_=false,officialFinish_=false,officialResponseVerified_=false,officialCleanupSpent_=false,mediaBarrierCleared_=false;
+    std::shared_ptr<Capability> officialHandler_;
     std::shared_ptr<ProjectCapture> preparingPoll_;
     std::uint64_t activePoll_=0,pollExpiry_=0,nextPollAt_=0,finalPoll_=0;bool pollPreparing_=false,terminalAttempted_=false;
     bool mediaAttempted_=false,d47Attempted_=false,unknown_=false;friend class NativeClient;friend class OriginalMediaCapture;

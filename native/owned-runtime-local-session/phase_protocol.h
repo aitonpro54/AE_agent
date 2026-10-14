@@ -70,7 +70,8 @@ enum class Verb : std::uint16_t { Open=1, ReserveInitialLaunch=2, Status=3,
     BindCommand=41, ConsumeDispatch=42, GuardDelivery=43, RecordDelivery=44,
     ObserveServerGates=46, BindOriginalJob=47, BeginCompletionPoll=48,
     ObserveJobTerminal=49, ObserveMedia=50, FinishServerOnly=52,
-    ObserveSameActorState=53, ReservePanelEffect=54, ObserveChallenge=65 };
+    ObserveSameActorState=53, ReservePanelEffect=54, ObserveChallenge=65,
+    PublishOwnCompletionReady=66, CompletionResultNotice=67 };
 enum class CallKind : std::uint8_t { ServerOnly=1, Panel=2, BootstrapRead=3,
     Read=4, ExecutionPrep=5, Execute=6, Completion=7 };
 enum class ToolCode : std::uint16_t { GetOwnedRuntimeStatus=1,
@@ -214,6 +215,8 @@ private:
         std::uint8_t bracketIndex=0;
         Digest readHash{},actorHash{},observationHash{},sourceHash{};
         Digest executionScope{};
+        Digest completionSelector{};std::uint16_t completionSlot=0;
+        std::array<std::uint8_t,586> completionBinding{};
         std::uint64_t leaseEpoch=0,observedMono=0;
     };
     struct NativeBinding {
@@ -304,6 +307,12 @@ private:
     bool ExecutionRowCurrent(const CallRow& row,std::uint64_t now)const noexcept;
     Digest ExecutionRowHash(const CallRow& row,bool handler)const noexcept;
     Status FinishExecution(const PeerWitness& daemon,const Id& handler,const Digest& result,std::uint64_t now)noexcept;
+    Status BeginCompletion(const PeerWitness& controller,const BeginCallPayload& body,const Digest& selector,std::uint16_t slot,
+        const std::array<std::uint8_t,586>& binding,std::uint64_t jobDeadline,std::uint64_t now,CallReply& out)noexcept;
+    Status IssueCompletion(const PeerWitness& daemon,const VerifyIngressPayload& body,const std::array<std::uint8_t,586>& binding,std::uint64_t now,HandlerReply& out)noexcept;
+    Status FinishCompletion(const PeerWitness& daemon,const Id& handler,const Digest& projection,const std::array<std::uint8_t,586>& binding,std::uint64_t now)noexcept;
+    Digest CompletionRowHash(const CallRow& row,bool handler)const noexcept;
+    bool CompletionRowCurrent(const CallRow& row,std::uint64_t now)const noexcept;
     bool ObservationCurrent(const ReadObservation& value,const Id& target,std::uint64_t now) const noexcept;
     Digest ReadRowHash(const CallRow& row,bool handler) const noexcept;
     Digest ReadAuthorizationHash(const ReadAuthorization& value,const Id& bracket) const noexcept;

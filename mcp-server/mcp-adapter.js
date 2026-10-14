@@ -24,6 +24,24 @@ const trustedSourceCensus=require("./owned-runtime-initial-source-census");
 const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
 const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
+// One original stdio request object per exact JSON-RPC ID. A notification can
+// cancel only that retained object; primitive type is part of the Map key.
+const originalRpcRequests=new Map();
+function rpcRequestId(value){return typeof value==="string"&&value.length>0&&value.length<=256||typeof value==="number"&&Number.isSafeInteger(value);}
+function cancelOriginalRpcRequests(){for(const original of originalRpcRequests.values())original.controller.abort();}
+async function handleRpc(message){
+  if(!message||message.jsonrpc!=="2.0")return;
+  if(message.method==="notifications/cancelled"){
+    const params=message.params;if(message.id!==undefined||!params||typeof params!=="object"||Array.isArray(params)||
+      Object.keys(params).some(key=>!["requestId","reason"].includes(key))||!rpcRequestId(params.requestId)||
+      params.reason!==undefined&&typeof params.reason!=="string")return;
+    const original=originalRpcRequests.get(params.requestId);if(original)original.controller.abort();return;
+  }
+  if(message.method!=="tools/call"||!initialRuntime)return handleRpcBound(message,null);
+  if(!rpcRequestId(message.id)||originalRpcRequests.has(message.id)){err(message.id,-32600,"Invalid or duplicate original request ID");return;}
+  const original={message,controller:new AbortController()};originalRpcRequests.set(message.id,original);
+  try{return await handleRpcBound(message,original);}finally{if(originalRpcRequests.get(message.id)===original)originalRpcRequests.delete(message.id);}
+}
 async function handleOwnedRuntimeTool(name,args,controller) {
   if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
   require("./owned-runtime-authority").exact(args,[],"owned_adapter_arguments_forbidden");
@@ -155,8 +173,8 @@ async function getTools() {
 
 }
 
-async function callDaemonTool(name, args) {
-  if(initialRuntime)return initialRuntime.callTool(name,args===undefined?{}:args);
+async function callDaemonTool(name, args, originalRequest) {
+  if(initialRuntime)return initialRuntime.callTool(name,args===undefined?{}:args,originalRequest?originalRequest.controller.signal:undefined);
   if (!isPanelControlTool(name)) await ensureDaemonRunning();
   const response = await daemonRequest("POST", "/mcp/tools/call", {
     name,
@@ -174,7 +192,7 @@ async function callDaemonTool(name, args) {
   return response.body.result;
 }
 
-async function handleRpc(message) {
+async function handleRpcBound(message, originalRequest) {
   if (!message || message.jsonrpc !== "2.0") return;
   const id = message.id;
 
@@ -206,7 +224,7 @@ async function handleRpc(message) {
       const params = message.params || {};
       const toolName = params.name;
       if(initialRuntime){ok(id,Object.hasOwn(OWNED_TOOL_METHODS,toolName)?await handleOwnedRuntimeTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}):
-        await callDaemonTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}));return;}
+        await callDaemonTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{},originalRequest));return;}
       const toolArgs = isPanelControlTool(toolName)
         ? (Object.prototype.hasOwnProperty.call(params, "arguments") ? params.arguments : {})
         : (params.arguments || {});
@@ -282,15 +300,16 @@ function startStdioMcp() {
 
   rl.on("close", async () => {
     log("stdin closed");
+    cancelOriginalRpcRequests();
     if(initialRuntime)await initialRuntime.revoke();
     process.exit(0);
   });
   if(initialRuntime){
     // Installed before the first explicit ensure can invoke the native factory.
     // These handlers only revoke this original controller; EOF never relaunches.
-    process.stdin.on("error",async()=>{await initialRuntime.revoke();process.exit(1);});
-    process.stdin.on("end",()=>{void initialRuntime.revoke();});
-    process.stdout.on("error",()=>{void initialRuntime.revoke();});
+    process.stdin.on("error",async()=>{cancelOriginalRpcRequests();await initialRuntime.revoke();process.exit(1);});
+    process.stdin.on("end",()=>{cancelOriginalRpcRequests();void initialRuntime.revoke();});
+    process.stdout.on("error",()=>{cancelOriginalRpcRequests();void initialRuntime.revoke();});
   }
 }
 

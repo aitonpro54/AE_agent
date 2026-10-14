@@ -50,9 +50,9 @@ enum class Operation:std::uintptr_t{Assert=1,Open,Ensure,Status,BeginPanel,Begin
     CepInventory,InvalidateCep,CaptureObservation,SubmitObservation,ObserveActor,DaemonTransport,AssertPreactor,ReserveBootstrap,LaunchBootstrap,BootstrapSettled,PreactorInventory,CompleteIdleCleanup,
     BeginExecution,VerifyExecution,CaptureAme,BeginServerOnly,VerifyServerOnly,CaptureServerOnly,
     BindExecution,DescribeExecution,SelectExecution,GuardExecution,SubmitExecution,CaptureExecutionResult,CaptureSelection,DescribeSelection,CaptureManifest,CapturePreparation,CaptureGates,BindPreparationDelivery,AcceptManualAdopt,DeadlineProjection,
-    BindStageDelivery,CaptureStageResult,ExecuteCheckpoint,ExecuteCleanCopy,DescribeCheckpoint,DescribeCleanCopy,DescribeSavedSnapshot,ManualPreflight,PreissueRestoration,BindRestorationDelivery,CaptureRestorationResult,DescribeRestorationDebt,BindAmeInspection,BindAmeDelivery,CaptureAmeResult,DescribeAmeCommand,BindOriginalJob,AmeQueueFacts,AssertAmeCommand,CaptureAmeReservation,BeginCompletionPoll,DescribeCompletionPoll,SelectCompletionPoll,CompletionFacts,AbandonCompletionPoll};
+    BindStageDelivery,CaptureStageResult,ExecuteCheckpoint,ExecuteCleanCopy,DescribeCheckpoint,DescribeCleanCopy,DescribeSavedSnapshot,ManualPreflight,PreissueRestoration,BindRestorationDelivery,CaptureRestorationResult,DescribeRestorationDebt,BindAmeInspection,BindAmeDelivery,CaptureAmeResult,DescribeAmeCommand,BindOriginalJob,AmeQueueFacts,AssertAmeCommand,CaptureAmeReservation,BeginCompletionPoll,DescribeCompletionPoll,SelectCompletionPoll,CompletionFacts,AbandonCompletionPoll,ArmCompletionWait,WaitCompletionNotice,CancelCompletionWait,PublishCompletion,BeginCompletion,VerifyCompletion,FinishCompletion,CompletionResponse};
 struct RequestBox;
-struct Instance final {std::shared_ptr<NativeClient> native;std::vector<std::shared_ptr<RequestBox>> requests;napi_ref statusGetter=nullptr,observationGetter=nullptr,quiescenceGetter=nullptr,serverOnlyGetter=nullptr,readonlyScriptGetter=nullptr,preparationGetter=nullptr,executionGateGetter=nullptr,preparationScriptGetter=nullptr,stageScriptGetter=nullptr,restorationProgramGetter=nullptr,restorationScriptGetter=nullptr,ameScriptGetter=nullptr,ameReservationGetter=nullptr;bool pending=false;};
+struct Instance final {std::shared_ptr<NativeClient> native;std::vector<std::shared_ptr<RequestBox>> requests;napi_ref statusGetter=nullptr,observationGetter=nullptr,quiescenceGetter=nullptr,serverOnlyGetter=nullptr,readonlyScriptGetter=nullptr,preparationGetter=nullptr,executionGateGetter=nullptr,preparationScriptGetter=nullptr,stageScriptGetter=nullptr,restorationProgramGetter=nullptr,restorationScriptGetter=nullptr,ameScriptGetter=nullptr,ameReservationGetter=nullptr;bool pending=false;std::array<bool,2> completionWaitScheduled{};std::uint16_t completionPublishScheduled=0;std::vector<void*> retainedCompletionWorks;};
 struct RequestBox final {std::shared_ptr<Instance> owner;std::shared_ptr<AuthenticatedRequest> request;std::shared_ptr<Capability> delivery;napi_ref originalRequest=nullptr;bool executionDelivery=false,completionDelivery=false,terminal=false,cleanupAttempted=false,cleanupFailure=false;};
 struct RequestObject final {std::shared_ptr<RequestBox> original;};
 // HttpTransportBinding owns this original object. Its common HTTP operations
@@ -247,7 +247,7 @@ HttpRequestFields RequestFields(napi_env env,napi_value request,napi_value body)
 napi_value Error(napi_env env,const std::string& code,bool unknown){napi_value message=nullptr,error=nullptr;Check(napi_create_string_utf8(env,code.c_str(),code.size(),&message));Check(napi_create_error(env,nullptr,message,&error));Property(env,error,"code",message);Boolean(env,error,"unknown",unknown);return error;}
 napi_value Summary(napi_env env,const phase::Frame& frame){napi_value value=nullptr;Check(napi_create_object(env,&value));Text(env,value,"schema",std::string(phase::kSchema));
     Text(env,value,"authorityMode","local_controller_session");Boolean(env,value,"genuineChatIdentity",false);Boolean(env,value,"replayAllowed",false);
-    if(frame.header.verb==phase::Verb::Status||frame.header.verb==phase::Verb::Revoke){Number(env,value,"state",static_cast<std::uint32_t>(frame.payload[0]|(static_cast<unsigned>(frame.payload[1])<<8)));}
+    if(frame.header.verb==phase::Verb::Status||frame.header.verb==phase::Verb::Revoke){Number(env,value,"state",static_cast<std::uint32_t>(frame.payload[0]));}
     Number(env,value,"operation",static_cast<std::uint32_t>(frame.header.verb));return value;
 }
 phase::ToolCode Tool(napi_env env,napi_value value,bool panel=false){const auto name=String(env,value,64);if(name=="get_bridge_status")return phase::ToolCode::GetBridgeStatus;if(name=="get_project_info")return phase::ToolCode::GetProjectInfo;if(panel&&name=="ensure_ae_agent_panel")return phase::ToolCode::EnsureAgentPanel;detail::Refuse("trusted_exact_read_tool_required");}
@@ -279,6 +279,8 @@ void Execute(napi_env,void* pointer){auto& work=*static_cast<Work*>(pointer);try
     case Operation::ExecuteCheckpoint:work.output=client.ExecuteOwnedCheckpointFixed(work.input);break;
     case Operation::ExecuteCleanCopy:work.output=client.ExecuteOwnedCleanCopyFixed(work.input);break;
     case Operation::BindOriginalJob:work.output=client.BindOriginalJobFixed(work.input);break;
+    case Operation::WaitCompletionNotice:work.frame=client.WaitOriginalCompletionNoticeFixed(work.intent.slot);break;
+    case Operation::PublishCompletion:work.frame=client.PublishOwnCompletionReadyFixed(work.input);break;
     case Operation::LaunchBootstrap:client.LaunchPanelBootstrapFixed(work.input,work.second);break;
     case Operation::SubmitObservation:work.output=client.SubmitObservation(work.input,work.second);break;
     case Operation::ObserveActor:work.output=client.ObserveActor(work.input,work.second);break;
@@ -288,19 +290,24 @@ void Execute(napi_env,void* pointer){auto& work=*static_cast<Work*>(pointer);try
     if(work.operation==Operation::AckDisposition)client.AssertOriginalDispositionCurrent();
     else if(work.operation!=Operation::Revoke){client.AssertCurrent();if(work.output&&work.operation!=Operation::SubmitObservation)client.AssertCapabilityCurrent(work.output);}
     }catch(const detail::Failure& failure){work.error=failure.code;work.unknown=failure.unknown;}catch(...){work.error="trusted_node_async_unknown";work.unknown=true;}}
-void Complete(napi_env env,napi_status status,void* pointer){std::unique_ptr<Work> work(static_cast<Work*>(pointer));work->owner->pending=false;
+void Complete(napi_env env,napi_status status,void* pointer){std::unique_ptr<Work> work(static_cast<Work*>(pointer));
+    if(work->operation==Operation::WaitCompletionNotice||work->operation==Operation::PublishCompletion){if(napi_delete_async_work(env,work->work)!=napi_ok){
+        work->owner->native->InvalidateLoadedNodeProof();napi_reject_deferred(env,work->deferred,Error(env,"trusted_completion_async_close_unknown",true));work->owner->retainedCompletionWorks.push_back(work.release());return;}work->work=nullptr;}
+    work->owner->pending=false;
     try{if(status!=napi_ok&&work->error.empty()){work->error="trusted_node_async_cancelled_unknown";work->unknown=true;}
         if(work->error.empty()&&work->operation==Operation::AckDisposition)work->owner->native->AssertOriginalDispositionCurrent();
         else if(work->error.empty()&&work->operation!=Operation::Revoke){work->owner->native->AssertCurrent();if(work->output&&work->operation!=Operation::SubmitObservation)work->owner->native->AssertCapabilityCurrent(work->output);}
         if(!work->error.empty())Check(napi_reject_deferred(env,work->deferred,Error(env,work->error,work->unknown)));
         else Check(napi_resolve_deferred(env,work->deferred,work->output?Wrap(env,work->owner,work->output):work->operation==Operation::Revoke||work->operation==Operation::AckDisposition||work->operation==Operation::LaunchBootstrap?Undefined(env):Summary(env,work->frame)));
     }catch(const detail::Failure& failure){napi_reject_deferred(env,work->deferred,Error(env,failure.code,failure.unknown));}
-    catch(...){napi_reject_deferred(env,work->deferred,Error(env,"trusted_node_completion_unknown",true));}napi_delete_async_work(env,work->work);
+    catch(...){napi_reject_deferred(env,work->deferred,Error(env,"trusted_node_completion_unknown",true));}if(work->work)napi_delete_async_work(env,work->work);
 }
 napi_value Async(napi_env env,std::unique_ptr<Work> work){if(work->owner->pending)detail::Refuse("trusted_node_serial_operation_required");work->owner->pending=true;
     napi_value promise=nullptr,name=nullptr;try{Check(napi_create_promise(env,&work->deferred,&promise));Check(napi_create_string_utf8(env,"owned-original-native",NAPI_AUTO_LENGTH,&name));
         Check(napi_create_async_work(env,nullptr,name,Execute,Complete,work.get(),&work->work));Check(napi_queue_async_work(env,work->work));(void)work.release();return promise;
-    }catch(...){work->owner->pending=false;if(work->work)napi_delete_async_work(env,work->work);throw;}}
+    }catch(...){if(work->operation==Operation::WaitCompletionNotice||work->operation==Operation::PublishCompletion){if(work->operation==Operation::WaitCompletionNotice)work->owner->native->CancelOriginalCompletionWaitFixed(work->intent.slot);work->owner->native->InvalidateLoadedNodeProof();
+        if(work->work&&napi_delete_async_work(env,work->work)!=napi_ok){work->owner->retainedCompletionWorks.push_back(work.release());throw;}}
+      else if(work->work)napi_delete_async_work(env,work->work);work->owner->pending=false;throw;}}
 bool Null(napi_env env,napi_value value){napi_valuetype type=napi_undefined;Check(napi_typeof(env,value,&type));return type==napi_null;}
 void EmptyArray(napi_env env,napi_value value){bool array=false;Check(napi_is_array(env,value,&array));std::uint32_t count=0;if(!array)detail::Refuse("trusted_actual_empty_inventory_required");Check(napi_get_array_length(env,value,&count));if(count)detail::Refuse("trusted_actual_inventory_not_idle");}
 void SameOriginalProposalPins(napi_env env,napi_value actual,napi_value expected){
@@ -472,6 +479,15 @@ napi_value Dispatch(napi_env env,napi_callback_info info){try{std::array<napi_va
     Check(napi_get_cb_info(env,info,&count,nullptr,&role,&data));if(count>arguments.size())detail::Refuse("trusted_node_extra_arguments_refused");
     const auto actualCount=count;count=arguments.size();Check(napi_get_cb_info(env,info,&count,arguments.data(),&role,&data));if(count!=actualCount)detail::Refuse("trusted_node_arguments_changed");
     const auto operation=static_cast<Operation>(reinterpret_cast<std::uintptr_t>(data));auto owner=Original(env,role);auto& client=*owner->native;
+    if(operation==Operation::CancelCompletionWait){if(count!=1)detail::Refuse("trusted_completion_cancel_arguments");const auto slot=Unsigned(env,arguments[0]);if(slot<1||slot>2)detail::Refuse("trusted_completion_cancel_slot");client.CancelOriginalCompletionWaitFixed(static_cast<std::uint16_t>(slot));return Undefined(env);}
+    if(owner->pending)detail::Refuse("trusted_node_original_reader_or_operation_busy");
+    if(operation==Operation::PublishCompletion){if(count!=1||owner->completionPublishScheduled>=2)detail::Refuse("trusted_completion_publish_arguments_or_limit");auto cap=Cap(env,arguments[0],owner);++owner->completionPublishScheduled;auto work=std::make_unique<Work>();work->owner=owner;work->operation=operation;work->input=std::move(cap);return Async(env,std::move(work));}
+    if(operation==Operation::BeginCompletion){if(count!=2)detail::Refuse("trusted_completion_begin_arguments");const auto slot=Unsigned(env,arguments[0]);if(slot<1||slot>2)detail::Refuse("trusted_completion_begin_slot");return Wrap(env,owner,client.BeginCompletionFixed(static_cast<std::uint16_t>(slot),Buffer(env,arguments[1],1048576,true)));}
+    if(operation==Operation::VerifyCompletion){if(count!=1)detail::Refuse("trusted_completion_verify_arguments");return Wrap(env,owner,client.VerifyCompletionToolFixed(OriginalRequest(env,arguments[0],owner)->request));}
+    if(operation==Operation::FinishCompletion){if(count!=1)detail::Refuse("trusted_completion_finish_arguments");const auto bytes=client.FinishOriginalCompletionFixed(Cap(env,arguments[0],owner));napi_value value=nullptr;Check(napi_create_string_utf8(env,reinterpret_cast<const char*>(bytes.data()),bytes.size(),&value));return value;}
+    if(operation==Operation::CompletionResponse){if(count!=1)detail::Refuse("trusted_completion_response_arguments");client.CompleteOriginalCompletionResponseFixed(Cap(env,arguments[0],owner));return Undefined(env);}
+    if(operation==Operation::ArmCompletionWait){if(count!=1)detail::Refuse("trusted_completion_arm_arguments");client.ArmOriginalCompletionWaitFixed(Cap(env,arguments[0],owner));return Undefined(env);}
+    if(operation==Operation::WaitCompletionNotice){if(count!=1)detail::Refuse("trusted_completion_wait_arguments");const auto slot=Unsigned(env,arguments[0]);if(slot<1||slot>2||owner->completionWaitScheduled[static_cast<std::size_t>(slot-1)])detail::Refuse("trusted_completion_wait_slot_or_duplicate");owner->completionWaitScheduled[static_cast<std::size_t>(slot-1)]=true;auto work=std::make_unique<Work>();work->owner=owner;work->operation=operation;work->intent.slot=static_cast<std::uint16_t>(slot);return Async(env,std::move(work));}
     if(operation==Operation::Assert){if(count>1)detail::Refuse("trusted_node_assert_arguments");if(count){napi_valuetype type=napi_undefined;Check(napi_typeof(env,arguments[0],&type));if(type!=napi_undefined)client.AssertCapabilityCurrent(Cap(env,arguments[0],owner));else client.AssertCurrent();}else client.AssertCurrent();return Undefined(env);}
     if(operation==Operation::InvalidateSource){if(count)detail::Refuse("trusted_node_source_close_arguments");client.InvalidateLoadedNodeProof();return Undefined(env);}
     if(operation==Operation::InvalidateCep){if(count)detail::Refuse("trusted_cep_source_close_arguments");client.InvalidateLoadedCepProof();return Undefined(env);}
@@ -672,6 +688,8 @@ napi_value Factory(napi_env env,napi_callback_info info){try{std::size_t count=1
         {"ameQueuePreparationFactsFixed",Operation::AmeQueueFacts},{"assertAmeCommandCurrentFixed",Operation::AssertAmeCommand},{"captureOriginalAmeManualReservationFixed",Operation::CaptureAmeReservation},
         {"beginOriginalCompletionPollFixed",Operation::BeginCompletionPoll},{"describeOriginalCompletionPollFixed",Operation::DescribeCompletionPoll},{"selectOriginalCompletionPollFixed",Operation::SelectCompletionPoll},{"originalCompletionFactsFixed",Operation::CompletionFacts},
         {"abandonOriginalCompletionPollFixed",Operation::AbandonCompletionPoll},
+        {"armOriginalCompletionWaitFixed",Operation::ArmCompletionWait},{"waitOriginalCompletionNoticeFixed",Operation::WaitCompletionNotice},{"cancelOriginalCompletionWaitFixed",Operation::CancelCompletionWait},
+        {"publishOwnCompletionReadyFixed",Operation::PublishCompletion},{"beginCompletionFixed",Operation::BeginCompletion},{"verifyCompletionToolFixed",Operation::VerifyCompletion},{"finishOriginalCompletionFixed",Operation::FinishCompletion},{"completeOriginalCompletionResponseFixed",Operation::CompletionResponse},
         {"captureSelectionFixed",Operation::CaptureSelection},{"describeSelectionFixed",Operation::DescribeSelection},{"captureManifestFixed",Operation::CaptureManifest},
         {"captureExecutionPreparationFixed",Operation::CapturePreparation},{"captureServerGatesFixed",Operation::CaptureGates},{"acceptOriginalManualAdoptFixed",Operation::AcceptManualAdopt},{"originalDeadlineProjectionFixed",Operation::DeadlineProjection},
         {"beginServerOnlyFixed",Operation::BeginServerOnly},{"verifyServerOnlyTool",Operation::VerifyServerOnly},{"captureServerOnlyResultFixed",Operation::CaptureServerOnly},

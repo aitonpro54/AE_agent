@@ -1831,11 +1831,20 @@ function trustedStartOriginalCompletion(originalJob,slot){if(![1,2].includes(slo
   if(!trustedReadDaemon.completionFlights)trustedReadDaemon.completionFlights=[null,null];if(trustedReadDaemon.completionFlights[slot-1])trustedFail("owned_initial_original_completion_lifetime_once",true);
   const flight={originalJob,slot,unknown:false,complete:false,promise:null};trustedReadDaemon.completionFlights[slot-1]=flight;
   flight.promise=(async()=>{for(let index=0;index<10;index++){trustedCurrent();const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);
-      if(facts.complete){flight.complete=true;return;}if(!Number.isSafeInteger(facts.remainingPolls)||facts.remainingPolls<=0||!Number.isSafeInteger(facts.nextPollDelayMs)||facts.nextPollDelayMs<0||facts.nextPollDelayMs>=facts.remainingJobMs)trustedFail("owned_initial_original_completion_budget_closed",true);
+      if(facts.complete){await trustedPublishOriginalCompletion(flight);flight.complete=true;return;}if(!Number.isSafeInteger(facts.remainingPolls)||facts.remainingPolls<=0||!Number.isSafeInteger(facts.nextPollDelayMs)||facts.nextPollDelayMs<0||facts.nextPollDelayMs>=facts.remainingJobMs)trustedFail("owned_initial_original_completion_budget_closed",true);
       if(facts.nextPollDelayMs)await new Promise(resolve=>setTimeout(resolve,facts.nextPollDelayMs));trustedCurrent();await trustedOriginalCompletionPoll(originalJob,slot);
-      if(trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob).complete){flight.complete=true;return;}}
+      if(trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob).complete){await trustedPublishOriginalCompletion(flight);flight.complete=true;return;}}
     trustedFail("owned_initial_original_completion_poll_limit",true);
   })();void flight.promise.catch(error=>{flight.unknown=true;flight.error=error;trustedReadDaemon.activeTool?.reject?.(error);});return flight;
+}
+async function trustedPublishOriginalCompletion(flight){const index=flight.slot-1,terminal=trustedReadDaemon.completionTerminals?.[index];
+  const cleanup=trustedReadDaemon.completionResultCleanups?.[index];
+  if(trustedReadDaemon.completionFlights?.[index]!==flight||trustedReadDaemon.ameJobs[index]!==flight.originalJob||!terminal||!cleanup||cleanup.terminal!==terminal||flight.publicationPromise)trustedFail("owned_initial_original_completion_publication_join",true);
+  flight.publicationPromise=(async()=>{await cleanup.promise;
+    if(trustedReadDaemon.completionFlights?.[index]!==flight||trustedReadDaemon.ameJobs[index]!==flight.originalJob||trustedReadDaemon.completionTerminals?.[index]!==terminal||trustedReadDaemon.completionResultCleanups?.[index]!==cleanup)
+      trustedFail("owned_initial_original_completion_producer_cleanup_drift",true);
+    trustedCurrent();return trustedNative.publishOwnCompletionReadyFixed(trustedReadDaemon.role,terminal);
+  })();void flight.publicationPromise.catch(()=>{});await flight.publicationPromise;trustedCurrent();flight.published=true;
 }
 async function trustedProject(handler){return trustedCommand(handler,false);}
 async function trustedReadonlyInspection(handler,name,args){return trustedCommand(handler,true,name,[ameTitleJobs.INSPECT,ameTitleJobs.QUEUE_MANIFEST].includes(name)?{operation:"ame_inspection",slot:args.variantSlot}:null);}
@@ -1934,8 +1943,9 @@ async function trustedFixedExecute(handler,value){
   finally{if(trustedReadDaemon.manualPending===pending)trustedReadDaemon.manualPending=null;}
 }
 async function trustedTool(req,res,body){const value=JSON.parse(body.toString("utf8"));
-  const read=["ensure_ae_agent_panel","get_bridge_status","get_project_info"].includes(value?.name),library=["search_solutions","get_solution"].includes(value?.name),inspection=["get_comp_details","get_layer_details","inspect_title_variants",ameTitleJobs.INSPECT,ameTitleJobs.QUEUE_MANIFEST].includes(value?.name),build=value?.name==="build_solution_plan",proposal=value?.name==="propose_ai_agent_plan",dryRun=value?.name==="run_ai_agent_plan"&&value.args?.dryRun===true,execute=value?.name==="run_ai_agent_plan"&&value.args?.dryRun!==true;
-  if(!trustedExact(value,["args","name"])||!value.args||typeof value.args!=="object"||Array.isArray(value.args)||(!read&&!library&&!inspection&&!build&&!proposal&&!dryRun&&!execute)||(read&&!trustedExact(value.args,[]))||
+  const read=["ensure_ae_agent_panel","get_bridge_status","get_project_info"].includes(value?.name),library=["search_solutions","get_solution"].includes(value?.name),inspection=["get_comp_details","get_layer_details","inspect_title_variants",ameTitleJobs.INSPECT,ameTitleJobs.QUEUE_MANIFEST].includes(value?.name),build=value?.name==="build_solution_plan",proposal=value?.name==="propose_ai_agent_plan",dryRun=value?.name==="run_ai_agent_plan"&&value.args?.dryRun===true,execute=value?.name==="run_ai_agent_plan"&&value.args?.dryRun!==true,completion=value?.name==="get_ame_title_job_status";
+  if(!trustedExact(value,["args","name"])||!value.args||typeof value.args!=="object"||Array.isArray(value.args)||(!read&&!library&&!inspection&&!build&&!proposal&&!dryRun&&!execute&&!completion)||(read&&!trustedExact(value.args,[]))||
+      (completion&&(!trustedExact(value.args,["variantSlot"])||![1,2].includes(value.args.variantSlot)))||
       (build&&(!trustedExact(value.args,["solutionId"])||value.args.solutionId!=="owned-runtime-two-title-fixed-v1")))trustedFail("owned_initial_exact_tool_required");
   if(trustedReadDaemon.activeTool)trustedFail("owned_initial_concurrent_tool_refused",true);
   // Hold the one ingress slot before the first await. A lost response never
@@ -1944,8 +1954,10 @@ async function trustedTool(req,res,body){const value=JSON.parse(body.toString("u
   trustedReadDaemon.activeTool=slot;
   res.once("close",()=>{if(!res.writableFinished)slot.reject(Object.assign(Error("owned_initial_original_tool_response_lost"),{code:"owned_initial_original_tool_response_lost",unknown:true}));});
   const operation=(async()=>{if(trustedReadDaemon.pumpWork)await trustedReadDaemon.pumpWork;trustedCurrent();
+    if(completion){const flight=trustedReadDaemon.completionFlights?.[value.args.variantSlot-1];if(!flight||flight.unknown||!flight.publicationPromise)trustedFail("owned_initial_original_completion_publication_required",true);await flight.publicationPromise;trustedCurrent();if(!flight.published)trustedFail("owned_initial_original_completion_publication_not_settled",true);}
     const role=trustedReadDaemon.role,request=await trustedHttp.retainAuthenticatedRequest(role,req,body);trustedCurrent();
-    const handler=await (library?trustedNative.verifyServerOnlyTool(role,request,value.name):inspection||build||proposal||dryRun||execute?trustedNative.verifyExecutionTool(role,request,value.name):trustedNative.verifyTool(role,request,value.name));slot.handler=handler;trustedCurrent();
+    const handler=await (completion?trustedNative.verifyCompletionToolFixed(role,request):library?trustedNative.verifyServerOnlyTool(role,request,value.name):inspection||build||proposal||dryRun||execute?trustedNative.verifyExecutionTool(role,request,value.name):trustedNative.verifyTool(role,request,value.name));slot.handler=handler;trustedCurrent();
+    if(completion){const text=await trustedNative.finishOriginalCompletionFixed(role,handler);trustedCurrent();trustedHttp.bindOriginalCompletionResponse(role,req,handler);return {content:[{type:"text",text}],isError:false};}
     if(library){const captured=await trustedNative.captureServerOnlyResultFixed(role,handler);trustedCurrent();return captured.value;}
     if(build||proposal){if(!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_own_manifest_before_build_required");
       const captured=await trustedNative.captureExecutionPreparationFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal);trustedCurrent();
@@ -2087,7 +2099,8 @@ async function trustedRoute(req,res,boundary){trustedCurrent();boundary.validate
     else if(state.ameOperation==="queue"){if(trustedReadDaemon.ameQueues[index])trustedFail("owned_initial_original_ame_queue_once",true);const value=trustedNative.ameQueuePreparationFactsFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameQueues[index]=captured.terminal;if(!trustedReadDaemon.ameQueueFacts)trustedReadDaemon.ameQueueFacts=[null,null];trustedReadDaemon.ameQueueFacts[index]={terminal:captured.terminal,value,original:JSON.stringify(value)};returned={ok:true,manifest:value.manifest,manifestHash:value.manifestSha25664,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
     else if(state.ameOperation==="start"){if(trustedReadDaemon.ameJobs[index])trustedFail("owned_initial_original_ame_job_once",true);const originalJob=await trustedNative.bindOriginalJobFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameJobs[index]=originalJob;trustedCurrent();res.once("finish",()=>{try{trustedStartOriginalCompletion(originalJob,state.stageSlot);}catch(error){trustedReadDaemon.activeTool?.reject?.(error);}});returned={ok:true,originalJobAssociated:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
     else if(state.ameOperation==="status"){const originalJob=trustedReadDaemon.ameJobs[index];if(!originalJob)trustedFail("owned_initial_original_completion_job_missing",true);const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);
-      if(facts.complete){if(!trustedReadDaemon.completionTerminals)trustedReadDaemon.completionTerminals=[null,null];if(trustedReadDaemon.completionTerminals[index])trustedFail("owned_initial_original_completion_terminal_once",true);trustedReadDaemon.completionTerminals[index]=captured.terminal;}
+      if(facts.complete){if(!trustedReadDaemon.completionTerminals)trustedReadDaemon.completionTerminals=[null,null];if(!trustedReadDaemon.completionResultCleanups)trustedReadDaemon.completionResultCleanups=[null,null];if(trustedReadDaemon.completionTerminals[index]||trustedReadDaemon.completionResultCleanups[index])trustedFail("owned_initial_original_completion_terminal_once",true);
+        const cleanup=trustedHttp.waitOriginalCompletionProducerResponse(trustedReadDaemon.role,req);trustedReadDaemon.completionTerminals[index]=captured.terminal;trustedReadDaemon.completionResultCleanups[index]={terminal:captured.terminal,promise:cleanup};}
       returned={ok:true,terminalAccepted:facts.complete,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
     else if(state.ameOperation==="enqueue")returned={ok:true,enqueued:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};else trustedFail("owned_initial_original_ame_operation",true);
   }else if(state.stage){if(![1,2].includes(state.stageSlot)||trustedReadDaemon.savedSnapshots[state.stageSlot-1])trustedFail("owned_initial_original_saved_snapshot_once",true);

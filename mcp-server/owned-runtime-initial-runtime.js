@@ -26,6 +26,7 @@ const AME_INSPECTION_TOOLS=Object.freeze(["inspect_ame_title_sources","inspect_a
 const BUILD_TOOLS=Object.freeze(["build_solution_plan"]);
 const PROPOSAL_TOOLS=Object.freeze(["propose_ai_agent_plan"]);
 const DRY_RUN_TOOLS=Object.freeze(["run_ai_agent_plan"]);
+const COMPLETION_TOOLS=Object.freeze(["get_ame_title_job_status"]);
 const FIXED_OPERATION_LEAVES=Object.freeze({checkpoint:14,clean_copy:15,stage:5,enqueue:6,start:7,restore:8});
 // Pure finite intent validation. Execute still needs the original native READ,
 // own retained proposal/dry-run and authenticated manual D46 consumer. This
@@ -62,6 +63,7 @@ const INITIAL_TOOL_PROPERTIES=freezeDefinition({
   ,build_solution_plan:{solutionId:{type:"string",enum:["owned-runtime-two-title-fixed-v1"]}},
   inspect_ame_title_sources:{variantSlot:{type:"integer",minimum:1,maximum:2}},inspect_ame_title_queue_manifest:{variantSlot:{type:"integer",minimum:1,maximum:2}},
   propose_ai_agent_plan:{ownedTitleOperation:{type:"string",enum:Object.keys(FIXED_OPERATION_LEAVES)},variantSlot:{type:"integer",minimum:0,maximum:2}},
+  get_ame_title_job_status:{variantSlot:{type:"integer",minimum:1,maximum:2}},
   run_ai_agent_plan:{actionId:text,payloadRef:text,payloadHash:text,previewHash:text,riskLevel:{type:"string",enum:["mutating"]},riskPolicyVersion:text,
     ownedTitleOperation:{type:"string",enum:Object.keys(FIXED_OPERATION_LEAVES)},variantSlot:{type:"integer",minimum:0,maximum:2},dryRun:{type:"boolean",enum:[true]},ownedTitleProgram:{type:"object"}}
 });
@@ -108,8 +110,29 @@ function createInitialRuntime() {
   const census=sourceCensus.requested();
   if (!selected.requested && !native.selectedFixed() && !census) return null;
   const fixed = !selected.requested && native.selectedFixed() && !census;
-  let revoked=false,unknown=false,role=null,observer=null,opened=false,ensured=false,read=null,serial=Promise.resolve(),bootPromise=null;
-  const tools=Object.freeze([...BASIC_READ_TOOLS,...LIBRARY_TOOLS,...INSPECTION_TOOLS,...BUILD_TOOLS,...PROPOSAL_TOOLS,...DRY_RUN_TOOLS].map(name=>freezeDefinition({name,
+  let revoked=false,unknown=false,role=null,observer=null,opened=false,ensured=false,read=null,serial=Promise.resolve(),bootPromise=null,revokePromise=null;
+  const completionStarts=new Map();
+  function retainOriginalStart(slot,call){
+    if(![1,2].includes(slot)||completionStarts.has(slot))fail("owned_initial_completion_start_once");
+    native.armOriginalCompletionWaitFixed(role,call);
+    const original={call,requested:false,promise:null};completionStarts.set(slot,original);
+    original.promise=native.waitOriginalCompletionNoticeFixed(role,slot).catch(error=>{unknown=true;throw error;});
+    // A notice can arrive before the official consumer. Its original rejection
+    // is handled immediately and retained, never rerun or replaced.
+    void original.promise.catch(()=>{});
+  }
+  async function completionResult(name,args,signal){
+    if(name!=="get_ame_title_job_status"||!args||typeof args!=="object"||Array.isArray(args)||Object.keys(args).join(",")!=="variantSlot"||![1,2].includes(args.variantSlot))fail("owned_initial_completion_exact_selector");
+    const slot=args.variantSlot,original=completionStarts.get(slot);if(!original||original.requested)fail("owned_initial_completion_original_start_required");original.requested=true;
+    if(!signal||typeof signal.addEventListener!=="function"||typeof signal.removeEventListener!=="function"||typeof signal.aborted!=="boolean")fail("owned_initial_completion_original_stdio_request_required");
+    const cancel=()=>{unknown=true;native.cancelOriginalCompletionWaitFixed(role,slot);};signal.addEventListener("abort",cancel,{once:true});
+    try{if(signal.aborted)cancel();await original.promise;if(signal.aborted)fail("owned_initial_completion_original_request_cancelled");assertIngress();
+      const body=canonicalBody(name,args),call=await native.beginCompletionFixed(role,slot,body);assertIngress();
+      if(signal.aborted)throw Object.assign(Error("owned_initial_completion_original_request_cancelled"),{unknown:true});
+      return await exchange(name,args,null,call,signal);
+    }finally{signal.removeEventListener("abort",cancel);}
+  }
+  const tools=Object.freeze([...BASIC_READ_TOOLS,...LIBRARY_TOOLS,...INSPECTION_TOOLS,...BUILD_TOOLS,...PROPOSAL_TOOLS,...DRY_RUN_TOOLS,...COMPLETION_TOOLS].map(name=>freezeDefinition({name,
     description:name==="ensure_ae_agent_panel"?"Open the fixed installed AE Agent panel and verify its native project read.":LIBRARY_TOOLS.includes(name)?"Read the local reviewed solution library within the original native call.":"Read current native AE facts within the original owned local session.",
     inputSchema:{type:"object",additionalProperties:false,properties:INITIAL_TOOL_PROPERTIES[name]||{}},annotations:{readOnlyHint:name!=="ensure_ae_agent_panel",destructiveHint:false,idempotentHint:false,openWorldHint:false}})));
   function status() {
@@ -131,6 +154,7 @@ function createInitialRuntime() {
       if(intent.kind!==5&&![14,15].includes(intent.leaf))fail("owned_initial_fixed_execute_producer_unbound");}
     if(name==="get_layer_details"&&copied.args.responseView!==undefined&&copied.args.responseView!=="full")fail("owned_initial_readonly_full_result_required");
     if(AME_INSPECTION_TOOLS.includes(name)&&(Object.keys(copied.args).join(",")!=="variantSlot"||![1,2].includes(copied.args.variantSlot)))fail("owned_initial_ame_exact_inspection_slot");
+    if(COMPLETION_TOOLS.includes(name)&&(Object.keys(copied.args).join(",")!=="variantSlot"||![1,2].includes(copied.args.variantSlot)))fail("owned_initial_completion_exact_selector");
   }
   function ordered(operation) {const work=serial.then(()=>{assertRoute();return operation();});serial=work.catch(error=>{if (error.unknown) unknown=true;});return work;}
   async function bootController() {
@@ -153,17 +177,17 @@ function createInitialRuntime() {
   function transport() {assertIngress();let value;try {value=JSON.parse(native.fixedTransport(role).toString("utf8"));}catch {fail("owned_initial_fixed_transport_refused");}
     if (!value||Object.keys(value).sort().join(",")!=="automationToken,host,port"||value.host!=="127.0.0.1"||value.port!==3456||
         typeof value.automationToken!=="string"||!value.automationToken||value.automationToken.length>4096||/[\r\n\0]/.test(value.automationToken)) fail("owned_initial_fixed_transport_refused");return value;}
-  async function exchange(name,args,authorization) {
+  async function exchange(name,args,authorization,completionCall=null,originalSignal=null) {
     assertTool(name,args);if (!ensured) fail("owned_initial_original_daemon_absent");const body=canonicalBody(name,args);
     const scoped=PROPOSAL_TOOLS.includes(name)||DRY_RUN_TOOLS.includes(name);
     const scopedIntent=scoped?fixedTitlePlanIntent(name,args):null;
-    const call=LIBRARY_TOOLS.includes(name)?await native.beginServerOnlyFixed(role,name,body):INSPECTION_TOOLS.includes(name)||BUILD_TOOLS.includes(name)||scoped?
+    const call=completionCall|| (LIBRARY_TOOLS.includes(name)?await native.beginServerOnlyFixed(role,name,body):INSPECTION_TOOLS.includes(name)||BUILD_TOOLS.includes(name)||scoped?
       await native.beginExecutionFixed(role,authorization,Object.freeze({name,kind:scoped?scopedIntent.kind:5,slot:scoped?scopedIntent.slot:AME_INSPECTION_TOOLS.includes(name)?args.variantSlot:0,leaf:scoped?scopedIntent.leaf:4,canonicalBody:body})):
-      name==="ensure_ae_agent_panel"?await native.beginPanel(role):await native.beginRead(role,name,authorization);
+      name==="ensure_ae_agent_panel"?await native.beginPanel(role):await native.beginRead(role,name,authorization));
     assertIngress();native.assertCurrent(role,call);const locator=native.locator(role,call),target=transport();
     // Everything is synchronous between the last guard and this one request.
     // No retry/reconnect, caller host/port/token, or retained-origin fallback.
-    assertIngress();const response=await new Promise((resolve,reject)=>{let settled=false;const done=(error,value)=>{if(settled)return;settled=true;error?reject(error):resolve(value);};
+    assertIngress();const response=await new Promise((resolve,reject)=>{let settled=false;let abort=null;const done=(error,value)=>{if(settled)return;settled=true;if(originalSignal&&abort)originalSignal.removeEventListener("abort",abort);error?reject(error):resolve(value);};
       const request=http.request({host:target.host,port:target.port,path:"/mcp/tools/call",method:"POST",agent:false,
         headers:{"content-type":"application/json","content-length":body.length,"x-ae-bridge-token":target.automationToken,
           "x-ae-mcp-adapter":"codex-stdio-v1","x-ae-initial-call":locator.toString("hex")}},reply=>{const chunks=[];let bytes=0;
@@ -172,15 +196,19 @@ function createInitialRuntime() {
         reply.once("end",()=>{if(!reply.complete||reply.statusCode!==200){done(Object.assign(Error("owned_initial_response_unknown"),{unknown:true}));return;}
           try {done(null,JSON.parse(Buffer.concat(chunks).toString("utf8")));}catch {done(Object.assign(Error("owned_initial_response_invalid"),{unknown:true}));}});});
       request.setTimeout(30000,()=>{request.destroy();done(Object.assign(Error("owned_initial_response_timeout_unknown"),{unknown:true}));});
-      request.once("error",error=>done(Object.assign(error,{unknown:true})));request.end(body);});
+      request.once("error",error=>done(Object.assign(error,{unknown:true})));
+      if(originalSignal){abort=()=>{const error=Object.assign(Error("owned_initial_completion_original_HTTP_cancelled"),{unknown:true});request.destroy(error);done(error);};originalSignal.addEventListener("abort",abort,{once:true});if(originalSignal.aborted){abort();return;}}
+      request.end(body);});
     assertIngress();if (!response||response.ok!==true||!response.result||typeof response.result!=="object"||response.result.isError===true)
-      fail("owned_initial_terminal_result_refused");return response.result;
+      fail("owned_initial_terminal_result_refused");
+    if(scopedIntent&&scopedIntent.kind===6&&scopedIntent.leaf===7)retainOriginalStart(scopedIntent.slot,call);
+    return response.result;
   }
   async function renew() {const bracket=await native.beginBracket(role);assertIngress();
     const first=await exchange("get_bridge_status",{},bracket);assertIngress();const project=await exchange("get_project_info",{},bracket);assertIngress();
     const last=await exchange("get_bridge_status",{},bracket);assertIngress();read=await native.adoptBracket(role,bracket);assertIngress();
     return {first,project,last};}
-  async function callTool(name,args) {return ordered(async()=>{assertTool(name,args);
+  async function callTool(name,args,originalSignal) {return ordered(async()=>{if(name==="get_ame_title_job_status")return completionResult(name,args,originalSignal);assertTool(name,args);
     if(name==="ensure_ae_agent_panel"){const result=await exchange(name,args,null);const bracket=await renew();return Object.freeze({...result,project:bracket.project});}
     if(LIBRARY_TOOLS.includes(name))return exchange(name,args,null);
     if(!read) await renew();try{return await exchange(name,args,read);}catch(error){
@@ -193,7 +221,8 @@ function createInitialRuntime() {
     opened=true;ensured=true;return status();}
   function daemonRole() {assertIngress();return role;}
   async function restart(args) {empty(args);fail("owned_initial_restart_spent_no_replay");}
-  async function revoke() {if(revoked)return status();revoked=true;if(role)await native.revoke(role);return status();}
+  function revoke() {if(revokePromise)return revokePromise;revoked=true;
+    revokePromise=(async()=>{if(role){for(const [slot] of completionStarts)native.cancelOriginalCompletionWaitFixed(role,slot);await Promise.allSettled([...completionStarts.values()].map(original=>original.promise));await native.revoke(role);}return status();})();return revokePromise;}
   async function shutdown(args) {empty(args);return revoke();}
   const runtime=Object.freeze({status,readStatus,ensure,restart,shutdown,revoke,tools,callTool,startDaemonFixed,daemonRole,
     assertStartup:assertRoute,assertIngress,assertTool,

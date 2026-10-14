@@ -440,6 +440,10 @@ struct NativeClient::Data final {
     std::unique_ptr<phase::WireChannel> wire;
     std::vector<std::unique_ptr<Io>> unsettled;
     std::deque<phase::Frame> challenges;
+    struct CompletionStart final {std::shared_ptr<Capability> call;Digest selector{};phase::Frame notice{};bool noticed=false,armed=false,waitSpent=false,officialSpent=false;Held cancel;};
+    std::array<std::unique_ptr<CompletionStart>,2> completionStarts{};
+    std::mutex completionCancelSerial;std::atomic<std::uint16_t> completionReader{0};
+    std::uint64_t openedMono=0,sessionDeadline=0;
     std::unique_ptr<Process> preactor;std::vector<std::unique_ptr<Process>> captured;
     std::unique_ptr<CheckedDirectory> bootstrapDirectory;std::unique_ptr<BootstrapHelper> panelHelper;
     DWORD listenerPid=0;std::uint64_t lastMono=0,outgoing=0;
@@ -521,8 +525,11 @@ struct NativeClient::Data final {
         wire=std::make_unique<phase::WireChannel>(role==Role::Controller?phase::Direction::BrokerToController:phase::Direction::BrokerToDaemon,binding,stage);
         if(!Current()||wire->Closed())Refuse("trusted_original_server_peer_refused");
     }
-    Bytes Transfer(bool write,const Bytes& input){
+    Bytes Transfer(bool write,const Bytes& input,bool completionChecked=false){
         auto io=std::make_unique<Io>(write?input.size():phase::kMaximumFrameBytes);if(write)io->bytes=input;DWORD count=0;
+        const auto retire=[&](){if(!completionChecked||!io)return;if(io->pending){unknown=true;unsettled.push_back(std::move(io));return;}
+            if(io->event.Valid()){const HANDLE exact=io->event.Take();if(!CloseHandle(exact)){failedCloseHandles.push_back(exact);unknown=true;Refuse("trusted_completion_transfer_event_close_unknown",0,true);}}};
+        try{
         const BOOL immediate=write?WriteFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state):
             ReadFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state);
         if(!immediate){if(GetLastError()!=ERROR_IO_PENDING){unknown=true;Refuse("trusted_original_io_unknown",GetLastError(),true);}io->pending=true;
@@ -531,9 +538,10 @@ struct NativeClient::Data final {
                 const DWORD settled=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));
                 if(settled==WAIT_OBJECT_0){DWORD ignored=0;GetOverlappedResult(pipe.Get(),&io->state,&ignored,FALSE);io->pending=false;}
                 else unsettled.push_back(std::move(io));unknown=true;Refuse("trusted_original_io_timeout_no_replay",0,true);}
-            if(!GetOverlappedResult(pipe.Get(),&io->state,&count,FALSE)){io->pending=false;unknown=true;Refuse("trusted_original_io_settlement_unknown",GetLastError(),true);}io->pending=false;
+            if(!GetOverlappedResult(pipe.Get(),&io->state,&count,FALSE)){const auto error=GetLastError();io->pending=completionChecked&&error!=ERROR_OPERATION_ABORTED&&error!=ERROR_BROKEN_PIPE&&error!=ERROR_PIPE_NOT_CONNECTED;unknown=true;Refuse("trusted_original_io_settlement_unknown",error,true);}io->pending=false;
         }
-        if(!count||(write&&count!=input.size())){unknown=true;Refuse("trusted_original_io_partial",0,true);}io->bytes.resize(count);return io->bytes;
+        if(!count||(write&&count!=input.size())){unknown=true;Refuse("trusted_original_io_partial",0,true);}io->bytes.resize(count);auto result=io->bytes;retire();return result;
+        }catch(...){retire();throw;}
     }
 };
 NativeClient::NativeClient(std::unique_ptr<Data> data):data_(std::move(data)){}
@@ -694,16 +702,18 @@ std::shared_ptr<Capability> NativeClient::Own(CapKind kind,const phase::Frame& f
     return std::shared_ptr<Capability>(new Capability(this,kind,frame));
 }
 phase::Frame NativeClient::Exchange(phase::Verb verb,const Bytes& payload,bool lifecycle){
-    std::lock_guard<std::mutex> lock(data_->serial);if((lifecycle&&verb!=phase::Verb::DrainAck&&verb!=phase::Verb::ShutdownAck)||!data_->Current(lifecycle)||payload.size()>phase::kMaximumPayloadBytes||data_->outgoing==std::numeric_limits<std::uint64_t>::max())Refuse("trusted_original_exchange_closed",0,data_->unknown);
+    if(data_->completionReader.load())Refuse("trusted_original_completion_reader_exclusive");
+    std::lock_guard<std::mutex> lock(data_->serial);if(data_->completionReader.load()||(lifecycle&&verb!=phase::Verb::DrainAck&&verb!=phase::Verb::ShutdownAck)||!data_->Current(lifecycle)||payload.size()>phase::kMaximumPayloadBytes||data_->outgoing==std::numeric_limits<std::uint64_t>::max())Refuse("trusted_original_exchange_closed",0,data_->unknown);
     phase::Frame request{};request.header.direction=data_->role==Role::Controller?phase::Direction::ControllerToBroker:phase::Direction::DaemonToBroker;
     request.header.verb=verb;request.header.senderOrdinal=data_->outgoing+1;request.header.payloadBytes=static_cast<std::uint32_t>(payload.size());
     request.header.channelNonce=data_->wire->bindings_.channelNonce;request.header.sessionRef=data_->wire->bindings_.sessionRef;request.header.generation=data_->wire->bindings_.generation;request.header.bootNonce=data_->wire->bindings_.bootNonce;
     std::copy(payload.begin(),payload.end(),request.payload.begin());std::array<unsigned char,phase::kMaximumFrameBytes> encoded{};std::size_t count=0;
     if(phase::EncodeFrame(request,encoded.data(),encoded.size(),count)!=phase::CodecError::None||data_->wire->TrackOutgoing(request)!=phase::CodecError::None)Refuse("trusted_original_request_codec_refused");
-    ++data_->outgoing;data_->Transfer(true,Bytes(encoded.begin(),encoded.begin()+static_cast<std::ptrdiff_t>(count)));
-    for(unsigned events=0;events<3;++events){const auto bytes=data_->Transfer(false,{});phase::Frame reply{};
+    const bool completionChecked=verb==phase::Verb::PublishOwnCompletionReady||(data_->role==Role::Controller&&std::any_of(data_->completionStarts.begin(),data_->completionStarts.end(),[](const auto& start){return !!start;}));
+    ++data_->outgoing;data_->Transfer(true,Bytes(encoded.begin(),encoded.begin()+static_cast<std::ptrdiff_t>(count)),completionChecked);
+    for(unsigned events=0;events<3;++events){const auto bytes=data_->Transfer(false,{},completionChecked);phase::Frame reply{};
         if(data_->wire->AcceptIncoming(bytes.data(),bytes.size(),reply)!=phase::CodecError::None){data_->unknown=true;Refuse("trusted_original_reply_correlation_unknown",0,true);}
-        if(reply.header.kind==phase::FrameKind::Event){if(reply.header.verb!=phase::Verb::ObserveChallenge||data_->challenges.size()>=1){data_->unknown=true;Refuse("trusted_original_event_refused",0,true);}data_->challenges.push_back(reply);continue;}
+        if(reply.header.kind==phase::FrameKind::Event){if(data_->role==Role::Controller&&reply.header.verb==phase::Verb::CompletionResultNotice){RetainOriginalCompletionNoticeLocked(reply);continue;}if(reply.header.verb!=phase::Verb::ObserveChallenge||data_->challenges.size()>=1){data_->unknown=true;Refuse("trusted_original_event_refused",0,true);}data_->challenges.push_back(reply);continue;}
         if(reply.header.status!=phase::Status::Ok){if(reply.header.status==phase::Status::Unknown)data_->unknown=true;
             Refuse(reply.header.status==phase::Status::RevalidationRequired?"trusted_read_revalidation_required":"trusted_original_native_refused",0,data_->unknown);}
         if(!data_->Current(lifecycle)){data_->unknown=true;Refuse("trusted_original_reply_late_guard_unknown",0,true);}return reply;
@@ -748,11 +758,47 @@ void NativeClient::AcknowledgeOriginalDisposition(const std::shared_ptr<Capabili
     catch(...){data_->unknown=true;throw;}
 }
 phase::Frame NativeClient::Open(){RequireRole(Role::Controller);if(data_->opened||!data_->loadedSources)Refuse("trusted_original_open_source_gate");const auto reply=Exchange(phase::Verb::Open,{});
-    data_->wire->bindings_.sessionRef=Fixed<16>(reply.payload.data());data_->wire->stage_=phase::BindingStage::Open;data_->opened=true;return reply;}
+    data_->wire->bindings_.sessionRef=Fixed<16>(reply.payload.data());data_->wire->stage_=phase::BindingStage::Open;data_->openedMono=Number(reply.payload.data()+16,8);data_->sessionDeadline=Number(reply.payload.data()+24,8);data_->opened=true;return reply;}
 phase::Frame NativeClient::Ensure(){RequireRole(Role::Controller);if(!data_->opened||data_->ensured)Refuse("trusted_original_ensure_once");data_->ensured=true;
     const auto reply=Exchange(phase::Verb::ReserveInitialLaunch,{});data_->wire->bindings_.generation=Fixed<16>(reply.payload.data()+97);data_->wire->bindings_.bootNonce=Fixed<16>(reply.payload.data()+113);return reply;}
 phase::Frame NativeClient::Status(){RequireRole(Role::Controller);return Exchange(phase::Verb::Status,{});}
-void NativeClient::RevokeOnce()noexcept{try{if(data_->revoked)return;if(data_->role==Role::Controller&&!data_->unknown)Exchange(phase::Verb::Revoke,{});
+std::shared_ptr<Capability> NativeClient::BeginCompletionFixed(std::uint16_t slot,const Bytes& exactCanonicalBody){RequireRole(Role::Controller);AssertLoadedNodeCurrent();
+    const std::string canonical=slot==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}";
+    if(slot<1||slot>2||exactCanonicalBody!=Bytes(canonical.begin(),canonical.end())||data_->completionReader.load())Refuse("trusted_completion_exact_original_intent");auto& start=data_->completionStarts[slot-1];
+    if(!start||!start->noticed||!start->waitSpent||Number(start->notice.payload.data()+2,2)!=1||start->officialSpent)Refuse("trusted_completion_original_notice_required");start->officialSpent=true;
+    const auto preflight=Exchange(phase::Verb::Status,{});const auto word=Number(preflight.payload.data(),2);if((word&0xffu)!=5||(word&(slot==1?0x100u:0x200u))==0||Fixed<16>(preflight.payload.data()+2)!=data_->wire->bindings_.sessionRef)Refuse("trusted_completion_notice_readiness_drift",0,true);
+    Bytes body;detail::PutU16(body,18);body.push_back(7);detail::PutU16(body,1);Put(body,detail::Hash(exactCanonicalBody));Put(body,start->selector);detail::PutU64(body,1);
+    auto call=Own(CapKind::Call,Exchange(phase::Verb::BeginCall,body));std::copy(body.begin(),body.end(),call->frame_.payload.begin()+72);return call;
+}
+phase::Frame NativeClient::PublishOwnCompletionReadyFixed(const std::shared_ptr<Capability>& terminal){RequireRole(Role::Daemon);auto& own=Require(terminal,CapKind::Terminal);const auto job=own.job_;
+    if(!job||job->owner_!=this||job->acceptedTerminal_!=terminal||job->publicationSpent_||job->stage_!=AmeOriginalJob::Stage::SuccessfulTerminal||!job->mediaReservation_||!job->mediaReservation_->complete||job->mediaReservation_->unknown||job->pendingPoll_)Refuse("trusted_completion_publication_own_terminal_required");job->publicationSpent_=true;
+    try{AssertOriginalJobObservationCurrent(job);AssertOriginalAmeUniqueCurrent(job);const auto now=GetTickCount64();if(now>=job->deadline_||job->deadline_-now<574000||!data_->bootstrap||now>=data_->bootstrap->sessionDeadline||data_->bootstrap->sessionDeadline-now<574000||
+        !terminal->project_||terminal->project_->stage!=ProjectCapture::Stage::Terminal||job->finalPoll_!=job->activePoll_||job->finalPoll_<1||job->finalPoll_>10||!job->output_.Valid()||!detail::SamePin(detail::ReadPin(job->output_.Get(),false),job->outputPin_))Refuse("trusted_completion_publication_current_closed",0,true);
+        const Bytes opening(job->acceptedTerminalFactualOpening_.begin(),job->acceptedTerminalFactualOpening_.end());if(Fixed<32>(opening.data())!=job->terminalResultHash_||job->terminalResultHash_!=detail::Hash(terminal->project_->originalResult)||DomainHash("lcp2.production.original-poll-factual-receipt.v1",opening)!=job->terminalReceipt_||Fixed<32>(opening.data()+128)!=job->pollBinding_)Refuse("trusted_completion_publication_retained_opening",0,true);
+        Bytes body;detail::PutU16(body,job->slot_);detail::PutU16(body,1);Put(body,job->terminalRef_);Put(body,job->terminalReceipt_);body.insert(body.end(),opening.begin(),opening.end());const auto reply=Exchange(phase::Verb::PublishOwnCompletionReady,body);
+        if(Number(reply.payload.data(),2)!=job->slot_||Number(reply.payload.data()+2,2)!=1||!job->startTerminal_||!job->startTerminal_->project_||!job->startTerminal_->project_->executionGate||
+            Fixed<16>(reply.payload.data()+4)!=job->startTerminal_->project_->executionGate->execution_->call)Refuse("trusted_completion_publication_original_ACK",0,true);job->published_=true;return reply;
+    }catch(...){job->unknown_=true;job->stage_=AmeOriginalJob::Stage::Unknown;data_->unknown=true;throw;}}
+Bytes NativeClient::OriginalCompletionProjectionFixed(std::uint16_t slot)const{constexpr char first[]="{\"schema\":\"ae-agent.owned-original-completion-result.v1\",\"ok\":true,\"variantSlot\":1,\"state\":\"own_job_completed\",\"nativeResult\":\"True\",\"completionVerified\":true,\"nativeAssociationVerified\":true,\"mediaVerified\":false,\"settingsVerified\":false,\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"nativeAuthority\":false,\"replayAllowed\":false}";
+    constexpr char second[]="{\"schema\":\"ae-agent.owned-original-completion-result.v1\",\"ok\":true,\"variantSlot\":2,\"state\":\"own_job_completed\",\"nativeResult\":\"True\",\"completionVerified\":true,\"nativeAssociationVerified\":true,\"mediaVerified\":false,\"settingsVerified\":false,\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"nativeAuthority\":false,\"replayAllowed\":false}";static_assert(sizeof(first)==357&&sizeof(second)==357);if(slot<1||slot>2)Refuse("trusted_completion_projection_exact_slot");const auto* text=slot==1?first:second;return Bytes(text,text+356);}
+std::shared_ptr<Capability> NativeClient::VerifyCompletionToolFixed(const std::shared_ptr<AuthenticatedRequest>& request){RequireRole(Role::Daemon);AssertLoadedNodeCurrent();
+    if(!request||request->owner_!=this||request->panel_||request->handlerSpent_||request->responseTerminal_||request->unknown_||request->fields_.method!="POST"||request->fields_.url!="/mcp/tools/call"||request->fields_.toolLocatorHex.size()!=138)Refuse("trusted_completion_original_HTTP_required");
+    std::uint16_t slot=0;for(std::uint16_t candidate=1;candidate<=2;++candidate){const std::string canonical=candidate==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}";if(request->fields_.body==Bytes(canonical.begin(),canonical.end()))slot=candidate;}if(!slot)Refuse("trusted_completion_exact_canonical_HTTP");auto& job=data_->originalJobs[slot-1];
+    if(!job||!job->published_||job->officialHandler_||job->unknown_||!job->acceptedTerminal_||job->pendingPoll_)Refuse("trusted_completion_private_published_job_required");AssertOriginalJobObservationCurrent(job);AssertOriginalAmeUniqueCurrent(job);
+    Bytes locator;const auto nibble=[](char c)->unsigned{if(c>='0'&&c<='9')return static_cast<unsigned>(c-'0');if(c>='a'&&c<='f')return static_cast<unsigned>(c-'a'+10);Refuse("trusted_completion_locator_hex");};const auto& text=request->fields_.toolLocatorHex;for(std::size_t at=0;at<text.size();at+=2)locator.push_back(static_cast<unsigned char>((nibble(text[at])<<4)|nibble(text[at+1])));
+    if(Number(locator.data()+32,2)!=18||locator[34]!=7||Number(locator.data()+35,2)!=1||Fixed<32>(locator.data()+37)!=detail::Hash(request->fields_.body))Refuse("trusted_completion_original_locator_binding");AuthenticateSocketRequest(*request->connection_,request->fields_.token,false);request->handlerSpent_=true;
+    try{auto handler=Own(CapKind::Handler,Exchange(phase::Verb::VerifyIngress,locator));std::copy(locator.begin()+32,locator.end(),handler->frame_.payload.begin()+72);std::copy(locator.begin(),locator.begin()+16,handler->frame_.payload.begin()+109);handler->ingress_=request;handler->job_=job;job->officialHandler_=handler;return handler;}catch(...){request->unknown_=true;job->unknown_=true;data_->unknown=true;throw;}}
+Bytes NativeClient::FinishOriginalCompletionFixed(const std::shared_ptr<Capability>& cap){RequireRole(Role::Daemon);auto& handler=Require(cap,CapKind::Handler);const auto job=handler.job_;
+    if(!job||job->officialHandler_!=cap||job->officialFinish_||!job->published_||!handler.ingress_||handler.ingress_->unknown_||!job->acceptedTerminal_||!job->acceptedTerminal_->project_||job->terminalResultHash_!=detail::Hash(job->acceptedTerminal_->project_->originalResult))Refuse("trusted_completion_original_finish_required");AssertOriginalJobObservationCurrent(job);AssertOriginalAmeUniqueCurrent(job);AssertCapabilityCurrent(cap);
+    const auto projection=OriginalCompletionProjectionFixed(job->slot_);const auto hash=detail::Hash(projection);Bytes fields;constexpr char domain[]="lcp2.production.broker-selected-completion-finish.v1";fields.insert(fields.end(),domain,domain+sizeof(domain));Put(fields,Fixed<32>(handler.frame_.payload.data()+40));const auto call=Fixed<16>(handler.frame_.payload.data()+109);Put(fields,call);Put(fields,job->grantHash_);detail::PutU64(fields,job->finalPoll_);Put(fields,job->terminalRef_);Put(fields,job->terminalReceipt_);Put(fields,job->terminalResultHash_);Put(fields,hash);Put(fields,job->session_);Put(fields,EmbeddedProfile().execution.policyHash);
+    Bytes body;Put(body,Fixed<16>(handler.frame_.payload.data()));Put(body,call);Put(body,hash);detail::PutU16(body,1);Put(body,detail::Hash(fields));handler.spent_=true;
+    try{const auto reply=Exchange(phase::Verb::Complete,body);if(reply.payload[0]!=1||Fixed<16>(reply.payload.data()+1)!=Fixed<16>(handler.frame_.payload.data())||Fixed<32>(reply.payload.data()+17)!=hash||!Number(reply.payload.data()+49,8)||!Number(reply.payload.data()+57,8)||detail::Zero(Fixed<32>(reply.payload.data()+65)))Refuse("trusted_completion_original_finish_ACK",0,true);job->officialFinish_=true;return projection;}catch(...){job->unknown_=true;handler.ingress_->unknown_=true;data_->unknown=true;throw;}}
+void NativeClient::CompleteOriginalCompletionResponseFixed(const std::shared_ptr<Capability>& handler){RequireRole(Role::Daemon);if(!handler||handler->owner_!=this||handler->kind_!=CapKind::Handler||!handler->spent_||!handler->job_)Refuse("trusted_completion_original_response_handler");const auto job=handler->job_;
+    if(job->officialHandler_!=handler||!job->officialFinish_||!job->officialResponseVerified_||job->officialCleanupSpent_||!handler->ingress_||!handler->ingress_->responseTerminal_||handler->ingress_->unknown_)Refuse("trusted_completion_original_response_terminal");job->officialCleanupSpent_=true;
+    try{const auto request=handler->ingress_;const auto current=request->connection_->CaptureRequestIoSnapshot();const auto& original=request->ioAtRetain_;if(current.owner!=original.owner||current.original!=original.original||current.lifetime!=original.lifetime||current.originalSocket!=original.originalSocket||current.writeAttemptOrdinal<=original.writeAttemptOrdinal||!request->connection_->ConfirmOriginalRequestIoSnapshot(current,current.writeAttemptOrdinal))Refuse("trusted_completion_original_socket_cleanup_unknown",0,true);
+        AssertOriginalJobObservationCurrent(job);const auto now=GetTickCount64();if(now>=job->deadline_||job->deadline_-now<574000||now>=data_->bootstrap->sessionDeadline||data_->bootstrap->sessionDeadline-now<574000)Refuse("trusted_completion_media_barrier_headroom_closed",0,true);job->mediaBarrierCleared_=true;
+    }catch(...){job->unknown_=true;data_->unknown=true;throw;}}
+void NativeClient::RevokeOnce()noexcept{try{if(data_->completionReader.load()){data_->unknown=true;return;}if(data_->revoked)return;if(data_->role==Role::Controller&&!data_->unknown)Exchange(phase::Verb::Revoke,{});
     data_->revoked=true;if(data_->pipe.Valid()){HANDLE exact=data_->pipe.Take();if(!CloseHandle(exact)){data_->unknown=true;data_->failedCloseHandles.push_back(exact);}}}catch(...){data_->revoked=true;data_->unknown=true;}}
 Bytes Body(phase::ToolCode tool,phase::CallKind kind){const char* canonical=tool==phase::ToolCode::GetBridgeStatus?"{\"args\":{},\"name\":\"get_bridge_status\"}":
     tool==phase::ToolCode::GetProjectInfo?"{\"args\":{},\"name\":\"get_project_info\"}":"{\"args\":{},\"name\":\"ensure_ae_agent_panel\"}";
@@ -792,7 +838,59 @@ std::shared_ptr<Capability> NativeClient::BeginExecutionFixed(const ExecutionInt
     AssertCapabilityCurrent(authorization);auto result=Own(CapKind::Call,Exchange(phase::Verb::BeginCall,body));
     // The broker retains the entire101B tail. D40 remains69B and cannot replace
     // scope/READ fields with a caller hash. The private cap keeps the same bytes.
-    std::copy(body.begin(),body.end(),result->frame_.payload.begin()+72);return result;
+    std::copy(body.begin(),body.end(),result->frame_.payload.begin()+72);
+    if(intent.tool==phase::ToolCode::RunAiAgentPlan&&intent.kind==phase::CallKind::Execute&&intent.leaf==ExecutionLeaf::StartAme){
+        if(intent.slot<1||intent.slot>2||data_->completionStarts[intent.slot-1])Refuse("trusted_completion_original_start_once",0,true);
+        auto start=std::make_unique<Data::CompletionStart>();start->call=result;Bytes selector;constexpr char domain[]="lcp2.production.broker-selected-completion-selector.v1";
+        selector.insert(selector.end(),domain,domain+sizeof(domain));const auto& cohort=data_->wire->bindings_;Put(selector,cohort.channelNonce);Put(selector,cohort.sessionRef);Put(selector,cohort.generation);Put(selector,cohort.bootNonce);
+        Put(selector,policy.policyHash);Put(selector,policy.typedProducerHash);Put(selector,TextHash(intent.slot==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}"));detail::PutU16(selector,intent.slot);detail::PutU64(selector,1);start->selector=detail::Hash(selector);data_->completionStarts[intent.slot-1]=std::move(start);
+    }
+    return result;
+}
+void NativeClient::RetainOriginalCompletionNoticeLocked(const phase::Frame& notice){
+    if(data_->role!=Role::Controller||notice.header.kind!=phase::FrameKind::Event||notice.header.verb!=phase::Verb::CompletionResultNotice||notice.header.payloadBytes!=52){data_->unknown=true;Refuse("trusted_completion_notice_origin_unknown",0,true);}
+    const auto slot=Number(notice.payload.data(),2);if(slot<1||slot>2){data_->unknown=true;Refuse("trusted_completion_notice_slot_unknown",0,true);}auto& start=data_->completionStarts[static_cast<std::size_t>(slot-1)];
+    if(!start||start->noticed||!start->call||Fixed<16>(notice.payload.data()+4)!=Fixed<16>(start->call->frame_.payload.data())||Fixed<32>(notice.payload.data()+20)!=start->selector){data_->unknown=true;Refuse("trusted_completion_notice_original_join_unknown",0,true);}
+    start->notice=notice;start->noticed=true;
+}
+void NativeClient::ArmOriginalCompletionWaitFixed(const std::shared_ptr<Capability>& originalStart){
+    RequireRole(Role::Controller);AssertLoadedNodeCurrent();if(!originalStart||originalStart->owner_!=this||originalStart->kind_!=CapKind::Call||!originalStart->spent_)Refuse("trusted_completion_original_issued_start_locator_required");std::lock_guard<std::mutex> lock(data_->serial);std::lock_guard<std::mutex> cancelLock(data_->completionCancelSerial);
+    std::uint16_t slot=0;for(std::uint16_t candidate=1;candidate<=2;++candidate){const auto& start=data_->completionStarts[candidate-1];if(start&&start->call==originalStart){if(slot)Refuse("trusted_completion_start_ambiguous");slot=candidate;}}
+    const auto now=GetTickCount64();if(!slot||data_->completionReader.load()||now<data_->openedMono||now>=data_->sessionDeadline||now>=Number(originalStart->frame_.payload.data()+32,8)||!data_->Current())Refuse("trusted_completion_wait_original_start_required");
+    auto& start=*data_->completionStarts[slot-1];if(start.armed||start.waitSpent)Refuse("trusted_completion_wait_once");start.waitSpent=true;
+    start.cancel=Held(CreateEventW(nullptr,TRUE,FALSE,nullptr));if(!start.cancel.Valid()){data_->unknown=true;Refuse("trusted_completion_cancel_event_unknown",GetLastError(),true);}start.armed=true;data_->completionReader.store(slot);
+}
+void NativeClient::CancelOriginalCompletionWaitFixed(std::uint16_t slot)noexcept{try{
+    // Cancellation must never acquire serial: the original reader holds it.
+    std::lock_guard<std::mutex> lock(data_->completionCancelSerial);if(data_->role!=Role::Controller||slot<1||slot>2||data_->completionReader.load()!=slot)return;
+    auto& start=data_->completionStarts[slot-1];if(!start||!start->armed||!start->cancel.Valid()||!SetEvent(start->cancel.Get()))data_->unknown=true;
+}catch(...){data_->unknown=true;}}
+phase::Frame NativeClient::WaitOriginalCompletionNoticeFixed(std::uint16_t slot){
+    if(data_->role!=Role::Controller||slot<1||slot>2||data_->completionReader.load()!=slot)Refuse("trusted_completion_wait_original_owner_required");std::lock_guard<std::mutex> lock(data_->serial);auto& start=*data_->completionStarts[slot-1];
+    std::unique_ptr<Io> io;bool known=true;phase::Frame outcome{};
+    try{if(!start.armed||!start.cancel.Valid()||!data_->Current()||GetTickCount64()<data_->openedMono||GetTickCount64()>=data_->sessionDeadline||WaitForSingleObject(start.cancel.Get(),0)!=WAIT_TIMEOUT)Refuse("trusted_completion_wait_closed",0,true);
+        if(!start.noticed){io=std::make_unique<Io>(phase::kMaximumFrameBytes);DWORD count=0;const BOOL immediate=ReadFile(data_->pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state);
+            if(!immediate){const auto error=GetLastError();if(error!=ERROR_IO_PENDING)Refuse("trusted_completion_wait_original_eof_unknown",error,true);io->pending=true;const HANDLE handles[]{io->event.Get(),start.cancel.Get(),data_->peer->handle.Get()};const auto now=GetTickCount64();
+                const auto remaining=now<data_->sessionDeadline?data_->sessionDeadline-now:0;const DWORD waited=remaining?WaitForMultipleObjects(3,handles,FALSE,static_cast<DWORD>(remaining)):WAIT_TIMEOUT;
+                if(waited!=WAIT_OBJECT_0||WaitForSingleObject(start.cancel.Get(),0)!=WAIT_TIMEOUT){
+                    const BOOL cancelled=CancelIoEx(data_->pipe.Get(),&io->state);const auto cancelError=cancelled?ERROR_SUCCESS:GetLastError();const auto settled=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));
+                    if(settled==WAIT_OBJECT_0){DWORD ignored=0;const BOOL done=GetOverlappedResult(data_->pipe.Get(),&io->state,&ignored,FALSE);const auto doneError=done?ERROR_SUCCESS:GetLastError();known=done||doneError==ERROR_OPERATION_ABORTED||doneError==ERROR_BROKEN_PIPE||doneError==ERROR_PIPE_NOT_CONNECTED;io->pending=!known;}
+                    else known=false;if(!cancelled&&cancelError!=ERROR_NOT_FOUND)known=false;Refuse("trusted_completion_wait_cancel_or_deadline_unknown",0,true);
+                }
+                if(!GetOverlappedResult(data_->pipe.Get(),&io->state,&count,FALSE)){const auto completionReadError=GetLastError();known=completionReadError==ERROR_OPERATION_ABORTED||completionReadError==ERROR_BROKEN_PIPE||completionReadError==ERROR_PIPE_NOT_CONNECTED;io->pending=!known;Refuse("trusted_completion_wait_read_unknown",completionReadError,true);}io->pending=false;
+            }
+            if(count!=148||WaitForSingleObject(start.cancel.Get(),0)!=WAIT_TIMEOUT||!data_->Current()||GetTickCount64()>=data_->sessionDeadline)Refuse("trusted_completion_wait_frame_unknown",0,true);
+            phase::Frame notice{};if(data_->wire->AcceptIncoming(io->bytes.data(),count,notice)!=phase::CodecError::None)Refuse("trusted_completion_wait_correlation_unknown",0,true);RetainOriginalCompletionNoticeLocked(notice);
+        }
+        outcome=start.notice;if(Number(outcome.payload.data()+2,2)!=1)Refuse("trusted_completion_notice_closed",0,true);
+    }catch(...){data_->unknown=true;if(io&&(!known||io->pending)){data_->unsettled.push_back(std::move(io));throw;}
+        // Known settled cancellation still spends the original wait/intent.
+        if(io&&io->event.Valid()){const HANDLE exact=io->event.Take();if(!CloseHandle(exact)){data_->failedCloseHandles.push_back(exact);known=false;}}
+        {std::lock_guard<std::mutex> cancelLock(data_->completionCancelSerial);if(start.cancel.Valid()){const HANDLE exact=start.cancel.Take();if(!CloseHandle(exact)){data_->failedCloseHandles.push_back(exact);known=false;}}if(known)data_->completionReader.store(0);}throw;
+    }
+    if(io&&io->event.Valid()){const HANDLE exact=io->event.Take();if(!CloseHandle(exact)){data_->failedCloseHandles.push_back(exact);data_->unknown=true;Refuse("trusted_completion_wait_event_close_unknown",0,true);}}
+    {std::lock_guard<std::mutex> cancelLock(data_->completionCancelSerial);const HANDLE exact=start.cancel.Take();if(!CloseHandle(exact)){data_->failedCloseHandles.push_back(exact);data_->unknown=true;Refuse("trusted_completion_wait_cancel_close_unknown",0,true);}data_->completionReader.store(0);}
+    return outcome;
 }
 std::shared_ptr<Capability> NativeClient::BeginServerOnlyFixed(phase::ToolCode tool,const Bytes& canonicalBody){RequireRole(Role::Controller);AssertLoadedNodeCurrent();
     const auto* selected=phase::FindTool(tool);if(!selected||!selected->serverOnlyHandler||(tool!=phase::ToolCode::SearchSolutions&&tool!=phase::ToolCode::GetSolution)||
@@ -2512,6 +2610,7 @@ std::shared_ptr<Capability> NativeClient::CaptureOriginalJobObservationFixed(con
         if(successful){auto reservation=std::make_unique<AmeOriginalJob::MediaReservation>();reservation->terminal=ref;reservation->poll=job->pollRef_;reservation->hash=reserved;reservation->sequence=sequence;reservation->epoch=epoch;reservation->head=head;reservation->outputPin=job->outputPin_;reservation->outputHash=job->outputHash_;
             const auto& profile=data_->originalSeal->ResolvedEnrollment();Bytes scope;Put(scope,profile.installation);detail::PutPin(scope,profile.repository);detail::PutPin(scope,profile.runtime);detail::PutPin(scope,profile.journal);detail::PutPin(scope,profile.lockFile);const auto enrollmentScope=detail::Hash(scope);
             for(std::size_t index=0;index<reservation->keys.size();++index){Bytes key;constexpr char domain[]="native-dispatch-stable-effect.v2";key.insert(key.end(),domain,domain+sizeof(domain)-1);Put(key,enrollmentScope);Put(key,profile.installation);Put(key,profile.lineage);detail::PutU16(key,job->slot_);Put(key,FixedOriginalCompletionLeaf(EmbeddedProfile().execution,job->slot_,static_cast<std::uint16_t>(index+3)));detail::PutU16(key,13);reservation->keys[index]=detail::Hash(key);}
+            if(factual.size()!=job->acceptedTerminalFactualOpening_.size())Refuse("trusted_completion_factual_opening_width",0,true);std::copy(factual.begin(),factual.end(),job->acceptedTerminalFactualOpening_.begin());job->terminalResultHash_=detail::Hash(actual.result);
             reservation->complete=true;job->mediaReservation_=std::move(reservation);job->terminalRef_=ref;job->terminalReceipt_=receipt;job->finalPoll_=job->activePoll_;job->acceptedTerminal_=terminal;job->mediaChildAllowance_=6;job->stage_=AmeOriginalJob::Stage::SuccessfulTerminal;
         }else job->nextPollAt_=project->terminalMono+EmbeddedProfile().execution.completionCadenceMs;
         job->pendingPoll_.reset();return terminal;
@@ -2559,6 +2658,11 @@ void NativeClient::AssertOriginalJobObservationCurrent(const std::shared_ptr<Ame
 }
 void NativeClient::CompleteAuthenticatedResponse(const std::shared_ptr<AuthenticatedRequest>& request,std::uint32_t status,const Bytes& bytes){
     RequireRole(Role::Daemon);AssertLoadedNodeCurrent();if(!request||request->owner_!=this||request->responseTerminal_||request->unknown_||status<100||status>599||bytes.size()>1048576)Refuse("trusted_authenticated_response_terminal_refused");
+    for(const auto& job:data_->originalJobs)if(job&&job->officialHandler_&&job->officialHandler_->ingress_==request){
+        if(!job->officialFinish_||job->officialResponseVerified_||status!=200)Refuse("trusted_completion_original_HTTP_terminal_refused",0,true);
+        const auto response=ManifestJson(bytes);capture::Fields(response,{"ok","result"});if(!capture::Boolean(response.Field("ok")))Refuse("trusted_completion_HTTP_failed",0,true);const auto& result=response.Field("result");capture::Fields(result,{"content","isError"});
+        const auto& content=result.Field("content");if(capture::Boolean(result.Field("isError"))||content.kind!=capture::Json::Kind::Array||content.children.size()!=1)Refuse("trusted_completion_HTTP_projection_shape",0,true);const auto& item=content.children.front();capture::Fields(item,{"type","text"});const auto projection=OriginalCompletionProjectionFixed(job->slot_);if(item.Field("type").Text()!="text"||item.Field("text").Text()!=std::string(projection.begin(),projection.end()))Refuse("trusted_completion_HTTP_projection_bytes",0,true);job->officialResponseVerified_=true;
+    }
     request->responseTerminal_=true;
 }
 void NativeClient::CompleteOriginalIdleRequestCleanup(const std::shared_ptr<AuthenticatedRequest>& request){
