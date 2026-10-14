@@ -285,3 +285,21 @@ next после actual result ACK. Ordinary flow/cache/START confirmation сох
 [block: original held-poll scheduling] [executor: ae_implementer; review: ae_reviewer]
 [ownership: прежние panel.js и focused smoke]. Backend должен отдельно подтвердить
 actual original socket deadline close. Installed UI, C1 и whole runtime FIT не приняты.
+
+Manual-stage SourceSTOP `976E9332…C061F` получил REVISE P1: Stage effects были
+разрешены с bookkeeping debt без usable preissued Restore consumer/cap. Требуемый
+guard — до BindCommand/Note/dispatch. В mutable source Stage временно закрыт и
+добавлена private restoration-program binding; actual Restore ещё реализуется.
+Это исправление пока не прошло source review и не означает завершение Stage.
+
+Диагностическая сборка исходного REVISE snapshot разрешена только без загрузки
+модулей/factory/C1. Capture-control `F7E55344…400439` Source GO, freeze63
+`ns-6947328c4d40` → `ic-bc12e4abb027`, XML11/15/3. Node-client PP exit0,
+build exit1/C2660: formatter Uuid ошибочно вызван как parser в node_api.cpp:153.
+Mutable exact fix использует existing OriginalUuid; ещё не compiled/reviewed.
+Broker/provisioner NOTRUN, media CPP не достигнуты. Original MSBuild2 CLOSED/EOF,
+handles закрыты; owner15312 подтвердил свои retained objects и завершён exit0.
+Diagnostic record SHA `DFDFAC40…583E3D4`, receipt `B0A5E4BA…2F7305B`.
+Source/production acceptance и видео отсутствуют, все четыре remaining producers
+остаются незавершёнными. [block: source diagnostic] [executor: root sole compiler]
+[reason: accepted original-handle compiler control; no runtime load].
