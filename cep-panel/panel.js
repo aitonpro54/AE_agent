@@ -106,6 +106,8 @@
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
+  var initialAutomaticStartup = null;
+  var initialAutomaticConnectDispatch = null;
   var activeEvalScriptCommandId = "";
   var agents = [];
   var chatSessions = [];
@@ -433,6 +435,14 @@
   }
 
   function request(method, path, body, onDone) {
+    var startup = initialAutomaticStartup;
+    if (initialAutomaticStartupCurrent(startup) && /^(lookup|connecting|pending)$/.test(startup.state)) {
+      var startupDone = onDone;
+      onDone = function (error, response) {
+        if (error) closeInitialAutomaticStartup(startup);
+        startupDone(error, response);
+      };
+    }
     if (!bridgeHostAvailable(onDone)) return;
     var completed = false;
     var requestEpoch=panelLifecycleEpoch,requestGeneration=panelConnectionGeneration;
@@ -4245,6 +4255,21 @@
     });
   }
 
+  function initialAutomaticStartupCurrent(startup) {
+    return !!startup && startup === initialAutomaticStartup && startup.epoch === panelLifecycleEpoch &&
+      startup.generation === panelConnectionGeneration && startup.url === getBaseUrl() && startup.token === getToken();
+  }
+
+  function closeInitialAutomaticStartup(startup) {
+    if (!startup || /^(closed|superseded|succeeded)$/.test(startup.state)) return;
+    if (initialAutomaticStartupCurrent(startup)) {
+      running = false;
+      pollInFlight = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    }
+    startup.state = "closed";
+  }
+
   function poll(onDone) {
     if (!bridgeHostAvailable(onDone)) return;
     if(recoveryTransportScope){pollRecoveryTransport();return;}
@@ -4263,11 +4288,35 @@
       pollTimer = setTimeout(poll, 500);
       return;
     }
+    var pollEpoch = panelLifecycleEpoch, pollGeneration = panelConnectionGeneration;
+    var startup = initialAutomaticStartupCurrent(initialAutomaticStartup) && initialAutomaticStartup.state === "pending" ? initialAutomaticStartup : null;
+    if (startup && startup.consumed) return;
+    // Consume before evalScript: an absent callback is UNKNOWN and cannot replay.
+    if (startup) startup.consumed = true;
     pollInFlight = true;
+    try {
     cs.evalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
+    if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
+    if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "pending" || startup.getAttempted)) return;
     if (!running) { pollInFlight = false; return; }
+    if (startup && (typeof projectFile !== "string" || projectFile.indexOf("EvalScript error.") === 0)) {
+      closeInitialAutomaticStartup(startup);
+      if(onDone) onDone({isUnknown:true,code:"initial_project_file_unknown"});
+      return;
+    }
+    if (startup) startup.getAttempted = true;
     request("GET", bridgeNextPath(projectFile), null, function (error, response) {
+      if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
+      if (startup && (!initialAutomaticStartupCurrent(startup) || !/^(pending|closed)$/.test(startup.state))) return;
       pollInFlight = false;
+      if (startup && (error || !response || typeof response !== "object" || startup.state === "closed")) {
+        closeInitialAutomaticStartup(startup);
+        var startupError = error || {isUnknown:true,code:"initial_bridge_next_unknown"};
+        var startupMessage = setBridgeOffline(startupError);
+        if (startupMessage !== lastPollErrorMessage) {log(startupMessage);lastPollErrorMessage=startupMessage;}
+        if(onDone) onDone(startupError);
+        return;
+      }
       if (!running) return;
 
       if (error) {
@@ -4282,9 +4331,11 @@
       }
 
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
+      if (startup) startup.state = "succeeded";
       lastPollErrorMessage = "";
       setBridgeConnected();
       if(onDone) onDone(null,{connected:true,generation:String(panelConnectionGeneration)});
+      if (!running || pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
       if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
@@ -4299,9 +4350,16 @@
       pollTimer = setTimeout(poll, 50);
     });
     });
+    } catch (error) {
+      if (!startup) throw error;
+      closeInitialAutomaticStartup(startup);
+      if(onDone) onDone(error);
+    }
   }
 
-  function connect(onDone) {
+  function connect(onDone, startup) {
+    if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || startup.consumed)) return;
+    if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
     if (!bridgeHostAvailable(onDone)) return;
     var restoringRecovery=!!recoveryTransportScope;
     recoveryTransportScope=null;recoveryTransportConnecting=false;
@@ -4310,6 +4368,7 @@
     pollInFlight = false;
     panelConnectionGeneration = Date.now();
     panelLifecycleEpoch += 1;
+    if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
     currentPlanSyncInFlight = false;
     currentPlanSyncActiveReqId = 0;
     currentPlanSyncActiveEpoch = 0;
@@ -4327,7 +4386,7 @@
     renderAutonomousSession();
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
-    if(!restoringRecovery){localStorage.setItem("codexAeBridgeUrl", urlEl.value);
+    if(!restoringRecovery && !startup){localStorage.setItem("codexAeBridgeUrl", urlEl.value);
       localStorage.setItem("codexAeBridgeToken", tokenEl.value);
       localStorage.setItem("codexAeBridgeAutoConnect", "1");}
     setStatus("Connecting...", false);
@@ -4514,8 +4573,14 @@
       done(null,{configured:true,url:getBaseUrl()});
     },
     "bridge.connect":function(args,done,context) {
+      var startup = initialAutomaticConnectDispatch;
+      if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
       if(running && !recoveryTransportScope) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
-      panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(context.submit()) connect(done);});
+      panelLifecycleIdle(function(error) {
+        if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
+        if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
+        if(context.submit()) connect(done,startup);else if(startup) closeInitialAutomaticStartup(startup);
+      });
     },
     "bridge.disconnect":function(args,done,context) {
       panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(!context.submit()) return;disconnect();done(null,{disconnected:true});});
@@ -4736,13 +4801,34 @@
     },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
   function lookupHumanSettlementBeforeConnect(attempt) {
-    panelActionUI.refreshTrustedGuards(function(ready) {
-      function finishLookup(allReady) {
-        if(allReady && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0")setTimeout(function(){invokePanelUI("bridge.connect",{});},250);
-        else if(!allReady && tokenEl.value && attempt<3)setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
-      }
-      finishLookup(ready);
+    if (!initialAutomaticStartup) initialAutomaticStartup = {epoch:panelLifecycleEpoch,generation:panelConnectionGeneration,
+      url:getBaseUrl(),token:getToken(),state:"lookup",rounds:0,lookupPending:false,consumed:false,getAttempted:false};
+    var startup = initialAutomaticStartup;
+    if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || startup.lookupPending || running ||
+      attempt !== startup.rounds || attempt > 3) return;
+    startup.rounds += 1;startup.lookupPending=true;
+    var receipt = panelActionUI.refreshTrustedGuards(function(ready) {
+      if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || !startup.lookupPending || running) return;
+      startup.lookupPending=false;
+      if(ready && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0") {
+        startup.state="connecting";
+        setTimeout(function() {
+          if (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || running) return;
+          initialAutomaticConnectDispatch=startup;
+          try {
+            var connectReceipt=invokePanelUI("bridge.connect",{});
+            if (!connectReceipt || connectReceipt.accepted === false || !/^(accepted|running|completed)$/.test(connectReceipt.state)) closeInitialAutomaticStartup(startup);
+          } catch (error) {closeInitialAutomaticStartup(startup);}
+          finally {initialAutomaticConnectDispatch=null;}
+        },250);
+      } else if (!ready && tokenEl.value && attempt<3) {
+        setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
+      } else closeInitialAutomaticStartup(startup);
     });
+    if (receipt && receipt.accepted === false) {
+      startup.lookupPending=false;
+      closeInitialAutomaticStartup(startup);
+    }
   }
   lookupHumanSettlementBeforeConnect(0);
 })();
