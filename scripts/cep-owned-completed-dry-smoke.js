@@ -18,8 +18,11 @@ function passiveDrain(env){let count=0;while(env.inFlightRequests.length){assert
     r.path==="/usage"?{usage:{sources:{}}}:r.path==="/human-guard-settlement/lookup"?{ok:true,settlement:null}:
     r.path==="/ame/fixture-ui-disposition/lookup"?{ok:true,disposition:null}:r.path==="/ame/native-fixture-prephase-recovery/lookup"?{ok:true,certificate:null}:
     r.path==="/placeholder/protection"?{ok:true,acceptedCount:0,groupMappings:[],constraints:{}}:{ok:true,command:null,version:"3.3.1"};r.respond(200,body);}}
-function fixture(finite=true){const env=createPanelEnvironment(source);passiveDrain(env);env.planOps.connect();
-  const next=request(env,"/bridge/next");next.respond(200,{ok:true,command:null,...(finite?{ownedPlanPreparation:marker}:{})});
+function fixture(finite=true,holdCommand=false){
+  // Host callback control stays in this VM fixture, never in production assets.
+  const hostedSource=holdCommand?source.replace("  var cs = new CSInterface();","  var cs = new CSInterface(); var originalEval = cs.evalScript; window.__ownedVmSetConnection = function(url,token) { if(url) configuredBridgeUrl=url; if(token) configuredPanelToken=token; }; cs.evalScript = function(script, callback) { if(script === 'owned-vm-command') { window.__ownedVmCommandDone = callback; return; } originalEval.call(cs,script,callback); };"):source;
+  const env=createPanelEnvironment(hostedSource);passiveDrain(env);env.planOps.connect();
+  const next=request(env,"/bridge/next");next.respond(200,{ok:true,command:null,...(finite?{ownedPlanPreparation:{...marker,remainingSessionMs:600000}}:{})});
   if(!finite){const current=env.popRequest(r=>r.path==="/agents/plan/current");if(current)current.respond(200,{ok:true,current:null});}
   passiveDrain(env);
   const state=env.api.state(),actor={panelConnectionId:state.bridgeConnection.panelConnectionId,panelGeneration:String(state.panelGeneration),
@@ -175,11 +178,115 @@ for(const [name,change] of [
   assert.equal(f.env.api.state().plan.acceptedDryRun,null);assert.equal(f.env.requestHistory.length,before,"No follow-up dry/run request");
 });
 
-test("finite bridge polling survives while periodic current/autonomy reads stay absent",()=>{
+test("finite held original beyond 10s has no duplicate poll or periodic current/autonomy reads",()=>{
   const f=fixture();f.prepared();const start=f.env.requestHistory.length;f.env.setFrozenNow(Date.now()+2000);
-  assert(f.env.runTimer(t=>t.fn.name==="poll"));request(f.env,"/bridge/next").respond(200,{ok:true,command:null});passiveDrain(f.env);
+  const poll=[...f.env.timers.values()].find(t=>t.fn.name==="poll").fn;
+  assert(f.env.runTimer(t=>t.fn.name==="poll"));const held=request(f.env,"/bridge/next");
+  assert.equal(held.xhr.timeout,600000,"Native initial remaining lifetime bounds XHR, not generic 10s");
+  f.env.setFrozenNow(Date.now()+11000);poll();poll();
+  assert.equal(f.env.requestHistory.slice(start).filter(r=>r.path.startsWith("/bridge/next?")).length,1);
   assert.equal(f.env.requestHistory.slice(start).filter(r=>r.path==="/agents/plan/current" || r.path==="/autonomy/session").length,0);
-  assert(f.env.timers.size>0);
+  assert.equal(f.env.requestHistory.slice(start).filter(r=>r.path.startsWith("/bridge/heartbeat?")).length,0);
+  assert.equal(held.completed,false);assert(![...f.env.timers.values()].some(t=>t.fn.name==="poll"));
+});
+
+function heldNext(f){assert(f.env.runTimer(t=>t.fn.name==="poll"));return request(f.env,"/bridge/next");}
+function originalCommand(f,remaining=18000){return {id:"owned-original-command",executionId:"a".repeat(32),leaseId:"b".repeat(32),contractVersion:2,
+  script:"owned-vm-command",remainingCommandMs:remaining,leaseOwner:{panelConnectionId:f.actor.panelConnectionId,panelGeneration:f.actor.panelGeneration}};}
+function pollCount(f){return f.env.requestHistory.filter(r=>r.path.startsWith("/bridge/next?")).length;}
+function heartbeatCount(f){return f.env.requestHistory.filter(r=>r.path.startsWith("/bridge/heartbeat?")).length;}
+function assertClosedWithoutReplay(f,before){
+  assert.equal(f.env.api.state().running,false);
+  assert(![...f.env.timers.values()].some(t=>t.fn.name==="poll"));
+  let closed=null;f.env.planOps.connect(error=>{closed=error;});assert.equal(closed.code,"owned_transport_reconciliation_required");
+  f.env.planOps.runLastPlan(true,false,error=>{closed=error;},{prepare:true,strict:true,pins:f.pins});assert.equal(closed.code,"owned_transport_reconciliation_required");
+  assert.equal(f.env.requestHistory.length,before,"Closed original transport neither reconnects nor adopts");
+}
+
+test("actual command submission and result ACK alone release the next original poll",()=>{
+  const f=fixture(true,true),sessionTimer=[...f.env.timers.entries()].find(([,t])=>t.fn.name==="ownedSessionDeadline"),before=pollCount(f);
+  heldNext(f).respond(200,{ok:true,command:originalCommand(f)});
+  assert.equal(pollCount(f),before+1);assert.equal(f.env.window.__ownedVmCommandDone,undefined);
+  assert(f.env.runTimer(t=>t.fn.name==="poll"));assert.equal(heartbeatCount(f),0,"Delivered but unsubmitted command has no heartbeat");
+  request(f.env,"/bridge/submitted").respond(200,{ok:true});assert.equal(typeof f.env.window.__ownedVmCommandDone,"function");
+  f.env.window.__ownedVmCommandDone('{"ok":true}');const result=request(f.env,"/bridge/result");
+  assert(f.env.runTimer(t=>t.fn.name==="poll"));assert.equal(pollCount(f),before+1,"No next while actual result ACK is pending");
+  result.respond(200,{ok:true});assert.equal(f.env.timers.get(sessionTimer[0]),sessionTimer[1],"Session timer was not replaced or extended");
+  const next=heldNext(f);assert.equal(pollCount(f),before+2);assert.equal(next.completed,false);
+  assert.equal(heartbeatCount(f),0,"Idle manual/AME wait sends no heartbeat");
+});
+
+for(const kind of ["error","timeout","idle-null"])test("original held "+kind+" is sticky CLOSED with no retry/adoption",()=>{
+  const f=fixture(),held=heldNext(f),before=f.env.requestHistory.length;
+  if(kind==="idle-null")held.respond(200,{ok:true,command:null,ownedPlanPreparation:{...marker,remainingSessionMs:600000}});else held[kind]();
+  assertClosedWithoutReplay(f,before);
+});
+
+test("original session deadline cancels exactly its held read without renewal or replay",()=>{
+  const f=fixture(),held=heldNext(f),before=f.env.requestHistory.length;let aborted=0;
+  held.xhr.abort=()=>{aborted++;held.error("Original session deadline");};
+  assert(f.env.runTimer(t=>t.fn.name==="ownedSessionDeadline"));assert.equal(aborted,1);assertClosedWithoutReplay(f,before);
+});
+
+test("missing original initial deadline closes the connect callback without entering a held loop",()=>{
+  const env=createPanelEnvironment(source);passiveDrain(env);let outcome=null;env.planOps.connect(error=>{outcome=error;});
+  const next=request(env,"/bridge/next");next.respond(200,{ok:true,command:null,ownedPlanPreparation:marker});
+  assert.equal(outcome.code,"owned_original_session_deadline_invalid");assert.equal(env.api.state().running,false);
+  assert(![...env.timers.values()].some(t=>t.fn.name==="poll"));
+});
+
+test("missing actual command deadline closes before submission or eval",()=>{
+  const f=fixture(true,true),command=originalCommand(f);delete command.remainingCommandMs;
+  const held=heldNext(f),before=f.env.requestHistory.length;held.respond(200,{ok:true,command});
+  assertClosedWithoutReplay(f,before);assert.equal(f.env.window.__ownedVmCommandDone,undefined);
+});
+
+for(const kind of ["url","token","chat-actor","lifecycle"])test("held original "+kind+" drift cannot submit returned command or restart",()=>{
+  const f=fixture(true,true);if(kind==="chat-actor")f.prepared();
+  const held=heldNext(f),before=f.env.requestHistory.length;
+  if(kind==="url")f.env.window.__ownedVmSetConnection("http://127.0.0.1:9999",null);
+  if(kind==="token")f.env.window.__ownedVmSetConnection(null,"other-private-token");
+  if(kind==="chat-actor")f.env.elements.get("newChatButton").click();
+  if(kind==="lifecycle")f.env.planOps.disconnect();
+  held.respond(200,{ok:true,command:originalCommand(f)});assertClosedWithoutReplay(f,before);
+  assert(!f.env.requestHistory.slice(before).some(r=>r.path==="/bridge/submitted"));
+});
+
+test("actor drift closes pending held transport before a new preparation can send",()=>{
+  const f=fixture(true,true);heldNext(f);f.env.window.__ownedVmSetConnection(null,"drifted-private-token");
+  const before=f.env.requestHistory.length;let outcome=null;f.env.planOps.runLastPlan(true,false,error=>{outcome=error;},{prepare:true,strict:true,pins:f.pins});
+  assert.equal(outcome.code,"owned_transport_reconciliation_required");assertClosedWithoutReplay(f,before);
+});
+
+test("heartbeat is bounded to submitted eval; result ACK waits for its existing heartbeat receipt",()=>{
+  const f=fixture(true,true),start=Date.now();f.env.setFrozenNow(start);
+  heldNext(f).respond(200,{ok:true,command:originalCommand(f,16000)});request(f.env,"/bridge/submitted").respond(200,{ok:true});
+  f.env.setFrozenNow(start+5001);assert(f.env.runTimer(t=>t.fn.name==="poll"));const heartbeat=request(f.env,"/bridge/heartbeat");
+  f.env.setFrozenNow(start+10002);assert(f.env.runTimer(t=>t.fn.name==="poll"));assert.equal(heartbeatCount(f),1,"One outstanding heartbeat only");
+  const count=pollCount(f);f.env.window.__ownedVmCommandDone('{"ok":true}');request(f.env,"/bridge/result").respond(200,{ok:true});
+  assert(f.env.runTimer(t=>t.fn.name==="poll"));assert.equal(pollCount(f),count);assert.equal(heartbeatCount(f),1,"No new heartbeat after result ACK");
+  heartbeat.respond(200,{ok:true,session:{desiredEnabled:true,connectionReady:true}});
+  heldNext(f);assert.equal(pollCount(f),count+1);assert.equal(heartbeatCount(f),1);
+});
+
+test("original command deadline stops heartbeat and retains late eval without result replay",()=>{
+  const f=fixture(true,true),start=Date.now();f.env.setFrozenNow(start);
+  heldNext(f).respond(200,{ok:true,command:originalCommand(f,8000)});request(f.env,"/bridge/submitted").respond(200,{ok:true});
+  f.env.setFrozenNow(start+5001);assert(f.env.runTimer(t=>t.fn.name==="poll"));request(f.env,"/bridge/heartbeat").respond(200,{ok:true,session:{}});
+  const before=f.env.requestHistory.length;assert(f.env.runTimer(t=>t.fn.name==="ownedCommandDeadline"));
+  f.env.window.__ownedVmCommandDone('{"ok":true}');assertClosedWithoutReplay(f,before);
+  assert(!f.env.requestHistory.slice(before).some(r=>r.path==="/bridge/result"));
+});
+
+for(const phase of ["submitted","result"])test("unknown original "+phase+" POST is not cleared into a next request",()=>{
+  const f=fixture(true,true);heldNext(f).respond(200,{ok:true,command:originalCommand(f)});
+  if(phase==="result"){request(f.env,"/bridge/submitted").respond(200,{ok:true});f.env.window.__ownedVmCommandDone('{"ok":true}');}
+  const before=f.env.requestHistory.length;request(f.env,"/bridge/"+phase).timeout();assertClosedWithoutReplay(f,before);
+});
+
+test("ordinary held request retains generic timeout and ordinary retry scheduling",()=>{
+  const f=fixture(false),held=heldNext(f);assert.equal(held.xhr.timeout,10000);held.timeout();
+  assert(f.env.api.state().running);assert(f.env.runTimer(t=>t.fn.name==="poll"));request(f.env,"/bridge/next");
 });
 
 test("ordinary adoption retains canonical refresh and actual dry-run POST",()=>{

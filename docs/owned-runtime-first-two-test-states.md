@@ -260,3 +260,28 @@ Existing refresh33/actions48, syntax2/rules/diff PASS. [block: CEP caller]
 [executor: ae_implementer; review: ae_reviewer] [ownership: panel.js и focused smoke].
 Установленная CEP-копия, backend/native execution, whole budget FIT, M/C1 и видео
 этим milestone не приняты; root не выполнял reload или live-действия.
+
+Restoration UI baseline: прежние reviewed contracts требуют exact baseline
+read-back, но не перечисляют универсальное восстановление вкладок/viewer layout.
+Одного reopen и graph equality недостаточно. В SAME charged original READ
+фиксируются immutable actual activeItem type/identity либо null, project.selection,
+comp.time без округления и selectedLayer IDs всех original CompItem bounded census.
+Stage.before сверяет original baseline; поздний user state его не заменяет.
+Restore8 использует own mapping и supported selected/time/viewer actions, затем
+независимо перечитывает UI вместе с source graph/file/hash/dirty. Несовпадение
+оставляет debt. Null/folder/Layer-viewer без конкретного restoration action и
+exact proof закрывают Stage до effects; read-only activeItem нельзя считать setter.
+Новых Call/leaf/vector нет, schema/parser/getter/manifest входят SourceM до C1.
+[block: restoration UI] [executor: ae_architect] [ownership: read-only decision].
+Реализация ещё в работе; SourceSTOP `976E9332…C061F` эти новые UI facts не содержит.
+
+CEP original transport Source GO: immutable manifest `4111E33E…2EC382`, panel
+`B8E9FEA1…D84FEB`, focused smoke `E4D117CF…00C14D`. Независимый VM56/56,
+existing refresh33/actions48, syntax2/rules/diff PASS. OWNED держит single original
+next до command/receipt или исходного session deadline; initial timer не продлевается.
+Loss/expiry/actor drift дают sticky CLOSED across reconnect, без повторной отправки.
+Heartbeat только во время submitted eval и в пределах original command deadline;
+next после actual result ACK. Ordinary flow/cache/START confirmation сохранены.
+[block: original held-poll scheduling] [executor: ae_implementer; review: ae_reviewer]
+[ownership: прежние panel.js и focused smoke]. Backend должен отдельно подтвердить
+actual original socket deadline close. Installed UI, C1 и whole runtime FIT не приняты.

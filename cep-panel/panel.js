@@ -149,6 +149,8 @@
   // Scheduling only: the backend still owns all fresh execution guards.
   var ownedPlanPreparationMode = "";
   var ownedCompletedDryRunCache = null;
+  var ownedPollingSession = null;
+  var ownedPollingClosed = "";
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
   var operationUsageReports = [];
@@ -456,6 +458,11 @@
     xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path === "/agents/ame/title-start/run" || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
+    if(method==="GET" && path.indexOf("/bridge/next?")===0 && ownedPollingSession && !ownedPollingClosed) {
+      // The one initial native remaining lifetime also has a non-renewed timer.
+      // Backend owns the actual monotonic deadline and closes this exact response.
+      xhr.timeout=ownedPollingSession.remainingSessionMs;
+    }
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -513,6 +520,7 @@
       finish(makeBridgeOfflineError());
     };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
+    return xhr;
   }
 
   function refreshAppTitle() {
@@ -1832,6 +1840,7 @@
   }
 
   function currentProposalBlockReason(proposal) {
+    if(ownedPollingClosed) return "Owned transport закрыт; требуется сверка исходной сессии";
     if (!proposal) return "Нет текущего proposal";
     if (Date.parse(proposal.confirmation.proposalExpiresAt) <= Date.now()) return "Срок действия плана истёк";
     if (!currentBridgePlan || currentBridgePlan.actionId !== proposal.actionId) return "План не подтверждён сервером как текущий";
@@ -1921,6 +1930,72 @@
     var publicProposal=JSON.parse(JSON.stringify(proposal));
     delete publicProposal.confirmation.confirmationToken;
     return planKeyFor(publicProposal);
+  }
+
+  function ownedPollingActorCurrent(session) {
+    if(!session || session!==ownedPollingSession || ownedPollingClosed) return false;
+    if(session.url!==getBaseUrl() || session.token!==getToken()) return false;
+    var actor=ownedPanelActor();
+    for(var key in session.actor) if(actor[key]!==session.actor[key]) return false;
+    return true;
+  }
+
+  function closeOwnedPolling(code) {
+    if(ownedPollingClosed) return;
+    ownedPollingClosed=code || "owned_transport_unknown";
+    var session=ownedPollingSession;
+    running=false;pollInFlight=false;ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;
+    if(pollTimer) clearTimeout(pollTimer);
+    if(session) {
+      clearTimeout(session.timer);
+      if(session.command) clearTimeout(session.command.timer);
+      // Abort only held reads; submitted POST outcomes remain unreconciled.
+      if(session.heldXhr && typeof session.heldXhr.abort==="function") session.heldXhr.abort();
+      if(session.heartbeatXhr && typeof session.heartbeatXhr.abort==="function") session.heartbeatXhr.abort();
+    }
+    setStatus("Owned transport CLOSED · требуется сверка",false);
+    setPlanRunStatus(ownedPollingClosed,"blocked");updateChatAvailability();
+  }
+
+  function beginOwnedPolling(response) {
+    if(!ownedCompletedDryRunPromised(response)) return false;
+    var remaining=response.ownedPlanPreparation.remainingSessionMs;
+    if(ownedPollingSession || typeof remaining!=="number" || Math.floor(remaining)!==remaining || remaining<=0 || remaining>28800000) {
+      closeOwnedPolling("owned_original_session_deadline_invalid");return false;
+    }
+    ownedPlanPreparationMode="completed_native_dry_run_v1";
+    var session={actor:ownedPanelActor(),url:getBaseUrl(),token:getToken(),remainingSessionMs:remaining,heldXhr:null,command:null,heartbeatXhr:null};
+    ownedPollingSession=session;
+    // Scheduling data only: this timer never renews the ORIGINAL session.
+    session.timer=setTimeout(function ownedSessionDeadline() {if(session===ownedPollingSession) closeOwnedPolling("owned_original_session_deadline");},remaining);
+    return true;
+  }
+
+  function beginOwnedCommand(command) {
+    var session=ownedPollingSession,remaining=command && command.remainingCommandMs,owner=command && command.leaseOwner;
+    if(!ownedPollingActorCurrent(session) || session.command || !command || command.contractVersion!==2 || !command.id ||
+        !command.executionId || !command.leaseId || !owner || owner.panelConnectionId!==session.actor.panelConnectionId ||
+        owner.panelGeneration!==session.actor.panelGeneration || typeof remaining!=="number" || Math.floor(remaining)!==remaining || remaining<=0 || remaining>30000) {
+      closeOwnedPolling("owned_original_command_deadline_invalid");return false;
+    }
+    var pending={id:command.id,phase:"delivered",heartbeatInFlight:false};session.command=pending;
+    pending.originalCommand=command;
+    pending.timer=setTimeout(function ownedCommandDeadline() {
+      if(session===ownedPollingSession && session.command===pending) closeOwnedPolling("owned_original_command_deadline");
+    },remaining);
+    return true;
+  }
+
+  function finishOwnedCommand(command, receiptAccepted) {
+    var session=ownedPollingSession,pending=session && session.command;
+    if(!ownedPollingActorCurrent(session) || !pending || pending.id!==command.id || !receiptAccepted) {
+      closeOwnedPolling("owned_original_command_receipt_unknown");return;
+    }
+    if(pending.heartbeatInFlight) {pending.phase="acknowledged";return;}
+    clearTimeout(pending.timer);session.command=null;clearActiveEvalScriptCommand(command.id);
+    // The next original GET is permitted only after this actual result ACK.
+    if(pollTimer) clearTimeout(pollTimer);
+    pollTimer=setTimeout(poll,50);
   }
 
   function ownedCompletedDryRunCacheMatches(pins) {
@@ -3958,6 +4033,8 @@
       setPlanRunStatus(message || code,"blocked");
       if(onDone) onDone({code:code,message:message || code,rejected:!unknown,isUnknown:!!unknown});
     }
+    if(ownedPollingSession && !ownedPollingActorCurrent(ownedPollingSession)) closeOwnedPolling("owned_original_poll_actor_changed");
+    if(ownedPollingClosed) {fail("owned_transport_reconciliation_required","Owned transport закрыт; требуется сверка исходной сессии.",true);return;}
     if (!fresh && !(!dryRun && ownedCompletedDryRunCacheMatches(policy.pins))) {
       var clicked=m100ActionProposalForResult(lastPlanResult);
       if (!clicked) {fail("proposal_missing","No backend action proposal ready");return;}
@@ -3991,6 +4068,7 @@
         rememberPlanRun(null);planRunInFlightMode="prepare";}
       request("POST","/agents/plan/adopt",adoptionBody,function(error,response) {
         if(adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during adoption.",true);return;}
+        if(ownedPollingClosed) {fail("owned_transport_reconciliation_required","Owned transport closed during adoption.",true);return;}
         if(error) {planRunInFlightMode="";setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
         if(ownedPreparation) {
           if(!currentBridgePlanMatchesPins(currentBridgePlan,originalPins) || currentPlanKey()!==originalPlanKey ||
@@ -4257,7 +4335,8 @@
       ok: ok,
       result: result,
       error: error
-    }, function (postError) {
+    }, function (postError,response) {
+      if(ownedPollingSession && !postError && (!response || response.ok!==true)) postError={message:"Original result ACK missing"};
       if (postError) {
         log("Could not post result: " + postError.message);
       }
@@ -4282,7 +4361,8 @@
       contractVersion: 2,
       panelConnectionId: owner.panelConnectionId,
       panelGeneration: owner.panelGeneration
-    }, function (error) {
+    }, function (error,response) {
+      if(ownedPollingSession && !error && (!response || response.ok!==true)) error={message:"Original submission ACK missing"};
       if (error) {
         log("Could not mark command submitted: " + error.message);
         onDone(false);
@@ -4307,21 +4387,33 @@
       return;
     }
     activeEvalScriptCommandId = command.id;
+    var ownedSession=ownedPollingSession,ownedCommand=ownedSession && ownedSession.command;
     log("Executing command " + command.id);
     markCommandSubmitted(command, function (submitted) {
+      if(ownedSession) {
+        if(!submitted || !ownedPollingActorCurrent(ownedSession) || !ownedCommand || ownedSession.command!==ownedCommand || ownedCommand.id!==command.id) {
+          closeOwnedPolling("owned_original_command_submission_unknown");return;
+        }
+        ownedCommand.phase="submitted";panelHeartbeatAt=Date.now();
+      }
       if (!submitted) {
         clearActiveEvalScriptCommand(command.id);
         return;
       }
       cs.evalScript(command.script, function (result) {
+        if(ownedSession) {
+          if(!ownedPollingActorCurrent(ownedSession) || ownedSession.command!==ownedCommand) {closeOwnedPolling("owned_original_command_actor_changed");return;}
+          if(ownedCommand.phase!=="submitted") return;
+          ownedCommand.phase="posting";
+        }
         if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
-          postResult(command, false, null, result, function () {
-            clearActiveEvalScriptCommand(command.id);
+          postResult(command, false, null, result, function (accepted) {
+            if(ownedSession) finishOwnedCommand(command,accepted);else clearActiveEvalScriptCommand(command.id);
           });
           return;
         }
-        postResult(command, true, result, null, function () {
-          clearActiveEvalScriptCommand(command.id);
+        postResult(command, true, result, null, function (accepted) {
+          if(ownedSession) finishOwnedCommand(command,accepted);else clearActiveEvalScriptCommand(command.id);
         });
       });
     });
@@ -4391,12 +4483,29 @@
   }
 
   function poll(onDone) {
+    if(ownedPollingClosed) {if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;}
     if (!bridgeHostAvailable(onDone)) return;
     if(recoveryTransportScope){pollRecoveryTransport();return;}
     if (!running) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
+    if(ownedPollingSession && !ownedPollingActorCurrent(ownedPollingSession)) {closeOwnedPolling("owned_original_poll_actor_changed");return;}
     if (panelLifecycleGuard) {pollTimer=setTimeout(poll,100);return;}
     if (pollInFlight) return;
     if (activeEvalScriptCommandId) {
+      if(ownedPollingSession) {
+        var heartbeatSession=ownedPollingSession,heartbeatCommand=heartbeatSession.command;
+        if(!heartbeatCommand || heartbeatCommand.id!==activeEvalScriptCommandId) {closeOwnedPolling("owned_original_command_owner_changed");return;}
+        if(heartbeatCommand.phase==="submitted" && !heartbeatCommand.heartbeatInFlight && Date.now()-panelHeartbeatAt>=5000) {
+          heartbeatCommand.heartbeatInFlight=true;panelHeartbeatAt=Date.now();
+          heartbeatSession.heartbeatXhr=request("GET",bridgeNextPath().replace("/bridge/next?","/bridge/heartbeat?"),null,function(error,response) {
+            heartbeatCommand.heartbeatInFlight=false;heartbeatSession.heartbeatXhr=null;
+            if(!ownedPollingActorCurrent(heartbeatSession) || heartbeatSession.command!==heartbeatCommand) return;
+            if(error || !response || response.ok!==true) {closeOwnedPolling("owned_original_command_heartbeat_unknown");return;}
+            autonomousSessionState=response.session;renderAutonomousSession();
+            if(heartbeatCommand.phase==="acknowledged") finishOwnedCommand(heartbeatCommand.originalCommand,true);
+          });
+        }
+        pollTimer=setTimeout(poll,500);return;
+      }
       if (Date.now() - panelHeartbeatAt >= 5000) {
         panelHeartbeatAt = Date.now();
         request("GET", bridgeNextPath().replace("/bridge/next?", "/bridge/heartbeat?"), null, function (error, response) {
@@ -4425,7 +4534,10 @@
       return;
     }
     if (startup) startup.getAttempted = true;
-    request("GET", bridgeNextPath(projectFile), null, function (error, response) {
+    var ownedPollSession=ownedPollingSession;
+    var pollXhr=request("GET", bridgeNextPath(projectFile), null, function (error, response) {
+      if(ownedPollSession) ownedPollSession.heldXhr=null;
+      if(ownedPollSession && !ownedPollingActorCurrent(ownedPollSession)) {closeOwnedPolling("owned_original_poll_actor_changed");return;}
       if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
       if (startup && (!initialAutomaticStartupCurrent(startup) || !/^(pending|closed)$/.test(startup.state))) return;
       pollInFlight = false;
@@ -4440,6 +4552,7 @@
       if (!running) return;
 
       if (error) {
+        if(ownedPollSession) {closeOwnedPolling("owned_original_poll_lost");if(onDone) onDone(error);return;}
         var message = setBridgeOffline(error);
         if (message !== lastPollErrorMessage) {
           log(message);
@@ -4450,6 +4563,10 @@
         return;
       }
 
+      if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
+      if(!ownedPollSession && ownedCompletedDryRunPromised(response) && !beginOwnedPolling(response)) {
+        if(onDone) onDone({isUnknown:true,code:"owned_original_session_deadline_invalid"});return;
+      }
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
       if (startup) startup.state = "succeeded";
       lastPollErrorMessage = "";
@@ -4465,13 +4582,16 @@
       }
 
       if (response && response.command) {
+        if(ownedPollingSession && !beginOwnedCommand(response.command)) return;
         executeCommand(response.command);
       }
 
-      pollTimer = setTimeout(poll, 50);
+      if(!ownedPollingClosed) pollTimer = setTimeout(poll,ownedPollingSession && activeEvalScriptCommandId ? 500 : 50);
     });
+    if(ownedPollSession) ownedPollSession.heldXhr=pollXhr;
     });
     } catch (error) {
+      if(ownedPollingSession) {closeOwnedPolling("owned_original_project_file_unknown");if(onDone) onDone(error);return;}
       if (!startup) throw error;
       closeInitialAutomaticStartup(startup);
       if(onDone) onDone(error);
@@ -4479,6 +4599,10 @@
   }
 
   function connect(onDone, startup) {
+    if(ownedPollingSession || ownedPollingClosed) {
+      closeOwnedPolling("owned_original_poll_lifecycle_changed");
+      if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;
+    }
     if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || startup.consumed)) return;
     if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
     if (!bridgeHostAvailable(onDone)) return;
@@ -4520,6 +4644,7 @@
   }
 
   function disconnect() {
+    if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     recoveryTransportConnecting=false;recoveryTransportScope=null;
     running = false;
@@ -4567,6 +4692,7 @@
   }
 
   function reloadApp() {
+    if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     running = false;
     pollInFlight = false;
@@ -4625,6 +4751,7 @@
     var reasons=[], passive=/^(logs.get|chat.sessions.list|chat.transcript.get)$/.test(name) || name === "plan.current" && !(args && args.fresh);
     if (!passive && !hostStartupGuard.isAllowed()) reasons.push(hostStartupGuard.snapshot().code);
     if(!passive && panelActionBusy()) reasons.push("panel_busy");
+    if(ownedPollingClosed && (name==="bridge.connect" || /^plan\.(prepare|dryRun|run)$/.test(name))) reasons.push("owned_transport_reconciliation_required");
     if(name === "bridge.configure" && running) reasons.push("disconnect_required");
     if(/^(autonomy|placeholder|plan)\./.test(name) && !running && name !== "plan.current" &&
        !(name === "plan.reconcile" && knownUnresolvedPlanRun(args && args.runId))) reasons.push("bridge_disconnected");
