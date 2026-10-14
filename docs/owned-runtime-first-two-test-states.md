@@ -489,3 +489,55 @@ AE19140/AME22812 живы с прежними birth, это не owned-runtime a
 fix `F3A5C3A2…` проверяет exact names, frozen slot1/2 schemas, правильный C5 body
 и отказ caller selectors до HTTP; Root independent diff/run **17/17 PASS**.
 First-two getter/Restore fixtures также PASS; native authority/effects0.
+
+D48–49 implementation preflight выявил отдельный Completion77 ingress seam.
+F66A report подтверждён по SHA: два official result-read (один/job) без current
+READ; private polls20 имеют Calls0/external2/Store2 каждый. Existing codec77/Tool18
+не имеет controller/ledger producer; actual D47 grant/final ordinal известны
+только daemon/broker. Удерживать C5 через poll loop нельзя из-за Call/HTTP TTL30s.
+Architect audit REVISE ingress: post-D49 локальная проекция подходит бюджету,
+но controller binding ещё отсутствует. Root поручил конкретный новый
+broker-selected77 source-contract proposal с явной новой семантикой tail,
+independent review до реализации; не выдавать selector за old grant/ordinal join.
+D49 shared precharge продолжается независимо; route/C1 CLOSED, children0.
+
+**Private D48–49 — SourceSTOP, 15.10, review pending.** Immutable manifest
+`native-completion-d48-d49-d48fd84d1c46/E15E5F93…` содержит 98 файлов/native63,
+TU11/15/3. Root независимо сверил 98/98 SHA/bytes и повторил source proof:
+VM119/static7 PASS, nativeCppExecuted=false/originalOSObjects=false/children0.
+Writer STOP: own ordinal/nonce, retained HTTP result, exact host terminal/file
+joins и семь irreversible Notes до private reservation; partial/lost ACK UNKNOWN.
+Independent Source review: **REVISE двух P2** — ожидание poll не прерывается
+native deadline; completion branch пропускает повторный unique AME census.
+Counterexample deadline20ms/poll absent: через50ms flight pending, abandonment0.
+Writer исправляет только эти guards и focused negatives. Capture control
+`7A0326A1…` и launcher `544C35A3…` отдельно получили CONTROL GO; actual inert
+capture63 `ns-b58b6e4ffa21/2DCE2B56…`, approval `0A326F40…`, TU11/15/3.
+Этот snapshot не компилировался: Source REVISE сохраняется, нужен новый STOP.
+Official77 требует нового private completion-ready handoff до короткого C5:
+существующего readiness event нет. Его contract revision/review ещё не завершены.
+D50/whole FIT/SourceM/M/C1 и actual AME effects остаются CLOSED, renders0/2.
+
+Correction STOP `native-completion-p2-6a0dabbb0890/7A0E859D…`: exact4 delta,
+98/native63, TU11/15/3. Root snapshot/current hashes+bytes98/98 и VM130/static8
+PASS. Deadline races poll acquisition с exact-own cleanup; прежний bounded4096
+AME census общий для preD48/send/result. Focused source rereview выполняется,
+CPP/Windows/live NOTRUN; whole FIT не выводится из добавленных revalidation reads.
+Completion77 contract revision3 `CE5186B8…/1AEA5DFE…` получила independent
+source-design GO: NEW publish66/notice67 и retained native wait до C3/C5;
+projection offset32=SHA256 inner356, finish offset66 сохраняет full lineage.
+Root и reviewer пересчитали exact literals; reviewer подтвердил пять lineage
+negatives. Footprint6frames/824bytes/12endpoint completions и headroom574000ms
+заявлены для будущей реализации; cancellation/race/cleanup census ещё её обязанности.
+Это контракт, не implementation/native refusal/M/C1. Next: corrected build,
+затем official77 implementation и D50; renders0/2.
+
+**Private D48–49 — завершённый Source/build блок, 15.10.** Correction7A0E
+получила focused Source GO, VM130/static8; capture6FB708/launcher637F3384 CONTROL GO.
+Actual freeze63 `ns-62bab8806698/8666A6ED…`, approval `3D77AD64…` → compile
+`ic-597a8c804b32/4B78A2CE…`: TU11/15/3, все PP/build exit0.
+Root в original owner26728/PTY47673 сверил original6 CLOSED0/exact exit/EOF,
+completed capture tasks/no truncation/handlesclosed и locks0; explicitexit0.
+Readback `52CC900C…`, local acceptance `9B1DEFCA…`. Это bounded compile/source,
+не loaded module/descendant/M/FIT/runtime доказательство. Official77 writer
+начал отдельный блок по принятому контракту; D50/children/C1 ещё CLOSED, renders0/2.

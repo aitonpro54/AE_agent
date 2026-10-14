@@ -58,6 +58,8 @@ bool FixedExecutionScopeMatches(const ExecutionPolicy& policy,const Digest& scop
 bool FixedExecutionIntentAllowed(phase::ToolCode tool,phase::CallKind kind,std::uint16_t slot,ExecutionLeaf leaf)noexcept;
 bool FixedExecutionScopeAllowed(const ExecutionPolicy& policy,phase::ToolCode tool,phase::CallKind kind,const Digest& scope)noexcept;
 bool FixedAmeTargetSpecifier(const std::string& target)noexcept;
+// Fixed source selectors only; no capability or job/proposal/ordinal input.
+Digest FixedOriginalCompletionLeaf(const ExecutionPolicy& policy,std::uint16_t slot,std::uint16_t purpose);
 struct NativeTitleLayer final {std::uint64_t id=0;std::wstring name;Digest contentHash{};bool enabled=false;};
 struct NativeTitleState final {ObjectPin project;Digest projectHash{},revision{},graphHash{},owner{};std::uint64_t rootId=0,compId=0;
     std::uint32_t width=0,height=0,frameStart=0,frameCount=0,rateNumerator=0,rateDenominator=0;
@@ -122,6 +124,12 @@ private:
     std::uint32_t width_=0,height_=0,frameCount_=0,rateNumerator_=0,rateDenominator_=0;
     std::vector<std::uint32_t> alphaIndices_;std::uint64_t issued_=0,deadline_=0,nextPoll_=1;
     std::uint16_t rawReadAllowance_=0,mediaChildAllowance_=0;Stage stage_=Stage::SourcePending;
+    struct MediaReservation final {Id terminal{},poll{};Digest hash{},head{},outputHash{};ObjectPin outputPin;std::array<Digest,6> keys{};std::array<bool,6> spent{};
+        std::uint64_t sequence=0,epoch=0;bool complete=false,unknown=false;};
+    std::unique_ptr<MediaReservation> mediaReservation_;detail::Held output_;ObjectPin outputPin_;Digest outputHash_{};
+    std::shared_ptr<Capability> pendingPoll_,acceptedTerminal_;Id pollRef_{},pollNonce_{},pollRequestNonce_{};Digest pollBinding_{},pollCommit_{};
+    std::shared_ptr<ProjectCapture> preparingPoll_;
+    std::uint64_t activePoll_=0,pollExpiry_=0,nextPollAt_=0,finalPoll_=0;bool pollPreparing_=false,terminalAttempted_=false;
     bool mediaAttempted_=false,d47Attempted_=false,unknown_=false;friend class NativeClient;friend class OriginalMediaCapture;
 };
 // Native only: no public constructor/fromJSON/boolean setter or issuer. UIA

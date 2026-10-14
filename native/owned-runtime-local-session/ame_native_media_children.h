@@ -74,6 +74,9 @@ private:
     // Explicit once-only cancellation of this exact original decoder HANDLE.
     // Never kills a job, AE or AME, and never silently runs from the destructor.
     const Facts& CancelOriginalOnce() noexcept;
+    // Same original bounded streaming reader used by the child guards. This
+    // owner-only call hashes a retained output; it never constructs a child.
+    static Digest HashOriginalOutputForOwner(void* original,std::uint64_t deadline);
     std::unique_ptr<Data> data_;
     friend class ::local_session::trusted_read::OriginalMediaCapture;
     friend class ::local_session::trusted_read::NativeClient;

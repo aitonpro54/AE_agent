@@ -219,6 +219,13 @@ public:
     std::shared_ptr<Capability> FinishServerOnlyFixed(const std::shared_ptr<Capability>& handler,const std::vector<unsigned char>& actualResult);
     std::shared_ptr<Capability> CaptureOriginalAmeFixed();
     std::shared_ptr<Capability> BindOriginalJobFixed(const std::shared_ptr<Capability>& successfulStartTerminal);
+    std::vector<unsigned char> OriginalCompletionPollDescriptorFixed(const std::shared_ptr<Capability>& originalJob);
+    ProjectDescriptor DescribeOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalPoll);
+    std::shared_ptr<Capability> SelectOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalPoll,const std::shared_ptr<AuthenticatedRequest>& actualRequest);
+    void RecordOriginalCompletionPollDeliveryFixed(const std::shared_ptr<Capability>& originalPoll,const std::shared_ptr<AuthenticatedRequest>& actualRequest,const PanelReceipt& actual);
+    bool IsOriginalCompletionPoll(const std::shared_ptr<Capability>& command);
+    std::vector<unsigned char> OriginalCompletionFactsFixed(const std::shared_ptr<Capability>& originalJob);
+    void AbandonOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalPoll);
     std::vector<unsigned char> AmeSourceInspectionDescriptorFixed(const std::shared_ptr<Capability>& handler,const std::shared_ptr<Capability>& snapshot,const std::shared_ptr<Capability>& ame);
     std::vector<unsigned char> AmeDeliveryDescriptorFixed(const std::shared_ptr<Capability>& gate,const std::shared_ptr<Capability>& snapshot,const std::shared_ptr<Capability>& ame);
     bool IsAmeCommand(const std::shared_ptr<Capability>& command);
@@ -315,6 +322,10 @@ private:
     void ValidateOriginalAmeResult(const std::shared_ptr<ProjectCapture>& original,const std::vector<unsigned char>& actualResult);
     void CommitOriginalAmeResult(const std::shared_ptr<ProjectCapture>& original,const std::shared_ptr<Capability>& terminal);
     void CaptureOriginalAmeManualReservationFixed(const std::shared_ptr<Capability>& command,const std::vector<unsigned char>& originalGetterReceipt);
+    std::shared_ptr<Capability> BeginOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalJob,const std::string& originalScript,const std::string& originalBridgeTalkBody);
+    std::shared_ptr<Capability> CaptureOriginalJobObservationFixed(const std::shared_ptr<Capability>& originalPoll,const std::shared_ptr<AuthenticatedRequest>& actualRequest,const PanelReceipt& actual);
+    void AssertOriginalCompletionPollCurrent(const std::shared_ptr<Capability>& originalPoll);
+    void AssertOriginalAmeUniqueCurrent(const std::shared_ptr<AmeOriginalJob>& originalJob);
     std::shared_ptr<Capability> SelectOwnCommand(const std::shared_ptr<Capability>& command,const std::shared_ptr<AuthenticatedRequest>& actualRequest,bool inspection);
     std::shared_ptr<Capability> GuardOwnCommand(const std::shared_ptr<Capability>& selected,bool inspection);
     void RecordOwnDelivery(const std::shared_ptr<Capability>& delivery,const std::shared_ptr<AuthenticatedRequest>& actualRequest,const PanelReceipt& actualResponse,bool inspection);

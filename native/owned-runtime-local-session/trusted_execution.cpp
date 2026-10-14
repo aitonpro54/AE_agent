@@ -19,6 +19,17 @@ bool FixedAmeTargetSpecifier(const std::string& target)noexcept{
     if(dot==std::string::npos||dot<5||dot>7||target.size()-dot-1<1||target.size()-dot-1>3)return false;
     for(std::size_t i=4;i<target.size();++i)if(i!=dot&&(target[i]<'0'||target[i]>'9'))return false;return true;
 }
+Digest FixedOriginalCompletionLeaf(const ExecutionPolicy& policy,std::uint16_t slot,std::uint16_t purpose){
+    // 0/1 are the two private poll reads; 2 is terminal; 3..8 are the six
+    // composite media operations Metadata/Packets/Decode/Alpha0/1/2.
+    if(slot<1||slot>2||purpose>8||detail::Zero(policy.policyHash)||detail::Zero(policy.typedProducerHash)||detail::Zero(policy.mediaProducerHash)||detail::Zero(policy.pngEncoderHash))detail::Refuse("trusted_original_completion_leaf_refused");
+    std::vector<unsigned char> bytes;constexpr char domain[]="lcp2.production.fixed-original-completion-leaf.v1";bytes.insert(bytes.end(),domain,domain+sizeof(domain)-1);
+    for(const auto* digest:{&policy.policyHash,&policy.typedProducerHash,&policy.mediaProducerHash,&policy.pngEncoderHash})bytes.insert(bytes.end(),digest->begin(),digest->end());
+    detail::PutU16(bytes,slot);detail::PutU16(bytes,purpose);detail::PutPin(bytes,policy.outputRoot);
+    for(const auto* file:{&policy.ffprobe,&policy.ffmpeg}){detail::PutPin(bytes,file->pin);bytes.insert(bytes.end(),file->sha256.begin(),file->sha256.end());}
+    const auto& variant=policy.variants[slot-1];for(const auto* name:{&variant.outputName,&variant.previewNames[0],&variant.previewNames[1],&variant.previewNames[2]}){if(name->size()>255)detail::Refuse("trusted_original_completion_name_bound");detail::PutU16(bytes,static_cast<std::uint16_t>(name->size()));for(const auto c:*name)detail::PutU16(bytes,static_cast<std::uint16_t>(c));}
+    return detail::Hash(bytes);
+}
 bool FixedExecutionIntentAllowed(phase::ToolCode tool,phase::CallKind kind,std::uint16_t slot,ExecutionLeaf leaf)noexcept{
     if(slot>2)return false;using phase::ToolCode;using phase::CallKind;
     const bool titleEffect=slot&&leaf>=ExecutionLeaf::StageVariant&&leaf<=ExecutionLeaf::RestoreBaseline;

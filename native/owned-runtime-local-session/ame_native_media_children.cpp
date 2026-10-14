@@ -358,4 +358,5 @@ const OriginalChild::Facts& OriginalChild::CancelOriginalOnce()noexcept{
     catch(...){d.Unknown("media_child_original_cancel_unknown");}
     return d.facts;
 }
+Digest OriginalChild::HashOriginalOutputForOwner(void* original,std::uint64_t deadline){return HashHeld(original,std::numeric_limits<std::uint64_t>::max(),deadline);}
 } // namespace local_session::trusted_read::media_children

@@ -377,7 +377,16 @@ struct Broker::Data::Trusted final : Broker::Data {
     std::vector<std::unique_ptr<ExecutionAuthority>> executionAuthorities;
     struct OriginalJobRow final {enum class Stage:std::uint8_t{Armed,Polling,Terminal,Media,Unknown};Stage stage=Stage::Armed;
         Id ref{},startTicket{},handler{},poll{},pollNonce{};Digest hash{},selector{},processWrapper{},startReceipt{},terminalReceipt{},mediaReceipt{},pollBinding{};
-        std::uint64_t issued=0,deadline=0,nextOrdinal=1,activeOrdinal=0;std::uint32_t maximumPolls=0;std::uint16_t slot=0;};
+        std::uint64_t issued=0,deadline=0,nextOrdinal=1,activeOrdinal=0,nextPollAt=0;std::uint32_t maximumPolls=0;std::uint16_t slot=0;
+        Id actor{},terminal{};Digest observationCommit{},terminalJoin{},reservation{};
+        bool pollAttempted=false,terminalAttempted=false,mediaReserved=false;
+        struct PollAttempt final {Id ref{},nonce{};Digest input{},binding{};std::uint64_t ordinal=0,expiry=0;bool observed=false;
+            std::array<std::unique_ptr<NativeDispatchCommit>,2> commits{};std::array<NativeDispatchCommit::Observation,2> notes{};};
+        std::vector<std::unique_ptr<PollAttempt>> polls;
+        std::array<std::unique_ptr<NativeDispatchCommit>,7> terminalCommits{};
+        std::array<NativeDispatchCommit::Observation,7> terminalNotes{};
+        std::array<Digest,6> mediaKeys{};
+        std::uint64_t reservationSequence=0,reservationEpoch=0;Digest reservationHead{};};
     std::array<std::unique_ptr<OriginalJobRow>,2> originalJobs{};
     struct RestoreDebt final {enum class State:std::uint8_t{Selected,StageTerminal,Restored,Unknown};State state=State::Selected;Id stageTicket{},actor{};Digest scope{},stageResult{},stageReceipt{};std::uint16_t slot=0;};
     std::array<std::unique_ptr<RestoreDebt>,2> restoreDebts{};
@@ -636,6 +645,34 @@ struct Broker::Data::Trusted final : Broker::Data {
         const auto observed=factory->Observe(root,fence);if(!observed.ok)Refuse("trusted_effect_fence_refused");Bytes original;Put(original,observed.sessionRef);
         b.fence=TrustedHash("lcp2.production.original-fence.v1",original);b.nativeOrdinal=effects.attempts+1;b.operation=operation;return b;
     }
+    Digest OriginalPollBinding(const OriginalJobRow& job,const OriginalJobRow::PollAttempt& poll)const{Bytes bytes;Put(bytes,session);Put(bytes,generation);Put(bytes,bootNonce);Put(bytes,job.ref);Put(bytes,job.hash);Put(bytes,job.selector);Put(bytes,job.processWrapper);Put(bytes,job.startReceipt);Put(bytes,job.actor);Put(bytes,poll.ref);Put(bytes,poll.nonce);Put(bytes,poll.input);detail::PutU64(bytes,poll.ordinal);detail::PutU64(bytes,poll.expiry);return TrustedHash("lcp2.production.original-current-poll.v1",bytes);}
+    Digest OriginalTerminalJoin(const OriginalJobRow& job,const Digest& receipt,bool successful)const{Bytes bytes;Put(bytes,session);Put(bytes,generation);Put(bytes,bootNonce);Put(bytes,job.ref);Put(bytes,job.hash);Put(bytes,job.selector);Put(bytes,job.processWrapper);Put(bytes,job.startReceipt);Put(bytes,job.actor);Put(bytes,job.poll);Put(bytes,job.pollNonce);Put(bytes,job.pollBinding);detail::PutU64(bytes,job.activeOrdinal);Put(bytes,receipt);return TrustedHash(successful?"lcp2.production.original-successful-terminal.v1":"lcp2.production.original-nonterminal-observation.v1",bytes);}
+    void AcceptOriginalTerminalAndReserveMedia(OriginalJobRow& job,const Digest& receipt,const Digest& join){
+        const auto& policy=trusted_read::EmbeddedProfile().execution;const auto now=GetTickCount64();auto& start=Ticket(job.startTicket);
+        if(job.terminalAttempted||job.mediaReserved||job.stage!=OriginalJobRow::Stage::Polling||job.actor!=actor||join!=OriginalTerminalJoin(job,receipt,true)||detail::Zero(receipt)||
+            !OriginalFloor(false)||effects.unknown||effects.attempts>176-7||cas.sequence>256-16-7||now>=job.deadline||job.deadline-now<trusted_read::kTwoTitleMediaMaximumMs||now>=sessionDeadline||sessionDeadline-now<trusted_read::kTwoTitleMediaMaximumMs)
+            Refuse("trusted_d49_original_terminal_precharge_closed",0,true);
+        // These are minimum restoration reserves; full workflow dynamic fit is
+        // a separate CLOSED production gate, never inferred from this floor.
+        std::uint64_t restoreExternal=0,restoreStore=0;for(const auto& debt:restoreDebts)if(debt&&debt->state!=RestoreDebt::State::Restored){if(debt->state!=RestoreDebt::State::StageTerminal)Refuse("trusted_d49_restore_debt_unknown",0,true);restoreExternal+=policy.restoration.external;restoreStore+=policy.restoration.store;}
+        if(restoreExternal>176-(effects.attempts+7)||restoreStore>256-16-(cas.sequence+7))Refuse("trusted_d49_restoration_reserve_closed",0,true);
+        job.terminalAttempted=true;daemon->MarkAdmitted();Bytes chain;Put(chain,job.ref);Put(chain,job.hash);Put(chain,job.pollBinding);Put(chain,receipt);Put(chain,join);
+        try{
+            for(std::size_t index=0;index<job.terminalCommits.size();++index){
+                if(!OriginalFloor(false)||job.actor!=actor||GetTickCount64()>=job.deadline||job.terminalCommits[index])Refuse("trusted_d49_precharge_transition_closed",0,true);
+                const auto purpose=static_cast<std::uint16_t>(index+2);auto binding=EffectBinding(start.command,start.execution,start.lease,job.hash,join,
+                    index?policy.mediaProducerHash:start.script,trusted_read::FixedOriginalCompletionLeaf(policy,job.slot,purpose),index?std::uint16_t{13}:std::uint16_t{12});binding.variantSlot=job.slot;binding.actor=ledger.panelDefinition_.actorHash;binding.target=job.selector;
+                job.terminalCommits[index]=std::unique_ptr<NativeDispatchCommit>(new NativeDispatchCommit(*store,cas,binding,{this,CommitGuard,CommitFloor},effects));
+                job.terminalNotes[index]=job.terminalCommits[index]->Commit(NativeDispatchCommit::ProofFault::None);
+                const auto& note=job.terminalNotes[index];if(!note.latched||!note.freshAppend||note.unknown||!note.priorFloorVerified||!note.appendAckVerified||note.head!=cas.head||note.sequence!=cas.sequence||note.epoch!=cas.epoch||!OriginalFloor(false))Refuse("trusted_d49_partial_precharge_unknown",0,true);
+                Put(chain,note.recordHash);detail::PutU64(chain,note.sequence);detail::PutU64(chain,note.epoch);Put(chain,note.head);
+                if(index)job.mediaKeys[index-1]=job.terminalCommits[index]->StableKey();
+            }
+            if(!OriginalFloor(false)||effects.unknown||GetTickCount64()>=job.deadline)Refuse("trusted_d49_final_precharge_floor_unknown",0,true);
+            job.reservation=TrustedHash("lcp2.production.original-six-media-reservation.v1",chain);job.reservationSequence=cas.sequence;job.reservationEpoch=cas.epoch;job.reservationHead=cas.head;
+            job.terminal=detail::RandomId();job.terminalReceipt=receipt;job.terminalJoin=join;job.mediaReserved=true;job.stage=OriginalJobRow::Stage::Terminal;
+        }catch(...){job.stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;throw;}
+    }
     bool LedgerIdleLifecycle()const noexcept{if(effects.unknown||challenge.pending||controllerDeferred||ledger.HasUnresolved())return false;
         for(const auto& p:projects)if(p->stage!=Project::Stage::Terminal)return false;return true;}
     void WorkerFrame(const phase::Frame& request);
@@ -840,11 +877,29 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
         std::size_t enqueued=0;for(const auto& candidate:projects)if(candidate->executionDelivery&&candidate->variantSlot==slot&&candidate->effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::EnqueueAme)){
             if(candidate->stage!=Project::Stage::Terminal||detail::Zero(candidate->result)||detail::Zero(candidate->receipt))Refuse("trusted_d47_original_enqueue_unknown");++enqueued;}
         if(enqueued!=1)Refuse("trusted_d47_original_enqueue_required");auto job=std::make_unique<OriginalJobRow>();job->slot=slot;job->ref=detail::RandomId();job->startTicket=start.ref;job->handler=start.handler;
-        job->selector=TrustedField<32>(request,16);job->processWrapper=TrustedField<32>(request,48);job->startReceipt=start.result;job->issued=now;job->maximumPolls=policy.completionPollsPerJob;
+        job->selector=TrustedField<32>(request,16);job->processWrapper=TrustedField<32>(request,48);job->startReceipt=start.result;job->issued=now;job->maximumPolls=policy.completionPollsPerJob;job->actor=actor;job->nextPollAt=now;
         const auto remaining=sessionDeadline-now;job->deadline=now+(std::min)(policy.jobDeadlineMs,remaining);Bytes grant;Put(grant,session);Put(grant,generation);Put(grant,bootNonce);Put(grant,job->ref);Put(grant,start.ref);
         Put(grant,job->selector);Put(grant,job->processWrapper);Put(grant,job->startReceipt);detail::PutU64(grant,job->issued);detail::PutU64(grant,job->deadline);detail::PutU32(grant,job->maximumPolls);detail::PutU16(grant,slot);
         job->hash=TrustedHash("lcp2.production.original-completion-grant.v1",grant);auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,job->ref);Put(bytes,job->hash);detail::PutU64(bytes,job->deadline);detail::PutU32(bytes,job->maximumPolls);
         originalJobs[slot-1]=std::move(job);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::BeginCompletionPoll){OriginalJobRow* job=nullptr;for(auto& own:originalJobs)if(own&&own->ref==TrustedField<16>(request,0))job=own.get();const auto now=GetTickCount64();const auto& policy=trusted_read::EmbeddedProfile().execution;
+        if(!job||job->stage!=OriginalJobRow::Stage::Armed||job->actor!=actor||job->terminalAttempted||job->mediaReserved||job->nextOrdinal>job->maximumPolls||job->maximumPolls!=trusted_read::kTwoTitlePollsPerJob||
+            TrustedNumber(request,16,8)!=job->nextOrdinal||TrustedNumber(request,56,2)!=static_cast<std::uint16_t>(phase::CompletionOperation::OriginalWrapperStatus)||now<job->nextPollAt||now>=job->deadline||
+            job->deadline-now<=10000+trusted_read::kTwoTitleMediaMaximumMs||effects.unknown||effects.attempts>176-2||cas.sequence>256-16-2||!OriginalFloor(false)||!LedgerIdle())Refuse("trusted_d48_original_poll_admission_closed",0,true);
+        auto attempt=std::make_unique<OriginalJobRow::PollAttempt>();attempt->ordinal=job->nextOrdinal;attempt->input=TrustedField<32>(request,24);attempt->ref=detail::RandomId();attempt->nonce=detail::RandomId();attempt->expiry=now+10000;attempt->binding=OriginalPollBinding(*job,*attempt);
+        job->stage=OriginalJobRow::Stage::Polling;job->activeOrdinal=job->nextOrdinal++;job->poll=attempt->ref;job->pollNonce=attempt->nonce;job->pollBinding=attempt->binding;job->observationCommit=attempt->input;job->polls.push_back(std::move(attempt));auto& poll=*job->polls.back();daemon->MarkAdmitted();
+        try{auto& start=Ticket(job->startTicket);for(std::size_t index=0;index<poll.commits.size();++index){auto binding=EffectBinding(start.command,start.execution,start.lease,job->hash,poll.input,poll.input,trusted_read::FixedOriginalCompletionLeaf(policy,job->slot,static_cast<std::uint16_t>(index)),2);binding.variantSlot=job->slot;binding.actor=ledger.panelDefinition_.actorHash;binding.target=job->selector;
+                poll.commits[index]=std::unique_ptr<NativeDispatchCommit>(new NativeDispatchCommit(*store,cas,binding,{this,CommitGuard,CommitFloor},effects));poll.notes[index]=poll.commits[index]->Commit(NativeDispatchCommit::ProofFault::None);if(!poll.notes[index].freshAppend||poll.notes[index].unknown||!OriginalFloor(false))Refuse("trusted_d48_partial_poll_precharge_unknown",0,true);}
+            Bytes bytes;Put(bytes,poll.ref);Put(bytes,poll.nonce);detail::PutU64(bytes,poll.expiry);Put(bytes,poll.binding);auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,bytes);Send(reply,false,true);return;
+        }catch(...){job->stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;throw;}}
+    if(verb==phase::Verb::ObserveJobTerminal){OriginalJobRow* job=nullptr;for(auto& own:originalJobs)if(own&&own->ref==TrustedField<16>(request,0))job=own.get();const auto now=GetTickCount64();
+        if(!job||job->stage!=OriginalJobRow::Stage::Polling||job->actor!=actor||job->poll!=TrustedField<16>(request,16)||job->polls.empty()||job->polls.back()->observed||job->polls.back()->ref!=job->poll||
+            job->polls.back()->binding!=job->pollBinding||job->activeOrdinal!=job->polls.back()->ordinal||now>=job->polls.back()->expiry||!OriginalFloor(false))Refuse("trusted_d49_current_original_poll_required",0,true);
+        auto& poll=*job->polls.back();poll.observed=true;const auto receipt=TrustedField<32>(request,32),join=TrustedField<32>(request,64);auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;
+        try{if(join==OriginalTerminalJoin(*job,receipt,true)){AcceptOriginalTerminalAndReserveMedia(*job,receipt,join);bytes=EffectAck(job->terminal,job->terminalNotes.back());std::copy(job->reservation.begin(),job->reservation.end(),bytes.begin()+17);}
+            else{if(join!=OriginalTerminalJoin(*job,receipt,false))Refuse("trusted_d49_foreign_terminal_join",0,true);job->stage=OriginalJobRow::Stage::Armed;job->nextPollAt=now+trusted_read::EmbeddedProfile().execution.completionCadenceMs;bytes=EffectAck(job->poll,poll.notes.back());std::copy(receipt.begin(),receipt.end(),bytes.begin()+17);}
+            if(!OriginalFloor(false))Refuse("trusted_d49_original_reply_floor_unknown",0,true);TrustedPayload(reply,bytes);Send(reply,false,true);return;
+        }catch(...){job->stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;throw;}}
     if(verb==phase::Verb::FinishServerOnly){const auto ref=TrustedField<16>(request,0);const auto result=TrustedField<32>(request,16);auto* row=Handler(ref);phase::Status status=phase::Status::Denied;
         if(row&&row->body.kind==phase::CallKind::ServerOnly)status=ledger.Finish(ledger.daemon_,ref,result,GetTickCount64());
         else if(row&&row->body.tool==phase::ToolCode::GetBridgeStatus&&(row->body.kind==phase::CallKind::BootstrapRead||row->body.kind==phase::CallKind::Read)&&ReadCurrent(ref))
