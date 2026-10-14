@@ -268,7 +268,7 @@ function resolveRetainedSuccession(root,pairAnchor,runtime){
 }
 function createOwnedRuntimeSupervisor(deps={}){
   const initial=require("./owned-runtime-initial-runtime").createInitialRuntime();
-  if(initial)return Object.freeze({status:async()=>initial.status(),ensure:args=>initial.ensure(args===undefined?{}:args),restart:args=>initial.restart(args===undefined?{}:args),shutdown:args=>initial.shutdown(args===undefined?{}:args),readBack:()=>{initial.assertIngress();}});
+  if(initial)return Object.freeze({status:()=>initial.readStatus({}),ensure:args=>initial.ensure(args===undefined?{}:args),restart:args=>initial.restart(args===undefined?{}:args),shutdown:args=>initial.shutdown(args===undefined?{}:args),readBack:()=>initial.readStatus({})});
   const root=path.resolve(deps.repoRoot || ROOT),now=deps.now || Date.now,readPolicy=deps.readPolicy || (()=>authority.loadPolicy(root,"owned_daemon_lifecycle")),current=deps.readRegistration || (()=>readDaemonRegistration(root)),sources=deps.readSources || (()=>evidence.runtimeIdentity(root)),native=deps.native || createDaemonNativeBackend(),transport=deps.request || ((p,route,body)=>authority.runtimeControlFor(root).request(p,route,body)),sleep=deps.sleep || (ms=>new Promise(r=>setTimeout(r,ms)));
   function allowed(reference){const loaded=readPolicy(),p=loaded.policy || loaded;authority.validatePolicy(p);if(!p.enabled || !p.acceptedServerCoverage.includes("owned_daemon_lifecycle") || reference && !same(p.authorization,reference))fail("owned_supervisor_policy_disabled_or_changed");loaded.assertUnchanged?.();return p;}
   function profile(reg){return {daemon:{port:3456,credentialSha256:reg.credentialSha256}};}

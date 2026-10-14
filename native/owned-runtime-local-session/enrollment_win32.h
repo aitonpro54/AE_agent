@@ -8,6 +8,8 @@
 namespace initial_fence { class Factory; class InternalFencedIo; }
 namespace initial_durability { class Store; }
 namespace local_session {
+namespace trusted_read { class NativeClient; }
+namespace production { class OriginalSealWitness;class SetupCreator; }
 using Id = std::array<unsigned char,16>;
 using Digest = std::array<unsigned char,32>;
 struct Result {
@@ -21,6 +23,9 @@ struct ObjectPin {
     std::wstring canonicalPath;
 };
 namespace reviewed {
+// Fixed classification of the combined source policy. No bit issues a command,
+// manual declaration, settings cap, completion watcher or mutable operation.
+constexpr std::uint16_t kReadCapabilities=0x001f,kCombinedExecutionCapabilities=0x07ff;
 // This shape is a build contract, not an input API. The sole profile comes from
 // local_session_installation_pins.h, generated/reviewed by the fixed entry owner.
 struct File { std::vector<std::wstring> components; ObjectPin pin; Digest sha256{}; };
@@ -34,8 +39,9 @@ struct Profile {
     Id installation{}, lineage{}, launchTarget{}, stopTarget{}, actorTarget{};
     Digest authorizationAudit{}, policyHash{}, sourceSetHash{};
     std::uint64_t policyEpoch=0, maximumSessionMs=0, maximumLeaseMs=0;
-    // Exact current READ status/project, panel bootstrap, launch and lifecycle.
-    // No execution/export/raw/save/destructive capability is represented here.
+    // Ordinary profiles retain the exact READ mask. The separately sealed
+    // combined profile additionally classifies prep/execute/completion/media/
+    // settings/restoration; every actual right still comes from private rows.
     std::uint16_t capabilities=0;
     bool enabled=false;
     std::vector<File> sourceFiles;
@@ -60,6 +66,8 @@ private:
     struct Data;
     explicit InstalledEnrollment(std::unique_ptr<Data> data);
     static std::unique_ptr<InstalledEnrollment> OpenFixed(Result& result);
+    static std::unique_ptr<InstalledEnrollment> OpenProductionFixed(
+        const std::shared_ptr<production::OriginalSealWitness>& original,Result& result);
     static Result ProvisionFixedCreator();
     Result Fresh(bool lockHeld) const;
     const reviewed::Profile& Profile() const;
@@ -84,6 +92,8 @@ private:
     friend class initial_fence::Factory;
     friend class initial_durability::Store;
     friend Result ProvisionFixedEnrollmentOverOriginalStdio();
+    friend class trusted_read::NativeClient;
+    friend class production::SetupCreator;
 };
 // Closed --enroll-fixed creator entry: no input selectors or serialized authority.
 // A bounded binary observation is emitted while all FILE_CREATE handles remain
@@ -114,7 +124,14 @@ std::uint64_t ProcessBirth(void* process);
 bool ProcessLive(void* process);
 std::string Hex(const Id& value); std::string Hex(const Digest& value);
 void PutU16(std::vector<unsigned char>& bytes,std::uint16_t value);
+void PutU32(std::vector<unsigned char>& bytes,std::uint32_t value);
 void PutU64(std::vector<unsigned char>& bytes,std::uint64_t value);
 void PutPin(std::vector<unsigned char>& bytes,const ObjectPin& pin);
+// Shared byte encoders/inventory checks. No enrollment or authority is created
+// from their returned bytes; production setup reuses the ordinary exact format.
+std::vector<unsigned char> ProductionPolicyBytes(const reviewed::Profile& profile);
+std::vector<unsigned char> ProductionInstallationBytes(const reviewed::Profile& profile,const ObjectPin& lock,const ObjectPin& journal);
+void AssertEmptyDirectory(void* originalDirectory);
+void AssertRuntimeInventory(void* originalRuntime);
 }
 } // namespace local_session

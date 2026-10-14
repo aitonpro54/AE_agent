@@ -1,10 +1,15 @@
 #include "phase_protocol.h"
+#include "trusted_execution_budget.h"
+#include "ame_pe_mapped_span.h"
+#include "ame_native_rgba_png.h"
 #include <algorithm>
 #include <array>
 #include <iostream>
 #include <initializer_list>
 #include <limits>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #if !defined(AE_AGENT_PHASE_SYNTHETIC_PROOF)
 #error This entry point is exclusively an isolated synthetic codec/ledger proof.
@@ -27,6 +32,9 @@ private:
     static void CodecCases();
     static void CorrelationCases();
     static void LedgerCases();
+    static void BudgetCases();
+    static void PeSpanCases();
+    static void PngCases();
     static std::size_t checks_,failed_;
 };
 std::size_t SyntheticPhaseProof::checks_=0;
@@ -121,6 +129,18 @@ VerifyIngressPayload SyntheticPhaseProof::Ingress(const CallReply& call,const Be
 }
 void SyntheticPhaseProof::CodecCases() {
     Check(kHeaderBytes==96 && kMaximumFrameBytes==4096 && kMaximumPayloadBytes==2048,"exact envelope caps");
+    // Exact D47..D50 request fields, independent of any production issuer.
+    // Reject each absent semantic field before a broker consumer can observe it.
+    for(const auto verb:{Verb::BindOriginalJob,Verb::BeginCompletionPoll,Verb::ObserveJobTerminal,Verb::ObserveMedia}){
+        const std::vector<std::pair<std::size_t,std::size_t>> fields=verb==Verb::BindOriginalJob?
+            std::vector<std::pair<std::size_t,std::size_t>>{{0,16},{16,32},{48,32},{80,32}}:
+            verb==Verb::BeginCompletionPoll?std::vector<std::pair<std::size_t,std::size_t>>{{0,16},{16,8},{24,32},{56,2}}:
+            std::vector<std::pair<std::size_t,std::size_t>>{{0,16},{16,16},{32,32},{64,32}};
+        for(const auto& field:fields){auto missing=Request(verb);std::fill_n(missing.payload.data()+field.first,field.second,std::uint8_t{0});
+            Check(ValidateFrame(missing)==CodecError::Tag,"D47..D50 missing exact request field refused");}
+    }
+    for(const auto operation:{std::uint16_t{3},std::numeric_limits<std::uint16_t>::max()}){auto wrong=Request(Verb::BeginCompletionPoll);
+        Put16(wrong.payload.data()+56,operation);Check(ValidateFrame(wrong)==CodecError::Tag,"D48 closed observation operation refused");}
     for (const auto verb:kAllVerbs) {
         const auto request=Request(verb);std::array<std::uint8_t,kMaximumFrameBytes> bytes{};
         const auto size=Bytes(request,bytes);Frame parsed{};
@@ -512,12 +532,87 @@ void SyntheticPhaseProof::LedgerCases() {
             "new synthetic initialization cannot revive closed private rows");
     }
 }
+void SyntheticPhaseProof::BudgetCases(){
+    using trusted_read::ExecutionCost;using trusted_read::FixedTwoTitleCosts;
+    Check(kCallRows==32&&kLifetimeCallRows==32,"ordinary/synthetic Call32 is unchanged");
+    Check(trusted_read::kTwoTitleCalls==86&&trusted_read::kTwoTitlePreparedScopes==11&&trusted_read::kTwoTitleReadIssuances==12&&
+        trusted_read::kTwoTitlePollsPerJob==10&&trusted_read::kTwoTitleMediaChildren==6,"finite production object ceilings are independent");
+    ExecutionCost total{};bool exact=total.Plus(FixedTwoTitleCosts::Startup(),total)&&total.Plus(FixedTwoTitleCosts::InitialRead(),total)&&
+        total.Plus(FixedTwoTitleCosts::Preparation(),total)&&total.Plus(FixedTwoTitleCosts::Checkpoint(),total);
+    for(unsigned slot=0;slot<2;++slot){exact=exact&&total.Plus(FixedTwoTitleCosts::CleanCopy(),total);
+        for(unsigned delivery=0;delivery<4;++delivery)exact=exact&&total.Plus(FixedTwoTitleCosts::Delivery(),total);
+        for(unsigned poll=0;poll<trusted_read::kTwoTitlePollsPerJob;++poll)exact=exact&&total.Plus(FixedTwoTitleCosts::Poll(),total);
+        exact=exact&&total.Plus(FixedTwoTitleCosts::Terminal(),total)&&total.Plus(FixedTwoTitleCosts::Media(),total);}
+    exact=exact&&total.Plus(FixedTwoTitleCosts::Teardown(),total);
+    Check(exact&&total.Same(FixedTwoTitleCosts::Full()),"frozen two-title full vector is 86/192/224/32/4/16");
+    const ExecutionCost zero{};Check(zero.Empty(),"encoded HQ does not allocate Settings operations");
+    for(unsigned field=0;field<6;++field){ExecutionCost excessive=FixedTwoTitleCosts::Full();
+        switch(field){case 0:excessive.calls=87;break;case 1:excessive.external=193;break;case 2:excessive.store=257;break;
+            case 3:excessive.service=33;break;case 4:excessive.terminalMedia=17;break;default:excessive.teardown=17;break;}
+        ExecutionCost unchanged{1,1,1,1,1,1};Check(!zero.Plus(excessive,unchanged)&&unchanged.Same({1,1,1,1,1,1}),"each excess refuses without publishing a partial sum");}
+    ExecutionCost unchanged{1,1,1,1,1,1};const ExecutionCost overflow{65535,65535,65535,65535,65535,65535};
+    Check(!overflow.Plus({1,1,1,1,1,1},unchanged)&&unchanged.Same({1,1,1,1,1,1}),"cost addition cannot wrap or mutate its output on refusal");
+}
+void SyntheticPhaseProof::PeSpanCases(){
+    using trusted_read::pe::SectionSpan;using trusted_read::pe::SectionMappedSpan;using trusted_read::pe::ExpectedSection;using trusted_read::pe::NormalizeDir64;
+    SectionSpan span{};const auto valid=[&](std::uint32_t virtualBytes,std::uint32_t next=12288,std::uint32_t image=16384){return SectionMappedSpan(4096,virtualBytes,512,512,next,image,1024,512,4096,512,span);};
+    Check(valid(6000)&&span.mappedBytes==8192,"executable VirtualSize tail and alignment padding are inside measured mapped span");
+    std::vector<unsigned char> file(1024,0),expected;file[512]=0x48;file[513]=0x90;
+    Check(ExpectedSection(file,span,expected)&&expected.size()==8192&&expected[0]==0x48&&expected[511]==0&&expected[512]==0&&expected.back()==0,
+        "full expected image copies raw bytes then zero fills virtual and alignment tails");
+    auto changed=expected;changed[6000]=0x90;Check(changed!=expected,"mutated executable zero-filled VirtualSize tail is detected");
+    changed=expected;changed.back()=0x90;Check(changed!=expected,"mutated executable aligned page tail is detected");
+    const auto originalSpan=span;Check(!valid(0xffffffff)&&span.rva==originalSpan.rva&&span.mappedBytes==originalSpan.mappedBytes,"overflowing VirtualSize closes without publishing partial span");
+    Check(!valid(6000,8192),"mapped span cannot cross next section RVA");Check(!valid(6000,8192,8192),"mapped span cannot cross SizeOfImage");
+    Check(!SectionMappedSpan(4096,6000,512,1024,12288,16384,1024,512,4096,512,span),"raw span cannot exceed held source bytes");
+    Check(!SectionMappedSpan(4096,6000,512,512,12288,16384,1024,512,6144,512,span),"unsupported section alignment is closed");
+    Check(!SectionMappedSpan(4096,6000,0,512,12288,16384,1024,512,4096,512,span),"raw image cannot alias PE headers");
+    Check(!SectionMappedSpan(4096,6000,512,512,12288,16384,1024,8192,4096,512,span),"mapped image cannot overlap declared headers");
+    changed=expected;const std::uint64_t delta=0x140000000ULL;std::memcpy(changed.data()+1024,&delta,sizeof(delta));
+    Check(NormalizeDir64(changed,1024,delta)&&changed==expected,"DIR64 relocation in zero-filled executable tail is normalized");
+    const auto unchanged=changed;Check(!NormalizeDir64(changed,changed.size()-7,delta)&&changed==unchanged,"truncated DIR64 cannot cross mapped span or mutate bytes");
+    const std::vector<SectionSpan> measured{{4096,8192,512,512}};
+    Check(trusted_read::pe::ExecutableRegionMeasured(4096,8192,16384,measured),"approved measured RX region is wholly inside full code span");
+    Check(!trusted_read::pe::ExecutableRegionMeasured(0,4096,16384,measured),"executable PE headers are not an approved measured code span");
+    Check(!trusted_read::pe::ExecutableRegionMeasured(12288,4096,16384,measured),"non-executable PE data cannot acquire RX permission");
+    Check(!trusted_read::pe::ExecutableRegionMeasured(4096,12288,16384,measured),"RX region crossing approved text into data is refused");
+    const std::vector<SectionSpan> gap{{4096,4096,512,512},{12288,4096,512,512}};
+    Check(!trusted_read::pe::ExecutableRegionMeasured(8192,4096,16384,gap),"RX image gap outside approved sections is refused");
+    Check(!trusted_read::pe::ExecutableRegionMeasured(4096,12288,16384,gap),"one RX region cannot bridge an unmeasured image gap");
+    Check(!trusted_read::pe::ExecutableRegionMeasured(4096,16384,16384,measured),"RX allocation cannot extend beyond held SizeOfImage");
+    Check(trusted_read::pe::ApprovedExecutableProtection(0x10)&&trusted_read::pe::ApprovedExecutableProtection(0x20)&&
+        !trusted_read::pe::ApprovedExecutableProtection(0x40)&&!trusted_read::pe::ApprovedExecutableProtection(0x80)&&!trusted_read::pe::ApprovedExecutableProtection(0x120),
+        "writable-exec, copy-on-write-exec and guarded executable pages are refused");
+}
+void SyntheticPhaseProof::PngCases(){
+    using namespace trusted_read::media_pixels;
+    const std::vector<unsigned char> rgba{255,0,0,0,0,255,0,64,0,0,255,128,255,255,255,255};std::vector<unsigned char> png;AlphaFacts facts;
+    Check(EncodeRgba(rgba,2,2,png,facts)&&png.size()==86,"pure retained RGBA encoder produces finite 2x2 RGBA PNG");
+    Check(facts.pixels==4&&facts.transparent==1&&facts.opaque==1&&facts.partial==2&&facts.foreground==3&&facts.alphaSum==447&&facts.minimum==0&&facts.maximum==255,
+        "actual retained alpha bytes determine exact transparent/foreground facts");
+    const unsigned char known[]{'1','2','3','4','5','6','7','8','9'};
+    Check(Crc32(known,sizeof(known))==0xcbf43926,"CRC32 matches fixed independent standard check vector");
+    const std::vector<unsigned char> wikipedia{'W','i','k','i','p','e','d','i','a'};Check(Adler32(wikipedia)==0x11e60398,"zlib Adler32 matches fixed standard check vector");
+    const auto before=png;const auto beforeFacts=facts;auto truncated=rgba;truncated.pop_back();Check(!EncodeRgba(truncated,2,2,png,facts)&&png==before&&facts.alphaSum==beforeFacts.alphaSum,
+        "truncated decoder stdout cannot publish PNG or partial alpha facts");
+    Check(!EncodeRgba(rgba,0,2,png,facts)&&png==before,"zero dimension is refused before publication");
+    Check(!EncodeRgba(rgba,8193,1,png,facts)&&png==before,"dimension beyond frozen encoder bound is refused");
+    Check(!EncodeRgba(rgba,8192,8192,png,facts)&&png==before,"RGBA allocation beyond fixed byte bound is refused");
+}
 int SyntheticPhaseProof::Run() {
     std::cout<<"SYNTHETIC LCP2 codec/volatile SERVER_ONLY ledger proof ONLY; "
         "productionAuthority=false; OS/held-peer authority=NOT_TESTED; AE effects=0\n";
-    CodecCases();CorrelationCases();LedgerCases();
+    CodecCases();CorrelationCases();LedgerCases();BudgetCases();PeSpanCases();PngCases();
     std::cout<<"synthetic_checks="<<checks_<<" failed="<<failed_<<" productionRuntimeEntry=CLOSED\n";
     return failed_==0 ? 0 : 1;
 }
 } // namespace local_session::phase
-int main() { return local_session::phase::SyntheticPhaseProof::Run(); }
+int main(int count,char** arguments) {
+    if(count==2&&std::string_view(arguments[1])=="--png-fixture"){
+        const std::vector<unsigned char> rgba{255,0,0,0,0,255,0,64,0,0,255,128,255,255,255,255};std::vector<unsigned char> png;local_session::trusted_read::media_pixels::AlphaFacts facts;
+        if(!local_session::trusted_read::media_pixels::EncodeRgba(rgba,2,2,png,facts))return 1;
+        constexpr char hex[]="0123456789abcdef";std::cout<<"{\"authority\":false,\"nativeEffects\":0,\"width\":2,\"height\":2,\"pngHex\":\"";
+        for(const auto byte:png)std::cout<<hex[byte>>4]<<hex[byte&15];std::cout<<"\"}\n";return 0;
+    }
+    if(count!=1)return 2;return local_session::phase::SyntheticPhaseProof::Run();
+}

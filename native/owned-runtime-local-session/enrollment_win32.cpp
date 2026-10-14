@@ -1,4 +1,7 @@
 #include "enrollment_win32.h"
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+#include "production_artifact_seal.h"
+#endif
 #include <windows.h>
 #include <winternl.h>
 #include <sddl.h>
@@ -30,6 +33,7 @@ bool Zero(const Id& a){return AllZero(a);}bool Zero(const Digest& a){return AllZ
 template<std::size_t N> std::string ToHex(const std::array<unsigned char,N>& a){constexpr char alphabet[]="0123456789abcdef";std::string s(N*2,'0');for(std::size_t i=0;i<N;++i){s[i*2]=alphabet[a[i]>>4];s[i*2+1]=alphabet[a[i]&15];}return s;}
 std::string Hex(const Id& a){return ToHex(a);}std::string Hex(const Digest& a){return ToHex(a);}
 void PutU16(std::vector<unsigned char>& b,std::uint16_t n){b.push_back(static_cast<unsigned char>(n));b.push_back(static_cast<unsigned char>(n>>8));}
+void PutU32(std::vector<unsigned char>& b,std::uint32_t n){for(unsigned i=0;i<4;++i)b.push_back(static_cast<unsigned char>(n>>(8*i)));}
 void PutU64(std::vector<unsigned char>& b,std::uint64_t n){for(unsigned i=0;i<8;++i)b.push_back(static_cast<unsigned char>(n>>(8*i)));}
 template<class A> void Put(std::vector<unsigned char>& b,const A& a){b.insert(b.end(),a.begin(),a.end());}
 void PutPin(std::vector<unsigned char>& b,const ObjectPin& p){Put(b,p.volumeGuid);PutU64(b,p.serial);Put(b,p.fileId);}
@@ -178,8 +182,18 @@ static_assert(StableOrdinaryLiteral(L"COM0.txt")&&StableOrdinaryLiteral(L"COM10"
 static_assert(!StableOrdinaryLiteral(L"a<b")&&!StableOrdinaryLiteral(L"a>b")&&!StableOrdinaryLiteral(L"a:b")&&!StableOrdinaryLiteral(L"a\"b")&&!StableOrdinaryLiteral(L"a/b")&&!StableOrdinaryLiteral(L"a\\b")&&!StableOrdinaryLiteral(L"a|b")&&!StableOrdinaryLiteral(L"a?b")&&!StableOrdinaryLiteral(L"a*b")&&!StableOrdinaryLiteral(L"a\x001f" L"b")&&!StableOrdinaryLiteral(L"a\0b")&&!StableOrdinaryLiteral(L"a\x007f" L"b"),"invalid and control characters refused");
 static_assert(StableOrdinaryPathLiteral(L"C:\\root\\.codex-runtime\\fixture")&&!StableOrdinaryPathLiteral(L"C:\\root\\fixture.")&&!StableOrdinaryPathLiteral(L"C:\\root\\fixture ")&&!StableOrdinaryPathLiteral(L"C:\\root\\fixture.\\child")&&!StableOrdinaryPathLiteral(L"C:\\root\\fixture \\child"),"exact fixture/sibling source counterexamples closed before alias opens");
 }
+namespace detail {
+std::vector<unsigned char> ProductionPolicyBytes(const reviewed::Profile& p){return PolicyBytes(p);}
+std::vector<unsigned char> ProductionInstallationBytes(const reviewed::Profile& p,const ObjectPin& lock,const ObjectPin& journal){return InstallationBytes(p,lock,journal);}
+void AssertEmptyDirectory(void* original){EmptyInventory(original);}
+void AssertRuntimeInventory(void* original){RuntimeInventory(original);}
+}
 struct InstalledEnrollment::Data {
+    std::unique_ptr<reviewed::Profile> ownedProfile;
     const reviewed::Profile& profile;
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    std::shared_ptr<production::OriginalSealWitness> originalSeal;
+#endif
     std::vector<Witness> repository,runtime,sourceParents,inventory;
     std::vector<Held> sourceFiles;
     Held installation,policy,journal;
@@ -189,6 +203,7 @@ struct InstalledEnrollment::Data {
     Digest scope{},launchKey{};
     std::size_t bridgeEntryIndex=std::numeric_limits<std::size_t>::max();
     explicit Data(const reviewed::Profile& p):profile(p){}
+    explicit Data(std::unique_ptr<reviewed::Profile> p):ownedProfile(std::move(p)),profile(*ownedProfile){}
     ObjectPin OriginalAncestor(const ObjectPin& actual)const{
         const Witness* expected=nullptr;
         for(const auto* group:{&repository,&runtime,&sourceParents}){for(const auto& w:*group){if(detail::SamePath(actual.canonicalPath,w.original.canonicalPath)){expected=&w;break;}}if(expected)break;}
@@ -227,7 +242,12 @@ struct InstalledEnrollment::Data {
     }
     void Bases(){
         const auto& p=profile;
-        if(detail::Zero(p.installation)||detail::Zero(p.lineage)||detail::Zero(p.launchTarget)||detail::Zero(p.stopTarget)||detail::Zero(p.actorTarget)||p.policyEpoch==0||p.capabilities!=0x001f||!p.enabled||p.maximumSessionMs==0||p.maximumSessionMs>8ULL*60*60*1000||p.maximumLeaseMs==0||p.maximumLeaseMs>60000||p.userSid!=detail::ProcessSid(GetCurrentProcess()))Refuse("embedded_policy_or_sid_refused");
+        const auto expectedCapabilities=
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+            originalSeal?reviewed::kCombinedExecutionCapabilities:
+#endif
+            reviewed::kReadCapabilities;
+        if(detail::Zero(p.installation)||detail::Zero(p.lineage)||detail::Zero(p.launchTarget)||detail::Zero(p.stopTarget)||detail::Zero(p.actorTarget)||p.policyEpoch==0||p.capabilities!=expectedCapabilities||!p.enabled||p.maximumSessionMs==0||p.maximumSessionMs>8ULL*60*60*1000||p.maximumLeaseMs==0||p.maximumLeaseMs>60000||p.userSid!=detail::ProcessSid(GetCurrentProcess()))Refuse("embedded_policy_or_sid_refused");
         if(p.sourceFiles.empty()||p.sourceFiles.size()>128||p.inventories.size()>32||p.inventories.size()<6)Refuse("embedded_inventory_or_source_contract_invalid");
         std::set<std::wstring,OrdinalPathLess> selectors;
         const std::vector<std::wstring> exactBridge={L"mcp-server",L"bridge-daemon.js"};
@@ -257,6 +277,21 @@ std::unique_ptr<InstalledEnrollment> InstalledEnrollment::OpenFixed(Result& resu
     RuntimeInventory(root);Held lockWitness=detail::Relative(root,kLock,false);std::uint64_t lockSize=0;if(!detail::SamePin(detail::ReadPin(lockWitness.Get(),false,&lockSize),d->profile.lockFile)||lockSize)Refuse("original_empty_lock_required");
     std::vector<unsigned char> launch;launch.insert(launch.end(),d->profile.installation.begin(),d->profile.installation.end());detail::PutU16(launch,static_cast<std::uint16_t>(d->profile.userSid.size()));for(wchar_t c:d->profile.userSid)detail::PutU16(launch,static_cast<std::uint16_t>(c));detail::PutU64(launch,d->profile.runtime.serial);launch.insert(launch.end(),d->profile.runtime.fileId.begin(),d->profile.runtime.fileId.end());launch.insert(launch.end(),d->profile.lineage.begin(),d->profile.lineage.end());d->launchKey=detail::Hash(launch);result.ok=true;result.code="fixed_enrollment_open";return std::unique_ptr<InstalledEnrollment>(new InstalledEnrollment(std::move(d)));
 }catch(const detail::Failure& f){result={false,f.unknown,f.unavailable,f.code,f.error};}return nullptr;}
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+std::unique_ptr<InstalledEnrollment> InstalledEnrollment::OpenProductionFixed(const std::shared_ptr<production::OriginalSealWitness>& original,Result& result){try{
+    if(!original||!original->Fresh())Refuse("production_original_seal_required");
+    auto d=std::make_unique<Data>(std::make_unique<reviewed::Profile>(original->ResolvedEnrollment()));d->originalSeal=original;d->Bases();d->Inventory();void* root=d->runtime.back().handle.Get();
+    d->installation=detail::Relative(root,kInstallation,false,false,false,false,true);Check(d->installation,d->profile.installationFile,false);
+    d->policy=detail::Relative(root,kPolicy,false,false,false,false,true);Check(d->policy,d->profile.policyFile,false);
+    d->journal=detail::Relative(root,kJournal,true);Check(d->journal,d->profile.journal,true);
+    if(detail::ReadExact(d->policy.Get(),16384)!=PolicyBytes(d->profile)||detail::Hash(PolicyBytes(d->profile))!=d->profile.policyHash||detail::ReadExact(d->installation.Get(),16384)!=InstallationBytes(d->profile,d->profile.lockFile,d->profile.journal))Refuse("production_original_enrollment_bytes_changed");
+    RuntimeInventory(root);Held lock=detail::Relative(root,kLock,false);std::uint64_t size=0;
+    if(!detail::SamePin(detail::ReadPin(lock.Get(),false,&size),d->profile.lockFile)||size)Refuse("production_original_empty_lock_required");
+    std::vector<unsigned char> scope;scope.insert(scope.end(),d->profile.installation.begin(),d->profile.installation.end());detail::PutPin(scope,d->profile.repository);detail::PutPin(scope,d->profile.runtime);detail::PutPin(scope,d->profile.journal);detail::PutPin(scope,d->profile.lockFile);d->scope=detail::Hash(scope);
+    std::vector<unsigned char> launch;launch.insert(launch.end(),d->profile.installation.begin(),d->profile.installation.end());detail::PutU16(launch,static_cast<std::uint16_t>(d->profile.userSid.size()));for(wchar_t c:d->profile.userSid)detail::PutU16(launch,static_cast<std::uint16_t>(c));detail::PutU64(launch,d->profile.runtime.serial);launch.insert(launch.end(),d->profile.runtime.fileId.begin(),d->profile.runtime.fileId.end());launch.insert(launch.end(),d->profile.lineage.begin(),d->profile.lineage.end());d->launchKey=detail::Hash(launch);
+    if(!original->Fresh())Refuse("production_original_seal_late_guard");result={true,false,false,"production_original_enrollment_open",0};return std::unique_ptr<InstalledEnrollment>(new InstalledEnrollment(std::move(d)));
+}catch(const detail::Failure& failure){result={false,failure.unknown,failure.unavailable,failure.code,failure.error};return nullptr;}}
+#endif
 Result InstalledEnrollment::ProvisionFixedCreator(){
     Result result;bool created=false;
     try{
@@ -313,6 +348,9 @@ Result InstalledEnrollment::ProvisionFixedCreator(){
 }
 Result InstalledEnrollment::Fresh(bool lockHeld)const{
     Result result;
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    if(data_->originalSeal&&!data_->originalSeal->Fresh())return {false,false,false,"production_original_seal_changed",0};
+#endif
     try{
         const auto& d=*data_;if(!lockHeld)Refuse("actual_fence_required");
         if(detail::ProcessSid(GetCurrentProcess())!=d.profile.userSid)Refuse("broker_sid_changed");

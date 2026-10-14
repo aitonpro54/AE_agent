@@ -59,6 +59,7 @@ const literal = value => JSON.stringify(value).replace(/\u2028/g, "\\u2028").rep
 // invented native queue IDs. The actual returned EncoderWrapper is retained.
 function nativeTitleJob(a) {
   function scalar(v) { return typeof v === "string" ? v.substring(0, 4096) : typeof v === "number" && isFinite(v) || typeof v === "boolean" ? v : null; }
+  function utf8Bytes(v, maximum) { var bytes = 0, i, c, low; for (i = 0; i < v.length; i++) { c = v.charCodeAt(i); if (c < 128) bytes++; else if (c < 2048) bytes += 2; else if (c >= 55296 && c <= 56319) { if (++i >= v.length) return -1; low = v.charCodeAt(i); if (low < 56320 || low > 57343) return -1; bytes += 4; } else if (c >= 56320 && c <= 57343) return -1; else bytes += 3; if (bytes > maximum) return -1; } return bytes; }
   function norm(v) { return String(v || "").replace(/\\/g, "/").toLowerCase(); }
   function stringify(v) {
     var out = [], i, k, s;
@@ -69,18 +70,48 @@ function nativeTitleJob(a) {
     for (k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(stringify(k) + ":" + stringify(v[k])); return "{" + out.join(",") + "}";
   }
   var reply = { schema: "ae-agent-ame-title-native.v1", requestNonce: a.requestNonce, operationBinding: a.operationBinding, appSpecifier: String(BridgeTalk.appSpecifier), sessionNonce: scalar($.global.aeAgentAMEProbeSessionNonce), observedAt: new Date().getTime(), code: "unsupported", nativeJobId: null, nativeAssociationVerified: false };
-  function done(code) { reply.code = code; return stringify(reply); }
+  function done(code) { reply.code = code; var serialized = stringify(reply); if (utf8Bytes(serialized, 524288) < 0) { reply = { schema: reply.schema, requestNonce: reply.requestNonce, operationBinding: reply.operationBinding, appSpecifier: reply.appSpecifier, sessionNonce: reply.sessionNonce, observedAt: reply.observedAt, code: "native_response_envelope_oversize", nativeJobId: null, nativeAssociationVerified: false }; serialized = stringify(reply); } return serialized; }
+  if(a.ownedInitialDispatch===true){var rawProbe=$.global.aeAgentAMEProbeSessionNonce;if(!(rawProbe===undefined||rawProbe===null||typeof rawProbe==="string"&&/^[A-Za-z0-9._-]{1,128}$/.test(rawProbe)))return done("owned_probe_observation_invalid");}
   if (reply.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && reply.sessionNonce !== a.expectedSessionNonce) return done("target_session_changed");
+  if(a.ownedInitialDispatch===true&&a.operation!=="sources"){
+    if(!Object.prototype.hasOwnProperty.call(a,"boundNativeSessionNonce")||!(a.boundNativeSessionNonce===null||typeof a.boundNativeSessionNonce==="string"&&/^[A-Za-z0-9._-]{1,128}$/.test(a.boundNativeSessionNonce))||reply.sessionNonce!==a.boundNativeSessionNonce)return done("owned_target_session_changed");
+  }
   var slot = $.global.aeAgentAMETitleJobsV1, frontend, host, ids, i, entry, batch;
   function readEntry(e) {
     var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, status: e.status, nativeCompletionObserved: e.finished === true, nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
     try { result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles; if (!files || typeof files.length !== "number") throw Error(); for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n])); if (files.length !== 1 || norm(files[0]) !== norm(e.outputPath)) result.nativeAssociationVerified = false; } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
-    for (var name in { getEncodeProgress: 1, getEncodeTime: 1, getLogOutput: 1 }) {
+    for (var name in { getEncodeProgress: 1, getEncodeTime: 1 }) {
       try { if (!e.wrapper || typeof e.wrapper[name] !== "function") throw Error(); result[name] = scalar(e.wrapper[name]()); } catch (x2) { result.readErrors.push(name + "_read_error"); }
     }
+    result.rawLogCaptures = []; var captures = e.rawLogCaptures || [], capture, index;
+    for (index = 0; index < captures.length; index++) { capture = captures[index]; result.rawLogCaptures.push({ ordinal: capture.ordinal, kind: capture.kind, callbackOrdinal: capture.callbackOrdinal, observedAt: capture.observedAt, code: capture.code, utf8Bytes: capture.utf8Bytes }); }
+    result.rawLogSnapshot = null;
+    if (a.rawLogOrdinal !== undefined) { if (typeof a.rawLogOrdinal !== "number" || a.rawLogOrdinal < 1 || a.rawLogOrdinal > 3 || Math.floor(a.rawLogOrdinal) !== a.rawLogOrdinal) result.readErrors.push("raw_log_exact_ordinal_required");
+      else if (a.rawLogOrdinal <= captures.length) result.rawLogSnapshot = captures[a.rawLogOrdinal - 1]; }
     return result;
   }
+  function captureRaw(e, kind, event) {
+    if (!e.rawLogCaptures || e.rawLogCaptures.length >= 3 || e.rawLogKinds[kind]) return;
+    // Original callbacks capture the getter once. Status retrieval only reads
+    // these retained bytes; a callback label does not assert a current phase.
+    e.rawLogKinds[kind] = true;
+    var snapshot = { ordinal: e.rawLogCaptures.length + 1, kind: kind, callbackOrdinal: e.callbackOrdinal, observedAt: new Date().getTime(), code: "get_log_read_error", utf8Bytes: 0, raw: null,
+      handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, processBinding: e.processBinding, sourcePath: e.sourcePath, outputPath: e.outputPath, presetIdentity: e.presetIdentity,
+      callbackSource: event && typeof event.sourceFilePath === "string" ? event.sourceFilePath : null, callbackOutput: event && typeof event.outputFilePath === "string" ? event.outputFilePath : null,
+      callbackStatus: event && typeof event.status === "number" && isFinite(event.status) ? event.status : null, callbackResult: event && typeof event.result === "string" ? scalar(event.result) : null,
+      activeEncodingWindowVerified: false, frozenEncodeSettingsVerified: false };
+    e.rawLogCaptures.push(snapshot); // irreversible before the actual getter
+    try { var original = e.wrapper, before = original && original.outputFiles;
+      if (!original || typeof original.getLogOutput !== "function" || !before || before.length !== 1 || norm(before[0]) !== norm(e.outputPath)) { snapshot.code = "get_log_original_wrapper_refused"; return; }
+      var raw = original.getLogOutput(), after = original.outputFiles;
+      if (original !== e.wrapper || !after || after.length !== 1 || norm(after[0]) !== norm(e.outputPath)) { snapshot.code = "get_log_original_wrapper_changed"; return; }
+      if (typeof raw !== "string") { snapshot.code = "get_log_string_required"; return; }
+      var bytes = utf8Bytes(raw, 65536); if (bytes < 0) { snapshot.code = "get_log_utf8_bound_refused"; return; }
+      snapshot.raw = raw; snapshot.utf8Bytes = bytes; snapshot.code = raw.length ? "raw_log_captured" : "raw_log_empty";
+    } catch (readError) { snapshot.code = "get_log_read_error"; }
+  }
   function finish(e, event, origin) {
+    e.callbackOrdinal++; captureRaw(e, "finished", event);
     e.finished = true; e.nativeResult = scalar(event && typeof event === "object" ? event.result : event); e.status = "native_finished"; e.completionOrigin = origin; e.eventObservedAt = new Date().getTime();
     if (origin === "host_exact_paths") e.hostCompletion = { sourceFilePath: String(event.sourceFilePath), outputFilePath: String(event.outputFilePath), result: e.nativeResult, observedAt: e.eventObservedAt };
     else e.wrapperCompletion = { result: e.nativeResult, observedAt: e.eventObservedAt };
@@ -102,7 +133,13 @@ function nativeTitleJob(a) {
       var matches = 0; for (i = 0; i < ids.length; i++) if (ids[i] === a.sourceGuid) matches++; if (matches !== 1) return done("exact_source_guid_unavailable");
     }
     if (typeof app.getEncoderHost !== "function") return done("encoder_host_unsupported"); host = app.getEncoderHost();
-    if (!host || typeof host.isBatchRunning !== "function" || host.isBatchRunning() !== false) return done("batch_running_or_unknown");
+    if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_or_unknown");reply.batchRunning=scalar(host.isBatchRunning());if(reply.batchRunning!==false)return done("batch_running_or_unknown");
+    if(a.operation==="queue"&&a.ownedInitialDispatch===true){
+      if(!slot||slot.retainedWrapperSessionNonce!==a.retainedWrapperSessionNonce||!a.jobIds||a.jobIds.length<1||a.jobIds.length>2)return done("owned_queue_origin_changed");
+      var known={},count=0,key;reply.queue={expectedJobs:[],completedOwnedPrefix:[]};
+      for(i=0;i<a.jobIds.length;i++){key=a.jobIds[i];if(known[key]||!slot.jobs[key])return done("owned_queue_entry_unavailable");known[key]=true;entry=slot.jobs[key];var observed=readEntry(entry);if(!observed.nativeAssociationVerified||observed.status!==(i===a.jobIds.length-1?"queued":"native_finished"))return done("owned_queue_entry_changed");if(i===a.jobIds.length-1)reply.queue.expectedJobs.push(observed);else reply.queue.completedOwnedPrefix.push(observed);}
+      for(key in slot.jobs)if(Object.prototype.hasOwnProperty.call(slot.jobs,key)){count++;if(!known[key])return done("owned_queue_foreign_entry");}if(count!==a.jobIds.length)return done("owned_queue_census_changed");return done("owned_queue_observed");
+    }
     if (a.operation === "start") {
       if (a.manualQueueMode === "cep_user_declaration_v2" && reply.sessionNonce !== a.boundNativeSessionNonce) return done("target_session_changed");
       batch = slot && slot.batches[a.batchId]; if (!batch || batch.presetIdentity !== a.presetIdentity || batch.processBinding !== a.processBinding || batch.start) return done("native_batch_unavailable_or_start_reserved");
@@ -120,26 +157,35 @@ function nativeTitleJob(a) {
       }
       if (typeof host.runBatch !== "function") return done("run_batch_unsupported");
       batch.start = { requestNonce: a.requestNonce, invoked: true, accepted: null }; var accepted = host.runBatch(); batch.start.accepted = scalar(accepted); reply.start = batch.start;
+      if(a.ownedInitialDispatch===true){reply.job=readEntry(slot.jobs[a.jobIds[0]]);reply.nativeAssociationVerified=reply.job.nativeAssociationVerified;}
       return done(accepted === true ? "batch_start_accepted" : "batch_start_unknown");
     }
     if (!frontend || typeof frontend.addDLToBatch !== "function") return done("add_dl_unsupported");
+    if(a.ownedInitialDispatch===true){
+      if(typeof a.newWrapperSessionNonce!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(a.newWrapperSessionNonce))return done("owned_wrapper_nonce_required");
+      if(a.ownedVariantSlot===1&&slot||a.ownedVariantSlot===2&&(!slot||slot.retainedWrapperSessionNonce!==a.newWrapperSessionNonce))return done("owned_wrapper_slot_changed");
+      if(a.ownedVariantSlot!==1&&a.ownedVariantSlot!==2)return done("owned_wrapper_slot_invalid");
+      if(a.ownedRangeMode!=="full_observed_root_range_v1"||!a.range||a.range.startSeconds!==0||typeof a.ownedObservedDuration!=="number"||!isFinite(a.ownedObservedDuration)||a.ownedObservedDuration<=0||a.range.endSeconds!==a.ownedObservedDuration)return done("owned_entire_range_invalid_before_submit");
+    }
     if (!slot) { slot = { jobs: {}, batches: {}, count: 0, hostListeners: null, retainedWrapperSessionNonce: a.newWrapperSessionNonce }; $.global.aeAgentAMETitleJobsV1 = slot; }
     if (slot.count >= 256 || slot.jobs[a.jobId]) return done("native_handle_already_reserved_or_limit");
     batch = slot.batches[a.batchId]; if (batch && (batch.presetIdentity !== a.presetIdentity || batch.processBinding !== a.processBinding || batch.start || batch.jobIds.length >= 64)) return done("native_batch_identity_changed");
     if (!batch) { batch = { presetIdentity: a.presetIdentity, processBinding: a.processBinding, jobIds: [], start: null }; slot.batches[a.batchId] = batch; }
-    entry = { handleKey: a.jobId, enqueueRequestNonce: a.requestNonce, batchId: a.batchId, sourcePath: a.sourcePath, sourceGuid: a.sourceGuid, outputPath: a.outputPath, presetIdentity: a.presetIdentity, range: a.range, processBinding: a.processBinding, wrapper: null, associated: false, status: "unknown_outcome", finished: false, nativeResult: null };
+    entry = { handleKey: a.jobId, enqueueRequestNonce: a.requestNonce, batchId: a.batchId, sourcePath: a.sourcePath, sourceGuid: a.sourceGuid, outputPath: a.outputPath, presetIdentity: a.presetIdentity, range: a.range, processBinding: a.processBinding, wrapper: null, associated: false, status: "unknown_outcome", finished: false, nativeResult: null, rawLogCaptures: [], rawLogKinds: {}, callbackOrdinal: 0 };
     slot.jobs[a.jobId] = entry; slot.count++; batch.jobIds.push(a.jobId);
     if (!slot.hostListeners && typeof host.addEventListener === "function") {
-      function hostEvent(event, complete) { var key, e; for (key in slot.jobs) if (Object.prototype.hasOwnProperty.call(slot.jobs, key)) { e = slot.jobs[key]; if (e.associated && event && norm(event.sourceFilePath) === norm(e.sourcePath) && norm(event.outputFilePath) === norm(e.outputPath)) { if (complete) finish(e, event, "host_exact_paths"); else if (!e.finished) { e.status = "running"; e.eventObservedAt = new Date().getTime(); } } } }
+      function hostEvent(event, complete) { var key, e; for (key in slot.jobs) if (Object.prototype.hasOwnProperty.call(slot.jobs, key)) { e = slot.jobs[key]; if (e.associated && event && norm(event.sourceFilePath) === norm(e.sourcePath) && norm(event.outputFilePath) === norm(e.outputPath)) { if (complete) finish(e, event, "host_exact_paths"); else { e.callbackOrdinal++; if (!e.finished) { e.status = "running"; e.eventObservedAt = new Date().getTime(); captureRaw(e, "started", event); } } } } }
       slot.hostListeners = { started: function(e) { hostEvent(e, false); }, complete: function(e) { hostEvent(e, true); } };
       host.addEventListener("onItemEncodingStarted", slot.hostListeners.started); host.addEventListener("onItemEncodeComplete", slot.hostListeners.complete);
     }
     // Empty format is the documented automatic format derived from this exact EPR.
     entry.wrapper = frontend.addDLToBatch(a.sourcePath, "", a.presetPath, a.sourceGuid, a.outputPath);
     if (!entry.wrapper || typeof entry.wrapper.setWorkArea !== "function" || typeof entry.wrapper.addEventListener !== "function") return done("encoder_wrapper_unsupported_after_submit");
-    entry.listeners = { progress: function() { if (!entry.finished) { entry.status = "running"; entry.eventObservedAt = new Date().getTime(); } }, finished: function(e) { finish(entry, e, "native_wrapper"); } };
+    entry.listeners = { progress: function(event) { entry.callbackOrdinal++; if (!entry.finished) { entry.status = "running"; entry.eventObservedAt = new Date().getTime(); captureRaw(entry, "progress", event); } }, finished: function(e) { finish(entry, e, "native_wrapper"); } };
     entry.wrapper.addEventListener("onEncodeProgress", entry.listeners.progress); entry.wrapper.addEventListener("onEncodeFinished", entry.listeners.finished);
-    if (entry.wrapper.setWorkArea(3, a.range.startSeconds, a.range.endSeconds) !== true) return done("work_area_unverified_after_submit");
+    if(a.ownedInitialDispatch===true&&a.ownedRangeMode==="full_observed_root_range_v1"){
+      if(entry.wrapper.setWorkArea(0,0,a.ownedObservedDuration)!==true)return done("owned_entire_range_unverified_after_submit");
+    }else if (entry.wrapper.setWorkArea(3, a.range.startSeconds, a.range.endSeconds) !== true) return done("work_area_unverified_after_submit");
     entry.associated = true; if (entry.status === "unknown_outcome") entry.status = "queued"; reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified;
     return done(reply.nativeAssociationVerified ? "job_enqueued" : "output_binding_unverified_after_submit");
   } catch (error) { reply.error = String(error).substring(0, 2000); return done("native_read_or_submit_error"); }
@@ -148,6 +194,7 @@ function nativeTitleJob(a) {
 // Fixed AE sender. It never launches AME; unknown delivery blocks another send.
 // Reconciliation pumps the SAME retained BridgeTalk message and never resubmits.
 function nativeSend(a, messageBody) {
+  function utf8Bytes(v, maximum) { var bytes = 0, i, c, low; for (i = 0; i < v.length; i++) { c = v.charCodeAt(i); if (c < 128) bytes++; else if (c < 2048) bytes += 2; else if (c >= 55296 && c <= 56319) { if (++i >= v.length) return -1; low = v.charCodeAt(i); if (low < 56320 || low > 57343) return -1; bytes += 4; } else if (c >= 56320 && c <= 57343) return -1; else bytes += 3; if (bytes > maximum) return -1; } return bytes; }
   var slot = $.global.aeAgentAMETitleSendV1;
   function reply(code) { return { schema: "ae-agent-ame-title-send.v1", code: code, requestNonce: slot ? slot.requestNonce : a.requestNonce, callback: slot ? slot.callback : null, responseBody: slot ? slot.body : null }; }
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
@@ -157,7 +204,7 @@ function nativeSend(a, messageBody) {
   if (slot && (!slot.callback || slot.callback === "timeout")) return reply("previous_request_unresolved");
   var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, callback: null, body: null, message: message }; $.global.aeAgentAMETitleSendV1 = slot;
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
-  message.onResult = function(r) { slot.body = String(r.body || "").substring(0, 65537); slot.callback = "result"; };
+  message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
   message.onError = function(r) { slot.body = String(r.body || "").substring(0, 2000); slot.callback = "error"; }; message.onTimeout = function() { slot.callback = "timeout"; };
   try { message.send(Math.ceil(a.timeoutMs / 1000)); } catch (_) { return reply("send_unknown"); }
   if (!slot.callback) pump(250); return reply(slot.callback || "unknown");
@@ -180,7 +227,7 @@ function write(file, value, exclusive = false) {
 }
 function createExecutor(deps) {
   if (!deps || !path.isAbsolute(deps.stateDir || "") || ["runExtendScriptBody", "inspectProcesses", "resolveOutputFilePath", "assertManualIngress", "assertServerContext"].some(k => typeof deps[k] !== "function")) fail("ame_title_invalid_dependencies");
-  const caps = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false;
+  const caps = new WeakMap(), nativePreparations = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false;
   const recordFile = id => path.join(deps.stateDir, "batches", id + ".json"), guardDir = path.join(deps.stateDir, "outputs");
   function result(code, extra = {}) { return { schema: SCHEMA, ok: false, code, nativeJobId: null, nativeAssociationVerified: false, nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false, automaticRetryAllowed: false, observedAt: new Date(now()).toISOString(), ...extra }; }
   function assertCap(cap, name, a) {
@@ -216,6 +263,34 @@ function createExecutor(deps) {
     const source = stableFile(job.sourcePath, job.args.expectedSourceSha25664), preset = stableFile(job.presetPath, job.args.presetSha25664);
     if (hash(source) !== hash(job.sourcePin) || hash(preset) !== hash(job.presetPin)) fail("ame_title_file_changed");
   }
+  async function prepareNativeReservation(operation, entry, selector) {
+    const port = deps.nativeDispatchPort;
+    if (!port) return; // Existing non-L4 consumers retain their old boundary.
+    const method = operation === "enqueue" ? "prepareEnqueue" : operation === "start" ? "prepareStart" : null;
+    if (!method || typeof port[method] !== "function" || typeof port.assertPreparation !== "function") fail("ame_title_native_preparation_port_required");
+    let original = nativePreparations.get(entry.context);
+    if (original && original.has(operation)) fail("ame_title_native_preparation_once");
+    const frozen = Object.freeze({ schema: "ae-agent-ame-title-reservation-selector.v1", operation, argsHash: entry.argsHash, ...selector });
+    const preparation = await port[method](frozen, entry.context);
+    if (!preparation || typeof preparation !== "object") fail("ame_title_native_preparation_capability_required");
+    return { preparation, frozen, port, operation };
+  }
+  function assertNativeReservation(prepared, a, cap, entry, lastGuard) {
+    // No asynchronous work may intervene between these guards and the first
+    // directory/reservation/audit write. The native cap is retained privately.
+    assertCap(cap, entry.name, a);
+    const guarded = lastGuard();
+    if (guarded === false || guarded && typeof guarded.then === "function") { if (guarded && typeof guarded.catch === "function") guarded.catch(() => {}); fail("ame_title_native_preparation_last_guard_required"); }
+    if (!prepared) return;
+    const { preparation, frozen, port, operation } = prepared;
+    if (port !== deps.nativeDispatchPort) fail("ame_title_native_preparation_port_changed");
+    const asserted = port.assertPreparation(preparation, frozen, entry.context);
+    if (asserted === false || asserted && typeof asserted.then === "function") { if (asserted && typeof asserted.catch === "function") asserted.catch(() => {}); fail("ame_title_native_preparation_assertion_required"); }
+    let original = nativePreparations.get(entry.context);
+    if (original && original.has(operation)) fail("ame_title_native_preparation_once");
+    if (!original) { original = new Map(); nativePreparations.set(entry.context, original); }
+    original.set(operation, preparation);
+  }
   async function send(a, context, finalGuard, refreshBeforeGuard) {
     try {
       const script = commandScript(a), metadata = { schema: "ae-agent-ame-title-dispatch.v2", operation: a.operation, mutating: !a.reconcileRequestNonce && ["enqueue", "start"].includes(a.operation), requestNonce: a.reconcileRequestNonce || a.requestNonce, freshRequestNonce: a.requestNonce, processBinding: a.processBinding,
@@ -225,7 +300,7 @@ function createExecutor(deps) {
       let raw;
       if (port) {
         if (["authorize", "assertAuthorization", "dispatch"].some(key => typeof port[key] !== "function")) fail("ame_title_native_dispatch_port_invalid");
-        const capability = await port.authorize(metadata, context);
+        const capability = await port.authorize(metadata, context, context && nativePreparations.get(context)?.get(a.operation));
         if (!capability || typeof capability !== "object") fail("ame_title_native_dispatch_capability_required");
         if (refreshBeforeGuard) await refreshBeforeGuard();
         // Finish all asynchronous work before checking file/context pins. There
@@ -251,7 +326,7 @@ function createExecutor(deps) {
       const reply = raw && Object.prototype.hasOwnProperty.call(raw, "result") ? raw.result : raw;
       if (!reply || reply.schema !== "ae-agent-ame-title-send.v1" || reply.requestNonce !== (a.reconcileRequestNonce || a.requestNonce)) return { resolved: false, code: "transport_correlation_unknown", native: null };
       if (reply.callback === "error") return { resolved: true, code: "native_delivery_error", native: null };
-      if (reply.code !== "result" || typeof reply.responseBody !== "string" || reply.responseBody.length > 65536) return { resolved: false, code: reply.code || "transport_unknown", native: null };
+      if (reply.code !== "result" || typeof reply.responseBody !== "string" || Buffer.byteLength(reply.responseBody, "utf8") > 524288) return { resolved: false, code: reply.code || "transport_unknown", native: null };
       let native; try { native = JSON.parse(reply.responseBody); } catch (_) { return { resolved: true, code: "native_response_invalid", native: null }; }
       if (!native || native.schema !== NATIVE_SCHEMA || native.requestNonce !== (a.reconcileRequestNonce || a.requestNonce) || native.operationBinding !== a.operationBinding || native.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && native.sessionNonce !== a.expectedSessionNonce || !Number.isFinite(native.observedAt) || native.observedAt <= 0 || native.observedAt < a.minimumObservedAt || native.observedAt > now() + 60000) return { resolved: false, code: "native_correlation_unknown", native: null };
       return { resolved: true, code: native.code, native };
@@ -302,8 +377,18 @@ function createExecutor(deps) {
     let batch = load(a.batchId); if (batch && (batch.presetIdentity !== presetIdentity || batch.processBinding !== processBinding || batch.start || batch.jobs.length >= 64)) return result("batch_identity_or_preset_changed");
     if (batch && batch.jobs.some(job => !job.transportResolved || !job.nativeAssociationVerified || job.state === "unknown_outcome")) return result("ame_title_unknown_job_no_replay");
     if (!previousJobsReady(a.batchId, processInfo)) return result("ame_title_previous_job_not_completed_no_replay");
-    const outputPath = outputFile(a.outputFileName), intent = { schema: reservation.SCHEMA || "ae-agent-ame-submit-intent.v1", sourcePath: source.path, sourceIdentity: hash({ guid: a.sourceGuid, sha256: source.sha256 }), preset: presetIdentity, outputPath, range: a.range };
+    // Resolve the selector without outputFile's mkdir. Native admission must
+    // precede even creation of the owned output directory.
+    const selectedOutput = deps.resolveOutputFilePath(a.outputFileName);
     assertCap(cap, ENQUEUE, a); await processPin(a, processInfo); if (hash(stableFile(source.path, source.sha256)) !== hash(source) || hash(stableFile(presetPin.path, presetPin.sha256)) !== hash(presetPin)) fail("ame_title_file_changed");
+    const prepared = await prepareNativeReservation("enqueue", entry, { processBinding, sourcePath: source.path, sourceSha25664: source.sha256, sourceGuid: a.sourceGuid,
+      presetPath: presetPin.path, presetSha25664: presetPin.sha256, outputPath: selectedOutput, range: Object.freeze({ ...a.range }) });
+    assertNativeReservation(prepared, a, cap, entry, () => {
+      if (hash(stableFile(source.path, source.sha256)) !== hash(source) || hash(stableFile(presetPin.path, presetPin.sha256)) !== hash(presetPin)) fail("ame_title_file_changed");
+    });
+    const outputPath = outputFile(a.outputFileName);
+    if (!samePath(outputPath, selectedOutput)) fail("ame_title_native_preparation_output_changed");
+    const intent = { schema: reservation.SCHEMA || "ae-agent-ame-submit-intent.v1", sourcePath: source.path, sourceIdentity: hash({ guid: a.sourceGuid, sha256: source.sha256 }), preset: presetIdentity, outputPath, range: a.range };
     const reserved = reservation.reserveSubmissionIntent(intent, guardDir, new Date(now())); if (reserved.blocked || !reserved.ok) return result(reserved.reason, { attemptId: reserved.attemptId || null });
     const job = { jobId: reserved.attemptId, handleKey: reserved.attemptId, nativeJobId: null, requestNonce: crypto.randomUUID(), operationBinding: hash({ operation: "enqueue", jobId: reserved.attemptId, args: a }), args: a, sourcePath: source.path, sourcePin: source, presetPath: presetPin.path, presetPin, presetIdentity, processBinding, process: processInfo, outputPath, submittedAt: reserved.reservedAt, transportResolved: false, nativeAssociationVerified: false, readyForStart: false, state: "unknown_outcome" };
     const initial = !batch; if (!batch) batch = { schema: LEDGER_SCHEMA, batchId: a.batchId, presetIdentity, processBinding, jobs: [], start: null }; batch.jobs.push(job); write(recordFile(a.batchId), batch, initial);
@@ -366,6 +451,12 @@ function createExecutor(deps) {
       if (manualQueue.manifestHash(last.manifest) !== a.manualQueueManifestSha25664) return result("ame_manual_queue_last_guard_changed");
       assertCap(cap, START, a); issuer.assertCapability(queueCap, entry.context, last.manifest);
       const startRecord = { batchId: a.batchId, requestNonce: crypto.randomUUID(), operationBinding: hash({ operation: "start", batchId: a.batchId, jobs: last.batch.jobs.map(job => job.jobId), manifestHash: a.manualQueueManifestSha25664 }), transportResolved: false, state: "unknown_outcome", reservedAt: new Date(now()).toISOString(), lastDispatchGuardVerified: true };
+      const prepared = await prepareNativeReservation("start", entry, { processBinding: batch.processBinding, batchId: a.batchId, manifestHash: a.manualQueueManifestSha25664,
+        jobIds: Object.freeze(last.batch.jobs.map(job => job.jobId)), operationBinding: startRecord.operationBinding, requestNonce: startRecord.requestNonce });
+      assertNativeReservation(prepared, a, cap, entry, () => {
+        for (const job of last.pinnedJobs) pinned(job); for (const job of batch.jobs) readyOutput(job);
+        issuer.assertCapability(queueCap, entry.context, last.manifest);
+      });
       const reserved = issuer.consume(queueCap, entry.context, last.manifest, startRecord);
       batch.start = { ...startRecord }; write(recordFile(a.batchId), batch); entry.active = false;
       const observed = await send({ ...a, operation: "start", jobIds: manifest.jobs.map(job => job.jobId), expectedJobs: manifest.jobs, completedOwnedPrefix: manifest.completedOwnedPrefix, boundNativeSessionNonce: manifest.nativeSessionNonce, retainedWrapperSessionNonce: manifest.retainedWrapperSessionNonce, presetIdentity: batch.presetIdentity, processBinding: batch.processBinding, operationBinding: startRecord.operationBinding, requestNonce: startRecord.requestNonce, minimumObservedAt: Date.parse(startRecord.reservedAt) }, entry.context, () => {
@@ -383,6 +474,9 @@ function createExecutor(deps) {
     // entire native queue composition. No default implementation grants this.
     if (typeof deps.assertQueueOwnership !== "function" || await deps.assertQueueOwnership(entry.context, JSON.parse(JSON.stringify(batch))) !== true) return result("queue_composition_unavailable");
     assertCap(cap, START, a); await processPin(a, processInfo); for (const job of batch.jobs) pinned(job);
+    const prepared = await prepareNativeReservation("start", entry, { processBinding: batch.processBinding, batchId: a.batchId,
+      jobIds: Object.freeze(batch.jobs.map(job => job.jobId)) });
+    assertNativeReservation(prepared, a, cap, entry, () => { for (const job of batch.jobs) pinned(job); });
     batch.start = { requestNonce: crypto.randomUUID(), operationBinding: hash({ operation: "start", batchId: a.batchId, jobs: batch.jobs.map(j => j.jobId) }), transportResolved: false, state: "unknown_outcome", reservedAt: new Date(now()).toISOString() }; write(recordFile(a.batchId), batch); assertCap(cap, START, a); entry.active = false;
     const observed = await send({ ...a, operation: "start", jobIds: batch.jobs.map(j => j.jobId), presetIdentity: batch.presetIdentity, processBinding: batch.processBinding, operationBinding: batch.start.operationBinding, requestNonce: batch.start.requestNonce, minimumObservedAt: Date.parse(batch.start.reservedAt) });
     try { await processPin(a, processInfo); for (const job of batch.jobs) pinned(job); deps.assertServerContext(entry.context, { name: START, argsHash: entry.argsHash }); }

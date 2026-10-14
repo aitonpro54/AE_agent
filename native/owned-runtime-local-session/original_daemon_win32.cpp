@@ -1,4 +1,7 @@
 #include "original_daemon_win32.h"
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+#include "local_session_native_client.h"
+#endif
 #include <windows.h>
 #include <algorithm>
 #include <limits>
@@ -7,6 +10,7 @@
 namespace local_session {
 namespace {
 using detail::Refuse;
+#if !defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
 std::wstring WideHex(const Id& value){const auto text=detail::Hex(value);return std::wstring(text.begin(),text.end());}
 std::wstring Quote(const std::wstring& value){if(value.empty()||value.find(L'\0')!=std::wstring::npos)Refuse("fixed_argument_invalid");std::wstring quoted=L"\"";std::size_t slashes=0;for(wchar_t c:value){if(c==L'\\'){++slashes;continue;}if(c==L'\"'){quoted.append(slashes*2+1,L'\\');quoted+=c;}else{quoted.append(slashes,L'\\');quoted+=c;}slashes=0;}quoted.append(slashes*2,L'\\');quoted+=L'\"';return quoted;}
 std::vector<wchar_t> Environment(const Id& generation,const Id& boot,const Id& nonce,const std::wstring& pipe
@@ -22,6 +26,7 @@ std::vector<wchar_t> Environment(const Id& generation,const Id& boot,const Id& n
 #endif
     std::sort(values.begin(),values.end());std::vector<wchar_t> block;for(const auto& value:values){block.insert(block.end(),value.begin(),value.end());block.push_back(L'\0');}block.push_back(L'\0');return block;
 }
+#endif
 }
 PreparedLifecycleGrant::PreparedLifecycleGrant(const Id& generation,const Id& boot,const Digest& consumed,std::uint64_t issuedAt,std::uint64_t sessionDeadline,std::uint64_t dispositionDeadline)
     :generation_(generation),boot_(boot),consumed_(consumed),issuedAt_(issuedAt),sessionDeadline_(sessionDeadline),dispositionDeadline_(dispositionDeadline){}
@@ -33,29 +38,53 @@ std::unique_ptr<PreparedLifecycleGrant> PreparedLifecycleGrant::Prepare(const Id
     return std::unique_ptr<PreparedLifecycleGrant>(new PreparedLifecycleGrant(generation,boot,consumed,now,originalSessionDeadline,originalSessionDeadline+kFixedDispositionGraceMs));
 }
 bool PreparedLifecycleGrant::EffectClockLive()const{const auto now=GetTickCount64();return now>=issuedAt_&&now<dispositionDeadline_;}
-Digest PreparedLifecycleGrant::BindingHash()const{
-    std::vector<unsigned char> bytes;const char* domain="native-original-lifecycle.v2";
-    for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));
-    bytes.insert(bytes.end(),generation_.begin(),generation_.end());bytes.insert(bytes.end(),boot_.begin(),boot_.end());
-    bytes.insert(bytes.end(),consumed_.begin(),consumed_.end());detail::PutU64(bytes,issuedAt_);
-    detail::PutU64(bytes,sessionDeadline_);detail::PutU64(bytes,dispositionDeadline_);return detail::Hash(bytes);
-}
 struct OriginalDaemon::Data {
     InstalledEnrollment& enrollment;detail::Held process,thread;
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    std::unique_ptr<trusted_read::Bootstrap> bootstrap;
+    std::vector<void*> failedCloseHandles;
+#endif
     DWORD originalPid=0;std::uint64_t birth=0;
     std::unique_ptr<PreparedLifecycleGrant> grant;
     Id generation{},boot{},originalInstance=detail::RandomId();Digest consumed{};std::wstring sid,image;
     bool admitted=false,abortConsumed=false,unknown=false;
     Data(InstalledEnrollment& e,const Id& g,const Id& b,std::unique_ptr<PreparedLifecycleGrant> prepared):enrollment(e),grant(std::move(prepared)),generation(g),boot(b){if(grant)consumed=grant->consumed_;}
 };
-OriginalDaemon::OriginalDaemon(std::unique_ptr<Data> data):data_(std::move(data)){}OriginalDaemon::~OriginalDaemon()=default;
+OriginalDaemon::OriginalDaemon(std::unique_ptr<Data> data):data_(std::move(data)){}
+OriginalDaemon::~OriginalDaemon(){
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    // A failed original creation keeps its process/thread/bootstrap and immutable
+    // lifecycle grant until this broker's actual exit; destruction is no retry.
+    if(data_&&data_->unknown&&(data_->process.Valid()||!data_->failedCloseHandles.empty()))(void)data_.release();
+#endif
+}
 std::unique_ptr<OriginalDaemon> OriginalDaemon::Launch(InstalledEnrollment& enrollment,const Id& generation,const Id& bootNonce,const Id& channelNonce,const std::wstring& daemonPipe,
-#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE) || defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
     const Id& phaseSession,
+#endif
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    void* originalController,
 #endif
     std::unique_ptr<PreparedLifecycleGrant> lifecycleGrant,Result& result){
     auto data=std::make_unique<Data>(enrollment,generation,bootNonce,std::move(lifecycleGrant));auto target=std::unique_ptr<OriginalDaemon>(new OriginalDaemon(std::move(data)));auto& d=*target->data_;
     try{const auto& p=enrollment.Profile();const auto now=GetTickCount64();if(!d.grant||d.grant->generation_!=generation||d.grant->boot_!=bootNonce||detail::Zero(d.grant->consumed_)||detail::Zero(channelNonce)||!d.grant->EffectClockLive()||now>=d.grant->sessionDeadline_||!enrollment.Fresh(true).ok)Refuse("prepared_lifecycle_grant_refused");
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+        if(detail::Zero(phaseSession)||!originalController||!detail::ProcessLive(originalController)||
+            detail::ProcessSid(originalController)!=p.userSid||detail::ProcessImage(originalController)!=p.controllerImage.pin.canonicalPath)
+            Refuse("trusted_original_controller_launch_binding_refused");
+        const phase::WireBindings binding{channelNonce,phaseSession,generation,bootNonce};
+        auto created=trusted_read::NativeClient::CreateOriginalDaemonFixed(enrollment,binding,daemonPipe,originalController,*d.grant);
+        // Preserve the returned originals and anonymous bootstrap before any
+        // post-creation check. This cannot reconstruct ownership from a PID.
+        d.process=std::move(created.process);d.thread=std::move(created.thread);d.bootstrap=std::move(created.bootstrap);d.failedCloseHandles=std::move(created.failedCloseHandles);
+        if(!created.status.ok){d.unknown=true;result=std::move(created.status);if(!d.process.Valid())return nullptr;return target;}
+        d.originalPid=GetProcessId(d.process.Get());d.birth=detail::ProcessBirth(d.process.Get());d.sid=detail::ProcessSid(d.process.Get());
+        d.image=enrollment.CheckedOriginalLaunchImage(d.process.Get());
+        if(!d.originalPid||!d.birth||d.sid!=p.userSid||d.image!=p.node.pin.canonicalPath||!d.bootstrap||
+            !detail::ProcessLive(d.process.Get())||!enrollment.Fresh(true).ok||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)
+            Refuse("trusted_original_creation_identity_or_late_guard",0,true);
+        result.ok=true;result.code="original_creation_handles_held";
+#else
         const std::wstring canonicalScript=enrollment.CheckedBridgeEntry();const auto& locators=enrollment.PrepareFixedLaunchLocators();const std::wstring node=locators.node,script=locators.bridge;
         // Synthetic proof enrolls its own repository containing a fixed fixture
         // script at this exact name. It never points this entry at the real daemon.
@@ -72,7 +101,11 @@ std::unique_ptr<OriginalDaemon> OriginalDaemon::Launch(InstalledEnrollment& enro
         d.process=detail::Held(original.hProcess);d.thread=detail::Held(original.hThread);d.originalPid=original.dwProcessId;
         d.birth=detail::ProcessBirth(d.process.Get());d.sid=detail::ProcessSid(d.process.Get());d.image=enrollment.CheckedOriginalLaunchImage(d.process.Get());enrollment.CheckFixedLaunchLocators();if(!d.birth||d.sid!=p.userSid||d.image!=p.node.pin.canonicalPath||!detail::ProcessLive(d.process.Get())||!enrollment.Fresh(true).ok||!d.grant->EffectClockLive()||GetTickCount64()>=d.grant->sessionDeadline_)Refuse("original_creation_identity_or_late_guard",0,true);
         if(ResumeThread(d.thread.Get())==static_cast<DWORD>(-1))Refuse("original_resume_unknown",GetLastError(),true);result.ok=true;result.code="original_creation_handles_held";
+#endif
     }catch(const detail::Failure& failure){d.unknown=true;result={false,true,failure.unavailable,failure.code,failure.error};if(!d.process.Valid())return nullptr;}
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    catch(...){d.unknown=true;result.ok=false;result.unknown=true;result.code="trusted_original_launch_exception";if(!d.process.Valid())return nullptr;}
+#endif
     // A successful CreateProcess with later UNKNOWN retains both original handles
     // and the prepared lifecycle grant. It is never replayed or replaced by PID.
     return target;

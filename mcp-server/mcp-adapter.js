@@ -20,13 +20,14 @@ const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
+const trustedSourceCensus=require("./owned-runtime-initial-source-census");
 const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
 const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
 async function handleOwnedRuntimeTool(name,args,controller) {
   if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
   require("./owned-runtime-authority").exact(args,[],"owned_adapter_arguments_forbidden");
-  if(initialRuntime){const method=OWNED_TOOL_METHODS[name],result=method==="status"?initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,true);}
+  if(initialRuntime){const method=OWNED_TOOL_METHODS[name],result=method==="status"?await initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,result.ok===false);}
   const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
   try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
 }
@@ -136,7 +137,7 @@ async function ensureDaemonRunning() {
 
 async function getTools() {
   const localTools = [...productionUsageTools,...ownedRuntimeTools];
-  if(initialRuntime)return localTools;
+  if(initialRuntime)return [...initialRuntime.tools,...ownedRuntimeTools];
   try {
     await ensureDaemonRunning();
     const response = await daemonRequest("GET", "/tools", undefined, 5000);
@@ -155,7 +156,7 @@ async function getTools() {
 }
 
 async function callDaemonTool(name, args) {
-  if(initialRuntime)return toolResult(initialRuntime.status(),true);
+  if(initialRuntime)return initialRuntime.callTool(name,args===undefined?{}:args);
   if (!isPanelControlTool(name)) await ensureDaemonRunning();
   const response = await daemonRequest("POST", "/mcp/tools/call", {
     name,
@@ -204,7 +205,8 @@ async function handleRpc(message) {
     if (message.method === "tools/call") {
       const params = message.params || {};
       const toolName = params.name;
-      if(initialRuntime){ok(id,Object.hasOwn(OWNED_TOOL_METHODS,toolName)?await handleOwnedRuntimeTool(toolName,params.arguments):toolResult(initialRuntime.status(),true));return;}
+      if(initialRuntime){ok(id,Object.hasOwn(OWNED_TOOL_METHODS,toolName)?await handleOwnedRuntimeTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}):
+        await callDaemonTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}));return;}
       const toolArgs = isPanelControlTool(toolName)
         ? (Object.prototype.hasOwnProperty.call(params, "arguments") ? params.arguments : {})
         : (params.arguments || {});
@@ -283,11 +285,20 @@ function startStdioMcp() {
     if(initialRuntime)await initialRuntime.revoke();
     process.exit(0);
   });
-  if(initialRuntime)process.stdin.on("error",async()=>{await initialRuntime.revoke();process.exit(1);});
+  if(initialRuntime){
+    // Installed before the first explicit ensure can invoke the native factory.
+    // These handlers only revoke this original controller; EOF never relaunches.
+    process.stdin.on("error",async()=>{await initialRuntime.revoke();process.exit(1);});
+    process.stdin.on("end",()=>{void initialRuntime.revoke();});
+    process.stdout.on("error",()=>{void initialRuntime.revoke();});
+  }
 }
 
 if (require.main === module) {
-  startStdioMcp();
+  if(trustedSourceCensus.requested()){
+    void trustedSourceCensus.collectFixed("controller").then(value=>process.stdout.write(JSON.stringify(value)+"\n"),error=>{
+      process.stderr.write(JSON.stringify({authority:false,code:error.code||"owned_initial_passive_census_unknown"})+"\n");process.exitCode=1;});
+  }else startStdioMcp();
 }
 
 module.exports = {

@@ -1,6 +1,10 @@
 #include "local_session_win32.h"
 #include "original_daemon_win32.h"
 #include "native_dispatch_commit.h"
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+#include "local_session_native_client.h"
+#include "production_artifact_seal.h"
+#endif
 #if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
 #if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
 #include "local_session_native_panel_case.h"
@@ -47,8 +51,11 @@ struct Reader {
 };
 struct SlotObservation {std::uint16_t type=0;std::uint64_t sequence=0,epoch=0;Id lineage{},owner{},fileId{};Digest scope{},genesis{},previous{},key{},hash{};};
 std::wstring SlotName(std::uint64_t n){if(!n||n>256)Refuse("floor_slot_limit");std::wostringstream name;name<<std::setfill(L'0')<<std::setw(20)<<n<<L".rec";return name.str();}
+SlotObservation ReadOriginalSlot(void* original,std::uint64_t n){
+    SlotObservation slot;slot.fileId=detail::ReadPin(original,false).fileId;const Bytes bytes=detail::ReadExact(original,16384);if(bytes.size()<228)Refuse("floor_partial_slot",0,true);Reader read{bytes};if(read.Fixed<8>()!=std::array<unsigned char,8>{'O','W','N','J','R','N','0','1'}||read.Number(2)!=1)Refuse("floor_frame_version",0,true);slot.type=static_cast<std::uint16_t>(read.Number(2));if(slot.type<1||slot.type>5||read.Number(4)!=bytes.size())Refuse("floor_frame_type_length",0,true);slot.scope=read.Fixed<32>();slot.lineage=read.Fixed<16>();slot.genesis=read.Fixed<32>();slot.sequence=read.Number(8);slot.epoch=read.Number(8);slot.owner=read.Fixed<16>();slot.previous=read.Fixed<32>();slot.key=read.Fixed<32>();const auto payload=read.Number(4);if(payload>4096||read.offset+payload+32!=bytes.size())Refuse("floor_frame_payload",0,true);read.offset+=static_cast<std::size_t>(payload);slot.hash=read.Fixed<32>();read.End();if(slot.sequence!=n||detail::Hash(Bytes(bytes.begin(),bytes.end()-32))!=slot.hash)Refuse("floor_frame_hash_or_slot",0,true);return slot;
+}
 SlotObservation IndependentlyRead(void* journal,std::uint64_t n){
-    Held witness=detail::Relative(journal,SlotName(n),false);SlotObservation slot;slot.fileId=detail::ReadPin(witness.Get(),false).fileId;const Bytes bytes=detail::ReadExact(witness.Get(),16384);if(bytes.size()<228)Refuse("floor_partial_slot",0,true);Reader read{bytes};if(read.Fixed<8>()!=std::array<unsigned char,8>{'O','W','N','J','R','N','0','1'}||read.Number(2)!=1)Refuse("floor_frame_version",0,true);slot.type=static_cast<std::uint16_t>(read.Number(2));if(slot.type<1||slot.type>5||read.Number(4)!=bytes.size())Refuse("floor_frame_type_length",0,true);slot.scope=read.Fixed<32>();slot.lineage=read.Fixed<16>();slot.genesis=read.Fixed<32>();slot.sequence=read.Number(8);slot.epoch=read.Number(8);slot.owner=read.Fixed<16>();slot.previous=read.Fixed<32>();slot.key=read.Fixed<32>();const auto payload=read.Number(4);if(payload>4096||read.offset+payload+32!=bytes.size())Refuse("floor_frame_payload",0,true);read.offset+=static_cast<std::size_t>(payload);slot.hash=read.Fixed<32>();read.End();if(slot.sequence!=n||detail::Hash(Bytes(bytes.begin(),bytes.end()-32))!=slot.hash)Refuse("floor_frame_hash_or_slot",0,true);return slot;
+    Held witness=detail::Relative(journal,SlotName(n),false);return ReadOriginalSlot(witness.Get(),n);
 }
 void CheckFloorInventory(void* journal,const FloorSnapshot& floor){
     alignas(FILE_ID_BOTH_DIR_INFO) std::array<unsigned char,65536> buffer{};std::vector<std::wstring> names;bool restart=true;
@@ -92,9 +99,101 @@ private:
     std::wstring name_;Held pipe_,event_;void* originalEndpointCloseUnknown_=nullptr;OVERLAPPED connect_{},read_{};std::array<unsigned char,4096> buffer_{};
     bool connecting_=false,connected_=false,readPending_=false,closed_=false,endpointClosed_=false;
 };
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+// Separate original LCP2 endpoints. Legacy LCSB IO/cleanup remains unchanged.
+// Any unsettled operation or failed close retains this original state until
+// broker exit; no stack OVERLAPPED, unbounded wait or destructor retry exists.
+class TrustedPipe final {
+    struct Io final {
+        Held event;OVERLAPPED overlapped{};std::array<unsigned char,4096> bytes{};
+        bool pending=false,cancelled=false;
+        Io():event(CreateEventW(nullptr,TRUE,FALSE,nullptr)){if(!event.Valid())Refuse("trusted_pipe_event_create_refused",GetLastError());overlapped.hEvent=event.Get();}
+    };
+    struct Data final {
+        std::wstring name;Held pipe;std::unique_ptr<Io> connect,read;
+        std::vector<std::unique_ptr<Io>> unsettled;std::vector<void*> failedClose;
+        bool connected=false,closed=false,unknown=false,closeAttempted=false;
+        explicit Data(std::wstring n):name(std::move(n)){unsettled.reserve(1);failedClose.reserve(4);}
+    };
+    std::unique_ptr<Data> data_;
+    bool Settle(Io& io,bool cancel)noexcept {
+        if(!io.pending)return true;
+        if(cancel&&!io.cancelled){io.cancelled=true;if(!CancelIoEx(data_->pipe.Get(),&io.overlapped)&&GetLastError()!=ERROR_NOT_FOUND)return false;}
+        const auto wait=WaitForSingleObject(io.event.Get(),1000);if(wait!=WAIT_OBJECT_0)return false;
+        DWORD bytes=0;if(!GetOverlappedResult(data_->pipe.Get(),&io.overlapped,&bytes,FALSE)&&GetLastError()!=ERROR_OPERATION_ABORTED)return false;
+        io.pending=false;return true;
+    }
+    bool CloseHandleOnce(Held& held)noexcept {
+        if(!held.Valid())return true;void* exact=held.Take();if(CloseHandle(exact))return true;
+        data_->failedClose.push_back(exact);data_->unknown=true;return false;
+    }
+public:
+    TrustedPipe(const std::wstring& name,const std::wstring& sid):data_(std::make_unique<Data>(name)){
+        try{data_->connect=std::make_unique<Io>();data_->read=std::make_unique<Io>();
+            const std::wstring sddl=L"D:P(A;;GA;;;"+sid+L")";PSECURITY_DESCRIPTOR descriptor=nullptr;
+            if(!ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(),SDDL_REVISION_1,&descriptor,nullptr))Refuse("trusted_pipe_acl_refused",GetLastError());
+            SECURITY_ATTRIBUTES security{sizeof(security),descriptor,FALSE};data_->pipe=Held(CreateNamedPipeW(name.c_str(),
+                PIPE_ACCESS_DUPLEX|FILE_FLAG_FIRST_PIPE_INSTANCE|FILE_FLAG_OVERLAPPED,PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE|PIPE_WAIT|PIPE_REJECT_REMOTE_CLIENTS,
+                1,4096,4096,0,&security));const auto error=GetLastError();LocalFree(descriptor);
+            if(!data_->pipe.Valid())Refuse("trusted_pipe_original_create_refused",error);
+            const auto connected=ConnectNamedPipe(data_->pipe.Get(),&data_->connect->overlapped);
+            if(connected)data_->connected=true;else{const auto e=GetLastError();if(e==ERROR_PIPE_CONNECTED)data_->connected=true;
+                else if(e==ERROR_IO_PENDING)data_->connect->pending=true;else Refuse("trusted_pipe_original_connect_refused",e);}
+        }catch(...){data_->unknown=true;(void)data_.release();throw;}
+    }
+    ~TrustedPipe(){if(data_&&!CloseOnce())(void)data_.release();}
+    bool PollConnect(){auto& d=*data_;if(d.closed||d.unknown)return false;if(d.connected)return true;DWORD count=0;
+        if(!d.connect->pending)return false;if(GetOverlappedResult(d.pipe.Get(),&d.connect->overlapped,&count,FALSE)){d.connect->pending=false;d.connected=true;return true;}
+        const auto error=GetLastError();if(error==ERROR_IO_INCOMPLETE)return false;
+        if(error!=ERROR_OPERATION_ABORTED&&error!=ERROR_BROKEN_PIPE&&error!=ERROR_NO_DATA){d.unknown=true;return false;}
+        d.connect->pending=false;d.closed=true;return false;
+    }
+    bool PollBytes(Bytes& bytes){auto& d=*data_;if(!d.connected||d.closed||d.unknown)return false;auto& io=*d.read;DWORD count=0;
+        if(!io.pending){io.overlapped={};io.overlapped.hEvent=io.event.Get();ResetEvent(io.event.Get());
+            if(ReadFile(d.pipe.Get(),io.bytes.data(),static_cast<DWORD>(io.bytes.size()),&count,&io.overlapped)){bytes.assign(io.bytes.begin(),io.bytes.begin()+count);return true;}
+            const auto error=GetLastError();if(error==ERROR_IO_PENDING){io.pending=true;return false;}
+            d.closed=true;if(error!=ERROR_BROKEN_PIPE&&error!=ERROR_NO_DATA)d.unknown=true;return false;}
+        if(GetOverlappedResult(d.pipe.Get(),&io.overlapped,&count,FALSE)){io.pending=false;bytes.assign(io.bytes.begin(),io.bytes.begin()+count);return true;}
+        const auto error=GetLastError();if(error==ERROR_IO_INCOMPLETE)return false;d.closed=true;
+        if(error!=ERROR_OPERATION_ABORTED&&error!=ERROR_BROKEN_PIPE&&error!=ERROR_NO_DATA){d.unknown=true;return false;}
+        io.pending=false;return false;
+    }
+    bool SendBytes(const Bytes& bytes){auto& d=*data_;if(!d.connected||d.closed||d.unknown||bytes.empty()||bytes.size()>4096)return false;
+        auto io=std::make_unique<Io>();std::copy(bytes.begin(),bytes.end(),io->bytes.begin());DWORD count=0;
+        if(!WriteFile(d.pipe.Get(),io->bytes.data(),static_cast<DWORD>(bytes.size()),&count,&io->overlapped)){
+            if(GetLastError()!=ERROR_IO_PENDING){d.closed=true;d.unknown=true;d.unsettled.push_back(std::move(io));return false;}io->pending=true;
+            const auto wait=WaitForSingleObject(io->event.Get(),1000);
+            if(wait!=WAIT_OBJECT_0){d.closed=true;d.unknown=true;Settle(*io,true);d.unsettled.push_back(std::move(io));return false;}
+            if(!GetOverlappedResult(d.pipe.Get(),&io->overlapped,&count,FALSE)){d.closed=true;d.unknown=true;io->pending=false;d.unsettled.push_back(std::move(io));return false;}io->pending=false;
+        }
+        if(count!=bytes.size()){d.closed=true;d.unknown=true;d.unsettled.push_back(std::move(io));return false;}
+        if(!CloseHandleOnce(io->event)){d.closed=true;return false;}return true;
+    }
+    bool CloseOnce()noexcept{auto& d=*data_;if(d.closeAttempted)return !d.unknown;d.closeAttempted=true;d.closed=true;
+        if(d.unknown||!d.unsettled.empty()||!Settle(*d.connect,true)||!Settle(*d.read,true)){d.unknown=true;return false;}
+        const bool pipe=CloseHandleOnce(d.pipe);if(!pipe)return false;
+        const bool connect=CloseHandleOnce(d.connect->event),read=CloseHandleOnce(d.read->event);return connect&&read&&!d.unknown;
+    }
+    bool Closed()const noexcept{return data_->closed;}
+    bool Connected()const noexcept{return data_->connected;}
+    bool Unknown()const noexcept{return data_->unknown;}
+    void* Handle()const noexcept{return data_->pipe.Get();}
+    const std::wstring& Name()const noexcept{return data_->name;}
+};
+#endif
 class OriginalController final {
 public:
     OriginalController(void* pipe,const reviewed::Profile& p){ULONG pid=0;if(!GetNamedPipeClientProcessId(pipe,&pid)||!pid)Refuse("controller_peer_query_failed",GetLastError());original_=Held(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION|SYNCHRONIZE,FALSE,pid));if(!original_.Valid())Refuse("original_controller_open_failed",GetLastError());pid_=pid;birth_=detail::ProcessBirth(original_.Get());sid_=detail::ProcessSid(original_.Get());image_=detail::ProcessImage(original_.Get());if(sid_!=p.userSid||image_!=p.controllerImage.pin.canonicalPath||!detail::ProcessLive(original_.Get()))Refuse("controller_peer_binding_refused");ULONG still=0;if(!GetNamedPipeClientProcessId(pipe,&still)||still!=pid_||detail::ProcessBirth(original_.Get())!=birth_)Refuse("controller_peer_race");}
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    OriginalController(Held original,const reviewed::Profile& p):original_(std::move(original)){
+        if(!original_.Valid())Refuse("trusted_original_controller_required");pid_=GetProcessId(original_.Get());birth_=detail::ProcessBirth(original_.Get());
+        sid_=detail::ProcessSid(original_.Get());image_=detail::ProcessImage(original_.Get());
+        if(!pid_||!birth_||sid_!=p.userSid||image_!=p.controllerImage.pin.canonicalPath||!Current())Refuse("trusted_original_controller_identity_refused");
+    }
+    bool Current()const{try{return original_.Valid()&&detail::ProcessLive(original_.Get())&&GetProcessId(original_.Get())==pid_&&
+        detail::ProcessBirth(original_.Get())==birth_&&detail::ProcessSid(original_.Get())==sid_&&detail::ProcessImage(original_.Get())==image_;}catch(...){return false;}}
+    void* BorrowedOriginalProcess()const noexcept{return original_.Get();}
+#endif
     bool Live(void* pipe)const{ULONG peer=0;return GetNamedPipeClientProcessId(pipe,&peer)&&peer==pid_&&detail::ProcessLive(original_.Get())&&detail::ProcessBirth(original_.Get())==birth_&&detail::ProcessSid(original_.Get())==sid_&&detail::ProcessImage(original_.Get())==image_;}
 #if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
     bool DifferentOriginalPeer(void* pipe)const{ULONG peer=0;return GetNamedPipeClientProcessId(pipe,&peer)&&peer&&peer!=pid_;}
@@ -155,6 +254,10 @@ bool ContinuityPort::IsSpent(const Digest& key)const{return std::find(data_->spe
 void ContinuityPort::Close()noexcept{data_->closed=true;}
 
 struct Broker::Data {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    struct Trusted;
+    static int RunTrustedFixed();
+#endif
     std::unique_ptr<InstalledEnrollment> enrollment;std::unique_ptr<initial_fence::Factory> factory;
     initial_fence::RootLease root;initial_fence::FenceLease fence;
     std::unique_ptr<ContinuityPort> continuity;std::unique_ptr<initial_durability::Store> store;
@@ -186,7 +289,7 @@ struct Broker::Data {
     bool ControllerLive(){if(controllerRevoked||!controller||controllerPipe->Closed()||!controller->Live(controllerPipe->Handle())){Revoke();return false;}if(openedAt&&GetTickCount64()>=sessionDeadline){Revoke();return false;}return true;}
     Message Reply(std::uint16_t verb,std::uint64_t ordinal){Message message;message.verb=verb;message.ordinal=ordinal;message.channelNonce=controllerNonce;message.generation=generation;message.bootNonce=bootNonce;message.readinessEpoch=static_cast<std::uint64_t>(state);return message;}
     void ControllerMessage(const Message& m){
-#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE) || defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
         (void)m;Refuse("legacy_controller_entry_unavailable_in_phase_target");
 #else
         if(m.channelNonce!=controllerNonce||m.ordinal==0||controllerOrdinal==std::numeric_limits<std::uint64_t>::max()||m.ordinal!=controllerOrdinal+1||!detail::Zero(m.generation)||!detail::Zero(m.bootNonce)||!detail::Zero(m.reference)||!detail::Zero(m.digest)||m.readinessEpoch||m.readinessMask)Refuse("controller_closed_message_refused");controllerOrdinal=m.ordinal;
@@ -224,6 +327,584 @@ struct Broker::Data {
         if(!drainAcknowledged||readinessMask!=kAllQuiescent||stopConsumed)return false;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Stop;record.target=enrollment->Profile().stopTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;stopConsumed=true;stopRecord=consumed.recordHash;if(!consumed.ok||consumed.unknown||!Guard()||!daemon->LifecycleEffectAllowed()){Unknown();return false;}Message stop;stop.verb=34;stop.ordinal=2;stop.channelNonce=daemonNonce;stop.generation=generation;stop.bootNonce=bootNonce;stop.reference=stopRef;stop.digest=stopRecord;if(!daemon->LifecycleEffectAllowed()||!daemonPipe->Send(stop))Unknown();return false;
     }
 };
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+namespace {
+void TrustedPayload(phase::Frame& frame,const Bytes& bytes){if(bytes.size()>phase::kMaximumPayloadBytes)Refuse("trusted_payload_bound");
+    frame.header.payloadBytes=static_cast<std::uint32_t>(bytes.size());std::copy(bytes.begin(),bytes.end(),frame.payload.begin());}
+Bytes TrustedStatus(State state,const Id& session){Bytes bytes;detail::PutU16(bytes,static_cast<std::uint16_t>(state));Put(bytes,session);return bytes;}
+Digest TrustedHash(const char* domain,const Bytes& fields){Bytes bytes;for(const char* at=domain;*at;++at)bytes.push_back(static_cast<unsigned char>(*at));bytes.push_back(0);Put(bytes,fields);return detail::Hash(bytes);}
+template<std::size_t N>std::array<unsigned char,N> TrustedField(const phase::Frame& frame,std::size_t at){
+    if(at+N>frame.header.payloadBytes)Refuse("trusted_field_bounds");std::array<unsigned char,N> value{};std::copy_n(frame.payload.begin()+static_cast<std::ptrdiff_t>(at),N,value.begin());return value;}
+std::uint64_t TrustedNumber(const phase::Frame& frame,std::size_t at,std::size_t width){if(width>8||at+width>frame.header.payloadBytes)Refuse("trusted_number_bounds");
+    std::uint64_t value=0;for(std::size_t i=0;i<width;++i)value|=static_cast<std::uint64_t>(frame.payload[at+i])<<(i*8);return value;}
+Bytes TrustedCall(const phase::CallReply& call){Bytes bytes;Put(bytes,call.callRef);Put(bytes,call.ingressNonce);detail::PutU64(bytes,call.expiresMono);Put(bytes,call.bindingHash);return bytes;}
+Bytes TrustedHandler(const phase::HandlerReply& handler){Bytes bytes;Put(bytes,handler.permitRef);Put(bytes,handler.permitNonce);detail::PutU64(bytes,handler.expiresMono);Put(bytes,handler.bindingHash);return bytes;}
+}
+struct Broker::Data::Trusted final : Broker::Data {
+    std::shared_ptr<production::OriginalSealWitness> originalSeal;
+    std::unique_ptr<trusted_read::Bootstrap> inherited;
+    std::unique_ptr<OriginalController> originalController;
+    Held originalSelf;std::uint64_t originalSelfBirth=0;std::wstring originalSelfImage,originalSelfSid;
+    std::unique_ptr<TrustedPipe> controlled,worker;
+    std::unique_ptr<phase::WireChannel> controlWire,workerWire;
+    phase::VolatileServerLedger ledger;
+    NativeDispatchCommit::Lifetime effects;
+    Id session=detail::RandomId(),brokerInstance=detail::RandomId(),launchRef=detail::RandomId();
+    Digest controllerWitness{},daemonWitness{},transportBinding{},lifecycleBinding{};
+    std::uint64_t lastMono=0;bool opened=false,runtimeBound=false,daemonBound=false,journalStarted=false;
+    bool drainRequested=false,shutdownSent=false,shutdownAcknowledged=false;
+    struct Challenge {Id ref{},target{};phase::ChallengePurpose purpose=phase::ChallengePurpose::Readiness;
+        std::uint64_t issued=0,ordinal=0;bool pending=false;};
+    Challenge challenge;phase::VolatileServerLedger::ReadObservation observation{};
+    Digest observationTransport{},observationSnapshot{};Id observationActor{};std::uint64_t observationGeneration=0,lastObservationOrdinal=0;
+    bool sameActor=false,panelEffectSpent=false;phase::Frame deferredController{};bool controllerDeferred=false;
+    struct Project {enum class Stage:std::uint8_t{Bound,Selected,Guarded,Delivered,Terminal,Unknown};
+        Id ref{},nonce{},handler{},command{},execution{},lease{},delivery{},deliveryNonce{},lateNonce{};
+        Digest script{},body{},leaf{},binding{},selection{},guard{},receipt{},result{};
+        std::uint64_t expiry=0,ordinal=0;bool inspection=false,preparationDelivery=false,executionDelivery=false;
+        Id executionAuthority{};std::uint16_t variantSlot=0,effectOperation=2;bool nativeFile=false;Stage stage=Stage::Bound;NativeDispatchCommit::Observation note{};
+        std::unique_ptr<NativeDispatchCommit> commit;};
+    std::vector<std::unique_ptr<Project>> projects;
+    // These are actual source-bound preparation terminals, not D46 authorities.
+    // A scope is never recycled, and caller C5 hashes cannot mark it prepared.
+    Digest preparedBuild{};bool preparationFailed=false;
+    struct PreparedScope final {Digest scope{},proposal{},dryRun{};std::uint64_t issued=0;bool failed=false,executionBegun=false;};
+    // One whole-manifest Build precedes scoped Propose+dry-run+Execute groups.
+    // Group capacity is separately frozen, independent of the Call ceiling.
+    std::array<std::unique_ptr<PreparedScope>,trusted_read::kTwoTitlePreparedScopes> preparedScopes{};
+    struct ExecutionAuthority final {Id ref{},nonce{},call{},handler{};Digest scope{},proposal{},dryRun{},project{},leaves{},observation{},binding{};
+        std::uint64_t expiry=0;bool consumed=false;};
+    std::vector<std::unique_ptr<ExecutionAuthority>> executionAuthorities;
+    struct OriginalJobRow final {enum class Stage:std::uint8_t{Armed,Polling,Terminal,Media,Unknown};Stage stage=Stage::Armed;
+        Id ref{},startTicket{},handler{},poll{},pollNonce{};Digest hash{},selector{},processWrapper{},startReceipt{},terminalReceipt{},mediaReceipt{},pollBinding{};
+        std::uint64_t issued=0,deadline=0,nextOrdinal=1,activeOrdinal=0;std::uint32_t maximumPolls=0;std::uint16_t slot=0;};
+    std::array<std::unique_ptr<OriginalJobRow>,2> originalJobs{};
+    struct RestoreDebt final {enum class State:std::uint8_t{Selected,StageTerminal,Restored,Unknown};State state=State::Selected;Id stageTicket{},actor{};Digest scope{},stageResult{},stageReceipt{};std::uint16_t slot=0;};
+    std::array<std::unique_ptr<RestoreDebt>,2> restoreDebts{};
+    struct RestrictedRead final {Id readRef{},bracket{},stageTicket{},projectTicket{};Digest readHash{},scope{},stageResult{},projectResult{};std::uint64_t epoch=0;std::uint16_t slot=0;};
+    std::vector<RestrictedRead> restrictedReads;Id restorationBracket{};std::uint16_t restorationBracketSlot=0;
+    std::uint16_t EligibleRestoreBracket()const{std::uint16_t selected=0;for(const auto& debt:restoreDebts){if(!debt||debt->state==RestoreDebt::State::Restored)continue;if(selected||debt->state!=RestoreDebt::State::StageTerminal||debt->actor!=actor||detail::Zero(debt->stageResult)||detail::Zero(debt->stageReceipt))Refuse("trusted_restore_bracket_debt_unknown");selected=debt->slot;}
+        if(selected){for(const auto& job:originalJobs)if(job&&job->stage!=OriginalJobRow::Stage::Media)Refuse("trusted_restore_bracket_job_media_not_quiescent");
+            // A known enqueue without its completed media-bound START cannot
+            // be hidden by the absence of a D47 row; no renew between them.
+            for(const auto& ticket:projects)if(ticket->executionDelivery&&ticket->variantSlot==selected&&ticket->effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::EnqueueAme)){
+                if(!originalJobs[selected-1]||originalJobs[selected-1]->stage!=OriginalJobRow::Stage::Media)Refuse("trusted_restore_bracket_enqueue_start_pending");}}
+        return selected;
+    }
+    const RestrictedRead* Restriction(const Digest& hash)const noexcept{for(const auto& value:restrictedReads)if(value.readHash==hash)return &value;return nullptr;}
+
+    struct CleanupPrefix final {
+        Held journal;std::array<Held,256> slots{};std::array<void*,257> failedClose{};
+        ObjectPin journalPin;std::array<ObjectPin,256> pins{};FloorSnapshot floor;
+        bool acquired=false,releaseAttempted=false,released=false,unknown=false;
+        ~CleanupPrefix(){if(!released){(void)journal.Take();for(auto& slot:slots)(void)slot.Take();}}
+        bool SameHeld()const noexcept{try{if(!acquired||released||unknown||releaseAttempted||floor.pending.exists||floor.sequence>256||
+                !journal.Valid()||!detail::SamePin(detail::ReadPin(journal.Get(),true),journalPin))return false;
+            for(std::size_t i=0;i<static_cast<std::size_t>(floor.sequence);++i)if(!slots[i].Valid()||!detail::SamePin(detail::ReadPin(slots[i].Get(),false),pins[i])||
+                pins[i].fileId!=floor.originalSlotIds[i]||ReadOriginalSlot(slots[i].Get(),i+1).hash!=floor.originalFrameHashes[i])return false;
+            return true;
+        }catch(...){return false;}}
+        bool ReleaseOnce()noexcept{if(releaseAttempted)return released&&!unknown;releaseAttempted=true;
+            for(std::size_t i=0;i<static_cast<std::size_t>(floor.sequence);++i){if(!slots[i].Valid()){unknown=true;return false;}void* original=slots[i].Take();
+                if(!CloseHandle(original)){failedClose[i]=original;unknown=true;return false;}}
+            if(!journal.Valid()){unknown=true;return false;}void* original=journal.Take();if(!CloseHandle(original)){failedClose[256]=original;unknown=true;return false;}
+            released=true;return true;
+        }
+    };
+    std::unique_ptr<CleanupPrefix> cleanupPrefix;
+    void HoldCleanupPrefix(){if(cleanupPrefix||drainSent||drainAcknowledged||!WorkerCurrent(true))Refuse("trusted_cleanup_prefix_once_refused",0,true);
+        cleanupPrefix=std::make_unique<CleanupPrefix>();auto& retained=*cleanupPrefix;retained.floor=continuity->Floor();
+        if(retained.floor.pending.exists||retained.floor.sequence>256||retained.floor.originalSlotIds.size()!=retained.floor.sequence||
+            retained.floor.originalFrameHashes.size()!=retained.floor.sequence)Refuse("trusted_cleanup_prefix_floor_refused",0,true);
+        retained.journal=detail::Relative(enrollment->BorrowedRuntime(),L"journal",true,false,false,false,true);retained.journalPin=detail::ReadPin(retained.journal.Get(),true);
+        if(!detail::SamePin(retained.journalPin,enrollment->Profile().journal))Refuse("trusted_cleanup_original_journal_refused",0,true);
+        for(std::size_t i=0;i<static_cast<std::size_t>(retained.floor.sequence);++i){retained.slots[i]=detail::Relative(retained.journal.Get(),SlotName(i+1),false,false,false,false,true);
+            retained.pins[i]=detail::ReadPin(retained.slots[i].Get(),false);if(retained.pins[i].fileId!=retained.floor.originalSlotIds[i]||
+                ReadOriginalSlot(retained.slots[i].Get(),i+1).hash!=retained.floor.originalFrameHashes[i])Refuse("trusted_cleanup_original_prefix_refused",0,true);}
+        retained.acquired=true;if(!retained.SameHeld()||!WorkerCurrent(true))Refuse("trusted_cleanup_prefix_late_guard_refused",0,true);
+    }
+    bool CleanupPrefixCurrent()const noexcept{if(!cleanupPrefix||!cleanupPrefix->SameHeld())return false;const auto& original=cleanupPrefix->floor;const auto& now=continuity->Floor();
+        return !now.pending.exists&&now.sequence==original.sequence&&now.epoch==original.epoch&&now.head==original.head&&now.genesis==original.genesis&&now.owner==original.owner&&
+            now.scope==original.scope&&now.originalSlotIds==original.originalSlotIds&&now.originalFrameHashes==original.originalFrameHashes;}
+    void InitializeTrusted(){Result accepted;originalSeal=production::OriginalSealWitness::OpenFixed(accepted);
+        if(!originalSeal)Refuse(accepted.code.c_str(),accepted.win32Error,accepted.unknown,accepted.unavailable);
+        // Receive and check the actual original inherited MCP object first.
+        // No journal/fence creation or first-peer PID adoption precedes this.
+        projects.reserve(phase::kLifetimeCallRows);inherited=std::make_unique<trusted_read::Bootstrap>(trusted_read::ReceiveBootstrapFixed(trusted_read::Role::Controller));
+        enrollment=InstalledEnrollment::OpenProductionFixed(originalSeal,accepted);
+        if(!enrollment)Refuse(accepted.code.c_str(),accepted.win32Error,accepted.unknown,accepted.unavailable);
+        originalController=std::make_unique<OriginalController>(std::move(inherited->originalPeer),enrollment->Profile());controllerNonce=inherited->bindings.channelNonce;
+        HANDLE self=nullptr;if(!DuplicateHandle(GetCurrentProcess(),GetCurrentProcess(),GetCurrentProcess(),&self,PROCESS_QUERY_LIMITED_INFORMATION|SYNCHRONIZE,FALSE,0))
+            Refuse("trusted_broker_original_self_duplicate_failed",GetLastError());originalSelf=Held(self);originalSelfBirth=detail::ProcessBirth(originalSelf.Get());
+        originalSelfSid=detail::ProcessSid(originalSelf.Get());originalSelfImage=detail::ProcessImage(originalSelf.Get());
+        if(!SelfCurrent()||originalSelfImage!=originalSeal->ArtifactFile(production::ArtifactRole::Broker).pin.canonicalPath||
+            originalSelfSid!=enrollment->Profile().userSid||detail::Zero(controllerNonce))Refuse("trusted_broker_original_self_refused");
+        initial_fence::Result fenced;factory=initial_fence::Factory::CreateInstalledFactory(*enrollment,fenced);
+        if(!factory||!factory->OpenRoot(root,fence).ok||!factory->TryAcquire(root,fence).ok)Refuse("trusted_broker_original_fence_refused");
+        continuity=std::unique_ptr<ContinuityPort>(new ContinuityPort(*enrollment,*factory,root,fence));initial_durability::Result stored;
+        store=initial_durability::Store::CreateInstalledStore(*enrollment,*continuity,*factory,root,fence,stored);
+        if(!store)Refuse(stored.code.c_str(),stored.win32Error,stored.unknown,stored.unavailable);
+        stored=store->Inspect();if(!stored.ok||stored.unknown||stored.unavailable||stored.current.sequence||stored.current.epoch||!detail::Zero(stored.current.head))
+            Refuse("trusted_broker_nonempty_root_unavailable",stored.win32Error,stored.unknown,true);cas=stored.current;
+        controlled=std::make_unique<TrustedPipe>(PipeName(enrollment->LaunchKey(),controllerNonce,L"controller"),enrollment->Profile().userSid);
+        worker=std::make_unique<TrustedPipe>(PipeName(enrollment->LaunchKey(),daemonNonce,L"daemon"),enrollment->Profile().userSid);
+        controlWire=std::make_unique<phase::WireChannel>(phase::Direction::ControllerToBroker,inherited->bindings,phase::BindingStage::BeforeOpen);
+        if(!OriginalFloor(false))Refuse("trusted_broker_initial_floor_refused");
+        trusted_read::SendBrokerBootstrapFixed(*inherited,controlled->Name(),controllerNonce);
+    }
+    bool SelfCurrent()const noexcept{try{return originalSelf.Valid()&&originalSelfBirth&&detail::ProcessLive(originalSelf.Get())&&
+        GetProcessId(originalSelf.Get())==GetCurrentProcessId()&&detail::ProcessBirth(originalSelf.Get())==originalSelfBirth&&
+        detail::ProcessSid(originalSelf.Get())==originalSelfSid&&detail::ProcessImage(originalSelf.Get())==originalSelfImage;}catch(...){return false;}}
+    bool OriginalFloor(bool lifecycle)noexcept{try{const auto now=GetTickCount64();if(now<lastMono||unknownDisposition||!SelfCurrent()||!originalSeal||!originalSeal->Fresh()||
+            !enrollment||!Guard()||!continuity->MatchesBinding(*enrollment,*factory,root,fence))return false;lastMono=now;
+        const auto& floor=continuity->Floor();if(floor.pending.exists||floor.sequence!=cas.sequence||floor.epoch!=cas.epoch||floor.head!=cas.head||floor.scope!=enrollment->Scope())return false;
+        if(lifecycle)return daemon&&daemon->LifecycleEffectAllowed();
+        return !controllerRevoked&&originalController&&originalController->Current()&&(!opened||now<sessionDeadline);
+    }catch(...){return false;}}
+    bool ControllerCurrent()noexcept{return controlled&&controlled->Connected()&&!controlled->Closed()&&!controlled->Unknown()&&
+        originalController&&originalController->Live(controlled->Handle())&&OriginalFloor(false);}
+    bool WorkerCurrent(bool lifecycle=false)noexcept{try{if(!runtimeBound||!daemon||!worker||!worker->Connected()||worker->Closed()||worker->Unknown()||
+            !daemon->MatchesPeer(worker->Handle())||!OriginalFloor(lifecycle))return false;
+        return !daemonBound||(daemon->OriginalInstance()==ledger.daemon_.originalInstance&&daemonNonce==ledger.daemon_.privateChannel&&
+            daemon->PhaseWitness(worker->Handle(),session,daemonNonce)==daemonWitness);
+    }catch(...){return false;}}
+    static bool Refresh(void* pointer,std::uint64_t& now)noexcept{try{auto& d=*static_cast<Trusted*>(pointer);
+        if(!d.ControllerCurrent()||(d.daemonBound&&!d.WorkerCurrent()))return false;now=GetTickCount64();return now>=d.lastMono&&now<d.sessionDeadline;
+    }catch(...){return false;}}
+    static bool Random(void* pointer,Id& id)noexcept{try{auto& d=*static_cast<Trusted*>(pointer);if(!d.ControllerCurrent()||(d.daemonBound&&!d.WorkerCurrent()))return false;
+        id=detail::RandomId();return !detail::Zero(id);}catch(...){return false;}}
+    void StartJournal(){if(journalStarted||opened||cas.sequence||!ControllerCurrent())Refuse("trusted_c1_once_refused");journalStarted=true;
+        const auto genesis=store->InitializeGenesis({});cas=genesis.current;if(!genesis.ok||genesis.unknown||genesis.unavailable)Refuse("trusted_c1_genesis_unknown",genesis.win32Error,true);
+        if(!ControllerCurrent())Refuse("trusted_c1_genesis_late_guard_unknown",0,true);const auto owner=store->AcquireOwnerEpoch(cas);cas=owner.current;
+        if(!owner.ok||owner.unknown||owner.unavailable||!ControllerCurrent())Refuse("trusted_c1_owner_unknown",owner.win32Error,true);
+    }
+    phase::Frame Reply(const phase::Frame& request,bool controllerPeer,phase::Status status){auto& wire=controllerPeer?*controlWire:*workerWire;
+        if(wire.outgoingOrdinal_==std::numeric_limits<std::uint64_t>::max())Refuse("trusted_reply_ordinal_unknown",0,true);
+        phase::Frame reply{};reply.header.direction=controllerPeer?phase::Direction::BrokerToController:phase::Direction::BrokerToDaemon;
+        reply.header.kind=phase::FrameKind::Reply;reply.header.verb=request.header.verb;reply.header.status=status;
+        reply.header.senderOrdinal=wire.outgoingOrdinal_+1;reply.header.replyToOrdinal=request.header.senderOrdinal;
+        reply.header.channelNonce=wire.bindings_.channelNonce;reply.header.sessionRef=wire.bindings_.sessionRef;
+        reply.header.generation=wire.bindings_.generation;reply.header.bootNonce=wire.bindings_.bootNonce;return reply;
+    }
+    void Send(phase::Frame& frame,bool controllerPeer,bool admitted,bool lifecycle=false){auto& wire=controllerPeer?*controlWire:*workerWire;auto& pipe=controllerPeer?*controlled:*worker;
+        std::array<unsigned char,phase::kMaximumFrameBytes> bytes{};std::size_t count=0;
+        if(phase::EncodeFrame(frame,bytes.data(),bytes.size(),count)!=phase::CodecError::None||wire.TrackOutgoing(frame)!=phase::CodecError::None)
+            Refuse("trusted_send_codec_unknown",0,true);
+        if(admitted&&!(controllerPeer?ControllerCurrent():WorkerCurrent(lifecycle)))Refuse("trusted_send_last_guard_unknown",0,true);
+        if(!pipe.SendBytes(Bytes(bytes.begin(),bytes.begin()+static_cast<std::ptrdiff_t>(count))))Refuse("trusted_send_once_unknown",0,true);
+    }
+    void Open(const phase::Frame& request){if(opened||openedAt||state!=State::Closed||!ControllerCurrent())Refuse("trusted_c1_once_refused");StartJournal();
+        openedAt=GetTickCount64();const auto limit=enrollment->Profile().maximumSessionMs;
+        if(limit!=kMaximumSessionMs||openedAt>std::numeric_limits<std::uint64_t>::max()-limit)Refuse("trusted_c1_fixed_deadline_refused",0,true);sessionDeadline=openedAt+limit;
+        controllerWitness=originalController->PhaseWitness(controlled->Handle(),controllerNonce,enrollment->Profile().controllerImage.sha256);
+        Bytes transport;Put(transport,controllerNonce);Put(transport,controllerWitness);Put(transport,brokerInstance);Put(transport,enrollment->LaunchKey());
+        transportBinding=TrustedHash("lcp2.production.original-controller-transport.v1",transport);const auto scope=enrollment->Scope();
+        auto reply=Reply(request,true,phase::Status::Ok);Bytes payload;Put(payload,session);detail::PutU64(payload,openedAt);detail::PutU64(payload,sessionDeadline);
+        Put(payload,enrollment->Profile().policyHash);detail::PutU64(payload,enrollment->Profile().policyEpoch);detail::PutU64(payload,0);Put(payload,controllerWitness);Put(payload,transportBinding);Put(payload,scope);
+        TrustedPayload(reply,payload);Send(reply,true,true);
+        phase::VolatileServerLedger::NativeBinding binding{};binding.session={controllerNonce,session,{},{}};binding.brokerInstance=brokerInstance;
+        binding.installation=enrollment->Profile().installation;binding.lineage=enrollment->Profile().lineage;binding.scopeHash=scope;
+        binding.policyHash=enrollment->Profile().policyHash;binding.transportHash=transportBinding;binding.sourceHash=enrollment->Profile().sourceSetHash;
+        binding.openedMono=openedAt;binding.deadline=sessionDeadline;binding.policyEpoch=enrollment->Profile().policyEpoch;
+        if(!ControllerCurrent()||!ledger.InitializeNative(binding,{this,Refresh,Random},originalController->Instance(),controllerWitness)||
+            !controlWire->BindOpened(reply,session,scope))Refuse("trusted_c1_binding_unknown",0,true);opened=true;state=State::SessionOpen;
+    }
+    void Launch(const phase::Frame& request){if(!opened||runtimeBound||daemon||state!=State::SessionOpen||!ControllerCurrent())Refuse("trusted_launch_once_refused");
+        initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Launch;record.target=enrollment->Profile().launchTarget;
+        const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;
+        if(!consumed.ok||consumed.unknown||consumed.unavailable||!consumed.consumptionRecorded||consumed.persistence!="os_flush_ack_and_readback")
+            Refuse("trusted_launch_consumed_unknown",consumed.win32Error,true);launchRecord=consumed.recordHash;state=State::LaunchReserved;
+        auto lifecycle=PreparedLifecycleGrant::Prepare(generation,bootNonce,launchRecord,sessionDeadline);lifecycleBinding=lifecycle->BindingHash();
+        if(!ControllerCurrent())Refuse("trusted_launch_late_guard_unknown",0,true);Result launched;
+        daemon=OriginalDaemon::Launch(*enrollment,generation,bootNonce,daemonNonce,worker->Name(),session,originalController->BorrowedOriginalProcess(),std::move(lifecycle),launched);
+        if(!daemon||!launched.ok)Refuse("trusted_original_launch_unknown",launched.win32Error,true);state=State::TargetHeld;
+        auto reply=Reply(request,true,phase::Status::Ok);Bytes payload;payload.push_back(1);Put(payload,launchRef);Put(payload,launchRecord);
+        detail::PutU64(payload,cas.sequence);detail::PutU64(payload,cas.epoch);Put(payload,cas.head);Put(payload,generation);Put(payload,bootNonce);Put(payload,lifecycleBinding);
+        TrustedPayload(reply,payload);Send(reply,true,true);
+        if(!ControllerCurrent()||!controlWire->AttachRuntime(reply,generation,bootNonce)||!ledger.AttachNativeRuntime(generation,bootNonce))Refuse("trusted_runtime_binding_unknown",0,true);
+        workerWire=std::make_unique<phase::WireChannel>(phase::Direction::DaemonToBroker,phase::WireBindings{daemonNonce,session,generation,bootNonce},phase::BindingStage::Open);runtimeBound=true;
+    }
+    void Boot(const phase::Frame& request){if(daemonBound||state!=State::TargetHeld||!WorkerCurrent()||request.header.payloadBytes!=32||
+            !std::equal(enrollment->Profile().sourceSetHash.begin(),enrollment->Profile().sourceSetHash.end(),request.payload.begin()))Refuse("trusted_d17_original_source_refused");
+        daemonWitness=daemon->PhaseWitness(worker->Handle(),session,daemonNonce);
+        if(!ledger.AttachNativeDaemon(daemonNonce,daemon->OriginalInstance(),daemonWitness))Refuse("trusted_d17_binding_unknown",0,true);
+        Bytes installed;for(const auto& file:trusted_read::EmbeddedProfile().panelFiles){detail::PutPin(installed,file.pin);Put(installed,file.sha256);}
+        ledger.panelDefinition_.installedHash=TrustedHash("lcp2.production.installed-panel-closure.v1",installed);
+        Bytes definition;Put(definition,ledger.panelDefinition_.installedHash);Put(definition,enrollment->Profile().sourceSetHash);Put(definition,enrollment->Profile().policyHash);
+        ledger.panelDefinition_.definitionHash=TrustedHash("lcp2.production.bootstrap-definition.v1",definition);
+        daemonBound=true;state=State::RegisteredReadClosed;auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,TrustedStatus(state,session));Send(reply,false,true);
+    }
+    bool LedgerIdle(const Id& excluded={})const noexcept{if(effects.unknown||ledger.closed_||controllerDeferred)return false;
+        for(const auto& row:ledger.rows_)if(row.state==phase::VolatileServerLedger::RowState::Unknown||
+            ((row.state==phase::VolatileServerLedger::RowState::Begun||row.state==phase::VolatileServerLedger::RowState::Verified)&&row.handler.permitRef!=excluded))return false;
+        for(const auto& p:projects)if(p->stage!=Project::Stage::Terminal&&p->handler!=excluded)return false;return true;}
+    bool ReadCurrent(const Id& target)noexcept{const auto now=GetTickCount64();return everActor&&sameActor&&!challenge.pending&&WorkerCurrent()&&
+        ledger.ObservationCurrent(observation,target,now)&&observationActor==actor&&LedgerIdle(target);}
+    ExecutionAuthority* Authority(const Id& ref)noexcept{for(auto& row:executionAuthorities)if(row->ref==ref)return row.get();return nullptr;}
+    bool ExecutionCurrent(const ExecutionAuthority& authority,bool consumed=true)noexcept{const auto now=GetTickCount64();auto* row=Handler(authority.handler);
+        // D46 does not retarget the prior READ observation. Preserve the READ
+        // predicate and join EXEC to that exact fresh original observation.
+        return row&&authority.consumed==consumed&&row->body.kind==phase::CallKind::Execute&&row->state==phase::VolatileServerLedger::RowState::Verified&&
+            row->call.callRef==authority.call&&row->executionScope==authority.scope&&row->call.expiresMono==authority.expiry&&now<authority.expiry&&
+            everActor&&sameActor&&!challenge.pending&&WorkerCurrent()&&ledger.ExecutionRowCurrent(*row,now)&&
+            ledger.ObservationCurrent(observation,observation.target,now)&&observationActor==actor&&LedgerIdle(authority.handler);}
+    bool ProjectCurrent(const Project& ticket)noexcept{if(!ticket.executionDelivery)return ReadCurrent(ticket.handler);
+        const auto* authority=Authority(ticket.executionAuthority);return authority&&authority->handler==ticket.handler&&authority->scope==ticket.leaf&&ExecutionCurrent(*authority);}
+    void ChallengeTarget(const Id& target,phase::ChallengePurpose purpose){if(challenge.pending||detail::Zero(target))Refuse("trusted_challenge_once_refused");
+        const bool completion=purpose==phase::ChallengePurpose::Completion;
+        if(!WorkerCurrent(completion))Refuse("trusted_challenge_original_guard_refused");
+        if(purpose==phase::ChallengePurpose::ServerGates){phase::VolatileServerLedger::CallRow* row=nullptr;for(auto& candidate:ledger.rows_)if(candidate.call.callRef==target){row=&candidate;break;}
+            if(!row||row->body.kind!=phase::CallKind::Execute||row->state!=phase::VolatileServerLedger::RowState::Verified||!ledger.ExecutionRowCurrent(*row,GetTickCount64()))Refuse("trusted_server_gate_challenge_row_refused");}
+        else if(completion){OriginalJobRow* job=nullptr;for(auto& original:originalJobs)if(original&&original->ref==target){job=original.get();break;}
+            if(!job||job->stage!=OriginalJobRow::Stage::Polling||!job->activeOrdinal||GetTickCount64()>=job->deadline)Refuse("trusted_completion_challenge_row_refused");}
+        else if(purpose!=phase::ChallengePurpose::Readiness&&purpose!=phase::ChallengePurpose::SameActor)Refuse("trusted_challenge_purpose_refused");
+        challenge={detail::RandomId(),target,purpose,GetTickCount64(),workerWire->outgoingOrdinal_+1,true};if(!completion&&purpose!=phase::ChallengePurpose::ServerGates)sameActor=false;
+        phase::Frame event{};event.header.direction=phase::Direction::BrokerToDaemon;event.header.kind=phase::FrameKind::Event;event.header.verb=phase::Verb::ObserveChallenge;
+        event.header.senderOrdinal=challenge.ordinal;event.header.channelNonce=daemonNonce;event.header.sessionRef=session;event.header.generation=generation;event.header.bootNonce=bootNonce;
+        Bytes bytes;Put(bytes,challenge.ref);detail::PutU16(bytes,static_cast<std::uint16_t>(purpose));Put(bytes,target);TrustedPayload(event,bytes);Send(event,false,true,completion);
+    }
+    void CloseAdmission(bool unknown)noexcept{if(unknown||effects.unknown||ledger.HasUnresolved()){Unknown();effects.unknown=true;}
+        Revoke();ledger.Close();challenge.pending=false;sameActor=false;controllerDeferred=false;}
+    void ControllerFrame(const phase::Frame& request){const auto verb=request.header.verb;
+        if(verb==phase::Verb::Status){auto reply=Reply(request,true,phase::Status::Ok);TrustedPayload(reply,TrustedStatus(state,opened?session:Id{}));Send(reply,true,false);return;}
+        if(verb==phase::Verb::Revoke||verb==phase::Verb::RequestDrain){drainRequested=true;
+            // Reply is tracked before revocation. It cannot restore admission.
+            auto reply=Reply(request,true,phase::Status::Ok);Bytes bytes=verb==phase::Verb::RequestDrain?Bytes(129,0):TrustedStatus(state,opened?session:Id{});
+            if(verb==phase::Verb::RequestDrain){if(!opened||!daemonBound)Refuse("trusted_drain_before_runtime_refused");bytes[0]=1;
+                std::copy(launchRef.begin(),launchRef.end(),bytes.begin()+1);std::copy(launchRecord.begin(),launchRecord.end(),bytes.begin()+17);
+                for(std::size_t i=0;i<8;++i){bytes[49+i]=static_cast<unsigned char>(cas.sequence>>(i*8));bytes[57+i]=static_cast<unsigned char>(cas.epoch>>(i*8));}
+                std::copy(cas.head.begin(),cas.head.end(),bytes.begin()+65);std::copy(lifecycleBinding.begin(),lifecycleBinding.end(),bytes.begin()+97);}
+            TrustedPayload(reply,bytes);Send(reply,true,false);CloseAdmission(false);return;}
+        if(!ControllerCurrent()||controllerDeferred)Refuse("trusted_controller_admission_refused");
+        if(verb==phase::Verb::Open){Open(request);return;}if(verb==phase::Verb::ReserveInitialLaunch){Launch(request);return;}
+        if(!daemonBound||!WorkerCurrent())Refuse("trusted_controller_runtime_absent");
+        if(verb==phase::Verb::BeginCall){phase::BeginCallPayload body{};phase::CallReply call{};phase::Status status=phase::Status::Denied;
+            if(request.header.payloadBytes>=37){body.tool=static_cast<phase::ToolCode>(TrustedNumber(request,0,2));body.kind=static_cast<phase::CallKind>(request.payload[2]);
+                body.route=static_cast<phase::RouteCode>(TrustedNumber(request,3,2));body.canonicalBodyHash=TrustedField<32>(request,5);
+                if(body.kind==phase::CallKind::ServerOnly&&phase::ReadServerOnlyBegin(request,body)==phase::CodecError::None)status=ledger.Begin(ledger.controller_,body,GetTickCount64(),call);
+                else if(body.kind==phase::CallKind::Panel&&phase::ReadPanelBegin(request,body)==phase::CodecError::None&&state==State::RegisteredReadClosed&&!everActor)
+                    status=ledger.BeginPanel(ledger.controller_,body,GetTickCount64(),call);
+                else if((body.kind==phase::CallKind::BootstrapRead||body.kind==phase::CallKind::Read)&&ReadCurrent(observation.target)){
+                    Id bracket{};Digest read{};std::uint8_t index=0;if(body.kind==phase::CallKind::BootstrapRead){bracket=TrustedField<16>(request,37);index=request.payload[53];}
+                    else{read=TrustedField<32>(request,37);if(Restriction(read))Refuse("trusted_restoration_read_ordinary_tool_refused");}status=ledger.BeginRead(ledger.controller_,body,bracket,index,read,GetTickCount64(),call);}
+                else if(body.kind==phase::CallKind::ExecutionPrep||body.kind==phase::CallKind::Execute){trusted_read::ExecutionCost worst;
+                    if(trusted_read::EmbeddedProfile().execution.Validate(worst)&&ReadCurrent(observation.target)){
+                        const auto scope=TrustedField<32>(request,37);const auto* restriction=Restriction(TrustedField<32>(request,69));if(restriction){const auto& debt=restoreDebts[restriction->slot-1];if(scope!=restriction->scope||!debt||debt->state!=RestoreDebt::State::StageTerminal||debt->stageTicket!=restriction->stageTicket||debt->stageResult!=restriction->stageResult||restriction->epoch!=ledger.read_.epoch||restriction->readRef!=ledger.read_.ref||EligibleRestoreBracket()!=restriction->slot)Refuse("trusted_restoration_read_exact_scope_refused");}
+                        bool admittedScope=body.kind==phase::CallKind::ExecutionPrep&&
+                            trusted_read::FixedExecutionScopeAllowed(trusted_read::EmbeddedProfile().execution,body.tool,body.kind,scope)&&!preparationFailed;
+                        if(body.kind==phase::CallKind::Execute)for(const auto& original:preparedScopes)if(original&&original->scope==scope&&!original->failed&&!original->executionBegun&&
+                            !preparationFailed&&!detail::Zero(preparedBuild)&&!detail::Zero(original->proposal)&&!detail::Zero(original->dryRun)&&
+                            trusted_read::FixedExecutionScopeAllowed(trusted_read::EmbeddedProfile().execution,body.tool,body.kind,scope)){admittedScope=true;break;}
+                        if(admittedScope){status=ledger.BeginExecution(ledger.controller_,body,scope,TrustedField<32>(request,69),GetTickCount64(),call);
+                            if(status==phase::Status::Ok&&body.kind==phase::CallKind::Execute){auto* prepared=Preparation(scope);if(!prepared)Refuse("trusted_preparation_scope_late_unknown",0,true);prepared->executionBegun=true;}}}}}
+            auto reply=Reply(request,true,status);if(status==phase::Status::Ok)TrustedPayload(reply,TrustedCall(call));Send(reply,true,status==phase::Status::Ok);return;}
+        if(verb==phase::Verb::BeginBracket||verb==phase::Verb::AdoptBracket){if(!everActor||!LedgerIdle()||challenge.pending)Refuse("trusted_bracket_quiescence_refused");const auto restoreSlot=EligibleRestoreBracket();
+            if(verb==phase::Verb::BeginBracket){restorationBracketSlot=restoreSlot;restorationBracket={};}else if(restoreSlot!=restorationBracketSlot||(restoreSlot&&TrustedField<16>(request,0)!=restorationBracket))Refuse("trusted_restore_bracket_original_join");
+            deferredController=request;controllerDeferred=true;ChallengeTarget(session,phase::ChallengePurpose::Readiness);return;}
+        auto reply=Reply(request,true,phase::Status::Unavailable);Send(reply,true,false);
+    }
+    void FinishDeferred(){if(!controllerDeferred||!ReadCurrentDeferred())return;const auto request=deferredController;controllerDeferred=false;
+        auto reply=Reply(request,true,phase::Status::Denied);Bytes bytes;
+        if(request.header.verb==phase::Verb::BeginBracket){phase::VolatileServerLedger::Bracket value{};reply.header.status=ledger.BeginReadBracket(ledger.controller_,observation,GetTickCount64(),value);
+            if(reply.header.status==phase::Status::Ok){if(restorationBracketSlot)restorationBracket=value.ref;Put(bytes,value.ref);detail::PutU64(bytes,value.deadline);bytes.push_back(value.next);detail::PutU64(bytes,value.epoch);}}
+        else{phase::VolatileServerLedger::ReadAuthorization value{};reply.header.status=ledger.AdoptReadBracket(ledger.controller_,TrustedField<16>(request,0),observation,GetTickCount64(),value);
+            if(reply.header.status==phase::Status::Ok){if(restorationBracketSlot){const auto slot=EligibleRestoreBracket();if(slot!=restorationBracketSlot||value.originBracket!=restorationBracket||restrictedReads.size()>=12)Refuse("trusted_restore_read_issuance_original_bracket");
+                const auto& debt=*restoreDebts[slot-1];Project* middle=nullptr;for(const auto& ticket:projects){const auto* row=Handler(ticket->handler);if(row&&row->bracket==restorationBracket&&row->bracketIndex==2){if(middle)Refuse("trusted_restore_read_project_ambiguous");middle=ticket.get();}}
+                if(!middle||middle->stage!=Project::Stage::Terminal||detail::Zero(middle->result))Refuse("trusted_restore_read_actual_middle_terminal_required");RestrictedRead restriction;restriction.readRef=value.ref;restriction.readHash=value.hash;restriction.epoch=value.epoch;restriction.bracket=restorationBracket;restriction.slot=slot;restriction.scope=trusted_read::FixedExecutionScope(trusted_read::EmbeddedProfile().execution,slot,trusted_read::ExecutionLeaf::RestoreBaseline);restriction.stageTicket=debt.stageTicket;restriction.stageResult=debt.stageResult;restriction.projectTicket=middle->ref;restriction.projectResult=middle->result;restrictedReads.push_back(restriction);}
+            Put(bytes,value.ref);Put(bytes,value.hash);detail::PutU64(bytes,value.issuedMono);detail::PutU64(bytes,value.expiresMono);detail::PutU64(bytes,value.epoch);}}
+        if(reply.header.status==phase::Status::Ok)TrustedPayload(reply,bytes);Send(reply,true,reply.header.status==phase::Status::Ok);
+    }
+    bool ReadCurrentDeferred()noexcept{const auto pending=controllerDeferred;controllerDeferred=false;const auto ready=ReadCurrent(session);controllerDeferred=pending;return ready;}
+    phase::VolatileServerLedger::CallRow* Handler(const Id& ref)noexcept{for(auto& row:ledger.rows_)if(row.state!=phase::VolatileServerLedger::RowState::Empty&&row.handler.permitRef==ref)return &row;return nullptr;}
+    PreparedScope* Preparation(const Digest& scope)noexcept{for(auto& original:preparedScopes)if(original&&original->scope==scope)return original.get();return nullptr;}
+    Digest PreparationTerminal(const phase::VolatileServerLedger::CallRow& row,const Digest& result,std::uint16_t terminal){Bytes fields;
+        Put(fields,row.handler.bindingHash);Put(fields,row.executionScope);Put(fields,result);detail::PutU16(fields,terminal);Put(fields,session);Put(fields,enrollment->Profile().policyHash);
+        return TrustedHash("lcp2.production.preparation-terminal.v1",fields);}
+    Project& Ticket(const Id& ref){for(auto& p:projects)if(p->ref==ref||p->delivery==ref)return *p;Refuse("trusted_own_project_ticket_refused");}
+    static bool CommitGuard(void* pointer)noexcept{auto& d=*static_cast<Trusted*>(pointer);return d.WorkerCurrent()&&!d.effects.unknown;}
+    static bool CommitFloor(void* pointer,const initial_durability::Cas& expected,const Digest& record)noexcept{try{auto& d=*static_cast<Trusted*>(pointer);
+        if(!d.WorkerCurrent())return false;const auto& f=d.continuity->Floor();return !f.pending.exists&&f.sequence==expected.sequence&&f.epoch==expected.epoch&&
+            f.head==expected.head&&f.head==record&&!f.originalFrameHashes.empty()&&f.originalFrameHashes.back()==record;}catch(...){return false;}}
+    Bytes EffectAck(const Id& ref,const NativeDispatchCommit::Observation& note,const Id* nonce=nullptr){Bytes bytes;bytes.push_back(1);Put(bytes,ref);Put(bytes,note.recordHash);
+        detail::PutU64(bytes,note.sequence);detail::PutU64(bytes,note.epoch);Put(bytes,note.head);if(nonce)Put(bytes,*nonce);return bytes;}
+    NativeDispatchCommit::Binding EffectBinding(const Id& command,const Id& execution,const Id& lease,const Digest& authorization,
+        const Digest& body,const Digest& script,const Digest& leaf,std::uint16_t operation){NativeDispatchCommit::Binding b{};
+        b.broker=brokerInstance;b.installation=enrollment->Profile().installation;b.lineage=enrollment->Profile().lineage;b.session=session;b.generation=generation;b.boot=bootNonce;
+        b.command=command;b.execution=execution;b.lease=lease;b.scope=enrollment->Scope();b.runtime=enrollment->Profile().sourceSetHash;
+        b.actor=operation==3?ledger.panelDefinition_.installedHash:observation.actor;b.authorization=authorization;b.body=body;b.finalScript=script;b.allowedLeaf=leaf;
+        b.target=operation==3?ledger.panelDefinition_.definitionHash:observation.context;Bytes owner;Put(owner,continuity->AcquisitionOwner());b.owner=TrustedHash("lcp2.production.original-owner.v1",owner);
+        const auto observed=factory->Observe(root,fence);if(!observed.ok)Refuse("trusted_effect_fence_refused");Bytes original;Put(original,observed.sessionRef);
+        b.fence=TrustedHash("lcp2.production.original-fence.v1",original);b.nativeOrdinal=effects.attempts+1;b.operation=operation;return b;
+    }
+    bool LedgerIdleLifecycle()const noexcept{if(effects.unknown||challenge.pending||controllerDeferred||ledger.HasUnresolved())return false;
+        for(const auto& p:projects)if(p->stage!=Project::Stage::Terminal)return false;return true;}
+    void WorkerFrame(const phase::Frame& request);
+    bool Lifecycle();
+};
+void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto verb=request.header.verb;
+    const bool lifecycle=verb==phase::Verb::DrainAck||verb==phase::Verb::ShutdownAck;
+    if(!WorkerCurrent(lifecycle))Refuse("trusted_worker_original_guard_refused",0,true);
+    if(verb==phase::Verb::BootHello){Boot(request);return;}
+    if(lifecycle){if(!drainSent||TrustedField<16>(request,0)!=stopRef||TrustedField<16>(request,16)!=generation)Refuse("trusted_lifecycle_ack_refused",0,true);
+        if(verb==phase::Verb::DrainAck){if(drainAcknowledged||shutdownSent||TrustedField<16>(request,32)!=bootNonce||
+                TrustedField<32>(request,48)!=lifecycleBinding||!LedgerIdleLifecycle()||!CleanupPrefixCurrent())Refuse("trusted_drain_ack_quiescence_refused",0,true);drainAcknowledged=true;}
+        else{if(!shutdownSent||shutdownAcknowledged||TrustedField<32>(request,32)!=stopRecord)Refuse("trusted_shutdown_ack_refused",0,true);shutdownAcknowledged=true;awaitingOriginalExit=true;}
+        auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,TrustedStatus(state,session));Send(reply,false,true,true);
+        // The full native floor has guarded receipt and the actual ACK reply.
+        // Only now may the same held prefix close, once, before Stop Append.
+        if(verb==phase::Verb::DrainAck&&(!CleanupPrefixCurrent()||!OriginalFloor(true)||!cleanupPrefix->ReleaseOnce()))Refuse("trusted_cleanup_prefix_release_unknown",0,true);return;}
+    if(controllerRevoked||unknownDisposition||!daemonBound||drainSent)Refuse("trusted_worker_admission_closed");
+    if(verb==phase::Verb::VerifyIngress){phase::VerifyIngressPayload body{};phase::HandlerReply handler{};phase::Status status=phase::Status::Denied;
+        body.callRef=TrustedField<16>(request,0);body.ingressNonce=TrustedField<16>(request,16);body.body.tool=static_cast<phase::ToolCode>(TrustedNumber(request,32,2));
+        body.body.kind=static_cast<phase::CallKind>(request.payload[34]);body.body.route=static_cast<phase::RouteCode>(TrustedNumber(request,35,2));body.body.canonicalBodyHash=TrustedField<32>(request,37);
+        if(body.body.kind==phase::CallKind::ServerOnly&&phase::ReadServerOnlyIngress(request,body)==phase::CodecError::None)status=ledger.Verify(ledger.daemon_,body,GetTickCount64(),handler);
+        else if(body.body.kind==phase::CallKind::Panel&&phase::ReadPanelIngress(request,body)==phase::CodecError::None)status=ledger.IssuePanel(ledger.daemon_,body,GetTickCount64(),handler);
+        else if(body.body.kind==phase::CallKind::BootstrapRead||body.body.kind==phase::CallKind::Read)status=ledger.VerifyRead(ledger.daemon_,body,GetTickCount64(),handler);
+        else if(body.body.kind==phase::CallKind::ExecutionPrep||body.body.kind==phase::CallKind::Execute)status=ledger.IssueExecution(ledger.daemon_,body,GetTickCount64(),handler);
+        if(status==phase::Status::Ok&&body.body.kind==phase::CallKind::Panel){panelGrantIssued=true;panelGrantDeadline=ledger.panel_.deadline;}
+        const bool readonlyPreparation=body.body.kind==phase::CallKind::ExecutionPrep&&(body.body.tool==phase::ToolCode::GetCompDetails||body.body.tool==phase::ToolCode::GetLayerDetails||body.body.tool==phase::ToolCode::InspectTitleVariants||body.body.tool==phase::ToolCode::InspectAmeTitleSources||body.body.tool==phase::ToolCode::InspectAmeTitleQueueManifest||body.body.tool==phase::ToolCode::RunAiAgentPlan);
+        if(status==phase::Status::Ok&&(body.body.kind==phase::CallKind::BootstrapRead||body.body.kind==phase::CallKind::Read||readonlyPreparation))ChallengeTarget(handler.permitRef,phase::ChallengePurpose::Readiness);
+        if(status==phase::Status::Ok&&body.body.kind==phase::CallKind::Execute)ChallengeTarget(body.callRef,phase::ChallengePurpose::ServerGates);
+        auto reply=Reply(request,false,status);if(status==phase::Status::Ok)TrustedPayload(reply,TrustedHandler(handler));Send(reply,false,status==phase::Status::Ok);return;}
+    if(verb==phase::Verb::ObserveServerGates){const auto call=TrustedField<16>(request,0);phase::VolatileServerLedger::CallRow* row=nullptr;
+        for(auto& candidate:ledger.rows_)if(candidate.call.callRef==call&&candidate.body.kind==phase::CallKind::Execute){if(row)Refuse("trusted_execution_call_ambiguous",0,true);row=&candidate;}
+        const auto now=GetTickCount64();auto* prepared=row?Preparation(row->executionScope):nullptr;
+        if(!row||row->state!=phase::VolatileServerLedger::RowState::Verified||!ledger.ExecutionRowCurrent(*row,now)||!prepared||prepared->failed||!prepared->executionBegun||
+            !challenge.pending||challenge.purpose!=phase::ChallengePurpose::ServerGates||challenge.target!=call||challenge.ref!=TrustedField<16>(request,16)||
+            now<challenge.issued||now-challenge.issued>10000||TrustedNumber(request,192,4)!=trusted_read::kExecutionGateMask||
+            TrustedField<32>(request,32)!=prepared->proposal||TrustedField<32>(request,64)!=prepared->dryRun||detail::Zero(TrustedField<32>(request,96))||
+            detail::Zero(TrustedField<32>(request,128))||detail::Zero(TrustedField<32>(request,160))||executionAuthorities.size()>=phase::kLifetimeCallRows)
+            Refuse("trusted_execution_actual_gates_refused");
+        for(const auto& original:executionAuthorities)if(original->call==call||original->handler==row->handler.permitRef)Refuse("trusted_execution_gates_once_refused");
+        Bytes actual(request.payload.begin(),request.payload.begin()+196);Put(actual,row->handler.bindingHash);Put(actual,row->executionScope);Put(actual,session);
+        Put(actual,enrollment->Profile().policyHash);if(TrustedField<32>(request,196)!=TrustedHash("lcp2.production.actual-server-gates.v1",actual))Refuse("trusted_execution_gate_commitment_refused");
+        auto owned=std::make_unique<ExecutionAuthority>();owned->ref=detail::RandomId();owned->nonce=detail::RandomId();owned->call=call;owned->handler=row->handler.permitRef;
+        owned->scope=row->executionScope;owned->proposal=prepared->proposal;owned->dryRun=prepared->dryRun;owned->project=TrustedField<32>(request,96);owned->leaves=TrustedField<32>(request,128);
+        owned->observation=TrustedField<32>(request,160);owned->expiry=row->call.expiresMono;
+        Bytes binding;Put(binding,TrustedField<32>(request,196));Put(binding,owned->ref);Put(binding,owned->nonce);detail::PutU64(binding,owned->expiry);
+        owned->binding=TrustedHash("lcp2.production.execution-authority.v1",binding);
+        // This transfers the source-bound producer's exact observations. It
+        // neither promotes public M100 JSON nor manufactures a new READ lease.
+        if(!WorkerCurrent()||!ledger.ExecutionRowCurrent(*row,GetTickCount64()))Refuse("trusted_execution_gates_late_refused");challenge.pending=false;
+        auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,owned->ref);Put(bytes,owned->nonce);detail::PutU64(bytes,owned->expiry);Put(bytes,owned->binding);
+        executionAuthorities.push_back(std::move(owned));TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::ReadySnapshot){const auto now=GetTickCount64();const auto ordinal=TrustedNumber(request,16,8),observed=TrustedNumber(request,168,8),epoch=TrustedNumber(request,256,8);
+        const auto target=TrustedField<16>(request,152);if(!challenge.pending||challenge.purpose!=phase::ChallengePurpose::Readiness||
+            TrustedField<16>(request,0)!=challenge.ref||target!=challenge.target||now<challenge.issued||now-challenge.issued>10000||
+            !ordinal||ordinal<=lastObservationOrdinal||observed>now||now-observed>10000||!epoch||TrustedNumber(request,264,8)!=epoch||
+            TrustedNumber(request,272,4)!=kAllQuiescent||TrustedField<32>(request,88)!=enrollment->Profile().sourceSetHash||
+            detail::Zero(TrustedField<32>(request,56))||detail::Zero(TrustedField<32>(request,120))||detail::Zero(TrustedField<32>(request,176))||
+            detail::Zero(TrustedField<16>(request,208))||detail::Zero(TrustedField<32>(request,224)))Refuse("trusted_readiness_challenge_refused");
+        Bytes fields(request.payload.begin()+56,request.payload.begin()+272);Put(fields,challenge.ref);detail::PutU64(fields,ordinal);
+        if(TrustedField<32>(request,24)!=TrustedHash("lcp2.production.actor-readiness-snapshot.v1",fields))Refuse("trusted_readiness_binding_refused");
+        if(everActor&&(TrustedField<16>(request,208)!=actor||TrustedField<32>(request,56)!=ledger.panelDefinition_.actorHash))Refuse("trusted_actor_readiness_changed");
+        if(!everActor&&(target!=ledger.panel_.ref||!panelEffectSpent||ledger.panel_.stage!=phase::VolatileServerLedger::ActorStage::Issued))Refuse("trusted_pre_actor_readiness_refused");
+        observation={target,TrustedField<32>(request,56),TrustedField<32>(request,88),TrustedField<32>(request,224),TrustedField<32>(request,120),ordinal,observed,kAllQuiescent};
+        observationActor=TrustedField<16>(request,208);observationTransport=TrustedField<32>(request,176);observationSnapshot=TrustedField<32>(request,24);
+        observationGeneration=epoch;lastObservationOrdinal=ordinal;challenge.pending=false;
+        ChallengeTarget(target,phase::ChallengePurpose::SameActor);auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,challenge.ref);detail::PutU64(bytes,ordinal);Put(bytes,observationSnapshot);
+        TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::ObserveSameActorState){const auto now=GetTickCount64();if(!challenge.pending||challenge.purpose!=phase::ChallengePurpose::SameActor||
+            TrustedField<16>(request,0)!=challenge.ref||TrustedField<16>(request,16)!=challenge.target||challenge.target!=observation.target||
+            TrustedField<32>(request,32)!=observation.actor||TrustedField<32>(request,64)!=observation.context||TrustedNumber(request,96,8)!=observation.observedMono||
+            TrustedNumber(request,104,8)!=observationGeneration||now<challenge.issued||now-challenge.issued>10000||now<observation.observedMono||now-observation.observedMono>10000)
+            Refuse("trusted_same_actor_challenge_refused");challenge.pending=false;sameActor=true;
+        auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,TrustedStatus(state,session));Send(reply,false,true);FinishDeferred();return;}
+    if(verb==phase::Verb::ReservePanelEffect){const auto ref=TrustedField<16>(request,0);const auto& profile=trusted_read::EmbeddedProfile();
+        if(panelEffectSpent||everActor||state!=State::RegisteredReadClosed||!ledger.PanelRowExact()||ledger.panel_.stage!=phase::VolatileServerLedger::ActorStage::Issued||
+            ref!=ledger.panel_.ref||TrustedNumber(request,16,8)!=effects.attempts+1||GetTickCount64()>=ledger.panel_.deadline||
+            detail::Zero(profile.panelBootstrapDescriptor)||TrustedField<32>(request,24)!=profile.panelBootstrapDescriptor||detail::Zero(TrustedField<16>(request,56))||!LedgerIdle(ref)||cas.sequence>237)
+            Refuse("trusted_bootstrap_descriptor_refused");
+        panelEffectSpent=true;daemon->MarkAdmitted();const auto* row=Handler(ref);if(!row)Refuse("trusted_bootstrap_handler_absent",0,true);
+        const auto b=EffectBinding(ref,ledger.panel_.nonce,TrustedField<16>(request,56),ledger.panel_.authorizationHash,row->body.canonicalBodyHash,
+            profile.panelBootstrapDescriptor,profile.panelBootstrapDescriptor,3);NativeDispatchCommit commit(*store,cas,b,{this,CommitGuard,CommitFloor},effects);
+        const auto note=commit.Commit(NativeDispatchCommit::ProofFault::None);if(!note.freshAppend||note.unknown)Refuse("trusted_bootstrap_note_unknown",0,true);
+        ChallengeTarget(ref,phase::ChallengePurpose::Readiness);const auto nonce=detail::RandomId();auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,EffectAck(ref,note,&nonce));Send(reply,false,true);return;}
+    if(verb==phase::Verb::FirstActorObserved){phase::FirstActorPayload value{};if(phase::ReadFirstActor(request,value)!=phase::CodecError::None||everActor||!panelEffectSpent||
+            !sameActor||challenge.pending||value.grantRef!=ledger.panel_.ref||value.grantNonce!=ledger.panel_.nonce||value.actorRef!=observationActor||
+            value.actorHash!=observation.actor||value.installedPanelHash!=ledger.panelDefinition_.installedHash||GetTickCount64()>=ledger.panel_.deadline||cas.sequence>238)
+            Refuse("trusted_first_actor_own_observation_refused");
+        ledger.panelDefinition_.actorRef=value.actorRef;ledger.panelDefinition_.actorHash=value.actorHash;
+        if(!ledger.PanelExact(value))Refuse("trusted_first_actor_binding_refused");ledger.firstActorAttemptSpent_=true;ledger.panel_.stage=phase::VolatileServerLedger::ActorStage::AttemptSpent;
+        ledger.panel_.operation=value;daemon->MarkAdmitted();initial_durability::ClosedRecord consume;consume.type=initial_durability::RecordType::Consume;
+        consume.effect=initial_durability::EffectClass::Dispatch;consume.target=enrollment->Profile().actorTarget;const auto result=store->AppendOnce(cas,consume);cas=result.current;
+        if(!result.ok||result.unknown||!result.consumptionRecorded||result.persistence!="os_flush_ack_and_readback"||!WorkerCurrent())Refuse("trusted_actor_consumed_unknown",0,true);
+        ledger.panel_.consumeHash=result.recordHash;ledger.panel_.consumeSequence=cas.sequence;ledger.panel_.stage=phase::VolatileServerLedger::ActorStage::Consumed;
+        initial_durability::ClosedRecord note;note.type=initial_durability::RecordType::Note;note.sourceDigest=value.observationHash;note.configDigest=observationSnapshot;
+        const auto noted=store->AppendOnce(cas,note);cas=noted.current;if(!noted.ok||noted.unknown||noted.persistence!="os_flush_ack_and_readback"||!WorkerCurrent())Refuse("trusted_actor_note_unknown",0,true);
+        ledger.panel_.noteHash=noted.recordHash;ledger.panel_.noteSequence=cas.sequence;ledger.panel_.noteSource=note.sourceDigest;ledger.panel_.noteConfig=note.configDigest;
+        ledger.panel_.stage=phase::VolatileServerLedger::ActorStage::Published;actor=value.actorRef;everActor=true;state=State::ActorBound;
+        ledger.rows_[ledger.panel_.rowIndex].state=phase::VolatileServerLedger::RowState::ActorObserved;
+        auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;bytes.push_back(1);Put(bytes,ledger.panel_.consumeHash);Put(bytes,ledger.panel_.noteHash);
+        detail::PutU64(bytes,ledger.panel_.consumeSequence);detail::PutU64(bytes,ledger.panel_.noteSequence);Put(bytes,cas.head);Put(bytes,ledger.panel_.ref);Put(bytes,actor);
+        TrustedPayload(reply,bytes);Send(reply,false,true);ledger.panel_.stage=phase::VolatileServerLedger::ActorStage::ReplySent;return;}
+    if(verb==phase::Verb::BindCommand){const auto inputRef=TrustedField<16>(request,0);auto* row=Handler(inputRef);auto* authority=row?nullptr:Authority(inputRef);const auto now=GetTickCount64();
+        if(authority)row=Handler(authority->handler);const auto handler=row?row->handler.permitRef:Id{};
+        const bool execution=authority&&row&&row->body.kind==phase::CallKind::Execute;
+        const bool preparation=row&&row->body.kind==phase::CallKind::ExecutionPrep&&row->body.tool==phase::ToolCode::RunAiAgentPlan;
+        const bool ameInspection=row&&row->body.kind==phase::CallKind::ExecutionPrep&&(row->body.tool==phase::ToolCode::InspectAmeTitleSources||row->body.tool==phase::ToolCode::InspectAmeTitleQueueManifest);
+        const bool inspection=row&&row->body.kind==phase::CallKind::ExecutionPrep&&(row->body.tool==phase::ToolCode::GetCompDetails||row->body.tool==phase::ToolCode::GetLayerDetails||row->body.tool==phase::ToolCode::InspectTitleVariants||ameInspection||preparation);
+        const auto expectedLeaf=execution?authority->scope:preparation||ameInspection?row->executionScope:inspection?trusted_read::FixedExecutionScope(trusted_read::EmbeddedProfile().execution,0,trusted_read::ExecutionLeaf::Inspect):trusted_read::EmbeddedProfile().projectLeaf;
+        const auto expectedRole=execution?4u:inspection?3u:row&&row->body.kind==phase::CallKind::BootstrapRead?1u:2u;
+        const auto* prepared=preparation?Preparation(row->executionScope):nullptr;
+        if(!row||row->state!=phase::VolatileServerLedger::RowState::Verified||(!inspection&&!execution&&row->body.tool!=phase::ToolCode::GetProjectInfo)||
+            !(inspection||execution?ledger.ExecutionRowCurrent(*row,now):ledger.ReadRowCurrent(*row,now))||
+            (execution?authority->nonce:row->handler.permitNonce)!=TrustedField<16>(request,16)||row->handler.expiresMono!=TrustedNumber(request,32,8)||
+            TrustedNumber(request,40,2)!=static_cast<std::uint16_t>(row->body.tool)||TrustedNumber(request,42,2)!=expectedRole||
+            TrustedField<32>(request,108)!=expectedLeaf||detail::Zero(expectedLeaf)||(inspection&&row->executionScope!=expectedLeaf)||
+            (execution?!ExecutionCurrent(*authority,false):!ReadCurrent(handler))||
+            (preparation&&(!prepared||prepared->failed||prepared->executionBegun||detail::Zero(prepared->proposal)||!detail::Zero(prepared->dryRun)))||
+            projects.size()>=phase::kLifetimeCallRows)Refuse("trusted_project_bind_row_refused");
+        auto ticket=std::make_unique<Project>();ticket->ref=detail::RandomId();ticket->nonce=detail::RandomId();ticket->handler=handler;
+        ticket->command=TrustedField<16>(request,44);ticket->execution=TrustedField<16>(request,60);ticket->lease=TrustedField<16>(request,76);
+        if(detail::Zero(ticket->command)||detail::Zero(ticket->execution)||detail::Zero(ticket->lease)||!detail::Zero(TrustedField<16>(request,92)))Refuse("trusted_project_ids_refused");
+        for(const auto& other:projects)if(other->handler==handler||other->command==ticket->command||other->execution==ticket->execution||other->lease==ticket->lease)Refuse("trusted_project_ids_spent");
+        ticket->inspection=inspection||execution;ticket->preparationDelivery=preparation;ticket->executionDelivery=execution;
+        if(execution){const auto& policy=trusted_read::EmbeddedProfile().execution;bool selected=false;
+            for(std::uint16_t slot=0;slot<=2;++slot)for(const auto leaf:{trusted_read::ExecutionLeaf::OwnedCheckpoint,trusted_read::ExecutionLeaf::CleanCopy,trusted_read::ExecutionLeaf::StageVariant,trusted_read::ExecutionLeaf::EnqueueAme,trusted_read::ExecutionLeaf::StartAme,trusted_read::ExecutionLeaf::RestoreBaseline}){
+                if(trusted_read::FixedExecutionIntentAllowed(row->body.tool,phase::CallKind::Execute,slot,leaf)&&trusted_read::FixedExecutionScope(policy,slot,leaf)==expectedLeaf){
+                    if(selected)Refuse("trusted_execution_scope_ambiguous");selected=true;ticket->variantSlot=slot;ticket->effectOperation=static_cast<std::uint16_t>(leaf);
+                    ticket->nativeFile=leaf==trusted_read::ExecutionLeaf::OwnedCheckpoint||leaf==trusted_read::ExecutionLeaf::CleanCopy;}}
+            if(!selected)Refuse("trusted_execution_closed_scope_refused");ticket->executionAuthority=authority->ref;authority->consumed=true;}
+        ticket->script=TrustedField<32>(request,140);ticket->body=row->body.canonicalBodyHash;ticket->leaf=TrustedField<32>(request,108);ticket->expiry=row->call.expiresMono;
+        Bytes binding(request.payload.begin(),request.payload.begin()+172);Put(binding,session);Put(binding,observationSnapshot);Put(binding,ticket->ref);Put(binding,ticket->nonce);
+        ticket->binding=TrustedHash("lcp2.production.project-ticket.v1",binding);auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,ticket->ref);Put(bytes,ticket->nonce);
+        detail::PutU64(bytes,ticket->expiry);Put(bytes,ticket->binding);projects.push_back(std::move(ticket));TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::ConsumeDispatch){auto& ticket=Ticket(TrustedField<16>(request,0));if(ticket.stage!=Project::Stage::Bound||
+            ticket.nonce!=TrustedField<16>(request,16)||ticket.binding!=TrustedField<32>(request,32)||!ProjectCurrent(ticket)||GetTickCount64()>=ticket.expiry)
+            Refuse("trusted_project_selection_refused");Bytes selected;Put(selected,ticket.binding);Put(selected,observationSnapshot);Put(selected,observation.context);Put(selected,observationTransport);
+        ticket.selection=TrustedHash("lcp2.production.project-selected.v1",selected);if(ticket.selection!=TrustedField<32>(request,64))Refuse("trusted_project_selected_binding_refused");
+        if(ticket.executionDelivery&&ticket.variantSlot&&ticket.effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::StageVariant)){if(restoreDebts[ticket.variantSlot-1])Refuse("trusted_stage_original_restore_debt_once");auto debt=std::make_unique<RestoreDebt>();debt->slot=ticket.variantSlot;debt->stageTicket=ticket.ref;debt->scope=ticket.leaf;debt->actor=actor;restoreDebts[ticket.variantSlot-1]=std::move(debt);}
+        if(ticket.executionDelivery&&ticket.variantSlot&&ticket.effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::RestoreBaseline)){const auto& debt=restoreDebts[ticket.variantSlot-1];if(!debt||debt->state!=RestoreDebt::State::StageTerminal||debt->actor!=actor||detail::Zero(debt->stageResult))Refuse("trusted_restore_original_stage_terminal_required");}
+        ticket.stage=Project::Stage::Selected;daemon->MarkAdmitted();const auto* row=Handler(ticket.handler);if(!row)Refuse("trusted_project_selected_handler_absent",0,true);
+        const auto* authority=ticket.executionDelivery?Authority(ticket.executionAuthority):nullptr;
+        auto binding=EffectBinding(ticket.command,ticket.execution,ticket.lease,authority?authority->binding:row->handler.bindingHash,ticket.body,ticket.script,ticket.leaf,ticket.effectOperation);
+        binding.variantSlot=ticket.variantSlot;if(authority)binding.target=authority->project;
+        ticket.ordinal=binding.nativeOrdinal;ticket.commit=std::unique_ptr<NativeDispatchCommit>(new NativeDispatchCommit(*store,cas,binding,{this,CommitGuard,CommitFloor},effects));
+        ticket.note=ticket.commit->Commit(NativeDispatchCommit::ProofFault::None);if(!ticket.note.freshAppend||ticket.note.unknown){ticket.stage=Project::Stage::Unknown;Refuse("trusted_project_note_unknown",0,true);}
+        ticket.lateNonce=detail::RandomId();auto reply=Reply(request,false,phase::Status::Ok);TrustedPayload(reply,EffectAck(ticket.ref,ticket.note,&ticket.lateNonce));Send(reply,false,true);return;}
+    if(verb==phase::Verb::GuardDelivery){auto& ticket=Ticket(TrustedField<16>(request,0));if(ticket.stage!=Project::Stage::Selected||ticket.lateNonce!=TrustedField<16>(request,16)||
+            ticket.note.recordHash!=TrustedField<32>(request,32)||ticket.handler!=TrustedField<16>(request,64)||actor!=TrustedField<16>(request,80)||
+            ticket.selection!=TrustedField<32>(request,96)||observation.context!=TrustedField<32>(request,128)||ticket.expiry!=TrustedNumber(request,160,8)||
+            observation.ordinal!=TrustedNumber(request,168,8)||!ProjectCurrent(ticket)||GetTickCount64()>=ticket.expiry)Refuse("trusted_project_last_guard_unknown",0,true);
+        ticket.delivery=detail::RandomId();ticket.deliveryNonce=detail::RandomId();Bytes fields;Put(fields,ticket.delivery);Put(fields,ticket.deliveryNonce);Put(fields,ticket.selection);
+        Put(fields,ticket.note.recordHash);detail::PutU64(fields,ticket.expiry);ticket.guard=TrustedHash("lcp2.production.project-delivery-guard.v1",fields);ticket.stage=Project::Stage::Guarded;
+        auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,ticket.delivery);Put(bytes,ticket.deliveryNonce);detail::PutU64(bytes,ticket.expiry);Put(bytes,ticket.guard);
+        TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::RecordDelivery){auto& ticket=Ticket(TrustedField<16>(request,0));if(ticket.stage!=Project::Stage::Guarded||ticket.deliveryNonce!=TrustedField<16>(request,16)||
+            ticket.command!=TrustedField<16>(request,32)||ticket.guard!=TrustedField<32>(request,49)||request.payload[48]!=1||!ProjectCurrent(ticket))
+            {ticket.stage=Project::Stage::Unknown;Refuse("trusted_project_delivery_unknown",0,true);}
+        ticket.stage=Project::Stage::Delivered;Bytes receipt;Put(receipt,ticket.guard);Put(receipt,ticket.command);Put(receipt,ticket.execution);Put(receipt,ticket.lease);Put(receipt,observationTransport);
+        // A native file operation has no panel HTTP delivery/receipt. Its
+        // original producer owns the FILE_CREATE witness; D20 binds actual
+        // file hash/identity. Keep the two receipt domains distinct.
+        ticket.receipt=TrustedHash(ticket.nativeFile?"lcp2.production.native-file-effect-delivered.v1":"lcp2.production.project-delivered.v1",receipt);auto reply=Reply(request,false,phase::Status::Ok);auto bytes=EffectAck(ticket.ref,ticket.note);
+        std::copy(ticket.receipt.begin(),ticket.receipt.end(),bytes.begin()+17);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::Complete){auto* preparedRow=Handler(TrustedField<16>(request,0));
+        if(preparedRow&&preparedRow->body.kind==phase::CallKind::ExecutionPrep){const auto result=TrustedField<32>(request,32);const auto terminal=static_cast<std::uint16_t>(TrustedNumber(request,64,2));
+            if(preparedRow->call.callRef!=TrustedField<16>(request,16)||(terminal!=1&&terminal!=2)||detail::Zero(result)||!ledger.ExecutionRowCurrent(*preparedRow,GetTickCount64())||
+                TrustedField<32>(request,66)!=PreparationTerminal(*preparedRow,result,terminal))Refuse("trusted_preparation_original_terminal_refused");
+            PreparedScope* scope=Preparation(preparedRow->executionScope);const auto tool=preparedRow->body.tool;
+            if(tool==phase::ToolCode::BuildSolutionPlan){if(!detail::Zero(preparedBuild)||preparationFailed||preparedRow->executionScope!=trusted_read::FixedExecutionScope(trusted_read::EmbeddedProfile().execution,0,trusted_read::ExecutionLeaf::Inspect))
+                    Refuse("trusted_preparation_build_once_refused");}
+            else if(tool==phase::ToolCode::ProposeAiAgentPlan){if(scope||preparationFailed||detail::Zero(preparedBuild))Refuse("trusted_preparation_proposal_order_refused");std::size_t index=0;while(index<preparedScopes.size()&&preparedScopes[index])++index;
+                if(index==preparedScopes.size())Refuse("trusted_preparation_scope_budget");auto owned=std::make_unique<PreparedScope>();owned->scope=preparedRow->executionScope;owned->issued=GetTickCount64();
+                preparedScopes[index]=std::move(owned);scope=preparedScopes[index].get();}
+            else if(tool==phase::ToolCode::RunAiAgentPlan){if(!scope||scope->failed||preparationFailed||detail::Zero(preparedBuild)||detail::Zero(scope->proposal)||!detail::Zero(scope->dryRun))
+                    Refuse("trusted_preparation_receipt_order_refused");}
+            Project* originalDelivery=nullptr;if(tool==phase::ToolCode::RunAiAgentPlan){for(auto& ticket:projects)if(ticket->handler==preparedRow->handler.permitRef&&ticket->preparationDelivery){
+                    if(originalDelivery)Refuse("trusted_preparation_delivery_ambiguous",0,true);originalDelivery=ticket.get();}
+                if(!originalDelivery||originalDelivery->stage!=Project::Stage::Delivered||originalDelivery->leaf!=preparedRow->executionScope||!ProjectCurrent(*originalDelivery))Refuse("trusted_preparation_actual_delivery_required",0,true);}
+            if(ledger.FinishExecution(ledger.daemon_,preparedRow->handler.permitRef,result,GetTickCount64())!=phase::Status::Ok)Refuse("trusted_preparation_terminal_row_unknown",0,true);
+            if(tool==phase::ToolCode::BuildSolutionPlan){if(terminal!=1)preparationFailed=true;else preparedBuild=result;}
+            else if(scope){if(terminal!=1)scope->failed=true;else if(tool==phase::ToolCode::ProposeAiAgentPlan)scope->proposal=result;else if(tool==phase::ToolCode::RunAiAgentPlan)scope->dryRun=result;}
+            if(originalDelivery){originalDelivery->result=result;originalDelivery->stage=Project::Stage::Terminal;}
+            auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;bytes.push_back(1);Put(bytes,preparedRow->handler.permitRef);Put(bytes,result);
+            detail::PutU64(bytes,cas.sequence);detail::PutU64(bytes,cas.epoch);Put(bytes,cas.head);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+        Project* ticket=nullptr;for(auto& p:projects)if(p->command==TrustedField<16>(request,0)){if(ticket)Refuse("trusted_terminal_command_ambiguous",0,true);ticket=p.get();}
+        if(!ticket||ticket->stage!=Project::Stage::Delivered||ticket->execution!=TrustedField<16>(request,16)||ticket->receipt!=TrustedField<32>(request,66)||
+            TrustedNumber(request,64,2)!=1||!ProjectCurrent(*ticket))Refuse("trusted_project_terminal_unknown",0,true);
+        const auto hash=TrustedField<32>(request,32);const auto status=ticket->inspection?ledger.FinishExecution(ledger.daemon_,ticket->handler,hash,GetTickCount64()):ledger.FinishLocalProjectRead(ledger.daemon_,ticket->handler,hash,observation,GetTickCount64());
+        if(status!=phase::Status::Ok){ticket->stage=Project::Stage::Unknown;Refuse("trusted_project_terminal_row_unknown",0,true);}ticket->result=hash;ticket->stage=Project::Stage::Terminal;
+        if(ticket->executionDelivery&&ticket->variantSlot){const auto operation=static_cast<trusted_read::ExecutionLeaf>(ticket->effectOperation);if(operation==trusted_read::ExecutionLeaf::StageVariant||operation==trusted_read::ExecutionLeaf::RestoreBaseline){auto& debt=restoreDebts[ticket->variantSlot-1];if(!debt||debt->actor!=actor)Refuse("trusted_restore_terminal_original_debt",0,true);if(operation==trusted_read::ExecutionLeaf::StageVariant){if(debt->stageTicket!=ticket->ref||debt->state!=RestoreDebt::State::Selected)Refuse("trusted_stage_terminal_original_debt",0,true);debt->stageResult=hash;debt->stageReceipt=ticket->receipt;debt->state=RestoreDebt::State::StageTerminal;}else{if(debt->state!=RestoreDebt::State::StageTerminal||detail::Zero(debt->stageResult)||detail::Zero(debt->stageReceipt))Refuse("trusted_restore_terminal_stage_join",0,true);debt->state=RestoreDebt::State::Restored;}}}
+        auto reply=Reply(request,false,phase::Status::Ok);auto bytes=EffectAck(ticket->ref,ticket->note);std::copy(hash.begin(),hash.end(),bytes.begin()+17);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::BindOriginalJob){auto& start=Ticket(TrustedField<16>(request,0));const auto& policy=trusted_read::EmbeddedProfile().execution;const auto now=GetTickCount64();
+        const auto slot=start.variantSlot;const auto* handler=Handler(start.handler);const auto* authority=Authority(start.executionAuthority);
+        if(slot<1||slot>2||!start.executionDelivery||start.stage!=Project::Stage::Terminal||start.effectOperation!=static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::StartAme)||
+            !handler||handler->body.kind!=phase::CallKind::Execute||handler->body.tool!=phase::ToolCode::RunAiAgentPlan||!authority||authority->handler!=start.handler||authority->scope!=start.leaf||!authority->consumed||
+            originalJobs[slot-1]||detail::Zero(start.receipt)||start.result!=TrustedField<32>(request,80)||detail::Zero(start.result)||
+            now>=start.expiry||now>=sessionDeadline||!policy.jobDeadlineMs||!policy.completionPollsPerJob||policy.completionPollsPerJob>trusted_read::kTwoTitlePollsPerJob||
+            !ReadCurrent(observation.target)||!OriginalFloor(false))Refuse("trusted_d47_original_START_terminal_required");
+        if(slot==2&&(!originalJobs[0]||originalJobs[0]->stage!=OriginalJobRow::Stage::Media))Refuse("trusted_d47_slot2_before_media_terminal");
+        const auto& debt=restoreDebts[slot-1];if(!debt||debt->actor!=actor||debt->state!=RestoreDebt::State::StageTerminal||detail::Zero(debt->stageResult))Refuse("trusted_d47_own_stage_debt_required");
+        std::size_t enqueued=0;for(const auto& candidate:projects)if(candidate->executionDelivery&&candidate->variantSlot==slot&&candidate->effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::EnqueueAme)){
+            if(candidate->stage!=Project::Stage::Terminal||detail::Zero(candidate->result)||detail::Zero(candidate->receipt))Refuse("trusted_d47_original_enqueue_unknown");++enqueued;}
+        if(enqueued!=1)Refuse("trusted_d47_original_enqueue_required");auto job=std::make_unique<OriginalJobRow>();job->slot=slot;job->ref=detail::RandomId();job->startTicket=start.ref;job->handler=start.handler;
+        job->selector=TrustedField<32>(request,16);job->processWrapper=TrustedField<32>(request,48);job->startReceipt=start.result;job->issued=now;job->maximumPolls=policy.completionPollsPerJob;
+        const auto remaining=sessionDeadline-now;job->deadline=now+(std::min)(policy.jobDeadlineMs,remaining);Bytes grant;Put(grant,session);Put(grant,generation);Put(grant,bootNonce);Put(grant,job->ref);Put(grant,start.ref);
+        Put(grant,job->selector);Put(grant,job->processWrapper);Put(grant,job->startReceipt);detail::PutU64(grant,job->issued);detail::PutU64(grant,job->deadline);detail::PutU32(grant,job->maximumPolls);detail::PutU16(grant,slot);
+        job->hash=TrustedHash("lcp2.production.original-completion-grant.v1",grant);auto reply=Reply(request,false,phase::Status::Ok);Bytes bytes;Put(bytes,job->ref);Put(bytes,job->hash);detail::PutU64(bytes,job->deadline);detail::PutU32(bytes,job->maximumPolls);
+        originalJobs[slot-1]=std::move(job);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
+    if(verb==phase::Verb::FinishServerOnly){const auto ref=TrustedField<16>(request,0);const auto result=TrustedField<32>(request,16);auto* row=Handler(ref);phase::Status status=phase::Status::Denied;
+        if(row&&row->body.kind==phase::CallKind::ServerOnly)status=ledger.Finish(ledger.daemon_,ref,result,GetTickCount64());
+        else if(row&&row->body.tool==phase::ToolCode::GetBridgeStatus&&(row->body.kind==phase::CallKind::BootstrapRead||row->body.kind==phase::CallKind::Read)&&ReadCurrent(ref))
+            status=ledger.FinishLocalStatusRead(ledger.daemon_,ref,result,observation,GetTickCount64());
+        auto reply=Reply(request,false,status);if(status==phase::Status::Ok){Bytes bytes;Put(bytes,ref);Put(bytes,row->handler.permitNonce);Put(bytes,result);TrustedPayload(reply,bytes);}Send(reply,false,status==phase::Status::Ok);return;}
+    auto reply=Reply(request,false,phase::Status::Unavailable);Send(reply,false,false);
+}
+bool Broker::Data::Trusted::Lifecycle(){
+    // The exact returned original HANDLE is observed independently of every
+    // admission/source/actor/pipe gate. ACK never substitutes for actual exit.
+    if(ObserveOriginalExit()){if(!awaitingOriginalExit||ledger.HasUnresolved())Unknown();return true;}
+    if(!daemon)return controllerRevoked;
+    if(!daemon->LifecycleEffectAllowed()){Unknown();return true;}
+    if(!controllerRevoked&&!drainRequested)return false;
+    if(!effects.admitted){if(awaitingOriginalExit)return false;Result aborted;
+        if(!OriginalFloor(true)||!daemon->AbortUnadmitted(aborted)){Unknown();return false;}awaitingOriginalExit=true;return false;}
+    if(unknownDisposition||!daemonBound||!WorkerCurrent(true))return false;
+    if(!drainSent){HoldCleanupPrefix();drainSent=true;stopRef=detail::RandomId();phase::Frame event{};event.header.direction=phase::Direction::BrokerToDaemon;
+        event.header.kind=phase::FrameKind::Event;event.header.verb=phase::Verb::Drain;event.header.senderOrdinal=workerWire->outgoingOrdinal_+1;
+        event.header.channelNonce=daemonNonce;event.header.sessionRef=session;event.header.generation=generation;event.header.bootNonce=bootNonce;
+        Bytes bytes;Put(bytes,stopRef);Put(bytes,generation);Put(bytes,lifecycleBinding);TrustedPayload(event,bytes);Send(event,false,true,true);return false;}
+    if(!drainAcknowledged||shutdownSent||!LedgerIdleLifecycle())return false;
+    if(!cleanupPrefix||!cleanupPrefix->released||cleanupPrefix->unknown)Refuse("trusted_cleanup_prefix_not_released",0,true);
+    // Reserve is a single durable consumed Stop followed by one native ordinal.
+    // Actor absence, controller EOF and expired READ do not alter this clock.
+    stopConsumed=true;initial_durability::ClosedRecord record;record.type=initial_durability::RecordType::Consume;record.effect=initial_durability::EffectClass::Stop;
+    record.target=enrollment->Profile().stopTarget;const auto consumed=store->AppendOnce(cas,record);cas=consumed.current;stopRecord=consumed.recordHash;
+    if(!consumed.ok||consumed.unknown||!consumed.consumptionRecorded||consumed.persistence!="os_flush_ack_and_readback"||!OriginalFloor(true))Refuse("trusted_stop_consumed_unknown",0,true);
+    shutdownSent=true;phase::Frame event{};event.header.direction=phase::Direction::BrokerToDaemon;event.header.kind=phase::FrameKind::Event;event.header.verb=phase::Verb::Shutdown;
+    event.header.senderOrdinal=workerWire->outgoingOrdinal_+1;event.header.channelNonce=daemonNonce;event.header.sessionRef=session;event.header.generation=generation;event.header.bootNonce=bootNonce;
+    Bytes bytes;Put(bytes,stopRef);Put(bytes,bootNonce);Put(bytes,stopRecord);TrustedPayload(event,bytes);Send(event,false,true,true);return false;
+}
+int Broker::Data::RunTrustedFixed(){std::unique_ptr<Trusted> owned;
+    try{owned=std::make_unique<Trusted>();auto& d=*owned;d.InitializeTrusted();const auto start=GetTickCount64();bool reported=false;
+        const auto fail=[&](const char* code,std::uint32_t error){d.CloseAdmission(true);if(!reported){reported=true;
+            FailureDiagnostic("trusted_broker_loop_unknown",{false,true,false,code,error});}};
+        for(;;){try{if(d.Lifecycle()){const auto disposition=d.ExitDisposition();
+                    if(!d.originalExitObserved&&d.daemon)(void)owned.release();return disposition;}
+                if(!d.controllerRevoked){if(d.controlled->PollConnect()){
+                        if(!d.originalController->Live(d.controlled->Handle()))Refuse("trusted_competing_first_controller_refused");
+                        Bytes bytes;if(d.controlled->PollBytes(bytes)){phase::Frame request{};if(d.controlWire->AcceptIncoming(bytes.data(),bytes.size(),request)!=phase::CodecError::None)
+                                Refuse("trusted_controller_wire_unknown",0,true);d.ControllerFrame(request);}
+                        if(d.controlled->Closed()||!d.originalController->Current()||(d.opened&&GetTickCount64()>=d.sessionDeadline))d.CloseAdmission(d.controlled->Unknown());
+                    }else if(d.controlled->Closed()||!d.originalController->Current()||GetTickCount64()-start>=30000)d.CloseAdmission(d.controlled->Unknown());}
+                // This continues after revocation; admission methods cannot use
+                // the independent clock, but D21/D22 may settle their own events.
+                if(d.runtimeBound&&d.worker->PollConnect()){
+                    if(!d.daemon||!d.daemon->MatchesPeer(d.worker->Handle()))Refuse("trusted_competing_worker_refused",0,true);
+                    Bytes bytes;if(d.worker->PollBytes(bytes)){phase::Frame request{};if(d.workerWire->AcceptIncoming(bytes.data(),bytes.size(),request)!=phase::CodecError::None)
+                            Refuse("trusted_worker_wire_unknown",0,true);d.WorkerFrame(request);}
+                    if(d.worker->Closed()&&!d.awaitingOriginalExit)Refuse("trusted_original_worker_eof_unknown",0,true);}
+                if(d.controllerDeferred&&d.challenge.pending&&GetTickCount64()-d.challenge.issued>10000)Refuse("trusted_observation_timeout_unknown",0,true);
+            }catch(const detail::Failure& failure){fail(failure.code.c_str(),failure.error);}catch(...){fail("trusted_broker_late_exception_unknown",0);}
+            if(d.Lifecycle()){const auto disposition=d.ExitDisposition();if(!d.originalExitObserved&&d.daemon)(void)owned.release();return disposition;}Sleep(5);
+        }
+    }catch(const detail::Failure& failure){if(owned&&owned->daemon){owned->CloseAdmission(true);(void)owned.release();}
+        FailureDiagnostic("trusted_broker_initial_refused",{false,true,failure.unavailable,failure.code,failure.error});return 2;
+    }catch(...){if(owned&&owned->daemon){owned->CloseAdmission(true);(void)owned.release();}return 2;}
+}
+#endif
 #if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
 namespace {
 #if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
@@ -266,6 +947,7 @@ struct Broker::PhaseData final : Broker::Data {
     phase::VolatileServerLedger ledger;
     std::unique_ptr<phase::WireChannel> controllerWire,daemonWire;
     std::unique_ptr<NativeDispatchCommit> privateCommit;
+    NativeDispatchCommit::Lifetime commitLifetime;
     NativeDispatchCommit::Observation noteObservation{};
     Id phaseSession=detail::RandomId(),brokerInstance=detail::RandomId(),launchRef=detail::RandomId();
     Digest controllerWitness{},daemonWitness{},transportBinding{},expectedSource{},lifecycleBinding{};
@@ -517,7 +1199,7 @@ struct Broker::PhaseData final : Broker::Data {
         Bytes fenceBinding;Put(fenceBinding,enrollment->LaunchKey());Put(fenceBinding,launchRecord);Put(fenceBinding,continuity->Floor().genesis);
         detail::PutU64(fenceBinding,cas.epoch);Put(fenceBinding,continuity->Floor().owner);binding.fence=NativeHash("native-private-note-launch-fence.v2",fenceBinding);
         binding.allowedLeaf=TextHash("synthetic.private.note.fixed.leaf.v1");
-        privateCommit=std::unique_ptr<NativeDispatchCommit>(new NativeDispatchCommit(*store,cas,binding,{this,CommitGuard,CommitFloor}));
+        privateCommit=std::unique_ptr<NativeDispatchCommit>(new NativeDispatchCommit(*store,cas,binding,{this,CommitGuard,CommitFloor},commitLifetime));
         // This separate proof cannot abort an admitted target, including a lost
         // private receipt. It creates no wire effect grant/delivery permit.
         daemon->MarkAdmitted();NativeDispatchCommit::ProofFault fault=NativeDispatchCommit::ProofFault::None;
@@ -689,7 +1371,9 @@ int Broker::RunPhaseFixed(){try{auto owned=std::make_unique<PhaseData>();auto& d
 #endif
 Broker::Broker(std::unique_ptr<Data> d):data_(std::move(d)){}Broker::~Broker()=default;
 int Broker::RunFixed(){
-#if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    return Data::RunTrustedFixed();
+#elif defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
     return RunPhaseFixed();
 #else
     try{auto data=std::make_unique<Data>();data->Initialize();Broker broker(std::move(data));auto& d=*broker.data_;const std::wstring name=d.controllerPipe->Name();const std::string locator=AsciiPipeLocator(name);const std::string nonce=detail::Hex(d.controllerNonce);std::string hello="{\"schema\":\"ae-agent.local-broker.locator.v2\",\"pipe\":\"";for(char c:locator){if(c=='\\')hello+='\\';hello+=c;}hello+="\",\"nonce\":\""+nonce+"\",\"authorityMode\":\"local_controller_session\",\"genuineChatIdentity\":false,\"executionAdmission\":false}\n";DWORD n=0;if(!WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),hello.data(),static_cast<DWORD>(hello.size()),&n,nullptr)||n!=hello.size())Refuse("broker_locator_send_unknown",GetLastError(),true);

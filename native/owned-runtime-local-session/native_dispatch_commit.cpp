@@ -10,7 +10,7 @@ void Domain(Bytes& bytes,const char* value){for(const char* at=value;*at;++at)by
 bool SameCas(const initial_durability::Cas& a,const initial_durability::Cas& b){return a.sequence==b.sequence&&a.epoch==b.epoch&&a.head==b.head;}
 }
 NativeDispatchCommit::NativeDispatchCommit(initial_durability::Store& store,initial_durability::Cas& cas,
-    const Binding& binding,const Port& port):store_(store),cas_(cas),binding_(binding),port_(port){}
+    const Binding& binding,const Port& port,Lifetime& lifetime):store_(store),cas_(cas),binding_(binding),port_(port),lifetime_(lifetime){}
 bool NativeDispatchCommit::Guard()const noexcept{return port_.originalBroker&&port_.guard&&port_.floor&&port_.guard(port_.originalBroker);}
 Bytes NativeDispatchCommit::Descriptor()const{
     Bytes bytes;Domain(bytes,"native-dispatch-descriptor.v2");
@@ -24,10 +24,15 @@ Bytes NativeDispatchCommit::Descriptor()const{
 Digest NativeDispatchCommit::StableKey()const{
     Bytes bytes;Domain(bytes,"native-dispatch-stable-effect.v2");Put(bytes,binding_.scope);
     Put(bytes,binding_.installation);Put(bytes,binding_.lineage);detail::PutU16(bytes,binding_.variantSlot);
-    Put(bytes,binding_.allowedLeaf);detail::PutU16(bytes,binding_.operation);return detail::Hash(bytes);
+    Put(bytes,binding_.allowedLeaf);detail::PutU16(bytes,binding_.operation);
+    // Operation 2 is the fixed READ producer. A read is a distinct sealed
+    // delivery attempt; future mutations keep the original stable scope key.
+    if(binding_.operation==2)detail::PutU64(bytes,binding_.nativeOrdinal);
+    return detail::Hash(bytes);
 }
 void NativeDispatchCommit::CloseUnknown(const char* code)noexcept{
     observation_.unknown=true;observation_.code=code;
+    lifetime_.unknown=true;
     observation_.sequence=cas_.sequence;observation_.epoch=cas_.epoch;observation_.head=cas_.head;
 }
 NativeDispatchCommit::Observation NativeDispatchCommit::Commit(ProofFault fault){
@@ -42,20 +47,20 @@ NativeDispatchCommit::Observation NativeDispatchCommit::Commit(ProofFault fault)
             detail::Zero(binding_.authorization)||detail::Zero(binding_.body)||detail::Zero(binding_.finalScript)||
             detail::Zero(binding_.target)||detail::Zero(binding_.owner)||detail::Zero(binding_.fence)||
             detail::Zero(binding_.allowedLeaf)||detail::Zero(binding_.command)||detail::Zero(binding_.execution)||
-            detail::Zero(binding_.lease)||binding_.nativeOrdinal!=externalCommits_+1||!binding_.operation||
-            externalCommits_>=kExternalCap||cas_.sequence>kTotalSlots-kFinalReserve-1||
+            detail::Zero(binding_.lease)||lifetime_.unknown||binding_.nativeOrdinal!=lifetime_.attempts+1||!binding_.operation||
+            lifetime_.attempts>=kExternalCap||cas_.sequence>kTotalSlots-kFinalReserve-1||
             kFixedRemainingLifecycle>kTotalSlots-(cas_.sequence+1)||!Guard()){
             CloseUnknown("private_commit_preflight_closed");entered_=false;return observation_;
         }
         observation_.priorFloorVerified=true;stableKey_=StableKey();if(detail::Zero(stableKey_)){CloseUnknown("private_commit_stable_key_invalid");entered_=false;return observation_;}
-        for(const auto& key:latchedKeys_)if(key==stableKey_){CloseUnknown("private_commit_stable_key_spent");entered_=false;return observation_;}
+        for(const auto& key:lifetime_.keys)if(key==stableKey_){CloseUnknown("private_commit_stable_key_spent");entered_=false;return observation_;}
         note_.type=initial_durability::RecordType::Note;note_.sourceDigest=detail::Hash(Descriptor());
         Bytes config;Domain(config,"native-dispatch-consumed.v2");Put(config,note_.sourceDigest);
         Put(config,binding_.fence);Put(config,stableKey_);note_.configDigest=detail::Hash(config);
         observation_.descriptorHash=note_.sourceDigest;observation_.configDigest=note_.configDigest;
         // Irreversible latch precedes AppendOnce; every failure retains this row.
-        selected_=true;latchedKeys_[static_cast<std::size_t>(externalCommits_)]=stableKey_;
-        ++externalCommits_;observation_.latched=true;
+        selected_=true;lifetime_.keys[static_cast<std::size_t>(lifetime_.attempts)]=stableKey_;
+        ++lifetime_.attempts;lifetime_.admitted=true;observation_.latched=true;
         if(fault==ProofFault::BeforeAppendGuardClosed){observation_.syntheticFault=true;CloseUnknown("synthetic_guard_closed_before_append");entered_=false;return observation_;}
         if(!Guard()){CloseUnknown("private_commit_late_guard_closed");entered_=false;return observation_;}
         const auto before=cas_;const auto stored=store_.AppendOnce(before,note_);cas_=stored.current;

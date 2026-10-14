@@ -20,6 +20,17 @@ private:
         std::uint16_t variantSlot=0, operation=1;
         std::uint64_t nativeOrdinal=1;
     };
+    // Owned by the original broker for its entire lifetime. Neither a new
+    // descriptor nor a READ renewal constructs a new budget or clears a key.
+    struct Lifetime final {
+        static constexpr std::size_t kExternalCap=192;
+        std::uint64_t attempts=0;
+        std::array<Digest,kExternalCap> keys{};
+        bool admitted=false,unknown=false;
+        Lifetime()=default;
+        Lifetime(const Lifetime&)=delete;
+        Lifetime& operator=(const Lifetime&)=delete;
+    };
     struct Port {
         void* originalBroker=nullptr;
         bool (*guard)(void*) noexcept=nullptr;
@@ -34,7 +45,7 @@ private:
     };
     enum class ProofFault : std::uint8_t { None, BeforeAppendGuardClosed, PrivateReplyLost };
     NativeDispatchCommit(initial_durability::Store& store,initial_durability::Cas& cas,
-        const Binding& binding,const Port& port);
+        const Binding& binding,const Port& port,Lifetime& lifetime);
     Observation Commit(ProofFault fault);
     Observation ObserveDuplicate();
     void CloseUnknown(const char* code) noexcept;
@@ -45,6 +56,7 @@ private:
     initial_durability::Cas& cas_;
     const Binding binding_;
     const Port port_;
+    Lifetime& lifetime_;
     initial_durability::ClosedRecord note_{};
     Observation observation_{};
     Digest stableKey_{};
@@ -52,8 +64,6 @@ private:
     // Fixed ceilings, no row recycling, UUID/source/proposal budget reset.
     static constexpr std::uint64_t kTotalSlots=256, kFinalReserve=16, kExternalCap=192;
     static constexpr std::uint64_t kFixedRemainingLifecycle=16;
-    std::uint64_t externalCommits_=0;
-    std::array<Digest,kExternalCap> latchedKeys_{};
     friend class Broker;
 };
 } // namespace local_session

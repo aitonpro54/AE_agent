@@ -457,3 +457,35 @@ Local acceptance `native95-proof-acceptance-526171c05a9e.json/0041052C…`.
 Это synthetic predicates для Restore57F source, не actual AE facts, новый AME
 build, loaded modules/descendants, whole M/FIT или production admission.
 Render0/2; следующий блок — AME/D47 source STOP/review/build, затем D48–50.
+
+AME/D47 STOP97/native63 `2E3C1993…` принят как immutable candidate; Root97 hashes
+PASS. VM84/static10/title85/proposal21/gate26/syntax9/rules/diff PASS, новые CPP
+NOTRUN. Independent Source review **REVISE**: marker capture читает revision
+из authenticated panel body, хотя exact manual schema запрещает это поле.
+Корректный запрос создаёт wx/fsync marker, затем отказывает до send. Исправление
+должно брать принятую original proposal/quiescence revision, сохраняя exact body
+и once/noReplay; focused positive без body.revision и negative marker drift.
+Capture control `5EE38223…` подготовлен, не исполнен; candidate не Source GO.
+Root выбрал и создал plain `logs/ame-title-jobs/starts` в этом workspace.
+Native root Pin40/held handle и frozen future child LOG_DIR ещё не подтверждены;
+это не reservation/job и не production admission. AE/AME effects0, renders0/2.
+
+**AME/D47 — Source/build checkpoint, 14.10.** Revision fix `D968CAA3…` получил
+independent GO: marker revision берётся из собственного принятого Propose proof
+и сверяется с private gate/row/owner/scope/slot/actor/manifest/action/payload/preview.
+Exact body остаётся без revision; VM97/static11 проверяет source-derived scalar
+comparison и отказ до send при drift, не actual C++ capability lifecycle.
+Root97 snapshot/current hashes PASS; capture `ns-cdff7cb60a1f/56C8CFF3…`, approval
+`4A7345D9…`, native63/TU11/15/3. Actual all-role compile `ic-0bce7ad4f391/44F0AC8C…`:
+все PP/build exit0. Root в owner28136/PTY67511 сверил original6 CLOSED0/EOF,
+taskscompleted/handlesclosed, затем explicitexit0. Acceptance `774AA2F7…` local.
+Rules, syntax19 snapshot-owned changed JS и diff PASS. Контрольная точка сохраняет
+только Source/build состояние; D48–50, whole footprint/SourceM/M и admission
+остаются CLOSED. Actual AME26 API, Native root Pin40 и final frames UNVERIFIED.
+Следующий блок — D48–49 ordinal/terminal/floor и семь precharge Notes до children;
+затем D50/collector. User AEP hashes E55/01A неизменны при свежем FS чтении;
+AE19140/AME22812 живы с прежними birth, это не owned-runtime attestation.
+Дополнительный controller VM выявил stale catalog11 вместо actual13. Proof-only
+fix `F3A5C3A2…` проверяет exact names, frozen slot1/2 schemas, правильный C5 body
+и отказ caller selectors до HTTP; Root independent diff/run **17/17 PASS**.
+First-two getter/Restore fixtures также PASS; native authority/effects0.

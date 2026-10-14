@@ -39,7 +39,13 @@ constexpr std::array<VerbSpec, 30> kVerbs{{
     {Verb::ObserveChallenge,Direction::BrokerToDaemon,FrameKind::Event,34,0},
     // No spare verb slots, aliases or protocol negotiation entries.
 }};
-constexpr std::array<ToolSpec, 7> kTools{{
+constexpr std::array<ToolSpec,
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+19
+#else
+7
+#endif
+> kTools{{
     {ToolCode::GetOwnedRuntimeStatus,"get_owned_runtime_status",CallKind::ServerOnly,true},
     {ToolCode::EnsureOwnedRuntimeDaemon,"ensure_owned_runtime_daemon",CallKind::ServerOnly,false},
     {ToolCode::SearchSolutions,"search_solutions",CallKind::ServerOnly,true},
@@ -47,6 +53,20 @@ constexpr std::array<ToolSpec, 7> kTools{{
     {ToolCode::EnsureAgentPanel,"ensure_ae_agent_panel",CallKind::Panel,false},
     {ToolCode::GetBridgeStatus,"get_bridge_status",CallKind::Read,false},
     {ToolCode::GetProjectInfo,"get_project_info",CallKind::Read,false},
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    {ToolCode::BuildSolutionPlan,"build_solution_plan",CallKind::ExecutionPrep,false},
+    {ToolCode::ProposeAiAgentPlan,"propose_ai_agent_plan",CallKind::ExecutionPrep,false},
+    {ToolCode::RunAiAgentPlan,"run_ai_agent_plan",CallKind::Execute,false},
+    {ToolCode::InspectTitleVariants,"inspect_title_variants",CallKind::ExecutionPrep,false},
+    {ToolCode::GetCompDetails,"get_comp_details",CallKind::ExecutionPrep,false},
+    {ToolCode::GetLayerDetails,"get_layer_details",CallKind::ExecutionPrep,false},
+    {ToolCode::InspectAmeTitleSources,"inspect_ame_title_sources",CallKind::ExecutionPrep,false},
+    {ToolCode::EnqueueAmeTitleVariant,"enqueue_ame_title_variant",CallKind::Execute,false},
+    {ToolCode::InspectAmeTitleQueueManifest,"inspect_ame_title_queue_manifest",CallKind::ExecutionPrep,false},
+    {ToolCode::StartAmeTitleBatch,"start_ame_title_batch",CallKind::Execute,false},
+    {ToolCode::GetAmeTitleJobStatus,"get_ame_title_job_status",CallKind::Completion,false},
+    {ToolCode::SaveCurrentNamedProject,"save_current_named_project",CallKind::Execute,false},
+#endif
 }};
 static_assert(kHeaderBytes==96 && kHeaderBytes+kMaximumPayloadBytes<=kMaximumFrameBytes);
 
@@ -92,6 +112,9 @@ bool KnownKind(std::uint8_t kind) noexcept { return kind>=1 && kind<=7; }
 bool Compatible(ToolCode tool, CallKind kind) noexcept {
     const auto* spec=FindTool(tool);
     return spec && (spec->kind==kind ||
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+        (tool==ToolCode::RunAiAgentPlan&&kind==CallKind::ExecutionPrep)||
+#endif
         (spec->kind==CallKind::Read && kind==CallKind::BootstrapRead));
 }
 std::size_t BeginBytes(std::uint8_t kind) noexcept {
@@ -232,18 +255,36 @@ CodecError CheckPayload(const Frame& frame) noexcept {
         if (U64(p+32)==0 || !FindTool(static_cast<ToolCode>(U16(p+40))) ||
             U16(p+42)<1 || U16(p+42)>6 || p[204]<1 || p[204]>6 ||
             U16(p+42)!=p[204] || Zero(p+140,32)) return CodecError::Tag;
-        // No AME tool code is registered in this first closed build map.
-        if (!Zero(p+172,32)) return CodecError::Reserved;
+        // Only the exact AME leaves may carry their generated message body hash.
+        if (!Zero(p+172,32)
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+            && static_cast<ToolCode>(U16(p+40))!=ToolCode::InspectAmeTitleSources&&static_cast<ToolCode>(U16(p+40))!=ToolCode::EnqueueAmeTitleVariant&&
+            static_cast<ToolCode>(U16(p+40))!=ToolCode::InspectAmeTitleQueueManifest&&static_cast<ToolCode>(U16(p+40))!=ToolCode::StartAmeTitleBatch&&static_cast<ToolCode>(U16(p+40))!=ToolCode::GetAmeTitleJobStatus
+#endif
+        ) return CodecError::Reserved;
         break;
     case Verb::RecordDelivery:
         if (p[48]<1 || p[48]>2) return CodecError::Tag;
         break;
     case Verb::ObserveServerGates:
-        // Gate interpretation/issuance is unavailable; no unreviewed mask is admitted.
+        // This codec does not issue gates. The original broker compares all
+        // native-produced commitments and the exact purpose3 pending row.
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+        if(U32(p+192)!=0x00ff||Zero(p,16)||Zero(p+16,16)||Zero(p+32,32)||Zero(p+64,32)||Zero(p+96,32)||Zero(p+128,32)||Zero(p+160,32)||Zero(p+196,32))return CodecError::Tag;
+#else
         if (U32(p+192)!=0) return CodecError::Reserved;
+#endif
+        break;
+    case Verb::BindOriginalJob:
+        // D47 layout is fixed before source freeze. These commitments still
+        // require an independently retained native START/job producer.
+        if (Zero(p,16) || Zero(p+16,32) || Zero(p+48,32) || Zero(p+80,32)) return CodecError::Tag;
         break;
     case Verb::BeginCompletionPoll:
-        if (U64(p+16)==0 || U16(p+56)<1 || U16(p+56)>2) return CodecError::Tag;
+        if (Zero(p,16) || U64(p+16)==0 || Zero(p+24,32) || U16(p+56)<1 || U16(p+56)>2) return CodecError::Tag;
+        break;
+    case Verb::ObserveJobTerminal:case Verb::ObserveMedia:
+        if (Zero(p,16) || Zero(p+16,16) || Zero(p+32,32) || Zero(p+64,32)) return CodecError::Tag;
         break;
     case Verb::ReservePanelEffect:
         if (U64(p+16)==0) return CodecError::Tag;
@@ -618,7 +659,7 @@ Status VolatileServerLedger::Begin(const PeerWitness& controller,const BeginCall
     if (!tool || body.kind!=CallKind::ServerOnly || tool->kind!=CallKind::ServerOnly ||
         body.route!=RouteCode::McpToolsCall || Zero(body.canonicalBodyHash)) return DenyAndClose(Status::Denied);
     if (!tool->serverOnlyHandler) return Status::Unavailable;
-    if (usedRows_==kCallRows || callCounter_==std::numeric_limits<std::uint64_t>::max() ||
+    if (usedRows_>=kLifetimeCallRows || callCounter_==std::numeric_limits<std::uint64_t>::max() ||
         now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs) return DenyAndClose(Status::Unknown);
     CallRow row{};row.state=RowState::Begun;row.body=body;row.counter=callCounter_+1;
     row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
@@ -702,13 +743,21 @@ Status VolatileServerLedger::Finish(const PeerWitness& daemon,const Id& permit,c
 }
 Status VolatileServerLedger::BeginPanel(const PeerWitness& controller,const BeginCallPayload& body,
     std::uint64_t now,CallReply& out) noexcept {
-#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE) || defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
     const auto guarded=Guard(controller,PeerRole::Controller,now);if(guarded!=Status::Ok)return guarded;
     if(!nativeBound_||firstPanelAttempt_||firstActorAttemptSpent_||HasUnresolved()||
         body.tool!=ToolCode::EnsureAgentPanel||body.kind!=CallKind::Panel||body.route!=RouteCode::McpToolsCall||
-        Zero(body.canonicalBodyHash)||Zero(panelDefinition_.actorRef)||Zero(panelDefinition_.actorHash)||
+        Zero(body.canonicalBodyHash)||
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+        Zero(panelDefinition_.actorRef)||Zero(panelDefinition_.actorHash)||
+#endif
         Zero(panelDefinition_.installedHash)||Zero(panelDefinition_.definitionHash))return DenyAndClose(Status::Denied);
-    if(usedRows_==kCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    constexpr std::string_view canonical="{\"args\":{},\"name\":\"ensure_ae_agent_panel\"}";
+    if(!Zero(panelDefinition_.actorRef)||!Zero(panelDefinition_.actorHash)||
+        body.canonicalBodyHash!=Sha256(reinterpret_cast<const std::uint8_t*>(canonical.data()),canonical.size()))return DenyAndClose(Status::Denied);
+#endif
+    if(usedRows_>=kLifetimeCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||
         now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)return DenyAndClose(Status::Unknown);
     CallRow row{};row.state=RowState::Begun;row.body=body;row.counter=callCounter_+1;
     row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
@@ -727,7 +776,7 @@ Status VolatileServerLedger::BeginPanel(const PeerWitness& controller,const Begi
 }
 Status VolatileServerLedger::IssuePanel(const PeerWitness& daemon,const VerifyIngressPayload& body,
     std::uint64_t now,HandlerReply& out) noexcept {
-#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE)
+#if defined(AE_AGENT_PHASE_NATIVE_PANEL_PROFILE) || defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
     const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;
     CallRow* row=nullptr;std::size_t index=0;for(;index<usedRows_;++index)if(rows_[index].call.callRef==body.callRef){row=&rows_[index];break;}
     if(!nativeBound_||firstPanelAttempt_||firstActorAttemptSpent_||!row||row->state!=RowState::Begun||
@@ -767,7 +816,12 @@ Digest VolatileServerLedger::PanelAuthorizationHash(const PanelGrant& grant) con
     append(daemon_.privateChannel);append(daemon_.originalInstance);append(daemon_.witnessHash);
     append(row.call.callRef);append(row.call.ingressNonce);append(row.call.bindingHash);append(row.body.canonicalBodyHash);
     append(grant.ref);append(grant.nonce);append(panelDefinition_.definitionHash);append(panelDefinition_.installedHash);
+#if !defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    // The synthetic profile has an actor at issuance. The production bootstrap
+    // grants only the static installed closure; its first actor is bound later
+    // by the original daemon's separately measured post-open observation.
     append(panelDefinition_.actorRef);append(panelDefinition_.actorHash);
+#endif
     for(auto value:{row.counter,policyEpoch_,revocationEpoch_,nativeBinding_.openedMono,sessionDeadline_,grant.issuedMono,grant.deadline}){W64(binary.data()+at,value);at+=8;}
     return Sha256(binary.data(),at);
 }
@@ -797,6 +851,194 @@ bool VolatileServerLedger::PanelRowExact() const noexcept {
         row.handler.expiresMono!=row.call.expiresMono||row.handler.bindingHash!=PanelHandlerHash(row,panel_))return false;
     for(std::size_t i=0;i<usedRows_;++i)if(i!=panel_.rowIndex&&(rows_[i].state==RowState::Begun||rows_[i].state==RowState::Verified||rows_[i].state==RowState::Unknown))return false;
     return row.state==RowState::Verified||row.state==RowState::ActorObserved;
+}
+bool VolatileServerLedger::ObservationCurrent(const ReadObservation& value,const Id& target,std::uint64_t now)const noexcept {
+    return nativeBound_&&!closed_&&value.target==target&&value.ordinal&&value.observedMono<=now&&
+        now-value.observedMono<=10000&&value.mask==0x7f&&!Zero(value.actor)&&!Zero(value.context)&&
+        !Zero(value.readiness)&&value.actor==panelDefinition_.actorHash&&value.source==nativeBinding_.sourceHash;
+}
+Digest VolatileServerLedger::ReadRowHash(const CallRow& row,bool handler)const noexcept {
+    std::array<std::uint8_t,512> bytes{};std::size_t at=0;
+    const std::string_view domain=handler?"lcp2.native.read-handler.v2":"lcp2.native.read-call.v2";
+    W16(bytes.data(),static_cast<std::uint16_t>(domain.size()));at=2;for(char c:domain)bytes[at++]=static_cast<std::uint8_t>(c);
+    const auto put=[&](const auto& value)noexcept{std::copy(value.begin(),value.end(),bytes.begin()+static_cast<std::ptrdiff_t>(at));at+=value.size();};
+    put(BindingHash(row,handler));put(row.bracket);bytes[at++]=row.bracketIndex;put(row.readHash);put(row.actorHash);put(row.sourceHash);
+    W64(bytes.data()+at,row.leaseEpoch);at+=8;return Sha256(bytes.data(),at);
+}
+Digest VolatileServerLedger::ReadAuthorizationHash(const ReadAuthorization& value,const Id& bracket)const noexcept {
+    std::array<std::uint8_t,512> bytes{};std::size_t at=0;const std::string_view domain="lcp2.native.read-authorization.v2";
+    W16(bytes.data(),static_cast<std::uint16_t>(domain.size()));at=2;for(char c:domain)bytes[at++]=static_cast<std::uint8_t>(c);
+    const auto put=[&](const auto& item)noexcept{std::copy(item.begin(),item.end(),bytes.begin()+static_cast<std::ptrdiff_t>(at));at+=item.size();};
+    put(value.ref);put(bracket);put(value.actor);put(value.source);put(nativeBinding_.scopeHash);put(nativeBinding_.policyHash);
+    put(nativeBinding_.transportHash);put(session_.sessionRef);put(session_.generation);put(session_.bootNonce);
+    for(const auto n:{value.issuedMono,value.expiresMono,value.epoch,policyEpoch_,revocationEpoch_,sessionDeadline_}){W64(bytes.data()+at,n);at+=8;}
+    return Sha256(bytes.data(),at);
+}
+bool VolatileServerLedger::ReadRowCurrent(const CallRow& row,std::uint64_t now)const noexcept {
+    if(!nativeBound_||closed_||now>=sessionDeadline_||now>=row.call.expiresMono||
+        row.policyEpoch!=policyEpoch_||row.revocationEpoch!=revocationEpoch_||row.actorHash!=panelDefinition_.actorHash||
+        row.sourceHash!=nativeBinding_.sourceHash||row.call.bindingHash!=ReadRowHash(row,false))return false;
+    if(row.body.kind==CallKind::BootstrapRead)return bracket_.active&&!bracket_.consumed&&row.bracket==bracket_.ref&&
+        row.bracketIndex==bracket_.next&&row.bracketIndex>=1&&row.bracketIndex<=3&&now<bracket_.deadline;
+    return row.body.kind==CallKind::Read&&row.leaseEpoch==read_.epoch&&row.readHash==read_.hash&&
+        !Zero(read_.hash)&&read_.hash==ReadAuthorizationHash(read_,read_.originBracket)&&now<read_.expiresMono;
+}
+Status VolatileServerLedger::BeginReadBracket(const PeerWitness& controller,const ReadObservation& observation,
+    std::uint64_t now,Bracket& out)noexcept {
+    const auto status=Guard(controller,PeerRole::Controller,now);if(status!=Status::Ok)return status;
+    if(!nativeBound_||panel_.stage!=ActorStage::ReplySent||HasUnresolved()||bracket_.active||
+        !ObservationCurrent(observation,session_.sessionRef,now))return Status::Denied;
+    if(bracketEpoch_>=kLifetimeReadIssuances||now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)
+        return DenyAndClose(Status::Unknown);
+    Bracket value{};if(!nativePort_.randomId(nativePort_.originalBroker,value.ref)||Zero(value.ref))return DenyAndClose(Status::Unknown);
+    value.actor=observation.actor;value.source=observation.source;value.deadline=std::min(now+kCallTtlMs,sessionDeadline_);
+    value.epoch=bracketEpoch_+1;value.active=true;
+    const auto last=Guard(controller,PeerRole::Controller,now);if(last!=Status::Ok)return last;
+    if(now>=value.deadline||!ObservationCurrent(observation,session_.sessionRef,now))return Status::Denied;
+    bracket_=value;++bracketEpoch_;readObservation_=observation;out=bracket_;return Status::Ok;
+}
+Status VolatileServerLedger::BeginRead(const PeerWitness& controller,const BeginCallPayload& body,
+    const Id& bracket,std::uint8_t index,const Digest& readHash,std::uint64_t now,CallReply& out)noexcept {
+    const auto status=Guard(controller,PeerRole::Controller,now);if(status!=Status::Ok)return status;
+    if(!nativeBound_||panel_.stage!=ActorStage::ReplySent||HasUnresolved()||body.route!=RouteCode::McpToolsCall||
+        (body.tool!=ToolCode::GetBridgeStatus&&body.tool!=ToolCode::GetProjectInfo))return Status::Denied;
+    const std::string_view canonical=body.tool==ToolCode::GetBridgeStatus?
+        "{\"args\":{},\"name\":\"get_bridge_status\"}":"{\"args\":{},\"name\":\"get_project_info\"}";
+    if(body.canonicalBodyHash!=Sha256(reinterpret_cast<const std::uint8_t*>(canonical.data()),canonical.size()))return Status::Denied;
+    if(usedRows_>=kLifetimeCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)
+        return DenyAndClose(Status::Unknown);
+    CallRow row{};row.body=body;row.state=RowState::Begun;row.counter=callCounter_+1;row.policyEpoch=policyEpoch_;
+    row.revocationEpoch=revocationEpoch_;row.actorHash=panelDefinition_.actorHash;row.sourceHash=nativeBinding_.sourceHash;
+    if(body.kind==CallKind::BootstrapRead){
+        if(!bracket_.active||bracket_.consumed||bracket!=bracket_.ref||index!=bracket_.next||index<1||index>3||
+            now>=bracket_.deadline||!Zero(readHash)||body.tool!=(index==2?ToolCode::GetProjectInfo:ToolCode::GetBridgeStatus))return Status::Denied;
+        row.bracket=bracket;row.bracketIndex=index;row.call.expiresMono=std::min(now+kCallTtlMs,bracket_.deadline);
+    }else if(body.kind==CallKind::Read){
+        if(!Zero(bracket)||index||readHash!=read_.hash||Zero(readHash)||read_.hash!=ReadAuthorizationHash(read_,read_.originBracket)||now>=read_.expiresMono)
+            return Status::RevalidationRequired;
+        row.readHash=readHash;row.leaseEpoch=read_.epoch;row.call.expiresMono=std::min(now+kCallTtlMs,read_.expiresMono);
+    }else return Status::Denied;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row.call.callRef)||!nativePort_.randomId(nativePort_.originalBroker,row.call.ingressNonce)||
+        Zero(row.call.callRef)||Zero(row.call.ingressNonce)||row.call.callRef==row.call.ingressNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(previous.state!=RowState::Empty&&(previous.call.callRef==row.call.callRef||previous.call.ingressNonce==row.call.ingressNonce))return DenyAndClose(Status::Unknown);
+    row.call.bindingHash=ReadRowHash(row,false);const auto last=Guard(controller,PeerRole::Controller,now);if(last!=Status::Ok)return last;
+    if(!ReadRowCurrent(row,now))return Status::Denied;rows_[usedRows_++]=row;++callCounter_;out=row.call;return Status::Ok;
+}
+Status VolatileServerLedger::VerifyRead(const PeerWitness& daemon,const VerifyIngressPayload& body,std::uint64_t now,HandlerReply& out)noexcept {
+    const auto status=Guard(daemon,PeerRole::Daemon,now);if(status!=Status::Ok)return status;
+    CallRow* row=nullptr;for(auto& value:rows_)if(value.state!=RowState::Empty&&value.call.callRef==body.callRef){row=&value;break;}
+    if(!row||row->state!=RowState::Begun||row->call.ingressNonce!=body.ingressNonce||row->body.tool!=body.body.tool||
+        row->body.kind!=body.body.kind||row->body.route!=body.body.route||row->body.canonicalBodyHash!=body.body.canonicalBodyHash||!ReadRowCurrent(*row,now))return Status::Denied;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitRef)||!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitNonce)||
+        Zero(row->handler.permitRef)||Zero(row->handler.permitNonce)||row->handler.permitRef==row->handler.permitNonce)return DenyAndClose(Status::Unknown);
+    row->handler.expiresMono=row->call.expiresMono;row->handler.bindingHash=ReadRowHash(*row,true);
+    const auto last=Guard(daemon,PeerRole::Daemon,now);if(last!=Status::Ok)return last;if(!ReadRowCurrent(*row,now))return Status::Denied;
+    row->state=RowState::Verified;++handlerAdmissions_;out=row->handler;return Status::Ok;
+}
+Digest VolatileServerLedger::ExecutionRowHash(const CallRow& row,bool handler)const noexcept {
+    std::array<std::uint8_t,128> bytes{};constexpr std::string_view domain="lcp2.native.execution-row.v1";std::size_t at=0;
+    for(const char c:domain)bytes[at++]=static_cast<std::uint8_t>(c);const auto base=ReadRowHash(row,handler);
+    for(const auto& hash:{base,row.executionScope}){std::copy(hash.begin(),hash.end(),bytes.begin()+static_cast<std::ptrdiff_t>(at));at+=hash.size();}return Sha256(bytes.data(),at);
+}
+bool VolatileServerLedger::ExecutionRowCurrent(const CallRow& row,std::uint64_t now)const noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    return nativeBound_&&!closed_&&Compatible(row.body.tool,row.body.kind)&&(row.body.kind==CallKind::ExecutionPrep||row.body.kind==CallKind::Execute)&&
+        !Zero(row.executionScope)&&row.body.route==RouteCode::McpToolsCall&&row.policyEpoch==policyEpoch_&&row.revocationEpoch==revocationEpoch_&&
+        row.actorHash==panelDefinition_.actorHash&&row.sourceHash==nativeBinding_.sourceHash&&row.readHash==read_.hash&&row.leaseEpoch==read_.epoch&&
+        !Zero(read_.hash)&&now>=read_.issuedMono&&now<read_.expiresMono&&now<sessionDeadline_&&now<row.call.expiresMono&&
+        row.call.bindingHash==ExecutionRowHash(row,false);
+#else
+    (void)row;(void)now;return false;
+#endif
+}
+Status VolatileServerLedger::BeginExecution(const PeerWitness& controller,const BeginCallPayload& body,const Digest& scope,const Digest& readHash,
+    std::uint64_t now,CallReply& out)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(controller,PeerRole::Controller,now);if(guarded!=Status::Ok)return guarded;
+    if(!nativeBound_||!Compatible(body.tool,body.kind)||(body.kind!=CallKind::ExecutionPrep&&body.kind!=CallKind::Execute)||body.route!=RouteCode::McpToolsCall||
+        Zero(body.canonicalBodyHash)||Zero(scope)||Zero(readHash)||readHash!=read_.hash||read_.actor!=panelDefinition_.actorHash||read_.source!=nativeBinding_.sourceHash||
+        now<read_.issuedMono||now>=read_.expiresMono||HasUnresolved())return Status::Denied;
+    if(usedRows_>=kLifetimeCallRows||callCounter_==std::numeric_limits<std::uint64_t>::max()||now>std::numeric_limits<std::uint64_t>::max()-kCallTtlMs)return DenyAndClose(Status::Unknown);
+    CallRow row{};row.state=RowState::Begun;row.body=body;row.executionScope=scope;row.readHash=readHash;row.actorHash=read_.actor;row.sourceHash=read_.source;row.leaseEpoch=read_.epoch;
+    row.counter=callCounter_+1;row.policyEpoch=policyEpoch_;row.revocationEpoch=revocationEpoch_;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row.call.callRef)||!nativePort_.randomId(nativePort_.originalBroker,row.call.ingressNonce)||
+        Zero(row.call.callRef)||Zero(row.call.ingressNonce)||row.call.callRef==row.call.ingressNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(previous.state!=RowState::Empty&&(previous.call.callRef==row.call.callRef||previous.call.ingressNonce==row.call.ingressNonce))return DenyAndClose(Status::Unknown);
+    row.call.expiresMono=std::min(now+kCallTtlMs,std::min(read_.expiresMono,sessionDeadline_));row.call.bindingHash=ExecutionRowHash(row,false);
+    const auto finalGuard=Guard(controller,PeerRole::Controller,now);if(finalGuard!=Status::Ok)return finalGuard;if(!ExecutionRowCurrent(row,now))return Status::Denied;
+    rows_[usedRows_]=row;++usedRows_;++callCounter_;out=row.call;return Status::Ok;
+#else
+    (void)controller;(void)body;(void)scope;(void)readHash;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::IssueExecution(const PeerWitness& daemon,const VerifyIngressPayload& body,std::uint64_t now,HandlerReply& out)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;CallRow* row=nullptr;
+    for(auto& original:rows_)if(original.state!=RowState::Empty&&original.call.callRef==body.callRef){row=&original;break;}
+    // D40's unchanged base body cannot replace the saved C5 execution tail.
+    if(!row||row->state!=RowState::Begun||row->call.ingressNonce!=body.ingressNonce||row->body.tool!=body.body.tool||row->body.kind!=body.body.kind||
+        row->body.route!=body.body.route||row->body.canonicalBodyHash!=body.body.canonicalBodyHash||!ExecutionRowCurrent(*row,now))return Status::Denied;
+    if(!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitRef)||!nativePort_.randomId(nativePort_.originalBroker,row->handler.permitNonce)||
+        Zero(row->handler.permitRef)||Zero(row->handler.permitNonce)||row->handler.permitRef==row->handler.permitNonce)return DenyAndClose(Status::Unknown);
+    for(const auto& previous:rows_)if(&previous!=row&&previous.state!=RowState::Empty&&(previous.handler.permitRef==row->handler.permitRef||previous.handler.permitNonce==row->handler.permitNonce))return DenyAndClose(Status::Unknown);
+    row->handler.expiresMono=row->call.expiresMono;row->handler.bindingHash=ExecutionRowHash(*row,true);const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);if(finalGuard!=Status::Ok)return finalGuard;
+    if(!ExecutionRowCurrent(*row,now))return Status::Denied;row->state=RowState::Verified;++handlerAdmissions_;out=row->handler;return Status::Ok;
+#else
+    (void)daemon;(void)body;(void)now;(void)out;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::FinishExecution(const PeerWitness& daemon,const Id& handler,const Digest& result,std::uint64_t now)noexcept {
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const auto guarded=Guard(daemon,PeerRole::Daemon,now);if(guarded!=Status::Ok)return guarded;CallRow* row=nullptr;
+    for(auto& original:rows_)if(original.handler.permitRef==handler&&original.state==RowState::Verified){if(row)return DenyAndClose(Status::Unknown);row=&original;}
+    if(!row||Zero(result)||!ExecutionRowCurrent(*row,now)||row->handler.bindingHash!=ExecutionRowHash(*row,true)||row->handler.expiresMono!=row->call.expiresMono)return Status::Denied;
+    const auto finalGuard=Guard(daemon,PeerRole::Daemon,now);if(finalGuard!=Status::Ok)return finalGuard;if(!ExecutionRowCurrent(*row,now))return Status::Denied;
+    row->resultHash=result;row->state=RowState::Finished;return Status::Ok;
+#else
+    (void)daemon;(void)handler;(void)result;(void)now;return Status::Unavailable;
+#endif
+}
+Status VolatileServerLedger::FinishLocalStatusRead(const PeerWitness& daemon,const Id& permit,const Digest& result,
+    const ReadObservation& observation,std::uint64_t now)noexcept {
+    return FinishLocalRead(daemon,permit,ToolCode::GetBridgeStatus,result,observation,now);
+}
+Status VolatileServerLedger::FinishLocalProjectRead(const PeerWitness& daemon,const Id& permit,const Digest& result,
+    const ReadObservation& observation,std::uint64_t now)noexcept {
+    // Only the original broker's independently validated D20 terminal path
+    // calls this method. D52 cannot choose Tool7 through a supplied kind/code.
+    return FinishLocalRead(daemon,permit,ToolCode::GetProjectInfo,result,observation,now);
+}
+Status VolatileServerLedger::FinishLocalRead(const PeerWitness& daemon,const Id& permit,ToolCode tool,const Digest& result,
+    const ReadObservation& observation,std::uint64_t now)noexcept {
+    const auto status=Guard(daemon,PeerRole::Daemon,now);if(status!=Status::Ok)return status;
+    CallRow* row=nullptr;for(auto& value:rows_)if(value.state!=RowState::Empty&&value.handler.permitRef==permit){row=&value;break;}
+    if(!row||row->body.tool!=tool||row->state!=RowState::Verified||Zero(result)||!ReadRowCurrent(*row,now)||
+        row->handler.bindingHash!=ReadRowHash(*row,true)||row->handler.expiresMono!=row->call.expiresMono||
+        !ObservationCurrent(observation,permit,now))return Status::Denied;
+    const auto last=Guard(daemon,PeerRole::Daemon,now);if(last!=Status::Ok)return last;
+    if(!ReadRowCurrent(*row,now)||!ObservationCurrent(observation,permit,now))return Status::Denied;
+    row->resultHash=result;row->observationHash=observation.readiness;row->observedMono=observation.observedMono;row->state=RowState::Finished;
+    readObservation_=observation;if(row->body.kind==CallKind::BootstrapRead)++bracket_.next;return Status::Ok;
+}
+Status VolatileServerLedger::AdoptReadBracket(const PeerWitness& controller,const Id& bracket,const ReadObservation& observation,
+    std::uint64_t now,ReadAuthorization& out)noexcept {
+    const auto status=Guard(controller,PeerRole::Controller,now);if(status!=Status::Ok)return status;
+    if(!nativeBound_||!bracket_.active||bracket_.consumed||bracket!=bracket_.ref||bracket_.next!=4||now>=bracket_.deadline||
+        HasUnresolved()||!ObservationCurrent(observation,session_.sessionRef,now))return Status::Denied;
+    std::uint64_t previous=0;for(std::uint8_t index=1;index<=3;++index){const CallRow* row=nullptr;
+        for(const auto& value:rows_)if(value.bracket==bracket&&value.bracketIndex==index){if(row)return DenyAndClose(Status::Unknown);row=&value;}
+        if(!row||row->state!=RowState::Finished||Zero(row->resultHash)||Zero(row->observationHash)||row->observedMono>now||now-row->observedMono>10000||
+            row->body.kind!=CallKind::BootstrapRead||row->body.tool!=(index==2?ToolCode::GetProjectInfo:ToolCode::GetBridgeStatus)||
+            row->actorHash!=bracket_.actor||row->sourceHash!=bracket_.source||(previous&&row->counter!=previous+1))return Status::Denied;
+        previous=row->counter;
+    }
+    if(leaseEpoch_==std::numeric_limits<std::uint64_t>::max()||now>std::numeric_limits<std::uint64_t>::max()-60000)return DenyAndClose(Status::Unknown);
+    ReadAuthorization value{};if(!nativePort_.randomId(nativePort_.originalBroker,value.ref)||Zero(value.ref))return DenyAndClose(Status::Unknown);
+    value.originBracket=bracket;value.actor=bracket_.actor;value.source=bracket_.source;value.epoch=leaseEpoch_+1;value.issuedMono=now;
+    value.expiresMono=std::min(now+60000,sessionDeadline_);value.hash=ReadAuthorizationHash(value,bracket);
+    const auto last=Guard(controller,PeerRole::Controller,now);if(last!=Status::Ok)return last;
+    if(now>=value.expiresMono||!ObservationCurrent(observation,session_.sessionRef,now))return Status::Denied;
+    bracket_.consumed=true;bracket_.active=false;read_=value;++leaseEpoch_;out=value;return Status::Ok;
 }
 Digest VolatileServerLedger::BindingHash(const CallRow& row,bool handler) const noexcept {
     std::array<std::uint8_t,1024> binary{};

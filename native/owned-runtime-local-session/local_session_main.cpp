@@ -5,7 +5,11 @@
 int wmain(int argc,wchar_t** argv){
     // Closed named entry points only. Runtime root/PID/policy/exe/record selectors
     // are absent. Enrollment never performs launch; initialize/status never ensure.
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    if(argc==2&&std::wstring(argv[1])==L"--trusted-read-broker")return local_session::Broker::RunFixed();
+#else
     if(argc==2&&std::wstring(argv[1])==L"--broker")return local_session::Broker::RunFixed();
+#endif
     if(argc==2&&std::wstring(argv[1])==L"--enroll-fixed"){
         // The creator first emits its fixed binary observation and consumes one
         // original-stdin ACK while creation handles are held. This terminal JSON
