@@ -303,3 +303,15 @@ Diagnostic record SHA `DFDFAC40…583E3D4`, receipt `B0A5E4BA…2F7305B`.
 Source/production acceptance и видео отсутствуют, все четыре remaining producers
 остаются незавершёнными. [block: source diagnostic] [executor: root sole compiler]
 [reason: accepted original-handle compiler control; no runtime load].
+
+UI baseline component Source GO: immutable manifest `94F09DDB…B7F559`, module
+`924FA41A…3F8EF5`, proof `2617BDD5…3A9C2`. Независимый VM199/199,
+syntax2/rules/diff PASS. Self-contained ES3 capture/support/restore сохраняют
+immutable baseline, полный bounded census и index/type/name/numLayers mapping;
+precheck отказывает без записей, result перечитывает exact time/selection/viewer.
+Actual method-availability boolean не заменяет успешный Restore proof. Module
+не открывает/сохраняет проект, не пишет файлы и не выдаёт cap/readiness/authority;
+fsName selector не заявлен physical proof. [block: UI baseline component]
+[executor: ae_implementer; review: ae_reviewer] [ownership: новый pure module/proof].
+Native reopen/pin/hash/parser/SourceM/preissued program/floor/debt интеграция ещё
+не принята; P1 Stage без usable Restore остаётся открытым до этой приёмки.
