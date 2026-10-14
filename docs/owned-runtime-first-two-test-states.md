@@ -200,3 +200,28 @@ owner20732 exit0; acceptance SHA256 `441CDB6B…B69619F6`. Parser принима
 синтетические факты original getter; actual host observation и capability не
 заявляются. Execute/copy/stage/restore/AME/media/debt пока не закончены;
 addon/factory/C1 не запускались, результат остаётся 0/2.
+
+Решение Stage до C1: **отдельный final SaveAs**, без in-place write epoch.
+Для каждого slot различаются fixed `workingName` и final `snapshotName`:
+checkpoint1 + clean working AEP2 + final snapshots2. Все пять имён различны,
+находятся в approved physical root, не совпадают с original; caller их не выбирает.
+CleanCopy создаёт working AEP и удерживает его read-only. Stage в одном charged
+leaf проверяет original/working/final absence, фиксирует D42/floor/restoration debt,
+открывает working, сверяет полный поддержанный graph/timing/fonts/text/visibility
+и mapping новых IDs, переключает точную пару и сохраняет отдельный final AEP.
+
+Private `OwnedSavedSnapshot` (maximum2) выдаётся только по own Stage command/result
+capabilities, successful authentic terminal и native final file/pin/hash/named
+read-back. D44 delivery отдельно не доказывает save; filename/hash/ready JSON
+не выдаёт cap. Original/checkpoint/working остаются неизменными; aliases/hardlinks
+запрещены. После первого final pin replacement запрещён. Несовместимый writer,
+неизвестный результат или failed capture закрывают enqueue без replay SaveAs.
+OriginalJob и inspections используют final cap и actual post-save AEP/comp/GUID
+association; clean-copy receipt не становится staged snapshot proof.
+
+Copy2/Stage2/11 groups и прежний vector сохраняются **условно**, если reconciliation,
+result и pinning входят в уже посчитанные producers без новых Calls/Store rows.
+Working-file cleanup не добавлен. Restoration — отдельный group с factual
+promised RAM/UI/source read-back. Source GO архитектуры разрешает реализацию
+до C1; actual AE read-locked open/SaveAs writer release и вся интеграция пока
+не доказаны. Disposable production trial и fallback write epoch не допускаются.
