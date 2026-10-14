@@ -225,3 +225,26 @@ Working-file cleanup не добавлен. Restoration — отдельный g
 promised RAM/UI/source read-back. Source GO архитектуры разрешает реализацию
 до C1; actual AE read-locked open/SaveAs writer release и вся интеграция пока
 не доказаны. Disposable production trial и fallback write epoch не допускаются.
+
+Следующий bounded architecture decision: outer C5/M100/D41 остаётся
+`RunAiAgentPlan`; только private production scope6/7 отображается на внутренние
+Enqueue/START. Wire payloadHash остаётся нулевым, exact BridgeTalk bytes/hash
+удерживаются private original command и связываются scriptHash. Stage lineage
+связывает own receipt, successful D20 terminal, NativeNode graph и held final
+snapshot; original READ/manifest не меняются. Final getters используют только
+этот живой объект, разрешённый для scope6/7 и preissued Restore8.
+
+Preparation-only renewal может исключать один exact-own pending M100 по original
+proposal/manifest/actor/current pins. Foreign, duplicate, UNKNOWN и активные
+effects/jobs/children закрывают его. READ60s, comp freshness10s, proposal expiry
+и session deadline сохраняются. При restoration debt renewal исключительно для
+восстановления; между Enqueue и START renewal запрещён. Expired READ после Stage
+закрывает Enqueue/START и оставляет exact restoration.
+
+Completed native dry receipt допускается вернуть вместе с existing adopt response
+без новой delivery или Call. Все реальные service costs учитываются: startup33
+при лимите32 закрывает C1. [block: final-wire-boundaries] [executor: ae_architect]
+[reason: wire/lineage/manual-wait trust boundaries] [ownership: read-only decision].
+Это разрешение scoped реализации; production GO и фактический budget FIT ещё
+не получены. Media child/collector Source GO принят отдельно; CPP/OS и визуальная
+проверка этих новых producers пока не выполнены.
