@@ -345,3 +345,58 @@ byte-identical ранее принятой ES3 программе; API/schema/bo
 syntax2/rules/diff PASS. [block: static UI exports] [executor: ae_implementer]
 [review: ae_reviewer] [ownership: прежние module/proof]. Native ScriptParsed/census,
 transitive SourceM и пригодность Stage/Restore этим scope не приняты; C1 CLOSED.
+
+Restore/C6 Source STOP 14.10: manifest `E4F380D8…ACF53B`,
+`.codex-runtime/native-restore-c6-integrated-65cb9fcddc1f/`: 90 файлов/native63,
+XML TU11/15/3; root независимо сверил 90/90 SHA и bytes. Preissued Restore8,
+consumer D41–44/D20, full mapped UI/source read-back, same C6/C7 restriction,
+own successful historical pins при rawcount0 и factual debt/status guards связаны.
+Runtime:129 и bridge trustedFixedExecute:1818 допускают только Execute14/15
+до Bind/Note/dispatch; Stage outer CLOSED. Independent review: **REVISE P2**
+initial/no-debt C6 — originalBaselineCurrent ставится без полного own GUID,
+comp/root/selected-ID join (`node_api:209`, `native_client:1617/1596`).
+Фиксированный getter выдаёт правильные поля, но это не заменяет predicate.
+root==comp остаётся допустимым; negative cases нужны для каждого identity поля.
+Native заявленные VM53/21/26/12/16 и syntax6/rules/diff PASS. Независимо из
+snapshot VM53/12/16/UI207 PASS; proposal/history и gate NOTRUN: отсутствует
+ame-presets в bounded dependency closure, mutable deps не подмешивались.
+Native JSON/history70, CPP и native census admission этим review не доказаны.
+[block: coherent Restore/C6] [executor: ae_specialist] [review: ae_reviewer]
+[ownership: backend/native; root sole build/live controller].
+
+Отдельный diagnostic compile E4F с REVISE P2: принятые capture-control `5A462DB5…`,
+launcher `120FDD14…`, harness `724E084B…` и 411preheld `728A4C3C…`;
+freeze63 `ns-e0ac244bd6ed/0849AB76…` → `ic-f023fc47eaa3`, approval `ADFD7A05…`.
+Root и control reviewer подтвердили все63 hashes/TU11/15/3. Receipt0014
+`30A11A72…42B6D0D`: node preprocess0/build1, C2220 из C4456 — inner `bytes`
+строка1696 скрывает1664, inner `slot`1749 скрывает1740. Следующие роли/mediaCPP
+не достигнуты. Original MSBuild2 CLOSED/exactExit/EOF/handlesclosed; root повторно
+сверил те же objects внутри owner18180/PTY98767, затем explicit exit0.
+Record `restore-c6-build-diagnostic-f023fc47eaa3.json/CFFC39C5…41E1002` локальный;
+frozen bytes/старые outputs не меняются. Native writer исправляет P2 и lexical
+names без ослабления WX/flags/contracts; следующий build требует свежий STOP,
+review/freeze/output. Captured input создан при прежнем writer STOP; текущий
+mutable writer продолжает отдельно. Factory/C1/runtime load/FIT/effects=false,
+videos0/2. AME/D47, D48–49 reservations, D50 collector/lifetime/footprint CLOSED.
+
+Исправленный Restore/C6 STOP `57F0AAA9…D0E15`: 96files/native63, Source GO
+для bounded delta; root/reviewer96/96 SHA+bytes PASS. Shared identity predicate
+проверяет structural graph/pair и own GUID из retained compRead, comp/root и
+ordered selectedIds до baseline flag и повторно при consumption. root==comp
+разрешён; mapped Restore.after branch не менялся. Lexical stageBytes/restoredSlot
+закрывают оба C4456 без изменения flags/contracts. Product delta — пять файлов;
+шесть неизменённых proof dependencies закрывают copied VM55/21/26, PASS независимо.
+Native95 (25 новых cases) и native ScriptParsed/census этим review не исполнены.
+
+Fresh diagnostic all-role compile `ns-41581b9304ab/0CE2403C…`, approval
+`EEFBA504…` → `ic-8cbe8e785c09`, receipt0032 `A3C0FB9C…15D3A4`: **PASS**,
+TU11/15/3, все шесть preprocess/build exit0. Media CPP включены и достигнуты.
+Control capture `E8C98C2A…`, launcher `7761F653…` получили bounded control GO;
+63/63 frozen inputs, XML и approval совпали. Root в том же original owner28092
+/PTY95989 независимо сверил6CLOSED/exactExit0/EOF/handlesclosed и explicitexit0.
+Acceptance `restore-c6-build-acceptance-8cbe8e785c09.json/BB7DBD0F…D4DAF` локальный.
+Это CPP доказательство, не attestation compiler/linker descendants/all modules.
+Native95 требует новый совместимый isolated proof owner и immutable fixture
+closure: placeholder-geometry отсутствует в snapshot96; старый runner hardcodes50.
+Root готовит ограниченный fork; native writer отдельно начал AME/D47 после Source
+GO. Runtime addon/factory/C1/wholeSourceM/FIT/effects не запускались, renders0/2.
