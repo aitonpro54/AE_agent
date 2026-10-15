@@ -29,7 +29,7 @@
   namespaces отсутствуют. Provisioner CPP/link/input closure PASS (0 ошибок).
   Node client остановился на C2026: generated projectScript 42774 UTF8 bytes.
   Генератор исправлен: отдельные append chunks ≤4 КиБ, текст/SHA сохранены.
-  Root pure12/parser/syntax PASS; actual MSVC preflight повторяется на новых inputs.
+  Root pure12/parser/syntax PASS. В v6 MSVC прошёл генерацию, затем остановился на C4334: 32-bit shift перед 64-bit mask. Root исправил один literal на 1ULL (адресная правка по точному diagnostic, без отдельного исполнителя); source-proof PASS. Actual preflight повторяется на новых inputs.
   Original compile children 7/7 CLOSED/EOF (последний exit1); creator/seal/deploy 0.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
