@@ -20,6 +20,10 @@
   проекта до общего START, собственные terminal receipts 2/2 и барьер завершения
   своего I/O. Root повторил три focused проверки и 11 AME VM-сценариев: PASS.
   Сборка Windows и реальное подключение остаются следующим этапом.
+- Driver source готов: actual pin/census collection, предварительная компиляция
+  всех трёх ролей без запуска creator и отдельный production build/seal.
+  Root проверил pure smoke 9 групп, syntax 6 JS и PowerShell parser: PASS.
+  Перед native-сессией выполняется фактическая компиляция Windows.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
