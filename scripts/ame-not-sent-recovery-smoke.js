@@ -25,15 +25,18 @@ async function fixture(){
   const settle=(runId=first.runId)=>executor.execute(jobs.STATUS,{...common,batchId:args.batchId,jobId:ledger().jobs[0].jobId,originalRunId:runId});
   return {dir,source,args,stateDir,first,ledger,saveLedger,enqueue,record,settle,executor,seen,dispatches:()=>dispatches,allowDispatch:()=>{beforeDispatch=false;},denyDispatch:()=>{beforeDispatch=true;},setQueued:v=>{queued=v;},setRuntime:v=>{runtimeOkay=v;},assertOriginal:()=>assert.deepEqual(fs.readFileSync(records.fileFor(dir,first.runId)),originalBytes)};
 }
-async function rehydrateFixture(){
+async function rehydrateFixture(mode="original"){
   // Reuse the committed focused recovery fixture, without executing its suite.
   const file=path.join(__dirname,"title-export-recovery-smoke.js"),source=fs.readFileSync(file,"utf8"),boundary=source.indexOf("(async()=>{");assert(boundary>0);
-  const f=vm.runInNewContext(source.slice(0,boundary)+"\nfixture();",{require:createRequire(file),__dirname:path.dirname(file),console});
+  const f=vm.runInNewContext(source.slice(0,boundary).replace("graph:[],queue:[]","graph:[{id:1,layers:args.variants.map((v,i)=>({id:v.layerId,name:v.name,enabled:i===0,text:v.name}))}],queue:[]")+"\nfixture();",{require:createRequire(file),__dirname:path.dirname(file),console});
   const receipt=await f.run();assert.equal(receipt.ok,true);f.foreign();
   const tool=require("../mcp-server/title-export-snapshots"),variants=require("../mcp-server/native-render-variant"),executor=tool.createExecutor({});let recovery,reads=0;const labels=[];
   recovery=executor.createRecovery({root:f.dir,loadRecord:id=>records.readRecord(f.dir,id,{throwOnError:true}),wrap:body=>body,readActor:async()=>copy(f.actor),commandSettled:()=>true,readNative:async(body,scope)=>{
     reads++;labels.push(scope.label);assert.equal(scope.label,"rehydrate_verifier");assert(!body.includes("raw:typeof __codexMcpBridgeResult"));recovery.assertNative(scope,body);recovery.queued(scope,crypto.randomUUID());
-    const baseline=f.record.run.steps[0].commands[0].result.snapshot;assert.equal(variants.digest(baseline),f.args.expectedStateHash);return {result:{snapshot:{...copy(baseline),revision:12},dirty:false}};
+    const baseline=f.record.run.steps[0].commands[0].result.snapshot;assert.equal(variants.digest(baseline),f.args.expectedStateHash);const snapshot={...copy(baseline),revision:12};if(mode!=="original"){snapshot.projectFile=f.targets[1];for(const rows of [snapshot.controlled,snapshot.graph[0].layers])for(const row of rows)row.enabled=row.id===12;if(mode==="flags")snapshot.controlled[0].enabled=true;if(mode==="drift")snapshot.graph[0].layers[0].text="unexpected";}
+    const current=mode==="original"?f.source:f.targets[1],guid=mode==="guid"?"foreign":receipt.recovered.snapshots[1].native.guid;
+    const injected=body.replace("var nativeSnapshot="+variants.nativeSnapshot.toString(),"var nativeSnapshot=function(){return "+JSON.stringify(snapshot)+";}");const project={file:{fsName:current.replace(/\\/g,"/")},dirty:false,numItems:1,item:()=>({id:1,dynamicLinkGUID:guid})};
+    return {result:vm.runInNewContext("(function(){"+injected+"})()",{app:{project}})};
   }});
   return {f,receipt,executor,recovery,labels,reads:()=>reads,run:()=>recovery.recover({runId:f.selector.runId,commandId:f.selector.commandId})};
 }
@@ -49,5 +52,7 @@ async function rehydrateFixture(){
   const settled=await capacity.executor.execute(jobs.STATUS,{targetSpecifier:capacity.args.targetSpecifier,expectedProcess:capacity.args.expectedProcess,batchId:capacity.args.batchId,jobId:batch.jobs[1].jobId,originalRunId:capacity.first.runId});assert.equal(settled.ok,true);capacity.allowDispatch();assert.equal((await capacity.enqueue()).result.jobId,batch.jobs[1].jobId);assert.equal(capacity.ledger().jobs.length,2);assert.equal(capacity.dispatches(),1);checks++;
   const hydrated=await rehydrateFixture(),r=await hydrated.run();assert.equal(r.ok,true);assert.equal(r.rehydrated,true);assert.equal(hydrated.reads(),1);assert.deepEqual(hydrated.labels,["rehydrate_verifier"]);assert.equal(hydrated.recovery.status().guardHeld,false);for(const s of r.recovered.snapshots)assert.equal(hydrated.executor.assertSavedSource({sourcePath:s.path,sourceSha25664:s.sha25664,sourceGuid:s.native.guid}),true);hydrated.f.assertOriginal();checks++;
   for(const target of ["source","snapshot"]){const drift=await rehydrateFixture();fs.appendFileSync(target==="source"?drift.f.source:drift.f.targets[0],"drift");assert.equal((await drift.run()).ok,false);assert.equal(drift.reads(),0);assert.equal(drift.recovery.status().guardHeld,false);checks++;}
+  const current=await rehydrateFixture("snapshot2"),currentResult=await current.run();assert.equal(currentResult.ok,true);assert.equal(currentResult.rehydrationCurrent.snapshotIndex,1);assert.equal(currentResult.rehydrationCurrent.revision,12);assert.deepEqual(currentResult.recovered,current.receipt.recovered);current.f.assertOriginal();checks++;
+  for(const mode of ["flags","drift","guid"]){const denied=await rehydrateFixture(mode);assert.equal((await denied.run()).ok,false,mode);checks++;}
   console.log(JSON.stringify({ok:true,checks,evidence:"offline actual executor/ledgers/verified receipt, injected native port; no live AE/AME",root}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

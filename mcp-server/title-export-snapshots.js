@@ -37,6 +37,7 @@ function destinations(a){
 }
 function absent(files){for(const file of files){try{fs.lstatSync(file);fail("title_export_target_exists_no_replay");}catch(e){if(e.code!=="ENOENT")throw e;}}}
 function readScript(a){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};return {snapshot:nativeSnapshot(${JSON.stringify(inspectionArgs(a))}),dirty:app.project.dirty};`;}
+function rehydrateReadScript(a,files){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};var allowed=${JSON.stringify(files)},current=app.project&&app.project.file?String(app.project.file.fsName):"",selected=null;for(var i=0;i<allowed.length;i++)if(current.toLowerCase().split("\\\\").join("/")===allowed[i].toLowerCase().split("\\\\").join("/"))selected=allowed[i];if(!selected)throw Error("title_recovery_current_project_not_verified");var inspect=${JSON.stringify(inspectionArgs(a))};inspect.expectedProjectFile=selected;var target=null;for(var j=1;j<=app.project.numItems;j++)if(app.project.item(j).id===${a.compItemId})target=app.project.item(j);return {snapshot:nativeSnapshot(inspect),dirty:app.project.dirty,guid:target?String(target.dynamicLinkGUID||""):null};`;}
 // Uses the same native String(number) representation as the bridge serializer.
 function nativeSnapshotDifference(actual,expected){
   var mismatch=null;
@@ -277,11 +278,18 @@ function createRecovery(deps){
     try{
       sourcePins();for(const s of saved.snapshots){const {native:unused,...pin}=s;unchanged(pin);}
       const before=actor(await deps.readActor());if(stableStringify(before)!==stableStringify(receipt.actor))fail("title_recovery_panel_actor_changed");
-      const response=await native(readScript(args),"rehydrate_verifier"),observed=response?.result||response,normalized={...observed?.snapshot,revision:baseline.revision};
-      if(observed?.dirty!==false||stableStringify(normalized)!==stableStringify(baseline))fail("title_recovery_source_readback_changed");
+      const files=[args.expectedProjectFile,...saved.snapshots.map(s=>s.path)],response=await native(rehydrateReadScript(args,files),"rehydrate_verifier"),observed=response?.result||response;
+      const selected=files.findIndex(file=>same(file,observed?.snapshot?.projectFile));if(selected<0||observed?.dirty!==false||!Number.isSafeInteger(observed?.snapshot?.revision))fail("title_recovery_source_readback_changed");
+      const expected=JSON.parse(JSON.stringify(baseline));expected.projectFile=files[selected];
+      if(selected>0){const snapshot=saved.snapshots[selected-1];if(observed.guid!==snapshot.native.guid)fail("title_recovery_snapshot_guid_changed");
+        const flags=snapshot.native.flags,target=expected.graph.filter(c=>c.id===args.compItemId);if(target.length!==1)fail("title_recovery_snapshot_graph_invalid");
+        for(const flag of flags){const controlled=expected.controlled.filter(l=>l.id===flag.id),layers=target[0].layers.filter(l=>l.id===flag.id);if(controlled.length!==1||layers.length!==1||controlled[0].name!==flag.name)fail("title_recovery_snapshot_flags_invalid");controlled[0].enabled=flag.enabled;layers[0].enabled=flag.enabled;}
+      }
+      // Revision is a host session counter; every other structural field is exact.
+      const normalized={...observed.snapshot,revision:baseline.revision};if(stableStringify(normalized)!==stableStringify(expected))fail("title_recovery_source_readback_changed");
       sourcePins();for(const s of saved.snapshots){const {native:unused,...pin}=s;unchanged(pin);}
       if(stableStringify(before)!==stableStringify(actor(await deps.readActor())))fail("title_recovery_panel_actor_changed");
-      deps.adopt(saved.snapshots);result={...receipt,rehydrated:true,adoptedInCurrentRuntime:true};phase="verified";held=false;current=null;return result;
+      deps.adopt(saved.snapshots);result={...receipt,rehydrated:true,adoptedInCurrentRuntime:true,rehydrationCurrent:{path:files[selected],snapshotIndex:selected-1,guid:observed.guid||null,revision:observed.snapshot.revision,stateHash:variants.digest(observed.snapshot)}};phase="verified";held=false;current=null;return result;
     }catch(error){held=!!current?.id&&!deps.commandSettled(current.id);phase=held?"rehydrate_unknown":"unarmed";current=null;result={ok:false,schema:RECOVERY_SCHEMA,code:error.code||error.message,guardHeld:held,replayAllowed:false};return result;}
   }
   async function recover(raw){

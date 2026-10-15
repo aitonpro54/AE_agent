@@ -84,7 +84,7 @@ function nativeTitleJob(a) {
     for (k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(stringify(k) + ":" + stringify(v[k])); return "{" + out.join(",") + "}";
   }
   var reply = { schema: "ae-agent-ame-title-native.v1", requestNonce: a.requestNonce, operationBinding: a.operationBinding, appSpecifier: String(BridgeTalk.appSpecifier), sessionNonce: scalar($.global.aeAgentAMEProbeSessionNonce), observedAt: new Date().getTime(), code: "unsupported", nativeJobId: null, nativeAssociationVerified: false };
-  function done(code) { reply.code = code; var serialized = stringify(reply); if (utf8Bytes(serialized, 524288) < 0) { reply = { schema: reply.schema, requestNonce: reply.requestNonce, operationBinding: reply.operationBinding, appSpecifier: reply.appSpecifier, sessionNonce: reply.sessionNonce, observedAt: reply.observedAt, code: "native_response_envelope_oversize", nativeJobId: null, nativeAssociationVerified: false }; serialized = stringify(reply); } return serialized; }
+  function done(code) { reply.code = code; if(a.operation === "enqueue" && entry && !reply.job)reply.job=readEntry(entry);var serialized = stringify(reply); if (utf8Bytes(serialized, 524288) < 0) { reply = { schema: reply.schema, requestNonce: reply.requestNonce, operationBinding: reply.operationBinding, appSpecifier: reply.appSpecifier, sessionNonce: reply.sessionNonce, observedAt: reply.observedAt, code: "native_response_envelope_oversize", nativeJobId: null, nativeAssociationVerified: false }; serialized = stringify(reply); } return serialized; }
   if(a.ownedInitialDispatch===true){var rawProbe=$.global.aeAgentAMEProbeSessionNonce;if(!(rawProbe===undefined||rawProbe===null||typeof rawProbe==="string"&&/^[A-Za-z0-9._-]{1,128}$/.test(rawProbe)))return done("owned_probe_observation_invalid");}
   if (reply.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && reply.sessionNonce !== a.expectedSessionNonce) return done("target_session_changed");
   if(a.ownedInitialDispatch===true&&a.operation!=="sources"){
@@ -94,6 +94,8 @@ function nativeTitleJob(a) {
   function readEntry(e) {
     var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, workAreaApplied: e.workAreaApplied === true, status: e.status, nativeCompletionObserved: e.finished === true && (e.queueMode !== "shared_queue_v1" || !!e.hostCompletion && e.completionOrigin === "host_exact_paths"), nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
     result.wrapperDiagnostic = { type: typeof e.wrapper, isNull: e.wrapper === null, methods: {} };
+    result.dispatchDiagnostic = { phase:e.nativePhase || null, addDLInvoked:e.addDLInvoked === true, addDLReturned:e.addDLReturned === true, error:e.nativeError || null, creationFailures:e.creationFailures || [], workAreaCallAck:e.workAreaCallAck || null };
+    if(e.nativeError || e.creationFailures && e.creationFailures.length){result.readErrors.push(e.nativeError?"native_dispatch_error":"batch_item_creation_failed");result.nativeAssociationVerified=false;}
     for (var method in {setWorkArea:1,addEventListener:1,getEncodeProgress:1,getEncodeTime:1}) { try { result.wrapperDiagnostic.methods[method] = e.wrapper ? typeof e.wrapper[method] : "unavailable"; } catch (methodError) { result.wrapperDiagnostic.methods[method] = "read_error"; } }
     try { result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles; if (!files || typeof files.length !== "number") throw Error(); for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n])); if (files.length !== 1 || norm(files[0]) !== norm(e.outputPath)) result.nativeAssociationVerified = false; } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
     for (var name in { getEncodeProgress: 1, getEncodeTime: 1 }) {
@@ -158,6 +160,10 @@ function nativeTitleJob(a) {
     return result;
   }
   try {
+    if (a.operation === "enqueue" && a.retiredSenderIdentity) {
+      var retired = a.retiredSenderIdentity, retained = slot && slot.jobs && slot.jobs[retired.jobId], retainedBatch = slot && slot.batches && slot.batches[retired.batchId];
+      if (reply.sessionNonce !== retired.sessionNonce || !slot || slot.retainedWrapperSessionNonce !== retired.retainedWrapperSessionNonce || !retained || retained.handleKey !== retired.jobId || retained.enqueueRequestNonce !== retired.enqueueNonce || retained.batchId !== retired.batchId || retained.processBinding !== a.processBinding || !retainedBatch || retainedBatch.processBinding !== a.processBinding || a.jobId === retired.jobId || a.batchId === retired.batchId || norm(a.outputPath) === norm(retired.outputPath)) return done("retired_sender_ame_identity_changed");
+    }
     if (a.operation === "status") {
       entry = slot && slot.jobs[a.jobId]; if (!entry || entry.processBinding !== a.processBinding || entry.batchId !== a.batchId) return done("native_handle_unavailable");
       function pathChars(v) { if (typeof v !== "string") return null; var count = 0; for (var p = 0; p < v.length; p++) if (v.charCodeAt(p) === 92) count++; return {length:v.length,backslashCount:count}; }
@@ -249,24 +255,40 @@ function nativeTitleJob(a) {
     batch = slot.batches[a.batchId]; if (batch && (batch.presetIdentity !== a.presetIdentity || batch.processBinding !== a.processBinding || batch.start || batch.jobIds.length >= 64)) return done("native_batch_identity_changed");
     if (!batch) { batch = { presetIdentity: a.presetIdentity, processBinding: a.processBinding, jobIds: [], start: null }; slot.batches[a.batchId] = batch; }
     entry = { handleKey: a.jobId, enqueueRequestNonce: a.requestNonce, batchId: a.batchId, sourcePath: a.sourcePath, sourceGuid: a.sourceGuid, outputPath: a.outputPath, presetIdentity: a.presetIdentity, range: a.range, processBinding: a.processBinding, queueMode: a.queueMode || null, wrapper: null, associated: false, workAreaApplied: false, status: "unknown_outcome", finished: false, nativeResult: null, rawLogCaptures: [], rawLogKinds: {}, callbackOrdinal: 0 };
+    entry.nativePhase = "reserved"; entry.addDLInvoked = false; entry.addDLReturned = false; entry.nativeError = null; entry.creationFailures = [];
     slot.jobs[a.jobId] = entry; slot.count++; batch.jobIds.push(a.jobId);
+    entry.nativePhase = "host_listener_setup";
     if (!slot.hostListeners && typeof host.addEventListener === "function") {
       function hostEvent(event, complete) { var key, e; for (key in slot.jobs) if (Object.prototype.hasOwnProperty.call(slot.jobs, key)) { e = slot.jobs[key]; if (e.associated && event && norm(event.sourceFilePath) === norm(e.sourcePath) && norm(event.outputFilePath) === norm(e.outputPath)) { if (complete) finish(e, event, "host_exact_paths"); else { e.callbackOrdinal++; if (!e.finished) { e.status = "running"; e.eventObservedAt = new Date().getTime(); captureRaw(e, "started", event); } } } } }
       slot.hostListeners = { started: function(e) { hostEvent(e, false); }, complete: function(e) { hostEvent(e, true); } };
       host.addEventListener("onItemEncodingStarted", slot.hostListeners.started); host.addEventListener("onItemEncodeComplete", slot.hostListeners.complete);
     }
-    // Empty format is the documented automatic format derived from this exact EPR.
+    entry.nativePhase = "creation_failure_listener_setup";
+    if (typeof frontend.addEventListener !== "function") return done("creation_failure_listener_unsupported_before_submit");
+    entry.creationFailureListener = function(event) {
+      if (!event || typeof event.srcFilePath !== "string" || norm(event.srcFilePath) !== norm(entry.sourcePath) || entry.creationFailures.length >= 3) return;
+      entry.creationFailures.push({sourcePath:event.srcFilePath,error:String(event.error || "").substring(0,2000),observedAt:new Date().getTime()});
+    };
+    frontend.addEventListener("onBatchItemCreationFailed", entry.creationFailureListener);
+    // Empty format derives from the exact EPR argument. This is call evidence,
+    // not an independent getter proving the applied preset or range.
+    entry.nativePhase = "add_dl_submitted"; entry.addDLInvoked = true;
     entry.wrapper = frontend.addDLToBatch(a.sourcePath, "", a.presetPath, a.sourceGuid, a.outputPath);
+    entry.addDLReturned = true; entry.nativePhase = "add_dl_returned";
     if (!entry.wrapper || typeof entry.wrapper.setWorkArea !== "function" || typeof entry.wrapper.addEventListener !== "function") return done("encoder_wrapper_unsupported_after_submit");
+    entry.nativePhase = "wrapper_listener_setup";
     entry.listeners = { progress: function(event) { entry.callbackOrdinal++; if (!entry.finished) { entry.status = "running"; entry.eventObservedAt = new Date().getTime(); captureRaw(entry, "progress", event); } }, finished: function(e) { finish(entry, e, "native_wrapper"); } };
     entry.wrapper.addEventListener("onEncodeProgress", entry.listeners.progress); entry.wrapper.addEventListener("onEncodeFinished", entry.listeners.finished);
-    if(a.ownedInitialDispatch===true&&a.ownedRangeMode==="full_observed_root_range_v1"){
-      if(entry.wrapper.setWorkArea(0,0,a.ownedObservedDuration)!==true)return done("owned_entire_range_unverified_after_submit");
-    }else if (entry.wrapper.setWorkArea(3, a.range.startSeconds, a.range.endSeconds) !== true) return done("work_area_unverified_after_submit");
+    entry.nativePhase = "work_area_submitted";
+    var entire = a.ownedInitialDispatch===true&&a.ownedRangeMode==="full_observed_root_range_v1", areaType=entire?0:3, areaStart=entire?0:a.range.startSeconds, areaEnd=entire?a.ownedObservedDuration:a.range.endSeconds;
+    var areaResult = entry.wrapper.setWorkArea(areaType, areaStart, areaEnd);
+    entry.workAreaCallAck = {type:areaType,startSeconds:areaStart,endSeconds:areaEnd,result:scalar(areaResult),observedAt:new Date().getTime()};
+    entry.nativePhase = "work_area_returned";
+    if (areaResult !== true) return done(entire?"owned_entire_range_unverified_after_submit":"work_area_unverified_after_submit");
     entry.workAreaApplied = true;
-    entry.associated = true; if (entry.status === "unknown_outcome") entry.status = "queued"; reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified;
+    entry.nativePhase = "association_readback"; entry.associated = true; if (entry.status === "unknown_outcome") entry.status = "queued"; reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified;
     return done(reply.nativeAssociationVerified ? "job_enqueued" : "output_binding_unverified_after_submit");
-  } catch (error) { reply.error = String(error).substring(0, 2000); return done("native_read_or_submit_error"); }
+  } catch (error) { reply.error = String(error).substring(0, 2000); if(entry){entry.nativeError={phase:entry.nativePhase || "unknown",error:reply.error,observedAt:new Date().getTime()};reply.job=readEntry(entry);} return done("native_read_or_submit_error"); }
 }
 
 // Fixed AE sender. It never launches AME; unknown queue delivery blocks another send.
@@ -282,7 +304,7 @@ function nativeSend(a, messageBody) {
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
   if (typeof BridgeTalk !== "function" || typeof BridgeTalk.isRunning !== "function") return reply("bridgetalk_unsupported");
   try { if (!BridgeTalk.isRunning(a.targetSpecifier)) return reply("target_not_running"); } catch (_) { return reply("target_running_unknown"); }
-  var observationOnly = a.observeOwnJob === true, retainedSourceRead = null;
+  var observationOnly = a.observeOwnJob === true, retainedSourceRead = null, originSender = slot, retiredMutation = slot ? slot.retainedRetiredMutation || null : null;
   if (observationOnly) {
     // A separate read descriptor leaves the mutation message and its late
     // callbacks untouched. Only a fixed own-job status can use this lane.
@@ -302,13 +324,18 @@ function nativeSend(a, messageBody) {
   } else {
   retainedSourceRead = slot ? slot.retainedSourceRead || null : null;
   if (slot && (!slot.callback || slot.callback === "timeout")) {
-    if (slot.operation !== "sources" || a.operation === "sources" || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || retainedSourceRead) return reply("previous_request_unresolved");
-    retainedSourceRead = slot;
+    var proof = a.independentSenderRetirement, observation = $.global.aeAgentAMETitleObservationV1;
+    if (proof && a.operation === "enqueue" && slot.operation === "enqueue" && slot.callback === "timeout" && observation && observation.originSender === slot && observation.callback === "result" && observation.independentRetirementConsumed !== true && observation.requestNonce === proof.observationNonce && observation.operationBinding === proof.observationBinding && observation.body === proof.responseBody && observation.jobId === proof.jobId && observation.batchId === proof.batchId && observation.enqueueRequestNonce === proof.enqueueNonce && slot.requestNonce === proof.enqueueNonce && slot.operationBinding === proof.enqueueBinding && slot.targetSpecifier === a.targetSpecifier && slot.processBinding === a.processBinding && observation.processBinding === a.processBinding && observation.targetSpecifier === a.targetSpecifier && a.jobId !== proof.jobId && a.batchId !== proof.batchId && a.requestNonce !== proof.enqueueNonce && a.outputPath !== proof.outputPath && proof.newJobId === a.jobId && proof.newBatchId === a.batchId && proof.newRequestNonce === a.requestNonce && proof.newOperationBinding === a.operationBinding && proof.newOutputPath === a.outputPath && new Date().getTime() >= proof.observedAt && new Date().getTime() - proof.observedAt <= 60000) {
+      observation.independentRetirementConsumed = true; retiredMutation = slot;
+    } else {
+      if (slot.operation !== "sources" || a.operation === "sources" || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || retainedSourceRead) return reply("previous_request_unresolved");
+      retainedSourceRead = slot;
+    }
   }
   if (a.operation === "sources" && retainedSourceRead && (!retainedSourceRead.callback || retainedSourceRead.callback === "timeout")) return reply("previous_request_unresolved");
   }
-  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, callback: null, body: null, message: message };
-  if (observationOnly) { slot.jobId = a.jobId; slot.batchId = a.batchId; slot.enqueueRequestNonce = a.observationEnqueueRequestNonce; $.global.aeAgentAMETitleObservationV1 = slot; } else $.global.aeAgentAMETitleSendV1 = slot;
+  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, retainedRetiredMutation: retiredMutation, callback: null, body: null, message: message };
+  if (observationOnly) { slot.originSender = originSender; slot.jobId = a.jobId; slot.batchId = a.batchId; slot.enqueueRequestNonce = a.observationEnqueueRequestNonce; $.global.aeAgentAMETitleObservationV1 = slot; } else $.global.aeAgentAMETitleSendV1 = slot;
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
   message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
   message.onError = function(r) { slot.body = String(r.body || "").substring(0, 2000); slot.callback = "error"; }; message.onTimeout = function() { slot.callback = "timeout"; };
@@ -329,8 +356,10 @@ function messageScript(a) { return "(" + nativeTitleJob.toString() + ")(" + mess
 function commandScript(a) {
   // Both the generated AME source and its string operands preserve exact UTF-16
   // units without Adobe's nested backslash-escape interpretation.
-  const body=a.reconcileRequestNonce?"":messageScript(a);
-  const script="return ("+nativeSend.toString()+")("+literal(a)+","+utf16Expression(body)+");";
+  const {independentSenderRetirement:senderOnly,...receiverArgs}=a;
+  if(senderOnly)receiverArgs.retiredSenderIdentity={jobId:senderOnly.jobId,batchId:senderOnly.batchId,enqueueNonce:senderOnly.enqueueNonce,outputPath:senderOnly.outputPath,sessionNonce:senderOnly.sessionNonce,retainedWrapperSessionNonce:senderOnly.retainedWrapperSessionNonce};
+  const body=a.reconcileRequestNonce?"":messageScript(receiverArgs);
+  const script="return ("+nativeSend.toString()+")("+messageArgument(a)+","+utf16Expression(body)+");";
   if(Buffer.byteLength(script,"utf8")>1048576)fail("ame_title_command_bound");return script;
 }
 
@@ -349,7 +378,7 @@ function write(file, value, exclusive = false) {
 }
 function createExecutor(deps) {
   if (!deps || !path.isAbsolute(deps.stateDir || "") || ["runExtendScriptBody", "inspectProcesses", "resolveOutputFilePath", "assertManualIngress", "assertServerContext"].some(k => typeof deps[k] !== "function")) fail("ame_title_invalid_dependencies");
-  const caps = new WeakMap(), nativePreparations = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false;
+  const caps = new WeakMap(), nativePreparations = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false, independentSenderProof = null;
   const recordFile = id => path.join(deps.stateDir, "batches", id + ".json"), guardDir = path.join(deps.stateDir, "outputs");
   function result(code, extra = {}) { return { schema: SCHEMA, ok: false, code, nativeJobId: null, nativeAssociationVerified: false, nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false, automaticRetryAllowed: false, observedAt: new Date(now()).toISOString(), ...extra }; }
   function assertIngress(context, name, a) {
@@ -510,6 +539,16 @@ function createExecutor(deps) {
       (job.args.queueMode !== sharedQueue.MODE || n.workAreaApplied === true && Array.isArray(n.readErrors) && n.readErrors.length === 0 && (!Object.hasOwn(job, "nativeSessionNonce") || native.sessionNonce === job.nativeSessionNonce)) &&
       (!n.nativeCompletionObserved || Number.isFinite(n.eventObservedAt) && n.eventObservedAt >= Date.parse(job.submittedAt) && n.eventObservedAt <= native.observedAt));
   }
+  function retainIndependentSenderProof(a, batch, job, observed) {
+    const n=observed.native,j=n?.job,t=observed.terminalObservation,o=observed.originalSender;
+    if(!observed.resolved||observed.code!=="job_observed"||!t||t.callback!=="result"||!o||o.callback!=="timeout"||o.requestNonce!==job.requestNonce||o.operationBinding!==job.operationBinding||n.batchRunning!==false||n.requestNonce===job.requestNonce||n.operationBinding!==hash({operation:"status",jobId:job.jobId})||n.appSpecifier!==a.targetSpecifier||n.observedAt>now()||now()-n.observedAt>60000||!j||j.handleKey!==job.jobId||j.enqueueRequestNonce!==job.requestNonce||j.processBinding!==batch.processBinding||j.sourceGuid!==job.args.sourceGuid||j.presetIdentity!==job.presetIdentity||hash(j.range)!==hash(job.args.range)||!UUID.test(j.retainedWrapperSessionNonce||"")||job.retainedWrapperSessionNonce&&j.retainedWrapperSessionNonce!==job.retainedWrapperSessionNonce||Object.hasOwn(job,"nativeSessionNonce")&&n.sessionNonce!==job.nativeSessionNonce||a.expectedSessionNonce&&n.sessionNonce!==a.expectedSessionNonce)return;
+    independentSenderProof={observationNonce:t.requestNonce,observationBinding:n.operationBinding,responseBody:t.responseBody,jobId:job.jobId,batchId:batch.batchId,enqueueNonce:job.requestNonce,enqueueBinding:job.operationBinding,outputPath:job.outputPath,processBinding:batch.processBinding,targetSpecifier:a.targetSpecifier,observedAt:n.observedAt,sessionNonce:n.sessionNonce,retainedWrapperSessionNonce:j.retainedWrapperSessionNonce};
+  }
+  function consumeIndependentSenderProof(a, job) {
+    const proof=independentSenderProof;if(!proof||now()<proof.observedAt||now()-proof.observedAt>60000||proof.processBinding!==job.processBinding||proof.targetSpecifier!==a.targetSpecifier||proof.batchId===a.batchId||proof.jobId===job.jobId||proof.enqueueNonce===job.requestNonce||samePath(proof.outputPath,job.outputPath))return null;
+    independentSenderProof=null;
+    return {...proof,newJobId:job.jobId,newBatchId:a.batchId,newRequestNonce:job.requestNonce,newOperationBinding:job.operationBinding,newOutputPath:job.outputPath};
+  }
   function updateJob(job, observation) {
     job.transportResolved = observation.resolved; if (observation.native) job.nativeObservation = observation.native;
     job.nativeAssociationVerified = associated(job, observation.native); job.readyForStart = job.nativeAssociationVerified && observation.native.job.status === "queued" && (observation.code === "job_enqueued" || observation.code === "job_observed" && job.readyForStart);
@@ -580,7 +619,9 @@ function createExecutor(deps) {
     const initial = !batch; if (!batch) batch = { schema: LEDGER_SCHEMA, batchId: a.batchId, presetIdentity, processBinding, jobs: [], start: null };
     if(reuse){consumeSettlement(job,settlement,entry.context);job.lastDispatchDiagnostic=null;}else batch.jobs.push(job);write(recordFile(a.batchId), batch, initial);
     assertCap(cap, ENQUEUE, a); entry.active = false;
-    const observed = await send({ ...a, operation: "enqueue", ...(savedNativeSourceVerified?{savedNativeSourceVerified:true}:{}), sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
+    const retirement=consumeIndependentSenderProof(a,job);
+    if(retirement){job.independentTransportRetirement={oldBatchId:retirement.batchId,oldJobId:retirement.jobId,oldEnqueueNonce:retirement.enqueueNonce,observationNonce:retirement.observationNonce,observedAt:retirement.observedAt,responseSha25664:crypto.createHash("sha256").update(retirement.responseBody,"utf8").digest("hex"),consumedByRunId:entry.context.runId,newRequestNonce:job.requestNonce};write(recordFile(a.batchId),batch);}
+    const observed = await send({ ...a, ...(retirement?{independentSenderRetirement:retirement}:{}), operation: "enqueue", ...(savedNativeSourceVerified?{savedNativeSourceVerified:true}:{}), sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
       pinned(job); readyOutput(job);
       assertIngress(entry.context, ENQUEUE, a);
     }, () => processPin(a, processInfo));
@@ -739,6 +780,7 @@ function createExecutor(deps) {
     const observed = await send({ ...a, operation: "status", jobId: job.jobId,expectedOwnSourcePath:job.sourcePath,expectedOwnOutputPath:job.outputPath,processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
     let observationDiagnostic=null;
+    if(ownObservation)retainIndependentSenderProof(a,batch,job,observed);
     if(ownObservation&&observed.terminalObservation){
       const terminal=observed.terminalObservation;
       job.ownStatusObservationHistory=(job.ownStatusObservationHistory||[]).concat({...job.ownStatusObservation,terminal,resultCode:observed.code,archivedAt:new Date(now()).toISOString()});
