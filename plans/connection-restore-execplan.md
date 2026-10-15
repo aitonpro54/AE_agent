@@ -19,6 +19,9 @@
 - Найден конкретный pre-intent blocker: inherited foreign Modify ACE не проходят
   `OwnAcl` на old seal/roots. Один SID — CodexSandboxUsers, четыре не разрешились.
   Старые journal bytes/pins сохранены. Добавлен безопасный failure code в stderr.
+- V14d: actual private ACL repair9/9 PASS с original-handle read-back и backup;
+  source 5c1f41d, compile3 PASS, BuildAndSeal PASS. Creator exit0/bothEOF,
+  pending0, seal11592B/intent584B; install shell закрыт. Bridge ещё не запускался.
 
 ## Decision Log
 
@@ -58,7 +61,13 @@
   предикатом на actual DACL без повторного запуска creator.
 - ACL reference cases 5/5 PASS; native constexpr проверяет actual Modify,
   DELETE_CHILD/DELETE, WRITE_DAC/OWNER, read-only/inherit-only и protected parent.
-  Исправленный native source ещё требует compile; machine ACL repair не выполнен.
+  Исправленный native source compiled/linked во всех трёх targets — PASS.
+- Machine repair изменил только девять private DACL через same original HANDLE;
+  frozen input SHA, old setup pin, zero fence, IDs/bytes до/после PASS. DACL backup
+  CREATE_NEW+Flush до изменений; repo/ancestor ACL не менялись.
+- V14d actual input SHA299f0fd79c8f892ac418f4a73bc14730fba86a59d11fa5bdc51bb60e19ed4a66;
+  `build-and-seal-receipt.json`: sealed_creator_closed, originalExit0,
+  stdoutEOF/stderrEOF. Новый runtime автоматически не запускался.
 - Переданные WIP имели syntax PASS, но содержали незавершённую native интеграцию и
   ошибки JS genesis key/selector. Это диагностические факты, не приёмка.
 - Проверить native-compatible closed records, actual intent/binding, отсутствие
@@ -71,5 +80,6 @@
 
 ## Следующее действие
 
-Исправить точную причину ACL отказа, сохранив protected one-shot contract. Затем
-сверить установку, обновить servicing MCP и прочитать реальный проект через MCP.
+Пользователю передан один технический шаг: штатный Restart сервера after-effects
+в настройках Codex. После подтверждения — один ensure в обслуживающем чат MCP,
+status и реальный get_project_info. До подтверждения не расходовать admission.
