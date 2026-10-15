@@ -77,6 +77,10 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   сравнивался с Node mtime в ms. Native сравнение приведено к секундам при сохранении
   exact server SHA/inode/mtime; executor21PASS, включая timestamp drift deny.
   Только две exact owned0-byte reservations после сверки удалены; original record сохранён.
+- Run4f9100dc также остановился в preflight/saved0: strict Double против wire baseline.
+  Native comparator использует тот же String(number), сохраняет first mismatch.
+  Readonly comparator проверяется в dry-run до CREATE_NEW. Executor23PASS: wire1/30
+  проходит, actual1/24 drift блокируется без reservations; ES3/syntax/diff/rules PASS.
 
 ## Следующий шаг
 

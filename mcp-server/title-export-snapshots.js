@@ -36,12 +36,19 @@ function destinations(a){
 }
 function absent(files){for(const file of files){try{fs.lstatSync(file);fail("title_export_target_exists_no_replay");}catch(e){if(e.code!=="ENOENT")throw e;}}}
 function readScript(a){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};return {snapshot:nativeSnapshot(${JSON.stringify(inspectionArgs(a))}),dirty:app.project.dirty};`;}
+// Uses the same native String(number) representation as the bridge serializer.
+function nativeSnapshotDifference(actual,expected){
+  var mismatch=null;
+  function equal(a,b,p){var k,n=0,m=0;if(a===b||typeof a==="number"&&typeof b==="number"&&String(a)===String(b))return true;if(a===null||b===null||typeof a!=="object"||typeof b!=="object"){mismatch={path:p,actual:String(a).substring(0,120),expected:String(b).substring(0,120)};return false;}for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)){mismatch={path:p+"."+k,actual:"present",expected:"missing"};return false;}if(!equal(a[k],b[k],p+"."+k))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;if(n!==m){mismatch={path:p,actual:"keys:"+n,expected:"keys:"+m};return false;}return true;}
+  equal(actual,expected,"snapshot");return mismatch;
+}
+function compareScript(a,baseline){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};var baseline=${JSON.stringify(baseline)};return {difference:nativeSnapshotDifference(nativeSnapshot(${JSON.stringify(inspectionArgs(a))}),baseline),dirty:app.project.dirty};`;}
 // Fixed ES3 program. No caller code, arbitrary save destination, render or catch restore.
 function nativeExport(a,baseline,sourcePin,reservations,deadline){
-  var phase="preflight",saved=[],i,j,target=null,layers=[],initial,finalRead;
+  var phase="preflight",saved=[],i,j,target=null,layers=[],initial,finalRead,mismatch=null;
   function norm(v){return String(v||"").replace(/\\/g,"/").toLowerCase();}
   function bad(code){throw new Error(code);}
-  function equal(a,b){var k,n=0,m=0;if(a===b)return true;if(a===null||b===null||typeof a!=="object"||typeof b!=="object")return false;for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)||!equal(a[k],b[k]))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;return n===m;}
+  function equal(a,b){mismatch=nativeSnapshotDifference(a,b);return mismatch===null;}
   // Admission deadline for the next mutation. A known, verified completion of
   // an already admitted open remains evidence even when it finishes later.
   function clock(){if(new Date().getTime()>=deadline)bad("title_export_deadline");}
@@ -78,9 +85,9 @@ function nativeExport(a,baseline,sourcePin,reservations,deadline){
     phase="restore_submitted";app.open(new File(a.expectedProjectFile));
     finalRead=state(a.expectedProjectFile,null);filePin(sourcePin,false);phase="restored";
     return {schema:"ae-agent-title-export-snapshots.v1",ok:true,phase:phase,saved:saved,restored:{path:String(app.project.file.fsName),revision:app.project.revision,dirty:app.project.dirty,flags:finalRead}};
-  }catch(e){return {schema:"ae-agent-title-export-snapshots.v1",ok:false,phase:phase,code:String(e.message||e),saved:saved,automaticRetryAllowed:false,current:{path:app.project&&app.project.file?String(app.project.file.fsName):null,dirty:app.project?app.project.dirty:null,revision:app.project?app.project.revision:null}};}
+  }catch(e){return {schema:"ae-agent-title-export-snapshots.v1",ok:false,phase:phase,code:String(e.message||e),mismatch:mismatch,saved:saved,automaticRetryAllowed:false,current:{path:app.project&&app.project.file?String(app.project.file.fsName):null,dirty:app.project?app.project.dirty:null,revision:app.project?app.project.revision:null}};}
 }
-function exportScript(a,baseline,pin,reservations,deadline){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};var nativeExport=${nativeExport.toString()};return nativeExport(${[a,baseline,pin,reservations,deadline].map(v=>JSON.stringify(v)).join(",")});`;}
+function exportScript(a,baseline,pin,reservations,deadline){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};var nativeExport=${nativeExport.toString()};return nativeExport(${[a,baseline,pin,reservations,deadline].map(v=>JSON.stringify(v)).join(",")});`;}
 function createExecutor(deps){
   const contexts=new WeakMap(),savedSources=new Map();
   function assertContext(context,a){
@@ -102,6 +109,8 @@ function createExecutor(deps){
     const native=await deps.readNative(readScript(a));unchanged(source);
     const read=native?.result || native;
     if(read?.dirty!==false || read.snapshot?.revision!==a.expectedRevision || variants.digest(read.snapshot)!==a.expectedStateHash)fail("title_export_source_baseline_changed");
+    const compared=await deps.readNative(compareScript(a,read.snapshot)),comparison=compared?.result || compared;unchanged(source);
+    if(comparison?.dirty!==false || comparison.difference!==null)throw Object.assign(Error("title_export_native_baseline_changed: "+JSON.stringify(comparison?.difference || null)),{code:"title_export_native_baseline_changed"});
     for(let i=0;i<2;i++){const layer=read.snapshot.controlled.find(l=>l.id===a.variants[i].layerId);if(!layer || layer.name!==a.variants[i].name || layer.enabled!==(i===0))fail("title_export_exact_pair_changed");}
     return {a,source,targets,baseline:read.snapshot};
   }
@@ -149,4 +158,4 @@ function verifyResult(result,raw){
   return {ok:true,scope:"two_new_native_snapshots_and_restored_pinned_source",sourceSha25664:result.source.sha25664,snapshotSha25664:result.snapshots.map(s=>s.sha25664),mediaVerified:false};
 }
 function toolDefinition(){return {name:TOOL,description:"Create exactly two new saved TITR_01/TITR_02 export snapshots beside the pinned clean source, then restore that same source. One server-proposed autonomous step with checkpoint and read-back; no render or arbitrary save/open.",inputSchema:{type:"object",additionalProperties:false,required:["expectedProjectFile","expectedSourceSha25664","expectedRevision","expectedStateHash","compItemId","variants"],properties:{expectedProjectFile:{type:"string"},expectedSourceSha25664:{type:"string"},expectedRevision:{type:"integer"},expectedStateHash:{type:"string"},compItemId:{type:"integer"},variants:{type:"array",minItems:2,maxItems:2,items:{type:"object",additionalProperties:false,required:["layerId","name","snapshotFileName"],properties:{layerId:{type:"integer"},name:{type:"string"},snapshotFileName:{type:"string"}}}}}}};}
-module.exports={TOOL,SCHEMA,validateInput,inspectionArgs,fileRecord,createExecutor,toolDefinition,nativeExport,exportScript,readScript,verifyResult};
+module.exports={TOOL,SCHEMA,validateInput,inspectionArgs,fileRecord,createExecutor,toolDefinition,nativeExport,nativeSnapshotDifference,exportScript,readScript,compareScript,verifyResult};

@@ -14,12 +14,18 @@ function fixture(mode="ok"){
   const app={project,beginUndoGroup(){counts.undo++;},endUndoGroup(){},open(file){counts.opens++;project.file=file;project.dirty=false;project.revision++;layers[0].enabled=true;layers[1].enabled=false;if(mode==="late-open")now+=130000;}};
   project.save=file=>{counts.saves++;if(mode==="save2-fails" && counts.saves===2){project.dirty=true;throw Error("save_failure");}fs.writeFileSync(file.fsName,"native saved "+layers.map(l=>l.enabled));project.file=file;project.dirty=false;project.revision++;
     if(mode==="source-drift" && counts.saves===1)fs.appendFileSync(source,"changed");if(mode==="deadline" && counts.saves===1)now+=130000;if(mode==="guid" && counts.saves===1)comp.dynamicLinkGUID="";};
-  const snapshot=()=>({projectFile:project.file.fsName,revision:project.revision,controlled:layers.map(l=>({id:l.id,index:l.id-10,name:l.name,enabled:l.enabled,text:l.name})),graph:[{id:1,layers:layers.map(l=>({id:l.id,enabled:l.enabled,name:l.name}))}],queue:[]});
-  const baseline=snapshot(),args={expectedProjectFile:source,expectedSourceSha25664:exportsTool.fileRecord(source).sha25664,expectedRevision:7,expectedStateHash:variants.digest(baseline),compItemId:1,variants:layers.map((l,i)=>({layerId:l.id,name:l.name,snapshotFileName:`titr_0${i+1}_ame_product_20261015.aep`}))};
+  let snapshotReads=0;const snapshot=()=>({projectFile:project.file.fsName,revision:project.revision,frameDuration:mode==="native-number-drift"&&++snapshotReads>2?1/24:1/30,controlled:layers.map(l=>({id:l.id,index:l.id-10,name:l.name,enabled:l.enabled,text:l.name})),graph:[{id:1,layers:layers.map(l=>({id:l.id,enabled:l.enabled,name:l.name}))}],queue:[]});
+  const wire=s=>mode==="numeric-wire"?JSON.parse(JSON.stringify(s,(k,v)=>typeof v==="number"?Number(v.toPrecision(13)):v)):s;
+  const nativeString=v=>typeof v==="number"&&mode==="numeric-wire"?String(Number(v.toPrecision(13))):String(v);
+  const baseline=wire(snapshot()),args={expectedProjectFile:source,expectedSourceSha25664:exportsTool.fileRecord(source).sha25664,expectedRevision:7,expectedStateHash:variants.digest(baseline),compItemId:1,variants:layers.map((l,i)=>({layerId:l.id,name:l.name,snapshotFileName:`titr_0${i+1}_ame_product_20261015.aep`}))};
   const evidence=[];let authorized=true;
-  const executor=exportsTool.createExecutor({assertRunner:()=>assert(authorized,"runner revoked"),persist:v=>evidence.push(JSON.parse(JSON.stringify(v))),readNative:async()=>({result:{snapshot:snapshot(),dirty:project.dirty}}),writeNative:async script=>{
+  const executor=exportsTool.createExecutor({assertRunner:()=>assert(authorized,"runner revoked"),persist:v=>evidence.push(JSON.parse(JSON.stringify(v))),readNative:async script=>{
+    if(script.includes("var baseline=")){const start=script.indexOf("var baseline=")+"var baseline=".length,baseline=JSON.parse(script.slice(start,script.indexOf(";return",start)));const difference=vm.runInNewContext(`(${exportsTool.nativeSnapshotDifference.toString()})(actual,baseline)`,{actual:snapshot(),baseline,String:nativeString});return {result:{difference,dirty:project.dirty}};}
+    return {result:{snapshot:wire(snapshot()),dirty:project.dirty}};
+  },writeNative:async script=>{
     const start=script.lastIndexOf("return nativeExport(")+"return nativeExport(".length,params=JSON.parse("["+script.slice(start,-2)+"]");
-    const result=vm.runInNewContext(`(${exportsTool.nativeExport.toString()})(...params)`,{params,nativeSnapshot:snapshot,app,File,TextLayer,Date:DateMock});return {result:JSON.parse(JSON.stringify(result))};
+    const nativeSnapshotDifference=vm.runInNewContext(`(${exportsTool.nativeSnapshotDifference.toString()})`,{String:nativeString});
+    const result=vm.runInNewContext(`(${exportsTool.nativeExport.toString()})(...params)`,{params,nativeSnapshot:snapshot,nativeSnapshotDifference,app,File,TextLayer,Date:DateMock,String:nativeString});return {result:JSON.parse(JSON.stringify(result))};
   }});
   const payload={plan:{steps:[{tool:exportsTool.TOOL,args}]}},record={payload,payloadHash:m100.sha256Payload(payload),project:{expectedFile:source},proposalExpiresAt:new Date(Date.now()+300000).toISOString(),dryRunCompletedAt:new Date().toISOString()};
   record.dryRunReceipt={payloadHash:record.payloadHash,contractVersion:"v1",stepCount:1,projectFile:source};
@@ -36,6 +42,8 @@ function fixture(mode="ok"){
   await assert.rejects(good.run(),/runner_required/);checks++;
   const late=fixture("late-open");assert.equal((await late.run()).ok,true);assert.deepEqual(late.counts,{saves:2,opens:1,undo:1});checks++;
   const nativeTime=fixture("native-time-drift"),nativeTimeResult=await nativeTime.run();assert.equal(nativeTimeResult.ok,false);assert.equal(nativeTimeResult.code,"title_export_native_file_changed");assert.equal(nativeTimeResult.evidence.phase,"preflight");assert.equal(nativeTime.counts.saves,0);checks++;
+  const numeric=fixture("numeric-wire");assert.equal((await numeric.run()).ok,true);assert.equal(numeric.counts.saves,2);checks++;
+  const numberDrift=fixture("native-number-drift");await assert.rejects(numberDrift.run(),/title_export_native_baseline_changed.*snapshot.frameDuration/);assert.equal(numberDrift.counts.saves,0);assert.equal(numberDrift.evidence.length,0);checks++;
   const fresh=good.executor.preflight(good.args);await assert.rejects(fresh,/target_exists_no_replay/);checks++;
   for(const mode of ["save2-fails","source-drift","deadline","guid"]){const f=fixture(mode),r=await f.run();assert.equal(r.ok,false);assert.equal(f.counts.opens,0);assert.equal(f.counts.saves,mode==="save2-fails"?2:1);assert.equal(fs.existsSync(path.join(path.dirname(f.source),f.args.variants[0].snapshotFileName)),true);await assert.rejects(f.run(),/runner_required/);checks++;}
   const dirty=fixture("dirty");dirty.project.dirty=true;await assert.rejects(dirty.run(),/source_baseline_changed/);assert.equal(dirty.counts.saves,0);checks++;
