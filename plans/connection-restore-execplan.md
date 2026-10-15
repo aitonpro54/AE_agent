@@ -12,7 +12,7 @@
   Private consumer разового known-product retirement проверяет exact intent,
   сохранённые source bytes/startup rows и held-HANDLE exit с `graceful:false`.
   Root остаётся единственным контроллером фактической retirement и перезапуска.
-- Scoped validation: product lifecycle10 и existing supervisor91 offline cases,
+- Scoped validation: product lifecycle12 и existing supervisor91 offline cases,
   initial-runtime24, rules/diff PASS. Проверены shutdown→ensure без нового grant,
   source-change succession, UNKNOWN/tamper/cross-generation denial и passive poll
   с сохранением private lifecycle delivery gate. Старый HTTP fixture в main root

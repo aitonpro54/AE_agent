@@ -3,6 +3,13 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),os=require("node:os"),crypto=require("node:crypto"),vm=require("node:vm");
 const supervisor=require("../mcp-server/owned-runtime-supervisor"),product=require("../mcp-server/owned-runtime-product-lifecycle"),service=require("../mcp-server/owned-runtime-service"),authority=require("../mcp-server/owned-runtime-authority"),ledger=require("../mcp-server/native-fixture-attempt-ledger"),r1=require("../mcp-server/owned-runtime-lifecycle"),evidence=require("../mcp-server/review-evidence");
 const {fixture}=require("./owned-runtime-supervisor-smoke"),cases=[];const uuid=()=>crypto.randomUUID(),copy=v=>JSON.parse(JSON.stringify(v));
+function adapterFixture(f){
+  const {EventEmitter}=require("node:events"),{createRequire}=require("node:module"),file=path.resolve(__dirname,"../mcp-server/mcp-adapter.js"),actual=createRequire(file),module={exports:{}};let healthy=false;
+  const http={request(_options,callback){const request=new EventEmitter();request.end=()=>queueMicrotask(()=>{if(!healthy){request.emit("error",Error("offline_daemon_absent"));return;}const response=new EventEmitter();response.statusCode=200;response.setEncoding=()=>{};callback(response);response.emit("data",JSON.stringify({ok:true,server:"offline fake health"}));response.emit("end");});return request;}};
+  const owned=supervisor.createOwnedRuntimeSupervisor(f.deps),controller={ensure:async()=>{const result=await owned.ensure();if(result.status==="owned_daemon_registered_admission_closed")healthy=true;return result;}};
+  const context=vm.createContext({module,exports:module.exports,process:{env:{AE_DAEMON_AUTO_START:"1"},stderr:{write(){}}},Buffer,AbortController,require:name=>name==="http"?http:name==="./owned-runtime-supervisor"?{createOwnedRuntimeSupervisor:()=>controller}:actual(name)});
+  vm.runInContext(fs.readFileSync(file,"utf8"),context,{filename:file});return module.exports;
+}
 async function check(name,fn){await fn();cases.push(name);}
 function write(file,value){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify(value));}
 async function first(){
@@ -60,6 +67,12 @@ async function main(){
       const refused=s.run("observation",()=>context.enqueueAeCommand("fixed read",1000));valid=false;const empty=s.ingress({method:"GET",url:"/bridge/next"},()=>context.leaseNextQueuedCommand({},new URL("http://127.0.0.1/bridge/next")));
       assert.equal(empty,null);await assert.rejects(refused,{code:"private_lifecycle_refused"});assert.equal(pending.length,0);assert.equal(inflight.size,0);
     }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+  });
+  await check("actual_adapter_absent_bridge_uses_supervisor_default_uuid_once",async()=>{
+    const f=fixture({absent:true});try{const adapter=adapterFixture(f),results=await Promise.all([adapter.ensureDaemonRunning(),adapter.ensureDaemonRunning()]);assert(results.every(r=>r.ok===true));assert.equal(f.counts.launch,1);const ids=fs.readdirSync(path.join(f.base,"supervisor-operations"));assert.equal(ids.length,1);assert(ledger.UUID.test(ids[0]));}finally{f.cleanup();}
+  });
+  await check("actual_adapter_unknown_reentry_uses_durable_semantic_key_without_relaunch",async()=>{
+    const f=fixture({absent:true,partialSpawn:true});try{const adapter=adapterFixture(f);await assert.rejects(adapter.ensureDaemonRunning());assert.equal(f.counts.launch,1);const ids=fs.readdirSync(path.join(f.base,"supervisor-operations"));assert.equal(ids.length,1);assert(ledger.UUID.test(ids[0]));await assert.rejects(adapter.ensureDaemonRunning());assert.equal(f.counts.launch,1);assert.deepEqual(fs.readdirSync(path.join(f.base,"supervisor-operations")),ids);assert(supervisor.readSupervisor(f.root,ids[0]).rows.unknown);}finally{f.cleanup();}
   });
   process.stdout.write(JSON.stringify({ok:true,cases,scope:"offline actual modules and fake private ports",liveAE:false,actualNativeFactories:0,actualHttp:false})+"\n");
 }
