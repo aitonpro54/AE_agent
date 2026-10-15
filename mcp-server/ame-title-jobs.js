@@ -290,13 +290,22 @@ function nativeSend(a, messageBody) {
   try { message.send(Math.ceil(a.timeoutMs / 1000)); } catch (_) { return reply("send_unknown"); }
   if (!slot.callback) pump(250); return reply(slot.callback || "unknown");
 }
-function messageScript(a) { return "(" + nativeTitleJob.toString() + ")(" + literal(a) + ");"; }
+function utf16Expression(text) {
+  const chunks=[];for(let i=0;i<text.length;i+=128){const units=[];for(let j=i;j<Math.min(i+128,text.length);j++)units.push(text.charCodeAt(j));chunks.push("String.fromCharCode("+units.join(",")+")");}return chunks.length?chunks.join("+"):'""';
+}
+function messageArgument(value) {
+  if(typeof value==="string")return utf16Expression(value);
+  if(value===null||typeof value==="boolean"||typeof value==="number"&&Number.isFinite(value))return JSON.stringify(value);
+  if(Array.isArray(value))return "["+value.map(v=>v===undefined?"null":messageArgument(v)).join(",")+"]";
+  if(value&&typeof value==="object")return "{"+Object.keys(value).filter(key=>value[key]!==undefined).map(key=>{if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key))fail("ame_title_fixed_argument_key_required");return JSON.stringify(key)+":"+messageArgument(value[key]);}).join(",")+"}";
+  fail("ame_title_fixed_argument_type_required");
+}
+function messageScript(a) { return "(" + nativeTitleJob.toString() + ")(" + messageArgument(a) + ");"; }
 function commandScript(a) {
-  // Transport the fixed generated AME source as exact UTF-16 units. Adobe's
-  // nested string-literal parsing need not interpret any backslash escapes.
-  const body=a.reconcileRequestNonce?"":messageScript(a),chunks=[];
-  for(let i=0;i<body.length;i+=128){const units=[];for(let j=i;j<Math.min(i+128,body.length);j++)units.push(body.charCodeAt(j));chunks.push("String.fromCharCode("+units.join(",")+")");}
-  const script="return ("+nativeSend.toString()+")("+literal(a)+","+(chunks.length?chunks.join("+"):'""')+");";
+  // Both the generated AME source and its string operands preserve exact UTF-16
+  // units without Adobe's nested backslash-escape interpretation.
+  const body=a.reconcileRequestNonce?"":messageScript(a);
+  const script="return ("+nativeSend.toString()+")("+literal(a)+","+utf16Expression(body)+");";
   if(Buffer.byteLength(script,"utf8")>1048576)fail("ame_title_command_bound");return script;
 }
 
