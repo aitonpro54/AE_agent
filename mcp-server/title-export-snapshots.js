@@ -45,7 +45,9 @@ function nativeExport(a,baseline,sourcePin,reservations,deadline){
   // Admission deadline for the next mutation. A known, verified completion of
   // an already admitted open remains evidence even when it finishes later.
   function clock(){if(new Date().getTime()>=deadline)bad("title_export_deadline");}
-  function filePin(pin,empty){var f=new File(pin.path);if(!f.exists||f.alias||f.length!==pin.bytes||!f.modified||f.modified.getTime()!==pin.mtimeMs||empty&&f.length!==0)bad("title_export_native_file_changed");return f;}
+  // ExtendScript File.modified exposes whole seconds on Windows. The server
+  // retains exact millisecond/inode/SHA checks before and after native execution.
+  function filePin(pin,empty){var f=new File(pin.path);if(!f.exists||f.alias||f.length!==pin.bytes||!f.modified||Math.floor(f.modified.getTime()/1000)!==Math.floor(pin.mtimeMs/1000)||empty&&f.length!==0)bad("title_export_native_file_changed");return f;}
   function args(file){return {expectedProjectFile:file,rootCompItemId:a.compItemId,variantCompItemId:a.compItemId,controlledLayerIds:[a.variants[0].layerId,a.variants[1].layerId]};}
   function state(file,slot){
     var s=nativeSnapshot(args(file)),k,n,row,wanted,actual=[];

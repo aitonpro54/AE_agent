@@ -72,6 +72,11 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   Offline fixtures не доказывают реальные SaveAs, AME enqueue или START.
 - Source-read fence: focused VM PASS (legacy exact classification, late callback,
   original reconcile после enqueue, mutation UNKNOWN deny); ES3/syntax/diff/rules PASS.
+- Live snapshot dry-run PASS. Run9da37cfd отказал в native preflight, saved0,
+  исходник clean/тот же revision/hash. Причина: Windows File.modified в секундах
+  сравнивался с Node mtime в ms. Native сравнение приведено к секундам при сохранении
+  exact server SHA/inode/mtime; executor21PASS, включая timestamp drift deny.
+  Только две exact owned0-byte reservations после сверки удалены; original record сохранён.
 
 ## Следующий шаг
 

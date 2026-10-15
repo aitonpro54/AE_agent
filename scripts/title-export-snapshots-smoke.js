@@ -8,7 +8,7 @@ function fixture(mode="ok"){
   class TextLayer{constructor(id,name,enabled){Object.assign(this,{id,name,enabled,locked:false});}}
   const layers=[new TextLayer(11,"TITR_01",true),new TextLayer(12,"TITR_02",false)],comp={id:1,numLayers:2,layer:i=>layers[i-1],dynamicLinkGUID:"00000001-0000-0000-0000-000000000000"};
   function File(file){this.fsName=file;}
-  Object.defineProperties(File.prototype,{exists:{get(){return fs.existsSync(this.fsName);}},alias:{get(){return false;}},length:{get(){return fs.statSync(this.fsName).size;}},modified:{get(){return new Date(Math.floor(fs.statSync(this.fsName).mtimeMs));}}});
+  Object.defineProperties(File.prototype,{exists:{get(){return fs.existsSync(this.fsName);}},alias:{get(){return false;}},length:{get(){return fs.statSync(this.fsName).size;}},modified:{get(){return new Date(Math.floor(fs.statSync(this.fsName).mtimeMs/1000)*1000+(mode==="native-time-drift"?1000:0));}}});
   const counts={saves:0,opens:0,undo:0},project={file:new File(source),dirty:false,revision:7,numItems:1,item:()=>comp};
   let now=Date.now();const DateMock=class extends Date{constructor(...a){super(...(a.length?a:[now]));}};
   const app={project,beginUndoGroup(){counts.undo++;},endUndoGroup(){},open(file){counts.opens++;project.file=file;project.dirty=false;project.revision++;layers[0].enabled=true;layers[1].enabled=false;if(mode==="late-open")now+=130000;}};
@@ -35,6 +35,7 @@ function fixture(mode="ok"){
   assert.throws(()=>good.executor.assertSavedSource({...selector,sourceSha25664:"0".repeat(64)}),/binding_required/);checks++;
   await assert.rejects(good.run(),/runner_required/);checks++;
   const late=fixture("late-open");assert.equal((await late.run()).ok,true);assert.deepEqual(late.counts,{saves:2,opens:1,undo:1});checks++;
+  const nativeTime=fixture("native-time-drift"),nativeTimeResult=await nativeTime.run();assert.equal(nativeTimeResult.ok,false);assert.equal(nativeTimeResult.code,"title_export_native_file_changed");assert.equal(nativeTimeResult.evidence.phase,"preflight");assert.equal(nativeTime.counts.saves,0);checks++;
   const fresh=good.executor.preflight(good.args);await assert.rejects(fresh,/target_exists_no_replay/);checks++;
   for(const mode of ["save2-fails","source-drift","deadline","guid"]){const f=fixture(mode),r=await f.run();assert.equal(r.ok,false);assert.equal(f.counts.opens,0);assert.equal(f.counts.saves,mode==="save2-fails"?2:1);assert.equal(fs.existsSync(path.join(path.dirname(f.source),f.args.variants[0].snapshotFileName)),true);await assert.rejects(f.run(),/runner_required/);checks++;}
   const dirty=fixture("dirty");dirty.project.dirty=true;await assert.rejects(dirty.run(),/source_baseline_changed/);assert.equal(dirty.counts.saves,0);checks++;
