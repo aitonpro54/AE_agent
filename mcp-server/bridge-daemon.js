@@ -273,6 +273,22 @@ const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
   assertPanelIdentity: meta => {const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),pending=own?.pending;if(own&&own.leaf===7){if(!pending||pending!==trustedReadDaemon.manualPending||pending.error||!pending.started||pending.authRole!=="panel"||pending.route!==ameManualQueue.ROUTE)return false;const panel=ownedOriginalPreparationPanel(ownedFixedTitleManualReceipts.get(context.record)?.panel);return panel.panelConnectionId===meta.panelConnectionId&&panel.panelGeneration===meta.panelGeneration;}return Boolean(lastPanelInfo && Date.now() - lastPanelSeenAt < 10000 && lastPanelInfo.panelConnectionId === meta.panelConnectionId && lastPanelInfo.panelGeneration === meta.panelGeneration);}
 });
 const ameSharedQueueIssuer=ameSharedQueue.createSharedQueueGrant({stateDir:path.join(LOG_DIR,"ame-title-jobs"),assertSharedQueueIngress,assertServerContext:assertSharedQueueIngress});
+const productAmeReadDispatchPort=require("./ame-product-read-dispatch").createProductReadDispatch({
+  assertProduct:()=>deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport(),
+  dispatch:(script,timeout)=>withPlanCommandRole("readback",()=>runExtendScriptBody(script,timeout))
+});
+const ameDispatchPorts=new WeakMap();
+const ameNativeDispatchPort={
+  authorize(metadata,context,preparation){
+    const port=deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport()?productAmeReadDispatchPort:ownedAmeNativeDispatchPort;
+    const cap=port.authorize(metadata,context,preparation);ameDispatchPorts.set(cap,port);return cap;
+  },
+  assertAuthorization(cap,metadata,context){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.assertAuthorization(cap,metadata,context);},
+  dispatch(cap,...args){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.dispatch(cap,...args);},
+  prepareEnqueue(...args){return ownedAmeNativeDispatchPort.prepareEnqueue(...args);},
+  prepareStart(...args){return ownedAmeNativeDispatchPort.prepareStart(...args);},
+  assertPreparation(...args){return ownedAmeNativeDispatchPort.assertPreparation(...args);}
+};
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
   resolveOutputFilePath,
@@ -282,7 +298,7 @@ const ameTitleExecutor = ameTitleJobs.createExecutor({
   sharedQueueGrant: ameSharedQueueIssuer,assertSharedQueueIngress,
   // L4 installs the real origin-bound native dispatch port. Generic plan roles
   // and caller flags cannot create native read/start/completion rights.
-  nativeDispatchPort: ownedAmeNativeDispatchPort,
+  nativeDispatchPort: ameNativeDispatchPort,
   runExtendScriptBody: () => { throw Object.assign(new Error("ame_title_native_dispatch_port_unavailable"), { code: "ame_title_native_dispatch_port_unavailable" }); }
 });
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
@@ -8320,7 +8336,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
     planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
-  if (lifecycleStep && (autonomous || allowWithoutCheckpoint)) {
+  if (!dryRun && lifecycleStep && (autonomous || allowWithoutCheckpoint)) {
     run.ok=false; run.errorCode=autonomous ? "lifecycle_manual_only" : "lifecycle_checkpoint_bypass_forbidden";
     run.error="Project lifecycle requires manual CEP authority and its mandatory source checkpoint."; return finishRun();
   }
