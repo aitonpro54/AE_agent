@@ -299,6 +299,8 @@ function nativeSend(a, messageBody) {
   function reply(code) {
     var value = { schema: "ae-agent-ame-title-send.v1", code: code, requestNonce: slot ? slot.requestNonce : a.requestNonce, callback: slot ? slot.callback : null, responseBody: slot ? slot.body : null };
     if (a.operation === "status") { var original = $.global.aeAgentAMETitleSendV1; if (original) value.originalSender = {requestNonce:original.requestNonce,operationBinding:original.operationBinding,callback:original.callback,responseBody:typeof original.body === "string" && utf8Bytes(original.body,524288) >= 0 ? original.body : null}; }
+    var targetStatus = null; try { if(typeof BridgeTalk.getStatus === "function")targetStatus=String(BridgeTalk.getStatus(a.targetSpecifier)); } catch (statusError) { targetStatus="read_error"; }
+    value.transportDiagnostic={targetStatus:targetStatus,sendAck:slot&&typeof slot.sent === "boolean"?slot.sent:null,sendError:slot&&slot.sendError||null,messageBodyChars:slot&&slot.message&&typeof slot.message.body === "string"?slot.message.body.length:null,callback:slot?slot.callback:null};
     return value;
   }
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
@@ -339,7 +341,7 @@ function nativeSend(a, messageBody) {
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
   message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
   message.onError = function(r) { slot.body = String(r.body || "").substring(0, 2000); slot.callback = "error"; }; message.onTimeout = function() { slot.callback = "timeout"; };
-  try { message.send(Math.ceil(a.timeoutMs / 1000)); } catch (_) { return reply("send_unknown"); }
+  try { slot.sent = message.send(Math.ceil(a.timeoutMs / 1000)); } catch (sendError) { slot.sendError=String(sendError).substring(0,2000);return reply("send_unknown"); }
   if (!slot.callback) pump(250); return reply(slot.callback || "unknown");
 }
 function utf16Expression(text) {
@@ -525,13 +527,13 @@ function createExecutor(deps) {
       }
       const reply = raw && Object.prototype.hasOwnProperty.call(raw, "result") ? raw.result : raw;
       if (!reply || reply.schema !== "ae-agent-ame-title-send.v1" || reply.requestNonce !== (a.reconcileRequestNonce || a.requestNonce)) return { resolved: false, code: "transport_correlation_unknown", native: null };
-      const originalSender=reply.originalSender||null;
+      const originalSender=reply.originalSender||null,transportDiagnostic=reply.transportDiagnostic||null;
       const terminalObservation=a.observeOwnJob===true&&["result","error"].includes(reply.callback)&&typeof reply.responseBody==="string"&&Buffer.byteLength(reply.responseBody,"utf8")<=524288?{requestNonce:a.requestNonce,callback:reply.callback,code:reply.code,responseBody:reply.responseBody,bodySha25664:crypto.createHash("sha256").update(reply.responseBody,"utf8").digest("hex")}:null;
-      if (reply.callback === "error") return { resolved: true, code: "native_delivery_error", native: null,terminalObservation,originalSender };
-      if (reply.code !== "result" || typeof reply.responseBody !== "string" || Buffer.byteLength(reply.responseBody, "utf8") > 524288) return { resolved: false, code: reply.code || "transport_unknown", native: null,terminalObservation,originalSender };
-      let native; try { native = JSON.parse(reply.responseBody); } catch (_) { return { resolved: true, code: "native_response_invalid", native: null,terminalObservation,originalSender }; }
-      if (!native || native.schema !== NATIVE_SCHEMA || native.requestNonce !== (a.reconcileRequestNonce || a.requestNonce) || native.operationBinding !== a.operationBinding || native.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && native.sessionNonce !== a.expectedSessionNonce || !Number.isFinite(native.observedAt) || native.observedAt <= 0 || native.observedAt < a.minimumObservedAt || native.observedAt > now() + 60000) return { resolved: false, code: "native_correlation_unknown", native: null,terminalObservation,originalSender };
-      return { resolved: true, code: native.code, native,terminalObservation,originalSender };
+      if (reply.callback === "error") return { resolved: true, code: "native_delivery_error", native: null,terminalObservation,originalSender,transportDiagnostic };
+      if (reply.code !== "result" || typeof reply.responseBody !== "string" || Buffer.byteLength(reply.responseBody, "utf8") > 524288) return { resolved: false, code: reply.code || "transport_unknown", native: null,terminalObservation,originalSender,transportDiagnostic };
+      let native; try { native = JSON.parse(reply.responseBody); } catch (_) { return { resolved: true, code: "native_response_invalid", native: null,terminalObservation,originalSender,transportDiagnostic }; }
+      if (!native || native.schema !== NATIVE_SCHEMA || native.requestNonce !== (a.reconcileRequestNonce || a.requestNonce) || native.operationBinding !== a.operationBinding || native.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && native.sessionNonce !== a.expectedSessionNonce || !Number.isFinite(native.observedAt) || native.observedAt <= 0 || native.observedAt < a.minimumObservedAt || native.observedAt > now() + 60000) return { resolved: false, code: "native_correlation_unknown", native: null,terminalObservation,originalSender,transportDiagnostic };
+      return { resolved: true, code: native.code, native,terminalObservation,originalSender,transportDiagnostic };
     } catch (error) { const diagnostic={stage,dispatchInvoked,originalCode:error.code||null,error:String(error.message||error).slice(0,2000)};return { resolved:false,code:dispatchInvoked?"ae_delivery_unknown":"ame_title_not_sent",error:diagnostic.error,dispatchDiagnostic:diagnostic,native:null }; }
   }
   function associated(job, native) {
@@ -802,7 +804,7 @@ function createExecutor(deps) {
     if (startAcceptanceVerified) { batch.start.transportResolved = true; batch.start.state = "accepted"; }
     job.completionVerified = complete; write(recordFile(a.batchId), batch);
     return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted: !!job.acceptanceReceipt, acceptanceReceipt: job.acceptanceReceipt || null, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
-      state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce,observationDiagnostic,originalSender:observed.originalSender||null });
+      state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce,observationDiagnostic,originalSender:observed.originalSender||null,transportDiagnostic:observed.transportDiagnostic||null });
   }
   async function execute(name, raw, cap) {
     const a = validateInput(name, raw), mutation = name === ENQUEUE || name === START; if (mutation) { assertCap(cap, name, a); if (busy) fail("ame_title_writer_busy"); busy = true; }
