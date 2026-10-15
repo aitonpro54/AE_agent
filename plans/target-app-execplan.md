@@ -35,6 +35,11 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   fresh source baseline проверены, private saved-source proof восстановлен.
   Первый enqueue run `d784c316` UNKNOWN; исходный exception не сохранён, поддержанного
   пассивного способа восстановить его нет. Приём не установлен, slot2/START0.
+- По повторному поручению пользователя работа возобновлена. Root подтвердил
+  required command-capture/fsync-before-delivery в reviewed product route:
+  finalized original run без commands доказывает отсутствие native delivery.
+  Реализуется отдельный not_sent settlement с reuse той же reservation под новым
+  current proposal/dry-run и rehydrate из verified snapshot receipt после restart.
 - AME source discovery nonce сохранён timeout без повторной отправки. Это
   getDLItemsAtRoot, а не подтверждение приёма собственного задания. Для enqueue
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
@@ -122,13 +127,13 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Следующий шаг
 
-Текущая попытка остановлена на фактическом UNKNOWN: exact server exception потерян,
-existing retained/status reads исчерпаны. Отправлена одна попытка enqueue; accepted
-не установлен, slot2/START0. UNKNOWN не превращать в not_sent по отсутствию команды;
-старый readonly nonce не считать ответом enqueue. Повторных save/open/export,
-enqueue и START не выполнять. Future instrumentation не восстановит потерянную
-причину этой попытки и сейчас не реализуется. Исходная цель не выполнена;
-root принимает saved artifacts и оставшийся блокер.
+Установить scoped settlement/rehydrate patch после focused checks, восстановить
+private source proof из verified receipt и закрыть текущую reservation на основании
+integrity run proof. Затем fresh exact ENQUEUE той же reservation → immediate own
+wrapper read, второй ENQUEUE/read и один START. Original UNKNOWN сохраняется;
+старый readonly nonce не является ответом enqueue. Повторных save/open/export нет.
+Каждый новый proposal получает только свой обязательный dry-run; повторов unchanged
+проверок и общего queue census нет.
 
 Исторический sources timeout сохранён без повторной отправки, но не является
 условием этого product пути: enqueue использует GUID фактически сохранённых

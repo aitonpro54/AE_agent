@@ -229,9 +229,7 @@ function createRecovery(deps){
     for(let i=0;i<2;i++){const row=n.saved[i];if(!exact(row,["path","revision","dirty","guid","flags"])||row.path!==targets[i]||row.dirty!==false||!Number.isSafeInteger(row.revision)||row.revision<0||!/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(row.guid||""))fail("title_recovery_native_saved_invalid");flags(row.flags,i);}
     const r=n.restored;if(!exact(r,["path","revision","dirty","flags"])||r.path!==args.expectedProjectFile||r.dirty!==false||!Number.isSafeInteger(r.revision)||r.revision<0)fail("title_recovery_native_restore_invalid");flags(r.flags,null);return n;
   }
-  if(fs.existsSync(marker)){
-    if(fs.lstatSync(marker).isSymbolicLink()||fs.statSync(marker).size>1024)fail("title_recovery_selector_invalid");
-    selector=JSON.parse(fs.readFileSync(marker,"utf8"));
+  function loadOriginal(){
     if(!exact(selector,["schema","runId","commandId","runRecordSha256"])||selector.schema!==RECOVERY_SCHEMA||!require("./plan-run-records").ID.test(selector.runId)||!require("./plan-run-records").ID.test(selector.commandId)||!/^[a-f0-9]{64}$/.test(selector.runRecordSha256||""))fail("title_recovery_selector_invalid");
     record=deps.loadRecord(selector.runId);
     if(require("./plan-run-records").digest(JSON.stringify(record))!==selector.runRecordSha256||record.run?.dryRun!==false||record.run?.ok!==false||record.plan?.steps?.length!==1||record.run.steps?.length!==1||record.plan.steps[0].tool!==TOOL)fail("title_recovery_original_record_invalid");
@@ -242,6 +240,10 @@ function createRecovery(deps){
       saved?.schema!==SCHEMA||saved.phase!=="native_submitted"||saved.automaticRetryAllowed!==false||saved.source?.sha25664!==args.expectedSourceSha25664||saved.source.path!==args.expectedProjectFile||saved.checkpoint?.sha25664!==args.expectedSourceSha25664||saved.checkpoint.path===saved.source.path||
       stableStringify(saved.targets)!==stableStringify(args.variants.map(v=>path.join(path.dirname(args.expectedProjectFile),v.snapshotFileName)))||!Array.isArray(saved.reservations)||saved.reservations.length!==2||saved.reservations.some((p,i)=>p.path!==saved.targets[i]||p.bytes!==0)||
       !baseline||baseline.projectFile!==args.expectedProjectFile||baseline.revision!==args.expectedRevision||variants.digest(baseline)!==args.expectedStateHash)fail("title_recovery_original_record_invalid");
+  }
+  if(fs.existsSync(marker)){
+    if(fs.lstatSync(marker).isSymbolicLink()||fs.statSync(marker).size>1024)fail("title_recovery_selector_invalid");
+    selector=JSON.parse(fs.readFileSync(marker,"utf8"));loadOriginal();
     storedCapture=stored("capture");const previous=stored("receipt");
     if(storedCapture){
       if(stableStringify(storedCapture.selector)!==stableStringify(selector)||!require("./plan-run-records").ID.test(storedCapture.commandId))fail("title_recovery_evidence_invalid");
@@ -249,8 +251,7 @@ function createRecovery(deps){
       if(!Array.isArray(ids)||ids[0]!==storedCapture.commandId||new Set(ids).size!==ids.length||ids.some(id=>!require("./plan-run-records").ID.test(id)))fail("title_recovery_evidence_invalid");issued.push(...ids);
     }
     held=true;phase=storedCapture?"captured":fs.existsSync(evidenceFile("attempt"))?"previous_attempt_requires_review":"armed";
-    assertSuffix();
-    if(previous?.ok===true&&previous.phase==="verified"){consume();held=false;phase="previously_verified";result={...previous,adoptedInCurrentRuntime:false};}
+    if(previous?.ok===true&&previous.phase==="verified"){consume();held=false;phase="previously_verified";result={...previous,adoptedInCurrentRuntime:false};}else assertSuffix();
   }
   async function native(body,label){
     current={body,script:deps.wrap(body),label,used:false,id:null};
@@ -262,8 +263,31 @@ function createRecovery(deps){
     scope.used=true;
   }
   function queued(scope,id){if(!held||scope!==current||!scope.used||scope.id)fail("title_recovery_native_guard");scope.id=id;issued.push(id);if(scope.label==="source_verifier")persist("receipt",{ok:false,phase:"verifier_submitted",selector,issuedCommandIds:issued.slice(),replayAllowed:false});}
+  async function rehydrate(raw){
+    // Consumed startup markers are not rearmed. Only an already verified,
+    // server-owned receipt can restore this daemon's private saved-source map.
+    selector={schema:RECOVERY_SCHEMA,runId:raw.runId,commandId:raw.commandId,runRecordSha256:null};
+    const receipt=stored("receipt");
+    if(receipt?.ok!==true||receipt.schema!==RECOVERY_SCHEMA||receipt.phase!=="verified"||receipt.originalRunId!==raw.runId||receipt.originalCommandId!==raw.commandId||receipt.replayAllowed!==false)fail("title_recovery_verified_receipt_required");
+    selector.runRecordSha256=receipt.originalRunRecordSha256;loadOriginal();storedCapture=stored("capture");
+    if(!storedCapture||!require("./plan-run-records").ID.test(storedCapture.commandId)||receipt.issuedCommandIds?.[0]!==storedCapture.commandId||receipt.captureFile!==evidenceFile("capture")||stableStringify(storedCapture.selector)!==stableStringify(selector)||stableStringify(storedCapture.actor)!==stableStringify(receipt.actor))fail("title_recovery_evidence_invalid");
+    const n=nativeResult(storedCapture.raw),saved=receipt.recovered;verifyResult(saved,args);
+    if(stableStringify(saved.source)!==stableStringify(step.exportSnapshots.source)||stableStringify(saved.checkpoint)!==stableStringify(step.exportSnapshots.checkpoint)||saved.snapshots.some((s,i)=>stableStringify(s.native)!==stableStringify(n.saved[i])))fail("title_recovery_verified_receipt_changed");
+    phase="rehydrating";held=true;
+    try{
+      sourcePins();for(const s of saved.snapshots){const {native:unused,...pin}=s;unchanged(pin);}
+      const before=actor(await deps.readActor());if(stableStringify(before)!==stableStringify(receipt.actor))fail("title_recovery_panel_actor_changed");
+      const response=await native(readScript(args),"rehydrate_verifier"),observed=response?.result||response,normalized={...observed?.snapshot,revision:baseline.revision};
+      if(observed?.dirty!==false||stableStringify(normalized)!==stableStringify(baseline))fail("title_recovery_source_readback_changed");
+      sourcePins();for(const s of saved.snapshots){const {native:unused,...pin}=s;unchanged(pin);}
+      if(stableStringify(before)!==stableStringify(actor(await deps.readActor())))fail("title_recovery_panel_actor_changed");
+      deps.adopt(saved.snapshots);result={...receipt,rehydrated:true,adoptedInCurrentRuntime:true};phase="verified";held=false;current=null;return result;
+    }catch(error){held=!!current?.id&&!deps.commandSettled(current.id);phase=held?"rehydrate_unknown":"unarmed";current=null;result={ok:false,schema:RECOVERY_SCHEMA,code:error.code||error.message,guardHeld:held,replayAllowed:false};return result;}
+  }
   async function recover(raw){
-    if(!exact(raw,["runId","commandId"])||!selector||raw.runId!==selector.runId||raw.commandId!==selector.commandId)fail("title_recovery_exact_selector_required");
+    if(!exact(raw,["runId","commandId"])||!require("./plan-run-records").ID.test(raw.runId)||!require("./plan-run-records").ID.test(raw.commandId))fail("title_recovery_exact_selector_required");
+    if(["unarmed","previously_verified"].includes(phase))return rehydrate(raw);
+    if(!selector||raw.runId!==selector.runId||raw.commandId!==selector.commandId)fail("title_recovery_exact_selector_required");
     if(!["armed","captured"].includes(phase))return result||{ok:false,schema:RECOVERY_SCHEMA,phase,replayAllowed:false,guardHeld:held};
     phase="checking";held=true;let captured=!!storedCapture,before=null;
     try{
@@ -309,5 +333,5 @@ function verifyResult(result,raw){
   return {ok:true,scope:"two_new_native_snapshots_and_restored_pinned_source",sourceSha25664:result.source.sha25664,snapshotSha25664:result.snapshots.map(s=>s.sha25664),mediaVerified:false};
 }
 function toolDefinition(){return {name:TOOL,description:"Create exactly two new saved TITR_01/TITR_02 export snapshots beside the pinned clean source, then restore that same source. One server-proposed autonomous step with checkpoint and read-back; no render or arbitrary save/open.",inputSchema:{type:"object",additionalProperties:false,required:["expectedProjectFile","expectedSourceSha25664","expectedRevision","expectedStateHash","compItemId","variants"],properties:{expectedProjectFile:{type:"string"},expectedSourceSha25664:{type:"string"},expectedRevision:{type:"integer"},expectedStateHash:{type:"string"},compItemId:{type:"integer"},variants:{type:"array",minItems:2,maxItems:2,items:{type:"object",additionalProperties:false,required:["layerId","name","snapshotFileName"],properties:{layerId:{type:"integer"},name:{type:"string"},snapshotFileName:{type:"string"}}}}}}};}
-function recoveryToolDefinition(){return {name:RECOVER,description:"Read-only recovery of the one startup-armed timed-out two-title snapshot command. Captures its untouched native result before any other native read, verifies files/source, and never saves, opens or replays.",annotations:{readOnlyHint:true},inputSchema:{type:"object",additionalProperties:false,required:["runId","commandId"],properties:{runId:{type:"string"},commandId:{type:"string"}}}};}
+function recoveryToolDefinition(){return {name:RECOVER,description:"Read-only recovery of one startup-armed snapshot command, or rehydrate saved-source proofs from its already verified durable receipt after restart. Rehydrate performs fresh file/source checks without capture, save, open or replay.",annotations:{readOnlyHint:true},inputSchema:{type:"object",additionalProperties:false,required:["runId","commandId"],properties:{runId:{type:"string"},commandId:{type:"string"}}}};}
 module.exports={TOOL,SCHEMA,RECOVER,RECOVERY_SCHEMA,validateInput,inspectionArgs,fileRecord,createExecutor,toolDefinition,recoveryToolDefinition,nativeExport,nativeSnapshotDifference,exportScript,readScript,compareScript,verifyResult};

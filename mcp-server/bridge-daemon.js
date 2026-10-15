@@ -349,6 +349,20 @@ const ameNativeDispatchPort={
 };
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
+  readRunRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),
+  assertNoSendRuntime:record=>{
+    const runtime=record.run?.provenance?.runtime,modules=runtime?.modules||[],pin=name=>modules.find(m=>m.name===name)?.sha256;
+    // The legacy receipt did not hash product-dispatch. Its unchanged reviewed
+    // blob is checked here, not retroactively claimed as a historical field.
+    if(crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"ame-product-dispatch.js"))).digest("hex")!=="d457511285d51376c858a76d87fea1b50cb448c92fb452f1052e73df9e110142")return false;
+    if(runtime?.gitCommit==="64830927f8ceb3e8e1b94ebfc66a50e1bb95277d"&&runtime.sourceSha256==="ca8c0f7be7c15abb11db0e461926c6bc4a7e8b11604fe318954ffa1cea8e1bb9")
+      return pin("mcp-server/bridge-daemon.js")==="8e80a40aa724910050e87cdd8b4aa286b0a7afd66dcc3636f219a87306c5160b"&&pin("mcp-server/ame-title-jobs.js")==="81fda2a55fa105aea681067031f8df8ef70635d2dff07ab0232dedefb79d95a1"&&pin("mcp-server/plan-run-records.js")===RUNTIME_IDENTITY.modules.find(m=>m.name==="mcp-server/plan-run-records.js")?.sha256;
+    return runtime?.sourceSha256===RUNTIME_IDENTITY.sourceSha256&&["mcp-server/bridge-daemon.js","mcp-server/ame-title-jobs.js","mcp-server/plan-run-records.js"].every(name=>pin(name)===RUNTIME_IDENTITY.modules.find(m=>m.name===name)?.sha256);
+  },
+  hasQueuedStep:runId=>{
+    if(fs.statSync(LOG_FILE).size>128*1024*1024)throw Error("ame_not_sent_journal_budget");
+    return fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)).some(e=>e.type==="ae_command_queued"&&e.details?.runId===runId&&e.details.stepIndex===1);
+  },
   resolveOutputFilePath,
   assertManualIngress: context => assertOwnedExecutionContext(context),
   assertServerContext: assertAmeTitleContext,
