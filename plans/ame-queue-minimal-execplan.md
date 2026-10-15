@@ -7,8 +7,15 @@
 
 ## Progress
 
-- Аудит существующих AME submit/status/start и native admission выполнен.
-  Новый профиль ещё не реализован; AEP и очередь не изменялись, видео 0/2.
+- Пользователь поручил реализацию и реальный запуск; работа возобновлена.
+  ae_specialist пишет native/initial admission, ae_implementer — AME adapter/grant.
+  Root — единственный build/deploy/AE/AME controller. AEP/очередь пока не менялись.
+- Дополнительное поручение «Поставь всё необходимое» разрешает нужные установки.
+  Bundled Node24.19 и MSBuild найдены; проверяются остальные точные build inputs.
+- AME source-блок готов: shared queue grant, немедленный own-item read-back,
+  global once START; root повторил VM-проверки. Устранён необоснованный лимит 1s
+  до consume после native preparation, добавлен regression на задержку 5s.
+  Это offline checkpoint; native admission/build и live запуск ещё выполняются.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

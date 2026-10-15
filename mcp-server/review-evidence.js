@@ -173,6 +173,7 @@ const RUNTIME_FILES = [
   "mcp-server/fixed-guard-timeout-maintenance-proof.js",
   "scripts/native-fixture-prephase-maintenance.js",
   "mcp-server/ame-title-jobs.js",
+  "mcp-server/ame-shared-queue-grant.js",
   "mcp-server/ame-fixture-ui-disposition.js",
   "mcp-server/ame-fixture-ui-backend.js",
   "mcp-server/human-guard-settlement.js","scripts/human-guard-settlement-maintenance.js",

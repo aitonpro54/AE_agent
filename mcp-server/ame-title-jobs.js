@@ -3,6 +3,7 @@ const fs = require("node:fs"), path = require("node:path"), crypto = require("no
 const presets = require("./ame-presets"), reservation = require("./ame-submit-guard"), passive = require("./ame-passive-status");
 const { sameProcess } = require("./ame-running");
 const manualQueue = require("./ame-manual-queue-grant");
+const sharedQueue = require("./ame-shared-queue-grant");
 const INSPECT = "inspect_ame_title_sources", ENQUEUE = "enqueue_ame_title_variant", START = "start_ame_title_batch", STATUS = "get_ame_title_job_status";
 const QUEUE_MANIFEST = "inspect_ame_title_queue_manifest";
 const SCHEMA = "ae-agent-ame-title-jobs.v1", NATIVE_SCHEMA = "ae-agent-ame-title-native.v1", LEDGER_SCHEMA = "ae-agent-ame-title-batch.v1";
@@ -19,7 +20,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -30,6 +31,10 @@ function validateInput(name, raw = {}) {
   if (name === INSPECT || name === ENQUEUE) { a.sourceProjectFile = localFile(raw.sourceProjectFile, ".aep"); if (typeof raw.expectedSourceSha25664 !== "string" || !SHA.test(raw.expectedSourceSha25664)) fail("ame_title_source_hash_required"); a.expectedSourceSha25664 = raw.expectedSourceSha25664; }
   if (name === INSPECT && raw.reconcileRequestNonce !== undefined) { if (typeof raw.reconcileRequestNonce !== "string" || !UUID.test(raw.reconcileRequestNonce)) fail("ame_title_invalid_nonce"); a.reconcileRequestNonce = raw.reconcileRequestNonce; }
   if (name !== INSPECT) { if (typeof raw.batchId !== "string" || !UUID.test(raw.batchId)) fail("ame_title_invalid_batch"); a.batchId = raw.batchId; }
+  if (raw.queueMode !== undefined) {
+    if (raw.queueMode !== sharedQueue.MODE || raw.manualQueueMode !== undefined || raw.manualQueueManifestSha25664 !== undefined || raw.completedOwnedPrefix !== undefined) fail("ame_shared_queue_mode_invalid");
+    a.queueMode = sharedQueue.MODE;
+  }
   if (name === QUEUE_MANIFEST || name === START && raw.manualQueueMode !== undefined) {
     if (raw.manualQueueMode !== "cep_user_declaration_v2" || !Array.isArray(raw.completedOwnedPrefix) || raw.completedOwnedPrefix.length > 63) fail("ame_title_manual_queue_mode_invalid");
     const seen = new Set(); a.manualQueueMode = raw.manualQueueMode;
@@ -78,11 +83,12 @@ function nativeTitleJob(a) {
   }
   var slot = $.global.aeAgentAMETitleJobsV1, frontend, host, ids, i, entry, batch;
   function readEntry(e) {
-    var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, status: e.status, nativeCompletionObserved: e.finished === true, nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
+    var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, workAreaApplied: e.workAreaApplied === true, status: e.status, nativeCompletionObserved: e.finished === true, nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
     try { result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles; if (!files || typeof files.length !== "number") throw Error(); for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n])); if (files.length !== 1 || norm(files[0]) !== norm(e.outputPath)) result.nativeAssociationVerified = false; } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
     for (var name in { getEncodeProgress: 1, getEncodeTime: 1 }) {
       try { if (!e.wrapper || typeof e.wrapper[name] !== "function") throw Error(); result[name] = scalar(e.wrapper[name]()); } catch (x2) { result.readErrors.push(name + "_read_error"); }
     }
+    if (e.queueMode === "shared_queue_v1" && (result.readErrors.length || !result.workAreaApplied)) result.nativeAssociationVerified = false;
     result.rawLogCaptures = []; var captures = e.rawLogCaptures || [], capture, index;
     for (index = 0; index < captures.length; index++) { capture = captures[index]; result.rawLogCaptures.push({ ordinal: capture.ordinal, kind: capture.kind, callbackOrdinal: capture.callbackOrdinal, observedAt: capture.observedAt, code: capture.code, utf8Bytes: capture.utf8Bytes }); }
     result.rawLogSnapshot = null;
@@ -133,9 +139,21 @@ function nativeTitleJob(a) {
       var matches = 0; for (i = 0; i < ids.length; i++) if (ids[i] === a.sourceGuid) matches++; if (matches !== 1) return done("exact_source_guid_unavailable");
     }
     if (typeof app.getEncoderHost !== "function") return done("encoder_host_unsupported"); host = app.getEncoderHost();
-    if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_or_unknown");reply.batchRunning=scalar(host.isBatchRunning());if(reply.batchRunning!==false)return done("batch_running_or_unknown");
+    if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_or_unknown");reply.batchRunning=scalar(host.isBatchRunning());
+    if (a.operation === "start" && a.queueMode === "shared_queue_v1" && reply.batchRunning === true) {
+      if (!slot || !a.jobIds || a.jobIds.length !== 2 || !a.expectedJobs || a.expectedJobs.length !== 2 || slot.retainedWrapperSessionNonce !== a.retainedWrapperSessionNonce) return done("owned_batch_changed");
+      reply.jobs = [];
+      for (i = 0; i < a.jobIds.length; i++) { entry = slot.jobs[a.jobIds[i]]; if (!entry || entry.batchId !== a.batchId || entry.processBinding !== a.processBinding) return done("owned_batch_changed"); var active = readEntry(entry); if (!active.nativeAssociationVerified || active.status !== "running" && active.status !== "native_finished") return done("batch_running_or_unknown"); reply.jobs.push(active); }
+      return done("shared_queue_already_running");
+    }
+    if(reply.batchRunning!==false)return done("batch_running_or_unknown");
     if(a.operation==="queue"&&a.ownedInitialDispatch===true){
       if(!slot||slot.retainedWrapperSessionNonce!==a.retainedWrapperSessionNonce||!a.jobIds||a.jobIds.length<1||a.jobIds.length>2)return done("owned_queue_origin_changed");
+      if (a.queueMode === "shared_queue_v1") {
+        reply.queue = { expectedJobs: [], completedOwnedPrefix: [] };
+        for (i = 0; i < a.jobIds.length; i++) { entry = slot.jobs[a.jobIds[i]]; if (!entry || entry.processBinding !== a.processBinding || entry.batchId !== a.batchId || i > 0 && a.jobIds[i] === a.jobIds[0]) return done("owned_queue_entry_unavailable"); var own = readEntry(entry); if (!own.nativeAssociationVerified || own.status !== "queued" || !own.workAreaApplied || own.readErrors.length) return done("owned_queue_entry_changed"); reply.queue.expectedJobs.push(own); }
+        return done("owned_queue_observed");
+      }
       var known={},count=0,key;reply.queue={expectedJobs:[],completedOwnedPrefix:[]};
       for(i=0;i<a.jobIds.length;i++){key=a.jobIds[i];if(known[key]||!slot.jobs[key])return done("owned_queue_entry_unavailable");known[key]=true;entry=slot.jobs[key];var observed=readEntry(entry);if(!observed.nativeAssociationVerified||observed.status!==(i===a.jobIds.length-1?"queued":"native_finished"))return done("owned_queue_entry_changed");if(i===a.jobIds.length-1)reply.queue.expectedJobs.push(observed);else reply.queue.completedOwnedPrefix.push(observed);}
       for(key in slot.jobs)if(Object.prototype.hasOwnProperty.call(slot.jobs,key)){count++;if(!known[key])return done("owned_queue_foreign_entry");}if(count!==a.jobIds.length)return done("owned_queue_census_changed");return done("owned_queue_observed");
@@ -145,6 +163,14 @@ function nativeTitleJob(a) {
       batch = slot && slot.batches[a.batchId]; if (!batch || batch.presetIdentity !== a.presetIdentity || batch.processBinding !== a.processBinding || batch.start) return done("native_batch_unavailable_or_start_reserved");
       if (batch.jobIds.length !== a.jobIds.length) return done("owned_batch_changed");
       for (i = 0; i < a.jobIds.length; i++) { entry = slot.jobs[a.jobIds[i]]; if (batch.jobIds[i] !== a.jobIds[i] || !entry || !entry.associated || entry.status !== "queued" || !readEntry(entry).nativeAssociationVerified) return done("owned_batch_changed"); }
+      if (a.queueMode === "shared_queue_v1") {
+        if (a.jobIds.length !== 2 || !a.expectedJobs || a.expectedJobs.length !== 2 || slot.retainedWrapperSessionNonce !== a.retainedWrapperSessionNonce || reply.sessionNonce !== a.boundNativeSessionNonce) return done("owned_shared_queue_guard_changed");
+        for (i = 0; i < a.expectedJobs.length; i++) {
+          var required = a.expectedJobs[i]; entry = slot.jobs[a.jobIds[i]];
+          if (required.jobId !== a.jobIds[i] || entry.batchId !== a.batchId || entry.enqueueRequestNonce !== required.enqueueRequestNonce || entry.processBinding !== a.processBinding || entry.presetIdentity !== a.presetIdentity || entry.sourcePath !== required.source.path || entry.sourceGuid !== required.source.guid || entry.outputPath !== required.outputPath || stringify(entry.range) !== stringify(required.range)) return done("owned_shared_queue_guard_changed");
+          var checked = readEntry(entry); if (!checked.nativeAssociationVerified || !checked.workAreaApplied || checked.readErrors.length || checked.status !== "queued") return done("owned_shared_queue_guard_changed");
+        }
+      }
       if (a.manualQueueMode === "cep_user_declaration_v2") {
         if (a.jobIds.length !== 1 || !a.expectedJobs || a.expectedJobs.length !== 1 || slot.retainedWrapperSessionNonce !== a.retainedWrapperSessionNonce) return done("owned_queue_guard_changed");
         var expected = {}, key, wanted, current, all = a.expectedJobs.concat(a.completedOwnedPrefix || []);
@@ -157,7 +183,7 @@ function nativeTitleJob(a) {
       }
       if (typeof host.runBatch !== "function") return done("run_batch_unsupported");
       batch.start = { requestNonce: a.requestNonce, invoked: true, accepted: null }; var accepted = host.runBatch(); batch.start.accepted = scalar(accepted); reply.start = batch.start;
-      if(a.ownedInitialDispatch===true){reply.job=readEntry(slot.jobs[a.jobIds[0]]);reply.nativeAssociationVerified=reply.job.nativeAssociationVerified;}
+      if(a.ownedInitialDispatch===true){reply.job=readEntry(slot.jobs[a.queueMode === "shared_queue_v1" ? a.jobId : a.jobIds[0]]);reply.nativeAssociationVerified=reply.job.nativeAssociationVerified;}
       return done(accepted === true ? "batch_start_accepted" : "batch_start_unknown");
     }
     if (!frontend || typeof frontend.addDLToBatch !== "function") return done("add_dl_unsupported");
@@ -171,7 +197,7 @@ function nativeTitleJob(a) {
     if (slot.count >= 256 || slot.jobs[a.jobId]) return done("native_handle_already_reserved_or_limit");
     batch = slot.batches[a.batchId]; if (batch && (batch.presetIdentity !== a.presetIdentity || batch.processBinding !== a.processBinding || batch.start || batch.jobIds.length >= 64)) return done("native_batch_identity_changed");
     if (!batch) { batch = { presetIdentity: a.presetIdentity, processBinding: a.processBinding, jobIds: [], start: null }; slot.batches[a.batchId] = batch; }
-    entry = { handleKey: a.jobId, enqueueRequestNonce: a.requestNonce, batchId: a.batchId, sourcePath: a.sourcePath, sourceGuid: a.sourceGuid, outputPath: a.outputPath, presetIdentity: a.presetIdentity, range: a.range, processBinding: a.processBinding, wrapper: null, associated: false, status: "unknown_outcome", finished: false, nativeResult: null, rawLogCaptures: [], rawLogKinds: {}, callbackOrdinal: 0 };
+    entry = { handleKey: a.jobId, enqueueRequestNonce: a.requestNonce, batchId: a.batchId, sourcePath: a.sourcePath, sourceGuid: a.sourceGuid, outputPath: a.outputPath, presetIdentity: a.presetIdentity, range: a.range, processBinding: a.processBinding, queueMode: a.queueMode || null, wrapper: null, associated: false, workAreaApplied: false, status: "unknown_outcome", finished: false, nativeResult: null, rawLogCaptures: [], rawLogKinds: {}, callbackOrdinal: 0 };
     slot.jobs[a.jobId] = entry; slot.count++; batch.jobIds.push(a.jobId);
     if (!slot.hostListeners && typeof host.addEventListener === "function") {
       function hostEvent(event, complete) { var key, e; for (key in slot.jobs) if (Object.prototype.hasOwnProperty.call(slot.jobs, key)) { e = slot.jobs[key]; if (e.associated && event && norm(event.sourceFilePath) === norm(e.sourcePath) && norm(event.outputFilePath) === norm(e.outputPath)) { if (complete) finish(e, event, "host_exact_paths"); else { e.callbackOrdinal++; if (!e.finished) { e.status = "running"; e.eventObservedAt = new Date().getTime(); captureRaw(e, "started", event); } } } } }
@@ -186,6 +212,7 @@ function nativeTitleJob(a) {
     if(a.ownedInitialDispatch===true&&a.ownedRangeMode==="full_observed_root_range_v1"){
       if(entry.wrapper.setWorkArea(0,0,a.ownedObservedDuration)!==true)return done("owned_entire_range_unverified_after_submit");
     }else if (entry.wrapper.setWorkArea(3, a.range.startSeconds, a.range.endSeconds) !== true) return done("work_area_unverified_after_submit");
+    entry.workAreaApplied = true;
     entry.associated = true; if (entry.status === "unknown_outcome") entry.status = "queued"; reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified;
     return done(reply.nativeAssociationVerified ? "job_enqueued" : "output_binding_unverified_after_submit");
   } catch (error) { reply.error = String(error).substring(0, 2000); return done("native_read_or_submit_error"); }
@@ -230,13 +257,22 @@ function createExecutor(deps) {
   const caps = new WeakMap(), nativePreparations = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false;
   const recordFile = id => path.join(deps.stateDir, "batches", id + ".json"), guardDir = path.join(deps.stateDir, "outputs");
   function result(code, extra = {}) { return { schema: SCHEMA, ok: false, code, nativeJobId: null, nativeAssociationVerified: false, nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false, automaticRetryAllowed: false, observedAt: new Date(now()).toISOString(), ...extra }; }
+  function assertIngress(context, name, a) {
+    const binding = { name, argsHash: hash(a) };
+    if (a.queueMode === sharedQueue.MODE) {
+      if (typeof deps.assertSharedQueueIngress !== "function") fail("ame_shared_queue_private_capability_required");
+      const asserted = deps.assertSharedQueueIngress(context, binding);
+      if (asserted === false || asserted && typeof asserted.then === "function") { if (asserted && typeof asserted.catch === "function") asserted.catch(() => {}); fail("ame_shared_queue_synchronous_assertion_required"); }
+    } else deps.assertManualIngress(context, binding);
+    deps.assertServerContext(context, binding);
+  }
   function assertCap(cap, name, a) {
     const entry = caps.get(cap); if (!entry || !entry.active || entry.name !== name || entry.argsHash !== hash(a)) fail("ame_title_manual_capability_required");
-    deps.assertManualIngress(entry.context, { name, argsHash: entry.argsHash }); deps.assertServerContext(entry.context, { name, argsHash: entry.argsHash }); return entry;
+    assertIngress(entry.context, name, a); return entry;
   }
   function authorize(name, raw, context) {
     if (![ENQUEUE, START].includes(name)) fail("ame_title_mutation_capability_only"); const a = validateInput(name, raw), cap = Object.freeze(Object.create(null));
-    const entry = { name, argsHash: hash(a), context, active: true }; deps.assertManualIngress(context, { name, argsHash: entry.argsHash }); deps.assertServerContext(context, { name, argsHash: entry.argsHash }); caps.set(cap, entry); return cap;
+    const entry = { name, argsHash: hash(a), context, active: true }; assertIngress(context, name, a); caps.set(cap, entry); return cap;
   }
   async function processPin(a, original) {
     const rows = await deps.inspectProcesses(); if (!Array.isArray(rows) || rows.length !== 1 || !sameProcess(rows[0], rows[0]) || rows[0].pid !== a.expectedProcess.pid || new Date(rows[0].startedAt).toISOString() !== a.expectedProcess.startedAt || original && !sameProcess(rows[0], original)) fail("ame_title_process_changed_or_ambiguous"); return rows[0];
@@ -320,7 +356,7 @@ function createExecutor(deps) {
         }
         raw = await port.dispatch(capability, script, 30000, metadata, context);
       } else {
-        if (a.manualQueueMode === "cep_user_declaration_v2") fail("ame_title_native_dispatch_port_unavailable");
+        if (a.manualQueueMode === "cep_user_declaration_v2" || a.queueMode === sharedQueue.MODE) fail("ame_title_native_dispatch_port_unavailable");
         raw = await deps.runExtendScriptBody(script, 30000, metadata);
       }
       const reply = raw && Object.prototype.hasOwnProperty.call(raw, "result") ? raw.result : raw;
@@ -334,23 +370,31 @@ function createExecutor(deps) {
   }
   function associated(job, native) {
     const n = native && native.job; return !!(n && n.nativeJobId === null && n.handleKey === job.jobId && n.enqueueRequestNonce === job.requestNonce && UUID.test(n.retainedWrapperSessionNonce || "") && (!job.retainedWrapperSessionNonce || n.retainedWrapperSessionNonce === job.retainedWrapperSessionNonce) && n.nativeAssociationVerified === true && n.sourceGuid === job.args.sourceGuid && samePath(n.sourcePath, job.sourcePath) && samePath(n.outputPath, job.outputPath) && n.presetIdentity === job.presetIdentity && n.processBinding === job.processBinding && hash(n.range) === hash(job.args.range) && Array.isArray(n.outputFiles) && n.outputFiles.length === 1 && samePath(n.outputFiles[0], job.outputPath) &&
+      (job.args.queueMode !== sharedQueue.MODE || n.workAreaApplied === true && Array.isArray(n.readErrors) && n.readErrors.length === 0 && (!Object.hasOwn(job, "nativeSessionNonce") || native.sessionNonce === job.nativeSessionNonce)) &&
       (!n.nativeCompletionObserved || Number.isFinite(n.eventObservedAt) && n.eventObservedAt >= Date.parse(job.submittedAt) && n.eventObservedAt <= native.observedAt));
   }
   function updateJob(job, observation) {
     job.transportResolved = observation.resolved; if (observation.native) job.nativeObservation = observation.native;
     job.nativeAssociationVerified = associated(job, observation.native); job.readyForStart = job.nativeAssociationVerified && observation.native.job.status === "queued" && (observation.code === "job_enqueued" || observation.code === "job_observed" && job.readyForStart);
     job.state = job.nativeAssociationVerified ? observation.native.job.status : "unknown_outcome";
-    if (job.nativeAssociationVerified) job.retainedWrapperSessionNonce = observation.native.job.retainedWrapperSessionNonce;
+    if (job.nativeAssociationVerified) { job.retainedWrapperSessionNonce = observation.native.job.retainedWrapperSessionNonce; job.nativeSessionNonce = observation.native.sessionNonce; }
   }
+  function acceptOwnRead(job, observation) {
+    if (job.args.queueMode === sharedQueue.MODE && job.nativeAssociationVerified && observation.code === "job_observed" && observation.native.requestNonce !== job.requestNonce && observation.native.job.status === "queued" && observation.native.batchRunning === false) {
+      job.readyForStart = true;
+      job.acceptanceReceipt = { schema: "ae-agent-ame-own-item-acceptance.v1", jobId: job.jobId, enqueueRequestNonce: job.requestNonce, readRequestNonce: observation.native.requestNonce, observedAt: observation.native.observedAt, retainedWrapperSessionNonce: job.retainedWrapperSessionNonce, outputPath: job.outputPath, workAreaApplied: true, proofSource: "retained_encoder_wrapper", appliedPresetVerified: false, mediaVerified: false };
+    }
+  }
+  const startReservation = batch => (batch.jobs[0]?.args.queueMode === sharedQueue.MODE ? deps.sharedQueueGrant : deps.manualQueueGrant)?.readReservation(batch.batchId) || null;
   function originalStartAccepted(batch, job, native, processInfo) {
     try {
-      const reserved = deps.manualQueueGrant && deps.manualQueueGrant.readReservation(batch.batchId), manifest = reserved?.manualQueueReceipt?.manifest;
+      const shared = job.args.queueMode === sharedQueue.MODE, reserved = startReservation(batch), manifest = shared ? reserved?.sharedQueueReceipt?.binding : reserved?.manualQueueReceipt?.manifest;
       const wanted = manifest?.jobs.find(entry => entry.jobId === job.jobId), start = batch.start;
       return Boolean(start && reserved && wanted && associated(job, native) && native.schema === NATIVE_SCHEMA && native.code === "job_observed" &&
         native.operationBinding === hash({ operation: "status", jobId: job.jobId }) && UUID.test(native.requestNonce || "") && native.requestNonce !== start.requestNonce && native.requestNonce !== job.requestNonce &&
         native.start?.requestNonce === start.requestNonce && native.start.invoked === true && native.start.accepted === true &&
         reserved.requestNonce === start.requestNonce && reserved.operationBinding === start.operationBinding && reserved.reservedAt === start.reservedAt &&
-        start.operationBinding === hash({ operation: "start", batchId: batch.batchId, jobs: manifest.jobs.map(entry => entry.jobId), manifestHash: manualQueue.manifestHash(manifest) }) &&
+        start.operationBinding === hash({ operation: "start", batchId: batch.batchId, jobs: manifest.jobs.map(entry => entry.jobId), ...(shared ? { bindingHash: sharedQueue.bindingHash(manifest) } : { manifestHash: manualQueue.manifestHash(manifest) }) }) &&
         Number.isFinite(native.observedAt) && native.observedAt >= Date.parse(reserved.reservedAt) && native.observedAt <= now() + 60000 &&
         native.appSpecifier === manifest.targetSpecifier && native.sessionNonce === manifest.nativeSessionNonce && native.job.retainedWrapperSessionNonce === manifest.retainedWrapperSessionNonce &&
         sameProcess(processInfo, manifest.process) && sameProcess(job.process, manifest.process) && manifest.processBinding === batch.processBinding && manifest.presetIdentity === batch.presetIdentity &&
@@ -374,9 +418,9 @@ function createExecutor(deps) {
   async function enqueue(a, cap) {
     const entry = assertCap(cap, ENQUEUE, a), processInfo = await processPin(a), processBinding = binding(a, processInfo), source = stableFile(a.sourceProjectFile, a.expectedSourceSha25664);
     const preset = presets.selectPreset(await catalog(), { presetId: a.presetId, sha256: a.presetSha25664 }), presetPin = stableFile(preset.canonicalPath, a.presetSha25664), presetIdentity = hash({ path: presetPin.path, sha256: presetPin.sha256 });
-    let batch = load(a.batchId); if (batch && (batch.presetIdentity !== presetIdentity || batch.processBinding !== processBinding || batch.start || batch.jobs.length >= 64)) return result("batch_identity_or_preset_changed");
+    let batch = load(a.batchId); if (batch && (batch.presetIdentity !== presetIdentity || batch.processBinding !== processBinding || batch.start || batch.jobs.length >= (a.queueMode === sharedQueue.MODE ? 2 : 64) || batch.jobs.some(job => job.args.queueMode !== a.queueMode))) return result("batch_identity_or_preset_changed");
     if (batch && batch.jobs.some(job => !job.transportResolved || !job.nativeAssociationVerified || job.state === "unknown_outcome")) return result("ame_title_unknown_job_no_replay");
-    if (!previousJobsReady(a.batchId, processInfo)) return result("ame_title_previous_job_not_completed_no_replay");
+    if (a.queueMode !== sharedQueue.MODE && !previousJobsReady(a.batchId, processInfo)) return result("ame_title_previous_job_not_completed_no_replay");
     // Resolve the selector without outputFile's mkdir. Native admission must
     // precede even creation of the owned output directory.
     const selectedOutput = deps.resolveOutputFilePath(a.outputFileName);
@@ -395,11 +439,19 @@ function createExecutor(deps) {
     assertCap(cap, ENQUEUE, a); entry.active = false;
     const observed = await send({ ...a, operation: "enqueue", sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
       pinned(job); readyOutput(job);
-      deps.assertManualIngress(entry.context, { name: ENQUEUE, argsHash: entry.argsHash }); deps.assertServerContext(entry.context, { name: ENQUEUE, argsHash: entry.argsHash });
+      assertIngress(entry.context, ENQUEUE, a);
     }, () => processPin(a, processInfo));
-    try { deps.assertManualIngress(entry.context, { name: ENQUEUE, argsHash: entry.argsHash }); deps.assertServerContext(entry.context, { name: ENQUEUE, argsHash: entry.argsHash }); await processPin(a, processInfo); pinned(job); }
+    try { assertIngress(entry.context, ENQUEUE, a); await processPin(a, processInfo); pinned(job); }
     catch (error) { return result(error.code || "post_submit_context_changed", { batchId: a.batchId, jobId: job.jobId, requestNonce: job.requestNonce, unknownOutcome: true, nativeMutationMayHaveOccurred: true }); }
     updateJob(job, observed); write(recordFile(a.batchId), batch);
+    if (a.queueMode === sharedQueue.MODE && job.nativeAssociationVerified && observed.code === "job_enqueued") {
+      const fresh = await send({ ...a, operation: "status", jobId: job.jobId, processBinding, operationBinding: hash({ operation: "status", jobId: job.jobId }), requestNonce: crypto.randomUUID(), minimumObservedAt: now() }, entry.context);
+      try { await processPin(a, processInfo); pinned(job); assertIngress(entry.context, ENQUEUE, a); } catch (error) { return result(error.code || "post_enqueue_readback_changed", { batchId: a.batchId, jobId: job.jobId, requestNonce: job.requestNonce, unknownOutcome: true, mutationMayHaveOccurred: true }); }
+      updateJob(job, fresh);
+      acceptOwnRead(job, fresh); if (!job.acceptanceReceipt) job.readyForStart = false;
+      write(recordFile(a.batchId), batch);
+      return result(fresh.code, { ok: !!job.acceptanceReceipt, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, requestNonce: job.requestNonce, nativeAssociationVerified: job.nativeAssociationVerified, ownItemAccepted: !!job.acceptanceReceipt, acceptanceReceipt: job.acceptanceReceipt || null, state: job.state, unknownOutcome: !job.acceptanceReceipt, outputPath, presetEncodingMode: "exact_epr_automatic_format", native: fresh.native });
+    }
     return result(observed.code, { ok: job.nativeAssociationVerified && observed.code === "job_enqueued", batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, nativeAssociationVerified: job.nativeAssociationVerified, requestNonce: job.requestNonce, state: job.state, unknownOutcome: !job.nativeAssociationVerified, outputPath, presetEncodingMode: "exact_epr_automatic_format", native: observed.native });
   }
   function completionScope(batch, job) {
@@ -432,11 +484,53 @@ function createExecutor(deps) {
     const processInfo = await processPin(a), { manifest } = await observeQueue(a, processInfo);
     return result("manual_queue_manifest_observed", { ok: true, manifest, manifestHash: manualQueue.manifestHash(manifest), declaration: manualQueue.declarationForManifest(manifest), process: processInfo, proofSource: "owned_wrappers_only_pending_authenticated_cep_declaration" });
   }
+  async function observeSharedBatch(a, batch, processInfo, context) {
+    if (!deps.nativeDispatchPort || !deps.sharedQueueGrant) fail("ame_shared_queue_private_capability_required");
+    if (batch.jobs.length !== 2 || batch.jobs.some(job => job.args.queueMode !== sharedQueue.MODE || !job.acceptanceReceipt || !job.transportResolved || !job.nativeAssociationVerified)) fail("ame_shared_queue_two_accepted_own_jobs_required");
+    const minimumObservedAt = now(); let running = false;
+    for (const job of batch.jobs) {
+      pinned(job);
+      const observed = await send({ ...a, operation: "status", jobId: job.jobId, processBinding: batch.processBinding, operationBinding: hash({ operation: "status", jobId: job.jobId }), requestNonce: crypto.randomUUID(), minimumObservedAt }, context);
+      if (!observed.resolved || observed.code !== "job_observed" || !associated(job, observed.native)) fail("ame_shared_queue_fresh_own_read_required");
+      updateJob(job, observed);
+      if (observed.native.batchRunning === true && ["running", "native_finished"].includes(job.state)) running = true;
+    }
+    await processPin(a, processInfo); for (const job of batch.jobs) pinned(job); write(recordFile(a.batchId), batch);
+    if (running && batch.jobs.every(job => job.nativeObservation.batchRunning === true && ["queued", "running", "native_finished"].includes(job.state))) return { alreadyRunning: true };
+    for (const job of batch.jobs) readyOutput(job);
+    return { binding: sharedQueue.buildBinding(batch, processInfo, a, minimumObservedAt) };
+  }
+  async function startShared(a, cap, entry, batch, processInfo) {
+    const issuer = deps.sharedQueueGrant;
+    if (!issuer || !deps.nativeDispatchPort) return result("ame_shared_queue_private_capability_required");
+    const first = await observeSharedBatch(a, batch, processInfo, entry.context);
+    if (first.alreadyRunning) return result("shared_queue_already_running", { ok: true, batchId: batch.batchId, ownItemsAccepted: 2, globalQueueStart: true, alreadyRunningObserved: true, dispatchAcceptanceVerified: false });
+    const queueCap = issuer.authorize(entry.context, first.binding), last = await observeSharedBatch(a, batch, processInfo, entry.context);
+    if (last.alreadyRunning) return result("shared_queue_already_running", { ok: true, batchId: batch.batchId, ownItemsAccepted: 2, globalQueueStart: true, alreadyRunningObserved: true, dispatchAcceptanceVerified: false });
+    if (sharedQueue.bindingHash(first.binding) !== sharedQueue.bindingHash(last.binding)) fail("ame_shared_queue_binding_changed");
+    const manifest = last.binding, bindingHash = sharedQueue.bindingHash(manifest);
+    assertCap(cap, START, a); issuer.assertCapability(queueCap, entry.context, manifest);
+    const startRecord = { batchId: a.batchId, requestNonce: crypto.randomUUID(), operationBinding: hash({ operation: "start", batchId: a.batchId, jobs: batch.jobs.map(job => job.jobId), bindingHash }), transportResolved: false, state: "unknown_outcome", reservedAt: new Date(now()).toISOString(), lastDispatchGuardVerified: true };
+    const prepared = await prepareNativeReservation("start", entry, { processBinding: batch.processBinding, batchId: a.batchId, bindingHash, jobIds: Object.freeze(batch.jobs.map(job => job.jobId)), operationBinding: startRecord.operationBinding, requestNonce: startRecord.requestNonce });
+    assertNativeReservation(prepared, a, cap, entry, () => { for (const job of batch.jobs) { pinned(job); readyOutput(job); } issuer.assertCapability(queueCap, entry.context, manifest); });
+    const reserved = issuer.consume(queueCap, entry.context, manifest, startRecord);
+    batch.start = { ...startRecord }; write(recordFile(a.batchId), batch); entry.active = false;
+    const observed = await send({ ...a, operation: "start", jobIds: batch.jobs.map(job => job.jobId), expectedJobs: manifest.jobs, boundNativeSessionNonce: manifest.nativeSessionNonce, retainedWrapperSessionNonce: manifest.retainedWrapperSessionNonce, presetIdentity: batch.presetIdentity, processBinding: batch.processBinding, operationBinding: startRecord.operationBinding, requestNonce: startRecord.requestNonce, minimumObservedAt: Date.parse(startRecord.reservedAt) }, entry.context, () => {
+      for (const job of batch.jobs) { pinned(job); readyOutput(job); }
+      issuer.assertConsumedForDispatch(queueCap, entry.context, manifest, reserved); assertIngress(entry.context, START, a);
+    }, () => processPin(a, processInfo));
+    try { await processPin(a, processInfo); for (const job of batch.jobs) pinned(job); assertIngress(entry.context, START, a); }
+    catch (error) { return result(error.code || "post_start_context_changed", { unknownOutcome: true, batchId: a.batchId, requestNonce: startRecord.requestNonce, startReservation: reserved }); }
+    batch.start.transportResolved = observed.resolved; batch.start.state = observed.code === "batch_start_accepted" ? "accepted" : "unknown_outcome"; write(recordFile(a.batchId), batch);
+    return result(observed.code, { ok: batch.start.state === "accepted", batchId: a.batchId, ownItemsAccepted: 2, requestNonce: startRecord.requestNonce, globalQueueStart: true, dispatchAcceptanceVerified: batch.start.state === "accepted", lastDispatchGuardVerified: true, unknownOutcome: batch.start.state !== "accepted", startReservation: reserved, process: processInfo, native: observed.native });
+  }
   async function start(a, cap) {
     const entry = assertCap(cap, START, a), processInfo = await processPin(a), batch = load(a.batchId); if (!batch || batch.processBinding !== binding(a, processInfo) || !batch.jobs.length) return result("batch_not_bound");
     if (batch.start) return result("batch_start_already_reserved", { requestNonce: batch.start.requestNonce });
-    const durable = deps.manualQueueGrant && deps.manualQueueGrant.readReservation(a.batchId);
+    const durable = startReservation(batch);
     if (durable) return result("batch_start_already_reserved", { requestNonce: durable.requestNonce, unknownOutcome: true });
+    if (a.queueMode === sharedQueue.MODE) return startShared(a, cap, entry, batch, processInfo);
+    if (batch.jobs.some(job => job.args.queueMode === sharedQueue.MODE)) return result("ame_shared_queue_mode_required");
     if (!previousJobsReady(a.batchId, processInfo)) return result("ame_title_previous_job_not_completed_no_replay");
     if (batch.jobs.some(j => !j.readyForStart || !j.nativeAssociationVerified)) return result("batch_jobs_unverified"); for (const job of batch.jobs) pinned(job);
     if (a.manualQueueMode === "cep_user_declaration_v2") {
@@ -492,7 +586,7 @@ function createExecutor(deps) {
     const observed = await send({ ...a, operation: "status", jobId: job.jobId, processBinding: batch.processBinding, operationBinding, requestNonce: crypto.randomUUID(), minimumObservedAt: pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
     if (pendingStart) { batch.start.transportResolved = observed.resolved; batch.start.state = observed.code === "batch_start_accepted" ? "accepted" : "unknown_outcome"; }
-    else updateJob(job, observed); write(recordFile(a.batchId), batch);
+    else { updateJob(job, observed); acceptOwnRead(job, observed); } write(recordFile(a.batchId), batch);
     const native = pendingStart ? null : observed.native, nativeJob = native && native.job, verified = associated(job, native);
     let file = { exists: false }; try { const stat = fs.lstatSync(job.outputPath); if (stat.isFile() && !stat.isSymbolicLink()) file = { exists: true, bytes: stat.size, modifiedAt: stat.mtime.toISOString() }; } catch (error) { if (error.code !== "ENOENT") return result("output_read_error"); }
     const passiveJob = { schema: "ae-agent-ame-job.v1", jobId: job.jobId, preset: job.presetIdentity, outputPath: job.outputPath, range: job.args.range, submittedAt: job.submittedAt };
@@ -505,15 +599,15 @@ function createExecutor(deps) {
     const startAcceptanceVerified = verified && originalStartAccepted(batch, job, native, processInfo);
     if (startAcceptanceVerified) { batch.start.transportResolved = true; batch.start.state = "accepted"; }
     job.completionVerified = complete; write(recordFile(a.batchId), batch);
-    return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
-      state: complete ? "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: deps.manualQueueGrant ? deps.manualQueueGrant.readReservation(a.batchId) : null, requestNonce: nonce || native && native.requestNonce });
+    return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted: !!job.acceptanceReceipt, acceptanceReceipt: job.acceptanceReceipt || null, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
+      state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce });
   }
   async function execute(name, raw, cap) {
     const a = validateInput(name, raw), mutation = name === ENQUEUE || name === START; if (mutation) { assertCap(cap, name, a); if (busy) fail("ame_title_writer_busy"); busy = true; }
     try { return await (name === INSPECT ? inspectSources(a) : name === QUEUE_MANIFEST ? queueManifest(a) : name === ENQUEUE ? enqueue(a, cap) : name === START ? start(a, cap) : status(a)); }
     catch (error) {
       let durable = null;
-      if (name === START && deps.manualQueueGrant) { try { durable = deps.manualQueueGrant.readReservation(a.batchId); } catch (_) {} }
+      if (name === START) { try { durable = (a.queueMode === sharedQueue.MODE ? deps.sharedQueueGrant : deps.manualQueueGrant)?.readReservation(a.batchId); } catch (_) {} }
       return result(error.code || "ame_title_read_error", { error: String(error.message || error).slice(0, 2000), ...(durable ? { unknownOutcome: true, batchId: a.batchId, requestNonce: durable.requestNonce, startReservation: durable } : {}) });
     }
     finally { if (mutation) busy = false; }
@@ -524,11 +618,12 @@ function createExecutor(deps) {
 const common = { targetSpecifier: { type: "string", pattern: "^ame-[0-9]{1,3}\\.[0-9]{1,3}$" }, expectedProcess: { type: "object", additionalProperties: false, required: ["pid", "startedAt"], properties: { pid: { type: "integer", minimum: 1 }, startedAt: { type: "string" } } }, expectedSessionNonce: { type: "string" }, timeoutMs: { type: "integer", minimum: 1000, maximum: 10000 } };
 const source = { sourceProjectFile: { type: "string" }, expectedSourceSha25664: { type: "string", pattern: SHA.source } }, batchId = { type: "string", pattern: UUID.source };
 const queueFields = { manualQueueMode: { type: "string", enum: ["cep_user_declaration_v2"] }, completedOwnedPrefix: { type: "array", maxItems: 63, items: { type: "object", additionalProperties: false, required: ["batchId", "jobId"], properties: { batchId, jobId: { type: "string", pattern: UUID.source } } } } };
+const queueMode = { type: "string", enum: [sharedQueue.MODE] };
 const definitions = [
   [INSPECT, "Read exact DL GUID strings from one pinned saved AEP in an already running AME. Reconcile an exact unknown read nonce without resend. No first-comp inference, submit or launch.", { ...source, reconcileRequestNonce: { type: "string", pattern: UUID.source } }, ["sourceProjectFile", "expectedSourceSha25664"]],
-  [ENQUEUE, "Manually gated fixed addDLToBatch with one exact GUID, exact catalog EPR and reserved output. Our jobId/handleKey is not a native ID. Unknown submission cannot replay.", { ...source, batchId, sourceGuid: { type: "string" }, presetId: { type: "string", pattern: "^amep_[a-f0-9]{40}$" }, presetSha25664: { type: "string", pattern: SHA.source }, outputFileName: { type: "string" }, range: { type: "object", additionalProperties: false, required: ["startSeconds", "endSeconds"], properties: { startSeconds: { type: "number", minimum: 0 }, endSeconds: { type: "number" } } } }, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range"]],
+  [ENQUEUE, "Gated fixed addDLToBatch with one exact GUID, exact catalog EPR and reserved output. Shared mode requires private server authority and immediate own wrapper read-back. Our jobId/handleKey is not a native ID. Unknown submission cannot replay.", { ...source, batchId, queueMode, sourceGuid: { type: "string" }, presetId: { type: "string", pattern: "^amep_[a-f0-9]{40}$" }, presetSha25664: { type: "string", pattern: SHA.source }, outputFileName: { type: "string" }, range: { type: "object", additionalProperties: false, required: ["startSeconds", "endSeconds"], properties: { startSeconds: { type: "number", minimum: 0 }, endSeconds: { type: "number" } } } }, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range"]],
   [QUEUE_MANIFEST, "Fresh owned wrapper manifest for exactly one ready job and explicit completed owned prefix. No proof of full AME queue, no enqueue/start. Requires trusted native read dispatch port.", { batchId, ...queueFields }, ["batchId", "manualQueueMode", "completedOwnedPrefix"]],
-  [START, "Protected CEP declaration of one ready job and explicit completed owned prefix; durable consume and last dispatch guard. Native full queue proof stays false. Default path fails closed.", { batchId, ...queueFields, manualQueueManifestSha25664: { type: "string", pattern: SHA.source } }, ["batchId"]],
+  [START, "Global AME runBatch. Shared mode starts the mixed queue after fresh checks of two accepted own items, private server capability and durable once marker. Legacy CEP declaration remains supported. No full queue or media proof.", { batchId, queueMode, ...queueFields, manualQueueManifestSha25664: { type: "string", pattern: SHA.source } }, ["batchId"]],
   [STATUS, "Fixed read of one retained native EncoderWrapper and listeners. Exact unresolved nonce is reconciled without resubmit. File growth is activity, not native completion or media proof.", { batchId, jobId: { type: "string", pattern: UUID.source } }, ["batchId", "jobId"]]
 ];
 const tools = definitions.map(([name, description, fields, required]) => ({ name, description, inputSchema: { type: "object", additionalProperties: false, properties: { ...common, ...fields }, required: ["targetSpecifier", "expectedProcess", ...required] }, annotations: { readOnlyHint: [INSPECT, STATUS, QUEUE_MANIFEST].includes(name), destructiveHint: false, idempotentHint: false, openWorldHint: false } }));
