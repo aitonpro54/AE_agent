@@ -32,6 +32,20 @@ struct Reader final {const Bytes& b;std::size_t at=0;
     ObjectPin Pin(const std::wstring& path){ObjectPin pin;pin.volumeGuid=Fixed<16>();pin.serial=Number(8);pin.fileId=Fixed<16>();pin.canonicalPath=path;if(detail::Zero(pin.volumeGuid)||detail::Zero(pin.fileId)||!pin.serial)Refuse("production_seal_empty_pin");return pin;}
 };
 struct Witness final {Held handle;ObjectPin pin;bool directory;};
+// Every capture validates its expected physical/canonical binding. Only a
+// duplicate read-only owner is released; all unique original parents stay held.
+std::size_t RetainParent(Held incoming,const ObjectPin& captured,std::vector<Witness>& parents){
+    if(!incoming.Valid())Refuse("production_parent_original_required");const auto actual=detail::ReadPin(incoming.Get(),true);
+    if(actual.canonicalPath!=captured.canonicalPath||!detail::SamePin(actual,captured))Refuse("production_parent_capture_changed");
+    for(std::size_t i=0;i<parents.size();++i){const auto& retained=parents[i];if(CompareStringOrdinal(retained.pin.canonicalPath.c_str(),static_cast<int>(retained.pin.canonicalPath.size()),actual.canonicalPath.c_str(),static_cast<int>(actual.canonicalPath.size()),TRUE)!=CSTR_EQUAL)continue;
+        const auto current=detail::ReadPin(retained.handle.Get(),true);
+        if(!retained.directory||retained.pin.canonicalPath!=actual.canonicalPath||current.canonicalPath!=actual.canonicalPath||
+            !detail::SamePin(retained.pin,actual)||!detail::SamePin(current,actual))Refuse("production_parent_original_binding_changed");
+        if(!CloseHandle(static_cast<HANDLE>(incoming.Get())))Refuse("production_parent_duplicate_close_unknown",GetLastError(),true);
+        (void)incoming.Take();return i;
+    }
+    parents.push_back({std::move(incoming),actual,true});return parents.size()-1;
+}
 ObjectPin VendorPin(void* handle,const vendor::Definition& fixed){if(GetFileType(handle)!=FILE_TYPE_DISK)Refuse("production_vendor_not_disk");
     FILE_ATTRIBUTE_TAG_INFO attributes{};FILE_STANDARD_INFO standard{};FILE_ID_INFO identity{};
     if(!GetFileInformationByHandleEx(handle,FileAttributeTagInfo,&attributes,sizeof(attributes))||!GetFileInformationByHandleEx(handle,FileStandardInfo,&standard,sizeof(standard))||!GetFileInformationByHandleEx(handle,FileIdInfo,&identity,sizeof(identity)))Refuse("production_vendor_identity_query_failed",GetLastError());
@@ -54,33 +68,37 @@ Held VendorRelative(void* parent,const std::wstring& component){
     OBJECT_ATTRIBUTES object{};object.Length=sizeof(object);object.RootDirectory=parent;object.ObjectName=&name;object.Attributes=0x40;IO_STATUS_BLOCK io{};HANDLE actual=nullptr;
     if(create(&actual,FILE_READ_DATA|FILE_READ_ATTRIBUTES|SYNCHRONIZE,&object,&io,nullptr,FILE_ATTRIBUTE_NORMAL,FILE_SHARE_READ,1u,0x00200000|0x00000020|0x40u,nullptr,0)<0)Refuse("production_vendor_relative_open_refused");
     Held original(actual);if(!original.Valid()||!SetHandleInformation(actual,HANDLE_FLAG_INHERIT,0))Refuse("production_vendor_original_handle_refused",GetLastError());return original;}
-struct VendorWitness final {Held handle;ObjectPin pin;const vendor::Definition* fixed;void* parent;std::wstring component;
-    void Fresh()const{if(!fixed||vendor::Find(fixed->selector)!=fixed||!detail::SamePin(VendorPin(handle.Get(),*fixed),pin))Refuse("production_vendor_held_pin_changed");
-        (void)VendorReadBytes(handle.Get(),*fixed);auto named=VendorRelative(parent,component);if(!detail::SamePin(VendorPin(named.Get(),*fixed),pin))Refuse("production_vendor_named_pin_changed");(void)VendorReadBytes(named.Get(),*fixed);}};
+struct VendorWitness final {Held handle;ObjectPin pin;const vendor::Definition* fixed;const std::vector<Witness>* parentOwners;std::size_t parentIndex;std::wstring component;
+    void Fresh()const{if(!fixed||vendor::Find(fixed->selector)!=fixed||!parentOwners||parentIndex>=parentOwners->size())Refuse("production_vendor_parent_owner_refused");
+        const auto& parent=(*parentOwners)[parentIndex];const std::wstring path=fixed->path;const auto slash=path.find_last_of(L'\\');
+        if(slash==std::wstring::npos||!parent.directory||parent.pin.canonicalPath!=path.substr(0,slash)||component!=path.substr(slash+1)||
+            !detail::SamePin(detail::ReadPin(parent.handle.Get(),true),parent.pin))Refuse("production_vendor_parent_binding_changed");
+        if(!detail::SamePin(VendorPin(handle.Get(),*fixed),pin))Refuse("production_vendor_held_pin_changed");
+        (void)VendorReadBytes(handle.Get(),*fixed);auto named=VendorRelative(parent.handle.Get(),component);if(!detail::SamePin(VendorPin(named.Get(),*fixed),pin))Refuse("production_vendor_named_pin_changed");(void)VendorReadBytes(named.Get(),*fixed);}};
 void VendorFresh(const std::vector<VendorWitness>& held){if(held.size()>3)Refuse("production_vendor_witness_bound");std::set<std::uint16_t> selectors;for(const auto& witness:held){if(!witness.fixed||!selectors.insert(witness.fixed->selector).second)Refuse("production_vendor_duplicate_witness");witness.Fresh();}}
 VendorWitness OpenVendor(const BuildInput& row,std::vector<Witness>& parents){const auto* fixed=vendor::Find(row.code);Bytes expected;detail::PutPin(expected,row.file.pin);
     std::array<unsigned char,40> provided{};if(expected.size()!=provided.size())Refuse("production_vendor_pin_length_refused");std::copy(expected.begin(),expected.end(),provided.begin());
     if(!fixed||!vendor::ExactRow(*fixed,row.code,row.file.pin.canonicalPath,provided,row.file.sha256,fixed->bytes,fixed->links))Refuse("production_vendor_compiled_row_refused");
     const std::wstring path=fixed->path;Held volume(CreateFileW(path.substr(0,49).c_str(),FILE_LIST_DIRECTORY|FILE_READ_ATTRIBUTES|SYNCHRONIZE,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr));
-    if(!volume.Valid())Refuse("production_vendor_volume_open_failed",GetLastError());const auto pin=detail::ReadPin(volume.Get(),true);parents.push_back({std::move(volume),pin,true});void* parent=parents.back().handle.Get();std::size_t at=49;
-    while(true){const auto end=path.find(L'\\',at);if(end==std::wstring::npos)break;auto ancestor=detail::Relative(parent,path.substr(at,end-at),true);const auto identity=detail::ReadPin(ancestor.Get(),true);parents.push_back({std::move(ancestor),identity,true});parent=parents.back().handle.Get();at=end+1;}
-    const auto component=path.substr(at);auto original=VendorRelative(parent,component);const auto physical=VendorPin(original.Get(),*fixed);(void)VendorReadBytes(original.Get(),*fixed);
-    return {std::move(original),physical,fixed,parent,component};}
+    if(!volume.Valid())Refuse("production_vendor_volume_open_failed",GetLastError());const auto pin=detail::ReadPin(volume.Get(),true);std::size_t parent=RetainParent(std::move(volume),pin,parents),at=49;
+    while(true){const auto end=path.find(L'\\',at);if(end==std::wstring::npos)break;auto ancestor=detail::Relative(parents[parent].handle.Get(),path.substr(at,end-at),true);const auto identity=detail::ReadPin(ancestor.Get(),true);parent=RetainParent(std::move(ancestor),identity,parents);at=end+1;}
+    const auto component=path.substr(at);auto original=VendorRelative(parents[parent].handle.Get(),component);const auto physical=VendorPin(original.Get(),*fixed);(void)VendorReadBytes(original.Get(),*fixed);
+    return {std::move(original),physical,fixed,&parents,parent,component};}
 std::wstring SelectorPath(const reviewed::Profile& p,const std::vector<std::wstring>& components){if(components.empty()||components.size()>32)Refuse("production_selector_invalid");std::wstring result=p.repository.canonicalPath;
     for(const auto& c:components){if(c.empty()||c==L"."||c==L".."||c.find_first_of(L"\\/:")!=std::wstring::npos||c.find(L'\0')!=std::wstring::npos)Refuse("production_selector_invalid");result+=L"\\"+c;}return result;}
 Held Root(const reviewed::Profile& p,std::vector<Witness>& parents){if(p.repositoryAncestors.size()!=p.repositoryComponents.size()+1)Refuse("production_repository_ancestors_invalid");
     Held volume(CreateFileW(p.canonicalVolumeAnchor.c_str(),FILE_LIST_DIRECTORY|FILE_READ_ATTRIBUTES|SYNCHRONIZE,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr));
-    if(!volume.Valid()||!detail::SamePin(detail::ReadPin(volume.Get(),true),p.repositoryAncestors[0]))Refuse("production_original_volume_refused");parents.push_back({std::move(volume),p.repositoryAncestors[0],true});
-    for(std::size_t i=0;i<p.repositoryComponents.size();++i){auto next=detail::Relative(parents.back().handle.Get(),p.repositoryComponents[i],true);if(!detail::SamePin(detail::ReadPin(next.Get(),true),p.repositoryAncestors[i+1]))Refuse("production_original_repository_refused");parents.push_back({std::move(next),p.repositoryAncestors[i+1],true});}
-    if(!detail::SamePin(parents.back().pin,p.repository))Refuse("production_original_repository_refused");HANDLE duplicated=nullptr;
-    if(!DuplicateHandle(GetCurrentProcess(),parents.back().handle.Get(),GetCurrentProcess(),&duplicated,0,FALSE,DUPLICATE_SAME_ACCESS))Refuse("production_repository_duplicate_failed",GetLastError());return Held(duplicated);}
+    if(!volume.Valid()||!detail::SamePin(detail::ReadPin(volume.Get(),true),p.repositoryAncestors[0]))Refuse("production_original_volume_refused");std::size_t parent=RetainParent(std::move(volume),p.repositoryAncestors[0],parents);
+    for(std::size_t i=0;i<p.repositoryComponents.size();++i){auto next=detail::Relative(parents[parent].handle.Get(),p.repositoryComponents[i],true);if(!detail::SamePin(detail::ReadPin(next.Get(),true),p.repositoryAncestors[i+1]))Refuse("production_original_repository_refused");parent=RetainParent(std::move(next),p.repositoryAncestors[i+1],parents);}
+    if(!detail::SamePin(parents[parent].pin,p.repository))Refuse("production_original_repository_refused");HANDLE duplicated=nullptr;
+    if(!DuplicateHandle(GetCurrentProcess(),parents[parent].handle.Get(),GetCurrentProcess(),&duplicated,0,FALSE,DUPLICATE_SAME_ACCESS))Refuse("production_repository_duplicate_failed",GetLastError());return Held(duplicated);}
 Held Open(void* root,const std::vector<std::wstring>& components,bool directory,std::vector<Witness>& parents,bool create=false){if(components.empty()||components.size()>32)Refuse("production_selector_invalid");void* parent=root;
-    for(std::size_t i=0;i+1<components.size();++i){auto next=detail::Relative(parent,components[i],true);const auto pin=detail::ReadPin(next.Get(),true);parents.push_back({std::move(next),pin,true});parent=parents.back().handle.Get();}
+    for(std::size_t i=0;i+1<components.size();++i){auto next=detail::Relative(parent,components[i],true);const auto pin=detail::ReadPin(next.Get(),true);parent=parents[RetainParent(std::move(next),pin,parents)].handle.Get();}
     return detail::Relative(parent,components.back(),directory,create,create,false,!directory&&!create);}
 Held Absolute(const ObjectPin& expected,bool directory,std::vector<Witness>& parents,bool requirePin=true){const auto& path=expected.canonicalPath;if(path.size()<50||path.substr(0,11)!=L"\\\\?\\Volume{"||path[48]!=L'\\')Refuse("production_canonical_witness_required");
-    Held volume(CreateFileW(path.substr(0,49).c_str(),FILE_LIST_DIRECTORY|FILE_READ_ATTRIBUTES|SYNCHRONIZE,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr));if(!volume.Valid())Refuse("production_dependency_volume_refused",GetLastError());auto pin=detail::ReadPin(volume.Get(),true);parents.push_back({std::move(volume),pin,true});std::size_t at=49;void* parent=parents.back().handle.Get();Held actual;
+    Held volume(CreateFileW(path.substr(0,49).c_str(),FILE_LIST_DIRECTORY|FILE_READ_ATTRIBUTES|SYNCHRONIZE,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr));if(!volume.Valid())Refuse("production_dependency_volume_refused",GetLastError());auto pin=detail::ReadPin(volume.Get(),true);std::size_t at=49;void* parent=parents[RetainParent(std::move(volume),pin,parents)].handle.Get();Held actual;
     while(at<path.size()){const auto end=path.find(L'\\',at);const bool childDirectory=end!=std::wstring::npos||directory;auto item=detail::Relative(parent,path.substr(at,end==std::wstring::npos?path.size()-at:end-at),childDirectory,false,false,false,!childDirectory);
-        if(end==std::wstring::npos){actual=std::move(item);break;}const auto identity=detail::ReadPin(item.Get(),true);parents.push_back({std::move(item),identity,true});parent=parents.back().handle.Get();at=end+1;}
+        if(end==std::wstring::npos){actual=std::move(item);break;}const auto identity=detail::ReadPin(item.Get(),true);parent=parents[RetainParent(std::move(item),identity,parents)].handle.Get();at=end+1;}
     if(!actual.Valid())Refuse("production_original_absolute_pin_refused");const auto observed=detail::ReadPin(actual.Get(),directory);
     if(observed.canonicalPath!=path||(requirePin&&!detail::SamePin(observed,expected)))Refuse("production_original_absolute_pin_refused");return actual;}
 void HeldFresh(const std::vector<Witness>& held){for(const auto& w:held)if(!detail::SamePin(detail::ReadPin(w.handle.Get(),w.directory),w.pin))Refuse("production_original_witness_changed");}
@@ -218,7 +236,7 @@ std::shared_ptr<OriginalSealWitness> OriginalSealWitness::OpenFixed(Result& resu
     auto installation=Absolute(data->resolved.installationFile,false,data->parents),policy=Absolute(data->resolved.policyFile,false,data->parents);
     if(detail::Hash(detail::ReadExact(installation.Get(),16384))!=installationHash||detail::Hash(detail::ReadExact(policy.Get(),16384))!=policyHash||policyHash!=data->resolved.policyHash)Refuse("production_original_enrollment_bytes_refused");
     data->files.push_back({std::move(installation),data->resolved.installationFile,false});data->files.push_back({std::move(policy),data->resolved.policyFile,false});
-    auto setup=Absolute(definition.setupNamespace,true,data->parents);data->parents.push_back({std::move(setup),definition.setupNamespace,true});
+    auto setup=Absolute(definition.setupNamespace,true,data->parents);(void)RetainParent(std::move(setup),definition.setupNamespace,data->parents);
     data->recordHash=detail::Hash(data->record);if(!data->Fresh())Refuse("production_seal_late_guard_refused");result={true,false,false,"production_original_seal_open",0};return std::shared_ptr<OriginalSealWitness>(new OriginalSealWitness(std::move(data)));
 }catch(const detail::Failure& failure){result={false,failure.unknown,failure.unavailable,failure.code,failure.error};return nullptr;}}
 #endif

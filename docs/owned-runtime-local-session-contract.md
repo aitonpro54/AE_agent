@@ -183,6 +183,36 @@ original observation, не повтор. Original HANDLE [wait](https://learn.mi
 Handover не передаёт grant; старый broker завершает свою цель либо остаётся closed.
 До сверки fence/unknown новый controller не действует; first-launch latch всегда spent.
 
+## Проектируемый independent successor для закрытого C1 до launch
+
+Этот отдельный контракт принят по разрешённому поручению restore/install;
+реализация и native приёмка ещё не завершены. Он не разрешает использовать
+существующий provisioner для обхода spent latch. Старые native floor/pending
+не реконструируются, old namespace остаётся CLOSED/UNKNOWN с исходными records.
+
+Планируемая optional successor branch того же SetupCreator выдаёт самостоятельный
+local_operator grant; genuine human/chat attestation остаётся false. Исторический
+tool audit завершения original pair — supplementary evidence, не grant и не fresh
+exit attestation нового creator. Новый native creator самостоятельно удерживает
+exclusive ORIGINAL old fence и читает exact physical roots/SID/ACL, seal/enrollment
+и закрытый journal prefix Genesis(seq1,epoch0) → OwnerEpoch(seq2,epoch1). Partial,
+третья запись, неверный hash/pin/lineage/scope или namespace race закрывают branch.
+Исторический old source commitment не выдаётся за текущий OldSeal.Fresh после patch.
+
+До новых anchor/enrollment effects native делает CREATE_NEW фиксированного
+oldRuntime/.initial-owned-successor.intent, flush и same-object read-back.
+Ключ связывает SID, physical repository, old physical runtime, installation и
+lineage; новый UUID/source/policy/successor directory его не меняют. Любой existing
+intent, включая zero/partial/correct, означает consumed/read-back-only. Intent
+связывает ровно один новый installation/root/policy и original creator lifetime.
+Grant непередаваем, существует в памяти и потребляется тем же creator; JSON не
+создаёт и не восстанавливает его. Старый journal не изменяется.
+
+Fresh-install v1 сохраняется. Successor-only seal binding удостоверяет spec/key и
+actual intent pin/hash; обычные fresh prepare/seal/runtime gates нового installation
+сохраняются. Native runtime читает этот факт, но нового successor grant не выдаёт.
+AE/AME, их процессы и пользовательские задания не входят в retirement.
+
 ## Server gates и минимальный implementation path
 
 Private record выбирает exact initial_local origin; mixed/unknown fail closed.

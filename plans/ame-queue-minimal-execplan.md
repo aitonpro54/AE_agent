@@ -115,7 +115,29 @@
   добавленный get_ame_title_job_status; supervisor status передаёт undefined
   вместо пустых args. Эти тесты не проверяют изменённый preload; не исправлялись
   попутно и не объявляются PASS.
-- Последний проверенный MCP status: owned_registration_absent / owned=false.
+- V13: fresh metadata531, CompileOnly3/3 и штатный BuildAndSeal PASS. Actual
+  controller source proof прошёл; Open достиг C1 и завершился клиентским
+  trusted_original_io_timeout_no_replay. В journal сохранены валидные Genesis
+  seq1/epoch0 (458B) и OwnerEpoch seq2/epoch1 (244B); второй record завершился
+  после timeout. LaunchConsume отсутствует в exact2 prefix; native floor/pending
+  по этим файлам не удостоверяются. Original controller13928 exit1 и broker9208
+  pair exit2 подтверждены SAME retained query handles, birth/image до закрытия,
+  terminal wait/exit после него; stdio EOF/pending0 и owners exit0 подтверждены.
+  V13 — CLOSED/UNKNOWN, не pre-C1 RETIRED_UNADMITTED; records/floor не сбрасываются.
+- Измеренная причина задержки: повторные ancestor witnesses (5380 slots против
+  114 unique parents только в build inputs). Reviewed dedup сохраняет каждый
+  unique parent и все Fresh/hash/alias guards. Actual readonly harness:
+  baseline Fresh 146.12–149.27ms, candidate 27.30–28.18ms, Open около1.04s;
+  3/3 Fresh в обеих версиях PASS, original children exit0/EOF. Это не Store/C1
+  timing proof. Первый candidate compile дал undefined private SamePath;
+  исправленный CompareStringOrdinal вариант скомпилирован и измерен отдельно.
+- Аудитные исправления batchId/completion объединены: main4fb08ac, completion6/6
+  и descriptor3/3 PASS. Следующая сборка объединяет их с dedup, измеренным reply
+  budget и новым finite successor contract. Existing post-C1 recovery отсутствует;
+  готовится независимый native operator grant внутри SetupCreator с old fence,
+  exact2 closed readback и no-replace intent вне старого journal. Grant пока
+  NOT IMPLEMENTED/NOT RUN; обычный ensure/reprovision запрещён до его приёмки.
+- Последний ранний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
   root — этот план и основной execplan. Чужие smoke/WIP сохраняются.
