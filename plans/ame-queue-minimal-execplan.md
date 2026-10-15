@@ -58,6 +58,20 @@
   predicate3positive/15negative PASS. V8 Collect завершён2/2exit0/EOF, но его
   source-only manifest отмечен superseded до compile/seal/factory. Следующий
   frozen source/M — v9; v7 retirement audit остаётся явно связан с новой policy.
+- V9 BuildAndSeal COMPLETE штатно: creator ACK/exit0/stdout+stderr EOF, artifacts
+  ordered1,2,3, все compile children закрыты. Factory затем получила
+  bootstrap_read_unknown: exact retained broker pair exit2, original controller
+  exit0/stdio close; Connect/Open/StartJournal не достигнуты, journal пуст.
+  V9 также RETIRED_UNADMITTED, old records/seal и exact3 binaries сохранены.
+  Корректирующая read-only сверка подтверждает все5 pins/bytes/inventory/archive;
+  ранняя проверка каталога file-only методом сохранена как ошибочная, не скрыта.
+- Конкретный startup defect найден в source: InitializeTrusted перемещал peer
+  из Bootstrap в OriginalController; final SendBrokerBootstrapFixed затем вызывал
+  ProcessLive на пустом moved-from HANDLE. Исправлен только ownership: Bootstrap
+  сохраняет inherited original, observer владеет query/sync duplicate того же
+  kernel object. Source/liveness gates сохранены; прочая startup chain проверена.
+  Новый diagnostic protocol не добавляется. Далее fresh v10 M/build/install;
+  known retired v7/v9 явно перечисляются в provisioning audit. AE/AME effects0.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

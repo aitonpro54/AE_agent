@@ -469,7 +469,12 @@ struct Broker::Data::Trusted final : Broker::Data {
         projects.reserve(phase::kLifetimeCallRows);inherited=std::make_unique<trusted_read::Bootstrap>(trusted_read::ReceiveBootstrapFixed(trusted_read::Role::Controller));
         enrollment=InstalledEnrollment::OpenProductionFixed(originalSeal,accepted);
         if(!enrollment)Refuse(accepted.code.c_str(),accepted.win32Error,accepted.unknown,accepted.unavailable);
-        originalController=std::make_unique<OriginalController>(std::move(inherited->originalPeer),enrollment->Profile());controllerNonce=inherited->bindings.channelNonce;
+        // Bootstrap retains its original peer for the final reply liveness gate.
+        // The controller observer owns a query-only duplicate of that same object.
+        HANDLE controllerQuery=nullptr;
+        if(!DuplicateHandle(GetCurrentProcess(),inherited->originalPeer.Get(),GetCurrentProcess(),&controllerQuery,
+            PROCESS_QUERY_LIMITED_INFORMATION|SYNCHRONIZE,FALSE,0))Refuse("trusted_original_controller_query_duplicate_failed",GetLastError());
+        originalController=std::make_unique<OriginalController>(Held(controllerQuery),enrollment->Profile());controllerNonce=inherited->bindings.channelNonce;
         HANDLE self=nullptr;if(!DuplicateHandle(GetCurrentProcess(),GetCurrentProcess(),GetCurrentProcess(),&self,PROCESS_QUERY_LIMITED_INFORMATION|SYNCHRONIZE,FALSE,0))
             Refuse("trusted_broker_original_self_duplicate_failed",GetLastError());originalSelf=Held(self);originalSelfBirth=detail::ProcessBirth(originalSelf.Get());
         originalSelfSid=detail::ProcessSid(originalSelf.Get());originalSelfImage=detail::ProcessImage(originalSelf.Get());
