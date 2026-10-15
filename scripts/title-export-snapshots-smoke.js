@@ -3,6 +3,31 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const exportsTool=require("../mcp-server/title-export-snapshots"),variants=require("../mcp-server/native-render-variant"),m100=require("../mcp-server/m100-protocol"),semantic=require("../mcp-server/semantic-verification");
 const root=path.resolve(__dirname,"../.codex-runtime/title-export-snapshots-smoke",crypto.randomUUID());fs.mkdirSync(root,{recursive:true});
 let checks=0;
+function nativeStringIdentityRegression(){
+  const source=exportsTool.nativeSnapshotDifference.toString();
+  assert.equal(source.split("a===b").length,2,"Actual native strict-equality branch must remain identifiable");
+  // V8 cannot reproduce AE's native-string === failure. Replace only that
+  // operator to force the observed failure while running the actual comparator.
+  const compare=vm.runInNewContext("("+source.replace("a===b","nativeStrictEqual(a,b)")+")",{
+    nativeStrictEqual:(a,b)=>typeof a!=="string"&&a===b
+  });
+  const file=String.raw`C:\Проекты 21\Папка (Титры)\titr_all.aep`;
+  const text='Титр "01"\\literal\\n\r\n\t\0\b\f\u2028\u2029\ud800\udc00\ud800';
+  const baseline={projectFile:file,controlled:[{name:"TITR_01",text}],empty:""};
+  assert.equal(compare(baseline,JSON.parse(JSON.stringify(baseline))),null);checks++;
+  for(const [value,field] of [[file,"projectFile"],[text,"text"]]){
+    for(let i=0;i<value.length;i++){
+      const changed=value.slice(0,i)+String.fromCharCode(value.charCodeAt(i)^1)+value.slice(i+1);
+      const difference=compare({[field]:value},{[field]:changed});
+      assert.equal(difference.path,"snapshot."+field);assert.equal(difference.firstDifference,i);
+    }
+    for(const changed of [value+"x",value.slice(1),value.toLowerCase(),value.replace(/\\/g,"/")]){
+      if(changed!==value)assert.notEqual(compare({[field]:value},{[field]:changed}),null);
+    }
+  }
+  for(const value of [new String(file),null,7])assert.notEqual(compare({projectFile:file},{projectFile:value}),null);
+  checks++;
+}
 function fixture(mode="ok"){
   const dir=path.join(root,mode);fs.mkdirSync(dir);const source=path.join(dir,"source.aep"),checkpoint=path.join(dir,"checkpoint.aep");fs.writeFileSync(source,"original saved AEP");fs.copyFileSync(source,checkpoint);
   class TextLayer{constructor(id,name,enabled){Object.assign(this,{id,name,enabled,locked:false});}}
@@ -34,6 +59,7 @@ function fixture(mode="ok"){
   return {executor,args,cap,evidence,counts,context,project,checkpoint,source,run:()=>executor.execute(args,cap),revoke:()=>{authorized=false;}};
 }
 (async()=>{
+  nativeStringIdentityRegression();
   const good=fixture();const result=await good.run();assert.equal(result.ok,true);assert.equal(exportsTool.verifyResult(result,good.args).ok,true);assert.deepEqual(good.counts,{saves:2,opens:1,undo:1});assert.equal(fs.readFileSync(good.source,"utf8"),"original saved AEP");assert.equal(good.evidence.at(-1).phase,"verified");checks++;
   const selector={sourcePath:result.snapshots[0].path,sourceSha25664:result.snapshots[0].sha25664,sourceGuid:result.snapshots[0].native.guid};
   assert.equal(good.executor.assertSavedSource(selector),true);checks++;

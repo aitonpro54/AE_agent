@@ -39,7 +39,20 @@ function readScript(a){return `var nativeSnapshot=${variants.nativeSnapshot.toSt
 // Uses the same native String(number) representation as the bridge serializer.
 function nativeSnapshotDifference(actual,expected){
   var mismatch=null;
-  function equal(a,b,p){var k,n=0,m=0;if(a===b||typeof a==="number"&&typeof b==="number"&&String(a)===String(b))return true;if(a===null||b===null||typeof a!=="object"||typeof b!=="object"){mismatch={path:p,actual:String(a).substring(0,120),expected:String(b).substring(0,120)};return false;}for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)){mismatch={path:p+"."+k,actual:"present",expected:"missing"};return false;}if(!equal(a[k],b[k],p+"."+k))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;if(n!==m){mismatch={path:p,actual:"keys:"+n,expected:"keys:"+m};return false;}return true;}
+  function equal(a,b,p){
+    var k,n=0,m=0,as,bs;
+    if(a===b||typeof a==="number"&&typeof b==="number"&&String(a)===String(b))return true;
+    // ExtendScript can reject === for native and literal strings with identical
+    // UTF-16 units. Preserve exact identity, including path separators and case.
+    if(typeof a==="string"&&typeof b==="string"&&a.length===b.length){
+      for(k=0;k<a.length;k++)if(a.charCodeAt(k)!==b.charCodeAt(k))break;
+      if(k===a.length)return true;
+    }
+    if(a===null||b===null||typeof a!=="object"||typeof b!=="object"){as=String(a);bs=String(b);mismatch={path:p,actual:as.substring(0,120),expected:bs.substring(0,120),actualType:typeof a,expectedType:typeof b,actualLength:as.length,expectedLength:bs.length};for(k=0;k<Math.max(as.length,bs.length);k++)if(as.charCodeAt(k)!==bs.charCodeAt(k)){mismatch.firstDifference=k;mismatch.actualCode=k<as.length?as.charCodeAt(k):null;mismatch.expectedCode=k<bs.length?bs.charCodeAt(k):null;break;}return false;}
+    for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)){mismatch={path:p+"."+k,actual:"present",expected:"missing"};return false;}if(!equal(a[k],b[k],p+"."+k))return false;}
+    for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;
+    if(n!==m){mismatch={path:p,actual:"keys:"+n,expected:"keys:"+m};return false;}return true;
+  }
   equal(actual,expected,"snapshot");return mismatch;
 }
 function compareScript(a,baseline){return `var nativeSnapshot=${variants.nativeSnapshot.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};var baseline=${JSON.stringify(baseline)};return {difference:nativeSnapshotDifference(nativeSnapshot(${JSON.stringify(inspectionArgs(a))}),baseline),dirty:app.project.dirty};`;}
