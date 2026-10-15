@@ -28,8 +28,16 @@ public sealed class SharedQueueBuildPin : IDisposable {
    (canonical==@"\\?\Volume{c3c972fd-0862-442d-9c16-be619b003f4d}\Windows\Globalization\Sorting\SortDefault.nls"&&physical=="fd72c9c362082d449c16be619b003f4de353213e1cf9ba5991c50000000001000000000000000000"&&hash=="5710c47f5c5c745854e11fc06c8d349cd61d084f5a90937396e88ab762298b67"&&bytes==3385740&&links==2)||
    (canonical==@"\\?\Volume{c3c972fd-0862-442d-9c16-be619b003f4d}\Windows\Microsoft.NET\Framework\v4.0.30319\Microsoft.Xaml.targets"&&physical=="fd72c9c362082d449c16be619b003f4de353213e1cf9ba5969cd0000000001000000000000000000"&&hash=="c7901713049b86eda6842a8aaba45daaabb560bd1ae1c4af711dd6d2fc916af0"&&bytes==19892&&links==3);
  }
- public SharedQueueBuildPin(string path,bool isDirectory,bool exactVendor=false){
-  locator=path;directory=isDirectory;handle=CreateFileW(path,isDirectory?0x100081u:0x100081u,isDirectory?3u:1u,IntPtr.Zero,3,0x200000u|(isDirectory?0x2000000u:0u),IntPtr.Zero);
+ // The original native intent writer remains open. Its FILE_SHARE_READ denies
+ // third-party writers; this read-only observer must reciprocate its existing
+ // write access. Never apply this sharing mode to ordinary source/build pins.
+ public static SharedQueueBuildPin SuccessorIntent(string path){
+  if(Path.GetFileName(path)!=".initial-owned-successor.intent")throw new IOException("production_exact_successor_intent_required");
+  return new SharedQueueBuildPin(path,false,false,true);
+ }
+ public SharedQueueBuildPin(string path,bool isDirectory,bool exactVendor=false):this(path,isDirectory,exactVendor,false){}
+ SharedQueueBuildPin(string path,bool isDirectory,bool exactVendor,bool successorIntent){
+  locator=path;directory=isDirectory;handle=CreateFileW(path,0x100081u,isDirectory||successorIntent?3u:1u,IntPtr.Zero,3,0x200000u|(isDirectory?0x2000000u:0u),IntPtr.Zero);
   Check(!handle.IsInvalid,"production_pin_open");try{var basic=Info(0,40);var standard=Info(1,24);identity=Info(18,24);
    if(standard[20]!=0||(standard[21]!=0)!=directory||(BitConverter.ToUInt32(basic,32)&0x441400)!=0)throw new IOException("production_pin_shape");
    Links=BitConverter.ToUInt32(standard,16);Bytes=BitConverter.ToInt64(standard,8);

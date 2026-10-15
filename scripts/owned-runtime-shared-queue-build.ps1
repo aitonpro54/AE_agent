@@ -92,9 +92,10 @@ function Invoke-SQNode([string[]]$Arguments,[string]$Prefix){
  $sqChild=Start-SQChild $NodePath (@('--expose-internals',$sqCli)+$Arguments) ([IO.Path]::GetDirectoryName($sqCli)) $Prefix $false $null $true
  Wait-SQChild $sqChild 60000
 }
-function Get-SQObservation([string]$Locator,[bool]$Directory,[bool]$Vendor=$false,[bool]$Retain=$false){
+function Get-SQObservation([string]$Locator,[bool]$Directory,[bool]$Vendor=$false,[bool]$Retain=$false,[bool]$SuccessorIntent=$false){
  Assert-SQPlain $Locator
- $sqHeld=[SharedQueueBuildPin]::new($Locator,$Directory,$Vendor)
+ if($SuccessorIntent-and ($Directory-or $Vendor-or -not $Retain)){throw 'PRODUCTION_EXACT_SUCCESSOR_INTENT_OBSERVER_REQUIRED'}
+ $sqHeld=if($SuccessorIntent){[SharedQueueBuildPin]::SuccessorIntent($Locator)}else{[SharedQueueBuildPin]::new($Locator,$Directory,$Vendor)}
  try{
   $sqObserved=[ordered]@{locator=$Locator;directory=$Directory;pin=[ordered]@{volumeGuidHex=$sqHeld.VolumeGuidHex;fileIdHex=$sqHeld.FileIdHex;serial=$sqHeld.Serial;canonicalPath=$sqHeld.CanonicalPath};sha256=$sqHeld.Sha256;bytes=$sqHeld.Bytes;links=$sqHeld.Links}
   if($Retain){$global:SharedQueueBuildOwner.pins.Add($sqHeld);$sqHeld=$null}
@@ -127,7 +128,7 @@ if(Get-Variable -Name SharedQueueBuildOwner -Scope Global -ErrorAction SilentlyC
 if($MyInvocation.InvocationName-ne '.'){throw 'PRODUCTION_ROOT_RETAINED_DOT_SOURCE_OWNER_REQUIRED'}
 if($RootReviewedDriverSha256-notmatch '^[A-Fa-f0-9]{64}$'-or (Get-SQHash $PSCommandPath)-ne $RootReviewedDriverSha256.ToLowerInvariant()){throw 'PRODUCTION_ROOT_REVIEWED_DRIVER_REQUIRED'}
 if(-not ('SharedQueueBuildPin'-as [type])){Add-Type -Path (Join-Path $sqHelpers 'identity.cs')}
-$global:SharedQueueBuildOwner=[ordered]@{stage='created';children=[Collections.Generic.List[object]]::new();pins=[Collections.Generic.List[object]]::new();locks=[Collections.Generic.List[object]]::new();reads=[Collections.Generic.List[object]]::new();creator=$null;sealed=$false;closed=$false;authority=$false}
+$global:SharedQueueBuildOwner=[ordered]@{stage='created';children=[Collections.Generic.List[object]]::new();pins=[Collections.Generic.List[object]]::new();locks=[Collections.Generic.List[object]]::new();reads=[Collections.Generic.List[object]]::new();transientObservations=[Collections.Generic.List[object]]::new();creator=$null;sealed=$false;closed=$false;authority=$false}
 $sqOwner=$global:SharedQueueBuildOwner
 try{
  $sqInput=Read-SQJson $InputFile
@@ -166,8 +167,15 @@ try{
  foreach($sqRequest in (Read-SQJson $sqRequestFile)){
   if($sqRequest.generated){continue}
   $sqVendor=@($sqInput.definition.buildInputs|Where-Object {$_.code-in @(1020,1021,1022)-and $_.file.pin.canonicalPath-ceq $sqRequest.locator}).Count-eq 1
-  $sqActual=Get-SQObservation $sqRequest.locator $sqRequest.directory $sqVendor $true
+  $sqTransient=$sqRequest.ContainsKey('transient')-and $sqRequest.transient-eq $true
+  if($sqTransient-and (-not $sqInput.definition.ContainsKey('closedPredecessor')-or $sqRequest.locator-cne $sqInput.definition.closedPredecessor.lock.canonicalPath-or $sqRequest.directory-or $sqVendor)){throw 'PRODUCTION_EXACT_TRANSIENT_OLD_FENCE_REQUIRED'}
+  $sqActual=Get-SQObservation $sqRequest.locator $sqRequest.directory $sqVendor (-not $sqTransient)
   if(($sqActual.pin|ConvertTo-Json -Compress)-cne ($sqRequest.pin|ConvertTo-Json -Compress)-or ($sqRequest.sha256-and $sqActual.sha256-cne $sqRequest.sha256)){throw 'PRODUCTION_ACTUAL_PIN_OR_BYTES_CHANGED'}
+  if($sqTransient){if([string]$sqActual.bytes-cne '0'){throw 'PRODUCTION_CLOSED_FENCE_BYTES_CHANGED'};$sqOwner.transientObservations.Add([ordered]@{purpose='closed_predecessor_fence';released=$true;retained=$false;observation=$sqActual})}
+ }
+ if($sqInput.definition.ContainsKey('closedPredecessor')){
+  if($sqOwner.transientObservations.Count-ne 1){throw 'PRODUCTION_RELEASED_OLD_FENCE_OBSERVATION_REQUIRED'}
+  Save-SQNew (Join-Path $sqOut ('released-old-fence-'+$sqPhase+'.json')) ([ordered]@{schema='ae-agent.shared-queue-released-old-fence.v1';authority=$false;observations=@($sqOwner.transientObservations);nativeExclusiveRevalidationRequired=$true})
  }
  function Build-SQRole($Role,[bool]$Deploy=$true){
   if($sqOwner.sealed-or $sqOwner.stage-eq 'seal_requested'){throw 'PRODUCTION_COMPILE_AFTER_SEAL_REFUSED'}
@@ -228,9 +236,21 @@ try{
  $sqBirth=[SharedQueueBuildIo]::Birth($sqCreator.originalProcess.SafeHandle)
  $sqPrepareFrame=Join-Path $sqOut 'original-prepare-424.bin';Read-SQFrame $sqCreator 424 $sqPrepareFrame
  $sqPrepare=Join-Path $sqOut 'original-prepare.json';Invoke-SQNode @('prepare',$InputFile,$InputSha256,$sqCreatorObservation,$sqPrepareFrame,$sqBirth,$sqPrepare) (Join-Path $sqOut 'verify-prepare')
+ $sqSuccessorArguments=@()
+ if($sqInput.definition.ContainsKey('closedPredecessor')){
+  Assert-SQHeld
+  $sqIntentLocator=$sqInput.definition.closedPredecessor.runtime.canonicalPath+'\.initial-owned-successor.intent'
+  $sqIntent=Get-SQObservation $sqIntentLocator $false $false $true $true
+  if([string]$sqIntent.bytes-cne '584'){throw 'PRODUCTION_ACTUAL_SUCCESSOR_INTENT_SIZE_REQUIRED'}
+  $sqIntentObservation=Join-Path $sqOut 'successor-intent-actual.json';Save-SQNew $sqIntentObservation $sqIntent
+  Assert-SQHeld
+  $sqSuccessorArguments=@($sqCreatorObservation,$sqIntentObservation)
+ }
  foreach($sqHeaderPin in $sqSetupHeaderPins){$sqHeaderPin.AssertFresh();[void]$sqOwner.pins.Remove($sqHeaderPin);$sqHeaderPin.Dispose()}
  $sqOwner.stage='original_anchor_retained_final_build';$sqGenerated=Join-Path $sqOut 'generated-input-commitment.json'
- Invoke-SQNode @('generate-final',$InputFile,$InputSha256,$sqPrepare,$sqGenerated) (Join-Path $sqOut 'generate-final')
+ Assert-SQHeld
+ Invoke-SQNode (@('generate-final',$InputFile,$InputSha256,$sqPrepare,$sqGenerated)+$sqSuccessorArguments) (Join-Path $sqOut 'generate-final')
+ Assert-SQHeld
  foreach($sqPath in @($sqInput.definition.buildInputs|Where-Object {$_.code-le 3}|ForEach-Object {$_.file.pin.canonicalPath})+@($sqInput.definition.buildInputManifest.pin.canonicalPath)){[void](Get-SQObservation $sqPath $false $false $true)}
  $sqArtifacts=[Collections.Generic.List[object]]::new();$sqArtifacts.Add([ordered]@{code=3;file=[ordered]@{components=@();pin=$sqCreatorFile.pin;sha256=$sqCreatorFile.sha256}})
  foreach($sqRole in $sqInput.build.plannedRoles|Where-Object {$_.code-ne 3}){$sqFinalFile=Build-SQRole $sqRole;$sqArtifacts.Add([ordered]@{code=$sqRole.code;file=[ordered]@{components=@();pin=$sqFinalFile.pin;sha256=$sqFinalFile.sha256}})}

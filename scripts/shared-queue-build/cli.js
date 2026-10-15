@@ -23,7 +23,24 @@ function requests(d) {
   function visit(value, parent = null) { if (!value || typeof value !== "object") return;
     if (value.volumeGuidHex && value.fileIdHex && value.canonicalPath) { const directory = !parent || !Object.hasOwn(parent, "sha256"); const row = { locator: value.canonicalPath, pin: value, directory, sha256: directory || generated.has(value.canonicalPath) ? null : parent.sha256, generated: generated.has(value.canonicalPath) }; const prior = rows.get(value.canonicalPath); if (prior && JSON.stringify(prior) !== JSON.stringify(row)) codec.fail("production_conflicting_expected_object"); rows.set(value.canonicalPath, row); return; }
     for (const item of Object.values(value)) visit(item, value);
-  } visit(d); return [...rows.values()];
+  } visit(d);
+  // A retained read pin would prevent the native creator taking the old fence
+  // exclusively. Only this exact historical fence is observed then released;
+  // native admission reopens and verifies its physical identity itself.
+  if (d.definition.closedPredecessor) {
+    const fence = rows.get(d.definition.closedPredecessor.lock.canonicalPath);
+    if (!fence || !fence.directory || fence.sha256 !== null) codec.fail("production_closed_fence_request_required");
+    fence.directory = false; fence.sha256 = codec.sha(Buffer.alloc(0)).toString("hex"); fence.transient = true;
+  }
+  return [...rows.values()];
+}
+function generationBinding(d, original, creator, observation, raw) {
+  if (!d.definition.closedPredecessor) {
+    if (creator || observation || raw) codec.fail("production_fresh_binding_forbidden");
+    return null;
+  }
+  if (!creator || !observation || !raw) codec.fail("production_actual_successor_binding_required");
+  return codec.closedPredecessorBinding(d.definition.closedPredecessor, observation, raw, expected(d, creator), original);
 }
 async function main(args) {
   const [operation, ...a] = args;
@@ -38,11 +55,15 @@ async function main(args) {
   if (operation === "generate-setup") { for (const [name, text] of Object.entries(profile.generate(d))) writeSame(path.join(d.build.pinsDirectory, name), Buffer.from(text)); return; }
   if (operation === "prepare") { const raw = fs.readFileSync(a[3]), parsed = codec.prepare(raw, expected(d, json(a[2]))); if (parsed.birth !== a[4]) codec.fail("production_original_process_birth_changed"); save(a[5], parsed); return; }
   if (operation === "generate-final") {
-    const original = json(a[2]); for (const [name, text] of Object.entries(profile.generate(d, original.anchor))) writeSame(path.join(d.build.pinsDirectory, name), Buffer.from(text));
+    const original = json(a[2]);
+    const creator = a[4] ? json(a[4]) : null, observation = a[5] ? json(a[5]) : null;
+    const binding = generationBinding(d, original, creator, observation, observation ? fs.readFileSync(observation.pin.canonicalPath) : null);
+    const headers = profile.generate(d, original.anchor, "0".repeat(64), binding);
+    for (const [name, text] of Object.entries(headers)) writeSame(path.join(d.build.pinsDirectory, name), Buffer.from(text));
     const rows = d.definition.buildInputs.map(row => ({ ...row, bytes: fs.readFileSync(row.file.pin.canonicalPath) })); for (const row of rows) if (row.code >= 4 && codec.sha(row.bytes).toString("hex") !== row.file.sha256) codec.fail("production_build_input_changed");
     const manifest = codec.buildManifest(d.definition, original.anchor, rows), file = path.join(d.build.pinsDirectory, "local_session_production_artifact_pins.h"), raw = fs.readFileSync(file), field = codec.normalizeHeader(raw); Buffer.from(manifest.generatedBuildInputsHash).copy(raw, field.start); writeSame(file, raw);
     const finalRows = d.definition.buildInputs.map(row => ({ ...row, bytes: fs.readFileSync(row.file.pin.canonicalPath) })), recomputed = codec.buildManifest(d.definition, original.anchor, finalRows); if (!manifest.bytes.equals(recomputed.bytes)) codec.fail("production_M_commitment_cycle");
-    writeSame(d.definition.buildInputManifest.pin.canonicalPath, manifest.bytes); save(a[3], { generatedBuildInputsHash: manifest.generatedBuildInputsHash, manifestSha256: codec.sha(manifest.bytes).toString("hex"), generatedHeaders: Object.keys(profile.generate(d, original.anchor)).map(name => ({ path: path.join(d.build.pinsDirectory, name), sha256: codec.sha(fs.readFileSync(path.join(d.build.pinsDirectory, name))).toString("hex") })) }); return;
+    writeSame(d.definition.buildInputManifest.pin.canonicalPath, manifest.bytes); save(a[3], { generatedBuildInputsHash: manifest.generatedBuildInputsHash, manifestSha256: codec.sha(manifest.bytes).toString("hex"), ...(binding ? { closedPredecessorBinding: binding } : {}), generatedHeaders: Object.keys(headers).map(name => ({ path: path.join(d.build.pinsDirectory, name), sha256: codec.sha(fs.readFileSync(path.join(d.build.pinsDirectory, name))).toString("hex") })) }); return;
   }
   if (operation === "seal-request") { const original = json(a[2]); fs.writeFileSync(a[4], codec.ack("OWNLCPS1", 3, original, fs.readFileSync(a[3])), { flag: "wx" }); return; }
   if (operation === "verify-final") {
@@ -55,4 +76,4 @@ async function main(args) {
   codec.fail("production_unknown_build_operation");
 }
 if (require.main === module) Promise.resolve().then(() => { waitForStartup(); return main(process.argv.slice(2)); }).catch(error => { const value = error.code || error.message; process.stderr.write(JSON.stringify({ ok: false, code: typeof value === "string" && /^[a-zA-Z0-9_]+$/.test(value) ? value : "production_build_exception", authority: false }) + "\n"); process.exitCode = 1; });
-module.exports = { main, requests, waitForStartup, STARTUP_ENV, STARTUP_GO };
+module.exports = { main, requests, generationBinding, waitForStartup, STARTUP_ENV, STARTUP_GO };

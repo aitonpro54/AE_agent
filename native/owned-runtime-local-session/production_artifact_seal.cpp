@@ -104,6 +104,7 @@ Held Absolute(const ObjectPin& expected,bool directory,std::vector<Witness>& par
 void HeldFresh(const std::vector<Witness>& held){for(const auto& w:held)if(!detail::SamePin(detail::ReadPin(w.handle.Get(),w.directory),w.pin))Refuse("production_original_witness_changed");}
 void Validate(const StaticDefinition& d,bool prepared){const auto& p=d.enrollment;
     if(detail::Zero(d.fixedProfileHash)||detail::Zero(d.staticCodeHash)||detail::Zero(d.transportProfileHash)||detail::Zero(p.installation)||detail::Zero(p.lineage)||detail::Zero(p.policyHash)||p.sourceSetHash!=d.staticCodeHash||p.userSid!=detail::ProcessSid(GetCurrentProcess())||d.artifacts.size()<3||d.artifacts.size()>kArtifactMax||d.dependencies.size()<10||d.dependencies.size()>kDependencyMax)Refuse("production_static_profile_refused");
+    if(detail::Hash(detail::ProductionPolicyBytes(p))!=p.policyHash)Refuse("production_static_policy_bytes_refused");
     std::uint16_t prior=0;for(const auto& item:d.artifacts){if(item.code<=prior||item.code>6)Refuse("production_artifact_roles_refused");prior=item.code;SelectorPath(p,item.components);}if(d.artifacts[0].code!=1||d.artifacts[1].code!=2||d.artifacts[2].code!=3)Refuse("production_mandatory_artifact_roles_missing");
     prior=0;bool controller=false,daemon=false;std::size_t panels=0;for(const auto& item:d.dependencies){if(item.code<=prior||detail::Zero(item.file.sha256)||detail::Zero(item.file.pin.fileId))Refuse("production_dependency_set_refused");prior=item.code;
         if(item.code==1){controller=true;if(item.file.sha256!=p.node.sha256||!detail::SamePin(item.file.pin,p.node.pin))Refuse("production_controller_node_refused");}
@@ -194,8 +195,8 @@ void Send(HANDLE output,const Bytes& bytes){DWORD count=0;if(bytes.size()>16384|
 const Definition& EmbeddedDefinition(){return local_session_production_reviewed::kDefinition;}
 struct OriginalSealWitness::Data final {
     reviewed::Profile resolved;std::vector<Witness> parents,files;std::vector<VendorWitness> vendors;Held root,anchor;ObjectPin originalAnchor;Digest recordHash{};
-    std::vector<Artifact> artifacts;Bytes record;
-    bool Fresh()const{try{HeldFresh(parents);HeldFresh(files);VendorFresh(vendors);return detail::SamePin(detail::ReadPin(anchor.Get(),false),originalAnchor)&&detail::ReadExact(anchor.Get(),kRecordMax)==record;}catch(...){return false;}}
+    std::vector<Artifact> artifacts;Bytes record;std::unique_ptr<post_c1::BindingWitness> predecessor;
+    bool Fresh()const{try{HeldFresh(parents);HeldFresh(files);VendorFresh(vendors);return (!predecessor||predecessor->Fresh())&&detail::SamePin(detail::ReadPin(anchor.Get(),false),originalAnchor)&&detail::ReadExact(anchor.Get(),kRecordMax)==record;}catch(...){return false;}}
 };
 OriginalSealWitness::OriginalSealWitness(std::unique_ptr<Data> data):data_(std::move(data)){}
 OriginalSealWitness::~OriginalSealWitness()=default;
@@ -204,7 +205,7 @@ const reviewed::Profile& OriginalSealWitness::ResolvedEnrollment()const noexcept
 const Digest& OriginalSealWitness::RecordHash()const noexcept{return data_->recordHash;}
 const reviewed::File& OriginalSealWitness::ArtifactFile(ArtifactRole role)const{for(const auto& artifact:data_->artifacts)if(artifact.role==static_cast<std::uint16_t>(role))return artifact.file;Refuse("production_exact_artifact_role_missing");}
 std::shared_ptr<OriginalSealWitness> OriginalSealWitness::OpenFixed(Result& result){try{
-    const auto& definition=EmbeddedDefinition();Validate(definition,false);auto data=std::make_unique<Data>();data->resolved=definition.enrollment;data->root=Root(data->resolved,data->parents);
+    const auto& definition=EmbeddedDefinition();Validate(definition,false);if(definition.closedPredecessor.has_value()!=definition.closedPredecessorBinding.has_value())Refuse("production_predecessor_binding_presence_refused");auto data=std::make_unique<Data>();data->resolved=definition.enrollment;data->root=Root(data->resolved,data->parents);
     data->anchor=Open(data->root.Get(),definition.anchorComponents,false,data->parents);data->originalAnchor=detail::ReadPin(data->anchor.Get(),false);
     constexpr auto compiledGenerated=DecodeGeneratedBuildInputsHash(local_session_production_reviewed::kExpectedGeneratedBuildInputsHashHex);
     if(detail::Zero(compiledGenerated)||definition.generatedBuildInputsHash!=compiledGenerated||!detail::SamePin(data->originalAnchor,definition.anchor))Refuse("production_original_anchor_or_compiled_build_refused");
@@ -213,7 +214,8 @@ std::shared_ptr<OriginalSealWitness> OriginalSealWitness::OpenFixed(Result& resu
     data->files.push_back({std::move(manifest),definition.buildInputManifest.pin,false});const auto dependencies=RawDependencies(definition,build);
     data->record=detail::ReadExact(data->anchor.Get(),kRecordMax);Reader r{data->record};
     const std::array<unsigned char,8> magic={'O','W','N','L','C','P','A','1'};
-    if(r.Fixed<8>()!=magic||r.Number(2)!=1||r.Number(2)!=1||r.Number(4)!=data->record.size())Refuse("production_artifact_record_header_refused");
+    const std::uint16_t version=definition.closedPredecessor?2:1;
+    if(r.Fixed<8>()!=magic||r.Number(2)!=version||r.Number(2)!=1||r.Number(4)!=data->record.size())Refuse("production_artifact_record_header_refused");
     if(r.Fixed<16>()!=data->resolved.installation||r.Fixed<16>()!=data->resolved.lineage||r.Fixed<32>()!=definition.fixedProfileHash||r.Fixed<32>()!=data->resolved.policyHash||r.Number(8)!=data->resolved.policyEpoch||r.Fixed<32>()!=definition.staticCodeHash||r.Fixed<32>()!=definition.generatedBuildInputsHash)Refuse("production_artifact_static_binding_refused");
     const std::array<const ObjectPin*,4> originalRoots={&definition.anchor,&data->resolved.repository,&data->resolved.runtime,&definition.setupNamespace};
     for(const auto* pin:originalRoots)if(!detail::SamePin(r.Pin(pin->canonicalPath),*pin))Refuse("production_artifact_original_root_refused");
@@ -226,8 +228,10 @@ std::shared_ptr<OriginalSealWitness> OriginalSealWitness::OpenFixed(Result& resu
     if(r.Number(2)!=dependencies.size()||r.Number(2))Refuse("production_dependency_count_refused");
     for(const auto& expected:dependencies){if(r.Number(2)!=expected.code||r.Number(2)||!detail::SamePin(r.Pin(expected.file.pin.canonicalPath),expected.file.pin)||r.Fixed<32>()!=expected.file.sha256)Refuse("production_dependency_pin_refused");}
     for(const auto* file:{&definition.automationCredential,&definition.panelCredential})if(!detail::SamePin(r.Pin(file->pin.canonicalPath),file->pin)||r.Fixed<32>()!=file->sha256)Refuse("production_credential_binding_refused");
-    if(r.Fixed<32>()!=definition.transportProfileHash||r.at+32!=data->record.size())Refuse("production_transport_or_tail_refused");
-    const Bytes preceding(data->record.begin(),data->record.begin()+static_cast<std::ptrdiff_t>(r.at));if(r.Fixed<32>()!=Domain("lcs.production.artifact-record.v1",preceding))Refuse("production_artifact_integrity_refused");
+    if(r.Fixed<32>()!=definition.transportProfileHash)Refuse("production_transport_or_tail_refused");
+    if(definition.closedPredecessorBinding){const auto binding=post_c1::BindingBytes(*definition.closedPredecessorBinding);r.Size(binding.size());if(!std::equal(binding.begin(),binding.end(),data->record.begin()+static_cast<std::ptrdiff_t>(r.at)))Refuse("production_predecessor_actual_binding_refused");r.at+=binding.size();}
+    if(r.at+32!=data->record.size())Refuse("production_transport_or_tail_refused");
+    const Bytes preceding(data->record.begin(),data->record.begin()+static_cast<std::ptrdiff_t>(r.at));if(r.Fixed<32>()!=Domain(version==1?"lcs.production.artifact-record.v1":"lcs.production.artifact-record.v2",preceding))Refuse("production_artifact_integrity_refused");
     // Hold every dependency and credential original; external absolute entries
     // are opened through their exact canonical no-reparse ancestors below.
     for(const auto& expected:dependencies){auto actual=Absolute(expected.file.pin,false,data->parents);if(detail::Hash(detail::ReadExact(actual.Get(),134217728))!=expected.file.sha256)Refuse("production_dependency_original_bytes_refused");data->files.push_back({std::move(actual),expected.file.pin,false});}
@@ -237,6 +241,8 @@ std::shared_ptr<OriginalSealWitness> OriginalSealWitness::OpenFixed(Result& resu
     if(detail::Hash(detail::ReadExact(installation.Get(),16384))!=installationHash||detail::Hash(detail::ReadExact(policy.Get(),16384))!=policyHash||policyHash!=data->resolved.policyHash)Refuse("production_original_enrollment_bytes_refused");
     data->files.push_back({std::move(installation),data->resolved.installationFile,false});data->files.push_back({std::move(policy),data->resolved.policyFile,false});
     auto setup=Absolute(definition.setupNamespace,true,data->parents);(void)RetainParent(std::move(setup),definition.setupNamespace,data->parents);
+    if(definition.closedPredecessor){const reviewed::File* creator=nullptr;for(const auto& artifact:data->artifacts)if(artifact.role==3)creator=&artifact.file;if(!creator)Refuse("production_successor_creator_artifact_required");
+        data->predecessor=post_c1::BindingWitness::Open(*definition.closedPredecessor,*definition.closedPredecessorBinding,data->resolved,definition.setupNamespace,definition.fixedProfileHash,definition.staticCodeHash,*creator);}
     data->recordHash=detail::Hash(data->record);if(!data->Fresh())Refuse("production_seal_late_guard_refused");result={true,false,false,"production_original_seal_open",0};return std::shared_ptr<OriginalSealWitness>(new OriginalSealWitness(std::move(data)));
 }catch(const detail::Failure& failure){result={false,failure.unknown,failure.unavailable,failure.code,failure.error};return nullptr;}}
 #endif
@@ -256,8 +262,10 @@ public:
         if(SelectorPath(p,d.anchorComponents).substr(0,SelectorPath(p,d.anchorComponents).find_last_of(L'\\'))!=d.setupNamespace.canonicalPath)Refuse("production_anchor_namespace_refused");
         for(const auto& expected:d.dependencies){auto file=Absolute(expected.file.pin,false,parents);if(detail::Hash(detail::ReadExact(file.Get(),134217728))!=expected.file.sha256)Refuse("production_setup_source_changed");files.push_back({std::move(file),expected.file.pin,false});}
         for(const auto* credential:{&d.automationCredential,&d.panelCredential}){auto file=Absolute(credential->pin,false,parents);if(detail::Hash(detail::ReadExact(file.Get(),4096))!=credential->sha256)Refuse("production_setup_credential_changed");files.push_back({std::move(file),credential->pin,false});}
+        std::unique_ptr<post_c1::CreatorGrant> predecessor;
+        if(d.closedPredecessor)predecessor=post_c1::CreatorGrant::Consume(*d.closedPredecessor,p,d.setupNamespace,d.fixedProfileHash,d.staticCodeHash,image.Get(),birth,nonce,created);
         auto anchor=Open(root.Get(),d.anchorComponents,false,parents,true);created=true;std::uint64_t length=0;const auto anchorPin=detail::ReadPin(anchor.Get(),false,&length);if(length)Refuse("production_created_anchor_not_empty",0,true);
-        const auto fresh=[&](){if(GetStdHandle(STD_INPUT_HANDLE)!=input||GetStdHandle(STD_OUTPUT_HANDLE)!=output||detail::ProcessBirth(GetCurrentProcess())!=birth||detail::ProcessSid(GetCurrentProcess())!=p.userSid||detail::ProcessImage(GetCurrentProcess())!=imagePath||!detail::SamePin(detail::ReadPin(image.Get(),false),imagePin)||detail::Hash(detail::ReadExact(image.Get(),134217728))!=imageSha||!detail::SamePin(detail::ReadPin(anchor.Get(),false),anchorPin))Refuse("production_setup_original_changed",0,true);HeldFresh(parents);HeldFresh(files);VendorFresh(vendors);};
+        const auto fresh=[&](){if(GetStdHandle(STD_INPUT_HANDLE)!=input||GetStdHandle(STD_OUTPUT_HANDLE)!=output||detail::ProcessBirth(GetCurrentProcess())!=birth||detail::ProcessSid(GetCurrentProcess())!=p.userSid||detail::ProcessImage(GetCurrentProcess())!=imagePath||!detail::SamePin(detail::ReadPin(image.Get(),false),imagePin)||detail::Hash(detail::ReadExact(image.Get(),134217728))!=imageSha||!detail::SamePin(detail::ReadPin(anchor.Get(),false),anchorPin))Refuse("production_setup_original_changed",0,true);HeldFresh(parents);HeldFresh(files);VendorFresh(vendors);if(predecessor)predecessor->AssertFresh();};
         Bytes prepare;Header(prepare,"OWNLCP01",1,0,424);Put(prepare,nonce);detail::PutU64(prepare,birth);Put(prepare,p.installation);Put(prepare,p.lineage);Put(prepare,d.staticCodeHash);Put(prepare,p.policyHash);detail::PutPin(prepare,anchorPin);detail::PutPin(prepare,d.setupNamespace);detail::PutPin(prepare,imagePin);Put(prepare,imageSha);Put(prepare,d.fixedProfileHash);detail::PutPin(prepare,p.node.pin);Put(prepare,p.node.sha256);Put(prepare,SidHash(p.userSid));if(prepare.size()!=424)Refuse("production_prepare_internal_size",0,true);
         fresh();Send(output,prepare);const auto preparedAt=GetTickCount64();if(preparedAt>std::numeric_limits<std::uint64_t>::max()-3600000)Refuse("production_prepare_deadline_overflow",0,true);
         const auto sealRequest=ReadOwnedStage(input,preparedAt+3600000);fresh();CheckStage(sealRequest,"OWNLCPS1",3,nonce,birth,detail::Hash(prepare));
@@ -276,12 +284,14 @@ public:
         auto installation=detail::Relative(runtime.Get(),L".initial-owned-local.installation",false,true,true),policy=detail::Relative(runtime.Get(),L".initial-owned-local.policy",false,true,true);
         const auto lockPin=detail::ReadPin(lock.Get(),false),journalPin=detail::ReadPin(journal.Get(),true),installationPin=detail::ReadPin(installation.Get(),false),policyPin=detail::ReadPin(policy.Get(),false);
         const auto installationBytes=detail::ProductionInstallationBytes(p,lockPin,journalPin),policyBytes=detail::ProductionPolicyBytes(p);if(detail::Hash(policyBytes)!=p.policyHash)Refuse("production_static_policy_bytes_refused",0,true);WriteNew(installation,installationBytes);WriteNew(policy,policyBytes);
-        Bytes record;Header(record,"OWNLCPA1",1,1,0);Put(record,p.installation);Put(record,p.lineage);Put(record,d.fixedProfileHash);Put(record,p.policyHash);detail::PutU64(record,p.policyEpoch);Put(record,d.staticCodeHash);Put(record,generatedHash);
+        const std::uint16_t sealVersion=predecessor?2:1;
+        Bytes record;Header(record,"OWNLCPA1",sealVersion,1,0);Put(record,p.installation);Put(record,p.lineage);Put(record,d.fixedProfileHash);Put(record,p.policyHash);detail::PutU64(record,p.policyEpoch);Put(record,d.staticCodeHash);Put(record,generatedHash);
         for(const auto* pin:{&anchorPin,&p.repository,&p.runtime,&d.setupNamespace})detail::PutPin(record,*pin);Put(record,SidHash(p.userSid));
         for(const auto* pin:{&installationPin,&policyPin,&lockPin,&journalPin})detail::PutPin(record,*pin);Put(record,detail::Hash(installationBytes));Put(record,detail::Hash(policyBytes));Put(record,artifactSection);
         detail::PutU16(record,static_cast<std::uint16_t>(dependencies.size()));detail::PutU16(record,0);for(const auto& dependency:dependencies){detail::PutU16(record,dependency.code);detail::PutU16(record,0);detail::PutPin(record,dependency.file.pin);Put(record,dependency.file.sha256);}
         for(const auto* credential:{&d.automationCredential,&d.panelCredential}){detail::PutPin(record,credential->pin);Put(record,credential->sha256);}Put(record,d.transportProfileHash);
-        if(record.size()+32>kRecordMax)Refuse("production_artifact_record_limit",0,true);const auto total=static_cast<std::uint32_t>(record.size()+32);for(unsigned i=0;i<4;++i)record[12+i]=static_cast<unsigned char>(total>>(8*i));Put(record,Domain("lcs.production.artifact-record.v1",record));fresh();WriteNew(anchor,record);
+        if(predecessor)Put(record,post_c1::BindingBytes(predecessor->ActualBinding()));
+        if(record.size()+32>kRecordMax)Refuse("production_artifact_record_limit",0,true);const auto total=static_cast<std::uint32_t>(record.size()+32);for(unsigned i=0;i<4;++i)record[12+i]=static_cast<unsigned char>(total>>(8*i));Put(record,Domain(sealVersion==1?"lcs.production.artifact-record.v1":"lcs.production.artifact-record.v2",record));fresh();WriteNew(anchor,record);
         const auto finalFresh=[&](){fresh();detail::AssertRuntimeInventory(runtime.Get());detail::AssertEmptyDirectory(journal.Get());std::uint64_t lockLength=0;
             if(!detail::SamePin(detail::ReadPin(lock.Get(),false,&lockLength),lockPin)||lockLength||!detail::SamePin(detail::ReadPin(journal.Get(),true),journalPin)||!detail::SamePin(detail::ReadPin(installation.Get(),false),installationPin)||!detail::SamePin(detail::ReadPin(policy.Get(),false),policyPin)||detail::ReadExact(installation.Get(),16384)!=installationBytes||detail::ReadExact(policy.Get(),16384)!=policyBytes||detail::ReadExact(anchor.Get(),kRecordMax)!=record)Refuse("production_sealed_original_records_changed",0,true);};
         Bytes final;Header(final,"OWNLCP02",2,1,752);Put(final,nonce);detail::PutU64(final,birth);Put(final,p.installation);Put(final,p.lineage);Put(final,p.policyHash);
@@ -290,7 +300,8 @@ public:
         finalFresh();Send(output,final);const auto sentAt=GetTickCount64();if(sentAt>std::numeric_limits<std::uint64_t>::max()-30000)Refuse("production_final_deadline_overflow",0,true);
         const auto ack=ReadOwnedStage(input,sentAt+30000);CheckStage(ack,"OWNLCA01",2,nonce,birth,detail::Hash(final));finalFresh();DWORD extra=0;if(!PeekNamedPipe(input,nullptr,0,nullptr,&extra,nullptr)||extra)Refuse("production_final_stdio_changed",GetLastError(),true);
         return {true,false,false,"production_original_artifact_seal_acknowledged",0};
-    }catch(const detail::Failure& failure){return {false,created||failure.unknown,failure.unavailable,failure.code,failure.error};}}
+    }catch(const detail::Failure& failure){return {false,created||failure.unknown,failure.unavailable,failure.code,failure.error};}
+    catch(...){return {false,created,false,"production_setup_exception_closed",0};}}
 };
 Result PrepareAndSealFixedOverOriginalStdio(){return SetupCreator::Run();}
 #endif

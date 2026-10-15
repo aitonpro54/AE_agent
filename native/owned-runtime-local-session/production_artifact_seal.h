@@ -1,5 +1,7 @@
 #pragma once
 #include "enrollment_win32.h"
+#include "post_c1_successor_provision.h"
+#include <optional>
 
 namespace local_session::production {
 enum class ArtifactRole : std::uint16_t { Addon=1,Broker=2,Provisioner=3,McpHost=4,NativeProbe=5,Reconnect=6 };
@@ -22,8 +24,9 @@ struct StaticDefinition {
     // are explicitly enumerated, never inferred from a numeric range.
     std::vector<BuildInput> buildInputs;
     reviewed::File automationCredential,panelCredential,buildInputManifest;
+    std::optional<post_c1::Specification> closedPredecessor;
 };
-struct Definition final : StaticDefinition {ObjectPin anchor;Digest generatedBuildInputsHash{};};
+struct Definition final : StaticDefinition {ObjectPin anchor;Digest generatedBuildInputsHash{};std::optional<post_c1::Binding> closedPredecessorBinding;};
 // Compiled only into the already accepted pre-prepare creator from selector3.
 // It has no late anchor/D field and cannot provide runtime OpenFixed authority.
 struct SetupDefinition final : StaticDefinition {};
