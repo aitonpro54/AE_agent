@@ -33,6 +33,11 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Decision Log
 
+- 15.10: по прямому поручению пользователя управление передано в чат
+  `01a14081-3bdf-7ed0-8ae8-e583c49f06ef`; прежний writer и AE/CEP/AME controller
+  остановлены. Цель — минимальный запуск через действующую автономную сессию.
+  Один обязательный server dry-run на актуальный план; неизменённые проверки
+  повторно не запускать. Новая experimental приёмка и общий UI workflow не нужны.
 - Продолжаем обычный product путь. Historical finite/native admission, old whole-M
   acceptance и legacy media proof не являются условиями product экспорта.
 - Generic SaveAs/Open, raw и destructive gates сохраняются. Новая операция
@@ -92,13 +97,21 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Следующий шаг
 
-1. Сверить retained callback исходного readonly sources timeout (16:41:53Z всё
-   ещё unknown); не стирать sender slot и не повторять send. Bridge connected/idle.
-2. Применить reviewed source, выполнить один exact snapshot proposal/dry-run.
+1. Завершить исправление сравнения native primitives в snapshot executor:
+   свежий read-only dry-run показал одинаковые строки, затем одинаковые boolean,
+   отвергнутые native strict equality. Исходник clean, сохранений пока нет.
+2. Применить исправление и выполнить обязательный dry-run актуального плана;
+   при успехе сразу перейти к выполнению в автономной сессии.
 3. Создать два snapshots и сверить source restoration; при UNKNOWN остановить
    отправки и сверить только исходную операцию.
 4. Enqueue первый own item → immediate wrapper read; затем второй и его read.
 5. START общей очереди один раз; записать фактический outcome, без video proof.
+
+Исторический sources timeout сохранён без повторной отправки, но не является
+условием этого product пути: enqueue использует GUID фактически сохранённых
+snapshots. Потерянный diagnostic result `12c38350` относится к `dryRun:true`,
+`executedCount:0`, `steps:[]`, mutation `not_started`; исходная запись проверена
+через evidence store. Восстановление доставки этого чтения не блокирует новый план.
 
 ## Отложенные и исторические scope
 

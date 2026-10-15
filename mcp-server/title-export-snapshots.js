@@ -39,19 +39,29 @@ function readScript(a){return `var nativeSnapshot=${variants.nativeSnapshot.toSt
 // Uses the same native String(number) representation as the bridge serializer.
 function nativeSnapshotDifference(actual,expected){
   var mismatch=null;
+  function sameText(a,b){var i;if(a.length!==b.length)return false;for(i=0;i<a.length;i++)if(a.charCodeAt(i)!==b.charCodeAt(i))return false;return true;}
   function equal(a,b,p){
-    var k,n=0,m=0,as,bs;
-    if(a===b||typeof a==="number"&&typeof b==="number"&&String(a)===String(b))return true;
-    // ExtendScript can reject === for native and literal strings with identical
-    // UTF-16 units. Preserve exact identity, including path separators and case.
-    if(typeof a==="string"&&typeof b==="string"&&a.length===b.length){
-      for(k=0;k<a.length;k++)if(a.charCodeAt(k)!==b.charCodeAt(k))break;
-      if(k===a.length)return true;
+    var k,n=0,m=0,as,bs,at=typeof a,bt=typeof b,ak,bk;
+    // Native primitives can reject === after a JSON round trip. Compare each
+    // supported type by value without coercing types or normalizing text.
+    if(sameText(at,bt)){
+      switch(at){
+        case "string":if(sameText(a,b))return true;break;
+        case "boolean":if(a){if(b)return true;}else if(!b)return true;break;
+        case "number":if(isFinite(a)&&isFinite(b)&&sameText(String(a),String(b)))return true;break;
+        case "object":
+          if(!a){if(!b)return true;break;}
+          if(!b)break;
+          ak=Object.prototype.toString.call(a);bk=Object.prototype.toString.call(b);
+          if(!sameText(ak,bk))break;
+          if(sameText(ak,"[object Array]")){if(a.length!==b.length)break;}
+          else if(!sameText(ak,"[object Object]"))break;
+          for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)){mismatch={path:p+"."+k,actual:"present",expected:"missing"};return false;}if(!equal(a[k],b[k],p+"."+k))return false;}
+          for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;
+          if(n!==m){mismatch={path:p,actual:"keys:"+n,expected:"keys:"+m};return false;}return true;
+      }
     }
-    if(a===null||b===null||typeof a!=="object"||typeof b!=="object"){as=String(a);bs=String(b);mismatch={path:p,actual:as.substring(0,120),expected:bs.substring(0,120),actualType:typeof a,expectedType:typeof b,actualLength:as.length,expectedLength:bs.length};for(k=0;k<Math.max(as.length,bs.length);k++)if(as.charCodeAt(k)!==bs.charCodeAt(k)){mismatch.firstDifference=k;mismatch.actualCode=k<as.length?as.charCodeAt(k):null;mismatch.expectedCode=k<bs.length?bs.charCodeAt(k):null;break;}return false;}
-    for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){n++;if(!Object.prototype.hasOwnProperty.call(b,k)){mismatch={path:p+"."+k,actual:"present",expected:"missing"};return false;}if(!equal(a[k],b[k],p+"."+k))return false;}
-    for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))m++;
-    if(n!==m){mismatch={path:p,actual:"keys:"+n,expected:"keys:"+m};return false;}return true;
+    as=String(a);bs=String(b);mismatch={path:p,actual:as.substring(0,120),expected:bs.substring(0,120),actualType:at,expectedType:bt,actualLength:as.length,expectedLength:bs.length};for(k=0;k<Math.max(as.length,bs.length);k++)if(as.charCodeAt(k)!==bs.charCodeAt(k)){mismatch.firstDifference=k;mismatch.actualCode=k<as.length?as.charCodeAt(k):null;mismatch.expectedCode=k<bs.length?bs.charCodeAt(k):null;break;}return false;
   }
   equal(actual,expected,"snapshot");return mismatch;
 }
@@ -67,34 +77,34 @@ function nativeExport(a,baseline,sourcePin,reservations,deadline){
   function clock(){if(new Date().getTime()>=deadline)bad("title_export_deadline");}
   // ExtendScript File.modified exposes whole seconds on Windows. The server
   // retains exact millisecond/inode/SHA checks before and after native execution.
-  function filePin(pin,empty){var f=new File(pin.path);if(!f.exists||f.alias||f.length!==pin.bytes||!f.modified||Math.floor(f.modified.getTime()/1000)!==Math.floor(pin.mtimeMs/1000)||empty&&f.length!==0)bad("title_export_native_file_changed");return f;}
+  function filePin(pin,empty){var f=new File(pin.path);if(!f.exists||f.alias||!equal(f.length,pin.bytes)||!f.modified||!equal(Math.floor(f.modified.getTime()/1000),Math.floor(pin.mtimeMs/1000))||empty&&!equal(f.length,0))bad("title_export_native_file_changed");return f;}
   function args(file){return {expectedProjectFile:file,rootCompItemId:a.compItemId,variantCompItemId:a.compItemId,controlledLayerIds:[a.variants[0].layerId,a.variants[1].layerId]};}
   function state(file,slot){
     var s=nativeSnapshot(args(file)),k,n,row,wanted,actual=[];
-    if(app.project.dirty!==false)bad("title_export_project_dirty");
-    for(k=0;k<s.controlled.length;k++){row=s.controlled[k];wanted=slot===null?baseline.controlled[k].enabled:row.id===a.variants[slot].layerId;if(row.enabled!==wanted)bad("title_export_variant_flags");actual.push({id:row.id,name:row.name,enabled:row.enabled});row.enabled=baseline.controlled[k].enabled;}
-    for(k=0;k<s.graph.length;k++)if(s.graph[k].id===a.compItemId)for(n=0;n<s.graph[k].layers.length;n++){row=s.graph[k].layers[n];for(j=0;j<baseline.controlled.length;j++)if(row.id===baseline.controlled[j].id)row.enabled=baseline.controlled[j].enabled;}
+    if(!equal(app.project.dirty,false))bad("title_export_project_dirty");
+    for(k=0;k<s.controlled.length;k++){row=s.controlled[k];wanted=slot===null?baseline.controlled[k].enabled:equal(row.id,a.variants[slot].layerId);if(!equal(row.enabled,wanted))bad("title_export_variant_flags");actual.push({id:row.id,name:row.name,enabled:row.enabled});row.enabled=baseline.controlled[k].enabled;}
+    for(k=0;k<s.graph.length;k++)if(equal(s.graph[k].id,a.compItemId))for(n=0;n<s.graph[k].layers.length;n++){row=s.graph[k].layers[n];for(j=0;j<baseline.controlled.length;j++)if(equal(row.id,baseline.controlled[j].id))row.enabled=baseline.controlled[j].enabled;}
     s.projectFile=baseline.projectFile;s.revision=baseline.revision;if(!equal(s,baseline))bad("title_export_preservation_mismatch");
     return actual;
   }
   try{
     clock();filePin(sourcePin,false);for(i=0;i<reservations.length;i++)filePin(reservations[i],true);
-    if(app.project.dirty!==false || app.project.revision!==a.expectedRevision)bad("title_export_source_changed");
+    if(!equal(app.project.dirty,false) || !equal(app.project.revision,a.expectedRevision))bad("title_export_source_changed");
     initial=nativeSnapshot(args(a.expectedProjectFile));if(!equal(initial,baseline))bad("title_export_baseline_changed");
-    for(i=1;i<=app.project.numItems;i++)if(app.project.item(i).id===a.compItemId)target=app.project.item(i);
-    for(i=0;i<2;i++){for(j=1;j<=target.numLayers;j++)if(target.layer(j).id===a.variants[i].layerId)layers[i]=target.layer(j);
-      if(!layers[i] || !(layers[i] instanceof TextLayer) || layers[i].name!==a.variants[i].name || layers[i].locked || layers[i].enabled!==(i===0))bad("title_export_exact_pair_changed");}
+    for(i=1;i<=app.project.numItems;i++)if(equal(app.project.item(i).id,a.compItemId))target=app.project.item(i);
+    for(i=0;i<2;i++){for(j=1;j<=target.numLayers;j++)if(equal(target.layer(j).id,a.variants[i].layerId))layers[i]=target.layer(j);
+      if(!layers[i] || !(layers[i] instanceof TextLayer) || !equal(layers[i].name,a.variants[i].name) || layers[i].locked || !equal(layers[i].enabled,i===0))bad("title_export_exact_pair_changed");}
     for(i=0;i<2;i++){
       clock();filePin(sourcePin,false);filePin(reservations[i],true);
       phase="save_"+(i+1)+"_submitted";
       if(i===1){app.beginUndoGroup("AE Agent: второй экспортный титр");try{layers[0].enabled=false;layers[1].enabled=true;}finally{app.endUndoGroup();}}
       app.project.save(new File(reservations[i].path));
-      if(!app.project.file || norm(app.project.file.fsName)!==norm(reservations[i].path) || app.project.dirty!==false || !(new File(reservations[i].path)).exists || (new File(reservations[i].path)).length<1)bad("title_export_save_readback_failed");
+      if(!app.project.file || !equal(norm(app.project.file.fsName),norm(reservations[i].path)) || !equal(app.project.dirty,false) || !(new File(reservations[i].path)).exists || (new File(reservations[i].path)).length<1)bad("title_export_save_readback_failed");
       var flags=state(reservations[i].path,i),guid=String(target.dynamicLinkGUID||"");
       if(!/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(guid))bad("title_export_native_guid_missing");
       saved.push({path:String(app.project.file.fsName),revision:app.project.revision,dirty:false,guid:guid,flags:flags});phase="save_"+(i+1)+"_verified";
     }
-    clock();filePin(sourcePin,false);if(app.project.dirty!==false)bad("title_export_restore_dirty");
+    clock();filePin(sourcePin,false);if(!equal(app.project.dirty,false))bad("title_export_restore_dirty");
     phase="restore_submitted";app.open(new File(a.expectedProjectFile));
     finalRead=state(a.expectedProjectFile,null);filePin(sourcePin,false);phase="restored";
     return {schema:"ae-agent-title-export-snapshots.v1",ok:true,phase:phase,saved:saved,restored:{path:String(app.project.file.fsName),revision:app.project.revision,dirty:app.project.dirty,flags:finalRead}};
