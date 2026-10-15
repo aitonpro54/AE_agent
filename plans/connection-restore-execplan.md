@@ -38,10 +38,15 @@
   старше d314a2f, Node24.19 подходит. Успех отдельного child не является подключением
   обслуживающего чат MCP. Если штатный restart недоступен агенту, запросить один
   технический шаг пользователя после полной готовности установки.
-- [block: ACL допуска] [executor: ae_specialist и выбранная пользователем Astra —
-  ограниченный read-only анализ; root — sole permissions/build/live controller].
-  Не расширять native whitelist и не удалять права рекурсивно у рабочего дерева.
-  Проверить минимальную защиту служебного namespace с сохранением исходных DACL.
+- [block: ACL допуска] [executor: ae_specialist — native correction; выбранная
+  пользователем Astra — bounded review; root — sole permissions/build/live].
+  Shared repository проверять по original pin/owner/present valid DACL; strict
+  foreign-write policy относится к private runtime/journal/setup и их файлам.
+  Три private parent DACL должны быть protected от будущего наследования.
+  Scope machine repair — девять существующих private объектов, backup DACL и
+  неизменность original IDs/bytes; ACL репозитория и ancestors не менять.
+  Ancestor rename сохраняет physical intent/key, а canonical/pin проверки закрывают
+  доступ. Он не даёт удалить intent через защищённого непосредственного родителя.
 
 ## Validation
 
@@ -51,6 +56,9 @@
 - V14c failure сверена по исходному retained HANDLE, exit2/stdoutEOF/stderrEOF;
   все handles закрыты, pending0. Доказанный ACL blocker воспроизведён точным
   предикатом на actual DACL без повторного запуска creator.
+- ACL reference cases 5/5 PASS; native constexpr проверяет actual Modify,
+  DELETE_CHILD/DELETE, WRITE_DAC/OWNER, read-only/inherit-only и protected parent.
+  Исправленный native source ещё требует compile; machine ACL repair не выполнен.
 - Переданные WIP имели syntax PASS, но содержали незавершённую native интеграцию и
   ошибки JS genesis key/selector. Это диагностические факты, не приёмка.
 - Проверить native-compatible closed records, actual intent/binding, отсутствие

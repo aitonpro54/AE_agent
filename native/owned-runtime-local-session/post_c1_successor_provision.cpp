@@ -43,20 +43,37 @@ void ValidateSpec(const Specification& s,const reviewed::Profile& next,const Obj
     Bytes scope;Put(scope,s.installation);for(const auto* pin:{&s.repository,&s.runtime,&s.journal,&s.lock})detail::PutPin(scope,*pin);if(detail::Hash(scope)!=s.scopeHash)Refuse("post_c1_closed_scope_refused");
 }
 struct Sid final {PSID value=nullptr;explicit Sid(const std::wstring& text){if(!ConvertStringSidToSidW(text.c_str(),&value))Refuse("post_c1_sid_invalid",GetLastError());}~Sid(){if(value)LocalFree(value);}};
-void OwnAcl(void* handle,const std::wstring& sid){
+constexpr bool AclControlPermitted(SECURITY_DESCRIPTOR_CONTROL control,bool privateDirectory){return (control&SE_DACL_PRESENT)&&(!privateDirectory||(control&SE_DACL_PROTECTED));}
+static_assert(AclControlPermitted(SE_DACL_PRESENT,false),"shared repository and inherited intent need a present DACL");
+static_assert(!AclControlPermitted(0,false),"missing DACL refuses even shared repository");
+static_assert(!AclControlPermitted(SE_DACL_PRESENT,true),"private parent cannot inherit an ancestor's future grants");
+static_assert(AclControlPermitted(SE_DACL_PRESENT|SE_DACL_PROTECTED,true),"protected private parent supported");
+constexpr ACCESS_MASK kForeignWrites=GENERIC_ALL|GENERIC_WRITE|WRITE_DAC|WRITE_OWNER|DELETE|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES|FILE_DELETE_CHILD;
+constexpr bool ForeignWriteRefused(ACCESS_MASK mask,BYTE flags,bool trusted){return !(flags&INHERIT_ONLY_ACE)&&(mask&kForeignWrites)&&!trusted;}
+static_assert(ForeignWriteRefused(0x1301ff,0,false),"observed foreign Modify ACE refuses private history");
+static_assert(ForeignWriteRefused(FILE_DELETE_CHILD,0,false)&&ForeignWriteRefused(DELETE,0,false),"both parent and file deletion rights refuse");
+static_assert(ForeignWriteRefused(WRITE_DAC|WRITE_OWNER,0,false),"foreign ACL rewriting refuses");
+static_assert(!ForeignWriteRefused(FILE_GENERIC_READ,0,false),"read-only foreign access is not write authority");
+static_assert(!ForeignWriteRefused(FILE_ALL_ACCESS,INHERIT_ONLY_ACE,false)&&!ForeignWriteRefused(FILE_ALL_ACCESS,0,true),"inherit-only and trusted ACE behavior preserved");
+void CheckAcl(void* handle,const std::wstring& sid,bool privateDirectory,bool strictWrites){
     Sid own(sid);PSID owner=nullptr;PACL acl=nullptr;PSECURITY_DESCRIPTOR descriptor=nullptr;
     const DWORD status=GetSecurityInfo(handle,SE_FILE_OBJECT,OWNER_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION,&owner,nullptr,&acl,nullptr,&descriptor);
     if(status!=ERROR_SUCCESS)Refuse("post_c1_acl_query_refused",status);struct Release{PSECURITY_DESCRIPTOR p;~Release(){if(p)LocalFree(p);}}release{descriptor};
     if(!owner||!EqualSid(owner,own.value)||!acl||!IsValidAcl(acl))Refuse("post_c1_owner_or_null_dacl_refused");
+    SECURITY_DESCRIPTOR_CONTROL control=0;DWORD revision=0;if(!GetSecurityDescriptorControl(descriptor,&control,&revision))Refuse("post_c1_acl_control_query_refused",GetLastError());
+    if(!AclControlPermitted(control,privateDirectory))Refuse("post_c1_private_parent_dacl_unprotected");
+    // The shared checkout is an identity/source container, not the private
+    // durable-intent parent. Its original pin is independently checked in Fresh.
+    if(!strictWrites)return;
     std::array<unsigned char,SECURITY_MAX_SID_SIZE> system{},administrators{};DWORD systemBytes=static_cast<DWORD>(system.size()),adminBytes=static_cast<DWORD>(administrators.size());
     if(!CreateWellKnownSid(WinLocalSystemSid,nullptr,system.data(),&systemBytes)||!CreateWellKnownSid(WinBuiltinAdministratorsSid,nullptr,administrators.data(),&adminBytes))Refuse("post_c1_system_sid_refused",GetLastError());
-    constexpr ACCESS_MASK writes=GENERIC_ALL|GENERIC_WRITE|WRITE_DAC|WRITE_OWNER|DELETE|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES|FILE_DELETE_CHILD;
     for(DWORD i=0;i<acl->AceCount;++i){void* raw=nullptr;if(!GetAce(acl,i,&raw))Refuse("post_c1_ace_query_refused",GetLastError());const auto* header=static_cast<const ACE_HEADER*>(raw);if(header->AceFlags&INHERIT_ONLY_ACE)continue;
         if(header->AceType==ACCESS_DENIED_ACE_TYPE)continue;if(header->AceType!=ACCESS_ALLOWED_ACE_TYPE||header->AceSize<sizeof(ACCESS_ALLOWED_ACE))Refuse("post_c1_ace_type_refused");
         const auto* ace=static_cast<const ACCESS_ALLOWED_ACE*>(raw);const auto trustee=const_cast<DWORD*>(&ace->SidStart);if(!IsValidSid(trustee)||GetLengthSid(trustee)>header->AceSize- offsetof(ACCESS_ALLOWED_ACE,SidStart))Refuse("post_c1_ace_sid_refused");
-        if((ace->Mask&writes)&&!EqualSid(trustee,own.value)&&!EqualSid(trustee,system.data())&&!EqualSid(trustee,administrators.data()))Refuse("post_c1_foreign_write_acl_refused");
+        if(ForeignWriteRefused(ace->Mask,header->AceFlags,EqualSid(trustee,own.value)||EqualSid(trustee,system.data())||EqualSid(trustee,administrators.data())))Refuse("post_c1_foreign_write_acl_refused");
     }
 }
+void OwnAcl(void* handle,const std::wstring& sid,bool privateDirectory=false){CheckAcl(handle,sid,privateDirectory,true);}
 Held Relative(void* parent,const std::wstring& name,bool directory,ACCESS_MASK access,ULONG share,bool create=false,bool* durableEffect=nullptr){
     using NtCreate=NTSTATUS(NTAPI*)(PHANDLE,ACCESS_MASK,POBJECT_ATTRIBUTES,PIO_STATUS_BLOCK,PLARGE_INTEGER,ULONG,ULONG,ULONG,ULONG,PVOID,ULONG);
     using ToError=ULONG(NTAPI*)(NTSTATUS);NtCreate open=nullptr;ToError error=nullptr;auto address=GetProcAddress(GetModuleHandleW(L"ntdll.dll"),"NtCreateFile");std::memcpy(&open,&address,sizeof(open));address=GetProcAddress(GetModuleHandleW(L"ntdll.dll"),"RtlNtStatusToDosError");std::memcpy(&error,&address,sizeof(error));
@@ -135,8 +152,9 @@ struct History final {
     static std::set<std::wstring> RuntimeWithIntent(){auto names=kRuntime;names.insert(kIntentName);return names;}
     void Fresh(bool hasIntent)const{
         for(const auto& p:parents)if(!detail::SamePin(detail::ReadPin(p.handle.Get(),true),p.pin))Refuse("post_c1_original_parent_changed");
-        for(const auto& row:std::array<std::pair<void*,const ObjectPin*>,4>{{{repository.Get(),&spec.repository},{runtime.Get(),&spec.runtime},{journal.Get(),&spec.journal},{setup.Get(),&setupPin}}}){
-            if(!detail::SamePin(detail::ReadPin(row.first,true),*row.second))Refuse("post_c1_original_root_changed");OwnAcl(row.first,spec.userSid);}
+        if(!detail::SamePin(detail::ReadPin(repository.Get(),true),spec.repository))Refuse("post_c1_original_root_changed");CheckAcl(repository.Get(),spec.userSid,false,false);
+        for(const auto& row:std::array<std::pair<void*,const ObjectPin*>,3>{{{runtime.Get(),&spec.runtime},{journal.Get(),&spec.journal},{setup.Get(),&setupPin}}}){
+            if(!detail::SamePin(detail::ReadPin(row.first,true),*row.second))Refuse("post_c1_original_root_changed");OwnAcl(row.first,spec.userSid,true);}
         std::uint64_t size=0;if(!detail::SamePin(detail::ReadPin(fence.Get(),false,&size),spec.lock)||size)Refuse("post_c1_original_fence_changed");OwnAcl(fence.Get(),spec.userSid);
         if(ReadClosed(seal.Get(),spec.seal,spec.userSid)!=sealBytes||ReadClosed(installation.Get(),spec.installationFile,spec.userSid)!=installationBytes||ReadClosed(policy.Get(),spec.policyFile,spec.userSid)!=policyBytes||ReadClosed(first.Get(),spec.records[0],spec.userSid)!=firstBytes||ReadClosed(second.Get(),spec.records[1],spec.userSid)!=secondBytes)Refuse("post_c1_closed_history_changed");
         Inventory(runtime.Get(),hasIntent?RuntimeWithIntent():kRuntime,!hasIntent);Inventory(journal.Get(),kJournal);

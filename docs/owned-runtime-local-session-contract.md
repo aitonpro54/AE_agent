@@ -199,6 +199,14 @@ exclusive ORIGINAL old fence и читает exact physical roots/SID/ACL, seal/
 третья запись, неверный hash/pin/lineage/scope или namespace race закрывают branch.
 Исторический old source commitment не выдаётся за текущий OldSeal.Fresh после patch.
 
+Shared repository остаётся контейнером исходников: original physical pin,
+SID владельца и корректная ненулевая DACL проверяются без запрета всех сторонних
+writers рабочего дерева. Private old runtime/journal/setup требуют protected DACL
+и отсутствия effective foreign write/delete/ACL-control grants; файлы истории и
+intent требуют тех же строгих прав. Intent может наследовать безопасную DACL от
+protected runtime. Переименование ancestor сохраняет physical key/intent и
+закрывает canonical/pin проверку; оно не разрешает новый grant или удаление intent.
+
 До новых anchor/enrollment effects native делает CREATE_NEW фиксированного
 oldRuntime/.initial-owned-successor.intent, flush и same-object read-back.
 Ключ связывает SID, physical repository, old physical runtime, installation и
