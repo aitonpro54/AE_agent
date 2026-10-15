@@ -70,7 +70,16 @@ function nativeTitleJob(a) {
     var out = [], i, k, s;
     if (v === null || v === undefined) return "null";
     if (typeof v === "number" || typeof v === "boolean") return String(v);
-    if (typeof v === "string") { s = v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\x00-\x1f\u2028\u2029]/g, function(c) { var h = c.charCodeAt(0).toString(16); while (h.length < 4) h = "0" + h; return "\\u" + h; }); return '"' + s + '"'; }
+    if (typeof v === "string") {
+      s = '"';
+      for (i = 0; i < v.length; i++) {
+        var code = v.charCodeAt(i), ch = v.charAt(i), escape = String.fromCharCode(92);
+        if (code === 34 || code === 92) s += escape + ch;
+        else if (code < 32 || code === 8232 || code === 8233) { var h = code.toString(16); while (h.length < 4) h = "0" + h; s += escape + "u" + h; }
+        else s += ch;
+      }
+      return s + '"';
+    }
     if (Object.prototype.toString.call(v) === "[object Array]") { for (i = 0; i < v.length; i++) out.push(stringify(v[i])); return "[" + out.join(",") + "]"; }
     for (k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(stringify(k) + ":" + stringify(v[k])); return "{" + out.join(",") + "}";
   }
@@ -438,10 +447,11 @@ function createExecutor(deps) {
       }
       const reply = raw && Object.prototype.hasOwnProperty.call(raw, "result") ? raw.result : raw;
       if (!reply || reply.schema !== "ae-agent-ame-title-send.v1" || reply.requestNonce !== (a.reconcileRequestNonce || a.requestNonce)) return { resolved: false, code: "transport_correlation_unknown", native: null };
-      if (reply.callback === "error") return { resolved: true, code: "native_delivery_error", native: null };
-      if (reply.code !== "result" || typeof reply.responseBody !== "string" || Buffer.byteLength(reply.responseBody, "utf8") > 524288) return { resolved: false, code: reply.code || "transport_unknown", native: null };
-      let native; try { native = JSON.parse(reply.responseBody); } catch (_) { return { resolved: true, code: "native_response_invalid", native: null }; }
-      if (!native || native.schema !== NATIVE_SCHEMA || native.requestNonce !== (a.reconcileRequestNonce || a.requestNonce) || native.operationBinding !== a.operationBinding || native.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && native.sessionNonce !== a.expectedSessionNonce || !Number.isFinite(native.observedAt) || native.observedAt <= 0 || native.observedAt < a.minimumObservedAt || native.observedAt > now() + 60000) return { resolved: false, code: "native_correlation_unknown", native: null };
+      const terminalObservation=a.observeOwnJob===true&&["result","error"].includes(reply.callback)&&typeof reply.responseBody==="string"&&Buffer.byteLength(reply.responseBody,"utf8")<=524288?{requestNonce:a.requestNonce,callback:reply.callback,code:reply.code,responseBody:reply.responseBody,bodySha25664:crypto.createHash("sha256").update(reply.responseBody,"utf8").digest("hex")}:null;
+      if (reply.callback === "error") return { resolved: true, code: "native_delivery_error", native: null,terminalObservation };
+      if (reply.code !== "result" || typeof reply.responseBody !== "string" || Buffer.byteLength(reply.responseBody, "utf8") > 524288) return { resolved: false, code: reply.code || "transport_unknown", native: null,terminalObservation };
+      let native; try { native = JSON.parse(reply.responseBody); } catch (_) { return { resolved: true, code: "native_response_invalid", native: null,terminalObservation }; }
+      if (!native || native.schema !== NATIVE_SCHEMA || native.requestNonce !== (a.reconcileRequestNonce || a.requestNonce) || native.operationBinding !== a.operationBinding || native.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && native.sessionNonce !== a.expectedSessionNonce || !Number.isFinite(native.observedAt) || native.observedAt <= 0 || native.observedAt < a.minimumObservedAt || native.observedAt > now() + 60000) return { resolved: false, code: "native_correlation_unknown", native: null,terminalObservation };
       return { resolved: true, code: native.code, native };
     } catch (error) { const diagnostic={stage,dispatchInvoked,originalCode:error.code||null,error:String(error.message||error).slice(0,2000)};return { resolved:false,code:dispatchInvoked?"ae_delivery_unknown":"ame_title_not_sent",error:diagnostic.error,dispatchDiagnostic:diagnostic,native:null }; }
   }
@@ -671,12 +681,20 @@ function createExecutor(deps) {
     const operationBinding = pendingStart ? batch.start.operationBinding : ownObservation ? hash({ operation: "status", jobId: job.jobId }) : nonce ? job.operationBinding : hash({ operation: "status", jobId: job.jobId });
     let observationReconcile=false;
     if(ownObservation){
+      if(job.ownStatusObservationHistory&&!Array.isArray(job.ownStatusObservationHistory))fail("ame_title_own_observation_changed");
       observationReconcile=!!job.ownStatusObservation;
       if(!job.ownStatusObservation){job.ownStatusObservation={requestNonce:crypto.randomUUID(),operationBinding,enqueueRequestNonce:job.requestNonce,reservedAt:new Date(now()).toISOString()};write(recordFile(a.batchId),batch);}
       const own=job.ownStatusObservation;if(!UUID.test(own.requestNonce||"")||own.operationBinding!==operationBinding||own.enqueueRequestNonce!==job.requestNonce||!Number.isFinite(Date.parse(own.reservedAt)))fail("ame_title_own_observation_changed");
     }
     const observed = await send({ ...a, operation: "status", jobId: job.jobId, processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
+    let observationDiagnostic=null;
+    if(ownObservation&&observed.terminalObservation&&!observed.native){
+      const terminal=observed.terminalObservation;
+      job.ownStatusObservationHistory=(job.ownStatusObservationHistory||[]).concat({...job.ownStatusObservation,terminal,resultCode:observed.code,archivedAt:new Date(now()).toISOString()});
+      job.ownStatusObservation=null;observed.resolved=false;
+      observationDiagnostic={requestNonce:terminal.requestNonce,callback:terminal.callback,resultCode:observed.code,bodySha25664:terminal.bodySha25664,nextReadAllowed:true};
+    }
     if (pendingStart) { batch.start.transportResolved = observed.resolved; batch.start.state = observed.code === "batch_start_accepted" ? "accepted" : "unknown_outcome"; }
     else { updateJob(job, observed); acceptOwnRead(job, observed); } write(recordFile(a.batchId), batch);
     const native = pendingStart ? null : observed.native, nativeJob = native && native.job, verified = associated(job, native);
@@ -692,7 +710,7 @@ function createExecutor(deps) {
     if (startAcceptanceVerified) { batch.start.transportResolved = true; batch.start.state = "accepted"; }
     job.completionVerified = complete; write(recordFile(a.batchId), batch);
     return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted: !!job.acceptanceReceipt, acceptanceReceipt: job.acceptanceReceipt || null, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
-      state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce });
+      state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce,observationDiagnostic });
   }
   async function execute(name, raw, cap) {
     const a = validateInput(name, raw), mutation = name === ENQUEUE || name === START; if (mutation) { assertCap(cap, name, a); if (busy) fail("ame_title_writer_busy"); busy = true; }
