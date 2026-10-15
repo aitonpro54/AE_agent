@@ -569,12 +569,12 @@ const autonomousSession = createAutonomousSessionManager({
 const lifecycle = createLifecycleBridgeAdapter({
   proposals: currentProposalState,
   verifyDryRun: (record, count) => projectSave.verifyDryRunReceipt(record, count, AUTONOMY_CONTRACT_VERSION),
-  readNative: (body, capability) => {
+  readNative: (body, capability, timeoutMs) => {
     const facts = lifecycle.phaseFacts(capability);
     if (!facts) projectLifecycleContract.fail("lifecycle_phase_capability_required");
     return withPlanCommandRole(facts.readOnly ? "readback" : "mutation", () =>
       lifecycleCommandContext.run({capability, rawScript: body}, async () => {
-        const native = await runExtendScriptBody(body);
+        const native = await runExtendScriptBody(body, timeoutMs);
         if (!native || native.ok === false) projectLifecycleContract.fail("lifecycle_native_failed");
         return native;
       }));
@@ -589,6 +589,9 @@ const lifecycle = createLifecycleBridgeAdapter({
   },
   isIdle: ownedSessionId => inflightCommands.size === 0 && pendingCommands.length === 0 &&
     (!activeEditSession || activeEditSession.id === ownedSessionId),
+  isBootstrapReadIdle: commandId => !activeEditSession &&
+    !["confirmed", "executing"].includes(currentProposalState.current && currentProposalState.current.executionState) &&
+    pendingCommands.every(id => id === commandId) && Array.from(inflightCommands.keys()).every(id => id === commandId),
   isRecoveryIdle: (pending, saved) => {
     if (inflightCommands.size !== 0 || pendingCommands.length !== 0 || activeEditSession && ![pending.authorization.ownedEditSessionId, saved && saved.ownedSessionId].filter(Boolean).includes(activeEditSession.id)) return false;
     const current = currentProposalState.current;
@@ -5293,58 +5296,7 @@ async function retireGeneratedRecoveryForNormalPoll(req,url){
   generatedRecoveryByPanel.delete(owner.panelConnectionId);generatedRecoveryScopes.delete(id);
 }
 
-const OWNED_TRUSTED_PROJECT_BODY = `
-      var project = app.project;
-      function __codexFramesCountTypeSnapshot(targetProject) {
-        var value = null;
-        var name = null;
-        var startFrame = null;
-        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
-        try {
-          if (value === FramesCountType.FC_START_0) {
-            name = "FC_START_0";
-            startFrame = 0;
-          } else if (value === FramesCountType.FC_START_1) {
-            name = "FC_START_1";
-            startFrame = 1;
-          } else if (value !== null && value !== undefined) {
-            name = String(value);
-          }
-        } catch (__framesCountNameError) {
-          if (value !== null && value !== undefined) name = String(value);
-        }
-        return {
-          value: value === null || value === undefined ? null : String(value),
-          name: name,
-          startFrame: startFrame
-        };
-      }
-      var framesCount = __codexFramesCountTypeSnapshot(project);
-      function __codexRead(fn) { try { return fn(); } catch (_) { return undefined; } }
-      var revision = null;
-      var revisionSupported = false;
-      if (project) {
-        var rawRevision = __codexRead(function () { return project.revision; });
-        if (typeof rawRevision === "number" && isFinite(rawRevision) && Math.floor(rawRevision) === rawRevision && rawRevision >= 0 && rawRevision <= 9007199254740991) {
-          revision = rawRevision;
-          revisionSupported = true;
-        }
-      }
-      return {
-        file: project && project.file ? project.file.fsName : null,
-        bitsPerChannel: project ? project.bitsPerChannel : null,
-        numItems: project ? project.numItems : 0,
-        activeItemName: project && project.activeItem ? project.activeItem.name : null,
-        activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
-        framesCountType: framesCount.name,
-        framesCountTypeValue: framesCount.value,
-        framesCountStartFrame: framesCount.startFrame,
-        revision: revision,
-        supported: {
-          revision: revisionSupported
-        }
-      };
-    `;
+const OWNED_TRUSTED_PROJECT_BODY = projectLifecycleState.nativeProjectInfoBody();
 function ownedTrustedReadProjectScript(program){
   if(program===undefined)return wrapExtendScriptBody(OWNED_TRUSTED_PROJECT_BODY);
   // This operand is a pre-C1 source-generation input, never an HTTP tool arg,
@@ -14333,12 +14285,15 @@ const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeS
   initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
   readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption || require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+  readProductStopAuthority:()=>require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION),
   readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
   readReadiness:()=>{
     const status=getBridgeStatus();let children=false,capsule=false;
     try{const manifest=ownedRuntimeAuthority.privateFile(path.join(ownedRuntimeAuthority.base(PROJECT_ROOT),"retained-authority.json")),s=ownedRuntimeAuthority.validateManifest(manifest.value).selector,saved=require("./native-fixture-retained").lookupAudited(s,{repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR});children=!!saved;capsule=!!require("../scripts/native-fixture-retained-maintenance").read(LOG_DIR,"capture");}catch(_){/* Missing/partial authority remains blocked. */}
-    const fixtureState=ownedFixtureLifecycle.quiescence(),runnerState=ameFixtureExecutor.quiescence();
-    return {...status,protectedTransportReadiness:panelControlService.cutoverReadiness(),bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:children && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:capsule};
+    const fixtureState=ownedFixtureLifecycle.quiescence(),runnerState=ameFixtureExecutor.quiescence(),transport=panelControlService.cutoverReadiness();
+    return {...status,protectedTransportReadiness:transport,bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:children && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:capsule,
+      productStopQuiescence:{allChildrenExitProven:fixtureState.allChildrenExitProven,pendingCleanupJobs:fixtureState.pendingCleanupJobs+runnerState.pendingCleanupJobs,pendingNativeAttempts:runnerState.pendingCount,
+        outstandingAttempts:Array.isArray(runnerState.outstandingAttempts)?runnerState.outstandingAttempts.length:null,transportOutstanding:Array.isArray(transport.outstanding)?transport.outstanding.length:null}};
   },
   closeIdleWaiters:()=>{for(const waiter of waitingPanels.splice(0)){clearTimeout(waiter.timer);if(!waiter.done && !waiter.res.destroyed && !waiter.res.writableEnded){waiter.done=true;writeJson(waiter.res,200,{ok:true,command:null,draining:true});}}},
   closeServer:()=>{if(ownedRuntimeHttpServer){ownedRuntimeHttpServer.close();if(typeof ownedRuntimeHttpServer.closeIdleConnections==="function")ownedRuntimeHttpServer.closeIdleConnections();}}
@@ -16319,7 +16274,10 @@ async function callTool(name, args, executionContext) {
   }
 
   if (name === "get_project_info") {
-    const result = await runExtendScriptBody(OWNED_TRUSTED_PROJECT_BODY, executionContext && executionContext.panelBootstrapReadTimeoutMs);
+    const timeoutMs = executionContext && executionContext.panelBootstrapReadTimeoutMs;
+    const result = lifecycle.diagnostics().freshMissingStoreReadAllowed
+      ? await lifecycle.readProjectInfo(timeoutMs)
+      : await runExtendScriptBody(OWNED_TRUSTED_PROJECT_BODY, timeoutMs);
     return toolResult(result.result);
   }
 

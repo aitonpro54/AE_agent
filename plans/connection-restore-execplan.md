@@ -6,6 +6,11 @@
 
 ## Progress
 
+- Fresh product startup: устранён deadlock первого подключения при отсутствующем
+  lifecycle store. Server-computed fresh absence разрешает только connect и
+  фиксированный `get_project_info` через существующую read-only capability;
+  store не создаётся, mutation barrier сохраняется. Offline проверка завершена;
+  установка панели, новый daemon и реальное MCP чтение принадлежат root.
 - Пользователь явно одобрил разовый переход к обычному запуску с сохранением
   старого UNKNOWN. Три старых MCP adapters завершены по удержанным observed process
   objects; это не original daemon exit proof. Source f92e3b0 перенесён fast-forward,
@@ -45,6 +50,13 @@
 
 ## Decision Log
 
+- [block: fresh lifecycle read] [executor: ae_specialist] [ownership: lifecycle
+  state/adapter, bootstrap, CEP connect, bridge integration, scoped tests/docs].
+  Missing/gen0/pendingnull недостаточны: проверять отсутствие обоих файлов и
+  process history/lock. Общий фиксированный getter сохраняет прежний результат;
+  cap проверяется при enqueue и delivery, включая только свою command identity.
+  Readiness product stop получает отдельные фактические counts от существующих
+  quiescence readers; legacy retained readiness и write admission не открываются.
 - [block: ordinary product startup] [executor: ae_architect — bounded source review;
   ae_implementer — product seams; ae_specialist — native diagnostics; root — sole live]
   Отделить выбор deployment mode от authority; не использовать отказ как fallback.
@@ -83,6 +95,14 @@
 
 ## Validation
 
+- Fresh read: 62 actual-module/VM counterexamples PASS; transition89, lifecycle
+  state/adapter/review и прежний fixed-getter regression PASS; syntax8 JS,
+  rules/diff PASS. Проверены historical missing,
+  marker loss, corrupt/null store, durable pending, lock до/после enqueue, queue,
+  edit session, active plan, script tamper/state drift и closed write admission.
+  Actual HTTP handler и intake→observation dispatcher проверены в VM при закрытом
+  write admission; это не socket/auth integration proof. Daemon/сеть/native/AE
+  не запускались. Live criterion остаётся NOTRUN у исполнителя.
 - Native correction: reuse того же удерживаемого seal с прежними Fresh/identity joins,
   verb/phase/deadline/elapsed диагностика и пассивный same-instance observer после UNKNOWN.
   Observer не трогает HANDLE при pending work и не меняет authority/IO. Отдельный

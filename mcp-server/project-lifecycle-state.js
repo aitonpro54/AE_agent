@@ -77,4 +77,58 @@ function normalizeProjectLifecycleState(runtimeResult, observedAt = new Date().t
   };
 }
 
-module.exports = { getProjectLifecycleStateTool, nativeReadScript, normalizeProjectLifecycleState };
+// Shared fixed getter for ordinary typed reads and the first read before a
+// protection store exists. It never creates/adopts a project or writes policy.
+function nativeProjectInfoBody() { return `
+      var project = app.project;
+      function __codexFramesCountTypeSnapshot(targetProject) {
+        var value = null;
+        var name = null;
+        var startFrame = null;
+        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
+        try {
+          if (value === FramesCountType.FC_START_0) {
+            name = "FC_START_0";
+            startFrame = 0;
+          } else if (value === FramesCountType.FC_START_1) {
+            name = "FC_START_1";
+            startFrame = 1;
+          } else if (value !== null && value !== undefined) {
+            name = String(value);
+          }
+        } catch (__framesCountNameError) {
+          if (value !== null && value !== undefined) name = String(value);
+        }
+        return {
+          value: value === null || value === undefined ? null : String(value),
+          name: name,
+          startFrame: startFrame
+        };
+      }
+      var framesCount = __codexFramesCountTypeSnapshot(project);
+      function __codexRead(fn) { try { return fn(); } catch (_) { return undefined; } }
+      var revision = null;
+      var revisionSupported = false;
+      if (project) {
+        var rawRevision = __codexRead(function () { return project.revision; });
+        if (typeof rawRevision === "number" && isFinite(rawRevision) && Math.floor(rawRevision) === rawRevision && rawRevision >= 0 && rawRevision <= 9007199254740991) {
+          revision = rawRevision;
+          revisionSupported = true;
+        }
+      }
+      return {
+        file: project && project.file ? project.file.fsName : null,
+        bitsPerChannel: project ? project.bitsPerChannel : null,
+        numItems: project ? project.numItems : 0,
+        activeItemName: project && project.activeItem ? project.activeItem.name : null,
+        activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
+        framesCountType: framesCount.name,
+        framesCountTypeValue: framesCount.value,
+        framesCountStartFrame: framesCount.startFrame,
+        revision: revision,
+        supported: {
+          revision: revisionSupported
+        }
+      };
+    `; }
+module.exports = { getProjectLifecycleStateTool, nativeReadScript, normalizeProjectLifecycleState, nativeProjectInfoBody };

@@ -26,7 +26,9 @@ function assertIdle(status) {
   if (status.pendingCommands!==0 || status.inflightCommands.length) throw problem("bridge_commands_unfinished","Pending/inflight commands must be reconciled before bootstrap or another project read.", {pendingCommands:status.pendingCommands,inflightCommands:status.inflightCommands});
   if (["confirmed","executing"].includes(status.planExecutionState)) throw problem("bridge_plan_unfinished");
   const life=status.projectLifecycle;
-  if (!life || life.blocked!==false || life.pending || life.problem) throw problem("project_lifecycle_unfinished");
+  const freshRead=life && life.enabled===true && life.blocked===true && life.problem==="lifecycle_store_missing" && life.generation===0 &&
+    life.freshMissingStoreReadAllowed===true && !status.activeEditSession;
+  if (!life || life.pending || life.pendingTransition || life.activeTransition || (!freshRead && (life.blocked!==false || life.problem))) throw problem("project_lifecycle_unfinished");
   // Keep the active manual session; it is not itself a panel-reload blocker.
 }
 function selectRunningAE(rows) {

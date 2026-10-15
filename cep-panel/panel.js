@@ -4791,7 +4791,7 @@
     return {available:reasons.length === 0,reasonCodes:reasons};
   }
 
-  function panelLifecycleIdle(onDone) {
+  function panelLifecycleIdle(onDone, allowFreshProjectRead) {
     if(panelActionBusy()) {onDone({rejected:true,code:"panel_busy"});return;}
     // Freeze command acquisition during the status check; active commands remain protected.
     var paused=panelLifecycleGuard;
@@ -4805,8 +4805,11 @@
       }
       var lifecycle=status.projectLifecycle;
       var pending=status.pendingCommands, inflight=status.inflightCommands;
+      var freshRead=allowFreshProjectRead === true && lifecycle.enabled === true && lifecycle.blocked === true &&
+        lifecycle.problem === "lifecycle_store_missing" && lifecycle.generation === 0 && lifecycle.freshMissingStoreReadAllowed === true;
       var idle=typeof pending === "number" && pending === 0 && Array.isArray(inflight) && inflight.length === 0 &&
-        !status.activeEditSession && !lifecycle.blocked && !lifecycle.problem && !lifecycle.pendingTransition && !lifecycle.pending && !lifecycle.activeTransition;
+        !status.activeEditSession && !/^(confirmed|executing)$/.test(status.planExecutionState || "") &&
+        (freshRead || !lifecycle.blocked && !lifecycle.problem) && !lifecycle.pendingTransition && !lifecycle.pending && !lifecycle.activeTransition;
       if(!idle) {panelLifecycleGuard=paused;onDone({rejected:true,code:"bridge_busy",message:"Bridge has pending/inflight work or an active project session."});return;}
       refreshCurrentBridgePlan({fresh:true},function(syncError) {
         if(syncError || panelActionBusy() || currentBridgePlan && /^(confirmed|executing)$/.test(currentBridgePlan.state)) {
@@ -4831,7 +4834,7 @@
         if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
         if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
         if(context.submit()) connect(done,startup);else if(startup) closeInitialAutomaticStartup(startup);
-      });
+      },true);
     },
     "bridge.disconnect":function(args,done,context) {
       panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(!context.submit()) return;disconnect();done(null,{disconnected:true});});

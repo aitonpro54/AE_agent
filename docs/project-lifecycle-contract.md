@@ -15,6 +15,16 @@ AE_PROJECT_LIFECYCLE_ENABLED=1 — приватный opt-in до live fixture �
 Capability остаётся выключенной по умолчанию; текущий production runtime ещё не
 перезапущен с этим флагом, поэтому описанный flow не является live-доступным.
 При первом включении требуется уже существующий валидный protection store; пустую базу startup не создаёт.
+Первое подключение и фиксированный `get_project_info` допускаются без store только
+при серверном `freshMissingStoreReadAllowed === true`: оба пути store/marker
+отсутствуют с точным ENOENT, store/marker ранее не наблюдались этим процессом,
+нет lifecycle lock/pending. Ошибка доступа и broken link не считаются отсутствием.
+Дополнительно нужны пустая очередь, отсутствие чужих команд, edit session и
+confirmed/executing plan. `blocked` остаётся `true`; policy/store и AE не меняются.
+Это read-only capability существующего registry, привязанная к точному общему
+getter и одной команде; enqueue и delivery повторно проверяют script, fresh state
+и idle. Клиентский JSX и JSON не создают capability. Потеря исторического store
+или marker, corrupt/null store и появление нового состояния закрывают этот путь.
 Permanent initialized marker сохраняет требование валидного store при последующих рестартах/выключении capability; missing/corrupt marker/store blocks writes.
 Marker не содержит pending authority: pending и commit только в одном atomic V2 store.
 V2 pending блокирует writes даже при выключенном флаге. Read-only diagnostics доступны.
