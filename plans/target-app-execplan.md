@@ -2,19 +2,25 @@
 
 Продукт: [specs/target-app.md](../specs/target-app.md).
 Режимы запуска: [docs/deployment-modes.md](../docs/deployment-modes.md).
-Точная текущая задача: [два титра через product workflow](../docs/product-two-title-workflow.md).
+Точная текущая задача: [автоматическая передача и завершённая пара титров](../docs/product-two-title-workflow.md).
 
 ## Текущая цель пользователя
 
-Добавить два собственных задания TITR_01 / TITR_02 из titr_all.aep в смешанную
-очередь AME, проверить каждый собственный item сразу после enqueue и один раз
-запустить общую очередь. Пользователь явно разрешил общий START, исключил
-Computer Use, участие человека и проверку готового видео; 16.10 отдельно разрешил
-завершить этот запуск через GUI. Точные human thread /
-turn, тексты, comp/layer IDs, snapshot paths и исходный hash — в linked workflow.
-Чужие задания не изменять; полный обход очереди не входит в приёмку.
+По поручению 16.10 довести существующий адаптер и выполнить одну реальную
+автоматическую передачу в AME с точным preset и полным диапазоном0..15.4s,
+затем независимо проверить собственный wrapper. Без новой системы, GUI-передачи,
+нового export/save/open, повторного enqueue и START/рендера. Предыдущая задача
+двух титров и одного START завершена через явно разрешённый GUI fallback;
+её результат и старые UNKNOWN сохранены как история в linked workflow.
 
 ## Progress
+
+- 16.10: одна автоматическая передача выполнена: run `580dec47`, job `27f44aa2`,
+  exact EPR/source/GUID/output, живой wrapper и setWorkArea(3,0,15.4)=true.
+  После `eed1585` независимый STATUS `89125766` подтвердил queued/ownItemAccepted;
+  START0, outputFiles[] сохранён как список ещё не созданных файлов. Output/preset
+  binding — подтверждённые аргументы addDL, отдельного getter proof нет.
+  Source changes: `b5cbcbe` → `a413840` → `ece4680` → `019c220` → `eed1585`.
 
 - 16.10: пользователь разрешил завершение через GUI. На фактически пустой очереди
   добавлены ровно2 own items из проверенных snapshots, каждый проверен с точным
@@ -58,6 +64,13 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Decision Log
 
+- 16.10: outputFiles — generated files, поэтому queued admission использует только
+  exact addDL call ack + живой own wrapper + явный range ack + свежий stopped/queued
+  read без ошибок/завершения. Generated-output/completion/media proof не выдаётся.
+  Старый UNKNOWN не replay: его transport slot сохранён отдельно; новый job имеет
+  собственную reservation. Run `04748598` доказанно отказал до BridgeTalk constructor
+  и получил отдельный exact not_sent settlement; та же reservation доставлена один раз.
+
 - 16.10: исправление передачи путей не даёт права повторить неизвестный addDL.
   Readonly observation имеет отдельный nonce/audit; original mutation sender
   неизменен. Null wrapper и старый batch.xml не доказывают отсутствие queue item.
@@ -92,8 +105,6 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   сверяются; отсутствующие historical PID/epoch поля не выдумываются.
 - AME использует существующие private executor capabilities, shared-queue issuer
   и once reservations; выбор product/experimental сделан до отправки.
-- Разовый Astra override завершается этим source milestone; далее задачу ведёт
-  Sol 6.1/XHigh, Astra — только штатная эскалация по existing routing rules.
 - Exact sources reconciliation классифицирует исходный read-only slot; sender
   сохраняет его callback отдельно в том же объекте. Он не блокирует независимый
   queue send; unknown enqueue/start/status сохраняет fence. Retained read только один.
@@ -102,70 +113,24 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Validation
 
-- Live GUI:2 Ready rows с DXV3/exact preset/разными outputs, обе Entire Composition
-  00:00:15:12 @30 source; START1 и активный encoding подтверждены vendor screenshots.
-  Root просмотрел settings/ready/start evidence. Это приёмка текущего запуска,
-  без проверки готового видео и без объявления native UNKNOWN успешным.
-- Wire/observation:15 focused PASS через actual generated wrapper/sender/receiver;
-  ES3/syntax/rules/diff PASS. Live UTF-16 input equality и bounded capability
-  metadata подтверждены; это не acceptance задания. Evidence paths — в workflow.
-- Уже подтверждены live: connected, project info/snapshot/property reads,
-  ordinary proposal/dry-run/autonomy; title inspector; нормальный bridge restart.
-- `b690fc6`: actual product read port/lifecycle gate — 10 focused PASS;
-  SaveAs dry-run — PASS. Source discovery timeout не объявлен успехом.
-- Текущий source: AME adapter/actual runner context/own START — 25 focused PASS;
-  snapshots actual module/file reservations/fixed native program — 20 PASS
-  (AE mock), включая partial save, deadline, stale source/revision/checkpoint,
-  foreign destination, once, восстановление и known late-open completion.
-- Fixed snapshot program ES3, touched JS syntax и diff — PASS.
-- Bounded source review GO, check:rules PASS; новый source ещё не установлен.
-  Offline fixtures не доказывают реальные SaveAs, AME enqueue или START.
-- Source-read fence: focused VM PASS (legacy exact classification, late callback,
-  original reconcile после enqueue, mutation UNKNOWN deny); ES3/syntax/diff/rules PASS.
-- Live snapshot dry-run PASS. Run9da37cfd отказал в native preflight, saved0,
-  исходник clean/тот же revision/hash. Причина: Windows File.modified в секундах
-  сравнивался с Node mtime в ms. Native сравнение приведено к секундам при сохранении
-  exact server SHA/inode/mtime; executor21PASS, включая timestamp drift deny.
-  Только две exact owned0-byte reservations после сверки удалены; original record сохранён.
-- Run4f9100dc также остановился в preflight/saved0: strict Double против wire baseline.
-  Native comparator использует тот же String(number), сохраняет first mismatch.
-  Readonly comparator проверяется в dry-run до CREATE_NEW. Executor23PASS: wire1/30
-  проходит, actual1/24 drift блокируется без reservations; ES3/syntax/diff/rules PASS.
-- Official adapter health budget1200ms дал ложный unreachable при живом bridge.
-  Budget5s; delayed healthy1600ms+concurrent ensure fixture PASS, daemon starts0.
-  Стандартный отдельный stdio adapter допустим; custom adapter marker не используется.
-- Readonly comparator29f15e6a выявил projectFile mismatch до reservations; diagnostic
-  dry-run12c38350 потерял только result POST (native callback был, saves0).
-  Root cause нагрузки: observation/completion/passive tickets вызывали mutation
-  admission. Теперь admission только intake/execution; actual service35PASS,
-  включая no-admission reads на health/result и pre-drain intake continuation.
-- Native comparator30PASS, ES3/syntax/diff/rules PASS (`69b5244`). Dry-run
-  `cc153074` PASS; run `b9377a63` command `9353601e` submitted17:29:03Z,
-  timed_out_after_submit17:31:02Z; CEP callback17:31:16Z/HTTP409. Source/checkpoint
-  SHA совпадают; snapshots32001325/32002424bytes. Native contents ещё не приняты.
-  Durable event suffix17:42Z: более новых native dispatch нет. Supported panel
-  state совпадает с original lease; current AE/AME process starts предшествуют run.
-- Recovery19PASS и comparator30PASS, ES3/syntax/rules/diff PASS; live recovery PASS
-  без повторных save/open. Slot1 dry-run `b3cdf496` PASS, real run `d784c316`
-  `ae_delivery_unknown`; exact status `transport_correlation_unknown`. Journal и
-  retained results содержат только project/checkpoint reads, нового enqueue-sender
-  нет; status вернул старый readonly nonce, который не подтверждает новую mutation.
+- Текущий scope: focused diagnostics8 / own-status29 / not-sent+rehydrate25 PASS;
+  syntax/ES3/rules/diff PASS. Live current dry-run `746128d6`, actual delivery
+  `580dec47`, independent STATUS `89125766` PASS; actual addDL1, START0.
+- Receipt честно разделяет exact call ack и API getter/generated-file proof:
+  queued acceptance=true, appliedPresetVerified/generatedOutputVerified/mediaVerified=false.
+  Evidence: ignored `.codex-runtime/product-two-title-sol/auto-one-final-acceptance-*.json`
+  и `auto-one-final-independent-status.json`; точные pins/ограничения — в workflow.
+- Предыдущая GUI-пара:2 Ready rows, exact preset/output/full range, START1 и active
+  encoding подтверждены screenshots/root review; видео не проверялось.
+- Исторические bridge/export/recovery/wire checks и original UNKNOWN описаны в
+  workflow и Git. Их результаты не подменяют текущую live приёмку и не требуют повторов.
 
 ## Следующий шаг
 
-Установить scoped settlement/rehydrate patch после focused checks, восстановить
-private source proof из verified receipt и закрыть текущую reservation на основании
-integrity run proof. Затем fresh exact ENQUEUE той же reservation → immediate own
-wrapper read, второй ENQUEUE/read и один START. Original UNKNOWN сохраняется;
-старый readonly nonce не является ответом enqueue. Повторных save/open/export нет.
-Каждый новый proposal получает только свой обязательный dry-run; повторов unchanged
-проверок и общего queue census нет.
-
-Исторический sources timeout сохранён без повторной отправки, но не является
-условием этого product пути: enqueue использует GUID фактически сохранённых
-snapshots. Потерянный diagnostic result `12c38350` относится к `dryRun:true`,
-`executedCount:0`, `steps:[]`, mutation `not_started`; исходная запись проверена
-через evidence store. Восстановление доставки этого чтения не блокирует новый план.
+Текущий этап завершён: одно своё задание принято и независимо прочитано в AME.
+Дополнительный ENQUEUE, START и проверка готового видео в этот этап не входят.
+Новые операции требуют отдельного поручения и свежих штатных gates; старые UNKNOWN
+не повторять. Повторный export/save/open и historical finite admission не нужны.
 
 ## Отложенные и исторические scope
 

@@ -1,12 +1,13 @@
-# Два существующих титра через обычный product workflow
+# Передача титров в AME через product workflow
 
 ## Текущая цель
 
-Добавить два своих задания в общую очередь AME, проверить каждый добавленный
-item сразу после enqueue и запустить общую очередь. Чужие items не изменять;
-полный обход очереди, Computer Use и проверка готового видео не нужны.
+Поручение 16.10: довести существующий адаптер и проверить одну автоматическую
+передачу с точным preset и полным диапазоном. Этап завершён: один actual addDL,
+независимый queued own-wrapper STATUS, START0. Нового export/save/open и GUI
+в этой проверке не было. Предыдущая задача двух титров завершена через GUI ниже.
 
-Источник: прямое поручение пользователя в чате «Найти этап остановки работы»
+Исходное поручение пары титров: прямое поручение пользователя в чате «Найти этап остановки работы»
 `01a13e8b-b936-79e0-99f1-fe70b9e8fbdf`, turn
 `01a13eab-9964-7332-9501-a2f2c07484c3` от 15.10.2026:
 «Приступай к реализации этого минимального пути: восстановить подключение,
@@ -14,6 +15,54 @@ item сразу после enqueue и запустить общую очеред
 Без человека, Computer Use и проверки готового видео.»
 Это заменяет прежний критерий двух проверенных видео и finite/native whole-M
 приёмку как маршрут обычного product режима. Сами experimental receipts не меняются.
+
+## Одна автоматическая передача: результат 16.10
+
+Существующий snapshot1 и native GUID использованы напрямую. Новый output:
+`C:/Users/Ant/Documents/Codex/AE_agent/logs/generated-renders/titr_01_ame_auto_20261016.mov`.
+Preset `FHD_HQ_alfa_nosound.epr` с прежним exact SHA/identity; вызов
+`addDLToBatch` вернул живой wrapper. `setWorkArea(3,0,15.4)` вернул true.
+Run `580dec47-19b2-4c3d-95ee-536d36a274ce`, mutation command
+`b1f2d16d-3b35-4bcf-bd42-fe1fc0d81fa6`: sent=true, result correlated.
+Batch `16259490-2707-4191-99a8-be892133e6c9`, job
+`27f44aa2-34e8-4eab-93d9-24622b9a1f6b`, enqueue nonce
+`9585b0ea-a69c-4fba-a9f5-69387f9df580`.
+
+Независимый STATUS `89125766-d993-4896-8534-f97d1e2f706d` подтвердил тот же
+wrapper/job/nonce, exact source/GUID/presetIdentity/range/output bindings,
+queued, host stopped, progress/time0, readErrors[], native error null и
+creationFailures[]. Own acceptance=true; START0 и готовое видео не проверялось.
+
+Первый read вернул outputFiles[]: [API описывает это поле как уже созданные
+encode files](https://ame-scripting.docsforadobe.dev/reference/#encoderwrapper).
+Исправлена queued-only приёмка: raw[] остаётся, evidence называется
+`exact_addDL_call_argument_ack`, rangeProof=`setWorkArea_call_ack`.
+`appliedPresetVerified`, `independentOutputGetterVerified`,
+`generatedOutputVerified`, `mediaVerified` — false: echo аргументов не выдаётся
+за независимый getter результата. Null wrapper, отсутствующий ack, ошибки,
+malformed list, непустой чужой output и completed без generated proof отклоняются.
+
+Предdispatch run `04748598` остановился до BridgeTalk constructor из-за истёкшего
+60s допуска. Exact completed native refusal и reviewed source/journal pins дали
+отдельный not_sent settlement той же reservation; original failed record неизменён.
+Допуск180s сохраняет fresh process и actual AME session/wrapper/old-entry checks.
+Actual addDL выполнен ровно один раз. Старый `5b59…` остаётся UNKNOWN, его message
+и callback отделены от нового sender. Старый большой readonly request сохранён
+как transportUnknown; компактный запрос ответил. Связь с размером payload —
+гипотеза, доказанного универсального 32KiB лимита не заявляем.
+
+Из experimental переиспользованы существующие server-owned authority, exact
+canonical process/target/session, saved-source proof и direct GUID без census,
+UTF-16 wire, own wrapper + independent read, unknown/no-replay и явный full range.
+Finite admission, whole-M, новый dispatcher и повторный render не запускались.
+
+Source commits: `b5cbcbe`, `a413840`, `ece4680`, `019c220`, `eed1585`.
+Focused diagnostics8 / own-status29 / not-sent+rehydrate25 PASS; syntax/ES3/rules/diff PASS.
+Live evidence в ignored `.codex-runtime/product-two-title-sol/`:
+`auto-one-final-acceptance-proposal.json`, `auto-one-final-acceptance-dryrun.json`,
+`auto-one-final-acceptance-run.json`, `auto-one-exact-sender-settlement.json`,
+`auto-one-final-independent-status.json`. Final daemon19600/source `eed1585`;
+после установки выполнен только STATUS, source proofs повторно не adopt.
 
 ## Точная подготовленная пара
 
@@ -212,6 +261,6 @@ Source checkpoints: `0054e60`, `a038a5d`, `4a26285`, `55e1d1a`, `a9fff09`.
 Focused actual generated sender/receiver tests:15 PASS; ES3/syntax/rules/diff PASS.
 Live evidence — ignored `.codex-runtime/product-two-title-sol/`: `input-wire-fresh.json`,
 `exact-args-fresh.json`, `reflection-own-status.json`, `batch-meta-own-status.json`.
-Последний daemon PID10668, source `a9fff09`; source proof был rehydrated до GUI.
+На момент GUI daemon PID10668, source `a9fff09`; source proof был rehydrated до GUI.
 После открытия snapshot2 прежний source context нельзя использовать без свежих gates.
 Recovery capture/receipt — `logs/evidence/title-export-recovery/`; original records неизменны.
