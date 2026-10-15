@@ -84,6 +84,11 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 - Official adapter health budget1200ms дал ложный unreachable при живом bridge.
   Budget5s; delayed healthy1600ms+concurrent ensure fixture PASS, daemon starts0.
   Стандартный отдельный stdio adapter допустим; custom adapter marker не используется.
+- Readonly comparator29f15e6a выявил projectFile mismatch до reservations; diagnostic
+  dry-run12c38350 потерял только result POST (native callback был, saves0).
+  Root cause нагрузки: observation/completion/passive tickets вызывали mutation
+  admission. Теперь admission только intake/execution; actual service35PASS,
+  включая no-admission reads на health/result и pre-drain intake continuation.
 
 ## Следующий шаг
 

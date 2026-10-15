@@ -46,7 +46,9 @@ function createOwnedRuntimeService({initialRuntime=null,generation=null,readRegi
   function assertCommandTicket(){const t=context.getStore();if(t?.bootstrapEntitled){if(t.kind!=="bootstrap_project_read")fail("owned_service_bootstrap_project_read_required");assertBootstrapAllowed();return;}if(t && ["observation","completion","passive_wait"].includes(t.kind)){assertAllowed(t.kind,t);return;}assertExecutionTicket();}
   function run(kind,fn){
     const parent=context.getStore();if(parent?.bootstrapEntitled)fail("owned_service_bootstrap_scope_required");assertAllowed(kind,parent);if(parent)return context.run({...parent,kind},fn);
-    const ticket={id:crypto.randomUUID(),kind,executionEntitled:!draining && !closing && admissionOpen(),startedAt:now()};
+    // Observations and exact result delivery never need execution admission.
+    // Intake retains its pre-drain entitlement; execution still checks live proof.
+    const ticket={id:crypto.randomUUID(),kind,executionEntitled:["intake","execution"].includes(kind) && !draining && !closing && admissionOpen(),startedAt:now()};
     if(kind!=="control")tickets.add(ticket);
     try{const value=context.run(ticket,fn);if(value && typeof value.then==="function")return Promise.resolve(value).finally(()=>tickets.delete(ticket));tickets.delete(ticket);return value;}catch(e){tickets.delete(ticket);throw e;}
   }
