@@ -136,7 +136,38 @@ Durable event suffix 17:42Z подтверждает, что последняя 
 Прежний source-discovery timeout сохраняется; независимый queue send разрешён
 существующим разделением readonly sender и mutation fence. Census не повторять.
 
-## Текущий live результат (16.10)
+## Текущий live результат (16.10, задача завершена через GUI)
+
+После прямого разрешения пользователя «Разрешаю завершить через GUI» выполнен
+ограниченный fallback через установленный Computer Use. Начальная фактическая
+очередь AME была пуста; чужих items не было. Импорт через AME показал отложенно
+загружаемое дерево без найденной целевой comp и был отменён до добавления.
+Оба проверенных snapshots открыты в AE без сохранения; точная comp
+`TITR_ALL_VARIANTS_FHD` передана штатным Add to Adobe Media Encoder Queue.
+У второго snapshot shortcut не дал подтверждённого эффекта; спустя >60s сверены
+одна строка очереди и отсутствие модальных/ожидающих действий, после чего выполнен
+один видимый пункт меню. Финальная очередь содержала ровно два собственных items.
+
+Оба items проверены сразу после добавления и настройки: `DXV 3`,
+`FHD_HQ_alfa_nosound`, отдельные `logs/generated-renders/titr_01.mov` и
+`titr_02.mov`, `Entire Composition` с исходными 00:00:15:12 @30fps (15.4s).
+Preset сохраняет 1920×1080, alpha, no audio, 29.97fps; отображаемая выходная
+длительность00:00:15:11 соответствует этому preset, диапазон не ограничен Work Area.
+Перед START обе строки имели Ready, счётчик0of2 и Not currently encoding.
+START нажат ровно один раз; Pause/Stop активировались, затем фактически наблюдались
+`1 output encoding` и progress первой строки (elapsed00:00:33, remaining00:00:29).
+Готовое видео не проверялось. Удалений и изменений чужих items не было.
+
+При открытии каждого snapshot появился информационный Resolve Fonts:
+отсутствует `ReservoirGrunge`, применяется штатная временная подмена. Закрыт OK;
+шрифты вручную не менялись, проекты не сохранялись. Наличие этого modal подтверждено,
+его причинная связь с прежним timeout отдельно не доказана. AE оставлен на snapshot2.
+UI-блок завершён, свой node REPL сброшен; encoding не останавливался.
+
+GUI evidence в `.codex-runtime/product-two-title-sol/`: `gui-slot1-settings.png`,
+`gui-slot2-settings.png`, `gui-two-jobs-ready.png`, `gui-start-accepted.png`,
+`gui-encoding-readback.png`, `gui-completion.json`. Приёмка завершения этой задачи —
+фактический GUI read-back; старые native UNKNOWN records/ledger не объявлены success.
 
 `6483092`: recovery выполнен один раз. Capture `62e7bc3d…`, fresh source verifier
 `ac4fe6b5…`; оба snapshots native-verified, flags и GUID совпали, source clean с
@@ -174,13 +205,13 @@ restart восстанавливается из verified receipt со свеже
 Bounded reflection app/frontend/encoderHost/batchEncoder/exporter в actual AME26.0
 не обнаружил exact queue lookup/save; неизвестные методы не вызывались.
 Старый `batch.xml` не свежий и не является доказательством отсутствия item.
-Пользователю задано точечное исключение исходного запрета Computer Use для
-сверки собственного item и завершения задачи; ответ ожидается, GUI не использовался.
-Цель не выполнена, работа не закрыта.
+После исчерпания этого пути пользователь разрешил точечное исключение запрета
+Computer Use; задача завершена описанным выше GUI fallback.
 
 Source checkpoints: `0054e60`, `a038a5d`, `4a26285`, `55e1d1a`, `a9fff09`.
 Focused actual generated sender/receiver tests:15 PASS; ES3/syntax/rules/diff PASS.
 Live evidence — ignored `.codex-runtime/product-two-title-sol/`: `input-wire-fresh.json`,
 `exact-args-fresh.json`, `reflection-own-status.json`, `batch-meta-own-status.json`.
-Последний daemon PID10668, source `a9fff09`, private source proof rehydrated.
+Последний daemon PID10668, source `a9fff09`; source proof был rehydrated до GUI.
+После открытия snapshot2 прежний source context нельзя использовать без свежих gates.
 Recovery capture/receipt — `logs/evidence/title-export-recovery/`; original records неизменны.

@@ -9,12 +9,19 @@
 Добавить два собственных задания TITR_01 / TITR_02 из titr_all.aep в смешанную
 очередь AME, проверить каждый собственный item сразу после enqueue и один раз
 запустить общую очередь. Пользователь явно разрешил общий START, исключил
-Computer Use, участие человека и проверку готового видео. Точные human thread /
+Computer Use, участие человека и проверку готового видео; 16.10 отдельно разрешил
+завершить этот запуск через GUI. Точные human thread /
 turn, тексты, comp/layer IDs, snapshot paths и исходный hash — в linked workflow.
 Чужие задания не изменять; полный обход очереди не входит в приёмку.
 
 ## Progress
 
+- 16.10: пользователь разрешил завершение через GUI. На фактически пустой очереди
+  добавлены ровно2 own items из проверенных snapshots, каждый проверен с точным
+  preset/output и Entire Composition15.4s. Один START принят, фактически наблюдались
+  Pause/Stop и активный encoding первой строки. Цель выполнена через GUI fallback;
+  старый native UNKNOWN сохранён, native ledger не подменялся GUI proof. UI-блок
+  закрыт/reset; готовое видео не проверялось. Evidence — в linked workflow.
 - `3c5287d`: обычный запуск панели; manual connect, reload auto-connect и реальный
   get_project_info подтверждены. Базовый connect больше не зависит от finite admission.
 - `fbf2a4f`: product reads, proposal/dry-run и autonomy доступны через проверенное
@@ -43,8 +50,8 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   live current source/output paths совпали с серверными. Независимый readonly
   own-status подтвердил retained entry с wrapper null и прежним удвоенным path;
   original nonce `5b59…` callback timeout/body null. Приём не установлен.
-  Actual AME capability reflection не выявил queue lookup/save. Ожидается ответ
-  пользователя на точечное исключение исходного no-Computer-Use; GUI не использовался.
+  Actual AME capability reflection не выявил queue lookup/save. Затем пользователь
+  разрешил точечное GUI исключение; результат завершения приведён выше.
 - AME source discovery nonce сохранён timeout без повторной отправки. Это
   getDLItemsAtRoot, а не подтверждение приёма собственного задания. Для enqueue
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
@@ -54,7 +61,10 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 - 16.10: исправление передачи путей не даёт права повторить неизвестный addDL.
   Readonly observation имеет отдельный nonce/audit; original mutation sender
   неизменен. Null wrapper и старый batch.xml не доказывают отсутствие queue item.
-  Scope возможного GUI исключения решает пользователь; задача остаётся открытой.
+  Пользователь явно разрешил GUI завершение; независимая визуальная сверка пустой
+  очереди предшествовала GUI добавлению. Чужие items и старый UNKNOWN не изменялись.
+- В обоих snapshots наблюдался missing ReservoirGrunge; закрыт информационный OK,
+  штатная подмена не сохранялась в AEP. Причину прежнего timeout не объявляем доказанной.
 - 15.10: по прямому поручению пользователя управление передано в чат
   `01a14081-3bdf-7ed0-8ae8-e583c49f06ef`; прежний writer и AE/CEP/AME controller
   остановлены. Цель — минимальный запуск через действующую автономную сессию.
@@ -92,6 +102,10 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Validation
 
+- Live GUI:2 Ready rows с DXV3/exact preset/разными outputs, обе Entire Composition
+  00:00:15:12 @30 source; START1 и активный encoding подтверждены vendor screenshots.
+  Root просмотрел settings/ready/start evidence. Это приёмка текущего запуска,
+  без проверки готового видео и без объявления native UNKNOWN успешным.
 - Wire/observation:15 focused PASS через actual generated wrapper/sender/receiver;
   ES3/syntax/rules/diff PASS. Live UTF-16 input equality и bounded capability
   metadata подтверждены; это не acceptance задания. Evidence paths — в workflow.
