@@ -163,7 +163,9 @@ function nativeTitleJob(a) {
       function pathChars(v) { if (typeof v !== "string") return null; var count = 0; for (var p = 0; p < v.length; p++) if (v.charCodeAt(p) === 92) count++; return {length:v.length,backslashCount:count}; }
       reply.pathDiagnostic = { inputSource:pathChars(a.expectedOwnSourcePath),inputOutput:pathChars(a.expectedOwnOutputPath),inputSourcePath:a.expectedOwnSourcePath||null,inputOutputPath:a.expectedOwnOutputPath||null,retainedSource:pathChars(entry.sourcePath),retainedOutput:pathChars(entry.outputPath) };
       if (typeof app.getEncoderHost !== "function") return done("encoder_host_unsupported"); host = app.getEncoderHost();
-      reply.capabilityDiagnostic = { app:reflectNames(app),encoderHost:reflectNames(host),frontend:null };
+      reply.capabilityDiagnostic = { app:reflectNames(app),encoderHost:reflectNames(host),frontend:null,batchEncoder:null,exporter:null };
+      try { reply.capabilityDiagnostic.batchEncoder = reflectNames(typeof app.getBatchEncoder === "function" ? app.getBatchEncoder() : null); } catch (batchReflectionError) { reply.capabilityDiagnostic.batchEncoder = {methods:[],properties:[],errors:["batch_encoder_reflection_unavailable"]}; }
+      try { reply.capabilityDiagnostic.exporter = reflectNames(typeof app.getExporter === "function" ? app.getExporter() : null); } catch (exporterReflectionError) { reply.capabilityDiagnostic.exporter = {methods:[],properties:[],errors:["exporter_reflection_unavailable"]}; }
       try { reply.capabilityDiagnostic.frontend = reflectNames(typeof app.getFrontend === "function" ? app.getFrontend() : null); } catch (frontendReflectionError) { reply.capabilityDiagnostic.frontend = {methods:[],properties:[],errors:["frontend_reflection_unavailable"]}; }
       if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_unknown"); reply.batchRunning = scalar(host.isBatchRunning());
       reply.start = slot.batches[a.batchId] && slot.batches[a.batchId].start || null;
