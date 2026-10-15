@@ -136,12 +136,35 @@ function nativeTitleJob(a) {
     if (origin === "host_exact_paths") e.hostCompletion = { sourceFilePath: String(event.sourceFilePath), outputFilePath: String(event.outputFilePath), result: result, observedAt: observedAt };
     else e.wrapperCompletion = { result: result, observedAt: observedAt };
   }
+  function reflectNames(target) {
+    // Read Adobe reflection metadata only; never dereference reflected members.
+    var result = { methods: [], properties: [], truncated: false, errors: [] }, reflection;
+    try { reflection = target && target.reflect; } catch (reflectionError) { result.errors.push("reflection_unavailable"); return result; }
+    if (!reflection) { result.errors.push("reflection_unavailable"); return result; }
+    for (var kind in {methods:1,properties:1}) {
+      try {
+        var rows = reflection[kind]; if (!rows || typeof rows.length !== "number") { result.errors.push(kind+"_unavailable"); continue; }
+        if (rows.length > 64) result.truncated = true;
+        for (var n = 0; n < rows.length && n < 64; n++) {
+          var info = rows[n], item = { name: typeof info.name === "string" ? info.name.substring(0,160) : null, dataType: typeof info.dataType === "string" ? info.dataType.substring(0,96) : null };
+          if (kind === "methods") {
+            item.arguments = []; var parameters = info.arguments;
+            if (parameters && typeof parameters.length === "number") { if (parameters.length > 8) result.truncated = true; for (var p = 0; p < parameters.length && p < 8; p++) { var parameter = parameters[p]; item.arguments.push(typeof parameter === "string" ? parameter.substring(0,96) : {name:parameter && typeof parameter.name === "string" ? parameter.name.substring(0,96) : null,dataType:parameter && typeof parameter.dataType === "string" ? parameter.dataType.substring(0,96) : null}); } }
+          }
+          result[kind].push(item);
+        }
+      } catch (metadataError) { result.errors.push(kind+"_read_error"); }
+    }
+    return result;
+  }
   try {
     if (a.operation === "status") {
       entry = slot && slot.jobs[a.jobId]; if (!entry || entry.processBinding !== a.processBinding || entry.batchId !== a.batchId) return done("native_handle_unavailable");
       function pathChars(v) { if (typeof v !== "string") return null; var count = 0; for (var p = 0; p < v.length; p++) if (v.charCodeAt(p) === 92) count++; return {length:v.length,backslashCount:count}; }
       reply.pathDiagnostic = { inputSource:pathChars(a.expectedOwnSourcePath),inputOutput:pathChars(a.expectedOwnOutputPath),inputSourcePath:a.expectedOwnSourcePath||null,inputOutputPath:a.expectedOwnOutputPath||null,retainedSource:pathChars(entry.sourcePath),retainedOutput:pathChars(entry.outputPath) };
       if (typeof app.getEncoderHost !== "function") return done("encoder_host_unsupported"); host = app.getEncoderHost();
+      reply.capabilityDiagnostic = { app:reflectNames(app),encoderHost:reflectNames(host),frontend:null };
+      try { reply.capabilityDiagnostic.frontend = reflectNames(typeof app.getFrontend === "function" ? app.getFrontend() : null); } catch (frontendReflectionError) { reply.capabilityDiagnostic.frontend = {methods:[],properties:[],errors:["frontend_reflection_unavailable"]}; }
       if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_unknown"); reply.batchRunning = scalar(host.isBatchRunning());
       reply.start = slot.batches[a.batchId] && slot.batches[a.batchId].start || null;
       reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified; return done("job_observed");
