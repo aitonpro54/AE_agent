@@ -106,6 +106,7 @@ function inspectLocatorEnvironment(env) {
 
 function createInitialRuntime() {
   if (arguments.length) fail("owned_initial_private_factory_arguments_forbidden");
+  if (require("./deployment-mode").deploymentMode() === "product") return null;
   const selected = inspectLocatorEnvironment(process.env);
   const census=sourceCensus.requested();
   if (!selected.requested && !native.selectedFixed() && !census) return null;
@@ -166,7 +167,10 @@ function createInitialRuntime() {
       observer.assertCurrent();native.assertCurrent(role);await native.open(role);observer.assertCurrent();native.assertCurrent(role);profile=native.executionProfileFixed(role);opened=true;})();
     try {await bootPromise;}catch(error){unknown=true;throw error;}
   }
-  async function readStatus(args) {empty(args);if (!role||revoked||unknown) return status();return ordered(async()=>{const actual=await native.status(role);assertIngress();return Object.freeze({...status(),state:actual.state});});}
+  async function readStatus(args) {empty(args);if (!role) return status();
+    // Passive same-instance evidence remains readable after UNKNOWN and while
+    // the original request is pending. No serial enqueue or native exchange.
+    return Object.freeze({...status(),retained:native.observeRetainedFixed(role)});}
   async function ensure(args) {empty(args);return ordered(async()=>{await bootController();if (ensured) return status();
     // Native Ensure consumes one launch and owns the returned original HANDLE.
     // A failure is retained; this promise cannot create a replacement root.

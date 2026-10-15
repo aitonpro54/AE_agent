@@ -11,6 +11,21 @@ namespace local_session::trusted_read {
 // Build-embedded fixed locators and source identities. The reviewed artifact
 // sealing record is deliberately separate from source/Node pins (no self hash).
 enum class Role : std::uint8_t { Controller=1,Daemon=2 };
+// Diagnostic observations of this retained instance only. No HANDLE, locator,
+// token or cap leaves its owner; observing never changes admission or IO.
+struct RetainedRuntimeObservation final {
+    bool snapshotAvailable=false,unknown=false,revoked=false,pipeHeld=false,brokerHeld=false;
+    const char* brokerState="absent";
+    std::uint32_t brokerPid=0,brokerExitCode=0,brokerError=0;
+    std::uint64_t brokerBirth=0,observedMono=0;
+    std::uint32_t retainedIo=0,pendingIo=0,completedIo=0,unavailableIo=0;
+    struct Exchange final {
+        std::uint16_t verb=0;std::uint64_t ordinal=0,startedMono=0,elapsedMs=0,guardElapsedMs=0;
+        const char* phase="none";std::uint64_t phaseStartedMono=0,phaseElapsedMs=0,waitBudgetMs=0,deadlineMono=0;
+        std::uint32_t waitResult=0,cancelError=0,settlementWaitResult=0,settlementError=0;
+        bool waitAttempted=false,cancelAttempted=false,cancelSucceeded=false,settlementAttempted=false;
+    } exchange;
+};
 enum class SourceCategory : std::uint8_t { FileDefault=1,NodeDefault=2,NodeCompileZero=3,InternalThis=4 };
 enum class ContextSlot : std::uint8_t { None=0,Default=1,Internal=2 };
 struct Source final {
@@ -161,6 +176,7 @@ public:
     phase::Frame Open();
     phase::Frame Ensure();
     phase::Frame Status();
+    RetainedRuntimeObservation ObserveRetainedFixed();
     // Original START continuation only; none of these observations issue a cap.
     void ArmOriginalCompletionWaitFixed(const std::shared_ptr<Capability>& originalStart);
     phase::Frame WaitOriginalCompletionNoticeFixed(std::uint16_t slot);

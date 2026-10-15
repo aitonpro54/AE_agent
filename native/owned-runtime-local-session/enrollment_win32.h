@@ -70,6 +70,9 @@ private:
         const std::shared_ptr<production::OriginalSealWitness>& original,Result& result);
     static Result ProvisionFixedCreator();
     Result Fresh(bool lockHeld) const;
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+    const std::shared_ptr<production::OriginalSealWitness>& OriginalProductionSeal() const;
+#endif
     const reviewed::Profile& Profile() const;
     void* BorrowedRuntime() const;
     void* BorrowedJournal() const;

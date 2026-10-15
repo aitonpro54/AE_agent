@@ -367,6 +367,9 @@ Result InstalledEnrollment::Fresh(bool lockHeld)const{
     return result;
 }
 const reviewed::Profile& InstalledEnrollment::Profile()const{return data_->profile;}
+#if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
+const std::shared_ptr<production::OriginalSealWitness>& InstalledEnrollment::OriginalProductionSeal()const{return data_->originalSeal;}
+#endif
 void* InstalledEnrollment::BorrowedRuntime()const{return data_->runtime.back().handle.Get();}
 void* InstalledEnrollment::BorrowedJournal()const{return data_->journal.Get();}
 const std::wstring& InstalledEnrollment::CheckedBridgeEntry()const{

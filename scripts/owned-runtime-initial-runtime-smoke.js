@@ -14,14 +14,15 @@ let passed = 0;
 async function check(name, fn) { try { await fn(); passed++; } catch (error) { error.message = name + ": " + error.message; throw error; } }
 function moduleFixture(relative, env, overrides = {}, processFields = {}) {
   const file = path.join(ROOT, relative), module = { exports: {} }, realRequire = createRequire(file);
-  const localRequire = name => Object.hasOwn(overrides, name) ? overrides[name] : realRequire(name);
+  const localRequire = name => name === "./deployment-mode" ? {deploymentMode:()=>require("../mcp-server/deployment-mode").deploymentMode(env,[])} : Object.hasOwn(overrides, name) ? overrides[name] : realRequire(name);
   const context = vm.createContext({ module, exports: module.exports, require: localRequire,
     __dirname: path.dirname(file), __filename: file, process: { env, ...processFields },
-    Object, Reflect, WeakSet, Buffer, URL, Promise, console, setTimeout, clearTimeout });
+    Object, Reflect, WeakSet, Buffer, URL, Promise, AbortController, console, setTimeout, clearTimeout });
   new vm.Script(fs.readFileSync(file, "utf8"), { filename: file }).runInContext(context);
   return module.exports;
 }
 function fixture(env = valid()) {
+  if(Object.keys(env).some(key=>/^AE_AGENT_(?:LOCAL_SESSION_|TRUSTED_READ_)/i.test(key)))env={...env,AE_AGENT_DEPLOYMENT_MODE:"initial-owned"};
   const counts = { handler: 0, event: 0, enqueue: 0, launch: 0, http: 0, retained: 0, catalog: 0 },
     api = moduleFixture("mcp-server/owned-runtime-initial-runtime.js", env), runtime = api.createInitialRuntime();
   const effect = name => () => { counts[name]++; throw Error("unexpected " + name + " effect"); };
@@ -36,7 +37,7 @@ function serviceFixture(f) {
 }
 function supervisorFixture(f) {
   const api = moduleFixture("mcp-server/owned-runtime-supervisor.js", f.env, {
-    "./owned-runtime-initial-runtime": f.api, "node:child_process": { spawn: f.effect("launch") }
+    "./owned-runtime-initial-runtime": { ...f.api, createInitialRuntime:()=>f.runtime && {...f.runtime,readStatus:args=>f.runtime.readStatus(plain(args))} }, "node:child_process": { spawn: f.effect("launch") }
   });
   const deps = {};
   for (const key of ["repoRoot", "now", "readPolicy", "readRegistration", "readSources", "native", "request", "sleep"]) {
@@ -65,7 +66,7 @@ function adapterFixture(f, retained = false) {
     "./owned-runtime-supervisor": { createOwnedRuntimeSupervisor: f.effect("launch") },
     "./production-usage-tools": { productionUsageTools: [], isProductionUsageTool: () => true,
       handleProductionUsageTool: f.effect("handler") }
-  }, { stdin, stdout: { write: value => replies.push(JSON.parse(value)) }, stderr: { write() {} }, exit: code => exit.push(code) });
+  }, { stdin, stdout: Object.assign(new EventEmitter(),{write: value => replies.push(JSON.parse(value))}), stderr: { write() {} }, exit: code => exit.push(code) });
   return { adapter, replies, handlers, stdin, exit, responses };
 }
 function bridgeFunctions(f, service) {
@@ -87,7 +88,7 @@ function bridgeFunctions(f, service) {
     return source.slice(from, to);
   }).join("\n");
   const pending = [], inflight = new Map(), context = vm.createContext({ initialRuntime: f.runtime,
-    ownedRuntimeService: service, pendingCommands: pending, inflightCommands: inflight,
+    ownedRuntimeService: service, ownedReadonlyScriptPreparation:()=>null, pendingCommands: pending, inflightCommands: inflight,
     panelBootstrapService: { isBusy: f.effect("handler"), ensure: f.effect("handler") },
     panelControlService: { handleTool: f.effect("handler") },
     panelBootstrapReadContext: { getStore: f.effect("handler") },
@@ -98,8 +99,8 @@ function bridgeFunctions(f, service) {
     recordEvent: f.effect("event"), crypto: { randomUUID: f.effect("event") },
     capturePlanCommand: f.effect("event"), setTimeout: f.effect("event"), Promise, URL });
   new vm.Script(bodies, { filename: file }).runInContext(context);
-  assert.match(source, /nativeDispatchPort:\s*null/, "AME9 production port remains null");
-  const early = source.indexOf("if(require.main===module && initialRuntime)initialRuntime.assertStartup();");
+  assert.match(source, /nativeDispatchPort:\s*ownedAmeNativeDispatchPort/, "AME dispatch uses the private owned port; unavailable ingress must reject before reaching it");
+  const early = source.indexOf("if(require.main===module && initialRuntime&&!trustedSourceCensus.requested())initialRuntime.assertStartup();");
   assert.ok(early > 0 && early < source.indexOf("const autonomousCommandContext"), "standalone startup closes before product initialization");
   return { context, pending, inflight };
 }
@@ -125,7 +126,10 @@ async function main() {
     assert.equal(snapshot.genuineChatIdentity, false); assert.equal(snapshot.origin, "initial_owned");
     assert.deepEqual(Object.keys(snapshot).sort(), ["ok", "schema", "origin", "authorityMode", "genuineChatIdentity", "status", "code", "owned", "available", "productionAuthority", "writeAdmission", "executionEntitled", "replayAllowed"].sort());
     assert.ok(!JSON.stringify(snapshot).includes("AEAgent.LocalSession"));
-    for (const method of ["status", "ensure", "restart", "shutdown"]) assert.equal((await supervisor[method]({})).status, "CLOSED");
+    assert.equal((await supervisor.status({})).status,"CLOSED");
+    await assert.rejects(supervisor.ensure({}),{code:test.code});
+    await assert.rejects(supervisor.restart({}),{code:"owned_initial_restart_spent_no_replay"});
+    const shutdownFixture=fixture(test.env);assert.equal((await supervisorFixture(shutdownFixture).supervisor.shutdown({})).status,"REVOKED");zeroEffects(shutdownFixture);
     for (const method of ["assertStartupReservation", "registerCurrentDaemon", "loadCurrentDaemonRegistration"]) {
       assert.throws(() => api[method]("ignored", {}, {}), { code: test.code });
     }
@@ -143,9 +147,9 @@ async function main() {
     assert.throws(() => api.createOwnedRuntimeService({ initialRuntime: { origin: "initial_owned", productionAuthority: true } }), /private_runtime_required/);
     for (const args of [undefined, null, [], false, 0, { pid: 1 }, Object.create({ granted: true }), Object.assign({}, { [Symbol("grant")]: true })]) {
       await assert.rejects(f.runtime.ensure(args), /arguments_empty_required/);
-      assert.throws(() => f.runtime.readStatus(args), /arguments_empty_required/);
+      await assert.rejects(f.runtime.readStatus(args), /arguments_empty_required/);
     }
-    assert.equal((await f.runtime.ensure({})).status, "CLOSED");
+    await assert.rejects(f.runtime.ensure({}),{code:"owned_initial_native_protocol_unavailable"});
     zeroEffects(f);
   });
   await check("all alternate HTTP ingress stops before handler/body/event", async () => {
@@ -161,15 +165,16 @@ async function main() {
     a.adapter.startStdioMcp();
     await a.adapter.handleRpc({ jsonrpc: "2.0", id: 1, method: "initialize" });
     await a.adapter.handleRpc({ jsonrpc: "2.0", id: 2, method: "tools/list" });
-    assert.equal((await a.adapter.getTools()).length, 4);
+    assert.deepEqual(plain((await a.adapter.getTools()).map(t=>t.name).sort()),[...f.runtime.tools.map(t=>t.name),...a.adapter.ownedRuntimeTools.map(t=>t.name)].sort());
     for (const name of ["get_owned_runtime_status", "ensure_owned_runtime_daemon", "restart_owned_runtime_daemon", "shutdown_owned_runtime_daemon", "get_bridge_status", "get_project_info", "execute_extendscript", "ensure_ae_agent_panel", "invoke_panel_action", "render_ame_title_job", "get_task_usage"]) {
       await a.adapter.handleRpc({ jsonrpc: "2.0", id: name, method: "tools/call", params: { name, arguments: {} } });
-      const reply = a.replies.at(-1); assert.equal(reply.result.isError, true);
-      assert.equal(JSON.parse(reply.result.content[0].text).status, "CLOSED");
+      const reply = a.replies.at(-1);
+      if(name==="get_owned_runtime_status" || name==="shutdown_owned_runtime_daemon"){assert.equal(reply.result.isError,true);assert.equal(JSON.parse(reply.result.content[0].text).status,name==="get_owned_runtime_status"?"CLOSED":"REVOKED");}
+      else{assert.equal(reply.error.code,-32000);assert.equal(reply.error.message,name==="ensure_owned_runtime_daemon"?"owned_initial_native_protocol_unavailable":name==="restart_owned_runtime_daemon"?"owned_initial_restart_spent_no_replay":"owned_initial_controller_closed");}
     }
-    await assert.rejects(a.adapter.ensureDaemonRunning(), /owned_initial_native_protocol_unavailable/);
+    await assert.rejects(a.adapter.ensureDaemonRunning(), /owned_initial_controller_closed/);
     await assert.rejects(a.adapter.handleOwnedRuntimeTool("ensure_owned_runtime_daemon", { pid: 1 }, { ensure: f.effect("launch") }), /arguments_forbidden/);
-    assert.equal((await a.adapter.handleOwnedRuntimeTool("ensure_owned_runtime_daemon", {}, { ensure: f.effect("launch") })).isError, true);
+    await assert.rejects(a.adapter.handleOwnedRuntimeTool("ensure_owned_runtime_daemon", {}, { ensure: f.effect("launch") }),/owned_initial_controller_closed/);
     for (const args of [null, [], false, { origin: "retained" }]) {
       await a.adapter.handleRpc({ jsonrpc: "2.0", id: "invalid", method: "tools/call", params: { name: "ensure_owned_runtime_daemon", arguments: args } });
       assert.ok(a.replies.at(-1).error);
@@ -185,7 +190,7 @@ async function main() {
   await check("adapter stdin error permanently closes original facade before exit", async () => {
     const f = fixture(), a = adapterFixture(f); a.adapter.startStdioMcp();
     await a.stdin.listeners("error")[0](Error("offline")); assert.deepEqual(a.exit, [1]);
-    assert.equal(JSON.parse((await a.adapter.handleOwnedRuntimeTool("ensure_owned_runtime_daemon", {})).content[0].text).code, "owned_initial_controller_closed");
+    await assert.rejects(a.adapter.handleOwnedRuntimeTool("ensure_owned_runtime_daemon", {}),/owned_initial_controller_closed/);
     zeroEffects(f);
   });
   await check("production bridge function seams reject before any effect", async () => {

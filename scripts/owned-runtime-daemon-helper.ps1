@@ -86,6 +86,13 @@ function Config {
   $script:locks+=@($s);$s=$null;return @{token=$token;values=$values}
  }finally{if($null -ne $s){$s.Dispose()}}
 }
+function AssertProductDeployment($environment) {
+ foreach($key in @($environment.Keys)) {
+  if($key -match '^AE_AGENT_(?:LOCAL_SESSION_|TRUSTED_READ_)' -or ($key -match '^AE_AGENT_DEPLOYMENT_MODE$' -and $key -cne 'AE_AGENT_DEPLOYMENT_MODE')) {throw 'owned_supervisor_deployment_mode_changed'}
+ }
+ $mode=$environment['AE_AGENT_DEPLOYMENT_MODE'];if($null -eq $mode){return 'product'}
+ if($mode -cne 'product'){throw 'owned_supervisor_deployment_mode_changed'};return $mode
+}
 function Policy($authorization){$p=ReadJson (Join-Path $base 'policy.json') $null $true;if($p.schema -cne 'ae-agent.owned-runtime-policy.v1' -or $p.enabled -cne $true -or $p.acceptedServerCoverage -cnotcontains 'owned_daemon_lifecycle' -or (Canon $p.authorization) -cne (Canon $authorization)){throw 'owned_supervisor_policy_disabled_or_changed'}}
 function BootstrapIdle($value) {
   if ($null -eq $value) { return $false }
@@ -148,7 +155,9 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
    if(@(Get-NetTCPConnection -State Listen -LocalPort 3456 -ErrorAction SilentlyContinue).Count -ne 0){throw 'owned_supervisor_endpoint_occupied'}
    $image=SafeFile $node $true;if([OwnedDaemonKernel]::Hash($image) -cne $nodeSha){$image.Dispose();throw 'owned_supervisor_node_pin_changed'}
    $info=[Diagnostics.ProcessStartInfo]::new($node);$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.WindowStyle=[Diagnostics.ProcessWindowStyle]::Hidden;$info.WorkingDirectory=$repo;[void]$info.ArgumentList.Add((Join-Path $repo 'mcp-server/bridge-daemon.js'))
+   $deploymentBefore=AssertProductDeployment $info.Environment
    foreach($key in @($info.Environment.Keys)){if($key -match '^AE_BRIDGE_|^AE_OWNED_RUNTIME_'){$info.Environment.Remove($key)|Out-Null}};foreach($key in $config.values.Keys){$info.Environment[$key]=$config.values[$key]};$info.Environment['AE_BRIDGE_HOST']='127.0.0.1';$info.Environment['AE_BRIDGE_PORT']='3456';$info.Environment['AE_BRIDGE_LOG_DIR']=Join-Path $repo 'logs';$info.Environment['AE_OWNED_RUNTIME_GENERATION']=$r.generation;$info.Environment['AE_OWNED_RUNTIME_BOOT_NONCE']=$r.bootNonce
+   if((AssertProductDeployment $info.Environment) -cne $deploymentBefore){throw 'owned_supervisor_deployment_mode_changed'}
    if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt)){throw 'owned_supervisor_successor_expired'};$script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
    $candidate=@{schema=$schema+'.native-candidate';generation=$r.generation;bootNonce=$r.bootNonce;reservationSha256=$chain.reservation.sha256;startupTicketSha256=$chain.ticket.sha256;kernelIdentity=$identity;argv=$r.command.argv;sourceSha256=$r.sourceSha256;heldLaunchWitness=@{kind='native_launch_held_process_handle';handleOpenedAt=$opened;identityVerifiedAt=[DateTimeOffset]::UtcNow.ToString('o')}};$signature=Hmac $candidate $config.token;$candidate.authentication=$signature;[void](WriteOnce (Join-Path $chain.dir 'native-candidate.json') $candidate);$script:mode='owned';ReleaseLocks;Emit @{ok=$true;identity=$identity};continue
   }

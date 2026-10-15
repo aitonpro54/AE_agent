@@ -299,8 +299,11 @@ void SendBrokerBootstrapFixed(Bootstrap& original,const std::wstring& pipe,const
 }
 CreatedChild NativeClient::CreateOriginalDaemonFixed(InstalledEnrollment& enrollment,const phase::WireBindings& binding,const std::wstring& pipe,
     void* originalController,const PreparedLifecycleGrant& lifecycle){
-    if(!enrollment.Fresh(true).ok)Refuse("trusted_daemon_precreate_source_guard");Result opened;
-    auto original=production::OriginalSealWitness::OpenFixed(opened);if(!original||!original->Fresh())Refuse("trusted_daemon_original_seal_closed");
+    if(!enrollment.Fresh(true).ok)Refuse("trusted_daemon_precreate_source_guard");
+    // Keep the broker's continuously held witness and all its original pins.
+    // A second whole-build Open after LaunchConsume consumes the reply budget
+    // without strengthening these same Fresh and enrollment identity joins.
+    const auto original=enrollment.OriginalProductionSeal();if(!original||!original->Fresh())Refuse("trusted_daemon_original_seal_closed");
     const auto& resolved=original->ResolvedEnrollment();const auto& installed=enrollment.Profile();
     if(resolved.installation!=installed.installation||resolved.lineage!=installed.lineage||resolved.policyHash!=installed.policyHash||
         resolved.sourceSetHash!=installed.sourceSetHash||resolved.policyEpoch!=installed.policyEpoch||!detail::SamePin(resolved.runtime,installed.runtime)||
@@ -453,6 +456,7 @@ struct NativeClient::Data final {
     std::unique_ptr<CreatedChild> originalChild;
     std::unique_ptr<phase::WireChannel> wire;
     std::vector<std::unique_ptr<Io>> unsettled;
+    RetainedRuntimeObservation::Exchange lastExchange;
     std::deque<phase::Frame> challenges;
     struct CompletionStart final {std::shared_ptr<Capability> call;Digest selector{};phase::Frame notice{};bool noticed=false,armed=false,waitSpent=false,officialSpent=false;Held cancel;};
     std::array<std::unique_ptr<CompletionStart>,2> completionStarts{};
@@ -542,6 +546,10 @@ struct NativeClient::Data final {
         if(!Current()||wire->Closed())Refuse("trusted_original_server_peer_refused");
     }
     Bytes Transfer(bool write,const Bytes& input,bool completionChecked=false,std::uint64_t readWaitMs=kIoMs){
+        auto& observed=lastExchange;observed.phase=write?"write":"read";observed.phaseStartedMono=GetTickCount64();
+        observed.phaseElapsedMs=0;observed.waitBudgetMs=write?kIoMs:readWaitMs;observed.deadlineMono=observed.phaseStartedMono+observed.waitBudgetMs;
+        observed.waitAttempted=false;observed.cancelAttempted=false;observed.cancelSucceeded=false;observed.cancelError=0;
+        observed.settlementAttempted=false;observed.settlementError=0;observed.waitResult=0;observed.settlementWaitResult=0;
         auto io=std::make_unique<Io>(write?input.size():phase::kMaximumFrameBytes);if(write)io->bytes=input;DWORD count=0;
         const auto retire=[&](){if(!completionChecked||!io)return;if(io->pending){unknown=true;unsettled.push_back(std::move(io));return;}
             if(io->event.Valid()){const HANDLE exact=io->event.Take();if(!CloseHandle(exact)){failedCloseHandles.push_back(exact);unknown=true;Refuse("trusted_completion_transfer_event_close_unknown",0,true);}}};
@@ -549,15 +557,16 @@ struct NativeClient::Data final {
         const BOOL immediate=write?WriteFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state):
             ReadFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state);
         if(!immediate){if(GetLastError()!=ERROR_IO_PENDING){unknown=true;Refuse("trusted_original_io_unknown",GetLastError(),true);}io->pending=true;
-            const DWORD wait=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(write?kIoMs:readWaitMs));
-            if(wait!=WAIT_OBJECT_0){CancelIoEx(pipe.Get(),&io->state);
-                const DWORD settled=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));
-                if(settled==WAIT_OBJECT_0){DWORD ignored=0;GetOverlappedResult(pipe.Get(),&io->state,&ignored,FALSE);io->pending=false;}
+            observed.waitAttempted=true;const DWORD wait=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(observed.waitBudgetMs));observed.waitResult=wait;
+            observed.phaseElapsedMs=GetTickCount64()-observed.phaseStartedMono;
+            if(wait!=WAIT_OBJECT_0){observed.cancelAttempted=true;observed.cancelSucceeded=CancelIoEx(pipe.Get(),&io->state)!=FALSE;observed.cancelError=observed.cancelSucceeded?ERROR_SUCCESS:GetLastError();
+                observed.settlementAttempted=true;const DWORD settled=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));observed.settlementWaitResult=settled;
+                if(settled==WAIT_OBJECT_0){DWORD ignored=0;const BOOL complete=GetOverlappedResult(pipe.Get(),&io->state,&ignored,FALSE);observed.settlementError=complete?ERROR_SUCCESS:GetLastError();io->pending=false;}
                 else unsettled.push_back(std::move(io));unknown=true;Refuse("trusted_original_io_timeout_no_replay",0,true);}
             if(!GetOverlappedResult(pipe.Get(),&io->state,&count,FALSE)){const auto error=GetLastError();io->pending=completionChecked&&error!=ERROR_OPERATION_ABORTED&&error!=ERROR_BROKEN_PIPE&&error!=ERROR_PIPE_NOT_CONNECTED;unknown=true;Refuse("trusted_original_io_settlement_unknown",error,true);}io->pending=false;
         }
-        if(!count||(write&&count!=input.size())){unknown=true;Refuse("trusted_original_io_partial",0,true);}io->bytes.resize(count);auto result=io->bytes;retire();return result;
-        }catch(...){retire();throw;}
+        if(!count||(write&&count!=input.size())){unknown=true;Refuse("trusted_original_io_partial",0,true);}io->bytes.resize(count);auto result=io->bytes;observed.phaseElapsedMs=GetTickCount64()-observed.phaseStartedMono;retire();return result;
+        }catch(...){observed.phaseElapsedMs=GetTickCount64()-observed.phaseStartedMono;retire();throw;}
     }
 };
 NativeClient::NativeClient(std::unique_ptr<Data> data):data_(std::move(data)){}
@@ -719,7 +728,10 @@ std::shared_ptr<Capability> NativeClient::Own(CapKind kind,const phase::Frame& f
 }
 phase::Frame NativeClient::Exchange(phase::Verb verb,const Bytes& payload,bool lifecycle){
     if(data_->completionReader.load())Refuse("trusted_original_completion_reader_exclusive");
-    std::lock_guard<std::mutex> lock(data_->serial);if(data_->completionReader.load()||(lifecycle&&verb!=phase::Verb::DrainAck&&verb!=phase::Verb::ShutdownAck)||!data_->Current(lifecycle)||payload.size()>phase::kMaximumPayloadBytes||data_->outgoing==std::numeric_limits<std::uint64_t>::max())Refuse("trusted_original_exchange_closed",0,data_->unknown);
+    std::lock_guard<std::mutex> lock(data_->serial);auto& observed=data_->lastExchange;observed={};observed.verb=static_cast<std::uint16_t>(verb);
+    observed.startedMono=GetTickCount64();observed.phase="guard";observed.phaseStartedMono=observed.startedMono;observed.ordinal=data_->outgoing+1;
+    try{if(data_->completionReader.load()||(lifecycle&&verb!=phase::Verb::DrainAck&&verb!=phase::Verb::ShutdownAck)||!data_->Current(lifecycle)||payload.size()>phase::kMaximumPayloadBytes||data_->outgoing==std::numeric_limits<std::uint64_t>::max())Refuse("trusted_original_exchange_closed",0,data_->unknown);
+    observed.guardElapsedMs=GetTickCount64()-observed.startedMono;
     phase::Frame request{};request.header.direction=data_->role==Role::Controller?phase::Direction::ControllerToBroker:phase::Direction::DaemonToBroker;
     request.header.verb=verb;request.header.senderOrdinal=data_->outgoing+1;request.header.payloadBytes=static_cast<std::uint32_t>(payload.size());
     request.header.channelNonce=data_->wire->bindings_.channelNonce;request.header.sessionRef=data_->wire->bindings_.sessionRef;request.header.generation=data_->wire->bindings_.generation;request.header.bootNonce=data_->wire->bindings_.bootNonce;
@@ -735,9 +747,12 @@ phase::Frame NativeClient::Exchange(phase::Verb verb,const Bytes& payload,bool l
         if(reply.header.kind==phase::FrameKind::Event){if(data_->role==Role::Controller&&reply.header.verb==phase::Verb::CompletionResultNotice){RetainOriginalCompletionNoticeLocked(reply);continue;}if(reply.header.verb!=phase::Verb::ObserveChallenge||data_->challenges.size()>=1){data_->unknown=true;Refuse("trusted_original_event_refused",0,true);}data_->challenges.push_back(reply);continue;}
         if(reply.header.status!=phase::Status::Ok){if(reply.header.status==phase::Status::Unknown)data_->unknown=true;
             Refuse(reply.header.status==phase::Status::RevalidationRequired?"trusted_read_revalidation_required":"trusted_original_native_refused",0,data_->unknown);}
-        if(!data_->Current(lifecycle)){data_->unknown=true;Refuse("trusted_original_reply_late_guard_unknown",0,true);}return reply;
+        observed.phase="reply_guard";observed.phaseStartedMono=GetTickCount64();
+        if(!data_->Current(lifecycle)){data_->unknown=true;Refuse("trusted_original_reply_late_guard_unknown",0,true);}
+        observed.phaseElapsedMs=GetTickCount64()-observed.phaseStartedMono;observed.guardElapsedMs+=observed.phaseElapsedMs;observed.phase="complete";observed.elapsedMs=GetTickCount64()-observed.startedMono;return reply;
     }
     data_->unknown=true;Refuse("trusted_original_reply_event_budget",0,true);
+    }catch(...){observed.elapsedMs=GetTickCount64()-observed.startedMono;observed.phaseElapsedMs=GetTickCount64()-observed.phaseStartedMono;throw;}
 }
 std::shared_ptr<Capability> NativeClient::PollOriginalEvent(){AssertOriginalDispositionCurrent();std::lock_guard<std::mutex> lock(data_->serial);
     if(!data_->challenges.empty()){auto event=data_->challenges.front();data_->challenges.pop_front();return Own(CapKind::Challenge,event);}
@@ -781,6 +796,28 @@ phase::Frame NativeClient::Open(){RequireRole(Role::Controller);if(data_->opened
 phase::Frame NativeClient::Ensure(){RequireRole(Role::Controller);if(!data_->opened||data_->ensured)Refuse("trusted_original_ensure_once");data_->ensured=true;
     const auto reply=Exchange(phase::Verb::ReserveInitialLaunch,{});data_->wire->bindings_.generation=Fixed<16>(reply.payload.data()+97);data_->wire->bindings_.bootNonce=Fixed<16>(reply.payload.data()+113);return reply;}
 phase::Frame NativeClient::Status(){RequireRole(Role::Controller);return Exchange(phase::Verb::Status,{});}
+RetainedRuntimeObservation NativeClient::ObserveRetainedFixed(){RequireRole(Role::Controller);RetainedRuntimeObservation result;
+    result.observedMono=GetTickCount64();result.unknown=data_->unknown.load();result.revoked=data_->revoked.load();
+    // Never wait for an in-flight exchange on the Node event loop. A busy
+    // snapshot is evidence of retained ownership, not a new request or retry.
+    std::unique_lock<std::mutex> lock(data_->serial,std::try_to_lock);if(!lock.owns_lock())return result;
+    result.snapshotAvailable=true;result.unknown=data_->unknown.load();result.revoked=data_->revoked.load();result.pipeHeld=data_->pipe.Valid();result.exchange=data_->lastExchange;
+    const auto* child=data_->originalChild.get();const HANDLE broker=child&&child->process.Valid()?child->process.Get():nullptr;
+    result.brokerHeld=broker!=nullptr;if(broker){result.brokerPid=GetProcessId(broker);FILETIME born{},exited{},kernel{},user{};
+        if(!result.brokerPid||!GetProcessTimes(broker,&born,&exited,&kernel,&user)){result.brokerState="query_failed";result.brokerError=GetLastError();}
+        else{result.brokerBirth=(static_cast<std::uint64_t>(born.dwHighDateTime)<<32)|born.dwLowDateTime;
+            const auto wait=WaitForSingleObject(broker,0);if(wait==WAIT_TIMEOUT)result.brokerState="running";
+            else if(wait==WAIT_OBJECT_0){DWORD exit=0;if(GetExitCodeProcess(broker,&exit)){result.brokerState="exited";result.brokerExitCode=exit;}
+                else{result.brokerState="query_failed";result.brokerError=GetLastError();}}
+            else{result.brokerState="query_failed";result.brokerError=wait==WAIT_FAILED?GetLastError():ERROR_INVALID_DATA;}}}
+    result.retainedIo=static_cast<std::uint32_t>(data_->unsettled.size());
+    for(const auto& io:data_->unsettled){if(!io||!io->event.Valid()||!data_->pipe.Valid()){++result.unavailableIo;continue;}
+        DWORD bytes=0;if(GetOverlappedResult(data_->pipe.Get(),&io->state,&bytes,FALSE)){++result.completedIo;continue;}
+        const auto error=GetLastError();if(error==ERROR_IO_INCOMPLETE)++result.pendingIo;
+        else if(error==ERROR_OPERATION_ABORTED||error==ERROR_BROKEN_PIPE||error==ERROR_PIPE_NOT_CONNECTED)++result.completedIo;
+        else ++result.unavailableIo;}
+    return result;
+}
 std::shared_ptr<Capability> NativeClient::BeginCompletionFixed(std::uint16_t slot,const Bytes& exactCanonicalBody){RequireRole(Role::Controller);AssertLoadedNodeCurrent();
     const std::string canonical=slot==1?"{\"args\":{\"variantSlot\":1},\"name\":\"get_ame_title_job_status\"}":"{\"args\":{\"variantSlot\":2},\"name\":\"get_ame_title_job_status\"}";
     if(slot<1||slot>2||exactCanonicalBody!=Bytes(canonical.begin(),canonical.end())||data_->completionReader.load())Refuse("trusted_completion_exact_original_intent");auto& start=data_->completionStarts[slot-1];

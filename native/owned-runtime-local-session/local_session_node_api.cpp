@@ -44,7 +44,7 @@ using Bytes=std::vector<unsigned char>;
 using capture::kOriginalResultBytes;using capture::kOriginalResultNodes;using capture::kOriginalResultDepth;
 constexpr napi_type_tag kCapabilityTag{0x48c996025a6847ceULL,0xb2c446582e65cf1cULL};
 constexpr napi_type_tag kRequestTag{0x6517f9755a6a4d92ULL,0xad2876f8b6dc2b34ULL};
-enum class Operation:std::uintptr_t{Assert=1,Open,Ensure,Status,BeginPanel,BeginBracket,BeginRead,AdoptBracket,Locator,
+enum class Operation:std::uintptr_t{ObserveRetained=4096,Assert=1,Open,Ensure,Status,BeginPanel,BeginBracket,BeginRead,AdoptBracket,Locator,
     TakeChallenge,CaptureTarget,AssertTarget,NodeInventory,PanelInventory,Transport,ExecutionProfile,SharedQueueState,SharedQueueIo,LoadedNode,InvalidateSource,Revoke,CapturePreactor,RetainRequest,CompleteResponse,FailResponse,VerifyTool,
     DispositionCurrent,PollEvent,EventKind,AckDisposition,CaptureStatus,BindProject,DescribeProject,SelectProject,GuardProject,SubmitProject,CaptureProjectResult,
     CepInventory,InvalidateCep,CaptureObservation,SubmitObservation,ObserveActor,DaemonTransport,AssertPreactor,ReserveBootstrap,LaunchBootstrap,BootstrapSettled,PreactorInventory,CompleteIdleCleanup,
@@ -249,6 +249,25 @@ napi_value Summary(napi_env env,const phase::Frame& frame){napi_value value=null
     Text(env,value,"authorityMode","local_controller_session");Boolean(env,value,"genuineChatIdentity",false);Boolean(env,value,"replayAllowed",false);
     if(frame.header.verb==phase::Verb::Status||frame.header.verb==phase::Verb::Revoke){Number(env,value,"state",static_cast<std::uint32_t>(frame.payload[0]));}
     Number(env,value,"operation",static_cast<std::uint32_t>(frame.header.verb));return value;
+}
+napi_value RetainedSummary(napi_env env,const RetainedRuntimeObservation& observed,bool nativeWorkPending){
+    napi_value value=nullptr;Check(napi_create_object(env,&value));Text(env,value,"schema","ae-agent.owned-runtime-retained-observation.v1");
+    Boolean(env,value,"productionAuthority",false);Boolean(env,value,"replayAllowed",false);Boolean(env,value,"snapshotAvailable",observed.snapshotAvailable);
+    Boolean(env,value,"nativeWorkPending",nativeWorkPending);
+    if(!observed.snapshotAvailable)return value;
+    Boolean(env,value,"unknown",observed.unknown);Boolean(env,value,"revoked",observed.revoked);Text(env,value,"observedMono",std::to_string(observed.observedMono));
+    Boolean(env,value,"pipeHeld",observed.pipeHeld);napi_value broker=nullptr;Check(napi_create_object(env,&broker));
+    Boolean(env,broker,"held",observed.brokerHeld);Text(env,broker,"state",observed.brokerState);Number(env,broker,"pid",observed.brokerPid);
+    Text(env,broker,"birth",std::to_string(observed.brokerBirth));Number(env,broker,"exitCode",observed.brokerExitCode);Number(env,broker,"win32Error",observed.brokerError);Property(env,value,"originalBroker",broker);
+    napi_value io=nullptr;Check(napi_create_object(env,&io));Number(env,io,"retained",observed.retainedIo);Number(env,io,"pending",observed.pendingIo);
+    Number(env,io,"completed",observed.completedIo);Number(env,io,"unavailable",observed.unavailableIo);Property(env,value,"retainedIo",io);
+    const auto& exchange=observed.exchange;napi_value last=nullptr;Check(napi_create_object(env,&last));Number(env,last,"verb",exchange.verb);
+    Text(env,last,"ordinal",std::to_string(exchange.ordinal));Text(env,last,"startedMono",std::to_string(exchange.startedMono));Text(env,last,"elapsedMs",std::to_string(exchange.elapsedMs));
+    Text(env,last,"guardElapsedMs",std::to_string(exchange.guardElapsedMs));Text(env,last,"phase",exchange.phase);Text(env,last,"phaseStartedMono",std::to_string(exchange.phaseStartedMono));
+    Text(env,last,"phaseElapsedMs",std::to_string(exchange.phaseElapsedMs));Text(env,last,"waitBudgetMs",std::to_string(exchange.waitBudgetMs));Text(env,last,"deadlineMono",std::to_string(exchange.deadlineMono));
+    Boolean(env,last,"waitAttempted",exchange.waitAttempted);Number(env,last,"waitResult",exchange.waitResult);Boolean(env,last,"cancelAttempted",exchange.cancelAttempted);
+    Boolean(env,last,"cancelSucceeded",exchange.cancelSucceeded);Number(env,last,"cancelError",exchange.cancelError);Boolean(env,last,"settlementAttempted",exchange.settlementAttempted);
+    Number(env,last,"settlementWaitResult",exchange.settlementWaitResult);Number(env,last,"settlementError",exchange.settlementError);Property(env,value,"lastExchange",last);return value;
 }
 phase::ToolCode Tool(napi_env env,napi_value value,bool panel=false){const auto name=String(env,value,64);if(name=="get_bridge_status")return phase::ToolCode::GetBridgeStatus;if(name=="get_project_info")return phase::ToolCode::GetProjectInfo;if(panel&&name=="ensure_ae_agent_panel")return phase::ToolCode::EnsureAgentPanel;detail::Refuse("trusted_exact_read_tool_required");}
 phase::ToolCode ExecutionTool(napi_env env,napi_value value){const auto name=String(env,value,64);
@@ -479,6 +498,13 @@ napi_value Dispatch(napi_env env,napi_callback_info info){try{std::array<napi_va
     Check(napi_get_cb_info(env,info,&count,nullptr,&role,&data));if(count>arguments.size())detail::Refuse("trusted_node_extra_arguments_refused");
     const auto actualCount=count;count=arguments.size();Check(napi_get_cb_info(env,info,&count,arguments.data(),&role,&data));if(count!=actualCount)detail::Refuse("trusted_node_arguments_changed");
     const auto operation=static_cast<Operation>(reinterpret_cast<std::uintptr_t>(data));auto owner=Original(env,role);auto& client=*owner->native;
+    // This one observer is available even during/after UNKNOWN. It cannot send
+    // a frame, consume a cap, cancel IO, close a HANDLE or reopen an owner.
+    if(operation==Operation::ObserveRetained){if(count)detail::Refuse("trusted_retained_observation_arguments");
+        // Revoke may close its pipe outside data.serial. All asynchronous native
+        // work must finish before even the try-lock observer touches originals.
+        if(owner->pending)return RetainedSummary(env,RetainedRuntimeObservation{},true);
+        return RetainedSummary(env,client.ObserveRetainedFixed(),false);}
     if(operation==Operation::CancelCompletionWait){if(count!=1)detail::Refuse("trusted_completion_cancel_arguments");const auto slot=Unsigned(env,arguments[0]);if(slot<1||slot>2)detail::Refuse("trusted_completion_cancel_slot");client.CancelOriginalCompletionWaitFixed(static_cast<std::uint16_t>(slot));return Undefined(env);}
     // Retained synchronous source getters revalidate the original role. They
     // may assert it while their own native capture is pending; no operation,
@@ -681,7 +707,7 @@ napi_value Factory(napi_env env,napi_callback_info info){try{std::size_t count=1
     const napi_node_version* version=nullptr;Check(napi_get_node_version(env,&version));std::uint32_t napi=0;Check(napi_get_version(env,&napi));if(!version||version->major!=24||version->minor!=19||version->patch!=0||napi<8)detail::Refuse("trusted_node_current_runtime_refused");
     consumed=true;auto instance=std::make_shared<Instance>();instance->requests.reserve(192);instance->native=daemon?std::shared_ptr<NativeClient>(NativeClient::BindOriginalDaemonFixed()):std::shared_ptr<NativeClient>(NativeClient::OpenControllerFixed());
     auto role=HttpTransportBinding::Role(env,std::make_shared<HttpOwner>(instance));
-    const std::pair<const char*,Operation> methods[]={{"assertSessionCurrent",Operation::Assert},{"open",Operation::Open},{"ensure",Operation::Ensure},{"status",Operation::Status},
+    const std::pair<const char*,Operation> methods[]={{"assertSessionCurrent",Operation::Assert},{"open",Operation::Open},{"ensure",Operation::Ensure},{"status",Operation::Status},{"observeRetainedFixed",Operation::ObserveRetained},
         {"beginPanel",Operation::BeginPanel},{"beginBracket",Operation::BeginBracket},{"beginRead",Operation::BeginRead},{"adoptBracket",Operation::AdoptBracket},{"toolLocator",Operation::Locator},
         {"beginExecutionFixed",Operation::BeginExecution},{"verifyExecutionTool",Operation::VerifyExecution},
         {"bindExecutionFixed",Operation::BindExecution},{"bindPreparationDeliveryFixed",Operation::BindPreparationDelivery},{"describeExecution",Operation::DescribeExecution},{"selectExecution",Operation::SelectExecution},{"guardExecution",Operation::GuardExecution},

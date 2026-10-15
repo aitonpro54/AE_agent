@@ -5,7 +5,7 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),{spawn}=require("node:child_process");
 const r1=require("./owned-runtime-lifecycle"),ledger=require("./native-fixture-attempt-ledger"),authority=require("./owned-runtime-authority"),service=require("./owned-runtime-service"),win=require("./owned-runtime-win32"),evidence=require("./review-evidence");
 const ROOT=path.resolve(__dirname,".."),SCHEMA="ae-agent.owned-runtime-supervisor.v1",LEGACY="bridge-daemon-migration-v1";
-const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"38c34cc3abb4e3dca75629f623b7f36ca531a35189fc4f7dcce26fb672da1be9",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
+const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"e9c6cecb2ba1e6dd7edd8c02f3762fa6e415d1a6cc4860559ce119d1f7bf7c3a",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
 const same=(a,b)=>r1.canonical(a)===r1.canonical(b),uuid=v=>ledger.UUID.test(v || ""),sha=v=>ledger.SHA.test(v || "");
 function fail(code){throw Object.assign(Error(code),{code});}
 function exact(v,keys,code="owned_supervisor_contract_invalid"){authority.exact(v,keys,code);}

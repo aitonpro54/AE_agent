@@ -41,13 +41,23 @@ function createOwnedRuntimeService({initialRuntime=null,generation=null,readRegi
   function registeredGeneration(){const value=registration();if(value!==null && !ledger.UUID.test(value?.generation || ""))fail("owned_service_registration_invalid");return value?.generation || null;}
   function admissionOpen(){return typeof readAdmission!=="function" || readAdmission()===true;}
   function assertAllowed(kind,ticket){if(!["execution","observation","completion","intake","control"].includes(kind))fail("owned_service_ticket_kind_invalid");if(closing && kind!=="control")fail("owned_service_shutdown_committed");if(kind==="execution" && !admissionOpen())fail("owned_service_retained_admission_closed");if(draining && kind==="execution" && !ticket?.executionEntitled)fail("owned_service_draining_new_execution_rejected");}
-  function assertExecutionTicket(){const t=context.getStore();assertAllowed("execution",t);if(!t?.executionEntitled && draining)fail("owned_service_execution_ticket_required");}
-  function assertCommandTicket(){const t=context.getStore();if(t && ["observation","completion"].includes(t.kind)){assertAllowed(t.kind,t);return;}assertExecutionTicket();}
+  function assertExecutionTicket(){const t=context.getStore();if(t?.bootstrapEntitled)fail("owned_service_bootstrap_execution_forbidden");assertAllowed("execution",t);if(!t?.executionEntitled && draining)fail("owned_service_execution_ticket_required");}
+  function assertCommandTicket(){const t=context.getStore();if(t?.bootstrapEntitled){if(t.kind!=="bootstrap_project_read")fail("owned_service_bootstrap_project_read_required");assertBootstrapAllowed();return;}if(t && ["observation","completion"].includes(t.kind)){assertAllowed(t.kind,t);return;}assertExecutionTicket();}
   function run(kind,fn){
-    const parent=context.getStore();assertAllowed(kind,parent);if(parent)return context.run({...parent,kind},fn);
+    const parent=context.getStore();if(parent?.bootstrapEntitled)fail("owned_service_bootstrap_scope_required");assertAllowed(kind,parent);if(parent)return context.run({...parent,kind},fn);
     const ticket={id:crypto.randomUUID(),kind,executionEntitled:!draining && !closing && admissionOpen(),startedAt:now()};
     if(kind!=="control")tickets.add(ticket);
     try{const value=context.run(ticket,fn);if(value && typeof value.then==="function")return Promise.resolve(value).finally(()=>tickets.delete(ticket));tickets.delete(ticket);return value;}catch(e){tickets.delete(ticket);throw e;}
+  }
+  function assertBootstrapAllowed(){if(closing)fail("owned_service_shutdown_committed");if(draining)fail("owned_service_draining_new_execution_rejected");}
+  function runBootstrap(fn){
+    assertBootstrapAllowed();if(context.getStore()?.bootstrapEntitled)fail("owned_service_bootstrap_scope_required");
+    const ticket={id:crypto.randomUUID(),kind:"bootstrap",bootstrapEntitled:true,executionEntitled:false,startedAt:now()};tickets.add(ticket);
+    try{return Promise.resolve(context.run(ticket,fn)).finally(()=>tickets.delete(ticket));}catch(error){tickets.delete(ticket);throw error;}
+  }
+  function runBootstrapProjectRead(fn){
+    const ticket=context.getStore();assertBootstrapAllowed();if(!ticket?.bootstrapEntitled || ticket.kind!=="bootstrap")fail("owned_service_bootstrap_ticket_required");
+    return context.run({...ticket,kind:"bootstrap_project_read"},fn);
   }
   function status(){const current=registeredGeneration();return {ok:true,schema:SCHEMA+".status",owned:current!==null,generation:current,draining,closing,writeAdmission:admissionOpen()?"open":"retained_audit_and_fresh_adoption_required",activeTickets:tickets.size,drainOperationId:drainOperation,shutdownEffectPending,replayAllowed:false};}
   function privateOperation(input,operation){authority.exact(input,["operationId"],"owned_service_body_operation_id_only");const current=registeredGeneration();if(!current)fail("owned_service_registration_required");const rows=readOperation(journalRoot,input.operationId),v=rows.intent.value;if(v.targetGeneration!==current || v.operation!==operation)fail("owned_service_operation_generation_mismatch");const policy=readPolicy();if(policy.enabled!==true || !policy.acceptedServerCoverage?.includes("owned_daemon_lifecycle") || !ledger.same(policy.authorization,v.authorizationRef))fail("owned_service_policy_disabled_or_changed");return rows;}
@@ -63,6 +73,6 @@ function createOwnedRuntimeService({initialRuntime=null,generation=null,readRegi
     res.once("finish",()=>{try{privateOperation(input,"shutdown");if(!readiness().ready)fail("owned_service_shutdown_readiness_changed_after_ack");if(closeIdleWaiters)closeIdleWaiters();if(closeServer)closeServer();}catch(error){shutdownEffectPending=error.code || "owned_service_shutdown_authority_changed_after_ack";}});
     return {ok:true,status:"shutdown_acknowledged",ack,exitProven:false,replayAllowed:false};
   }
-  return Object.freeze({run,ingress:(req,fn)=>run(ingressKind(req),fn),assertExecutionTicket,assertCommandTicket,status,readiness,drainOnce,shutdownOnce,get context(){return context;}});
+  return Object.freeze({run,runBootstrap,runBootstrapProjectRead,ingress:(req,fn)=>run(ingressKind(req),fn),assertExecutionTicket,assertCommandTicket,status,readiness,drainOnce,shutdownOnce,get context(){return context;}});
 }
 module.exports={SCHEMA,OPERATIONS,operationKey,operationDirectory,validateOperationIntent,reserveOperation,readOperation,ingressKind,createOwnedRuntimeService};

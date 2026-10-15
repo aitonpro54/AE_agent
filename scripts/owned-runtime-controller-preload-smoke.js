@@ -17,6 +17,7 @@ function fixture(){
     restart:forbidden("restart"),shutdown:forbidden("shutdown"),revoke:async()=>state(),callTool:forbidden("ordinary_tool")};
   function assertAuthorityLoaded(){for(const file of authorityFiles)assert(cache.has(file),"authority closure must precede native factory: "+path.basename(file));}
   const stubs={
+    "./deployment-mode":{deploymentMode:()=>"initial-owned"},
     http:{request:forbidden("http")},readline:{createInterface(){return {on(name,callback){handlers[name]=callback;return this;}};}},
     "./text-layout-policy":{TEXT_LAYOUT_POLICY:"offline"},"./tool-error-response":{decorateToolResult:forbidden("decorate"),sanitizeHttpFailure:forbidden("sanitize")},
     "./cep-panel-control":{isPanelControlTool:()=>false},"./production-usage-tools":{productionUsageTools:[],isProductionUsageTool:()=>false,handleProductionUsageTool:forbidden("usage")},

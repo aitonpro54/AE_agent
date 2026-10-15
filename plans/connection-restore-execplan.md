@@ -6,6 +6,15 @@
 
 ## Progress
 
+- После полного Restart Codex пользователь подтвердил продолжение в чате
+  01a13fa7-d879-7373-a9e1-4d17746b9b44. Свежий adapter выполнил ровно один ensure:
+  `trusted_original_io_timeout_no_replay`, затем UNKNOWN/owned=true. Bridge3456
+  отсутствует; пассивный CEP inspect подтверждает открытую панель3.3.1 Disconnected.
+  V14d journal теперь Genesis/OwnerEpoch/LaunchConsume; exact2 successor неприменим.
+- Обычный startup оказался привязан к experimental finite title profile по наличию
+  каталога. В отдельном managed worktree от64f41e4 готовится product/initial-owned
+  selection и узкий authenticated bootstrap без открытия общего write admission.
+  Исходники действующей установки заблокированы original pins и не менялись.
 - Передача принята из [предыдущего чата](connection-handoff-20261015.md), checkpoint
   7f7d9c4. Все прежние writers/native owners остановлены, pending0. Ветка продолжения:
   `codex/restore-mcp-connection`. Пять переданных WIP и семь чужих WIP сохранены.
@@ -25,6 +34,16 @@
 
 ## Decision Log
 
+- [block: ordinary product startup] [executor: ae_architect — bounded source review;
+  ae_implementer — product seams; ae_specialist — native diagnostics; root — sole live]
+  Отделить выбор deployment mode от authority; не использовать отказ как fallback.
+  Старые managed generations сохраняют retained admission. Product ticket разрешает
+  только typed bootstrap и его внутреннее чтение проекта. См. [режимы](../docs/deployment-modes.md).
+- Текущий experimental UNKNOWN не переводить в product автоматически. Original
+  daemon disposition недоступен через прежний addon; PID/listener absence не exit.
+  Для активации подготовленного product режима требуется отдельное рассмотренное
+  пользователем разовое migration boundary с сохранением старого UNKNOWN и журналов;
+  старые grants не переносятся. Повторного ensure, forensic takeover и exact3 reinstall нет.
 - Только подключение; уже принятые AME fixes сохраняются, операции очереди запрещены.
 - [block: post-C1 recovery] [executor: ae_specialist — native; ae_implementer —
   JS/driver; Astra — выбранный пользователем bounded architecture review]
@@ -53,6 +72,17 @@
 
 ## Validation
 
+- Native correction: reuse того же удерживаемого seal с прежними Fresh/identity joins,
+  verb/phase/deadline/elapsed диагностика и пассивный same-instance observer после UNKNOWN.
+  Observer не трогает HANDLE при pending work и не меняет authority/IO. Отдельный
+  offline compile/link всех3 targets PASS; затем affected node/broker corrections и
+  explicit child mode compiled PASS. Installed binaries/runtime не заменялись.
+- Product matrix12, panel-bootstrap74, initial-runtime24, observation7,
+  controller-preload4 и shared-queue fixtures PASS. Actual isolated HTTP проверил
+  auth/Host/Origin/marker, create_comp без grant → proposal_required, project read
+  через fake CEP; pending/inflight0 и child exit/cleanup подтверждены. Реальный AE,
+  native addon и providers не вызывались. Syntax12JS/rules/diff PASS.
+  Это не live AE proof; actual project read по-прежнему NOTRUN.
 - Successor behavioral fixtures5 и existing build fixtures12 PASS; syntax7 JS,
   PowerShell parser, compile identity.cs, rules/diff PASS. Source review Astra GO.
   Native C++ compile/link трёх targets PASS; live project read ещё не выполнен.
@@ -80,6 +110,8 @@
 
 ## Следующее действие
 
-Пользователю передан один технический шаг: штатный Restart сервера after-effects
-в настройках Codex. После подтверждения — один ensure в обслуживающем чат MCP,
-status и реальный get_project_info. До подтверждения не расходовать admission.
+Завершить bounded product fixture/ingress validation и зафиксировать reviewable source
+commit в worktree. После явного решения о разовом переходе согласованно завершить
+старую controller boundary и применить новую конфигурацию product с обычным автостартом.
+Старый UNKNOWN сохранить. Затем проверить открытие панели, connection и настоящий
+get_project_info через обслуживающий чат MCP. Очередь/AEP writes/save вне scope.

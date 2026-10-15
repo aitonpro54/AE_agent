@@ -19,7 +19,7 @@ std::vector<wchar_t> Environment(const Id& generation,const Id& boot,const Id& n
 #endif
 ){
     wchar_t system[32761]{};const UINT n=GetWindowsDirectoryW(system,32761);if(!n||n>=32761)Refuse("windows_directory_unavailable",GetLastError());
-    std::vector<std::wstring> values={L"AE_AGENT_LOCAL_SESSION_BOOT="+WideHex(boot),L"AE_AGENT_LOCAL_SESSION_GENERATION="+WideHex(generation),L"AE_AGENT_LOCAL_SESSION_NONCE="+WideHex(nonce),L"AE_AGENT_LOCAL_SESSION_PIPE="+pipe,L"SystemRoot="+std::wstring(system,n)};
+    std::vector<std::wstring> values={L"AE_AGENT_DEPLOYMENT_MODE=initial-owned",L"AE_AGENT_LOCAL_SESSION_BOOT="+WideHex(boot),L"AE_AGENT_LOCAL_SESSION_GENERATION="+WideHex(generation),L"AE_AGENT_LOCAL_SESSION_NONCE="+WideHex(nonce),L"AE_AGENT_LOCAL_SESSION_PIPE="+pipe,L"SystemRoot="+std::wstring(system,n)};
 #if defined(AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE)
     if(detail::Zero(phaseSession))Refuse("phase_session_locator_absent");
     values.push_back(L"AE_AGENT_LOCAL_SESSION_REF="+WideHex(phaseSession));

@@ -11,6 +11,7 @@ function fixture(profile="shared_queue_v1",refuseRead=false){
     const value={ok:true,slot:input.args.variantSlot,result:{ok:true},fixtureAuthority:false};reply.emit("data",Buffer.from(JSON.stringify({ok:true,result:{content:[{type:"text",text:JSON.stringify(value)}],isError:false}})));reply.emit("end");
   });return request;}};
   const context=vm.createContext({Buffer,URL,setTimeout,clearTimeout,Promise,process:{env:{}},module:{exports:{}},require(name){
+    if(name==="./deployment-mode")return {deploymentMode:()=>"initial-owned"};
     if(name==="./owned-runtime-initial-native-client")return native;
     if(name==="./owned-runtime-initial-source-census")return {requested:()=>false};
     if(name==="./owned-runtime-initial-observers")return {bindLoadedNodeFixed:async()=>({assertCurrent(){binding++;}})};

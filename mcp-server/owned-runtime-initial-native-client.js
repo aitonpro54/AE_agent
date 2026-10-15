@@ -12,7 +12,7 @@ let controller = null, daemon = null, addon = null;
 function fail(code) { throw Object.assign(Error(code), {code}); }
 function emptyArguments(args) { if (args.length) fail("owned_initial_fixed_factory_arguments_forbidden"); }
 function selectedFixed() {
-  return fs.existsSync(FIXED_ROOT) || Object.keys(process.env).some(k => /^AE_AGENT_(?:TRUSTED_READ_|LOCAL_SESSION_)/i.test(k));
+  return require("./deployment-mode").deploymentMode() === "initial-owned";
 }
 function loadFixed() {
   if (addon) return addon;
@@ -89,6 +89,12 @@ async function ownOperation(role, name, ownCaps, values) {
 async function open(role) { return assertRole(role, "controller").operation("open"); }
 async function ensure(role) { return assertRole(role, "controller").operation("ensure"); }
 async function status(role) { return assertRole(role).operation("status"); }
+function observeRetainedFixed(role) {
+  if (arguments.length !== 1) fail("owned_initial_retained_observation_arguments");
+  // Deliberately bypass the effect/current gate: this original object only
+  // observes its already retained HANDLEs. A diagnostic cannot revive a role.
+  return Object.freeze(assertRole(role, "controller").original.observeRetainedFixed());
+}
 function beginPanel(role) { assertRole(role, "controller"); return ownOperation(role, "beginPanel", [], []); }
 function beginBracket(role) { assertRole(role, "controller"); return ownOperation(role, "beginBracket", [], []); }
 function beginRead(role, name, authorization) {
@@ -237,7 +243,7 @@ function beginCompletionFixed(role,slot,body){if(arguments.length!==3||![1,2].in
 function verifyCompletionToolFixed(role,request){if(arguments.length!==2)fail("owned_initial_completion_verify_arguments");assertRole(role,"daemon");return ownOperation(role,"verifyCompletionToolFixed",[request],[]);}
 function finishOriginalCompletionFixed(role,handler){if(arguments.length!==2)fail("owned_initial_completion_finish_arguments");assertRole(role,"daemon");return assertRole(role).operation("finishOriginalCompletionFixed",[handler],[]);}
 function completeOriginalCompletionResponseFixed(role,handler){if(arguments.length!==2)fail("owned_initial_completion_response_arguments");assertRole(role,"daemon");return assertRole(role).operation("completeOriginalCompletionResponseFixed",[handler],[]);}
-module.exports = Object.freeze({selectedFixed,openControllerFixed,bindOriginalDaemonFixed,assertCurrent,executionProfileFixed,sharedQueueStateFixed,acknowledgeSharedQueueIoFixed,open,ensure,status,
+module.exports = Object.freeze({selectedFixed,openControllerFixed,bindOriginalDaemonFixed,assertCurrent,executionProfileFixed,sharedQueueStateFixed,acknowledgeSharedQueueIoFixed,open,ensure,status,observeRetainedFixed,
   beginPanel,beginBracket,beginRead,beginExecutionFixed,beginServerOnlyFixed,adoptBracket,locator,verifyTool,verifyExecutionTool,verifyServerOnlyTool,captureServerOnlyResultFixed,takeChallenge,submitObservation,observeActor,
   captureOriginalAeFixed,captureOriginalAmeFixed,captureSelectionFixed,describeSelectionFixed,captureManifestFixed,captureOriginalAeCepFixed,assertPreactorCurrent,preactorObserverDefinition,reservePanelBootstrapFixed,launchPanelBootstrapFixed,assertBootstrapSettled,assertCapturedCurrent,cepSourceInventory,invalidateLoadedCepProof,captureObservationFixed,nodeSourceInventory,panelSourceInventory,bindLoadedNodeProof,invalidateLoadedNodeProof,fixedTransport,fixedDaemonTransport,
   openHttpListenerFixed,acceptFixed,connectionPeer,brandHttpStream,connectionRead,connectionWrite,connectionEnd,connectionClose,closeHttpListenerFixed,

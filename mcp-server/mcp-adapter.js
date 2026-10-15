@@ -22,6 +22,7 @@ const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
 const trustedSourceCensus=require("./owned-runtime-initial-source-census");
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
+const deploymentMode = require("./deployment-mode").deploymentMode();
 const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
 const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
@@ -326,5 +327,5 @@ module.exports = {
   handleRpc,
   startStdioMcp,
   toolResult,
-  ownedRuntimeTools,handleOwnedRuntimeTool,ensureDaemonRunning
+  ownedRuntimeTools,handleOwnedRuntimeTool,ensureDaemonRunning,deploymentMode
 };
