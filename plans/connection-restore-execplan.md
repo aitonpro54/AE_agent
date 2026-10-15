@@ -13,8 +13,12 @@
   запись OwnerEpoch. LaunchConsume отсутствует. Original controller/broker exact
   exits подтверждены. Порт3456 закрыт, CEP8870 существует; project read ещё не было.
 - fae6d1f сократил измеренный Fresh147→28ms. Полное время C1 этим не доказано.
-- Native successor и JS/driver интеграция завершены, source заморожен. Независимый
-  review Astra GO. Реальные build/provision/ensure пока не запускались.
+- Native successor и JS/driver интеграция завершены в 7729f55; source review Astra GO.
+  V14c: все три native target собраны. SetupCreator завершился exit2 до prepare;
+  exact original exit/EOF подтверждены, intent отсутствует, новый enrollment пуст.
+- Найден конкретный pre-intent blocker: inherited foreign Modify ACE не проходят
+  `OwnAcl` на old seal/roots. Один SID — CodexSandboxUsers, четыре не разрешились.
+  Старые journal bytes/pins сохранены. Добавлен безопасный failure code в stderr.
 
 ## Decision Log
 
@@ -34,12 +38,19 @@
   старше d314a2f, Node24.19 подходит. Успех отдельного child не является подключением
   обслуживающего чат MCP. Если штатный restart недоступен агенту, запросить один
   технический шаг пользователя после полной готовности установки.
+- [block: ACL допуска] [executor: ae_specialist и выбранная пользователем Astra —
+  ограниченный read-only анализ; root — sole permissions/build/live controller].
+  Не расширять native whitelist и не удалять права рекурсивно у рабочего дерева.
+  Проверить минимальную защиту служебного namespace с сохранением исходных DACL.
 
 ## Validation
 
 - Successor behavioral fixtures5 и existing build fixtures12 PASS; syntax7 JS,
   PowerShell parser, compile identity.cs, rules/diff PASS. Source review Astra GO.
-  Native C++ compile и live-проверка ещё не выполнены; это source checkpoint.
+  Native C++ compile/link трёх targets PASS; live project read ещё не выполнен.
+- V14c failure сверена по исходному retained HANDLE, exit2/stdoutEOF/stderrEOF;
+  все handles закрыты, pending0. Доказанный ACL blocker воспроизведён точным
+  предикатом на actual DACL без повторного запуска creator.
 - Переданные WIP имели syntax PASS, но содержали незавершённую native интеграцию и
   ошибки JS genesis key/selector. Это диагностические факты, не приёмка.
 - Проверить native-compatible closed records, actual intent/binding, отсутствие
@@ -52,5 +63,5 @@
 
 ## Следующее действие
 
-Завершить и сверить единый source batch. Затем собрать/установить его один раз,
-обновить servicing MCP штатно и проверить подключение без операций очереди.
+Исправить точную причину ACL отказа, сохранив protected one-shot contract. Затем
+сверить установку, обновить servicing MCP и прочитать реальный проект через MCP.
