@@ -45,6 +45,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "export_two_title_snapshots",
   "ensure_ame_running",
   "enqueue_ame_title_variant",
   "start_ame_title_batch",
@@ -820,7 +821,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4249,6 +4250,14 @@ function verifyAmeNativeFixture(step, evidence) {
 }
 
 function verifyStep(checks, step, evidence) {
+  if(step.tool==="export_two_title_snapshots"){
+    const payload=payloadForStep(step);let valid=false;
+    const reads=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+    try{const checked=require("./title-export-snapshots").verifyResult(payload,step.args);valid=step.status==="completed" && checked.ok && payload.verification?.ok===true &&
+      payload.authorization?.runId===evidence.run?.id && payload.authorization?.proposalId===evidence.run?.provenance?.actionId && reads.length===1 && reads.every(read=>
+      SERVER_ATTACHED_READS.get(read)?.valid===true && read.tool==="get_project_info" && read.status==="completed" && projectLifecycle.samePath(payloadForStep(read)?.file,step.args.expectedProjectFile) && payloadForStep(read)?.dirty===false);}catch(_){}
+    pushCheck(checks,{id:`${step.index}:${step.tool}:snapshots`,title:"Два новых снимка и восстановленный исходник",expected:"native SaveAs read-back, pinned files and source restoration",observed:valid?"two snapshots verified; media not checked":"snapshot outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if (step.tool === "import_footage") {
     const payload = payloadForStep(step);
     if (!payload || step.status !== "completed") return;
@@ -4268,6 +4277,12 @@ function verifyStep(checks, step, evidence) {
     return;
   }
   if (step.tool === "start_ame_title_batch") {
+    if(args.queueMode==="shared_queue_v1"){
+      const attached=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+      const valid=payload.verification?.ok===true && payload.verification.scope==="ame_two_own_items_global_start" && attached.every(read=>SERVER_ATTACHED_READS.get(read)?.valid===true) &&
+        require("./ame-shared-queue-grant").verifyStartEvidence(args,payload,evidence.run,attached.map(read=>({...read,result:payloadForStep(read)})));
+      pushCheck(checks,{id:`${step.index}:${step.tool}:own-items-start`,title:"Два собственных item и общий START",expected:"exact retained own wrappers and one accepted global start",observed:valid?"own items and global START verified; mixed queue and media not scanned":"shared START unresolved",passed:valid,evidence:stepLabel(step)});return;
+    }
     if (args.manualQueueMode === "cep_user_declaration_v2") {
       const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
       let valid = false;

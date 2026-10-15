@@ -82,4 +82,34 @@ function createSharedQueueGrant(deps) {
   }
   return { authorize, assertCapability, consume, assertConsumedForDispatch, readReservation: id => readReservation(deps.stateDir, id) };
 }
-module.exports = { MODE, BINDING_SCHEMA, RESERVATION_SCHEMA, validateBinding, bindingHash, buildBinding, readReservation, createSharedQueueGrant };
+// Verify only this runner's two retained wrappers and its exact once START.
+// The status executor already validates each wrapper against the durable ledger.
+function verifyStartEvidence(args,payload,run,reads){
+  try{
+    const reserved=payload?.startReservation,receipt=reserved?.sharedQueueReceipt,binding=receipt?.binding;
+    validateBinding(binding);
+    if(args.queueMode!==MODE || payload.ok!==true || payload.code!=="batch_start_accepted" || payload.dispatchAcceptanceVerified!==true ||
+      payload.globalQueueStart!==true || payload.unknownOutcome===true || payload.authorization?.runId!==run?.id || payload.authorization?.proposalId!==run?.provenance?.actionId ||
+      reserved.schema!==RESERVATION_SCHEMA || reserved.batchId!==args.batchId || reserved.requestNonce!==payload.requestNonce || reserved.lastDispatchGuardVerified!==true ||
+      receipt.proofSource!=="server_private_shared_queue_capability" || receipt.globalQueueStart!==true || receipt.bindingHash!==bindingHash(binding) || reserved.receiptHash!==digest(receipt) ||
+      receipt.requestNonce!==payload.requestNonce || receipt.operationBinding!==reserved.operationBinding || binding.batchId!==args.batchId || binding.targetSpecifier!==args.targetSpecifier ||
+      binding.process.pid!==args.expectedProcess.pid || binding.process.startedAt!==new Date(args.expectedProcess.startedAt).toISOString() ||
+      payload.native?.start?.requestNonce!==payload.requestNonce || payload.native.start.invoked!==true || payload.native.start.accepted!==true ||
+      !Array.isArray(reads) || reads.length!==2) return false;
+    const ids=new Set(),nonces=new Set([payload.requestNonce]);
+    for(const read of reads){
+      const observed=read.result,native=observed?.native,job=binding.jobs.find(j=>j.jobId===read.args?.jobId);
+      if(!job || ids.has(job.jobId) || read.tool!=="get_ame_title_job_status" || read.status!=="completed" || read.args.batchId!==args.batchId ||
+        read.args.targetSpecifier!==args.targetSpecifier || read.args.expectedProcess?.pid!==binding.process.pid || new Date(read.args.expectedProcess.startedAt).toISOString()!==binding.process.startedAt ||
+        observed?.ok!==true || observed.jobId!==job.jobId || observed.batchId!==args.batchId || observed.startAcceptanceVerified!==true || observed.nativeAssociationVerified!==true ||
+        digest(observed.startReservation)!==digest(reserved) || native?.code!=="job_observed" || !UUID.test(native.requestNonce||"") || nonces.has(native.requestNonce) ||
+        native.start?.requestNonce!==payload.requestNonce || native.start.accepted!==true || native.start.invoked!==true || native.job?.handleKey!==job.jobId ||
+        native.job.sourcePath!==job.source.path || native.job.sourceGuid!==job.source.guid || native.job.outputPath!==job.outputPath ||
+        native.job.retainedWrapperSessionNonce!==binding.retainedWrapperSessionNonce || native.job.processBinding!==binding.processBinding ||
+        !Number.isFinite(native.observedAt) || native.observedAt<payload.native.observedAt) return false;
+      ids.add(job.jobId);nonces.add(native.requestNonce);
+    }
+    return true;
+  }catch(_){return false;}
+}
+module.exports = { MODE, BINDING_SCHEMA, RESERVATION_SCHEMA, validateBinding, bindingHash, buildBinding, readReservation, createSharedQueueGrant, verifyStartEvidence };

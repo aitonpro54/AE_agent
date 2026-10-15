@@ -29,8 +29,18 @@ const ownedSharedQueueContextGuard=require("./owned-runtime-initial-shared-queue
   const own=ownedSharedQueueContexts.get(context);if(!initialRuntime||trustedReadDaemon.executionProfile!=="shared_queue_v1"||!trustedReadDaemon.role||!own||!own.handler||!own.request||own.record!==context.record||ownedExecutionRunContext.getStore()!==context)trustedFail("owned_initial_original_shared_ingress_required");
   initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);
 }});
-function assertOwnedExecutionContext(context){if(ownedSharedQueueContexts.has(context))return ownedSharedQueueContextGuard.assertContext(context);return manualPlanIngress.assertContext(context);}
+function assertOwnedExecutionContext(context){if(productAmeContexts.has(context))return assertProductAmeContext(context);if(ownedSharedQueueContexts.has(context))return ownedSharedQueueContextGuard.assertContext(context);return manualPlanIngress.assertContext(context);}
 function assertSharedQueueIngress(context,binding){
+  if(productAmeContexts.has(context)){
+    assertProductAmeContext(context);
+    if(binding?.schema===ameSharedQueue.BINDING_SCHEMA){
+      ameSharedQueue.validateBinding(binding);
+      if(context.record.payload.plan.steps[0].tool!==ameTitleJobs.START || binding.batchId!==context.args.batchId || binding.targetSpecifier!==context.args.targetSpecifier ||
+        binding.process.pid!==context.args.expectedProcess.pid || binding.process.startedAt!==context.args.expectedProcess.startedAt)throw Error("ame_product_shared_binding_changed");
+      return true;
+    }
+    assertAmeTitleContext(context,binding);return true;
+  }
   if(!ownedSharedQueueContexts.has(context))trustedFail("owned_initial_private_shared_ingress_required");assertOwnedExecutionContext(context);
   if(binding?.schema===ameSharedQueue.BINDING_SCHEMA){const own=ownedAmeContexts.get(context),queue=trustedReadDaemon.ameQueueFacts?.[1];if(!own||own.slot!==2||own.leaf!==7||!queue||m100Protocol.stableStringify(binding)!==m100Protocol.stableStringify(queue.value.manifest))trustedFail("owned_initial_exact_shared_binding_required");const debt=trustedNative.describeRestorationDebtFixed(trustedReadDaemon.role);if(debt.count||debt.inFlight||debt.unknown)trustedFail("owned_initial_shared_restoration_debt");return true;}
   return assertAmeTitleContext(context,binding);
@@ -103,6 +113,7 @@ const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const nativeRenderVariant = require("./native-render-variant");
+const titleExport = require("./title-export-snapshots");
 const compDynamicLinkRead = require("./comp-dynamic-link-read");
 const ameTransport = require("./ame-transport");
 const amePresets = require("./ame-presets");
@@ -249,6 +260,35 @@ const ameFixtureExecutor = ameFixtureRunner.createExecutor({
   }
 });
 const ameTitleMutationNames = new Set([ameTitleJobs.ENQUEUE, ameTitleJobs.START]);
+const productAmeContexts=new WeakMap();
+function productRuntimeCurrent(){return deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport();}
+function productAmeFingerprint(context){return m100Protocol.stableStringify({payloadHash:context.record.payloadHash,runId:context.runId,args:context.args,checkpoint:context.checkpoint});}
+function assertProductAmeContext(context){
+  const row=productAmeContexts.get(context),record=context?.record,authority=autonomousSession.authorization();
+  if(!row || !productRuntimeCurrent() || !authority || authority.sessionHash!==row.sessionHash || row.record!==record ||
+    context.autonomous!==true || context.confirm!==true || context.allowWithoutCheckpoint!==false || context.args.queueMode!==ameSharedQueue.MODE ||
+    record.confirmedBySurface!=="cep-autonomous-session" || record.confirmedBySession!==`session-${row.sessionHash}` ||
+    row.fingerprint!==productAmeFingerprint(context) || record.payloadHash!==m100Protocol.sha256Payload(record.payload))throw Error("ame_product_current_runner_required");
+  currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+  projectSave.verifyDryRunReceipt(record,context.stepCount,AUTONOMY_CONTRACT_VERSION);
+  return true;
+}
+function brandAmeTitleContext(context,autonomous){
+  if(!autonomous || !productRuntimeCurrent() || context.args.queueMode!==ameSharedQueue.MODE)return manualPlanIngress.brand(context);
+  productAmeContexts.set(context,{record:context.record,sessionHash:autonomous.sessionHash,fingerprint:productAmeFingerprint(context)});
+  assertProductAmeContext(context);return context;
+}
+const titleExportExecutor=titleExport.createExecutor({
+  assertRunner:context=>{
+    const record=context.record,authority=autonomousSession.authorization();
+    if(!productRuntimeCurrent() || context.autonomous!==true || !authority || authority.sessionHash!==context.sessionHash || context.confirm!==true || context.allowWithoutCheckpoint!==false ||
+      record.confirmedBySurface!=="cep-autonomous-session" || record.confirmedBySession!==`session-${context.sessionHash}`)throw Error("title_export_current_runner_required");
+    currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+  },
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body))),
+  writeNative:(body,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(body,timeout)),
+  persist:value=>{const context=planCommandContext.getStore();if(!context?.item || context.item.tool!==titleExport.TOOL)throw Error("title_export_run_record_required");context.item.exportSnapshots=JSON.parse(JSON.stringify(value));context.persist();}
+});
 function assertAmeTitleContext(context, binding) {
   currentProposalState.assertCurrent(context && context.record);
   assertOwnedExecutionContext(context);
@@ -274,20 +314,29 @@ const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
 });
 const ameSharedQueueIssuer=ameSharedQueue.createSharedQueueGrant({stateDir:path.join(LOG_DIR,"ame-title-jobs"),assertSharedQueueIngress,assertServerContext:assertSharedQueueIngress});
 const productAmeReadDispatchPort=require("./ame-product-read-dispatch").createProductReadDispatch({
-  assertProduct:()=>deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport(),
+  assertProduct:productRuntimeCurrent,
   dispatch:(script,timeout)=>withPlanCommandRole("readback",()=>runExtendScriptBody(script,timeout))
 });
+const productAmeDispatchPort=require("./ame-product-dispatch").createProductDispatch({assertProduct:productRuntimeCurrent,assertContext:assertProductAmeContext,
+  assertSavedSource:selector=>titleExportExecutor.assertSavedSource(selector),
+  dispatch:(script,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(script,timeout))});
 const ameDispatchPorts=new WeakMap();
+const amePreparationPorts=new WeakMap();
+function prepareAmeDispatch(method,selector,context){
+  const port=productRuntimeCurrent()?productAmeDispatchPort:ownedAmeNativeDispatchPort;
+  return Promise.resolve(port[method](selector,context)).then(cap=>{amePreparationPorts.set(cap,port);return cap;});
+}
 const ameNativeDispatchPort={
   authorize(metadata,context,preparation){
-    const port=deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport()?productAmeReadDispatchPort:ownedAmeNativeDispatchPort;
+    const port=productRuntimeCurrent()?(metadata.mutating?productAmeDispatchPort:productAmeReadDispatchPort):ownedAmeNativeDispatchPort;
     const cap=port.authorize(metadata,context,preparation);ameDispatchPorts.set(cap,port);return cap;
   },
   assertAuthorization(cap,metadata,context){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.assertAuthorization(cap,metadata,context);},
   dispatch(cap,...args){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.dispatch(cap,...args);},
-  prepareEnqueue(...args){return ownedAmeNativeDispatchPort.prepareEnqueue(...args);},
-  prepareStart(...args){return ownedAmeNativeDispatchPort.prepareStart(...args);},
-  assertPreparation(...args){return ownedAmeNativeDispatchPort.assertPreparation(...args);}
+  prepareEnqueue(...args){return prepareAmeDispatch("prepareEnqueue",...args);},
+  prepareStart(...args){return prepareAmeDispatch("prepareStart",...args);},
+  assertPreparation(cap,...args){const port=amePreparationPorts.get(cap);if(!port)throw Error("ame_dispatch_preparation_required");return port.assertPreparation(cap,...args);}
+  ,usesSavedSource(cap,context){const port=amePreparationPorts.get(cap);return port===productAmeDispatchPort && port.usesSavedSource(cap,context);}
 };
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
@@ -296,8 +345,8 @@ const ameTitleExecutor = ameTitleJobs.createExecutor({
   assertServerContext: assertAmeTitleContext,
   manualQueueGrant: ameManualQueueIssuer,
   sharedQueueGrant: ameSharedQueueIssuer,assertSharedQueueIngress,
-  // L4 installs the real origin-bound native dispatch port. Generic plan roles
-  // and caller flags cannot create native read/start/completion rights.
+  // Product reads and exact autonomous shared-queue steps use the ordinary
+  // runner; experimental generations retain their original native port.
   nativeDispatchPort: ameNativeDispatchPort,
   runExtendScriptBody: () => { throw Object.assign(new Error("ame_title_native_dispatch_port_unavailable"), { code: "ame_title_native_dispatch_port_unavailable" }); }
 });
@@ -2274,6 +2323,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
+  titleExport.TOOL,
   ameTitleJobs.ENQUEUE, ameTitleJobs.START,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
@@ -4001,6 +4051,11 @@ async function verifyMutationResult(toolName, args, payload) {
     }
     return {ok:checks.every(check=>check.covered===true && check.eligible===true),scope:"fresh_rectangular_footprint_only",checks,artisticAccepted:false};
   }
+  if(toolName===titleExport.TOOL){
+    const verified=titleExport.verifyResult(payload,args),result=await callToolLogged("verification-readback","get_project_info",{}),read=firstToolPayload(result),context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:"get_project_info",args:{},status:result.isError?"failed":"completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {...verified,ok:verified.ok && !result.isError && projectLifecycleContract.samePath(read?.file,args.expectedProjectFile) && read?.dirty===false};
+  }
   if(toolName===projectSave.TOOL_NAME){
     projectSave.verifyReceipt(payload && payload.saveReceipt,args);
     return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
@@ -4040,8 +4095,9 @@ async function verifyMutationResult(toolName, args, payload) {
       nativeJobId: null, nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
   }
   if (toolName === ameTitleJobs.START) {
-    if (args.manualQueueMode !== "cep_user_declaration_v2") return { ok: false, scope: "ame_native_queue_composition", reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
-    const reads = [], context = planCommandContext.getStore(), manifest = payload?.startReservation?.manualQueueReceipt?.manifest;
+    const shared=args.queueMode===ameSharedQueue.MODE;
+    if (!shared && args.manualQueueMode !== "cep_user_declaration_v2") return { ok: false, scope: "ame_native_queue_composition", reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
+    const reads = [], context = planCommandContext.getStore(), manifest = shared?payload?.startReservation?.sharedQueueReceipt?.binding:payload?.startReservation?.manualQueueReceipt?.manifest;
     for (const job of manifest?.jobs || []) {
       const readArgs = { targetSpecifier: args.targetSpecifier, expectedProcess: args.expectedProcess, batchId: args.batchId, jobId: job.jobId,
         ...(args.expectedSessionNonce ? { expectedSessionNonce: args.expectedSessionNonce } : {}) };
@@ -4051,8 +4107,8 @@ async function verifyMutationResult(toolName, args, payload) {
     if (context?.item) { context.item.independentReadBack = reads; context.persist(); }
     const record = currentProposalState.current;
     const proofRun = context?.run && record && { ...context.run, m100Action: { previewHash: record.previewHash, confirmedBySession: record.confirmedBySession, confirmedBySurface: record.confirmedBySurface, confirmedAt: record.confirmedAt } };
-    const valid = ameManualQueue.verifyStartEvidence(args, payload, proofRun, reads);
-    return { ok: valid, scope: "ame_authenticated_cep_declaration_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+    const valid = shared?ameSharedQueue.verifyStartEvidence(args,payload,proofRun,reads):ameManualQueue.verifyStartEvidence(args, payload, proofRun, reads);
+    return { ok: valid, scope: shared?"ame_two_own_items_global_start":"ame_authenticated_cep_declaration_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
   }
   if(toolName===nativeRenderVariant.RENDER){
     const receipt=payload && payload.renderReceipt;
@@ -5604,6 +5660,10 @@ function validateAgentPlanObject(plan, requestId, context) {
       projectRoot: PROJECT_ROOT,
       generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
     }) : [];
+    if(toolName===titleExport.TOOL){
+      try{titleExport.validateInput(safeArgs);}catch(error){generatedSafetyIssues.push(error.code || error.message);}
+      if(steps.length!==1 || plan.runtimeBindings || step.resultBindings)generatedSafetyIssues.push("Two title snapshots require one exact isolated typed step without runtime bindings.");
+    }
     if(toolName===projectSave.TOOL_NAME){
       try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
       if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
@@ -5618,7 +5678,7 @@ function validateAgentPlanObject(plan, requestId, context) {
     }
     if (ameTitleJobs.tools.some(tool => tool.name === toolName)) {
       try { ameTitleJobs.validateInput(toolName, safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
-      if (ameTitleMutationNames.has(toolName) && steps.length !== 1) generatedSafetyIssues.push("AME submission/start requires an isolated manual one-step plan.");
+      if (ameTitleMutationNames.has(toolName) && steps.length !== 1) generatedSafetyIssues.push("AME submission/start requires an isolated one-step plan.");
     }
     if([nativeRenderVariant.INSPECT,nativeRenderVariant.RENDER].includes(toolName)) {
       try{nativeRenderVariant.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
@@ -5686,17 +5746,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
+      if (toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
+      if (toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
+      if (toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -6597,6 +6657,7 @@ const PLANNING_TOOL_NAMES = [
   ameFixtureRunner.INSPECT,
   ameFixtureRunner.INSPECT_ATTEMPT,
   ...ameTitleJobs.tools.map(tool => tool.name),
+  titleExport.TOOL,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
   ameTransport.TOOL_NAME,
@@ -8533,6 +8594,10 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       currentProposalState.assertCurrent(options._m100ActionRecord);
       currentProposalState.bindProject(options._m100ActionRecord, projectResult && projectResult.file);
       run.project = {...options._m100ActionRecord.project};
+      if(dryRun && validation.steps.length===1 && validation.steps[0].tool===titleExport.TOOL){
+        const preparedExport=await titleExportExecutor.preflight(validation.steps[0].safeArgs);
+        run.exportSnapshotsPreflight={ok:true,source:preparedExport.source,targets:preparedExport.targets,nativeMutations:0};
+      }
     } catch (error) {
       run.ok = false; run.errorCode = error.code || "project_inspection_failed";
       run.error = error.message; run.project = error.project || null;
@@ -8608,7 +8673,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   }
   if (!dryRun && options._m100ActionRecord) {
     try {
-      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
+      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
         manualPlanIngress.assertRequest(options._m100ActionRecord);
       }
       confirmM100ActionProposal(options._m100ActionRecord, options, run);
@@ -8798,6 +8863,10 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       persistRun(item);
+      const titleExportAuthorization=step.tool===titleExport.TOOL ? titleExportExecutor.authorize({
+        record:options._m100ActionRecord,runId:run.id,args:bound.args,autonomous:Boolean(autonomous),sessionHash:autonomous && autonomous.sessionHash,confirm,allowWithoutCheckpoint,
+        checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }) : null;
       const nativeRenderAuthorization=step.tool===nativeRenderVariant.RENDER ? nativeRenderExecutor.authorize({
         record:options._m100ActionRecord,runId:run.id,autonomous:Boolean(autonomous),confirm,allowWithoutCheckpoint,
         checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,
@@ -8822,11 +8891,11 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         try { ameFixtureAuthorization = await ameFixtureExecutor.authorize(ameFixtureContext); }
         catch (error) { ameFixtureCheckpoints.delete(run.id); throw error; }
       }
-      const ameTitleContext = ameTitleMutationNames.has(step.tool) ? manualPlanIngress.brand({
+      const ameTitleContext = ameTitleMutationNames.has(step.tool) ? brandAmeTitleContext({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
-      }) : null;
+      },autonomous) : null;
       const ameTitleAuthorization = ameTitleContext ? ameTitleExecutor.authorize(step.tool, bound.args, ameTitleContext) : null;
       const result = await planCommandContext.run({item,run,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
@@ -8834,7 +8903,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         projectLifecycleContract.isLifecycleMutation(step.tool) ? {lifecycleAuthorization} : step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : titleExportAuthorization ? {titleExportAuthorization} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -14223,6 +14292,7 @@ const tools = [
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
   ...projectSave.createToolDefinitions(),
   ...nativeRenderVariant.createToolDefinitions(),
+  titleExport.toolDefinition(),
   ameTransport.tool,
   amePresets.listAmePresetsTool,
   ameRunning.tool,
@@ -14589,6 +14659,11 @@ async function callTool(name, args, executionContext) {
   if(name===ameFixtureRunner.INSPECT_ATTEMPT) {
     try{return toolResult(await ameFixtureExecutor.inspectAttempt(args));}
     catch(error){return toolResult({ok:false,code:error.code || "fixture_attempt_inspection_failed",replayAllowed:false},true);}
+  }
+  if(name===titleExport.TOOL){
+    const result=await titleExportExecutor.execute(args,executionContext && executionContext.titleExportAuthorization);
+    if(result.ok)result.authorization={runId:currentProposalState.current.executionId,proposalId:currentProposalState.current.actionId};
+    return toolResult(result,!result.ok);
   }
   if (ameTitleJobs.tools.some(tool => tool.name === name)) {
     const result = await ameTitleExecutor.execute(name, args, executionContext && executionContext.ameTitleAuthorization);
@@ -24042,7 +24117,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
       if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
-    idContext = ameTitleMutationNames.has(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
+    idContext = name===titleExport.TOOL || ameTitleMutationNames.has(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -24123,7 +24198,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = ameTitleMutationNames.has(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {

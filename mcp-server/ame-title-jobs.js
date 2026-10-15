@@ -144,7 +144,7 @@ function nativeTitleJob(a) {
       reply.nativeAssociationVerified = true; return done("shared_jobs_observed");
     }
     if (typeof app.getFrontend !== "function") return done("frontend_unsupported"); frontend = app.getFrontend();
-    if (a.operation === "sources" || a.operation === "enqueue") {
+    if (a.operation === "sources" || a.operation === "enqueue" && a.savedNativeSourceVerified !== true) {
       if (!frontend || typeof frontend.getDLItemsAtRoot !== "function") return done("dl_items_unsupported"); ids = frontend.getDLItemsAtRoot(a.sourcePath);
       if (!ids || typeof ids.length !== "number" || ids.length > 256) return done("dl_items_read_error"); reply.sourceGuids = [];
       for (i = 0; i < ids.length; i++) { if (typeof ids[i] !== "string" || !ids[i] || ids[i].length > 160) return done("dl_items_read_error"); reply.sourceGuids.push(ids[i]); }
@@ -440,6 +440,9 @@ function createExecutor(deps) {
     assertCap(cap, ENQUEUE, a); await processPin(a, processInfo); if (hash(stableFile(source.path, source.sha256)) !== hash(source) || hash(stableFile(presetPin.path, presetPin.sha256)) !== hash(presetPin)) fail("ame_title_file_changed");
     const prepared = await prepareNativeReservation("enqueue", entry, { processBinding, sourcePath: source.path, sourceSha25664: source.sha256, sourceGuid: a.sourceGuid,
       presetPath: presetPin.path, presetSha25664: presetPin.sha256, outputPath: selectedOutput, range: Object.freeze({ ...a.range }) });
+    // Private product port accepts only a snapshot actually saved/read back by
+    // the current export executor. Tool JSON cannot set this native-only field.
+    const savedNativeSourceVerified=!!(prepared && typeof prepared.port.usesSavedSource==="function" && prepared.port.usesSavedSource(prepared.preparation,entry.context));
     assertNativeReservation(prepared, a, cap, entry, () => {
       if (hash(stableFile(source.path, source.sha256)) !== hash(source) || hash(stableFile(presetPin.path, presetPin.sha256)) !== hash(presetPin)) fail("ame_title_file_changed");
     });
@@ -450,7 +453,7 @@ function createExecutor(deps) {
     const job = { jobId: reserved.attemptId, handleKey: reserved.attemptId, nativeJobId: null, requestNonce: crypto.randomUUID(), operationBinding: hash({ operation: "enqueue", jobId: reserved.attemptId, args: a }), args: a, sourcePath: source.path, sourcePin: source, presetPath: presetPin.path, presetPin, presetIdentity, processBinding, process: processInfo, outputPath, submittedAt: reserved.reservedAt, transportResolved: false, nativeAssociationVerified: false, readyForStart: false, state: "unknown_outcome" };
     const initial = !batch; if (!batch) batch = { schema: LEDGER_SCHEMA, batchId: a.batchId, presetIdentity, processBinding, jobs: [], start: null }; batch.jobs.push(job); write(recordFile(a.batchId), batch, initial);
     assertCap(cap, ENQUEUE, a); entry.active = false;
-    const observed = await send({ ...a, operation: "enqueue", sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
+    const observed = await send({ ...a, operation: "enqueue", ...(savedNativeSourceVerified?{savedNativeSourceVerified:true}:{}), sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
       pinned(job); readyOutput(job);
       assertIngress(entry.context, ENQUEUE, a);
     }, () => processPin(a, processInfo));

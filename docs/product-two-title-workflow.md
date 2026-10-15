@@ -45,8 +45,8 @@ matte consumers; stateHash `0114062a5330e3b93b81acda41d8b3ed240c809d1c728c2cc3c5
    consumers общего matte и получить exact snapshot.
 2. Восстановить обычный product AME dispatch через existing typed runner и
    source/process/preset/output bindings, отделив private experimental port.
-3. Подготовить checkpoint и отдельные сохранённые snapshots вариантов через
-   существующие typed gates; источник не перезаписывать. Разрешённый диапазон —
+3. Подготовить checkpoint и отдельные snapshots через новый typed
+   `export_two_title_snapshots` в обычном runner; источник не перезаписывать. Диапазон —
    полная композиция, без изменения workArea/FPS/Source Text.
 4. Enqueue slot1, проверить его собственный wrapper; затем slot2 и его wrapper.
    Использовать фактический DXV3 HQ Alpha preset, не объявлять codec по имени.
@@ -94,6 +94,34 @@ nonce `73c7c6d4-f53a-4dc9-998b-1cf0ae117556` остался timeout при exact
 reconciliation; не переотправлялся. `getDLItemsAtRoot` — отдельное перечисление
 источников AEP, не проверка добавленного item. Новый write path должен связывать
 точный saved snapshot/его native comp GUID и проверять собственный wrapper.
-Сейчас enqueue0/start0/save0. Реальное SaveAs/open всё ещё требует private manual
-CEP authority; успешный dry-run не снимает эту границу. Product read port не
-выдаёт write capability, experimental/manual режимы не переключаются по отказу.
+Сейчас enqueue0/start0/save0. Generic SaveAs/open сохраняет private manual CEP
+authority. Подготовленная выше последовательность описывает цели и сохранность;
+она заменяется одним новым typed export step, не исполнением generic save в обход gate.
+
+## Текущий source checkpoint — подготовлен, ещё не установлен
+
+`export_two_title_snapshots` принимает exact current source SHA/revision/stateHash,
+comp ID и ровно TITR_01/TITR_02 с их IDs и новыми leaf names выше. Runtime bindings
+и caller JSX запрещены. Successful dry-run, current server proposal/autonomy и
+существующий runner checkpoint обязательны. Generic lifecycle контракт не меняется.
+CREATE_NEW reservations и фактические фазы сохраняются в существующем plan record;
+нет нового ledger, catch-restore или удаления UNKNOWN. Source SHA/file identity
+проверяет сервер, native fixed program — path/dirty/revision/length/mtime и baseline.
+Сохраняются два native GUID и hash snapshots; после restore выполняется read-back.
+
+Product AME context теперь отделён от private experimental/manual ingress до
+dispatch. Enqueue принимает privately retained saved-source proof от этого export
+executor и использует фактический GUID напрямую: `getDLItemsAtRoot` не нужен для
+этого узкого пути. Приёмка всё равно требует actual returned own wrapper и
+immediate independent status. START проверяет два own items и once receipt,
+не всю mixed queue. Source proof находится в памяти текущего daemon; рестарт
+после snapshots требует отдельной фактической сверки, не восстановления из client JSON.
+
+Focused offline: 25 AME checks и 20 snapshot checks PASS; fixed native program ES3.
+Save/open/AME runtime новый source пока не проверен. Последний живой status:
+connected=true, pending0/inflight0/editnull, daemon started16:13:30.812Z.
+Exact sources nonce выше на16:41:53Z всё ещё timeout/reconciled=true; прежний send
+не повторялся. Retained sender `$.global.aeAgentAMETitleSendV1` в AE удерживает
+исходный callback; `nativeSend` в `mcp-server/ame-title-jobs.js` может отказать
+следующему send с `previous_request_unresolved`. Это оставшийся конкретный шаг
+сверки для следующего исполнителя; состояние не стирать и census не переотправлять.
