@@ -39,3 +39,26 @@ raw/destructive/save confirmations сохраняют собственные т�
 сверить фактическое завершение исходных владельцев и pending effects.
 Исторический LaunchConsume не является доказательством успешного запуска
 или выхода процесса. Source/offline-проверки не заменяют живое чтение AE.
+
+## Остановка и преемственность product daemon
+
+Право остановить собственный зарегистрированный product daemon отделено от
+write admission. Product genesis связывает первую положительную registration,
+reservation и launch operation с явным разрешением миграции и её сохранённым
+результатом. Следующие поколения проходят подписанную линейную succession;
+current pointer обновляется после регистрации преемника. При наличии legacy
+anchor сохраняются прежние проверки retained manifest и capsule.
+
+Product shutdown требует пустых очередей, отсутствия active edit session,
+bootstrap, native work, cleanup, outstanding transport и confirmed/executing
+plan. Отдельный trusted признак разрешает остановку при свежем отсутствии
+lifecycle store; corrupt, partial и неизвестное состояние не считаются idle.
+Пассивный `/bridge/next` poll не мешает остановке, а реальная read/execution
+операция продолжает учитываться. Это не открывает mutation admission.
+
+Разовый repair receipt относится к известному never-admitted product generation.
+Он связывает CREATE_NEW intent, исходные source snapshots и signed startup rows
+с фактическим выходом того же удерживаемого OS HANDLE и сохраняет `graceful:false`.
+Это private read-only consumer, без нового force tool; UNKNOWN, неполная запись,
+подмена snapshot или другого поколения блокируют продолжение. Старый experimental
+UNKNOWN и его журналы не становятся product grant или доказательством выхода.

@@ -6,6 +6,19 @@
 
 ## Progress
 
+- Product lifecycle repair: добавлены signed genesis от первой собственной
+  registration и явного migration evidence, линейная succession и отдельная stop
+  readiness при закрытом write admission. Legacy anchor и mutation gates сохранены.
+  Private consumer разового known-product retirement проверяет exact intent,
+  сохранённые source bytes/startup rows и held-HANDLE exit с `graceful:false`.
+  Root остаётся единственным контроллером фактической retirement и перезапуска.
+- Scoped validation: product lifecycle10 и existing supervisor91 offline cases,
+  initial-runtime24, rules/diff PASS. Проверены shutdown→ensure без нового grant,
+  source-change succession, UNKNOWN/tamper/cross-generation denial и passive poll
+  с сохранением private lifecycle delivery gate. Старый HTTP fixture в main root
+  с существующей registration отказал до listen на unreserved startup guard;
+  child exited1, повтор не выполнялся. Удаление его exact Temp было отклонено
+  automatic approval policy; cleanup остаётся отдельным housekeeping. Это не live proof.
 - Fresh product startup: устранён deadlock первого подключения при отсутствующем
   lifecycle store. Server-computed fresh absence разрешает только connect и
   фиксированный `get_project_info` через существующую read-only capability;

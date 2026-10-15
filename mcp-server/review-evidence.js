@@ -148,6 +148,7 @@ const RUNTIME_FILES = [
   "mcp-server/owned-runtime-win32.js",
   "mcp-server/owned-runtime-authority.js",
   "mcp-server/owned-runtime-service.js",
+  "mcp-server/owned-runtime-product-lifecycle.js",
   "mcp-server/owned-runtime-supervisor.js",
   "mcp-server/owned-fixture-lifecycle.js",
   "scripts/owned-runtime-control.js",
