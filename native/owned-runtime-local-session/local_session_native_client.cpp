@@ -44,6 +44,7 @@ std::wstring Quote(const std::wstring& value){
     for(wchar_t c:value){if(c==L'\\'){++slashes;continue;}out.append(c==L'\"'?slashes*2+1:slashes,L'\\');slashes=0;out+=c;}
     out.append(slashes*2,L'\\');out+=L'\"';return out;
 }
+std::wstring FixedDaemonEntry(){return EmbeddedProfile().repository+L"\\mcp-server\\bridge-daemon.js";}
 std::wstring HandleText(HANDLE value){return std::to_wstring(reinterpret_cast<std::uintptr_t>(value));}
 HANDLE InheritedLocator(const wchar_t* key){
     wchar_t text[32]{};const DWORD n=GetEnvironmentVariableW(key,text,32);
@@ -177,7 +178,14 @@ CreatedChild NativeClient::CreateFixedChild(Role childRole,const std::shared_ptr
     const auto& creator=daemon?originalSeal->ArtifactFile(production::ArtifactRole::Broker):resolved.controllerImage;
     CheckedFile executable(approved);
     const std::wstring image=daemon?fixed.nodeLocator:fixed.brokerLocator;
-    const std::wstring command=Quote(image)+(daemon?L" "+Quote(enrollment?enrollment->CheckedBridgeEntry():L""):L" --trusted-read-broker");
+    const std::wstring daemonEntry=daemon?FixedDaemonEntry():std::wstring{};
+    if(daemon){
+        if(!enrollment)Refuse("trusted_daemon_original_lifecycle_closed");
+        const auto& locators=enrollment->PrepareFixedLaunchLocators();
+        if(locators.node!=fixed.nodeLocator||locators.bridge!=daemonEntry||locators.repository!=fixed.repository)
+            Refuse("trusted_daemon_fixed_launch_locator_mismatch");
+    }
+    const std::wstring command=Quote(image)+(daemon?L" "+Quote(daemonEntry):L" --trusted-read-broker");
     const auto boundary=[&](){
         if(!originalSeal->Fresh()||!executable.Current()||!detail::ProcessBirth(GetCurrentProcess())||
             detail::ProcessSid(GetCurrentProcess())!=resolved.userSid||detail::ProcessImage(GetCurrentProcess())!=creator.pin.canonicalPath)
@@ -193,6 +201,7 @@ CreatedChild NativeClient::CreateFixedChild(Role childRole,const std::shared_ptr
             lifecycle->sessionDeadline_>std::numeric_limits<std::uint64_t>::max()-600000||lifecycle->dispositionDeadline_!=lifecycle->sessionDeadline_+600000||
             now<lifecycle->issuedAt_||now>=lifecycle->sessionDeadline_||now>=lifecycle->dispositionDeadline_)
             Refuse("trusted_daemon_original_lifecycle_closed");
+        enrollment->CheckFixedLaunchLocators();
     };
     static_assert(std::is_nothrow_move_constructible_v<CreatedChild>&&std::is_nothrow_move_assignable_v<CreatedChild>,"Original creation ownership transfer must not throw.");
     boundary();CreatedChild result;result.status.code.reserve(256);result.failedCloseHandles.reserve(5);result.bootstrap=std::make_unique<Bootstrap>();
@@ -503,7 +512,7 @@ struct NativeClient::Data final {
         int argc=0;wchar_t** arguments=CommandLineToArgvW(GetCommandLineW(),&argc);if(!arguments)Refuse("trusted_original_node_command_line_unavailable",GetLastError());
         std::wstring wanted=role==Role::Controller?fixed.adapterLocator:std::wstring{};
         if(role==Role::Daemon)for(const auto& source:expected.sourceFiles)if(source.components==std::vector<std::wstring>{L"mcp-server",L"bridge-daemon.js"}){
-            if(!wanted.empty())Refuse("trusted_original_daemon_entry_ambiguous");wanted=source.pin.canonicalPath;}
+            if(!wanted.empty())Refuse("trusted_original_daemon_entry_ambiguous");wanted=FixedDaemonEntry();}
         const bool exact=argc==2&&arguments[0]&&arguments[1]&&_wcsicmp(arguments[0],fixed.nodeLocator.c_str())==0&&std::wstring(arguments[1])==wanted;
         LocalFree(arguments);if(!exact)Refuse("trusted_original_node_fixed_entry_required");
     }

@@ -72,6 +72,15 @@
   kernel object. Source/liveness gates сохранены; прочая startup chain проверена.
   Новый diagnostic protocol не добавляется. Далее fresh v10 M/build/install;
   known retired v7/v9 явно перечисляются в provisioning audit. AE/AME effects0.
+- V10 CompileOnly3/3 PASS, original9children exit0/EOF; seal/creator/factory0.
+  До C1 отдельно проверен actual Node loader: canonical VolumeGUID daemon entry
+  даёт EISDIR до исполнения JS (original passive child exit1/EOF). Ordinary DOS
+  entry actual PASS, census эквивалентен baseline: rows312/modules123/7709635bytes,
+  pinned descriptors/modulepaths без различий, nativeFactories0/addonLoadedfalse.
+  V10 source-only superseded до provisioning. Исправлен только native launcher:
+  один ordinary daemon locator для command и argv guard; существующие helpers
+  подтверждают retained no-follow alias, physical pin и full hash до Create/Resume.
+  Canonical pin authority сохранена. Source proof/rules/diff PASS; далее fresh v11.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
