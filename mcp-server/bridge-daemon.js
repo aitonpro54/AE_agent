@@ -14306,8 +14306,15 @@ const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeS
         outstandingAttempts:Array.isArray(runnerState.outstandingAttempts)?runnerState.outstandingAttempts.length:null,transportOutstanding:Array.isArray(transport.outstanding)?transport.outstanding.length:null}};
   },
   closeIdleWaiters:()=>{for(const waiter of waitingPanels.splice(0)){clearTimeout(waiter.timer);if(!waiter.done && !waiter.res.destroyed && !waiter.res.writableEnded){waiter.done=true;writeJson(waiter.res,200,{ok:true,command:null,draining:true});}}},
-  closeServer:()=>{if(ownedRuntimeHttpServer){ownedRuntimeHttpServer.close();if(typeof ownedRuntimeHttpServer.closeIdleConnections==="function")ownedRuntimeHttpServer.closeIdleConnections();}}
+  closeServer:closeOwnedRuntimeHttpServer
 });
+function closeOwnedRuntimeHttpServer(){
+  if(!ownedRuntimeHttpServer)return;
+  // Called only after the shutdown ACK finished and service quiescence passed.
+  // A CEP long-poll socket can remain active after the listener is closed.
+  ownedRuntimeHttpServer.close();
+  if(typeof ownedRuntimeHttpServer.closeAllConnections==="function")ownedRuntimeHttpServer.closeAllConnections();
+}
 const ownedFixtureLifecycle=require("./owned-fixture-lifecycle").createFixtureLifecycleController({
   repoRoot:PROJECT_ROOT,
   getCurrentActor:()=>{const s=getBridgeStatus().lastPanelInfo;return {panelInstanceId:s?.panelInstanceId,panelLifecycleEpoch:s?.panelLifecycleEpoch,panelGeneration:s?.panelGeneration};},

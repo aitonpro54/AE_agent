@@ -112,6 +112,16 @@ function nativeSnapshot(a) {
     return row;
   }
   function registeredProducer(c,l){var n;for(n=0;n<producers.length;n++)if(producers[n].ownerCompItemId===c.id && producers[n].layer===l)return true;return false;}
+  function immutableTextDefinition(l){
+    var p=l.property("ADBE Text Properties").property("ADBE Text Document"),doc,n,range,styles=[],row;
+    if(!p || p.expressionEnabled!==false || p.numKeys!==0)bad("immutable_text_animation_unsupported");
+    doc=p.value;
+    if(!doc || typeof doc.text!=="string" || doc.text.length>4096 || typeof doc.characterRange!=="function")bad("immutable_text_styles_unavailable");
+    var fields=["font","fontSize","applyFill","fillColor","applyStroke","strokeColor","strokeWidth","tracking","leading","autoLeading","baselineShift","horizontalScale","verticalScale","fauxBold","fauxItalic","allCaps","smallCaps","justification"];
+    function style(s){var out={},i,v,key;for(i=0;i<fields.length;i++){key=fields[i];if(key==="fillColor" && s.applyFill===false || (key==="strokeColor" || key==="strokeWidth") && s.applyStroke===false){out[key]=null;continue;}v=s[key];if(v===undefined){out[key]=null;continue;}if(typeof v==="number")out[key]=number(v);else if(typeof v==="string" || typeof v==="boolean")out[key]=v;else if(v && typeof v.length==="number")out[key]=value(v);else out[key]=String(v);}return out;}
+    for(n=0;n<doc.text.length;n++){range=doc.characterRange(n,n+1);row=style(range);if(typeof row.font!=="string" || typeof row.fontSize!=="number")bad("immutable_text_styles_unavailable");styles.push(row);}
+    return {text:doc.text,numKeys:0,expressionEnabled:false,documentStyle:style(doc),characterStyles:styles};
+  }
   // Local first pass in each visited comp. Permission is exact owner/layer identity, never shared source identity.
   function deriveBindings(c){
     var n,m,fill,isControlled,producer,found,producerIdCount,fillIdCount,producerIndex,key,row,producerRow;
@@ -124,7 +134,7 @@ function nativeSnapshot(a) {
       }else{
         // Preserve previously allowed footage/shape producers without introducing dependencies or new restrictions.
         if(fill.hasTrackMatte!==true || !fill.trackMatteLayer || !(fill.trackMatteLayer.source instanceof CompItem))continue;
-        if(typeof AVLayer==="undefined" || !(fill instanceof AVLayer) || typeof FootageItem==="undefined" || !(fill.source instanceof FootageItem) || fill.isTrackMatte!==false)bad("immutable_matte_consumer_unsupported");
+        if(!(fill instanceof TextLayer) && (typeof AVLayer==="undefined" || !(fill instanceof AVLayer) || typeof FootageItem==="undefined" || !(fill.source instanceof FootageItem)) || fill.isTrackMatte!==false)bad("immutable_matte_consumer_unsupported");
       }
       if(typeof TrackMatteType.ALPHA==="undefined" || fill.trackMatteType!==TrackMatteType.ALPHA)bad("controlled_matte_type_unsupported");
       producer=fill.trackMatteLayer;found=0;producerIdCount=0;fillIdCount=0;producerIndex=0;
@@ -134,9 +144,9 @@ function nativeSnapshot(a) {
       if(typeof AVLayer==="undefined" || !(producer instanceof AVLayer) || producer.hasTrackMatte!==false || producer.isTrackMatte!==true || producer.trackMatteType!==TrackMatteType.NO_TRACK_MATTE || producer.trackMatteLayer!==null || readBool(producer.solo) || readBool(producer.guideLayer) || readBool(producer.locked))bad("matte_producer_flags_unsupported");
       key=c.id+":"+fill.id;if(contains(bindingKeys,key))continue;
       producerRow={id:producer.id,index:producerIndex,name:String(producer.name),enabled:readBool(producer.enabled),solo:false,guide:false,locked:false,hasTrackMatte:false,isTrackMatte:true,trackMatteType:"none",trackMatteLayerId:null,source:sourceDefinition(producer.source),definition:layerDefinition(producer)};
-      row={ownerCompItemId:c.id,consumerLayerId:fill.id,consumerRole:isControlled ? "controlled_text" : "immutable_footage",trackMatteType:"alpha",trackMatteLayerId:producer.id,producer:producerRow};
+      row={ownerCompItemId:c.id,consumerLayerId:fill.id,consumerRole:isControlled ? "controlled_text" : fill instanceof TextLayer ? "immutable_text" : "immutable_footage",trackMatteType:"alpha",trackMatteLayerId:producer.id,producer:producerRow};
       if(isControlled){row.controlledLayerId=fill.id;row.controlledLayerIndex=n;row.controlledDefinition=layerDefinition(fill);}
-      else row.consumer={id:fill.id,index:n,name:String(fill.name),enabled:readBool(fill.enabled),solo:readBool(fill.solo),guide:readBool(fill.guideLayer),locked:readBool(fill.locked),hasTrackMatte:true,isTrackMatte:false,source:footageDefinition(fill.source),definition:layerDefinition(fill)};
+      else {row.consumer={id:fill.id,index:n,name:String(fill.name),enabled:readBool(fill.enabled),solo:readBool(fill.solo),guide:readBool(fill.guideLayer),locked:readBool(fill.locked),hasTrackMatte:true,isTrackMatte:false,source:fill instanceof TextLayer ? null : footageDefinition(fill.source),definition:layerDefinition(fill)};if(fill instanceof TextLayer)row.consumer.textDefinition=immutableTextDefinition(fill);}
       bindings.push(row);bindingKeys.push(key);
       if(!registeredProducer(c,producer))producers.push({ownerCompItemId:c.id,layer:producer});
     }
