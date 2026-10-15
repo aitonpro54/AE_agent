@@ -19,6 +19,7 @@ const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
+const DAEMON_HEALTH_TIMEOUT_MS = 5000;
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
 const trustedSourceCensus=require("./owned-runtime-initial-source-census");
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
@@ -122,7 +123,7 @@ function daemonRequest(method, requestPath, payload, timeoutMs) {
 }
 
 async function getDaemonHealth(timeoutMs) {
-  const response = await daemonRequest("GET", "/health", undefined, timeoutMs || 1200);
+  const response = await daemonRequest("GET", "/health", undefined, timeoutMs || DAEMON_HEALTH_TIMEOUT_MS);
   if (response.status !== 200 || !response.body.ok) {
     throw new Error(response.body.error || `Bridge daemon health failed with HTTP ${response.status}`);
   }
@@ -135,7 +136,7 @@ async function ensureDaemonRunning() {
 
   daemonEnsurePromise = (async () => {
     try {
-      return await getDaemonHealth(1200);
+      return await getDaemonHealth(DAEMON_HEALTH_TIMEOUT_MS);
     } catch (firstError) {
       if (!AUTO_START_DAEMON) {
         throw firstError;
@@ -144,7 +145,7 @@ async function ensureDaemonRunning() {
       if(DAEMON_HOST!=="127.0.0.1" || DAEMON_PORT!==3456)throw Object.assign(Error("owned_adapter_fixed_endpoint_required"),{code:"owned_adapter_fixed_endpoint_required"});
       const result=await require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor().ensure();
       if(result.ok!==true)throw Object.assign(Error("owned_adapter_ensure_readback_only"),{code:"owned_adapter_ensure_readback_only"});
-      return await getDaemonHealth(1200);
+      return await getDaemonHealth(DAEMON_HEALTH_TIMEOUT_MS);
     }
   })();
 
