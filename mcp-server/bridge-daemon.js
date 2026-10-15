@@ -14274,7 +14274,12 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
 const PANEL_BOOTSTRAP_AUTHORITY = Symbol("official-automation-panel-bootstrap");
 function panelControlUsesRetainedTransport() {
-  return ownedRuntimeStartup.managed && !require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
+  if (!ownedRuntimeStartup.managed) return false;
+  const supervisor=require("./owned-runtime-supervisor"), current=supervisor.readDaemonRegistration(PROJECT_ROOT);
+  // The supervisor reads status/register before publishing the successor.
+  // Keep admission closed during that normal phase; malformed records still throw.
+  if (!current || current.generation!==process.env.AE_OWNED_RUNTIME_GENERATION) return true;
+  return !supervisor.readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
 }
 const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
   const status=getBridgeStatus();
@@ -14287,7 +14292,9 @@ const ownedRuntimeAuthority=require("./owned-runtime-authority");
 const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
   initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
-  readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption || require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+  readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption ||
+    ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport() ||
+    require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
   readProductStopAuthority:()=>require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION),
   readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
   readReadiness:()=>{

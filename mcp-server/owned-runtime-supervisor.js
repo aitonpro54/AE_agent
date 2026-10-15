@@ -201,11 +201,12 @@ function validateHeldExit(exit,identity){
 }
 // An HMAC seals the private controller's factual held-HANDLE observation. Plain
 // journal digests and PID disappearance cannot produce a predecessor proof.
-function predecessorExitFacts(root,operationId,allowPrior=true){
+const PRODUCT_START_REPAIR=Symbol("verified-unregistered-product-start-retirement");
+function predecessorExitFacts(root,operationId,allowPrior=true,repairAuthority=null){
   const rows=readSupervisor(root,operationId).rows,intent=validateSupervisorIntent(root,operationId,rows),row=rows?.["predecessor-exit"],v=row?.value;
   exact(v,["schema","kind","operationId","targetGeneration","predecessor","sourceOperationId","source","finalInventorySha256","historicalOutcome","ingressFenced","replayAllowed","authentication"]);
   exact(v.source,v.kind==="prior_verified_product_repair_retirement"?["intentSha256","exitResultSha256","drainAckSha256","shutdownAckSha256","priorShutdownReceiptSha256","productRepairReceiptSha256"]:v.kind==="prior_verified_maintenance_retirement"?["intentSha256","exitResultSha256","drainAckSha256","shutdownAckSha256","priorShutdownReceiptSha256","maintenanceRetirementReceiptSha256"]:v.kind==="prior_verified_startup_retirement"?["intentSha256","exitResultSha256","drainAckSha256","shutdownAckSha256","priorShutdownReceiptSha256","startupRetirementReceiptSha256"]:["intentSha256","exitResultSha256","drainAckSha256","shutdownAckSha256","priorShutdownReceiptSha256"]);
-  const before=registeredGeneration(root,intent.targetGeneration);if(rows.unknown || v.schema!==SCHEMA+".predecessor-exit" || v.operationId!==operationId || v.targetGeneration!==intent.targetGeneration || !same(v.predecessor,before.refs) || v.historicalOutcome!=="unknown" || v.ingressFenced!==false || v.replayAllowed!==false || v.authentication!==successionHmac(v,credential(before.reservation.value,root)) || !sha(v.authentication) || !rows["final-stop-inventory"] || v.finalInventorySha256!==rows["final-stop-inventory"].sha256)fail("owned_supervisor_predecessor_exit_invalid");
+  const before=registeredGeneration(root,intent.targetGeneration);if(rows.unknown && repairAuthority!==PRODUCT_START_REPAIR || v.schema!==SCHEMA+".predecessor-exit" || v.operationId!==operationId || v.targetGeneration!==intent.targetGeneration || !same(v.predecessor,before.refs) || v.historicalOutcome!=="unknown" || v.ingressFenced!==false || v.replayAllowed!==false || v.authentication!==successionHmac(v,credential(before.reservation.value,root)) || !sha(v.authentication) || !rows["final-stop-inventory"] || v.finalInventorySha256!==rows["final-stop-inventory"].sha256)fail("owned_supervisor_predecessor_exit_invalid");
   validateFinalInventory(rows["final-stop-inventory"].value);let proof;
   if(v.kind==="prior_verified_maintenance_retirement"){
     if(!allowPrior || v.sourceOperationId===operationId || rows["drain-readback"] || rows["shutdown-readback"] || rows["exit-result"])fail("owned_supervisor_prior_maintenance_source_invalid");const prior=readVerifiedMaintenanceRetirement(root,intent.targetGeneration);
@@ -233,8 +234,24 @@ function sealPredecessorExit(root,op,kind,prior=null){
   prior?.assertUnchanged?.();const source=["prior_verified_startup_retirement","prior_verified_maintenance_retirement","prior_verified_product_repair_retirement"].includes(kind)?prior.source:prior?{...prior.source,priorShutdownReceiptSha256:prior.row.sha256}:{intentSha256:rows.intent.sha256,exitResultSha256:rows["exit-result"].sha256,...acks,priorShutdownReceiptSha256:null};
   const value={schema:SCHEMA+".predecessor-exit",kind,operationId:op.id,targetGeneration:intent.targetGeneration,predecessor:before.refs,sourceOperationId:prior?.operationId || op.id,source,finalInventorySha256:rows["final-stop-inventory"].sha256,historicalOutcome:"unknown",ingressFenced:false,replayAllowed:false,authentication:"0".repeat(64)};value.authentication=successionHmac(value,credential(before.reservation.value,root));r1.writeJournalOnce(op.dir,"predecessor-exit",value);return predecessorExitFacts(root,op.id);
 }
+function readKnownProductStartRetirement(root,generation){
+  // An operator's private disposition preserves the failed launch as UNKNOWN.
+  // Only the already-proven predecessor exit is reused.
+  if(!uuid(generation))fail("owned_product_start_retirement_invalid");
+  const file=path.join(base(root),"product-start-retirements",generation+".json");if(!fs.existsSync(file))return null;
+  const pin=authority.privateFile(file),row=readEnvelope(file),v=row.value;
+  exact(v,["schema","operationId","targetGeneration","failedGeneration","pins","proof","replayAllowed","historicalOutcome","authentication"]);
+  if(!uuid(v.operationId)||!uuid(v.failedGeneration))fail("owned_product_start_retirement_invalid");
+  const operationId=v.operationId,failed=v.failedGeneration,rows=readSupervisor(root,operationId).rows,chain=readCandidate(root,failed),key=credential(chain.reservation.value,root);
+  const pins={intent:rows.intent.sha256,unknown:rows.unknown?.sha256,launchIntent:rows["launch-intent"]?.sha256,predecessorExit:rows["predecessor-exit"]?.sha256,reservation:chain.reservation.sha256,ticket:chain.ticket.sha256,candidate:chain.candidate.sha256};
+  if(v.schema!=="ae-agent.known-product-start-retirement.v1"||v.operationId!==operationId||v.targetGeneration!==generation||v.failedGeneration!==failed||!same(v.pins,pins)||rows.unknown?.value.code!=="owned_authenticated_daemon_refused"||rows["launch-intent"].value.generation!==failed||rows.result||rows["launch-result"]||fs.existsSync(path.join(directory(root,failed),"registration.json"))||v.replayAllowed!==false||v.historicalOutcome!=="unknown"||v.authentication!==successionHmac(v,key))fail("owned_product_start_retirement_invalid");
+  validateHeldExit({schema:SCHEMA+".held-handle-exit",targetGeneration:failed,shutdownExitProven:true,proof:v.proof,replayAllowed:false},chain.candidate.value.kernelIdentity);
+  const facts=predecessorExitFacts(root,operationId,false,PRODUCT_START_REPAIR);
+  if(facts.intent.command!=="restart"||facts.intent.targetGeneration!==generation||facts.row.value.kind!=="graceful_owned_shutdown"||chain.reservation.value.operationId!==operationId)fail("owned_product_start_retirement_binding_invalid");
+  return {row,operationId,intent:facts.intent,source:facts.source,proof:facts.proof,assertUnchanged(){pin.assertUnchanged();readKnownProductStartRetirement(root,generation);}};
+}
 function readVerifiedShutdown(root,generation){
-  const file=path.join(base(root),"daemon-verified-shutdown",generation+".json");if(!fs.existsSync(file))return null;const row=readEnvelope(file),v=row.value;exact(v,["schema","targetGeneration","operationId","predecessorExitSha256","resultSha256","replayAllowed","authentication"]);
+  const file=path.join(base(root),"daemon-verified-shutdown",generation+".json");if(!fs.existsSync(file))return readKnownProductStartRetirement(root,generation);const row=readEnvelope(file),v=row.value;exact(v,["schema","targetGeneration","operationId","predecessorExitSha256","resultSha256","replayAllowed","authentication"]);
   if(v.schema!==SCHEMA+".verified-shutdown" || v.targetGeneration!==generation || !uuid(v.operationId) || v.replayAllowed!==false)fail("owned_supervisor_verified_shutdown_invalid");
   const facts=predecessorExitFacts(root,v.operationId,false),result=facts.rows.result?.value;
   if(facts.row.value.kind!=="graceful_owned_shutdown" || facts.intent.command!=="shutdown" || facts.intent.targetGeneration!==generation || facts.row.sha256!==v.predecessorExitSha256 || facts.rows.result?.sha256!==v.resultSha256 || result?.status!=="owned_daemon_shutdown_exit_proven" || result.ok!==true || result.shutdownExitProven!==true || result.replayAllowed!==false || !same(result.proof,facts.proof) || !sha(v.authentication) || v.authentication!==successionHmac(v,credential(facts.before.reservation.value,root)))fail("owned_supervisor_verified_shutdown_invalid");

@@ -89,14 +89,29 @@ check("product connect uses bootstrap ticket while project actions retain admiss
 check("ordinary product receipts do not require experimental retained manifest",()=>{
   const daemon=fs.readFileSync(path.join(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
   const start=daemon.indexOf("function panelControlUsesRetainedTransport("),end=daemon.indexOf("const panelControlService =",start);
-  let product=true;const c={ownedRuntimeStartup:{managed:true},PROJECT_ROOT:"offline",process:{env:{AE_OWNED_RUNTIME_GENERATION:"generation"}},
-    require:()=>({readProductStopAuthority:()=>product})};
+  let product=true,current={generation:"generation"};const c={ownedRuntimeStartup:{managed:true},PROJECT_ROOT:"offline",process:{env:{AE_OWNED_RUNTIME_GENERATION:"generation"}},
+    require:()=>({readProductStopAuthority:()=>product,readDaemonRegistration:()=>current})};
   vm.createContext(c);vm.runInContext(daemon.slice(start,end),c);
   assert.equal(c.panelControlUsesRetainedTransport(),false);
   product=false;assert.equal(c.panelControlUsesRetainedTransport(),true);
+  product=true;current={generation:"predecessor"};assert.equal(c.panelControlUsesRetainedTransport(),true);
+  current=null;assert.equal(c.panelControlUsesRetainedTransport(),true);current={generation:"generation"};
   c.ownedRuntimeStartup.managed=false;assert.equal(c.panelControlUsesRetainedTransport(),false);
-  c.ownedRuntimeStartup.managed=true;c.require=()=>({readProductStopAuthority:()=>{throw Error("invalid_provenance");}});
+  c.ownedRuntimeStartup.managed=true;c.require=()=>({readDaemonRegistration:()=>current,readProductStopAuthority:()=>{throw Error("invalid_provenance");}});
   assert.throws(()=>c.panelControlUsesRetainedTransport(),/invalid_provenance/);
+});
+check("ordinary product admission still rejects experimental or invalid provenance",()=>{
+  const daemon=fs.readFileSync(path.join(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
+  const start=daemon.indexOf("readAdmission:()=>"),end=daemon.indexOf(",journalRoot:",start);
+  let retained=false,admitted=false,cutover=false;
+  const c={ownedRuntimeStartup:{managed:true,requiresRetainedAdoption:true},PROJECT_ROOT:"offline",
+    panelControlUsesRetainedTransport:()=>retained,require:()=>({currentAdmission:()=>admitted}),
+    panelControlService:{cutoverReadiness:()=>({ready:cutover})}};
+  vm.createContext(c);const read=vm.runInContext("("+daemon.slice(start+"readAdmission:".length,end)+")",c);
+  assert.equal(read(),true);retained=true;assert.equal(read(),false);
+  admitted=true;assert.equal(read(),false);cutover=true;assert.equal(read(),true);
+  c.panelControlUsesRetainedTransport=()=>{throw Error("invalid_provenance");};
+  assert.throws(read,/invalid_provenance/);
 });
 
 check("first GET error closes automatic startup without retry or preference write",()=>{
