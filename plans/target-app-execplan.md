@@ -15,6 +15,10 @@
 
 ## Progress
 
+- 16.10 уточнён default следующих заданий: свежая marked workArea exact pinned
+  comp → explicit start/end. Full comp только явно; adapter range не подменяет.
+  Tool metadata/workflow исправлены; nonzero2..12s fixture PASS, live0.
+
 - 16.10: одна автоматическая передача выполнена: run `580dec47`, job `27f44aa2`,
   exact EPR/source/GUID/output, живой wrapper и setWorkArea(3,0,15.4)=true.
   После `eed1585` независимый STATUS `89125766` подтвердил queued/ownItemAccepted;
@@ -63,6 +67,11 @@
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
 
 ## Decision Log
+
+- Выбор диапазона выполняется при подготовке плана: workAreaStart + Duration
+  из get_comp_details того же source/comp; explicit user range имеет приоритет.
+  Невалидная/отсутствующая область требует уточнения, не fallback на comp.duration.
+  Предыдущий actual0..15.4s и его receipts сохраняются как история.
 
 - 16.10: outputFiles — generated files, поэтому queued admission использует только
   exact addDL call ack + живой own wrapper + явный range ack + свежий stopped/queued

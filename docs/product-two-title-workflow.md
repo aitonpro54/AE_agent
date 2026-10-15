@@ -16,6 +16,25 @@
 Это заменяет прежний критерий двух проверенных видео и finite/native whole-M
 приёмку как маршрут обычного product режима. Сами experimental receipts не меняются.
 
+## Диапазон следующих заданий: отмеченная рабочая область
+
+По уточнению пользователя 16.10 default подготовки плана — отмеченная рабочая
+область композиции. Явно заданные пользователем секунды имеют приоритет;
+полная композиция выбирается только по прямому запросу. Исторический запуск
+ниже действительно получил0..15.4s; это не default будущих заданий.
+
+Перед подготовкой range использовать существующий get_comp_details для exact comp
+того же pinned source/snapshot: взять свежие workAreaStart и workAreaDuration,
+проверить конечные числа, start>=0, duration>0 и end<=comp.duration. Передать
+`{startSeconds:workAreaStart,endSeconds:workAreaStart+workAreaDuration}`;
+например, отмеченная область start2s/duration10s даёт range2..12, а не0..10.
+Если область отсутствует/невалидна, уточнить недостающие данные; full comp молча
+не подставлять. В evidence подготовки связать это чтение/project revision/exact
+comp GUID и выбранный range с snapshot SHA. Existing intent/operation binding
+и workArea call ack сохраняют тот же range; старые receipt/schema не дополнять
+задним числом. ENQUEUE исполняет explicit range дословно, без нового default в sender.
+Правка проверена офлайн; нового live enqueue/рендера/установки не было.
+
 ## Одна автоматическая передача: результат 16.10
 
 Существующий snapshot1 и native GUID использованы напрямую. Новый output:
