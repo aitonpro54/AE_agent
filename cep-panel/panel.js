@@ -5066,8 +5066,15 @@
       startup.lookupPending=false;
       if(ready && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0") {
         startup.state="connecting";
-        setTimeout(function() {
+        var connectWaits=0;
+        setTimeout(function dispatchInitialConnect() {
           if (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || running) return;
+          // Initial provider/usage reads may still own the panel at 250ms.
+          // Wait before dispatch; never retry a submitted connection or AE read.
+          if (panelActionBusy()) {
+            if (++connectWaits >= 80) {closeInitialAutomaticStartup(startup);return;}
+            setTimeout(dispatchInitialConnect,250);return;
+          }
           initialAutomaticConnectDispatch=startup;
           try {
             var connectReceipt=invokePanelUI("bridge.connect",{});

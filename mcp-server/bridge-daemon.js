@@ -14273,7 +14273,10 @@ const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
 const PANEL_BOOTSTRAP_AUTHORITY = Symbol("official-automation-panel-bootstrap");
-const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>ownedRuntimeStartup.managed?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>ownedRuntimeStartup.managed?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
+function panelControlUsesRetainedTransport() {
+  return ownedRuntimeStartup.managed && !require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
+}
+const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
   const status=getBridgeStatus();
   if(status.lastPanelInfo?.panelGeneration!==expected.currentActor.panelGeneration || status.lastPanelInfo?.panelInstanceId!==expected.currentActor.panelInstanceId || status.lastPanelInfo?.panelLifecycleEpoch!==expected.currentActor.panelLifecycleEpoch || status.humanGuardRuntime.pid!==expected.runtime.daemon.pid || status.humanGuardRuntime.startedAt!==expected.runtime.daemon.startedAt || RUNTIME_IDENTITY.sourceSha256!==expected.runtime.loadedRuntimeSha256 || reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256!==expected.runtime.currentRuntimeSha256)throw Object.assign(Error("retained_admission_actor_or_runtime_changed"),{code:"retained_admission_actor_or_runtime_changed"});
 }});
@@ -23950,6 +23953,10 @@ function callToolLogged(source, name, args, executionContext) {
   }
   if(deploymentMode==="product" && source==="panel-bootstrap-read" && name==="get_project_info" && panelBootstrapReadContext.getStore())
     return ownedRuntimeService.runBootstrapProjectRead(()=>callToolLoggedImpl(source,name,args,executionContext));
+  // Connecting an idle panel does not admit project writes or experimental work.
+  // The panel service still validates the official adapter, action and idle state.
+  if(deploymentMode==="product" && name==="invoke_panel_action" && args?.action==="bridge.connect")
+    return ownedRuntimeService.runBootstrap(()=>callToolLoggedImpl(source,name,args,executionContext));
   const tool=toolByName(name),read=tool?.annotations?.readOnlyHint===true || !!tool && !MUTATING_TOOL_NAMES.has(name) && /^(get_|list_|inspect_|find_|search_|ping_|wait_for_)/.test(name) || ["get_panel_state","list_panel_actions","get_panel_action_result","refresh_panel_guards","reconcile_plan_run","reconcile_project_lifecycle"].includes(name);
   return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
 }

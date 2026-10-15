@@ -23,6 +23,8 @@ function fixture() {
   let guardCallback;
   const c = {
     running:false, pollTimer:null, pollInFlight:false, initialAutomaticStartup:null, initialAutomaticConnectDispatch:null,
+    ownedPollingSession:null,ownedPollingClosed:false,
+    ownedCompletedDryRunPromised:()=>false,
     panelLifecycleEpoch:0,panelConnectionGeneration:0,panelLifecycleGuard:false,panelConnectionId:"panel-fixed",
     recoveryTransportScope:null,recoveryTransportConnecting:false,activeEvalScriptCommandId:"",panelHeartbeatAt:0,
     currentPlanSyncInFlight:false,currentPlanSyncActiveReqId:0,currentPlanSyncActiveEpoch:0,currentPlanSyncWaiters:[],currentPlanSyncAt:Date.now(),
@@ -40,7 +42,7 @@ function fixture() {
     renderAutonomousSession:()=>{},setStatus:()=>{},setBridgeHelp:()=>{},refreshAppTitle:()=>{},loadAgents:()=>{},loadUsageSnapshot:()=>{},
     refreshCurrentBridgePlan:()=>{},refreshAutonomousSession:()=>{},refreshPlaceholderProtection:()=>{},
     executeCommand:command=>deliveries.push(command),pollRecoveryTransport:()=>{},
-    panelLifecycleIdle:done=>done(null),
+    panelLifecycleIdle:done=>done(null),panelActionBusy:()=>false,
     panelActionUI:{refreshTrustedGuards:done=>{guardCallback=done;return {accepted:true};}},
     invokePanelUI:()=>{c.handlers["bridge.connect"]({},(...args)=>completed.push(args),{submit:()=>true});return {state:"running"};},
     XMLHttpRequest:function() {
@@ -56,6 +58,46 @@ function fixture() {
 }
 let count=0;
 function check(name,fn) {fn();count++;process.stdout.write("PASS " + name + "\n");}
+
+check("initial provider reads delay connect without consuming or repeating it",()=>{
+  const f=fixture();let busy=true;f.c.panelActionBusy=()=>busy;
+  f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+  for(let i=0;i<4;i++)f.timer(250);
+  assert.equal(f.evals.length,0);assert.equal(f.c.initialAutomaticStartup.consumed,false);
+  busy=false;f.timer(250);assert.equal(f.evals.length,1);
+  assert.equal(f.timers.filter(t=>!t.used&&!t.cancelled&&t.delay===250).length,0);
+});
+check("busy startup wait is bounded and has no native delivery",()=>{
+  const f=fixture();f.c.panelActionBusy=()=>true;f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+  for(let i=0;i<80;i++)f.timer(250);
+  assert.equal(f.c.initialAutomaticStartup.state,"closed");assert.equal(f.evals.length,0);
+  assert.equal(f.timers.filter(t=>!t.used&&!t.cancelled).length,0);
+});
+check("product connect uses bootstrap ticket while project actions retain admission",()=>{
+  const daemon=fs.readFileSync(path.join(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
+  const start=daemon.indexOf("function callToolLogged("),end=daemon.indexOf("async function callToolLoggedImpl(",start);
+  const calls=[],c={initialRuntime:null,deploymentMode:"product",panelBootstrap:{TOOL_NAME:"ensure_ae_agent_panel"},
+    toolByName:()=>({annotations:{readOnlyHint:false}}),MUTATING_TOOL_NAMES:new Set(["invoke_panel_action"]),
+    ownedRuntimeService:{runBootstrap:fn=>{calls.push("bootstrap");return fn();},run:(kind,fn)=>{calls.push(kind);return fn();}},
+    callToolLoggedImpl:()=>"validated-by-existing-panel-service"};
+  vm.createContext(c);vm.runInContext(daemon.slice(start,end),c);
+  c.callToolLogged("mcp-adapter","invoke_panel_action",{action:"bridge.connect"},{});
+  c.callToolLogged("mcp-adapter","invoke_panel_action",{action:"plan.run"},{});
+  c.deploymentMode="initial-owned";c.callToolLogged("mcp-adapter","invoke_panel_action",{action:"bridge.connect"},{});
+  assert.deepEqual(calls,["bootstrap","execution","execution"]);
+});
+check("ordinary product receipts do not require experimental retained manifest",()=>{
+  const daemon=fs.readFileSync(path.join(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
+  const start=daemon.indexOf("function panelControlUsesRetainedTransport("),end=daemon.indexOf("const panelControlService =",start);
+  let product=true;const c={ownedRuntimeStartup:{managed:true},PROJECT_ROOT:"offline",process:{env:{AE_OWNED_RUNTIME_GENERATION:"generation"}},
+    require:()=>({readProductStopAuthority:()=>product})};
+  vm.createContext(c);vm.runInContext(daemon.slice(start,end),c);
+  assert.equal(c.panelControlUsesRetainedTransport(),false);
+  product=false;assert.equal(c.panelControlUsesRetainedTransport(),true);
+  c.ownedRuntimeStartup.managed=false;assert.equal(c.panelControlUsesRetainedTransport(),false);
+  c.ownedRuntimeStartup.managed=true;c.require=()=>({readProductStopAuthority:()=>{throw Error("invalid_provenance");}});
+  assert.throws(()=>c.panelControlUsesRetainedTransport(),/invalid_provenance/);
+});
 
 check("first GET error closes automatic startup without retry or preference write",()=>{
   const f=fixture();f.start();f.evals[0].callback("C:/project.aep");f.response(0,{error:"offline"},503);
