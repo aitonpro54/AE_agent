@@ -13,7 +13,7 @@ function text(value,maximum){return typeof value==="string"&&value.length>0&&val
 function post(session,method,params){return new Promise((resolve,reject)=>session.post(method,params,(error,value)=>error?reject(error):resolve(value)));}
 function canonicalUrl(url){
   if(!text(url,32760))fail("owned_initial_loaded_script_url_refused");
-  if(/^node:[a-z0-9_/-]+$/.test(url)||url==="evalmachine.<anonymous>")return url;
+  if(/^node:[A-Za-z0-9_/-]+$/.test(url)||url==="evalmachine.<anonymous>")return url;
   const value=url.startsWith("file://")?fileURLToPath(url):url;
   if(!/^(?:[a-z]:[\\/]|\\\\\?\\Volume\{)/i.test(value))fail("owned_initial_loaded_script_locator_refused");
   return value.replaceAll("/","\\").toLowerCase();

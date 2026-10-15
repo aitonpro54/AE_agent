@@ -81,6 +81,16 @@
   один ordinary daemon locator для command и argv guard; существующие helpers
   подтверждают retained no-follow alias, physical pin и full hash до Create/Resume.
   Canonical pin authority сохранена. Source proof/rules/diff PASS; далее fresh v11.
+- V11 CompileOnly3/3 и штатный BuildAndSeal PASS: final752/ACK80,
+  creator exit0/EOF, комплект установлен. Первый ensure прошёл bootstrap, затем
+  expected inventory отклонил штатный builtin `node:internal/readline/emitKeypressEvents`:
+  Node URL grammar ошибочно допускала только lowercase. Отказ до native.open/C1,
+  журнал пуст, launch не consumed; проект и AME не читались и не менялись.
+  Штатный revoke вернул UNKNOWN; отдельные original HANDLEs подтвердили broker
+  exit0. Controller exit1/stdio EOF после stdin close сохранён вместе с ошибкой.
+  V11 RETIRED_UNADMITTED: пять durable pins/bytes сверены, три exact binary
+  перемещены с сохранением file IDs/hash; seal/records сохранены, floor не сброшен.
+  Далее узкая grammar regression, fresh census/M/build v12; enqueue0/2, START0.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
