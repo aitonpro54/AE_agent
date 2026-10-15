@@ -1,6 +1,6 @@
 # Монтаж трейлеров компьютерных игр
 
-Статус на 15 октября 2026 года: прежняя шестёрка MP4 доставлена; **revision04 выполняется по отзыву о повторах игр и недостающих источниках**. Предыдущие файлы сохраняются до проверки замены. Выполнен разрешённый пользователем fallback VideoScout после недоступности AE bridge. Исходная установка в AE и приёмка Split Scene 05 остаются незавершёнными: targets неизвестны, AE mutations 0. Этот результат не считается готовым AEP.
+Статус на 16 октября 2026 года: **revision04 завершена и шесть проверенных MP4 доставлены в «Готовое»**. Использованы11 игр, ровно один повтор Genshin на непересекающихся фрагментах; в каждом ролике два разных оригинала. Четыре заменённых файла сохранены в «Предыдущие версии»,01/04 оставлены идентичными. Выполнен разрешённый пользователем fallback VideoScout после недоступности AE bridge. Исходная установка в AE и приёмка Split Scene 05 остаются незавершёнными: targets неизвестны, AE mutations0. Этот результат не считается готовым AEP.
 
 ## Цель и принятые уточнения
 
@@ -39,8 +39,9 @@
 - [x] Flash подтвердил окончательный порядок короткими codes:02 GD+Angry Birds [G,J,B,A],05 Genshin+Civ [N1,N2,N3,C],06 Chip+Subway [H,H2,Q,S]. Order task terminalSUCCESS/schema,34095 native tokens;0 новых изображений, честный reuse ранее просмотренных body ledgers. Project adapter03-aware подготовил actual canonical; first/last H2/N2 сопоставляются с RGB выбранных исходных кадров, затем выполняется последний canonical confirmation.
 - [x] Flash final canonical всех3jobs completed/schema/actual3images;41559 native tokens. N2/H2 first/last RGB соответствуют выбранным poolframes. Все3 V4 renders выполнены,210frames/7с/CFR30; original→final native audio12/12 PASS,min0.906134 при неизменном пороге0.90. Root просмотрел36 actual MP4 controls:05 и06 приняты;02 требует узкой коррекции B53 — виден остаток HUD у верхнего левого края. Полный повтор отбора не нужен,05/06 не менять.
 - [x] Фактический сохранённый04 оказался более поздней r06 версией SHA7eac3e4c…f216cb,1992852B, а не историческимc8fd. Lineage/QA/root receipt найдены; root повторно просмотрел actual12frames этой версии, reuse принят. Для архивации закреплены именно текущие6 файлов «Готовое», прежний v18 manifest не подменяет фактическое состояние. Доставка ещё не выполнялась.
-- [ ] Flash подтверждает исправленный crop B53 с полным transformed body и exact canonical; rerender только02, native QA/actual controls, затем versioned final6 manifest. Common Code не менять. Сохранять11 игр/один повтор/ноль перекрытий исходных окон, лица/текст/насилие. Предыдущая шестёрка сохраняется вне «Готовое» только после принятия новой.
-- [ ] Доставить всю принятую шестёрку с SHA manifest и обновить учёт. Свежий Codeburn не запрашивается, пока AfterFX открыт; промежуточный учёт `usage/revision04-interim-20261015.md/json` явно ограничен покрытием. Исходная AE-установка/приёмка Split Scene05 не завершена: targets неизвестны, mutations0; новый штатный owned-runtime status вернул native_refused/replayAllowed=false, не повторялся.
+- [x] Узкая коррекция B53 завершена. v28 Flash accept отклонён root: верхний HUD исчез, но справа остался score200; эта затратная попытка сохранена, render0. v29 Flash выбрал crop[.14,.14,.58,.72]; v30 подтвердил все53 transformed frames и actual02canonical. Rerender только02, V4technicalPASS и originalaudio4/4PASS(min0.906134,offset0). Root просмотрел actual12controls и3 TRUE1920×1080 Bframes: HUD удалён. Новая02 SHA46c83de1…ae6995d,4958815B; остальные MP4 идентичны. Common VideoScout Code не менялся.
+- [x] Доставка завершена15Oct19:23:20UTC /16Oct00:23:20+05: шесть MP4,34087357B; final6 manifest SHA5eef64d7…188e492. Before-membership/SHA проверены,4 новых файла staged/hashed,4 прежних перемещены в `Предыдущие версии/Перед revision04 final6 20261015T192319.767209Z/previous-delivered`;01/04 сохранены идентичными. После публикации проверены ровно6 имён, все SHA и архив. Root независимо проверил24 исходных окна:11 игр/два оригинала в каждом/единственный повтор03 вjobs3,5/0overlap. Подробности: revision04-final-visual-review.json и revision04-delivery-manifest.json.
+- [x] Учёт обновлён до v30:41 native Flash tasks,2742279 tokens, включая failed/request_revision/root-rejected. Срез15Oct19:22:04UTC в `usage/revision04-final-accounting.md/json`; native Codex/Luna/Sol attribution остаётся пробелом. Свежий Codeburn не запрашивается, пока AfterFX открыт. Исходная AE-установка/приёмка Split Scene05 не завершена: targets неизвестны, mutations0; штатный owned-runtime status вернул native_refused/replayAllowed=false, не повторялся.
 ### Завершённая локальная revision03
 
 - [x] Инвентаризация: 12 оригиналов с полными SHA256, 12 overview sheets/288 records. Исходники не менялись; PAR неизвестен у пяти источников.
@@ -67,6 +68,8 @@
 
 Рабочий runtime: `.codex-runtime/game-trailers-montage/` (ignored); результаты: `C:\Users\Ant\VideoScout\Results\Музыка компьютерных игр 2026-10-18`.
 
+Актуальная revision04: `project_code/revision-04/assembly-v30/final6-manifest.json`; root receipts `revision04-final-visual-review.json`, `revision04-delivery-manifest.json`. Все6 delivery SHA сверены после публикации. Runtime/source originals не менялись. Ниже revision03 — исторические проверки, не индекс текущей шестёрки.
+
 - Canonical final index: `project_code/revision-03/final-render-summary.json`, status `six_outputs_technical_pass`.
 - Независимый read-back: `project_code/revision-03/final-readback.json`,15Oct13:16:30.641566UTC, status `six_actual_outputs_reconciled`.
 - Runtime: `revision03-final-boundaries-approval.json`, `revision03-final-visual-review.json`, `revision03-delivery-manifest.json`, `execution-status.json`.
@@ -75,6 +78,8 @@
 - Финальные проверки документации: `npm.cmd run check:rules` PASS и `git diff --check` PASS. Product/source code AE Agent не менялся в этом этапе.
 
 ## Учёт времени и токенов
+
+Revision04 завершена: `usage/revision04-final-accounting.md/json`,collected_at15Oct19:22:04UTC. Flash41tasks: input1982690/output759589,total2742279; thinking включён вoutput,cache отдельно. Outer wall sum native6562.029с; с pre-init/audit7200.373с, доступный intervalunion5639.339с. Это transport/wall, не чистое compute. Время технической подготовки и native Sol/Luna token attribution неполное. На расход повлияли сетевые сбои, повторные просмотры, слишком большой контекст отдельных поручений, добавленные диспетчером ограничения и пропуски HUD при проверке Flash. Контрольного сравнения безFlash нет, экономия/недельная квота не приписываются задаче. Следующий абзац — исторический срез прежних фаз.
 
 Подробности и ограничения: `.codex-runtime/game-trailers-montage/usage/final-accounting.md` и JSON. Codeburn snapshot `collected_at=2026-10-15T13:09:55.826049Z`, подтверждённый UUID `01a13efb-07c2-73b0-a013-c6f17de9e3e4`, AE был закрыт. Snapshot охватывает весь чат и17 сессий, не отдельно последние шесть роликов; текущий ответ и поздние helper-ответы могут отсутствовать. Legacy errors и oversized records отражены в отчёте.
 
