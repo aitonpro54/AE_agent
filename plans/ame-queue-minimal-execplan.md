@@ -28,8 +28,15 @@
 - Actual v7 preflight COMPLETE на source dc2ab41: provisioner, Node client и broker
   CPP/link PASS (0 ошибок); preprocess/includes/link-read входят в planned M.
   Compile original children 9/9 CLOSED, exit0/EOF; actual source AEP и EPR прежние.
-  Input SHA 4ceb2547…d221f, receipts остаются local/ignored. Creator/seal/deploy
-  ещё не запускались. Следующий этап — BuildAndSeal тех же inputs и один C1.
+  Input SHA 4ceb2547…d221f, receipts остаются local/ignored.
+- Actual BuildAndSeal с теми же inputs собрал и установил все три native роли.
+  Original creator выдал prepare424 и final752 после записи seal/enrollment.
+  Parent verify-final отказал: artifact JSON сохранился в порядке 3,1,2 вместо
+  1,2,3 (`Sort-Object code` для OrderedDictionary). ACK не отправлен; original
+  creator CLOSED exit2, stdout/stderr EOF подтверждены тем же HANDLE.
+  Root сохраняет original pins/owner; повтор creator/build запрещён. Выполняется
+  отдельная полная read-only сверка той же установки; успех BuildAndSeal не заявлен.
+  C1/daemon ещё не запускались, enqueue 0/2, START не отправлен.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
@@ -55,6 +62,13 @@
 - Не разрабатывать full queue observer, per-item START, decoder/alpha/PNG/D50
   ради ближайшего результата. Runtime identity, auth, once/noReplay, UNKNOWN
   reconciliation, pins своих snapshots/output и сохранность RAM остаются.
+- [block: reconciliation полного seal после несостоявшегося ACK]
+  [executor: ae_specialist / Sol6.1 xhigh] [reason: native authority boundary]
+  [ownership: новый ignored read-only verifier]. Root — sole original owner.
+  Native ACK не является persistent admission marker: final752 отправляется после
+  durable write/read-back, OpenFixed независимо проверяет полную установку.
+  Допустима только factual сверка same installation с сохранением exit2/noACK;
+  normal success receipt, replay, новый seal и исправление pinned source запрещены.
 
 ## Достаточная проверка добавляемого элемента
 
