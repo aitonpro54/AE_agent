@@ -39,6 +39,11 @@
   Для новой подготовки введён GO+EOF handshake до main, image/birth фиксируются
   до GO; после exit проверяются original HANDLE/birth/EOF, без позднего image-query.
   Все actions требуют сохраняемого owner. Root: pure11/parser/syntax2 PASS.
+- Actual v4 Collect PASS: original children 2/2 CLOSED, exit0/EOF. Provisioner
+  CPP/link PASS (0 ошибок); post-link проверка не передала exact-vendor режим
+  для уже разрешённых SortDefault.nls/TZRES.dll. Исправлен только этот выбор;
+  literal pins/SHA/links и planned M сохранены. Original children 5/5 CLOSED;
+  creator/seal/deploy 0. Root parser + actual link selector 2/2 PASS.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

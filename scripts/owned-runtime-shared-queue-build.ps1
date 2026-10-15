@@ -102,6 +102,19 @@ function Get-SQObservation([string]$Locator,[bool]$Directory,[bool]$Vendor=$fals
  }finally{if($null-ne $sqHeld){$sqHeld.Dispose()}}
 }
 function Assert-SQHeld{foreach($sqHeld in $global:SharedQueueBuildOwner.pins){$sqHeld.AssertFresh()}}
+function Test-SQPlannedExactVendor([string]$Locator,$BuildInputs,$ExternalInputs){
+ $sqVendorLocator=[IO.Path]::GetFullPath($Locator)
+ foreach($sqVendorCode in @(1020,1021,1022)){
+  $sqVendorRows=@($BuildInputs|Where-Object {$_.code-eq $sqVendorCode})
+  if($sqVendorRows.Count-ne 1){continue}
+  $sqVendorRow=$sqVendorRows[0]
+  $sqExpectedVendorLinks=if($sqVendorCode-eq 1022){3}else{2}
+  if([string]::Equals($sqVendorLocator,[IO.Path]::GetFullPath($sqVendorRow.file.pin.canonicalPath),[StringComparison]::OrdinalIgnoreCase)){return $true}
+  $sqVendorAliases=@($ExternalInputs|Where-Object {[string]::Equals($sqVendorLocator,[IO.Path]::GetFullPath($_.path),[StringComparison]::OrdinalIgnoreCase)-and $_.sha256.ToLowerInvariant()-ceq $sqVendorRow.file.sha256-and $_.links-eq $sqExpectedVendorLinks})
+  if($sqVendorAliases.Count-eq 1){return $true}
+ }
+ return $false
+}
 function Read-SQFrame($Creator,[int]$Size,[string]$Destination,[int]$Timeout=30000){
  $sqRead=[SharedQueueBuildIo]::ReadExactly($Creator.originalProcess.StandardOutput.BaseStream,$Size)
  $global:SharedQueueBuildOwner.reads.Add($sqRead)
@@ -185,7 +198,10 @@ try{
   foreach($sqLine in (Get-Content -LiteralPath $sqLinkReads[0].FullName -Encoding Unicode)){
    if(-not $sqLine-or $sqLine.StartsWith('^')){continue}
    $sqLinkPath=$sqLine.Trim();if([IO.Path]::GetExtension($sqLinkPath)-in @('.obj','.pdb')){if(-not [IO.Path]::GetFullPath($sqLinkPath).StartsWith(([IO.Path]::GetFullPath((Join-Path $sqOut ($Role.role+'/obj'))).TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)){throw 'PRODUCTION_FOREIGN_GENERATED_LINK_INPUT_REFUSED'};continue}
-   $sqActualLink=Get-SQObservation $sqLinkPath $false;if(-not $sqAllowed.Contains($sqActualLink.pin.canonicalPath)){throw 'PRODUCTION_UNPLANNED_LINK_INPUT_REFUSED'}
+   $sqExactLinkVendor=Test-SQPlannedExactVendor $sqLinkPath $sqInput.definition.buildInputs $sqInput.build.externalInputs
+   try{$sqActualLink=Get-SQObservation $sqLinkPath $false $sqExactLinkVendor}
+   catch{throw [IO.IOException]::new(('PRODUCTION_LINK_INPUT_OBSERVATION_REFUSED path='+$sqLinkPath+'; cause='+$_.Exception.GetBaseException().Message),$_.Exception)}
+   if(-not $sqAllowed.Contains($sqActualLink.pin.canonicalPath)){throw [IO.IOException]::new(('PRODUCTION_UNPLANNED_LINK_INPUT_REFUSED path='+$sqLinkPath+'; canonical='+$sqActualLink.pin.canonicalPath))}
   }
   $sqImage=Join-Path $sqOut $Role.image
   if(-not $Deploy){return Get-SQObservation $sqImage $false $false $true}
