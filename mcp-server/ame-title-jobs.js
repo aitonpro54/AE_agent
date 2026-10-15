@@ -83,7 +83,7 @@ function nativeTitleJob(a) {
   }
   var slot = $.global.aeAgentAMETitleJobsV1, frontend, host, ids, i, entry, batch;
   function readEntry(e) {
-    var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, workAreaApplied: e.workAreaApplied === true, status: e.status, nativeCompletionObserved: e.finished === true, nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
+    var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, workAreaApplied: e.workAreaApplied === true, status: e.status, nativeCompletionObserved: e.finished === true && (e.queueMode !== "shared_queue_v1" || !!e.hostCompletion && e.completionOrigin === "host_exact_paths"), nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
     try { result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles; if (!files || typeof files.length !== "number") throw Error(); for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n])); if (files.length !== 1 || norm(files[0]) !== norm(e.outputPath)) result.nativeAssociationVerified = false; } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
     for (var name in { getEncodeProgress: 1, getEncodeTime: 1 }) {
       try { if (!e.wrapper || typeof e.wrapper[name] !== "function") throw Error(); result[name] = scalar(e.wrapper[name]()); } catch (x2) { result.readErrors.push(name + "_read_error"); }
@@ -118,9 +118,12 @@ function nativeTitleJob(a) {
   }
   function finish(e, event, origin) {
     e.callbackOrdinal++; captureRaw(e, "finished", event);
-    e.finished = true; e.nativeResult = scalar(event && typeof event === "object" ? event.result : event); e.status = "native_finished"; e.completionOrigin = origin; e.eventObservedAt = new Date().getTime();
-    if (origin === "host_exact_paths") e.hostCompletion = { sourceFilePath: String(event.sourceFilePath), outputFilePath: String(event.outputFilePath), result: e.nativeResult, observedAt: e.eventObservedAt };
-    else e.wrapperCompletion = { result: e.nativeResult, observedAt: e.eventObservedAt };
+    var result = scalar(event && typeof event === "object" ? event.result : event), observedAt = new Date().getTime();
+    e.finished = true; e.status = "native_finished";
+    // Wrapper events retain their raw result, but cannot replace exact host proof.
+    if (origin === "host_exact_paths" || !e.hostCompletion) { e.nativeResult = result; e.completionOrigin = origin; e.eventObservedAt = observedAt; }
+    if (origin === "host_exact_paths") e.hostCompletion = { sourceFilePath: String(event.sourceFilePath), outputFilePath: String(event.outputFilePath), result: result, observedAt: observedAt };
+    else e.wrapperCompletion = { result: result, observedAt: observedAt };
   }
   try {
     if (a.operation === "status") {

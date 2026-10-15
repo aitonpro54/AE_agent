@@ -7,6 +7,12 @@
 
 ## Progress
 
+- Изолированный аудит Astra по прямому выбору пользователя: найдены и исправлены
+  два дефекта до новой сборки. Native own-queue descriptor теперь передаёт
+  сохранённый batchId; shared completion сохраняет exact host evidence при любом
+  порядке wrapper/host callbacks, а wrapper-only read остаётся pending.
+  Рабочая копия основана на d314a2f; основная установка и её live owner не менялись.
+
 - Пользователь поручил реализацию и реальный запуск; работа возобновлена.
   ae_specialist пишет native/initial admission, ae_implementer — AME adapter/grant.
   Root — единственный build/deploy/AE/AME controller. AEP/очередь пока не менялись.
@@ -118,6 +124,14 @@
 
 ## Decision Log
 
+- [block: подтверждённые стыковые ошибки shared queue]
+  [executor: Astra/high — аудит по прямому выбору; Sol6.1/high — scoped fix]
+  [ownership: изолированный worktree, AME receiver/native descriptor и два smoke].
+  Один batch исправлений до следующего согласованного census/build; без отдельной
+  пересборки на каждый дефект. Native exact-path/result/once/noReplay gates прежние.
+  Дедупликация directory witnesses и settlement текущего UNKNOWN остаются у
+  основного live owner; этот commit не обновляет его установленный runtime.
+
 - Два задания — количество создаваемых агентом items, не полный состав AME.
   Наличие заданий пользователя, другой preset или другое количество общих
   entries само по себе не закрывает enqueue/START.
@@ -207,6 +221,13 @@ events; это не полная инспекция native очереди. Не�
    Никакого ожидания чужих jobs ради объявления собственной media acceptance.
 
 ## Validation
+
+- Изолированные регрессии: completion-order 6/6 групп и native-descriptor 3/3
+  PASS. Старый checkpoint даёт 4 ошибки completion и отказ missing batchId;
+  отрицательные сценарии foreign batch/wrong paths сохраняют отказ.
+  node --check трёх JS, check:rules и git diff --check PASS.
+  Descriptor-проверка связывает native source с actual receiver VM; C++ build,
+  фактическая сериализация и live AE/AME NOTRUN. Успешный enqueue/START не заявлен.
 
 Native/shared source checkpoint: context-smoke, runtime-smoke, source-proof,
 AME shared queue smoke (11 групп), syntax 10 JS, check:rules, diff --check — PASS.
