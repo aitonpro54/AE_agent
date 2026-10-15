@@ -52,6 +52,12 @@
   shared source proof, actual PS3,1,2→1,2,3 и parser PASS. Далее fresh v8 provisioning
   с явным audit старой не допущенной установки; root не удерживает lock witness
   перед передачей exclusive fence broker. AE/AME effects остаются0.
+- Startup audit выявил тот же1s bound у reply Open/ReserveInitialLaunch/BootHello;
+  Reserve синхронно повторяет полный seal check до ответа. Исправлены только эти
+  три role/verb reads на30s; writes/cancel/остальные reads остаются1s. Source
+  predicate3positive/15negative PASS. V8 Collect завершён2/2exit0/EOF, но его
+  source-only manifest отмечен superseded до compile/seal/factory. Следующий
+  frozen source/M — v9; v7 retirement audit остаётся явно связан с новой policy.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

@@ -32,6 +32,7 @@ constexpr std::uint64_t kIoMs=1000;
 // The original broker validates the sealed build before replying to bootstrap.
 // Startup has its own bound; established-session I/O retains its shorter bound.
 constexpr std::uint64_t kBootstrapReadMs=30000;
+constexpr std::uint64_t kStartupReplyReadMs=30000;
 template<class T> void Put(Bytes& out,const T& value){out.insert(out.end(),value.begin(),value.end());}
 std::uint64_t Number(const unsigned char* p,std::size_t n){std::uint64_t value=0;for(std::size_t i=0;i<n;++i)value|=static_cast<std::uint64_t>(p[i])<<(i*8);return value;}
 template<std::size_t N> std::array<unsigned char,N> Fixed(const unsigned char* p){std::array<unsigned char,N> value{};std::copy_n(p,N,value.begin());return value;}
@@ -531,7 +532,7 @@ struct NativeClient::Data final {
         wire=std::make_unique<phase::WireChannel>(role==Role::Controller?phase::Direction::BrokerToController:phase::Direction::BrokerToDaemon,binding,stage);
         if(!Current()||wire->Closed())Refuse("trusted_original_server_peer_refused");
     }
-    Bytes Transfer(bool write,const Bytes& input,bool completionChecked=false){
+    Bytes Transfer(bool write,const Bytes& input,bool completionChecked=false,std::uint64_t readWaitMs=kIoMs){
         auto io=std::make_unique<Io>(write?input.size():phase::kMaximumFrameBytes);if(write)io->bytes=input;DWORD count=0;
         const auto retire=[&](){if(!completionChecked||!io)return;if(io->pending){unknown=true;unsettled.push_back(std::move(io));return;}
             if(io->event.Valid()){const HANDLE exact=io->event.Take();if(!CloseHandle(exact)){failedCloseHandles.push_back(exact);unknown=true;Refuse("trusted_completion_transfer_event_close_unknown",0,true);}}};
@@ -539,7 +540,7 @@ struct NativeClient::Data final {
         const BOOL immediate=write?WriteFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state):
             ReadFile(pipe.Get(),io->bytes.data(),static_cast<DWORD>(io->bytes.size()),&count,&io->state);
         if(!immediate){if(GetLastError()!=ERROR_IO_PENDING){unknown=true;Refuse("trusted_original_io_unknown",GetLastError(),true);}io->pending=true;
-            const DWORD wait=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));
+            const DWORD wait=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(write?kIoMs:readWaitMs));
             if(wait!=WAIT_OBJECT_0){CancelIoEx(pipe.Get(),&io->state);
                 const DWORD settled=WaitForSingleObject(io->event.Get(),static_cast<DWORD>(kIoMs));
                 if(settled==WAIT_OBJECT_0){DWORD ignored=0;GetOverlappedResult(pipe.Get(),&io->state,&ignored,FALSE);io->pending=false;}
@@ -716,8 +717,11 @@ phase::Frame NativeClient::Exchange(phase::Verb verb,const Bytes& payload,bool l
     std::copy(payload.begin(),payload.end(),request.payload.begin());std::array<unsigned char,phase::kMaximumFrameBytes> encoded{};std::size_t count=0;
     if(phase::EncodeFrame(request,encoded.data(),encoded.size(),count)!=phase::CodecError::None||data_->wire->TrackOutgoing(request)!=phase::CodecError::None)Refuse("trusted_original_request_codec_refused");
     const bool completionChecked=verb==phase::Verb::PublishOwnCompletionReady||(data_->role==Role::Controller&&std::any_of(data_->completionStarts.begin(),data_->completionStarts.end(),[](const auto& start){return !!start;}));
+    const bool startupReply=(data_->role==Role::Controller&&(verb==phase::Verb::Open||verb==phase::Verb::ReserveInitialLaunch))||
+        (data_->role==Role::Daemon&&verb==phase::Verb::BootHello);
+    const auto readWaitMs=startupReply?kStartupReplyReadMs:kIoMs;
     ++data_->outgoing;data_->Transfer(true,Bytes(encoded.begin(),encoded.begin()+static_cast<std::ptrdiff_t>(count)),completionChecked);
-    for(unsigned events=0;events<3;++events){const auto bytes=data_->Transfer(false,{},completionChecked);phase::Frame reply{};
+    for(unsigned events=0;events<3;++events){const auto bytes=data_->Transfer(false,{},completionChecked,readWaitMs);phase::Frame reply{};
         if(data_->wire->AcceptIncoming(bytes.data(),bytes.size(),reply)!=phase::CodecError::None){data_->unknown=true;Refuse("trusted_original_reply_correlation_unknown",0,true);}
         if(reply.header.kind==phase::FrameKind::Event){if(data_->role==Role::Controller&&reply.header.verb==phase::Verb::CompletionResultNotice){RetainOriginalCompletionNoticeLocked(reply);continue;}if(reply.header.verb!=phase::Verb::ObserveChallenge||data_->challenges.size()>=1){data_->unknown=true;Refuse("trusted_original_event_refused",0,true);}data_->challenges.push_back(reply);continue;}
         if(reply.header.status!=phase::Status::Ok){if(reply.header.status==phase::Status::Unknown)data_->unknown=true;
