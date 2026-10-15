@@ -8,7 +8,7 @@ namespace {
 constexpr std::uint16_t kVariableBytes=0xffff;
 constexpr std::array<VerbSpec,
 #if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
-32
+37
 #else
 30
 #endif
@@ -46,6 +46,11 @@ constexpr std::array<VerbSpec,
 #if defined(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)
     {Verb::PublishOwnCompletionReady,Direction::DaemonToBroker,FrameKind::Request,324,20},
     {Verb::CompletionResultNotice,Direction::BrokerToController,FrameKind::Event,52,0},
+    {Verb::BindSharedQueue,Direction::DaemonToBroker,FrameKind::Request,208,60},
+    {Verb::BeginSharedQueuePoll,Direction::DaemonToBroker,FrameKind::Request,58,72},
+    {Verb::ObserveSharedQueuePoll,Direction::DaemonToBroker,FrameKind::Request,100,97},
+    {Verb::ReadSharedQueueState,Direction::ControllerToBroker,FrameKind::Request,0,120},
+    {Verb::AcknowledgeSharedQueueIo,Direction::DaemonToBroker,FrameKind::Request,80,18},
 #endif
     // No spare verb slots, aliases or protocol negotiation entries.
 }};
@@ -148,7 +153,7 @@ bool HasEffectAck(Verb verb) noexcept {
     switch (verb) {
     case Verb::ReserveInitialLaunch:case Verb::RequestDrain:case Verb::FirstActorObserved:
     case Verb::Complete:case Verb::ConsumeDispatch:case Verb::RecordDelivery:
-    case Verb::ObserveJobTerminal:case Verb::ObserveMedia:case Verb::ReservePanelEffect:return true;
+    case Verb::ObserveJobTerminal:case Verb::ObserveMedia:case Verb::ObserveSharedQueuePoll:case Verb::ReservePanelEffect:return true;
     default:return false;
     }
 }
@@ -178,7 +183,7 @@ CodecError CheckPayload(const Frame& frame) noexcept {
             break;
 #endif
         case Verb::Revoke:case Verb::BootHello:case Verb::DrainAck:
-        case Verb::ShutdownAck:case Verb::ObserveSameActorState:
+        case Verb::ShutdownAck:case Verb::ObserveSameActorState:case Verb::AcknowledgeSharedQueueIo:
             if (U16(p)>8) return CodecError::Tag;
             break;
         case Verb::Open:
@@ -194,7 +199,7 @@ CodecError CheckPayload(const Frame& frame) noexcept {
                 U64(p+56)-U64(p+48)>60000 || U64(p+64)==0) return CodecError::Tag;
             break;
         case Verb::BeginCall:case Verb::VerifyIngress:case Verb::BindCommand:
-        case Verb::GuardDelivery:case Verb::ObserveServerGates:case Verb::BeginCompletionPoll:
+        case Verb::GuardDelivery:case Verb::ObserveServerGates:case Verb::BeginCompletionPoll:case Verb::BeginSharedQueuePoll:
             if (Zero(p,16) || Zero(p+16,16) || U64(p+32)==0 || Zero(p+40,32)) return CodecError::Tag;
             break;
         case Verb::ReadySnapshot:
@@ -209,7 +214,7 @@ CodecError CheckPayload(const Frame& frame) noexcept {
         case Verb::FirstActorObserved:
             if (Zero(p+97,16) || Zero(p+113,32)) return CodecError::Tag;
             break;
-        case Verb::BindOriginalJob:
+        case Verb::BindOriginalJob:case Verb::BindSharedQueue:
             if (Zero(p,16) || Zero(p+16,32) || U64(p+48)==0 || U32(p+56)==0 || U32(p+56)>48) return CodecError::Tag;
             break;
         case Verb::FinishServerOnly:
@@ -304,6 +309,18 @@ CodecError CheckPayload(const Frame& frame) noexcept {
         break;
     case Verb::ObserveJobTerminal:case Verb::ObserveMedia:
         if (Zero(p,16) || Zero(p+16,16) || Zero(p+32,32) || Zero(p+64,32)) return CodecError::Tag;
+        break;
+    case Verb::BindSharedQueue:
+        if(Zero(p,16)||Zero(p+16,32)||Zero(p+48,32)||Zero(p+80,32)||Zero(p+112,32)||Zero(p+144,32)||Zero(p+176,32))return CodecError::Tag;
+        break;
+    case Verb::BeginSharedQueuePoll:
+        if(Zero(p,16)||U64(p+16)==0||Zero(p+24,32)||U16(p+56)!=1)return CodecError::Tag;
+        break;
+    case Verb::ObserveSharedQueuePoll:
+        if(Zero(p,16)||Zero(p+16,16)||Zero(p+32,32)||U16(p+64)>3||U16(p+66)>3||(U16(p+66)&~U16(p+64))||Zero(p+68,32))return CodecError::Tag;
+        break;
+    case Verb::AcknowledgeSharedQueueIo:
+        if(Zero(p,16)||Zero(p+16,32)||Zero(p+48,32))return CodecError::Tag;
         break;
     case Verb::ReservePanelEffect:
         if (U64(p+16)==0) return CodecError::Tag;

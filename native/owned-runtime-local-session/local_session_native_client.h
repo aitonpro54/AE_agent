@@ -228,6 +228,8 @@ public:
     std::shared_ptr<Capability> FinishServerOnlyFixed(const std::shared_ptr<Capability>& handler,const std::vector<unsigned char>& actualResult);
     std::shared_ptr<Capability> CaptureOriginalAmeFixed();
     std::shared_ptr<Capability> BindOriginalJobFixed(const std::shared_ptr<Capability>& successfulStartTerminal);
+    std::vector<unsigned char> ReadSharedQueueStateFixed();
+    void AcknowledgeSharedQueueIoFixed(const std::shared_ptr<Capability>& original);
     std::vector<unsigned char> OriginalCompletionPollDescriptorFixed(const std::shared_ptr<Capability>& originalJob);
     ProjectDescriptor DescribeOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalPoll);
     std::shared_ptr<Capability> SelectOriginalCompletionPollFixed(const std::shared_ptr<Capability>& originalPoll,const std::shared_ptr<AuthenticatedRequest>& actualRequest);
@@ -299,6 +301,13 @@ private:
     void RequireRole(Role role);
     bool CheckOriginalHttpCleanupLocked(HttpTransportOwner& original,HttpCleanupOperation operation)noexcept;
     void AssertOriginalJobObservationCurrent(const std::shared_ptr<AmeOriginalJob>& original);
+    bool SharedQueuedJobCurrent(const std::shared_ptr<AmeOriginalJob>& original);
+    std::shared_ptr<Capability> BindSharedQueueFixed(const std::shared_ptr<Capability>& terminal);
+    void AssertSharedQueueObservationCurrent();
+    void AssertSharedQueueResponseIoCurrent();
+    std::vector<unsigned char> SharedQueuePollDescriptorFixed(const std::shared_ptr<Capability>& original);
+    std::shared_ptr<Capability> BeginSharedQueuePollFixed(const std::shared_ptr<Capability>& original,const std::string& source,const std::string& body);
+    std::shared_ptr<Capability> CaptureSharedQueueObservationFixed(const std::shared_ptr<Capability>& poll,const std::shared_ptr<AuthenticatedRequest>& request,const PanelReceipt& actual);
     // Only the fixed N-API producer may deliver generated source captured from
     // the retained main-module getter. No JS method accepts source/result JSON.
     std::shared_ptr<Capability> BindReadonlyExecutionFixed(const std::shared_ptr<Capability>& handler,const std::string& originalGeneratedSource);

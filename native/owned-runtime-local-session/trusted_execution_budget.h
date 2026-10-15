@@ -14,6 +14,8 @@ constexpr std::uint16_t kTwoTitleMediaChildren=6;
 constexpr std::uint16_t kTwoTitleAlphaSamples=3;
 constexpr std::uint16_t kTwoTitleRenewalOpportunities=10;
 constexpr std::uint64_t kTwoTitleMediaMaximumMs=540000;
+constexpr std::uint16_t kSharedQueueMaximumPolls=10;
+constexpr std::uint64_t kSharedQueuePollCadenceMs=30000;
 
 struct ExecutionCost final {
     std::uint16_t calls=0,external=0,store=0,service=0,terminalMedia=0,teardown=0;
@@ -39,5 +41,13 @@ struct FixedTwoTitleCosts final {
     static constexpr ExecutionCost Media(){return {0,7,7,0,1,0};}
     static constexpr ExecutionCost Teardown(){return {0,16,16,0,0,16};}
     static constexpr ExecutionCost Full(){return {86,192,224,32,4,16};}
+};
+// Same original session, two immutable sources and one global queue start.
+// No settings, decoder, PNG or media-acceptance operation is admitted. The two
+// terminal rows reserve native-only status publication, never a media claim.
+struct FixedSharedQueueCosts final {
+    static constexpr ExecutionCost Terminal(){return {1,3,3,0,1,0};}
+    static constexpr ExecutionCost Poll(){return {0,2,2,0,0,0};}
+    static constexpr ExecutionCost Full(){return {85,160,192,32,2,16};}
 };
 } // namespace local_session::trusted_read

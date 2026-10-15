@@ -110,7 +110,7 @@ function createInitialRuntime() {
   const census=sourceCensus.requested();
   if (!selected.requested && !native.selectedFixed() && !census) return null;
   const fixed = !selected.requested && native.selectedFixed() && !census;
-  let revoked=false,unknown=false,role=null,observer=null,opened=false,ensured=false,read=null,serial=Promise.resolve(),bootPromise=null,revokePromise=null;
+  let revoked=false,unknown=false,role=null,observer=null,opened=false,ensured=false,read=null,profile=null,serial=Promise.resolve(),bootPromise=null,revokePromise=null;
   const completionStarts=new Map();
   function retainOriginalStart(slot,call){
     if(![1,2].includes(slot)||completionStarts.has(slot))fail("owned_initial_completion_start_once");
@@ -151,7 +151,8 @@ function createInitialRuntime() {
     if(Object.keys(copied.args).some(key=>!Object.hasOwn(properties,key)))fail("owned_initial_tool_argument_field_refused");
     if(BUILD_TOOLS.includes(name)&&copied.args.solutionId!=="owned-runtime-two-title-fixed-v1")fail("owned_initial_exact_finite_build_required");
     if(PROPOSAL_TOOLS.includes(name)||DRY_RUN_TOOLS.includes(name)){const intent=fixedTitlePlanIntent(name,copied.args);
-      if(intent.kind!==5&&![14,15].includes(intent.leaf))fail("owned_initial_fixed_execute_producer_unbound");}
+      if(intent.kind!==5&&![14,15].includes(intent.leaf)&&profile!=="shared_queue_v1")fail("owned_initial_fixed_execute_producer_unbound");
+      if(profile==="shared_queue_v1"&&intent.leaf===7&&intent.slot!==2)fail("owned_initial_shared_START_exact_slot");}
     if(name==="get_layer_details"&&copied.args.responseView!==undefined&&copied.args.responseView!=="full")fail("owned_initial_readonly_full_result_required");
     if(AME_INSPECTION_TOOLS.includes(name)&&(Object.keys(copied.args).join(",")!=="variantSlot"||![1,2].includes(copied.args.variantSlot)))fail("owned_initial_ame_exact_inspection_slot");
     if(COMPLETION_TOOLS.includes(name)&&(Object.keys(copied.args).join(",")!=="variantSlot"||![1,2].includes(copied.args.variantSlot)))fail("owned_initial_completion_exact_selector");
@@ -162,7 +163,7 @@ function createInitialRuntime() {
     // Called only by explicit ensure, after official stdin lifecycle listeners
     // are installed. Status/tools-list/module import never invoke this factory.
     bootPromise=(async()=>{role=native.openControllerFixed();observer=await fixedObservers.bindLoadedNodeFixed(role);
-      observer.assertCurrent();native.assertCurrent(role);await native.open(role);observer.assertCurrent();native.assertCurrent(role);opened=true;})();
+      observer.assertCurrent();native.assertCurrent(role);await native.open(role);observer.assertCurrent();native.assertCurrent(role);profile=native.executionProfileFixed(role);opened=true;})();
     try {await bootPromise;}catch(error){unknown=true;throw error;}
   }
   async function readStatus(args) {empty(args);if (!role||revoked||unknown) return status();return ordered(async()=>{const actual=await native.status(role);assertIngress();return Object.freeze({...status(),state:actual.state});});}
@@ -201,14 +202,28 @@ function createInitialRuntime() {
       request.end(body);});
     assertIngress();if (!response||response.ok!==true||!response.result||typeof response.result!=="object"||response.result.isError===true)
       fail("owned_initial_terminal_result_refused");
-    if(scopedIntent&&scopedIntent.kind===6&&scopedIntent.leaf===7)retainOriginalStart(scopedIntent.slot,call);
+    if(profile!=="shared_queue_v1"&&scopedIntent&&scopedIntent.kind===6&&scopedIntent.leaf===7)retainOriginalStart(scopedIntent.slot,call);
+    if(profile==="shared_queue_v1"&&scopedIntent&&scopedIntent.kind===6&&scopedIntent.leaf===6){
+      // A separate original call reads the retained wrapper immediately. The
+      // enqueue is already spent: loss/refusal here is UNKNOWN, never a retry.
+      try{const verified=await exchange("inspect_ame_title_queue_manifest",{variantSlot:scopedIntent.slot},read);
+        const result=JSON.parse(response.result.content[0].text),ownRead=JSON.parse(verified.content[0].text);
+        if(ownRead.ok!==true||ownRead.slot!==scopedIntent.slot)fail("owned_initial_shared_immediate_readback_required");
+        return {content:[{type:"text",text:JSON.stringify({...result,immediateOwnQueueRead:ownRead})}],isError:false};
+      }catch(error){unknown=true;throw Object.assign(error,{unknown:true,replayAllowed:false});}
+    }
+    if(profile==="shared_queue_v1"&&scopedIntent&&scopedIntent.kind===6&&scopedIntent.leaf===8){
+      // Restore has completed. Re-read the actual restored original project
+      // before another source operation or the common START can be prepared.
+      try{await renew();}catch(error){unknown=true;throw Object.assign(error,{unknown:true,replayAllowed:false});}
+    }
     return response.result;
   }
   async function renew() {const bracket=await native.beginBracket(role);assertIngress();
     const first=await exchange("get_bridge_status",{},bracket);assertIngress();const project=await exchange("get_project_info",{},bracket);assertIngress();
     const last=await exchange("get_bridge_status",{},bracket);assertIngress();read=await native.adoptBracket(role,bracket);assertIngress();
     return {first,project,last};}
-  async function callTool(name,args,originalSignal) {return ordered(async()=>{if(name==="get_ame_title_job_status")return completionResult(name,args,originalSignal);assertTool(name,args);
+  async function callTool(name,args,originalSignal) {return ordered(async()=>{if(name==="get_ame_title_job_status"&&profile==="shared_queue_v1"){assertTool(name,args);const state=native.sharedQueueStateFixed(role);return {content:[{type:"text",text:JSON.stringify({...state,variantSlot:args.variantSlot,ownJobTerminal:!!(state.terminalMask&(1<<(args.variantSlot-1))),ownJobSucceeded:!!(state.successMask&(1<<(args.variantSlot-1)))})}],isError:false};}if(name==="get_ame_title_job_status")return completionResult(name,args,originalSignal);assertTool(name,args);
     if(name==="ensure_ae_agent_panel"){const result=await exchange(name,args,null);const bracket=await renew();return Object.freeze({...result,project:bracket.project});}
     if(LIBRARY_TOOLS.includes(name))return exchange(name,args,null);
     if(!read) await renew();try{return await exchange(name,args,read);}catch(error){
@@ -218,7 +233,7 @@ function createInitialRuntime() {
       await renew();return exchange(name,args,read);}});}
   async function startDaemonFixed(){assertRoute();if(role||bootPromise) fail("owned_initial_original_daemon_bind_once");
     role=native.bindOriginalDaemonFixed();observer=await fixedObservers.bindLoadedNodeFixed(role);observer.assertCurrent();native.assertCurrent(role);
-    opened=true;ensured=true;return status();}
+    profile=native.executionProfileFixed(role);opened=true;ensured=true;return status();}
   function daemonRole() {assertIngress();return role;}
   async function restart(args) {empty(args);fail("owned_initial_restart_spent_no_replay");}
   function revoke() {if(revokePromise)return revokePromise;revoked=true;

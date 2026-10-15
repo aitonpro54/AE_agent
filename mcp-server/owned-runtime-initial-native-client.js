@@ -79,6 +79,9 @@ function bind(kind) {
 function openControllerFixed() { emptyArguments(arguments); return controller || (controller = bind("controller")); }
 function bindOriginalDaemonFixed() { emptyArguments(arguments); return daemon || (daemon = bind("daemon")); }
 function assertCurrent(role, cap) { assertRole(role).assertCurrent(cap); }
+function executionProfileFixed(role) { if(arguments.length!==1)fail("owned_initial_profile_arguments");assertCurrent(role);const value=assertRole(role).original.executionProfileFixed();if(!["shared_queue_v1","two_title_media_v1"].includes(value))fail("owned_initial_profile_refused");assertCurrent(role);return value; }
+function sharedQueueStateFixed(role) { if(arguments.length!==1)fail("owned_initial_shared_status_arguments");assertRole(role,"controller");assertCurrent(role);const value=assertRole(role).original.sharedQueueStateFixed();assertCurrent(role);return value; }
+function acknowledgeSharedQueueIoFixed(role,original) { if(arguments.length!==2)fail("owned_initial_shared_IO_arguments");assertRole(role,"daemon");return assertRole(role).operation("acknowledgeSharedQueueIoFixed",[original],[]); }
 async function ownOperation(role, name, ownCaps, values) {
   const value = await assertRole(role).operation(name, ownCaps, values);
   return wrapCap(role, value);
@@ -234,7 +237,7 @@ function beginCompletionFixed(role,slot,body){if(arguments.length!==3||![1,2].in
 function verifyCompletionToolFixed(role,request){if(arguments.length!==2)fail("owned_initial_completion_verify_arguments");assertRole(role,"daemon");return ownOperation(role,"verifyCompletionToolFixed",[request],[]);}
 function finishOriginalCompletionFixed(role,handler){if(arguments.length!==2)fail("owned_initial_completion_finish_arguments");assertRole(role,"daemon");return assertRole(role).operation("finishOriginalCompletionFixed",[handler],[]);}
 function completeOriginalCompletionResponseFixed(role,handler){if(arguments.length!==2)fail("owned_initial_completion_response_arguments");assertRole(role,"daemon");return assertRole(role).operation("completeOriginalCompletionResponseFixed",[handler],[]);}
-module.exports = Object.freeze({selectedFixed,openControllerFixed,bindOriginalDaemonFixed,assertCurrent,open,ensure,status,
+module.exports = Object.freeze({selectedFixed,openControllerFixed,bindOriginalDaemonFixed,assertCurrent,executionProfileFixed,sharedQueueStateFixed,acknowledgeSharedQueueIoFixed,open,ensure,status,
   beginPanel,beginBracket,beginRead,beginExecutionFixed,beginServerOnlyFixed,adoptBracket,locator,verifyTool,verifyExecutionTool,verifyServerOnlyTool,captureServerOnlyResultFixed,takeChallenge,submitObservation,observeActor,
   captureOriginalAeFixed,captureOriginalAmeFixed,captureSelectionFixed,describeSelectionFixed,captureManifestFixed,captureOriginalAeCepFixed,assertPreactorCurrent,preactorObserverDefinition,reservePanelBootstrapFixed,launchPanelBootstrapFixed,assertBootstrapSettled,assertCapturedCurrent,cepSourceInventory,invalidateLoadedCepProof,captureObservationFixed,nodeSourceInventory,panelSourceInventory,bindLoadedNodeProof,invalidateLoadedNodeProof,fixedTransport,fixedDaemonTransport,
   openHttpListenerFixed,acceptFixed,connectionPeer,brandHttpStream,connectionRead,connectionWrite,connectionEnd,connectionClose,closeHttpListenerFixed,

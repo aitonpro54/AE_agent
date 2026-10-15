@@ -19,6 +19,12 @@ bool FixedAmeTargetSpecifier(const std::string& target)noexcept{
     if(dot==std::string::npos||dot<5||dot>7||target.size()-dot-1<1||target.size()-dot-1>3)return false;
     for(std::size_t i=4;i<target.size();++i)if(i!=dot&&(target[i]<'0'||target[i]>'9'))return false;return true;
 }
+Digest FixedSharedQueueObservationLeaf(const ExecutionPolicy& policy,std::uint16_t purpose){
+    ExecutionCost worst;if(!policy.SharedQueue()||!policy.Validate(worst)||purpose>3)detail::Refuse("trusted_shared_observation_leaf_refused");
+    std::vector<unsigned char> bytes;constexpr char domain[]="lcp2.production.shared-queue-native-observation.v1";bytes.insert(bytes.end(),domain,domain+sizeof(domain)-1);
+    for(const auto* value:{&policy.policyHash,&policy.typedProducerHash,&policy.ame.sha256,&policy.preset.sha256})bytes.insert(bytes.end(),value->begin(),value->end());
+    detail::PutPin(bytes,policy.snapshotRoot);detail::PutPin(bytes,policy.outputRoot);detail::PutU16(bytes,purpose);return detail::Hash(bytes);
+}
 Digest FixedOriginalCompletionLeaf(const ExecutionPolicy& policy,std::uint16_t slot,std::uint16_t purpose){
     // 0/1 are the two private poll reads; 2 is terminal; 3..8 are the six
     // composite media operations Metadata/Packets/Decode/Alpha0/1/2.
@@ -81,14 +87,14 @@ bool FixedExecutionScopeMatches(const ExecutionPolicy& policy,const Digest& scop
 }catch(...){return false;}}
 bool FixedExecutionScopeAllowed(const ExecutionPolicy& policy,phase::ToolCode tool,phase::CallKind kind,const Digest& scope)noexcept{try{
     if(detail::Zero(scope))return false;for(std::uint16_t slot=0;slot<=2;++slot)for(const auto leaf:{ExecutionLeaf::Inspect,ExecutionLeaf::StageVariant,ExecutionLeaf::EnqueueAme,ExecutionLeaf::StartAme,ExecutionLeaf::RestoreBaseline,ExecutionLeaf::OwnedCheckpoint,ExecutionLeaf::CleanCopy})
-        if(FixedExecutionIntentAllowed(tool,kind,slot,leaf)&&FixedExecutionScope(policy,slot,leaf)==scope)return true;return false;
+        if(!(policy.SharedQueue()&&leaf==ExecutionLeaf::StartAme&&slot!=2)&&FixedExecutionIntentAllowed(tool,kind,slot,leaf)&&FixedExecutionScope(policy,slot,leaf)==scope)return true;return false;
 }catch(...){return false;}}
 bool ExecutionPolicy::Validate(ExecutionCost& fullLifetimeWorst)const noexcept{try{
-    if(!enabled||budgetProfile!=ExecutionBudgetProfile::FrozenTwoTitle86||hqCriterion!=HqCriterion::EncodedDxv3HqAlpha||
+    const bool queue=SharedQueue();
+    if(!enabled||(!queue&&budgetProfile!=ExecutionBudgetProfile::FrozenTwoTitle86)||(!queue&&hqCriterion!=HqCriterion::EncodedDxv3HqAlpha)||(queue&&hqCriterion!=HqCriterion::None)||
         detail::Zero(policyHash)||detail::Zero(typedProducerHash)||detail::Zero(restorationLeaf)||detail::Zero(checkpointLeaf)||detail::Zero(cleanCopyLeaf)||
-        detail::Zero(mediaProducerHash)||detail::Zero(pngEncoderHash)||completionPollsPerJob!=kTwoTitlePollsPerJob||
-        completionCadenceMs==0||jobDeadlineMs<=kTwoTitleMediaMaximumMs||jobDeadlineMs>phase::kSessionMaximumMs||
-        completionCadenceMs>(jobDeadlineMs-kTwoTitleMediaMaximumMs)/completionPollsPerJob||
+        (!queue&&(detail::Zero(mediaProducerHash)||detail::Zero(pngEncoderHash)||completionPollsPerJob!=kTwoTitlePollsPerJob||completionCadenceMs==0||jobDeadlineMs<=kTwoTitleMediaMaximumMs||completionCadenceMs>(jobDeadlineMs-kTwoTitleMediaMaximumMs)/completionPollsPerJob))||
+        (queue&&(!detail::Zero(mediaProducerHash)||!detail::Zero(pngEncoderHash)||completionPollsPerJob||completionCadenceMs||jobDeadlineMs<=kSharedQueueMaximumPolls*kSharedQueuePollCadenceMs+10000))||jobDeadlineMs>phase::kSessionMaximumMs||
         !FixedAmeTargetSpecifier(ameTargetSpecifier)||snapshotRoot.canonicalPath.empty()||outputRoot.canonicalPath.empty()||detail::Zero(snapshotRoot.fileId)||detail::Zero(outputRoot.fileId)||manualQueueReservationRoot.canonicalPath.empty()||detail::Zero(manualQueueReservationRoot.fileId)||manualQueueReservationLocator.empty()||manualQueueReservationLocator.find(L'\0')!=std::wstring::npos||
         (snapshotRoot.canonicalPath==outputRoot.canonicalPath||SamePhysicalObject(snapshotRoot,outputRoot))||SamePhysicalObject(manualQueueReservationRoot,snapshotRoot)||SamePhysicalObject(manualQueueReservationRoot,outputRoot)||manualQueueReservationRoot.canonicalPath.size()>32760||manualQueueReservationLocator.size()>32760||snapshotLocator.empty()||outputLocator.empty()||ameLocator.empty())return false;
     if(selectionMode!=TitleSelectionMode::ExactNamedVariants&&selectionMode!=TitleSelectionMode::FirstTwoObservedTextStatesV1)return false;
@@ -98,8 +104,8 @@ bool ExecutionPolicy::Validate(ExecutionCost& fullLifetimeWorst)const noexcept{t
     if(sourceProjectLocator.empty()||sourceProjectLocator.find(L'\0')!=std::wstring::npos||sourceProjectLocator.size()>32760||
         checkpointName!=L"titr_all-source-checkpoint.aep"||!FixedOutputComponent(checkpointName,L".aep")||snapshotRoot.canonicalPath.size()>32760)return false;
     if(variants[0].workingName!=L"titr_all-first-working.aep"||variants[1].workingName!=L"titr_all-second-working.aep")return false;
-    for(const auto* file:{&sourceProject,&ame,&preset,&dxvExporter,&ffmpeg,&ffprobe})if(detail::Zero(file->pin.fileId)||detail::Zero(file->sha256)||file->pin.canonicalPath.empty())return false;
-    if(encodedMappingDescriptor!=FixedEncodedMappingDescriptor()||encodedMappingVersion!=kEncodedMappingVersion)return false;
+    for(const auto* file:queue?std::vector<const reviewed::File*>{&sourceProject,&ame,&preset}:std::vector<const reviewed::File*>{&sourceProject,&ame,&preset,&dxvExporter,&ffmpeg,&ffprobe})if(detail::Zero(file->pin.fileId)||detail::Zero(file->sha256)||file->pin.canonicalPath.empty())return false;
+    if(queue?(!detail::Zero(encodedMappingDescriptor)||!encodedMappingVersion.empty()||!ffmpeg.pin.canonicalPath.empty()||!ffprobe.pin.canonicalPath.empty()||!settingsHelper.pin.canonicalPath.empty()):encodedMappingDescriptor!=FixedEncodedMappingDescriptor()||encodedMappingVersion!=kEncodedMappingVersion)return false;
     for(const auto& variant:variants){if(variant.variantId.empty()||variant.rootName.empty()||variant.compName.empty()||variant.controlledLayerNames.size()>64||
             (selectionMode==TitleSelectionMode::ExactNamedVariants&&(variant.controlledLayerNames.empty()||variant.activeLayerNames.empty()))||
             (selectionMode==TitleSelectionMode::FirstTwoObservedTextStatesV1&&(!variant.controlledLayerNames.empty()||!variant.activeLayerNames.empty()))||
@@ -108,7 +114,7 @@ bool ExecutionPolicy::Validate(ExecutionCost& fullLifetimeWorst)const noexcept{t
         for(std::size_t i=0;i<variant.controlledLayerNames.size();++i){if(variant.controlledLayerNames[i].empty()||std::find(variant.controlledLayerNames.begin(),variant.controlledLayerNames.begin()+static_cast<std::ptrdiff_t>(i),variant.controlledLayerNames[i])!=variant.controlledLayerNames.begin()+static_cast<std::ptrdiff_t>(i))return false;}
         for(std::size_t i=0;i<variant.activeLayerNames.size();++i){if(std::find(variant.controlledLayerNames.begin(),variant.controlledLayerNames.end(),variant.activeLayerNames[i])==variant.controlledLayerNames.end()||
                 std::find(variant.activeLayerNames.begin(),variant.activeLayerNames.begin()+static_cast<std::ptrdiff_t>(i),variant.activeLayerNames[i])!=variant.activeLayerNames.begin()+static_cast<std::ptrdiff_t>(i))return false;}
-        for(std::size_t i=0;i<kTwoTitleAlphaSamples;++i){if(!FixedOutputComponent(variant.previewNames[i],L".png")||(observed?variant.alphaFrameIndices[i]!=0:variant.alphaFrameIndices[i]>=variant.frameEnd-variant.frameStart))return false;
+        for(std::size_t i=0;!queue&&i<kTwoTitleAlphaSamples;++i){if(!FixedOutputComponent(variant.previewNames[i],L".png")||(observed?variant.alphaFrameIndices[i]!=0:variant.alphaFrameIndices[i]>=variant.frameEnd-variant.frameStart))return false;
             for(std::size_t j=0;j<i;++j)if((!observed&&variant.alphaFrameIndices[j]==variant.alphaFrameIndices[i])||_wcsicmp(variant.previewNames[j].c_str(),variant.previewNames[i].c_str())==0)return false;}}
     if(variants[0].variantId==variants[1].variantId||_wcsicmp(variants[0].snapshotName.c_str(),variants[1].snapshotName.c_str())==0||_wcsicmp(variants[0].outputName.c_str(),variants[1].outputName.c_str())==0||
         variants[0].rootName!=variants[1].rootName||variants[0].compName!=variants[1].compName||variants[0].controlledLayerNames!=variants[1].controlledLayerNames)return false;
@@ -116,18 +122,21 @@ bool ExecutionPolicy::Validate(ExecutionCost& fullLifetimeWorst)const noexcept{t
     for(std::size_t i=0;i<aepNames.size();++i)for(std::size_t j=0;j<i;++j)if(_wcsicmp(aepNames[i]->c_str(),aepNames[j]->c_str())==0)return false;
     if(selectionMode==TitleSelectionMode::FirstTwoObservedTextStatesV1&&(variants[0].frameStart!=variants[1].frameStart||variants[0].frameEnd!=variants[1].frameEnd||
         variants[0].frameRateNumerator!=variants[1].frameRateNumerator||variants[0].frameRateDenominator!=variants[1].frameRateDenominator))return false;
-    for(const auto& first:variants[0].previewNames)for(const auto& second:variants[1].previewNames)if(_wcsicmp(first.c_str(),second.c_str())==0)return false;
+    if(queue){for(const auto& variant:variants)for(std::size_t i=0;i<kTwoTitleAlphaSamples;++i)if(!variant.previewNames[i].empty()||variant.alphaFrameIndices[i])return false;}
+    else for(const auto& first:variants[0].previewNames)for(const auto& second:variants[1].previewNames)if(_wcsicmp(first.c_str(),second.c_str())==0)return false;
     if(!startup.Same(FixedTwoTitleCosts::Startup())||!initialRead.Same(FixedTwoTitleCosts::InitialRead())||!preparation.Same(FixedTwoTitleCosts::Preparation())||
         !checkpoint.Same(FixedTwoTitleCosts::Checkpoint())||!cleanCopy.Same(FixedTwoTitleCosts::CleanCopy())||!stage.Same(FixedTwoTitleCosts::Delivery())||
         !enqueued.Same(FixedTwoTitleCosts::Delivery())||!start.Same(FixedTwoTitleCosts::Delivery())||!restoration.Same(FixedTwoTitleCosts::Delivery())||
-        !poll.Same(FixedTwoTitleCosts::Poll())||!terminal.Same(FixedTwoTitleCosts::Terminal())||!media.Same(FixedTwoTitleCosts::Media())||!finalTeardown.Same(FixedTwoTitleCosts::Teardown()))return false;
+        (!queue&&(!poll.Same(FixedTwoTitleCosts::Poll())||!terminal.Same(FixedTwoTitleCosts::Terminal())||!media.Same(FixedTwoTitleCosts::Media())))||(queue&&(!poll.Same(FixedSharedQueueCosts::Poll())||!media.Empty()||!terminal.Same(FixedSharedQueueCosts::Terminal())))||!finalTeardown.Same(FixedTwoTitleCosts::Teardown()))return false;
     // File-HQ is an alternative criterion, not a synthetic used-settings
     // observation. Its disabled settings operations must have exactly zero
     // cost and cannot silently issue a SettingsCap or consume extra Calls.
     if(!queuedSettings.Empty()||!usedSettings.Empty())return false;
     ExecutionCost total;if(!total.Plus(startup,total)||!total.Plus(initialRead,total)||!total.Plus(preparation,total)||!total.Plus(checkpoint,total))return false;
-    for(unsigned slot=0;slot<2;++slot){for(const auto* cost:{&cleanCopy,&stage,&enqueued,&start,&terminal,&media,&restoration})if(!total.Plus(*cost,total))return false;
+    for(unsigned slot=0;slot<2;++slot){for(const auto* cost:queue?std::vector<const ExecutionCost*>{&cleanCopy,&stage,&enqueued,&terminal,&restoration}:std::vector<const ExecutionCost*>{&cleanCopy,&stage,&enqueued,&start,&terminal,&media,&restoration})if(!total.Plus(*cost,total))return false;
         for(std::uint32_t ordinal=0;ordinal<completionPollsPerJob;++ordinal)if(!total.Plus(poll,total))return false;}
-    if(total.external>192-16||total.store>256-16||!total.Plus(finalTeardown,total)||!total.Same(FixedTwoTitleCosts::Full()))return false;fullLifetimeWorst=total;return true;
+    if(queue&&!total.Plus(start,total))return false;
+    if(queue)for(std::uint16_t ordinal=0;ordinal<kSharedQueueMaximumPolls;++ordinal)if(!total.Plus(poll,total))return false;
+    if(total.external>192-16||total.store>256-16||!total.Plus(finalTeardown,total)||!total.Same(queue?FixedSharedQueueCosts::Full():FixedTwoTitleCosts::Full()))return false;fullLifetimeWorst=total;return true;
 }catch(...){return false;}}
 }

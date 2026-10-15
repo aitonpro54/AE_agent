@@ -31,7 +31,7 @@ struct VariantSelector final {std::wstring variantId,rootName,compName;std::vect
     std::wstring workingName,snapshotName,outputName;std::array<std::wstring,kTwoTitleAlphaSamples> previewNames{};
     std::array<std::uint32_t,kTwoTitleAlphaSamples> alphaFrameIndices{};
     std::uint32_t frameStart=0,frameEnd=0,frameRateNumerator=0,frameRateDenominator=0;};
-enum class ExecutionBudgetProfile : std::uint8_t {None=0,FrozenTwoTitle86=1};
+enum class ExecutionBudgetProfile : std::uint8_t {None=0,FrozenTwoTitle86=1,SharedTwoTitleQueue85=2};
 enum class TitleSelectionMode : std::uint8_t {ExactNamedVariants=1,FirstTwoObservedTextStatesV1=2};
 enum class TitleRangeMode : std::uint8_t {FrozenLiteralRange=1,FullObservedRootRangeV1=2};
 enum class AlphaSampleMode : std::uint8_t {FrozenLiteralIndices=1,QuartileFramesV1=2};
@@ -49,6 +49,7 @@ struct ExecutionPolicy final {
     // Each row is an exact source-owned operation cost; zero/missing and any
     // excess fail before effects. Six existing media child invocations per job.
     ExecutionCost preparation,checkpoint,cleanCopy,stage,enqueued,start,queuedSettings,usedSettings,poll,terminal,media,restoration,startup,initialRead,finalTeardown;
+    bool SharedQueue()const noexcept{return enabled&&budgetProfile==ExecutionBudgetProfile::SharedTwoTitleQueue85;}
     bool Validate(ExecutionCost& fullLifetimeWorst)const noexcept;
 };
 // A closed operation selector, not an actor/project/M100 attestation. Dynamic
@@ -60,6 +61,7 @@ bool FixedExecutionScopeAllowed(const ExecutionPolicy& policy,phase::ToolCode to
 bool FixedAmeTargetSpecifier(const std::string& target)noexcept;
 // Fixed source selectors only; no capability or job/proposal/ordinal input.
 Digest FixedOriginalCompletionLeaf(const ExecutionPolicy& policy,std::uint16_t slot,std::uint16_t purpose);
+Digest FixedSharedQueueObservationLeaf(const ExecutionPolicy& policy,std::uint16_t purpose);
 struct NativeTitleLayer final {std::uint64_t id=0;std::wstring name;Digest contentHash{};bool enabled=false;};
 struct NativeTitleState final {ObjectPin project;Digest projectHash{},revision{},graphHash{},owner{};std::uint64_t rootId=0,compId=0;
     std::uint32_t width=0,height=0,frameStart=0,frameCount=0,rateNumerator=0,rateDenominator=0;
@@ -103,7 +105,7 @@ private:
     reviewed::File imagePin_,exporterPin_;std::wstring sid_;std::uint32_t pid_=0;std::uint64_t birth_=0;
     std::uintptr_t exporterBase_=0;std::uint64_t exporterSize_=0;Digest loadedExecutableSections_{};
     bool Current()const noexcept;
-    bool unknown_=false;friend class NativeClient;friend class OriginalMediaCapture;
+    bool queueOnly_=false,unknown_=false;friend class NativeClient;friend class OriginalMediaCapture;
 };
 class AmeOriginalJob final {
 private:

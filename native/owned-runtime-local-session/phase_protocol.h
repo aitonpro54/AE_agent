@@ -71,7 +71,8 @@ enum class Verb : std::uint16_t { Open=1, ReserveInitialLaunch=2, Status=3,
     ObserveServerGates=46, BindOriginalJob=47, BeginCompletionPoll=48,
     ObserveJobTerminal=49, ObserveMedia=50, FinishServerOnly=52,
     ObserveSameActorState=53, ReservePanelEffect=54, ObserveChallenge=65,
-    PublishOwnCompletionReady=66, CompletionResultNotice=67 };
+    PublishOwnCompletionReady=66, CompletionResultNotice=67,
+    BindSharedQueue=68,BeginSharedQueuePoll=69,ObserveSharedQueuePoll=70,ReadSharedQueueState=71,AcknowledgeSharedQueueIo=72 };
 enum class CallKind : std::uint8_t { ServerOnly=1, Panel=2, BootstrapRead=3,
     Read=4, ExecutionPrep=5, Execute=6, Completion=7 };
 enum class ToolCode : std::uint16_t { GetOwnedRuntimeStatus=1,

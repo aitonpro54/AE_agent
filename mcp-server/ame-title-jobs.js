@@ -130,6 +130,16 @@ function nativeTitleJob(a) {
       reply.start = slot.batches[a.batchId] && slot.batches[a.batchId].start || null;
       reply.job = readEntry(entry); reply.nativeAssociationVerified = reply.job.nativeAssociationVerified; return done("job_observed");
     }
+    if (a.operation === "shared_status" && a.ownedInitialDispatch === true && a.queueMode === "shared_queue_v1") {
+      if (!slot || !a.jobIds || a.jobIds.length !== 2 || a.jobIds[0] === a.jobIds[1] || slot.retainedWrapperSessionNonce !== a.retainedWrapperSessionNonce) return done("owned_shared_status_origin_changed");
+      batch = slot.batches[a.batchId]; if (!batch || batch.processBinding !== a.processBinding || batch.jobIds.length !== 2) return done("owned_shared_status_batch_changed");
+      if (typeof app.getEncoderHost !== "function") return done("encoder_host_unsupported"); host = app.getEncoderHost();
+      if (!host || typeof host.isBatchRunning !== "function") return done("batch_running_unknown"); reply.batchRunning = scalar(host.isBatchRunning());
+      reply.jobs = []; reply.start = batch.start || null;
+      for (i = 0; i < a.jobIds.length; i++) { entry = slot.jobs[a.jobIds[i]]; if (batch.jobIds[i] !== a.jobIds[i] || !entry || entry.batchId !== a.batchId || entry.processBinding !== a.processBinding) return done("owned_shared_status_entry_changed");
+        var statusEntry = readEntry(entry); if (!statusEntry.nativeAssociationVerified || !statusEntry.workAreaApplied || statusEntry.readErrors.length || statusEntry.status !== "queued" && statusEntry.status !== "running" && statusEntry.status !== "native_finished") return done("owned_shared_status_entry_changed"); reply.jobs.push(statusEntry); }
+      reply.nativeAssociationVerified = true; return done("shared_jobs_observed");
+    }
     if (typeof app.getFrontend !== "function") return done("frontend_unsupported"); frontend = app.getFrontend();
     if (a.operation === "sources" || a.operation === "enqueue") {
       if (!frontend || typeof frontend.getDLItemsAtRoot !== "function") return done("dl_items_unsupported"); ids = frontend.getDLItemsAtRoot(a.sourcePath);

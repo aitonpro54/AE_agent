@@ -420,7 +420,7 @@ struct Broker::Data::Trusted final : Broker::Data {
     struct RestrictedRead final {Id readRef{},bracket{},stageTicket{},projectTicket{};Digest readHash{},scope{},stageResult{},projectResult{};std::uint64_t epoch=0;std::uint16_t slot=0;};
     std::vector<RestrictedRead> restrictedReads;Id restorationBracket{};std::uint16_t restorationBracketSlot=0;
     std::uint16_t EligibleRestoreBracket()const{std::uint16_t selected=0;for(const auto& debt:restoreDebts){if(!debt||debt->state==RestoreDebt::State::Restored)continue;if(selected||debt->state!=RestoreDebt::State::StageTerminal||debt->actor!=actor||detail::Zero(debt->stageResult)||detail::Zero(debt->stageReceipt))Refuse("trusted_restore_bracket_debt_unknown");selected=debt->slot;}
-        if(selected){for(const auto& job:originalJobs)if(job&&job->stage!=OriginalJobRow::Stage::Media)Refuse("trusted_restore_bracket_job_media_not_quiescent");
+        if(selected&&!trusted_read::EmbeddedProfile().execution.SharedQueue()){for(const auto& job:originalJobs)if(job&&job->stage!=OriginalJobRow::Stage::Media)Refuse("trusted_restore_bracket_job_media_not_quiescent");
             // A known enqueue without its completed media-bound START cannot
             // be hidden by the absence of a D47 row; no renew between them.
             for(const auto& ticket:projects)if(ticket->executionDelivery&&ticket->variantSlot==selected&&ticket->effectOperation==static_cast<std::uint16_t>(trusted_read::ExecutionLeaf::EnqueueAme)){
@@ -602,10 +602,11 @@ struct Broker::Data::Trusted final : Broker::Data {
     void CloseAdmission(bool unknown)noexcept{if(unknown||effects.unknown||ledger.HasUnresolved()){Unknown();effects.unknown=true;}
         Revoke();ledger.Close();challenge.pending=false;sameActor=false;controllerDeferred=false;}
     void ControllerFrame(const phase::Frame& request){const auto verb=request.header.verb;
+        if(verb==phase::Verb::ReadSharedQueueState){SharedQueueStatus(request);return;}
         if(verb==phase::Verb::Status){auto reply=Reply(request,true,phase::Status::Ok);auto status=TrustedStatus(state,opened?session:Id{});std::uint16_t word=static_cast<std::uint16_t>(state);
             if(state==State::ActorBound&&ControllerCurrent()&&WorkerCurrent()&&!controllerDeferred&&!ledger.HasUnresolved())for(const auto& job:originalJobs)if(job&&job->official==OriginalJobRow::Official::Unused&&CompletionCurrent(*job))word=static_cast<std::uint16_t>(word|(job->slot==1?0x100u:0x200u));
             status[0]=static_cast<unsigned char>(word);status[1]=static_cast<unsigned char>(word>>8);TrustedPayload(reply,status);Send(reply,true,false);return;}
-        if(verb==phase::Verb::Revoke||verb==phase::Verb::RequestDrain){drainRequested=true;
+        if(verb==phase::Verb::Revoke||verb==phase::Verb::RequestDrain){if(trusted_read::EmbeddedProfile().execution.SharedQueue()&&!SharedQueueQuiescent())Refuse("trusted_shared_own_jobs_or_IO_not_quiescent");drainRequested=true;
             // Reply is tracked before revocation. It cannot restore admission.
             auto reply=Reply(request,true,phase::Status::Ok);Bytes bytes=verb==phase::Verb::RequestDrain?Bytes(129,0):TrustedStatus(state,opened?session:Id{});
             if(verb==phase::Verb::RequestDrain){if(!opened||!daemonBound)Refuse("trusted_drain_before_runtime_refused");bytes[0]=1;
@@ -706,7 +707,8 @@ struct Broker::Data::Trusted final : Broker::Data {
             job.terminal=detail::RandomId();job.terminalReceipt=receipt;job.terminalJoin=join;job.mediaReserved=true;job.stage=OriginalJobRow::Stage::Terminal;
         }catch(...){job.stage=OriginalJobRow::Stage::Unknown;effects.unknown=true;throw;}
     }
-    bool LedgerIdleLifecycle()const noexcept{if(effects.unknown||challenge.pending||controllerDeferred||ledger.HasUnresolved())return false;
+#include "owned_shared_queue_broker.inc"
+    bool LedgerIdleLifecycle()const noexcept{if(!SharedQueueQuiescent()||effects.unknown||challenge.pending||controllerDeferred||ledger.HasUnresolved())return false;
         for(const auto& p:projects)if(p->stage!=Project::Stage::Terminal)return false;return true;}
     void WorkerFrame(const phase::Frame& request);
     bool Lifecycle();
@@ -724,6 +726,7 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
         // Only now may the same held prefix close, once, before Stop Append.
         if(verb==phase::Verb::DrainAck&&(!CleanupPrefixCurrent()||!OriginalFloor(true)||!cleanupPrefix->ReleaseOnce()))Refuse("trusted_cleanup_prefix_release_unknown",0,true);return;}
     if(controllerRevoked||unknownDisposition||!daemonBound||drainSent)Refuse("trusted_worker_admission_closed");
+    if(HandleSharedQueueFrame(request))return;
     if(verb==phase::Verb::VerifyIngress){phase::VerifyIngressPayload body{};phase::HandlerReply handler{};phase::Status status=phase::Status::Denied;
         body.callRef=TrustedField<16>(request,0);body.ingressNonce=TrustedField<16>(request,16);body.body.tool=static_cast<phase::ToolCode>(TrustedNumber(request,32,2));
         body.body.kind=static_cast<phase::CallKind>(request.payload[34]);body.body.route=static_cast<phase::RouteCode>(TrustedNumber(request,35,2));body.body.canonicalBodyHash=TrustedField<32>(request,37);
@@ -904,6 +907,11 @@ void Broker::Data::Trusted::WorkerFrame(const phase::Frame& request){const auto 
         const auto hash=TrustedField<32>(request,32);const auto status=ticket->inspection?ledger.FinishExecution(ledger.daemon_,ticket->handler,hash,GetTickCount64()):ledger.FinishLocalProjectRead(ledger.daemon_,ticket->handler,hash,observation,GetTickCount64());
         if(status!=phase::Status::Ok){ticket->stage=Project::Stage::Unknown;Refuse("trusted_project_terminal_row_unknown",0,true);}ticket->result=hash;ticket->stage=Project::Stage::Terminal;
         if(ticket->executionDelivery&&ticket->variantSlot){const auto operation=static_cast<trusted_read::ExecutionLeaf>(ticket->effectOperation);if(operation==trusted_read::ExecutionLeaf::StageVariant||operation==trusted_read::ExecutionLeaf::RestoreBaseline){auto& debt=restoreDebts[ticket->variantSlot-1];if(!debt||debt->actor!=actor)Refuse("trusted_restore_terminal_original_debt",0,true);if(operation==trusted_read::ExecutionLeaf::StageVariant){if(debt->stageTicket!=ticket->ref||debt->state!=RestoreDebt::State::Selected)Refuse("trusted_stage_terminal_original_debt",0,true);debt->stageResult=hash;debt->stageReceipt=ticket->receipt;debt->state=RestoreDebt::State::StageTerminal;}else{if(debt->state!=RestoreDebt::State::StageTerminal||detail::Zero(debt->stageResult)||detail::Zero(debt->stageReceipt))Refuse("trusted_restore_terminal_stage_join",0,true);debt->state=RestoreDebt::State::Restored;}}}
+        if(trusted_read::EmbeddedProfile().execution.SharedQueue()){
+            if(ticket->executionDelivery&&ticket->effectOperation==6)sharedEnqueueMask|=static_cast<std::uint16_t>(1u<<(ticket->variantSlot-1));
+            if(ticket->executionDelivery&&ticket->effectOperation==7)sharedQueueStart=ticket->ref;
+            const auto* row=Handler(ticket->handler);if(row&&row->body.tool==phase::ToolCode::InspectAmeTitleQueueManifest)for(std::uint16_t slot=1;slot<=2;++slot)if(row->executionScope==trusted_read::FixedExecutionScope(trusted_read::EmbeddedProfile().execution,slot,trusted_read::ExecutionLeaf::Inspect))sharedOwnReadbackMask|=static_cast<std::uint16_t>(1u<<(slot-1));
+        }
         auto reply=Reply(request,false,phase::Status::Ok);auto bytes=EffectAck(ticket->ref,ticket->note);std::copy(hash.begin(),hash.end(),bytes.begin()+17);TrustedPayload(reply,bytes);Send(reply,false,true);return;}
     if(verb==phase::Verb::BindOriginalJob){auto& start=Ticket(TrustedField<16>(request,0));const auto& policy=trusted_read::EmbeddedProfile().execution;const auto now=GetTickCount64();
         const auto slot=start.variantSlot;const auto* handler=Handler(start.handler);const auto* authority=Authority(start.executionAuthority);

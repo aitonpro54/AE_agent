@@ -23,6 +23,18 @@ const planCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
 const ownedExecutionRunContext = new AsyncLocalStorage();
 const ownedAmeContexts=new WeakMap(),ownedAmePreparations=new WeakMap(),ownedAmeAuthorizations=new WeakMap();
+const ownedSharedQueueContexts=new WeakMap();
+const ownedSharedQueueContextGuard=require("./owned-runtime-initial-shared-queue-context").createSharedQueueContextGuard({assertOriginal:context=>{
+  const own=ownedSharedQueueContexts.get(context);if(!initialRuntime||trustedReadDaemon.executionProfile!=="shared_queue_v1"||!trustedReadDaemon.role||!own||!own.handler||!own.request||own.record!==context.record||ownedExecutionRunContext.getStore()!==context)trustedFail("owned_initial_original_shared_ingress_required");
+  initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);
+}});
+function assertOwnedExecutionContext(context){if(ownedSharedQueueContexts.has(context))return ownedSharedQueueContextGuard.assertContext(context);return manualPlanIngress.assertContext(context);}
+function assertSharedQueueIngress(context,binding){
+  if(!ownedSharedQueueContexts.has(context))trustedFail("owned_initial_private_shared_ingress_required");assertOwnedExecutionContext(context);
+  if(binding?.schema===ameSharedQueue.BINDING_SCHEMA){const own=ownedAmeContexts.get(context),queue=trustedReadDaemon.ameQueueFacts?.[1];if(!own||own.slot!==2||own.leaf!==7||!queue||m100Protocol.stableStringify(binding)!==m100Protocol.stableStringify(queue.value.manifest))trustedFail("owned_initial_exact_shared_binding_required");const debt=trustedNative.describeRestorationDebtFixed(trustedReadDaemon.role);if(debt.count||debt.inFlight||debt.unknown)trustedFail("owned_initial_shared_restoration_debt");return true;}
+  return assertAmeTitleContext(context,binding);
+}
+
 const ownedAmeNativeDispatchPort=createOwnedAmeNativeDispatchPort();
 const ownedExecutionPreparationContext = new AsyncLocalStorage();
 const ownedFixedTitleProposals = new WeakMap();
@@ -99,6 +111,7 @@ const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
 const ameTitleJobs = require("./ame-title-jobs");
 const ameManualQueue = require("./ame-manual-queue-grant");
+const ameSharedQueue = require("./ame-shared-queue-grant");
 const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
 const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const nativeFixtureAbandonment = require("./native-fixture-abandonment");
@@ -237,7 +250,7 @@ const ameFixtureExecutor = ameFixtureRunner.createExecutor({
 const ameTitleMutationNames = new Set([ameTitleJobs.ENQUEUE, ameTitleJobs.START]);
 function assertAmeTitleContext(context, binding) {
   currentProposalState.assertCurrent(context && context.record);
-  manualPlanIngress.assertContext(context);
+  assertOwnedExecutionContext(context);
   const plan = context.record.payload && context.record.payload.plan;
   const steps = plan && plan.steps;
   const step = Array.isArray(steps) && steps.length === 1 && steps[0];
@@ -258,12 +271,14 @@ const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
   assertServerContext: context => assertAmeTitleContext(context, { name: ameTitleJobs.START, argsHash: ameTitleJobs.operationArgsHash(ameTitleJobs.START, context.args) }),
   assertPanelIdentity: meta => {const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),pending=own?.pending;if(own&&own.leaf===7){if(!pending||pending!==trustedReadDaemon.manualPending||pending.error||!pending.started||pending.authRole!=="panel"||pending.route!==ameManualQueue.ROUTE)return false;const panel=ownedOriginalPreparationPanel(ownedFixedTitleManualReceipts.get(context.record)?.panel);return panel.panelConnectionId===meta.panelConnectionId&&panel.panelGeneration===meta.panelGeneration;}return Boolean(lastPanelInfo && Date.now() - lastPanelSeenAt < 10000 && lastPanelInfo.panelConnectionId === meta.panelConnectionId && lastPanelInfo.panelGeneration === meta.panelGeneration);}
 });
+const ameSharedQueueIssuer=ameSharedQueue.createSharedQueueGrant({stateDir:path.join(LOG_DIR,"ame-title-jobs"),assertSharedQueueIngress,assertServerContext:assertSharedQueueIngress});
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
   resolveOutputFilePath,
-  assertManualIngress: context => manualPlanIngress.assertContext(context),
+  assertManualIngress: context => assertOwnedExecutionContext(context),
   assertServerContext: assertAmeTitleContext,
   manualQueueGrant: ameManualQueueIssuer,
+  sharedQueueGrant: ameSharedQueueIssuer,assertSharedQueueIngress,
   // L4 installs the real origin-bound native dispatch port. Generic plan roles
   // and caller flags cannot create native read/start/completion rights.
   nativeDispatchPort: ownedAmeNativeDispatchPort,
@@ -1392,7 +1407,17 @@ function ownedTrustedExecutionGates(input) {
   if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!input.descriptor||input.descriptor.purpose!=="gates")
     throw Object.assign(Error("owned_initial_fixed_execution_gate_getter_required"),{code:"owned_initial_fixed_execution_gate_getter_required"});
   initialRuntime.assertIngress();const descriptor=input.descriptor,context=ownedExecutionRunContext.getStore(),record=context&&context.record;
-  currentProposalState.assertCurrent(record);manualPlanIngress.assertContext(context);
+  currentProposalState.assertCurrent(record);assertOwnedExecutionContext(context);
+  if(ownedSharedQueueContexts.has(context)){
+    const own=ownedSharedQueueContexts.get(context),fixed=ownedFixedTitleProposals.get(record),manual=ownedFixedTitleManualReceipts.get(record);
+    if(!fixed||!manual||!manual.proposalTerminal||!manual.dryTerminal||!manual.completedDryRun||descriptor.panelRoute!=="/mcp/tools/call"||
+        descriptor.request.name!=="run_ai_agent_plan"||m100Protocol.stableStringify(descriptor.request)!==m100Protocol.stableStringify(descriptor.panel)||
+        m100Protocol.stableStringify(descriptor.request.args)!==m100Protocol.stableStringify(own.controllerArgs)||descriptor.slot!==fixed.slot||descriptor.leaf!==fixed.leaf||
+        record.executionId!==context.runId||m100Protocol.stableStringify(descriptor.cleanSourcePreflight)!==m100Protocol.stableStringify(context.checkpoint))trustedFail("owned_initial_original_shared_gate_join");
+    for(const key of ["proposalProof","dryRunProof"]){const proof=descriptor[key],saved=proof&&ownedExecutionPreparationFacts.get(proof.descriptorSha25664);if(!saved||saved.record!==record||saved.slot!==fixed.slot||saved.leaf!==fixed.leaf||saved.proof!==JSON.stringify(proof))trustedFail("owned_initial_original_shared_preparation_join");}
+    if(fixed.leaf===7&&(!context.ownedSharedQueueCapability||!context.ownedSharedQueueBinding||fixed.slot!==2))trustedFail("owned_initial_original_shared_START_grant");
+    return ownedExecutionFactProof(input.descriptorSha25664,descriptor,record,{actionId:record.actionId,revision:record.revision,runId:context.runId,authoritySource:"original_owned_shared_queue_profile"},"ae-agent.owned-execution-gate-proof.v1");
+  }
   const keys=m100PlanRunLookupKey(descriptor.request.args),panelKeys=m100PlanRunLookupKey(descriptor.panel);
   if(record.riskPolicyVersion!==m100Protocol.M100_RISK_POLICY_VERSION||record.contractVersion!==AUTONOMY_CONTRACT_VERSION||
       !panelKeys.confirmationToken||m100Protocol.hashConfirmationToken(panelKeys.confirmationToken)!==record.confirmationTokenHash||
@@ -1425,7 +1450,7 @@ function ownedTrustedExecutionGates(input) {
     ameManualQueueIssuer.assertCapability(context.ownedManualQueueCapability,context,context.ownedManualQueueManifest);
   }else if(descriptor.panelRoute!=="/agents/plan/run")throw Object.assign(Error("owned_initial_exact_manual_route_required"),{code:"owned_initial_exact_manual_route_required"});
   const proof=ownedExecutionFactProof(input.descriptorSha25664,descriptor,record,{actionId:record.actionId,revision:record.revision,runId:context.runId},"ae-agent.owned-execution-gate-proof.v1");
-  currentProposalState.assertCurrent(record);manualPlanIngress.assertContext(context);initialRuntime.assertIngress();return proof;
+  currentProposalState.assertCurrent(record);assertOwnedExecutionContext(context);initialRuntime.assertIngress();return proof;
 }
 function ownedReadonlyScriptPreparation(name){
   const current=scriptPreparationContext.getStore();
@@ -1612,7 +1637,7 @@ function ownedFixedStageHost(d,nativeSnapshot){
 async function ownedTrustedStageScript(input){
   if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!input.descriptor||input.descriptor.schema!=="ae-agent.owned-native-stage-descriptor.v1")
     throw Object.assign(Error("owned_initial_fixed_stage_getter_required"),{code:"owned_initial_fixed_stage_getter_required"});
-  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);manualPlanIngress.assertContext(context);
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
   const d=input.descriptor,operand=context.args&&context.args.ownedTitleProgram;
   if(!operand||operand.operation!=="stage"||operand.slot!==d.slot||operand.manifestSha25664!==d.manifestSha25664||![1,2].includes(d.slot)||d.operation!=="stage")
     throw Object.assign(Error("owned_initial_exact_stage_manual_operand_required"),{code:"owned_initial_exact_stage_manual_operand_required"});
@@ -1620,7 +1645,7 @@ async function ownedTrustedStageScript(input){
   const at=source.lastIndexOf(suffix);if(at<0||!source.endsWith(");"))throw Object.assign(Error("owned_initial_fixed_snapshot_generator_shape"),{code:"owned_initial_fixed_snapshot_generator_shape"});
   const script=wrapExtendScriptBody(`${source.slice(0,at)}var ownedFirstTwoTitleInventory=${ownedFirstTwoTitleInventory.toString()};var ownedInitialUiBaseline=${ownedInitialUiBaseline.toString()};var ownedCopiedTitleInventoryJoin=${ownedCopiedTitleInventoryJoin.toString()};var ownedCopiedTitleGraphJoin=${ownedCopiedTitleGraphJoin.toString()};var ownedObservedRootTiming=${ownedObservedRootTiming.toString()};var ownedFixedTitleState=${ownedFixedTitleState.toString()};var ownedFixedStageHost=${ownedFixedStageHost.toString()};return ownedFixedStageHost(${aeLiteral(d)},nativeSnapshot);`);
   if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_stage_generated_source_bound"),{code:"owned_initial_stage_generated_source_bound"});
-  initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);
+  initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);
   return Object.freeze({name:"run_ai_agent_plan",script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex")});
 }
 function ownedFixedAmeHost(d,descriptorSha25664,nativeSnapshot,send){
@@ -1632,44 +1657,44 @@ function ownedFixedAmeHost(d,descriptorSha25664,nativeSnapshot,send){
 }
 async function ownedTrustedAmeScript(input){
   if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!trustedExact(input.descriptor,["schema","operation","slot","expectedCurrent","stageDescriptor","args"])||
-      input.descriptor.schema!=="ae-agent.owned-native-ame-command.v1"||!["sources","queue","enqueue","start","status"].includes(input.descriptor.operation)||![1,2].includes(input.descriptor.slot)||
+      input.descriptor.schema!=="ae-agent.owned-native-ame-command.v1"||!["sources","queue","enqueue","start","status","shared_status"].includes(input.descriptor.operation)||![1,2].includes(input.descriptor.slot)||
       !/^[a-f0-9]{64}$/.test(input.descriptorSha25664)||crypto.createHash("sha256").update(m100Protocol.stableStringify(input.descriptor)).digest("hex")!==input.descriptorSha25664)
     throw Object.assign(Error("owned_initial_fixed_ame_getter_required"),{code:"owned_initial_fixed_ame_getter_required"});
   initialRuntime.assertIngress();const d=input.descriptor,a=d.args,effect=["enqueue","start"].includes(d.operation),context=ownedExecutionRunContext.getStore();
-  if(a.operation!==d.operation||a.ownedInitialDispatch!==true||!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(a.targetSpecifier)||a.sourcePath!==d.expectedCurrent.projectFile||d.expectedCurrent.dirty!==false||d.stageDescriptor.slot!==d.slot)
+  if(a.operation!==d.operation||a.ownedInitialDispatch!==true||!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(a.targetSpecifier)||(!(a.queueMode==="shared_queue_v1"&&["start","shared_status"].includes(d.operation))&&a.sourcePath!==d.expectedCurrent.projectFile)||d.expectedCurrent.dirty!==false||d.stageDescriptor.slot!==d.slot)
     throw Object.assign(Error("owned_initial_fixed_ame_operand_join"),{code:"owned_initial_fixed_ame_operand_join"});
-  if(effect){currentProposalState.assertCurrent(context&&context.record);manualPlanIngress.assertContext(context);const program=(ownedAmeContexts.get(context)?.outerArgs||context.args)?.ownedTitleProgram;
+  if(effect){currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);const program=(ownedAmeContexts.get(context)?.outerArgs||context.args)?.ownedTitleProgram;
     if(!program||program.operation!==d.operation||program.slot!==d.slot)throw Object.assign(Error("owned_initial_fixed_ame_manual_program_required"),{code:"owned_initial_fixed_ame_manual_program_required"});}
   const source=nativeRenderVariant.inspectScript({expectedProjectFile:d.expectedCurrent.projectFile,rootCompItemId:d.expectedCurrent.rootCompItemId,variantCompItemId:d.expectedCurrent.compItemId,controlledLayerIds:d.expectedCurrent.selectedTextLayerIds}),at=source.lastIndexOf("return nativeSnapshot(");
   if(at<0||!source.endsWith(");"))throw Object.assign(Error("owned_initial_fixed_ame_snapshot_generator_shape"),{code:"owned_initial_fixed_ame_snapshot_generator_shape"});
   const bridgeTalkBody=ameTitleJobs.messageScript(a),sender=ameTitleJobs.commandScript(a);if(!sender.startsWith("return ")||!sender.endsWith(";"))throw Object.assign(Error("owned_initial_fixed_ame_sender_shape"),{code:"owned_initial_fixed_ame_sender_shape"});
   const body=source.slice(0,at)+"var ownedFirstTwoTitleInventory="+ownedFirstTwoTitleInventory.toString()+";var ownedInitialUiBaseline="+ownedInitialUiBaseline.toString()+";var ownedObservedRootTiming="+ownedObservedRootTiming.toString()+";var ownedFixedTitleState="+ownedFixedTitleState.toString()+";var ownedFixedAmeHost="+ownedFixedAmeHost.toString()+";return ownedFixedAmeHost("+aeLiteral(d)+","+aeLiteral(input.descriptorSha25664)+",nativeSnapshot,function(){"+sender+"});";
   const script=wrapExtendScriptBody(body);if(Buffer.byteLength(script,"utf8")>1048576||Buffer.byteLength(bridgeTalkBody,"utf8")>524288)throw Object.assign(Error("owned_initial_fixed_ame_source_bound"),{code:"owned_initial_fixed_ame_source_bound"});
-  initialRuntime.assertIngress();if(effect){currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);}return Object.freeze({name:effect?"run_ai_agent_plan":d.operation==="status"?ameTitleJobs.STATUS:d.operation==="sources"?ameTitleJobs.INSPECT:ameTitleJobs.QUEUE_MANIFEST,script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex"),bridgeTalkBody});
+  initialRuntime.assertIngress();if(effect){currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);}return Object.freeze({name:effect?"run_ai_agent_plan":["status","shared_status"].includes(d.operation)?ameTitleJobs.STATUS:d.operation==="sources"?ameTitleJobs.INSPECT:ameTitleJobs.QUEUE_MANIFEST,script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex"),bridgeTalkBody});
 }
 function createOwnedAmeNativeDispatchPort(){
-  async function prepare(context,leaf){const own=ownedAmeContexts.get(context);if(!own||own.leaf!==leaf||own.preparation||!own.gate||!own.snapshot)trustedFail("owned_initial_original_ame_preparation_required");currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);
+  async function prepare(context,leaf){const own=ownedAmeContexts.get(context);if(!own||own.leaf!==leaf||own.preparation||!own.gate||!own.snapshot)trustedFail("owned_initial_original_ame_preparation_required");currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);
     const command=await trustedNative.bindAmeDeliveryFixed(trustedReadDaemon.role,own.gate,own.snapshot,trustedReadDaemon.ame);trustedCurrent();const facts=trustedNative.ameCommandFactsFixed(trustedReadDaemon.role,command),a=facts.descriptor.args;
     if(facts.slot!==own.slot||facts.operation!==(leaf===6?"enqueue":"start")||facts.descriptor.slot!==own.slot)trustedFail("owned_initial_original_ame_command_slot_join",true);
-    if(leaf===6){const args={targetSpecifier:a.targetSpecifier,expectedProcess:facts.expectedProcess,timeoutMs:a.timeoutMs,sourceProjectFile:a.sourcePath,expectedSourceSha25664:facts.sourceSha25664,batchId:a.batchId,sourceGuid:a.sourceGuid,presetId:facts.presetId,presetSha25664:facts.presetSha25664,outputFileName:path.basename(a.outputPath),range:a.range};if(a.boundNativeSessionNonce!==null)args.expectedSessionNonce=a.boundNativeSessionNonce;own.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.ENQUEUE,args));context.args=own.args;}
+    if(leaf===6){const args={targetSpecifier:a.targetSpecifier,expectedProcess:facts.expectedProcess,timeoutMs:a.timeoutMs,sourceProjectFile:a.sourcePath,expectedSourceSha25664:facts.sourceSha25664,batchId:a.batchId,sourceGuid:a.sourceGuid,presetId:facts.presetId,presetSha25664:facts.presetSha25664,outputFileName:path.basename(a.outputPath),range:a.range,...(a.queueMode==="shared_queue_v1"?{queueMode:ameSharedQueue.MODE}:{})};if(a.boundNativeSessionNonce!==null)args.expectedSessionNonce=a.boundNativeSessionNonce;own.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.ENQUEUE,args));context.args=own.args;}
     const preparation=Object.freeze(Object.create(null));own.preparation=preparation;ownedAmePreparations.set(preparation,{own,context,command,facts,guarded:false,authorized:false,dispatchAttempted:false,dispatched:false,state:null,poll:null});return preparation;
   }
-  function original(preparation,context){const row=ownedAmePreparations.get(preparation);if(!row||row.context!==context||ownedAmeContexts.get(context)!==row.own||row.own.preparation!==preparation||row.own.record!==context.record)trustedFail("owned_initial_original_ame_preparation_join");currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);return row;}
+  function original(preparation,context){const row=ownedAmePreparations.get(preparation);if(!row||row.context!==context||ownedAmeContexts.get(context)!==row.own||row.own.preparation!==preparation||row.own.record!==context.record)trustedFail("owned_initial_original_ame_preparation_join");currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);return row;}
   function assertPreparation(preparation,_frozen,context){const row=original(preparation,context);trustedNative.assertAmeCommandCurrentFixed(trustedReadDaemon.role,row.command);if(!row.state||!row.poll||row.poll!==trustedReadDaemon.heldPoll||row.poll.req.aborted||row.poll.res.destroyed||row.poll.res.writableEnded||row.state.project!==row.command)trustedFail("owned_initial_original_ame_delivery_socket_changed",true);row.guarded=true;return true;}
   function authorize(metadata,context,preparation){const row=original(preparation,context);assertPreparation(preparation,null,context);if(row.authorized||row.dispatched||!trustedExact(metadata,["operation","requestNonce","operationBinding","scriptSha25664","bodySha25664"])||metadata.operation!==row.facts.operation||metadata.requestNonce!==row.facts.descriptor.args.requestNonce||metadata.operationBinding!==row.facts.descriptor.args.operationBinding||metadata.scriptSha25664!==row.facts.scriptSha25664||metadata.bodySha25664!==row.facts.bodySha25664)trustedFail("owned_initial_original_ame_authorization_once",true);row.authorized=true;const cap=Object.freeze(Object.create(null));ownedAmeAuthorizations.set(cap,{row,metadata:JSON.stringify(metadata)});return cap;}
   function assertAuthorization(cap,metadata,context){const saved=ownedAmeAuthorizations.get(cap);if(!saved||saved.metadata!==JSON.stringify(metadata)||saved.row.context!==context||!saved.row.guarded||!saved.row.authorized||saved.row.dispatchAttempted||saved.row.dispatched)trustedFail("owned_initial_original_ame_authorization_required");original(saved.row.own.preparation,context);trustedNative.assertAmeCommandCurrentFixed(trustedReadDaemon.role,saved.row.command);return true;}
   async function dispatch(cap,script,metadata,context){assertAuthorization(cap,metadata,context);const row=ownedAmeAuthorizations.get(cap).row,descriptor=row.state.descriptor;if(script!==descriptor.script||crypto.createHash("sha256").update(script).digest("hex")!==row.facts.scriptSha25664)trustedFail("owned_initial_original_ame_script_changed",true);
     row.dispatchAttempted=true; // irreversible before marker reservation or send; UNKNOWN cannot replay
-    if(row.own.leaf===7){ameManualQueueIssuer.assertCapability(context.ownedManualQueueCapability,context,context.ownedManualQueueManifest);const a=row.facts.descriptor.args;
-      row.manualReservation=ameManualQueueIssuer.consume(context.ownedManualQueueCapability,context,context.ownedManualQueueManifest,{batchId:a.batchId,requestNonce:a.requestNonce,operationBinding:a.operationBinding,reservedAt:new Date().toISOString(),state:"unknown_outcome",transportResolved:false,lastDispatchGuardVerified:true});
-      await trustedNative.captureOriginalAmeManualReservationFixed(trustedReadDaemon.role,row.command);trustedCurrent();ameManualQueueIssuer.assertConsumedForDispatch(context.ownedManualQueueCapability,context,context.ownedManualQueueManifest,row.manualReservation);}
+    if(row.own.leaf===7){const shared=ownedSharedQueueContexts.has(context),issuer=shared?ameSharedQueueIssuer:ameManualQueueIssuer,binding=shared?context.ownedSharedQueueBinding:context.ownedManualQueueManifest,grant=shared?context.ownedSharedQueueCapability:context.ownedManualQueueCapability;
+      issuer.assertCapability(grant,context,binding);const a=row.facts.descriptor.args;row.manualReservation=issuer.consume(grant,context,binding,{batchId:a.batchId,requestNonce:a.requestNonce,operationBinding:a.operationBinding,reservedAt:new Date().toISOString(),state:"unknown_outcome",transportResolved:false,lastDispatchGuardVerified:true});
+      await trustedNative.captureOriginalAmeManualReservationFixed(trustedReadDaemon.role,row.command);trustedCurrent();issuer.assertConsumedForDispatch(grant,context,binding,row.manualReservation);}
     ownedAmeNativeDispatchPort.assertPreparation(row.own.preparation,null,context);row.dispatched=true;const deadline=trustedNative.originalDeadlineProjectionFixed(trustedReadDaemon.role,row.command);clearTimeout(row.poll.deadlineTimer);trustedReadDaemon.heldPoll=null;
     writeJson(row.poll.res,200,{ok:true,command:{...descriptor,remainingCommandMs:deadline.remainingCommandMs,leaseOwner:{panelConnectionId:trustedReadDaemon.connection.panelConnectionId,panelGeneration:trustedReadDaemon.connection.panelGeneration}}});return true;
   }
   return Object.freeze({prepareEnqueue:context=>prepare(context,6),prepareStart:context=>prepare(context,7),assertPreparation,authorize,assertAuthorization,dispatch});
 }
 function ownedTrustedAmeManualReservation(facts){const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),row=own&&ownedAmePreparations.get(own.preparation);if(!row||row.own!==own||own.leaf!==7||!row.guarded||row.dispatched||!row.manualReservation||m100Protocol.stableStringify(facts)!==m100Protocol.stableStringify(row.facts))trustedFail("owned_initial_original_manual_marker_receipt_required",true);
-  currentProposalState.assertCurrent(context.record);manualPlanIngress.assertContext(context);const a=facts.descriptor.args,file=path.join(LOG_DIR,"ame-title-jobs","starts",a.batchId+".json");if(file!==facts.reservationFile)trustedFail("owned_initial_original_manual_marker_root_changed",true);const raw=fs.readFileSync(file,"utf8");if(raw!==JSON.stringify(row.manualReservation)+"\n")trustedFail("owned_initial_original_manual_marker_bytes_changed",true);return {schema:"ae-agent.owned-original-ame-manual-reservation.v1",raw,rawSha25664:crypto.createHash("sha256").update(raw,"utf8").digest("hex")};}
+  currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);const a=facts.descriptor.args,file=path.join(LOG_DIR,"ame-title-jobs","starts",a.batchId+".json");if(file!==facts.reservationFile)trustedFail("owned_initial_original_manual_marker_root_changed",true);const raw=fs.readFileSync(file,"utf8");if(raw!==JSON.stringify(row.manualReservation)+"\n")trustedFail("owned_initial_original_manual_marker_bytes_changed",true);return {schema:"ae-agent.owned-original-ame-manual-reservation.v1",raw,rawSha25664:crypto.createHash("sha256").update(raw,"utf8").digest("hex")};}
 function ownedFixedRestorationHost(original,d,nativeSnapshot){
   function bad(code){throw Error(code);}
   function equal(a,b){var k,ac=0,bc=0;if(a===b)return true;if(a===null||b===null||typeof a!==typeof b||typeof a!=="object"||(a instanceof Array)!==(b instanceof Array))return false;for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){ac++;if(!Object.prototype.hasOwnProperty.call(b,k)||!equal(a[k],b[k]))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))bc++;return ac===bc;}
@@ -1699,13 +1724,13 @@ function ownedRestorationProgramSource(d){
 }
 function ownedTrustedRestorationProgram(input){
   if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||input.descriptor?.schema!=="ae-agent.owned-native-stage-descriptor.v1")throw Object.assign(Error("owned_initial_restore_preissue_getter_required"),{code:"owned_initial_restore_preissue_getter_required"});
-  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);manualPlanIngress.assertContext(context);
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
   if(context.args?.ownedTitleProgram?.operation!=="stage"||context.args.ownedTitleProgram.slot!==input.descriptor.slot||!ownedUiBaseline.supportedOperand(input.descriptor.originalUi))throw Object.assign(Error("owned_initial_restore_preissue_stage_join"),{code:"owned_initial_restore_preissue_stage_join"});
   return Object.freeze(ownedRestorationProgramSource(input.descriptor));
 }
 async function ownedTrustedRestorationScript(input){
   if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||input.descriptor?.schema!=="ae-agent.owned-native-restoration-delivery.v1")throw Object.assign(Error("owned_initial_restore_delivery_getter_required"),{code:"owned_initial_restore_delivery_getter_required"});
-  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);manualPlanIngress.assertContext(context);
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
   const d=input.descriptor;if(context.args?.ownedTitleProgram?.operation!=="restore"||context.args.ownedTitleProgram.slot!==d.slot)throw Object.assign(Error("owned_initial_exact_restore_manual_operand_required"),{code:"owned_initial_exact_restore_manual_operand_required"});
   const parts=ownedRestorationProgramSource(d.original),script=parts.prefix+aeLiteral(d)+parts.suffix;if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_restore_delivery_bound"),{code:"owned_initial_restore_delivery_bound"});
   return Object.freeze({name:"run_ai_agent_plan",script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex")});
@@ -1817,7 +1842,7 @@ async function trustedOriginalCompletionPoll(originalJob,slot){const role=truste
   if(![1,2].includes(slot)||trustedReadDaemon.ameJobs[slot-1]!==originalJob)trustedFail("owned_initial_original_completion_job_required");trustedCurrent();
   const project=await trustedNative.beginOriginalCompletionPollFixed(role,originalJob);trustedCurrent();const descriptor=trustedNative.describeOriginalCompletionPollFixed(role,project);
   if(!descriptor||typeof descriptor.id!=="string"||trustedReadDaemon.projects.has(descriptor.id))trustedFail("owned_initial_original_completion_descriptor",true);
-  let state,timer,ownedWaiter;const completion=new Promise((resolve,reject)=>{state={project,descriptor,inspection:true,preparation:false,restoration:false,ame:true,ameOperation:"status",stage:false,stageSlot:slot,name:ameTitleJobs.STATUS,resolve,reject,delivered:false,submitted:false,deadlineError:null};trustedReadDaemon.projects.set(descriptor.id,state);
+  let state,timer,ownedWaiter;const completion=new Promise((resolve,reject)=>{state={project,descriptor,inspection:true,preparation:false,restoration:false,ame:true,ameOperation:trustedReadDaemon.executionProfile==="shared_queue_v1"?"shared_status":"status",stage:false,stageSlot:slot,name:ameTitleJobs.STATUS,resolve,reject,delivered:false,submitted:false,deadlineError:null};trustedReadDaemon.projects.set(descriptor.id,state);
     const remaining=trustedNative.originalDeadlineProjectionFixed(role,project).remainingCommandMs;if(!Number.isSafeInteger(remaining)||remaining<=0||remaining>10000)trustedFail("owned_initial_original_completion_deadline",true);
     timer=setTimeout(()=>{const error=Object.assign(Error("owned_initial_original_completion_timeout"),{code:"owned_initial_original_completion_timeout",unknown:true});state.deadlineError=error;reject(error);},remaining);});
   void completion.catch(()=>{});const current=()=>{trustedCurrent();if(state.deadlineError)throw state.deadlineError;trustedNative.assertCurrent(role,project);};
@@ -1826,6 +1851,20 @@ async function trustedOriginalCompletionPoll(originalJob,slot){const role=truste
     const request=trustedHttp.requestCapability(role,poll.req);await trustedNative.selectOriginalCompletionPollFixed(role,project,request);current();state.delivered=true;const deadline=trustedNative.originalDeadlineProjectionFixed(role,project);current();clearTimeout(poll.deadlineTimer);trustedReadDaemon.heldPoll=null;
     writeJson(poll.res,200,{ok:true,command:{...descriptor,remainingCommandMs:deadline.remainingCommandMs,leaseOwner:{panelConnectionId:trustedReadDaemon.connection.panelConnectionId,panelGeneration:trustedReadDaemon.connection.panelGeneration}}});const result=await completion;trustedCurrent();return result;
   }catch(error){ownedWaiter?.cancel(error);try{await trustedNative.abandonOriginalCompletionPollFixed(role,project);}catch(abandonment){error.abandonmentCode=abandonment.code||"owned_original_poll_abandonment_closed";}throw Object.assign(error,{unknown:true});}finally{clearTimeout(timer);ownedWaiter?.cancel(state.deadlineError||Object.assign(Error("owned_initial_original_completion_wait_closed"),{unknown:true}));trustedReadDaemon.projects.delete(descriptor.id);}
+}
+function trustedStartSharedQueueCompletion(originalJob){
+  if(trustedReadDaemon.sharedQueueFlight||trustedReadDaemon.ameJobs[1]!==originalJob)trustedFail("owned_initial_shared_observation_once",true);
+  const flight={originalJob,complete:false,unknown:false,promise:null};trustedReadDaemon.sharedQueueFlight=flight;
+  flight.promise=(async()=>{
+    while(trustedReadDaemon.activeTool){await new Promise(resolve=>setTimeout(resolve,25));trustedCurrent();}
+    for(let index=0;index<10;index++){const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);if(facts.complete){await trustedNative.acknowledgeSharedQueueIoFixed(trustedReadDaemon.role,originalJob);flight.complete=true;return facts;}
+      if(!Number.isSafeInteger(facts.remainingPolls)||facts.remainingPolls<1||facts.nextPollDelayMs>=facts.remainingJobMs)trustedFail("owned_initial_shared_observation_budget_unknown",true);
+      if(facts.nextPollDelayMs)await new Promise(resolve=>setTimeout(resolve,facts.nextPollDelayMs));trustedCurrent();while(trustedReadDaemon.activeTool){await new Promise(resolve=>setTimeout(resolve,25));trustedCurrent();}
+      await trustedOriginalCompletionPoll(originalJob,2);if(trustedReadDaemon.sharedQueueResponseCleanup){await trustedReadDaemon.sharedQueueResponseCleanup;trustedReadDaemon.sharedQueueResponseCleanup=null;}trustedCurrent();
+      if(trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob).complete){await trustedNative.acknowledgeSharedQueueIoFixed(trustedReadDaemon.role,originalJob);flight.complete=true;return;}
+    }
+    trustedFail("owned_initial_shared_observation_limit_unknown",true);
+  })();void flight.promise.catch(error=>{flight.unknown=true;flight.error=error;trustedReadDaemon.activeTool?.reject?.(error);});return flight;
 }
 function trustedStartOriginalCompletion(originalJob,slot){if(![1,2].includes(slot)||trustedReadDaemon.ameJobs[slot-1]!==originalJob)trustedFail("owned_initial_original_completion_start_required",true);
   if(!trustedReadDaemon.completionFlights)trustedReadDaemon.completionFlights=[null,null];if(trustedReadDaemon.completionFlights[slot-1])trustedFail("owned_initial_original_completion_lifetime_once",true);
@@ -1901,7 +1940,37 @@ async function trustedWaitOriginalManual(record){
   return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{trustedReadDaemon.manualWaiter=null;reject(Object.assign(Error("owned_initial_original_manual_join_timeout"),{code:"owned_initial_original_manual_join_timeout"}));},30000);
     trustedReadDaemon.manualWaiter={resolve:pending=>{clearTimeout(timer);trustedReadDaemon.manualWaiter=null;if(pending.record!==record||pending.error||pending.started)reject(Object.assign(Error("owned_initial_original_manual_join_changed"),{code:"owned_initial_original_manual_join_changed",unknown:true}));else resolve(pending);}};});
 }
-async function trustedFixedExecute(handler,value){
+async function trustedSharedQueueExecute(handler,value,originalRequest){
+  const role=trustedReadDaemon.role,record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record),fixed=ownedFixedTitleProposals.get(record);currentProposalState.assertCurrent(record);
+  if(trustedReadDaemon.executionProfile!=="shared_queue_v1"||!own||!fixed||own.executing||own.completedExecution||record.executionState!=="pending"||record.confirmedAt||!own.proposalTerminal||!own.dryTerminal||!own.completedDryRun||!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_original_shared_preparation_required");
+  const step=record.payload.plan.steps[0],operations={14:"checkpoint",15:"clean_copy",5:"stage",6:"enqueue",7:"start",8:"restore"};
+  const exact={...step.args,actionId:record.actionId,payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,ownedTitleOperation:operations[fixed.leaf],variantSlot:fixed.slot};
+  if(value.name!==step.tool||m100Protocol.stableStringify(value.args)!==m100Protocol.stableStringify(exact)||!operations[fixed.leaf]||fixed.leaf===7&&fixed.slot!==2)trustedFail("owned_initial_exact_shared_program_required");
+  const checkpoint=trustedNative.manualExecutionPreflightFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal);
+  if(!/^[a-f0-9]{32}$/.test(checkpoint.callRef)||checkpoint.executionId!==ownedNativeUuid32(checkpoint.callRef))trustedFail("owned_initial_original_shared_execution_ref");
+  own.executing=true;record.confirmedAt=new Date().toISOString();record.confirmedBySurface="owned-original-controller";record.confirmedBySession=null;record.executionId=checkpoint.executionId;record.executionState="executing";
+  const context={source:"owned-native-shared-queue",record,runId:checkpoint.executionId,args:step.args,outerArgs:step.args,autonomous:true,confirm:true,allowWithoutCheckpoint:false,stepCount:1,checkpoint};
+  ownedSharedQueueContexts.set(context,{handler,request:originalRequest,record,controllerArgs:exact});
+  const result=await ownedExecutionRunContext.run(context,()=>ownedSharedQueueContextGuard.run(context,async()=>{
+    if([6,7].includes(fixed.leaf)){
+      const snapshot=trustedReadDaemon.savedSnapshots[fixed.slot-1];if(!snapshot||!trustedReadDaemon.ame||!trustedReadDaemon.ameSources[fixed.slot-1])trustedFail("owned_initial_original_shared_source_required");
+      const nativeContext={record,slot:fixed.slot,leaf:fixed.leaf,outerArgs:step.args,args:null,snapshot,gate:null,preparation:null};ownedAmeContexts.set(context,nativeContext);
+      if(fixed.leaf===7){const queue=trustedReadDaemon.ameQueueFacts?.[1];if(!queue||queue.terminal!==trustedReadDaemon.ameQueues[1])trustedFail("owned_initial_original_shared_pair_required");const actual=trustedNative.ameQueuePreparationFactsFixed(role,queue.terminal);if(JSON.stringify(actual)!==queue.original)trustedFail("owned_initial_original_shared_binding_changed");nativeContext.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.START,actual.args));context.args=nativeContext.args;context.ownedSharedQueueBinding=ameSharedQueue.validateBinding(actual.manifest);context.ownedSharedQueueCapability=ameSharedQueueIssuer.authorize(context,context.ownedSharedQueueBinding);}
+      nativeContext.gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,originalRequest);trustedCurrent();
+      const preparation=await(fixed.leaf===6?ownedAmeNativeDispatchPort.prepareEnqueue(context):ownedAmeNativeDispatchPort.prepareStart(context));trustedCurrent();return JSON.parse((await trustedCommand(nativeContext.gate,true,"run_ai_agent_plan",{operation:"ame",preparation,context,slot:fixed.slot})).content[0].text);
+    }
+    const gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,originalRequest);trustedCurrent();assertOwnedExecutionContext(context);
+    if(fixed.leaf===14){if(trustedReadDaemon.checkpoint)trustedFail("owned_initial_checkpoint_once");trustedReadDaemon.checkpoint=await trustedNative.executeOwnedCheckpointFixed(role,gate);return trustedNative.describeOwnedCheckpointFixed(role,trustedReadDaemon.checkpoint);}
+    if(fixed.leaf===15){if(trustedReadDaemon.cleanCopies[fixed.slot-1])trustedFail("owned_initial_clean_copy_once");const copy=await trustedNative.executeOwnedCleanCopyFixed(role,gate);trustedReadDaemon.cleanCopies[fixed.slot-1]=copy;return trustedNative.describeOwnedCleanCopyFixed(role,copy);}
+    const workingCopy=trustedReadDaemon.cleanCopies[fixed.slot-1];if(!workingCopy)trustedFail("owned_initial_original_shared_working_copy_required");
+    if(fixed.leaf===8){const program=trustedReadDaemon.restorationPrograms[fixed.slot-1];if(!program)trustedFail("owned_initial_original_shared_restore_program_required");return JSON.parse((await trustedCommand(gate,true,"run_ai_agent_plan",{operation:"restore",gate,program,slot:fixed.slot})).content[0].text);}
+    if(trustedReadDaemon.restorationPrograms[fixed.slot-1])trustedFail("owned_initial_restore_preissue_once");trustedReadDaemon.restorationPrograms[fixed.slot-1]=await trustedNative.preissueRestorationFixed(role,gate,workingCopy);trustedCurrent();return JSON.parse((await trustedCommand(gate,true,"run_ai_agent_plan",{gate,workingCopy,slot:fixed.slot})).content[0].text);
+  }));
+  trustedCurrent();const run={id:checkpoint.executionId,ok:true,dryRun:false,actionId:record.actionId,revision:record.revision,requestId:record.requestId,finishedAt:new Date().toISOString(),result,nativeAuthority:false,authoritySource:"original_owned_shared_queue_profile",mediaVerified:false,nativeQueueCompositionVerified:false};
+  if(!currentProposalState.publishRunResult(record,run,{id:run.id,ok:true,dryRun:false,finishedAt:run.finishedAt}))trustedFail("owned_initial_original_shared_publication_unknown",true);own.completedExecution=Object.freeze({callRef:checkpoint.executionId,rawCallRef:checkpoint.callRef});return toolResult(run);
+}
+async function trustedFixedExecute(handler,value,originalRequest){
+  if(trustedReadDaemon.executionProfile==="shared_queue_v1")return trustedSharedQueueExecute(handler,value,originalRequest);
   const role=trustedReadDaemon.role,record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record),fixed=ownedFixedTitleProposals.get(record);
   currentProposalState.assertCurrent(record);
   if(!own||!fixed||!own.adopted||own.executing||record.executionState!=="pending"||record.confirmedAt||!own.completedDryRun||!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_original_execution_preparation_required");
@@ -1926,7 +1995,7 @@ async function trustedFixedExecute(handler,value){
         const work=async()=>{if(fixed.leaf===7){const queue=trustedReadDaemon.ameQueueFacts?.[fixed.slot-1];if(!queue||queue.terminal!==trustedReadDaemon.ameQueues[fixed.slot-1])trustedFail("owned_initial_original_queue_before_START");const actual=trustedNative.ameQueuePreparationFactsFixed(role,queue.terminal);if(JSON.stringify(actual)!==queue.original)trustedFail("owned_initial_original_queue_manifest_drift");nativeContext.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.START,actual.args));context.args=nativeContext.args;context.ownedManualQueueManifest=ameManualQueue.validateManifest(actual.manifest);context.ownedManualQueueCapability=ameManualQueueIssuer.authorize(context,context.ownedManualQueueManifest);}
           nativeContext.gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,pending.request);trustedCurrent();const preparation=await (fixed.leaf===6?ownedAmeNativeDispatchPort.prepareEnqueue(context):ownedAmeNativeDispatchPort.prepareStart(context));trustedCurrent();return JSON.parse((await trustedCommand(nativeContext.gate,true,"run_ai_agent_plan",{operation:"ame",preparation,context,slot:fixed.slot})).content[0].text);};
         if(fixed.leaf===7){const witness=pending.value.ameManualQueueWitness;if(witness.acceptedDryRunId!==JSON.parse(own.completedDryRun).id||ownedNativeUuid32(witness.acceptedDryRunId)!==record.dryRunReceipt.runId||pending.route!==ameManualQueue.ROUTE||pending.authRole!=="panel")trustedFail("owned_initial_original_raw_dry_id_join");const panel=ownedOriginalPreparationPanel(own.panel),panelIdentityValid=panel.panelConnectionId===witness.panelConnectionId&&panel.panelGeneration===witness.panelGeneration;return ameManualQueueIssuer.runAuthenticated({...witness,acceptedDryRunId:ownedNativeUuid32(witness.acceptedDryRunId),route:pending.route,authRole:pending.authRole,panelIdentityValid},work);}return work();}
-      const gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,pending.request);trustedCurrent();manualPlanIngress.assertContext(context);
+      const gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,pending.request);trustedCurrent();assertOwnedExecutionContext(context);
       if(fixed.leaf===14){if(trustedReadDaemon.checkpoint)trustedFail("owned_initial_checkpoint_once");trustedReadDaemon.checkpoint=await trustedNative.executeOwnedCheckpointFixed(role,gate);trustedCurrent();return trustedNative.describeOwnedCheckpointFixed(role,trustedReadDaemon.checkpoint);}
       if(fixed.leaf===15){if(trustedReadDaemon.cleanCopies[fixed.slot-1])trustedFail("owned_initial_clean_copy_once");const copy=await trustedNative.executeOwnedCleanCopyFixed(role,gate);trustedCurrent();trustedReadDaemon.cleanCopies[fixed.slot-1]=copy;return trustedNative.describeOwnedCleanCopyFixed(role,copy);}
       const workingCopy=trustedReadDaemon.cleanCopies[fixed.slot-1];if(!workingCopy)trustedFail("owned_initial_original_working_copy_required");
@@ -1965,7 +2034,7 @@ async function trustedTool(req,res,body){const value=JSON.parse(body.toString("u
         if(!own||captured.value.actionId!==record.actionId||captured.value.payloadHash!==record.payloadHash||own.proposalTerminal)trustedFail("owned_initial_original_proposal_ack_changed",true);
         own.proposalTerminal=captured.terminal;trustedReadDaemon.proposalTerminal=captured.terminal;}return toolResult(captured.value);}
     if(value.name==="ensure_ae_agent_panel")return trustedBootstrap(handler);
-    if(execute)return trustedFixedExecute(handler,value);
+    if(execute)return trustedFixedExecute(handler,value,request);
     if(!trustedReadDaemon.cep)trustedFail("owned_initial_actual_actor_absent");await trustedWaitPoll();trustedCurrent();await trustedObserveHandler(handler);trustedCurrent();
     if(inspection||dryRun)return trustedReadonlyInspection(handler,value.name,value.args);
     if(value.name==="get_bridge_status"){const captured=await trustedNative.captureLocalStatusFixed(role,handler);trustedCurrent();return toolResult(captured.value);}return trustedProject(handler);})();
@@ -2097,14 +2166,16 @@ async function trustedRoute(req,res,boundary){trustedCurrent();boundary.validate
   if(state.ame){if(![1,2].includes(state.stageSlot))trustedFail("owned_initial_original_ame_result_slot",true);const index=state.stageSlot-1;
     if(state.ameOperation==="sources"){if(trustedReadDaemon.ameSources[index])trustedFail("owned_initial_original_ame_source_once",true);trustedReadDaemon.ameSources[index]=captured.terminal;returned={ok:true,sourceInspected:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
     else if(state.ameOperation==="queue"){if(trustedReadDaemon.ameQueues[index])trustedFail("owned_initial_original_ame_queue_once",true);const value=trustedNative.ameQueuePreparationFactsFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameQueues[index]=captured.terminal;if(!trustedReadDaemon.ameQueueFacts)trustedReadDaemon.ameQueueFacts=[null,null];trustedReadDaemon.ameQueueFacts[index]={terminal:captured.terminal,value,original:JSON.stringify(value)};returned={ok:true,manifest:value.manifest,manifestHash:value.manifestSha25664,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="start"&&trustedReadDaemon.executionProfile==="shared_queue_v1"){const original=await trustedNative.bindOriginalJobFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameJobs[1]=original;res.once("finish",()=>{try{trustedStartSharedQueueCompletion(original);}catch(error){trustedReadDaemon.activeTool?.reject?.(error);}});const observed=JSON.parse(captured.value.send.responseBody);returned={ok:true,globalQueueStartAccepted:observed.code==="batch_start_accepted",ownItemsAlreadyRunning:observed.code==="shared_queue_already_running",ownItemsAccepted:2,keepOriginalLifetime:true,mediaVerified:false,nativeQueueCompositionVerified:false,replayAllowed:false};}
     else if(state.ameOperation==="start"){if(trustedReadDaemon.ameJobs[index])trustedFail("owned_initial_original_ame_job_once",true);const originalJob=await trustedNative.bindOriginalJobFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameJobs[index]=originalJob;trustedCurrent();res.once("finish",()=>{try{trustedStartOriginalCompletion(originalJob,state.stageSlot);}catch(error){trustedReadDaemon.activeTool?.reject?.(error);}});returned={ok:true,originalJobAssociated:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="shared_status"){const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,trustedReadDaemon.ameJobs[1]);trustedReadDaemon.sharedQueueResponseCleanup=trustedHttp.waitOriginalCompletionProducerResponse(trustedReadDaemon.role,req);returned={ok:true,terminalMask:facts.terminalMask,successMask:facts.successMask,ownJobsTerminal:facts.complete,mediaVerified:false,nativeQueueCompositionVerified:false,replayAllowed:false};}
     else if(state.ameOperation==="status"){const originalJob=trustedReadDaemon.ameJobs[index];if(!originalJob)trustedFail("owned_initial_original_completion_job_missing",true);const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);
       if(facts.complete){if(!trustedReadDaemon.completionTerminals)trustedReadDaemon.completionTerminals=[null,null];if(!trustedReadDaemon.completionResultCleanups)trustedReadDaemon.completionResultCleanups=[null,null];if(trustedReadDaemon.completionTerminals[index]||trustedReadDaemon.completionResultCleanups[index])trustedFail("owned_initial_original_completion_terminal_once",true);
         const cleanup=trustedHttp.waitOriginalCompletionProducerResponse(trustedReadDaemon.role,req);trustedReadDaemon.completionTerminals[index]=captured.terminal;trustedReadDaemon.completionResultCleanups[index]={terminal:captured.terminal,promise:cleanup};}
       returned={ok:true,terminalAccepted:facts.complete,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
     else if(state.ameOperation==="enqueue")returned={ok:true,enqueued:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};else trustedFail("owned_initial_original_ame_operation",true);
   }else if(state.stage){if(![1,2].includes(state.stageSlot)||trustedReadDaemon.savedSnapshots[state.stageSlot-1])trustedFail("owned_initial_original_saved_snapshot_once",true);
-    trustedReadDaemon.savedSnapshots[state.stageSlot-1]=captured.savedSnapshot;returned=trustedNative.describeOwnedSavedSnapshotFixed(trustedReadDaemon.role,captured.savedSnapshot);
+    trustedReadDaemon.savedSnapshots[state.stageSlot-1]=captured.savedSnapshot;trustedReadDaemon.lastCompTerminal=captured.terminal;returned=trustedNative.describeOwnedSavedSnapshotFixed(trustedReadDaemon.role,captured.savedSnapshot);
   }else if(state.preparation){if(!captured.readTerminal||captured.readTerminal===captured.terminal)trustedFail("owned_initial_original_distinct_dry_read_projection_required",true);
     const record=currentProposalState.current;returned=ownedPublishCompletedNativeDry(record,captured);
     trustedReadDaemon.lastCompTerminal=captured.readTerminal;trustedReadDaemon.dryRunTerminal=captured.terminal;
@@ -2127,7 +2198,7 @@ async function trustedRoute(req,res,boundary){trustedCurrent();boundary.validate
   writeJson(res,200,{ok:true});state.resolve(returned);
 }
 async function startTrustedReadBridge(){initialRuntime.assertStartup();if(trustedReadDaemon.role||trustedReadDaemon.server)trustedFail("owned_initial_daemon_start_once");
-  await initialRuntime.startDaemonFixed();trustedReadDaemon.role=initialRuntime.daemonRole();trustedCurrent();
+  await initialRuntime.startDaemonFixed();trustedReadDaemon.role=initialRuntime.daemonRole();trustedCurrent();trustedReadDaemon.executionProfile=trustedNative.executionProfileFixed(trustedReadDaemon.role);
   const fixed=JSON.parse(trustedNative.fixedDaemonTransport(trustedReadDaemon.role).toString("utf8"));
   if(!trustedExact(fixed,["automationToken","panelToken","host","port"])||fixed.host!=="127.0.0.1"||fixed.port!==3456||[fixed.automationToken,fixed.panelToken].some(value=>typeof value!=="string"||!value||/[\r\n\0]/.test(value)))trustedFail("owned_initial_fixed_daemon_transport_refused");
   const boundary=createBoundary({automation:fixed.automationToken,panel:fixed.panelToken});

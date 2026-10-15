@@ -16,6 +16,10 @@
   global once START; root повторил VM-проверки. Устранён необоснованный лимит 1s
   до consume после native preparation, добавлен regression на задержку 5s.
   Это offline checkpoint; native admission/build и live запуск ещё выполняются.
+- Native source-блок готов: отдельный shared_queue_v1, восстановление исходного
+  проекта до общего START, собственные terminal receipts 2/2 и барьер завершения
+  своего I/O. Root повторил три focused проверки и 11 AME VM-сценариев: PASS.
+  Сборка Windows и реальное подключение остаются следующим этапом.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
@@ -102,6 +106,10 @@ events; это не полная инспекция native очереди. Не�
    Никакого ожидания чужих jobs ради объявления собственной media acceptance.
 
 ## Validation
+
+Native/shared source checkpoint: context-smoke, runtime-smoke, source-proof,
+AME shared queue smoke (11 групп), syntax 10 JS, check:rules, diff --check — PASS.
+Это offline проверки; native binary, admission и два реальных enqueue не заявлены.
 
 Только source/doc reads; прежний read-only MCP status. Live submit/start, build,
 Computer Use, video decode и проектные изменения не выполнялись.

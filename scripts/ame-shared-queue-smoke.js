@@ -132,5 +132,19 @@ async function pair(f) { const jobs = []; for (let slot = 1; slot <= 2; slot++) 
     const observed = await f.start(); assert.equal(observed.ok, true); assert.equal(observed.code, "shared_queue_already_running"); assert.equal(observed.alreadyRunningObserved, true); assert.equal(f.counts().starts, 0);
     assert.equal((await f.status(jobs[0].jobId)).mediaVerified, false);
   });
+  await check("shared own terminal read remains available while foreign queue keeps running", async () => {
+    const f = fixture("own-terminal-foreign-running"); await pair(f); const batch = f.ledger(), binding = shared.buildBinding(batch, f.process, f.startArgs, 0);
+    assert.equal((await f.start()).ok, true); f.addForeign(); f.setRunning(true);
+    for (const entry of Object.values(f.ame.$.global.aeAgentAMETitleJobsV1.jobs)) {
+      const slot = f.ame.$.global.aeAgentAMETitleJobsV1; slot.hostListeners.complete({ sourceFilePath: entry.sourcePath, outputFilePath: entry.outputPath, result: "True" });
+    }
+    Object.defineProperty(f.ame.$.global.aeAgentAMETitleJobsV1.jobs, "foreign-opaque", { enumerable: true, get: () => { throw Error("foreign read forbidden"); } });
+    const args = { ...f.startArgs, operation: "shared_status", ownedInitialDispatch: true, boundNativeSessionNonce: "session", retainedWrapperSessionNonce: binding.retainedWrapperSessionNonce, processBinding: batch.processBinding, jobIds: batch.jobs.map(job => job.jobId), operationBinding: "b".repeat(64), requestNonce: crypto.randomUUID() };
+    const observed = JSON.parse(vm.runInContext(adapter.messageScript(args), f.ame));
+    assert.equal(observed.code, "shared_jobs_observed"); assert.equal(observed.nativeAssociationVerified, true); assert.equal(observed.batchRunning, true); assert.equal(observed.jobs.length, 2);
+    for (const job of observed.jobs) { assert.equal(job.status, "native_finished"); assert.equal(job.hostCompletion.result, "True"); assert.equal(job.workAreaApplied, true); assert.equal(job.nativeJobId, null); }
+    assert.equal(f.counts().starts, 1); f.assertForeign();
+    assert.equal(JSON.parse(vm.runInContext(adapter.messageScript({ ...args, jobIds: [batch.jobs[0].jobId, batch.jobs[0].jobId] }), f.ame)).nativeAssociationVerified, false);
+  });
   console.log("AME shared queue offline smoke PASS: " + groups + " groups; VM fixtures only, no live execution.");
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { assert.equal(path.dirname(root), fixtureParent); assert(path.basename(root).startsWith("bounded-")); fs.rmSync(root, { recursive: true, force: true }); });
