@@ -37,6 +37,21 @@
   Root сохраняет original pins/owner; повтор creator/build запрещён. Выполняется
   отдельная полная read-only сверка той же установки; успех BuildAndSeal не заявлен.
   C1/daemon ещё не запускались, enqueue 0/2, START не отправлен.
+- Полная read-only reconciliation v7 PASS: 660 build inputs, 137 dependencies,
+  690 byte files, 700 expected pins; actual creator exit2/noACK сохранены.
+  Первая factory отвергла argv0 slash mismatch до broker creation; original
+  Node exit0/stdio close. Исправленный launch создал broker, но header timeout:
+  actual existing HANDLE pair через CompareObjectHandles подтверждает exit2.
+  Root удерживал READ witness lock, мешавший exclusive fence; startup budget1s
+  также меньше observed3.47s. Connect/native.open/StartJournal не достигнуты,
+  journal пуст. Original controller exit0/stdio close; v7 RETIRED_UNADMITTED.
+  Старые seal/runtime/records сохранены, exact3 artifacts перенесены в local
+  retired-artifacts с сохранением file IDs/SHA; consumed floor не сбрасывался.
+- Минимальный repair source готов: bootstrap read/EOF30s отдельно от established
+  I/O1s; driver сортирует OrderedDictionary по числовому code. Offline12groups,
+  shared source proof, actual PS3,1,2→1,2,3 и parser PASS. Далее fresh v8 provisioning
+  с явным audit старой не допущенной установки; root не удерживает lock witness
+  перед передачей exclusive fence broker. AE/AME effects остаются0.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
@@ -69,6 +84,11 @@
   durable write/read-back, OpenFixed независимо проверяет полную установку.
   Допустима только factual сверка same installation с сохранением exit2/noACK;
   normal success receipt, replay, новый seal и исправление pinned source запрещены.
+- После exact settlement pre-C1 допускается replacement отвергнутой установки:
+  старое состояние явно retired/сохранено, его binaries выведены из fixed root;
+  новое provisioning не скрывает old runtime как absent и не сбрасывает floor.
+  Runtime admission остаётся самостоятельным gate. При consumed C1 этот путь
+  неприменим. Native bootstrap repair — ae_specialist, root — driver/install/live.
 
 ## Достаточная проверка добавляемого элемента
 

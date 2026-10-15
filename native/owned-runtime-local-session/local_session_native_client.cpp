@@ -29,6 +29,9 @@ using Bytes=std::vector<unsigned char>;
 using detail::Held;using detail::Refuse;
 std::mutex creationCriticalSection;
 constexpr std::uint64_t kIoMs=1000;
+// The original broker validates the sealed build before replying to bootstrap.
+// Startup has its own bound; established-session I/O retains its shorter bound.
+constexpr std::uint64_t kBootstrapReadMs=30000;
 template<class T> void Put(Bytes& out,const T& value){out.insert(out.end(),value.begin(),value.end());}
 std::uint64_t Number(const unsigned char* p,std::size_t n){std::uint64_t value=0;for(std::size_t i=0;i<n;++i)value|=static_cast<std::uint64_t>(p[i])<<(i*8);return value;}
 template<std::size_t N> std::array<unsigned char,N> Fixed(const unsigned char* p){std::array<unsigned char,N> value{};std::copy_n(p,N,value.begin());return value;}
@@ -117,7 +120,7 @@ struct BootstrapHelper final {
 };
 Bytes PipeReadBounded(HANDLE pipe,std::size_t count){
     if(GetFileType(pipe)!=FILE_TYPE_PIPE||!count||count>4096)Refuse("trusted_original_bootstrap_pipe_refused");
-    Bytes bytes(count);const auto deadline=GetTickCount64()+kIoMs;DWORD available=0;
+    Bytes bytes(count);const auto deadline=GetTickCount64()+kBootstrapReadMs;DWORD available=0;
     while(true){if(!PeekNamedPipe(pipe,nullptr,0,nullptr,&available,nullptr))Refuse("trusted_original_bootstrap_read_unknown",GetLastError(),true);
         if(available>=count)break;if(GetTickCount64()>=deadline)Refuse("trusted_original_bootstrap_read_timeout",0,true);Sleep(1);}
     DWORD read=0;if(!ReadFile(pipe,bytes.data(),static_cast<DWORD>(count),&read,nullptr)||read!=count)Refuse("trusted_original_bootstrap_read_partial",GetLastError(),true);return bytes;
@@ -129,7 +132,7 @@ void PipeWriteInitial(HANDLE pipe,const Bytes& bytes){
     DWORD written=0;if(!WriteFile(pipe,bytes.data(),static_cast<DWORD>(bytes.size()),&written,nullptr)||written!=bytes.size())Refuse("trusted_original_bootstrap_write_unknown",GetLastError(),true);
 }
 void PipeRequireEofBounded(HANDLE pipe){
-    const auto deadline=GetTickCount64()+kIoMs;DWORD available=0;
+    const auto deadline=GetTickCount64()+kBootstrapReadMs;DWORD available=0;
     for(;;){if(!PeekNamedPipe(pipe,nullptr,0,nullptr,&available,nullptr)){
             if(GetLastError()==ERROR_BROKEN_PIPE)return;Refuse("trusted_bootstrap_eof_unknown",GetLastError(),true);}
         if(available)Refuse("trusted_bootstrap_trailing_bytes",0,true);

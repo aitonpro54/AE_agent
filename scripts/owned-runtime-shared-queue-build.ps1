@@ -234,7 +234,7 @@ try{
  foreach($sqPath in @($sqInput.definition.buildInputs|Where-Object {$_.code-le 3}|ForEach-Object {$_.file.pin.canonicalPath})+@($sqInput.definition.buildInputManifest.pin.canonicalPath)){[void](Get-SQObservation $sqPath $false $false $true)}
  $sqArtifacts=[Collections.Generic.List[object]]::new();$sqArtifacts.Add([ordered]@{code=3;file=[ordered]@{components=@();pin=$sqCreatorFile.pin;sha256=$sqCreatorFile.sha256}})
  foreach($sqRole in $sqInput.build.plannedRoles|Where-Object {$_.code-ne 3}){$sqFinalFile=Build-SQRole $sqRole;$sqArtifacts.Add([ordered]@{code=$sqRole.code;file=[ordered]@{components=@();pin=$sqFinalFile.pin;sha256=$sqFinalFile.sha256}})}
- $sqArtifactFile=Join-Path $sqOut 'actual-final-artifacts.json';Save-SQNew $sqArtifactFile @($sqArtifacts|Sort-Object code)
+ $sqArtifactFile=Join-Path $sqOut 'actual-final-artifacts.json';Save-SQNew $sqArtifactFile @($sqArtifacts|Sort-Object { $_.code })
  Assert-SQHeld;$sqSealAck=Join-Path $sqOut 'seal-request-80.bin';Invoke-SQNode @('seal-request',$InputFile,$InputSha256,$sqPrepare,$sqPrepareFrame,$sqSealAck) (Join-Path $sqOut 'seal-request')
  $sqOwner.stage='seal_requested';$sqBytes=[IO.File]::ReadAllBytes($sqSealAck);$sqCreator.originalProcess.StandardInput.BaseStream.Write($sqBytes,0,$sqBytes.Length);$sqCreator.originalProcess.StandardInput.BaseStream.Flush()
  $sqFinalFrame=Join-Path $sqOut 'original-final-752.bin';Read-SQFrame $sqCreator 752 $sqFinalFrame
