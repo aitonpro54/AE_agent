@@ -136,32 +136,51 @@ Durable event suffix 17:42Z подтверждает, что последняя 
 Прежний source-discovery timeout сохраняется; независимый queue send разрешён
 существующим разделением readonly sender и mutation fence. Census не повторять.
 
-## Текущий live результат
+## Текущий live результат (16.10)
 
 `6483092`: recovery выполнен один раз. Capture `62e7bc3d…`, fresh source verifier
 `ac4fe6b5…`; оба snapshots native-verified, flags и GUID совпали, source clean с
 исходными revision/stateHash. Private saved-source proof восстановлен, guard снят;
 original run остаётся UNKNOWN. Повторных save/open не было.
 
-Первый enqueue: dry-run `b3cdf496…` PASS, run `d784c316…` завершён
-`ae_delivery_unknown`. Batch `3868d0ff-6960-4ce4-b3e3-95836729bdda`, job
-`cce91efe-a719-4291-a795-590faa174858`, nonce `5b59f788-fb03-46a4-8b13-64fd69662872`.
-Exact status дал `transport_correlation_unknown` и прочитал прежний readonly
-nonce `73c7…`; новый enqueue этим не подтверждён. Native journal этого run содержит
-только успешно завершённые project/checkpoint reads, нового enqueue-sender в нём нет.
-Отправлена одна попытка enqueue; её приём не установлен, slot2/START0.
-Точный прежний exception потерян в общем `ae_delivery_unknown`, однако отдельно
-проверено более сильное доказательство: reviewed product route обязательно
-fsync-сохраняет command в run record до queue/delivery. В finalized integrity run
-`d784c316…` commands отсутствуют. Exact run/args/job/nonce/output-guard и provenance
-joins разрешают отдельный settlement `not_sent`; original UNKNOWN не изменяется.
-Новая current server-proposed ENQUEUE с обязательным dry-run использует тот же
-jobId/nonce/output reservation однократно. Старый settlement после consume не
-разрешает ещё одну доставку. После restart source proof восстанавливается из уже
-verified recovery receipt с fresh source/files/actor checks, без capture/save/open.
+Batch `3868d0ff-6960-4ce4-b3e3-95836729bdda`, job
+`cce91efe-a719-4291-a795-590faa174858`, enqueue nonce
+`5b59f788-fb03-46a4-8b13-64fd69662872`. Две ранние попытки (`d784c316…`,
+`e9c71b63…`) доказанно не дошли до native queue: finalized integrity records
+не содержат commands при обязательном fsync-before-delivery. Отдельные not_sent
+settlements позволили однократно использовать ту же reservation. Во второй
+попытке сохранён точный предdispatch отказ `ame_product_dispatch_binding_changed`;
+исправлено представление process timestamp в плане, без ослабления gate.
 
-Runtime evidence: `.codex-runtime/product-two-title-sol/recovered-snapshots-once.json`,
-`ame-slot1-proposal.json`, `ame-slot1-dryrun.json`, `ame-slot1-run.json`,
-`ame-slot1-reconcile-once.json`, `ame-slot1-retained-results.json` и
-`ame-slot1-panel-inspect.json`. Это локальные ignored artifacts; recovery capture
-и receipt лежат в `logs/evidence/title-export-recovery/`, original run не изменён.
+Run `0a310bc2-275f-4647-b0c2-49dbed6e6f6c` действительно отправил mutation command
+`c2cafb96-f99f-4ea9-aeb6-2b69d402817e`. Его исход UNKNOWN: original sender callback
+остаётся `timeout`, body отсутствует. Эта попытка содержит command; not_sent
+settlement и повторный enqueue для неё запрещены. Slot2/START0; приём slot1 не установлен.
+
+Независимый fixed readonly STATUS сохраняет original mutation sender и читает
+только наш retained entry. Подтверждены enqueue nonce и `wrapper:null`, association
+и workArea false. Старые поля source/output содержат удвоенные backslashes.
+Исправлены serializer ответа и передача generated source/строковых аргументов
+через exact UTF-16. Live read `exact-args-fresh.json` подтвердил точный текущий
+input: source length135/backslashes4, output72/8; retained старые значения139/8
+и80/16 не менялись. Ручного декодирования под authority и повторного addDL не было.
+
+Точные входы: snapshots `titr_01_ame_product_20261015.aep` /
+`titr_02_ame_product_20261015.aep` в исходном `titr_all folder` (полный путь выше),
+outputs `C:/Users/Ant/Documents/Codex/AE_agent/logs/generated-renders/titr_01.mov`
+и `titr_02.mov`, range0..15.4, прежний preset/GUID. Source proof после штатных
+restart восстанавливается из verified receipt со свежей сверкой, без save/open/capture.
+
+Bounded reflection app/frontend/encoderHost/batchEncoder/exporter в actual AME26.0
+не обнаружил exact queue lookup/save; неизвестные методы не вызывались.
+Старый `batch.xml` не свежий и не является доказательством отсутствия item.
+Пользователю задано точечное исключение исходного запрета Computer Use для
+сверки собственного item и завершения задачи; ответ ожидается, GUI не использовался.
+Цель не выполнена, работа не закрыта.
+
+Source checkpoints: `0054e60`, `a038a5d`, `4a26285`, `55e1d1a`, `a9fff09`.
+Focused actual generated sender/receiver tests:15 PASS; ES3/syntax/rules/diff PASS.
+Live evidence — ignored `.codex-runtime/product-two-title-sol/`: `input-wire-fresh.json`,
+`exact-args-fresh.json`, `reflection-own-status.json`, `batch-meta-own-status.json`.
+Последний daemon PID10668, source `a9fff09`, private source proof rehydrated.
+Recovery capture/receipt — `logs/evidence/title-export-recovery/`; original records неизменны.

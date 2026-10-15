@@ -35,17 +35,26 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   fresh source baseline проверены, private saved-source proof восстановлен.
   Первый enqueue run `d784c316` UNKNOWN; исходный exception не сохранён, поддержанного
   пассивного способа восстановить его нет. Приём не установлен, slot2/START0.
-- По повторному поручению пользователя работа возобновлена. Root подтвердил
-  required command-capture/fsync-before-delivery в reviewed product route:
-  finalized original run без commands доказывает отсутствие native delivery.
-  Реализуется отдельный not_sent settlement с reuse той же reservation под новым
-  current proposal/dry-run и rehydrate из verified snapshot receipt после restart.
+- `07f64c1`: not_sent settlement по immutable no-command record и rehydrate из
+  verified snapshot receipt проверены. Две предdispatch попытки завершены без
+  доставки; новая run `0a310bc2` отправила один настоящий enqueue command и остаётся
+  UNKNOWN. Slot2/START0; его replay запрещён.
+- `0054e60` → `a9fff09`: исправлены wire serializer и exact UTF-16 arguments;
+  live current source/output paths совпали с серверными. Независимый readonly
+  own-status подтвердил retained entry с wrapper null и прежним удвоенным path;
+  original nonce `5b59…` callback timeout/body null. Приём не установлен.
+  Actual AME capability reflection не выявил queue lookup/save. Ожидается ответ
+  пользователя на точечное исключение исходного no-Computer-Use; GUI не использовался.
 - AME source discovery nonce сохранён timeout без повторной отправки. Это
   getDLItemsAtRoot, а не подтверждение приёма собственного задания. Для enqueue
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
 
 ## Decision Log
 
+- 16.10: исправление передачи путей не даёт права повторить неизвестный addDL.
+  Readonly observation имеет отдельный nonce/audit; original mutation sender
+  неизменен. Null wrapper и старый batch.xml не доказывают отсутствие queue item.
+  Scope возможного GUI исключения решает пользователь; задача остаётся открытой.
 - 15.10: по прямому поручению пользователя управление передано в чат
   `01a14081-3bdf-7ed0-8ae8-e583c49f06ef`; прежний writer и AE/CEP/AME controller
   остановлены. Цель — минимальный запуск через действующую автономную сессию.
@@ -83,6 +92,9 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 
 ## Validation
 
+- Wire/observation:15 focused PASS через actual generated wrapper/sender/receiver;
+  ES3/syntax/rules/diff PASS. Live UTF-16 input equality и bounded capability
+  metadata подтверждены; это не acceptance задания. Evidence paths — в workflow.
 - Уже подтверждены live: connected, project info/snapshot/property reads,
   ordinary proposal/dry-run/autonomy; title inspector; нормальный bridge restart.
 - `b690fc6`: actual product read port/lifecycle gate — 10 focused PASS;
