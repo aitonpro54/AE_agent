@@ -91,6 +91,24 @@
   V11 RETIRED_UNADMITTED: пять durable pins/bytes сверены, три exact binary
   перемещены с сохранением file IDs/hash; seal/records сохранены, floor не сброшен.
   Далее узкая grammar regression, fresh census/M/build v12; enqueue0/2, START0.
+- V12 fresh census и metadata527 PASS; CompileOnly3/3, BuildAndSeal ACK/creator0/EOF
+  PASS. Actual ensure прошёл grammar, но observer invalidated при Debugger.enable;
+  native guard отказал до native.open/C1, journal0. Найден обязательный lazy import
+  owned-runtime-authority из adapter ensure, отсутствующий в controller census:
+  authority/ledger/lifecycle/win32 ранее имели только daemon role. Перенос того же
+  чистого импорта в top-level выравнивает подготовку и обычный запуск.
+  Revoke RPC также guard-closed; original readonly HANDLE copies удержаны до
+  фактических controller exit1 и broker pair exit2, stdio EOF/pending0 подтверждены.
+  V12 RETIRED_UNADMITTED: пять durable pins/bytes и три archived binaries сверены,
+  прежние записи сохранены, floor не сбрасывался. Далее fresh census/M/build v13;
+  фактическое подключение/AE READ/enqueue0/2/START ещё не приняты.
+- Preload regression PASS: четыре реальных pure authority modules в VM до
+  facade/factory, import/initialize/list/status не запускают native/process/HTTP,
+  первый ensure не загружает новые модули. Два старых offline focused proof
+  обнаружили отдельные stale fixtures: controller catalog не содержит уже
+  добавленный get_ame_title_job_status; supervisor status передаёт undefined
+  вместо пустых args. Эти тесты не проверяют изменённый preload; не исправлялись
+  попутно и не объявляются PASS.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
