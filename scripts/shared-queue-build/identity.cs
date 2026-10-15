@@ -4,6 +4,8 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.ComponentModel;
 using Microsoft.Win32.SafeHandles;
 
 // Observations of actual held Windows objects, never a native session issuer.
@@ -37,10 +39,35 @@ public sealed class SharedQueueBuildPin : IDisposable {
   }catch{handle.Dispose();throw;}
  }
  public void AssertFresh(){var current=Info(18,24);var shape=Info(1,24);if(shape[20]!=0||(shape[21]!=0)!=directory||(!directory&&BitConverter.ToUInt32(shape,16)!=Links)||!CryptographicOperations.FixedTimeEquals(current,identity)||Canonical()!=CanonicalPath||(!directory&&Hash()!=Sha256))throw new IOException("production_held_pin_changed");}
+ public void AssertExpected(string volume,string serial,string fileId,string canonical,string hash){AssertFresh();if(directory||VolumeGuidHex!=volume||Serial!=serial||FileIdHex!=fileId||CanonicalPath!=canonical||Sha256!=hash)throw new IOException("production_launch_expected_image_changed");}
+ public void AssertAlias(string ordinaryLocator){
+  if(directory||String.IsNullOrEmpty(ordinaryLocator)||!System.Text.RegularExpressions.Regex.IsMatch(ordinaryLocator,@"^[A-Za-z]:[\\/]"))throw new IOException("production_ordinary_launch_locator_required");
+  AssertFresh();using(var named=new SharedQueueBuildPin(ordinaryLocator,false)){named.AssertExpected(VolumeGuidHex,Serial,FileIdHex,CanonicalPath,Sha256);}AssertFresh();
+ }
+ public void AssertProcessImage(SafeProcessHandle original){AssertAlias(SharedQueueBuildIo.Image(original));}
  public void Dispose(){handle.Dispose();}
+}
+public sealed class SharedQueueBuildStart {
+ public bool Started,OriginalHandleAcquired,NoAssociatedHandleObserved,KnownBeforeCreate;
+ public int Win32Error;
 }
 public static class SharedQueueBuildIo {
  [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(SafeProcessHandle h,out long c,out long e,out long k,out long u);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool QueryFullProcessImageNameW(SafeProcessHandle h,uint f,StringBuilder b,ref uint n);
+ public static string Image(SafeProcessHandle original){if(original==null||original.IsClosed||original.IsInvalid)throw new IOException("production_original_process_handle_required");var b=new StringBuilder(32768);uint n=(uint)b.Capacity;if(!QueryFullProcessImageNameW(original,0,b,ref n)||n==0||n>=b.Capacity)throw new IOException("production_original_process_image_unknown");return b.ToString();}
+ public static SharedQueueBuildStart StartOriginal(Process process){
+  var result=new SharedQueueBuildStart();
+  try{result.Started=process.Start();if(result.Started){var original=process.SafeHandle;result.OriginalHandleAcquired=!original.IsClosed&&!original.IsInvalid;}return result;}
+  catch(Win32Exception error){
+   result.Win32Error=error.NativeErrorCode;
+   // Inspect only this Process object's original association. Never open a PID,
+   // enumerate processes, retry Start or interpret a missing stdout file as proof.
+   try{var original=process.SafeHandle;result.OriginalHandleAcquired=!original.IsClosed&&!original.IsInvalid;}
+   catch(InvalidOperationException){result.NoAssociatedHandleObserved=true;}
+   result.KnownBeforeCreate=!result.Started&&result.Win32Error==87&&result.NoAssociatedHandleObserved&&!result.OriginalHandleAcquired;
+   return result;
+  }
+ }
  public static string Birth(SafeProcessHandle handle){long c,e,k,u;if(!GetProcessTimes(handle,out c,out e,out k,out u))throw new IOException("production_original_creator_birth");return ((ulong)c).ToString();}
  public static async Task<byte[]> ReadExactly(Stream stream,int size){var bytes=new byte[size];int at=0;while(at<size){var n=await stream.ReadAsync(bytes,at,size-at).ConfigureAwait(false);if(n==0)throw new IOException("production_original_stdio_eof_unknown");at+=n;}return bytes;}
  public static async Task<bool> ReadEof(Stream stream){var bytes=new byte[1];return await stream.ReadAsync(bytes,0,1).ConfigureAwait(false)==0;}

@@ -35,6 +35,11 @@ check("typed C++ pin preserves ulong serial and refuses unknown expression field
   const literal = p.objectPin(fixturePin(70)); assert(literal.includes("18446744073709551000ULL")); assert.throws(() => p.objectPin({ ...fixturePin(70), injected: "system()" }));
   assert.throws(() => p.validate({ schema: "fake", enrollment: {}, definition: {}, trustedRead: {}, build: {}, census: {} }));
 });
+check("launch locator is a reviewed ordinary Windows path; canonical volume pins stay separate", () => {
+  assert.equal(p.ordinaryLaunchLocator("C:/Program Files (x86)/Build Tools/MSBuild.exe"), "C:\\Program Files (x86)\\Build Tools\\MSBuild.exe");
+  for (const rejected of [fixturePin(80).canonicalPath, "\\\\server\\share\\MSBuild.exe", "MSBuild.exe", "C:MSBuild.exe", "C:\\tools\\..\\other.exe", "C:\\tools\\x\n.exe"]) assert.throws(() => p.ordinaryLaunchLocator(rejected), /ordinary_launch_locator_required/);
+  const physical = fixturePin(80), serialized = p.objectPin(physical); assert(serialized.includes("Volume{")); assert.equal(physical.serial, "18446744073709551000");
+});
 check("full typed header generator selects the native shared policy without media or caller C++", () => {
   const file = n => ({ components: ["fixture-" + n], pin: fixturePin(n), sha256: hash(n) }), generated = n => ({ ...file(n), sha256: "0".repeat(64) }), late = n => ({ components: ["fixture-" + n], canonicalPath: fixturePin(n).canonicalPath });
   const enrollment = { canonicalVolumeAnchor: "\\\\?\\Volume{11111111-1111-4111-8111-111111111111}\\", repositoryComponents: ["repo"], runtimeComponents: ["repo", "runtime"], repositoryAncestors: [fixturePin(1), fixturePin(2)], runtimeAncestors: [fixturePin(1), fixturePin(2), fixturePin(3)], repository: fixturePin(2), runtime: fixturePin(3), userSid: expected.userSid, installation: id(4), lineage: id(5), launchTarget: id(6), stopTarget: id(7), actorTarget: id(8), authorizationAudit: hash(9), policyHash: hash(10), sourceSetHash: hash(11), policyEpoch: "1", maximumSessionMs: 28800000, maximumLeaseMs: 60000, capabilities: 0x07ff, enabled: true, sourceFiles: [file(12)], node: file(13), controllerImage: file(13), inventories: Array.from({ length: 6 }, (_, i) => ({ components: ["inventory-" + i], absent: true })) };

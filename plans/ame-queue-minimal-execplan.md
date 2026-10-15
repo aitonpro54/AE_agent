@@ -24,6 +24,16 @@
   всех трёх ролей без запуска creator и отдельный production build/seal.
   Root проверил pure smoke 9 групп, syntax 6 JS и PowerShell parser: PASS.
   Перед native-сессией выполняется фактическая компиляция Windows.
+- Actual Collect PASS: 677 файлов и 10 реальных prior namespaces; native factories 0.
+  Первый CompileOnly остановился до создания MSBuild: Process.Start error 87 для
+  Volume GUID executable locator. Physical pins проверены; исправляется отдельный
+  ordinary launch locator с сохранением проверки исходного процесса. Native build,
+  seal/C1 и live enqueue/START ещё не выполнены.
+- Исправлен launch locator: ordinary DOS path отдельно от physical canonical pin;
+  исходный process HANDLE/image/birth проверяются до/после ожидания. Только error87
+  без process association классифицируется NOT_CREATED, остальные исходы UNKNOWN.
+  CompileOnly также требует сохраняемого root owner. Pure10/parser/syntax3 — PASS;
+  перед повтором собираются актуальные build inputs, старые записи сохраняются.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

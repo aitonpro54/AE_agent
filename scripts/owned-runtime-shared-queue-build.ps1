@@ -20,8 +20,19 @@ function Assert-SQPlain([string]$Path){
 function Write-SQNew([string]$Path,[byte[]]$Bytes){$sqStream=[IO.File]::Open($Path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read);try{$sqStream.Write($Bytes,0,$Bytes.Length);$sqStream.Flush($true)}finally{$sqStream.Dispose()}}
 function Save-SQNew([string]$Path,$Value){Write-SQNew $Path ($sqUtf8.GetBytes(($Value|ConvertTo-Json -Depth 100 -Compress)+"`n"))}
 function Read-SQJson([string]$Path){Get-Content -LiteralPath $Path -Encoding UTF8 -Raw|ConvertFrom-Json -AsHashtable}
-function Start-SQChild([string]$Image,[string[]]$Arguments,[string]$WorkingDirectory,[string]$Prefix,[bool]$Binary=$false){
+function Get-SQStartDisposition([bool]$Started,[bool]$HandleAcquired,[int]$Win32Error,[bool]$NoAssociatedHandle){
+ if($Started-and $HandleAcquired){return 'STARTED'}
+ if(-not $Started-and -not $HandleAcquired-and $Win32Error-eq 87-and $NoAssociatedHandle){return 'NOT_CREATED'}
+ return 'UNKNOWN'
+}
+function Start-SQChild([string]$Image,[string[]]$Arguments,[string]$WorkingDirectory,[string]$Prefix,[bool]$Binary=$false,$ExpectedImage=$null){
+ if($Image-notmatch '^[A-Za-z]:[\\/]'-or $Image-match '[\x00-\x1f\x7f]'){throw 'PRODUCTION_ORDINARY_LAUNCH_LOCATOR_REQUIRED'}
+ $Image=[IO.Path]::GetFullPath($Image)
  Assert-SQPlain $Image
+ $sqImagePin=[SharedQueueBuildPin]::new($Image,$false,$false);$global:SharedQueueBuildOwner.pins.Add($sqImagePin)
+ if($null-ne $ExpectedImage){$sqImagePin.AssertExpected($ExpectedImage.pin.volumeGuidHex,[string]$ExpectedImage.pin.serial,$ExpectedImage.pin.fileIdHex,$ExpectedImage.pin.canonicalPath,$ExpectedImage.sha256)}
+ elseif($sqImagePin.Sha256-ne '3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237'){throw 'PRODUCTION_EXACT_NODE_LAUNCH_IMAGE_REQUIRED'}
+ $sqImagePin.AssertAlias($Image)
  $sqInfo=[Diagnostics.ProcessStartInfo]::new();$sqInfo.FileName=$Image;$sqInfo.WorkingDirectory=$WorkingDirectory;$sqInfo.UseShellExecute=$false;$sqInfo.CreateNoWindow=$true;$sqInfo.RedirectStandardInput=$true;$sqInfo.RedirectStandardOutput=$true;$sqInfo.RedirectStandardError=$true
  foreach($sqArgument in $Arguments){$sqInfo.ArgumentList.Add($sqArgument)}
  $sqInfo.Environment.Clear()
@@ -29,17 +40,33 @@ function Start-SQChild([string]$Image,[string[]]$Arguments,[string]$WorkingDirec
  $sqInfo.Environment['PATH']='C:\Windows\System32;C:\Windows';$sqInfo.Environment['TEMP']=[IO.Path]::GetDirectoryName($Prefix);$sqInfo.Environment['TMP']=[IO.Path]::GetDirectoryName($Prefix)
  $sqInfo.Environment['MSBUILDDISABLENODEREUSE']='1';$sqInfo.Environment['MSBUILDPRESERVETOOLTEMPFILES']='1'
  $sqProcess=[Diagnostics.Process]::new();$sqProcess.StartInfo=$sqInfo
- $sqRecord=[ordered]@{image=$Image;arguments=$Arguments;outcome='UNKNOWN';originalProcess=$sqProcess;stderr=$null;stdout=$null;prefix=$Prefix;binary=$Binary}
+ $sqRecord=[ordered]@{image=$Image;arguments=$Arguments;outcome='UNKNOWN';originalProcess=$sqProcess;startReturned=$false;originalHandleAcquired=$false;noAssociatedHandleObserved=$false;imagePin=$sqImagePin;originalBirth=$null;win32Error=0;stderr=$null;stdout=$null;prefix=$Prefix;binary=$Binary}
  $global:SharedQueueBuildOwner.children.Add($sqRecord)
- if(-not $sqProcess.Start()){throw 'PRODUCTION_CHILD_START_UNKNOWN'}
+ Save-SQNew ($Prefix+'.start-intent.json') ([ordered]@{schema='ae-agent.shared-queue-child-start.v1';stage='intent';imageLocator=$Image;imageCanonicalPath=$sqImagePin.CanonicalPath;imageSha256=$sqImagePin.Sha256;originalHandleAcquired=$false})
+ $sqImagePin.AssertAlias($Image)
+ $sqStarted=[SharedQueueBuildIo]::StartOriginal($sqProcess)
+ $sqRecord.startReturned=$sqStarted.Started;$sqRecord.originalHandleAcquired=$sqStarted.OriginalHandleAcquired;$sqRecord.noAssociatedHandleObserved=$sqStarted.NoAssociatedHandleObserved;$sqRecord.win32Error=$sqStarted.Win32Error
+ $sqDisposition=Get-SQStartDisposition $sqStarted.Started $sqStarted.OriginalHandleAcquired $sqStarted.Win32Error $sqStarted.NoAssociatedHandleObserved
+ if($sqDisposition-eq 'NOT_CREATED'){
+  $sqRecord.outcome='NOT_CREATED'
+  Save-SQNew ($Prefix+'.start-refused.json') ([ordered]@{schema='ae-agent.shared-queue-child-start.v1';stage='known_before_create';win32Error=87;originalHandleAcquired=$false;noAssociatedHandleObserved=$true;creatorStarted=$false})
+  throw 'PRODUCTION_CHILD_PARAMETER_REFUSED_BEFORE_CREATE'
+ }
+ if($sqDisposition-ne 'STARTED'){throw 'PRODUCTION_CHILD_START_UNKNOWN'}
+ $sqImagePin.AssertAlias($Image);$sqImagePin.AssertProcessImage($sqProcess.SafeHandle)
+ $sqRecord.originalBirth=[SharedQueueBuildIo]::Birth($sqProcess.SafeHandle)
+ Save-SQNew ($Prefix+'.started.json') ([ordered]@{schema='ae-agent.shared-queue-child-start.v1';stage='started';imageLocator=$Image;imageCanonicalPath=$sqImagePin.CanonicalPath;imageSha256=$sqImagePin.Sha256;originalHandleAcquired=$true;originalBirth=$sqRecord.originalBirth})
  $sqRecord.stderr=[SharedQueueBuildIo]::Drain($sqProcess.StandardError.BaseStream,($Prefix+'.stderr'),4194304)
  if(-not $Binary){$sqRecord.stdout=[SharedQueueBuildIo]::Drain($sqProcess.StandardOutput.BaseStream,($Prefix+'.stdout'),67108864);$sqProcess.StandardInput.Close()}
  return $sqRecord
 }
 function Wait-SQChild($Child,[int]$Timeout=300000){
+ $Child.imagePin.AssertAlias($Child.image);$Child.imagePin.AssertProcessImage($Child.originalProcess.SafeHandle)
  if(-not $Child.originalProcess.WaitForExit($Timeout)){throw 'PRODUCTION_ORIGINAL_CHILD_PENDING_UNKNOWN_NO_REPLAY'}
  if(-not $Child.stderr.Wait(10000)-or (-not $Child.binary-and -not $Child.stdout.Wait(10000))){throw 'PRODUCTION_CHILD_EOF_PENDING_UNKNOWN_NO_REPLAY'}
  [void]$Child.stderr.GetAwaiter().GetResult();if(-not $Child.binary){[void]$Child.stdout.GetAwaiter().GetResult()}
+ if([SharedQueueBuildIo]::Birth($Child.originalProcess.SafeHandle)-cne $Child.originalBirth){throw 'PRODUCTION_ORIGINAL_CHILD_BIRTH_CHANGED'}
+ $Child.imagePin.AssertAlias($Child.image);$Child.imagePin.AssertProcessImage($Child.originalProcess.SafeHandle)
  $Child.outcome='CLOSED';$Child.exitCode=$Child.originalProcess.ExitCode
  if($Child.exitCode-ne 0){throw 'PRODUCTION_CHILD_EXIT_REFUSED'}
 }
@@ -66,7 +93,7 @@ function Read-SQFrame($Creator,[int]$Size,[string]$Destination,[int]$Timeout=300
 if($InputSha256-notmatch '^[A-Fa-f0-9]{64}$'-or (Get-SQHash $InputFile)-ne $InputSha256.ToLowerInvariant()){throw 'PRODUCTION_EXACT_INPUT_DIGEST_REQUIRED'}
 if((Get-SQHash $NodePath)-ne '3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237'){throw 'PRODUCTION_EXACT_NODE_IMAGE_REQUIRED'}
 if(Get-Variable -Name SharedQueueBuildOwner -Scope Global -ErrorAction SilentlyContinue){throw 'PRODUCTION_OWNER_ALREADY_USED_NO_REPLAY'}
-if($Action-eq 'BuildAndSeal'){
+if($Action-in @('CompileOnly','BuildAndSeal')){
  if($MyInvocation.InvocationName-ne '.'){throw 'PRODUCTION_ROOT_RETAINED_DOT_SOURCE_OWNER_REQUIRED'}
  if($RootReviewedDriverSha256-notmatch '^[A-Fa-f0-9]{64}$'-or (Get-SQHash $PSCommandPath)-ne $RootReviewedDriverSha256.ToLowerInvariant()){throw 'PRODUCTION_ROOT_REVIEWED_DRIVER_REQUIRED'}
 }
@@ -120,7 +147,7 @@ try{
   $sqArguments=@($Role.project,'/noautoresponse','/nologo','/m:1','/nodeReuse:false','/t:Rebuild','/p:Configuration=Release','/p:Platform=x64',('/p:LocalSessionTrustedReadOutputDir='+$sqOut),('/p:LocalSessionTrustedReadPinsDir='+$sqInput.build.pinsDirectory),('/p:LocalSessionNodeSdkDir='+$sqInput.build.nodeSdkDirectory),('/p:LocalSessionTrustedRead'+$(if($Role.code-eq 3){'Setup'}else{'Source'})+'Reviewed=true'))
   $sqArguments+=@('/p:PreferredToolArchitecture=x64','/p:BuildProjectReferences=false','/p:PreBuildEventUseInBuild=false','/p:PreLinkEventUseInBuild=false','/p:PostBuildEventUseInBuild=false')
   $sqPpArguments=@($sqArguments|Where-Object {$_-ne '/t:Rebuild'})+@('/pp')
-  $sqPp=Start-SQChild $sqInput.build.msbuild.pin.canonicalPath $sqPpArguments $sqInput.build.repository ($sqPrefix+'-preprocess');Wait-SQChild $sqPp 120000
+  $sqPp=Start-SQChild $sqInput.build.msbuildLocator $sqPpArguments $sqInput.build.repository ($sqPrefix+'-preprocess') $false $sqInput.build.msbuild;Wait-SQChild $sqPp 120000
   $sqAllowed=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   foreach($sqRow in $sqInput.definition.buildInputs){[void]$sqAllowed.Add($sqRow.file.pin.canonicalPath)}
   [xml]$sqPpXml=[IO.File]::ReadAllText(($sqPrefix+'-preprocess.stdout'),$sqUtf8)
@@ -128,7 +155,7 @@ try{
   if(-not $sqImports.Count){throw 'PRODUCTION_PREPROCESS_IMPORT_OBSERVATIONS_REQUIRED'}
   foreach($sqImport in $sqImports){$sqVendorImport=$sqImport-match '(?i)\\Windows\\Microsoft\.NET\\Framework\\v4\.0\.30319\\Microsoft\.Xaml\.targets$';$sqImported=Get-SQObservation $sqImport $false $sqVendorImport;if(-not $sqAllowed.Contains($sqImported.pin.canonicalPath)){throw 'PRODUCTION_UNPLANNED_MSBUILD_IMPORT_REFUSED'}}
   Assert-SQHeld
-  $sqBuild=Start-SQChild $sqInput.build.msbuild.pin.canonicalPath $sqArguments $sqInput.build.repository $sqPrefix
+  $sqBuild=Start-SQChild $sqInput.build.msbuildLocator $sqArguments $sqInput.build.repository $sqPrefix $false $sqInput.build.msbuild
   Wait-SQChild $sqBuild 600000;Assert-SQHeld
   $sqReports=@(Get-ChildItem -LiteralPath (Join-Path $sqOut ($Role.role+'/obj')) -Filter '*.dependencies.json' -File)
   if($sqReports.Count-ne $Role.translationUnits.Count){throw 'PRODUCTION_EXACT_TRANSLATION_UNIT_COUNT_REQUIRED'}
@@ -165,7 +192,7 @@ try{
  }
  $sqOwner.stage='building_original_creator';$sqCreatorRole=$sqInput.build.plannedRoles|Where-Object {$_.code-eq 3};$sqCreatorFile=Build-SQRole $sqCreatorRole
  $sqCreatorObservation=Join-Path $sqOut 'creator-actual.json';Save-SQNew $sqCreatorObservation ([ordered]@{components=@();pin=$sqCreatorFile.pin;sha256=$sqCreatorFile.sha256})
- $sqOwner.stage='original_creator_started';$sqCreator=Start-SQChild $sqCreatorFile.pin.canonicalPath @('--prepare-and-seal-fixed') $sqInput.build.repository (Join-Path $sqOut 'original-creator') $true;$sqOwner.creator=$sqCreator
+ $sqOwner.stage='original_creator_started';$sqCreator=Start-SQChild $sqCreatorFile.locator @('--prepare-and-seal-fixed') $sqInput.build.repository (Join-Path $sqOut 'original-creator') $true $sqCreatorFile;$sqOwner.creator=$sqCreator
  $sqBirth=[SharedQueueBuildIo]::Birth($sqCreator.originalProcess.SafeHandle)
  $sqPrepareFrame=Join-Path $sqOut 'original-prepare-424.bin';Read-SQFrame $sqCreator 424 $sqPrepareFrame
  $sqPrepare=Join-Path $sqOut 'original-prepare.json';Invoke-SQNode @('prepare',$InputFile,$InputSha256,$sqCreatorObservation,$sqPrepareFrame,$sqBirth,$sqPrepare) (Join-Path $sqOut 'verify-prepare')
@@ -195,7 +222,7 @@ try{
  throw
 }finally{
  $sqPendingChild=@($sqOwner.children|Where-Object {$_.outcome-eq 'UNKNOWN'}).Count-gt 0
- if($sqOwner.closed-or (-not $sqOwner.creator-and -not $sqPendingChild)){foreach($sqHeld in $sqOwner.pins){$sqHeld.Dispose()};foreach($sqLock in $sqOwner.locks){$sqLock.Dispose()};foreach($sqChild in $sqOwner.children){if($sqChild.outcome-eq 'CLOSED'){$sqChild.originalProcess.Dispose()}}}
+ if($sqOwner.closed-or (-not $sqOwner.creator-and -not $sqPendingChild)){foreach($sqHeld in $sqOwner.pins){$sqHeld.Dispose()};foreach($sqLock in $sqOwner.locks){$sqLock.Dispose()};foreach($sqChild in $sqOwner.children){if($sqChild.outcome-in @('CLOSED','NOT_CREATED')){$sqChild.originalProcess.Dispose()}}}
  # UNKNOWN keeps the SAME original creator, streams, pending reads and pins in
  # $global:SharedQueueBuildOwner. Do not close its root PowerShell owner or retry.
 }

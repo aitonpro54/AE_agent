@@ -55,11 +55,16 @@ serial как decimal string, строит header/M tables, role/TU lists, sourc
 Final binary identities разрешаются оригинальным seal witness, поэтому их
 generated locator selectors не выдаются за заранее известные pins.
 
-Collect и Validate можно запускать отдельными короткими PowerShell процессами.
+Collect и Validate запускают Node children: при их UNKNOWN также сохраняется
+исходный root PowerShell owner. CompileOnly и BuildAndSeal обязательно выполняются
+через dot-source в сохраняемом root PowerShell owner; закрывающийся после ошибки
+короткий shell для них запрещён.
 До prepare обязателен CompileOnly всех трёх ролей на тех же inputs:
 
 ```powershell
-& $sqDriver -Action CompileOnly -InputFile $sqManifest -InputSha256 (Get-FileHash -LiteralPath $sqManifest -Algorithm SHA256).Hash
+$sqDriver = Join-Path $sqRepo 'scripts/owned-runtime-shared-queue-build.ps1'
+$sqManifest = Join-Path $sqRepo '.codex-runtime/shared-queue-20261015/production-build/production-build-inputs.json'
+. $sqDriver -Action CompileOnly -InputFile $sqManifest -InputSha256 (Get-FileHash -LiteralPath $sqManifest -Algorithm SHA256).Hash -RootReviewedDriverSha256 (Get-FileHash -LiteralPath $sqDriver -Algorithm SHA256).Hash
 ```
 
 CompileOnly создаёт артефакты только в build output, проверяет preprocess/imports,
@@ -88,6 +93,17 @@ setup headers → creator compile → prepare424 → actual anchor → final hea
 После final compile driver сверяет реальные PE artifacts и перед ACK проверяет
 nonce/birth, исходные pins, profile/source/policy/M/artifact-set/SID commitments
 и фактические bytes anchor. Native creator независимо держит и проверяет originals.
+
+CreateProcess получает обычные DOS locators: reviewed `build.msbuildLocator` и
+обычный destination locator созданного creator. Canonical volume paths сохраняются
+в physical pins. До запуска alias открывается и сравнивается с held image pin/SHA;
+после запуска image запрашивается через исходный process HANDLE и снова связывается
+с тем же pin. PID reopen и fallback locator отсутствуют. `Win32Exception(87)`
+с подтверждённым отсутствием process association записывается как `NOT_CREATED`,
+с `originalHandleAcquired:false`; это отличается от UNKNOWN. Остальные ошибки
+создания, отсутствие ясного результата и ошибки post-create проверки удерживают
+исходный owner и не повторяют Start. Start intent/refusal/started receipts находятся
+рядом с соответствующими stdout/stderr logs.
 
 `$global:SharedQueueBuildOwner` хранит UNKNOWN originals. Timeout не закрывает
 stdio, не убивает процесс, не открывает его по PID и не повторяет операцию.

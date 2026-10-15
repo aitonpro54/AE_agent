@@ -1,9 +1,13 @@
 "use strict";
-const { fail, hex, u64, pin, MARKER } = require("./codec");
+const { fail, hex, u64, pin, MARKER } = require("./codec"), path = require("node:path");
 const ns = "local_session::", tr = ns + "trusted_read::", pr = ns + "production::";
 function exact(value, allowed, required = allowed) { if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(key => !allowed.includes(key)) || required.some(key => !Object.hasOwn(value, key))) fail("production_profile_exact_fields_required"); }
 function text(value) { if (typeof value !== "string" || value.includes("\0") || value.length > 1048576) fail("production_profile_text_required"); return JSON.stringify(value).replace(/\\u([a-f0-9]{4})/gi, "\\u$1"); }
 const str = value => text(value), wide = value => "L" + text(value);
+function ordinaryLaunchLocator(value) {
+  if (typeof value !== "string" || !/^[a-z]:[\\/]/i.test(value) || /[\x00-\x1f\x7f]/.test(value) || value.replaceAll("/", "\\").split("\\").some(part => part === "." || part === "..")) fail("production_ordinary_launch_locator_required");
+  return path.win32.normalize(value);
+}
 function bytes(value, size, zero = false) { return "{" + [...hex(value, size, zero)].map(n => "0x" + n.toString(16).padStart(2, "0")).join(",") + "}"; }
 const digest = value => bytes(value, 32), id = value => bytes(value, 16), number = value => { if (!Number.isSafeInteger(value) || value < 0 || value > 0xffffffff) fail("production_profile_number_required"); return String(value); }, uint64 = value => { u64(value); return String(value) + "ULL"; }, bool = value => { if (typeof value !== "boolean") fail("production_profile_bool_required"); return String(value); };
 const list = (values, convert) => { if (!Array.isArray(values) || values.length > 65535) fail("production_profile_array_required"); return "{" + values.map(convert).join(",") + "}"; };
@@ -45,6 +49,7 @@ function validate(document) {
   exact(document, ["schema", "enrollment", "definition", "trustedRead", "build", "census"]);
   if (document.schema !== "ae-agent.shared-queue-production-build-inputs.v1") fail("production_input_schema_required");
   const p = document.enrollment, d = document.definition, t = document.trustedRead;
+  if (document.build.msbuild) ordinaryLaunchLocator(document.build.msbuildLocator);
   record(ns + "reviewed::Profile", p, enrollmentFields); record(pr + "SetupDefinition", d, definitionFields); record(tr + "Profile", t, trustedFields);
   if (p.capabilities !== 0x07ff || !p.enabled || String(p.maximumSessionMs) !== "28800000" || String(p.maximumLeaseMs) !== "60000" || p.sourceSetHash !== d.staticCodeHash || t.panelFiles.length !== 8 || t.bridgePort !== 3456 || t.cdpPort !== 8870 || t.nodeSources.length === 0 || t.cepSources.length === 0) fail("production_combined_profile_required");
   const host = d.artifacts.some(a => a.code === 4), mandatory = host ? 7 : 6;
@@ -61,4 +66,4 @@ function generate(document, anchor = null, generatedHash = "0".repeat(64)) {
   const production = '#pragma once\n#include "local_session_installation_pins.h"\nnamespace local_session_production_reviewed {\n' + MARKER + generatedHash + '";\ninline const local_session::production::Definition kDefinition=[](){local_session::production::Definition p;static_cast<local_session::production::StaticDefinition&>(p)=local_session_reviewed::kSetupDefinition;' + (anchor ? "p.anchor=" + objectPin(anchor) + ";" : "") + "p.generatedBuildInputsHash=local_session::production::DecodeGeneratedBuildInputsHash(kExpectedGeneratedBuildInputsHashHex);return p;}();\n}\n";
   return { "local_session_production_artifact_pins.h": production, "local_session_installation_pins.h": installation, "local_session_trusted_read_pins.h": trusted };
 }
-module.exports = { validate, generate, objectPin, file };
+module.exports = { validate, generate, objectPin, file, ordinaryLaunchLocator };
