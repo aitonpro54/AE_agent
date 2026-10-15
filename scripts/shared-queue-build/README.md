@@ -43,7 +43,8 @@ $sqCli = Join-Path $sqRepo 'scripts/shared-queue-build/cli.js'
 $sqConfig = Join-Path $sqRepo '.codex-runtime/shared-queue-20261015/config.json'
 $sqCep = Join-Path $sqRepo '.codex-runtime/shared-queue-20261015/cep-source-census.json'
 & $sqNode --expose-internals $sqCli cep-census 'file:///C:/Users/Ant/AppData/Roaming/Adobe/CEP/extensions/com.codex.aemcpbridge/index.html' $sqCep
-& (Join-Path $sqRepo 'scripts/owned-runtime-shared-queue-build.ps1') -Action Collect -InputFile $sqConfig -InputSha256 (Get-FileHash -LiteralPath $sqConfig -Algorithm SHA256).Hash
+$sqDriver = Join-Path $sqRepo 'scripts/owned-runtime-shared-queue-build.ps1'
+. $sqDriver -Action Collect -InputFile $sqConfig -InputSha256 (Get-FileHash -LiteralPath $sqConfig -Algorithm SHA256).Hash -RootReviewedDriverSha256 (Get-FileHash -LiteralPath $sqDriver -Algorithm SHA256).Hash
 ```
 
 Collect выполняет actual no-follow Windows pin observations, сохраняет 64-bit
@@ -55,10 +56,9 @@ serial как decimal string, строит header/M tables, role/TU lists, sourc
 Final binary identities разрешаются оригинальным seal witness, поэтому их
 generated locator selectors не выдаются за заранее известные pins.
 
-Collect и Validate запускают Node children: при их UNKNOWN также сохраняется
-исходный root PowerShell owner. CompileOnly и BuildAndSeal обязательно выполняются
-через dot-source в сохраняемом root PowerShell owner; закрывающийся после ошибки
-короткий shell для них запрещён.
+Все четыре actions требуют dot-source и текущий reviewed driver SHA в сохраняемом
+root PowerShell owner. Закрывающийся после ошибки короткий shell запрещён:
+Collect/Validate тоже запускают Node children и сохраняют originals при UNKNOWN.
 До prepare обязателен CompileOnly всех трёх ролей на тех же inputs:
 
 ```powershell
@@ -104,6 +104,19 @@ CreateProcess получает обычные DOS locators: reviewed `build.msbu
 создания, отсутствие ясного результата и ошибки post-create проверки удерживают
 исходный owner и не повторяют Start. Start intent/refusal/started receipts находятся
 рядом с соответствующими stdout/stderr logs.
+
+Node CLI получает фиксированный startup flag
+`AE_AGENT_SHARED_QUEUE_BUILD_STARTUP_V1=1` и блокируется на исходном stdin до
+строки `AE_AGENT_SHARED_QUEUE_BUILD_GO_V1\n` и EOF. Driver сначала получает image
+и birth через исходный HANDLE, запускает drains и проверяет image alias/pin, затем
+записывает GO intent и один раз отправляет GO с EOF. Флаг не предоставляет прав
+native factory и не содержит исполняемого кода. Неверная/неполная строка, CRLF и
+лишние байты запрещены до main. UNKNOWN записи GO не разрешает её повторить.
+Это устраняет race короткой pure Node команды с live image-query. Wait/exit path
+не запрашивает image снова и не использует racy HasExited guard: он проверяет
+сохранённое live наблюдение, тот же original HANDLE/birth, held image/alias,
+точный exit и EOF. Быстро завершившийся до первого query другой child остаётся
+UNKNOWN; Image diagnostic включает Win32 error и не запускает fallback/reopen.
 
 `$global:SharedQueueBuildOwner` хранит UNKNOWN originals. Timeout не закрывает
 stdio, не убивает процесс, не открывает его по PID и не повторяет операцию.

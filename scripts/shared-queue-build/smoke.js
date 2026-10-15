@@ -3,6 +3,7 @@
 // they are never persisted as installation inputs or passed to native code.
 const assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const c = require("./codec"), p = require("./profile"), collect = require("./collect"), assemble = require("./assemble");
+const cli = require("./cli");
 let groups = 0; function check(name, run) { run(); groups++; console.log("PASS " + name); }
 const id = n => n.toString(16).padStart(32, "0"), hash = n => n.toString(16).padStart(64, "0"), fixturePin = n => ({ volumeGuidHex: id(1), fileIdHex: id(n), serial: "18446744073709551000", canonicalPath: "\\\\?\\Volume{11111111-1111-4111-8111-111111111111}\\fixture-" + n });
 const expected = { installation: id(11), lineage: id(12), staticCodeHash: hash(13), policyHash: hash(14), fixedProfileHash: hash(15), setupNamespace: fixturePin(16), creator: { pin: fixturePin(17), sha256: hash(18) }, node: { pin: fixturePin(19), sha256: hash(20) }, userSid: "S-1-5-21-1-2-3-1001", anchorPath: fixturePin(21).canonicalPath, repository: fixturePin(22), runtime: fixturePin(23), generatedBuildInputsHash: hash(24), artifactSetHash: hash(25) };
@@ -39,6 +40,16 @@ check("launch locator is a reviewed ordinary Windows path; canonical volume pins
   assert.equal(p.ordinaryLaunchLocator("C:/Program Files (x86)/Build Tools/MSBuild.exe"), "C:\\Program Files (x86)\\Build Tools\\MSBuild.exe");
   for (const rejected of [fixturePin(80).canonicalPath, "\\\\server\\share\\MSBuild.exe", "MSBuild.exe", "C:MSBuild.exe", "C:\\tools\\..\\other.exe", "C:\\tools\\x\n.exe"]) assert.throws(() => p.ordinaryLaunchLocator(rejected), /ordinary_launch_locator_required/);
   const physical = fixturePin(80), serialized = p.objectPin(physical); assert(serialized.includes("Volume{")); assert.equal(physical.serial, "18446744073709551000");
+});
+check("startup gate accepts exactly fragmented GO plus EOF before main and rejects all other input", () => {
+  const environment = { [cli.STARTUP_ENV]: "1" };
+  const driver = fs.readFileSync(path.resolve(__dirname, "../owned-runtime-shared-queue-build.ps1"), "utf8"), go = /ASCII\.GetBytes\("([^"\r\n]+)"\)/.exec(driver);
+  assert(go); assert.equal(go[1].replaceAll("`n", "\n"), cli.STARTUP_GO); assert(driver.includes("Environment['" + cli.STARTUP_ENV + "']='1'")); assert(driver.includes("StandardInputEncoding=[Text.UTF8Encoding]::new($false)"));
+  function reader(raw, maximum = 1) { const bytes = Buffer.from(raw, "ascii"); let at = 0; return (destination, offset, length) => { const count = Math.min(maximum, length, bytes.length - at); bytes.copy(destination, offset, at, at + count); at += count; return count; }; }
+  for (const fragment of [1, 2, 7, 1024]) assert.equal(cli.waitForStartup(environment, reader(cli.STARTUP_GO, fragment)), true);
+  for (const bad of ["", cli.STARTUP_GO.slice(0, -1), cli.STARTUP_GO.replace("GO", "NO"), cli.STARTUP_GO.replace("\n", "\r\n"), cli.STARTUP_GO + "x", cli.STARTUP_GO + cli.STARTUP_GO]) assert.throws(() => cli.waitForStartup(environment, reader(bad)), /production_startup_/);
+  assert.throws(() => cli.waitForStartup({ [cli.STARTUP_ENV]: "true" }, () => { throw Error("must not read"); }), /exact_startup_handshake_required/);
+  assert.equal(cli.waitForStartup({}, () => { throw Error("direct pure entry must not read stdin"); }), false);
 });
 check("full typed header generator selects the native shared policy without media or caller C++", () => {
   const file = n => ({ components: ["fixture-" + n], pin: fixturePin(n), sha256: hash(n) }), generated = n => ({ ...file(n), sha256: "0".repeat(64) }), late = n => ({ components: ["fixture-" + n], canonicalPath: fixturePin(n).canonicalPath });

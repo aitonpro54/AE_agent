@@ -34,6 +34,11 @@
   без process association классифицируется NOT_CREATED, остальные исходы UNKNOWN.
   CompileOnly также требует сохраняемого root owner. Pure10/parser/syntax3 — PASS;
   перед повтором собираются актуальные build inputs, старые записи сохраняются.
+- Collect v3 выявил race image-query короткого Node CLI; original exit не доказан,
+  этот source-only исход сохранён UNKNOWN и не повторяется. Native factories 0.
+  Для новой подготовки введён GO+EOF handshake до main, image/birth фиксируются
+  до GO; после exit проверяются original HANDLE/birth/EOF, без позднего image-query.
+  Все actions требуют сохраняемого owner. Root: pure11/parser/syntax2 PASS.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

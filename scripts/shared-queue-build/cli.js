@@ -1,6 +1,19 @@
 "use strict";
 const fs = require("node:fs"), path = require("node:path"), codec = require("./codec"), profile = require("./profile"), collect = require("./collect"), assembly = require("./assemble");
 const json = file => JSON.parse(fs.readFileSync(file, "utf8")), save = (file, value) => fs.writeFileSync(file, JSON.stringify(value) + "\n", { flag: "wx" });
+const STARTUP_ENV = "AE_AGENT_SHARED_QUEUE_BUILD_STARTUP_V1", STARTUP_GO = "AE_AGENT_SHARED_QUEUE_BUILD_GO_V1\n";
+function waitForStartup(environment = process.env, read = (buffer, offset, length) => fs.readSync(0, buffer, offset, length, null)) {
+  if (environment[STARTUP_ENV] === undefined) return false;
+  if (environment[STARTUP_ENV] !== "1") codec.fail("production_exact_startup_handshake_required");
+  const expected = Buffer.from(STARTUP_GO, "ascii"), observed = Buffer.alloc(expected.length); let at = 0;
+  while (at < expected.length) {
+    const count = read(observed, at, expected.length - at);
+    if (!Number.isSafeInteger(count) || count < 1 || count > expected.length - at) codec.fail("production_startup_go_missing_or_invalid");
+    at += count; if (!observed.subarray(0, at).equals(expected.subarray(0, at))) codec.fail("production_startup_go_changed");
+  }
+  if (read(Buffer.alloc(1), 0, 1) !== 0) codec.fail("production_startup_trailing_input_refused");
+  return true;
+}
 function input(file, expected) { const raw = fs.readFileSync(file); if (codec.sha(raw).toString("hex") !== expected.toLowerCase()) codec.fail("production_input_document_digest_changed"); const d = profile.validate(JSON.parse(raw)); for (const receipt of Object.values(d.census)) if (receipt && typeof receipt === "object" && receipt.path && codec.sha(fs.readFileSync(receipt.path)).toString("hex") !== receipt.sha256) codec.fail("production_census_document_changed"); return d; }
 function writeSame(file, raw) { const fd = fs.openSync(file, "r+"); try { fs.ftruncateSync(fd, 0); fs.writeFileSync(fd, raw); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
 function anchorPath(d) { return d.enrollment.repository.canonicalPath + "\\" + d.definition.anchorComponents.join("\\"); }
@@ -41,5 +54,5 @@ async function main(args) {
   }
   codec.fail("production_unknown_build_operation");
 }
-if (require.main === module) main(process.argv.slice(2)).catch(error => { const value = error.code || error.message; process.stderr.write(JSON.stringify({ ok: false, code: typeof value === "string" && /^[a-zA-Z0-9_]+$/.test(value) ? value : "production_build_exception", authority: false }) + "\n"); process.exitCode = 1; });
-module.exports = { main, requests };
+if (require.main === module) Promise.resolve().then(() => { waitForStartup(); return main(process.argv.slice(2)); }).catch(error => { const value = error.code || error.message; process.stderr.write(JSON.stringify({ ok: false, code: typeof value === "string" && /^[a-zA-Z0-9_]+$/.test(value) ? value : "production_build_exception", authority: false }) + "\n"); process.exitCode = 1; });
+module.exports = { main, requests, waitForStartup, STARTUP_ENV, STARTUP_GO };

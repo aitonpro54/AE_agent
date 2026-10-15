@@ -54,7 +54,7 @@ public sealed class SharedQueueBuildStart {
 public static class SharedQueueBuildIo {
  [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(SafeProcessHandle h,out long c,out long e,out long k,out long u);
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool QueryFullProcessImageNameW(SafeProcessHandle h,uint f,StringBuilder b,ref uint n);
- public static string Image(SafeProcessHandle original){if(original==null||original.IsClosed||original.IsInvalid)throw new IOException("production_original_process_handle_required");var b=new StringBuilder(32768);uint n=(uint)b.Capacity;if(!QueryFullProcessImageNameW(original,0,b,ref n)||n==0||n>=b.Capacity)throw new IOException("production_original_process_image_unknown");return b.ToString();}
+ public static string Image(SafeProcessHandle original){if(original==null||original.IsClosed||original.IsInvalid)throw new IOException("production_original_process_handle_required");var b=new StringBuilder(32768);uint n=(uint)b.Capacity;if(!QueryFullProcessImageNameW(original,0,b,ref n)){var error=Marshal.GetLastWin32Error();throw new IOException("production_original_process_image_unknown_win32_"+error);}if(n==0||n>=b.Capacity)throw new IOException("production_original_process_image_extent_unknown");return b.ToString();}
  public static SharedQueueBuildStart StartOriginal(Process process){
   var result=new SharedQueueBuildStart();
   try{result.Started=process.Start();if(result.Started){var original=process.SafeHandle;result.OriginalHandleAcquired=!original.IsClosed&&!original.IsInvalid;}return result;}
