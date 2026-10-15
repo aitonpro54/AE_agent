@@ -102,7 +102,7 @@ nonce `73c7c6d4-f53a-4dc9-998b-1cf0ae117556` остался timeout при exact
 reconciliation; не переотправлялся. `getDLItemsAtRoot` — отдельное перечисление
 источников AEP, не проверка добавленного item. Новый write path должен связывать
 точный saved snapshot/его native comp GUID и проверять собственный wrapper.
-Сейчас enqueue0/start0. Generic SaveAs/open сохраняет private manual CEP authority.
+Generic SaveAs/open сохраняет private manual CEP authority.
 
 ## Узкое восстановление уже выполненной операции
 
@@ -135,3 +135,29 @@ Durable event suffix 17:42Z подтверждает, что последняя 
 запущены до исходной операции; это continuity evidence, а не поля original run.
 Прежний source-discovery timeout сохраняется; независимый queue send разрешён
 существующим разделением readonly sender и mutation fence. Census не повторять.
+
+## Текущий live результат
+
+`6483092`: recovery выполнен один раз. Capture `62e7bc3d…`, fresh source verifier
+`ac4fe6b5…`; оба snapshots native-verified, flags и GUID совпали, source clean с
+исходными revision/stateHash. Private saved-source proof восстановлен, guard снят;
+original run остаётся UNKNOWN. Повторных save/open не было.
+
+Первый enqueue: dry-run `b3cdf496…` PASS, run `d784c316…` завершён
+`ae_delivery_unknown`. Batch `3868d0ff-6960-4ce4-b3e3-95836729bdda`, job
+`cce91efe-a719-4291-a795-590faa174858`, nonce `5b59f788-fb03-46a4-8b13-64fd69662872`.
+Exact status дал `transport_correlation_unknown` и прочитал прежний readonly
+nonce `73c7…`; новый enqueue этим не подтверждён. Native journal этого run содержит
+только успешно завершённые project/checkpoint reads, нового enqueue-sender в нём нет.
+Отправлена одна попытка enqueue; её приём не установлен, slot2/START0.
+Точный прежний exception потерян: `ame-title-jobs.js` свёл его к общему
+`ae_delivery_unknown`, не сохранив исходный code/error и dispatch stage в ledger.
+Существующие retained/status reads уже исчерпаны. Отсутствие нового sender само
+по себе не переклассифицирует UNKNOWN в not_sent. Reservation и UNKNOWN сохраняются;
+повторный enqueue и START не разрешены. Исходная цель пользователя не выполнена.
+
+Runtime evidence: `.codex-runtime/product-two-title-sol/recovered-snapshots-once.json`,
+`ame-slot1-proposal.json`, `ame-slot1-dryrun.json`, `ame-slot1-run.json`,
+`ame-slot1-reconcile-once.json`, `ame-slot1-retained-results.json` и
+`ame-slot1-panel-inspect.json`. Это локальные ignored artifacts; recovery capture
+и receipt лежат в `logs/evidence/title-export-recovery/`, original run не изменён.

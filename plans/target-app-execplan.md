@@ -31,6 +31,10 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 - `69b5244`: native primitive comparator исправлен; actual dry-run PASS.
   Run `b9377a63` UNKNOWN: два snapshot files существуют, source/checkpoint неизменны,
   callback пришёл позже120s и был отвергнут. Enqueue0/start0; export не повторять.
+- `6483092`: узкий capture-first recovery установлен; native receipt, snapshots и
+  fresh source baseline проверены, private saved-source proof восстановлен.
+  Первый enqueue run `d784c316` UNKNOWN; исходный exception не сохранён, поддержанного
+  пассивного способа восстановить его нет. Приём не установлен, slot2/START0.
 - AME source discovery nonce сохранён timeout без повторной отправки. Это
   getDLItemsAtRoot, а не подтверждение приёма собственного задания. Для enqueue
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
@@ -110,15 +114,21 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   SHA совпадают; snapshots32001325/32002424bytes. Native contents ещё не приняты.
   Durable event suffix17:42Z: более новых native dispatch нет. Supported panel
   state совпадает с original lease; current AE/AME process starts предшествуют run.
+- Recovery19PASS и comparator30PASS, ES3/syntax/rules/diff PASS; live recovery PASS
+  без повторных save/open. Slot1 dry-run `b3cdf496` PASS, real run `d784c316`
+  `ae_delivery_unknown`; exact status `transport_correlation_unknown`. Journal и
+  retained results содержат только project/checkpoint reads, нового enqueue-sender
+  нет; status вернул старый readonly nonce, который не подтверждает новую mutation.
 
 ## Следующий шаг
 
-1. Установить узкий recovery с заранее armed native guard; первым native действием
-   захватить прежний wrapper result, durable сохранить и выполнить exact joins.
-2. Подтвердить source restoration и восстановить private saved-source proof;
-   original UNKNOWN сохранить. Повторные save/open/export не выполнять.
-4. Enqueue первый own item → immediate wrapper read; затем второй и его read.
-5. START общей очереди один раз; записать фактический outcome, без video proof.
+Текущая попытка остановлена на фактическом UNKNOWN: exact server exception потерян,
+existing retained/status reads исчерпаны. Отправлена одна попытка enqueue; accepted
+не установлен, slot2/START0. UNKNOWN не превращать в not_sent по отсутствию команды;
+старый readonly nonce не считать ответом enqueue. Повторных save/open/export,
+enqueue и START не выполнять. Future instrumentation не восстановит потерянную
+причину этой попытки и сейчас не реализуется. Исходная цель не выполнена;
+root принимает saved artifacts и оставшийся блокер.
 
 Исторический sources timeout сохранён без повторной отправки, но не является
 условием этого product пути: enqueue использует GUID фактически сохранённых
