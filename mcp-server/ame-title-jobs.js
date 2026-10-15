@@ -240,21 +240,33 @@ function nativeSend(a, messageBody) {
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
   if (typeof BridgeTalk !== "function" || typeof BridgeTalk.isRunning !== "function") return reply("bridgetalk_unsupported");
   try { if (!BridgeTalk.isRunning(a.targetSpecifier)) return reply("target_not_running"); } catch (_) { return reply("target_running_unknown"); }
-  if (a.reconcileRequestNonce) {
+  var observationOnly = a.observeOwnJob === true, retainedSourceRead = null;
+  if (observationOnly) {
+    // A separate read descriptor leaves the mutation message and its late
+    // callbacks untouched. Only a fixed own-job status can use this lane.
+    if (a.operation !== "status" || a.reconcileRequestNonce || !slot || slot.operation !== "enqueue" || slot.requestNonce !== a.observationEnqueueRequestNonce || slot.operationBinding !== a.observationEnqueueOperationBinding || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding) return reply("own_observation_origin_changed");
+    slot = $.global.aeAgentAMETitleObservationV1;
+    var matching = slot && slot.requestNonce === a.requestNonce && slot.operation === "status" && slot.jobId === a.jobId && slot.batchId === a.batchId && slot.enqueueRequestNonce === a.observationEnqueueRequestNonce && slot.targetSpecifier === a.targetSpecifier && slot.processBinding === a.processBinding && slot.operationBinding === a.operationBinding;
+    if (matching) { pump(a.timeoutMs); return reply(slot.callback || "unknown"); }
+    if (a.observationReconcile === true) return reply("own_observation_unavailable");
+    if (slot && (!slot.callback || slot.callback === "timeout")) return reply("previous_observation_unresolved");
+  } else if (a.reconcileRequestNonce) {
     if (slot && slot.requestNonce !== a.reconcileRequestNonce && slot.retainedSourceRead && slot.retainedSourceRead.requestNonce === a.reconcileRequestNonce) slot = slot.retainedSourceRead;
     if (!slot || slot.requestNonce !== a.reconcileRequestNonce || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || slot.operationBinding !== a.operationBinding) return reply("reconciliation_mismatch");
     // An exact server-built sources reconciliation also classifies a legacy slot.
     // Keep that original message/callback; a late source reply has no queue effect.
     if (a.operation === "sources") slot.operation = "sources";
     pump(a.timeoutMs); return reply(slot.callback || "unknown");
-  }
-  var retainedSourceRead = slot ? slot.retainedSourceRead || null : null;
+  } else {
+  retainedSourceRead = slot ? slot.retainedSourceRead || null : null;
   if (slot && (!slot.callback || slot.callback === "timeout")) {
     if (slot.operation !== "sources" || a.operation === "sources" || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || retainedSourceRead) return reply("previous_request_unresolved");
     retainedSourceRead = slot;
   }
   if (a.operation === "sources" && retainedSourceRead && (!retainedSourceRead.callback || retainedSourceRead.callback === "timeout")) return reply("previous_request_unresolved");
-  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, callback: null, body: null, message: message }; $.global.aeAgentAMETitleSendV1 = slot;
+  }
+  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, callback: null, body: null, message: message };
+  if (observationOnly) { slot.jobId = a.jobId; slot.batchId = a.batchId; slot.enqueueRequestNonce = a.observationEnqueueRequestNonce; $.global.aeAgentAMETitleObservationV1 = slot; } else $.global.aeAgentAMETitleSendV1 = slot;
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
   message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
   message.onError = function(r) { slot.body = String(r.body || "").substring(0, 2000); slot.callback = "error"; }; message.onTimeout = function() { slot.callback = "timeout"; };
@@ -655,8 +667,15 @@ function createExecutor(deps) {
     if (!job || batch.processBinding !== binding(a, processInfo)) return result("job_not_bound"); pinned(job);
     if(a.originalRunId)return settleNotSent(a,batch,job);
     const pendingStart = batch.start && !batch.start.transportResolved, nonce = pendingStart ? batch.start.requestNonce : !job.transportResolved ? job.requestNonce : null;
-    const operationBinding = pendingStart ? batch.start.operationBinding : nonce ? job.operationBinding : hash({ operation: "status", jobId: job.jobId });
-    const observed = await send({ ...a, operation: "status", jobId: job.jobId, processBinding: batch.processBinding, operationBinding, requestNonce: crypto.randomUUID(), minimumObservedAt: pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(nonce ? { reconcileRequestNonce: nonce } : {}) });
+    const ownObservation=!pendingStart&&!job.transportResolved;
+    const operationBinding = pendingStart ? batch.start.operationBinding : ownObservation ? hash({ operation: "status", jobId: job.jobId }) : nonce ? job.operationBinding : hash({ operation: "status", jobId: job.jobId });
+    let observationReconcile=false;
+    if(ownObservation){
+      observationReconcile=!!job.ownStatusObservation;
+      if(!job.ownStatusObservation){job.ownStatusObservation={requestNonce:crypto.randomUUID(),operationBinding,enqueueRequestNonce:job.requestNonce,reservedAt:new Date(now()).toISOString()};write(recordFile(a.batchId),batch);}
+      const own=job.ownStatusObservation;if(!UUID.test(own.requestNonce||"")||own.operationBinding!==operationBinding||own.enqueueRequestNonce!==job.requestNonce||!Number.isFinite(Date.parse(own.reservedAt)))fail("ame_title_own_observation_changed");
+    }
+    const observed = await send({ ...a, operation: "status", jobId: job.jobId, processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
     if (pendingStart) { batch.start.transportResolved = observed.resolved; batch.start.state = observed.code === "batch_start_accepted" ? "accepted" : "unknown_outcome"; }
     else { updateJob(job, observed); acceptOwnRead(job, observed); } write(recordFile(a.batchId), batch);
