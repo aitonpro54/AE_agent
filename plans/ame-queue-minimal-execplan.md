@@ -25,12 +25,11 @@
   Исправлены Windows launch locator, startup GO+EOF и exact-vendor link mode.
   Все действия используют сохраняемый root owner; исход v3 source-only Node
   сохраняется UNKNOWN (original exit не доказан), без повтора прежней операции.
-- Actual v5 Collect PASS: original children 2/2 CLOSED, exit0/EOF; 10 реальных prior
-  namespaces отсутствуют. Provisioner CPP/link/input closure PASS (0 ошибок).
-  Node client остановился на C2026: generated projectScript 42774 UTF8 bytes.
-  Генератор исправлен: отдельные append chunks ≤4 КиБ, текст/SHA сохранены.
-  Root pure12/parser/syntax PASS. В v6 MSVC прошёл генерацию, затем остановился на C4334: 32-bit shift перед 64-bit mask. Root исправил один literal на 1ULL (адресная правка по точному diagnostic, без отдельного исполнителя); source-proof PASS. Actual preflight повторяется на новых inputs.
-  Original compile children 7/7 CLOSED/EOF (последний exit1); creator/seal/deploy 0.
+- Actual v7 preflight COMPLETE на source dc2ab41: provisioner, Node client и broker
+  CPP/link PASS (0 ошибок); preprocess/includes/link-read входят в planned M.
+  Compile original children 9/9 CLOSED, exit0/EOF; actual source AEP и EPR прежние.
+  Input SHA 4ceb2547…d221f, receipts остаются local/ignored. Creator/seal/deploy
+  ещё не запускались. Следующий этап — BuildAndSeal тех же inputs и один C1.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;
