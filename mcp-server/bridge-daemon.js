@@ -355,9 +355,16 @@ const ameTitleExecutor = ameTitleJobs.createExecutor({
     // The legacy receipt did not hash product-dispatch. Its unchanged reviewed
     // blob is checked here, not retroactively claimed as a historical field.
     if(crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"ame-product-dispatch.js"))).digest("hex")!=="d457511285d51376c858a76d87fea1b50cb448c92fb452f1052e73df9e110142")return false;
+    if(runtime?.gitCommit==="ece468020fe4372e208e39c429d7e7bfed3af1cf")return runtime.sourceSha256==="b1dae09117efbd12762590f4edf3d1306ab74d5f0637b3c9ae086e0af5754aa1"&&pin("mcp-server/bridge-daemon.js")==="b349f9861b338d21ec5d3f220c42e2a5d50d4f99a4dc88d645381dd17fcbbabd"&&pin("mcp-server/ame-title-jobs.js")==="61ab0c8b3322d94583e5b5d80b88cafade842b08a3f3781410900760e757371b"&&pin("mcp-server/plan-run-records.js")==="422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4";
     if(runtime?.gitCommit==="64830927f8ceb3e8e1b94ebfc66a50e1bb95277d"&&runtime.sourceSha256==="ca8c0f7be7c15abb11db0e461926c6bc4a7e8b11604fe318954ffa1cea8e1bb9")
       return pin("mcp-server/bridge-daemon.js")==="8e80a40aa724910050e87cdd8b4aa286b0a7afd66dcc3636f219a87306c5160b"&&pin("mcp-server/ame-title-jobs.js")==="81fda2a55fa105aea681067031f8df8ef70635d2dff07ab0232dedefb79d95a1"&&pin("mcp-server/plan-run-records.js")===RUNTIME_IDENTITY.modules.find(m=>m.name==="mcp-server/plan-run-records.js")?.sha256;
     return runtime?.sourceSha256===RUNTIME_IDENTITY.sourceSha256&&["mcp-server/bridge-daemon.js","mcp-server/ame-title-jobs.js","mcp-server/plan-run-records.js"].every(name=>pin(name)===RUNTIME_IDENTITY.modules.find(m=>m.name===name)?.sha256);
+  },
+  assertPreSendGuardRecord:(record,command)=>{
+    // One reviewed completed sender refusal; this never admits a delivered timeout.
+    if(record.runId!=="04748598-91c9-44f8-b1c5-f6c76d2178b1"||command.id!=="8a52f4a1-a339-4be7-9c74-a9015e2bda85"||fs.statSync(LOG_FILE).size>128*1024*1024)return false;
+    const rows=fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)).filter(e=>e.type==="ae_command_queued"&&e.details?.runId===record.runId&&e.details.stepIndex===1),row=rows[0],d=row?.details;
+    return rows.length===1&&d.id===command.id&&d.commandId===command.id&&d.actionId===record.run.provenance.actionId&&d.planSha256===record.run.provenance.planSha256&&d.scriptSha25664==="24a09eafe23ef14bb51ddae68bd5379b20af105fecd97eef6882b220a578c8a3"&&row.runtime?.sourceSha256===record.run.provenance.runtime.sourceSha256;
   },
   hasQueuedStep:runId=>{
     if(fs.statSync(LOG_FILE).size>128*1024*1024)throw Error("ame_not_sent_journal_budget");
