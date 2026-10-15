@@ -22,28 +22,15 @@
   Сборка Windows и реальное подключение остаются следующим этапом.
 - Driver source готов: actual pin/census collection, предварительная компиляция
   всех трёх ролей без запуска creator и отдельный production build/seal.
-  Root проверил pure smoke 9 групп, syntax 6 JS и PowerShell parser: PASS.
-  Перед native-сессией выполняется фактическая компиляция Windows.
-- Actual Collect PASS: 677 файлов и 10 реальных prior namespaces; native factories 0.
-  Первый CompileOnly остановился до создания MSBuild: Process.Start error 87 для
-  Volume GUID executable locator. Physical pins проверены; исправляется отдельный
-  ordinary launch locator с сохранением проверки исходного процесса. Native build,
-  seal/C1 и live enqueue/START ещё не выполнены.
-- Исправлен launch locator: ordinary DOS path отдельно от physical canonical pin;
-  исходный process HANDLE/image/birth проверяются до/после ожидания. Только error87
-  без process association классифицируется NOT_CREATED, остальные исходы UNKNOWN.
-  CompileOnly также требует сохраняемого root owner. Pure10/parser/syntax3 — PASS;
-  перед повтором собираются актуальные build inputs, старые записи сохраняются.
-- Collect v3 выявил race image-query короткого Node CLI; original exit не доказан,
-  этот source-only исход сохранён UNKNOWN и не повторяется. Native factories 0.
-  Для новой подготовки введён GO+EOF handshake до main, image/birth фиксируются
-  до GO; после exit проверяются original HANDLE/birth/EOF, без позднего image-query.
-  Все actions требуют сохраняемого owner. Root: pure11/parser/syntax2 PASS.
-- Actual v4 Collect PASS: original children 2/2 CLOSED, exit0/EOF. Provisioner
-  CPP/link PASS (0 ошибок); post-link проверка не передала exact-vendor режим
-  для уже разрешённых SortDefault.nls/TZRES.dll. Исправлен только этот выбор;
-  literal pins/SHA/links и planned M сохранены. Original children 5/5 CLOSED;
-  creator/seal/deploy 0. Root parser + actual link selector 2/2 PASS.
+  Исправлены Windows launch locator, startup GO+EOF и exact-vendor link mode.
+  Все действия используют сохраняемый root owner; исход v3 source-only Node
+  сохраняется UNKNOWN (original exit не доказан), без повтора прежней операции.
+- Actual v5 Collect PASS: original children 2/2 CLOSED, exit0/EOF; 10 реальных prior
+  namespaces отсутствуют. Provisioner CPP/link/input closure PASS (0 ошибок).
+  Node client остановился на C2026: generated projectScript 42774 UTF8 bytes.
+  Генератор исправлен: отдельные append chunks ≤4 КиБ, текст/SHA сохранены.
+  Root pure12/parser/syntax PASS; actual MSVC preflight повторяется на новых inputs.
+  Original compile children 7/7 CLOSED/EOF (последний exit1); creator/seal/deploy 0.
 - Последний проверенный MCP status: owned_registration_absent / owned=false.
   Последний product source/build checkpoint — 507740e (Completion77).
 - ae_architect — bounded source/policy review; ae_scout — AME item observations;

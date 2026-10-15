@@ -36,6 +36,20 @@ check("typed C++ pin preserves ulong serial and refuses unknown expression field
   const literal = p.objectPin(fixturePin(70)); assert(literal.includes("18446744073709551000ULL")); assert.throws(() => p.objectPin({ ...fixturePin(70), injected: "system()" }));
   assert.throws(() => p.validate({ schema: "fake", enrollment: {}, definition: {}, trustedRead: {}, build: {}, census: {} }));
 });
+function restoreNarrow(expression) {
+  if (expression.startsWith('"')) return JSON.parse(expression);
+  const literals = [...expression.matchAll(/result\.append\(("(?:\\.|[^"\\])*")\);/g)].map(match => match[1]);
+  assert(literals.length > 1); for (const literal of literals) { assert(Buffer.byteLength(literal, "utf8") <= 4096); const decoded = JSON.parse(literal); assert(Buffer.byteLength(decoded, "utf8") <= 4096); assert(!/[\ud800-\udbff]$/.test(decoded)); assert(!/^[\udc00-\udfff]/.test(decoded)); }
+  return literals.map(literal => JSON.parse(literal)).join("");
+}
+check("long C++ narrow strings use bounded append tokens and preserve exact UTF-8/hash", () => {
+  for (const value of ["small\\quoted\"\nКириллица🙂", "a".repeat(4094), "a".repeat(4095), "a".repeat(4093) + "🙂" + "я".repeat(5000), ('\\\"\t\nТекст🙂').repeat(6000)]) {
+    const expression = p.narrowString(value), restored = restoreNarrow(expression);
+    assert.equal(restored, value); assert.equal(c.sha(Buffer.from(restored)).toString("hex"), c.sha(Buffer.from(value)).toString("hex"));
+    if (Buffer.byteLength(JSON.stringify(value)) <= 4096) assert.equal(expression, JSON.stringify(value));
+    else { assert(expression.startsWith("[](){std::string result;\n")); assert(expression.includes("result.reserve(" + Buffer.byteLength(value) + ")")); }
+  }
+});
 check("launch locator is a reviewed ordinary Windows path; canonical volume pins stay separate", () => {
   assert.equal(p.ordinaryLaunchLocator("C:/Program Files (x86)/Build Tools/MSBuild.exe"), "C:\\Program Files (x86)\\Build Tools\\MSBuild.exe");
   for (const rejected of [fixturePin(80).canonicalPath, "\\\\server\\share\\MSBuild.exe", "MSBuild.exe", "C:MSBuild.exe", "C:\\tools\\..\\other.exe", "C:\\tools\\x\n.exe"]) assert.throws(() => p.ordinaryLaunchLocator(rejected), /ordinary_launch_locator_required/);
@@ -66,6 +80,7 @@ check("full typed header generator selects the native shared policy without medi
 check("pure programs use original named source generators without AE/native factories", () => {
   const result = collect.purePrograms(path.resolve(__dirname, "../.."), { schema: "ae-agent.owned-read-fixed-program.v1", rootName: "FIXTURE_EXPECTATION", compName: "FIXTURE_EXPECTATION", sourceProjectFile: "C:\\fixture\\source.aep", snapshotProjectFiles: ["C:\\fixture\\first.aep", "C:\\fixture\\second.aep"] });
   assert.equal(result.authority, false); assert.equal(result.nativeFactories, 0); assert(result.projectScript.includes("owned_read_current_pair_absent")); assert.equal(c.sha(Buffer.from(result.projectScript)).toString("hex"), result.projectScriptHash); assert(result.functionRows.some(row => row.name === "ownedTrustedReadProjectScript"));
+  const restored = restoreNarrow(p.narrowString(result.projectScript)); assert.equal(restored, result.projectScript); assert.equal(c.sha(Buffer.from(restored)).toString("hex"), result.projectScriptHash);
 });
 check("transport requires pinned JSON with exact credential and never a JS module", () => {
   const parent = path.resolve(__dirname, "../../.codex-runtime/shared-queue-build-tests"); fs.mkdirSync(parent, { recursive: true }); const scratch = fs.mkdtempSync(path.join(parent, "transport-"));

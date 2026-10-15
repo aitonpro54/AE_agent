@@ -3,7 +3,23 @@ const { fail, hex, u64, pin, MARKER } = require("./codec"), path = require("node
 const ns = "local_session::", tr = ns + "trusted_read::", pr = ns + "production::";
 function exact(value, allowed, required = allowed) { if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(key => !allowed.includes(key)) || required.some(key => !Object.hasOwn(value, key))) fail("production_profile_exact_fields_required"); }
 function text(value) { if (typeof value !== "string" || value.includes("\0") || value.length > 1048576) fail("production_profile_text_required"); return JSON.stringify(value).replace(/\\u([a-f0-9]{4})/gi, "\\u$1"); }
-const str = value => text(value), wide = value => "L" + text(value);
+function narrowString(value) {
+  const quoted = text(value), maximum = 4096;
+  if (Buffer.byteLength(quoted, "utf8") <= maximum) return quoted;
+  const chunks = []; let chunk = "", sourceBytes = 0;
+  // Iterate code points, keeping surrogate pairs together. Bound the escaped
+  // UTF-8 literal token as well as its payload, rather than joining adjacent
+  // literals that MSVC could treat as one oversized constant.
+  for (const character of value) {
+    if (character.length === 1 && character.charCodeAt(0) >= 0xd800 && character.charCodeAt(0) <= 0xdfff) fail("production_narrow_string_unpaired_surrogate");
+    const width = Buffer.byteLength(text(character), "utf8") - 2;
+    if (chunk && sourceBytes + width > maximum - 2) { chunks.push(chunk); chunk = ""; sourceBytes = 0; }
+    chunk += character; sourceBytes += width;
+  }
+  if (chunk) chunks.push(chunk);
+  return "[](){std::string result;\nresult.reserve(" + Buffer.byteLength(value, "utf8") + ");\n" + chunks.map(part => "result.append(" + text(part) + ");\n").join("") + "return result;}()";
+}
+const str = narrowString, wide = value => "L" + text(value);
 function ordinaryLaunchLocator(value) {
   if (typeof value !== "string" || !/^[a-z]:[\\/]/i.test(value) || /[\x00-\x1f\x7f]/.test(value) || value.replaceAll("/", "\\").split("\\").some(part => part === "." || part === "..")) fail("production_ordinary_launch_locator_required");
   return path.win32.normalize(value);
@@ -66,4 +82,4 @@ function generate(document, anchor = null, generatedHash = "0".repeat(64)) {
   const production = '#pragma once\n#include "local_session_installation_pins.h"\nnamespace local_session_production_reviewed {\n' + MARKER + generatedHash + '";\ninline const local_session::production::Definition kDefinition=[](){local_session::production::Definition p;static_cast<local_session::production::StaticDefinition&>(p)=local_session_reviewed::kSetupDefinition;' + (anchor ? "p.anchor=" + objectPin(anchor) + ";" : "") + "p.generatedBuildInputsHash=local_session::production::DecodeGeneratedBuildInputsHash(kExpectedGeneratedBuildInputsHashHex);return p;}();\n}\n";
   return { "local_session_production_artifact_pins.h": production, "local_session_installation_pins.h": installation, "local_session_trusted_read_pins.h": trusted };
 }
-module.exports = { validate, generate, objectPin, file, ordinaryLaunchLocator };
+module.exports = { validate, generate, objectPin, file, ordinaryLaunchLocator, narrowString };
