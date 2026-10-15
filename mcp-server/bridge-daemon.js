@@ -21,6 +21,7 @@ const trustedReadDaemon={role:null,target:null,cep:null,server:null,transport:nu
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const planCommandContext = new AsyncLocalStorage();
+const titleRecoveryCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
 const ownedExecutionRunContext = new AsyncLocalStorage();
 const ownedAmeContexts=new WeakMap(),ownedAmePreparations=new WeakMap(),ownedAmeAuthorizations=new WeakMap();
@@ -288,6 +289,14 @@ const titleExportExecutor=titleExport.createExecutor({
   readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body))),
   writeNative:(body,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(body,timeout)),
   persist:value=>{const context=planCommandContext.getStore();if(!context?.item || context.item.tool!==titleExport.TOOL)throw Error("title_export_run_record_required");context.item.exportSnapshots=JSON.parse(JSON.stringify(value));context.persist();}
+});
+// Synchronous selector validation arms the mandatory enqueue guard before HTTP
+// startup, including reconnect-triggered placeholder/protection background reads.
+const titleExportRecovery=titleExportExecutor.createRecovery({
+  root:LOG_DIR,loadRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),wrap:wrapExtendScriptBody,
+  readActor:()=>panelControlService.maintenanceTarget(),
+  readNative:(body,scope)=>titleRecoveryCommandContext.run(scope,()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000))),
+  commandSettled:id=>["completed","failed","expired_before_delivery"].includes(completedResults.get(id)?.lifecycleState)
 });
 function assertAmeTitleContext(context, binding) {
   currentProposalState.assertCurrent(context && context.record);
@@ -1201,6 +1210,7 @@ function getBridgeStatus() {
     panelConnected: now - lastPanelSeenAt < 15000,
     panelBootstrap: panelBootstrapService.snapshot(),
     autonomousSession: autonomousSession.publicStatus(),
+    titleExportRecovery: titleExportRecovery.status(),
     projectLifecycle: lifecycle.diagnostics(),
     lastPanelSeenAt,
     lastPanelInfo,
@@ -5024,6 +5034,7 @@ function drainWaitingPanels() {
 }
 
 function enqueueAeCommand(script, timeoutMs) {
+  try{titleExportRecovery.assertNative(titleRecoveryCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
   try{ownedRuntimeService.assertCommandTicket();}catch(error){return Promise.reject(error);}
   if (panelBootstrapService.isBusy() && !panelBootstrapReadContext.getStore()) {
     return Promise.reject(Object.assign(new Error("Panel bootstrap admission is active; retry after its reconciliation."), {code:"panel_bootstrap_busy",phase:"before_delivery"}));
@@ -5052,6 +5063,8 @@ function enqueueAeCommand(script, timeoutMs) {
       phase: null,
       settled: false
     };
+    const titleRecoveryScope=titleRecoveryCommandContext.getStore();
+    if(titleRecoveryScope)titleExportRecovery.queued(titleRecoveryScope,id);
     const lifecycleScope = lifecycleCommandContext.getStore();
     const recoveryRead=generatedRecoveryReadContext.getStore();
     if(recoveryRead){
@@ -5086,6 +5099,7 @@ function enqueueAeCommand(script, timeoutMs) {
       lifecycleState: command.state,
       timeoutMs,
       expiresAt: new Date(command.expiresAt).toISOString(),
+      scriptSha25664: crypto.createHash("sha256").update(script,"utf8").digest("hex"),
       script
     });
     drainWaitingPanels();
@@ -14293,6 +14307,7 @@ const tools = [
   ...projectSave.createToolDefinitions(),
   ...nativeRenderVariant.createToolDefinitions(),
   titleExport.toolDefinition(),
+  titleExport.recoveryToolDefinition(),
   ameTransport.tool,
   amePresets.listAmePresetsTool,
   ameRunning.tool,
@@ -14664,6 +14679,10 @@ async function callTool(name, args, executionContext) {
     const result=await titleExportExecutor.execute(args,executionContext && executionContext.titleExportAuthorization);
     if(result.ok)result.authorization={runId:currentProposalState.current.executionId,proposalId:currentProposalState.current.actionId};
     return toolResult(result,!result.ok);
+  }
+  if(name===titleExport.RECOVER){
+    if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");
+    const result=await titleExportRecovery.recover(args);return toolResult(result,!result.ok);
   }
   if (ameTitleJobs.tools.some(tool => tool.name === name)) {
     const result = await ameTitleExecutor.execute(name, args, executionContext && executionContext.ameTitleAuthorization);

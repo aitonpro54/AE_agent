@@ -57,29 +57,37 @@ matte consumers; stateHash `0114062a5330e3b93b81acda41d8b3ed240c809d1c728c2cc3c5
 контракт, точные targets и файлы, idempotency и неизвестные доставленные эффекты.
 Нельзя объявить выполнение этих шагов по одному offline тесту или этому плану.
 
-## Подготовка snapshots и собственных AME items — 15.10
+## Фактический export snapshots — 15.10
 
 Исходный каталог:
 `C:\Проекты 21\2026.10.12 - Русский оркестр. Ломаем шаблоны (Мунивер и ШМПушка, Былина)\titr_all folder`.
 Source `titr_all.aep`: SHA256
 `01a5985b82cb207eedbec64bdd727187990c9e25bf2c1c8bcb73c1267c50b34a`,
-revision12968664, dirty=false. Собственный native comp GUID:
+revision12968664, dirty=false перед export. Собственный native comp GUID:
 `000111ef-0000-0000-0000-000000000000`.
 
-1. Protected `save_project_as` в отсутствующий
-   `titr_01_ame_product_20261015.aep`, label `titr-01-ame-product`.
-   Proposal `act_3493563fecc24f5ab00219914e929e5b`, dry-run
-   `69ea47d4-adf1-4285-970a-e7d5b8c31eca`: PASS, executed0.
-2. В открытой копии после свежего identity read выключить только TITR_01 и
-   включить только TITR_02 через `set_layer_metadata`, protected typed plan.
-   Остальные слои/matte/стили неизменны. Затем terminal `save_project_as` в
-   отсутствующий `titr_02_ame_product_20261015.aep`, с фактическими новыми
-   revision/dirty/file hash; заранее их не подставлять.
-3. После каждого сохранения получить фактические snapshot hash и comp GUID;
-   GUID/ID исходника не считать автоматически доказанными для копии.
-4. Восстановить исходный открытый проект через protected `open_project`,
-   проверив original hash выше и clean последнего snapshot. Его disk file
-   не переписывается; текущий source checkpoint обеспечивает lifecycle runner.
+Один server-proposed typed `export_two_title_snapshots` заменяет прежнюю
+подготовку через generic save/open. Proposal `act_7fe98062e5754aeda87b01cbfec54dde`,
+dry-run `cc153074-94a5-44ea-a653-ef0ce5532142`: PASS. Реальный run
+`b9377a63-3b57-4dfc-8f6d-7116c2092488`, native command
+`9353601e-152c-4ed3-9b53-dc5022fdb81c` отправлен 17:29:03Z.
+Сервер завершил ожидание через120s; CEP получил callback примерно через133s
+и ответ POST был отвергнут `terminal_result_conflict`. Original run остаётся
+`timed_out_after_submit`, mutation UNKNOWN. Повторный export запрещён.
+Предположение пользователя о предупреждении отсутствующего шрифта согласуется
+с задержкой reopen, но пока не подтверждено. Шрифты и содержимое не меняются.
+
+Оба snapshots существуют; filesystem read 17:42Z:
+
+| Snapshot | Bytes | SHA256 |
+| --- | --- | --- |
+| `titr_01_ame_product_20261015.aep` | 32001325 | `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f` |
+| `titr_02_ame_product_20261015.aep` | 32002424 | `07ec31721b621ddff67f3a25c1deb882ac6c1713a15b877610b9995de4c59a80` |
+
+Source и checkpoint имеют одинаковый исходный SHA и32000676bytes; exact pins
+не изменились. Наличие snapshots само по себе не подтверждает их native flags/GUID
+и не выдаёт private saved-source proof. AE atomic save заменил inode пустых
+CREATE_NEW reservations; recovery связывает exact paths и новые стабильные pins.
 
 Оба output leaf `titr_01.mov` / `titr_02.mov` проверены отсутствующими в
 `logs/generated-renders`. Job intents используют разные snapshot files,
@@ -94,20 +102,23 @@ nonce `73c7c6d4-f53a-4dc9-998b-1cf0ae117556` остался timeout при exact
 reconciliation; не переотправлялся. `getDLItemsAtRoot` — отдельное перечисление
 источников AEP, не проверка добавленного item. Новый write path должен связывать
 точный saved snapshot/его native comp GUID и проверять собственный wrapper.
-Сейчас enqueue0/start0/save0. Generic SaveAs/open сохраняет private manual CEP
-authority. Подготовленная выше последовательность описывает цели и сохранность;
-она заменяется одним новым typed export step, не исполнением generic save в обход gate.
+Сейчас enqueue0/start0. Generic SaveAs/open сохраняет private manual CEP authority.
 
-## Текущий source checkpoint — подготовлен, ещё не установлен
+## Узкое восстановление уже выполненной операции
 
-`export_two_title_snapshots` принимает exact current source SHA/revision/stateHash,
-comp ID и ровно TITR_01/TITR_02 с их IDs и новыми leaf names выше. Runtime bindings
-и caller JSX запрещены. Successful dry-run, current server proposal/autonomy и
-существующий runner checkpoint обязательны. Generic lifecycle контракт не меняется.
-CREATE_NEW reservations и фактические фазы сохраняются в существующем plan record;
-нет нового ledger, catch-restore или удаления UNKNOWN. Source SHA/file identity
-проверяет сервер, native fixed program — path/dirty/revision/length/mtime и baseline.
-Сохраняются два native GUID и hash snapshots; после restore выполняется read-back.
+До любого обычного native read требуется захватить сохранённый wrapper result:
+новое чтение перезаписывает `__codexMcpBridgeResult`. После restart CEP автоматически
+вызывает `/placeholder/protection` и `placeholder-state-read`; обычный restart
+без заранее установленного guard поэтому небезопасен для recovery.
+
+Утверждённый scope: fixed startup selector выбирает только integrity-checked
+original run/command; guard до HTTP блокирует другие native dispatch. Fixed capture
+выполняется один раз; его отдельное durable evidence сохраняется до fresh reads.
+Только exact native schema/restored/two paths/GUID/flags, source/checkpoint pins,
+stable snapshots и свежий source baseline совместно восстанавливают private proof.
+Selector и client JSON не являются authority. Original failure неизменен;
+recovered evidence имеет `replayAllowed:false`. Snapshot reopen, save и replay
+не входят в recovery. Ошибка захвата не разрешает повтор.
 
 Product AME context теперь отделён от private experimental/manual ingress до
 dispatch. Enqueue принимает privately retained saved-source proof от этого export
@@ -117,11 +128,10 @@ immediate independent status. START проверяет два own items и once 
 не всю mixed queue. Source proof находится в памяти текущего daemon; рестарт
 после snapshots требует отдельной фактической сверки, не восстановления из client JSON.
 
-Focused offline: 25 AME checks и 20 snapshot checks PASS; fixed native program ES3.
-Save/open/AME runtime новый source пока не проверен. Последний живой status:
-connected=true, pending0/inflight0/editnull, daemon started16:13:30.812Z.
-Exact sources nonce выше на16:41:53Z всё ещё timeout/reconciled=true; прежний send
-не повторялся. Retained sender `$.global.aeAgentAMETitleSendV1` в AE удерживает
-исходный callback; `nativeSend` в `mcp-server/ame-title-jobs.js` может отказать
-следующему send с `previous_request_unresolved`. Это оставшийся конкретный шаг
-сверки для следующего исполнителя; состояние не стирать и census не переотправлять.
+Focused snapshot comparator:30PASS, ES3/syntax/diff/rules PASS на `69b5244`.
+Durable event suffix 17:42Z подтверждает, что последняя native команда всё ещё
+`9353601e…`; после неё AE native reads не отправлялись. Supported panel state
+сохраняет original lease connectionId/generation. Текущие AE PID25132 и AME PID19932
+запущены до исходной операции; это continuity evidence, а не поля original run.
+Прежний source-discovery timeout сохраняется; независимый queue send разрешён
+существующим разделением readonly sender и mutation fence. Census не повторять.

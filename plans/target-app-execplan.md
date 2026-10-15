@@ -26,7 +26,11 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 - `b119b5c`: autonomous AME context/dispatch в существующем runner;
   отдельный typed export_two_title_snapshots с source checkpoint, двумя новыми
   файлами, фиксированными двумя переключениями и возвратом исходника. Offline
-  проверки и bounded source review GO; установка, live dry-run и выполнение pending.
+  проверки и bounded source review GO. Установлено; live export дошёл до двух
+  snapshot saves, затем server timeout при source reopen; результат требует recovery.
+- `69b5244`: native primitive comparator исправлен; actual dry-run PASS.
+  Run `b9377a63` UNKNOWN: два snapshot files существуют, source/checkpoint неизменны,
+  callback пришёл позже120s и был отвергнут. Enqueue0/start0; export не повторять.
 - AME source discovery nonce сохранён timeout без повторной отправки. Это
   getDLItemsAtRoot, а не подтверждение приёма собственного задания. Для enqueue
   требуется actual saved snapshot/native GUID и реальная проверка own wrapper.
@@ -52,6 +56,12 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   допущенного open после deadline сохраняет силу при успешном read-back.
 - Частичный/неизвестный исход сохраняется в original plan/command record и
   reservations. Нет слепого replay, catch-restore или принудительного discard.
+- Узкий recovery-read восстанавливает прежний receipt, сохраняя original UNKNOWN.
+  Startup selector не выдаёт authority; native guard до HTTP защищает capture от
+  фонового placeholder-state-read. После durable capture обязательны exact native
+  joins, stable files и fresh source baseline до private saved-source adoption.
+  Original lease generation/connectionId и current panel/process continuity
+  сверяются; отсутствующие historical PID/epoch поля не выдумываются.
 - AME использует существующие private executor capabilities, shared-queue issuer
   и once reservations; выбор product/experimental сделан до отправки.
 - Разовый Astra override завершается этим source milestone; далее задачу ведёт
@@ -94,16 +104,19 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   Root cause нагрузки: observation/completion/passive tickets вызывали mutation
   admission. Теперь admission только intake/execution; actual service35PASS,
   включая no-admission reads на health/result и pre-drain intake continuation.
+- Native comparator30PASS, ES3/syntax/diff/rules PASS (`69b5244`). Dry-run
+  `cc153074` PASS; run `b9377a63` command `9353601e` submitted17:29:03Z,
+  timed_out_after_submit17:31:02Z; CEP callback17:31:16Z/HTTP409. Source/checkpoint
+  SHA совпадают; snapshots32001325/32002424bytes. Native contents ещё не приняты.
+  Durable event suffix17:42Z: более новых native dispatch нет. Supported panel
+  state совпадает с original lease; current AE/AME process starts предшествуют run.
 
 ## Следующий шаг
 
-1. Завершить исправление сравнения native primitives в snapshot executor:
-   свежий read-only dry-run показал одинаковые строки, затем одинаковые boolean,
-   отвергнутые native strict equality. Исходник clean, сохранений пока нет.
-2. Применить исправление и выполнить обязательный dry-run актуального плана;
-   при успехе сразу перейти к выполнению в автономной сессии.
-3. Создать два snapshots и сверить source restoration; при UNKNOWN остановить
-   отправки и сверить только исходную операцию.
+1. Установить узкий recovery с заранее armed native guard; первым native действием
+   захватить прежний wrapper result, durable сохранить и выполнить exact joins.
+2. Подтвердить source restoration и восстановить private saved-source proof;
+   original UNKNOWN сохранить. Повторные save/open/export не выполнять.
 4. Enqueue первый own item → immediate wrapper read; затем второй и его read.
 5. START общей очереди один раз; записать фактический outcome, без video proof.
 

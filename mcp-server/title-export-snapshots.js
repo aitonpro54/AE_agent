@@ -2,6 +2,7 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
 const variants=require("./native-render-variant"),save=require("./project-save"),{stableStringify,sha256Payload}=require("./m100-protocol");
 const TOOL="export_two_title_snapshots",SCHEMA="ae-agent-title-export-snapshots.v1";
+const RECOVER="recover_title_export_snapshots",RECOVERY_SCHEMA="ae-agent-title-export-recovery.v1";
 const hash=value=>crypto.createHash("sha256").update(Buffer.isBuffer(value)?value:stableStringify(value)).digest("hex");
 const same=(a,b)=>String(a).replace(/\\/g,"/").toLowerCase()===String(b).replace(/\\/g,"/").toLowerCase();
 function fail(code){throw Object.assign(Error(code),{code});}
@@ -169,7 +170,134 @@ function createExecutor(deps){
     if(!saved || saved.sha25664!==selector.sourceSha25664 || saved.native.guid!==selector.sourceGuid)fail("title_export_saved_source_binding_required");
     const {native,...pin}=saved;unchanged(pin);return true;
   }
-  return {authorize,preflight,execute,assertSavedSource};
+  return {authorize,preflight,execute,assertSavedSource,createRecovery:options=>createRecovery({...options,adopt:snapshots=>{
+    for(const pin of snapshots)savedSources.set(path.resolve(pin.path).toLowerCase(),JSON.parse(JSON.stringify(pin)));
+  }})};
+}
+// One startup-selected, read-only reconciliation. A selector never supplies
+// native data or execution rights, and the original run record is immutable.
+function createRecovery(deps){
+  const exact=(v,keys)=>v&&typeof v==="object"&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.prototype.hasOwnProperty.call(v,k));
+  const marker=path.join(deps.root,"title-export-recovery-arm.json");
+  let selector=null,record=null,args=null,step=null,command=null,baseline=null,phase="unarmed",held=false,current=null,result=null,storedCapture=null;
+  const issued=[];
+  const captureBody='return {raw:typeof __codexMcpBridgeResult==="string"?__codexMcpBridgeResult:null};';
+  const evidenceFile=kind=>path.join(deps.root,"evidence","title-export-recovery",selector.runId+"."+kind+".json");
+  function consume(){if(fs.existsSync(marker)){if(stableStringify(JSON.parse(fs.readFileSync(marker,"utf8")))!==stableStringify(selector))fail("title_recovery_selector_changed");fs.renameSync(marker,marker+".consumed-"+selector.runId);}}
+  function stored(kind){
+    const file=evidenceFile(kind);if(!fs.existsSync(file))return null;
+    require("./plan-run-records").containedFile(deps.root,file);
+    if(fs.lstatSync(file).isSymbolicLink()||fs.statSync(file).size>4*1024*1024)fail("title_recovery_evidence_invalid");
+    const e=JSON.parse(fs.readFileSync(file,"utf8"));if(e.schema!==RECOVERY_SCHEMA||e.sha256!==hash(e.value))fail("title_recovery_evidence_invalid");return e.value;
+  }
+  function persist(kind,value){
+    const file=evidenceFile(kind);fs.mkdirSync(path.dirname(file),{recursive:true});
+    require("./plan-run-records").containedFile(deps.root,path.dirname(file));
+    if(kind==="receipt"){const previous=stored(kind);value.failures=previous?.failures||[];if(value.ok===false&&value.code)value.failures=value.failures.concat({code:value.code,at:new Date().toISOString()});}
+    const temporary=kind==="receipt"?file+"."+crypto.randomUUID()+".tmp":file;
+    const fd=fs.openSync(temporary,"wx");try{fs.writeFileSync(fd,JSON.stringify({schema:RECOVERY_SCHEMA,sha256:hash(value),value}),"utf8");fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+    if(kind==="receipt")fs.renameSync(temporary,file);
+    return file;
+  }
+  function sourcePins(){unchanged(step.exportSnapshots.source);unchanged(step.exportSnapshots.checkpoint);}
+  function assertSuffix(){
+    const file=path.join(deps.root,"bridge-events.jsonl"),stat=fs.statSync(file);
+    if(stat.size>128*1024*1024)fail("title_recovery_journal_budget");
+    const events=fs.readFileSync(file,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)),rows=events.filter(e=>e.type==="ae_command_queued");
+    const originals=rows.filter(e=>e.details?.id===selector.commandId);
+    if(originals.length!==1||originals[0].details.runId!==selector.runId||originals[0].runtime?.sourceSha256!==record.run.provenance.runtime.sourceSha256)fail("title_recovery_original_command_journal_required");
+    const later=rows.slice(rows.indexOf(originals[0])+1).map(e=>e.details?.id);
+    if(stableStringify(later)!==stableStringify(issued))fail("title_recovery_later_native_command");
+    for(let i=0;i<later.length;i++)if(rows[rows.indexOf(originals[0])+1+i].details.scriptSha25664!==crypto.createHash("sha256").update(deps.wrap(i===0?captureBody:readScript(args)),"utf8").digest("hex"))fail("title_recovery_foreign_native_script");
+  }
+  function actor(value){
+    const s=value?.state,owner=command.leaseOwner;
+    if(!s||s.bridgeConnection?.panelConnectionId!==owner.panelConnectionId||String(s.panelGeneration)!==owner.panelGeneration||
+      typeof s.panelInstanceId!=="string"||!s.panelInstanceId||!Number.isSafeInteger(s.panelLifecycleEpoch)||s.nativeControlIdle!==true||
+      s.activeAction!==null||s.recoveryTransport||s.actionStorage!=="ready")fail("title_recovery_panel_actor_changed");
+    return {panelConnectionId:owner.panelConnectionId,panelGeneration:String(s.panelGeneration),panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch};
+  }
+  function flags(rows,slot){
+    const expected=args.variants.map((v,i)=>({id:v.layerId,name:v.name,enabled:slot===null?i===0:i===slot})).sort((a,b)=>a.id-b.id);
+    if(!Array.isArray(rows)||rows.length!==2||rows.some(r=>!exact(r,["id","name","enabled"]))||stableStringify(rows.slice().sort((a,b)=>a.id-b.id))!==stableStringify(expected))fail("title_recovery_native_flags_changed");
+  }
+  function nativeResult(raw){
+    if(typeof raw!=="string"||Buffer.byteLength(raw)>1024*1024)fail("title_recovery_global_invalid");
+    let wrapper;try{wrapper=JSON.parse(raw);}catch(_){fail("title_recovery_global_invalid");}
+    const n=wrapper?.result,targets=step.exportSnapshots.targets;
+    if(!exact(wrapper,["ok","result"])||wrapper.ok!==true||!exact(n,["schema","ok","phase","saved","restored"])||n.schema!==SCHEMA||n.ok!==true||n.phase!=="restored"||!Array.isArray(n.saved)||n.saved.length!==2)fail("title_recovery_global_not_restored");
+    for(let i=0;i<2;i++){const row=n.saved[i];if(!exact(row,["path","revision","dirty","guid","flags"])||row.path!==targets[i]||row.dirty!==false||!Number.isSafeInteger(row.revision)||row.revision<0||!/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/.test(row.guid||""))fail("title_recovery_native_saved_invalid");flags(row.flags,i);}
+    const r=n.restored;if(!exact(r,["path","revision","dirty","flags"])||r.path!==args.expectedProjectFile||r.dirty!==false||!Number.isSafeInteger(r.revision)||r.revision<0)fail("title_recovery_native_restore_invalid");flags(r.flags,null);return n;
+  }
+  if(fs.existsSync(marker)){
+    if(fs.lstatSync(marker).isSymbolicLink()||fs.statSync(marker).size>1024)fail("title_recovery_selector_invalid");
+    selector=JSON.parse(fs.readFileSync(marker,"utf8"));
+    if(!exact(selector,["schema","runId","commandId","runRecordSha256"])||selector.schema!==RECOVERY_SCHEMA||!require("./plan-run-records").ID.test(selector.runId)||!require("./plan-run-records").ID.test(selector.commandId)||!/^[a-f0-9]{64}$/.test(selector.runRecordSha256||""))fail("title_recovery_selector_invalid");
+    record=deps.loadRecord(selector.runId);
+    if(require("./plan-run-records").digest(JSON.stringify(record))!==selector.runRecordSha256||record.run?.dryRun!==false||record.run?.ok!==false||record.plan?.steps?.length!==1||record.run.steps?.length!==1||record.plan.steps[0].tool!==TOOL)fail("title_recovery_original_record_invalid");
+    step=record.run.steps[0];args=validateInput(record.plan.steps[0].args);
+    const mutations=step.commands?.filter(c=>c.role==="mutation")||[],saved=step.exportSnapshots;
+    command=mutations[0];baseline=step.commands?.find(c=>c.role==="readback"&&c.state==="completed"&&c.ok===true&&c.result?.snapshot)?.result.snapshot;
+    if(step.tool!==TOOL||step.index!==1||stableStringify(validateInput(step.args))!==stableStringify(args)||mutations.length!==1||command.id!==selector.commandId||command.executionId!==selector.runId||command.state!=="timed_out_after_submit"||command.timedOutFrom!=="submitted"||!command.leaseOwner?.panelConnectionId||!command.leaseOwner?.panelGeneration||
+      saved?.schema!==SCHEMA||saved.phase!=="native_submitted"||saved.automaticRetryAllowed!==false||saved.source?.sha25664!==args.expectedSourceSha25664||saved.source.path!==args.expectedProjectFile||saved.checkpoint?.sha25664!==args.expectedSourceSha25664||saved.checkpoint.path===saved.source.path||
+      stableStringify(saved.targets)!==stableStringify(args.variants.map(v=>path.join(path.dirname(args.expectedProjectFile),v.snapshotFileName)))||!Array.isArray(saved.reservations)||saved.reservations.length!==2||saved.reservations.some((p,i)=>p.path!==saved.targets[i]||p.bytes!==0)||
+      !baseline||baseline.projectFile!==args.expectedProjectFile||baseline.revision!==args.expectedRevision||variants.digest(baseline)!==args.expectedStateHash)fail("title_recovery_original_record_invalid");
+    storedCapture=stored("capture");const previous=stored("receipt");
+    if(storedCapture){
+      if(stableStringify(storedCapture.selector)!==stableStringify(selector)||!require("./plan-run-records").ID.test(storedCapture.commandId))fail("title_recovery_evidence_invalid");
+      const ids=previous?.issuedCommandIds||[storedCapture.commandId];
+      if(!Array.isArray(ids)||ids[0]!==storedCapture.commandId||new Set(ids).size!==ids.length||ids.some(id=>!require("./plan-run-records").ID.test(id)))fail("title_recovery_evidence_invalid");issued.push(...ids);
+    }
+    held=true;phase=storedCapture?"captured":fs.existsSync(evidenceFile("attempt"))?"previous_attempt_requires_review":"armed";
+    assertSuffix();
+    if(previous?.ok===true&&previous.phase==="verified"){consume();held=false;phase="previously_verified";result={...previous,adoptedInCurrentRuntime:false};}
+  }
+  async function native(body,label){
+    current={body,script:deps.wrap(body),label,used:false,id:null};
+    return deps.readNative(body,current);
+  }
+  function assertNative(scope,script){
+    if(!held)return;
+    if(!current||scope!==current||scope.used||scope.script!==script)fail("title_recovery_native_guard");
+    scope.used=true;
+  }
+  function queued(scope,id){if(!held||scope!==current||!scope.used||scope.id)fail("title_recovery_native_guard");scope.id=id;issued.push(id);if(scope.label==="source_verifier")persist("receipt",{ok:false,phase:"verifier_submitted",selector,issuedCommandIds:issued.slice(),replayAllowed:false});}
+  async function recover(raw){
+    if(!exact(raw,["runId","commandId"])||!selector||raw.runId!==selector.runId||raw.commandId!==selector.commandId)fail("title_recovery_exact_selector_required");
+    if(!["armed","captured"].includes(phase))return result||{ok:false,schema:RECOVERY_SCHEMA,phase,replayAllowed:false,guardHeld:held};
+    phase="checking";held=true;let captured=!!storedCapture,before=null;
+    try{
+      assertSuffix();sourcePins();before=actor(await deps.readActor());assertSuffix();
+      if(!storedCapture){
+        persist("attempt",{selector,actor:before,startedAt:new Date().toISOString(),replayAllowed:false});phase="capturing";
+        const response=await native(captureBody,"capture"),capture=response?.result||response;
+        const value={selector,actor:before,commandId:current.id,raw:capture?.raw,capturedAt:new Date().toISOString(),replayAllowed:false};
+        persist("capture",value);storedCapture=value;captured=true;
+      }
+      const captureFile=evidenceFile("capture");
+      if(stableStringify(before)!==stableStringify(storedCapture.actor))fail("title_recovery_panel_actor_changed");
+      assertSuffix();const n=nativeResult(storedCapture.raw);sourcePins();
+      const snapshots=step.exportSnapshots.targets.map((file,i)=>({...fileRecord(file),native:n.saved[i]}));
+      if(stableStringify(before)!==stableStringify(actor(await deps.readActor())))fail("title_recovery_panel_actor_changed");
+      phase="verifying";
+      const responseRead=await native(readScript(args),"source_verifier"),observed=responseRead?.result||responseRead,normalized={...observed?.snapshot,revision:baseline.revision};
+      if(observed?.dirty!==false||stableStringify(normalized)!==stableStringify(baseline))fail("title_recovery_source_readback_changed");
+      sourcePins();for(const pin of snapshots){const {native:unused,...file}=pin;unchanged(file);}
+      assertSuffix();if(stableStringify(before)!==stableStringify(actor(await deps.readActor())))fail("title_recovery_panel_actor_changed");assertSuffix();
+      const recovered={ok:true,schema:SCHEMA,source:step.exportSnapshots.source,checkpoint:step.exportSnapshots.checkpoint,snapshots,restored:{path:args.expectedProjectFile,dirty:false,revision:observed.snapshot.revision,stateHash:variants.digest(normalized)},automaticRetryAllowed:false};
+      verifyResult(recovered,args);
+      result={ok:true,schema:RECOVERY_SCHEMA,phase:"verified",originalRunId:selector.runId,originalCommandId:selector.commandId,originalRunRecordSha256:selector.runRecordSha256,captureFile,actor:before,issuedCommandIds:issued.slice(),recovered,replayAllowed:false};
+      persist("receipt",result);consume();deps.adopt(snapshots);phase="verified";held=false;current=null;return result;
+    }catch(error){
+      // Unknown native delivery retains the guard; a durable, settled capture
+      // permits ordinary reads after terminal failure, never adoption/replay.
+      const settled=!current?.id||deps.commandSettled(current.id);
+      result={ok:false,schema:RECOVERY_SCHEMA,phase:"failed",selector,code:error.code||error.message,captured,issuedCommandIds:issued.slice(),guardHeld:!settled,replayAllowed:false};
+      try{persist("receipt",result);if(!result.guardHeld)consume();}catch(_){result.guardHeld=true;}
+      phase=captured?"captured":"failed";held=result.guardHeld;current=null;return result;
+    }
+  }
+  return {recover,assertNative,queued,status:()=>({phase,guardHeld:held,runId:selector?.runId||null,replayAllowed:false})};
 }
 function verifyResult(result,raw){
   const a=validateInput(raw),files=a.variants.map(v=>path.join(path.dirname(a.expectedProjectFile),v.snapshotFileName));
@@ -181,4 +309,5 @@ function verifyResult(result,raw){
   return {ok:true,scope:"two_new_native_snapshots_and_restored_pinned_source",sourceSha25664:result.source.sha25664,snapshotSha25664:result.snapshots.map(s=>s.sha25664),mediaVerified:false};
 }
 function toolDefinition(){return {name:TOOL,description:"Create exactly two new saved TITR_01/TITR_02 export snapshots beside the pinned clean source, then restore that same source. One server-proposed autonomous step with checkpoint and read-back; no render or arbitrary save/open.",inputSchema:{type:"object",additionalProperties:false,required:["expectedProjectFile","expectedSourceSha25664","expectedRevision","expectedStateHash","compItemId","variants"],properties:{expectedProjectFile:{type:"string"},expectedSourceSha25664:{type:"string"},expectedRevision:{type:"integer"},expectedStateHash:{type:"string"},compItemId:{type:"integer"},variants:{type:"array",minItems:2,maxItems:2,items:{type:"object",additionalProperties:false,required:["layerId","name","snapshotFileName"],properties:{layerId:{type:"integer"},name:{type:"string"},snapshotFileName:{type:"string"}}}}}}};}
-module.exports={TOOL,SCHEMA,validateInput,inspectionArgs,fileRecord,createExecutor,toolDefinition,nativeExport,nativeSnapshotDifference,exportScript,readScript,compareScript,verifyResult};
+function recoveryToolDefinition(){return {name:RECOVER,description:"Read-only recovery of the one startup-armed timed-out two-title snapshot command. Captures its untouched native result before any other native read, verifies files/source, and never saves, opens or replays.",annotations:{readOnlyHint:true},inputSchema:{type:"object",additionalProperties:false,required:["runId","commandId"],properties:{runId:{type:"string"},commandId:{type:"string"}}}};}
+module.exports={TOOL,SCHEMA,RECOVER,RECOVERY_SCHEMA,validateInput,inspectionArgs,fileRecord,createExecutor,toolDefinition,recoveryToolDefinition,nativeExport,nativeSnapshotDifference,exportScript,readScript,compareScript,verifyResult};
