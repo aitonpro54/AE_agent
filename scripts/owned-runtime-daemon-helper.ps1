@@ -78,7 +78,7 @@ function ReleaseLocks{foreach($s in $script:locks){$s.Dispose()};$script:locks=@
 function Config {
  # Reuse the accepted R1 parser AST from its exact immutable source pin.
  $file=Join-Path $repo 'scripts/owned-runtime-win32-helper.ps1';$s=SafeFile $file
- try{if([OwnedDaemonKernel]::Hash($s) -cne 'eab199fb33e42debc9f1d266711bc0e610bef6bcb57f02d7ed4b92e0618c9f4e'){throw 'owned_supervisor_r1_parser_changed'}}finally{$s.Dispose()}
+ try{if([OwnedDaemonKernel]::Hash($s) -cne '945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4'){throw 'owned_supervisor_r1_parser_changed'}}finally{$s.Dispose()}
  $errors=$null;$tokens=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors);if($errors.Count){throw 'owned_supervisor_r1_parser_invalid'}
  $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'ParseCredentialConfig'},$true);Invoke-Expression $fn.Extent.Text
  $s=SafeFile (Join-Path $repo '.codex/config.toml');try{$reader=[IO.StreamReader]::new($s,[Text.UTF8Encoding]::new($false),$true,4096,$true);try{$text=$reader.ReadToEnd()}finally{$reader.Dispose()};$token=ParseCredentialConfig $text $repo;$values=@{};$selected=$false

@@ -6,6 +6,17 @@
 
 ## Progress
 
+- Пользователь явно одобрил разовый переход к обычному запуску с сохранением
+  старого UNKNOWN. Три старых MCP adapters завершены по удержанным observed process
+  objects; это не original daemon exit proof. Source f92e3b0 перенесён fast-forward,
+  product/auto-start включены; config inverse comparison, DPAPI backup,
+  foreign7 и old journal3 hashes PASS. Новый policy разрешает только daemon lifecycle.
+- Первый product ensure отказал до launch из-за stale pin control reader; старые
+  ссылки двух неизменённых reviewed scripts синхронизированы во всех4 consumers.
+  Actual-module/tamper matrix8 и PowerShell AST pin PASS, factories/HTTP/processes0.
+  Неудачная операция6542e734-1854-4fa3-8588-13366e72d547 сохранена; launch records
+  отсутствуют, replay не выполнялся. Следующий запуск — отдельная операция для
+  исправленного source, а не повтор старого finite runtime.
 - После полного Restart Codex пользователь подтвердил продолжение в чате
   01a13fa7-d879-7373-a9e1-4d17746b9b44. Свежий adapter выполнил ровно один ensure:
   `trusted_original_io_timeout_no_replay`, затем UNKNOWN/owned=true. Bridge3456
