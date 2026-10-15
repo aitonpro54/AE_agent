@@ -231,7 +231,7 @@ function nativeTitleJob(a) {
   } catch (error) { reply.error = String(error).substring(0, 2000); return done("native_read_or_submit_error"); }
 }
 
-// Fixed AE sender. It never launches AME; unknown delivery blocks another send.
+// Fixed AE sender. It never launches AME; unknown queue delivery blocks another send.
 // Reconciliation pumps the SAME retained BridgeTalk message and never resubmits.
 function nativeSend(a, messageBody) {
   function utf8Bytes(v, maximum) { var bytes = 0, i, c, low; for (i = 0; i < v.length; i++) { c = v.charCodeAt(i); if (c < 128) bytes++; else if (c < 2048) bytes += 2; else if (c >= 55296 && c <= 56319) { if (++i >= v.length) return -1; low = v.charCodeAt(i); if (low < 56320 || low > 57343) return -1; bytes += 4; } else if (c >= 56320 && c <= 57343) return -1; else bytes += 3; if (bytes > maximum) return -1; } return bytes; }
@@ -240,9 +240,21 @@ function nativeSend(a, messageBody) {
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
   if (typeof BridgeTalk !== "function" || typeof BridgeTalk.isRunning !== "function") return reply("bridgetalk_unsupported");
   try { if (!BridgeTalk.isRunning(a.targetSpecifier)) return reply("target_not_running"); } catch (_) { return reply("target_running_unknown"); }
-  if (a.reconcileRequestNonce) { if (!slot || slot.requestNonce !== a.reconcileRequestNonce || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || slot.operationBinding !== a.operationBinding) return reply("reconciliation_mismatch"); pump(a.timeoutMs); return reply(slot.callback || "unknown"); }
-  if (slot && (!slot.callback || slot.callback === "timeout")) return reply("previous_request_unresolved");
-  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, callback: null, body: null, message: message }; $.global.aeAgentAMETitleSendV1 = slot;
+  if (a.reconcileRequestNonce) {
+    if (slot && slot.requestNonce !== a.reconcileRequestNonce && slot.retainedSourceRead && slot.retainedSourceRead.requestNonce === a.reconcileRequestNonce) slot = slot.retainedSourceRead;
+    if (!slot || slot.requestNonce !== a.reconcileRequestNonce || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || slot.operationBinding !== a.operationBinding) return reply("reconciliation_mismatch");
+    // An exact server-built sources reconciliation also classifies a legacy slot.
+    // Keep that original message/callback; a late source reply has no queue effect.
+    if (a.operation === "sources") slot.operation = "sources";
+    pump(a.timeoutMs); return reply(slot.callback || "unknown");
+  }
+  var retainedSourceRead = slot ? slot.retainedSourceRead || null : null;
+  if (slot && (!slot.callback || slot.callback === "timeout")) {
+    if (slot.operation !== "sources" || a.operation === "sources" || slot.targetSpecifier !== a.targetSpecifier || slot.processBinding !== a.processBinding || retainedSourceRead) return reply("previous_request_unresolved");
+    retainedSourceRead = slot;
+  }
+  if (a.operation === "sources" && retainedSourceRead && (!retainedSourceRead.callback || retainedSourceRead.callback === "timeout")) return reply("previous_request_unresolved");
+  var message = new BridgeTalk(); slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, callback: null, body: null, message: message }; $.global.aeAgentAMETitleSendV1 = slot;
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
   message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
   message.onError = function(r) { slot.body = String(r.body || "").substring(0, 2000); slot.callback = "error"; }; message.onTimeout = function() { slot.callback = "timeout"; };

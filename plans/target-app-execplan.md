@@ -23,7 +23,7 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   исправлено завершение bridge при idle CEP longpoll. Live inspector PASS.
 - `b690fc6`: ordinary product AME read port; protected SaveAs dry-run доступен
   без manual execution authority. Exact proposal/dry-run PASS, save/enqueue/start0.
-- Текущий source milestone: autonomous AME context/dispatch в существующем runner;
+- `b119b5c`: autonomous AME context/dispatch в существующем runner;
   отдельный typed export_two_title_snapshots с source checkpoint, двумя новыми
   файлами, фиксированными двумя переключениями и возвратом исходника. Offline
   проверки и bounded source review GO; установка, live dry-run и выполнение pending.
@@ -51,6 +51,9 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
   и once reservations; выбор product/experimental сделан до отправки.
 - Разовый Astra override завершается этим source milestone; далее задачу ведёт
   Sol 6.1/XHigh, Astra — только штатная эскалация по existing routing rules.
+- Exact sources reconciliation классифицирует исходный read-only slot; sender
+  сохраняет его callback отдельно в том же объекте. Он не блокирует независимый
+  queue send; unknown enqueue/start/status сохраняет fence. Retained read только один.
 - Семь чужих WIP сохраняются. Push/PR, paid providers, Local/Ollama и frozen
   intake не входят в этот этап.
 
@@ -67,6 +70,8 @@ turn, тексты, comp/layer IDs, snapshot paths и исходный hash — 
 - Fixed snapshot program ES3, touched JS syntax и diff — PASS.
 - Bounded source review GO, check:rules PASS; новый source ещё не установлен.
   Offline fixtures не доказывают реальные SaveAs, AME enqueue или START.
+- Source-read fence: focused VM PASS (legacy exact classification, late callback,
+  original reconcile после enqueue, mutation UNKNOWN deny); ES3/syntax/diff/rules PASS.
 
 ## Следующий шаг
 
