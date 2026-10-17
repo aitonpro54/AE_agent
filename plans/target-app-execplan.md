@@ -7,6 +7,10 @@
 
 ## Текущая цель пользователя
 
+Новое поручение 17.10 после завершения reset: проверить добавление двух титров
+в AME без запуска рендера. Остановка до enqueue: новый snapshot export UNKNOWN,
+addDL0/START0. Данные и проверка — в linked product two-title workflow.
+
 17.10 создать штатный операторский сброс bridge для обычной новой product-сессии.
 Историю, UNKNOWN, checkpoints, idempotency и output/resource guards сохранить.
 Не восстанавливать старые задания, не удалять очереди, не запускать рендер.
@@ -16,6 +20,11 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Progress
 
+- 17.10: fresh bridge/AE/AME/source/preset/workArea preflight PASS. Новый snapshot
+  proposal/dry-run PASS; real run dad3dc19…/command f988d318… истёк на restore.
+  Resolve Fonts подтверждён и закрыт после deadline. Исходник восстановлен,
+  новые snapshots существуют, native flags/GUID не подтверждены; enqueue0/START0.
+  Reconcile incomplete/unknown; существующего adoption route нет, replay запрещён.
 - 17.10: приложения AE/AME и idle disconnected панель подтверждены. Bridge отсутствует;
   current указывает на отсутствующий прежний процесс. Штатные status/ensure дают
   native refusal; новых ENQUEUE/START не было. Готового clean reset не существовало.
@@ -105,14 +114,19 @@ Scoped ae_specialist реализовал инструмент; родитель
   Passive wait connected_idle и настоящий project read PASS
   (17.10 16:08:51 UTC, revision12968664). CLI status консервативен и сам по себе
   не доказывает execution admission. Очереди и рендер не тронуты.
+- Новая queue-проверка: dry-run ready, export real UNKNOWN, независимый source
+  read-back PASS; snapshot file hashes не заменяют native verification.
+  CU-блок только Resolve Fonts завершён, свой REPL reset; продуктовый код не менялся.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Текущий scope завершён: инструмент создан, review пройден, bridge в обычной сессии.
-Дальнейшие операции выполнять по штатным typed gates и новому поручению.
+Reset завершён; новая проверка добавления остановилась до enqueue на source proof.
+Для продолжения нужен отдельный scoped verifier existing snapshots с protected
+restoration и durable verification receipt; original UNKNOWN/noReplay сохранить.
+Не повторять export и не обходить gate через restart/raw/UI.
 Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
 
 ## Отложенные scope

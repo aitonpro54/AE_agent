@@ -2,6 +2,10 @@
 
 ## Текущая цель
 
+Поручение 17.10: проверить добавление TITR_01/TITR_02 в AME без запуска рендера.
+Текущая попытка остановилась до enqueue на новом snapshot export; addDL0/START0.
+Подробности и границы восстановления — в следующем разделе.
+
 Поручение 16.10: довести существующий адаптер и проверить одну автоматическую
 передачу с точным preset и полным диапазоном. Этап завершён: один actual addDL,
 независимый queued own-wrapper STATUS, START0. Нового export/save/open и GUI
@@ -15,6 +19,58 @@
 Без человека, Computer Use и проверки готового видео.»
 Это заменяет прежний критерий двух проверенных видео и finite/native whole-M
 приёмку как маршрут обычного product режима. Сами experimental receipts не меняются.
+
+## Проверка очереди 17.10: остановка до enqueue
+
+После штатного product reset bridge Connected, autonomy active, pending/inflight0,
+editSession=null. Свежие AE PID21876 / AME PID4704; AME26 build52 отвечает,
+batch stopped/isBatchRunning=false. Исходный `titr_all.aep` clean, revision12968664,
+SHA01a5985b…; native stateHash0114062a… и flags TITR_01=true/TITR_02=false совпали.
+Comp70127/GUID000111ef…: свежая workArea0..10.0333333333333, duration15.4.
+Preset FHD_HQ_alfa_nosound IDamep_bad667…/SHAc1b97e2f… подтверждён каталогом.
+
+Исторические snapshots не переотправлялись: их saved-source capability связана
+с прежним actor. Подготовлен новый isolated `export_two_title_snapshots` proposal
+`act_53393dae6fa548a3843684e38ec4599a`, dry-run
+`305d1e82-2024-433f-b2f1-d49db1ba3a07` PASS, autoEditSession/checkpoint включены.
+Новые destination отсутствовали до единственного запуска. Fixed export не пишет
+workArea; выбранный range связан с новым baseline как derivation invariant,
+а не выдан за отдельное native измерение каждого saved snapshot.
+
+Real run `dad3dc19-f4c6-44a4-a379-8f47ad404d34`, command
+`f988d318-c55b-4c77-ab21-451b21a7519f`: submitted16:34:30Z,
+timeout120s16:36:30Z; adapter вернул request timeout125s. На restore фактически
+наблюдался Resolve Fonts/ReservoirGrunge. Родитель закрыл только этот modal через
+установленный Computer Use, но уже после deadline; повторного export не было.
+UI read-back подтвердил отсутствие modal, свой node REPL сброшен.
+
+Созданы `titr_01_ame_product_20261017.aep` (32001325bytes,
+SHA4b76365617fc71a9aacdd753983c3f457efcd3841e867a154bab2be60b0a5834) и
+`titr_02_ame_product_20261017.aep` (32002424bytes,
+SHA7d9cca483cde05e08b164edd1914327aa2d8f9908b6eb9b7f70a7beaf918c540).
+Наличие файлов не подтверждает native flags/GUID и не выдаёт saved-source capability.
+
+Свежие get_project_info/inspect_title_variants подтвердили возврат к исходному AEP,
+revision/stateHash/flags без drift. Reconcile нового run: incomplete,
+mutationStatus=unknown, verification=insufficient/unsupported_or_unbound_target,
+replayAllowed=false. Pending/inflight0, editSession=null; в AME не отправлялись
+enqueue/START. Исторические UNKNOWN и очередь не менялись.
+
+Source diagnostic: поздний `/bridge/result` получает terminal_result_conflict и
+не сохраняет callback body; `retainStaleCommandResult` не вызывается. В текущем
+unarmed recovery нет verified receipt этого run. Обычные последующие native reads
+перезаписали общий result global, поэтому exact-tail startup capture больше
+не подходит; restart/recovery/reexport для обхода не выполнялись.
+
+Для продолжения нужен отдельный bounded verifier существующих owned snapshots:
+actual flags/GUID/workArea, protected restoration и отдельная verification receipt,
+с сохранением original UNKNOWN/noReplay. Это выявленный пробел текущего product
+flow, а не разрешение ослабить saved-source gate. Полезная отдельная профилактика —
+addressable retention authenticated late callback до terminal-conflict response.
+
+Evidence текущей попытки: ignored `.codex-runtime/ame-queue-20261017/`,
+`logs/evidence/plan-runs/dad3dc19-f4c6-44a4-a379-8f47ad404d34.json`.
+Production code не менялся, новые offline/native smokes не запускались.
 
 ## Диапазон следующих заданий: отмеченная рабочая область
 
