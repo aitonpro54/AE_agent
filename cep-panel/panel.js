@@ -133,6 +133,31 @@
     return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch};
   }
   function sameDeliveryActor(a,b) {return a.panelConnectionId===b.panelConnectionId && a.panelGeneration===b.panelGeneration && a.panelInstanceId===b.panelInstanceId && a.panelLifecycleEpoch===b.panelLifecycleEpoch;}
+  function acceptProductSessionResetActivation(activation) {
+    if(!activation || activation.schema!=="ae-agent.product-session-reset.v1.activation" || !/^[a-f0-9-]{36}$/.test(activation.generation) || !activation.actor || activation.actor.panelGeneration!=="reset-"+activation.generation || !activation.disposition || activation.disposition.replayAllowed!==false)return {accepted:false,transitioned:false};
+    var actor=deliveryActor(),resetActor=/^reset-/.test(actor.panelGeneration);
+    if(!resetActor) {
+      // Bootstrap 0 can adopt metadata only. The caller must run the ordinary
+      // connect path before any poll obtains a positive numeric generation.
+      if(panelConnectionGeneration===0 && actor.panelLifecycleEpoch===0 && running===false && physicalEvalScriptIdle()){productResetActivation=activation;return {accepted:true,transitioned:false,preconnect:true};}
+      if(!/^[1-9]\d*$/.test(actor.panelGeneration) || !Number.isSafeInteger(Number(actor.panelGeneration)))return {accepted:false,transitioned:false};
+      // A fresh ordinary connection may observe historical activation. It
+      // adopts the exact receipt without replaying preflight or rotating again.
+      productResetActivation=activation;return {accepted:true,transitioned:false};
+    }
+    if(actor.panelGeneration!=="reset-"+activation.generation || !sameDeliveryActor(actor,activation.actor) || !physicalEvalScriptIdle())return {accepted:false,transitioned:false};
+    var ordinaryGeneration=Date.now();
+    if(!Number.isSafeInteger(ordinaryGeneration) || ordinaryGeneration<=0)return {accepted:false,transitioned:false};
+    cancelResetPreflightRetry();if(pollTimer)clearTimeout(pollTimer);
+    // The immutable signed reset actor remains a fence witness. Normal
+    // delivery returns to the numeric reconnect contract in a fresh epoch.
+    panelConnectionGeneration=ordinaryGeneration;panelLifecycleEpoch+=1;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
+    currentPlanSyncInFlight=false;currentPlanSyncActiveReqId=0;currentPlanSyncActiveEpoch=0;
+    autonomousSessionState=null;renderAutonomousSession();productResetActivation=activation;
+    pollInFlight=false;running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);
+    return {accepted:true,transitioned:true};
+  }
   function cancelResetPreflightRetry() {
     if(resetPreflightRetry && resetPreflightRetry.timer!==null)clearTimeout(resetPreflightRetry.timer);
     resetPreflightRetry=null;
@@ -155,7 +180,7 @@
       cancelResetPreflightRetry();
       if(error || !response){setStatus("Reset preflight lookup failed; reconnect",false);return;}
       if(response.resetSession){beginProductSessionReset(response.resetSession);return;}
-      if(response.resetSessionActivation){productResetActivation=response.resetSessionActivation;running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);return;}
+      if(response.resetSessionActivation){var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(adoption.preconnect){connect(null,null,true);return;}if(!adoption.transitioned){running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);}return;}
       setStatus("Reset preflight authority unavailable",false);
     });
   }
@@ -186,7 +211,7 @@
         if(!sameDeliveryActor(actor,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finishKnown();return;}
         finishKnown();
         if(error || !response || response.status!=="reset_active"){setStatus("Reset preflight refused; read status",false);return;}
-        productResetActivation=response.activation;activeEvalScriptCommandId="";running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);
+        if(!acceptProductSessionResetActivation(response.activation).accepted)setStatus("Reset activation actor mismatch",false);
       });
     });
   }
@@ -4651,7 +4676,7 @@
       }
 
       if(response && response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
-      if(response && response.resetSessionActivation)productResetActivation=response.resetSessionActivation;
+      if(response && response.resetSessionActivation){var activationAdoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!activationAdoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(activationAdoption.transitioned)return;}
       if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
       if(!ownedPollSession && ownedCompletedDryRunPromised(response) && !beginOwnedPolling(response)) {
         if(onDone) onDone({isUnknown:true,code:"owned_original_session_deadline_invalid"});return;
@@ -4690,10 +4715,12 @@
   function connect(onDone, startup, resetChecked) {
     var resetState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     if(!startup && !resetChecked && resetState && resetState.reconciliationRequired){
+      var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
       request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){if(onDone)onDone({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
         if(error || !response || !response.resetSession && !response.resetSessionActivation){if(onDone)onDone(error||{code:"product_reset_session_required",message:"Historical action requires its original reconciliation or an explicit product reset."});return;}
         if(response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
-        productResetActivation=response.resetSessionActivation;connect(onDone,startup,true);
+        var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){if(onDone)onDone({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){if(onDone)onDone(null,{connected:true});return;}connect(onDone,startup,true);
       });return;
     }
     if(ownedPollingSession || ownedPollingClosed) {
@@ -4926,7 +4953,7 @@
     "bridge.connect":function(args,done,context) {
       var startup = initialAutomaticConnectDispatch;
       if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
-      if(running && !recoveryTransportScope) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
+      if(running && !recoveryTransportScope && !/^reset-/.test(String(panelConnectionGeneration))) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
       function normalConnect() { panelLifecycleIdle(function(error) {
         if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
         if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
@@ -4935,9 +4962,11 @@
       if(startup){normalConnect();return;}
       // Reset authority precedes the ordinary idle check: the exact old edit
       // owner is still preserved while the reset preflight is closed.
+      var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
       request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){done({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
         if(!error && response && response.resetSession){done(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
-        if(!error && response && response.resetSessionActivation)productResetActivation=response.resetSessionActivation;
+        if(!error && response && response.resetSessionActivation){var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){done({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){done(null,{connected:true});return;}}
         if(window.AEAgentPanelActions.state().reconciliationRequired){done({rejected:true,code:"product_reset_session_required"});return;}
         normalConnect();
       });

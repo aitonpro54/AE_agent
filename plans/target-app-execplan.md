@@ -32,6 +32,11 @@ Scoped ae_specialist реализовал инструмент; родитель
   Девять CEP assets поставлены с полной резервной копией и hash read-back.
   Live startup выявил transient busy без возобновления poll; узкая CEP correction
   добавляет один passive retry до native submission. Delta Ultra review GO.
+- `e9414ea`: startup correction поставлена. Обычный restart `64fa8b87…`
+  подтвердил exit root daemon (WAIT_OBJECT_0/code0), successor `31518ffd…`.
+  Fixed native read завершён, подписанная activation сохранена, reset_active.
+  Следующий poll отверг строковую reset generation. Ultra одобрил отдельный
+  numeric reconnect epoch после activation; specialist исправляет CEP.
 - 16.10: один actual AME addDL и независимый queued own-wrapper STATUS приняты.
   START0, generatedOutputVerified/appliedPresetVerified/mediaVerified=false.
   Диапазон следующего задания — свежая marked workArea exact pinned comp;
@@ -62,6 +67,9 @@ Scoped ae_specialist реализовал инструмент; родитель
   native канал; UNKNOWN внешних effects не выдаётся за completion.
 - Startup busy ожидается пассивно в том же actor/config; смена actor или physical
   unknown отменяет продолжение. Истёкший challenge обновляется одним fixed GET.
+- Signed activation хранит исходный reset actor неизменным. Точный reset actor
+  после activation и пустого physical tracker переходит в обычную numeric epoch;
+  автономные полномочия устанавливает штатный observePanel, validator не расширяется.
 - Operator disposition прекращает прежнюю control/edit ownership только в новой
   epoch; старые records/checkpoints не меняются. Exact signed old panel receipt
   IDs исключаются из общего availability/connect blocker, оставаясь UNKNOWN/noReplay.
@@ -84,16 +92,22 @@ Scoped ae_specialist реализовал инструмент; родитель
   До live применения эти проверки оставались изолированными; queue/render acceptance нет.
 - Startup delta: reset25, CEP48 actions/16 VM, rules/diff/JS syntax PASS; Ultra GO
   по SHA panel dbd6e955 и smoke 67b88ea9. Повторный reset не выполнялся.
-- Live reset/launch1 подтверждён, admission пока закрыт; очереди и рендер не тронуты.
+- Numeric epoch SourceSTOP: reset32 с настоящим autonomous manager, CEP48/16 VM,
+  rules/syntax/diff PASS; проверяются ACK loss, duplicates, actor/config drift
+  и physical unknown, настоящий bootstrap0/manual connect. Ultra source review GO
+  по SHA panel6e790905/smoke f82956bd; general numeric validator не изменён.
+- Live reset/launch1 и activation подтверждены; обычный poll пока не подключён.
+  CLI status консервативен и сам по себе не доказывает execution admission.
+  Очереди и рендер не тронуты.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Поставить проверенную CEP correction; штатно перезапустить daemon с настоящим
-exit receipt для очистки volatile challenge старой панели. Продолжить preflight
-уже созданной сессии (не повтор reset), затем минимальный read-back
+Поставить проверенную numeric reconnect correction и выполнить обычный graceful
+restart для согласования runtime source. Продолжить activated сессию (без нового preflight/reset), затем
+минимальный read-back
 подключения без queue/render acceptance.
 Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
 
