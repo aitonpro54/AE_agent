@@ -106,3 +106,17 @@ native callback неизвестен, tracker остаётся закрытым 
 Для activation нужна установленная CEP с новым reset protocol. Старый протокол
 не открывает admission новой сессии. После штатной поставки полной копии панели
 применяется узкий connect/reload порядок из [Tool-First workflow](tool-first-workflow.md).
+
+## Подтверждённое применение 17.10.2026
+
+Порученный reset выполнен один раз; подписанная activation сохранена. После
+исправления startup busy и перехода в numeric epoch панель подключена к обычной
+сессии: Connected/online, passive observer `connected_idle`, pending0/inflight0,
+activeEditSession=null, автономная typed-сессия active. Настоящий
+`get_project_info` успешно прочитал открытый проект. Повторного reset/preflight
+при поставке исправлений не было; обычные рестарты имеют held-handle exit proof.
+
+Внутреннее Ultra review финального source — GO. Изолированные проверки:
+reset32, supervisor91, service35, product lifecycle12, CEP48 actions/16 VM,
+rules/syntax/diff и PS AST/C# compile-only PASS. Эти offline-сценарии отдельно
+от фактического подключения; queue/render acceptance не выполнялась.

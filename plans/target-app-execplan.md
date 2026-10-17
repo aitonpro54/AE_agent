@@ -36,7 +36,12 @@ Scoped ae_specialist реализовал инструмент; родитель
   подтвердил exit root daemon (WAIT_OBJECT_0/code0), successor `31518ffd…`.
   Fixed native read завершён, подписанная activation сохранена, reset_active.
   Следующий poll отверг строковую reset generation. Ultra одобрил отдельный
-  numeric reconnect epoch после activation; specialist исправляет CEP.
+  numeric reconnect epoch после activation; исправление завершено и проверено.
+- `47c7344`: numeric reconnect correction поставлена (9 assets, hash match).
+  Restart `0e6e66c4…` подтвердил WAIT_OBJECT_0/code0, current `3ce32a47…`.
+  Панель Connected/online; connected_idle, pending0/inflight0/editSession=null,
+  autonomy active. Обычный typed get_project_info успешно прочитал текущий AEP.
+  Reset и native preflight не повторялись; пользовательский scope завершён.
 - 16.10: один actual AME addDL и независимый queued own-wrapper STATUS приняты.
   START0, generatedOutputVerified/appliedPresetVerified/mediaVerified=false.
   Диапазон следующего задания — свежая marked workArea exact pinned comp;
@@ -96,19 +101,18 @@ Scoped ae_specialist реализовал инструмент; родитель
   rules/syntax/diff PASS; проверяются ACK loss, duplicates, actor/config drift
   и physical unknown, настоящий bootstrap0/manual connect. Ultra source review GO
   по SHA panel6e790905/smoke f82956bd; general numeric validator не изменён.
-- Live reset/launch1 и activation подтверждены; обычный poll пока не подключён.
-  CLI status консервативен и сам по себе не доказывает execution admission.
-  Очереди и рендер не тронуты.
+- Live reset/launch1, activation и обычный poll подтверждены.
+  Passive wait connected_idle и настоящий project read PASS
+  (17.10 16:08:51 UTC, revision12968664). CLI status консервативен и сам по себе
+  не доказывает execution admission. Очереди и рендер не тронуты.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Поставить проверенную numeric reconnect correction и выполнить обычный graceful
-restart для согласования runtime source. Продолжить activated сессию (без нового preflight/reset), затем
-минимальный read-back
-подключения без queue/render acceptance.
+Текущий scope завершён: инструмент создан, review пройден, bridge в обычной сессии.
+Дальнейшие операции выполнять по штатным typed gates и новому поручению.
 Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
 
 ## Отложенные scope
