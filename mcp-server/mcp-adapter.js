@@ -25,8 +25,9 @@ const trustedSourceCensus=require("./owned-runtime-initial-source-census");
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
 const deploymentMode = require("./deployment-mode").deploymentMode();
 const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
-const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
+const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown",reset_owned_runtime_product_session:"resetProductSession"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
+ownedRuntimeTools.find(t=>t.name==="reset_owned_runtime_product_session").description="Explicit operator-request only: abandon control of an absent privately registered product daemon and start a fresh product session with closed preflight admission. Requires separate reset policy and native absence proof. Preserves old UNKNOWN, journals, resource fences and no-replay. Never forces a process, restores jobs, changes queues, saves a project or starts rendering.";
 // One original stdio request object per exact JSON-RPC ID. A notification can
 // cancel only that retained object; primitive type is part of the Map key.
 const originalRpcRequests=new Map();
@@ -48,7 +49,7 @@ async function handleRpc(message){
 async function handleOwnedRuntimeTool(name,args,controller) {
   if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
   ownedRuntimeAuthority.exact(args,[],"owned_adapter_arguments_forbidden");
-  if(initialRuntime){const method=OWNED_TOOL_METHODS[name],result=method==="status"?await initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,result.ok===false);}
+  if(initialRuntime){const method=OWNED_TOOL_METHODS[name];if(method==="resetProductSession")return toolResult({ok:false,code:"owned_product_reset_product_only",replayAllowed:false},true);const result=method==="status"?await initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,result.ok===false);}
   const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
   try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
 }

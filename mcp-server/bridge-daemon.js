@@ -10564,6 +10564,10 @@ function startHttpBridge() {
       lastPanelSeenAt = Date.now();
       writeJson(res,200,{ok:true,session:autonomousSession.publicStatus()}); return;
     }
+    if (url.pathname === "/bridge/product-session" && req.method === "GET") {
+      if(!requireToken(req,res,url))return;
+      try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const actor={panelConnectionId:url.searchParams.get("panelConnectionId"),panelGeneration:url.searchParams.get("panelGeneration"),panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))};writeJson(res,200,{ok:true,resetSession:state.admissionReady()?null:state.challenge(actor,url.searchParams.get("physicalInflight")==="0"?0:1),resetSessionActivation:state.activation()});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
+    }
     if (url.pathname === "/bridge/next" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       const panelIdentity = url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"];
@@ -10583,6 +10587,11 @@ function startHttpBridge() {
         panelLifecycleEpoch: /^\d+$/.test(url.searchParams.get("panelLifecycleEpoch") || "") ? Number(url.searchParams.get("panelLifecycleEpoch")) : null,
         at: lastPanelSeenAt
       };
+      const resetState=productSessionResetState();
+      if(resetState && !resetState.admissionReady()){
+        try{const resetSession=resetState.challenge({panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch},0);writeJson(res,200,{ok:true,command:null,resetSession});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",command:null});}return;
+      }
+      const resetSessionActivation=resetState?resetState.activation():null;
       if(recoveryTransport && url.searchParams.get("recoveryHandshake")==="1"){
         recoveryTransport.state="ready";
         writeJson(res,200,{ok:true,command:null,recoveryTransport:{scopeId:recoveryTransport.scopeId,state:"ready",freshReconcileRequired:true,expiresAt:new Date(recoveryTransport.expiresAt).toISOString()}});return;
@@ -10598,14 +10607,19 @@ function startHttpBridge() {
       let command;
       try{command=leaseNextQueuedCommand(req,url);}catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
       if (command) {
-        writeJson(res, 200, { ok: true, command });
+        writeJson(res, 200, { ok: true, command,resetSessionActivation });
         return;
       }
 
-      writeJson(res, 200, { ok: true, command: null });
+      writeJson(res, 200, { ok: true, command: null,resetSessionActivation });
       return;
     }
 
+    if (url.pathname === "/bridge/reset-session" && req.method === "POST") {
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"owned_product_reset_panel_witness_required"});return;}
+      try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const result=state.activate(await readJsonBody(req));autonomousSession.invalidateProjectContext();writeJson(res,200,result);}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
+    }
     if (url.pathname === "/bridge/submitted" && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       const payload = await readJsonBody(req);
@@ -14411,12 +14425,26 @@ function nativeRetainedReaders(){return nativeFixtureAbandonmentBackend.createRe
 let ownedRuntimeHttpServer=null;
 let ownedRuntimeStartup={managed:!!process.env.AE_OWNED_RUNTIME_GENERATION,requiresRetainedAdoption:!!process.env.AE_OWNED_RUNTIME_GENERATION};
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
+const productSessionReset=require("./owned-runtime-product-session-reset"),productSessionResetCache=new Map();
+function productSessionResetState(){
+  if(deploymentMode!=="product"||!ownedRuntimeStartup.managed)return null;
+  const supervisor=require("./owned-runtime-supervisor"),generation=process.env.AE_OWNED_RUNTIME_GENERATION,keyReader=v=>ownedRuntimeAuthority.runtimeControlFor(PROJECT_ROOT).credential({daemon:{port:3456,credentialSha256:v.credentialSha256}});
+  let rootGeneration=generation;
+  if(!fs.existsSync(path.join(ownedRuntimeAuthority.base(PROJECT_ROOT),"daemon-reservations",generation,"product-session-reset.json"))){
+    const current=supervisor.readDaemonRegistration(PROJECT_ROOT);if(!current||current.generation!==generation)return null;
+    const anchor=productSessionReset.sessionAnchor(PROJECT_ROOT,generation,supervisor.registeredGeneration,keyReader);if(!anchor)return null;rootGeneration=anchor.value.generation;
+  }
+  if(!productSessionResetCache.has(rootGeneration))productSessionResetCache.set(rootGeneration,productSessionReset.daemonSession({root:PROJECT_ROOT,generation:rootGeneration,readGeneration:supervisor.registeredGeneration,keyReader,
+    readLifecycle:()=>productSessionReset.assertLifecycle(PROJECT_ROOT),readEditHash:()=>productSessionReset.snapshot(EDIT_SESSION_ACTIVE_FILE).sha256,
+    retireEdit:hash=>{if(hash!==null && productSessionReset.snapshot(EDIT_SESSION_ACTIVE_FILE).sha256===hash)activeEditSession=null;}}));
+  return productSessionResetCache.get(rootGeneration);
+}
 const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
   initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
-  readAdmission:()=>!ownedRuntimeStartup.requiresRetainedAdoption ||
+  readAdmission:()=> (!productSessionResetState() || productSessionResetState().admissionReady()) && (!ownedRuntimeStartup.requiresRetainedAdoption ||
     ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport() ||
-    require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+    require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready),journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
   readProductStopAuthority:()=>require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION),
   readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
   readReadiness:()=>{

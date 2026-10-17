@@ -54,7 +54,9 @@ async function main(){
     const s=service.createOwnedRuntimeService({journalRoot:tmp,readPolicy:()=>({}),readReadiness:()=>({}),readAdmission:()=>false,readProductStopAuthority:()=>true});
     const source=fs.readFileSync(path.resolve(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
     const slice=(start,end)=>{const from=source.indexOf(start),to=source.indexOf(end,from);assert(from>=0&&to>from);return source.slice(from,to);};
-    const nullContext={getStore:()=>null},context=vm.createContext({initialRuntime:null,ownedRuntimeService:s,crypto,pendingCommands:pending,inflightCommands:inflight,
+    // The production enqueue path already includes the title-recovery guard.
+    // This unrelated read has no title authority; model that private null port.
+    const nullContext={getStore:()=>null},context=vm.createContext({initialRuntime:null,ownedRuntimeService:s,crypto,pendingCommands:pending,inflightCommands:inflight,titleExportRecovery:{assertNative(context){assert.equal(context,null);}},titleRecoveryCommandContext:nullContext,
       panelBootstrapService:{isBusy:()=>false},panelBootstrapReadContext:nullContext,lifecycleCommandContext:{getStore:()=>({capability,rawScript:"fixed read"})},generatedRecoveryReadContext:nullContext,autonomousCommandContext:nullContext,planCommandContext:nullContext,
       lifecycle:{validateCommand(actual){validations++;assert.equal(actual,capability);if(!valid)throw Object.assign(Error("private_lifecycle_refused"),{code:"private_lifecycle_refused"});},phaseFacts:()=>({readbackRole:"read"})},
       capturePlanCommand(){},setTimeout:()=>({}),clearTimeout(){},recordEvent(){},drainWaitingPanels(){},timeoutAeCommand(){},generatedRecoveryLeaseScope:()=>null,expireQueuedCommands(){},panelLeaseOwner:()=>owner,findActiveEvalScriptCommandForOwner:()=>null,rejectRevokedAutonomousCommand:()=>false,commandForPanel:v=>v,

@@ -62,3 +62,12 @@ lifecycle store; corrupt, partial и неизвестное состояние �
 Это private read-only consumer, без нового force tool; UNKNOWN, неполная запись,
 подмена snapshot или другого поколения блокируют продолжение. Старый experimental
 UNKNOWN и его журналы не становятся product grant или доказательством выхода.
+
+## Явный сброс product-сессии
+
+При отсутствии зарегистрированного daemon предусмотрен отдельный
+[операторский сброс product-сессии](product-session-reset.md). Он сохраняет
+исторические UNKNOWN и запрет их replay, требует своей private authorization,
+создаёт новую session anchor и открывает обычную работу после физического
+CEP fence и fresh project read. Это отдельная операция, не автоматический
+fallback ensure и не подмена exit proof прежнего процесса.

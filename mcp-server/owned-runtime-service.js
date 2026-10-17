@@ -20,7 +20,7 @@ function ingressKind(req){
   if(p.startsWith("/runtime/owned/"))return "control";
   if(req.method==="GET" && ["/bridge/next","/next"].includes(p))return "passive_wait";
   if(req.method==="OPTIONS" || req.method==="GET")return "observation";
-  if(req.method==="POST" && ["/bridge/heartbeat","/bridge/result","/bridge/submitted","/bridge/command-state","/bridge/results","/heartbeat","/result","/command/state"].includes(p))return "completion";
+  if(req.method==="POST" && ["/bridge/reset-session","/bridge/heartbeat","/bridge/result","/bridge/submitted","/bridge/command-state","/bridge/results","/heartbeat","/result","/command/state"].includes(p))return "completion";
   // Tool bodies are unknown before the body await. A pre-drain ticket has
   // execution entitlement; a post-drain ticket can only read/complete.
   if(req.method==="POST" && ["/tools/call","/mcp/tools/call"].includes(p))return "intake";

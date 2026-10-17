@@ -109,6 +109,58 @@
   var initialAutomaticStartup = null;
   var initialAutomaticConnectDispatch = null;
   var activeEvalScriptCommandId = "";
+  // A native callback owns this durable latch. Connection lifecycle changes
+  // cannot release it; a reload with a lost callback remains fail-closed.
+  var physicalEvalScriptKey = "codexAePhysicalEvalScript.v1";
+  var resetPreflightInFlight = false;
+  var resetPreflightAttempt = null;
+  var productResetActivation = null;
+  function physicalEvalScriptIdle() {
+    try { var pending=JSON.parse(localStorage.getItem(physicalEvalScriptKey) || "{}");return pending && typeof pending==="object" && !Object.keys(pending).length; } catch (_) { return false; }
+  }
+  function physicalEvalScript(script, callback) {
+    if(!physicalEvalScriptIdle()){callback("EvalScript error. physical_evalscript_pending");return;}
+    var id=String(Date.now())+"-"+String(Math.random()).slice(2),pending={};pending[id]={submittedAt:Date.now()};
+    try{localStorage.setItem(physicalEvalScriptKey,JSON.stringify(pending));}catch(_){callback("EvalScript error. physical_evalscript_latch_unavailable");return;}
+    cs.evalScript(script,function(result){
+      try{var current=JSON.parse(localStorage.getItem(physicalEvalScriptKey)||"{}");if(current[id]){delete current[id];localStorage.setItem(physicalEvalScriptKey,JSON.stringify(current));}}catch(_){return;}
+      callback(result);
+    });
+  }
+  function deliveryActor() {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch};
+  }
+  function sameDeliveryActor(a,b) {return a.panelConnectionId===b.panelConnectionId && a.panelGeneration===b.panelGeneration && a.panelInstanceId===b.panelInstanceId && a.panelLifecycleEpoch===b.panelLifecycleEpoch;}
+  function beginProductSessionReset(challenge) {
+    var actionState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(resetPreflightInFlight || !challenge || challenge.schema!=="ae-agent.product-session-reset.v1.challenge" || !/^[a-f0-9-]{36}$/.test(challenge.generation) || !/^[a-f0-9-]{36}$/.test(challenge.challenge) || !sameDeliveryActor(challenge.actor,deliveryActor()) || !physicalEvalScriptIdle()){
+      setStatus("Reset preflight refused: physical command pending",false);return;
+    }
+    if(!actionState || actionState.activeAction || actionState.recoveryTransport || actionState.actionStorage!=="ready" || actionState.trustedGuardRefresh && actionState.trustedGuardRefresh.pending || panelActionBusy()) {setStatus("Reset preflight refused: panel control busy",false);return;}
+    if(!(Date.parse(challenge.expiresAt)>Date.now())){setStatus("Reset preflight expired; reconnect for a fresh read",false);return;}
+    var panelControl={nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:(actionState.unresolvedActions||[]).map(function(r){return {requestId:r.requestId,entrySha256:r.entrySha256};})};
+    var previous=deliveryActor(),url=getBaseUrl(),token=getToken(),attempt={challenge:challenge.challenge};resetPreflightAttempt=attempt;resetPreflightInFlight=true;running=false;pollInFlight=false;
+    function finishKnown(message){if(resetPreflightAttempt!==attempt)return;resetPreflightInFlight=false;resetPreflightAttempt=null;if(message)setStatus(message,false);}
+    if(pollTimer)clearTimeout(pollTimer);
+    panelLifecycleEpoch+=1;panelConnectionGeneration="reset-"+challenge.generation;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
+    autonomousSessionState=null;renderAutonomousSession();var actor=deliveryActor();
+    // This fixed read is also a serialized host barrier. Its callback proves
+    // this read completed, never that old external AE/AME effects succeeded.
+    var script='(function(){var p=app.project;if(!p)return JSON.stringify({projectPresent:false});return JSON.stringify({projectPresent:true,file:p.file?String(p.file.fsName):"",dirty:p.dirty,revision:p.revision,rendering:p.renderQueue.rendering,challenge:'+JSON.stringify(challenge.challenge)+'});}())';
+    physicalEvalScript(script,function(result){
+      if(!sameDeliveryActor(actor,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finishKnown();return;}
+      var project;try{project=JSON.parse(result);}catch(_){finishKnown("Reset preflight: read failed; reconnect for a fresh read");return;}
+      if(!physicalEvalScriptIdle()){finishKnown("Reset preflight: physical fence unknown");return;}
+      request("POST","/bridge/reset-session",{generation:challenge.generation,challenge:challenge.challenge,previousActor:previous,actor:actor,physicalInflight:0,panelControl:panelControl,project:project},function(error,response){
+        if(!sameDeliveryActor(actor,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finishKnown();return;}
+        finishKnown();
+        if(error || !response || response.status!=="reset_active"){setStatus("Reset preflight refused; read status",false);return;}
+        productResetActivation=response.activation;activeEvalScriptCommandId="";running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);
+      });
+    });
+  }
   var agents = [];
   var chatSessions = [];
   var activeChatSessionId = "";
@@ -385,12 +437,13 @@
     return created;
   }
 
-  function bridgeNextPath(projectFile) {
+  function bridgeNextPath(projectFile,resetProbe) {
     var actionState = window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     return "/bridge/next?panelConnectionId=" + encodeURIComponent(panelConnectionId)
       + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0))
       + "&panelInstanceId=" + encodeURIComponent(actionState && actionState.panelInstanceId || "")
       + "&panelLifecycleEpoch=" + encodeURIComponent(String(panelLifecycleEpoch))
+      + (resetProbe ? "&physicalInflight=" + (physicalEvalScriptIdle() ? "0" : "1") : "")
       + "&projectFile=" + encodeURIComponent(projectFile || "");
   }
 
@@ -4336,7 +4389,7 @@
       result: result,
       error: error
     }, function (postError,response) {
-      if(ownedPollingSession && !postError && (!response || response.ok!==true)) postError={message:"Original result ACK missing"};
+      if(!postError && (!response || response.ok!==true)) postError={message:"Original result ACK missing"};
       if (postError) {
         log("Could not post result: " + postError.message);
       }
@@ -4362,7 +4415,7 @@
       panelConnectionId: owner.panelConnectionId,
       panelGeneration: owner.panelGeneration
     }, function (error,response) {
-      if(ownedPollingSession && !error && (!response || response.ok!==true)) error={message:"Original submission ACK missing"};
+      if(!error && (!response || response.ok!==true)) error={message:"Original submission ACK missing"};
       if (error) {
         log("Could not mark command submitted: " + error.message);
         onDone(false);
@@ -4382,14 +4435,18 @@
     if (command.contractVersion !== 2 || !command.executionId || !command.leaseId) {
       log("Bridge execution contract mismatch: update the bridge and panel together."); return;
     }
-    if (activeEvalScriptCommandId) {
+    if (activeEvalScriptCommandId || !physicalEvalScriptIdle()) {
       log("Skipping command " + command.id + " while command " + activeEvalScriptCommandId + " is still active");
       return;
     }
     activeEvalScriptCommandId = command.id;
+    var capturedActor=deliveryActor(),capturedUrl=getBaseUrl(),capturedToken=getToken();
     var ownedSession=ownedPollingSession,ownedCommand=ownedSession && ownedSession.command;
     log("Executing command " + command.id);
     markCommandSubmitted(command, function (submitted) {
+      // Applies equally to ordinary and retained delivery. An ACK arriving
+      // after disconnect/reconnect must never submit old script to the host.
+      if(!running || !sameDeliveryActor(capturedActor,deliveryActor()) || getBaseUrl()!==capturedUrl || getToken()!==capturedToken)return;
       if(ownedSession) {
         if(!submitted || !ownedPollingActorCurrent(ownedSession) || !ownedCommand || ownedSession.command!==ownedCommand || ownedCommand.id!==command.id) {
           closeOwnedPolling("owned_original_command_submission_unknown");return;
@@ -4400,7 +4457,8 @@
         clearActiveEvalScriptCommand(command.id);
         return;
       }
-      cs.evalScript(command.script, function (result) {
+      physicalEvalScript(command.script, function (result) {
+        if(!running || !sameDeliveryActor(capturedActor,deliveryActor()) || getBaseUrl()!==capturedUrl || getToken()!==capturedToken)return;
         if(ownedSession) {
           if(!ownedPollingActorCurrent(ownedSession) || ownedSession.command!==ownedCommand) {closeOwnedPolling("owned_original_command_actor_changed");return;}
           if(ownedCommand.phase!=="submitted") return;
@@ -4524,7 +4582,7 @@
     if (startup) startup.consumed = true;
     pollInFlight = true;
     try {
-    cs.evalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
+    physicalEvalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
     if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
     if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "pending" || startup.getAttempted)) return;
     if (!running) { pollInFlight = false; return; }
@@ -4563,6 +4621,8 @@
         return;
       }
 
+      if(response && response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+      if(response && response.resetSessionActivation)productResetActivation=response.resetSessionActivation;
       if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
       if(!ownedPollSession && ownedCompletedDryRunPromised(response) && !beginOwnedPolling(response)) {
         if(onDone) onDone({isUnknown:true,code:"owned_original_session_deadline_invalid"});return;
@@ -4598,7 +4658,15 @@
     }
   }
 
-  function connect(onDone, startup) {
+  function connect(onDone, startup, resetChecked) {
+    var resetState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(!startup && !resetChecked && resetState && resetState.reconciliationRequired){
+      request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(error || !response || !response.resetSession && !response.resetSessionActivation){if(onDone)onDone(error||{code:"product_reset_session_required",message:"Historical action requires its original reconciliation or an explicit product reset."});return;}
+        if(response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+        productResetActivation=response.resetSessionActivation;connect(onDone,startup,true);
+      });return;
+    }
     if(ownedPollingSession || ownedPollingClosed) {
       closeOwnedPolling("owned_original_poll_lifecycle_changed");
       if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;
@@ -4830,11 +4898,20 @@
       var startup = initialAutomaticConnectDispatch;
       if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
       if(running && !recoveryTransportScope) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
-      panelLifecycleIdle(function(error) {
+      function normalConnect() { panelLifecycleIdle(function(error) {
         if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
         if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
-        if(context.submit()) connect(done,startup);else if(startup) closeInitialAutomaticStartup(startup);
-      },true);
+        if(context.submit()) connect(done,startup,true);else if(startup) closeInitialAutomaticStartup(startup);
+      },true); }
+      if(startup){normalConnect();return;}
+      // Reset authority precedes the ordinary idle check: the exact old edit
+      // owner is still preserved while the reset preflight is closed.
+      request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(!error && response && response.resetSession){done(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+        if(!error && response && response.resetSessionActivation)productResetActivation=response.resetSessionActivation;
+        if(window.AEAgentPanelActions.state().reconciliationRequired){done({rejected:true,code:"product_reset_session_required"});return;}
+        normalConnect();
+      });
     },
     "bridge.disconnect":function(args,done,context) {
       panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(!context.submit()) return;disconnect();done(null,{disconnected:true});});
@@ -5007,7 +5084,7 @@
     setTimeout(loadAgents, 250);
   }
   rememberPanelSecrets();
-  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,
+  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,productSessionReset:function(){return productResetActivation;},
     passive:{"logs.get":true,"chat.sessions.list":true,"chat.transcript.get":true,"plan.current":function(args) {return !args || !args.fresh;}},
     availability:actionAvailability,state:panelActionSnapshot,
     lookupHumanSettlements:function(done) {
