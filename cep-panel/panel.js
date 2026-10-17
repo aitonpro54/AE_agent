@@ -114,6 +114,7 @@
   var physicalEvalScriptKey = "codexAePhysicalEvalScript.v1";
   var resetPreflightInFlight = false;
   var resetPreflightAttempt = null;
+  var resetPreflightRetry = null;
   var productResetActivation = null;
   function physicalEvalScriptIdle() {
     try { var pending=JSON.parse(localStorage.getItem(physicalEvalScriptKey) || "{}");return pending && typeof pending==="object" && !Object.keys(pending).length; } catch (_) { return false; }
@@ -132,13 +133,41 @@
     return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch};
   }
   function sameDeliveryActor(a,b) {return a.panelConnectionId===b.panelConnectionId && a.panelGeneration===b.panelGeneration && a.panelInstanceId===b.panelInstanceId && a.panelLifecycleEpoch===b.panelLifecycleEpoch;}
+  function cancelResetPreflightRetry() {
+    if(resetPreflightRetry && resetPreflightRetry.timer!==null)clearTimeout(resetPreflightRetry.timer);
+    resetPreflightRetry=null;
+  }
+  function resetPreflightRetryCurrent(retry) {return resetPreflightRetry===retry && sameDeliveryActor(retry.actor,deliveryActor()) && retry.url===getBaseUrl() && retry.token===getToken();}
+  function deferProductSessionReset(challenge,refresh) {
+    var retry=resetPreflightRetry;
+    if(!retry || !resetPreflightRetryCurrent(retry)) {cancelResetPreflightRetry();retry={actor:deliveryActor(),url:getBaseUrl(),token:getToken(),timer:null,refreshing:false};resetPreflightRetry=retry;}
+    retry.challenge=challenge;
+    if(retry.refreshing || retry.timer!==null)return;
+    if(!refresh) {
+      retry.timer=setTimeout(function(){retry.timer=null;if(!resetPreflightRetryCurrent(retry)){if(resetPreflightRetry===retry)cancelResetPreflightRetry();return;}beginProductSessionReset(retry.challenge);},500);
+      setStatus("Reset preflight waiting for panel control",false);return;
+    }
+    // The expired preflight has never submitted native work. Renew only its
+    // fixed read challenge on the unchanged actor, after the idle checks.
+    retry.refreshing=true;
+    request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+      if(!resetPreflightRetryCurrent(retry)){if(resetPreflightRetry===retry)cancelResetPreflightRetry();return;}
+      cancelResetPreflightRetry();
+      if(error || !response){setStatus("Reset preflight lookup failed; reconnect",false);return;}
+      if(response.resetSession){beginProductSessionReset(response.resetSession);return;}
+      if(response.resetSessionActivation){productResetActivation=response.resetSessionActivation;running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);return;}
+      setStatus("Reset preflight authority unavailable",false);
+    });
+  }
   function beginProductSessionReset(challenge) {
     var actionState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     if(resetPreflightInFlight || !challenge || challenge.schema!=="ae-agent.product-session-reset.v1.challenge" || !/^[a-f0-9-]{36}$/.test(challenge.generation) || !/^[a-f0-9-]{36}$/.test(challenge.challenge) || !sameDeliveryActor(challenge.actor,deliveryActor()) || !physicalEvalScriptIdle()){
-      setStatus("Reset preflight refused: physical command pending",false);return;
+      cancelResetPreflightRetry();setStatus("Reset preflight refused: physical command pending",false);return;
     }
-    if(!actionState || actionState.activeAction || actionState.recoveryTransport || actionState.actionStorage!=="ready" || actionState.trustedGuardRefresh && actionState.trustedGuardRefresh.pending || panelActionBusy()) {setStatus("Reset preflight refused: panel control busy",false);return;}
-    if(!(Date.parse(challenge.expiresAt)>Date.now())){setStatus("Reset preflight expired; reconnect for a fresh read",false);return;}
+    if(!actionState || actionState.recoveryTransport || actionState.actionStorage!=="ready") {cancelResetPreflightRetry();setStatus("Reset preflight refused: panel control unavailable",false);return;}
+    if(actionState.activeAction || actionState.trustedGuardRefresh && actionState.trustedGuardRefresh.pending || panelActionBusy()) {deferProductSessionReset(challenge,false);return;}
+    if(!(Date.parse(challenge.expiresAt)>Date.now())){deferProductSessionReset(challenge,true);return;}
+    cancelResetPreflightRetry();
     var panelControl={nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:(actionState.unresolvedActions||[]).map(function(r){return {requestId:r.requestId,entrySha256:r.entrySha256};})};
     var previous=deliveryActor(),url=getBaseUrl(),token=getToken(),attempt={challenge:challenge.challenge};resetPreflightAttempt=attempt;resetPreflightInFlight=true;running=false;pollInFlight=false;
     function finishKnown(message){if(resetPreflightAttempt!==attempt)return;resetPreflightInFlight=false;resetPreflightAttempt=null;if(message)setStatus(message,false);}

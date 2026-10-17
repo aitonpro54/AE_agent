@@ -12,7 +12,7 @@
 Не восстанавливать старые задания, не удалять очереди, не запускать рендер.
 Пользователь выбрал внутреннее review сильной моделью вместо внешнего Pro.
 Sol 6.1 Ultra выполнил source/design review; обязательные REVISE приняты.
-Scoped ae_specialist реализует инструмент; родитель владеет docs и live-контролем.
+Scoped ae_specialist реализовал инструмент; родитель владеет docs и live-контролем.
 
 ## Progress
 
@@ -23,10 +23,15 @@ Scoped ae_specialist реализует инструмент; родитель �
   прямому выбору пользователя. Внутреннее Ultra review разрешило узкую реализацию
   с отдельной reset policy, session anchor, native absence, mutex/once/CAS,
   физическим CEP tracker и закрытым admission до activation.
-- 17.10: production-реализация в работе. Добавлены local MCP route, reducer/CLI,
+- 17.10: production-реализация завершена. Добавлены local MCP route, reducer/CLI,
   отдельная авторизация, native probe, mutex/CAS и CEP epoch/handshake. Уточняются
   live условия. Три замечания Ultra исправлены: lost lease, exact receipt hashes
   и known-failed read-only preflight retry. Correction source review GO.
+- `fc3a9e6`: инструмент зафиксирован. Порученный reset выполнен один раз,
+  operation `75081867…`, новая generation `408cbe01…`, pending_preflight.
+  Девять CEP assets поставлены с полной резервной копией и hash read-back.
+  Live startup выявил transient busy без возобновления poll; узкая CEP correction
+  добавляет один passive retry до native submission. Delta Ultra review GO.
 - 16.10: один actual AME addDL и независимый queued own-wrapper STATUS приняты.
   START0, generatedOutputVerified/appliedPresetVerified/mediaVerified=false.
   Диапазон следующего задания — свежая marked workArea exact pinned comp;
@@ -55,6 +60,8 @@ Scoped ae_specialist реализует инструмент; родитель �
 - Physical evalScript tracker не стирается при reconnect. Epoch проверяется
   после submitted ACK до evalScript. Fixed host barrier/read подтверждает текущий
   native канал; UNKNOWN внешних effects не выдаётся за completion.
+- Startup busy ожидается пассивно в том же actor/config; смена actor или physical
+  unknown отменяет продолжение. Истёкший challenge обновляется одним fixed GET.
 - Operator disposition прекращает прежнюю control/edit ownership только в новой
   epoch; старые records/checkpoints не меняются. Exact signed old panel receipt
   IDs исключаются из общего availability/connect blocker, оставаясь UNKNOWN/noReplay.
@@ -74,16 +81,20 @@ Scoped ae_specialist реализует инструмент; родитель �
   записаны локально в ignored pro-review-bundles/product-session-reset-20261017/.
 - Correction SourceSTOP: reset22, supervisor91, service35, product lifecycle12,
   CEP48 actions/16 VM; rules/diff/JS syntax/PS AST/C# compile-only PASS. Ultra GO.
-  Native helper, реальный reset/launch, queue/render acceptance пока не запускались.
+  До live применения эти проверки оставались изолированными; queue/render acceptance нет.
+- Startup delta: reset25, CEP48 actions/16 VM, rules/diff/JS syntax PASS; Ultra GO
+  по SHA panel dbd6e955 и smoke 67b88ea9. Повторный reset не выполнялся.
+- Live reset/launch1 подтверждён, admission пока закрыт; очереди и рендер не тронуты.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Зафиксировать проверенный инструмент отдельным commit. Если условия выполнены,
-выполнить порученный штатный
-operator reset и минимальный read-back подключения без queue/render acceptance.
+Поставить проверенную CEP correction; штатно перезапустить daemon с настоящим
+exit receipt для очистки volatile challenge старой панели. Продолжить preflight
+уже созданной сессии (не повтор reset), затем минимальный read-back
+подключения без queue/render acceptance.
 Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
 
 ## Отложенные scope
