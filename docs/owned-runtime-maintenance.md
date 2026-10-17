@@ -1,5 +1,47 @@
 # Штатное завершение owned runtime: R1
 
+## Ограниченное восстановление initial startup — 17 октября
+
+`scripts/owned-runtime-initial-recovery.js` обслуживает один случай: после
+разрешённого administrative reset обычный initial `ensure` оставил только
+`intent`/`launch-intent` и startup chain до registration, но не current pointer.
+Это отдельный новый startup, не повтор или завершение старой операции.
+
+Private `prepare --authorization-reference <current-chat-UUID>:initial-startup-recovery-20261017`
+пишет HMAC capability: exact original operation/generation/восемь file pins,
+исторический fixture/retained inventory, current source/config/policy и новые
+generation/nonce/operation. Policy/credentials не меняются. Caller не задаёт PID,
+executable, argv или authority path. `inspect` не запускает процесс;
+`recover-once` использует прежний fixed native launcher. Это локальный bounded
+administrative CLI, не remote grant или универсальный reset.
+
+Generation key потребляется до effects независимо от UUID/source alias.
+Native preflight держит read locks на capability/config/policy/source/original
+witnesses; требует expired original ticket, успешный process/TCP census,
+отсутствие старого owner/helper и постороннего pointer/reservation. Unknown
+observation отказывает. Current публикуется create-only; отдельный completed
+receipt следует после publication/read-back. Любой UNKNOWN запрещает initial
+admission и повтор. Старые journals/keys/outcome неизменны; PID absence не exit proof.
+
+Initial trust требует exact current registration, неизменные source/config/policy
+и свежий authenticated CEP connection. Ordinary transport сохраняет namespace и
+receipt gates. Explicit autonomy off и manual/autonomous/raw/destructive/save gates
+сохраняются. Retained/nativeFixture admission этот trust не выдаёт. Readiness
+требует current fixture/runner quiescence и pending cleanup0; историческим children
+не приписывается exit. Future retained succession не добавлена: будущий restart
+требует отдельного поддержанного initial lifecycle решения.
+
+Offline: `node scripts/owned-runtime-initial-recovery-smoke.js` и
+`pwsh -NoProfile -File scripts/owned-runtime-initial-recovery-native-smoke.ps1`;
+native smoke исполняет actual preflight AST с mocked file/CIM/TCP, effects0.
+Live17окт: recovery `9a61a1d1-6680-4023-9dcd-7d3c1ccffef4`, generation
+`ef0668f2-b90a-45d1-9521-e58e7fc057b7`, source `915a7e0a…c73617`; после
+штатного Connect admission open/readiness true, pending0/inflight[]. Подтверждён
+native read `Titr_atomx_template.aep`/171items/revision100570317. По прямому
+поручению пользователя один stale offline CEP Connect архивирован из active queue
+с exact backup трёх storage keys/unknown sidecar; server queue уже была пуста.
+AE mutations/save0. Evidence: ignored `.codex-runtime/title-template-20261017/`.
+
 R1 добавляет закрытие двух disposable native fixture children. Исходный daemon,
 основной AE, AME, CEP и пользовательские проекты остаются за отдельными gates.
 R1 не запускает и не перезапускает приложения. Следующие этапы используют тот же

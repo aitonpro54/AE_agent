@@ -149,6 +149,8 @@ const RUNTIME_FILES = [
   "mcp-server/owned-runtime-authority.js",
   "mcp-server/owned-runtime-service.js",
   "mcp-server/owned-runtime-supervisor.js",
+  "mcp-server/owned-runtime-initial-recovery.js",
+  "scripts/owned-runtime-initial-recovery.js",
   "mcp-server/owned-fixture-lifecycle.js",
   "scripts/owned-runtime-control.js",
   "scripts/autonomous-plan-client.js",
