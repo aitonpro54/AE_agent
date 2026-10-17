@@ -7,6 +7,15 @@
 
 ## Текущая цель пользователя
 
+Последнее указание пользователя: закончить текущую доработку/проверки/review/commit
+и остановиться. Live verification, restart/deploy и enqueue сейчас не выполнять.
+
+Новое явное поручение: добавить verifier существующих снимков и довести оба
+титра до AME queued без запуска рендера. Нового export и replay прежнего UNKNOWN нет.
+[block: snapshot-verifier] [executor: ae_specialist + internal Ultra review]
+[reason: source authority и protected project context] [ownership: code/tests writer;
+docs/live/commit parent]. Подготовлен локальный secret-safe review request.
+
 Новое поручение 17.10 после завершения reset: проверить добавление двух титров
 в AME без запуска рендера. Остановка до enqueue: новый snapshot export UNKNOWN,
 addDL0/START0. Данные и проверка — в linked product two-title workflow.
@@ -20,6 +29,14 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Progress
 
+- Verifier реализован: два exact-selector tools, retained native result, fresh
+  adoption, ordinary runner/readback/semantic integration. Source review нашёл
+  два P2 (реальный getter и final protection check); оба исправлены, final delta
+  review GO. Live/restart/deploy/enqueue не выполнялись по позднему STOP.
+- Verifier design: internal Ultra GO. Original baseline присутствует в completed
+  readback; приняты EXCL once, отдельный native retained slot и readonly lookup,
+  actual GUID/workArea, independent restoration, fresh adoption после restart.
+  Один specialist writer; parent sole live controller. Decision log локально ignored.
 - 17.10: fresh bridge/AE/AME/source/preset/workArea preflight PASS. Новый snapshot
   proposal/dry-run PASS; real run dad3dc19…/command f988d318… истёк на restore.
   Resolve Fonts подтверждён и закрыт после deadline. Исходник восстановлен,
@@ -99,6 +116,9 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Validation
 
+- Verifier33, snapshots30/recovery19, actual lifecycle getter и ES3 parse3 PASS;
+  rules/syntax/diff PASS. Дополнительный AME semantic fake fixture fails до новой
+  ветки тем же code/line и с HEAD module; AME production/foreign WIP не менялись.
 - Internal Ultra source/design review завершён; решение и принятые уточнения
   записаны локально в ignored pro-review-bundles/product-session-reset-20261017/.
 - Correction SourceSTOP: reset22, supervisor91, service35, product lifecycle12,
@@ -123,10 +143,9 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Следующий шаг
 
-Reset завершён; новая проверка добавления остановилась до enqueue на source proof.
-Для продолжения нужен отдельный scoped verifier existing snapshots с protected
-restoration и durable verification receipt; original UNKNOWN/noReplay сохранить.
-Не повторять export и не обходить gate через restart/raw/UI.
+Завершить текущий source review/correction и commit, затем остановиться по просьбе
+пользователя. Live-поставка, verifier и два enqueue/read-back остаются невыполненными.
+Original UNKNOWN/noReplay сохранить. START/render и новый export не выполнять.
 Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
 
 ## Отложенные scope

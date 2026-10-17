@@ -171,7 +171,9 @@ function createExecutor(deps){
     if(!saved || saved.sha25664!==selector.sourceSha25664 || saved.native.guid!==selector.sourceGuid)fail("title_export_saved_source_binding_required");
     const {native,...pin}=saved;unchanged(pin);return true;
   }
-  return {authorize,preflight,execute,assertSavedSource,createRecovery:options=>createRecovery({...options,adopt:snapshots=>{
+  return {authorize,preflight,execute,assertSavedSource,createVerification:options=>require("./title-export-verification").createExecutor({...options,adopt:snapshots=>{
+    for(const pin of snapshots)savedSources.set(path.resolve(pin.path).toLowerCase(),JSON.parse(JSON.stringify(pin)));
+  }}),createRecovery:options=>createRecovery({...options,adopt:snapshots=>{
     for(const pin of snapshots)savedSources.set(path.resolve(pin.path).toLowerCase(),JSON.parse(JSON.stringify(pin)));
   }})};
 }

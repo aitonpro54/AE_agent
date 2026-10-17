@@ -45,6 +45,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "verify_title_export_snapshots",
   "export_two_title_snapshots",
   "ensure_ame_running",
   "enqueue_ame_title_variant",
@@ -135,6 +136,7 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "get_project_lifecycle_state",
   "inspect_ame_transport",
   "inspect_ame_title_sources",
   "get_ame_title_job_status",
@@ -821,7 +823,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4250,6 +4252,14 @@ function verifyAmeNativeFixture(step, evidence) {
 }
 
 function verifyStep(checks, step, evidence) {
+  if(step.tool==="verify_title_export_snapshots"){
+    const payload=payloadForStep(step),verifier=require("./title-export-verification"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&
+        state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&Number.isSafeInteger(state?.revision)&&state.revision>=0&&projectLifecycle.samePath(state?.file,payload.source.path)&&state?.dirty===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":verify_title_export_snapshots:existing-files",title:"Verified existing snapshots and restored clean source",expected:"actual graph/flags/GUID/workArea + private proof + independent source read",observed:valid?"verified; original UNKNOWN/noReplay preserved":"verification unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if(step.tool==="export_two_title_snapshots"){
     const payload=payloadForStep(step);let valid=false;
     const reads=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
