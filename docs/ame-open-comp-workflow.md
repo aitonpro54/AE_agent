@@ -140,3 +140,21 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   Binary delta заменяет decimal identity на bounded `b1:sign:e:hi26:lo26` с точной
   арифметической реконструкцией из encoded tokens; display canonical/equal/gates
   сохранены. Offline37/436 ES3 PASS с IEEE byte oracle, subnormal/ULP/negative cases.
+- `109252c` applied/review GO: actual inspect PASS82 numeric identities. Canary
+  `68fa94ef…` native dispatch returned, run `95013316…`/command `0a13a067…`.
+  Aggregate сохранил `verification_required` на AE process gate; exact keyed
+  reconcile затем PASS/privateProofVerified/restorable. UI receipt первого job
+  сохранён: full marker, preset, reserved output, Work Area0..00:00:10:01 при30fps.
+  START/render0, media не принималось; повторного dispatch нет.
+- Export Settings вызвал AfterFX26540 от `dynamiclinkmanager.exe`; original28492
+  жив. Restore proposal прошёл, dry отказал global singleton process gate до effects.
+  Имя held/debt1. Private continuity pin согласован архитектурой: FULL CEP tuple и
+  fresh exact original PID/birth/path, без caller hint, first/latest или старых прав.
+  Reviewed one-shot backend apply должен сохранить hashes пяти точных journal files,
+  debt1 и CEP tuple до fresh keyed reconcile/new proposed restore; при drift STOP.
+- Private actor pin delta:42 groups/540 actual ES3 parses PASS; retained helper,
+  executor restart, exact restore и следующий generic job покрыты. Неизвестный
+  multi-AE/CEP drift/PID reuse/конфликт или corrupt binding дают отказ. Pin хранит
+  идентичность, execution rights восстанавливаются только свежими обычными gates.
+- Actor-pin review GO (core84b559c7/smoke8c51e2ec); финальный root offline111:
+  42 groups/1620 actual ES3 parses PASS. Это общий цикл, без реального AME/рендера.

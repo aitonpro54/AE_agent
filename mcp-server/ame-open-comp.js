@@ -17,6 +17,12 @@ function uuid(value) { if (!UUID.test(value || "")) fail("ame_open_exact_uuid_re
 function id(value) { if (!Number.isSafeInteger(value) || value < 1) fail("ame_open_exact_item_id_required"); return value; }
 function iso(value) { if (typeof value !== "string" || !Number.isFinite(Date.parse(value)) || new Date(Date.parse(value)).toISOString() !== value) fail("ame_open_exact_timestamp_required"); return value; }
 function processIdentity(value) { object(value,["pid","startedAt","path"]); id(value.pid); iso(value.startedAt); if (typeof value.path !== "string" || !path.isAbsolute(value.path) || /[\x00-\x1f]/.test(value.path)) fail("ame_open_process_identity_invalid"); return clone(value); }
+function actorIdentity(value) {
+  object(value,["aeProcess","targetHash","panelConnectionId","panelGeneration","panelInstanceId","panelLifecycleEpoch"]); processIdentity(value.aeProcess);
+  if (!SHA.test(value.targetHash || "") || [value.panelConnectionId,value.panelGeneration,value.panelInstanceId].some(text=>typeof text!=="string"||!text||text.length>512||/[\x00-\x1f]/.test(text)) || !Number.isSafeInteger(Number(value.panelGeneration)) || Number(value.panelGeneration)<1 || !Number.isSafeInteger(value.panelLifecycleEpoch) || value.panelLifecycleEpoch<1) fail("ame_open_actor_identity_invalid");
+  return value;
+}
+function cepIdentity(value) { return {targetHash:value.targetHash,panelConnectionId:value.panelConnectionId,panelGeneration:value.panelGeneration,panelInstanceId:value.panelInstanceId,panelLifecycleEpoch:value.panelLifecycleEpoch}; }
 function validateInput(name,raw) {
   if (name === INSPECT) {
     object(raw,["compItemId","allowedLayerIds","presetLabel"]); id(raw.compItemId);
@@ -55,7 +61,7 @@ function inspectAeProcesses() {
 
 function createExecutor(deps) {
   if (!deps || !path.isAbsolute(deps.stateDir || "") || !path.isAbsolute(deps.outputDir || "") || ["native","wrap","readActor","inspectAeProcesses","inspectAmeProcesses","assertRunner"].some(k => typeof deps[k] !== "function")) fail("ame_open_dependencies_required");
-  const stateDir = path.resolve(deps.stateDir), outputDir = path.resolve(deps.outputDir), inspections = new Map(), capabilities = new WeakMap(), debts = new Map(), menuPins = new Map(), workflow = new Map();
+  const stateDir = path.resolve(deps.stateDir), outputDir = path.resolve(deps.outputDir), inspections = new Map(), capabilities = new WeakMap(), debts = new Map(), menuPins = new Map(), workflow = new Map(), actorPins = new Map();
   const now = deps.now || Date.now; let busy = false, current = null;
   function directory(dir) {
     if (!fs.existsSync(dir)) { directory(path.dirname(dir)); try { fs.mkdirSync(dir,{mode:0o700}); } catch (e) { if (e.code !== "EEXIST") throw e; } }
@@ -76,22 +82,38 @@ function createExecutor(deps) {
     const value = {intentId:attempt.intentId,runId:attempt.runId,phase,restoreDebt:!["restored","failed_before_native","no_effect_proven"].includes(phase),replayAllowed:false,...extra};
     write(file(attempt.intentId,"state"),value); workflow.set(attempt.intentId,attempt); if (value.restoreDebt) debts.set(attempt.intentId,attempt); else debts.delete(attempt.intentId); deps.persist?.(value); return value;
   }
+  function pinActor(owner) {
+    actorIdentity(owner); const key=hash(cepIdentity(owner)), pinned=actorPins.get(key);
+    if (pinned && !native.equal(pinned,owner.aeProcess)) fail("ame_open_conflicting_actor_pins");
+    actorPins.set(key,processIdentity(owner.aeProcess));
+  }
   if (fs.existsSync(stateDir)) {
     directory(stateDir);
     for (const name of fs.readdirSync(stateDir).filter(v => /^[a-f0-9-]{36}\.intent\.json$/.test(v))) {
       const attempt = read(path.join(stateDir,name)), saved = read(file(attempt.intentId,"state"));
+      const {binding,...facts}=attempt;
+      if (attempt.schema!==SCHEMA || name!==uuid(attempt.intentId)+".intent.json" || binding!==hash(facts)) fail("ame_open_retained_intent_binding_changed");
+      pinActor(attempt.actor);
       workflow.set(attempt.intentId,attempt);
       if (!saved || saved.restoreDebt !== false) debts.set(attempt.intentId,attempt);
       const key = hash(attempt.actor.aeProcess), pinned = menuPins.get(key); if (pinned && pinned !== attempt.menuMetadataHash) fail("ame_open_retained_menu_mapping_changed"); menuPins.set(key,attempt.menuMetadataHash);
     }
   }
-  async function actor() {
+  async function actor(expectedOwner = null) {
     const value = await deps.readActor(), s = value?.state, t = value?.target;
     // readActor is the existing exact installed AE extension maintenanceTarget
     // service. The native observation independently checks the AE application.
     if (!s || s.nativeControlIdle !== true || s.activeAction !== null || s.recoveryTransport || s.actionStorage !== "ready" || !s.bridgeConnection?.panelConnectionId || !s.panelInstanceId || !Number.isSafeInteger(s.panelLifecycleEpoch) || s.panelLifecycleEpoch < 1 || !Number.isSafeInteger(Number(s.panelGeneration)) || Number(s.panelGeneration) < 1 || !t || [t.url,t.webSocketDebuggerUrl].some(v => typeof v !== "string" || !v || /[\x00-\x1f]/.test(v))) fail("ame_open_actor_not_idle_or_not_ae");
-    const ae = await deps.inspectAeProcesses(); if (!Array.isArray(ae) || ae.length !== 1) fail("ame_open_exact_ae_process_required");
-    return {aeProcess:processIdentity(ae[0]),targetHash:hash({url:t.url,webSocketDebuggerUrl:t.webSocketDebuggerUrl}),panelConnectionId:s.bridgeConnection.panelConnectionId,panelGeneration:String(s.panelGeneration),panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch};
+    const cep={targetHash:hash({url:t.url,webSocketDebuggerUrl:t.webSocketDebuggerUrl}),panelConnectionId:s.bridgeConnection.panelConnectionId,panelGeneration:String(s.panelGeneration),panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch};
+    if (expectedOwner && !native.equal(cep,cepIdentity(actorIdentity(expectedOwner)))) fail("ame_open_actor_changed");
+    // A pin is private identity evidence, never an execution grant. It comes
+    // only from a successful single-process inspection or a validated intent.
+    const pinned=expectedOwner?expectedOwner.aeProcess:actorPins.get(hash(cep)), ae=await deps.inspectAeProcesses();
+    if (!Array.isArray(ae)) fail("ame_open_exact_ae_process_required");
+    const rows=ae.map(processIdentity); let selected;
+    if (pinned) { const matches=rows.filter(row=>row.pid===pinned.pid); if (matches.length!==1 || !native.equal(matches[0],pinned)) fail("ame_open_pinned_ae_process_changed"); selected=matches[0]; }
+    else { if (rows.length!==1) fail("ame_open_exact_ae_process_required"); selected=rows[0]; }
+    return actorIdentity({aeProcess:selected,...cep});
   }
   async function ameProcess() { const rows = await deps.inspectAmeProcesses(); if (!Array.isArray(rows) || rows.length !== 1) fail("ame_open_exact_ame_process_required"); return processIdentity(rows[0]); }
   async function invoke(body,mutation = false,attempt = null,kind = "read") {
@@ -120,7 +142,8 @@ function createExecutor(deps) {
   async function inspect(raw) {
     const selector = validateInput(INSPECT,raw); if (busy) fail("ame_open_busy");
     const owner = await actor(), observed = validObservation(await invoke(native.observeScript(selector)),selector), ame = await ameProcess();
-    if (!native.equal(owner,await actor())) fail("ame_open_actor_changed");
+    if (!native.equal(owner,await actor(owner))) fail("ame_open_actor_changed");
+    pinActor(owner);
     const intentId = crypto.randomUUID(), menuMetadataHash = hash(observed.menu), entry = {intentId,selector,before:observed,actor:owner,ameProcess:ame,menuMetadataHash,expiresAt:now()+INSPECTION_TTL,idle:null};
     inspections.set(intentId,entry);
     return {ok:true,schema:SCHEMA,intentId,marker:"CODX_AME_"+intentId,observed,expectedRevision:observed.snapshot.revision,expectedStateHash:hash(observed.snapshot),menuMetadataHash,ameProcess:ame,aeProcess:owner.aeProcess,expiresAt:new Date(entry.expiresAt).toISOString(),executionAuthority:false,mediaVerified:false};
@@ -160,7 +183,7 @@ function createExecutor(deps) {
     }
     if (entry.before.nameDependencies.status === "blocked" || entry.before.menu.available !== true || args.menuMetadataHash !== entry.menuMetadataHash || args.expectedStateHash !== hash(entry.before.snapshot) || args.expectedRevision !== entry.before.snapshot.revision) fail("ame_open_name_dependency_menu_or_baseline_blocked");
     if (menuPins.has(hash(entry.actor.aeProcess)) && menuPins.get(hash(entry.actor.aeProcess)) !== entry.menuMetadataHash) fail("ame_open_pinned_menu_mapping_changed");
-    if (!native.equal(entry.actor,await actor()) || !native.equal(entry.ameProcess,await ameProcess())) fail("ame_open_actor_or_ame_process_changed");
+    if (!native.equal(entry.actor,await actor(entry.actor)) || !native.equal(entry.ameProcess,await ameProcess())) fail("ame_open_actor_or_ame_process_changed");
     const fresh = validObservation(await invoke(native.observeScript(entry.selector)),entry.selector);
     if (!native.equal(fresh,entry.before)) fail("ame_open_baseline_changed");
     expected(entry,args,"CODX_AME_"+entry.intentId); checkIdle(entry);
@@ -179,7 +202,7 @@ function createExecutor(deps) {
   function restoredSnapshot(a,slot) { const wanted = slot.dispatchReturned ? clone(a.wanted) : clone(a.before.snapshot); wanted.graph.find(c => c.id === a.selector.compItemId).name = a.beforeName; return wanted; }
   async function reconcileAttempt(a) {
     const slot = slotValid(await invoke(native.lookupScript(a.intentId)),a), fresh = validObservation(await invoke(native.observeScript(a.selector)),a.selector);
-    if (!native.equal(a.actor,await actor())) fail("ame_open_actor_changed");
+    if (!native.equal(a.actor,await actor(a.actor))) fail("ame_open_actor_changed");
     if(slot.dispatchAttempted===false&&slot.dispatchReturned===false&&slot.restoreAttempted===false&&slot.restored===false&&slot.applied.length===0&&native.equal(fresh,a.before))return {slot,fresh,noEffectProven:true,restorable:false,restored:false,code:slot.error||"ame_open_no_effect_proven"};
     if (!slot.lastObserved || !native.equal(fresh,slot.lastObserved)) return {slot,fresh,restorable:false,code:"ame_open_restore_manual_drift"};
     const expectedSnapshot = slot.restored ? restoredSnapshot(a,slot) : partialExpected(a,slot), actual = clone(fresh.snapshot); actual.revision = expectedSnapshot.revision;

@@ -14,7 +14,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Progress
 
-- Open-comp canary no effects/debt0. `0cf7783` actual read: native precision17 усечён, roundtripfalse. Binary identity delta37/436 offline PASS ожидает review/apply/live. Root sole live controller; enqueue0.
+- `109252c`: actual binary inspect PASS; canary native dispatch1, exact keyed read+UI receipt PASS. Restore dry refused при втором AE от Dynamic Link; имя held/debt1, replay/START0. Private continuity pin в работе; root sole live controller.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
@@ -164,7 +164,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Исправить actual AE scanner failure, применить штатно; свежий inspect/canary, затем тот же шаг N.
+Private continuity pin: debt-preserving штатное apply, exact restore первой canary, затем тот же шаг оставшихся N.
 Без owned AEP/full-AEP SHA/fallback/census/START/render/video acceptance/user jobs/replay.
 
 ## Отложенные scope
