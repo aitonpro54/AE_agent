@@ -7,12 +7,9 @@
 
 ## Текущая цель пользователя
 
-19.10: исправлен semantic checker для подтверждённых queued AME jobs без
-готового output-файла. Scoped Sol/high implementation, независимое High review — GO.
-Приёмка offline; живую очередь, START и исторические records не меняли.
-
-По повторному поручению 19.10 два титровых снимка проверены в живом AE,
-два задания приняты в AME без запуска рендера. История и границы — в
+19.10: queued-only checker исправлен и применён штатным restart; свежий native
+STATUS подтвердил оба существующих задания после restart. Без START, рендера или
+повторного enqueue. История и границы — в
 [product two-title workflow](../docs/product-two-title-workflow.md).
 
 Предыдущий этап — штатный product reset с сохранением UNKNOWN и resource guards;
@@ -20,10 +17,10 @@
 
 ## Progress
 
-- 19.10: shared queued-only semantic branch принимает два свежих STATUS с
+- 19.10 offline: shared queued-only semantic branch принимает два разных STATUS с
   own-wrapper receipt и исходным completed ENQUEUE proof, без готового файла.
-  Исторический регресс теперь association PASS; прежний run.ok=false сохранён.
-  Legacy file-backed ветка остаётся строгой; live restart/deploy не выполнялись.
+  Проверки сохранённых runs ниже остаются read-only; исходные outcomes неизменны.
+  Legacy file-backed ветка остаётся строгой.
 - Verifier реализован: два exact-selector tools, retained native result, fresh
   adoption, ordinary runner/readback/semantic integration. Source review нашёл
   два P2 (реальный getter и final protection check); оба исправлены, final delta
@@ -61,13 +58,22 @@
   appliedPresetVerified/mediaVerified=false. Агрегатор второго enqueue-плана сообщил
   `semantic verification_required`, поэтому остаётся consistency gap; подробности
   и IDs — в linked workflow.
+- 19.10 после штатного restart checker build `921be66` применён; два существующих
+  jobs повторно прочитаны как `queued`. Read-only checker на старых exact runs:
+  slot2 association PASS/aggregate needs_review из-за сохранённого run.ok=false;
+  slot1 needs_review из-за прежнего failed/UNKNOWN шага. Это не live semantic PASS.
 
 ## Decision Log
 
 - Checker различает shared queued-only и прежний file-backed ENQUEUE contract.
   Без файла принимается только stopped/queued, нулевые progress/time и полные
   independent STATUS/receipt/command bindings. Media/preset completion не заявляется.
-  Исходный sender UNKNOWN не становится success; рабочий daemon не перезапускается.
+  Checker read-only; исходный sender UNKNOWN не становится success. Restart требует
+  отдельного scope и не меняет исторические records.
+- Свежие own-item STATUS после restart подтверждают текущее состояние jobs, но
+  existing semantic API не принимает их как доказательства для старых enqueue runs.
+  Исторические bytes/outcomes остаются неизменными; поздний queue read-back не
+  переинтерпретирует неизвестный или failed шаг.
 - 19.10: продолжение live и product reset явно разрешены пользователем. Родитель —
   единственный AE/CEP/UI-контроллер; specialist — read-only диагностика,
   operator — документация. Два задания приняты в разных внутренних batches
@@ -139,6 +145,9 @@
 - Live verifier: PASS, receipt и оба final STATUS подтверждают flags/GUID/workArea,
   восстановленный чистый source и два queued items; aggregate semantic consistency
   остаётся незакрытой. Детали и игнорируемые runtime evidence — в linked workflow.
+- Post-restart 19.10: runtime PID21860/source `921be66`, Connected/autonomy active;
+  project clean revision12968664, pending/inflight0/editSession=null. Оба jobs
+  снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
@@ -147,9 +156,10 @@
 
 ## Следующий шаг
 
-Scoped checker fix завершён офлайн. Для применения работающему bridge нужен
-отдельный штатный restart; в этом scope runtime не менялся. Два задания оставлены
-`queued`; START/render и повтор export/enqueue не выполнять, original UNKNOWN/noReplay сохранить.
+Scoped checker fix применён штатным restart, оба задания подтверждены `queued`.
+Semantic итоги старых runs остаются `needs_review`; свежий STATUS нельзя привязать
+к ним существующим API. Не повторять export/enqueue и сохранять original
+UNKNOWN/noReplay; дальнейшая работа требует отдельного scope/контракта.
 
 ## Отложенные scope
 

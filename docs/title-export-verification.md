@@ -72,8 +72,15 @@ START/render не выполнялись. Каталожный preset подтв
 исторический aggregate не переобозначается как success, enqueue не повторяется.
 19.10 исходный checker исправлен: отдельная shared queued-only ветка принимает
 строго связанные command/receipt и два независимых STATUS без output-файла.
-Offline replay реальной записи подтверждает association; исходный run.ok=false
-сохранён. Runtime не перезапускался, новая live-проверка не выполнялась.
+Offline replay реальных записей не переписывает их исходные outcomes. После
+отдельно разрешённого restart build `921be66` оба существующих jobs повторно
+прочитаны в `queued`; собственные fresh STATUS подтверждают текущую ассоциацию
+и workArea. Для старых runs slot 2 association PASS, но aggregate `needs_review`
+из-за `run.ok=false`; slot 1 `needs_review` из-за прежнего failed/UNKNOWN шага.
+Это не новый aggregate semantic PASS по свежим STATUS: публичного API для такого
+вызова без старого run selector нет. Не присоединять поздние STATUS к историческим
+timestamps и не менять UNKNOWN/outcomes. Подробная chronology — в
+[истории workflow](product-two-title-workflow.md).
 
 Статус реализации и live evidence: [активный план](../plans/target-app-execplan.md)
 и [история проверки очереди](product-two-title-workflow.md).

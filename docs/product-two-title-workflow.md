@@ -139,7 +139,29 @@ Association старой записи проходит, но её сохранё
 новый aggregate проверен на offline pre-semantic clone. Related semantic smoke
 `--ame-only` — PASS 10 groups после добавления event listener в clean mock.
 Независимое source review — GO. Production queue, exports и START не вызывались;
-работающий bridge остаётся на прежнем source до отдельного штатного restart.
+на момент записи работающий bridge оставался на прежнем source до отдельного
+штатного restart.
+
+## Применение checker и повторное чтение очереди — 19.10
+
+Отдельно разрешённый штатный restart применил runtime `921be66`: generation
+`4f6d5b36-38f3-499a-aea5-5fa23e0109e4`, daemon PID `21860` (10:34:54Z), source
+SHA `ea78e477fd35ac971cbe4821b49d25a4b77c0e06fa99e85dc12c3488cb0ca28e`.
+Bridge Connected/autonomy active; native read подтвердил исходный `titr_all.aep`
+clean, revision `12968664`, pending/inflight `0`, editSession `null`.
+
+Fresh own-item STATUS после restart (TITR_01/job `6dbb3e17-eca7-44d3-a247-8f55af57e694`
+10:35:18Z; TITR_02/job `32dcddb0-6f54-4e12-ac42-7fafb96ef077` 10:35:21Z)
+подтвердили оба `queued`, association/workArea applied, batch stopped, progress/time
+`0`, без read errors. Это read-back существующих jobs: enqueue/START/render/export/
+open/save не выполнялись.
+
+Read-only checker по старым exact runs: slot 2 (`0cb0ad38-fa07-4c78-afa5-aea66ea19d3c`)
+association PASS, aggregate `needs_review` из-за неизменённого `run.ok=false`; slot 1
+(`e1a0ce3f-c98b-4502-8e80-75eed71efe1d`) остаётся `needs_review` после failed/UNKNOWN
+шага. Исторические bytes/outcomes не менялись. API для semantic check свежих STATUS
+без run record нет; они не переоценивают UNKNOWN и не дают aggregate PASS обоим jobs.
+Evidence: ignored `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 
 ## Диапазон следующих заданий: отмеченная рабочая область
 
