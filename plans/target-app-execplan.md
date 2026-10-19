@@ -7,19 +7,23 @@
 
 ## Текущая цель пользователя
 
+19.10: исправлен semantic checker для подтверждённых queued AME jobs без
+готового output-файла. Scoped Sol/high implementation, независимое High review — GO.
+Приёмка offline; живую очередь, START и исторические records не меняли.
+
 По повторному поручению 19.10 два титровых снимка проверены в живом AE,
 два задания приняты в AME без запуска рендера. История и границы — в
 [product two-title workflow](../docs/product-two-title-workflow.md).
 
-17.10 создать штатный операторский сброс bridge для обычной новой product-сессии.
-Историю, UNKNOWN, checkpoints, idempotency и output/resource guards сохранить.
-Не восстанавливать старые задания, не удалять очереди, не запускать рендер.
-Пользователь выбрал внутреннее review сильной моделью вместо внешнего Pro.
-Sol 6.1 Ultra выполнил source/design review; обязательные REVISE приняты.
-Scoped ae_specialist реализовал инструмент; родитель владеет docs и live-контролем.
+Предыдущий этап — штатный product reset с сохранением UNKNOWN и resource guards;
+реализация specialist и внутреннее Ultra review завершены, история — в linked контракте.
 
 ## Progress
 
+- 19.10: shared queued-only semantic branch принимает два свежих STATUS с
+  own-wrapper receipt и исходным completed ENQUEUE proof, без готового файла.
+  Исторический регресс теперь association PASS; прежний run.ok=false сохранён.
+  Legacy file-backed ветка остаётся строгой; live restart/deploy не выполнялись.
 - Verifier реализован: два exact-selector tools, retained native result, fresh
   adoption, ordinary runner/readback/semantic integration. Source review нашёл
   два P2 (реальный getter и final protection check); оба исправлены, final delta
@@ -33,32 +37,15 @@ Scoped ae_specialist реализовал инструмент; родитель
   Resolve Fonts подтверждён и закрыт после deadline. Исходник восстановлен,
   новые snapshots существуют, native flags/GUID не подтверждены; enqueue0/START0.
   Reconcile incomplete/unknown; существующего adoption route нет, replay запрещён.
-- 17.10: приложения AE/AME и idle disconnected панель подтверждены. Bridge отсутствует;
-  current указывает на отсутствующий прежний процесс. Штатные status/ensure дают
-  native refusal; новых ENQUEUE/START не было. Готового clean reset не существовало.
-- 17.10: подготовлен secret-safe bundle COMPLETE; внешний Pro не использован по
-  прямому выбору пользователя. Внутреннее Ultra review разрешило узкую реализацию
-  с отдельной reset policy, session anchor, native absence, mutex/once/CAS,
-  физическим CEP tracker и закрытым admission до activation.
-- 17.10: production-реализация завершена. Добавлены local MCP route, reducer/CLI,
-  отдельная авторизация, native probe, mutex/CAS и CEP epoch/handshake. Уточняются
-  live условия. Три замечания Ultra исправлены: lost lease, exact receipt hashes
-  и known-failed read-only preflight retry. Correction source review GO.
-- `fc3a9e6`: инструмент зафиксирован. Порученный reset выполнен один раз,
-  operation `75081867…`, новая generation `408cbe01…`, pending_preflight.
-  Девять CEP assets поставлены с полной резервной копией и hash read-back.
-  Live startup выявил transient busy без возобновления poll; узкая CEP correction
-  добавляет один passive retry до native submission. Delta Ultra review GO.
-- `e9414ea`: startup correction поставлена. Обычный restart `64fa8b87…`
-  подтвердил exit root daemon (WAIT_OBJECT_0/code0), successor `31518ffd…`.
-  Fixed native read завершён, подписанная activation сохранена, reset_active.
-  Следующий poll отверг строковую reset generation. Ultra одобрил отдельный
-  numeric reconnect epoch после activation; исправление завершено и проверено.
-- `47c7344`: numeric reconnect correction поставлена (9 assets, hash match).
-  Restart `0e6e66c4…` подтвердил WAIT_OBJECT_0/code0, current `3ce32a47…`.
-  Панель Connected/online; connected_idle, pending0/inflight0/editSession=null,
-  autonomy active. Обычный typed get_project_info успешно прочитал текущий AEP.
-  Reset и native preflight не повторялись; пользовательский scope завершён.
+- 17.10: product reset реализован после native refusal отсутствующего daemon;
+  Ultra review и corrections GO. Отдельная reset policy, session anchor,
+  native absence, mutex/once/CAS и CEP physical fence сохранены.
+- `fc3a9e6`: reset `75081867…`/generation `408cbe01…` выполнен один раз.
+  CEP assets поставлены с backup/hash read-back; startup busy correction `e9414ea`
+  и numeric reconnect correction `47c7344` приняты Ultra. Обычные рестарты имеют
+  held-handle exit proof; activation завершена без повторного reset/preflight.
+- `47c7344`: Connected/autonomy active, pending0/inflight0/editSession=null,
+  fresh typed get_project_info PASS. Подробности — в product-session-reset.md.
 - 16.10: один actual AME addDL и независимый queued own-wrapper STATUS приняты.
   START0, generatedOutputVerified/appliedPresetVerified/mediaVerified=false.
   Диапазон следующего задания — свежая marked workArea exact pinned comp;
@@ -77,6 +64,10 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Decision Log
 
+- Checker различает shared queued-only и прежний file-backed ENQUEUE contract.
+  Без файла принимается только stopped/queued, нулевые progress/time и полные
+  independent STATUS/receipt/command bindings. Media/preset completion не заявляется.
+  Исходный sender UNKNOWN не становится success; рабочий daemon не перезапускается.
 - 19.10: продолжение live и product reset явно разрешены пользователем. Родитель —
   единственный AE/CEP/UI-контроллер; specialist — read-only диагностика,
   operator — документация. Два задания приняты в разных внутренних batches
@@ -118,6 +109,12 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Validation
 
+- Checker regression: `ame-queued-association-smoke.js` с сохранённым real run —
+  PASS 213 cases; historical association passed, replay aggregate passed,
+  savedRunOk=false сохранён. Независимое read-only source review — GO.
+  Related `ame-title-semantic-smoke.js --ame-only` — PASS 10 groups; в clean mock
+  добавлен отсутствовавший frontend.addEventListener. Чужой test/source-proof WIP сохранён.
+  Общий `semantic-verification-smoke.js`, rules, syntax трёх touched JS и diff — PASS.
 - Verifier33, snapshots30/recovery19, actual lifecycle getter и ES3 parse3 PASS;
   rules/syntax/diff PASS. Дополнительный AME semantic fake fixture fails до новой
   ветки тем же code/line и с HEAD module; AME production/foreign WIP не менялись.
@@ -150,10 +147,9 @@ Scoped ae_specialist реализовал инструмент; родитель
 
 ## Следующий шаг
 
-Текущий ограниченный scope завершён: два задания оставлены `queued`, START/render
-не выполнять. При отдельном продолжении сначала разобрать semantic
-`verification_required` consistency gap; не повторять export/enqueue и сохранять
-original UNKNOWN/noReplay.
+Scoped checker fix завершён офлайн. Для применения работающему bridge нужен
+отдельный штатный restart; в этом scope runtime не менялся. Два задания оставлены
+`queued`; START/render и повтор export/enqueue не выполнять, original UNKNOWN/noReplay сохранить.
 
 ## Отложенные scope
 

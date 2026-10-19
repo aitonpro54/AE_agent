@@ -122,6 +122,25 @@ Snapshot receipt и STATUS находятся в ignored
 batches; typed same-batch START готовность не подтверждена. START/render не
 выполнялись.
 
+## Исправление queued-only checker — 19.10
+
+По отдельному поручению пользователя исправлен `verifyAmeTitleAssociation`.
+Shared enqueue с внутренним STATUS теперь проверяется по своему контракту:
+исходная completed ENQUEUE-команда связывает nonce и operation args; два свежих
+различных STATUS связывают wrapper, job/source/process/session/output/preset/range.
+При пустом outputFiles дополнительно обязательны stopped/queued, нулевые
+progress/time, отсутствие completion/errors, точный addDL/workArea ack и
+own-item receipt. Эта ветка не доказывает готовность видео или применение preset;
+legacy file-backed проверки не ослаблены.
+
+Focused `ame-queued-association-smoke.js` со старой реальной записью — PASS
+213 cases, включая подменённые/неполные доказательства и legacy regression.
+Association старой записи проходит, но её сохранённый run.ok=false не меняется;
+новый aggregate проверен на offline pre-semantic clone. Related semantic smoke
+`--ame-only` — PASS 10 groups после добавления event listener в clean mock.
+Независимое source review — GO. Production queue, exports и START не вызывались;
+работающий bridge остаётся на прежнем source до отдельного штатного restart.
+
 ## Диапазон следующих заданий: отмеченная рабочая область
 
 По уточнению пользователя 16.10 default подготовки плана — отмеченная рабочая

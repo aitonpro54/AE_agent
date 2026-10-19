@@ -68,8 +68,12 @@ START/render не выполнялись. Каталожный preset подтв
 
 Финальный агрегатор второго enqueue-плана вернул `semantic verification_required`, несмотря
 на два свежих STATUS с `ownItemAccepted=true`, `nativeAssociationVerified=true`,
-`workAreaApplied=true` и `queued`. Это открытый semantic consistency gap;
-не переобозначать aggregate как success и не повторять enqueue.
+`workAreaApplied=true` и `queued`. Это был semantic consistency gap;
+исторический aggregate не переобозначается как success, enqueue не повторяется.
+19.10 исходный checker исправлен: отдельная shared queued-only ветка принимает
+строго связанные command/receipt и два независимых STATUS без output-файла.
+Offline replay реальной записи подтверждает association; исходный run.ok=false
+сохранён. Runtime не перезапускался, новая live-проверка не выполнялась.
 
 Статус реализации и live evidence: [активный план](../plans/target-app-execplan.md)
 и [история проверки очереди](product-two-title-workflow.md).

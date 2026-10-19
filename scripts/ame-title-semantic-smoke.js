@@ -35,7 +35,7 @@ async function fixture() {
   const forbidden = () => { throw Error("forbidden live or destructive action"); };
   const ame = vm.createContext({ Date: NativeDate, JSON: undefined, BridgeTalk: { appSpecifier: "ame-26.0" }, $: { global: { aeAgentAMEProbeSessionNonce: "session-semantic" } },
     app: { quit: forbidden, getEncoderHost: () => ({ isBatchRunning: () => false, addEventListener: () => {}, runBatch: () => { starts++; return true; } }),
-      getFrontend: () => ({ getDLItemsAtRoot: file => { assert.equal(file, sourcePath); return ["GUID-semantic"]; },
+      getFrontend: () => ({ addEventListener: () => {}, getDLItemsAtRoot: file => { assert.equal(file, sourcePath); return ["GUID-semantic"]; },
         addDLToBatch: (file, format, presetFile, guid, output) => {
           assert.equal(file, sourcePath); assert.equal(format, ""); assert.equal(presetFile, fs.realpathSync(preset.canonicalPath)); assert.equal(guid, "GUID-semantic"); enqueues++;
           return { outputFiles: [output], setWorkArea: () => true, addEventListener: () => {}, getEncodeProgress: () => 0, getEncodeTime: () => 0, getLogOutput: () => "offline" };

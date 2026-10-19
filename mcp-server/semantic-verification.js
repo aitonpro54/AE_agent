@@ -4151,8 +4151,39 @@ function verifyAmeTitleAssociation(step, evidence) {
   const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, sha = /^[a-f0-9]{64}$/;
   const exactPath = (left, right) => typeof left === "string" && left.length > 0 && typeof right === "string" && right.length > 0 &&
     normalizeSlashes(left).toLowerCase() === normalizeSlashes(right).toLowerCase();
+  // Shared enqueue returns its immediate own STATUS observation. The outer
+  // nonce still identifies ENQUEUE; neither STATUS binding contains its args.
+  // Retain the original server command proof to bind source/preset/range args.
+  const sharedObserved = args.queueMode === "shared_queue_v1" && payload.code === "job_observed";
+  const enqueueBinding = digest({ operation: "enqueue", jobId: payload.jobId, args });
+  const statusBinding = digest({ operation: "status", jobId: payload.jobId });
+  if (sharedObserved) {
+    const commands = Array.isArray(step.commands) ? step.commands.filter(command => command.role === "mutation") : [];
+    const command = commands.length === 1 ? commands[0] : null, sender = command && command.result;
+    if (!command || command.executionId !== run.id || command.state !== "completed" || command.ok !== true ||
+        sender?.schema !== "ae-agent-ame-title-send.v1" || sender.code !== "result" || sender.callback !== "result" ||
+        sender.requestNonce !== payload.requestNonce || typeof sender.responseBody !== "string" || sender.responseBody.length > 524288) return false;
+    const original = JSON.parse(sender.responseBody), job = original.job, process = observed.process;
+    if (original.schema !== jobs.NATIVE_SCHEMA || original.code !== "job_enqueued" || original.requestNonce !== payload.requestNonce ||
+        original.operationBinding !== enqueueBinding || original.appSpecifier !== args.targetSpecifier ||
+        original.sessionNonce !== first?.sessionNonce || original.nativeJobId !== null || original.nativeAssociationVerified !== true ||
+        original.batchRunning !== false || !job || job.handleKey !== payload.jobId || job.enqueueRequestNonce !== payload.requestNonce ||
+        job.retainedWrapperSessionNonce !== first?.job?.retainedWrapperSessionNonce || job.sourceGuid !== args.sourceGuid ||
+        !exactPath(job.sourcePath, args.sourceProjectFile) || !exactPath(job.outputPath, payload.outputPath) ||
+        job.presetIdentity !== first?.job?.presetIdentity || job.processBinding !== first?.job?.processBinding ||
+        digest(job.range) !== digest(args.range) || !Number.isFinite(original.observedAt) ||
+        original.observedAt < Date.parse(run.startedAt) || original.observedAt > first.observedAt ||
+        !process || process.pid !== args.expectedProcess.pid || process.startedAt !== args.expectedProcess.startedAt ||
+        !path.isAbsolute(process.path || "") || first.job.processBinding !== digest({ target: args.targetSpecifier,
+          session: args.expectedSessionNonce || null, pid: process.pid, startedAt: process.startedAt,
+          path: process.path.replace(/\\/g, "/").toLowerCase() }) ||
+        !uuid.test(first.requestNonce || "") || first.requestNonce === payload.requestNonce || first.requestNonce === observed.requestNonce ||
+        observed.queueOnly !== true || observed.startAcceptanceVerified !== false || observed.startReservation !== null ||
+        observed.nativeCompletionObserved !== false || observed.nativeResult !== null || observed.file?.exists !== false ||
+        !Number.isFinite(Date.parse(run.startedAt)) || !Number.isFinite(Date.parse(run.finishedAt))) return false;
+  }
   if (!first || !second || payload.schema !== jobs.SCHEMA || observed.schema !== jobs.SCHEMA ||
-      payload.ok !== true || observed.ok !== true || payload.code !== "job_enqueued" || observed.code !== "job_observed" ||
+      payload.ok !== true || observed.ok !== true || (!sharedObserved && payload.code !== "job_enqueued") || observed.code !== "job_observed" ||
       payload.batchId !== args.batchId || observed.batchId !== args.batchId || observed.jobId !== payload.jobId ||
       payload.handleKey !== payload.jobId || observed.handleKey !== payload.jobId ||
       payload.nativeJobId !== null || observed.nativeJobId !== null ||
@@ -4160,19 +4191,39 @@ function verifyAmeTitleAssociation(step, evidence) {
       payload.nativeQueueCompositionVerified !== false || observed.nativeQueueCompositionVerified !== false ||
       !path.isAbsolute(payload.outputPath || "") || !exactPath(path.basename(payload.outputPath), args.outputFileName) ||
       !uuid.test(payload.requestNonce || "") || !uuid.test(observed.requestNonce || "") || payload.requestNonce === observed.requestNonce ||
-      first.operationBinding !== digest({ operation: "enqueue", jobId: payload.jobId, args }) ||
-      second.operationBinding !== digest({ operation: "status", jobId: payload.jobId })) return false;
-  for (const [native, result, code] of [[first, payload, "job_enqueued"], [second, observed, "job_observed"]]) {
+      first.operationBinding !== (sharedObserved ? statusBinding : enqueueBinding) ||
+      second.operationBinding !== statusBinding) return false;
+  for (const [native, result, code] of [[first, payload, sharedObserved ? "job_observed" : "job_enqueued"], [second, observed, "job_observed"]]) {
     const job = native.job;
-    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || native.requestNonce !== result.requestNonce ||
+    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || (!sharedObserved || result === observed) && native.requestNonce !== result.requestNonce ||
         native.appSpecifier !== args.targetSpecifier || args.expectedSessionNonce && native.sessionNonce !== args.expectedSessionNonce ||
         native.nativeJobId !== null || native.nativeAssociationVerified !== true || !job ||
         job.nativeJobId !== null || job.handleKey !== payload.jobId || job.nativeAssociationVerified !== true ||
         job.sourceGuid !== args.sourceGuid || !exactPath(job.sourcePath, args.sourceProjectFile) ||
         !exactPath(job.outputPath, payload.outputPath) || !sha.test(job.presetIdentity || "") || !sha.test(job.processBinding || "") ||
         !isPlainObject(job.range) || Object.keys(job.range).length !== 2 ||
-        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds ||
-        !Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
+        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds) return false;
+    if (sharedObserved) {
+      const dispatch = job.dispatchDiagnostic, ack = dispatch?.workAreaCallAck, receipt = result.acceptanceReceipt;
+      if (result.ownItemAccepted !== true || result.state !== "queued" || result.completionVerified !== false || result.mediaVerified !== false ||
+          result === payload && result.unknownOutcome !== false || native.batchRunning !== false || native.start !== null ||
+          !uuid.test(job.retainedWrapperSessionNonce || "") || job.retainedWrapperSessionNonce !== first.job.retainedWrapperSessionNonce ||
+          job.enqueueRequestNonce !== payload.requestNonce || job.workAreaApplied !== true || job.status !== "queued" ||
+          job.nativeCompletionObserved !== false || job.nativeResult !== null || job.completionOrigin !== null || job.eventObservedAt !== null ||
+          job.hostCompletion !== null || job.wrapperCompletion !== null || job.getEncodeProgress !== 0 || job.getEncodeTime !== 0 ||
+          !Array.isArray(job.readErrors) || job.readErrors.length !== 0 || !Array.isArray(job.outputFiles) || job.outputFiles.length !== 0 ||
+          job.outputBindingEvidence !== "exact_addDL_call_argument_ack" || job.independentOutputGetterVerified !== false || job.generatedOutputVerified !== false ||
+          dispatch?.phase !== "association_readback" || dispatch.addDLInvoked !== true || dispatch.addDLReturned !== true || dispatch.error !== null ||
+          !Array.isArray(dispatch.creationFailures) || dispatch.creationFailures.length !== 0 || ack?.type !== 3 || ack.result !== true ||
+          ack.startSeconds !== args.range.startSeconds || ack.endSeconds !== args.range.endSeconds || !Number.isFinite(ack.observedAt) ||
+          ack.observedAt < Date.parse(run.startedAt) || ack.observedAt > native.observedAt ||
+          receipt?.schema !== "ae-agent-ame-own-item-acceptance.v1" || receipt.jobId !== payload.jobId ||
+          receipt.enqueueRequestNonce !== payload.requestNonce || receipt.readRequestNonce !== native.requestNonce || receipt.observedAt !== native.observedAt ||
+          receipt.retainedWrapperSessionNonce !== job.retainedWrapperSessionNonce || !exactPath(receipt.outputPath, payload.outputPath) ||
+          receipt.workAreaApplied !== true || receipt.proofSource !== "retained_encoder_wrapper" || receipt.appliedPresetVerified !== false ||
+          receipt.outputBindingEvidence !== job.outputBindingEvidence || receipt.independentOutputGetterVerified !== false || receipt.generatedOutputVerified !== false ||
+          receipt.rangeProof !== "setWorkArea_call_ack" || receipt.mediaVerified !== false) return false;
+    } else if (!Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
   }
   if (!exactPath(first.job.sourcePath, second.job.sourcePath) || !exactPath(first.job.outputPath, second.job.outputPath) ||
       first.job.presetIdentity !== second.job.presetIdentity || first.job.processBinding !== second.job.processBinding ||
@@ -4183,7 +4234,9 @@ function verifyAmeTitleAssociation(step, evidence) {
   // enqueue JSON is insufficient; native observations must also be ordered.
   return Number.isFinite(firstTime) && Number.isFinite(secondTime) && Number.isFinite(attachedTime) &&
     Number.isFinite(first.observedAt) && first.observedAt > 0 && Number.isFinite(second.observedAt) &&
-    second.observedAt >= first.observedAt && first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
+    second.observedAt >= first.observedAt && (!sharedObserved || second.observedAt > first.observedAt) &&
+    (!sharedObserved || first.observedAt <= firstTime && second.observedAt <= secondTime) &&
+    first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
     secondTime >= firstTime && attachedTime >= secondTime &&
     (!Number.isFinite(runStart) || firstTime >= runStart && first.observedAt >= runStart) &&
     (!Number.isFinite(runFinish) || attachedTime <= runFinish);
