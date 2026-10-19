@@ -7,6 +7,11 @@ const MUTATIONS = [DISPATCH,RESTORE], INSPECTION_TTL = 300000, IDLE_TTL = 60000;
 const clone = value => JSON.parse(JSON.stringify(value)), hash = value => crypto.createHash("sha256").update(stableStringify(value)).digest("hex");
 const samePath = (a,b) => typeof a === "string" && typeof b === "string" && a.replace(/\\/g,"/").toLowerCase() === b.replace(/\\/g,"/").toLowerCase();
 function fail(code) { throw Object.assign(Error(code),{code}); }
+function binaryIdentityValid(value) {
+  if (typeof value!=="string" || value.length>32) return false;
+  const parts=value.split(":"), values=parts.slice(1).map(Number);
+  return parts.length===5 && parts[0]==="b1" && values.every((number,index)=>Number.isSafeInteger(number)&&String(number)===parts[index+1]) && [1,-1].includes(values[0]) && values[1]>=-1074 && values[1]<=1023 && values.slice(2).every(number=>number>=0&&number<67108864);
+}
 function object(raw,keys,required = keys) { if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(k => !keys.includes(k)) || required.some(k => !Object.prototype.hasOwnProperty.call(raw,k))) fail("ame_open_closed_input_required"); }
 function uuid(value) { if (!UUID.test(value || "")) fail("ame_open_exact_uuid_required"); return value; }
 function id(value) { if (!Number.isSafeInteger(value) || value < 1) fail("ame_open_exact_item_id_required"); return value; }
@@ -105,7 +110,7 @@ function createExecutor(deps) {
   }
   function validObservation(o,selector) {
     if (o?.schema !== "ae-agent-ame-open-comp-observation.v1" || o.application !== "aftereffects" || o.snapshot?.compItemId !== selector.compItemId || !Number.isSafeInteger(o.snapshot?.revision) || typeof o.snapshot?.projectFile !== "string" || !Array.isArray(o.snapshot?.graph) || o.snapshot.graph.length < 1 || o.snapshot.graph.length > 100 || o.nameDependencies?.complete !== true || !["blocked","no_expressions","proven_name_independent_subset"].includes(o.nameDependencies.status)) fail("ame_open_observation_invalid");
-    if (!Array.isArray(o.numericIdentity) || o.numericIdentity.length > 6000 || new Set(o.numericIdentity.map(row=>row?.path)).size !== o.numericIdentity.length || o.numericIdentity.some(row=>!row || Object.keys(row).sort().join(",")!=="exact,path" || typeof row.path!=="string" || !row.path || row.path.length>160 || typeof row.exact!=="string" || row.exact.length>32 || !/^-?[0-9]+(?:\.[0-9]+)?(?:e[+-]?[0-9]+)?$/.test(row.exact) || !Number.isFinite(Number(row.exact)))) fail("ame_open_numeric_identity_invalid");
+    if (!Array.isArray(o.numericIdentity) || o.numericIdentity.length > 6000 || new Set(o.numericIdentity.map(row=>row?.path)).size !== o.numericIdentity.length || o.numericIdentity.some(row=>!row || Object.keys(row).sort().join(",")!=="exact,path" || typeof row.path!=="string" || !row.path || row.path.length>160 || !binaryIdentityValid(row.exact))) fail("ame_open_numeric_identity_invalid");
     const roots = o.snapshot.graph.filter(c => c.id === selector.compItemId); if (roots.length !== 1 || !Array.isArray(roots[0].layers) || new Set(roots[0].layers.map(l => l.id)).size !== roots[0].layers.length) fail("ame_open_comp_observation_invalid");
     for (const layerId of selector.allowedLayerIds) { const matches = roots[0].layers.filter(l => l.id === layerId); if (matches.length !== 1 || typeof matches[0].enabled !== "boolean") fail("ame_open_controlled_layer_missing"); }
     return o;

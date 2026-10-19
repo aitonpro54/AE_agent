@@ -6,22 +6,42 @@ const literal = value => JSON.stringify(value).replace(/\u2028/g, "\\u2028").rep
 function observe(a) {
   function bad(code) { throw Error(code); }
   var numericIdentity = [];
+  function binaryIdentity(value,path) {
+    function unavailable(stage) { bad('ame_open_numeric_identity_unavailable:{"path":' + diagnosticQuote(path,62) + ',"rawString":' + diagnosticQuote(String(value),34) + ',"stage":' + diagnosticQuote(stage,42) + '}'); }
+    function token(integer) { var text = String(integer); if (!/^-?(0|[1-9][0-9]*)$/.test(text) || Number(text) !== integer) unavailable("integer_token"); return text; }
+    var absolute = Math.abs(value), exponent = Math.floor(Math.log(absolute)/Math.LN2), unit, normalized, correction = 0, fraction, hi, lo, sign = value < 0 ? -1 : 1;
+    if (typeof exponent !== "number" || !isFinite(exponent)) unavailable("exponent");
+    if (exponent < -1074) exponent = -1074;
+    if (exponent > 1023) exponent = 1023;
+    unit = Math.pow(2,exponent);
+    if (!isFinite(unit) || unit <= 0) unavailable("unit");
+    normalized = absolute/unit;
+    while (normalized < 1 || normalized >= 2) {
+      if (++correction > 4) unavailable("correction_bound");
+      if (normalized < 1) { exponent--; unit = unit/2; } else { exponent++; unit = unit*2; }
+      if (exponent < -1074 || exponent > 1023 || !isFinite(unit) || unit <= 0) unavailable("correction_unit");
+      normalized = absolute/unit;
+    }
+    if (!isFinite(normalized) || normalized < 1 || normalized >= 2) unavailable("normalized");
+    fraction = (normalized-1)*4503599627370496;
+    if (!isFinite(fraction) || fraction < 0 || fraction >= 4503599627370496 || Math.floor(fraction) !== fraction) unavailable("fraction_integer");
+    hi = Math.floor(fraction/67108864); lo = fraction-hi*67108864;
+    if (hi < 0 || hi >= 67108864 || lo < 0 || lo >= 67108864 || Math.floor(hi) !== hi || Math.floor(lo) !== lo) unavailable("chunk_integer");
+    var signText = token(sign), exponentText = token(exponent), hiText = token(hi), loText = token(lo), encodedUnit = Math.pow(2,Number(exponentText));
+    if (!isFinite(encodedUnit) || encodedUnit <= 0 || encodedUnit !== unit) unavailable("encoded_unit");
+    if (Number(signText)*(1+(Number(hiText)*67108864+Number(loText))/4503599627370496)*encodedUnit !== value) unavailable("reconstruction");
+    return "b1:" + signText + ":" + exponentText + ":" + hiText + ":" + loText;
+  }
   function num(value,path) {
     if (typeof value !== "number" || !isFinite(value)) bad("ame_open_number_unavailable");
     if (value === 0 && 1/value === -Infinity) bad("ame_open_number_negative_zero");
-    // Display transport can lose digits. Retain the exact native double as a
-    // bounded, round-tripped 17-digit string in every full observation check.
+    // Display transport and native decimal precision can lose digits. Retain
+    // binary identity with exact native arithmetic reconstruction instead.
     var integer = Math.floor(value) === value, exact = null;
     if (!integer) {
       if (typeof path !== "string" || !path || path.length > 160 || numericIdentity.length >= 6000) bad("ame_open_numeric_identity_bound");
-      var parsed = null, precisionStage = "toPrecision", precisionFailed = false;
-      try { exact = value.toPrecision(17); precisionStage = "decimal_parse"; parsed = Number(exact); } catch (_) { precisionFailed = true; }
-      if (precisionFailed || typeof exact !== "string" || exact.length > 32 || parsed !== value) {
-        // This failure precedes any intent/effect. Keep the ENTIRE Error + JSON
-        // below the ordinary 400-char sanitizer bound; native has no JSON API.
-        var exactText = typeof exact === "string" ? exact : "", roundtrip = !precisionFailed && parsed === value;
-        bad('ame_open_numeric_identity_unavailable:{"path":' + diagnosticQuote(path,62) + ',"rawString":' + diagnosticQuote(String(value),34) + ',"exact":' + diagnosticQuote(exactText,42) + ',"type":' + diagnosticQuote(typeof exact,14) + ',"parsedString":' + diagnosticQuote(String(parsed),34) + ',"roundtrip":' + (roundtrip ? "true" : "false") + ',"stage":' + diagnosticQuote(precisionStage,18) + '}');
-      }
+      exact = binaryIdentity(value,path);
+      if (exact.length > 32) bad("ame_open_numeric_identity_bound");
     }
     // Use the SAME native conversion as the wire wrapper, never epsilon.
     var wire = String(value), canonical = Number(wire);

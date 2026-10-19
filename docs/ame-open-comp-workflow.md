@@ -135,3 +135,8 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
 - `1aff3c7` применён: readonly numeric identity refused до intent/effects.
   Diagnostic-only delta36/410 ES3 PASS добавляет bounded parseable path/raw/exact/
   parsed/stage в исходный отказ; representation/equal/gates сохранены.
+- `0cf7783` actual read установил несовместимость: frameDuration wire
+  `0.03333333333333`, native precision17 `0.033333333333330000`, roundtripfalse.
+  Binary delta заменяет decimal identity на bounded `b1:sign:e:hi26:lo26` с точной
+  арифметической реконструкцией из encoded tokens; display canonical/equal/gates
+  сохранены. Offline37/436 ES3 PASS с IEEE byte oracle, subnormal/ULP/negative cases.
