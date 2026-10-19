@@ -59,6 +59,7 @@ function observe(a) {
     // Data-only lexer. Deliberately no evaluation, comments, computed access,
     // concatenation, arbitrary assignment, calls or executable string decoder.
     var tokens = [], pos = 0, c, quote, value, escape, digits, match, number, cursor = 0;
+    debugStage = "expression_tokenize";
     while (pos < text.length) {
       c = text.charAt(pos);
       if (/\s/.test(c)) { pos++; continue; }
@@ -88,25 +89,88 @@ function observe(a) {
       if (/[.(),=;]/.test(c)) { tokens.push({kind:c,value:c}); pos++; continue; }
       return null;
     }
-    function take(kind,value) { var token = tokens[cursor]; if (!token || token.kind !== kind || value !== undefined && token.value !== value) return null; cursor++; return token; }
+    function take(kind,value) {
+      debugStage = "parse_take_array_" + typeof tokens;
+      if (typeof tokens !== "object") bad("ame_open_parser_internal_state:tokens_type");
+      if (tokens === null) bad("ame_open_parser_internal_state:tokens_null");
+      if (Object.prototype.toString.call(tokens) !== "[object Array]") bad("ame_open_parser_internal_state:tokens_array");
+      var count = tokens.length;
+      debugStage = "parse_take_length_" + typeof count;
+      if (typeof count !== "number") bad("ame_open_parser_internal_state:count_type");
+      if (!isFinite(count)) bad("ame_open_parser_internal_state:count_finite");
+      if (count < 0) bad("ame_open_parser_internal_state:count_negative");
+      if (count > 128) bad("ame_open_parser_internal_state:count_bound");
+      if (Math.floor(count) !== count) bad("ame_open_parser_internal_state:count_integer");
+      debugStage = "parse_cursor_" + typeof cursor + "_n" + count;
+      if (typeof cursor !== "number") bad("ame_open_parser_internal_state:cursor_type");
+      if (!isFinite(cursor)) bad("ame_open_parser_internal_state:cursor_finite");
+      if (cursor < 0) bad("ame_open_parser_internal_state:cursor_negative");
+      if (Math.floor(cursor) !== cursor) bad("ame_open_parser_internal_state:cursor_integer");
+      debugStage = "parse_take_c" + cursor + "_n" + count;
+      if (cursor > count) bad("ame_open_parser_internal_state:cursor_bound");
+      if (cursor === count) return null;
+      var token = tokens[cursor], tokenType = typeof token;
+      debugStage = "take_c" + cursor + "_n" + count + "_t" + tokenType;
+      if (tokenType !== "object") return null;
+      if (token === null) return null;
+      var tokenKind = token.kind;
+      if (typeof tokenKind !== "string") return null;
+      if (tokenKind !== kind) return null;
+      if (typeof value !== "undefined") {
+        var tokenValue = token.value;
+        if (tokenValue !== value) return null;
+      }
+      cursor = cursor + 1;
+      return token;
+    }
     function finish() { take(";"); return cursor === tokens.length; }
-    function stringCall() { var token; if (!take("(")) return null; token = take("string"); if (!token || !token.value || !take(")")) return null; return token.value; }
-    if (take("word","loopOutDuration")) {
-      if (!take("(")) return null;
-      if (take(")")) return finish() ? {kind:"literal_loop_out_duration",mode:"cycle",duration:0} : null;
-      if (take("word","type") && !take("=")) return null;
+    function stringCall() {
+      if (take("(") === null) return null;
+      var token = take("string");
+      if (typeof token !== "object") return null;
+      if (token === null) return null;
+      var stringValue = token.value;
+      if (typeof stringValue !== "string") return null;
+      if (stringValue.length === 0) return null;
+      if (take(")") === null) return null;
+      return stringValue;
+    }
+    if (take("word","loopOutDuration") !== null) {
+      if (take("(") === null) return null;
+      if (take(")") !== null) { if (!finish()) return null; return {kind:"literal_loop_out_duration",mode:"cycle",duration:0}; }
+      if (take("word","type") !== null) { if (take("=") === null) return null; }
       var mode = take("string"), duration = 0, hasDuration = false;
-      if (!mode || !/^(cycle|pingpong|offset|continue)$/.test(mode.value)) return null;
-      if (take(",")) { if (take("word","duration") && !take("=")) return null; var seconds = take("number"); if (!seconds || seconds.value < 0) return null; duration = seconds.value; hasDuration = true; }
-      if (!take(")") || !finish() || mode.value === "continue" && hasDuration) return null;
-      return {kind:"literal_loop_out_duration",mode:mode.value,duration:duration};
+      if (typeof mode !== "object") return null;
+      if (mode === null) return null;
+      var modeValue = mode.value;
+      if (typeof modeValue !== "string") return null;
+      if (!/^(cycle|pingpong|offset|continue)$/.test(modeValue)) return null;
+      if (take(",") !== null) {
+        if (take("word","duration") !== null) { if (take("=") === null) return null; }
+        var seconds = take("number");
+        if (typeof seconds !== "object") return null;
+        if (seconds === null) return null;
+        var secondsValue = seconds.value;
+        if (typeof secondsValue !== "number") return null;
+        if (secondsValue < 0) return null;
+        duration = secondsValue; hasDuration = true;
+      }
+      if (take(")") === null) return null;
+      if (!finish()) return null;
+      if (modeValue === "continue") { if (hasDuration) return null; }
+      return {kind:"literal_loop_out_duration",mode:modeValue,duration:duration};
     }
     cursor = 0;
-    if (!take("word","comp")) return null;
-    var compName = stringCall(); if (compName === null || !take(".") || !take("word","layer")) return null;
-    var layerName = stringCall(); if (layerName === null || !take(".") || !take("word","effect")) return null;
+    if (take("word","comp") === null) return null;
+    var compName = stringCall(); if (compName === null) return null;
+    if (take(".") === null) return null;
+    if (take("word","layer") === null) return null;
+    var layerName = stringCall(); if (layerName === null) return null;
+    if (take(".") === null) return null;
+    if (take("word","effect") === null) return null;
     var effectName = stringCall(); if (effectName === null) return null;
-    var propertyName = stringCall(); if (propertyName === null || !finish()) return null;
+    var propertyName = stringCall(); if (propertyName === null) return null;
+    if (!finish()) return null;
     return {kind:"literal_comp_effect_chain",compName:compName,layerName:layerName,effectName:effectName,propertyName:propertyName};
   }
   function recordComp(comp) {

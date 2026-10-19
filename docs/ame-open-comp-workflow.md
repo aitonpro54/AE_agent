@@ -110,3 +110,8 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   readonly inspect завершился `ae_execution_failed` внутри scanner: `undefined is
   not an object`, command `96293b2a…`. Intent/dispatch не создавались; это известный
   failed read, без replay/UNKNOWN и без live-приёмки. Нужна bounded диагностика места.
+- `f7c7f0c` применён: readonly диагностика указала parser `take`, original line131,
+  слой oldtext/`loopOutDuration`. Nullable/EOF проверки разделены на последовательные
+  guards; невозможное внутреннее состояние fail-closed. Focused32/372 actual ES3
+  parses, rules/syntax/scoped diff PASS. Причина actual AE ещё требует read-back;
+  enqueue/START/render 0. Whitelist и authority не расширялись.

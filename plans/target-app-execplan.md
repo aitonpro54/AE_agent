@@ -14,7 +14,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Progress
 
-- Open-comp `32850f1`/`dd83b33` применены. Lifecycle read PASS; второй readonly inspect failed внутри scanner (`undefined is not an object`), bounded диагностика уточняется. Root sole live controller; enqueue0.
+- Open-comp `32850f1`/`dd83b33`/`f7c7f0c` применены. Readonly диагностика локализовала scanner failure в parser take (oldtext/loopOutDuration). Последовательные nullable/EOF guards: offline32/372 PASS; требуется actual AE read. Root sole live controller; enqueue0.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
