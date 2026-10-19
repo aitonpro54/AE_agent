@@ -14,7 +14,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Progress
 
-- Open-comp `32850f1` применён; bridge/native read PASS. Первый inspect blocked на loop/literal refs; generic expression proof дополнен/review GO, повторное применение ожидается. Root sole live controller; enqueue0.
+- Open-comp `32850f1`/`dd83b33` применены. Lifecycle read PASS; второй readonly inspect failed внутри scanner (`undefined is not an object`), bounded диагностика уточняется. Root sole live controller; enqueue0.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
@@ -164,7 +164,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Применить уточнение expression proof штатно; свежий inspect/canary, затем тот же шаг N.
+Исправить actual AE scanner failure, применить штатно; свежий inspect/canary, затем тот же шаг N.
 Без owned AEP/full-AEP SHA/fallback/census/START/render/video acceptance/user jobs/replay.
 
 ## Отложенные scope

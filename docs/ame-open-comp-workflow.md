@@ -106,3 +106,7 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   `en_US`), но заблокировал rename: 80 выражений/11210 properties; текущий safe
   subset не распознаёт обычный `loopOutDuration` и literal ссылки на Color controller.
   До уточнения bounded expression proof enqueue не выполнялся; START/render 0.
+- `dd83b33` штатно применён; connected_idle и чистый lifecycle read PASS. Второй
+  readonly inspect завершился `ae_execution_failed` внутри scanner: `undefined is
+  not an object`, command `96293b2a…`. Intent/dispatch не создавались; это известный
+  failed read, без replay/UNKNOWN и без live-приёмки. Нужна bounded диагностика места.

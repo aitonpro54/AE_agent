@@ -13,6 +13,35 @@ function observe(a) {
   if (typeof BridgeTalk === "undefined" || String(BridgeTalk.appName).toLowerCase() !== "aftereffects") bad("ame_open_aftereffects_host_required");
   var target = null, i, j, graph = [], seen = {}, layerCount = 0, propertyCount = 0, expressionCount = 0, risks = [], propertySeen = {}, namedRootCount = 0;
   var compSeen = {}, layerSeen = {}, compCount = 0, expressionProofs = {}, expressionInventory = [], diagnosticSeen = {}, diagnosticBytes = 0, namedComps = {}, references = [], referenceSeen = {};
+  var debugStage = "observe", debugComp = null, debugLayer = null, debugKey = "", debugMatch = "";
+  function debug(stage,compId,layerId,key,match) {
+    debugStage = stage;
+    if (compId !== undefined) debugComp = compId;
+    if (layerId !== undefined) debugLayer = layerId;
+    if (key !== undefined) debugKey = key;
+    if (match !== undefined) debugMatch = match;
+  }
+  function diagnosticQuote(value,limit) {
+    // Bounded data-only JSON string encoder; native AE has no JSON polyfill.
+    var result = '"', text = String(value || ""), k, c, fragment, hex;
+    for (k = 0; k < text.length; k++) {
+      c = text.charAt(k); fragment = c;
+      if (c === '"' || c === "\\") fragment = "\\" + c;
+      else if (c.charCodeAt(0) < 32 || c.charCodeAt(0) > 126) { hex = c.charCodeAt(0).toString(16); while (hex.length < 4) hex = "0" + hex; fragment = "\\u" + hex; }
+      if (result.length + fragment.length + 1 > limit) break;
+      result += fragment;
+    }
+    return result + '"';
+  }
+  function diagnosticNumber(value) { if (typeof value === "number" && isFinite(value) && value >= 0 && value <= 2147483647 && Math.floor(value) === value) return String(value); return "null"; }
+  function inspectionError(error) {
+    // nativeLine is captured BEFORE this new Error/rethrow. The wire wrapper's
+    // outer line, if present, belongs to the diagnostic rethrow, not the cause.
+    var originalLine = error && error.line, message = error && error.message;
+    var detail = '{"stage":' + diagnosticQuote(debugStage,34) + ',"comp":' + diagnosticNumber(debugComp) + ',"layer":' + diagnosticNumber(debugLayer) + ',"key":' + diagnosticQuote(String(debugKey || "").slice(-40),42) + ',"match":' + diagnosticQuote(debugMatch,26) + ',"nativeLine":' + diagnosticNumber(originalLine) + ',"lineOrigin":"caught_error","message":' + diagnosticQuote(message || error,74) + '}';
+    // Prefix + every encoded field + Error.toString prefix remain below 400.
+    return Error("ame_open_expression_inspection_incomplete:" + detail);
+  }
   for (i = 1; i <= app.project.numItems; i++) if (app.project.item(i).id === a.compItemId) {
     if (target) bad("ame_open_comp_ambiguous"); target = app.project.item(i);
   }
@@ -97,6 +126,7 @@ function observe(a) {
   function propertyIdentity(p,parentPath) {
     if (!p || typeof PropertyType === "undefined") bad("ame_open_expression_property_unavailable");
     var index = p.propertyIndex, match = p.matchName, key = parentPath + "/" + index;
+    debugKey = key; debugMatch = match;
     if (typeof index !== "number" || !isFinite(index) || index < 1 || Math.floor(index) !== index || typeof match !== "string" || !match || match.length > 1024) bad("ame_open_expression_property_identity_unavailable");
     if (Object.prototype.hasOwnProperty.call(propertySeen,key)) {
       if (propertySeen[key].match !== match) bad("ame_open_expression_property_identity_changed"); return key;
@@ -105,6 +135,7 @@ function observe(a) {
     propertySeen[key] = {match:match,scanned:false}; return key;
   }
   function diagnostic(text,proof,compId,layerId,key,match) {
+    debug("diagnostic_record",compId,layerId,key,match);
     var refs = proof.reference ? proof.reference.key + ":" + proof.reference.compName + ":" + proof.reference.layerName + ":" + proof.reference.effectName + ":" + proof.reference.propertyName : "";
     var dedup = "expression:" + text + "\nkind:" + proof.kind + "\nreason:" + (proof.reason || "") + "\nreference:" + refs, row;
     if (Object.prototype.hasOwnProperty.call(diagnosticSeen,dedup)) row = expressionInventory[diagnosticSeen[dedup]];
@@ -121,6 +152,7 @@ function observe(a) {
     if (group.propertyType !== PropertyType.NAMED_GROUP && group.propertyType !== PropertyType.INDEXED_GROUP) return {error:"unsupported_literal_reference_group"};
     var count = groupCount(group), found = null, k, p;
     for (k = 1; k <= count; k++) {
+      debugKey = parentPath;
       p = group.property(k); propertyIdentity(p,parentPath);
       if (String(p.name || "") === name || p.matchName === name) { if (found) return {error:"ambiguous_literal_property"}; found = p; }
     }
@@ -137,6 +169,7 @@ function observe(a) {
     return false;
   }
   function resolveReference(syntax) {
+    debug("reference_comp_lookup");
     var cacheKey = "comp:" + syntax.compName, comp = null, layer = null, k, item, count, root, rootKey, effect, leaf, layerIndex = null;
     if (syntax.compName === String(target.name)) return {error:"root_comp_name_dependency"};
     if (Object.prototype.hasOwnProperty.call(namedComps,cacheKey)) comp = namedComps[cacheKey];
@@ -146,29 +179,34 @@ function observe(a) {
       if (!comp) return {error:"missing_literal_comp"}; namedComps[cacheKey] = comp;
     }
     if (comp.id === target.id) return {error:"root_comp_name_dependency"}; recordComp(comp);
+    debug("reference_layer_lookup",comp.id,null,"","");
     count = comp.numLayers; if (typeof count !== "number" || !isFinite(count) || count < 0 || Math.floor(count) !== count || count > 1000) bad("ame_open_layer_bound");
     for (k = 1; k <= count; k++) { item = comp.layer(k); if (String(item.name) === syntax.layerName) { if (layer) return {error:"ambiguous_literal_layer"}; layer = item; layerIndex = k; } }
     if (!layer) return {error:"missing_literal_layer"};
+    debug("reference_effect_group",comp.id,layer.id,"","");
     if (!referencedLayerSupported(layer)) return {error:"unsupported_literal_reference_layer"}; recordLayer(comp.id,layer,layerIndex);
     if (layer.source && layer.source.id === target.id && layer.isNameSet !== true) return {error:"root_derived_literal_layer_name"};
     root = layer.property("ADBE Effect Parade"); if (!root || root.matchName !== "ADBE Effect Parade") return {error:"missing_literal_effect_group"};
-    rootKey = propertyIdentity(root,comp.id+"/"+layer.id); effect = uniqueNamedChild(root,syntax.effectName,rootKey);
-    if (effect.error) return {error:effect.error}; leaf = uniqueNamedChild(effect.property,syntax.propertyName,effect.key);
+    rootKey = propertyIdentity(root,comp.id+"/"+layer.id); debug("reference_effect_lookup",comp.id,layer.id,rootKey,root.matchName); effect = uniqueNamedChild(root,syntax.effectName,rootKey);
+    if (effect.error) return {error:effect.error}; debug("reference_property_lookup",comp.id,layer.id,effect.key,effect.property.matchName); leaf = uniqueNamedChild(effect.property,syntax.propertyName,effect.key);
     if (leaf.error) return {error:leaf.error};
     if (leaf.property.propertyType !== PropertyType.PROPERTY) return {error:"literal_reference_leaf_required"};
     return {property:leaf.property,key:leaf.key,compId:comp.id,layerId:layer.id,reference:{key:leaf.key,compItemId:comp.id,compName:syntax.compName,layerId:layer.id,layerName:syntax.layerName,sourceItemId:layer.source?num(layer.source.id):null,layerNameIsSet:optional(layer.isNameSet),effectName:syntax.effectName,effectIndex:effect.property.propertyIndex,effectMatchName:effect.property.matchName,propertyName:syntax.propertyName,propertyIndex:leaf.property.propertyIndex,propertyMatchName:leaf.property.matchName}};
   }
   function analyzeLeaf(p,compId,layerId,key,dependencyDepth) {
+    debug("leaf_cache",compId,layerId,key,"");
     if (Object.prototype.hasOwnProperty.call(expressionProofs,key)) {
       if (expressionProofs[key].pending) return {proven:false,kind:"literal_comp_effect_chain",reason:"expression_dependency_cycle"};
       return expressionProofs[key];
     }
     if (p.propertyType !== PropertyType.PROPERTY || typeof p.canSetExpression !== "boolean") bad("ame_open_expression_capability_unavailable");
+    debug("leaf_expression_read",compId,layerId,key,p.matchName);
     var text = "", syntax, resolved, dependency, proof = {proven:true,kind:"static_property"};
     if (p.canSetExpression) text = p.expression;
     if (typeof text !== "string" || text.length > 20000) bad("ame_open_expression_text_unavailable_or_bound");
     if (!text.replace(/\s/g,"")) { expressionProofs[key] = proof; return proof; }
     expressionCount++; expressionProofs[key] = {pending:true};
+    debugStage = "expression_parse";
     syntax = expressionSyntax(text);
     if (nameIndependent(text)) proof = {proven:true,kind:"name_independent_math_subset"};
     else if (syntax && syntax.kind === "literal_loop_out_duration") proof = {proven:true,kind:syntax.kind};
@@ -179,6 +217,7 @@ function observe(a) {
         if (resolved.error) proof.reason = resolved.error;
         else {
           dependency = analyzeLeaf(resolved.property,resolved.compId,resolved.layerId,resolved.key,dependencyDepth + 1);
+          debug("reference_proof_record",compId,layerId,key,p.matchName);
           proof = {proven:dependency.proven,kind:syntax.kind,reason:dependency.proven ? null : dependency.reason || "uncertain_referenced_expression",reference:resolved.reference};
           if (!Object.prototype.hasOwnProperty.call(referenceSeen,resolved.key)) { referenceSeen[resolved.key] = true; references.push({target:resolved.reference,dependencyKind:dependency.kind,proven:dependency.proven,reason:dependency.reason || null}); }
         }
@@ -187,13 +226,15 @@ function observe(a) {
     expressionProofs[key] = proof; diagnostic(text,proof,compId,layerId,key,p.matchName); return proof;
   }
   function scanProperty(p, compId, layerId, parentPath, depth) {
+    debug("property_identity",compId,layerId,parentPath,"");
     if (depth > 32) bad("ame_open_expression_depth_bound");
     var key = propertyIdentity(p,parentPath), count, k;
+    debugStage = "property_scan";
     if (propertySeen[key].scanned) return; propertySeen[key].scanned = true;
     if (p.propertyType === PropertyType.PROPERTY) { analyzeLeaf(p,compId,layerId,key,0); return; }
     if (p.propertyType !== PropertyType.NAMED_GROUP && p.propertyType !== PropertyType.INDEXED_GROUP) bad("ame_open_expression_property_type_unsupported");
-    count = groupCount(p);
-    for (k = 1; k <= count; k++) scanProperty(p.property(k),compId,layerId,key,depth + 1);
+    debugStage = "property_group_count"; count = groupCount(p);
+    for (k = 1; k <= count; k++) { debug("indexed_property_lookup",compId,layerId,key,propertySeen[key].match); scanProperty(p.property(k),compId,layerId,key,depth + 1); }
   }
   function scanLayer(layer, compId) {
     // Layer.numProperties covers indexed mask/effect/tracker groups only.
@@ -214,11 +255,12 @@ function observe(a) {
       if (layer.threeDLayer === true) required.push("ADBE Material Options Group");
     }
     try {
+      debug("layer_group_count",compId,layer.id,path,kind);
       count = groupCount(layer);
-      for (k = 1; k <= count; k++) scanProperty(layer.property(k),compId,layer.id,path,1);
-      for (k = 0; k < required.length; k++) { p = layer.property(required[k]); if (!p) bad("ame_open_expression_required_root_unavailable:" + required[k]); if (p.matchName !== required[k]) bad("ame_open_expression_named_root_identity_changed"); scanProperty(p,compId,layer.id,path,1); namedRootCount++; }
-      for (k = 0; k < optionalRoots.length; k++) { p = layer.property(optionalRoots[k]); if (p !== null) { if (!p || p.matchName !== optionalRoots[k]) bad("ame_open_expression_optional_root_unavailable"); scanProperty(p,compId,layer.id,path,1); namedRootCount++; } }
-    } catch (error) { bad("ame_open_expression_inspection_incomplete:" + String(error.message || error)); }
+      for (k = 1; k <= count; k++) { debug("layer_index_lookup",compId,layer.id,path,kind); scanProperty(layer.property(k),compId,layer.id,path,1); }
+      for (k = 0; k < required.length; k++) { debug("required_root_lookup",compId,layer.id,path,required[k]); p = layer.property(required[k]); if (!p) bad("ame_open_expression_required_root_unavailable:" + required[k]); if (p.matchName !== required[k]) bad("ame_open_expression_named_root_identity_changed"); scanProperty(p,compId,layer.id,path,1); namedRootCount++; }
+      for (k = 0; k < optionalRoots.length; k++) { debug("optional_root_lookup",compId,layer.id,path,optionalRoots[k]); p = layer.property(optionalRoots[k]); if (p !== null) { if (!p || p.matchName !== optionalRoots[k]) bad("ame_open_expression_optional_root_unavailable"); scanProperty(p,compId,layer.id,path,1); namedRootCount++; } }
+    } catch (error) { throw inspectionError(error); }
   }
   function walk(comp, stack) {
     var key = String(comp.id), rows = [], next = [], k, layer, source, n;
