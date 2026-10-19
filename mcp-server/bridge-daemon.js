@@ -5797,6 +5797,7 @@ function validateAgentPlanObject(plan, requestId, context) {
       if(steps.length!==1 || plan.runtimeBindings || step.resultBindings)generatedSafetyIssues.push("Two title snapshots require one exact isolated typed step without runtime bindings.");
     }
     if(toolName===ameJobSource.TOOL){
+      generatedSafetyIssues.push("ame_snapshot_source_frozen: experimental per-title SaveAs/snapshot/full-AEP SHA flow is frozen pending separate user scope.");
       try{ameJobSource.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.code||error.message);}
       if(steps.length!==1||plan.runtimeBindings||step.resultBindings||step.bindings)generatedSafetyIssues.push("One AME source requires one exact isolated typed step without runtime bindings.");
     }
@@ -14631,6 +14632,8 @@ function nativePrephaseMaintenanceReaders() {
 }
 
 async function callTool(name, args, executionContext) {
+  if(name===ameJobSource.INSPECT||name===ameJobSource.TOOL)
+    return toolResult({ok:false,code:"ame_snapshot_source_frozen",scope:"experimental_unfinished_frozen_pending_separate_user_scope",replayAllowed:false},true);
   if(initialRuntime&&!ownedReadonlyScriptPreparation(name))initialRuntime.assertTool();
   if (name === panelBootstrap.TOOL_NAME) {
     const result = await panelBootstrapService.ensure(args || {});

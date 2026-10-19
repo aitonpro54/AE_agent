@@ -1,7 +1,9 @@
 # AME: запуск общей очереди
 
-Подготовка одного generic source перед существующим per-job enqueue описана в
-[AME single-job workflow](ame-single-job-workflow.md); она не является global start.
+Экспериментальный per-title SaveAs/source путь заморожен: [AME single-job workflow](ame-single-job-workflow.md).
+Активное направление повторных отправок из открытой композиции описано как черновик
+с незакрытыми архитектурными вопросами: [open-comp workflow](ame-open-comp-workflow.md).
+Ни один из этих путей не является global start.
 
 ## Два независимых пути
 

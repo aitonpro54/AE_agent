@@ -1,9 +1,9 @@
 # AME: generic single-job source
 
-**Статус: offline-контракт; live-проверка 11 jobs ещё не начата.** Producer
-готовит один проверенный source для одного собственного задания. Для N повторяются
-существующие per-job enqueue и self-check; producer не принимает N и не создаёт
-N API-вызовов или queue census.
+**Статус: EXPERIMENTAL / UNFINISHED / FROZEN.** Per-title SaveAs, owned AEP snapshots
+и full-AEP SHA flow заморожены до отдельного поручения пользователя. Код и полезные
+offline проверки сохранены для будущего отдельного review; это не активный путь.
+История реализации и эксперимента ниже — справочная, без GO на live acceptance.
 
 ## API и проверка source
 
@@ -17,14 +17,24 @@ N API-вызовов или queue census.
 - `reconcile_ame_job_source({runId, commandId})` только читает исходную команду,
   durable receipt и retained keyed slot. SaveAs/Open/replay запрещены.
 
-`inspect` выполняет native streaming SHA probe: бинарное чтение
-чанками 64 KiB, максимум 64 MiB, budget 40 s. Read transport timeout 60 s
+`inspect` выполняет read-only probe через фиксированный hash worker на закреплённом
+Node runtime: максимум 64 MiB, budget 40 s. Read transport timeout 60 s
 не разрешает принимать полный measured elapsed выше 40 s. До первого receipt при обычном
 выполнении и при reconcile результат native сравнивается с независимым Node SHA.
 Кэш probe живёт 120 s и привязан к точным filesystem pins и actor. Перед effect
 остаётся как минимум `2 × measured elapsed + 30 s` из native deadline до 120 s; если remaining budget меньше,
 source не создаётся. Namespace считается trusted до и во время hash; это не
-атомарная защита от произвольного внешнего writer.
+атомарная защита от произвольного внешнего writer. Exe и worker имеют private pins;
+caller не выбирает программу или команду. Путь исходника передаётся как base64-данные.
+Опасные startup/write-effect environment variables блокируют запуск; глобальная
+environment не меняется. Worker не записывает файлы, не обращается к сети или очереди.
+Полный exe/worker SHA проверяется при capture, перед mutation dispatch и самим worker;
+между ними проверяются identity/time/parent pins. Drift отклоняет попытку без repin.
+Code namespace считается trusted от capture до исполнения; selfhash не доказывает
+loaded bytes против произвольного concurrent writer.
+Его digest сохраняется native до восстановления исходника и callback; одного
+post-callback server hash недостаточно. `callSystem` не даёт гарантии жёсткого
+прерывания: неизвестный исход по-прежнему требует reconciliation без replay.
 
 Source path не задаётся caller: это owned UUID в `GENERATED_EXPORT_DIR/ame-job-sources`
 (`logs/generated-exports/ame-job-sources`); durable records лежат в
@@ -46,16 +56,13 @@ Pending, unknown actor/source/result, modal и неполное восстано
 Native resource cap 256 — предел ресурса retained slots, а не размер batch и не
 обещание неограниченного N. Producer не расширяет прежнюю пару export steps.
 
-## Статус и следующий шаг
+## История эксперимента (не активный следующий шаг)
 
-Final offline SHA34 и producer25 (включая x2/x11/x111), syntax и diff
-пройдены; static reviewer дал conditional GO. Live-проба 11 ещё не начата. Далее:
-штатный normal fresh CLI restart, затем
-actual read-only probe и 11 новых jobs по текущим титрам. Не запускать START,
-render или user jobs; прежние queued jobs не переотправлять. Live result сам по
-себе не подтверждает output quality.
+Исходные offline проверки и последующий fixed Node worker остались экспериментальными;
+они не подтверждают завершённость/приёмку workflow. Не продолжать их развитие в этом scope.
 
-В живом AE первоначальный read-only probe AEP 32 000 676 bytes превысил
-15 s до SaveAs. Бюджет 40 s выбран из прежнего admission: `2×40+30=110 s`
-при deadline 120 s. Если actual probe не укладывается в 40 s, создание не допускается;
-дальнейшее увеличение бюджета не является следующим автоматическим действием.
+В живом AE ES3 SHA probe AEP 32 000 676 bytes превысил 15 s и 40 s до SaveAs;
+effects/enqueue/START были 0. Worker-путь также остался экспериментальным и не даёт
+приёмки. Прежний admission `2×40+30=110 s` при deadline 120 s не меняется.
+Следующая работа определяется отдельным active workflow:
+[открытая композиция и повторяемая отправка](ame-open-comp-workflow.md).

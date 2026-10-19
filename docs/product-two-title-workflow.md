@@ -1,8 +1,9 @@
 # Передача титров в AME через product workflow
 
-Новый повторяемый single-job source producer описан как draft-контракт в
-[AME single-job workflow](ame-single-job-workflow.md). Он не переопределяет
-историческую приёмку двух титров.
+Экспериментальный per-title SaveAs/source producer заморожен; статус и история —
+в [AME single-job workflow](ame-single-job-workflow.md). Активное направление новых
+повторяемых отправок из открытой композиции — [черновик open-comp workflow](ame-open-comp-workflow.md).
+Архитектура ещё не утверждена; это не меняет историческую приёмку двух титров.
 
 ## Приёмка каждого задания без пересчёта очереди
 

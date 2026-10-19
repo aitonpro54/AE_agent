@@ -8,18 +8,16 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 ## Текущая цель пользователя
 
 19.10: per-job self-check/immutable acceptance и AME global-start реализованы; reset/apply PASS.
-Новый блок: generic single-job повтор для N; live-проба 11 jobs ещё не начата.
-Без census/START/render/user jobs.
-Контракт нового producer — [AME single-job workflow](../docs/ame-single-job-workflow.md);
-история — в [product workflow](../docs/product-two-title-workflow.md).
+Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFINISHED / FROZEN.
+Активное направление повторения N — open-comp enqueue, пока как архитектурный черновик:
+[open-comp workflow](../docs/ame-open-comp-workflow.md). Без census/START/render/user jobs.
 
 ## Progress
 
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
-- Single-job API: `expectedSourceSha25664`; native stream SHA64KiB/max64MiB,
-  trusted probe15s/cache120s (exact pins+actor), admission `2×elapsed+30s`, native+Node SHA до receipt.
-  Trust namespace не atomic к external writer; один source → enqueue/self-check → N, без N API/census.
-  Cap256 — resource limit. Пути и детали: [контракт](../docs/ame-single-job-workflow.md).
+- Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
+  preserve implementation and useful tests. Details/evidence:
+  [frozen workflow](../docs/ame-single-job-workflow.md).
 - 19.10: v2 receipt/evidence фиксируют первый self-check. Адресный STATUS меняет
   только текущее наблюдение; acceptanceOnly читает локальную приёмку без OS/native.
   Legacy v1 без proof не мигрирует; corrupt соседний proof не скрывает свой job.
@@ -85,6 +83,9 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   generic Save не получает обходного пути. Pending/source/actor UNKNOWN запрещает replay.
 - Native wrapper resource bound 256 не является лимитом batch count N; сохраняется.
   Расширять его или обещать неограниченную вместимость в этом блоке нельзя.
+- 19.10: human scope confirms producer is experimental/unfinished/frozen pending
+  separate request. Active target is visibility → enqueue from open AE comp →
+  exact new-job confirmation → repeat N; no owned AEP/full-AEP SHA/fallback/render/video acceptance.
 - Shared OS controller mutex сериализует ensure/restart/shutdown/reset.
   Predecessor-only once barrier не зависит от source/request ID. Partial launch
   и lost ACK допускают read-back, а не второй launch. Current публикуется CAS.
@@ -153,9 +154,10 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
-- Single-job: final SHA34/producer25 (x2/x11/x111), syntax и diff PASS;
-  actor fix `b678f77` применён; actual read-only probe32MB превысил15s, effects0.
-  Архитектурный GO: probe40s/read60s, прежние create120s/admission сохраняются; actual probe → 11 jobs.
+- Single-job experiment: offline worker/source checks and prior syntax passed, but
+  live ES3 read-only SHA probe of 32MB exceeded 15s and 40s before SaveAs; effects 0.
+  Later Node worker read-only command timed out after an AE parser modal, before helper launch.
+  Live acceptance is incomplete; producer remains frozen, with no GO claim.
 - AME global start: offline checks/review PASS; reset `48ebe813…`, connected_and_idle, bridge/project reads PASS, catalog 4 API. Вызовов 0; queue/job STATUS/census, enqueue, AME launch, START/render 0. Прежний STOP и причина v84/v86 сохранены в workflow; live cold-start/runBatch не тестировались.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
@@ -163,9 +165,9 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 
 ## Следующий шаг
 
-Следующий шаг: normal fresh CLI restart → actual
-read-only probe → 11 новых jobs по текущим титрам. Без census, START, render, user
-jobs, output-quality acceptance или replay UNKNOWN; lifecycle — по штатным gates.
+Следующий шаг: архитектурно определить контракт open-comp workflow, затем scoped
+реализация по отдельному поручению. No owned AEP, full-AEP SHA, auto-fallback,
+census, START, render, video acceptance, user jobs or UNKNOWN replay.
 
 ## Отложенные scope
 

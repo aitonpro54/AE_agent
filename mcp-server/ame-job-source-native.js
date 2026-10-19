@@ -61,7 +61,7 @@ function create(p){
     // Validate the entire patch before changing its first layer.
     for(i=0;i<patch.length;i++){for(j=1;j<=target.numLayers;j++)if(equal(target.layer(j).id,patch[i].layerId))layers[i]=target.layer(j);
       if(!layers[i]||!equal(layers[i].enabled,patch[i].expectedEnabled)||layers[i].locked)bad("ame_source_visibility_baseline_changed");}
-    clock();if(new Date().getTime()>=p.probeExpiresAt)bad("ame_source_hash_probe_stale");if(p.deadline-new Date().getTime()<p.minimumRemainingMs)bad("ame_source_hash_admission_budget");slot.phase="reserved";
+    clock();sourceRuntimeCheck(p.hashRequest.runtime);if(new Date().getTime()>=p.probeExpiresAt)bad("ame_source_hash_probe_stale");if(p.deadline-new Date().getTime()<p.minimumRemainingMs)bad("ame_source_hash_admission_budget");slot.phase="reserved";
     app.beginUndoGroup("AE Agent: один AME источник");try{
       for(i=0;i<patch.length;i++)layers[i].enabled=patch[i].enabled;
       if(p.args.range){target.workAreaStart=p.args.range.startSeconds;target.workAreaDuration=p.args.range.endSeconds-p.args.range.startSeconds;}
@@ -70,18 +70,18 @@ function create(p){
     slot.phase="save_submitted";app.project.save(new File(p.reservation.path));
     var savedArgs={expectedProjectFile:p.reservation.path,compItemId:p.args.compItemId},saved=sourceObserve(savedArgs);
     check(saved,p.reservation.path,p.wanted);var savedFile=new File(p.reservation.path);if(!savedFile.exists||savedFile.alias||savedFile.length<1||!savedFile.modified)bad("ame_source_saved_file_unverified");
-    slot.saved=sourceObserve(savedArgs);slot.phase="hashing_saved_source";slot.savedFile=sourceHashFile(p.reservation.path,p.deadline,p.maxHashBytes);slot.phase="saved_verified";
+    slot.saved=sourceObserve(savedArgs);slot.phase="hashing_saved_source";slot.savedFile=sourceHashFile(p.hashRequest);slot.phase="saved_verified";
     clock();pin(p.source,false);pin(p.checkpoint,false);slot.phase="restore_submitted";app.open(new File(p.source.path));
     var restored=sourceObserve(p.args);check(restored,p.source.path,p.before.snapshot);
     if(!equal(restored.guid,p.before.guid)||!equal(restored.range,p.before.range))bad("ame_source_restore_identity_changed");
     slot.restored=sourceObserve(p.args);pin(p.source,false);pin(p.checkpoint,false);slot.phase="restored";slot.ok=true;slot.state="terminal";return slot;
   }catch(e){slot.error=String(e.message||e);slot.state="unknown";return slot;}
 }
-function probe(p){var observed=sourceObserve(p.args);if(observed.dirty!==false)throw Error("ame_source_clean_baseline_required");return {observed:observed,hashProbe:sourceHashFile(p.args.expectedProjectFile,p.deadline,p.maxHashBytes)};}
+function probe(p){var observed=sourceObserve(p.args);if(observed.dirty!==false)throw Error("ame_source_clean_baseline_required");return {observed:observed,hashProbe:sourceHashFile(p.hashRequest)};}
 const literal=v=>JSON.stringify(v).replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
 function observeScript(a){return `var sourceObserve=${observe.toString()};return sourceObserve(${literal(a)});`;}
 function compareScript(a,before){return `var sourceObserve=${observe.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};return {difference:nativeSnapshotDifference(sourceObserve(${literal(a)}),${literal(before)})};`;}
-function createScript(p){return `var sourceObserve=${observe.toString()};var sourceHashFile=${hashing.hashFile.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};var sourceCreate=${create.toString()};return sourceCreate(${literal(p)});`;}
-function probeScript(p){return `var sourceObserve=${observe.toString()};var sourceHashFile=${hashing.hashFile.toString()};var sourceProbe=${probe.toString()};return sourceProbe(${literal(p)});`;}
+function createScript(p){return `var sourceObserve=${observe.toString()};var sourceRuntimeCheck=${hashing.nativeRuntimeCheck.toString()};var sourceHashFile=${hashing.nativeHash.toString()};var nativeSnapshotDifference=${nativeSnapshotDifference.toString()};var sourceCreate=${create.toString()};return sourceCreate(${literal(p)});`;}
+function probeScript(p){return `var sourceObserve=${observe.toString()};var sourceRuntimeCheck=${hashing.nativeRuntimeCheck.toString()};var sourceHashFile=${hashing.nativeHash.toString()};var sourceProbe=${probe.toString()};return sourceProbe(${literal(p)});`;}
 function lookupScript(p){return `var slots=$.global.${SLOT};return slots&&Object.prototype.hasOwnProperty.call(slots,${literal(p.nonce)})?slots[${literal(p.nonce)}]:null;`;}
 module.exports={SLOT,observe,create,observeScript,compareScript,createScript,lookupScript,probeScript};
