@@ -21,7 +21,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -47,6 +47,10 @@ function validateInput(name, raw = {}) {
     if (name === START) { if (!SHA.test(raw.manualQueueManifestSha25664 || "")) fail("ame_title_queue_manifest_hash_required"); a.manualQueueManifestSha25664 = raw.manualQueueManifestSha25664; }
   } else if (name === START && (raw.manualQueueManifestSha25664 !== undefined || raw.completedOwnedPrefix !== undefined)) fail("ame_title_manual_queue_mode_required");
   if (name === STATUS) { if (typeof raw.jobId !== "string" || !UUID.test(raw.jobId)) fail("ame_title_invalid_job"); a.jobId = raw.jobId;if(raw.originalRunId!==undefined){if(!UUID.test(raw.originalRunId))fail("ame_title_invalid_run");a.originalRunId=raw.originalRunId;} }
+  if (name === STATUS && raw.acceptanceOnly !== undefined) {
+    if (raw.acceptanceOnly !== true || raw.originalRunId !== undefined) fail("ame_title_invalid_acceptance_read");
+    a.acceptanceOnly = true;
+  }
   if (name === ENQUEUE) {
     a.sourceGuid = text(raw.sourceGuid, 160);
     if (!/^amep_[a-f0-9]{40}$/.test(raw.presetId || "") || !SHA.test(raw.presetSha25664 || "")) fail("ame_title_exact_preset_required");
@@ -395,11 +399,11 @@ function createExecutor(deps) {
     const rows = await deps.inspectProcesses(); if (!Array.isArray(rows) || rows.length !== 1 || !sameProcess(rows[0], rows[0]) || rows[0].pid !== a.expectedProcess.pid || new Date(rows[0].startedAt).toISOString() !== a.expectedProcess.startedAt || original && !sameProcess(rows[0], original)) fail("ame_title_process_changed_or_ambiguous"); return rows[0];
   }
   function binding(a, processInfo) { return hash({ target: a.targetSpecifier, session: a.expectedSessionNonce || null, pid: processInfo.pid, startedAt: processInfo.startedAt, path: String(processInfo.path).replace(/\\/g, "/").toLowerCase() }); }
-  function load(id) {
+  function load(id, receiptJobId = null) {
     const file = recordFile(id); if (!fs.existsSync(file)) return null; let batch;
     try { batch = JSON.parse(fs.readFileSync(file, "utf8")); } catch (_) { fail("ame_title_ledger_corrupt"); }
     if (!batch || batch.schema !== LEDGER_SCHEMA || batch.batchId !== id || !SHA.test(batch.processBinding || "") || !SHA.test(batch.presetIdentity || "") || !Array.isArray(batch.jobs) || batch.jobs.length > 64 || batch.jobs.some(j => !j || !UUID.test(j.jobId || "") || !UUID.test(j.requestNonce || "") || !SHA.test(j.operationBinding || "") || j.nativeJobId !== null || !j.args || j.args.batchId !== id || j.presetIdentity !== batch.presetIdentity || j.processBinding !== batch.processBinding)) fail("ame_title_ledger_corrupt");
-    for (const job of batch.jobs) validateInput(ENQUEUE, job.args); if (batch.start && (!UUID.test(batch.start.requestNonce || "") || !SHA.test(batch.start.operationBinding || "") || typeof batch.start.transportResolved !== "boolean")) fail("ame_title_ledger_corrupt"); return batch;
+    for (const job of batch.jobs) { validateInput(ENQUEUE, job.args); if (!receiptJobId || job.jobId === receiptJobId) savedAcceptance(job); } if (batch.start && (!UUID.test(batch.start.requestNonce || "") || !SHA.test(batch.start.operationBinding || "") || typeof batch.start.transportResolved !== "boolean")) fail("ame_title_ledger_corrupt"); return batch;
   }
   function outputFile(name) {
     const file = deps.resolveOutputFilePath(name); if (typeof file !== "string" || !path.isAbsolute(file) || path.basename(file) !== name) fail("ame_title_output_scope_invalid");
@@ -554,10 +558,47 @@ function createExecutor(deps) {
     job.state = job.nativeAssociationVerified ? observation.native.job.status : "unknown_outcome";
     if (job.nativeAssociationVerified) { job.retainedWrapperSessionNonce = observation.native.job.retainedWrapperSessionNonce; job.nativeSessionNonce = observation.native.sessionNonce; }
   }
+  function ownReceipt(job, native) {
+    return { schema: "ae-agent-ame-own-item-acceptance.v2", jobId: job.jobId, batchId: job.args.batchId,
+      enqueueRequestNonce: job.requestNonce, enqueueOperationBinding: job.operationBinding,
+      readRequestNonce: native.requestNonce, observedAt: native.observedAt,
+      retainedWrapperSessionNonce: native.job.retainedWrapperSessionNonce, nativeSessionNonce: native.sessionNonce,
+      jobBindingSha25664: hash(jobBinding(job)), nativeObservationSha25664: hash(native), authorizedRunId: job.latestAuthorizedRunId || null,
+      sourcePath: job.sourcePath, sourceGuid: job.args.sourceGuid, sourceSha25664: job.sourcePin.sha256,
+      presetIdentity: job.presetIdentity, presetSha25664: job.presetPin.sha256, processBinding: job.processBinding,
+      range: { ...job.args.range }, outputPath: job.outputPath, workAreaApplied: true, proofSource: "retained_encoder_wrapper",
+      appliedPresetVerified: false, outputBindingEvidence: native.job.outputBindingEvidence || "generated_output_files",
+      independentOutputGetterVerified: native.job.independentOutputGetterVerified === true,
+      generatedOutputVerified: native.job.generatedOutputVerified === true, rangeProof: "setWorkArea_call_ack", mediaVerified: false };
+  }
+  function savedAcceptance(job) {
+    const receipt = job.acceptanceReceipt, proof = job.acceptanceEvidence;
+    if (!receipt && !proof) return "missing";
+    // Historical v1 records lack an immutable initial observation. Preserve
+    // their bytes; viewing/restarting must not manufacture a new acceptance.
+    if (receipt?.schema === "ae-agent-ame-own-item-acceptance.v1" && !proof) return "legacy_unverified";
+    const native = proof?.native;
+    if (receipt?.schema !== "ae-agent-ame-own-item-acceptance.v2" || proof?.schema !== "ae-agent-ame-own-item-evidence.v1" ||
+        proof.receiptSha25664 !== hash(receipt) || !Number.isFinite(Date.parse(proof.acceptedAt)) ||
+        native?.schema !== NATIVE_SCHEMA || native.code !== "job_observed" || native.operationBinding !== hash({ operation: "status", jobId: job.jobId }) ||
+        !UUID.test(native.requestNonce || "") || native.requestNonce === job.requestNonce || native.appSpecifier !== job.args.targetSpecifier ||
+        job.args.expectedSessionNonce && native.sessionNonce !== job.args.expectedSessionNonce ||
+        !Number.isFinite(native.observedAt) || native.observedAt < Date.parse(job.submittedAt) || native.observedAt > Date.parse(proof.acceptedAt) + 60000 ||
+        native.nativeAssociationVerified !== true || native.nativeJobId !== null || native.batchRunning !== false || native.start !== null ||
+        native.job?.status !== "queued" || native.job.nativeCompletionObserved !== false || native.job.nativeResult !== null ||
+        !associated(job, native) || hash(receipt) !== hash(ownReceipt(job, native))) fail("ame_title_acceptance_corrupt");
+    return "accepted";
+  }
   function acceptOwnRead(job, observation) {
-    if (job.args.queueMode === sharedQueue.MODE && job.nativeAssociationVerified && observation.code === "job_observed" && observation.native.requestNonce !== job.requestNonce && observation.native.job.status === "queued" && observation.native.batchRunning === false) {
+    // Initial acceptance is historical proof, separate from mutable current
+    // observations. Never replace it after refresh, failure, or reconciliation.
+    if (job.acceptanceReceipt || job.acceptanceEvidence) return;
+    if (job.args.queueMode === sharedQueue.MODE && job.nativeAssociationVerified && observation.resolved && observation.code === "job_observed" && observation.native.requestNonce !== job.requestNonce && observation.native.job.status === "queued" && observation.native.batchRunning === false) {
       job.readyForStart = true;
-      job.acceptanceReceipt = { schema: "ae-agent-ame-own-item-acceptance.v1", jobId: job.jobId, enqueueRequestNonce: job.requestNonce, readRequestNonce: observation.native.requestNonce, observedAt: observation.native.observedAt, retainedWrapperSessionNonce: job.retainedWrapperSessionNonce, outputPath: job.outputPath, workAreaApplied: true, proofSource: "retained_encoder_wrapper", appliedPresetVerified: false, outputBindingEvidence:observation.native.job.outputBindingEvidence||"generated_output_files",independentOutputGetterVerified:observation.native.job.independentOutputGetterVerified===true,generatedOutputVerified:observation.native.job.generatedOutputVerified===true,rangeProof:"setWorkArea_call_ack",mediaVerified: false };
+      job.acceptanceReceipt = ownReceipt(job, observation.native);
+      job.acceptanceEvidence = { schema: "ae-agent-ame-own-item-evidence.v1", acceptedAt: new Date(now()).toISOString(),
+        receiptSha25664: hash(job.acceptanceReceipt), native: JSON.parse(JSON.stringify(observation.native)) };
+      savedAcceptance(job);
     }
   }
   const startReservation = batch => (batch.jobs[0]?.args.queueMode === sharedQueue.MODE ? deps.sharedQueueGrant : deps.manualQueueGrant)?.readReservation(batch.batchId) || null;
@@ -596,7 +637,7 @@ function createExecutor(deps) {
     let batch = load(a.batchId);const reuse=batch?.jobs.find(job=>job.notSentSettlement&&hash(validateInput(ENQUEUE,job.args))===hash(a)),limit=a.queueMode===sharedQueue.MODE?2:64;
     if (batch && (batch.presetIdentity !== presetIdentity || batch.processBinding !== processBinding || batch.start || batch.jobs.length>limit || batch.jobs.length===limit&&!reuse || batch.jobs.some(job => job.args.queueMode !== a.queueMode))) return result("batch_identity_or_preset_changed");
     const settlement=reuse?readSettlement(reuse):null;if(reuse&&!settlement)fail("ame_not_sent_settlement_required");
-    if (batch && batch.jobs.some(job => job!==reuse&&(!job.transportResolved || !job.nativeAssociationVerified || job.state === "unknown_outcome"))) return result("ame_title_unknown_job_no_replay");
+    if (batch && batch.jobs.some(job => job!==reuse && !(a.queueMode === sharedQueue.MODE && savedAcceptance(job) === "accepted") && (!job.transportResolved || !job.nativeAssociationVerified || job.state === "unknown_outcome"))) return result("ame_title_unknown_job_no_replay");
     if (a.queueMode !== sharedQueue.MODE && !previousJobsReady(a.batchId, processInfo)) return result("ame_title_previous_job_not_completed_no_replay");
     // Resolve the selector without outputFile's mkdir. Native admission must
     // precede even creation of the owned output directory.
@@ -764,7 +805,17 @@ function createExecutor(deps) {
     return result(observed.code, { ok: observed.code === "batch_start_accepted", batchId: a.batchId, requestNonce: batch.start.requestNonce, queueOwnershipAssertedByInjectedGate: true, unknownOutcome: batch.start.state !== "accepted", native: observed.native });
   }
   async function status(a) {
-    const processInfo = await processPin(a), batch = load(a.batchId), job = batch && batch.jobs.find(j => j.jobId === a.jobId);
+    if (a.acceptanceOnly) {
+      const batch = load(a.batchId, a.jobId), job = batch?.jobs.find(j => j.jobId === a.jobId);
+      const local = { observationSource: "saved_acceptance", currentStatusObserved: false, executionAuthority: false,
+        batchId: a.batchId, jobId: a.jobId, ownItemAccepted: false, acceptanceReceipt: null };
+      if (!job || batch.processBinding !== binding(a, job.process) || a.targetSpecifier !== job.args.targetSpecifier ||
+          a.expectedProcess.pid !== job.process.pid || Date.parse(a.expectedProcess.startedAt) !== Date.parse(job.process.startedAt)) return result("job_not_bound", local);
+      const acceptanceState = savedAcceptance(job), accepted = acceptanceState === "accepted";
+      return result(accepted ? "saved_acceptance_restored" : "saved_acceptance_" + acceptanceState, { ...local, ok: accepted,
+        handleKey: job.handleKey, ownItemAccepted: accepted, acceptanceState, acceptanceReceipt: accepted ? job.acceptanceReceipt : null });
+    }
+    const processInfo = await processPin(a), batch = load(a.batchId, a.jobId), job = batch && batch.jobs.find(j => j.jobId === a.jobId);
     if (!job || batch.processBinding !== binding(a, processInfo)) return result("job_not_bound"); pinned(job);
     if(a.originalRunId)return settleNotSent(a,batch,job);
     const pendingStart = batch.start && !batch.start.transportResolved, nonce = pendingStart ? batch.start.requestNonce : !job.transportResolved ? job.requestNonce : null;
@@ -807,7 +858,8 @@ function createExecutor(deps) {
     const startAcceptanceVerified = verified && originalStartAccepted(batch, job, native, processInfo);
     if (startAcceptanceVerified) { batch.start.transportResolved = true; batch.start.state = "accepted"; }
     job.completionVerified = complete; write(recordFile(a.batchId), batch);
-    return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted: !!job.acceptanceReceipt, acceptanceReceipt: job.acceptanceReceipt || null, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
+    const acceptanceState = savedAcceptance(job), ownItemAccepted = acceptanceState === "accepted";
+    return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted, acceptanceState, acceptanceReceipt: ownItemAccepted ? job.acceptanceReceipt : null, currentStatusObserved: !!native, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
       state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce,observationDiagnostic,originalSender:observed.originalSender||null,transportDiagnostic:observed.transportDiagnostic||null });
   }
   async function execute(name, raw, cap) {
@@ -816,7 +868,15 @@ function createExecutor(deps) {
     catch (error) {
       let durable = null;
       if (name === START) { try { durable = (a.queueMode === sharedQueue.MODE ? deps.sharedQueueGrant : deps.manualQueueGrant)?.readReservation(a.batchId); } catch (_) {} }
-      return result(error.code || "ame_title_read_error", { error: String(error.message || error).slice(0, 2000), ...(durable ? { unknownOutcome: true, batchId: a.batchId, requestNonce: durable.requestNonce, startReservation: durable } : {}) });
+      let initial = {};
+      if (name === STATUS) {
+        initial = { ownItemAccepted: false, acceptanceReceipt: null, currentStatusObserved: false, executionAuthority: false };
+        try {
+          const job = load(a.batchId, a.jobId)?.jobs.find(j => j.jobId === a.jobId);
+          if (job && binding(a, job.process) === job.processBinding && a.expectedProcess.pid === job.process.pid && Date.parse(a.expectedProcess.startedAt) === Date.parse(job.process.startedAt) && savedAcceptance(job) === "accepted") initial = { ...initial, ownItemAccepted: true, acceptanceReceipt: job.acceptanceReceipt };
+        } catch (_) { /* Corrupt/missing local proof is never an acceptance. */ }
+      }
+      return result(error.code || "ame_title_read_error", { error: String(error.message || error).slice(0, 2000), ...initial, ...(durable ? { unknownOutcome: true, batchId: a.batchId, requestNonce: durable.requestNonce, startReservation: durable } : {}) });
     }
     finally { if (mutation) busy = false; }
   }
@@ -832,7 +892,7 @@ const definitions = [
   [ENQUEUE, "Gated fixed addDLToBatch with one exact GUID, exact catalog EPR and reserved output. Shared mode requires private server authority and immediate own wrapper read-back. Our jobId/handleKey is not a native ID. Unknown submission cannot replay.", { ...source, batchId, queueMode, sourceGuid: { type: "string" }, presetId: { type: "string", pattern: "^amep_[a-f0-9]{40}$" }, presetSha25664: { type: "string", pattern: SHA.source }, outputFileName: { type: "string" }, range: { type: "object", description: "Явные секунды. По умолчанию брать свежую отмеченную рабочую область того же pinned source/comp из get_comp_details: startSeconds=workAreaStart, endSeconds=workAreaStart+workAreaDuration. Явный диапазон пользователя имеет приоритет; 0..comp.duration только по прямому запросу всей композиции. Если workArea невалидна или отсутствует, запросить недостающие данные, не подставлять full comp. Адаптер переданный range не меняет.", additionalProperties: false, required: ["startSeconds", "endSeconds"], properties: { startSeconds: { type: "number", minimum: 0 }, endSeconds: { type: "number" } } } }, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range"]],
   [QUEUE_MANIFEST, "Fresh owned wrapper manifest for exactly one ready job and explicit completed owned prefix. No proof of full AME queue, no enqueue/start. Requires trusted native read dispatch port.", { batchId, ...queueFields }, ["batchId", "manualQueueMode", "completedOwnedPrefix"]],
   [START, "Global AME runBatch. Shared mode starts the mixed queue after fresh checks of two accepted own items, private server capability and durable once marker. Legacy CEP declaration remains supported. No full queue or media proof.", { batchId, queueMode, ...queueFields, manualQueueManifestSha25664: { type: "string", pattern: SHA.source } }, ["batchId"]],
-  [STATUS, "Fixed read of one retained native EncoderWrapper. originalRunId selects server-owned proof of a finalized enqueue that never reached required command capture; settles that reservation without a native send and requires a new proposal for its first delivery.", { batchId, jobId: { type: "string", pattern: UUID.source },originalRunId:{type:"string",pattern:UUID.source} }, ["batchId", "jobId"]]
+  [STATUS, "Explicit fixed read of one retained native EncoderWrapper. acceptanceOnly:true restores only immutable saved initial acceptance locally, without OS/native/queue reads or execution authority; it cannot serve as current read-back. originalRunId settles server-proven never-sent enqueue without native send; requires a new proposal for its first delivery. These two modes are exclusive.", { batchId, jobId: { type: "string", pattern: UUID.source },originalRunId:{type:"string",pattern:UUID.source}, acceptanceOnly: { type: "boolean", enum: [true] } }, ["batchId", "jobId"]]
 ];
 const tools = definitions.map(([name, description, fields, required]) => ({ name, description, inputSchema: { type: "object", additionalProperties: false, properties: { ...common, ...fields }, required: ["targetSpecifier", "expectedProcess", ...required] }, annotations: { readOnlyHint: [INSPECT, STATUS, QUEUE_MANIFEST].includes(name), destructiveHint: false, idempotentHint: false, openWorldHint: false } }));
 module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, createExecutor };

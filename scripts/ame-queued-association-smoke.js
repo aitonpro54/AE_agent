@@ -30,7 +30,11 @@ function fixture() {
   const native = (nonce, offset) => ({ schema: jobs.NATIVE_SCHEMA, code: "job_observed", requestNonce: nonce,
     operationBinding: digest({ operation: "status", jobId }), appSpecifier: args.targetSpecifier, sessionNonce: null,
     observedAt: time + offset, nativeJobId: null, nativeAssociationVerified: true, batchRunning: false, start: null, job: copy(job) });
-  const receipt = n => ({ schema: "ae-agent-ame-own-item-acceptance.v1", jobId, enqueueRequestNonce: enqueueNonce,
+  const receipt = n => ({ schema: "ae-agent-ame-own-item-acceptance.v2", jobId, batchId, enqueueRequestNonce: enqueueNonce,
+    enqueueOperationBinding: digest({ operation: "enqueue", jobId, args: normalized }), nativeSessionNonce: n.sessionNonce,
+    nativeObservationSha25664: digest(n), jobBindingSha25664: "f".repeat(64), authorizedRunId: "offline-run",
+    sourcePath: args.sourceProjectFile, sourceGuid: args.sourceGuid, sourceSha25664: args.expectedSourceSha25664,
+    presetIdentity: job.presetIdentity, presetSha25664: args.presetSha25664, processBinding, range: args.range,
     readRequestNonce: n.requestNonce, observedAt: n.observedAt, retainedWrapperSessionNonce: wrapperNonce, outputPath,
     workAreaApplied: true, proofSource: "retained_encoder_wrapper", appliedPresetVerified: false,
     outputBindingEvidence: "exact_addDL_call_argument_ack", independentOutputGetterVerified: false, generatedOutputVerified: false,
@@ -41,7 +45,7 @@ function fixture() {
     ownItemAccepted: true, state: "queued", requestNonce: enqueueNonce, observedAt: stamp(110), outputPath, unknownOutcome: false,
     acceptanceReceipt: receipt(first), native: first, authorization: { runId: "offline-run", proposalId: "offline-proposal" },
     verification: { ok: true, scope: "ame_native_wrapper_association_only" } };
-  const readResult = { ...copy(result), requestNonce: readNonce, observedAt: stamp(210), acceptanceReceipt: receipt(second), native: second,
+  const readResult = { ...copy(result), requestNonce: readNonce, observedAt: stamp(210), acceptanceReceipt: copy(result.acceptanceReceipt), native: second,
     nativeCompletionObserved: false, nativeResult: null, queueOnly: true, startAcceptanceVerified: false, startReservation: null,
     process, file: { exists: false } };
   delete readResult.authorization; delete readResult.verification;
@@ -126,14 +130,21 @@ function exercise(record) {
     ["wrong work area ack", p => { p.native.job.dispatchDiagnostic.workAreaCallAck.endSeconds++; }],
     ["missing receipt", p => { delete p.acceptanceReceipt; }], ["foreign receipt nonce", p => { p.acceptanceReceipt.readRequestNonce = crypto.randomUUID(); }],
     ["preset applied claim", p => { p.acceptanceReceipt.appliedPresetVerified = true; }], ["media claim", p => { p.mediaVerified = true; }],
+    ["replaced initial receipt", p => { p.acceptanceReceipt.readRequestNonce = p.native.requestNonce; p.acceptanceReceipt.observedAt = p.native.observedAt; p.acceptanceReceipt.nativeObservationSha25664 = digest(p.native); }],
     ["completion claim", p => { p.completionVerified = true; }], ["unaccepted item", p => { p.ownItemAccepted = false; }]
   ];
   for (const side of ["enqueue", "read"]) for (const [name, mutate] of payloadChanges) {
+    if (name === "replaced initial receipt" && (side === "enqueue" || record.run.steps[0].result.acceptanceReceipt.schema.endsWith(".v1"))) continue;
     reject(record, `${side}: ${name}`, s => mutate(side === "enqueue" ? s.result : s.independentReadBack[0].result));
   }
 }
 
 const baseline = fixture(); exercise(baseline);
+reject(baseline, "cached acceptance is not a native attached read", s => {
+  s.independentReadBack[0].args.acceptanceOnly = true;
+  s.independentReadBack[0].result.currentStatusObserved = false;
+  s.independentReadBack[0].result.executionAuthority = false;
+});
 // The pre-existing file-backed ENQUEUE envelope must retain its exact binding.
 const legacy = copy(baseline), step = legacy.run.steps[0]; delete step.args.queueMode;
 step.result.code = step.result.native.code = "job_enqueued"; step.result.native.requestNonce = step.result.requestNonce;

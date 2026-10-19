@@ -7,16 +7,17 @@
 
 ## Текущая цель пользователя
 
-19.10: queued-only checker исправлен и применён штатным restart; свежий native
-STATUS подтвердил оба существующих задания после restart. Без START, рендера или
-повторного enqueue. История и границы — в
+19.10: immediate per-job self-check и immutable приёмка реализованы; повторного
+автоматического пересчёта очереди нет. Чужие задания и live runtime не менялись,
+рендер не запускался. Контракт и история — в
 [product two-title workflow](../docs/product-two-title-workflow.md).
-
-Предыдущий этап — штатный product reset с сохранением UNKNOWN и resource guards;
-реализация specialist и внутреннее Ultra review завершены, история — в linked контракте.
 
 ## Progress
 
+- 19.10: v2 receipt/evidence фиксируют первый self-check. Адресный STATUS меняет
+  только текущее наблюдение; acceptanceOnly читает локальную приёмку без OS/native.
+  Legacy v1 без proof не мигрирует; corrupt соседний proof не скрывает свой job.
+  Scoped specialist implementation и независимое High review GO; только offline.
 - 19.10 offline: shared queued-only semantic branch принимает два разных STATUS с
   own-wrapper receipt и исходным completed ENQUEUE proof, без готового файла.
   Проверки сохранённых runs ниже остаются read-only; исходные outcomes неизменны.
@@ -25,10 +26,8 @@ STATUS подтвердил оба существующих задания по�
   adoption, ordinary runner/readback/semantic integration. Source review нашёл
   два P2 (реальный getter и final protection check); оба исправлены, final delta
   review GO. На 17.10 live/enqueue были отложены по STOP; результат 19.10 ниже.
-- Verifier design: internal Ultra GO. Original baseline присутствует в completed
-  readback; приняты EXCL once, отдельный native retained slot и readonly lookup,
-  actual GUID/workArea, independent restoration, fresh adoption после restart.
-  Один specialist writer; parent sole live controller. Decision log локально ignored.
+- Verifier design/source review GO: exact-selector once, retained slot, actual
+  GUID/workArea и protected restoration сохранены; подробности в linked workflow.
 - 17.10: fresh bridge/AE/AME/source/preset/workArea preflight PASS. Новый snapshot
   proposal/dry-run PASS; real run dad3dc19…/command f988d318… истёк на restore.
   Resolve Fonts подтверждён и закрыт после deadline. Исходник восстановлен,
@@ -50,8 +49,6 @@ STATUS подтвердил оба существующих задания по�
 - Предыдущая пара титров завершена через явно разрешённый GUI fallback:
   два Ready items с preset/output/full range, START1 и active encoding.
   Готовое видео не проверялось; старые native UNKNOWN сохранены.
-- История snapshot export, source reopen timeout, recovery, wire fixes и
-  not_sent settlements сохранена в linked workflow и Git. Эти шаги не повторять.
 - 19.10: reset завершён после свежего подтверждения отсутствия предыдущего
   процесса; verifier PASS и свежие own-item STATUS подтвердили два отдельных
   задания `queued`. Исходный selector остаётся UNKNOWN/noReplay; START0,
@@ -65,6 +62,11 @@ STATUS подтвердил оба существующих задания по�
 
 ## Decision Log
 
+- [block: per-job-acceptance] [executor: ae_specialist]
+  [reason: durable acceptance, current status и UNKNOWN boundaries]
+  [ownership: scoped code/tests writer; docs/review/commit — parent]. Только offline.
+- Сохранённая приёмка не является текущим STATUS или execution authority. Новая
+  mutation и START сохраняют fresh gates; explicit STATUS/UNKNOWN читают exact own job.
 - Checker различает shared queued-only и прежний file-backed ENQUEUE contract.
   Без файла принимается только stopped/queued, нулевые progress/time и полные
   independent STATUS/receipt/command bindings. Media/preset completion не заявляется.
@@ -115,6 +117,10 @@ STATUS подтвердил оба существующих задания по�
 
 ## Validation
 
+- Per-job acceptance: focused 9 groups, AME semantic 18 groups, association 215
+  cases с реальным архивом — PASS; v1 bytes/run.ok=false сохранены. Syntax 4 JS,
+  общий semantic smoke/rules/diff — PASS. Дополнительный completion-order harness имеет прежний
+  `messageArgument is not defined` (также HEAD); fixture вне scope не менялся.
 - Checker regression: `ame-queued-association-smoke.js` с сохранённым real run —
   PASS 213 cases; historical association passed, replay aggregate passed,
   savedRunOk=false сохранён. Независимое read-only source review — GO.
@@ -156,10 +162,9 @@ STATUS подтвердил оба существующих задания по�
 
 ## Следующий шаг
 
-Scoped checker fix применён штатным restart, оба задания подтверждены `queued`.
-Semantic итоги старых runs остаются `needs_review`; свежий STATUS нельзя привязать
-к ним существующим API. Не повторять export/enqueue и сохранять original
-UNKNOWN/noReplay; дальнейшая работа требует отдельного scope/контракта.
+Scoped per-job контракт завершён в исходниках. Runtime остаётся на `921be66` до
+отдельного штатного restart. Не перепроверять live queue/старые runs ради приёмки;
+explicit STATUS только по поручению или exact UNKNOWN reconciliation. START не запускать.
 
 ## Отложенные scope
 

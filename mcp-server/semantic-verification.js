@@ -4155,6 +4155,7 @@ function verifyAmeTitleAssociation(step, evidence) {
   // nonce still identifies ENQUEUE; neither STATUS binding contains its args.
   // Retain the original server command proof to bind source/preset/range args.
   const sharedObserved = args.queueMode === "shared_queue_v1" && payload.code === "job_observed";
+  const immutableReceipt = payload.acceptanceReceipt?.schema === "ae-agent-ame-own-item-acceptance.v2";
   const enqueueBinding = digest({ operation: "enqueue", jobId: payload.jobId, args });
   const statusBinding = digest({ operation: "status", jobId: payload.jobId });
   if (sharedObserved) {
@@ -4205,6 +4206,17 @@ function verifyAmeTitleAssociation(step, evidence) {
         job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds) return false;
     if (sharedObserved) {
       const dispatch = job.dispatchDiagnostic, ack = dispatch?.workAreaCallAck, receipt = result.acceptanceReceipt;
+      const receiptNative = immutableReceipt ? first : native;
+      // Both necessary initial observations prove the same own job. Only the
+      // first selfcheck creates acceptance; the attached read cannot replace it.
+      if (immutableReceipt && (digest(receipt) !== digest(payload.acceptanceReceipt) ||
+          receipt.batchId !== args.batchId || receipt.enqueueOperationBinding !== enqueueBinding ||
+          receipt.nativeSessionNonce !== first.sessionNonce || receipt.nativeObservationSha25664 !== digest(first) ||
+          !sha.test(receipt.jobBindingSha25664 || "") || receipt.authorizedRunId !== run.id ||
+          !exactPath(receipt.sourcePath, args.sourceProjectFile) || receipt.sourceGuid !== args.sourceGuid ||
+          receipt.sourceSha25664 !== args.expectedSourceSha25664 || receipt.presetSha25664 !== args.presetSha25664 ||
+          receipt.presetIdentity !== first.job.presetIdentity || receipt.processBinding !== first.job.processBinding ||
+          digest(receipt.range) !== digest(args.range))) return false;
       if (result.ownItemAccepted !== true || result.state !== "queued" || result.completionVerified !== false || result.mediaVerified !== false ||
           result === payload && result.unknownOutcome !== false || native.batchRunning !== false || native.start !== null ||
           !uuid.test(job.retainedWrapperSessionNonce || "") || job.retainedWrapperSessionNonce !== first.job.retainedWrapperSessionNonce ||
@@ -4217,8 +4229,8 @@ function verifyAmeTitleAssociation(step, evidence) {
           !Array.isArray(dispatch.creationFailures) || dispatch.creationFailures.length !== 0 || ack?.type !== 3 || ack.result !== true ||
           ack.startSeconds !== args.range.startSeconds || ack.endSeconds !== args.range.endSeconds || !Number.isFinite(ack.observedAt) ||
           ack.observedAt < Date.parse(run.startedAt) || ack.observedAt > native.observedAt ||
-          receipt?.schema !== "ae-agent-ame-own-item-acceptance.v1" || receipt.jobId !== payload.jobId ||
-          receipt.enqueueRequestNonce !== payload.requestNonce || receipt.readRequestNonce !== native.requestNonce || receipt.observedAt !== native.observedAt ||
+          receipt?.schema !== (immutableReceipt ? "ae-agent-ame-own-item-acceptance.v2" : "ae-agent-ame-own-item-acceptance.v1") || receipt.jobId !== payload.jobId ||
+          receipt.enqueueRequestNonce !== payload.requestNonce || receipt.readRequestNonce !== receiptNative.requestNonce || receipt.observedAt !== receiptNative.observedAt ||
           receipt.retainedWrapperSessionNonce !== job.retainedWrapperSessionNonce || !exactPath(receipt.outputPath, payload.outputPath) ||
           receipt.workAreaApplied !== true || receipt.proofSource !== "retained_encoder_wrapper" || receipt.appliedPresetVerified !== false ||
           receipt.outputBindingEvidence !== job.outputBindingEvidence || receipt.independentOutputGetterVerified !== false || receipt.generatedOutputVerified !== false ||

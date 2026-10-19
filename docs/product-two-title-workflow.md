@@ -1,6 +1,43 @@
 # Передача титров в AME через product workflow
 
-## Текущая цель
+## Приёмка каждого задания без пересчёта очереди
+
+Нормальный путь — добавить одно точное задание агента и немедленно выполнить
+его независимую self-check. Проверяется собственный retained EncoderWrapper,
+source/GUID, preset, range и output; требуемые независимые адресные reads входят
+в эту первичную операцию. Глобальная очередь, её размер, порядок и чужие jobs
+не используются для доказательства нашей приёмки.
+
+Первый подтверждённый результат хранится как initial acceptance. Последующие
+добавления пользователя, перестановка строк и новые own jobs его не пересчитывают.
+Позднее наблюдение может сообщить queued/running/removed/unknown, но сохранённая
+приёмка означает только подтверждённое добавление в прошлом, а не текущее состояние
+или разрешение исполнения. Она не доказывает готовность media либо применение preset.
+
+Для чтения сохранённой приёмки используется тот же `get_ame_title_job_status`
+с `acceptanceOnly:true`, точными batchId/jobId и сохранёнными target/process pins.
+Этот режим не читает процессы или AME, не делает native send и не сверяет всю очередь.
+Ответ отмечает `observationSource:"saved_acceptance"`, `currentStatusObserved:false`
+и `executionAuthority:false`; его нельзя подставить вместо свежего independent STATUS
+или использовать как право START. Режим доступен в обычном product tool; временный
+fixed owned_initial ingress с `variantSlot` не расширяется.
+Новые `acceptanceReceipt.v2` и отдельное связанное evidence сохраняют первый
+self-check. Старый v1 без immutable proof возвращает `saved_acceptance_legacy_unverified`;
+отсутствующий либо повреждённый proof не становится принятой задачей. Просмотр и
+restart не создают новую receipt, не мигрируют старую и не меняют исторические bytes.
+
+Обычный STATUS без флага — отдельное текущее адресное наблюдение: по явному запросу,
+для сверки UNKNOWN или порученного контроля рендера. Не запускать его автоматически
+для повторной приёмки уже принятых jobs либо ради зелёного итога старого run.
+Потерянный ответ проверять только по exact own-job selector без повторного enqueue;
+исходный UNKNOWN/noReplay сохраняется. START общей AME очереди и прежние manual/shared
+gates остаются отдельным scope; self-check не перечисляет и не меняет пользовательские jobs.
+
+Offline regression: `node scripts/ame-title-job-acceptance-smoke.js` проверяет
+production executor/generated sender-receiver в изолированных VM; отдельный
+`ame-queued-association-smoke.js` проверяет semantic binding и архивный v1 контракт.
+
+## Последний завершённый live этап
 
 По повторному поручению 19.10 проверка TITR_01/TITR_02 и добавление в AME
 без запуска рендера выполнены: verifier принял оба снимка, оба задания имеют свежий
