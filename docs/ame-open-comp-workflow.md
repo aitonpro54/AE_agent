@@ -1,6 +1,6 @@
 # AME: отправка из открытой композиции
 
-**Статус: код и focused offline-проверки готовы; live-приёмка ещё не завершена.**
+**Статус: общий шаг подтверждён на 11 последовательных заданиях в живых AE/AME.**
 Это активный общий механизм повторной отправки N заданий. Количество заданий —
 входные данные цикла, а не повод расширять код под 2, 11 или 111 вариантов.
 
@@ -89,18 +89,34 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
 
 ## Валидация реализации
 
-- Focused smoke: 28 групп, включая настоящий ES3 wire, именованные свойства AE,
+- Финальный focused smoke: 42 группы / 540 actual ES3 wire parses, включая
+  именованные свойства AE, точную binary numeric identity и private AE actor pin,
   истечение idle TTL до эффектов, partial setters, UNKNOWN/no replay, неизменный
   receipt, отсутствие AEP IO и сохранение checkpoint gates остальных tools.
-- Окончательная версия прошла общий offline-цикл на 111 управляемых слоях/заданиях:
-  те же 28 групп, 1340 ES3 wire parses, восемь вспомогательных слоёв сохранены.
-  Последующая metadata-only маркировка samples проверена теми же 28 группами.
-- Независимое read-only review: три замечания исправлены; delta review GO по
-  зафиксированным SHA. Это проверка кода, а не live enqueue/media proof.
+- Финальный root offline-цикл `npm.cmd run smoke:ame-open-comp -- --series=111`:
+  42 группы / 1620 actual ES3 wire parses PASS, восемь вспомогательных слоёв
+  сохранены. Adobe/bridge/network/модели не вызывались.
+- Независимые read-only delta reviews GO, включая финальный actor pin по SHA
+  core84b559c7/native dd30bcef/smoke8c51e2ec; rules/JS syntax/scoped diff PASS.
+- Live 19.10: один generic шаг повторён для 11 отдельных layer IDs. У каждого
+  задания native dispatch/read-back, собственная полная метка, первое неизменное
+  UI receipt с preset/output/Work Area и отдельный verified name-only restore.
+  Для первой canary исходный aggregate `verification_required` сохранён; native
+  proof получен exact keyed reconcile, без повторной отправки. Jobs2–11 имеют
+  aggregate/semantic PASS; все 11 restore PASS/debt0.
+- Локальная сводка `.codex-runtime/ame-open-comp-live-20261019/series-summary.json`
+  построена только из сохранённых records, вызовов native/queue при сводке0.
+  Сверены 11 разных intent/selectedLayerId, receipt bindings и неизменные свойства
+  всех 8 вспомогательных слоёв. Имя `TITR_ALL_VARIANTS_FHD` восстановлено; выбран
+  TITR_11. Проект остаётся изменённым в памяти и не сохранялся этим workflow.
+- UI proof подтверждает добавление и настройки, не содержимое будущего видео:
+  `nativeJobId:null`, `mediaVerified:false`, `executionAuthority:false`.
+  START/render0, census0, owned AEP copies0; старые и пользовательские jobs не менялись.
+
+### История диагностик и применения
+
 - `plan-classification-smoke` не прошёл infrastructure health своего isolated
   daemon; это не PASS и не acceptance. Повторов нет; пользовательский runtime сохранён.
-- Следующий шаг — штатное применение, свежий native inspect, одна canary и затем
-  повторение того же шага N. START/render и проверка будущего видео исключены.
 - 19.10: commit `32850f1` штатно применён, bridge PID18332, native lifecycle read
   чистого проекта PASS. Первый inspect нашёл точный menu3800 (`26.2x49`, build49,
   `en_US`), но заблокировал rename: 80 выражений/11210 properties; текущий safe
@@ -158,3 +174,8 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   идентичность, execution rights восстанавливаются только свежими обычными gates.
 - Actor-pin review GO (core84b559c7/smoke8c51e2ec); финальный root offline111:
   42 groups/1620 actual ES3 parses PASS. Это общий цикл, без реального AME/рендера.
+- `b36ed6b` штатно применён debt-preserving restart: пять journal hashes/CEP tuple/
+  original AE birth сохранены, admission closed, debt1 rehydrated. Fresh keyed
+  reconcile PASS; новый proposed/dry restore PASS/semantic passed/debt0/name restored.
+  Второй job тем же шагом: native dispatch/readback, exact UI receipt, restore PASS.
+  Ни одного queue census/повторного dispatch/START/render; чужие jobs не менялись.

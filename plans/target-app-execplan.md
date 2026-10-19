@@ -9,12 +9,12 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 
 19.10: per-job self-check/immutable acceptance и AME global-start реализованы; reset/apply PASS.
 Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFINISHED / FROZEN.
-Активное направление повторения N — open-comp enqueue, scoped реализация:
+Общий open-comp enqueue подтверждён live11 и offline111; количество — входные данные:
 [open-comp workflow](../docs/ame-open-comp-workflow.md). Без census/START/render/user jobs.
 
 ## Progress
 
-- `109252c`: actual binary inspect PASS; canary native dispatch1, exact keyed read+UI receipt PASS. Restore dry refused при втором AE от Dynamic Link; имя held/debt1, replay/START0. Private continuity pin в работе; root sole live controller.
+- `b36ed6b` штатно применён с сохранёнными journal hashes/CEP owner. Live11 завершён тем же generic шагом: отдельный first UI receipt и verified name-only restore для каждого, debt0; 8 вспомогательных слоёв сохранены. START/census/replay0; root sole live controller.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
@@ -50,6 +50,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Decision Log
 
+- N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
 - [block: per-job-acceptance] [executor: ae_specialist]
@@ -113,7 +114,8 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Validation
 
-- Open-comp: focused28/1340ES3/offline111, rules/syntax/diff PASS; scoped review fixes GO. UI prep: auto-start off/idle, Cancel+REPL reset; live0. Isolated plan-classification health failed, без повторов/приёмки.
+- Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
+- Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
 - Per-job acceptance: focused 9 groups, AME semantic 18 groups, association 215
   cases с реальным архивом — PASS; v1 bytes/run.ok=false сохранены. Syntax 4 JS,
   общий semantic smoke/rules/diff — PASS. Дополнительный completion-order harness имеет прежний
@@ -164,8 +166,8 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Private continuity pin: debt-preserving штатное apply, exact restore первой canary, затем тот же шаг оставшихся N.
-Без owned AEP/full-AEP SHA/fallback/census/START/render/video acceptance/user jobs/replay.
+Этап enqueue завершён; использовать тот же generic шаг для следующих поручений с новым списком целей.
+Live11, offline111/42 groups/1620 ES3 PASS; сводка только локальная. START/render/video acceptance отдельно; producer frozen.
 
 ## Отложенные scope
 
