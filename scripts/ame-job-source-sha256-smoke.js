@@ -11,10 +11,11 @@ function fixture(buffer,options={}){
   File.prototype.close=function(){calls.closes++;return !options.closeFailure;};
   class Clock extends Date{constructor(){super(clock);clock+=options.clockStep||0;}}
   const hash=vm.runInNewContext("("+hashing.hashFile.toString()+")",{File,Date:options.clockStep?Clock:Date});
-  return {calls,run:()=>hash("owned.aep",options.clockStep?5:Date.now()+15000,hashing.MAX_BYTES)};
+  return {calls,run:()=>hash("owned.aep",options.clockStep?5:Date.now()+hashing.PROBE_MS,hashing.MAX_BYTES)};
 }
 function positive(bytes,expected){const f=fixture(bytes),r=f.run();assert.equal(r.sha25664,expected||crypto.createHash("sha256").update(bytes).digest("hex"));assert.equal(r.bytes,bytes.length);assert.equal(f.calls.opens,1);assert.equal(f.calls.closes,1);assert(f.calls.maxRead<=65536);checks++;}
 acorn.parse("("+hashing.hashFile.toString()+");",{ecmaVersion:3,allowReserved:"never"});checks++;
+assert.equal(hashing.PROBE_MS,40000);assert.equal(hashing.MAX_BYTES,64*1024*1024);checks++;
 positive(Buffer.alloc(0),"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
 positive(Buffer.from("abc"),"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 positive(Buffer.alloc(1000000,97),"cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");

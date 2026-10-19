@@ -337,7 +337,7 @@ const ameJobSourceExecutor=ameJobSource.createExecutor({
     lifecycle.assertMutationAllowed();
     if(!activeEditSession||activeEditSession.id!==context.ownedEditSessionId)throw Error("ame_source_own_checkpoint_required");
   },
-  native:(body,scope,mutation)=>ameJobSourceCommandContext.run(scope,()=>withPlanCommandRole(mutation?"mutation":"readback",()=>mutation?runExtendScriptBody(body,120000):autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))),
+  native:(body,scope,mutation)=>ameJobSourceCommandContext.run(scope,()=>withPlanCommandRole(mutation?"mutation":"readback",()=>mutation?runExtendScriptBody(body,120000):autonomousCommandContext.run(null,()=>runExtendScriptBody(body,60000)))),
   persist:value=>{const context=planCommandContext.getStore();if(context?.item?.tool===ameJobSource.TOOL){context.item.ameJobSource=JSON.parse(JSON.stringify(value));context.persist();}}
 });
 // Synchronous selector validation arms the mandatory enqueue guard before HTTP

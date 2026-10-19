@@ -153,9 +153,9 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
-- Single-job: final SHA33/producer24 (x2/x11/x111), nodecheck 9 JS и diff PASS;
-  static reviewer conditional GO; live 11 не начат. Далее normal fresh CLI restart →
-  actual read-only probe → 11 новых jobs; без START/render/user jobs.
+- Single-job: final SHA34/producer25 (x2/x11/x111), syntax и diff PASS;
+  actor fix `b678f77` применён; actual read-only probe32MB превысил15s, effects0.
+  Архитектурный GO: probe40s/read60s, прежние create120s/admission сохраняются; actual probe → 11 jobs.
 - AME global start: offline checks/review PASS; reset `48ebe813…`, connected_and_idle, bridge/project reads PASS, catalog 4 API. Вызовов 0; queue/job STATUS/census, enqueue, AME launch, START/render 0. Прежний STOP и причина v84/v86 сохранены в workflow; live cold-start/runBatch не тестировались.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.

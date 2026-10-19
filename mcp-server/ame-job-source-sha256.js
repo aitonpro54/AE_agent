@@ -1,7 +1,7 @@
 "use strict";
 // ES3 streaming SHA-256 for the fixed native source producer. The file namespace
 // is trusted while this program runs; this is not a hostile-writer file lock.
-const MAX_BYTES=64*1024*1024,PROBE_MS=15000;
+const MAX_BYTES=64*1024*1024,PROBE_MS=40000;
 function hashFile(filePath,deadline,maxBytes){
   var started=new Date().getTime(),f=new File(filePath),opened=false,bytes=0,block=[],used=0,w=[],i,n,chunk,want,result;
   function bad(c){throw Error(c);}
