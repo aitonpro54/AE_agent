@@ -9,11 +9,12 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 
 19.10: per-job self-check/immutable acceptance и AME global-start реализованы; reset/apply PASS.
 Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFINISHED / FROZEN.
-Активное направление повторения N — open-comp enqueue, пока как архитектурный черновик:
+Активное направление повторения N — open-comp enqueue, scoped реализация:
 [open-comp workflow](../docs/ame-open-comp-workflow.md). Без census/START/render/user jobs.
 
 ## Progress
 
+- Open-comp: выбран общий шаг N; specialist пишет code/tests, root — sole live controller/docs. Live enqueue пока 0.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
@@ -77,10 +78,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
   Отдельная private reset policy не расширяет молча owned_daemon_lifecycle.
 - Старый exact process должен быть строго absent; alive/reused/denied/unknown
   и занятый fixed endpoint — отказ. Отсутствие не является held-handle exit proof.
-- [block: ame-generic-single-job] [executor: ae_architect → ae_specialist]
-  [reason: дизайн затем scoped реализация] [ownership: docs → assigned code;
-  parent — sole live operator]. Source preparation отдельно от queue checker;
-  generic Save не получает обходного пути. Pending/source/actor UNKNOWN запрещает replay.
+- [block: ame-open-comp] [executor: ae_architect → ae_specialist] [reason: native dispatch/authority/UNKNOWN] [ownership: code/tests; root docs/live]. Exact marker + UI observation, local property journal; checkpoint остальных tools не ослабляется.
 - Native wrapper resource bound 256 не является лимитом batch count N; сохраняется.
   Расширять его или обещать неограниченную вместимость в этом блоке нельзя.
 - 19.10: human scope confirms producer is experimental/unfinished/frozen pending
@@ -115,6 +113,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Validation
 
+- Open-comp architecture: rules/diff PASS. UI preparation: idle auto-start off, encoding idle; Preferences Cancel, REPL reset. Live enqueue 0; это не приёмка нового маршрута.
 - Per-job acceptance: focused 9 groups, AME semantic 18 groups, association 215
   cases с реальным архивом — PASS; v1 bytes/run.ok=false сохранены. Syntax 4 JS,
   общий semantic smoke/rules/diff — PASS. Дополнительный completion-order harness имеет прежний
@@ -165,9 +164,8 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Следующий шаг: архитектурно определить контракт open-comp workflow, затем scoped
-реализация по отдельному поручению. No owned AEP, full-AEP SHA, auto-fallback,
-census, START, render, video acceptance, user jobs or UNKNOWN replay.
+Завершить scoped open-comp реализацию и review; одна canary, затем тот же шаг N.
+Без owned AEP/full-AEP SHA/fallback/census/START/render/video acceptance/user jobs/replay.
 
 ## Отложенные scope
 
