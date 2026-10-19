@@ -7,13 +7,19 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 
 ## Текущая цель пользователя
 
-19.10: per-job self-check/immutable acceptance и AME global-start реализованы;
-runtime reset/apply PASS, без AME queue/job операций. Подробности — в [workflow](../docs/product-two-title-workflow.md).
+19.10: per-job self-check/immutable acceptance и AME global-start реализованы; reset/apply PASS.
+Новый блок: generic single-job повтор для N; live-проба 11 jobs ещё не начата.
+Без census/START/render/user jobs.
+Контракт нового producer — [AME single-job workflow](../docs/ame-single-job-workflow.md);
+история — в [product workflow](../docs/product-two-title-workflow.md).
 
 ## Progress
 
-- `505a439` загружен штатным restart: PID22484, Connected/autonomy active,
-  native project read PASS. Нового STATUS/ENQUEUE/START для AME не было.
+- `505a439`: штатный restart и native project read PASS; история в product workflow.
+- Single-job API: `expectedSourceSha25664`; native stream SHA64KiB/max64MiB,
+  trusted probe15s/cache120s (exact pins+actor), admission `2×elapsed+30s`, native+Node SHA до receipt.
+  Trust namespace не atomic к external writer; один source → enqueue/self-check → N, без N API/census.
+  Cap256 — resource limit. Пути и детали: [контракт](../docs/ame-single-job-workflow.md).
 - 19.10: v2 receipt/evidence фиксируют первый self-check. Адресный STATUS меняет
   только текущее наблюдение; acceptanceOnly читает локальную приёмку без OS/native.
   Legacy v1 без proof не мигрирует; corrupt соседний proof не скрывает свой job.
@@ -22,33 +28,15 @@ runtime reset/apply PASS, без AME queue/job операций. Подробн�
   own-wrapper receipt и исходным completed ENQUEUE proof, без готового файла.
   Проверки сохранённых runs ниже остаются read-only; исходные outcomes неизменны.
   Legacy file-backed ветка остаётся строгой.
-- Verifier реализован: два exact-selector tools, retained native result, fresh
-  adoption, ordinary runner/readback/semantic integration. Source review нашёл
-  два P2 (реальный getter и final protection check); оба исправлены, final delta
-  review GO. На 17.10 live/enqueue были отложены по STOP; результат 19.10 ниже.
-- Verifier design/source review GO: exact-selector once, retained slot, actual
-  GUID/workArea и protected restoration сохранены; подробности в linked workflow.
-- 17.10: fresh bridge/AE/AME/source/preset/workArea preflight PASS. Новый snapshot
-  proposal/dry-run PASS; real run dad3dc19…/command f988d318… истёк на restore.
-  Resolve Fonts подтверждён и закрыт после deadline. Исходник восстановлен,
-  новые snapshots существуют, native flags/GUID не подтверждены; enqueue0/START0.
-  Reconcile incomplete/unknown; существующего adoption route нет, replay запрещён.
-- 17.10: product reset реализован после native refusal отсутствующего daemon;
-  Ultra review и corrections GO. Отдельная reset policy, session anchor,
-  native absence, mutex/once/CAS и CEP physical fence сохранены.
-- `fc3a9e6`: reset `75081867…`/generation `408cbe01…` выполнен один раз.
-  CEP assets поставлены с backup/hash read-back; startup busy correction `e9414ea`
-  и numeric reconnect correction `47c7344` приняты Ultra. Обычные рестарты имеют
-  held-handle exit proof; activation завершена без повторного reset/preflight.
-- `47c7344`: Connected/autonomy active, pending0/inflight0/editSession=null,
-  fresh typed get_project_info PASS. Подробности — в product-session-reset.md.
-- 16.10: один actual AME addDL и независимый queued own-wrapper STATUS приняты.
-  START0, generatedOutputVerified/appliedPresetVerified/mediaVerified=false.
-  Диапазон следующего задания — свежая marked workArea exact pinned comp;
-  full comp только по явному запросу. Offline nonzero-range fixture PASS.
-- Предыдущая пара титров завершена через явно разрешённый GUI fallback:
-  два Ready items с preset/output/full range, START1 и active encoding.
-  Готовое видео не проверялось; старые native UNKNOWN сохранены.
+- Verifier: exact-selector tools, retained native result, fresh adoption,
+  runner/readback/semantic integration; два P2 исправлены, final review GO.
+  Exact once/slot, GUID/workArea и protected restoration — в linked workflow.
+- 17.10: старый export dad3dc19…/f988d318… остаётся UNKNOWN без replay;
+  история восстановления и позднего Resolve Fonts — в product workflow.
+- Reset/reconnect milestones `fc3a9e6` → `47c7344`: review и corrections GO,
+  activation/read PASS; подробности — в [reset contract](../docs/product-session-reset.md).
+- Исторический AME: addDL1/own STATUS queued; предыдущая пара — два Ready,
+  START1/encoding active, output quality не проверена. Детали в linked workflow.
 - 19.10: reset завершён после свежего подтверждения отсутствия предыдущего
   процесса; verifier PASS и свежие own-item STATUS подтвердили два отдельных
   задания `queued`. Исходный selector остаётся UNKNOWN/noReplay; START0,
@@ -91,6 +79,12 @@ runtime reset/apply PASS, без AME queue/job операций. Подробн�
   Отдельная private reset policy не расширяет молча owned_daemon_lifecycle.
 - Старый exact process должен быть строго absent; alive/reused/denied/unknown
   и занятый fixed endpoint — отказ. Отсутствие не является held-handle exit proof.
+- [block: ame-generic-single-job] [executor: ae_architect → ae_specialist]
+  [reason: дизайн затем scoped реализация] [ownership: docs → assigned code;
+  parent — sole live operator]. Source preparation отдельно от queue checker;
+  generic Save не получает обходного пути. Pending/source/actor UNKNOWN запрещает replay.
+- Native wrapper resource bound 256 не является лимитом batch count N; сохраняется.
+  Расширять его или обещать неограниченную вместимость в этом блоке нельзя.
 - Shared OS controller mutex сериализует ensure/restart/shutdown/reset.
   Predecessor-only once barrier не зависит от source/request ID. Partial launch
   и lost ACK допускают read-back, а не второй launch. Current публикуется CAS.
@@ -159,6 +153,9 @@ runtime reset/apply PASS, без AME queue/job операций. Подробн�
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
+- Single-job: final SHA33/producer23 (x2/x11/x111), nodecheck 9 JS и diff PASS;
+  static reviewer conditional GO; live 11 не начат. Далее normal fresh CLI restart →
+  actual read-only probe → 11 новых jobs; без START/render/user jobs.
 - AME global start: offline checks/review PASS; reset `48ebe813…`, connected_and_idle, bridge/project reads PASS, catalog 4 API. Вызовов 0; queue/job STATUS/census, enqueue, AME launch, START/render 0. Прежний STOP и причина v84/v86 сохранены в workflow; live cold-start/runBatch не тестировались.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
@@ -166,7 +163,9 @@ runtime reset/apply PASS, без AME queue/job операций. Подробн�
 
 ## Следующий шаг
 
-Блок применения завершён. Новые AME-команды выполнять только по поручению; не читать старую очередь ради acceptance. Cold-start/runBatch/render live не проверялись. При дальнейших служебных lifecycle-операциях использовать fresh CLI, пока MCP collector кэширует v84; дополнительных restart сейчас не делать.
+Следующий шаг: normal fresh CLI restart → actual
+read-only probe → 11 новых jobs по текущим титрам. Без census, START, render, user
+jobs, output-quality acceptance или replay UNKNOWN; lifecycle — по штатным gates.
 
 ## Отложенные scope
 

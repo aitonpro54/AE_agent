@@ -45,6 +45,7 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "create_ame_job_source",
   "verify_title_export_snapshots",
   "export_two_title_snapshots",
   "ensure_ame_running",
@@ -825,7 +826,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4319,6 +4320,13 @@ function verifyAmeNativeFixture(step, evidence) {
 }
 
 function verifyStep(checks, step, evidence) {
+  if(step.tool==="create_ame_job_source"){
+    const payload=payloadForStep(step),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&require("./ame-job-source").verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&state?.revision===payload.restored.revision&&state?.dirty===false&&projectLifecycle.samePath(state?.file,step.args.expectedProjectFile);
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":create_ame_job_source:source",title:"Один сохранённый AME источник и восстановленный исходник",expected:"one native snapshot, exact patch/range, private proof and independent clean source read",observed:valid?"source verified; media not checked":"source outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if(step.tool==="verify_title_export_snapshots"){
     const payload=payloadForStep(step),verifier=require("./title-export-verification"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
     try{valid=step.status==="completed"&&verifier.verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{

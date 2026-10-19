@@ -1,5 +1,8 @@
 # AME: запуск общей очереди
 
+Подготовка одного generic source перед существующим per-job enqueue описана в
+[AME single-job workflow](ame-single-job-workflow.md); она не является global start.
+
 ## Два независимых пути
 
 1. **Задание агента.** При закрытом AME разрешён запуск AME существующим

@@ -135,6 +135,9 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 
 const RUNTIME_FILES = [
   "mcp-server/title-export-snapshots.js",
+  "mcp-server/ame-job-source.js",
+  "mcp-server/ame-job-source-native.js",
+  "mcp-server/ame-job-source-sha256.js",
   "mcp-server/native-render-variant.js",
   "mcp-server/title-export-verification.js",
   "mcp-server/ame-transport.js",

@@ -1,5 +1,9 @@
 # Передача титров в AME через product workflow
 
+Новый повторяемый single-job source producer описан как draft-контракт в
+[AME single-job workflow](ame-single-job-workflow.md). Он не переопределяет
+историческую приёмку двух титров.
+
 ## Приёмка каждого задания без пересчёта очереди
 
 Патч `505a439` применён штатным restart 19.10 в 11:06Z: PID22484,
