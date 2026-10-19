@@ -56,5 +56,24 @@ GO, открытых P1/P2 нет; исправления покрыты fixture
 
 Это offline acceptance. Cold start, global `runBatch`, native read-back и рендер
 live не приняты; запуск очереди не доказывает завершённое кодирование или готовое
-видео. Предстоящий штатный bridge restart пока не подтверждён; текущий runtime
-остаётся предыдущим.
+видео. Реализация и offline checks закоммичены как `fcbb8cb`, но live-применение
+остановлено на deploy STOP. Единственный штатный restart в 11:45:05Z завершился
+`owned_supervisor_started_process_exited`, `replayAllowed:false`. Старый PID22484
+завершился с held-exit proof (`WAIT_OBJECT_0`, code 0), generation `aded311e…`;
+новый незарегистрированный child PID14184 / generation
+`22273472-2a7e-403a-a155-0207f23fcc84` также завершился. Текущая регистрация
+указывает на старое поколение; OS read показал отсутствие listener на 3456.
+Новые команды не применены, новых queue/job reads, enqueue или START не было.
+
+Причина подтверждена offline в `assertStartupReservation.js:58`: долгоживущий MCP
+controller с кэшированным `RUNTIME_FILES` v84 вычислил reservation/source
+`e4a8a341…`, а свежий bridge collector v86 (два новых модуля) дал
+`2a7028e2…` и отказ `owned_supervisor_startup_binding_invalid` до listen.
+Fresh-v86 reservation и actual offline validator проходят (`managed:true`), что
+не доказывает live startup. Нельзя убирать source pins или повторять restart/ensure
+вслепую. Для восстановления найден поддержанный fresh CLI путь
+`node mcp-server/owned-runtime-product-session-reset.js reset`; generic failed
+supervisor startup сам по себе не является pending lifecycle. Reset ещё не применён:
+он требует отдельного поручения пользователя, подтверждения native absence и
+соблюдения штатных gates. Пока bridge недоступен, offline acceptance остаётся
+действительной, deployment/runtime PASS нет.

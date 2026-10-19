@@ -61,6 +61,11 @@ enqueue, не перечисляет очередь и не касается п�
 сверяется по run; потерянный native callback остаётся `UNKNOWN/noReplay`, в том
 числе после restart. Automatic retry нет, а `get_ame_queue_start_status` не является
 полной native-callback reconciliation. Подробности — в [AME global start](ame-global-start.md).
+Live-применение AME global-start пока остановлено после единственной неуспешной
+попытки bridge restart; новые AME-команды не применялись. Статус и причина — в
+[заметке deploy STOP](ame-global-start.md#приёмка-реализации).
+Для восстановления доступен поддержанный fresh CLI product reset, но он не
+применён и требует отдельного поручения пользователя, native absence и штатных gates.
 
 ## Последний завершённый live этап
 

@@ -158,14 +158,14 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
-- AME global start: production API реализованы offline; `queue-control` 17, `enqueue-sequence` 6, `ame-running` 27, acceptance 9, title-semantic 18, product-dispatch 25, shared-queue 11, product-read 10, source-read-fence, node-check 11 JS, rules/diff — PASS. Final/last-delta review GO, P1/P2 нет. Restart и live cold-start/runBatch не подтверждены.
+- AME global start: commit `fcbb8cb`, offline PASS/review GO; deploy restart 11:45:05Z STOP `owned_supervisor_started_process_exited`, replay запрещён. Старый PID22484 завершён, новый PID14184 exited; регистрация старая, listener3456 отсутствует. Причина: cached controller v84 vs fresh collector v86; offline validator PASS не live. Поддержанный fresh CLI product reset найден, но не применён: нужно отдельное поручение и native absence/gates. Live cold-start/runBatch не применены.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Родитель намерен выполнить штатный bridge restart без queue/job read, enqueue или START; результат пока не подтверждён. До отдельной live-приёмки считать runtime предыдущим; cold-start/runBatch не приняты.
+Ожидать отдельного поручения на поддержанный fresh CLI product reset; перед ним нужны native absence и штатные gates. Не убирать source pins и не повторять restart/ensure вслепую. Queue/job не читались, enqueue/START0; live cold-start/runBatch не приняты.
 
 ## Отложенные scope
 
