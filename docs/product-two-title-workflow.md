@@ -2,6 +2,11 @@
 
 ## Приёмка каждого задания без пересчёта очереди
 
+Патч `505a439` применён штатным restart 19.10 в 11:06Z: PID22484,
+runtime source `a5273d65…`, Connected/autonomy active и native project read PASS.
+Проверен каталог с `acceptanceOnly:true`; очередь и receipts jobs повторно не читались,
+STATUS/ENQUEUE/START/render не вызывались.
+
 Нормальный путь — добавить одно точное задание агента и немедленно выполнить
 его независимую self-check. Проверяется собственный retained EncoderWrapper,
 source/GUID, preset, range и output; требуемые независимые адресные reads входят

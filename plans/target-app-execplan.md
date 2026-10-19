@@ -8,12 +8,14 @@
 ## Текущая цель пользователя
 
 19.10: immediate per-job self-check и immutable приёмка реализованы; повторного
-автоматического пересчёта очереди нет. Чужие задания и live runtime не менялись,
-рендер не запускался. Контракт и история — в
+автоматического пересчёта очереди нет. Патч `505a439` применён штатным restart;
+очередь повторно не читалась, рендер не запускался. Контракт и история — в
 [product two-title workflow](../docs/product-two-title-workflow.md).
 
 ## Progress
 
+- `505a439` загружен штатным restart: PID22484, Connected/autonomy active,
+  native project read PASS. Нового STATUS/ENQUEUE/START для AME не было.
 - 19.10: v2 receipt/evidence фиксируют первый self-check. Адресный STATUS меняет
   только текущее наблюдение; acceptanceOnly читает локальную приёмку без OS/native.
   Legacy v1 без proof не мигрирует; corrupt соседний proof не скрывает свой job.
@@ -162,8 +164,8 @@
 
 ## Следующий шаг
 
-Scoped per-job контракт завершён в исходниках. Runtime остаётся на `921be66` до
-отдельного штатного restart. Не перепроверять live queue/старые runs ради приёмки;
+Scoped per-job контракт применён: runtime `505a439`, штатный restart 19.10 11:06Z.
+Очередь по поручению пользователя не перечитывалась. Не проверять старые runs ради приёмки;
 explicit STATUS только по поручению или exact UNKNOWN reconciliation. START не запускать.
 
 ## Отложенные scope
