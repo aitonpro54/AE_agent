@@ -54,26 +54,31 @@ product-read 10, source-read-fence (`--expose-internals`), `node --check` 11 JS,
 `check:rules` и `git diff --check`. Независимый final review и last-delta review —
 GO, открытых P1/P2 нет; исправления покрыты fixtures.
 
-Это offline acceptance. Cold start, global `runBatch`, native read-back и рендер
-live не приняты; запуск очереди не доказывает завершённое кодирование или готовое
-видео. Реализация и offline checks закоммичены как `fcbb8cb`, но live-применение
-остановлено на deploy STOP. Единственный штатный restart в 11:45:05Z завершился
-`owned_supervisor_started_process_exited`, `replayAllowed:false`. Старый PID22484
-завершился с held-exit proof (`WAIT_OBJECT_0`, code 0), generation `aded311e…`;
-новый незарегистрированный child PID14184 / generation
-`22273472-2a7e-403a-a155-0207f23fcc84` также завершился. Текущая регистрация
-указывает на старое поколение; OS read показал отсутствие listener на 3456.
-Новые команды не применены, новых queue/job reads, enqueue или START не было.
+Реализация и offline checks закоммичены как `fcbb8cb`. Первая штатная попытка
+restart в 11:45:05Z завершилась STOP `owned_supervisor_started_process_exited`,
+`replayAllowed:false`: старый PID22484 вышел с held-exit proof (`WAIT_OBJECT_0`,
+code 0), новый незарегистрированный PID14184 также завершился; registration
+осталась старой, listener3456 отсутствовал. Offline cause: долгоживущий MCP
+controller cache v84 получил reservation/source `e4a8a341…`, а свежий collector
+v86 — `2a7028e2…`, отказ `owned_supervisor_startup_binding_invalid` до listen.
+Fresh-v86 offline reservation/validator PASS не означали live startup.
 
-Причина подтверждена offline в `assertStartupReservation.js:58`: долгоживущий MCP
-controller с кэшированным `RUNTIME_FILES` v84 вычислил reservation/source
-`e4a8a341…`, а свежий bridge collector v86 (два новых модуля) дал
-`2a7028e2…` и отказ `owned_supervisor_startup_binding_invalid` до listen.
-Fresh-v86 reservation и actual offline validator проходят (`managed:true`), что
-не доказывает live startup. Нельзя убирать source pins или повторять restart/ensure
-вслепую. Для восстановления найден поддержанный fresh CLI путь
-`node mcp-server/owned-runtime-product-session-reset.js reset`; generic failed
-supervisor startup сам по себе не является pending lifecycle. Reset ещё не применён:
-он требует отдельного поручения пользователя, подтверждения native absence и
-соблюдения штатных gates. Пока bridge недоступен, offline acceptance остаётся
-действительной, deployment/runtime PASS нет.
+По явному поручению пользователя от 19.10 root выполнил fresh CLI reset один раз:
+`node mcp-server/owned-runtime-product-session-reset.js reset` — PASS,
+operation `48ebe813-d4bf-4166-b1a7-d6e97a051ac4`, generation
+`f735709b-0a90-4c41-bf73-8d3763a8d33e`, pending preflight → reset_active.
+Новый runtime PID3352 стартовал в 11:57:56.322Z, source
+`2a7028e2595dbf91dcd779e2851c2d1bfd040bf5a0aa26d72c677acdad6680b5`, git
+`17f672e` с feature commit `fcbb8cb`. `wait_for_bridge_state` connected_and_idle
+и фактические `get_bridge_status` (Connected, autonomy active, pending0,
+inflight[], editSession=null) прошли. `get_project_info` PASS: `titr_all.aep`,
+revision12968664, 465 items, active comp `TITR_ALL_VARIANTS_FHD`.
+
+В runtime catalog присутствуют четыре новых API; подтверждён только `tools/list`,
+все четыре вызова — 0. Queue/job STATUS/census, enqueue, AME launch, START и render
+также 0. Предыдущий failed restart `caad…` / generation
+`22273472-2a7e-403a-a155-0207f23fcc84` сохраняет `UNKNOWN/noReplay`; reset не очищал
+его историю. Direct MCP lifecycle collector всё ещё кэширует v84; дальнейшие
+служебные операции восстановления выполняются fresh CLI без дополнительных
+restart. Runtime reset и доступность команд применены, но live AME cold start,
+global `runBatch` и render не принимались и не проверялись.

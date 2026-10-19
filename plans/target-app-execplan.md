@@ -7,9 +7,8 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
 
 ## Текущая цель пользователя
 
-19.10: immediate per-job self-check и immutable приёмка реализованы; пересчёта
-очереди нет. AME autostart/global-start завершён offline; применение к runtime
-ожидает штатного bridge restart. Контракт — в [workflow](../docs/product-two-title-workflow.md).
+19.10: per-job self-check/immutable acceptance и AME global-start реализованы;
+runtime reset/apply PASS, без AME queue/job операций. Подробности — в [workflow](../docs/product-two-title-workflow.md).
 
 ## Progress
 
@@ -60,9 +59,11 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   jobs повторно прочитаны как `queued`. Read-only checker на старых exact runs:
   slot2 association PASS/aggregate needs_review из-за сохранённого run.ok=false;
   slot1 needs_review из-за прежнего failed/UNKNOWN шага. Это не live semantic PASS.
+- 19.10: reset `48ebe813…`/generation `f735709b…` applied; runtime PID3352 Connected/autonomy active, project `titr_all.aep` read PASS. Новый API catalog найден, вызовов AME API 0.
 
 ## Decision Log
 
+- Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
 - [block: per-job-acceptance] [executor: ae_specialist]
   [reason: durable acceptance, current status и UNKNOWN boundaries]
@@ -158,14 +159,14 @@ AME global start: [контракт и статус](../docs/ame-global-start.md
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
-- AME global start: commit `fcbb8cb`, offline PASS/review GO; deploy restart 11:45:05Z STOP `owned_supervisor_started_process_exited`, replay запрещён. Старый PID22484 завершён, новый PID14184 exited; регистрация старая, listener3456 отсутствует. Причина: cached controller v84 vs fresh collector v86; offline validator PASS не live. Поддержанный fresh CLI product reset найден, но не применён: нужно отдельное поручение и native absence/gates. Live cold-start/runBatch не применены.
+- AME global start: offline checks/review PASS; reset `48ebe813…`, connected_and_idle, bridge/project reads PASS, catalog 4 API. Вызовов 0; queue/job STATUS/census, enqueue, AME launch, START/render 0. Прежний STOP и причина v84/v86 сохранены в workflow; live cold-start/runBatch не тестировались.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Ожидать отдельного поручения на поддержанный fresh CLI product reset; перед ним нужны native absence и штатные gates. Не убирать source pins и не повторять restart/ensure вслепую. Queue/job не читались, enqueue/START0; live cold-start/runBatch не приняты.
+Блок применения завершён. Новые AME-команды выполнять только по поручению; не читать старую очередь ради acceptance. Cold-start/runBatch/render live не проверялись. При дальнейших служебных lifecycle-операциях использовать fresh CLI, пока MCP collector кэширует v84; дополнительных restart сейчас не делать.
 
 ## Отложенные scope
 
