@@ -50,6 +50,14 @@ edit session. Наших SaveAs, копий AEP и полного AEP SHA в э�
 известная или неразрешённая зависимость от имени блокирует отправку.
 Обход включает именованные корни Text/Transform и другие поддержанные группы:
 одного `layer.numProperties` недостаточно. [Контракт PropertyGroup](https://ae-scripting.docsforadobe.dev/property/propertygroup/#propertygroupnumproperties).
+Safe subset включает ограниченную арифметику и literal `loopOutDuration` с
+фиксированными аргументами; синтаксис цикла — в [справке Adobe](https://helpx.adobe.com/after-effects/desktop/work-with-expressions/expression-language-reference/expression-language-reference.html).
+Для точной literal цепочки `comp(...).layer(...).effect(...)(...)` проверяются
+однозначные comp/layer/effect/leaf и выражение только связанного свойства, включая
+транзитивные зависимости. Ссылки на переименовываемую comp, циклы и неопределённость
+блокируются; выражения не исполняются сканером. Общие resource bounds сохраняются.
+Диагностика содержит полные unique выражения/occurrences; targets явно обозначены
+как samples с признаком truncation. Переполнение unique inventory даёт отказ.
 Menu lookup использует фиксированные labels поддерживаемой locale, ровно один
 положительный ID и привязку version/build/locale к proposal. Перед dispatch lookup
 повторяется. Первая canary подтверждает фактическое mapping; затем используется
@@ -81,14 +89,20 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
 
 ## Валидация реализации
 
-- Focused smoke: 20 групп, включая настоящий ES3 wire, именованные свойства AE,
+- Focused smoke: 28 групп, включая настоящий ES3 wire, именованные свойства AE,
   истечение idle TTL до эффектов, partial setters, UNKNOWN/no replay, неизменный
   receipt, отсутствие AEP IO и сохранение checkpoint gates остальных tools.
 - Окончательная версия прошла общий offline-цикл на 111 управляемых слоях/заданиях:
-  те же 20 групп, 1277 ES3 wire parses, восемь вспомогательных слоёв сохранены.
+  те же 28 групп, 1340 ES3 wire parses, восемь вспомогательных слоёв сохранены.
+  Последующая metadata-only маркировка samples проверена теми же 28 группами.
 - Независимое read-only review: три замечания исправлены; delta review GO по
   зафиксированным SHA. Это проверка кода, а не live enqueue/media proof.
 - `plan-classification-smoke` не прошёл infrastructure health своего isolated
   daemon; это не PASS и не acceptance. Повторов нет; пользовательский runtime сохранён.
 - Следующий шаг — штатное применение, свежий native inspect, одна canary и затем
   повторение того же шага N. START/render и проверка будущего видео исключены.
+- 19.10: commit `32850f1` штатно применён, bridge PID18332, native lifecycle read
+  чистого проекта PASS. Первый inspect нашёл точный menu3800 (`26.2x49`, build49,
+  `en_US`), но заблокировал rename: 80 выражений/11210 properties; текущий safe
+  subset не распознаёт обычный `loopOutDuration` и literal ссылки на Color controller.
+  До уточнения bounded expression proof enqueue не выполнялся; START/render 0.
