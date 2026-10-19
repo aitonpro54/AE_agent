@@ -5,7 +5,24 @@ const literal = value => JSON.stringify(value).replace(/\u2028/g, "\\u2028").rep
 
 function observe(a) {
   function bad(code) { throw Error(code); }
-  function num(value) { if (typeof value !== "number" || !isFinite(value)) bad("ame_open_number_unavailable"); return value; }
+  var numericIdentity = [];
+  function num(value,path) {
+    if (typeof value !== "number" || !isFinite(value)) bad("ame_open_number_unavailable");
+    if (value === 0 && 1/value === -Infinity) bad("ame_open_number_negative_zero");
+    // Display transport can lose digits. Retain the exact native double as a
+    // bounded, round-tripped 17-digit string in every full observation check.
+    var integer = Math.floor(value) === value, exact = null;
+    if (!integer) {
+      if (typeof path !== "string" || !path || path.length > 160 || numericIdentity.length >= 6000) bad("ame_open_numeric_identity_bound");
+      exact = value.toPrecision(17);
+      if (typeof exact !== "string" || exact.length > 32 || Number(exact) !== value) bad("ame_open_numeric_identity_unavailable");
+    }
+    // Use the SAME native conversion as the wire wrapper, never epsilon.
+    var wire = String(value), canonical = Number(wire);
+    if (!isFinite(canonical) || String(canonical) !== wire) bad("ame_open_number_transport_not_fixed");
+    if (integer) { if (canonical !== value) bad("ame_open_integer_transport_changed"); return value; }
+    numericIdentity.push({path:path,exact:exact}); return canonical;
+  }
   function bool(value) { if (typeof value !== "boolean") bad("ame_open_boolean_unavailable"); return value; }
   function optional(value) { return value === undefined ? null : bool(value); }
   function norm(value) { return String(value || "").replace(/\\/g, "/").toLowerCase(); }
@@ -331,12 +348,14 @@ function observe(a) {
     for (n = 0; n < stack.length; n++) if (stack[n] === comp.id) bad("ame_open_comp_cycle");
     if (seen[key]) return; seen[key] = true;
     recordComp(comp);
-    var node = {id:num(comp.id),name:String(comp.name),width:num(comp.width),height:num(comp.height),pixelAspect:num(comp.pixelAspect),duration:num(comp.duration),frameDuration:num(comp.frameDuration),displayStartTime:num(comp.displayStartTime),workAreaStart:num(comp.workAreaStart),workAreaDuration:num(comp.workAreaDuration),layers:rows}; graph.push(node);
+    var compPath = "comp/" + num(comp.id);
+    var node = {id:num(comp.id),name:String(comp.name),width:num(comp.width,compPath+"/width"),height:num(comp.height,compPath+"/height"),pixelAspect:num(comp.pixelAspect,compPath+"/pixelAspect"),duration:num(comp.duration,compPath+"/duration"),frameDuration:num(comp.frameDuration,compPath+"/frameDuration"),displayStartTime:num(comp.displayStartTime,compPath+"/displayStartTime"),workAreaStart:num(comp.workAreaStart,compPath+"/workAreaStart"),workAreaDuration:num(comp.workAreaDuration,compPath+"/workAreaDuration"),layers:rows}; graph.push(node);
     if (node.workAreaStart < 0 || node.workAreaDuration <= 0 || node.workAreaStart + node.workAreaDuration > node.duration + 0.0000001) bad("ame_open_work_area_invalid");
     for (k = 1; k <= comp.numLayers; k++) {
       layer = comp.layer(k); source = layer.source;
       recordLayer(comp.id,layer,k);
-      rows.push({id:num(layer.id),index:k,name:String(layer.name),enabled:bool(layer.enabled),solo:bool(layer.solo),locked:bool(layer.locked),audioEnabled:optional(layer.audioEnabled),hasAudio:optional(layer.hasAudio),guideLayer:optional(layer.guideLayer),startTime:num(layer.startTime),inPoint:num(layer.inPoint),outPoint:num(layer.outPoint),stretch:num(layer.stretch),sourceItemId:source?num(source.id):null,parentId:layer.parent?num(layer.parent.id):null});
+      var layerPath = compPath + "/layer/" + num(layer.id);
+      rows.push({id:num(layer.id),index:k,name:String(layer.name),enabled:bool(layer.enabled),solo:bool(layer.solo),locked:bool(layer.locked),audioEnabled:optional(layer.audioEnabled),hasAudio:optional(layer.hasAudio),guideLayer:optional(layer.guideLayer),startTime:num(layer.startTime,layerPath+"/startTime"),inPoint:num(layer.inPoint,layerPath+"/inPoint"),outPoint:num(layer.outPoint,layerPath+"/outPoint"),stretch:num(layer.stretch,layerPath+"/stretch"),sourceItemId:source?num(source.id):null,parentId:layer.parent?num(layer.parent.id):null});
       scanLayer(layer, comp.id);
       if (source instanceof CompItem) next.push(source);
     }
@@ -350,7 +369,7 @@ function observe(a) {
   var dependencyStatus = "no_expressions"; if (expressionCount) dependencyStatus = "proven_name_independent_subset"; if (risks.length) dependencyStatus = "blocked";
   return {schema:"ae-agent-ame-open-comp-observation.v1",application:"aftereffects",snapshot:{projectFile:String(app.project.file.fsName),revision:num(app.project.revision),compItemId:a.compItemId,graph:graph},dirty:app.project.dirty,
     nameDependencies:{status:dependencyStatus,complete:true,coverage:"explicit_named_layer_roots_and_literal_expression_closure_v2",expressionCount:expressionCount,uniqueExpressionCount:expressionInventory.length,inventoryComplete:true,inventoryTruncated:false,inventory:expressionInventory,references:references,compCount:compCount,layerCount:layerCount,propertyCount:propertyCount,namedRootCount:namedRootCount,risks:risks},menu:menu,
-    range:{startSeconds:target.workAreaStart,endSeconds:target.workAreaStart+target.workAreaDuration}};
+    numericIdentity:numericIdentity,range:{startSeconds:num(target.workAreaStart,"range/startSeconds"),endSeconds:num(target.workAreaStart+target.workAreaDuration,"range/endSeconds")}};
 }
 
 function execute(p) {
@@ -388,7 +407,7 @@ function execute(p) {
     slot.lastObserved = openObserve(p.selector);
     var current = slot.lastObserved.snapshot, actualRevision = current.revision; current.revision = p.wanted.revision;
     var preserved = equal(current,p.wanted); current.revision = actualRevision;
-    if (!preserved) bad("ame_open_patch_preservation_changed");
+    if (!preserved || !equal(slot.lastObserved.numericIdentity,p.before.numericIdentity)) bad("ame_open_patch_preservation_changed");
     if (slot.lastObserved.nameDependencies.status === "blocked" || !equal(slot.lastObserved.nameDependencies,p.before.nameDependencies)) bad("ame_open_expression_proof_changed_after_marker");
     // Inspect the command binding again immediately before a single menu call.
     if (!equal(slot.lastObserved.menu,p.menu) || new Date().getTime() >= p.deadline) bad("ame_open_menu_or_deadline_changed");
@@ -423,7 +442,7 @@ function restore(p) {
     slot.lastObserved = openObserve(p.selector);
     var snapshot = slot.lastObserved.snapshot, actualRevision = snapshot.revision; snapshot.revision = p.restoredSnapshot.revision;
     var preserved = openEqual(snapshot,p.restoredSnapshot); snapshot.revision = actualRevision;
-    if (!preserved) bad("ame_open_restore_preservation_changed");
+    if (!preserved || !openEqual(slot.lastObserved.numericIdentity,p.expectedCurrent.numericIdentity)) bad("ame_open_restore_preservation_changed");
     // Never reset dirty, revision, viewer, work area, or any other user state.
     slot.restored = true; slot.restoreScope = slot.dispatchReturned ? "name_only" : "proven_partial_property_rollback"; slot.phase = "restored"; return slot;
   } catch (error) { slot.phase = "unknown"; slot.error = String(error.message || error); try { slot.lastObserved = openObserve(p.selector); } catch (_) {} return slot; }

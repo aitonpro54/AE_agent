@@ -105,6 +105,7 @@ function createExecutor(deps) {
   }
   function validObservation(o,selector) {
     if (o?.schema !== "ae-agent-ame-open-comp-observation.v1" || o.application !== "aftereffects" || o.snapshot?.compItemId !== selector.compItemId || !Number.isSafeInteger(o.snapshot?.revision) || typeof o.snapshot?.projectFile !== "string" || !Array.isArray(o.snapshot?.graph) || o.snapshot.graph.length < 1 || o.snapshot.graph.length > 100 || o.nameDependencies?.complete !== true || !["blocked","no_expressions","proven_name_independent_subset"].includes(o.nameDependencies.status)) fail("ame_open_observation_invalid");
+    if (!Array.isArray(o.numericIdentity) || o.numericIdentity.length > 6000 || new Set(o.numericIdentity.map(row=>row?.path)).size !== o.numericIdentity.length || o.numericIdentity.some(row=>!row || Object.keys(row).sort().join(",")!=="exact,path" || typeof row.path!=="string" || !row.path || row.path.length>160 || typeof row.exact!=="string" || row.exact.length>32 || !/^-?[0-9]+(?:\.[0-9]+)?(?:e[+-]?[0-9]+)?$/.test(row.exact) || !Number.isFinite(Number(row.exact)))) fail("ame_open_numeric_identity_invalid");
     const roots = o.snapshot.graph.filter(c => c.id === selector.compItemId); if (roots.length !== 1 || !Array.isArray(roots[0].layers) || new Set(roots[0].layers.map(l => l.id)).size !== roots[0].layers.length) fail("ame_open_comp_observation_invalid");
     for (const layerId of selector.allowedLayerIds) { const matches = roots[0].layers.filter(l => l.id === layerId); if (matches.length !== 1 || typeof matches[0].enabled !== "boolean") fail("ame_open_controlled_layer_missing"); }
     return o;
@@ -177,7 +178,7 @@ function createExecutor(deps) {
     if(slot.dispatchAttempted===false&&slot.dispatchReturned===false&&slot.restoreAttempted===false&&slot.restored===false&&slot.applied.length===0&&native.equal(fresh,a.before))return {slot,fresh,noEffectProven:true,restorable:false,restored:false,code:slot.error||"ame_open_no_effect_proven"};
     if (!slot.lastObserved || !native.equal(fresh,slot.lastObserved)) return {slot,fresh,restorable:false,code:"ame_open_restore_manual_drift"};
     const expectedSnapshot = slot.restored ? restoredSnapshot(a,slot) : partialExpected(a,slot), actual = clone(fresh.snapshot); actual.revision = expectedSnapshot.revision;
-    const matches = native.equal(actual,expectedSnapshot), owned = fresh.snapshot.graph.find(c => c.id === a.selector.compItemId).name === a.marker;
+    const matches = native.equal(actual,expectedSnapshot) && native.equal(fresh.numericIdentity,a.before.numericIdentity), owned = fresh.snapshot.graph.find(c => c.id === a.selector.compItemId).name === a.marker;
     const dispatchKnown=slot.dispatchAttempted===false||slot.dispatchReturned===true;
     return {slot,fresh,restorable:matches && owned && dispatchKnown && !slot.restoreAttempted && !slot.restored,restored:matches && slot.restored === true,code:!matches?"ame_open_partial_setter_not_proven":!dispatchKnown?"ame_open_unknown_dispatch_marker_held":null};
   }

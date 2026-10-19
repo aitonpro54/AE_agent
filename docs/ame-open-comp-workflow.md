@@ -115,3 +115,20 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   guards; невозможное внутреннее состояние fail-closed. Focused32/372 actual ES3
   parses, rules/syntax/scoped diff PASS. Причина actual AE ещё требует read-back;
   enqueue/START/render 0. Whitelist и authority не расширялись.
+- `2b160ae` применён: actual AE inspect PASS — 80 expressions, 5 unique, 11229
+  properties, 9 comps, risks0. Первая canary `cd4ac9f9…`/`ce4139fe…` отказала
+  до setters/menu (`ame_open_native_baseline_or_menu_changed`). Exact reconcile
+  подтвердил applied0/dispatchfalse/noEffectProven/debt0; прежний UNKNOWN не переписан.
+  Обе transport observations полностью совпадают; numeric roundtrip исследуется.
+  Ни одного нового задания/START/render; неизвестная отправка не повторялась.
+- Numeric delta: display numbers проходят native `Number(String(raw))` с finite/
+  fixed-point проверкой; дробные raw свойства дополнительно связаны точной
+  `toPrecision(17)` identity с обратной проверкой. Integer IDs/revision не округляются.
+  Полное сравнение, post-set preservation, reconcile и restore сохраняют identity;
+  epsilon не применяется. Focused35/406 actual ES3 parses PASS, включая lossy wire,
+  sub-wire drift до dispatch/restore и после marker, отказ без новых effects.
+  Это offline-воспроизведение; причинность старого live refusal остаётся гипотезой.
+- Numeric delta review GO по frozen native55238f45/coref9b13bf1/smoked0165068;
+  root offline `--series=111`:35 groups/1486 actual ES3 parses PASS, без Adobe/network.
+  Прямой node без configured `--expose-internals` остановился при require Acorn;
+  корректный configured runner прошёл. Live доказательство этим не подменяется.
