@@ -2,14 +2,11 @@
 
 ## Текущая цель
 
-Поручение 17.10: проверить добавление TITR_01/TITR_02 в AME без запуска рендера.
-Текущая попытка остановилась до enqueue на новом snapshot export; addDL0/START0.
-Подробности и границы восстановления — в следующем разделе.
-
-Затем пользователь поручил добавить verifier и завершить оба enqueue. Verifier
-реализован с focused offline checks; [контракт](title-export-verification.md).
-По последнему указанию завершить текущую доработку и остановиться live-поставка,
-проверка снимков и enqueue не выполнялись. Исходный UNKNOWN остаётся в истории.
+По повторному поручению 19.10 проверка TITR_01/TITR_02 и добавление в AME
+без запуска рендера выполнены: verifier принял оба снимка, оба задания имеют свежий
+own-item STATUS `queued`. START0; итоговое видео и media не проверялись.
+Подробности завершения — ниже, реализация и контракт verifier —
+[здесь](title-export-verification.md).
 
 Поручение 16.10: довести существующий адаптер и проверить одну автоматическую
 передачу с точным preset и полным диапазоном. Этап завершён: один actual addDL,
@@ -76,6 +73,54 @@ addressable retention authenticated late callback до terminal-conflict respons
 Evidence текущей попытки: ignored `.codex-runtime/ame-queue-20261017/`,
 `logs/evidence/plan-runs/dad3dc19-f4c6-44a4-a379-8f47ad404d34.json`.
 Production code не менялся, новые offline/native smokes не запускались.
+
+## Завершение verifier и двух enqueue — 19.10
+
+После известного отказа reset по `pid_reused` подтверждено свежее отсутствие
+предыдущего процесса. Единственный разрешённый product reset завершился успешно:
+operation `7787e01d-f4cf-4dcf-8e9c-45498b6d9c73`, generation
+`4513c15a-38f9-46c5-84f6-e2900613f685`, runtime `321122e`.
+
+Verifier run `464632f4-0e4a-4ba1-bd7c-ba1a500af473` завершён PASS с receipt
+`0b5e000f0c2fa6d85a46ecad5416a036cb1e199ca364a164930abf9d79ee8aac`. У обоих
+снимков подтверждены противоположные TITR_01/TITR_02 flags, GUID
+`000111ef-0000-0000-0000-000000000000` и workArea `0..10.0333333333333`;
+исходный AEP восстановлен чистым на revision `12968664`. Selector исходного
+экспорта `dad3dc19-f4c6-44a4-a379-8f47ad404d34` /
+`f988d318-c55b-4c77-ab21-451b21a7519f` сохраняет `UNKNOWN/noReplay`.
+Дополнительное discovery-read `55ada78d-493e-462b-8aae-9b103f2c9a26` истекло;
+это не queue mutation и оно не повторялось. Resolve Fonts на первом снимке
+закрыт; после ограниченных UI-блоков собственный REPL сброшен.
+
+Задание TITR_01: batch `fcfc1372-2a36-43a3-a93c-47e1836c5a78`, job
+`6dbb3e17-eca7-44d3-a247-8f55af57e694`, nonce
+`ae8da48a-59d9-4d36-846b-e73a18b50df5`,
+`titr_01_verified_20261019_fcfc1372.mov`. Задание TITR_02: batch
+`6aa0ed33-f6c0-4c8b-8e7b-640d82c0c57c`, job
+`32dcddb0-6f54-4e12-ac42-7fafb96ef077`, nonce
+`f0338213-c049-47c2-b6ed-bc7a3a18c76b`,
+`titr_02_verified_20261019_6aa0ed33.mov`. Свежие STATUS в 10:18:40Z и
+10:18:42Z подтвердили для обоих `ownItemAccepted`, `nativeAssociationVerified`,
+`workAreaApplied`, `queued`, `batchRunning=false`, progress/time `0` и
+`readErrors=[]`. Каталожный preset `FHD_HQ_alfa_nosound` имел hash
+`c1b97e…`; отдельная фактическая проверка applied preset и media остаётся false.
+Выбранный range следует подтверждению `setWorkArea_call_ack`.
+
+Попытка slot 2 в первом batch была отвергнута локальным sender guard до
+BridgeTalk constructor/send; settlement вернул `proof_denied`, поэтому она
+сохранена и не переигрывалась. Slot 2 принят отдельным cross-batch retirement
+proof. Финальный агрегатор второго enqueue-плана сообщил
+`semantic verification_required`, хотя оба свежих STATUS и final readbacks
+подтверждают queued; это остаётся semantic consistency gap, aggregate success
+не заявляется. Read-only разбор `verifyAmeTitleAssociation` установил устаревшие
+ожидания `job_enqueued`, enqueue-binding/nonce и одного outputFiles: shared enqueue
+возвращает `job_observed` с binding/nonce независимого STATUS, а queued-only proof
+законно содержит `outputFiles=[]` и `exact_addDL_call_argument_ack`. Исправление
+этого агрегатора в текущий live scope не включалось; фактические записи не менять.
+Snapshot receipt и STATUS находятся в ignored
+`.codex-runtime/ame-verify-20261019/`. AME содержит два задания в разных
+batches; typed same-batch START готовность не подтверждена. START/render не
+выполнялись.
 
 ## Диапазон следующих заданий: отмеченная рабочая область
 

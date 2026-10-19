@@ -1,7 +1,10 @@
 # Проверка существующих титровых AEP-снимков
 
-Реализовано в репозитории. Живое применение и добавление в AME отложены по
-последнему указанию пользователя закончить текущую доработку и остановиться.
+Реализовано в репозитории. 19.10 live verifier завершил проверку двух снимков;
+оба отдельных AME задания приняты в `queued` без запуска рендера. Свежая receipt,
+final STATUS и ограничения описаны в [истории workflow](product-two-title-workflow.md).
+Исходный export selector остаётся `UNKNOWN/noReplay`; успешный verifier не меняет
+его историю.
 
 ## Назначение
 
@@ -57,9 +60,16 @@ terminal result сам по себе не даёт capability: независи�
 ## Граница очереди AME
 
 Проверка не сохраняет AEP, не создаёт новый export и не вызывает enqueue/START.
-После её успеха создаются два отдельных свежих enqueue proposal с измеренными
-SHA/GUID/workArea, новым batch и разными output filenames. Каждый принимается
-по независимому own-wrapper STATUS. Запуск рендера — отдельное поручение.
+Для текущей пары после её успеха отправлены два отдельных enqueue: каждый принят свежим независимым
+own-wrapper STATUS в состоянии `queued`. Они находятся в разных batches.
+START/render не выполнялись. Каталожный preset подтверждён при подготовке, но
+`appliedPresetVerified=false` и `mediaVerified=false`; queued read-back не является
+доказательством preset применения или готового видео.
+
+Финальный агрегатор второго enqueue-плана вернул `semantic verification_required`, несмотря
+на два свежих STATUS с `ownItemAccepted=true`, `nativeAssociationVerified=true`,
+`workAreaApplied=true` и `queued`. Это открытый semantic consistency gap;
+не переобозначать aggregate как success и не повторять enqueue.
 
 Статус реализации и live evidence: [активный план](../plans/target-app-execplan.md)
 и [история проверки очереди](product-two-title-workflow.md).

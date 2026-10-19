@@ -7,18 +7,9 @@
 
 ## Текущая цель пользователя
 
-Последнее указание пользователя: закончить текущую доработку/проверки/review/commit
-и остановиться. Live verification, restart/deploy и enqueue сейчас не выполнять.
-
-Новое явное поручение: добавить verifier существующих снимков и довести оба
-титра до AME queued без запуска рендера. Нового export и replay прежнего UNKNOWN нет.
-[block: snapshot-verifier] [executor: ae_specialist + internal Ultra review]
-[reason: source authority и protected project context] [ownership: code/tests writer;
-docs/live/commit parent]. Подготовлен локальный secret-safe review request.
-
-Новое поручение 17.10 после завершения reset: проверить добавление двух титров
-в AME без запуска рендера. Остановка до enqueue: новый snapshot export UNKNOWN,
-addDL0/START0. Данные и проверка — в linked product two-title workflow.
+По повторному поручению 19.10 два титровых снимка проверены в живом AE,
+два задания приняты в AME без запуска рендера. История и границы — в
+[product two-title workflow](../docs/product-two-title-workflow.md).
 
 17.10 создать штатный операторский сброс bridge для обычной новой product-сессии.
 Историю, UNKNOWN, checkpoints, idempotency и output/resource guards сохранить.
@@ -32,7 +23,7 @@ Scoped ae_specialist реализовал инструмент; родитель
 - Verifier реализован: два exact-selector tools, retained native result, fresh
   adoption, ordinary runner/readback/semantic integration. Source review нашёл
   два P2 (реальный getter и final protection check); оба исправлены, final delta
-  review GO. Live/restart/deploy/enqueue не выполнялись по позднему STOP.
+  review GO. На 17.10 live/enqueue были отложены по STOP; результат 19.10 ниже.
 - Verifier design: internal Ultra GO. Original baseline присутствует в completed
   readback; приняты EXCL once, отдельный native retained slot и readonly lookup,
   actual GUID/workArea, independent restoration, fresh adoption после restart.
@@ -77,9 +68,20 @@ Scoped ae_specialist реализовал инструмент; родитель
   Готовое видео не проверялось; старые native UNKNOWN сохранены.
 - История snapshot export, source reopen timeout, recovery, wire fixes и
   not_sent settlements сохранена в linked workflow и Git. Эти шаги не повторять.
+- 19.10: reset завершён после свежего подтверждения отсутствия предыдущего
+  процесса; verifier PASS и свежие own-item STATUS подтвердили два отдельных
+  задания `queued`. Исходный selector остаётся UNKNOWN/noReplay; START0,
+  appliedPresetVerified/mediaVerified=false. Агрегатор второго enqueue-плана сообщил
+  `semantic verification_required`, поэтому остаётся consistency gap; подробности
+  и IDs — в linked workflow.
 
 ## Decision Log
 
+- 19.10: продолжение live и product reset явно разрешены пользователем. Родитель —
+  единственный AE/CEP/UI-контроллер; specialist — read-only диагностика,
+  operator — документация. Два задания приняты в разных внутренних batches
+  штатным cross-batch proof после независимого STATUS первого задания; START0.
+  Фактическая приёмка — два свежих own-wrapper STATUS, а не итоговый aggregate.
 - Reset — явная local MCP операция, доступная без HTTP daemon, не fallback ensure.
   Caller не задаёт PID/path/generation/raw script. Initial/retained и настоящий
   pending lifecycle в v1 отклоняются; общий recovery framework не строится.
@@ -137,16 +139,21 @@ Scoped ae_specialist реализовал инструмент; родитель
 - Новая queue-проверка: dry-run ready, export real UNKNOWN, независимый source
   read-back PASS; snapshot file hashes не заменяют native verification.
   CU-блок только Resolve Fonts завершён, свой REPL reset; продуктовый код не менялся.
+- Live verifier: PASS, receipt и оба final STATUS подтверждают flags/GUID/workArea,
+  восстановленный чистый source и два queued items; aggregate semantic consistency
+  остаётся незакрытой. Детали и игнорируемые runtime evidence — в linked workflow.
+- 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
+  продуктовый код и чужой source-proof/test WIP не менялись.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Завершить текущий source review/correction и commit, затем остановиться по просьбе
-пользователя. Live-поставка, verifier и два enqueue/read-back остаются невыполненными.
-Original UNKNOWN/noReplay сохранить. START/render и новый export не выполнять.
-Исторические ENQUEUE/START/export/save/open и UNKNOWN не повторять.
+Текущий ограниченный scope завершён: два задания оставлены `queued`, START/render
+не выполнять. При отдельном продолжении сначала разобрать semantic
+`verification_required` consistency gap; не повторять export/enqueue и сохранять
+original UNKNOWN/noReplay.
 
 ## Отложенные scope
 
