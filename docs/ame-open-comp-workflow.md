@@ -1,6 +1,6 @@
 # AME: отправка из открытой композиции
 
-**Статус: архитектурный контракт выбран; реализация и live-приёмка ещё не завершены.**
+**Статус: код и focused offline-проверки готовы; live-приёмка ещё не завершена.**
 Это активный общий механизм повторной отправки N заданий. Количество заданий —
 входные данные цикла, а не повод расширять код под 2, 11 или 111 вариантов.
 
@@ -20,6 +20,23 @@
 идентификатору. Автоматический fallback запрещён. START, render и video/output
 acceptance в целевой scope не входят.
 
+## Typed API одного задания
+
+| Инструмент | Роль |
+| --- | --- |
+| `inspect_ame_open_comp` | `compItemId`, `allowedLayerIds`, `presetLabel` — входные данные. Возвращает серверные intent/marker и свежие свойства/metadata. |
+| `declare_ame_open_comp_idle` | Свежая операторская декларация idle/auto-start для точного AME PID/birth; не grant. |
+| `dispatch_ame_open_comp` | Один `selectedLayerId` с серверными intent/revision/stateHash/menuMetadataHash; отдельный proposal/dry-run/run. |
+| `report_ame_open_comp_ui` | Первое неизменное наблюдение полной метки и настроек конкретного нового задания. |
+| `restore_ame_open_comp` | Только серверный `intentId`; отдельный proposal/dry-run/run восстанавливает имя по журналу. |
+| `reconcile_ame_open_comp` | Только исходные `runId`/`commandId`, без повторной отправки. |
+
+Массив вариантов хранится у вызывающего workflow и повторяет этот шаг. В коде
+нет ветки «11 титров» или привязки к названию текущей композиции/preset пользователя.
+Следующий dispatch требует локальных первого UI receipt и завершённого restore
+предыдущего задания этого контекста; наличие receipt не вызывает новый AME STATUS.
+Повтор одинакового UI-отчёта возвращает исходную запись, конфликт отклоняется.
+
 ## Границы одного шага
 
 Сервер создаёт intent, уникальную метку и output path. Caller не задаёт command ID,
@@ -31,6 +48,8 @@ edit session. Наших SaveAs, копий AEP и полного AEP SHA в э�
 
 Перед временным именем нужен ограниченный preflight релевантных expressions:
 известная или неразрешённая зависимость от имени блокирует отправку.
+Обход включает именованные корни Text/Transform и другие поддержанные группы:
+одного `layer.numProperties` недостаточно. [Контракт PropertyGroup](https://ae-scripting.docsforadobe.dev/property/propertygroup/#propertygroupnumproperties).
 Menu lookup использует фиксированные labels поддерживаемой locale, ровно один
 положительный ID и привязку version/build/locale к proposal. Перед dispatch lookup
 повторяется. Первая canary подтверждает фактическое mapping; затем используется
@@ -59,3 +78,17 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
 
 Экспериментальный per-title SaveAs/source producer остаётся frozen справочной историей:
 [AME single-job source workflow](ame-single-job-workflow.md).
+
+## Валидация реализации
+
+- Focused smoke: 20 групп, включая настоящий ES3 wire, именованные свойства AE,
+  истечение idle TTL до эффектов, partial setters, UNKNOWN/no replay, неизменный
+  receipt, отсутствие AEP IO и сохранение checkpoint gates остальных tools.
+- Окончательная версия прошла общий offline-цикл на 111 управляемых слоях/заданиях:
+  те же 20 групп, 1277 ES3 wire parses, восемь вспомогательных слоёв сохранены.
+- Независимое read-only review: три замечания исправлены; delta review GO по
+  зафиксированным SHA. Это проверка кода, а не live enqueue/media proof.
+- `plan-classification-smoke` не прошёл infrastructure health своего isolated
+  daemon; это не PASS и не acceptance. Повторов нет; пользовательский runtime сохранён.
+- Следующий шаг — штатное применение, свежий native inspect, одна canary и затем
+  повторение того же шага N. START/render и проверка будущего видео исключены.

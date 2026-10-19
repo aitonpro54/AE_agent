@@ -14,7 +14,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Progress
 
-- Open-comp: выбран общий шаг N; specialist пишет code/tests, root — sole live controller/docs. Live enqueue пока 0.
+- Open-comp: общий typed шаг N реализован; focused tests/delta review GO после 3 fixes. Root — sole live controller/docs; live enqueue пока 0.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:
@@ -113,7 +113,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Validation
 
-- Open-comp architecture: rules/diff PASS. UI preparation: idle auto-start off, encoding idle; Preferences Cancel, REPL reset. Live enqueue 0; это не приёмка нового маршрута.
+- Open-comp: focused20/1277ES3/offline111, rules/syntax/diff PASS; 3 review fixes GO. UI prep: auto-start off/idle, Cancel+REPL reset; live0. Isolated plan-classification health failed, без повторов/приёмки.
 - Per-job acceptance: focused 9 groups, AME semantic 18 groups, association 215
   cases с реальным архивом — PASS; v1 bytes/run.ok=false сохранены. Syntax 4 JS,
   общий semantic smoke/rules/diff — PASS. Дополнительный completion-order harness имеет прежний
@@ -164,7 +164,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Завершить scoped open-comp реализацию и review; одна canary, затем тот же шаг N.
+Применить open-comp патч штатно; свежий native inspect, одна canary, затем тот же шаг N.
 Без owned AEP/full-AEP SHA/fallback/census/START/render/video acceptance/user jobs/replay.
 
 ## Отложенные scope

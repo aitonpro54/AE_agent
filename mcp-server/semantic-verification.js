@@ -45,6 +45,8 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "dispatch_ame_open_comp",
+  "restore_ame_open_comp",
   "create_ame_job_source",
   "verify_title_export_snapshots",
   "export_two_title_snapshots",
@@ -138,6 +140,8 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "reconcile_ame_open_comp",
+  "inspect_ame_open_comp",
   "get_project_lifecycle_state",
   "inspect_ame_transport",
   "inspect_ame_title_sources",
@@ -826,7 +830,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["dispatch_ame_open_comp", "restore_ame_open_comp", "create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4320,6 +4324,13 @@ function verifyAmeNativeFixture(step, evidence) {
 }
 
 function verifyStep(checks, step, evidence) {
+  if(["dispatch_ame_open_comp","restore_ame_open_comp"].includes(step.tool)){
+    const payload=payloadForStep(step),verifier=require("./ame-open-comp"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(step.tool,payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const observed=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool===verifier.RECONCILE&&read.status==="completed"&&observed?.privateProofVerified===true&&observed?.intentId===payload.intentId&&observed?.selector?.runId===payload.selector.runId&&observed?.selector?.commandId===payload.selector.commandId&&observed?.mediaVerified===false&&observed?.executionAuthority===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":"+step.tool+":journal",title:step.tool==="dispatch_ame_open_comp"?"Одно native Add to AME; UI-приёмка очереди ожидается":"Точное восстановление принадлежащего intent имени",expected:"server proposal, private bounded property journal and fresh exact keyed readback",observed:valid?"native effect verified; media not checked":"native outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if(step.tool==="create_ame_job_source"){
     const payload=payloadForStep(step),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
     try{valid=step.status==="completed"&&require("./ame-job-source").verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
