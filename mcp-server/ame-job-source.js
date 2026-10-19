@@ -62,7 +62,14 @@ function createExecutor(deps){
   if(fs.existsSync(stateDir)){directories(stateDir);for(const v of fs.readdirSync(stateDir).filter(v=>/^[a-f0-9-]{36}\.attempt\.json$/.test(v)))if(!["source_ready","failed_before_mutation"].includes(read(stateFile(v.slice(0,36)))?.phase))unresolved.add(v.slice(0,36));}
   function held(){return unresolved.size>0;}
   function phase(a,value){if(["source_ready","failed_before_mutation"].includes(value.phase))unresolved.delete(a.args.intentId);else unresolved.add(a.args.intentId);write(stateFile(a.args.intentId),{runId:a.runId,intentId:a.args.intentId,...value,replayAllowed:false});deps.persist?.({intentId:a.args.intentId,runId:a.runId,...value,replayAllowed:false});}
-  async function actor(){const v=await deps.readActor(),s=v?.state;if(!s||s.nativeControlIdle!==true||s.activeAction!==null||s.recoveryTransport||s.actionStorage!=="ready"||!s.bridgeConnection?.panelConnectionId||!s.panelInstanceId||!Number.isSafeInteger(s.panelLifecycleEpoch)||s.panelLifecycleEpoch<1||!Number.isSafeInteger(Number(s.panelGeneration))||Number(s.panelGeneration)<1||typeof v.target?.id!=="string"||!v.target.id)fail("ame_source_actor_not_idle");return {targetId:v.target.id,panelConnectionId:s.bridgeConnection.panelConnectionId,panelGeneration:String(s.panelGeneration),panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch};}
+  async function actor(){
+    const v=await deps.readActor(),s=v?.state,t=v?.target;
+    if(!s||s.nativeControlIdle!==true||s.activeAction!==null||s.recoveryTransport||s.actionStorage!=="ready"||!s.bridgeConnection?.panelConnectionId||!s.panelInstanceId||!Number.isSafeInteger(s.panelLifecycleEpoch)||s.panelLifecycleEpoch<1||!Number.isSafeInteger(Number(s.panelGeneration))||Number(s.panelGeneration)<1||
+      !t||[t.url,t.webSocketDebuggerUrl].some(value=>typeof value!=="string"||!value||value!==value.trim()||value.length>8192||/[\x00-\x1f]/.test(value)))fail("ame_source_actor_not_idle");
+    // maintenanceTarget returns exactCdpTarget's URL/WS pair, not a CDP page id.
+    // Bind its exact trusted tuple privately; tool arguments cannot supply it.
+    return {targetSha25664:hash({url:t.url,webSocketDebuggerUrl:t.webSocketDebuggerUrl}),panelConnectionId:s.bridgeConnection.panelConnectionId,panelGeneration:String(s.panelGeneration),panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch};
+  }
   async function invoke(body,mutation=false,a=null,label="read"){
     if(current)fail("ame_source_concurrent_native_refused");const scope={body,script:deps.wrap(body),mutation,attempt:a,label,prepared:false,used:false,id:null};current=scope;
     try{const r=await deps.native(body,scope,mutation);return r?.result??r;}finally{current=null;}

@@ -47,7 +47,7 @@ Native resource cap 256 — предел ресурса retained slots, а не 
 
 ## Статус и следующий шаг
 
-Final offline SHA33 и producer23 (включая x2/x11/x111), nodecheck 9 JS и diff
+Final offline SHA33 и producer24 (включая x2/x11/x111), nodecheck 9 JS и diff
 пройдены; static reviewer дал conditional GO. Live-проба 11 ещё не начата. Далее:
 штатный normal fresh CLI restart, затем
 actual read-only probe и 11 новых jobs по текущим титрам. Не запускать START,
