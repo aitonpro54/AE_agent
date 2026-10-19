@@ -132,3 +132,6 @@ UNKNOWN, не разрешает replay и не выдаёт capability.
   root offline `--series=111`:35 groups/1486 actual ES3 parses PASS, без Adobe/network.
   Прямой node без configured `--expose-internals` остановился при require Acorn;
   корректный configured runner прошёл. Live доказательство этим не подменяется.
+- `1aff3c7` применён: readonly numeric identity refused до intent/effects.
+  Diagnostic-only delta36/410 ES3 PASS добавляет bounded parseable path/raw/exact/
+  parsed/stage в исходный отказ; representation/equal/gates сохранены.

@@ -14,7 +14,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Progress
 
-- Open-comp `2b160ae`: actual inspect PASS (80expr/5unique/11229props); canary до setters/menu refused, exact reconcile no effects/debt0. Numeric transport+exact raw identity delta offline35/406 PASS, ожидает apply/live. Root sole live controller; enqueue0.
+- Open-comp `2b160ae` inspect PASS; canary до setters/menu refused, exact reconcile no effects/debt0. Numeric `1aff3c7` offline35/1486(111) PASS/review GO; actual read refused numeric identity, диагностируется. Root sole live controller; enqueue0.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
   preserve implementation and useful tests. Details/evidence:

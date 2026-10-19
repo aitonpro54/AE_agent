@@ -14,8 +14,14 @@ function observe(a) {
     var integer = Math.floor(value) === value, exact = null;
     if (!integer) {
       if (typeof path !== "string" || !path || path.length > 160 || numericIdentity.length >= 6000) bad("ame_open_numeric_identity_bound");
-      exact = value.toPrecision(17);
-      if (typeof exact !== "string" || exact.length > 32 || Number(exact) !== value) bad("ame_open_numeric_identity_unavailable");
+      var parsed = null, precisionStage = "toPrecision", precisionFailed = false;
+      try { exact = value.toPrecision(17); precisionStage = "decimal_parse"; parsed = Number(exact); } catch (_) { precisionFailed = true; }
+      if (precisionFailed || typeof exact !== "string" || exact.length > 32 || parsed !== value) {
+        // This failure precedes any intent/effect. Keep the ENTIRE Error + JSON
+        // below the ordinary 400-char sanitizer bound; native has no JSON API.
+        var exactText = typeof exact === "string" ? exact : "", roundtrip = !precisionFailed && parsed === value;
+        bad('ame_open_numeric_identity_unavailable:{"path":' + diagnosticQuote(path,62) + ',"rawString":' + diagnosticQuote(String(value),34) + ',"exact":' + diagnosticQuote(exactText,42) + ',"type":' + diagnosticQuote(typeof exact,14) + ',"parsedString":' + diagnosticQuote(String(parsed),34) + ',"roundtrip":' + (roundtrip ? "true" : "false") + ',"stage":' + diagnosticQuote(precisionStage,18) + '}');
+      }
     }
     // Use the SAME native conversion as the wire wrapper, never epsilon.
     var wire = String(value), canonical = Number(wire);
