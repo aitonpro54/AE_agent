@@ -1,16 +1,15 @@
 # План исполнения AE Agent 3.3.1
 
-Продукт: [target app](../specs/target-app.md).
-Режимы: [deployment](../docs/deployment-modes.md).
+Продукт: [target app](../specs/target-app.md); режимы: [deployment](../docs/deployment-modes.md).
 Текущий контракт: [штатный сброс bridge](../docs/product-session-reset.md).
 Исторический экспорт: [product two-title workflow](../docs/product-two-title-workflow.md).
+AME global start: [контракт и статус](../docs/ame-global-start.md).
 
 ## Текущая цель пользователя
 
-19.10: immediate per-job self-check и immutable приёмка реализованы; повторного
-автоматического пересчёта очереди нет. Патч `505a439` применён штатным restart;
-очередь повторно не читалась, рендер не запускался. Контракт и история — в
-[product two-title workflow](../docs/product-two-title-workflow.md).
+19.10: immediate per-job self-check и immutable приёмка реализованы; пересчёта
+очереди нет. AME autostart/global-start завершён offline; применение к runtime
+ожидает штатного bridge restart. Контракт — в [workflow](../docs/product-two-title-workflow.md).
 
 ## Progress
 
@@ -64,6 +63,7 @@
 
 ## Decision Log
 
+- [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
 - [block: per-job-acceptance] [executor: ae_specialist]
   [reason: durable acceptance, current status и UNKNOWN boundaries]
   [ownership: scoped code/tests writer; docs/review/commit — parent]. Только offline.
@@ -158,15 +158,14 @@
   снова queued с собственным STATUS. Сводка — `.codex-runtime/ame-checker-restart-20261019/summary.json`.
 - 19.10: документация проверена `check:rules` и `git diff --check` — PASS;
   продуктовый код и чужой source-proof/test WIP не менялись.
+- AME global start: production API реализованы offline; `queue-control` 17, `enqueue-sequence` 6, `ame-running` 27, acceptance 9, title-semantic 18, product-dispatch 25, shared-queue 11, product-read 10, source-read-fence, node-check 11 JS, rules/diff — PASS. Final/last-delta review GO, P1/P2 нет. Restart и live cold-start/runBatch не подтверждены.
 - Исторические diagnostics8/own-status29/not-sent+rehydrate25 и rules/syntax/diff PASS;
   actual addDL1/START0 и independent queued STATUS описаны в linked workflow.
   Fake/offline результаты не являются live доказательством нового reset.
 
 ## Следующий шаг
 
-Scoped per-job контракт применён: runtime `505a439`, штатный restart 19.10 11:06Z.
-Очередь по поручению пользователя не перечитывалась. Не проверять старые runs ради приёмки;
-explicit STATUS только по поручению или exact UNKNOWN reconciliation. START не запускать.
+Родитель намерен выполнить штатный bridge restart без queue/job read, enqueue или START; результат пока не подтверждён. До отдельной live-приёмки считать runtime предыдущим; cold-start/runBatch не приняты.
 
 ## Отложенные scope
 

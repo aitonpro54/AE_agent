@@ -17,7 +17,7 @@ function fixture(label, options = {}) {
   const batchId = crypto.randomUUID(), born = new Date(clock).toISOString(), process = { pid: 77, startedAt: born, path: "C:\\Program Files\\Adobe\\Adobe Media Encoder 2026\\Adobe Media Encoder.exe" }, contexts = new WeakSet(), wrappers = [], foreign = [{ preset: "foreign-preset", output: "manual.mov", position: 0 }], foreignBefore = JSON.stringify(foreign), listeners = {};
   const fail = code => { throw Object.assign(new Error(code), { code }); }, forbidden = () => fail("foreign_queue_operation_forbidden");
   class TestDate extends Date { constructor(value) { super(arguments.length ? value : clock); } static now() { return clock; } }
-  const frontend = { getDLItemsAtRoot: file => { assert(sources.includes(file)); return ["GUID-" + (sources.indexOf(file) + 1)]; }, addDLToBatch: (source, format, epr, guid, output) => {
+  const frontend = { addEventListener: (name, listener) => { assert.equal(name, "onBatchItemCreationFailed"); assert.equal(typeof listener, "function"); }, getDLItemsAtRoot: file => { assert(sources.includes(file)); return ["GUID-" + (sources.indexOf(file) + 1)]; }, addDLToBatch: (source, format, epr, guid, output) => {
     adds++; assert(sources.includes(source)); assert.equal(format, ""); assert.equal(epr, presetPath); assert.equal(guid, "GUID-" + (sources.indexOf(source) + 1));
     const wrapper = { outputFiles: [output], listeners: {}, addEventListener: (name, fn) => { wrapper.listeners[name] = fn; }, setWorkArea: () => !options.workAreaFalse,
       getEncodeProgress: () => { reads++; if (options.getterError) throw Error("getter unavailable"); return 0; }, getEncodeTime: () => 0, getLogOutput: () => "fixture" };
@@ -28,8 +28,10 @@ function fixture(label, options = {}) {
   for (const key of ["getBatchItems", "getQueue", "batchItems", "numBatchItems"]) Object.defineProperty(host, key, { get: forbidden });
   const ame = vm.createContext({ Date: TestDate, BridgeTalk: { appSpecifier: "ame-26.0" }, $: { global: { aeAgentAMEProbeSessionNonce: "session" } }, app: { getFrontend: () => frontend, getEncoderHost: () => host, quit: forbidden } });
   function BridgeTalk() { const message = this; message.send = () => {
-    sends++; const body = vm.runInContext(message.body, ame);
-    if ((options.unknownEnqueue && message.body.includes('"operation":"enqueue"') && adds === 1) || options.unknownStart && message.body.includes('"operation":"start"')) { pending = { message, body }; return true; }
+    sends++; const body = vm.runInContext(message.body, ame), observed = JSON.parse(body);
+    // Fixed string operands are UTF-16 expressions. Inject callback loss from
+    // the actual native outcome, independent of the sender source spelling.
+    if ((options.unknownEnqueue && observed.code === "job_enqueued" && adds === 1) || options.unknownStart && observed.code === "batch_start_accepted") { pending = { message, body }; return true; }
     message.onResult({ body }); return true;
   }; }
   BridgeTalk.isRunning = () => true; BridgeTalk.launch = forbidden; BridgeTalk.pump = () => {};
@@ -88,9 +90,9 @@ async function pair(f) { const jobs = []; for (let slot = 1; slot <= 2; slot++) 
       assert.equal((await f.run(adapter.ENQUEUE, f.args(1))).ok, false); assert.equal(f.counts().adds, 1); assert.equal(f.counts().starts, 0);
     }
   });
-  await check("unknown enqueue reconciles the retained send before independent read; no duplicate", async () => {
+  await check("unknown enqueue resolves by exact independent own-wrapper read; no duplicate", async () => {
     const f = fixture("unknown-enqueue", { unknownEnqueue: true }), first = await f.run(adapter.ENQUEUE, f.args(1)); assert.equal(first.unknownOutcome, true); assert.equal((await f.run(adapter.ENQUEUE, f.args(1))).ok, false); assert.equal(f.counts().adds, 1);
-    f.deliver(); assert.equal((await f.status(first.jobId)).code, "job_enqueued"); assert.equal(f.counts().sends, 1); assert.equal((await f.status(first.jobId)).ownItemAccepted, true); assert.equal(f.counts().adds, 1);
+    f.deliver(); const read = await f.status(first.jobId); assert.equal(read.code, "job_observed"); assert.equal(read.ownItemAccepted, true); assert.notEqual(read.native.requestNonce, first.requestNonce); assert.equal(f.counts().sends, 2); assert.equal(f.counts().adds, 1);
     assert.equal((await f.run(adapter.ENQUEUE, f.args(2))).ok, true); assert.equal((await f.start()).ok, true); assert.equal(f.counts().adds, 2);
   });
   await check("unknown START is durable across restart and reconciles without resend", async () => {

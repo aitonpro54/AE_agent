@@ -28,7 +28,7 @@ function validateInput(name, raw = {}) {
   if (!Number.isSafeInteger(raw.expectedProcess.pid) || raw.expectedProcess.pid < 1 || typeof raw.expectedProcess.startedAt !== "string" || !Number.isFinite(Date.parse(raw.expectedProcess.startedAt))) fail("ame_title_process_binding_required");
   const a = { targetSpecifier: raw.targetSpecifier, expectedProcess: { pid: raw.expectedProcess.pid, startedAt: new Date(raw.expectedProcess.startedAt).toISOString() }, timeoutMs: raw.timeoutMs === undefined ? 5000 : raw.timeoutMs };
   if (!Number.isSafeInteger(a.timeoutMs) || a.timeoutMs < 1000 || a.timeoutMs > 10000) fail("ame_title_invalid_timeout");
-  if (raw.expectedSessionNonce !== undefined) { if (!/^[A-Za-z0-9._-]{1,128}$/.test(text(raw.expectedSessionNonce, 128))) fail("ame_title_invalid_session"); a.expectedSessionNonce = raw.expectedSessionNonce; }
+  if (raw.expectedSessionNonce !== undefined) { if (raw.expectedSessionNonce !== null && !/^[A-Za-z0-9._-]{1,128}$/.test(text(raw.expectedSessionNonce, 128))) fail("ame_title_invalid_session"); a.expectedSessionNonce = raw.expectedSessionNonce; }
   if (name === INSPECT || name === ENQUEUE) { a.sourceProjectFile = localFile(raw.sourceProjectFile, ".aep"); if (typeof raw.expectedSourceSha25664 !== "string" || !SHA.test(raw.expectedSourceSha25664)) fail("ame_title_source_hash_required"); a.expectedSourceSha25664 = raw.expectedSourceSha25664; }
   if (name === INSPECT && raw.reconcileRequestNonce !== undefined) { if (typeof raw.reconcileRequestNonce !== "string" || !UUID.test(raw.reconcileRequestNonce)) fail("ame_title_invalid_nonce"); a.reconcileRequestNonce = raw.reconcileRequestNonce; }
   if (name !== INSPECT) { if (typeof raw.batchId !== "string" || !UUID.test(raw.batchId)) fail("ame_title_invalid_batch"); a.batchId = raw.batchId; }
@@ -91,7 +91,7 @@ function nativeTitleJob(a) {
   var reply = { schema: "ae-agent-ame-title-native.v1", requestNonce: a.requestNonce, operationBinding: a.operationBinding, appSpecifier: String(BridgeTalk.appSpecifier), sessionNonce: scalar($.global.aeAgentAMEProbeSessionNonce), observedAt: new Date().getTime(), code: "unsupported", nativeJobId: null, nativeAssociationVerified: false };
   function done(code) { reply.code = code; if(a.operation === "enqueue" && entry && !reply.job)reply.job=readEntry(entry);var serialized = stringify(reply); if (utf8Bytes(serialized, 524288) < 0) { reply = { schema: reply.schema, requestNonce: reply.requestNonce, operationBinding: reply.operationBinding, appSpecifier: reply.appSpecifier, sessionNonce: reply.sessionNonce, observedAt: reply.observedAt, code: "native_response_envelope_oversize", nativeJobId: null, nativeAssociationVerified: false }; serialized = stringify(reply); } return serialized; }
   if(a.ownedInitialDispatch===true){var rawProbe=$.global.aeAgentAMEProbeSessionNonce;if(!(rawProbe===undefined||rawProbe===null||typeof rawProbe==="string"&&/^[A-Za-z0-9._-]{1,128}$/.test(rawProbe)))return done("owned_probe_observation_invalid");}
-  if (reply.appSpecifier !== a.targetSpecifier || a.expectedSessionNonce && reply.sessionNonce !== a.expectedSessionNonce) return done("target_session_changed");
+  if (reply.appSpecifier !== a.targetSpecifier || Object.prototype.hasOwnProperty.call(a,"expectedSessionNonce") && reply.sessionNonce !== a.expectedSessionNonce) return done("target_session_changed");
   if(a.ownedInitialDispatch===true&&a.operation!=="sources"){
     if(!Object.prototype.hasOwnProperty.call(a,"boundNativeSessionNonce")||!(a.boundNativeSessionNonce===null||typeof a.boundNativeSessionNonce==="string"&&/^[A-Za-z0-9._-]{1,128}$/.test(a.boundNativeSessionNonce))||reply.sessionNonce!==a.boundNativeSessionNonce)return done("owned_target_session_changed");
   }
@@ -349,6 +349,11 @@ function messageArgument(value) {
   fail("ame_title_fixed_argument_type_required");
 }
 function messageScript(a) { return "(" + nativeTitleJob.toString() + ")(" + messageArgument(a) + ");"; }
+// Internal fixed-program adapter. Tool JSON can never supply messageBody.
+function fixedCommandScript(a, messageBody) {
+  const script="return ("+nativeSend.toString()+")("+messageArgument(a)+","+utf16Expression(messageBody)+");";
+  if(Buffer.byteLength(script,"utf8")>1048576)fail("ame_title_command_bound");return script;
+}
 function commandScript(a) {
   // Both the generated AME source and its string operands preserve exact UTF-16
   // units without Adobe's nested backslash-escape interpretation.
@@ -883,7 +888,7 @@ function createExecutor(deps) {
   return { authorize, assertAuthorization: (cap, name, raw) => { assertCap(cap, name, validateInput(name, raw)); return true; }, execute };
 }
 
-const common = { targetSpecifier: { type: "string", pattern: "^ame-[0-9]{1,3}\\.[0-9]{1,3}$" }, expectedProcess: { type: "object", additionalProperties: false, required: ["pid", "startedAt"], properties: { pid: { type: "integer", minimum: 1 }, startedAt: { type: "string" } } }, expectedSessionNonce: { type: "string" }, timeoutMs: { type: "integer", minimum: 1000, maximum: 10000 } };
+const common = { targetSpecifier: { type: "string", pattern: "^ame-[0-9]{1,3}\\.[0-9]{1,3}$" }, expectedProcess: { type: "object", additionalProperties: false, required: ["pid", "startedAt"], properties: { pid: { type: "integer", minimum: 1 }, startedAt: { type: "string" } } }, expectedSessionNonce: { type: ["string", "null"] }, timeoutMs: { type: "integer", minimum: 1000, maximum: 10000 } };
 const source = { sourceProjectFile: { type: "string" }, expectedSourceSha25664: { type: "string", pattern: SHA.source } }, batchId = { type: "string", pattern: UUID.source };
 const queueFields = { manualQueueMode: { type: "string", enum: ["cep_user_declaration_v2"] }, completedOwnedPrefix: { type: "array", maxItems: 63, items: { type: "object", additionalProperties: false, required: ["batchId", "jobId"], properties: { batchId, jobId: { type: "string", pattern: UUID.source } } } } };
 const queueMode = { type: "string", enum: [sharedQueue.MODE] };
@@ -895,4 +900,4 @@ const definitions = [
   [STATUS, "Explicit fixed read of one retained native EncoderWrapper. acceptanceOnly:true restores only immutable saved initial acceptance locally, without OS/native/queue reads or execution authority; it cannot serve as current read-back. originalRunId settles server-proven never-sent enqueue without native send; requires a new proposal for its first delivery. These two modes are exclusive.", { batchId, jobId: { type: "string", pattern: UUID.source },originalRunId:{type:"string",pattern:UUID.source}, acceptanceOnly: { type: "boolean", enum: [true] } }, ["batchId", "jobId"]]
 ];
 const tools = definitions.map(([name, description, fields, required]) => ({ name, description, inputSchema: { type: "object", additionalProperties: false, properties: { ...common, ...fields }, required: ["targetSpecifier", "expectedProcess", ...required] }, annotations: { readOnlyHint: [INSPECT, STATUS, QUEUE_MANIFEST].includes(name), destructiveHint: false, idempotentHint: false, openWorldHint: false } }));
-module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, createExecutor };
+module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, fixedCommandScript, createExecutor };

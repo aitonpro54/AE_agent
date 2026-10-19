@@ -140,6 +140,8 @@ const RUNTIME_FILES = [
   "mcp-server/ame-transport.js",
   "mcp-server/ame-presets.js",
   "mcp-server/ame-running.js",
+  "mcp-server/ame-queue-control.js",
+  "mcp-server/ame-enqueue-sequence.js",
   "mcp-server/cep-manual-plan-ingress.js",
   "mcp-server/ame-native-fixture-grant.js",
   "mcp-server/ame-native-fixture-runner.js",

@@ -34,13 +34,33 @@ restart не создают новую receipt, не мигрируют стар
 Обычный STATUS без флага — отдельное текущее адресное наблюдение: по явному запросу,
 для сверки UNKNOWN или порученного контроля рендера. Не запускать его автоматически
 для повторной приёмки уже принятых jobs либо ради зелёного итога старого run.
-Потерянный ответ проверять только по exact own-job selector без повторного enqueue;
-исходный UNKNOWN/noReplay сохраняется. START общей AME очереди и прежние manual/shared
+Потерянный outer reply после сохранённого terminal sender сверять по run без повторного
+enqueue. Потерянный native callback сохраняет `UNKNOWN/noReplay`. START общей очереди и прежние manual/shared
 gates остаются отдельным scope; self-check не перечисляет и не меняет пользовательские jobs.
 
 Offline regression: `node scripts/ame-title-job-acceptance-smoke.js` проверяет
 production executor/generated sender-receiver в изолированных VM; отдельный
 `ame-queued-association-smoke.js` проверяет semantic binding и архивный v1 контракт.
+
+## Автозапуск AME и отдельная команда общей очереди
+
+Путь нового задания может обеспечить запуск закрытого AME и продолжить тот же
+exact per-job enqueue/self-check через сохранённый staged ensure. Он не повторяет
+enqueue, не перечисляет очередь и не касается пользовательских заданий. Точный
+контракт вызовов, доверенной проверки `Valid`, обработки `HashMismatch` и
+неизвестных исходов — в [AME global start](ame-global-start.md). `prepare` сохраняет
+точное поручение и выдаёт план, не меняя AME; новый default — `shared_queue_v1`,
+прежний enqueue default остаётся прежним.
+
+Запуск общей очереди — другой явный запрос: он действует на все готовые jobs,
+включая пользовательские, но не читает их содержимое и не делает census перед
+запуском. Существующие guards ручного/title START сохраняются. Unknown/timeout
+требует reconciliation и никогда не разрешает blind retry. Offline implementation
+и smoke не принимаются за live cold-start/runBatch; запуск очереди не подтверждает
+рендер или готовое видео. Потерянный outer reply после сохранённого terminal sender
+сверяется по run; потерянный native callback остаётся `UNKNOWN/noReplay`, в том
+числе после restart. Automatic retry нет, а `get_ame_queue_start_status` не является
+полной native-callback reconciliation. Подробности — в [AME global start](ame-global-start.md).
 
 ## Последний завершённый live этап
 

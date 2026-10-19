@@ -121,6 +121,8 @@ const compDynamicLinkRead = require("./comp-dynamic-link-read");
 const ameTransport = require("./ame-transport");
 const amePresets = require("./ame-presets");
 const ameRunning = require("./ame-running");
+const ameQueueControl = require("./ame-queue-control");
+const ameEnqueueSequence = require("./ame-enqueue-sequence");
 const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanIngress();
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
@@ -230,6 +232,35 @@ const ameRunningExecutor = ameRunning.createExecutor({
   }
 });
 const ameFixtureCheckpoints = new Map();
+const ameQueueContexts = new WeakMap();
+function brandAmeQueueContext(context, autonomous) {
+  if (!autonomous) manualPlanIngress.brand(context);
+  const sessionHash = autonomous && autonomous.sessionHash || null;
+  ameQueueContexts.set(context, { record: context.record, sessionHash, fingerprint: productAmeFingerprint(context) });
+  assertAmeQueueContext(context); return context;
+}
+function assertAmeQueueContext(context) {
+  const row = ameQueueContexts.get(context), record = context && context.record;
+  if (!row || row.record !== record || row.fingerprint !== productAmeFingerprint(context)) throw Error("ame_queue_current_runner_required");
+  currentProposalState.assertCurrent(record);
+  ameQueueControl.assertProposalContext(context, currentProposalState.current, AUTONOMY_CONTRACT_VERSION);
+  if (context.autonomous) {
+    const authority = autonomousSession.authorization();
+    if (!productRuntimeCurrent() || !authority || authority.sessionHash !== row.sessionHash || record.confirmedBySurface !== "cep-autonomous-session" || record.confirmedBySession !== `session-${row.sessionHash}`) throw Error("ame_queue_current_autonomous_session_required");
+  } else manualPlanIngress.assertContext(context);
+}
+const ameQueueExecutor = ameQueueControl.createExecutor({
+  stateDir: path.join(LOG_DIR, "ame-global-starts"), inspectProcesses: ameRunning.inspectProcesses,
+  inspectTransport: args => withPlanCommandRole("readback", () => ameTransport.execute(args, runExtendScriptBody)),
+  runExtendScriptBody: (script, timeout, metadata) => withPlanCommandRole(metadata.mutating ? "mutation" : "readback", () => runExtendScriptBody(script, timeout)),
+  assertServerProposalContext: assertAmeQueueContext,
+  assertLegacyStartClear: binding => ameQueueControl.readLegacyStartBlockers(path.join(LOG_DIR, "ame-title-jobs"), binding)
+});
+const ameEnqueueSequencer = ameEnqueueSequence.createSequence({
+  stateDir: path.join(LOG_DIR, "ame-enqueue-sequences"), inspectProcesses: ameRunning.inspectProcesses,
+  inspectTransport: args => withPlanCommandRole("readback", () => ameTransport.execute(args, runExtendScriptBody)),
+  readRunRecord: id => planRunRecords.readRecord(LOG_DIR, id, { throwOnError: true })
+});
 async function readNativeFixturePrimaryLifecycle() {
   const result=await callToolLogged("native-fixture-admission-read","get_project_lifecycle_state",{});
   if(result.isError)throw Object.assign(new Error("fixture_prephase_primary_state_required"),{code:"fixture_prephase_primary_state_required"});
@@ -2375,7 +2406,7 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 const MUTATING_TOOL_NAMES = new Set([
   titleVerification.TOOL,
   titleExport.TOOL,
-  ameTitleJobs.ENQUEUE, ameTitleJobs.START,
+  ameTitleJobs.ENQUEUE, ameTitleJobs.START, ameQueueControl.START,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
   nativeRenderVariant.RENDER,
@@ -4151,6 +4182,12 @@ async function verifyMutationResult(toolName, args, payload) {
       scope: "ame_native_wrapper_association_only", independentReadBack: { tool: ameTitleJobs.STATUS, args: readArgs, result: read },
       nativeJobId: null, nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
   }
+  if (toolName === ameQueueControl.START) {
+    const normalized = ameQueueControl.validateInput(toolName, args), { globalQueue, ...readArgs } = normalized;
+    const result = await callToolLogged("verification-readback", ameQueueControl.STATUS, readArgs), read = firstToolPayload(result), context = planCommandContext.getStore();
+    if (context?.item) { context.item.independentReadBack = [{ index: 2, tool: ameQueueControl.STATUS, args: readArgs, status: result.isError ? "failed" : "completed", result: read, source: "server_typed_readback", observedAt: new Date().toISOString() }]; context.persist(); }
+    return { ok: !result.isError && ameQueueControl.verifyReadBack(args, payload, read, context?.run), scope: "ame_global_queue_start_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+  }
   if (toolName === ameTitleJobs.START) {
     const shared=args.queueMode===ameSharedQueue.MODE;
     if (!shared && args.manualQueueMode !== "cep_user_declaration_v2") return { ok: false, scope: "ame_native_queue_composition", reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
@@ -5740,6 +5777,10 @@ function validateAgentPlanObject(plan, requestId, context) {
       try { ameRunning.validateInput(safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
       if (steps.length !== 1) generatedSafetyIssues.push("AME application startup requires an isolated one-step typed plan.");
     }
+    if (ameQueueControl.tools.some(tool => tool.name === toolName)) {
+      try { ameQueueControl.validateInput(toolName, safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
+      if (toolName === ameQueueControl.START && (steps.length !== 1 || plan.runtimeBindings || step.resultBindings || step.bindings)) generatedSafetyIssues.push("Global AME START requires one exact isolated typed step without runtime bindings.");
+    }
     if (toolName === ameFixtureGrant.TOOL_NAME) {
       try { ameFixtureGrant.validateInput(safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
       if (steps.length !== 1) generatedSafetyIssues.push("Native fixture probe requires an isolated manual one-step plan.");
@@ -6722,6 +6763,7 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  ...ameQueueControl.tools.map(tool => tool.name),
   titleVerification.TOOL,titleVerification.LOOKUP,
   ameFixtureRunner.INSPECT,
   ameFixtureRunner.INSPECT_ATTEMPT,
@@ -8746,7 +8788,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   }
   if (!dryRun && options._m100ActionRecord) {
     try {
-      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
+      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || step.tool === ameQueueControl.START && !(autonomous && productRuntimeCurrent()) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
         manualPlanIngress.assertRequest(options._m100ActionRecord);
       }
       confirmM100ActionProposal(options._m100ActionRecord, options, run);
@@ -8956,6 +8998,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       } : null;
       if (ameRunningContext && bound.args.existingInstallationTrust) manualPlanIngress.brand(ameRunningContext);
       const ameRunningAuthorization = ameRunningContext ? ameRunningExecutor.authorize(ameRunningContext) : null;
+      const ameQueueContext = step.tool === ameQueueControl.START ? brandAmeQueueContext({
+        source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
+        confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
+        checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
+      }, autonomous) : null;
+      const ameQueueAuthorization = ameQueueContext ? ameQueueExecutor.authorize(ameQueueContext) : null;
       const ameFixtureContext = step.tool === ameFixtureGrant.TOOL_NAME ? manualPlanIngress.brand({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         requestId:options.requestId || options._m100ActionRecord.requestId,instanceId:currentProposalState.snapshot().instanceId,
@@ -8980,7 +9028,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         projectLifecycleContract.isLifecycleMutation(step.tool) ? {lifecycleAuthorization} : step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : titleVerificationAuthorization ? {titleVerificationAuthorization} : titleExportAuthorization ? {titleExportAuthorization} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : titleVerificationAuthorization ? {titleVerificationAuthorization} : titleExportAuthorization ? {titleExportAuthorization} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameQueueAuthorization ? {ameQueueAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -14389,6 +14437,8 @@ const tools = [
   ameTransport.tool,
   amePresets.listAmePresetsTool,
   ameRunning.tool,
+  ...ameQueueControl.tools,
+  ...ameEnqueueSequence.tools,
   ameFixtureRunner.tool,
   ameFixtureRunner.inspectTool,
   ameFixtureRunner.inspectAttemptTool,
@@ -14791,6 +14841,14 @@ async function callTool(name, args, executionContext) {
       runId: currentProposalState.current.executionId, proposalId: currentProposalState.current.actionId
     };
     return toolResult(result, !result.ok);
+  }
+  if (ameQueueControl.tools.some(tool => tool.name === name)) {
+    const result = await ameQueueExecutor.execute(name, args, executionContext && executionContext.ameQueueAuthorization);
+    return toolResult(result, !result.ok);
+  }
+  if (ameEnqueueSequence.tools.some(tool => tool.name === name)) {
+    try { const result = await ameEnqueueSequencer.execute(name, args); return toolResult(result, !result.ok); }
+    catch (error) { return toolResult({ ok: false, code: error.code || "ame_enqueue_sequence_failed", executionAuthority: false, automaticRetryAllowed: false }, true); }
   }
   if(name===nativeRenderVariant.INSPECT || name===nativeRenderVariant.RENDER){
     try { const result=name===nativeRenderVariant.INSPECT ? await nativeRenderExecutor.inspect(args) : await nativeRenderExecutor.execute(args,executionContext && executionContext.nativeRenderAuthorization);
@@ -24201,6 +24259,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
   if(name===nativeRenderVariant.RENDER)nativeRenderExecutor.assertAuthorization(executionContext && executionContext.nativeRenderAuthorization,args || {});
   if (name === ameRunning.TOOL_NAME) ameRunningExecutor.assertAuthorization(executionContext && executionContext.ameRunningAuthorization, args || {});
+  if (name === ameQueueControl.START) ameQueueExecutor.assertAuthorization(executionContext && executionContext.ameQueueAuthorization, args || {});
   if (name === ameFixtureGrant.TOOL_NAME) ameFixtureExecutor.assertAuthorization(executionContext && executionContext.ameFixtureAuthorization, args || {});
   if (ameTitleMutationNames.has(name)) ameTitleExecutor.assertAuthorization(executionContext && executionContext.ameTitleAuthorization, name, args || {});
   if (projectLifecycleContract.isLifecycleTool(name)) projectLifecycleContract.validateInput(name, args || {});
@@ -24237,7 +24296,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
       if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
-    idContext = name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
+    idContext = name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameQueueControl.START || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -24318,7 +24377,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameQueueControl.START || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
