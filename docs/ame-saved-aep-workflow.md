@@ -118,6 +118,24 @@ mutation senders. Pending START в этот read-only режим не перев
 Только отдельный native STATUS/own-wrapper receipt устанавливает queued acceptance.
 Исходные outcomes сохраняются; START и его guards этим режимом не меняются.
 
+Если exact STATUS-read получил `callback:"timeout"`, обычный reconcile продолжает
+читать тот же nonce; истечение 600000 ms само по себе не создаёт новый read.
+Для отдельного нового чтения передать `readTransport:"async_once_v1"` и
+`afterReadTimeoutNonce` с текущим pending read nonce, без `readRequestNonce`.
+Этот вызов проверяет только старый cache slot и требует точный успешный result
+исходного enqueue с прежними job/process/session/source/output/range bindings.
+После проверки старый read сохраняется как `transport_unknown`; его native cache
+slot и поздние callbacks остаются. Ответ `own_status_read_retired_unknown`
+возвращает `nextReadArgs` для **отдельного** следующего STATUS с новым nonce.
+`nextReadAllowed:true` означает допуск протокола; `nextReadCapacityVerified:false`
+сохраняет отдельный fail-closed лимит native cache. Повтор старого
+`afterReadTimeoutNonce` не отправляет read. История ограничена 64 записями;
+retirement допускается при длине менее 63, оставляя место для результата нового
+чтения. Pending без точного timeout или незавершённый original enqueue не даёт
+такого допуска. Ни один из этих ответов не повторяет enqueue, не подтверждает
+acceptance и не изменяет исходный mutation outcome.
+STATUS сериализуется по batch; retirement сверяет свежий ledger перед записью.
+
 Live 20.10 16:33Z: после восстановления runtime новый `readTransport` прочитал
 оба прежних jobs как `queued`, с собственными GUID/range и workAreaApplied=true.
 Проверены current и retired sender origins; исходный sender cb63fb19… сохранил
@@ -129,6 +147,17 @@ callback, pending/no-replay/receipt/DTO/publication); дополнительно
 не было. Полную live plan acceptance нового режима и media/preset output это
 не подтверждает. Integration smoke тестового bridge был остановлен startup gate
 до listener; запрет не обходился. Focused regressions/syntax/rules/diff и High review PASS.
+
+20.10 17:36Z: первый новый `01.mov` прошёл live async enqueue и независимый
+`job_observed`: exact source/GUID/preset/range/output, own acceptance v2,
+currentStatusObserved=true, originalSender.callback=result, queued. Корень вывода
+через локальную конфигурацию — `Готовое/Титры 01` рядом с общим AEP.
+Первый отказ до send `8cd2d301…` сохранён; закрытый reviewed proof разрешил
+settlement без native send и новый proposal с прежними job/nonce/output.
+Исходный STATUS timeout сохранён как unknown; explicit retirement и отдельный
+свежий read дали приёмку. Evidence: `title-eleven-20261020/01-read-fresh-result.json`
+в локальной `.codex-runtime/`. Focused recovery56/status21, syntax/rules/diff и
+два High review — PASS. Это приёмка одного нового задания; START/media ещё нет.
 
 ## Ограниченная диагностика source API
 

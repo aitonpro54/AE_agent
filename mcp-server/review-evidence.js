@@ -196,6 +196,7 @@ const RUNTIME_FILES = [
   "mcp-server/fixed-guard-timeout-maintenance-proof.js",
   "scripts/native-fixture-prephase-maintenance.js",
   "mcp-server/ame-title-jobs.js",
+  "mcp-server/ame-title-sender-refusal-proof.js",
   "mcp-server/ame-shared-queue-grant.js",
   "mcp-server/owned-runtime-initial-shared-queue-context.js",
   "mcp-server/ame-fixture-ui-disposition.js",

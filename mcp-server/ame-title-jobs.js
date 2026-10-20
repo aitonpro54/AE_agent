@@ -24,7 +24,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce", "afterReadTimeoutNonce"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -43,6 +43,7 @@ function validateInput(name, raw = {}) {
   if(raw.enqueueTransport!==undefined){if(name!==ENQUEUE||raw.enqueueTransport!==pendingEnqueue.MODE||a.queueMode!==sharedQueue.MODE)fail("ame_title_async_shared_only");a.enqueueTransport=pendingEnqueue.MODE;}
   if(raw.readTransport!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.originalRunId!==undefined||raw.acceptanceOnly===true)fail("ame_title_async_read_invalid");a.readTransport=pendingEnqueue.MODE;}
   if(raw.readRequestNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||!UUID.test(raw.readRequestNonce))fail("ame_title_async_read_invalid");a.readRequestNonce=raw.readRequestNonce;}
+  if(raw.afterReadTimeoutNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.readRequestNonce!==undefined||raw.originalRunId!==undefined||raw.acceptanceOnly!==undefined||!UUID.test(raw.afterReadTimeoutNonce))fail("ame_title_async_read_invalid");a.afterReadTimeoutNonce=raw.afterReadTimeoutNonce;}
   if (name === QUEUE_MANIFEST || name === START && raw.manualQueueMode !== undefined) {
     if (raw.manualQueueMode !== "cep_user_declaration_v2" || !Array.isArray(raw.completedOwnedPrefix) || raw.completedOwnedPrefix.length > 63) fail("ame_title_manual_queue_mode_invalid");
     const seen = new Set(); a.manualQueueMode = raw.manualQueueMode;
@@ -406,7 +407,7 @@ function write(file, value, exclusive = false) {
 }
 function createExecutor(deps) {
   if (!deps || !path.isAbsolute(deps.stateDir || "") || ["runExtendScriptBody", "inspectProcesses", "resolveOutputFilePath", "assertManualIngress", "assertServerContext"].some(k => typeof deps[k] !== "function")) fail("ame_title_invalid_dependencies");
-  const caps = new WeakMap(), nativePreparations = new WeakMap(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false, independentSenderProof = null;
+  const caps = new WeakMap(), nativePreparations = new WeakMap(), statusReads = new Set(), catalog = deps.listPresetCatalog || presets.listAmePresets, now = deps.now || Date.now; let busy = false, independentSenderProof = null;
   const recordFile = id => path.join(deps.stateDir, "batches", id + ".json"), guardDir = path.join(deps.stateDir, "outputs");
   function result(code, extra = {}) { return { schema: SCHEMA, ok: false, code, nativeJobId: null, nativeAssociationVerified: false, nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false, automaticRetryAllowed: false, observedAt: new Date(now()).toISOString(), ...extra }; }
   function assertIngress(context, name, a) {
@@ -466,12 +467,31 @@ function createExecutor(deps) {
     const record=deps.readRunRecord(v.originalRunId);if(require("./plan-run-records").digest(JSON.stringify(record))!==v.originalRecordSha256||deps.assertNoSendRuntime(record)!==true)fail("ame_not_sent_original_record_changed");
     return v;
   }
+  function explicitSenderGuardCommand(record,batch,job){
+    const step=record.run?.steps?.[0],commands=step?.commands;
+    // A saved-source admission may read back once before the fixed sender. No
+    // other command, incomplete delivery or post-submit error proves no send.
+    if(!Array.isArray(commands)||commands.length<1||commands.length>2)return null;
+    if(commands.some(c=>!UUID.test(c?.id||"")||!UUID.test(c.executionId||"")||c.state!=="completed"||c.lifecycleState!=="completed"||c.ok!==true||c.error!==null||c.errorCode!==null||c.neverSubmitted!==false||c.timedOutFrom!==null||JSON.stringify(c.history)!==JSON.stringify(["queued","leased","submitted","completed"])))return null;
+    const c=commands[commands.length-1],n=c.result,f=n?.senderRefusal,d=job.lastDispatchDiagnostic;
+    if(c.role!=="mutation"||c.executionId!==record.runId||new Set(commands.map(c=>c.id)).size!==commands.length)return null;
+    if(commands.length===2){
+      const read=commands[0],o=read.result,comp=Array.isArray(o?.comps)?o.comps.find(c=>c.dynamicLinkGUID===job.args.sourceGuid):null;
+      if(read.role!=="readback"||!o||o.projectFile!==job.sourcePath||o.dirty!==false||!Number.isSafeInteger(o.revision)||o.revision<0||!Array.isArray(o.comps)||o.comps.length<1||o.comps.length>64||!comp||!Number.isFinite(comp.duration)||comp.duration<job.args.range.endSeconds)return null;
+    }
+    if(n?.schema!=="ae-agent-ame-title-send.v1"||n.code!=="previous_request_unresolved"||![null,"timeout"].includes(n.callback)||n.responseBody!==null||n.requestNonce!==job.requestNonce||
+      f?.schema!=="ae-agent-ame-title-sender-refusal.v1"||f.requestNonce!==job.requestNonce||f.operationBinding!==job.operationBinding||f.jobId!==job.jobId||f.batchId!==batch.batchId||!UUID.test(f.oldRequestNonce||"")||f.oldRequestNonce===job.requestNonce||f.constructorInvoked!==false||f.sendInvoked!==false||f.reason!=="previous_sender_unresolved_or_retirement_expired"||
+      !job.lastNativeSenderRefusal||hash(job.lastNativeSenderRefusal)!==hash(f)||d?.runId!==record.runId||d.stage!=="native_sender_guard"||d.dispatchInvoked!==true||d.bridgeTalkSendInvoked!==false||d.originalCode!==n.code||d.error!==f.reason)return null;
+    for(const value of [step.mutationResult,step.result])if(value?.code!=="ame_title_not_sent"||!value.senderRefusal||hash(value.senderRefusal)!==hash(f)||!value.dispatchDiagnostic||hash({runId:record.runId,...value.dispatchDiagnostic})!==hash(d))return null;
+    return c;
+  }
   function settleNotSent(a,batch,job){
     if(typeof deps.readRunRecord!=="function"||typeof deps.assertNoSendRuntime!=="function"||typeof deps.hasQueuedStep!=="function")fail("ame_not_sent_server_reader_required");
     if(job.latestAuthorizedRunId&&job.latestAuthorizedRunId!==a.originalRunId)fail("ame_not_sent_stale_original_run");
     const r=deps.readRunRecord(a.originalRunId),s=r.run?.steps?.[0],planned=r.plan?.steps?.[0],validated=r.run?.validation?.steps?.[0],m=s?.mutationResult,observed=s?.result;
-    const commands=s?.commands,retirement=job.independentTransportRetirement,c=Array.isArray(commands)&&commands.length===1?commands[0]:null,n=c?.result;
-    const guardRefused=!!(c&&retirement&&c.role==="mutation"&&c.state==="completed"&&c.ok===true&&c.executionId===r.runId&&JSON.stringify(c.history)===JSON.stringify(["queued","leased","submitted","completed"])&&UUID.test(c.id||"")&&n?.schema==="ae-agent-ame-title-send.v1"&&n.code==="previous_request_unresolved"&&n.callback==="timeout"&&n.responseBody===null&&n.requestNonce===retirement.oldEnqueueNonce&&n.requestNonce!==job.requestNonce&&retirement.newRequestNonce===job.requestNonce&&retirement.consumedByRunId===r.runId&&UUID.test(retirement.oldBatchId||"")&&retirement.oldBatchId!==batch.batchId&&UUID.test(retirement.oldJobId||"")&&retirement.oldJobId!==job.jobId&&UUID.test(retirement.oldEnqueueNonce||"")&&SHA.test(retirement.responseSha25664||"")&&typeof deps.assertPreSendGuardRecord==="function"&&deps.assertPreSendGuardRecord(r,c)===true);
+    const commands=s?.commands,retirement=job.independentTransportRetirement,explicit=explicitSenderGuardCommand(r,batch,job),c=explicit||(Array.isArray(commands)&&commands.length===1?commands[0]:null),n=c?.result;
+    const legacyGuardRefused=!!(c&&!explicit&&retirement&&c.role==="mutation"&&c.state==="completed"&&c.ok===true&&c.executionId===r.runId&&JSON.stringify(c.history)===JSON.stringify(["queued","leased","submitted","completed"])&&UUID.test(c.id||"")&&n?.schema==="ae-agent-ame-title-send.v1"&&n.code==="previous_request_unresolved"&&n.callback==="timeout"&&n.responseBody===null&&n.requestNonce===retirement.oldEnqueueNonce&&n.requestNonce!==job.requestNonce&&retirement.newRequestNonce===job.requestNonce&&retirement.consumedByRunId===r.runId&&UUID.test(retirement.oldBatchId||"")&&retirement.oldBatchId!==batch.batchId&&UUID.test(retirement.oldJobId||"")&&retirement.oldJobId!==job.jobId&&UUID.test(retirement.oldEnqueueNonce||"")&&SHA.test(retirement.responseSha25664||""));
+    const guardRefused=!!((explicit||legacyGuardRefused)&&typeof deps.assertPreSendGuardRecord==="function"&&deps.assertPreSendGuardRecord(r,c)===true);
     if(r.runId!==a.originalRunId||r.run?.id!==a.originalRunId||r.run.dryRun!==false||r.run.ok!==false||r.run.confirm!==true||r.run.allowMutations!==true||r.run.m100Action?.confirmedBySurface!=="cep-autonomous-session"||!/^session-[a-f0-9]+$/.test(r.run.m100Action?.confirmedBySession||"")||r.run.m100Action.actionId!==r.run.provenance?.actionId||r.run.m100Action.payloadHash!==r.run.provenance?.payloadHash||r.run.safety?.autonomousSession?.capability!=="typed_mutating_plan"||r.run.safety.allowRawExtendscript!==false||r.run.safety.allowWithoutCheckpoint!==false||!Number.isFinite(Date.parse(r.run.finishedAt))||r.run.steps?.length!==1||r.plan?.steps?.length!==1||r.run.validation?.ok!==true||r.run.validation.steps.length!==1||planned?.tool!==ENQUEUE||validated?.tool!==ENQUEUE||s?.tool!==ENQUEUE||s.index!==1||s.status!=="failed"||
       job.args.queueMode!==sharedQueue.MODE||batch.jobs.length<1||batch.jobs.length>2||batch.jobs.some(other=>other!==job&&(!other.transportResolved||!other.nativeAssociationVerified||!other.acceptanceReceipt))||batch.start!==null||startReservation(batch)||job.transportResolved||job.nativeAssociationVerified||job.acceptanceReceipt||job.nativeObservation||
       !guardRefused&&Object.hasOwn(s,"commands")&&(!Array.isArray(s.commands)||s.commands.length!==0)||deps.assertNoSendRuntime(r)!==true||!guardRefused&&deps.hasQueuedStep(r.runId)===true)fail("ame_not_sent_proof_denied");
@@ -851,6 +871,9 @@ function createExecutor(deps) {
     const asyncStatus=a.readTransport===pendingEnqueue.MODE||job.args.enqueueTransport===pendingEnqueue.MODE;
     if(asyncStatus&&job.args.queueMode!==sharedQueue.MODE)fail("ame_title_async_shared_only");
     if(asyncStatus&&batch.start&&!batch.start.transportResolved)return result("ame_title_async_start_reconcile_unsupported",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false});
+    if(a.afterReadTimeoutNonce&&(batch.start||startReservation(batch)||job.ownStatusObservation?.requestNonce!==a.afterReadTimeoutNonce))return result("ame_title_read_timeout_not_pending",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+    // Reserve one history entry for the separate read's terminal observation.
+    if(a.afterReadTimeoutNonce&&(job.ownStatusObservationHistory?.length||0)>=63)return result("ame_title_read_history_bound",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
     const pendingStart = batch.start && !batch.start.transportResolved, nonce = pendingStart ? batch.start.requestNonce : !job.transportResolved ? job.requestNonce : null;
     const ownObservation=!pendingStart&&(asyncStatus||!job.nativeAssociationVerified);
     const operationBinding = pendingStart ? batch.start.operationBinding : ownObservation ? hash({ operation: "status", jobId: job.jobId }) : nonce ? job.operationBinding : hash({ operation: "status", jobId: job.jobId });
@@ -858,14 +881,31 @@ function createExecutor(deps) {
     if(ownObservation){
       if(a.readRequestNonce&&job.ownStatusObservation?.requestNonce!==a.readRequestNonce)return result("ame_title_read_not_pending",{batchId:a.batchId,jobId:a.jobId,requestNonce:a.readRequestNonce,currentStatusObserved:false});
       if(job.ownStatusObservationHistory&&!Array.isArray(job.ownStatusObservationHistory))fail("ame_title_own_observation_changed");
+      if((job.ownStatusObservationHistory?.length||0)>=64)return result("ame_title_read_history_bound",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
       observationReconcile=!!job.ownStatusObservation;
       if(!job.ownStatusObservation){job.ownStatusObservation={requestNonce:crypto.randomUUID(),operationBinding,enqueueRequestNonce:job.requestNonce,reservedAt:new Date(now()).toISOString()};write(recordFile(a.batchId),batch);}
       const own=job.ownStatusObservation;if(!UUID.test(own.requestNonce||"")||own.operationBinding!==operationBinding||own.enqueueRequestNonce!==job.requestNonce||!Number.isFinite(Date.parse(own.reservedAt)))fail("ame_title_own_observation_changed");
     }
     const pendingRead=ownObservation&&job.ownStatusObservation,readDeadline=pendingRead?Date.parse(pendingRead.reservedAt)+120000:Infinity;
     const rollover=!asyncStatus&&pendingRead&&observationReconcile&&now()>=readDeadline&&!(job.ownStatusObservationHistory||[]).some(r=>r.transportUnknown?.reason==="read_transport_budget_exhausted_unknown")?{requestNonce:pendingRead.requestNonce,operationBinding:pendingRead.operationBinding,jobId:job.jobId,batchId:batch.batchId,enqueueNonce:job.requestNonce,enqueueBinding:job.operationBinding,targetSpecifier:a.targetSpecifier,processBinding:batch.processBinding,deadline:readDeadline}:null;
-    const observed = await send({ ...a, ...(asyncStatus&&!pendingStart?{asyncOwnStatus:true}:{}), ...(rollover?{readonlyObservationRollover:rollover}:{}), operation: "status", jobId: job.jobId,expectedOwnSourcePath:job.sourcePath,expectedOwnOutputPath:job.outputPath,processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
+    const {afterReadTimeoutNonce:timeoutControl,...statusArgs}=a;
+    const observed = await send({ ...statusArgs, ...(asyncStatus&&!pendingStart?{asyncOwnStatus:true}:{}), ...(rollover?{readonlyObservationRollover:rollover}:{}), operation: "status", jobId: job.jobId,expectedOwnSourcePath:job.sourcePath,expectedOwnOutputPath:job.outputPath,processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
+    if(timeoutControl){
+      const original=observed.originalSender;let n=null;
+      if(original?.callback==="result"&&original.requestNonce===job.requestNonce&&original.operationBinding===job.operationBinding&&typeof original.responseBody==="string"&&Buffer.byteLength(original.responseBody,"utf8")<=524288){try{n=JSON.parse(original.responseBody);}catch(_){}}
+      const proven=ownObservation&&observationReconcile&&pendingRead.requestNonce===timeoutControl&&!observed.resolved&&observed.code==="timeout"&&observed.native===null&&observed.transportDiagnostic?.callback==="timeout"&&
+        n?.schema===NATIVE_SCHEMA&&n.code==="job_enqueued"&&n.requestNonce===job.requestNonce&&n.operationBinding===job.operationBinding&&n.appSpecifier===a.targetSpecifier&&(!a.expectedSessionNonce||n.sessionNonce===a.expectedSessionNonce)&&n.nativeAssociationVerified===true&&n.batchRunning===false&&n.job?.status==="queued"&&n.job.nativeCompletionObserved===false&&n.job.nativeResult===null&&Number.isFinite(n.observedAt)&&n.observedAt>=Date.parse(job.submittedAt)&&n.observedAt<=now()+60000&&associated(job,n);
+      if(!proven)return result("ame_title_read_timeout_proof_denied",{batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,nextReadAllowed:false,originalSender:original||null,transportDiagnostic:observed.transportDiagnostic||null});
+      const archivedAt=new Date(now()).toISOString(),originalResultSha25664=crypto.createHash("sha256").update(original.responseBody,"utf8").digest("hex");
+      // Refresh the whole file after awaits: another authorized enqueue may
+      // have appended a different job. Never commit our stale batch snapshot.
+      const currentBatch=load(a.batchId,a.jobId),currentJob=currentBatch?.jobs.find(j=>j.jobId===a.jobId);
+      if(!currentJob||currentBatch.start||startReservation(currentBatch)||currentBatch.processBinding!==batch.processBinding||currentBatch.presetIdentity!==batch.presetIdentity||hash(jobBinding(currentJob))!==hash(jobBinding(job))||currentJob.latestAuthorizedRunId!==job.latestAuthorizedRunId||hash(currentJob.ownStatusObservation||null)!==hash(pendingRead)||hash(currentJob.ownStatusObservationHistory||[])!==hash(job.ownStatusObservationHistory||[]))return result("ame_title_read_timeout_origin_changed",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+      currentJob.ownStatusObservationHistory=(currentJob.ownStatusObservationHistory||[]).concat({...pendingRead,transportUnknown:{reason:"read_callback_timeout_unknown",observedAt:archivedAt,diagnostic:observed.transportDiagnostic,originalEnqueueResultSha25664:originalResultSha25664},archivedAt});
+      currentJob.ownStatusObservation=null;write(recordFile(a.batchId),currentBatch);
+      return result("own_status_read_retired_unknown",{batchId:a.batchId,jobId:a.jobId,requestNonce:timeoutControl,currentStatusObserved:false,executionAuthority:false,readPending:false,nextReadAllowed:true,nextReadCapacityVerified:false,nextReadArgs:statusArgs,transportUnknown:true,originalEnqueueResultSha25664:originalResultSha25664,transportDiagnostic:observed.transportDiagnostic});
+    }
     if(asyncStatus&&!pendingStart&&!observed.resolved&&["async_pending","timeout","send_unknown","ae_delivery_unknown"].includes(observed.code)){const accepted=savedAcceptance(job)==="accepted";return result("own_status_pending",{pending:true,readPending:true,batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,ownItemAccepted:accepted,acceptanceReceipt:accepted?job.acceptanceReceipt:null,native:null,originalSender:observed.originalSender||null,transportDiagnostic:observed.transportDiagnostic||null,reconcileArgs:{...a,readTransport:pendingEnqueue.MODE,readRequestNonce:pendingRead.requestNonce}});}
     let observationDiagnostic=null;
     if(ownObservation)retainIndependentSenderProof(a,batch,job,observed);
@@ -899,6 +939,10 @@ function createExecutor(deps) {
   }
   async function execute(name, raw, cap) {
     const a = validateInput(name, raw), mutation = name === ENQUEUE || name === START; if (mutation) { assertCap(cap, name, a); if (busy) fail("ame_title_writer_busy"); busy = true; }
+    // STATUS persists a whole batch file, so two jobs share this read lock.
+    const statusKey=name===STATUS?a.batchId:null;
+    if(statusKey&&statusReads.has(statusKey))return result("ame_title_status_read_busy",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+    if(statusKey)statusReads.add(statusKey);
     try { return await (name === INSPECT ? inspectSources(a) : name === QUEUE_MANIFEST ? queueManifest(a) : name === ENQUEUE ? enqueue(a, cap) : name === START ? start(a, cap) : status(a)); }
     catch (error) {
       let durable = null;
@@ -913,7 +957,7 @@ function createExecutor(deps) {
       }
       return result(error.code || "ame_title_read_error", { error: String(error.message || error).slice(0, 2000), ...initial, ...(durable ? { unknownOutcome: true, batchId: a.batchId, requestNonce: durable.requestNonce, startReservation: durable } : {}) });
     }
-    finally { if (mutation) busy = false; }
+    finally { if (mutation) busy = false; if(statusKey)statusReads.delete(statusKey); }
   }
   return { authorize, assertAuthorization: (cap, name, raw) => { assertCap(cap, name, validateInput(name, raw)); return true; }, execute };
 }
@@ -933,5 +977,7 @@ const tools = definitions.map(([name, description, fields, required]) => ({ name
 tools.find(t=>t.name===ENQUEUE).inputSchema.properties.enqueueTransport={type:"string",enum:[pendingEnqueue.MODE]};
 tools.find(t=>t.name===ENQUEUE).description+=" Opt-in enqueueTransport:async_once_v1 in shared mode sends once without blocking; returns pending, never acceptance. Poll exact own STATUS separately; no implicit START.";
 Object.assign(tools.find(t=>t.name===STATUS).inputSchema.properties,{readTransport:{type:"string",enum:[pendingEnqueue.MODE]},readRequestNonce:{type:"string",pattern:UUID.source}});
+tools.find(t=>t.name===STATUS).inputSchema.properties.afterReadTimeoutNonce={type:"string",pattern:UUID.source};
 tools.find(t=>t.name===STATUS).description+=" readTransport:async_once_v1 selects an independent async own read for shared jobs, including accepted jobs behind a retained timeout sender. Async enqueue jobs inherit this mode. Pending returns exact reconcileArgs; no mutation replay/pump. Pending START requires its existing explicit legacy reconciliation.";
+tools.find(t=>t.name===STATUS).description+=" afterReadTimeoutNonce with explicit async read mode probes only that exact pending read, archives a proven callback timeout as transport unknown only when the original enqueue has an exact successful result, and returns nextReadArgs for a separate new read. Exclusive with readRequestNonce/originalRunId/acceptanceOnly. Never resends enqueue or claims acceptance; repeating an archived nonce cannot dispatch.";
 module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, fixedCommandScript, createExecutor, nativeReceiverSource:()=>nativeTitleJob.toString(), fixedDataExpression:messageArgument, fixedStringExpression:utf16Expression };

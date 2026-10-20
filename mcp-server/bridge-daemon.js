@@ -459,6 +459,9 @@ const ameTitleExecutor = ameTitleJobs.createExecutor({
   readRunRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),
   assertNoSendRuntime:record=>{
     const runtime=record.run?.provenance?.runtime,modules=runtime?.modules||[],pin=name=>modules.find(m=>m.name===name)?.sha256;
+    if(record.run?.steps?.[0]?.commands?.some(c=>c.result?.senderRefusal?.schema==="ae-agent-ame-title-sender-refusal.v1")){
+      return require("./ame-title-sender-refusal-proof").assertRuntime(record);
+    }
     // The legacy receipt did not hash product-dispatch. Its unchanged reviewed
     // blob is checked here, not retroactively claimed as a historical field.
     if(crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"ame-product-dispatch.js"))).digest("hex")!=="d457511285d51376c858a76d87fea1b50cb448c92fb452f1052e73df9e110142")return false;
@@ -468,6 +471,11 @@ const ameTitleExecutor = ameTitleJobs.createExecutor({
     return runtime?.sourceSha256===RUNTIME_IDENTITY.sourceSha256&&["mcp-server/bridge-daemon.js","mcp-server/ame-title-jobs.js","mcp-server/plan-run-records.js"].every(name=>pin(name)===RUNTIME_IDENTITY.modules.find(m=>m.name===name)?.sha256);
   },
   assertPreSendGuardRecord:(record,command)=>{
+    if(command.result?.senderRefusal?.schema==="ae-agent-ame-title-sender-refusal.v1"){
+      if(fs.statSync(LOG_FILE).size>128*1024*1024)return false;
+      const journal=fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+      return require("./ame-title-sender-refusal-proof").assertRecord(record,command,journal);
+    }
     // One reviewed completed sender refusal; this never admits a delivered timeout.
     if(record.runId!=="04748598-91c9-44f8-b1c5-f6c76d2178b1"||command.id!=="8a52f4a1-a339-4be7-9c74-a9015e2bda85"||fs.statSync(LOG_FILE).size>128*1024*1024)return false;
     const rows=fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)).filter(e=>e.type==="ae_command_queued"&&e.details?.runId===record.runId&&e.details.stepIndex===1),row=rows[0],d=row?.details;

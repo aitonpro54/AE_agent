@@ -5,13 +5,14 @@
 
 ## Текущая цель пользователя
 
-20.10: создать композиции титров в одном AEP, затем адаптировать AME API enqueue/self-check.
-Исходную композицию/материалы сохранить; рендер пока не запускать, отдельных AEP и CU AME не делать.
+20.10: проверить API enqueue/self-check всех 11 композиций общего AEP с именами
+`01.mov`–`11.mov` в `Готовое/Титры 01` рядом с проектом. Ограниченный поток отправок с отдельной приёмкой; явно разрешён global START после первого валидированного титра, без census. Без отдельных AEP/CU enqueue.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
+- 20.10, в работе: конечный output root/admission11 PASS. Closed proof run8cd2d301… → actual settlement без send; original UNKNOWN сохранён. Runtime14120/source1520c719…; первый01.mov fresh own STATUS accepted/queued/GUID/source/output/preset/range, callback=result. Read timeout сохранён unknown, новый независимый read PASS. Остальные10/START ещё0; продолжается bounded sender/retained origins. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -30,8 +31,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 - Verifier: exact-selector tools, retained native result, fresh adoption,
   runner/readback/semantic integration; два P2 исправлены, final review GO.
   Exact once/slot, GUID/workArea и protected restoration — в linked workflow.
-- 17.10: старый export dad3dc19…/f988d318… остаётся UNKNOWN без replay;
-  история восстановления и позднего Resolve Fonts — в product workflow.
+- 17.10: export dad3dc19…/f988d318… UNKNOWN/noReplay; восстановление/Resolve Fonts — в product workflow.
 - Reset/reconnect milestones `fc3a9e6` → `47c7344`: review и corrections GO,
   activation/read PASS; подробности — в [reset contract](../docs/product-session-reset.md).
 - Исторический AME: addDL1/own STATUS queued; предыдущая пара — два Ready,
@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: saved-aep-api/async-once/reset-recovery] [executor: ae_specialist; recovery design ae_architect; independent ae_reviewer] [ownership: scoped async/DTO + closed recovery]; root sole live controller/docs. Async opt-in не меняет legacy defaults; pending не applied/accepted. Stale MCP census92/fresh99 исправлен own-file guard/fresh CLI. Отдельный once recovery завершён, старые journals/keys не переписаны, addDL total2/START0.
+- [block: async enqueue/read recovery → bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer] [ownership: scoped executor/proof/read + fixed sender]; root sole live/docs. No-send recovery допускает только exact reviewed исторический run. Read timeout не not_sent: отдельный retirement и новый STATUS. Native cache/UNKNOWN сохранены; runtime100 unique, fresh CLI. Early global START поручен отдельно от shared two-job binding.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 ## Validation
 
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
-- 20.10 admission15/dispatch25/acceptance9/probe7/sourceRead9/async6/recovery63/supervisor91 + focused regressions/syntax/rules/diff/High review PASS. Live source unchanged/clean, async STATUS2 accepted/queued/GUID/workArea; Connected/idle/autonomy active. Original sync enqueue outcomes UNKNOWN; новый async ENQUEUE live не тестировался, integration testbridge startup gate не обходился.
+- 20.10 recovery56/status21, actual offline-copy/nativeCalls0, independent19 + syntax/rules/diff/High review PASS. Новый live async ENQUEUE01/fresh own STATUS PASS; exact output01.mov/source/GUID/preset/range/callback=result. Source unchanged/clean, Connected/idle/autonomy active. Старые outcomes UNKNOWN неизменны; START/media пока0, прежний integration startup gate не обходился.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Текущий этап завершён:11 comps/2 queued jobs/API-only/live async STATUS/recovery PASS. Следующее фактически порученное добавление выполнять через async_once_v1 и exact STATUS; текущие jobs не повторять. Новый live async ENQUEUE и общий START/render остаются за границей выполненной проверки, дополнительных отправок сейчас нет.
+Продолжить порученный bounded stream02..11 без caller ожидания каждого ответа; сначала сохранить successful per-item sender origins, затем существующий global START после первого валидированного01. Приёмку и completion собирать отдельно; no replay, общий AEP не менять. Census/новый SDK/shared START refactor не нужны.
 
 ## Отложенные scope
 
