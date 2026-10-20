@@ -6,15 +6,15 @@
 // closing/reopening the application remains with the sole human/UI controller.
 const fs=require("node:fs"),path=require("node:path"),http=require("node:http"),readline=require("node:readline"),{spawn,execFile}=require("node:child_process");
 const fence=require("../mcp-server/cep-panel-reset-physical-fence"),authority=require("../mcp-server/owned-runtime-authority"),supervisor=require("../mcp-server/owned-runtime-supervisor"),reset=require("../mcp-server/owned-runtime-product-session-reset"),control=require("../mcp-server/cep-panel-control"),bootstrap=require("../mcp-server/ae-agent-panel-bootstrap");
-const ROOT=path.resolve(__dirname,".."),FILE=__filename,HELPER=path.join(__dirname,"cep-panel-reset-physical-fence-helper.ps1"),PS="C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/native/powershell/pwsh.exe";
+const ROOT=path.resolve(__dirname,".."),FILE=__filename,HELPER=path.join(__dirname,"cep-panel-reset-physical-fence-helper.ps1"),ABSENCE_HELPER=path.join(__dirname,"cep-panel-reset-physical-fence-absence.ps1"),PS="C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/native/powershell/pwsh.exe";
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // Only existing named read APIs, evaluated on our own paused event's frame.
 // No caller expression, properties, host code, or write operation is accepted.
 const PAUSED_READ_EXPRESSION="(function(){var api=window.AEAgentPanelActions;if(!api||typeof api.state!==\"function\"||typeof api.catalog!==\"function\")return {ok:false};return {ok:true,state:api.state(),catalog:api.catalog()};})()";
 function fail(code){throw Object.assign(Error(code),{code});}
 function check(ok,code){if(!ok)fail(code);}
-function parse(argv){const a=argv.slice(2);check(a.length===1&&["inspect","prepare-held-exit","readback","recover","__watch-held-exit"].includes(a[0]),"fence_closed_cli_required");if(a[0]==="__watch-held-exit")check(/^[a-f0-9-]{36}$/.test(process.env.AE_RESET_FENCE_WATCHER_TICKET||""),"fence_internal_watcher_required");return a[0];}
-function pins(){return [FILE,path.join(ROOT,"mcp-server","cep-panel-reset-physical-fence.js"),HELPER].map(file=>({name:path.relative(ROOT,file).replace(/\\/g,"/"),sha256:fence.hash(require("../mcp-server/native-fixture-attempt-ledger").readBytes(file))}));}
+function parse(argv){const a=argv.slice(2);check(a.length===1&&["inspect","prepare-held-exit","readback","recover","adopt-external-close","refresh-completed-barrier","complete-refreshed-recovery","__watch-held-exit"].includes(a[0]),"fence_closed_cli_required");if(a[0]==="__watch-held-exit")check(/^[a-f0-9-]{36}$/.test(process.env.AE_RESET_FENCE_WATCHER_TICKET||""),"fence_internal_watcher_required");return a[0];}
+function pins(){return [FILE,path.join(ROOT,"mcp-server","cep-panel-reset-physical-fence.js"),HELPER,ABSENCE_HELPER].map(file=>({name:path.relative(ROOT,file).replace(/\\/g,"/"),sha256:fence.hash(require("../mcp-server/native-fixture-attempt-ledger").readBytes(file))}));}
 function loadAuthority(){
   const reg=supervisor.readDaemonRegistration(ROOT);check(reg,"fence_registered_daemon_required");
   const privateControl=authority.runtimeControlFor(ROOT),key=privateControl.credential({daemon:{port:3456,credentialSha256:reg.credentialSha256}}),keyReader=v=>privateControl.credential({daemon:{port:3456,credentialSha256:v.credentialSha256}}),anchor=reset.sessionAnchor(ROOT,reg.generation,supervisor.registeredGeneration,keyReader),policy=reset.policy(ROOT);
@@ -35,8 +35,10 @@ async function connect(target){
   return {close,on:f=>{listeners.add(f);return()=>listeners.delete(f);},send(method,params={}){check(["Page.getFrameTree","DOMStorage.enable","DOMStorage.getDOMStorageItems","DOMStorage.setDOMStorageItem","Debugger.enable","Debugger.pause","Debugger.resume","Debugger.evaluateOnCallFrame"].includes(method),"fence_cdp_method_forbidden");if(method==="Debugger.evaluateOnCallFrame")check(params.expression===PAUSED_READ_EXPRESSION&&params.returnByValue===true&&params.silent===true&&typeof params.callFrameId==="string"&&Object.keys(params).sort().join(",")==="callFrameId,expression,returnByValue,silent","fence_paused_expression_forbidden");check(!dead,"fence_cdp_closed");return new Promise((resolve,reject)=>{const id=++sequence,timer=setTimeout(()=>{waiting.delete(id);reject(Object.assign(Error("fence_cdp_timeout_no_replay"),{code:"fence_cdp_timeout_no_replay"}));},5000);waiting.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}));});}};
 }
 async function storage(c){const tree=await c.send("Page.getFrameTree"),frame=tree.frameTree?.frame;check(frame&&frame.securityOrigin==="file://","fence_storage_origin_invalid");await c.send("DOMStorage.enable");const storageId={securityOrigin:frame.securityOrigin,isLocalStorage:true};return {frame:{id:frame.id,loaderId:frame.loaderId,url:frame.url},async read(key){const r=await c.send("DOMStorage.getDOMStorageItems",{storageId});check(Array.isArray(r.entries),"fence_storage_invalid");const rows=r.entries.filter(v=>v[0]===key);check(rows.length<=1,"fence_storage_duplicate");return rows.length?rows[0][1]:null;},write:(key,value)=>{check([fence.KEY,fence.ARCHIVE_KEY].includes(key),"fence_storage_key_forbidden");return c.send("DOMStorage.setDOMStorageItem",{storageId,key,value});}};}
-async function pauseTarget(target,{open=connect,sleep=pause}={}){
-  const c=await open(target);let paused=false,owned=false,requested=false,callFrameId=null;
+async function pauseTarget(target,{open=connect,sleep=pause,nudge=()=>control.createPanelControlService().state({},30000)}={}){
+  const c=await open(target);let paused=false,owned=false,requested=false,callFrameId=null,nudgePromise=null,pausedActor=null;
+  const actor=s=>({panelInstanceId:s.panelInstanceId,panelLifecycleEpoch:s.panelLifecycleEpoch,panelGeneration:s.panelGeneration});
+  async function settleNudge(){if(!nudgePromise)return;const result=await nudgePromise;check(!result.error&&result.value?.ok===true&&result.value.state,"fence_pause_named_read_unknown");if(pausedActor)check(JSON.stringify(actor(result.value.state))===JSON.stringify(pausedActor),"fence_pause_named_read_actor_changed");}
   const remove=c.on(e=>{
     if(e.method==="Debugger.paused"){paused=true;if(requested){owned=true;callFrameId=e.params?.callFrames?.[0]?.callFrameId||null;}}
     if(e.method==="Debugger.resumed"){paused=false;owned=false;callFrameId=null;}
@@ -46,21 +48,24 @@ async function pauseTarget(target,{open=connect,sleep=pause}={}){
     await c.send("Debugger.enable");await sleep(100);
     check(!paused,"fence_target_already_paused");
     requested=true;await c.send("Debugger.pause");
+    // The ACK may only schedule the next JS statement. Exactly one existing
+    // named read supplies that statement; it settles after our own resume.
+    nudgePromise=Promise.resolve().then(nudge).then(value=>({value}),error=>({error}));
     for(let n=0;!paused&&n<30;n++)await sleep(100);
     check(paused&&owned&&typeof callFrameId==="string"&&callFrameId.length>0,"fence_own_pause_event_missing");
     const s=await storage(c);
     check(JSON.stringify(s.frame)===JSON.stringify(target.frame),"fence_frame_changed_at_pause");
     function assertOwned(){check(owned&&paused,"fence_own_pause_lost");}
     return {owned:true,pausedEvent:true,
-      async snapshot(){assertOwned();const response=await c.send("Debugger.evaluateOnCallFrame",{callFrameId,expression:PAUSED_READ_EXPRESSION,returnByValue:true,silent:true});assertOwned();const value=response.result?.value;check(!response.exceptionDetails&&value?.ok===true&&value.state&&Array.isArray(value.catalog),"fence_paused_named_state_unknown");const connectAction=value.catalog.find(item=>item.name==="bridge.connect");return {...value.state,connectAvailability:connectAction?.availability};},
+      async snapshot(){assertOwned();const response=await c.send("Debugger.evaluateOnCallFrame",{callFrameId,expression:PAUSED_READ_EXPRESSION,returnByValue:true,silent:true});assertOwned();const value=response.result?.value;check(!response.exceptionDetails&&value?.ok===true&&value.state&&Array.isArray(value.catalog),"fence_paused_named_state_unknown");pausedActor=actor(value.state);const connectAction=value.catalog.find(item=>item.name==="bridge.connect");return {...value.state,connectAvailability:connectAction?.availability};},
       async read(key){assertOwned();const value=await s.read(key);assertOwned();return value;},
       async write(key,value){assertOwned();await s.write(key,value);assertOwned();},
-      async resume(){try{assertOwned();await c.send("Debugger.resume");}finally{remove();c.close();}},
-      close(){remove();c.close();}
+      async resume(){try{assertOwned();await c.send("Debugger.resume");}finally{remove();c.close();await settleNudge();}},
+      async close(){remove();c.close();await settleNudge();}
     };
   }catch(e){
     if(owned&&paused)try{await c.send("Debugger.resume");}catch(_){}
-    remove();c.close();throw e;
+    remove();c.close();try{await settleNudge();}catch(_){}throw e;
   }
 }
 function productionPanel(){const service=control.createPanelControlService();
@@ -78,10 +83,29 @@ async function hold(){
   const ready=await next();check(ready.schema==="ae-agent.cep-reset-physical-fence.v1"&&ready.status==="ready"&&ready.readOnly===true,"fence_native_handles_not_ready");const normalize=r=>fence.identity({...r,birthFileTime:r.birthFileTimeUtc||r.birthFileTime}),identities=[ready.root,...ready.cep].map(normalize);
   return {identities,async waitAll(){const done=await next(),exitCode=await closed;check(exitCode===0&&done.schema===ready.schema&&done.status==="completed"&&done.treeQuiescent===true&&done.readOnly===true&&done.globalAeCepCensusEmpty===true&&done.quiescentSamples>=3&&done.readyAt===ready.observedAt,"fence_native_exit_unknown");const all=[done.root,...done.cep,...done.lineage];check(done.heldHandleCount===all.length,"fence_native_held_count_mismatch");return {identities:all.map(r=>({identity:normalize(r),waitResult:r.waitResult,signaled:r.signaled===true,exitCode:r.exitCode})),nativeProof:done,helperExitCode:exitCode};},async dispose(){lines.close();child.stdout.destroy();child.stderr.destroy();/* No kill: the bounded helper owns/relinquishes its read-only handles. */}};
 }
+async function probeExternalAbsence(expected){
+  verifyPwsh();
+  return new Promise((resolve,reject)=>{
+    const child=spawn(PS,["-NoLogo","-NoProfile","-NonInteractive","-File",ABSENCE_HELPER],{windowsHide:true,stdio:["pipe","pipe","pipe"]});
+    let output="",failed=false;
+    const rejectBounded=code=>{if(!failed){failed=true;reject(Object.assign(Error(code),{code}));}};
+    const timer=setTimeout(()=>rejectBounded("fence_external_absence_timeout_readback_only"),30000);
+    child.stdout.setEncoding("utf8");child.stderr.resume();
+    child.stdout.on("data",chunk=>{output+=chunk;if(Buffer.byteLength(output)>512*1024)rejectBounded("fence_external_absence_output_budget");});
+    child.on("error",()=>rejectBounded("fence_external_absence_helper_failed"));
+    child.stdin.on("error",()=>rejectBounded("fence_external_absence_input_unknown"));
+    child.on("close",code=>{
+      clearTimeout(timer);
+      if(failed)return;
+      try{const lines=output.replace(/^\uFEFF/,"").trim().split(/\r?\n/);check(code===0&&lines.length===1,"fence_external_absence_helper_refused");const proof=JSON.parse(lines[0]);check(proof.schema==="ae-agent.cep-reset-external-absence.v1"&&proof.status==="observed"&&proof.readOnly===true&&proof.operationId===fence.OPERATION&&proof.generation===fence.GENERATION&&Array.isArray(proof.identities),"fence_external_absence_response_invalid");const identities=proof.identities.map(row=>({...row,expected:fence.identity(row.expected),actual:row.actual===null?null:fence.identity(row.actual)}));resolve({helperExitCode:code,identities,nativeProof:proof});}catch(e){rejectBounded(/^fence_/.test(e.code||"")?e.code:"fence_external_absence_response_invalid");}
+    });
+    child.stdin.end(JSON.stringify({schema:"ae-agent.cep-reset-external-absence.v1",operationId:fence.OPERATION,generation:fence.GENERATION,expected}));
+  });
+}
 function production(){let recovery;
   const deps={root:ROOT,authority:loadAuthority,census,panel:productionPanel(),hold,safeRead:file=>require("../mcp-server/native-fixture-attempt-ledger").readBytes(file),async launchWatcher(ticket){const child=spawn(process.execPath,[FILE,"__watch-held-exit"],{windowsHide:true,detached:true,stdio:"ignore",env:{...process.env,AE_RESET_FENCE_WATCHER_TICKET:ticket}});await new Promise((resolve,reject)=>{child.once("spawn",resolve);child.once("error",()=>reject(Object.assign(Error("fence_watcher_launch_unknown"),{code:"fence_watcher_launch_unknown"})));});child.unref();for(let n=0;n<60;n++){const r=recovery.readback();if(r.rows["held-ready"]||r.rows.failure)return;await pause(250);}fail("fence_watcher_ready_unknown_readback_only");},barrier:{async send(host,scriptPath,processes){const observed=fence.validateTree(await census());check(observed.host.birthFileTime===host.birthFileTime&&JSON.stringify(observed.processes)===JSON.stringify(processes),"fence_native_presend_host_tree_changed");const child=spawn(fence.AE,["-r",scriptPath],{windowsHide:true,stdio:"ignore",shell:false});await new Promise((resolve,reject)=>{child.once("spawn",resolve);child.once("error",()=>reject(Object.assign(Error("fence_native_submission_unknown"),{code:"fence_native_submission_unknown"})));});child.unref();},async ack(p){while(Date.now()<=p.deadline){if(fs.existsSync(p.ackPath)){try{return JSON.parse(require("../mcp-server/native-fixture-attempt-ledger").readBytes(p.ackPath).toString("utf8").replace(/^\uFEFF/,""));}catch(_){fail("fence_native_ack_invalid");}}await pause(100);}fail("fence_native_barrier_timeout_no_replay");}}};
-  recovery=fence.createRecovery(deps);return recovery;
+  deps.absence={probe:probeExternalAbsence};recovery=fence.createRecovery(deps);return recovery;
 }
-async function run(argv,create=production){const command=parse(argv),r=create();if(command==="inspect")return r.inspect();if(command==="prepare-held-exit")return r.prepare();if(command==="recover")return r.recover();if(command==="__watch-held-exit")return r.watch(process.env.AE_RESET_FENCE_WATCHER_TICKET);return r.readback();}
-module.exports={parse,run,loadAuthority,census,connect,storage,pauseTarget,productionPanel,hold,production,PAUSED_READ_EXPRESSION};
+async function run(argv,create=production){const command=parse(argv),r=create();if(command==="inspect")return r.inspect();if(command==="prepare-held-exit")return r.prepare();if(command==="recover")return r.recover();if(command==="refresh-completed-barrier")return r.refreshCompletedBarrier();if(command==="complete-refreshed-recovery")return r.completeRefreshedRecovery();if(command==="adopt-external-close")return r.adoptExternalClose();if(command==="__watch-held-exit")return r.watch(process.env.AE_RESET_FENCE_WATCHER_TICKET);return r.readback();}
+module.exports={parse,run,loadAuthority,census,connect,storage,pauseTarget,productionPanel,hold,probeExternalAbsence,production,PAUSED_READ_EXPRESSION};
 if(require.main===module)run(process.argv).then(v=>process.stdout.write(JSON.stringify(v)+"\n")).catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:/^fence_[a-z0-9_]+$/.test(e.code||"")?e.code:"fence_recovery_refused",...fence.UNKNOWN})+"\n");process.exitCode=1;});

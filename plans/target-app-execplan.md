@@ -12,9 +12,9 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10: bridge запущен, reset остаётся `reset_pending_preflight`. Root открыл панель,
-  подтвердил пустой Untitled и один раз закрыл AE; через 300s AE/CEP не вышли.
-  Fence journal: `fence_native_exit_unknown`, readback-only; проекты/AME jobs не изменялись.
+- 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
+  Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
+  Connected/idle/autonomy active, native project read: empty/revision1; AME jobs не изменялись.
 - `b36ed6b` штатно применён с сохранёнными journal hashes/CEP owner. Live11 завершён тем же generic шагом: отдельный first UI receipt и verified name-only restore для каждого, debt0; 8 вспомогательных слоёв сохранены. START/census/replay0; root sole live controller.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - SaveAs/source producer/full-AEP SHA frozen; код и тесты сохранить: [workflow](../docs/ame-single-job-workflow.md).
@@ -113,7 +113,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Validation
 
-- 20.10 fence: focused32/syntax3/PS compile/rules/diff PASS, независимое review GO; live exit timeout, recovery/activation не выполнялись.
+- 20.10 fence: focused64/syntax3/PS compile/rules/diff PASS, Ultra architecture/High review GO; native barrier/retirement/reset_active/Connected/project read PASS.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
@@ -167,7 +167,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Сначала восстановить завершение зависшего пустого AE и reset activation; затем открыть рабочий AEP и создать отдельные композиции.
+Открыть рабочий AEP, проверить сохранённые 11 титров и создать отдельные композиции с сохранением исходной.
 Далее адаптировать API enqueue/self-check к одному saved AEP; прежний UI enqueue не считается новой приёмкой. START/render отдельно.
 
 ## Отложенные scope

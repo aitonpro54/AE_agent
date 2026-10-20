@@ -103,6 +103,7 @@ node scripts/cep-panel-reset-physical-fence.js inspect
 node scripts/cep-panel-reset-physical-fence.js prepare-held-exit
 node scripts/cep-panel-reset-physical-fence.js readback
 node scripts/cep-panel-reset-physical-fence.js recover
+node scripts/cep-panel-reset-physical-fence.js adopt-external-close
 ```
 
 CLI принимает только эти команды, без PID, scripts, paths, credentials или
@@ -160,6 +161,61 @@ typed project read; helper их не присваивает.
 adoption. `node scripts/cep-panel-reset-physical-fence-smoke.js` проверяет только
 DI protocol/fake CDP и fixed JSX VM, без live AE/CEP и native процессов.
 
+Если прежний watcher завершился timeout, а пользователь затем самостоятельно
+закрыл AE, отдельная команда `adopt-external-close` проверяет фактическое отсутствие
+прежних identities. Новый запуск или закрытие AE для этой проверки не требуется.
+До завершения adoption AE/CEP должны отсутствовать; старый watcher не повторяется.
+Прежние `failure`, `held-ready`, UNKNOWN и их исходные bytes не изменяются.
+
+Этот переход разрешён только для исходного frozen набора трёх source pins
+(`b449b7f...` module, `853c97c...` CLI, `92ccb8f...` held helper), четырёх
+существующих envelopes prepare/watcher-consumed/held-ready/failure и exact отказа
+`fence_native_exit_unknown`. Отдельный HMAC `source-adoption` связывает исходные
+raw hashes с текущим source; произвольные исторические версии не принимаются.
+Этот receipt не доказывает отсутствие процессов и не открывает reset admission.
+
+Query-only native helper получает expected identities исключительно из подписанного
+`held-ready`, через закрытый reducer. Для каждой identity допускаются native
+`OpenProcess` ERROR 87 (absent), иной точный birth FILETIME (PID reused), либо
+exact identity с `WAIT_OBJECT_0`. Alive, access denied и unknown отклоняются.
+Затем обязательны три пустых глобальных AE/CEP census, exit code 0 самого helper
+и отсутствие старой exact CDP page. Результат отдельно сохраняется в
+`external-close-intent`, `external-close-evidence`, `external-close-adopted`.
+Файл `held-exit` не создаётся, прежний timeout не становится успешным.
+
+Статус `external_close_absence_adopted` разрешает запустить новый AE/CEP и продолжить
+прежний `recover`: новый host/tree должен родиться после этого receipt; fixed
+barrier, собственная пауза, exact storage checks и обычная reset activation
+остаются обязательными. Итог различает absence proof и held-exit proof, сохраняя
+`oldOutcome:unknown_preserved`, `oldExitProven:false`, `replayAllowed:false`.
+Без принятого отдельного evidence failure даёт `recorded_failure_readback_only`.
+
+Для exact завершённого barrier nonce `d6d2e42f-c4fb-45d9-81a4-f4cef03e9ca3`,
+после отказа ожидания собственной паузы и до retirement-intent, команда
+`refresh-completed-barrier` принимает только предыдущие четыре source pins и
+одиннадцать неизменных HMAC envelopes. Отдельный `pause-source-adoption` сохраняет
+их raw hashes; отдельный nonce обновляет только доказанно завершённый read.
+Pending/unknown refresh не отправляется повторно. Исходный archive неизменен,
+`archive-refresh-link` связывает его со свежим completed receipt. Затем сразу
+выполняется `recover` в пределах 30 секунд. В idle CEP после собственного
+Debugger.pause ACK запускается один штатный named state-read; обязательны
+собственный paused event, atomic named snapshot и ожидание read после own resume.
+При уже существующей паузе новый read и resume не выполняются. Оба native helpers,
+UNKNOWN прежней работы и обычная reset activation этим переходом не изменяются.
+
+После завершённого refresh nonce `a15e1cd3-122c-4bb8-9554-eb54f986395b`
+окончание выполняет одна закрытая команда `complete-refreshed-recovery` под одним
+lock. Она принимает только exact предыдущие четыре source pins и закреплённые
+raw hashes пятнадцати исторических HMAC envelopes. Command-local immutable view
+проверяет их подписи, source groups и связи один раз; global/TTL cache отсутствует.
+Отдельный `final-controller-adoption` сохраняет эту границу. Один distinct final
+read с fixed files сразу продолжается собственной паузой и retirement; unknown
+pending не отправляется повторно. Authority и исходные raw hashes проверяются
+заново перед SEND и retirement-intent, а отсутствие retirement проверяется свежо.
+Deadline и возраст completed receipt проверяются после последних guards перед
+intent и storage writes; 30 секунд не продлеваются. Все пятнадцать исходных файлов
+сохраняются, summary строится после own resume и settlement штатного named read.
+
 Временная занятость панели при загрузке agents/usage ожидается одним пассивным
 таймером до native submission. Продолжение связано с тем же actor, URL и token;
 смена контекста или неизвестный физический вызов отменяют его. Истёкший во время
@@ -174,9 +230,19 @@ DI protocol/fake CDP и fixed JSX VM, без live AE/CEP и native процес�
 не открывает admission новой сессии. После штатной поставки полной копии панели
 применяется узкий connect/reload порядок из [Tool-First workflow](tool-first-workflow.md).
 
-## Подтверждённое применение 17.10.2026
+## Подтверждённые применения
 
-Порученный reset выполнен один раз; подписанная activation сохранена. После
+20.10: reset `f0fb9754-678c-4649-9620-d7d3471d4294` / generation
+`9f2d63af-266f-4ae4-8f0f-1c8f89194ab4` завершён после ручного выхода зависшего AE.
+Исходный `fence_native_exit_unknown` и 15 исторических envelopes сохранены.
+Завершающая команда с новым native nonce и собственной pause прошла за 8s;
+retirement не присваивал activation. Последующий штатный connect подтвердил
+`reset_active`, Connected/idle, autonomous typed grant и настоящий
+`get_project_info` (пустой проект, revision1). Проекты и очередь AME не изменялись.
+64 focused DI/fake-CDP/VM проверки, syntax/rules/diff — PASS; архитектурное
+Ultra решение и ограниченное независимое High review — GO.
+
+17.10: порученный reset выполнен один раз; подписанная activation сохранена. После
 исправления startup busy и перехода в numeric epoch панель подключена к обычной
 сессии: Connected/online, passive observer `connected_idle`, pending0/inflight0,
 activeEditSession=null, автономная typed-сессия active. Настоящий
