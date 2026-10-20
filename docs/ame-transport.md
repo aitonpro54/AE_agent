@@ -88,6 +88,46 @@ Sender удерживает один BridgeTalk объект в собствен
 самого AE bridge возвращает `ae_delivery_unknown`; автоматического retry нет.
 Никакие raw JSX, destructive, save или CEP grants этой регистрацией не меняются.
 
+Если callback диагностического read остаётся неизвестным после исходного бюджета,
+есть отдельное явное завершение его текущего слота:
+
+```json
+{
+  "targetSpecifier": "ame-26.0",
+  "expectedSessionNonce": "точный-ранее-наблюдённый-nonce",
+  "afterReadUnknownNonce": "UUID-из-неизвестного-ответа",
+  "timeoutMs": 1000
+}
+```
+
+`afterReadUnknownNonce` несовместим с `reconcileRequestNonce`. Проверяются точный
+текущий nonce, target/session, target удержанного сообщения и полный fixed reader
+body для этого nonce. Допускается только канонизация CRLF в LF. Для прежних
+sender без `budgetMs`/`deadlineAt` бюджет определяется сохранёнными `startedAt`
+и целым `message.timeout` от 1 до 10 секунд; новые поля, если присутствуют,
+должны совпасть с этим бюджетом. Callback должен оставаться null/timeout,
+body — null, а исходный бюджет — истечь. `timeoutMs` нового вызова не сокращает
+исходный срок.
+
+Успешный ответ `read_transport_unknown_archived` сохраняет **тот же объект**
+slot/message/callback в истории AE и очищает только текущий указатель. Вызов
+не создаёт BridgeTalk, не делает send/pump и не объявляет старый read неотправленным.
+История ограничена 64 архивированными объектами без удаления; при заполнении
+следующая архивация отклоняется. Ошибка binding, смена reader, ранний запрос или
+terminal callback не освобождают слот.
+
+Ответ сохраняет `ok:false`, `deliveryVerified:false`, `warmSessionVerified:false`
+и возвращает `nextReadAllowed:true` с `nextReadArgs`. Только **отдельный** вызов
+с этими аргументами создаёт новый nonce и отправляет один новый диагностический
+read. Повтор старого retirement nonce ничего не отправляет и не выдаёт новые
+`nextReadArgs`. Готовность требует фактического нового correlated session response.
+
+Поздний callback обновляет только старый объект. Exact `reconcileRequestNonce`
+продолжает читать архив без отправки и без замены текущего слота. Даже валидный
+ответ архива имеет `historical:true`, `currentObservation:false`,
+`deliveryVerified:false`; данные возвращаются в `retainedAme`, а не `ame`.
+Такой ответ не может подтвердить текущую готовность или заменить обычный ready gate.
+
 ## Проверка
 
 `npm.cmd run smoke:ame-transport` выполняет только offline strict ES3 parse
