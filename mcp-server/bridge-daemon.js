@@ -128,6 +128,7 @@ const ameRunning = require("./ame-running");
 const ameQueueControl = require("./ame-queue-control");
 const ameEnqueueSequence = require("./ame-enqueue-sequence");
 const ameSavedSourceAdmission = require("./ame-saved-source-admission");
+const ameSourceProbe = require("./ame-source-probe");
 const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanIngress();
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
@@ -418,6 +419,11 @@ const savedAmeSourceAdmission=ameSavedSourceAdmission.createAdmission({
     if(!lastPanelInfo?.panelConnectionId||!lastPanelInfo.panelGeneration||Date.now()-lastPanelSeenAt>=10000)throw Error("ame_saved_source_current_panel_required");
     return {panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration};
   },
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))
+});
+const ameSourceProbeExecutor=ameSourceProbe.createProbe({
+  inspectProcesses:ameRunning.inspectProcesses,
+  assertReady:()=>{if(!productRuntimeCurrent()||pendingCommands.length||inflightCommands.size||activeEditSession)throw Error("ame_source_probe_product_idle_required");},
   readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))
 });
 const productAmeReadDispatchPort=require("./ame-product-read-dispatch").createProductReadDispatch({
@@ -14551,6 +14557,7 @@ const tools = [
   ...ameQueueControl.tools,
   ...ameEnqueueSequence.tools,
   ameSavedSourceAdmission.tool,
+  ameSourceProbe.tool,
   ameFixtureRunner.tool,
   ameFixtureRunner.inspectTool,
   ameFixtureRunner.inspectAttemptTool,
@@ -14945,6 +14952,10 @@ async function callTool(name, args, executionContext) {
   if(name===ameSavedSourceAdmission.TOOL){
     try{return toolResult(await savedAmeSourceAdmission.inspect(args));}
     catch(error){return toolResult({ok:false,code:error.code||error.message||"ame_saved_source_inspection_failed",executionAuthority:false,automaticRetryAllowed:false},true);}
+  }
+  if(name===ameSourceProbe.TOOL){
+    try{const result=await ameSourceProbeExecutor.execute(args);return toolResult(result,!result.ok);}
+    catch(error){return toolResult({ok:false,code:error.code||error.message||"ame_source_probe_failed",executionAuthority:false,queueMutationPerformed:false,automaticRetryAllowed:false},true);}
   }
   if(name===ameJobSource.RECONCILE){
     if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");

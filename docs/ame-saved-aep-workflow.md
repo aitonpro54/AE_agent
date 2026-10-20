@@ -39,3 +39,29 @@ lock и не защищает от произвольного внешнего c
 Офлайн-проверка: `node scripts/ame-saved-source-admission-smoke.js`.
 Она выполняет действующие admission, product ports, executor и fixed programs
 в изолированных VM; это не доказательство live подключения или рендера.
+
+## Ограниченная диагностика source API
+
+`inspect_ame_source_probe` принимает один новый `probeId` (UUID), `mode`,
+`sourceProjectFile`, `expectedSourceSha25664`, точные `targetSpecifier`,
+`expectedProcess`, `expectedSessionNonce` и постоянный `timeoutMs`.
+Порядок режимов: `begin` → `receiver` → `dl`; `status` читает сохранённую phase.
+Режим `receiver` компилирует текущую generic receiver function как невызванное
+выражение; `dl` использует отдельный короткий fixed receiver с отметками
+`before_get_dl`/`after_get_dl` и максимум одним вызовом API на probe.
+
+Отправка — асинхронный `BridgeTalk.send()` без timeout argument, sleep и pump
+в AE. Первый ответ может быть `unknown`: отпустить AE и повторить тот же режим
+с теми же аргументами, чтобы прочитать callback **того же nonce**. Повтор не
+отправляет этап заново. Для `status` следующий свежий read разрешён только после
+получения предыдущего callback. Старый UNKNOWN title sender не изменяется.
+
+`begin` PASS, но `receiver` не отмечен в `status` — проблема размера/компиляции/
+доставки generic body. `receiver` PASS и retained `before_get_dl` без завершения
+локализуют задержку внутри DL вызова. `after_get_dl` с GUID показывает завершение
+короткого асинхронного API read; это ещё не доказывает причину старого timeout.
+`dl_preflight`/`before_get_frontend`/`dl_error` уточняют более ранний отказ.
+GUID этой диагностики не дают authority на enqueue. Source pins/process/session
+сверяются, очередь/START/save/launch не вызываются.
+
+Офлайн-проверка: `node scripts/ame-source-probe-smoke.js`.
