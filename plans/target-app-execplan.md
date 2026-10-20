@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10 UTC, в работе:01.mov completion/acceptance/media/PNG PASS, GLOBAL1 UNKNOWN сохранён. Sourceclean/rev12968854/SHAf84a56ff…. Serial02..10 callbacks/ACKtrue, associationfalse; driver20964 остановлен,11 НЕsent. Core543b184 reviewedGO/offline8groups; caller N3 submit-before-callback/STATUS0 PASS. GLOBAL6afe29d2 принят19:55:59, independent running19:56:42 до11;02 exact host completionTrue19:57:01, public flagsfalse сохранены. Runtime23576/source6651fa95…. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 20.10 UTC20:38: ОСТАНОВЛЕНО по прямому поручению пользователя. Core543b184/phase2 7d5bc2e/transport c27501a reviewedGO; runtime14896/source0f847377…. Sourceclean/rev12968854/SHAf84a56ff…. GLOBAL6afe принят до11, теперь stopped. Transport4aa archived UNKNOWN, отдельный fresh read PASS.11 attempt5a4 отказал до constructor/send; settlement denied (closed proof только8cd2). Collector завершён частично: host02/03/04/09/10 подтверждены, на05 error. Полная media/visual11 не завершена. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Завершить typed PAUSE/resume offline+review → fresh runtime/admission → PAUSE/read-back, если GLOBAL6afe ещё running → pending11/customrangeACK → явный resume → host/media/visual11. Если уже stopped, использовать stopped enqueue и новый разрешённый START;6afe не повторять, stopped не выдавать за paused.02..10 не повторять; N>1 live недоступен (остался11), отделить от offline proof. Queued predicates/UNKNOWN неизменны.
+Только после явного возобновления: выяснить exact blocked map-origin через bounded readonly diagnostic, отдельно reviewed closed not-sent proof для run5a4; сейчас11 НЕповторять. Затем fresh admission/new proposal для11, новый разрешённый START и оставшиеся host/media/visual проверки.6afe и01..10 не повторять. N>1 доказан offline; live остался только11. Новых правок после stop нет, чужой WIP сохранён.
 
 ## Отложенные scope
 
