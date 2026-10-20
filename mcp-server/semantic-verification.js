@@ -55,6 +55,7 @@ const MUTATING_TOOLS = new Set([
   "enqueue_ame_title_variant",
   "start_ame_title_batch",
   "start_ame_queue",
+  "pause_ame_queue",
   "ame_native_fixture_probe",
   ...projectLifecycle.MUTATIONS,
   "reload_montage_material_source",
@@ -831,7 +832,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["dispatch_ame_open_comp", "restore_ame_open_comp", "create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["dispatch_ame_open_comp", "restore_ame_open_comp", "create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "pause_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4373,14 +4374,15 @@ function verifyStep(checks, step, evidence) {
       passed: valid, evidence: stepLabel(step) });
     return;
   }
-  if (step.tool === "start_ame_queue") {
+  if (step.tool === "start_ame_queue" || step.tool === "pause_ame_queue") {
     const control = require("./ame-queue-control"), attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
     let valid = false;
-    try { valid = payload.verification?.ok === true && payload.verification.scope === "ame_global_queue_start_dispatch_only" && attached.length === 1 && attached.every(read =>
+    try { valid = payload.verification?.ok === true && payload.verification.scope === (step.tool==="pause_ame_queue"?"ame_global_queue_pause_observed":"ame_global_queue_start_dispatch_only") && attached.length === 1 && attached.every(read =>
       SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === control.STATUS && read.status === "completed" &&
-      JSON.stringify(control.validateInput(control.STATUS, read.args)) === JSON.stringify((({globalQueue, ...wanted}) => wanted)(control.validateInput(control.START, args))) &&
+      JSON.stringify(control.validateInput(control.STATUS, read.args)) === JSON.stringify(control.statusArgs(step.tool,args)) &&
       control.verifyReadBack(args, payload, payloadForStep(read), evidence.run)); } catch (_) {}
-    pushCheck(checks, { id: `${step.index}:${step.tool}:global-start`, title: "Общий AME START", expected: "one exact authorized runBatch intent and independent native marker read", observed: valid ? "global START accepted; queue items, completion and media not inspected" : "global START unresolved", passed: valid, evidence: stepLabel(step) });
+    const pause=step.tool===control.PAUSE;
+    pushCheck(checks, { id: `${step.index}:${step.tool}:${pause?"global-pause":"global-start"}`, title: pause?"Общая AME PAUSE":"Общий AME START", expected: pause?"one exact authorized pause intent and independent paused marker read":"one exact authorized runBatch intent and independent native marker read", observed: valid ? pause?"same explicit pause and paused host verified":"global START accepted; queue items, completion and media not inspected" : pause?"global PAUSE unresolved":"global START unresolved", passed: valid, evidence: stepLabel(step) });
     return;
   }
   if (step.tool === "start_ame_title_batch") {

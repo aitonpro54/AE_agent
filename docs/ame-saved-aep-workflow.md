@@ -243,6 +243,17 @@ Host evidence и последующие media/visual проверки учиты
 paused: для11 используется безопасный stopped enqueue и новый разрешённый START,
 а новый pause/running путь остаётся отдельно ограниченным offline proof.
 
+Phase2 исходников: typed `pause_ame_queue`, независимый exact paused read-back,
+private lineage для group enqueue и отдельный NEW START с `resumeFromPauseId`.
+ACK паузы сам по себе не разрешает enqueue; состояние stopped не является paused.
+RESUME требует все terminal addDL/workArea ACK группы и отсутствие early encoding.
+Публичный proof не принимается; hidden pause/runBatch в enqueue отсутствуют.
+Обычный stopped enqueue остаётся доступен без pause reference. UNKNOWN сохраняются.
+PASS: pause7/group8/queue17/cycle13/retention36/async6/timeout96/sequence6,
+syntax/rules/diff; independent review GO, 16 pure VM assertions. Live proof нового
+pause/resume пока отсутствует; в этом тесте остался только неотправленный11.
+Reviewed queue SHA `b8ca87fe…`, jobs `7813def3…`, bridge `b6086918…`.
+
 ## Ограниченная диагностика source API
 
 `inspect_ame_source_probe` принимает один новый `probeId` (UUID), `mode`,

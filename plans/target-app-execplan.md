@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: Npending + early START/pause/resume] [executor: ae_specialist writer; ae_architect; ae_reviewer; helper ae_implementer]; root sole live/docs. Opt-in group/max11/SAME origins64/finite TTL6600s, collector отдельно. Custom0..10.033/D15.4 требует подтверждённой PAUSE передadd/setWorkArea; resume явный новый intent. Старые UNKNOWN и false association неизменны. Source не менять;100 modules/fresh CLI. Connect debts не сняты, пользователь выбрал CtrlS.
+- [block: Npending + early START/pause/resume] [executor: ae_specialist writer; ae_architect; ae_reviewer; helper ae_implementer]; root sole live/docs. Phase2 typed PAUSE/private paused proof/group ACK/new RESUME source+independent review GO, pause7/group8/queue17/cycle13/retention36/async6/timeout96/sequence6 PASS. Custom0..10.033/D15.4 и UNKNOWN сохранены; stopped11 без PAUSE допустим. Runtime ещё прежний; transport4aa16ae1 callbacknull,11unsent. Source не менять;100 modules/fresh CLI.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.

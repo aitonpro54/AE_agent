@@ -263,7 +263,9 @@ const ameQueueExecutor = ameQueueControl.createExecutor({
   assertServerProposalContext: assertAmeQueueContext,
   assertLegacyStartClear: binding => ameQueueControl.readLegacyStartBlockers(path.join(LOG_DIR, "ame-title-jobs"), binding),
   readRunRecord: id => planRunRecords.readRecord(LOG_DIR, id, { throwOnError: true }),
-  inspectOwnCompletion: args => withPlanCommandRole("readback", () => ameTitleExecutor.inspectOwnCompletion(args))
+  inspectOwnCompletion: args => withPlanCommandRole("readback", () => ameTitleExecutor.inspectOwnCompletion(args)),
+  inspectPausedGroup: args => withPlanCommandRole("readback",()=>ameTitleExecutor.inspectPausedGroup(args)),
+  assertPausedGroup:(args,value)=>ameTitleExecutor.assertPausedGroup(args,value)
 });
 const ameEnqueueSequencer = ameEnqueueSequence.createSequence({
   stateDir: path.join(LOG_DIR, "ame-enqueue-sequences"), inspectProcesses: ameRunning.inspectProcesses,
@@ -458,6 +460,7 @@ const ameNativeDispatchPort={
 };
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
+  preparePausedEnqueue:args=>withPlanCommandRole("readback",()=>ameQueueExecutor.preparePausedEnqueue(args)),
   readRunRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),
   assertNoSendRuntime:record=>{
     const runtime=record.run?.provenance?.runtime,modules=runtime?.modules||[],pin=name=>modules.find(m=>m.name===name)?.sha256;
@@ -2478,7 +2481,7 @@ const MUTATING_TOOL_NAMES = new Set([
   titleVerification.TOOL,
   titleExport.TOOL,
   ameJobSource.TOOL,
-  ameTitleJobs.ENQUEUE, ameTitleJobs.START, ameQueueControl.START,
+  ameTitleJobs.ENQUEUE, ameTitleJobs.START, ...ameQueueControl.MUTATIONS,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
   nativeRenderVariant.RENDER,
@@ -4264,11 +4267,11 @@ async function verifyMutationResult(toolName, args, payload) {
       scope: "ame_native_wrapper_association_only", independentReadBack: { tool: ameTitleJobs.STATUS, args: readArgs, result: read },
       nativeJobId: null, nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
   }
-  if (toolName === ameQueueControl.START) {
-    const normalized = ameQueueControl.validateInput(toolName, args), { globalQueue, ...readArgs } = normalized;
+  if (ameQueueControl.MUTATIONS.includes(toolName)) {
+    const readArgs = ameQueueControl.statusArgs(toolName,args);
     const result = await callToolLogged("verification-readback", ameQueueControl.STATUS, readArgs), read = firstToolPayload(result), context = planCommandContext.getStore();
     if (context?.item) { context.item.independentReadBack = [{ index: 2, tool: ameQueueControl.STATUS, args: readArgs, status: result.isError ? "failed" : "completed", result: read, source: "server_typed_readback", observedAt: new Date().toISOString() }]; context.persist(); }
-    return { ok: !result.isError && ameQueueControl.verifyReadBack(args, payload, read, context?.run), scope: "ame_global_queue_start_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+    return { ok: !result.isError && ameQueueControl.verifyReadBack(args, payload, read, context?.run), scope: toolName===ameQueueControl.PAUSE?"ame_global_queue_pause_observed":"ame_global_queue_start_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
   }
   if (toolName === ameTitleJobs.START) {
     const shared=args.queueMode===ameSharedQueue.MODE;
@@ -5878,7 +5881,7 @@ function validateAgentPlanObject(plan, requestId, context) {
     }
     if (ameQueueControl.tools.some(tool => tool.name === toolName)) {
       try { ameQueueControl.validateInput(toolName, safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
-      if (toolName === ameQueueControl.START && (steps.length !== 1 || plan.runtimeBindings || step.resultBindings || step.bindings)) generatedSafetyIssues.push("Global AME START requires one exact isolated typed step without runtime bindings.");
+      if (ameQueueControl.MUTATIONS.includes(toolName) && (steps.length !== 1 || plan.runtimeBindings || step.resultBindings || step.bindings)) generatedSafetyIssues.push("Global AME control requires one exact isolated typed step without runtime bindings.");
     }
     if (toolName === ameFixtureGrant.TOOL_NAME) {
       try { ameFixtureGrant.validateInput(safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
@@ -8900,7 +8903,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   }
   if (!dryRun && options._m100ActionRecord) {
     try {
-      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || step.tool === ameQueueControl.START && !(autonomous && productRuntimeCurrent()) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
+      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || ameQueueControl.MUTATIONS.includes(step.tool) && !(autonomous && productRuntimeCurrent()) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
         manualPlanIngress.assertRequest(options._m100ActionRecord);
       }
       confirmM100ActionProposal(options._m100ActionRecord, options, run);
@@ -9125,7 +9128,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       } : null;
       if (ameRunningContext && bound.args.existingInstallationTrust) manualPlanIngress.brand(ameRunningContext);
       const ameRunningAuthorization = ameRunningContext ? ameRunningExecutor.authorize(ameRunningContext) : null;
-      const ameQueueContext = step.tool === ameQueueControl.START ? brandAmeQueueContext({
+      const ameQueueContext = ameQueueControl.MUTATIONS.includes(step.tool) ? brandAmeQueueContext({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
@@ -24402,7 +24405,7 @@ function callToolLogged(source, name, args, executionContext) {
   return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
 }
 async function callToolLoggedImpl(source, name, args, executionContext) {
-  await ameOpenCompExecutor.assertProjectMutationAllowed(name,MUTATING_TOOL_NAMES.has(name) && ![ameRunning.TOOL_NAME,ameQueueControl.START,ameFixtureGrant.TOOL_NAME,...ameTitleMutationNames].includes(name) || ["start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name));
+  await ameOpenCompExecutor.assertProjectMutationAllowed(name,MUTATING_TOOL_NAMES.has(name) && ![ameRunning.TOOL_NAME,...ameQueueControl.MUTATIONS,ameFixtureGrant.TOOL_NAME,...ameTitleMutationNames].includes(name) || ["start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name));
   if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
   }
@@ -24418,7 +24421,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
   if(name===nativeRenderVariant.RENDER)nativeRenderExecutor.assertAuthorization(executionContext && executionContext.nativeRenderAuthorization,args || {});
   if (name === ameRunning.TOOL_NAME) ameRunningExecutor.assertAuthorization(executionContext && executionContext.ameRunningAuthorization, args || {});
-  if (name === ameQueueControl.START) ameQueueExecutor.assertAuthorization(executionContext && executionContext.ameQueueAuthorization, args || {});
+  if (ameQueueControl.MUTATIONS.includes(name)) ameQueueExecutor.assertAuthorization(executionContext && executionContext.ameQueueAuthorization, args || {});
   if (name === ameFixtureGrant.TOOL_NAME) ameFixtureExecutor.assertAuthorization(executionContext && executionContext.ameFixtureAuthorization, args || {});
   if (ameTitleMutationNames.has(name)) ameTitleExecutor.assertAuthorization(executionContext && executionContext.ameTitleAuthorization, name, args || {});
   if (projectLifecycleContract.isLifecycleTool(name)) projectLifecycleContract.validateInput(name, args || {});
@@ -24455,7 +24458,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
       if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
-    idContext = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameQueueControl.START || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
+    idContext = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || ameQueueControl.MUTATIONS.includes(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -24536,7 +24539,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || name===ameQueueControl.START || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || ameQueueControl.MUTATIONS.includes(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
