@@ -157,7 +157,33 @@ settlement без native send и новый proposal с прежними job/non
 Исходный STATUS timeout сохранён как unknown; explicit retirement и отдельный
 свежий read дали приёмку. Evidence: `title-eleven-20261020/01-read-fresh-result.json`
 в локальной `.codex-runtime/`. Focused recovery56/status21, syntax/rules/diff и
-два High review — PASS. Это приёмка одного нового задания; START/media ещё нет.
+два High review — PASS. Это приёмка одного нового задания.
+
+18:02Z: отдельный порученный GLOBAL START выполнен один раз, intent
+`abfa2035-45b9-4a8e-b9b8-fb5047ee9676`, run `93657906…`. Исходный ACK=false/UNKNOWN
+сохранён: `batchRunning=false` был снят до `runBatch`; поздний цикл старый STATUS
+не наблюдает. Повтор START не выполнялся. Реальный `01.mov` появился в конечной
+папке: 1920×1080, DXV3 HQ/alpha,300 кадров,30000/1001 fps,10.01s,84075723bytes;
+полное декодирование, packet/alpha checks и просмотр кадра против source PNG PASS.
+Это file/media proof, не разрешение снять UNKNOWN global-cycle gate по одному файлу.
+
+18:30–18:31Z: fresh runtime PID26260/source `26fa51d2…` подтвердил
+`01-xmp-final-result.json`: own acceptance/native association/completion=true.
+Строго допускается main output и один буквальный `outputPath + ".xmp"` только
+при успешном exact host completion; чужие/повторные выходы отклоняются.
+Retained enqueue origins сохраняют те же native объекты и callbacks (bound64)
+после иных отправок. Explicit orphan-read retirement не повторяет enqueue.
+`get_ame_queue_start_status` с selector `completionWitness:{batchId,jobId}`
+сам получил свежий typed completion и exact stopped marker: отдельный
+`executionCycleObservedStopped=true`, исходный ACK=false/UNKNOWN/noReplay
+не изменён. Caller не передаёт proof. Evidence global:
+`title-comps-20261020/eleven-global-cycle-status-result.json`.
+Offline status58/origin36/global-cycle13/recovery56, независимое review GO.
+
+Новая source admission отказана: открытый AEP dirty/revision12968847,
+477 элементов после импорта `01.mov`; saved файл имеет прежний SHA `e3de5221…`.
+02..11 пока не отправлены. Сохранение/смена baseline ожидает ответа пользователя;
+несохранённые изменения не отбрасываются и не обходят clean-source guard.
 
 ## Ограниченная диагностика source API
 

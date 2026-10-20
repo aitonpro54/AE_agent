@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10, в работе: конечный output root/admission11 PASS. Closed proof run8cd2d301… → actual settlement без send; original UNKNOWN сохранён. Runtime14120/source1520c719…; первый01.mov fresh own STATUS accepted/queued/GUID/source/output/preset/range, callback=result. Read timeout сохранён unknown, новый независимый read PASS. Остальные10/START ещё0; продолжается bounded sender/retained origins. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 20.10, в работе:01.mov actual completion/own acceptance + DXV3HQ/alpha/decode/PNG PASS,1920x1080/29.97/300frames/10.01s. GLOBAL START1 (run93657906…/intentabfa2035…) сохранил ACKfalse/UNKNOWN/noReplay; отдельный exact witness дал cycle_observed_stopped. Runtime26260/source26fa51d2…. Source admission остановил новые отправки: открытый проект dirty/revision12968847/items477 (импорт01.mov), saved SHAe3de5221… прежний; запрошено сохранение того же AEP. Остальные10 не отправлены. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: async enqueue/read recovery → bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer] [ownership: scoped executor/proof/read + fixed sender]; root sole live/docs. No-send recovery допускает только exact reviewed исторический run. Read timeout не not_sent: отдельный retirement и новый STATUS. Native cache/UNKNOWN сохранены; runtime100 unique, fresh CLI. Early global START поручен отдельно от shared two-job binding.
+- [block: origins/global cycle/bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer; helper ae_implementer] [ownership: jobs/queue-control по очереди, ignored runner отдельно]; root sole live/docs. Retention SAME objects/bound64; orphan read retired unknown, не replay. ACK и execution раздельны; old UNKNOWN неизменен. Terminal XMP только exact main+literal sidecar при host True. Early global START поручен, census не prerequisite;100 runtime modules/fresh CLI.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 ## Validation
 
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
-- 20.10 recovery56/status21, actual offline-copy/nativeCalls0, independent19 + syntax/rules/diff/High review PASS. Новый live async ENQUEUE01/fresh own STATUS PASS; exact output01.mov/source/GUID/preset/range/callback=result. Source unchanged/clean, Connected/idle/autonomy active. Старые outcomes UNKNOWN неизменны; START/media пока0, прежний integration startup gate не обходился.
+- 20.10 recovery56/status21/origin36 + actual offline-copy/independent19/syntax/rules/diff/High review PASS. Live async ENQUEUE01/own STATUS PASS; GLOBAL START1 UNKNOWN сохранён, actual01 media HQalpha/full decode и PNG comparison PASS. Source unchanged/clean. Новый orphan-read/global settlement пока не live-проверены; старый integration startup gate не обходился.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Продолжить порученный bounded stream02..11 без caller ожидания каждого ответа; сначала сохранить successful per-item sender origins, затем существующий global START после первого валидированного01. Приёмку и completion собирать отдельно; no replay, общий AEP не менять. Census/новый SDK/shared START refactor не нужны.
+После ответа пользователя сверить/сохранить общий AEP и заново admit source11; затем producer02..11 по retained dispatch callbacks, collector STATUS отдельно и следующий новый GLOBAL cycle. Пока batch running, producer ждёт stopped; shared stopped/acceptance guards сохраняются. Без SDK/census/отдельных AEP; старые01/global records неизменны.
 
 ## Отложенные scope
 

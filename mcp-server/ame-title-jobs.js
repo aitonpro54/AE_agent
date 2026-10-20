@@ -16,6 +16,17 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, S
 const META = ["verifyAfter", "idempotencyKey", "idempotencyScope", "checkpointLabel", "autoCheckpoint"];
 const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const samePath = (a, b) => String(a || "").replace(/\\/g, "/").toLowerCase() === String(b || "").replace(/\\/g, "/").toLowerCase();
+// Finite terminal output predicate only; it conveys no job/process authority.
+// The original single-output path remains separate and unchanged.
+function exactTerminalXmpOutput(n,sourcePath,outputPath,observedAt) {
+  const files=n?.outputFiles,h=n?.hostCompletion;
+  return !!(Array.isArray(files)&&files.length===2&&files.every(f=>typeof f==="string")&&
+    (samePath(files[0],outputPath)&&samePath(files[1],outputPath+".xmp")||samePath(files[1],outputPath)&&samePath(files[0],outputPath+".xmp"))&&
+    n.outputBindingEvidence==="generated_output_files_with_xmp"&&n.independentOutputGetterVerified===true&&n.generatedOutputVerified===true&&n.workAreaApplied===true&&
+    n.status==="native_finished"&&n.nativeCompletionObserved===true&&n.nativeResult==="True"&&n.completionOrigin==="host_exact_paths"&&h?.result==="True"&&
+    typeof h.sourceFilePath==="string"&&typeof h.outputFilePath==="string"&&samePath(h.sourceFilePath,sourcePath)&&samePath(h.outputFilePath,outputPath)&&
+    Number.isFinite(h.observedAt)&&h.observedAt===n.eventObservedAt&&Number.isFinite(observedAt)&&h.observedAt<=observedAt);
+}
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function object(value, keys) { if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(k => !keys.includes(k))) fail("ame_title_invalid_input"); }
 function text(value, max = 512) { if (typeof value !== "string" || !value || value !== value.trim() || value.length > max || /[\x00-\x1f\x7f]/.test(value)) fail("ame_title_invalid_text"); return value; }
@@ -24,7 +35,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce", "afterReadTimeoutNonce"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce", "afterReadTimeoutNonce", "afterReadUnavailableNonce"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -43,7 +54,8 @@ function validateInput(name, raw = {}) {
   if(raw.enqueueTransport!==undefined){if(name!==ENQUEUE||raw.enqueueTransport!==pendingEnqueue.MODE||a.queueMode!==sharedQueue.MODE)fail("ame_title_async_shared_only");a.enqueueTransport=pendingEnqueue.MODE;}
   if(raw.readTransport!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.originalRunId!==undefined||raw.acceptanceOnly===true)fail("ame_title_async_read_invalid");a.readTransport=pendingEnqueue.MODE;}
   if(raw.readRequestNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||!UUID.test(raw.readRequestNonce))fail("ame_title_async_read_invalid");a.readRequestNonce=raw.readRequestNonce;}
-  if(raw.afterReadTimeoutNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.readRequestNonce!==undefined||raw.originalRunId!==undefined||raw.acceptanceOnly!==undefined||!UUID.test(raw.afterReadTimeoutNonce))fail("ame_title_async_read_invalid");a.afterReadTimeoutNonce=raw.afterReadTimeoutNonce;}
+  if(raw.afterReadTimeoutNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.readRequestNonce!==undefined||raw.originalRunId!==undefined||raw.acceptanceOnly!==undefined||raw.afterReadUnavailableNonce!==undefined||!UUID.test(raw.afterReadTimeoutNonce))fail("ame_title_async_read_invalid");a.afterReadTimeoutNonce=raw.afterReadTimeoutNonce;}
+  if(raw.afterReadUnavailableNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.readRequestNonce!==undefined||raw.originalRunId!==undefined||raw.acceptanceOnly!==undefined||raw.afterReadTimeoutNonce!==undefined||!UUID.test(raw.afterReadUnavailableNonce))fail("ame_title_async_read_invalid");a.afterReadUnavailableNonce=raw.afterReadUnavailableNonce;}
   if (name === QUEUE_MANIFEST || name === START && raw.manualQueueMode !== undefined) {
     if (raw.manualQueueMode !== "cep_user_declaration_v2" || !Array.isArray(raw.completedOwnedPrefix) || raw.completedOwnedPrefix.length > 63) fail("ame_title_manual_queue_mode_invalid");
     const seen = new Set(); a.manualQueueMode = raw.manualQueueMode;
@@ -105,13 +117,49 @@ function nativeTitleJob(a) {
   }
   var slot = $.global.aeAgentAMETitleJobsV1, frontend, host, ids, i, entry, batch;
   function readEntry(e) {
+    function terminalXmpCompletion(){
+      if(e.queueMode!=="shared_queue_v1")return false;
+      if(e.finished!==true)return false;
+      if(e.status!=="native_finished")return false;
+      if(e.workAreaApplied!==true)return false;
+      if(e.nativeResult!=="True")return false;
+      if(e.completionOrigin!=="host_exact_paths")return false;
+      var completion=e.hostCompletion;if(!completion)return false;
+      if(completion.result!=="True")return false;
+      if(typeof completion.sourceFilePath!=="string")return false;
+      if(typeof completion.outputFilePath!=="string")return false;
+      if(norm(completion.sourceFilePath)!==norm(e.sourcePath))return false;
+      if(norm(completion.outputFilePath)!==norm(e.outputPath))return false;
+      if(typeof completion.observedAt!=="number")return false;
+      if(!isFinite(completion.observedAt))return false;
+      if(completion.observedAt!==e.eventObservedAt)return false;
+      if(completion.observedAt>reply.observedAt)return false;
+      return true;
+    }
     var result = { handleKey: e.handleKey, enqueueRequestNonce: e.enqueueRequestNonce, retainedWrapperSessionNonce: slot.retainedWrapperSessionNonce, sourcePath: e.sourcePath, sourceGuid: e.sourceGuid, outputPath: e.outputPath, presetIdentity: e.presetIdentity, range: e.range, processBinding: e.processBinding, nativeJobId: null, nativeAssociationVerified: e.associated === true, workAreaApplied: e.workAreaApplied === true, status: e.status, nativeCompletionObserved: e.finished === true && (e.queueMode !== "shared_queue_v1" || !!e.hostCompletion && e.completionOrigin === "host_exact_paths"), nativeResult: e.nativeResult, completionOrigin: e.completionOrigin || null, eventObservedAt: e.eventObservedAt || null, hostCompletion: e.hostCompletion || null, wrapperCompletion: e.wrapperCompletion || null, readErrors: [] };
     result.outputBindingEvidence = null; result.independentOutputGetterVerified = false; result.generatedOutputVerified = false;
     result.wrapperDiagnostic = { type: typeof e.wrapper, isNull: e.wrapper === null, methods: {} };
     result.dispatchDiagnostic = { phase:e.nativePhase || null, addDLInvoked:e.addDLInvoked === true, addDLReturned:e.addDLReturned === true, error:e.nativeError || null, creationFailures:e.creationFailures || [], workAreaCallAck:e.workAreaCallAck || null };
     if(e.nativeError || e.creationFailures && e.creationFailures.length){result.readErrors.push(e.nativeError?"native_dispatch_error":"batch_item_creation_failed");result.nativeAssociationVerified=false;}
     for (var method in {setWorkArea:1,addEventListener:1,getEncodeProgress:1,getEncodeTime:1}) { try { result.wrapperDiagnostic.methods[method] = e.wrapper ? typeof e.wrapper[method] : "unavailable"; } catch (methodError) { result.wrapperDiagnostic.methods[method] = "read_error"; } }
-    try { result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles; if (!files || typeof files.length !== "number") throw Error(); for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n])); if (files.length === 1 && norm(files[0]) === norm(e.outputPath)) {result.outputBindingEvidence="generated_output_files";result.independentOutputGetterVerified=true;result.generatedOutputVerified=true;} else result.nativeAssociationVerified = false; } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
+    try {
+      result.outputFiles = []; var files = e.wrapper && e.wrapper.outputFiles;
+      if (!files || typeof files.length !== "number") throw Error();
+      for (var n = 0; n < files.length && n < 8; n++) result.outputFiles.push(String(files[n]));
+      var exactXmp=false;
+      if(files.length===2){
+        var mainCount=0,xmpCount=0;
+        for(n=0;n<2;n++){if(norm(files[n])===norm(e.outputPath))mainCount++;else if(norm(files[n])===norm(e.outputPath+".xmp"))xmpCount++;}
+        if(mainCount===1&&xmpCount===1){
+          // Keep the terminal sidecar branch explicit for ExtendScript. It
+          // cannot establish queued acceptance or adopt an unrelated file.
+          exactXmp=terminalXmpCompletion();
+        }
+      }
+      if(files.length===1&&norm(files[0])===norm(e.outputPath)){result.outputBindingEvidence="generated_output_files";result.independentOutputGetterVerified=true;result.generatedOutputVerified=true;}
+      else if(exactXmp){result.outputBindingEvidence="generated_output_files_with_xmp";result.independentOutputGetterVerified=true;result.generatedOutputVerified=true;}
+      else result.nativeAssociationVerified=false;
+    } catch (x1) { result.readErrors.push("output_files_read_error"); result.nativeAssociationVerified = false; }
     for (var name in { getEncodeProgress: 1, getEncodeTime: 1 }) {
       try { if (!e.wrapper || typeof e.wrapper[name] !== "function") throw Error(); result[name] = scalar(e.wrapper[name]()); } catch (x2) { result.readErrors.push(name + "_read_error"); }
     }
@@ -287,12 +335,13 @@ function nativeTitleJob(a) {
 // Reconciliation pumps the SAME retained BridgeTalk message and never resubmits.
 function nativeSend(a, messageBody) {
   function utf8Bytes(v, maximum) { var bytes = 0, i, c, low; for (i = 0; i < v.length; i++) { c = v.charCodeAt(i); if (c < 128) bytes++; else if (c < 2048) bytes += 2; else if (c >= 55296 && c <= 56319) { if (++i >= v.length) return -1; low = v.charCodeAt(i); if (low < 56320 || low > 57343) return -1; bytes += 4; } else if (c >= 56320 && c <= 57343) return -1; else bytes += 3; if (bytes > maximum) return -1; } return bytes; }
-  var slot = $.global.aeAgentAMETitleSendV1,asyncOwn=a.asyncOwnStatus===true,asyncMode=asyncOwn||a.operation==="enqueue"&&a.enqueueTransport==="async_once_v1",readCache=null;
+  var slot = $.global.aeAgentAMETitleSendV1,asyncOwn=a.asyncOwnStatus===true,asyncMode=asyncOwn||a.operation==="enqueue"&&a.enqueueTransport==="async_once_v1",readCache=null,originDiagnostic=null,originDepth=null;
   function reply(code) {
     var value = { schema: "ae-agent-ame-title-send.v1", code: code, requestNonce: slot ? slot.requestNonce : a.requestNonce, callback: slot ? slot.callback : null, responseBody: slot ? slot.body : null };
-    if (a.operation === "status") { var original = $.global.aeAgentAMETitleSendV1; if (original) value.originalSender = {requestNonce:original.requestNonce,operationBinding:original.operationBinding,callback:original.callback,responseBody:typeof original.body === "string" && utf8Bytes(original.body,524288) >= 0 ? original.body : null}; }
+    if (a.operation === "status") { var original = asyncOwn || a.observeOwnJob === true ? originSender : $.global.aeAgentAMETitleSendV1; if (original) value.originalSender = {requestNonce:original.requestNonce,operationBinding:original.operationBinding,callback:original.callback,responseBody:typeof original.body === "string" && utf8Bytes(original.body,524288) >= 0 ? original.body : null}; }
     var targetStatus = null; try { if(typeof BridgeTalk.getStatus === "function")targetStatus=String(BridgeTalk.getStatus(a.targetSpecifier)); } catch (statusError) { targetStatus="read_error"; }
     value.transportDiagnostic={targetStatus:targetStatus,sendAck:slot&&typeof slot.sent === "boolean"?slot.sent:null,sendError:slot&&slot.sendError||null,messageBodyChars:slot&&slot.message&&typeof slot.message.body === "string"?slot.message.body.length:null,callback:slot?slot.callback:null};
+    if(originDiagnostic)value.transportDiagnostic.originRetention=originDiagnostic;
     if(asyncMode){value.transportDiagnostic.sendMode="async_no_wait";value.transportDiagnostic.pumpPerformed=false;if(slot&&slot.asyncDispatch)value.asyncDispatch=slot.asyncDispatch;}
     return value;
   }
@@ -302,14 +351,90 @@ function nativeSend(a, messageBody) {
     return value;
   }
   function pump(ms) { var deadline = new Date().getTime() + ms; while (slot && (!slot.callback || slot.callback === "timeout") && new Date().getTime() < deadline) { if (typeof BridgeTalk.pump !== "function" || typeof $.sleep !== "function") break; BridgeTalk.pump(); if (!slot.callback || slot.callback === "timeout") $.sleep(20); } }
+  function own(value,key){return Object.prototype.hasOwnProperty.call(value,key);}
+  function rejectOrigin(value,key,field){
+    var uuid=/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/,v=value&&typeof value==="object"?value:{},d=v.asyncDispatch,present=own(v,"asyncDispatch");
+    originDiagnostic={badNonce:typeof key==="string"&&uuid.test(key)?key:null,field:field,depth:originDepth,originType:typeof value,nonceValid:uuid.test(key),nonceMatches:v.requestNonce===key,operationValid:v.operation==="enqueue",bindingValid:/^[a-f0-9]{64}$/.test(v.operationBinding),processValid:/^[a-f0-9]{64}$/.test(v.processBinding),targetValid:/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(v.targetSpecifier),jobPresent:own(v,"jobId"),jobValid:uuid.test(v.jobId),batchPresent:own(v,"batchId"),batchValid:uuid.test(v.batchId),asyncPresent:present,asyncType:typeof d,asyncTag:String(Object.prototype.toString.call(d)).substring(0,64),asyncModeValid:!!d&&d.mode==="async_once_v1",asyncOperationValid:!!d&&d.operation==="enqueue",asyncNonceMatches:!!d&&d.requestNonce===key,asyncBindingMatches:!!d&&d.operationBinding===v.operationBinding,asyncProcessMatches:!!d&&d.processBinding===v.processBinding,asyncTargetMatches:!!d&&d.targetSpecifier===v.targetSpecifier,asyncJobValid:!!d&&uuid.test(d.jobId),asyncBatchValid:!!d&&uuid.test(d.batchId)};return false;
+  }
+  function enqueueOrigin(value,key){
+    var uuid=/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+    if(!value)return rejectOrigin(value,key,"origin_identity");
+    if(typeof value!=="object")return rejectOrigin(value,key,"origin_identity");
+    if(value.operation!=="enqueue")return rejectOrigin(value,key,"origin_identity");
+    if(value.requestNonce!==key)return rejectOrigin(value,key,"origin_identity");
+    if(!uuid.test(key))return rejectOrigin(value,key,"origin_identity");
+    if(!/^[a-f0-9]{64}$/.test(value.operationBinding))return rejectOrigin(value,key,"origin_identity");
+    if(!/^[a-f0-9]{64}$/.test(value.processBinding))return rejectOrigin(value,key,"origin_identity");
+    if(!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(value.targetSpecifier))return rejectOrigin(value,key,"origin_identity");
+    if(own(value,"jobId")){if(!uuid.test(value.jobId))return rejectOrigin(value,key,"top_level_job_batch");}
+    if(own(value,"batchId")){if(!uuid.test(value.batchId))return rejectOrigin(value,key,"top_level_job_batch");}
+    // ExtendScript must take the legacy absence branch explicitly. Do not fold
+    // this into a mixed ||/&& expression with descriptor property reads.
+    if(!own(value,"asyncDispatch"))return true;
+    var d=value.asyncDispatch;
+    if(!d)return rejectOrigin(value,key,"async_dispatch");
+    if(Object.prototype.toString.call(d)!=="[object Object]")return rejectOrigin(value,key,"async_dispatch");
+    if(d.mode!=="async_once_v1")return rejectOrigin(value,key,"async_dispatch");
+    if(d.operation!=="enqueue")return rejectOrigin(value,key,"async_dispatch");
+    if(d.requestNonce!==key)return rejectOrigin(value,key,"async_dispatch");
+    if(d.operationBinding!==value.operationBinding)return rejectOrigin(value,key,"async_dispatch");
+    if(d.processBinding!==value.processBinding)return rejectOrigin(value,key,"async_dispatch");
+    if(d.targetSpecifier!==value.targetSpecifier)return rejectOrigin(value,key,"async_dispatch");
+    if(!uuid.test(d.jobId))return rejectOrigin(value,key,"async_dispatch");
+    if(!uuid.test(d.batchId))return rejectOrigin(value,key,"async_dispatch");
+    if(own(value,"jobId")){if(value.jobId!==d.jobId)return rejectOrigin(value,key,"async_dispatch");}
+    if(own(value,"batchId")){if(value.batchId!==d.batchId)return rejectOrigin(value,key,"async_dispatch");}
+    return true;
+  }
+  function originMatches(value){
+    if(!enqueueOrigin(value,a.observationEnqueueRequestNonce))return false;
+    if(value.operationBinding!==a.observationEnqueueOperationBinding)return false;
+    if(value.targetSpecifier!==a.targetSpecifier)return false;
+    if(value.processBinding!==a.processBinding)return false;
+    if(own(value,"jobId")){if(value.jobId!==a.jobId)return false;}
+    if(own(value,"batchId")){if(value.batchId!==a.batchId)return false;}
+    if(own(value,"asyncDispatch")){
+      if(value.asyncDispatch.jobId!==a.jobId)return false;
+      if(value.asyncDispatch.batchId!==a.batchId)return false;
+    }
+    return true;
+  }
+  function originRegistry(){
+    var existing=$.global.aeAgentAMETitleMutationOriginsV1,staged={},count=0,key;
+    if(existing!==undefined){
+      if(Object.prototype.toString.call(existing)!=="[object Object]")return {error:"mutation_origin_cache_changed"};
+      for(key in existing)if(own(existing,key)){if(!enqueueOrigin(existing[key],key))return {error:"mutation_origin_cache_changed"};if(++count>64)return {error:"mutation_origin_cache_bound"};staged[key]=existing[key];}
+    }
+    return {value:staged,count:count};
+  }
+  function prepareOrigins(next){
+    var stage=originRegistry();if(stage.error)return stage;
+    function add(value){var key=value.requestNonce;if(!enqueueOrigin(value,key))return "mutation_origin_changed";if(own(stage.value,key))return stage.value[key]===value?null:"mutation_origin_collision";if(stage.count>=64)return "mutation_origin_cache_bound";stage.value[key]=value;stage.count++;return null;}
+    var cursor=$.global.aeAgentAMETitleSendV1,seen=[],depth=0,i,error;
+    while(cursor){if(depth++>=65)return {error:"mutation_origin_chain_bound"};originDepth=depth-1;for(i=0;i<seen.length;i++)if(seen[i]===cursor)return {error:"mutation_origin_chain_cycle"};seen.push(cursor);if(cursor.operation==="enqueue"){error=add(cursor);if(error)return {error:error};}cursor=cursor.retainedRetiredMutation;}
+    if(next&&next.operation==="enqueue"){originDepth=-1;error=add(next);if(error)return {error:error};}return stage;
+  }
   if (typeof BridgeTalk !== "function" || typeof BridgeTalk.isRunning !== "function") return reply("bridgetalk_unsupported");
   try { if (!BridgeTalk.isRunning(a.targetSpecifier)) return reply("target_not_running"); } catch (_) { return reply("target_running_unknown"); }
-  var observationOnly = a.observeOwnJob === true, retainedSourceRead = null, originSender = slot, retiredMutation = slot ? slot.retainedRetiredMutation || null : null;
+  var observationOnly = a.observeOwnJob === true, retainedSourceRead = null, originSender = slot, retiredMutation = slot ? slot.retainedRetiredMutation || null : null,nextSlot=null,originStage=null;
+  if(!asyncOwn&&!observationOnly&&!a.reconcileRequestNonce){
+    nextSlot={requestNonce:a.requestNonce,targetSpecifier:a.targetSpecifier,processBinding:a.processBinding,operationBinding:a.operationBinding,operation:a.operation,callback:null,body:null,message:null};
+    if(a.operation==="enqueue"){nextSlot.jobId=a.jobId;nextSlot.batchId=a.batchId;}
+    // Stage references only. A collision/capacity refusal consumes no retirement
+    // proof and cannot construct/send a message or overwrite the current sender.
+    originStage=prepareOrigins(nextSlot);if(originStage.error)return refuseBeforeSend(originStage.error);
+  }
   if(asyncOwn){
-    if(a.operation!=="status"||a.reconcileRequestNonce){slot=null;return reply("own_observation_origin_changed");}
-    var cursor=originSender,depth=0,found=null;
-    while(cursor&&depth++<64){if(cursor.operation==="enqueue"&&cursor.requestNonce===a.observationEnqueueRequestNonce&&cursor.operationBinding===a.observationEnqueueOperationBinding&&cursor.targetSpecifier===a.targetSpecifier&&cursor.processBinding===a.processBinding){found=cursor;break;}cursor=cursor.retainedRetiredMutation;}
-    if(!found){slot=null;return reply("own_observation_origin_changed");}originSender=found;
+    var currentSender=originSender;originSender=null;
+    if(a.operation!=="status"||!observationOnly||a.reconcileRequestNonce){slot=null;return reply("own_observation_origin_changed");}
+    // The same non-mutating preflight also rejects disagreement between a map
+    // origin and a legacy-chain object before selecting either for an own read.
+    var registry=prepareOrigins(null);if(registry.error){slot=null;return reply(registry.error);}
+    var savedRegistry=$.global.aeAgentAMETitleMutationOriginsV1,cursor=currentSender,depth=0,found=originMatches(currentSender)?currentSender:null,registered=savedRegistry&&own(savedRegistry,a.observationEnqueueRequestNonce)?savedRegistry[a.observationEnqueueRequestNonce]:null;
+    if(registered&&(currentSender&&currentSender.operation==="enqueue"&&currentSender.requestNonce===a.observationEnqueueRequestNonce&&registered!==currentSender||!originMatches(registered))){slot=null;return reply("mutation_origin_collision");}
+    if(!found&&registered)found=registered;
+    while(!found&&cursor&&depth++<65){if(originMatches(cursor)){found=cursor;break;}cursor=cursor.retainedRetiredMutation;}
+    if(!found){slot=null;return reply("own_observation_origin_changed");}originSender=found;originDiagnostic=null;originDepth=null;
     readCache=$.global.aeAgentAMETitleAsyncReadsV1;if(!readCache){readCache={};$.global.aeAgentAMETitleAsyncReadsV1=readCache;}
     var oldRead=$.global.aeAgentAMETitleObservationV1,readCount=0,readKey;slot=readCache[a.requestNonce];if(!slot&&oldRead&&oldRead.requestNonce===a.requestNonce)slot=oldRead;
     if(slot){if(slot.operation!=="status"||slot.originSender!==originSender||slot.jobId!==a.jobId||slot.batchId!==a.batchId||slot.enqueueRequestNonce!==a.observationEnqueueRequestNonce||slot.targetSpecifier!==a.targetSpecifier||slot.processBinding!==a.processBinding||slot.operationBinding!==a.operationBinding){slot=null;return reply("own_observation_binding_changed");}return reply(slot.callback||"async_pending");}
@@ -351,9 +476,9 @@ function nativeSend(a, messageBody) {
   }
   if (a.operation === "sources" && retainedSourceRead && (!retainedSourceRead.callback || retainedSourceRead.callback === "timeout")) return reply("previous_request_unresolved");
   }
-  var message = null;if(!asyncMode)message=new BridgeTalk();slot = { requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, retainedSourceRead: retainedSourceRead, retainedRetiredMutation: retiredMutation, callback: null, body: null, message: message };
+  var message = null;if(!asyncMode)message=new BridgeTalk();slot = nextSlot||{ requestNonce: a.requestNonce, targetSpecifier: a.targetSpecifier, processBinding: a.processBinding, operationBinding: a.operationBinding, operation: a.operation, callback: null, body: null, message: null };slot.retainedSourceRead=retainedSourceRead;slot.retainedRetiredMutation=retiredMutation;slot.message=message;
   if(asyncMode)slot.asyncDispatch={mode:"async_once_v1",operation:a.operation,requestNonce:a.requestNonce,operationBinding:a.operationBinding,processBinding:a.processBinding,targetSpecifier:a.targetSpecifier,batchId:a.batchId,jobId:a.jobId,budgetMs:600000,submittedAt:new Date().getTime(),sendInvoked:false};
-  if (observationOnly) { slot.originSender = originSender; var priorObservation=$.global.aeAgentAMETitleObservationV1;if(!asyncOwn&&priorObservation && priorObservation.readRolloverAllowed === true){priorObservation.readRolloverConsumed=true;slot.retainedPriorObservation=priorObservation;} slot.jobId = a.jobId; slot.batchId = a.batchId; slot.enqueueRequestNonce = a.observationEnqueueRequestNonce;if(asyncOwn){readCache[a.requestNonce]=slot;if(originSender===$.global.aeAgentAMETitleSendV1)$.global.aeAgentAMETitleObservationV1=slot;}else $.global.aeAgentAMETitleObservationV1 = slot; } else $.global.aeAgentAMETitleSendV1 = slot;
+  if (observationOnly) { slot.originSender = originSender; var priorObservation=$.global.aeAgentAMETitleObservationV1;if(!asyncOwn&&priorObservation && priorObservation.readRolloverAllowed === true){priorObservation.readRolloverConsumed=true;slot.retainedPriorObservation=priorObservation;} slot.jobId = a.jobId; slot.batchId = a.batchId; slot.enqueueRequestNonce = a.observationEnqueueRequestNonce;if(asyncOwn){readCache[a.requestNonce]=slot;if(originSender===$.global.aeAgentAMETitleSendV1)$.global.aeAgentAMETitleObservationV1=slot;}else $.global.aeAgentAMETitleObservationV1 = slot; } else {$.global.aeAgentAMETitleMutationOriginsV1=originStage.value;$.global.aeAgentAMETitleSendV1 = slot;}
   if(asyncMode){try{message=new BridgeTalk();slot.message=message;}catch(constructorError){slot.sendError=String(constructorError).substring(0,2000);return reply("send_unknown");}}
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);if(asyncMode)message.timeout=600;
   message.onResult = function(r) { var body = String(r.body || ""); if (utf8Bytes(body, 524288) < 0) { slot.body = null; slot.callback = "response_envelope_refused"; } else { slot.body = body; slot.callback = "result"; } };
@@ -590,7 +715,7 @@ function createExecutor(deps) {
   function associated(job, native) {
     const n = native && native.job,d=n?.dispatchDiagnostic,ack=d?.workAreaCallAck;
     const queuedAck=!!(n&&job.args.queueMode===sharedQueue.MODE&&n.outputBindingEvidence==="exact_addDL_call_argument_ack"&&n.independentOutputGetterVerified===false&&n.generatedOutputVerified===false&&Array.isArray(n.outputFiles)&&n.outputFiles.length===0&&n.status==="queued"&&native.batchRunning===false&&n.nativeCompletionObserved===false&&n.nativeResult===null&&n.hostCompletion===null&&n.wrapperCompletion===null&&n.getEncodeProgress===0&&n.getEncodeTime===0&&Array.isArray(n.readErrors)&&n.readErrors.length===0&&d?.addDLInvoked===true&&d.addDLReturned===true&&d.phase==="association_readback"&&d.error===null&&Array.isArray(d.creationFailures)&&d.creationFailures.length===0&&ack?.type===3&&ack.startSeconds===job.args.range.startSeconds&&ack.endSeconds===job.args.range.endSeconds&&ack.result===true);
-    return !!(n && n.nativeJobId === null && n.handleKey === job.jobId && n.enqueueRequestNonce === job.requestNonce && UUID.test(n.retainedWrapperSessionNonce || "") && (!job.retainedWrapperSessionNonce || n.retainedWrapperSessionNonce === job.retainedWrapperSessionNonce) && n.nativeAssociationVerified === true && n.sourceGuid === job.args.sourceGuid && samePath(n.sourcePath, job.sourcePath) && samePath(n.outputPath, job.outputPath) && n.presetIdentity === job.presetIdentity && n.processBinding === job.processBinding && hash(n.range) === hash(job.args.range) && (queuedAck || Array.isArray(n.outputFiles) && n.outputFiles.length === 1 && samePath(n.outputFiles[0], job.outputPath)) &&
+    return !!(n && n.nativeJobId === null && n.handleKey === job.jobId && n.enqueueRequestNonce === job.requestNonce && UUID.test(n.retainedWrapperSessionNonce || "") && (!job.retainedWrapperSessionNonce || n.retainedWrapperSessionNonce === job.retainedWrapperSessionNonce) && n.nativeAssociationVerified === true && n.sourceGuid === job.args.sourceGuid && samePath(n.sourcePath, job.sourcePath) && samePath(n.outputPath, job.outputPath) && n.presetIdentity === job.presetIdentity && n.processBinding === job.processBinding && hash(n.range) === hash(job.args.range) && (queuedAck || Array.isArray(n.outputFiles) && n.outputFiles.length === 1 && samePath(n.outputFiles[0], job.outputPath) || job.args.queueMode===sharedQueue.MODE&&exactTerminalXmpOutput(n,job.sourcePath,job.outputPath,native.observedAt)) &&
       (job.args.queueMode !== sharedQueue.MODE || n.workAreaApplied === true && Array.isArray(n.readErrors) && n.readErrors.length === 0 && (!Object.hasOwn(job, "nativeSessionNonce") || native.sessionNonce === job.nativeSessionNonce)) &&
       (!n.nativeCompletionObserved || Number.isFinite(n.eventObservedAt) && n.eventObservedAt >= Date.parse(job.submittedAt) && n.eventObservedAt <= native.observedAt));
   }
@@ -871,9 +996,10 @@ function createExecutor(deps) {
     const asyncStatus=a.readTransport===pendingEnqueue.MODE||job.args.enqueueTransport===pendingEnqueue.MODE;
     if(asyncStatus&&job.args.queueMode!==sharedQueue.MODE)fail("ame_title_async_shared_only");
     if(asyncStatus&&batch.start&&!batch.start.transportResolved)return result("ame_title_async_start_reconcile_unsupported",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false});
-    if(a.afterReadTimeoutNonce&&(batch.start||startReservation(batch)||job.ownStatusObservation?.requestNonce!==a.afterReadTimeoutNonce))return result("ame_title_read_timeout_not_pending",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+    const retirementNonce=a.afterReadTimeoutNonce||a.afterReadUnavailableNonce,retirementKind=a.afterReadUnavailableNonce?"unavailable":"timeout";
+    if(retirementNonce&&(batch.start||startReservation(batch)||job.ownStatusObservation?.requestNonce!==retirementNonce))return result("ame_title_read_"+retirementKind+"_not_pending",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
     // Reserve one history entry for the separate read's terminal observation.
-    if(a.afterReadTimeoutNonce&&(job.ownStatusObservationHistory?.length||0)>=63)return result("ame_title_read_history_bound",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+    if(retirementNonce&&(job.ownStatusObservationHistory?.length||0)>=63)return result("ame_title_read_history_bound",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
     const pendingStart = batch.start && !batch.start.transportResolved, nonce = pendingStart ? batch.start.requestNonce : !job.transportResolved ? job.requestNonce : null;
     const ownObservation=!pendingStart&&(asyncStatus||!job.nativeAssociationVerified);
     const operationBinding = pendingStart ? batch.start.operationBinding : ownObservation ? hash({ operation: "status", jobId: job.jobId }) : nonce ? job.operationBinding : hash({ operation: "status", jobId: job.jobId });
@@ -888,23 +1014,24 @@ function createExecutor(deps) {
     }
     const pendingRead=ownObservation&&job.ownStatusObservation,readDeadline=pendingRead?Date.parse(pendingRead.reservedAt)+120000:Infinity;
     const rollover=!asyncStatus&&pendingRead&&observationReconcile&&now()>=readDeadline&&!(job.ownStatusObservationHistory||[]).some(r=>r.transportUnknown?.reason==="read_transport_budget_exhausted_unknown")?{requestNonce:pendingRead.requestNonce,operationBinding:pendingRead.operationBinding,jobId:job.jobId,batchId:batch.batchId,enqueueNonce:job.requestNonce,enqueueBinding:job.operationBinding,targetSpecifier:a.targetSpecifier,processBinding:batch.processBinding,deadline:readDeadline}:null;
-    const {afterReadTimeoutNonce:timeoutControl,...statusArgs}=a;
+    const {afterReadTimeoutNonce:timeoutControl,afterReadUnavailableNonce:unavailableControl,...statusArgs}=a;
     const observed = await send({ ...statusArgs, ...(asyncStatus&&!pendingStart?{asyncOwnStatus:true}:{}), ...(rollover?{readonlyObservationRollover:rollover}:{}), operation: "status", jobId: job.jobId,expectedOwnSourcePath:job.sourcePath,expectedOwnOutputPath:job.outputPath,processBinding: batch.processBinding, operationBinding, requestNonce: ownObservation?job.ownStatusObservation.requestNonce:crypto.randomUUID(), minimumObservedAt: ownObservation?Date.parse(job.ownStatusObservation.reservedAt):pendingStart ? Date.parse(batch.start.reservedAt) : nonce ? Date.parse(job.submittedAt) : now(), completionScope: completionScope(batch, job), ...(ownObservation?{observeOwnJob:true,observationReconcile,observationEnqueueRequestNonce:job.requestNonce,observationEnqueueOperationBinding:job.operationBinding}:nonce ? { reconcileRequestNonce: nonce } : {}) });
     await processPin(a, processInfo); pinned(job);
-    if(timeoutControl){
+    if(retirementNonce){
       const original=observed.originalSender;let n=null;
       if(original?.callback==="result"&&original.requestNonce===job.requestNonce&&original.operationBinding===job.operationBinding&&typeof original.responseBody==="string"&&Buffer.byteLength(original.responseBody,"utf8")<=524288){try{n=JSON.parse(original.responseBody);}catch(_){}}
-      const proven=ownObservation&&observationReconcile&&pendingRead.requestNonce===timeoutControl&&!observed.resolved&&observed.code==="timeout"&&observed.native===null&&observed.transportDiagnostic?.callback==="timeout"&&
+      const transportProven=unavailableControl?observed.code==="own_observation_unavailable"&&observed.transportDiagnostic?.callback===null&&observed.transportDiagnostic.sendAck===null&&observed.transportDiagnostic.messageBodyChars===null:observed.code==="timeout"&&observed.transportDiagnostic?.callback==="timeout";
+      const proven=ownObservation&&observationReconcile&&pendingRead.requestNonce===retirementNonce&&!observed.resolved&&transportProven&&observed.native===null&&
         n?.schema===NATIVE_SCHEMA&&n.code==="job_enqueued"&&n.requestNonce===job.requestNonce&&n.operationBinding===job.operationBinding&&n.appSpecifier===a.targetSpecifier&&(!a.expectedSessionNonce||n.sessionNonce===a.expectedSessionNonce)&&n.nativeAssociationVerified===true&&n.batchRunning===false&&n.job?.status==="queued"&&n.job.nativeCompletionObserved===false&&n.job.nativeResult===null&&Number.isFinite(n.observedAt)&&n.observedAt>=Date.parse(job.submittedAt)&&n.observedAt<=now()+60000&&associated(job,n);
-      if(!proven)return result("ame_title_read_timeout_proof_denied",{batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,nextReadAllowed:false,originalSender:original||null,transportDiagnostic:observed.transportDiagnostic||null});
+      if(!proven)return result("ame_title_read_"+retirementKind+"_proof_denied",{batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,nextReadAllowed:false,originalSender:original||null,transportDiagnostic:observed.transportDiagnostic||null});
       const archivedAt=new Date(now()).toISOString(),originalResultSha25664=crypto.createHash("sha256").update(original.responseBody,"utf8").digest("hex");
       // Refresh the whole file after awaits: another authorized enqueue may
       // have appended a different job. Never commit our stale batch snapshot.
       const currentBatch=load(a.batchId,a.jobId),currentJob=currentBatch?.jobs.find(j=>j.jobId===a.jobId);
-      if(!currentJob||currentBatch.start||startReservation(currentBatch)||currentBatch.processBinding!==batch.processBinding||currentBatch.presetIdentity!==batch.presetIdentity||hash(jobBinding(currentJob))!==hash(jobBinding(job))||currentJob.latestAuthorizedRunId!==job.latestAuthorizedRunId||hash(currentJob.ownStatusObservation||null)!==hash(pendingRead)||hash(currentJob.ownStatusObservationHistory||[])!==hash(job.ownStatusObservationHistory||[]))return result("ame_title_read_timeout_origin_changed",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
-      currentJob.ownStatusObservationHistory=(currentJob.ownStatusObservationHistory||[]).concat({...pendingRead,transportUnknown:{reason:"read_callback_timeout_unknown",observedAt:archivedAt,diagnostic:observed.transportDiagnostic,originalEnqueueResultSha25664:originalResultSha25664},archivedAt});
+      if(!currentJob||currentBatch.start||startReservation(currentBatch)||currentBatch.processBinding!==batch.processBinding||currentBatch.presetIdentity!==batch.presetIdentity||hash(jobBinding(currentJob))!==hash(jobBinding(job))||currentJob.latestAuthorizedRunId!==job.latestAuthorizedRunId||hash(currentJob.ownStatusObservation||null)!==hash(pendingRead)||hash(currentJob.ownStatusObservationHistory||[])!==hash(job.ownStatusObservationHistory||[]))return result("ame_title_read_"+retirementKind+"_origin_changed",{batchId:a.batchId,jobId:a.jobId,currentStatusObserved:false,nextReadAllowed:false});
+      currentJob.ownStatusObservationHistory=(currentJob.ownStatusObservationHistory||[]).concat({...pendingRead,transportUnknown:{reason:unavailableControl?"read_cache_unavailable_unknown":"read_callback_timeout_unknown",observedAt:archivedAt,diagnostic:observed.transportDiagnostic,originalEnqueueResultSha25664:originalResultSha25664},archivedAt});
       currentJob.ownStatusObservation=null;write(recordFile(a.batchId),currentBatch);
-      return result("own_status_read_retired_unknown",{batchId:a.batchId,jobId:a.jobId,requestNonce:timeoutControl,currentStatusObserved:false,executionAuthority:false,readPending:false,nextReadAllowed:true,nextReadCapacityVerified:false,nextReadArgs:statusArgs,transportUnknown:true,originalEnqueueResultSha25664:originalResultSha25664,transportDiagnostic:observed.transportDiagnostic});
+      return result("own_status_read_retired_unknown",{batchId:a.batchId,jobId:a.jobId,requestNonce:retirementNonce,currentStatusObserved:false,executionAuthority:false,readPending:false,nextReadAllowed:true,nextReadCapacityVerified:false,nextReadArgs:statusArgs,transportUnknown:true,originalEnqueueResultSha25664:originalResultSha25664,transportDiagnostic:observed.transportDiagnostic});
     }
     if(asyncStatus&&!pendingStart&&!observed.resolved&&["async_pending","timeout","send_unknown","ae_delivery_unknown"].includes(observed.code)){const accepted=savedAcceptance(job)==="accepted";return result("own_status_pending",{pending:true,readPending:true,batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,ownItemAccepted:accepted,acceptanceReceipt:accepted?job.acceptanceReceipt:null,native:null,originalSender:observed.originalSender||null,transportDiagnostic:observed.transportDiagnostic||null,reconcileArgs:{...a,readTransport:pendingEnqueue.MODE,readRequestNonce:pendingRead.requestNonce}});}
     let observationDiagnostic=null;
@@ -959,7 +1086,21 @@ function createExecutor(deps) {
     }
     finally { if (mutation) busy = false; if(statusKey)statusReads.delete(statusKey); }
   }
-  return { authorize, assertAuthorization: (cap, name, raw) => { assertCap(cap, name, validateInput(name, raw)); return true; }, execute };
+  // Internal global-cycle readback only. The caller supplies selectors/pins,
+  // never acceptance JSON or transport controls. Private acceptance time comes
+  // from a freshly validated ledger proof matching this STATUS's exact receipt.
+  async function inspectOwnCompletion(raw) {
+    object(raw,["targetSpecifier","expectedProcess","expectedSessionNonce","timeoutMs","batchId","jobId"]);
+    const a=validateInput(STATUS,{...raw,readTransport:pendingEnqueue.MODE}),observed=await execute(STATUS,a);let acceptance=null;
+    if(observed.ownItemAccepted===true&&observed.acceptanceReceipt&&observed.batchId===a.batchId&&observed.jobId===a.jobId){
+      try{
+        const batch=load(a.batchId,a.jobId),job=batch?.jobs.find(j=>j.jobId===a.jobId);
+        if(job&&job.args.queueMode===sharedQueue.MODE&&batch.processBinding===binding(a,job.process)&&a.targetSpecifier===job.args.targetSpecifier&&a.expectedProcess.pid===job.process.pid&&Date.parse(a.expectedProcess.startedAt)===Date.parse(job.process.startedAt)&&a.expectedSessionNonce===job.acceptanceReceipt?.nativeSessionNonce&&savedAcceptance(job)==="accepted"&&hash(job.acceptanceReceipt)===hash(observed.acceptanceReceipt))acceptance={acceptedAt:job.acceptanceEvidence.acceptedAt,receiptSha25664:job.acceptanceEvidence.receiptSha25664};
+      }catch(_){/* A changed/missing/corrupt private proof grants no acceptance. */}
+    }
+    return {status:observed,acceptance};
+  }
+  return { authorize, assertAuthorization: (cap, name, raw) => { assertCap(cap, name, validateInput(name, raw)); return true; }, execute, inspectOwnCompletion };
 }
 
 const common = { targetSpecifier: { type: "string", pattern: "^ame-[0-9]{1,3}\\.[0-9]{1,3}$" }, expectedProcess: { type: "object", additionalProperties: false, required: ["pid", "startedAt"], properties: { pid: { type: "integer", minimum: 1 }, startedAt: { type: "string" } } }, expectedSessionNonce: { type: ["string", "null"] }, timeoutMs: { type: "integer", minimum: 1000, maximum: 10000 } };
@@ -978,6 +1119,8 @@ tools.find(t=>t.name===ENQUEUE).inputSchema.properties.enqueueTransport={type:"s
 tools.find(t=>t.name===ENQUEUE).description+=" Opt-in enqueueTransport:async_once_v1 in shared mode sends once without blocking; returns pending, never acceptance. Poll exact own STATUS separately; no implicit START.";
 Object.assign(tools.find(t=>t.name===STATUS).inputSchema.properties,{readTransport:{type:"string",enum:[pendingEnqueue.MODE]},readRequestNonce:{type:"string",pattern:UUID.source}});
 tools.find(t=>t.name===STATUS).inputSchema.properties.afterReadTimeoutNonce={type:"string",pattern:UUID.source};
+tools.find(t=>t.name===STATUS).inputSchema.properties.afterReadUnavailableNonce={type:"string",pattern:UUID.source};
 tools.find(t=>t.name===STATUS).description+=" readTransport:async_once_v1 selects an independent async own read for shared jobs, including accepted jobs behind a retained timeout sender. Async enqueue jobs inherit this mode. Pending returns exact reconcileArgs; no mutation replay/pump. Pending START requires its existing explicit legacy reconciliation.";
 tools.find(t=>t.name===STATUS).description+=" afterReadTimeoutNonce with explicit async read mode probes only that exact pending read, archives a proven callback timeout as transport unknown only when the original enqueue has an exact successful result, and returns nextReadArgs for a separate new read. Exclusive with readRequestNonce/originalRunId/acceptanceOnly. Never resends enqueue or claims acceptance; repeating an archived nonce cannot dispatch.";
-module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, fixedCommandScript, createExecutor, nativeReceiverSource:()=>nativeTitleJob.toString(), fixedDataExpression:messageArgument, fixedStringExpression:utf16Expression };
+tools.find(t=>t.name===STATUS).description+=" afterReadUnavailableNonce uses the same pinned read retirement only for exact own_observation_unavailable with no cached message and a verified original enqueue result. It archives transport unknown, never not_sent. Exclusive with afterReadTimeoutNonce/readRequestNonce/originalRunId/acceptanceOnly; nextReadArgs requires a separate call.";
+module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, fixedCommandScript, createExecutor, exactTerminalXmpOutput, nativeReceiverSource:()=>nativeTitleJob.toString(), fixedDataExpression:messageArgument, fixedStringExpression:utf16Expression };

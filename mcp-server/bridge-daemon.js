@@ -261,7 +261,9 @@ const ameQueueExecutor = ameQueueControl.createExecutor({
   inspectTransport: args => withPlanCommandRole("readback", () => ameTransport.execute(args, runExtendScriptBody)),
   runExtendScriptBody: (script, timeout, metadata) => withPlanCommandRole(metadata.mutating ? "mutation" : "readback", () => runExtendScriptBody(script, timeout)),
   assertServerProposalContext: assertAmeQueueContext,
-  assertLegacyStartClear: binding => ameQueueControl.readLegacyStartBlockers(path.join(LOG_DIR, "ame-title-jobs"), binding)
+  assertLegacyStartClear: binding => ameQueueControl.readLegacyStartBlockers(path.join(LOG_DIR, "ame-title-jobs"), binding),
+  readRunRecord: id => planRunRecords.readRecord(LOG_DIR, id, { throwOnError: true }),
+  inspectOwnCompletion: args => withPlanCommandRole("readback", () => ameTitleExecutor.inspectOwnCompletion(args))
 });
 const ameEnqueueSequencer = ameEnqueueSequence.createSequence({
   stateDir: path.join(LOG_DIR, "ame-enqueue-sequences"), inspectProcesses: ameRunning.inspectProcesses,
