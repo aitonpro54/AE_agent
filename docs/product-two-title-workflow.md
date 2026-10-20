@@ -12,6 +12,7 @@
 Общий AEP сохранён один раз защищённым `save_current_named_project`, затем native
 чтение подтвердило точный путь, `dirty=false`, revision12968816. Рендер не запускался.
 API admission и проверка двух новых jobs выполняются следующим отдельным этапом.
+Реализованный API-контракт одного AEP: [saved source admission](ame-saved-aep-workflow.md).
 У save-плана исходный semantic outcome `failed`: в плане не было отдельного
 project read-back, а публичная квитанция не содержит полного run binding.
 Успешный setter, файловая квитанция и последующее независимое lifecycle-чтение

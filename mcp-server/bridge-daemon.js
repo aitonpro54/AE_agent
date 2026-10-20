@@ -127,6 +127,7 @@ const amePresets = require("./ame-presets");
 const ameRunning = require("./ame-running");
 const ameQueueControl = require("./ame-queue-control");
 const ameEnqueueSequence = require("./ame-enqueue-sequence");
+const ameSavedSourceAdmission = require("./ame-saved-source-admission");
 const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanIngress();
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
@@ -300,7 +301,7 @@ const ameFixtureExecutor = ameFixtureRunner.createExecutor({
 const ameTitleMutationNames = new Set([ameTitleJobs.ENQUEUE, ameTitleJobs.START]);
 const productAmeContexts=new WeakMap();
 function productRuntimeCurrent(){return deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport();}
-function productAmeFingerprint(context){return m100Protocol.stableStringify({payloadHash:context.record.payloadHash,runId:context.runId,args:context.args,checkpoint:context.checkpoint});}
+function productAmeFingerprint(context){return m100Protocol.stableStringify({payloadHash:context.record.payloadHash,runId:context.runId,args:context.args,checkpoint:context.checkpoint,ownedEditSessionId:context.ownedEditSessionId});}
 function assertProductAmeContext(context){
   const row=productAmeContexts.get(context),record=context?.record,authority=autonomousSession.authorization();
   if(!row || !productRuntimeCurrent() || !authority || authority.sessionHash!==row.sessionHash || row.record!==record ||
@@ -409,11 +410,22 @@ const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
   assertPanelIdentity: meta => {const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),pending=own?.pending;if(own&&own.leaf===7){if(!pending||pending!==trustedReadDaemon.manualPending||pending.error||!pending.started||pending.authRole!=="panel"||pending.route!==ameManualQueue.ROUTE)return false;const panel=ownedOriginalPreparationPanel(ownedFixedTitleManualReceipts.get(context.record)?.panel);return panel.panelConnectionId===meta.panelConnectionId&&panel.panelGeneration===meta.panelGeneration;}return Boolean(lastPanelInfo && Date.now() - lastPanelSeenAt < 10000 && lastPanelInfo.panelConnectionId === meta.panelConnectionId && lastPanelInfo.panelGeneration === meta.panelGeneration);}
 });
 const ameSharedQueueIssuer=ameSharedQueue.createSharedQueueGrant({stateDir:path.join(LOG_DIR,"ame-title-jobs"),assertSharedQueueIngress,assertServerContext:assertSharedQueueIngress});
+const savedAmeSourceAdmission=ameSavedSourceAdmission.createAdmission({
+  assertReady:context=>{
+    if(!productRuntimeCurrent()||pendingCommands.length||inflightCommands.size||activeEditSession&&activeEditSession.id!==context?.ownedEditSessionId)throw Error("ame_saved_source_product_idle_required");
+  },
+  captureActor:()=>{
+    if(!lastPanelInfo?.panelConnectionId||!lastPanelInfo.panelGeneration||Date.now()-lastPanelSeenAt>=10000)throw Error("ame_saved_source_current_panel_required");
+    return {panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration};
+  },
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))
+});
 const productAmeReadDispatchPort=require("./ame-product-read-dispatch").createProductReadDispatch({
   assertProduct:productRuntimeCurrent,
   dispatch:(script,timeout)=>withPlanCommandRole("readback",()=>runExtendScriptBody(script,timeout))
 });
 const productAmeDispatchPort=require("./ame-product-dispatch").createProductDispatch({assertProduct:productRuntimeCurrent,assertContext:assertProductAmeContext,
+  savedSourceAdmission:savedAmeSourceAdmission,
   assertSavedSource:selector=>ameJobSourceExecutor.ownsSource(selector.sourcePath)?ameJobSourceExecutor.assertSavedSource(selector):titleExportExecutor.assertSavedSource(selector),
   dispatch:(script,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(script,timeout))});
 const ameDispatchPorts=new WeakMap();
@@ -433,6 +445,7 @@ const ameNativeDispatchPort={
   prepareStart(...args){return prepareAmeDispatch("prepareStart",...args);},
   assertPreparation(cap,...args){const port=amePreparationPorts.get(cap);if(!port)throw Error("ame_dispatch_preparation_required");return port.assertPreparation(cap,...args);}
   ,usesSavedSource(cap,context){const port=amePreparationPorts.get(cap);return port===productAmeDispatchPort && port.usesSavedSource(cap,context);}
+  ,getSavedSourceGuard(cap,context){const port=amePreparationPorts.get(cap);return port===productAmeDispatchPort?port.getSavedSourceGuard(cap,context):null;}
 };
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
@@ -9114,6 +9127,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       const ameTitleContext = ameTitleMutationNames.has(step.tool) ? brandAmeTitleContext({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
+        ownedEditSessionId: activeEditSession && activeEditSession.id,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
       },autonomous) : null;
       const ameTitleAuthorization = ameTitleContext ? ameTitleExecutor.authorize(step.tool, bound.args, ameTitleContext) : null;
@@ -14536,6 +14550,7 @@ const tools = [
   ameRunning.tool,
   ...ameQueueControl.tools,
   ...ameEnqueueSequence.tools,
+  ameSavedSourceAdmission.tool,
   ameFixtureRunner.tool,
   ameFixtureRunner.inspectTool,
   ameFixtureRunner.inspectAttemptTool,
@@ -14927,6 +14942,10 @@ async function callTool(name, args, executionContext) {
     return toolResult(result,!result.ok);
   }
   if(name===ameJobSource.INSPECT)return toolResult(await ameJobSourceExecutor.inspect(args));
+  if(name===ameSavedSourceAdmission.TOOL){
+    try{return toolResult(await savedAmeSourceAdmission.inspect(args));}
+    catch(error){return toolResult({ok:false,code:error.code||error.message||"ame_saved_source_inspection_failed",executionAuthority:false,automaticRetryAllowed:false},true);}
+  }
   if(name===ameJobSource.RECONCILE){
     if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");
     const result=await ameJobSourceExecutor.reconcile(args);return toolResult(result,!result.ok);

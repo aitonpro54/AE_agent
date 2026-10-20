@@ -4,6 +4,7 @@ const presets = require("./ame-presets"), reservation = require("./ame-submit-gu
 const { sameProcess } = require("./ame-running");
 const manualQueue = require("./ame-manual-queue-grant");
 const sharedQueue = require("./ame-shared-queue-grant");
+const savedSourceAdmission = require("./ame-saved-source-admission");
 const INSPECT = "inspect_ame_title_sources", ENQUEUE = "enqueue_ame_title_variant", START = "start_ame_title_batch", STATUS = "get_ame_title_job_status";
 const QUEUE_MANIFEST = "inspect_ame_title_queue_manifest";
 const SCHEMA = "ae-agent-ame-title-jobs.v1", NATIVE_SCHEMA = "ae-agent-ame-title-native.v1", LEDGER_SCHEMA = "ae-agent-ame-title-batch.v1";
@@ -358,10 +359,13 @@ function commandScript(a) {
   // Both the generated AME source and its string operands preserve exact UTF-16
   // units without Adobe's nested backslash-escape interpretation.
   const {independentSenderRetirement:senderOnly,...receiverArgs}=a;
-  for(const key of ["expectedProcess","timeoutMs","sourceProjectFile","expectedSourceSha25664","presetId","presetSha25664","outputFileName","minimumObservedAt","completionScope","observeOwnJob","observationReconcile","observationEnqueueRequestNonce","observationEnqueueOperationBinding","readonlyObservationRollover"])delete receiverArgs[key];
+  for(const key of ["expectedProcess","timeoutMs","sourceProjectFile","expectedSourceSha25664","presetId","presetSha25664","outputFileName","minimumObservedAt","completionScope","observeOwnJob","observationReconcile","observationEnqueueRequestNonce","observationEnqueueOperationBinding","readonlyObservationRollover","savedExistingSourceGuard"])delete receiverArgs[key];
   if(senderOnly)receiverArgs.retiredSenderIdentity={jobId:senderOnly.jobId,batchId:senderOnly.batchId,enqueueNonce:senderOnly.enqueueNonce,outputPath:senderOnly.outputPath,sessionNonce:senderOnly.sessionNonce,retainedWrapperSessionNonce:senderOnly.retainedWrapperSessionNonce};
   const body=a.reconcileRequestNonce||a.observationReconcile===true?"":messageScript(receiverArgs);
-  const script="return ("+nativeSend.toString()+")("+messageArgument(a)+","+utf16Expression(body)+");";
+  // Only a private preparation port can supply this binding. The public parser
+  // rejects it. A stale native source fails before BridgeTalk construction.
+  const guard=a.savedExistingSourceGuard?savedSourceAdmission.guardScript(a.savedExistingSourceGuard):"";
+  const script=guard+"return ("+nativeSend.toString()+")("+messageArgument(a)+","+utf16Expression(body)+");";
   if(Buffer.byteLength(script,"utf8")>1048576)fail("ame_title_command_bound");return script;
 }
 
@@ -653,6 +657,8 @@ function createExecutor(deps) {
     // Private product port accepts only a snapshot actually saved/read back by
     // the current export executor. Tool JSON cannot set this native-only field.
     const savedNativeSourceVerified=!!(prepared && typeof prepared.port.usesSavedSource==="function" && prepared.port.usesSavedSource(prepared.preparation,entry.context));
+    const savedExistingSourceGuard=prepared && typeof prepared.port.getSavedSourceGuard==="function"?prepared.port.getSavedSourceGuard(prepared.preparation,entry.context):null;
+    if(savedExistingSourceGuard && savedNativeSourceVerified)fail("ame_title_source_admission_mode_changed");
     assertNativeReservation(prepared, a, cap, entry, () => {
       if (hash(stableFile(source.path, source.sha256)) !== hash(source) || hash(stableFile(presetPin.path, presetPin.sha256)) !== hash(presetPin)) fail("ame_title_file_changed");
     });
@@ -666,7 +672,7 @@ function createExecutor(deps) {
     assertCap(cap, ENQUEUE, a); entry.active = false;
     const retirement=consumeIndependentSenderProof(a,job);
     if(retirement){job.independentTransportRetirement={oldBatchId:retirement.batchId,oldJobId:retirement.jobId,oldEnqueueNonce:retirement.enqueueNonce,observationNonce:retirement.observationNonce,observedAt:retirement.observedAt,responseSha25664:crypto.createHash("sha256").update(retirement.responseBody,"utf8").digest("hex"),consumedByRunId:entry.context.runId,newRequestNonce:job.requestNonce};write(recordFile(a.batchId),batch);}
-    const observed = await send({ ...a, ...(retirement?{independentSenderRetirement:retirement}:{}), operation: "enqueue", ...(savedNativeSourceVerified?{savedNativeSourceVerified:true}:{}), sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
+    const observed = await send({ ...a, ...(retirement?{independentSenderRetirement:retirement}:{}), operation: "enqueue", ...(savedNativeSourceVerified?{savedNativeSourceVerified:true}:{}), ...(savedExistingSourceGuard?{savedExistingSourceGuard}:{}), sourcePath: job.sourcePath, presetPath: job.presetPath, presetIdentity, processBinding, operationBinding: job.operationBinding, outputPath, jobId: job.jobId, newWrapperSessionNonce: crypto.randomUUID(), requestNonce: job.requestNonce, minimumObservedAt: Date.parse(job.submittedAt) }, entry.context, () => {
       pinned(job); readyOutput(job);
       assertIngress(entry.context, ENQUEUE, a);
     }, () => processPin(a, processInfo));

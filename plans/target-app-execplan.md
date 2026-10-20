@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 ## Validation
 
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
-- 20.10 fence: focused64/syntax3/PS compile/rules/diff PASS, Ultra architecture/High review GO; native barrier/retirement/reset_active/Connected/project read PASS.
+- 20.10 saved-AEP adapter: dedicated12/product-dispatch25/acceptance9, syntax6/rules/diff PASS; M100 read_only/catalog/runtime pins проверены. High review/census GO. Live admission/enqueue ещё не выполнены; fence64/Ultra/High и reset_active ранее PASS.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
