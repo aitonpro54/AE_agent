@@ -208,6 +208,29 @@ source admission11 PASS; actual retirement `02-retire-partial-result.json` и
 отдельный `02-fresh-partial-read-result.json` подтвердили currentStatusObserved=true,
 association/completion/own acceptance=false. Это не повтор enqueue или успех очереди.
 
+Уточнение обязательного результата: serial callback→next не является Npending.
+Driver20964 остановлен в read_wait без дочернего controller; native10 не прерывался
+и затем вернул exact addDL/workArea ACK. 02..10 уже отправлены,11 ещё нет.
+`current-title-dispatch-prefix.json` содержит только ссылки на реальные partial
+receipts, без fake producer-complete или queued acceptance.
+
+Npending CORE reviewed GO: optional `pendingGroupId`, max11 разных members,
+неизменные common/member bindings, SAME sender objects в origins64 без eviction.
+Group TTL6600s отсчитывается от первой reservation и не продлевается; legacy600s.
+`sendAck:false` в группе — delivery unknown с сохранённым pending receipt,
+не not_sent/acceptance/replay. Все unreleased origins блокируют несвязанные
+mutations/START; точные readonly STATUS остаются доступны. Legacy consumed release
+принимается только по прежней private observation identity/строгим bindings.
+PASS: group8,async6,retention36,timeout96,sequence6,global-cycle13,syntax/rules/diff;
+independent review GO по jobs `c049389d…`. Это source/offline proof, не live N>1.
+Отдельный bounded producer отправляет следующие items без STATUS/callback barrier;
+fake N3 сохраняет обратные callbacks и UNKNOWN, execute каждого ровно один раз.
+
+RUNNING/custom range пока не разрешён этим core. Actual26 typed capability read
+`pause-capabilities-result.json` подтвердил encoderHost.pauseBatch/status/runBatch.
+Следующий этап — явные typed PAUSE/fresh paused proof и отдельный RESUME с новым
+intent; enqueue не вызывает global controls. Общий AEP с queued jobs неизменен.
+
 ## Ограниченная диагностика source API
 
 `inspect_ame_source_probe` принимает один новый `probeId` (UUID), `mode`,

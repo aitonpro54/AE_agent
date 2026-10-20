@@ -13,9 +13,9 @@ function validateInput(name, raw) {
   if (name === CONTINUE) { if (!UUID.test(raw.ensureRunId || "")) fail("ame_enqueue_sequence_run_id_required"); return { stageId: raw.stageId, ensureRunId: raw.ensureRunId }; }
   if (name !== PREPARE || !path.isAbsolute(raw.targetProjectFile || "") || path.extname(raw.targetProjectFile).toLowerCase() !== ".aep") fail("ame_enqueue_sequence_project_required");
   // Validate through the production enqueue parser, while denying caller pins.
-  object(raw.enqueue, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "timeoutMs", "enqueueTransport"]);
-  const parsed = jobs.validateInput(jobs.ENQUEUE, { ...raw.enqueue, queueMode: raw.enqueue.queueMode === undefined ? sharedQueue.MODE : raw.enqueue.queueMode, targetSpecifier: "ame-1.0", expectedProcess: { pid: 1, startedAt: "2000-01-01T00:00:00.000Z" } });
-  delete parsed.targetSpecifier; delete parsed.expectedProcess;
+  object(raw.enqueue, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "timeoutMs", "enqueueTransport", "pendingGroupId"]);
+  const parsed = jobs.validateInput(jobs.ENQUEUE, { ...raw.enqueue, queueMode: raw.enqueue.queueMode === undefined ? sharedQueue.MODE : raw.enqueue.queueMode, targetSpecifier: "ame-1.0", expectedProcess: { pid: 1, startedAt: "2000-01-01T00:00:00.000Z" },...(raw.enqueue.pendingGroupId?{expectedSessionNonce:null}:{}) });
+  delete parsed.targetSpecifier; delete parsed.expectedProcess;delete parsed.expectedSessionNonce;
   const ensure = running.validateInput(raw.ensure || {});
   // Keep exactly the executable public input; normalized null optionals are not tool arguments.
   const publicEnsure = Object.fromEntries(Object.entries(ensure).filter(([, value]) => value !== null));

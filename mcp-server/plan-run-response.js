@@ -103,7 +103,7 @@ function compactStepSummary(step, runId) {
   let resultRef = null;
   if (step.result && typeof step.result === "object" && !Array.isArray(step.result)) {
     resultRef = { ok: typeof step.result.ok === "boolean" ? step.result.ok : step.status === "completed" ? !isErr : null };
-    if(step.result.pending===true){for(const key of ["pending","dispatchAccepted","ownItemAccepted","nativeAssociationVerified","code","batchId","jobId","requestNonce","pendingReceipt","statusArgs","reconcileArgs"])if(step.result[key]!==undefined)resultRef[key]=step.result[key];}
+    if(step.result.pending===true){for(const key of ["pending","dispatchAccepted","dispatchInvoked","deliveryUnknown","ownItemAccepted","nativeAssociationVerified","code","batchId","jobId","requestNonce","pendingReceipt","statusArgs","reconcileArgs"])if(step.result[key]!==undefined)resultRef[key]=step.result[key];}
     for (const key of ["comp", "layer", "source"]) {
       if (step.result[key]) resultRef[key] = scalarFields(step.result[key], ["itemId", "id", "itemIndex", "index", "name"], 60);
     }

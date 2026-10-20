@@ -6,13 +6,13 @@
 ## Текущая цель пользователя
 
 20.10: проверить API enqueue/self-check всех 11 композиций общего AEP с именами
-`01.mov`–`11.mov` в `Готовое/Титры 01` рядом с проектом. Ограниченный поток отправок с отдельной приёмкой; явно разрешён global START после первого валидированного титра, без census. Без отдельных AEP/CU enqueue.
+`01.mov`–`11.mov` в `Готовое/Титры 01` рядом с проектом. Обязательны несколько pending без ожидания каждого callback, отдельный collector и global START после первого проверенного титра. Explicit pause/resume с новыми once-intents разрешён для точного диапазона; без census/отдельных AEP/CU enqueue.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
-- 20.10 UTC, в работе:01.mov completion/own acceptance + HQ/alpha/decode/PNG PASS. GLOBAL START1 сохранил ACKfalse/UNKNOWN/noReplay, отдельный witness дал cycle_observed_stopped. Пользователь сохранил общийAEP: clean/rev12968854/SHAf84a56ff…, admission11PASS. 02addDL once returned/workAreaACKtrue, associationunverified из-за outputFiles01/time42.56; STOPдо03. Runtime23576/source6651fa95…: reviewed partial READ retirement livePASS, fresh02STATUS currentObserved/associationfalse. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 20.10 UTC, в работе:01.mov completion/acceptance/media/PNG PASS, GLOBAL1 UNKNOWN + stopped-cycle proof. Sourceclean/rev12968854/SHAf84a56ff…. Serial02..10 callbacks/ACKtrue, associationfalse; driver20964 stopped safely,11 НЕsent. Npending core jobsC049389d… reviewedGO/offline8groups; caller N3 submit-before-callback/STATUS0 PASS. Runtime пока23576/source6651fa95…; fresh26API pause/status/runBatch confirmed. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: origins/global cycle/bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer; helper ae_implementer] [ownership: jobs/queue-control по очереди, ignored runner отдельно]; root sole live/docs. Retention SAME objects/bound64; READ retirement без replay. Dispatch-only partial не queued acceptance; последующая host/media/visual проверка отдельно. Early global START поручен, census не prerequisite;100 runtime modules/fresh CLI. Старые connect UNKNOWN не сняты, пользователь выбрал CtrlS вместо нового panel repair.
+- [block: Npending + early START/pause/resume] [executor: ae_specialist writer; ae_architect; ae_reviewer; helper ae_implementer]; root sole live/docs. Opt-in group/max11/SAME origins64/finite TTL6600s, collector отдельно. Custom0..10.033/D15.4 требует подтверждённой PAUSE передadd/setWorkArea; resume явный новый intent. Старые UNKNOWN и false association неизменны. Source не менять;100 modules/fresh CLI. Connect debts не сняты, пользователь выбрал CtrlS.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Dispatch-only producer03..11 без повторения02 → один новый GLOBAL START → отдельные host completion/media/visual receipts. Queued getter predicates и исходные UNKNOWN/partial не менять; при last-output getter сохранять association=false. Без SDK/census/отдельных AEP.
+Завершить Npending core/driver offline+review → typed PAUSE/resume proof+review → freshruntime/admission → early GLOBAL02..10 → PAUSE/read-back → pending11/customrangeACK → явный resume → host/media/visual11. Уже отправленные02..10 не повторять; N>1 live недоступен (остался11), это явно отделить от offline proof. Queued predicates/UNKNOWN неизменны.
 
 ## Отложенные scope
 
