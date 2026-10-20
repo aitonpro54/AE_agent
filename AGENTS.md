@@ -46,10 +46,16 @@ Maintain AE Agent 3.3.1 in this clean repository. The product target is
 - Для поддерживаемых операций предпочитай `build_solution_plan`, затем
   `propose_ai_agent_plan` и обычные dry-run/confirmation/read-back gates.
   Raw JSX допустим только при конкретном пробеле typed tools.
-- Приоритет Tool-First / MCP-First: Computer Use допустим исключительно как fallback
+- В штатной эксплуатации приоритет Tool-First / MCP-First: typed tools/API;
+  отправка в AME выполняется через API, без меню и Computer Use. CU остаётся fallback
   по таксономии (`typed_gap`, `visual_ui_only`, `panel_bootstrap`, `protected_confirmation`,
-  `modal_blocker`, `diagnostics`), описанной в `docs/tool-first-workflow.md`. Отказ gate
-  нельзя обходить через GUI; экспорт кадра требует фактического визуального просмотра.
+  `modal_blocker`, `diagnostics`) из `docs/tool-first-workflow.md`.
+  При разработке, диагностике и подготовке инструментов к реальной работе используй
+  по необходимости доступные средства, включая CU и встроенные инструменты, в пределах
+  поручения; исчерпывать эксплуатационный список fallback предварительно не требуется.
+  Runtime grants, bridge gates, ownership и единственный контроллер сохраняются;
+  отказ gate нельзя обходить через GUI. Успех вручную не доказывает работу API-пути;
+  экспорт кадра требует фактического визуального просмотра.
   Для наблюдения использовать пассивные ожидания `wait_for_bridge_state` и `wait_for_plan_state`.
 - Для ограниченного блока Computer Use заранее объяви точную цель; после последнего
   нужного действия перечитай результат и сверь неизвестные отправки, затем заверши
@@ -58,8 +64,8 @@ Maintain AE Agent 3.3.1 in this clean repository. The product target is
   reset не доказывает закрытие overlay или освобождение контроллера. Не повторяй
   неизвестное действие и не сбрасывай чужой REPL; подробности в
   `docs/tool-first-workflow.md`.
-- Отсутствие typed MCP само по себе не обосновывает Computer Use: сначала проверь
-  готовые CLI/helpers/API. Для открытия/восстановления панели сначала используй
+- В штатной эксплуатации отсутствие typed MCP само по себе не обосновывает Computer Use:
+  сначала проверь готовые CLI/helpers/API. Для открытия/восстановления панели сначала используй
   `ensure_ae_agent_panel` (контракт `docs/ae-agent-panel-bootstrap.md`);
   `panelConnected=false` не доказывает закрытую панель, timeout/unknown не разрешает replay.
   Для CEP inspect/reload уже есть `scripts/cep-panel-cdp-smoke.js`;
