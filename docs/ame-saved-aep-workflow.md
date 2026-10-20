@@ -231,6 +231,18 @@ RUNNING/custom range пока не разрешён этим core. Actual26 type
 Следующий этап — явные typed PAUSE/fresh paused proof и отдельный RESUME с новым
 intent; enqueue не вызывает global controls. Общий AEP с queued jobs неизменен.
 
+19:55:59Z: ранний GLOBAL START `6afe29d2-6192-442e-b5ba-97bc55a4e252`
+принят через typed proposal/dry/run `ab46adfb-d819-4c71-85b3-b9f73a215d96`.
+Независимый STATUS19:56:42Z подтвердил exact marker/accepted=true/running до
+отправки11. Повтор этого intent запрещён. Старый GLOBAL1 UNKNOWN сохранён отдельно.
+`02-after-early-start-result.json` затем подтвердил exact host completionTrue
+для02 в19:57:01Z и готовый файл84782524bytes. `outputFiles` retained wrapper
+по-прежнему содержит01; public association/completion/acceptance=false сохранены.
+Host evidence и последующие media/visual проверки учитываются отдельно.
+Если очередь закончит работу до готовности нового PAUSE, stopped не доказывает
+paused: для11 используется безопасный stopped enqueue и новый разрешённый START,
+а новый pause/running путь остаётся отдельно ограниченным offline proof.
+
 ## Ограниченная диагностика source API
 
 `inspect_ame_source_probe` принимает один новый `probeId` (UUID), `mode`,

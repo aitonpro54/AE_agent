@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10 UTC, в работе:01.mov completion/acceptance/media/PNG PASS, GLOBAL1 UNKNOWN + stopped-cycle proof. Sourceclean/rev12968854/SHAf84a56ff…. Serial02..10 callbacks/ACKtrue, associationfalse; driver20964 stopped safely,11 НЕsent. Npending core jobsC049389d… reviewedGO/offline8groups; caller N3 submit-before-callback/STATUS0 PASS. Runtime пока23576/source6651fa95…; fresh26API pause/status/runBatch confirmed. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 20.10 UTC, в работе:01.mov completion/acceptance/media/PNG PASS, GLOBAL1 UNKNOWN сохранён. Sourceclean/rev12968854/SHAf84a56ff…. Serial02..10 callbacks/ACKtrue, associationfalse; driver20964 остановлен,11 НЕsent. Core543b184 reviewedGO/offline8groups; caller N3 submit-before-callback/STATUS0 PASS. GLOBAL6afe29d2 принят19:55:59, independent running19:56:42 до11;02 exact host completionTrue19:57:01, public flagsfalse сохранены. Runtime23576/source6651fa95…. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Завершить Npending core/driver offline+review → typed PAUSE/resume proof+review → freshruntime/admission → early GLOBAL02..10 → PAUSE/read-back → pending11/customrangeACK → явный resume → host/media/visual11. Уже отправленные02..10 не повторять; N>1 live недоступен (остался11), это явно отделить от offline proof. Queued predicates/UNKNOWN неизменны.
+Завершить typed PAUSE/resume offline+review → fresh runtime/admission → PAUSE/read-back, если GLOBAL6afe ещё running → pending11/customrangeACK → явный resume → host/media/visual11. Если уже stopped, использовать stopped enqueue и новый разрешённый START;6afe не повторять, stopped не выдавать за paused.02..10 не повторять; N>1 live недоступен (остался11), отделить от offline proof. Queued predicates/UNKNOWN неизменны.
 
 ## Отложенные scope
 
