@@ -12,6 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
+- 20.10: `TITR_RENDER_01..11` созданы в общем `titr_all.aep`; 12 независимых native reads подтвердили точную видимость и неизменный source/aux8. Все 11 PNG просмотрены; protected save один раз, native dirty=false/revision12968816. AME enqueue/START0.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
   Connected/idle/autonomy active, native project read: empty/revision1; AME jobs не изменялись.
@@ -45,10 +46,10 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
   jobs повторно прочитаны как `queued`. Read-only checker на старых exact runs:
   slot2 association PASS/aggregate needs_review из-за сохранённого run.ok=false;
   slot1 needs_review из-за прежнего failed/UNKNOWN шага. Это не live semantic PASS.
-- 19.10: reset `48ebe813…`/generation `f735709b…` applied; runtime PID3352 Connected/autonomy active, project `titr_all.aep` read PASS. Новый API catalog найден, вызовов AME API 0.
 
 ## Decision Log
 
+- [block: saved-aep-api] [executor: ae_specialist] [reason: private source admission/TOCTOU/GUID] [ownership: code/new smoke/new contract]; root sole live controller. Один saved AEP, Node hash, обязательное точное AME GUID membership; без snapshot producer. Canary: два новых comps/shared batch, START0.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -74,7 +75,6 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 - Reset — явная local MCP операция, доступная без HTTP daemon, не fallback ensure.
   Caller не задаёт PID/path/generation/raw script. Initial/retained и настоящий
   pending lifecycle в v1 отклоняются; общий recovery framework не строится.
-- User authorization на создание reset и внутреннее review получена в этом чате.
   Отдельная private reset policy не расширяет молча owned_daemon_lifecycle.
 - Старый exact process должен быть строго absent; alive/reused/denied/unknown
   и занятый fixed endpoint — отказ. Отсутствие не является held-handle exit proof.
@@ -113,6 +113,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Validation
 
+- 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
 - 20.10 fence: focused64/syntax3/PS compile/rules/diff PASS, Ultra architecture/High review GO; native barrier/retirement/reset_active/Connected/project read PASS.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
@@ -167,8 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Открыть рабочий AEP, проверить сохранённые 11 титров и создать отдельные композиции с сохранением исходной.
-Далее адаптировать API enqueue/self-check к одному saved AEP; прежний UI enqueue не считается новой приёмкой. START/render отдельно.
+Завершить private admission одного saved AEP и проверить два новых TITR_RENDER через API enqueue/self-check; прежний UI enqueue не считается новой приёмкой. START/render отдельно.
 
 ## Отложенные scope
 
