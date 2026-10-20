@@ -9,6 +9,7 @@ function validateInput(raw){
   const allowed=["probeId","mode","sourceProjectFile","expectedSourceSha25664","targetSpecifier","expectedProcess","expectedSessionNonce","timeoutMs"];
   if(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).some(k=>!allowed.includes(k))||!UUID.test(raw.probeId||"")||!["begin","receiver","dl","status"].includes(raw.mode)||typeof raw.expectedSessionNonce!=="string"||!raw.expectedSessionNonce)fail("ame_source_probe_invalid_input");
   const a={probeId:raw.probeId,mode:raw.mode,...jobs.validateInput(jobs.INSPECT,Object.fromEntries(Object.entries(raw).filter(([k])=>!["probeId","mode"].includes(k))))};
+  delete a.sourceReadBudgetMs; // This diagnostic keeps its existing binding contract.
   if(process.platform==="win32"&&/:/.test(a.sourceProjectFile.slice(2)))fail("ame_source_probe_source_alias");return a;
 }
 function filePin(file,sha){
@@ -86,6 +87,6 @@ function createProbe(deps){
   }
   return Object.freeze({execute});
 }
-const fields={...jobs.tools.find(t=>t.name===jobs.INSPECT).inputSchema.properties};delete fields.reconcileRequestNonce;
+const fields={...jobs.tools.find(t=>t.name===jobs.INSPECT).inputSchema.properties};delete fields.reconcileRequestNonce;delete fields.sourceReadBudgetMs;
 const tool={name:TOOL,description:"Bounded readonly localization with asynchronous BridgeTalk send(), no pump/wait in AE: begin registers a probe; receiver compiles the existing generic AME receiver without invoking it; dl uses one tiny marked getDLItemsAtRoot call; status only reads retained phase. Exact process/session/source pins. Repeat the SAME mode/arguments after releasing AE to read its retained callback; status alone starts a fresh read after the previous valid callback was returned. Never replay DL or alter the original UNKNOWN title sender. Returned GUIDs grant no enqueue authority. No launch, save, queue mutation or START.",inputSchema:{type:"object",additionalProperties:false,properties:{...fields,probeId:{type:"string",pattern:UUID.source},mode:{type:"string",enum:["begin","receiver","dl","status"]}},required:["probeId","mode","sourceProjectFile","expectedSourceSha25664","targetSpecifier","expectedProcess","expectedSessionNonce"]},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:false,openWorldHint:false}};
 module.exports={TOOL,SCHEMA,tool,validateInput,commandScript,createProbe};

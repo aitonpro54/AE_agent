@@ -5,6 +5,7 @@ const { sameProcess } = require("./ame-running");
 const manualQueue = require("./ame-manual-queue-grant");
 const sharedQueue = require("./ame-shared-queue-grant");
 const savedSourceAdmission = require("./ame-saved-source-admission");
+const sourceReads = require("./ame-source-read");
 const INSPECT = "inspect_ame_title_sources", ENQUEUE = "enqueue_ame_title_variant", START = "start_ame_title_batch", STATUS = "get_ame_title_job_status";
 const QUEUE_MANIFEST = "inspect_ame_title_queue_manifest";
 const SCHEMA = "ae-agent-ame-title-jobs.v1", NATIVE_SCHEMA = "ae-agent-ame-title-native.v1", LEDGER_SCHEMA = "ae-agent-ame-title-batch.v1";
@@ -22,7 +23,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -32,6 +33,7 @@ function validateInput(name, raw = {}) {
   if (raw.expectedSessionNonce !== undefined) { if (raw.expectedSessionNonce !== null && !/^[A-Za-z0-9._-]{1,128}$/.test(text(raw.expectedSessionNonce, 128))) fail("ame_title_invalid_session"); a.expectedSessionNonce = raw.expectedSessionNonce; }
   if (name === INSPECT || name === ENQUEUE) { a.sourceProjectFile = localFile(raw.sourceProjectFile, ".aep"); if (typeof raw.expectedSourceSha25664 !== "string" || !SHA.test(raw.expectedSourceSha25664)) fail("ame_title_source_hash_required"); a.expectedSourceSha25664 = raw.expectedSourceSha25664; }
   if (name === INSPECT && raw.reconcileRequestNonce !== undefined) { if (typeof raw.reconcileRequestNonce !== "string" || !UUID.test(raw.reconcileRequestNonce)) fail("ame_title_invalid_nonce"); a.reconcileRequestNonce = raw.reconcileRequestNonce; }
+  if(name===INSPECT){a.sourceReadBudgetMs=raw.sourceReadBudgetMs===undefined?sourceReads.MIN_BUDGET_MS:raw.sourceReadBudgetMs;if(!Number.isSafeInteger(a.sourceReadBudgetMs)||a.sourceReadBudgetMs<sourceReads.MIN_BUDGET_MS||a.sourceReadBudgetMs>sourceReads.MAX_BUDGET_MS)fail("ame_source_read_budget_invalid");}
   if (name !== INSPECT) { if (typeof raw.batchId !== "string" || !UUID.test(raw.batchId)) fail("ame_title_invalid_batch"); a.batchId = raw.batchId; }
   if (raw.queueMode !== undefined) {
     if (raw.queueMode !== sharedQueue.MODE || raw.manualQueueMode !== undefined || raw.manualQueueManifestSha25664 !== undefined || raw.completedOwnedPrefix !== undefined) fail("ame_shared_queue_mode_invalid");
@@ -356,6 +358,7 @@ function fixedCommandScript(a, messageBody) {
   if(Buffer.byteLength(script,"utf8")>1048576)fail("ame_title_command_bound");return script;
 }
 function commandScript(a) {
+  if(a.operation==="sources")return sourceReads.commandScript(a,{argument:messageArgument,string:utf16Expression});
   // Both the generated AME source and its string operands preserve exact UTF-16
   // units without Adobe's nested backslash-escape interpretation.
   const {independentSenderRetirement:senderOnly,...receiverArgs}=a;
@@ -533,6 +536,7 @@ function createExecutor(deps) {
       }
       const reply = raw && Object.prototype.hasOwnProperty.call(raw, "result") ? raw.result : raw;
       if (!reply || reply.schema !== "ae-agent-ame-title-send.v1" || reply.requestNonce !== (a.reconcileRequestNonce || a.requestNonce)) return { resolved: false, code: "transport_correlation_unknown", native: null };
+      if(a.operation==="sources")return sourceReads.normalizeTransport(reply,a,now());
       const originalSender=reply.originalSender||null,transportDiagnostic=reply.transportDiagnostic||null;
       const refused=reply.senderRefusal;
       if(reply.code==="previous_request_unresolved"&&refused?.schema==="ae-agent-ame-title-sender-refusal.v1"&&refused.constructorInvoked===false&&refused.sendInvoked===false&&refused.requestNonce===a.requestNonce&&refused.operationBinding===a.operationBinding&&refused.jobId===a.jobId&&refused.batchId===a.batchId&&UUID.test(refused.oldRequestNonce||""))return {resolved:false,code:"ame_title_not_sent",native:null,senderRefusal:refused,transportDiagnostic,dispatchDiagnostic:{stage:"native_sender_guard",dispatchInvoked:true,bridgeTalkSendInvoked:false,originalCode:reply.code,error:refused.reason}};
@@ -633,13 +637,8 @@ function createExecutor(deps) {
     return batches().filter(prior => prior.batchId !== batchId).every(prior => prior.jobs.every(job =>
       job.completionVerified === true && originalStartAccepted(prior, job, job.nativeObservation, processInfo)));
   }
-  async function inspectSources(a) {
-    const processInfo = await processPin(a), source = stableFile(a.sourceProjectFile, a.expectedSourceSha25664), processBinding = binding(a, processInfo);
-    const requestNonce = a.reconcileRequestNonce || crypto.randomUUID(), operationBinding = hash({ operation: "sources", sourcePath: source.path, sha256: source.sha256 });
-    const observed = await send({ ...a, operation: "sources", sourcePath: source.path, processBinding, operationBinding, requestNonce, minimumObservedAt: a.reconcileRequestNonce ? 0 : now() });
-    await processPin(a, processInfo); if (hash(stableFile(source.path, source.sha256)) !== hash(source)) fail("ame_title_file_changed");
-    return result(observed.code, { ok: observed.code === "sources_observed", sourceGuids: observed.native && observed.native.sourceGuids || [], process: processInfo, source, requestNonce, reconciled: !!a.reconcileRequestNonce });
-  }
+  const sourceReader=sourceReads.createReader({processPin,binding,send:a=>send(a),result});
+  async function inspectSources(a){return sourceReader.inspect(a);}
   async function enqueue(a, cap) {
     const entry = assertCap(cap, ENQUEUE, a), processInfo = await processPin(a), processBinding = binding(a, processInfo), source = stableFile(a.sourceProjectFile, a.expectedSourceSha25664);
     const preset = presets.selectPreset(await catalog(), { presetId: a.presetId, sha256: a.presetSha25664 }), presetPin = stableFile(preset.canonicalPath, a.presetSha25664), presetIdentity = hash({ path: presetPin.path, sha256: presetPin.sha256 });
@@ -899,7 +898,7 @@ const source = { sourceProjectFile: { type: "string" }, expectedSourceSha25664: 
 const queueFields = { manualQueueMode: { type: "string", enum: ["cep_user_declaration_v2"] }, completedOwnedPrefix: { type: "array", maxItems: 63, items: { type: "object", additionalProperties: false, required: ["batchId", "jobId"], properties: { batchId, jobId: { type: "string", pattern: UUID.source } } } } };
 const queueMode = { type: "string", enum: [sharedQueue.MODE] };
 const definitions = [
-  [INSPECT, "Read exact DL GUID strings from one pinned saved AEP in an already running AME. Reconcile an exact unknown read nonce without resend. No first-comp inference, submit or launch.", { ...source, reconcileRequestNonce: { type: "string", pattern: UUID.source } }, ["sourceProjectFile", "expectedSourceSha25664"]],
+  [INSPECT, "Asynchronous read of root DL GUIDs from one pinned saved AEP. Returns pending + exact reconcileArgs immediately; same binding never resends, new SHA has its own read. sourceReadBudgetMs defaults to 300000; timeoutMs does not block AE. Exact reconcile reads retained callbacks without send/pump, including historical results after source changes (never current GUID proof). No submit, launch or START.", { ...source, reconcileRequestNonce: { type: "string", pattern: UUID.source },sourceReadBudgetMs:{type:"integer",minimum:sourceReads.MIN_BUDGET_MS,maximum:sourceReads.MAX_BUDGET_MS,default:sourceReads.MIN_BUDGET_MS} }, ["sourceProjectFile", "expectedSourceSha25664"]],
   [ENQUEUE, "Gated fixed addDLToBatch with one exact GUID, exact catalog EPR and reserved output. Shared mode requires private server authority and immediate own wrapper read-back. Our jobId/handleKey is not a native ID. Unknown submission cannot replay.", { ...source, batchId, queueMode, sourceGuid: { type: "string" }, presetId: { type: "string", pattern: "^amep_[a-f0-9]{40}$" }, presetSha25664: { type: "string", pattern: SHA.source }, outputFileName: { type: "string" }, range: { type: "object", description: "Явные секунды. По умолчанию брать свежую отмеченную рабочую область того же pinned source/comp из get_comp_details: startSeconds=workAreaStart, endSeconds=workAreaStart+workAreaDuration. Явный диапазон пользователя имеет приоритет; 0..comp.duration только по прямому запросу всей композиции. Если workArea невалидна или отсутствует, запросить недостающие данные, не подставлять full comp. Адаптер переданный range не меняет.", additionalProperties: false, required: ["startSeconds", "endSeconds"], properties: { startSeconds: { type: "number", minimum: 0 }, endSeconds: { type: "number" } } } }, ["sourceProjectFile", "expectedSourceSha25664", "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range"]],
   [QUEUE_MANIFEST, "Fresh owned wrapper manifest for exactly one ready job and explicit completed owned prefix. No proof of full AME queue, no enqueue/start. Requires trusted native read dispatch port.", { batchId, ...queueFields }, ["batchId", "manualQueueMode", "completedOwnedPrefix"]],
   [START, "Global AME runBatch. Shared mode starts the mixed queue after fresh checks of two accepted own items, private server capability and durable once marker. Legacy CEP declaration remains supported. No full queue or media proof.", { batchId, queueMode, ...queueFields, manualQueueManifestSha25664: { type: "string", pattern: SHA.source } }, ["batchId"]],

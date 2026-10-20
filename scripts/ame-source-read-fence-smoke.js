@@ -12,7 +12,10 @@ function fixture() {
   const context = vm.createContext({ $: { global }, BridgeTalk });
   function call(operation, nonce, reconcileRequestNonce) {
     const args = { operation, requestNonce: nonce, targetSpecifier: "ame-26.0", processBinding: "process", operationBinding: operation === "sources" ? "source" : operation + nonce, timeoutMs: 1, ...(reconcileRequestNonce ? { reconcileRequestNonce } : {}) };
-    return vm.runInContext("(function(){" + adapter.commandScript(args) + "})()", context);
+    // Exercise the retained legacy sender fence explicitly. Public SOURCES now
+    // uses its separate async lane, covered by ame-source-read-smoke.js.
+    const script = operation === "sources" ? adapter.fixedCommandScript(args, adapter.messageScript(args)) : adapter.commandScript(args);
+    return vm.runInContext("(function(){" + script + "})()", context);
   }
   return { global, sent, call };
 }

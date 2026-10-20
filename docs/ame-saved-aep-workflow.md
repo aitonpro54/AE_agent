@@ -74,3 +74,42 @@ Marker-only protected raw read подтвердил `after_get_dl`, error=null. 
 старый timeout10s, но не подтверждает enqueue. Исходные UNKNOWN не переписаны.
 
 Офлайн-проверка: `node scripts/ame-source-probe-smoke.js`.
+
+## Асинхронное чтение SOURCES
+
+`inspect_ame_title_sources` отправляет один fixed read через `BridgeTalk.send()`
+без аргумента ожидания и сразу возвращает `source_read_pending`, `requestNonce`
+и точные `reconcileArgs`. AE должен получить возможность вернуться в idle,
+чтобы Dynamic Link мог открыть AEP. `sourceReadBudgetMs` задаёт callback budget:
+по умолчанию и минимум 300000 ms, максимум 600000 ms. Обычный `timeoutMs`
+сохраняет прежний диапазон 1000–10000 ms и не блокирует AE на время DL read.
+Ни отправка, ни reconcile не вызывают sleep/pump.
+
+Отдельные retained slots связаны с точными process/session, canonical path и
+Node SHA256 AEP. Повтор свежего запроса с тем же binding возвращает
+`source_read_reconcile_required` и исходный nonce; он не отправляет read повторно.
+Нужно вызвать tool с возвращёнными `reconcileArgs`: это только чтение callback
+того же nonce, включая timeout и поздний ответ. Чужой reconcile nonce не заменяет
+исходную связь. Новый SHA получает отдельный read, старые UNKNOWN сохраняются.
+Legacy source slot, в том числе ещё без поля `operation`, распознаётся по точным
+process/target/source-operation bindings и остаётся неизменным; mutation sender
+и его правила допуска этим чтением не меняются.
+
+Перед и после отправки/чтения сверяются Node file identity, родители пути и полный
+SHA; alias, reparse point и hardlink отклоняются. Короткий native receiver сверяет
+app/session и file size/mtime до и после `getDLItemsAtRoot`. Успешный ответ
+возвращает точный список GUID верхнего уровня. Если файл уже изменился, exact
+reconcile всё ещё доступен, но помечает результат `source_read_historical`:
+`currentSourceMatch=false`, `ok=false`, `sourceGuids=[]`; сохранённые старые GUID
+доступны только как `retainedSourceGuids` и не доказывают текущий source.
+
+Retained slots живут в AE process, отдельно от title mutation sender; daemon
+restart может найти их по тому же binding и nonce, пока исходный AE process жив.
+Лимит 64 slots без вытеснения UNKNOWN; перезапуск AE не восстанавливает потерянный
+callback и не даёт права повторять старую мутацию. Этот patch меняет только
+SOURCES: enqueue всё ещё обязан отдельно проверить exact GUID membership через
+`getDLItemsAtRoot`, а его транспорт, batch limit 2 и запрет implicit START сохранены.
+
+Офлайн-проверка: `node --expose-internals scripts/ame-source-read-smoke.js`.
+VM моделирует DL read 175664 ms после освобождения AE без реального ожидания;
+это проверка контракта, не live доказательство времени/доступности Dynamic Link.
