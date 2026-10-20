@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10: `TITR_RENDER_01..11` созданы в общем `titr_all.aep`; 12 независимых native reads подтвердили точную видимость и неизменный source/aux8. Все 11 PNG просмотрены; protected save один раз, native dirty=false/revision12968816. AME enqueue/START0.
+- 20.10: `TITR_RENDER_01..11` созданы в общем `titr_all.aep`; 12 native reads/11 PNG подтвердили source/aux8/видимость. После выявления root-only DL API копии перенесены в root; protected save+read semantic PASS, dirty=false/revision12968816. AME enqueue/START0.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
   Connected/idle/autonomy active, native project read: empty/revision1; AME jobs не изменялись.
@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 ## Validation
 
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
-- 20.10 saved-AEP adapter: dedicated12/product-dispatch25/acceptance9, syntax6/rules/diff PASS; M100 read_only/catalog/runtime pins проверены. High review/census GO. Live admission/enqueue ещё не выполнены; fence64/Ultra/High и reset_active ранее PASS.
+- 20.10 adapter12/dispatch25/acceptance9 и probe7/syntax/rules/review PASS. Live admission11 PASS; AME ensure PASS. DL async probe завершился за175664ms и вернул2rootGUID; прежние10s UNKNOWN сохранены. Root move проверен отдельно; save52c17e35… semantic PASS. SOURCES async correction в работе, enqueue/START0.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.

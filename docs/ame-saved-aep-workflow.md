@@ -5,6 +5,9 @@ comps:[{compItemId, expectedName}]})` читает один уже сохран�
 1–64 явно указанные композиции. Для текущей проверки manifest содержит 11
 композиций, в один shared batch добавляются только две выбранные. START не входит
 в этот путь; текущий START binding по-прежнему требует разные source paths.
+Композиции для `getDLItemsAtRoot` должны находиться на верхнем уровне проекта.
+20.10 созданные копии перенесены из `titr_all` в root с сохранением исходной
+композиции в папке; защищённое сохранение с отдельным project read-back прошло semantic PASS.
 
 Перед native read и после него Node проверяет SHA-256, file identity, размер,
 время и цепочку каталогов. Alias/symlink/junction и hardlink отклоняются. Native
@@ -63,5 +66,11 @@ lock и не защищает от произвольного внешнего c
 `dl_preflight`/`before_get_frontend`/`dl_error` уточняют более ранний отказ.
 GUID этой диагностики не дают authority на enqueue. Source pins/process/session
 сверяются, очередь/START/save/launch не вызываются.
+
+Live 20.10: generic body34626chars успешно скомпилирован; короткий async DL read
+завершился через175664ms и вернул два GUID верхнего уровня. Во время вызова AME
+не отвечал и запускал фоновый AE; затем фоновой процесс завершился, AME восстановился.
+Marker-only protected raw read подтвердил `after_get_dl`, error=null. Это локализует
+старый timeout10s, но не подтверждает enqueue. Исходные UNKNOWN не переписаны.
 
 Офлайн-проверка: `node scripts/ame-source-probe-smoke.js`.
