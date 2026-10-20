@@ -35,12 +35,14 @@ function nativeSend(a,body){
   function reply(code,selected,control){
     var callback=selected?selected.callback:null,read=selected?{schema:"ae-agent-ame-source-read-binding.v1",originalRequestNonce:selected.requestNonce,processBinding:selected.processBinding,operationBinding:selected.operationBinding,targetSpecifier:selected.targetSpecifier,sourcePath:selected.sourcePath||a.sourcePath,sourceSha25664:selected.sourceSha25664||a.expectedSourceSha25664,sourcePinSha25664:selected.sourcePinSha25664||null,sourceReadBudgetMs:selected.sourceReadBudgetMs||null,submittedAt:selected.submittedAt||null,deadlineAt:selected.deadlineAt||null,legacy:selected===legacyMatch}:null,status=null;
     try{if(typeof BridgeTalk.getStatus==="function")status=String(BridgeTalk.getStatus(a.targetSpecifier));}catch(_){}
-    return {schema:"ae-agent-ame-title-send.v1",requestNonce:control?a.requestNonce:selected?selected.requestNonce:a.requestNonce,code:code,callback:control?null:callback,responseBody:!control&&selected&&typeof selected.body==="string"?selected.body:null,sourceRead:read,transportDiagnostic:{targetStatus:status,sendAck:selected&&typeof selected.sent==="boolean"?selected.sent:null,sendError:selected&&selected.sendError||null,messageBodyChars:selected&&selected.message&&typeof selected.message.body==="string"?selected.message.body.length:null,callback:callback,sendMode:"async_no_wait",pumpPerformed:false}};
+    var replyNonce=a.requestNonce;if(!control&&selected)replyNonce=selected.requestNonce;
+    return {schema:"ae-agent-ame-title-send.v1",requestNonce:replyNonce,code:code,callback:control?null:callback,responseBody:!control&&selected&&typeof selected.body==="string"?selected.body:null,sourceRead:read,transportDiagnostic:{targetStatus:status,sendAck:selected&&typeof selected.sent==="boolean"?selected.sent:null,sendError:selected&&selected.sendError||null,messageBodyChars:selected&&selected.message&&typeof selected.message.body==="string"?selected.message.body.length:null,callback:callback,sendMode:"async_no_wait",pumpPerformed:false}};
   }
   if(a.operation!=="sources")return reply("sources_only_required",null,false);
   if(slot&&!matches(slot))return reply("source_read_binding_changed",null,false);
   if(a.reconcileRequestNonce){
-    var selected=slot&&slot.requestNonce===a.reconcileRequestNonce?slot:legacyMatch&&legacyMatch.requestNonce===a.reconcileRequestNonce?legacyMatch:null;
+    // ExtendScript live read disproved this selection as a chained ternary.
+    var selected=null;if(slot&&slot.requestNonce===a.reconcileRequestNonce)selected=slot;else if(legacyMatch&&legacyMatch.requestNonce===a.reconcileRequestNonce)selected=legacyMatch;
     return selected?reply(selected.callback||"source_read_pending",selected,false):reply("source_read_request_missing",null,false);
   }
   if(slot||legacyMatch)return reply("source_read_reconcile_required",slot||legacyMatch,true);
