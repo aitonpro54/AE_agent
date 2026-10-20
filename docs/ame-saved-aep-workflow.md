@@ -185,6 +185,29 @@ Offline status58/origin36/global-cycle13/recovery56, независимое revi
 02..11 пока не отправлены. Сохранение/смена baseline ожидает ответа пользователя;
 несохранённые изменения не отбрасываются и не обходят clean-source guard.
 
+18:45Z: пользователь удалил импорт и сохранил тот же AEP. Fresh admission11:
+clean/revision12968854/SHA `f84a56ffd958c750fad210c19d23e32f774d5866e0e078897c85cb74f6a601c1`.
+Protected API save был отклонён `reconciliation_required` по двум старым connect
+UNKNOWN; записи не сняты и обхода gate не было. Пользователь выбрал CtrlS.
+Новые планы02..11 отделены от исторического01, прежние UUID сохранены.
+
+18:49Z: второй титр отправлен один раз, run `62ca3e9d…`, job `868729e2…`.
+Callback `output_binding_unverified_after_submit`: exact addDL returned,
+workArea ACK=true, но `wrapper.outputFiles` содержит01.mov+xmp, encodeTime42.56.
+Это не getter назначения queued item и не доказательство global singleton.
+Producer остановлен до03; повтор02 запрещён. Read timeout retirement исходно
+отказан, поскольку прежний proof требовал `job_enqueued`. Архитектура допускает
+ограниченное продолжение03..11 по exact terminal dispatch-only callback;
+queued acceptance не создаётся, completion/media/visual проверяются отдельно.
+
+18:59Z: bounded Node READ-timeout extension reviewed GO, native/enqueue/association
+не менялись. Exact partial02 допускает архивирование только timeout-read неизвестным;
+исходный partial callback/digest, acceptance=false и native cache сохранены.
+Offline smoke96/actual-copy15 PASS. Fresh runtime23576/source `6651fa95…`,
+source admission11 PASS; actual retirement `02-retire-partial-result.json` и
+отдельный `02-fresh-partial-read-result.json` подтвердили currentStatusObserved=true,
+association/completion/own acceptance=false. Это не повтор enqueue или успех очереди.
+
 ## Ограниченная диагностика source API
 
 `inspect_ame_source_probe` принимает один новый `probeId` (UUID), `mode`,

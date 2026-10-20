@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10, в работе:01.mov actual completion/own acceptance + DXV3HQ/alpha/decode/PNG PASS,1920x1080/29.97/300frames/10.01s. GLOBAL START1 (run93657906…/intentabfa2035…) сохранил ACKfalse/UNKNOWN/noReplay; отдельный exact witness дал cycle_observed_stopped. Runtime26260/source26fa51d2…. Source admission остановил новые отправки: открытый проект dirty/revision12968847/items477 (импорт01.mov), saved SHAe3de5221… прежний; запрошено сохранение того же AEP. Остальные10 не отправлены. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 20.10 UTC, в работе:01.mov completion/own acceptance + HQ/alpha/decode/PNG PASS. GLOBAL START1 сохранил ACKfalse/UNKNOWN/noReplay, отдельный witness дал cycle_observed_stopped. Пользователь сохранил общийAEP: clean/rev12968854/SHAf84a56ff…, admission11PASS. 02addDL once returned/workAreaACKtrue, associationunverified из-за outputFiles01/time42.56; STOPдо03. Runtime23576/source6651fa95…: reviewed partial READ retirement livePASS, fresh02STATUS currentObserved/associationfalse. Evidence `.codex-runtime/title-eleven-20261020/`.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: origins/global cycle/bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer; helper ae_implementer] [ownership: jobs/queue-control по очереди, ignored runner отдельно]; root sole live/docs. Retention SAME objects/bound64; orphan read retired unknown, не replay. ACK и execution раздельны; old UNKNOWN неизменен. Terminal XMP только exact main+literal sidecar при host True. Early global START поручен, census не prerequisite;100 runtime modules/fresh CLI.
+- [block: origins/global cycle/bounded flow] [executor: ae_specialist; ae_architect; ae_reviewer; helper ae_implementer] [ownership: jobs/queue-control по очереди, ignored runner отдельно]; root sole live/docs. Retention SAME objects/bound64; READ retirement без replay. Dispatch-only partial не queued acceptance; последующая host/media/visual проверка отдельно. Early global START поручен, census не prerequisite;100 runtime modules/fresh CLI. Старые connect UNKNOWN не сняты, пользователь выбрал CtrlS вместо нового panel repair.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-После ответа пользователя сверить/сохранить общий AEP и заново admit source11; затем producer02..11 по retained dispatch callbacks, collector STATUS отдельно и следующий новый GLOBAL cycle. Пока batch running, producer ждёт stopped; shared stopped/acceptance guards сохраняются. Без SDK/census/отдельных AEP; старые01/global records неизменны.
+Dispatch-only producer03..11 без повторения02 → один новый GLOBAL START → отдельные host completion/media/visual receipts. Queued getter predicates и исходные UNKNOWN/partial не менять; при last-output getter сохранять association=false. Без SDK/census/отдельных AEP.
 
 ## Отложенные scope
 
