@@ -93,6 +93,73 @@ reset. Вызов reset — отдельная операторская опер
 epoch и фиксированное чтение; launch и прежние команды не повторяются. Если исход
 native callback неизвестен, tracker остаётся закрытым до отдельной сверки.
 
+### Ограниченное восстановление legacy physical latch 20.10.2026
+
+Для уже порученного reset `f0fb9754-678c-4649-9620-d7d3471d4294`, generation
+`9f2d63af-266f-4ae4-8f0f-1c8f89194ab4`, добавлен отдельный операторский helper:
+
+```powershell
+node scripts/cep-panel-reset-physical-fence.js inspect
+node scripts/cep-panel-reset-physical-fence.js prepare-held-exit
+node scripts/cep-panel-reset-physical-fence.js readback
+node scripts/cep-panel-reset-physical-fence.js recover
+```
+
+CLI принимает только эти команды, без PID, scripts, paths, credentials или
+переопределений. Он проверяет текущий подписанный reset anchor и private policy.
+Другой reset этим helper не обслуживается. Штатные gates и загруженные panel/server
+sources не изменяются; reset/admission инструмент повторно не запускается.
+
+`inspect` читает exact legacy map, текущие host/CEP identity и именованный panel
+state API. `prepare-held-exit` резервирует once intent и запускает скрытый bounded
+watcher. Только `held-ready` означает, что read/sync handles текущего AE и всех
+обнаруженных CEP submitters удерживаются. Это ещё не завершённый физический fence.
+Закрыть AE может только единственный UI-контроллер после свежей проверки пустого
+Untitled без items. При save prompt — Cancel и остановка; helper не закрывает,
+не сохраняет, не завершает процессы принудительно и не открывает проект.
+
+Перед новым запуском AE `readback` обязан показать `old_contexts_exited`:
+`WAIT_OBJECT_0` всех удержанных identities, exit code 0 самого helper, три пустых
+глобальных census AfterFX/CEP и отсутствие прежней exact CDP page. Watcher по
+умолчанию ограничен 300 секундами; timeout/unknown не разрешает повторный watcher
+или подразумеваемое завершение. После запуска нового AE и фиксированной панели
+`recover` проверяет новый host/tree и прежние exact bytes legacy map.
+
+В этом reducer отдельный scoped idle predicate различает `historicalBusy` и
+активную работу: fresh `bridge.connect` availability, отсутствие active action,
+recovery/refresh, executing proposal и pending/inflight bridge commands.
+Стандартный `nativeControlIdle` не переопределяется. Старые записи должны содержать
+только `submittedAt` и предшествовать текущему host; timestamp сам по себе не
+доказывает ни старое выполнение, ни завершение процесса.
+
+Затем один фиксированный `AfterFX.exe -r` read-barrier читает
+project/path/dirty/revision/rendering и возвращает nonce ack. Durable pending
+сохраняется до отправки; unknown/timeout не повторяет отправку. Как у штатного
+bootstrap, единственность AE до/после является условной привязкой: CLI не имеет
+строгого PID targeting. Пустой несохранённый проект допустим.
+
+После completed barrier helper сохраняет HMAC-подписанный архив исходных bytes.
+Финальное сравнение, запись подписанного sidecar, замена active legacy map на
+`{}` и read-back выполняются только под **собственным событием** `Debugger.paused`.
+Один ACK `Debugger.pause` недостаточен; уже остановленный другим контроллером
+target отклоняется без resume. Возобновляется только собственная пауза. Actor/frame,
+host, исходные bytes и sidecar проверяются; drift/unknown оставляет readback-only.
+Собственных произвольных `Runtime.evaluate`, host JSX через CDP и injection нет:
+для state используется существующий фиксированный именованный panel API.
+
+Исходный latch остаётся в permanent signed journal и отдельном localStorage
+sidecar. Исторические panel-action receipts не очищаются. `oldOutcome` остаётся
+`unknown_preserved`, original host identity неизвестна, `oldExitProven:false`,
+`replayAllowed:false`; отдельное поле подтверждает выход наблюдавшихся старых
+контекстов и новый barrier. Retirement только позволяет штатному reset preflight
+продолжиться. Успех задачи требует последующих `reset_active`, Connected и настоящего
+typed project read; helper их не присваивает.
+
+Журнал находится в ignored `.codex-runtime/owned-runtime-maintenance/` внутри
+`reset-physical-fences/<operationId>/`. Изменение source/policy/anchor останавливает
+adoption. `node scripts/cep-panel-reset-physical-fence-smoke.js` проверяет только
+DI protocol/fake CDP и fixed JSX VM, без live AE/CEP и native процессов.
+
 Временная занятость панели при загрузке agents/usage ожидается одним пассивным
 таймером до native submission. Продолжение связано с тем же actor, URL и token;
 смена контекста или неизвестный физический вызов отменяют его. Истёкший во время

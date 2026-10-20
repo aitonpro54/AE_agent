@@ -1,24 +1,23 @@
 # План исполнения AE Agent 3.3.1
 
 Продукт: [target app](../specs/target-app.md); режимы: [deployment](../docs/deployment-modes.md).
-Текущий контракт: [штатный сброс bridge](../docs/product-session-reset.md).
-Исторический экспорт: [product two-title workflow](../docs/product-two-title-workflow.md).
-AME global start: [контракт и статус](../docs/ame-global-start.md).
+Контракты: [reset](../docs/product-session-reset.md), [two-title](../docs/product-two-title-workflow.md), [AME start](../docs/ame-global-start.md).
 
 ## Текущая цель пользователя
 
-19.10: per-job self-check/immutable acceptance и AME global-start реализованы; reset/apply PASS.
-Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFINISHED / FROZEN.
-Общий open-comp enqueue подтверждён live11 и offline111; количество — входные данные:
-[open-comp workflow](../docs/ame-open-comp-workflow.md). Без census/START/render/user jobs.
+20.10: создать композиции титров в одном AEP, затем адаптировать AME API enqueue/self-check.
+Исходную композицию/материалы сохранить; рендер пока не запускать, отдельных AEP и CU AME не делать.
+[Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
+Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
+- 20.10: bridge запущен, reset остаётся `reset_pending_preflight`. Root открыл панель,
+  подтвердил пустой Untitled и один раз закрыл AE; через 300s AE/CEP не вышли.
+  Fence journal: `fence_native_exit_unknown`, readback-only; проекты/AME jobs не изменялись.
 - `b36ed6b` штатно применён с сохранёнными journal hashes/CEP owner. Live11 завершён тем же generic шагом: отдельный first UI receipt и verified name-only restore для каждого, debt0; 8 вспомогательных слоёв сохранены. START/census/replay0; root sole live controller.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
-- Experimental single-job SaveAs/source producer and full-AEP SHA are frozen;
-  preserve implementation and useful tests. Details/evidence:
-  [frozen workflow](../docs/ame-single-job-workflow.md).
+- SaveAs/source producer/full-AEP SHA frozen; код и тесты сохранить: [workflow](../docs/ame-single-job-workflow.md).
 - 19.10: v2 receipt/evidence фиксируют первый self-check. Адресный STATUS меняет
   только текущее наблюдение; acceptanceOnly читает локальную приёмку без OS/native.
   Legacy v1 без proof не мигрирует; corrupt соседний proof не скрывает свой job.
@@ -114,6 +113,8 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Validation
 
+- 20.10 fence: focused32/syntax3/PS compile/rules/diff PASS, независимое review GO; live exit timeout, recovery/activation не выполнялись.
+
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
 - Per-job acceptance: focused 9 groups, AME semantic 18 groups, association 215
@@ -166,8 +167,8 @@ Per-title SaveAs/snapshot/full-AEP SHA producer теперь EXPERIMENTAL / UNFI
 
 ## Следующий шаг
 
-Этап enqueue завершён; использовать тот же generic шаг для следующих поручений с новым списком целей.
-Live11, offline111/42 groups/1620 ES3 PASS; сводка только локальная. START/render/video acceptance отдельно; producer frozen.
+Сначала восстановить завершение зависшего пустого AE и reset activation; затем открыть рабочий AEP и создать отдельные композиции.
+Далее адаптировать API enqueue/self-check к одному saved AEP; прежний UI enqueue не считается новой приёмкой. START/render отдельно.
 
 ## Отложенные scope
 
