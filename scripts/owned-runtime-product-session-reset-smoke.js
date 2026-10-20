@@ -9,13 +9,28 @@ function make(options={}){
   const f=fixture({product:true,...options});f.p.acceptedServerCoverage=["owned_daemon_lifecycle"];fs.writeFileSync(path.join(f.base,"policy.json"),JSON.stringify(f.p));reset.provision("offline explicit operator reset",f.root);
   let locks=0,probes=0,leaseAlive=true,published=0;
   const acquire=f.deps.native.acquireController,request=f.deps.request;
-  f.deps.request=async(...args)=>{const result=await request(...args);if(options.loseAfterRegistration&&args[1]==="/runtime/owned/register")leaseAlive=false;return result;};
+  f.deps.request=async(...args)=>{if(f.failStartup&&args[1]==="/dev/status")throw Object.assign(Error("owned_supervisor_started_process_exited"),{code:"owned_supervisor_started_process_exited"});const result=await request(...args);if(options.loseAfterRegistration&&args[1]==="/runtime/owned/register")leaseAlive=false;return result;};
   f.deps.native.acquireController=async()=>{if(locks)throw Object.assign(Error("owned_supervisor_competing_controller"),{code:"owned_supervisor_competing_controller"});locks++;const native=await acquire();if(options.loseAfterAcquire)leaseAlive=false;function assertHeld(){if(!leaseAlive)throw Object.assign(Error("owned_supervisor_controller_lease_lost"),{code:"owned_supervisor_controller_lease_lost"});}
     return {...native,async assertHeld(){assertHeld();},async probeOwned(g){assertHeld();return f.deps.native.probeOwned(g);},async launch(g){assertHeld();return native.launch(g);},async publishCurrent(g,pin){if(options.loseBeforePublish)leaseAlive=false;assertHeld();published++;return native.publishCurrent(g,pin);},async dispose(){locks--;await native.dispose();}};};
-  f.deps.native.probeOwned=async generation=>{assert.equal(locks,1);probes++;options.onProbe?.(f,probes);return {state:options.probeState||"absent",win32Error:options.probeState?5:87,endpointFree:!options.probeState,generation};};
-  f.reset=()=>supervisor.createOwnedRuntimeSupervisor(f.deps).resetProductSession();f.probes=()=>probes;f.locks=()=>locks;f.published=()=>published;return f;
+  f.deps.native.probeOwned=async generation=>{assert.equal(locks,1);probes++;options.onProbe?.(f,probes);if(f.probeOverride)return f.probeOverride(generation,probes);return {state:options.probeState||"absent",win32Error:options.probeState?5:87,endpointFree:!options.probeState,generation};};
+  f.reset=()=>supervisor.createOwnedRuntimeSupervisor(f.deps).resetProductSession();f.recover=()=>supervisor.createOwnedRuntimeSupervisor(f.deps).recoverFailedProductSessionStart();f.failedStatus=()=>supervisor.createOwnedRuntimeSupervisor(f.deps).failedProductSessionStartStatus();f.probes=()=>probes;f.locks=()=>locks;f.published=()=>published;return f;
 }
 async function withF(options,fn){const f=make(options);try{await fn(f);}finally{f.cleanup();}}
+function envelope(file,value){const row={schema:r1.SCHEMA+".envelope",sha256:r1.hash(value),value};fs.writeFileSync(file,JSON.stringify(row));return row;}
+async function withFailedStart(fn){
+  const f=make(),b=reset.FAILED_START,old=supervisor.readDaemonRegistration(f.root),from=path.join(f.base,"daemon-reservations",old.generation),dir=path.join(f.base,"daemon-reservations",b.predecessorGeneration);fs.mkdirSync(dir);
+  const read=name=>JSON.parse(fs.readFileSync(path.join(from,name+".json"),"utf8")).value;
+  const r=envelope(path.join(dir,"reservation.json"),{...read("reservation"),generation:b.predecessorGeneration}),t=envelope(path.join(dir,"startup-ticket.json"),{...read("startup-ticket"),generation:b.predecessorGeneration,reservationSha256:r.sha256});
+  const c={...read("native-candidate"),generation:b.predecessorGeneration,reservationSha256:r.sha256,startupTicketSha256:t.sha256};c.authentication=supervisor.signedCandidate(c,f.key);const cr=envelope(path.join(dir,"native-candidate.json"),c);
+  const registration=envelope(path.join(dir,"registration.json"),{...read("registration"),generation:b.predecessorGeneration,reservationSha256:r.sha256,startupTicketSha256:t.sha256,nativeCandidateSha256:cr.sha256});envelope(path.join(f.base,"current-daemon.json"),{schema:supervisor.SCHEMA+".current",generation:b.predecessorGeneration,registrationSha256:registration.sha256});
+  const uuid=crypto.randomUUID,ids=[b.operationId,b.generation,uuid(),uuid()];f.failStartup=true;
+  try{crypto.randomUUID=()=>ids.shift()||uuid();await assert.rejects(f.reset(),/started_process_exited/);}finally{crypto.randomUUID=uuid;f.failStartup=false;}
+  f.counts.launch=0;f.originalFiles=new Map();
+  for(const folder of [dir,path.join(f.base,"daemon-reservations",b.generation),path.join(f.base,"product-session-resets",b.operationId),path.join(f.base,"product-session-reset-keys"),path.join(f.base,"daemon-launch-keys")])for(const name of fs.readdirSync(folder)){const file=path.join(folder,name);f.originalFiles.set(file,fs.readFileSync(file));}
+  const ameFile=path.join(f.root,"logs","offline-ame-unknown.json");fs.mkdirSync(path.dirname(ameFile),{recursive:true});fs.writeFileSync(ameFile,JSON.stringify({oldOutcome:"UNKNOWN",queuedJobs:2,START:0}));f.originalFiles.set(ameFile,fs.readFileSync(ameFile));
+  f.originalUnchanged=()=>{for(const [file,bytes] of f.originalFiles)assert.deepEqual(fs.readFileSync(file),bytes,file);};f.oldResetDir=path.join(f.base,"product-session-resets",b.operationId);f.failedCandidateDir=path.join(f.base,"daemon-reservations",b.generation);
+  try{await fn(f);}finally{f.cleanup();}
+}
 function session(f,generation){let retired=0;const s=reset.daemonSession({root:f.root,generation,readGeneration:supervisor.registeredGeneration,keyReader:()=>f.key,readLifecycle:()=>({pending:null}),readEditHash:()=>reset.snapshot(path.join(f.root,"logs","edit-session-active.json")).sha256,retireEdit(){retired++;}});return {s,retired:()=>retired};}
 function witness(s,generation,previousActor={panelConnectionId:"offline",panelGeneration:"1",panelInstanceId:"offline-panel",panelLifecycleEpoch:1}){const c=s.challenge(previousActor,0);return {generation,challenge:c.challenge,previousActor,actor:{...previousActor,panelGeneration:"reset-"+generation,panelLifecycleEpoch:previousActor.panelLifecycleEpoch+1},physicalInflight:0,panelControl:{nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:[{requestId:crypto.randomUUID(),entrySha256:"a".repeat(64)}]},project:{projectPresent:true,file:"",dirty:true,revision:5,rendering:false,challenge:c.challenge}};}
 function cepFixture(storage=new Map()){
@@ -41,6 +56,47 @@ function installBootstrapConnect(f){
   return {manager,normalConnects:()=>normalConnects,polls:()=>polls};
 }
 async function main(){
+  await check("exact failed reset recovers one fresh child, immutable history and closed physical preflight",()=>withFailedStart(async f=>{
+    const old=JSON.stringify(await f.reset()),before=f.probes();assert.equal((await f.failedStatus()).status,"failed_start_recovery_not_attempted");assert.equal(JSON.stringify(await f.reset()),old);
+    const r=await f.recover();assert.equal(r.status,"reset_pending_preflight");assert.notEqual(r.generation,reset.FAILED_START.generation);assert.equal(f.counts.launch,1);assert.equal(f.probes()-before,4);assert.equal(r.oldExitProven,false);assert.equal(r.writeAdmissionReleased,false);assert.equal(f.locks(),0);f.originalUnchanged();
+    assert.equal((await f.failedStatus()).status,"failed_start_recovered_pending_preflight");assert.equal((await f.recover()).status,"failed_start_recovered_pending_preflight");assert.equal(f.counts.launch,1);assert.equal(reset.readBack(f.root,r.operationId).status,"reset_pending_preflight");
+    const state=session(f,r.generation);assert.equal(state.s.admissionReady(),false);const w=witness(state.s,r.generation);assert.throws(()=>state.s.activate({...w,physicalInflight:1}),/physical_fence/);assert.equal(state.s.activate(w).status,"reset_active");f.originalUnchanged();
+  }));
+  for(const target of [reset.FAILED_START.predecessorGeneration,reset.FAILED_START.generation])for(const state of ["alive_exact","pid_reused","access_denied","unknown","endpoint_occupied","endpoint_unknown"])await check("failed reset denies "+target.slice(0,4)+" "+state+" without launch",()=>withFailedStart(async f=>{
+    f.probeOverride=g=>{if(g===target){if(state==="endpoint_unknown")throw Object.assign(Error("owned_supervisor_endpoint_unknown"),{code:"owned_supervisor_endpoint_unknown"});return {generation:g,state,win32Error:state==="access_denied"?5:87,endpointFree:false};}return {generation:g,state:"absent",win32Error:87,endpointFree:true};};
+    await assert.rejects(f.recover(),/absence_unproven|endpoint_unknown/);assert.equal(f.counts.launch,0);assert.equal(f.locks(),0);f.originalUnchanged();
+  }));
+  for(const invalid of ["reset-policy","lifecycle-policy","intent-hmac","candidate-hmac","pointer","edit","unknown","registered","activated","once"])await check("failed reset rejects invalid "+invalid+" before launch",()=>withFailedStart(async f=>{
+    function change(file,fn){const row=JSON.parse(fs.readFileSync(file,"utf8"));envelope(file,fn(row.value));}
+    if(invalid==="reset-policy")fs.unlinkSync(path.join(f.base,"product-session-reset-policy.json"));
+    if(invalid==="lifecycle-policy")f.setPolicy(false);
+    if(invalid==="intent-hmac")change(path.join(f.oldResetDir,"intent.json"),v=>({...v,authentication:"0".repeat(64)}));
+    if(invalid==="candidate-hmac")change(path.join(f.failedCandidateDir,"native-candidate.json"),v=>({...v,authentication:"0".repeat(64)}));
+    if(invalid==="pointer")fs.appendFileSync(path.join(f.base,"current-daemon.json")," ");
+    if(invalid==="edit"){fs.mkdirSync(path.join(f.root,"logs"),{recursive:true});fs.writeFileSync(path.join(f.root,"logs/edit-session-active.json"),"{}");}
+    if(invalid==="unknown")change(path.join(f.oldResetDir,"unknown.json"),v=>({...v,code:"owned_other_unknown"}));
+    if(invalid==="registered")envelope(path.join(f.failedCandidateDir,"registration.json"),{});
+    if(invalid==="activated")envelope(path.join(f.oldResetDir,"activation.json"),{});
+    if(invalid==="once"){const dir=path.join(f.base,"product-session-reset-keys");change(path.join(dir,fs.readdirSync(dir)[0]),v=>({...v,operationId:crypto.randomUUID()}));}
+    await assert.rejects(f.recover());assert.equal(f.counts.launch,0);assert.equal(f.locks(),0);
+  }));
+  await check("failed reset source drift after reserve consumes recovery without native launch",()=>withFailedStart(async f=>{
+    f.deps.readSources=()=>({...f.source});const before=f.probes();f.probeOverride=g=>{if(f.probes()===before+3)f.source.sourceSha256="f".repeat(64);return {generation:g,state:"absent",win32Error:87,endpointFree:true};};await assert.rejects(f.recover(),/baseline_changed/);assert.equal(f.counts.launch,0);assert.equal((await f.recover()).status,"failed_start_recovery_partial_readback_only");f.originalUnchanged();
+  }));
+  for(const after of ["registration","CAS"])await check("failed reset lost ACK after "+after+" is readback only even new source",()=>withFailedStart(async f=>{
+    if(after==="registration"){const request=f.deps.request;f.deps.request=async(...args)=>{const r=await request(...args);if(args[1]==="/runtime/owned/register")throw Object.assign(Error("owned_recovery_ack_lost"),{code:"owned_recovery_ack_lost"});return r;};}
+    else{const acquire=f.deps.native.acquireController;f.deps.native.acquireController=async()=>{const c=await acquire();return {...c,async publishCurrent(...args){await c.publishCurrent(...args);throw Object.assign(Error("owned_recovery_ack_lost"),{code:"owned_recovery_ack_lost"});}};};}
+    await assert.rejects(f.recover(),/ack_lost/);assert.equal(f.counts.launch,1);const old=JSON.stringify(reset.readBack(f.root,reset.FAILED_START.operationId));f.deps.readSources=()=>{throw Error("must_not_recollect_or_launch");};const r=await f.recover();assert.equal(r.status,"failed_start_recovery_partial_readback_only");assert.equal((await f.failedStatus()).status,r.status);assert.equal(f.counts.launch,1);assert.equal(JSON.stringify(reset.readBack(f.root,reset.FAILED_START.operationId)),old);f.originalUnchanged();
+    if(after==="CAS"){assert.equal(supervisor.readDaemonRegistration(f.root).generation,r.generation);assert.equal(reset.readBack(f.root,r.operationId).status,"reset_pending_preflight");}
+  }));
+  for(const bad of ["once","intent","result","result-status"])await check("failed reset corrupted recovery "+bad+" cannot allocate second child",()=>withFailedStart(async f=>{
+    const r=await f.recover(),dir=path.join(f.base,"product-session-reset-recoveries",r.operationId),keys=path.join(f.base,"product-session-reset-recovery-keys"),file=bad==="once"?path.join(keys,fs.readdirSync(keys)[0]):path.join(dir,(bad==="result-status"?"result":bad)+".json"),row=JSON.parse(fs.readFileSync(file,"utf8"));
+    if(bad==="once")row.value.originalPins.intent="0".repeat(64);else if(bad==="intent")row.value.authentication="0".repeat(64);else if(bad==="result-status")row.value.status="reset_active";else row.value.generation=crypto.randomUUID();envelope(file,row.value);await assert.rejects(f.recover(),/recovery_.*invalid/);assert.equal(f.counts.launch,1);f.originalUnchanged();
+  }));
+  await check("stale loaded collector refuses reset and restart before reserve or shutdown",()=>withF({},async f=>{
+    const Module=require("node:module"),file=path.join(f.root,"loaded-collector.js"),source=fs.readFileSync(path.join(__dirname,"../mcp-server/review-evidence.js"),"utf8");fs.writeFileSync(file,source);const m=new Module(file,module);m.filename=file;m.paths=Module._nodeModulePaths(path.dirname(file));m._compile(source,file);fs.appendFileSync(file,"\n// source changed after load\n");
+    f.deps.readSources=()=>m.exports.runtimeIdentity(f.root);await assert.rejects(f.reset(),/source_collector_changed/);await assert.rejects(f.run("restart"),/source_collector_changed/);assert.equal(f.counts.launch,0);assert.equal(f.counts.drain,0);assert.equal(f.counts.shutdown,0);assert.equal(fs.existsSync(path.join(f.base,"product-session-reset-keys")),false);assert.equal(fs.existsSync(path.join(f.base,"supervisor-operation-keys")),false);
+  }));
   for(const when of ["loseAfterAcquire","loseAfterRegistration","loseBeforePublish"])await check("lost controller lease "+when+" forbids further native effect/publication",()=>withF({[when]:true},async f=>{const pointer=fs.readFileSync(path.join(f.base,"current-daemon.json"));await assert.rejects(f.reset(),/controller_lease_lost/);assert.equal(f.counts.launch,when==="loseAfterAcquire"?0:1);assert.equal(f.published(),0);assert.deepEqual(fs.readFileSync(path.join(f.base,"current-daemon.json")),pointer);assert.equal(f.locks(),0);}));
   for(const probeState of ["alive_exact","pid_reused","access_denied","unknown","endpoint_occupied"])await check("refuses "+probeState,()=>withF({probeState},async f=>{await assert.rejects(f.reset(),new RegExp(probeState));assert.equal(f.counts.launch,0);assert.equal(f.locks(),0);}));
   await check("separate policy required",()=>withF({},async f=>{fs.unlinkSync(path.join(f.base,"product-session-reset-policy.json"));await assert.rejects(f.reset(),/ENOENT/);assert.equal(f.counts.launch,0);}));

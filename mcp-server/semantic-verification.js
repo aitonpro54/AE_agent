@@ -2,6 +2,7 @@
 
 const path = require("path");
 const crypto = require("node:crypto");
+const amePending=require("./ame-title-pending");
 const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
 const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const projectSave = require("./project-save");
@@ -5397,6 +5398,7 @@ function buildSemanticVerification(plan, run, options = {}) {
 
   for (let index = 0; index < mutatingSteps.length; index += 1) {
     const step = mutatingSteps[index];
+    if(amePending.isPendingStep(step,run)){pushCheck(checks,{id:`${step.index}:enqueue_ame_title_variant:pending`,title:"AME dispatch recorded; native acceptance pending",expected:"fresh independent own STATUS",observed:"dispatch receipt only; no queue acceptance",passed:false,status:"needs_review",evidence:stepLabel(step)});continue;}
     if (step.status !== "completed") {
       pushCheck(checks, {
         id: `${step.index || "step"}:${step.tool || "unknown"}:completed`,

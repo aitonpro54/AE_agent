@@ -3,6 +3,7 @@
 // Один текущий proposal на bridge. Проекция не содержит полномочий исполнения.
 const CONTRACT_VERSION = "typed-autonomy.v2";
 const INSTANCE_ID = require("crypto").randomUUID();
+const amePending=require("./ame-title-pending");
 const TERMINAL = new Set(["completed", "failed", "cancelled", "expired", "superseded"]);
 function failure(code, message) { return Object.assign(new Error(message), {code}); }
 function normalizeProject(file) {
@@ -77,7 +78,7 @@ function createProposalState() {
     record.lastRun = {...summary};
     if (!run.dryRun && record.executionState === "executing" && record.executionId === run.id) {
       record.finishedAt = run.finishedAt;
-      record.executionState = run.ok ? "completed" : "failed";
+      record.executionState = run.ok||amePending.isPendingRun(run) ? "completed" : "failed";
     }
     return true;
   }

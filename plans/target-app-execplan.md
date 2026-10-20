@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; 12 native reads/11 PNG/source/aux8 PASS. Root move/save semantic PASS, clean/revision12968816/SHAe3de5221…. Typed SOURCES13 и два новых own STATUS queued PASS: API addDL2/START0, без CU/per-title AEP. Исходные enqueue UNKNOWN сохранены: DL194/209s против timeout10s.
+- 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
   Connected/idle/autonomy active, native project read: empty/revision1; AME jobs не изменялись.
@@ -49,7 +49,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: saved-aep-api] [executor: ae_specialist] [reason: private source admission/TOCTOU/GUID] [ownership: code/new smoke/new contract]; root sole live controller. Один saved AEP/Node hash/exact GUID census; finite timing tolerance1e-7. Два новых shared batches нужны для existing exact sender retirement, total addDL2. Старые UNKNOWN не переписаны, START0.
+- [block: saved-aep-api/async-once/reset-recovery] [executor: ae_specialist; recovery design ae_architect; independent ae_reviewer] [ownership: scoped async/DTO + closed recovery]; root sole live controller/docs. Async opt-in не меняет legacy defaults; pending не applied/accepted. Stale MCP census92/fresh99 исправлен own-file guard/fresh CLI. Отдельный once recovery завершён, старые journals/keys не переписаны, addDL total2/START0.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 ## Validation
 
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
-- 20.10 admission15/dispatch25/acceptance9/probe7/sourceRead9, syntax/rules/diff/High review PASS. Live admission11/SOURCES13 PASS; jobs1bdd631b…/ae510cca… собственными STATUS accepted/queued/GUID/workArea PASS, START0. Final source unchanged/clean. Full enqueue-plan acceptance остаётся незакрытой из-за sync timeout; evidence/workflow сохраняют различие.
+- 20.10 admission15/dispatch25/acceptance9/probe7/sourceRead9/async6/recovery63/supervisor91 + focused regressions/syntax/rules/diff/High review PASS. Live source unchanged/clean, async STATUS2 accepted/queued/GUID/workArea; Connected/idle/autonomy active. Original sync enqueue outcomes UNKNOWN; новый async ENQUEUE live не тестировался, integration testbridge startup gate не обходился.
 
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
 - Документация финального этапа: `check:rules` и scoped `git diff --check` PASS; очередь для сводки не перечитывалась. История failed isolated health сохранена в workflow.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Адаптировать асинхронный enqueue/reconciliation для DL194–209s: два actual jobs уже приняты, addDL не повторять. Полная plan acceptance ещё не установлена; отдельный START/render не запускать в текущем scope.
+Текущий этап завершён:11 comps/2 queued jobs/API-only/live async STATUS/recovery PASS. Следующее фактически порученное добавление выполнять через async_once_v1 и exact STATUS; текущие jobs не повторять. Новый live async ENQUEUE и общий START/render остаются за границей выполненной проверки, дополнительных отправок сейчас нет.
 
 ## Отложенные scope
 

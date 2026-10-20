@@ -66,6 +66,7 @@ const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
 const planRunResponse = require("./plan-run-response");
+const amePending=require("./ame-title-pending");
 const toolErrorResponse = require("./tool-error-response");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
@@ -4592,6 +4593,8 @@ async function verifyMutationResult(toolName, args, payload) {
 
 async function attachMutationVerificationToToolResult(result, toolName, args) {
   if (!MUTATING_TOOL_NAMES.has(toolName) || !result || result.isError) return result;
+  const pendingContext=planCommandContext.getStore(),pendingPayload=firstToolPayload(result);
+  if(amePending.isPendingStep({...pendingContext?.item,result:pendingPayload},pendingContext?.run))return attachPayloadMetadataToToolResult(result,"verification",{ok:false,status:"needs_review",pending:true,scope:"ame_async_dispatch_only",nativeAssociationVerified:false,ownItemAccepted:false});
   if (optionalBoolean(args || {}, "verifyAfter", true) === false) return result;
   try {
     const payload = firstToolPayload(result);
@@ -8674,7 +8677,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         };
       }
     }
-    if (!run.ok && !run.recoveryHint) {
+    if (!run.ok && !amePending.isPendingRun(run) && !run.recoveryHint) {
       run.recoveryHint = planRunRecoveryHint(run);
     }
     if (options._m100ActionProposal) {
@@ -8700,19 +8703,19 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         confirmedBySurface: actionRecord && actionRecord.confirmedBySurface || null,
         confirmedBySession: actionRecord && actionRecord.confirmedBySession || null
       };
-      run.m100Message = m100Protocol.createActionResultEnvelope({
+      run.m100Message = m100Protocol.createActionResultEnvelope(amePending.actionOptions({
         ok: run.ok,
         requestId: options.requestId || options._m100ActionProposal.requestId,
         actionId: options._m100ActionProposal.actionId,
         executionId: run.id,
-        summary: run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
+        summary: amePending.isPendingRun(run)?"AME dispatch recorded; native acceptance pending. Use exact own STATUS; do not replay.":run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
         error: run.error || "Agent plan run failed.",
         phase: run.ok ? "ae_execution" : m100PlanRunFailurePhase(run),
         code: run.ok ? undefined : m100PlanRunFailureCode(run),
         rawPreview: run.ok ? undefined : m100PlanRunRawPreview(run)
-      });
+      },run));
     }
-    attachM100PlanRunDiagnostic(run, options);
+    if(!amePending.isPendingRun(run))attachM100PlanRunDiagnostic(run, options);
     run.outcome = buildRunOutcome(run, prepared.plan);
     let eligibleSolutionIds = [];
     try { eligibleSolutionIds = solutionDiscovery.reviewedIds(); } catch (_registryError) {}
@@ -8720,7 +8723,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse, outcome: run.outcome,
       provenance: {...provenance, runtime: {gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256}} });
     const diagnostic = obstacleEvent({operation: "run_ai_agent_plan", proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
-      runId: run.id, code: run.errorCode || (run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
+      runId: run.id, code: run.errorCode || (amePending.isPendingRun(run)?"async_acceptance_pending":run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
       durationMs: Date.parse(run.finishedAt) - Date.parse(run.startedAt), successfulSteps: run.executedCount,
       failedSteps: run.failedCount, verification: run.solutionPlanReadBack && run.solutionPlanReadBack.status || run.semanticVerification && run.semanticVerification.status});
     try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); }
@@ -8734,12 +8737,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     const lastRunSummary = {
       id: run.id, ok: run.ok, dryRun: run.dryRun, errorCode: diagnostic.code,
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
-      failedCount: run.failedCount, verification: diagnostic.verification
+      failedCount: run.failedCount, verification: diagnostic.verification,pending:amePending.isPendingRun(run)
     };
     if (ownsRecord && run.m100Action && !run.dryRun && options._m100ActionRecord.executionState === "executing") {
       // Final run evidence may describe the result before observer publication;
       // the proposal remains executing until its current summary is ready.
-      run.m100Action.confirmationState = run.ok ? "completed" : "failed";
+      run.m100Action.confirmationState = run.ok||amePending.isPendingRun(run) ? "completed" : "failed";
     }
     try { persistRun(null, true); } catch (_error) { run.recordWarning="run_record_update_failed"; }
     if (currentProposalState.publishRunResult(options._m100ActionRecord, run, lastRunSummary) && run.m100Action) {
@@ -9157,6 +9160,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       item.status = result.isError ? "failed" : "completed";
       item.result = payload;
       item.isError = Boolean(result.isError);
+      if(amePending.isPendingStep(item,run)){run.pending=true;run.ok=false;item.dispatchOnly=true;}
       if (result.isError) {
         item.errorCode = payload && (payload.errorCode || payload.code) || "ae_step_failed";
         item.error = typeof payload === "string" ? payload : payload && payload.error || `Шаг ${step.tool} завершился отказом.`;
@@ -14980,10 +14984,11 @@ async function callTool(name, args, executionContext) {
   }
   if (ameTitleJobs.tools.some(tool => tool.name === name)) {
     const result = await ameTitleExecutor.execute(name, args, executionContext && executionContext.ameTitleAuthorization);
-    if (ameTitleMutationNames.has(name) && result.ok) result.authorization = {
+    const pendingContext=planCommandContext.getStore(),dispatchPending=amePending.isPendingDispatch(result,args,pendingContext?.run?.id,pendingContext?.item?.commands);
+    if (ameTitleMutationNames.has(name) && (result.ok||dispatchPending)) result.authorization = {
       runId: currentProposalState.current.executionId, proposalId: currentProposalState.current.actionId
     };
-    return toolResult(result, !result.ok);
+    return toolResult(result, !result.ok&&!dispatchPending&&!amePending.isPendingStatus(result,args));
   }
   if (ameQueueControl.tools.some(tool => tool.name === name)) {
     const result = await ameQueueExecutor.execute(name, args, executionContext && executionContext.ameQueueAuthorization);
@@ -16464,7 +16469,7 @@ async function callTool(name, args, executionContext) {
   if (name === "run_ai_agent_plan") {
     try {
       const run = await runValidatedAgentPlan(args || {}, executionContext || null);
-      return toolResult(run, !run.ok);
+      return toolResult(run, !run.ok&&!amePending.isPendingResponse(run));
     } catch (error) {
       const diagnostic = obstacleEvent({operation: name, proposalId: args.actionId, code: error.code || "plan_run_rejected", phase: "preflight"});
       try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); } catch (_logError) {}
@@ -24529,7 +24534,8 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
       commandContext.item.mutationResultIsError=Boolean(result.isError);
       commandContext.persist();
     }
-    let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
+    const pendingMutation=amePending.isPendingStep({...commandContext?.item,result:firstToolPayload(result)},commandContext?.run);
+    let resultWithCheckpoint = pendingMutation?result:attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
     if (!lifecycleMutation) resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);

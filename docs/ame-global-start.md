@@ -1,9 +1,10 @@
 # AME: запуск общей очереди
 
 Экспериментальный per-title SaveAs/source путь заморожен: [AME single-job workflow](ame-single-job-workflow.md).
-Активное направление повторных отправок из открытой композиции описано как черновик
-с незакрытыми архитектурными вопросами: [open-comp workflow](ame-open-comp-workflow.md).
-Ни один из этих путей не является global start.
+Текущее направление — отдельные композиции в одном сохранённом AEP и API enqueue
+с собственным STATUS: [saved AEP workflow](ame-saved-aep-workflow.md).
+Исторический [open-comp workflow](ame-open-comp-workflow.md) сохраняет свои
+ограничения. Enqueue и проверка задания сами по себе не являются global start.
 
 ## Два независимых пути
 

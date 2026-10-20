@@ -192,6 +192,7 @@ function buildGuidance(payload, context = {}) {
 function decorateToolResult(result, context = {}) {
   if (!result || !Array.isArray(result.content)) return result;
   const payload = firstPayload(result);
+  if(!result.isError&&require("./ame-title-pending").isPendingPresentation(payload))return result;
   const waitBlocked = ["wait_for_plan_state", "wait_for_bridge_state"].includes(context.toolName) && payload.ok === true && payload.timedOut === true;
   const reconcileBlocked = context.toolName === "reconcile_plan_run" && ["incomplete", "unknown"].includes(payload.status);
   if (!result.isError && payload.ok !== false && !waitBlocked && !reconcileBlocked) return result;

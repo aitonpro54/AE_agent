@@ -3,6 +3,9 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+// A long-lived producer must not combine its loaded census with newer bytes.
+// This is a freshness fence for this collector, not a runtime attestation.
+const LOADED_COLLECTOR_SHA256=crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex");
 
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -151,6 +154,9 @@ const RUNTIME_FILES = [
   "mcp-server/ame-saved-source-admission.js",
   "mcp-server/ame-source-probe.js",
   "mcp-server/ame-source-read.js",
+  "mcp-server/ame-title-pending.js",
+  "mcp-server/m100-protocol.js",
+  "mcp-server/proposal-state.js",
   "mcp-server/ame-product-dispatch.js",
   "mcp-server/cep-manual-plan-ingress.js",
   "mcp-server/ame-native-fixture-grant.js",
@@ -204,6 +210,7 @@ const RUNTIME_FILES = [
 ];
 
 function runtimeNamedHashSet(root, fileList = RUNTIME_FILES) {
+  if(sha256(fs.readFileSync(__filename))!==LOADED_COLLECTOR_SHA256)throw Object.assign(Error("owned_runtime_source_collector_changed"),{code:"owned_runtime_source_collector_changed"});
   const targetRoot = root || path.resolve(__dirname, "..");
   const files = Array.isArray(fileList) ? fileList : RUNTIME_FILES;
   return files.map((name) => ({

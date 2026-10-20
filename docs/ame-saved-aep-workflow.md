@@ -8,6 +8,8 @@ comps:[{compItemId, expectedName}]})` читает один уже сохран�
 Композиции для `getDLItemsAtRoot` должны находиться на верхнем уровне проекта.
 20.10 созданные копии перенесены из `titr_all` в root с сохранением исходной
 композиции в папке; защищённое сохранение с отдельным project read-back прошло semantic PASS.
+Новые отправки этого workflow готовятся с `enqueueTransport:"async_once_v1"`;
+описанные ниже legacy enqueue-вызовы сохраняются для совместимости старых jobs.
 
 Перед native read и после него Node проверяет SHA-256, file identity, размер,
 время и цепочку каталогов. Alias/symlink/junction и hardlink отклоняются. Native
@@ -71,12 +73,13 @@ independent-sender retirement допускает новый batch после п�
 с потерянным исходным callback. Его условия не ослаблялись; всего новых addDL2.
 Перед вторым dispatch использован независимый native proof первого задания.
 
-Ограничение: исходные enqueue-планы завершились UNKNOWN через 10s, пока AME
+DL discovery timeout уже отмечен в историческом two-title workflow; текущая
+проверка локализует его и измеряет длительность. Исходные enqueue-планы завершились UNKNOWN через 10s, пока AME
 продолжал Dynamic Link. Native addDL/workArea завершились через194410/208673ms;
 последующие STATUS установили приёмку каждого задания. Исходные run outcomes
 не переписывались: queued acceptance подтверждена, полная приёмка синхронного
-enqueue-плана — нет. Следующая адаптация — асинхронный enqueue/reconciliation
-без ложного failed/UNKNOWN при длительной загрузке DL; повтор addDL запрещён.
+enqueue-плана — нет. Ниже реализован opt-in async enqueue/reconciliation;
+два уже принятых задания не переотправлялись ради проверки нового режима.
 Два GUID одного AEP в общем START binding этим этапом не проверялись.
 
 Финальная native admission: clean/revision12968816,39529370bytes,
@@ -87,6 +90,45 @@ SHA256 `e3de522177eb28a570c32f766dbc8507f72d75123c065796abcc6a5bea150957`;
 Локальные evidence: `.codex-runtime/title-comps-20261020/api-canary-summary.json`,
 `fresh-01-status-result.json`, `fresh-02-status-result.json`, `final-source-result.json`.
 Timing fix: admission15/dispatch25, syntax/rules/diff PASS; независимое High review GO.
+
+## Opt-in async_once_v1
+
+Для shared queue `enqueueTransport:"async_once_v1"` включает фиксированный
+`BridgeTalk.send()` без timeout-аргумента, sleep и pump; callback budget600000ms.
+Существующие аргументы без этого поля сохраняют прежнее поведение и binding.
+Обычные ensure/proposal/dry-run/authorization/file/process/GUID guards обязательны.
+
+`enqueue_pending` сообщает `pending:true`, `dispatchAccepted:true`,
+`ownItemAccepted:false`, `nativeAssociationVerified:false` и точные `statusArgs`.
+Это не приёмка очереди и не разрешение повторить enqueue. Сервер проверяет
+pending receipt относительно единственной команды dispatch, run/proposal,
+job/nonce/process/args binding; публичного флага pending недостаточно.
+План потребляется как terminal action, но native mutation остаётся unknown,
+verification=pending/coverage=incomplete; applied/accepted не выставляются.
+`run.ok=false` здесь означает отсутствие полной native verification;
+публичный ответ отдельно показывает pending вместо обычной ошибки шага.
+
+Позднее вызывается только exact `get_ame_title_job_status(statusArgs)`.
+Если возвращены `own_status_pending` и `reconcileArgs`, следующий вызов использует
+эти точные аргументы: читается тот же read nonce без повторной отправки.
+Для уже существующего shared job новый режим чтения явно задаётся как
+`readTransport:"async_once_v1"`; у новых async jobs он наследуется из ledger.
+Поддерживаются current и bounded retired sender origins, не изменяя старые
+mutation senders. Pending START в этот read-only режим не переводится.
+Только отдельный native STATUS/own-wrapper receipt устанавливает queued acceptance.
+Исходные outcomes сохраняются; START и его guards этим режимом не меняются.
+
+Live 20.10 16:33Z: после восстановления runtime новый `readTransport` прочитал
+оба прежних jobs как `queued`, с собственными GUID/range и workAreaApplied=true.
+Проверены current и retired sender origins; исходный sender cb63fb19… сохранил
+timeout/body=null. Новых addDL/START0. Final native source unchanged/clean,
+revision12968816; Connected/idle/autonomy active, pending/inflight0/editSession=null.
+Evidence: `.codex-runtime/title-comps-20261020/post-async-summary.json`.
+Сам opt-in async ENQUEUE проверен только offline VM (delayed194/209s, immediate
+callback, pending/no-replay/receipt/DTO/publication); дополнительного live enqueue
+не было. Полную live plan acceptance нового режима и media/preset output это
+не подтверждает. Integration smoke тестового bridge был остановлен startup gate
+до listener; запрет не обходился. Focused regressions/syntax/rules/diff и High review PASS.
 
 ## Ограниченная диагностика source API
 

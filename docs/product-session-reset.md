@@ -56,6 +56,50 @@ reset допускает read-back, но не новый launch. Обычная 
 restart succession использует настоящие held-handle exit receipts внутри новой
 сессии; reset не подменяет эти доказательства.
 
+### Закрытое восстановление failed start 20.10
+
+Для reset `67226724…` / failed candidate `889f0a88…` добавлен отдельный
+`recover-failed-start`, строго без аргументов. Он не повторяет обычный reset:
+старые once key, intent и UNKNOWN сохраняются, recovery использует свой журнал
+и один ключ, не зависящий от новой версии source. `failed-start-status` читает
+его результат без запуска. Произвольные PID/generation/paths не принимаются.
+
+Существующая reset policy, exact signed intent/candidate и immutable raw hashes
+обязательны. Pointer должен оставаться на прежней `deda8ab3…`; у failed child
+не допускаются registration, anchor, activation и успешный result. Controller
+mutex удерживается при обеих native absence проверках: прежний daemon и failed
+child должны дать ERROR87+endpointFree, повторно перед launch. Остальные исходы
+закрывают запуск. Новый обычный reset intent/generation использует штатные
+registration→anchor→CAS и physical project preflight; AME jobs не меняются.
+Любая частичная recovery допускает только read-back, без второго child.
+
+Причина этого failed start — старый MCP process вычислил reservation из
+закэшированного списка92 модулей и свежих bytes; новый daemon вычислил99 и
+отклонил source binding до listener. Это локализовано отдельными read-only
+проверками, а не выведено из одного кода child-exited. Текущий код фиксирует
+hash собственного `review-evidence.js` при module load и отказывает в новом
+вычислении census после изменения этого файла. Guard обнаруживает устаревший
+каталог; он не является attestation реально загруженного кода.
+
+Lifecycle после изменения source catalog выполнять из свежего локального CLI,
+а не из ранее загруженного MCP collector. Восстановление этого exact случая:
+`node mcp-server/owned-runtime-product-session-reset.js recover-failed-start`;
+чтение — та же команда с `failed-start-status`. После старта всё равно нужны
+Connected/idle и настоящий native project read. Forensic census в ignored runtime
+остаётся диагностикой и не даёт authority на запуск.
+
+Live 20.10: fresh CLI recovery9ed078cc… создал generation
+`1fc98c2e-16c5-4d94-894f-e5075013d483`, daemon PID17752/sourcea6555f60… .
+Старт занял4.2s, затем обычный preflight активирован: Connected/idle,
+autonomy active, native source unchanged/clean/revision12968816. Новый async
+STATUS повторно подтвердил два существующих AME jobs queued, новых addDL/START0.
+Оригинальные beb3141d…/67226724… UNKNOWN/keys сохранены. Recovery status читает
+сохранённую квитанцию `failed_start_recovered_pending_preflight`; фактическое
+`reset_active` подтверждается отдельным current runtime status/activation,
+а живое подключение — bridge/project reads. Evidence находится в ignored
+`.codex-runtime/title-comps-20261020/`; code/recovery63/supervisor91/async6,
+syntax/rules/diff и independent High review PASS.
+
 ## Границы
 
 Инструмент поддерживает отсутствующий зарегистрированный product daemon.

@@ -9,14 +9,17 @@
 20.10 в существующем `titr_all.aep` созданы `TITR_RENDER_01..11`: собственный титр
 включён, остальные десять выключены. Все 19 слоёв каждой копии, восемь вспомогательных
 слоёв и исходная композиция проверены независимыми native reads; все 11 PNG просмотрены.
-Общий AEP сохранён один раз защищённым `save_current_named_project`, затем native
-чтение подтвердило точный путь, `dirty=false`, revision12968816. Рендер не запускался.
-API admission и проверка двух новых jobs выполняются следующим отдельным этапом.
+Общий AEP сохранён защищённым `save_current_named_project`; после root move
+финальный save52c17e35… с отдельным project read-back получил semantic PASS:
+точный путь, `dirty=false`, revision12968816. Рендер не запускался.
+API admission и два новых addDL подтверждены отдельными own STATUS как queued;
+после восстановления runtime новый async STATUS снова прочитал оба existing jobs.
+Новых addDL при этой повторной проверке0, START0; отдельных render AEP и CU enqueue0.
 Реализованный API-контракт одного AEP: [saved source admission](ame-saved-aep-workflow.md).
-У save-плана исходный semantic outcome `failed`: в плане не было отдельного
+У первой save-попытки исходный semantic outcome `failed`: в плане не было отдельного
 project read-back, а публичная квитанция не содержит полного run binding.
 Успешный setter, файловая квитанция и последующее независимое lifecycle-чтение
-сохранены раздельно; этот результат не переименован в semantic PASS и save не повторялся.
+сохранены раздельно; первая попытка не переименована в PASS и вслепую не повторялась.
 
 ## Приёмка каждого задания без пересчёта очереди
 

@@ -203,8 +203,9 @@ function createActionProposalEnvelope(options) {
 
 function createActionResultEnvelope(options) {
   const source = options || {};
+  const pending=require("./ame-title-pending").isMarkedAction(source);
   const ok = source.ok !== false;
-  const errorDiagnostic = ok ? null : createUserDiagnostic({
+  const errorDiagnostic = ok||pending ? null : createUserDiagnostic({
     phase: source.phase || "protocol_validation",
     code: source.code,
     message: source.error || source.message || "Action failed.",
@@ -215,22 +216,23 @@ function createActionResultEnvelope(options) {
   });
   return {
     protocolVersion: M100_PROTOCOL_VERSION,
-    messageType: ok ? "action_result" : "error",
-    status: ok ? "completed" : "failed",
+    messageType: ok||pending ? "action_result" : "error",
+    status: ok||pending ? "completed" : "failed",
     createdBy: M100_BACKEND_SOURCE,
     serverCreated: true,
     requestId: compactText(source.requestId || "", 120),
     actionId: source.actionId ? compactText(source.actionId, 120) : undefined,
     executionId: source.executionId ? compactText(source.executionId, 120) : undefined,
-    summary: ok
+    summary: ok||pending
       ? compactText(source.summary || "Action completed.", 1000)
       : redactForUserDiagnostic(source.summary || (errorDiagnostic && errorDiagnostic.message) || "Action failed.", 1000),
-    result: ok ? {
-      ok: true,
+    result: ok||pending ? {
+      ok: !pending,
+      ...(pending?{pending:true,ownItemAccepted:false,automaticRetryAllowed:false}:{}),
       summary: compactText(source.resultSummary || source.summary || "Action completed.", 1000),
       rawPreview: source.rawPreview ? redactForUserDiagnostic(source.rawPreview, 1000) : undefined
     } : undefined,
-    error: ok ? undefined : {
+    error: ok||pending ? undefined : {
       phase: errorDiagnostic.phase,
       code: errorDiagnostic.code,
       message: errorDiagnostic.message,

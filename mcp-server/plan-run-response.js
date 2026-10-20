@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const planRunRecords = require("./plan-run-records");
+const amePending=require("./ame-title-pending");
 
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const PLAN_RUN_SUMMARY_SCHEMA = "ae-agent-plan-run-summary.v1";
@@ -102,6 +103,7 @@ function compactStepSummary(step, runId) {
   let resultRef = null;
   if (step.result && typeof step.result === "object" && !Array.isArray(step.result)) {
     resultRef = { ok: typeof step.result.ok === "boolean" ? step.result.ok : step.status === "completed" ? !isErr : null };
+    if(step.result.pending===true){for(const key of ["pending","dispatchAccepted","ownItemAccepted","nativeAssociationVerified","code","batchId","jobId","requestNonce","pendingReceipt","statusArgs","reconcileArgs"])if(step.result[key]!==undefined)resultRef[key]=step.result[key];}
     for (const key of ["comp", "layer", "source"]) {
       if (step.result[key]) resultRef[key] = scalarFields(step.result[key], ["itemId", "id", "itemIndex", "index", "name"], 60);
     }
@@ -166,6 +168,7 @@ function projectPlanRunSummary(run) {
     startedAt: run.startedAt,
     finishedAt: run.finishedAt || null,
     ok: Boolean(run.ok),
+    pending:amePending.isPendingRun(run),
     dryRun: Boolean(run.dryRun),
     confirm: Boolean(run.confirm),
     allowMutations: Boolean(run.allowMutations),
@@ -244,6 +247,7 @@ function projectPlanRunSummary(run) {
     m100Message: run.m100Message
       ? {
           ok: run.m100Message.ok,
+          ...(amePending.isPendingRun(run)?{messageType:run.m100Message.messageType,status:run.m100Message.status,serverCreated:run.m100Message.serverCreated,result:run.m100Message.result}:{}),
           actionId: run.m100Message.actionId,
           summary: truncateText(run.m100Message.summary, 300),
           code: run.m100Message.code
@@ -264,7 +268,7 @@ function projectPlanRunSummary(run) {
     summary.validation = {ok:false, errorCount:errors.length, truncated:errors.length > 3,
       errorExcerpt:errors.slice(0,3).map(error => typeof error === "string" ? truncateText(error,240) : scalarFields(error,["index","tool","code","errorCode","message","error","reason"],240))};
   }
-  return summary;
+  return amePending.markProjection(summary,run);
 }
 
 function isHighSurrogate(code) {

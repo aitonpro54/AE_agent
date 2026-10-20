@@ -376,8 +376,11 @@ function createOwnedRuntimeSupervisor(deps={}){
     }catch(e){if(op && !fs.existsSync(path.join(op.dir,"unknown.json")))r1.writeJournalOnce(op.dir,"unknown",{schema:SCHEMA+".unknown",code:/^owned_[a-z0-9_]+$/.test(e.code || "")?e.code:"owned_supervisor_outcome_unknown",shutdownExitProven:!!proof,proof,replayAllowed:false,writeAdmissionReleased:false});throw e;}finally{if(h)await h.dispose();}
   }
   async function controlled(fn){const lock=await native.acquireController();try{await lock.assertHeld();return await fn(lock);}finally{await lock.dispose();}}
-  const resetProductSession=()=>controlled(controller=>productReset.reset({root,native:controller,current,readGeneration:registeredGeneration,keyReader:v=>credential(v,root),launch:(op,predecessor,options)=>launch(op,predecessor,{...options,controller}),publishCurrent:async(g,pin)=>{await controller.assertHeld();await controller.publishCurrent(g,pin);},readSources:sources,readLifecyclePolicy:allowed}));
-  return Object.freeze({status,ensure:id=>controlled(c=>operate("ensure",id,c)),restart:id=>controlled(c=>operate("restart",id,c)),shutdown:id=>controlled(c=>operate("shutdown",id,c)),resetProductSession,readBack:id=>readSupervisor(root,id)});
+  function resetDeps(controller){return {root,native:controller,current,readGeneration:registeredGeneration,keyReader:v=>credential(v,root),launch:(op,predecessor,options)=>launch(op,predecessor,{...options,controller}),publishCurrent:async(g,pin)=>{await controller.assertHeld();await controller.publishCurrent(g,pin);},readSources:sources,readLifecyclePolicy:allowed};}
+  const resetProductSession=()=>controlled(controller=>productReset.reset(resetDeps(controller)));
+  const recoverFailedProductSessionStart=()=>controlled(controller=>productReset.recoverFailedStart(resetDeps(controller)));
+  const failedProductSessionStartStatus=()=>productReset.failedStartStatus(resetDeps(null));
+  return Object.freeze({status,ensure:id=>controlled(c=>operate("ensure",id,c)),restart:id=>controlled(c=>operate("restart",id,c)),shutdown:id=>controlled(c=>operate("shutdown",id,c)),resetProductSession,recoverFailedProductSessionStart,failedProductSessionStartStatus,readBack:id=>readSupervisor(root,id)});
 }
 function createDaemonNativeBackend(){
   function check(){win.verifyPolicy();verifyNodePolicy();if(ledger.hash(ledger.readBytes(POLICY.helper))!==POLICY.helperSha256)fail("owned_supervisor_native_source_changed");}
