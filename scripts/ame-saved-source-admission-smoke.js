@@ -7,7 +7,7 @@ const {createProductDispatch}=require("../mcp-server/ame-product-dispatch"),{cre
 const scratch=path.resolve(__dirname,"../.codex-runtime/ame-saved-source-admission/fixtures");fs.mkdirSync(scratch,{recursive:true});
 const root=fs.mkdtempSync(path.join(scratch,"bounded-")),copy=v=>JSON.parse(JSON.stringify(v));let checks=0;
 async function check(name,run){await run();checks++;console.log("PASS "+name);}
-function fixture(label){
+function fixture(label,options={}){
   const dir=path.join(root,label);fs.mkdirSync(dir);const source=path.join(dir,"one-existing.aep");fs.writeFileSync(source,"one saved AEP, eleven native composition identities");
   const presetDir=path.join(dir,"presets");fs.mkdirSync(presetDir);fs.writeFileSync(path.join(presetDir,"exact.epr"),"<PremiereData><PresetName>Fixture</PresetName><ExporterName>Fixture</ExporterName></PremiereData>");
   const catalog=()=>presets.scanPresetRoots({roots:[{source:"fixture",path:presetDir}]}),preset=catalog().presets[0];assert(preset);
@@ -28,7 +28,7 @@ function fixture(label){
   BridgeTalk.isRunning=()=>true;BridgeTalk.launch=forbidden;BridgeTalk.pump=()=>{};ae.BridgeTalk=BridgeTalk;
   const inspectArgs={expectedProjectFile:source,expectedRevision:123,comps:comps.map(c=>({compItemId:c.id,expectedName:c.name}))};
   const sourceAdmission=admission.createAdmission({captureActor:()=>({connection:"panel",generation:actor}),assertReady:()=>assert(ready,"not idle"),readNative:async body=>{
-    nativeReads++;if(readHook)readHook();return {result:vm.runInContext("(function(){"+body+"}())",ae,{timeout:2000})};
+    nativeReads++;if(readHook)readHook();const observed=vm.runInContext("(function(){"+body+"}())",ae,{timeout:2000});return {result:options.aeNumberRoundtrip?JSON.parse(JSON.stringify(observed,(_key,value)=>typeof value==="number"?Number(value.toPrecision(15)):value)):observed};
   }});
   const contexts=new WeakSet(),assertContext=c=>assert(contexts.has(c)&&c.current,"private current context required");
   const dispatch=async(script,timeout,metadata)=>{assert.equal(timeout,30000);assert.equal(crypto.createHash("sha256").update(script).digest("hex"),metadata.scriptSha25664);if(dispatchHook)dispatchHook(metadata);return {result:vm.runInContext("(function(){"+script+"}())",ae,{timeout:2000})};};
@@ -40,8 +40,9 @@ function fixture(label){
   const executor=jobs.createExecutor({stateDir:path.join(dir,"state"),now:()=>clock++,inspectProcesses:async()=>[processInfo],listPresetCatalog:catalog,resolveOutputFilePath:name=>path.join(dir,"outputs",name),assertManualIngress:forbidden,assertSharedQueueIngress:assertContext,assertServerContext:assertContext,runExtendScriptBody:forbidden,nativeDispatchPort:port});
   let report;
   const args=i=>({...common,batchId,queueMode:"shared_queue_v1",sourceProjectFile:source,expectedSourceSha25664:report.source.sha25664,sourceGuid:comps[i].dynamicLinkGUID,presetId:preset.presetId,presetSha25664:preset.sha256,outputFileName:"title-"+i+".mov",range:{startSeconds:1,endSeconds:5}});
-  const add=async i=>{const a=args(i),context={args:a,current:true,runId:crypto.randomUUID()};contexts.add(context);return executor.execute(jobs.ENQUEUE,a,executor.authorize(jobs.ENQUEUE,a,context));};
-  return {source,comps,project,inspectArgs,sourceAdmission,product,port,executor,common,batchId,args,add,
+  const add=async(i,overrides={})=>{const a={...args(i),...overrides},context={args:a,current:true,runId:crypto.randomUUID()};contexts.add(context);return executor.execute(jobs.ENQUEUE,a,executor.authorize(jobs.ENQUEUE,a,context));};
+  return {source,comps,project,inspectArgs,sourceAdmission,product,port,executor,common,batchId,args,add,ae,
+    ledger:id=>fs.readFileSync(path.join(dir,"state","batches",id+".json"),"utf8"),
     inspect:async()=>report=await sourceAdmission.inspect(inspectArgs),status:id=>executor.execute(jobs.STATUS,{...common,batchId,jobId:id}),counts:()=>({adds,sends,nativeReads,census}),
     actor:()=>actor++,ready:v=>{ready=v;},readHook:fn=>{readHook=fn;},dispatchHook:fn=>{dispatchHook=fn;},guidList:v=>{guidList=v;},contexts};
 }
@@ -78,6 +79,24 @@ function fixture(label){
     for(const [name,change] of [["dirty",f=>{f.project.dirty=true;}],["revision",f=>{f.project.revision++;}],["guid",f=>{f.comps[0].dynamicLinkGUID="abcdefab-1234-1234-1234-123456789012";}],["file",f=>fs.appendFileSync(f.source," late write")]]){
       const f=fixture("final-"+name);await f.inspect();f.dispatchHook(m=>{if(m.operation==="enqueue")change(f);});const r=await f.add(0);assert.equal(r.ok,false);assert.equal(r.automaticRetryAllowed,false);assert.equal(f.counts().sends,0);assert.equal(f.counts().adds,0);
     }
+  });
+  await check("AE JSON precision roundtrip accepts raw timing double while exact identity and DL census stay enforced",async()=>{
+    const f=fixture("number-roundtrip",{aeNumberRoundtrip:true});f.comps[0].duration=15.4;f.comps[0].workAreaStart=0;f.comps[0].workAreaDuration=301/30;
+    const observed=await f.inspect();assert.equal(observed.project.comps[0].workAreaDuration,10.0333333333333);assert.notEqual(observed.project.comps[0].workAreaDuration,f.comps[0].workAreaDuration);
+    const actual=await f.add(0);assert.equal(actual.ok,true,JSON.stringify(actual));assert.equal(actual.ownItemAccepted,true);assert.equal(f.counts().adds,1);assert.equal(f.counts().census,1);assert.equal((await f.status(actual.jobId)).native.job.status,"queued");
+  });
+  await check("real timing drift beyond 1e-7 seconds and nonfinite timing refuse before native sender",async()=>{
+    for(const field of ["duration","workAreaStart","workAreaDuration"])for(const value of ["drift",NaN,Infinity,-Infinity]){
+      const f=fixture("number-reject-"+field+"-"+String(value));await f.inspect();f.dispatchHook(m=>{if(m.operation==="enqueue")f.comps[0][field]=value==="drift"?f.comps[0][field]+2e-7:value;});const r=await f.add(0);assert.equal(r.ok,false,field+":"+String(value));assert.equal(r.automaticRetryAllowed,false);assert.equal(f.counts().sends,0);assert.equal(f.counts().census,0);assert.equal(f.counts().adds,0);
+    }
+  });
+  await check("pre-sender guard failure stays UNKNOWN; fresh shared batch/output passes without replay or rewriting old job",async()=>{
+    const f=fixture("fresh-after-guard");await f.inspect();f.dispatchHook(m=>{if(m.operation==="enqueue")f.comps[0].workAreaDuration+=2e-7;});const refused=await f.add(0);assert.equal(refused.ok,false);assert.equal(refused.code,"ae_delivery_unknown");assert.equal(f.counts().sends,0);assert.equal(f.counts().adds,0);assert.equal(f.ae.$.global.aeAgentAMETitleSendV1,undefined);
+    const oldLedger=f.ledger(f.batchId),old=JSON.parse(oldLedger);assert.equal(old.jobs[0].state,"unknown_outcome");assert.equal(old.jobs[0].requestNonce,refused.requestNonce);
+    // Existing native fence permits an unchanged prior SOURCES timeout to be
+    // retained. It does not grant replay rights to the failed original job.
+    const legacy={operation:"sources",requestNonce:crypto.randomUUID(),targetSpecifier:f.common.targetSpecifier,processBinding:old.processBinding,operationBinding:"a".repeat(64),callback:"timeout",body:null,message:{untouched:true}};f.ae.$.global.aeAgentAMETitleSendV1=legacy;
+    f.comps[0].workAreaDuration=4;f.dispatchHook(null);const freshBatch=crypto.randomUUID(),fresh=await f.add(0,{batchId:freshBatch,outputFileName:"fresh-"+freshBatch+".mov"});assert.equal(fresh.ok,true,JSON.stringify(fresh));assert.equal(fresh.ownItemAccepted,true);assert.notEqual(fresh.jobId,refused.jobId);assert.notEqual(fresh.requestNonce,refused.requestNonce);assert.equal(f.ledger(f.batchId),oldLedger);assert.equal(f.ae.$.global.aeAgentAMETitleSendV1.retainedSourceRead,legacy);assert.equal(legacy.callback,"timeout");assert.equal(f.counts().adds,1);assert.equal(f.counts().census,1);
   });
   await check("mandatory exact AME GUID membership: missing, duplicate and case mismatch never addDL",async()=>{
     for(const [name,list] of [["missing",()=>[]],["duplicate",f=>[f.comps[0].dynamicLinkGUID,f.comps[0].dynamicLinkGUID]],["case",f=>[f.comps[0].dynamicLinkGUID.toUpperCase()]]]){

@@ -2,8 +2,8 @@
 
 `inspect_saved_ame_title_source({expectedProjectFile, expectedRevision,
 comps:[{compItemId, expectedName}]})` читает один уже сохранённый clean AEP и
-1–64 явно указанные композиции. Для текущей проверки manifest содержит 11
-композиций, в один shared batch добавляются только две выбранные. START не входит
+1–64 явно указанные композиции. Manifest содержит 11 композиций;
+для текущей проверки shared queue выбраны только две. START не входит
 в этот путь; текущий START binding по-прежнему требует разные source paths.
 Композиции для `getDLItemsAtRoot` должны находиться на верхнем уровне проекта.
 20.10 созданные копии перенесены из `titr_all` в root с сохранением исходной
@@ -22,6 +22,15 @@ SaveAs, копии AEP по титрам и frozen snapshot producers не вы�
 AE sender непосредственно перед созданием BridgeTalk проверяет clean revision,
 выбранный comp и лёгкие native file pins. Native AME `getDLItemsAtRoot` обязателен:
 GUID должен встретиться ровно один раз с точным строковым равенством.
+
+Native guard сравнивает duration, workAreaStart и workAreaDuration как конечные
+числа с абсолютным допуском 1e-7 секунды: JSON в AE округляет дробное время.
+Identity/revision/GUID/path/file pins остаются точными. Live diagnostic 20.10
+подтвердил ложный отказ на разнице 3.37507799486048e-14 секунды до nativeSend.
+Исходный run `1b51be71-f309-4a78-99f3-e87a338d5082` остаётся UNKNOWN;
+его job/nonce/output reservation не переиспользуются и settlement не расширен.
+Для новой проверки после исправления используются новый batch/output/proposal
+и свежая admission. Regression сохраняет старый ledger побайтно.
 
 Затем используется существующий `prepare_ame_title_enqueue` → отдельный
 proposal/dry-run/выполнение `ensure_ame_running` → `continue_ame_title_enqueue`
@@ -42,6 +51,42 @@ lock и не защищает от произвольного внешнего c
 Офлайн-проверка: `node scripts/ame-saved-source-admission-smoke.js`.
 Она выполняет действующие admission, product ports, executor и fixed programs
 в изолированных VM; это не доказательство live подключения или рендера.
+
+## Live canary 20.10: две композиции из общего AEP
+
+Оба задания добавлены через `addDLToBatch` и подтверждены отдельным typed
+`get_ame_title_job_status`: own-item acceptance v2, exact GUID/source/output,
+workArea 0..10.0333333333333, setWorkArea ack=true, native status=queued,
+batchRunning=false, creationFailures=[]; START/render0. Computer Use для
+отправки и отдельные AEP для рендера не использовались.
+
+| Композиция | jobId | authorized enqueue run |
+|---|---|---|
+| TITR_RENDER_01 | `1bdd631b-961e-4f66-9c6e-7fa8727e7ddb` | `6b82732c-47b0-41f2-9141-8659aa6558cd` |
+| TITR_RENDER_02 | `ae510cca-3405-4de9-9449-ce204298fb3a` | `bf06afc2-cb86-412e-aea7-dc766b9c58f5` |
+
+У каждого свой служебный shared batch: `67599cd0-1b7e-47d8-a943-2817f2520f55`
+и `c1f5db55-33a9-4bd3-b9c0-02b1c48b4efe`. Причина — существующий exact
+independent-sender retirement допускает новый batch после принятого задания
+с потерянным исходным callback. Его условия не ослаблялись; всего новых addDL2.
+Перед вторым dispatch использован независимый native proof первого задания.
+
+Ограничение: исходные enqueue-планы завершились UNKNOWN через 10s, пока AME
+продолжал Dynamic Link. Native addDL/workArea завершились через194410/208673ms;
+последующие STATUS установили приёмку каждого задания. Исходные run outcomes
+не переписывались: queued acceptance подтверждена, полная приёмка синхронного
+enqueue-плана — нет. Следующая адаптация — асинхронный enqueue/reconciliation
+без ложного failed/UNKNOWN при длительной загрузке DL; повтор addDL запрещён.
+Два GUID одного AEP в общем START binding этим этапом не проверялись.
+
+Финальная native admission: clean/revision12968816,39529370bytes,
+SHA256 `e3de522177eb28a570c32f766dbc8507f72d75123c065796abcc6a5bea150957`;
+общий source не изменён. Preset `FHD_HQ_alfa_nosound`, SHA
+`c1b97e2fdba6076d0ae2da960c402da29032eacc42699dfbcc924d3eeaeded1c`;
+это точный аргумент EPR, appliedPresetVerified/mediaVerified=false.
+Локальные evidence: `.codex-runtime/title-comps-20261020/api-canary-summary.json`,
+`fresh-01-status-result.json`, `fresh-02-status-result.json`, `final-source-result.json`.
+Timing fix: admission15/dispatch25, syntax/rules/diff PASS; независимое High review GO.
 
 ## Ограниченная диагностика source API
 

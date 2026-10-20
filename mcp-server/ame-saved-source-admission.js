@@ -50,9 +50,11 @@ function nativeObserve(a){
   check();return {projectFile:String(project.file.fsName),revision:project.revision,dirty:false,comps:rows};
 }
 function nativeGuard(binding){
+  // AE's JSON number rendering rounds sub-frame doubles during admission.
+  function sameTiming(a,b){return typeof a==="number"&&typeof b==="number"&&isFinite(a)&&isFinite(b)&&Math.abs(a-b)<=0.0000001;}
   var actual=sourceObserve(binding.args),wanted=binding.observed;
   if(actual.projectFile!==wanted.projectFile||actual.revision!==wanted.revision||actual.comps.length!==wanted.comps.length)throw Error("ame_saved_source_native_guard_changed");
-  for(var i=0;i<actual.comps.length;i++){var a=actual.comps[i],b=wanted.comps[i];if(a.compItemId!==b.compItemId||a.name!==b.name||a.dynamicLinkGUID!==b.dynamicLinkGUID||a.duration!==b.duration||a.workAreaStart!==b.workAreaStart||a.workAreaDuration!==b.workAreaDuration)throw Error("ame_saved_source_native_guard_changed");}
+  for(var i=0;i<actual.comps.length;i++){var a=actual.comps[i],b=wanted.comps[i];if(a.compItemId!==b.compItemId||a.name!==b.name||a.dynamicLinkGUID!==b.dynamicLinkGUID||!sameTiming(a.duration,b.duration)||!sameTiming(a.workAreaStart,b.workAreaStart)||!sameTiming(a.workAreaDuration,b.workAreaDuration))throw Error("ame_saved_source_native_guard_changed");}
   var file=new File(binding.file.path);if(!file.exists||file.alias||file.length!==binding.file.bytes||!file.modified||Math.floor(file.modified.getTime()/1000)!==Math.floor(binding.file.mtimeMs/1000))throw Error("ame_saved_source_native_file_changed");
 }
 const literal=v=>JSON.stringify(v).replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
