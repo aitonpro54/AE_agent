@@ -59,6 +59,12 @@ async function unitTests(root) {
   test("missing installed",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_missing"}));
   const copy=path.join(roots,b.TARGET.bundleId);fs.cpSync(sourceRoot,copy,{recursive:true});
   test("actual manifest and asset equality",()=>assert.equal(b.inspectInstalledTarget([roots],sourceRoot).extensionId,b.TARGET.extensionId));
+  const guardAsset=path.join(copy,"native-probe-startup-guard.js"),guardBytes=fs.readFileSync(guardAsset);
+  fs.unlinkSync(guardAsset);
+  test("missing installed startup guard",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_source_mismatch"}));
+  fs.writeFileSync(guardAsset,Buffer.concat([guardBytes,Buffer.from("\n// stale startup guard")]));
+  test("stale installed startup guard",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_source_mismatch"}));
+  fs.writeFileSync(guardAsset,guardBytes);
   fs.cpSync(sourceRoot,path.join(roots,"duplicate"),{recursive:true});
   test("duplicate installed IDs",()=>assert.throws(()=>b.inspectInstalledTarget([roots],sourceRoot),{code:"installed_panel_ambiguous"}));
   fs.rmSync(path.join(roots,"duplicate"),{recursive:true});

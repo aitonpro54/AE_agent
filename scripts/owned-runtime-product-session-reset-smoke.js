@@ -17,8 +17,8 @@ function make(options={}){
 }
 async function withF(options,fn){const f=make(options);try{await fn(f);}finally{f.cleanup();}}
 function envelope(file,value){const row={schema:r1.SCHEMA+".envelope",sha256:r1.hash(value),value};fs.writeFileSync(file,JSON.stringify(row));return row;}
-async function withFailedStart(fn){
-  const f=make(),b=reset.FAILED_START,old=supervisor.readDaemonRegistration(f.root),from=path.join(f.base,"daemon-reservations",old.generation),dir=path.join(f.base,"daemon-reservations",b.predecessorGeneration);fs.mkdirSync(dir);
+async function withFailedStart(fn,b=reset.FAILED_START){
+  const f=make(),old=supervisor.readDaemonRegistration(f.root),from=path.join(f.base,"daemon-reservations",old.generation),dir=path.join(f.base,"daemon-reservations",b.predecessorGeneration);f.failed=b;fs.mkdirSync(dir);
   const read=name=>JSON.parse(fs.readFileSync(path.join(from,name+".json"),"utf8")).value;
   const r=envelope(path.join(dir,"reservation.json"),{...read("reservation"),generation:b.predecessorGeneration}),t=envelope(path.join(dir,"startup-ticket.json"),{...read("startup-ticket"),generation:b.predecessorGeneration,reservationSha256:r.sha256});
   const c={...read("native-candidate"),generation:b.predecessorGeneration,reservationSha256:r.sha256,startupTicketSha256:t.sha256};c.authentication=supervisor.signedCandidate(c,f.key);const cr=envelope(path.join(dir,"native-candidate.json"),c);
@@ -56,6 +56,8 @@ function installBootstrapConnect(f){
   return {manager,normalConnects:()=>normalConnects,polls:()=>polls};
 }
 async function main(){
+  await check("arbitrary UUID failed start selected from current consumed key",()=>withFailedStart(async f=>{const r=await f.recover();assert.equal(r.status,"reset_pending_preflight");assert.deepEqual(r.recoveredFailedStart,f.failed);assert.equal(f.counts.launch,1);assert.equal((await f.recover()).status,"failed_start_recovered_pending_preflight");f.originalUnchanged();},{operationId:crypto.randomUUID(),generation:crypto.randomUUID(),predecessorGeneration:crypto.randomUUID()}));
+  await check("failed recovery leaf gets distinct once key after exact absence",()=>withFailedStart(async f=>{f.failStartup=true;await assert.rejects(f.recover(),/started_process_exited/);assert.equal(f.counts.launch,1);f.failStartup=false;const first=fs.readdirSync(path.join(f.base,"product-session-reset-recoveries")),firstIntent=JSON.parse(fs.readFileSync(path.join(f.base,"product-session-reset-recoveries",first[0],"intent.json"))).value;const before=f.probes(),r=await f.recover();assert.equal(r.status,"reset_pending_preflight");assert.equal(r.recoveredFailedStart.operationId,firstIntent.operationId);assert.equal(r.recoveredFailedStart.generation,firstIntent.generation);assert.equal(f.counts.launch,2);assert.equal(f.probes()-before,4);assert.equal(fs.readdirSync(path.join(f.base,"product-session-reset-recovery-keys")).length,2);f.originalUnchanged();},{operationId:crypto.randomUUID(),generation:crypto.randomUUID(),predecessorGeneration:crypto.randomUUID()}));
   await check("exact failed reset recovers one fresh child, immutable history and closed physical preflight",()=>withFailedStart(async f=>{
     const old=JSON.stringify(await f.reset()),before=f.probes();assert.equal((await f.failedStatus()).status,"failed_start_recovery_not_attempted");assert.equal(JSON.stringify(await f.reset()),old);
     const r=await f.recover();assert.equal(r.status,"reset_pending_preflight");assert.notEqual(r.generation,reset.FAILED_START.generation);assert.equal(f.counts.launch,1);assert.equal(f.probes()-before,4);assert.equal(r.oldExitProven,false);assert.equal(r.writeAdmissionReleased,false);assert.equal(f.locks(),0);f.originalUnchanged();

@@ -8,13 +8,38 @@ const http = require("http");
 const {spawn, execFile} = require("child_process");
 const {fileURLToPath} = require("url");
 const {selectCepPanelTarget,isCepExtensionUrl} = require("../scripts/cep-panel-target");
+const recoveryState=require("./session-recovery-state");
 
 const TARGET = Object.freeze({bundleId:"com.codex.aemcpbridge", extensionId:"com.codex.aemcpbridge.panel", menu:"AE Agent 3.3.3", version:"3.3.3"});
 const TOOL_NAME = "ensure_ae_agent_panel";
+const RECOVERY_TOOL_NAME="recover_ae_agent_panel";
+const recoveryTool={name:RECOVERY_TOOL_NAME,description:"Reconcile the private active panel-bootstrap attempt using exact authenticated native results, or one separately identified fixed project read through the existing physical native latch. Preserves old UNKNOWN, never replays old commands or UI. Accepts no selectors. A successful reconciliation requires a separate fresh ensure.",annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false},inputSchema:{type:"object",additionalProperties:false,properties:{}}};
 const tool = {name:TOOL_NAME, description:"Open/activate the fixed installed AE Agent CEP panel in one already-running After Effects, or reconnect its exact existing CDP page. Changes application panel UI only; never project contents. Success requires fresh panel connectivity and the ordinary native typed get_project_info. Unknown delivery blocks replay.",
   annotations:{readOnlyHint:false, destructiveHint:false, idempotentHint:false, openWorldHint:false},
   inputSchema:{type:"object",additionalProperties:false,properties:{timeoutMs:{type:"integer",minimum:1,maximum:30000,description:"Overall deadline in milliseconds, default 30000."}}}};
 function problem(code, message, evidence) { return Object.assign(new Error(message || code), {code,evidence}); }
+function acquireServiceLock(lockPath){
+  const ledger=require("./native-fixture-attempt-ledger"),newOwner=()=>JSON.stringify({schema:2,pid:process.pid,token:crypto.randomUUID()}),absent=pid=>{if(!Number.isInteger(pid)||pid<1)throw problem("bootstrap_lock_unproven");try{process.kill(pid,0);return false;}catch(error){if(error.code==="ESRCH")return true;throw problem("bootstrap_lock_owner_unproven");}},owner=bytes=>{const text=bytes.toString("utf8");if(/^\d+$/.test(text))return Number(text);let row;try{row=JSON.parse(text);}catch(_){throw problem("bootstrap_lock_unproven");}if(row.schema!==2||!recoveryState.UUID.test(row.token||""))throw problem("bootstrap_lock_unproven");return row.pid;};
+  function create(){const fd=fs.openSync(lockPath,"wx",0o600);fs.writeFileSync(fd,newOwner());fs.fsyncSync(fd);return fd;}
+  ledger.safeDirectory(path.dirname(lockPath));
+  try{return create();}
+  catch(error){
+    if(error.code!=="EEXIST")throw error;
+    const bytes=ledger.readBytes(lockPath),stat=fs.lstatSync(lockPath),pid=owner(bytes);if(!absent(pid))throw problem("bootstrap_busy");
+    // Append-only claimant CAS serializes stale reclaimers. A crashed claimant
+    // is superseded only after strict process absence, under a NEW claim UUID.
+    // A claim never grants native authority and never removes another lock.
+    const sha=recoveryState.hash(bytes),claims=path.join(path.dirname(lockPath),"service-lock-reclaims",recoveryState.hash(Buffer.from(sha+":"+stat.dev+":"+stat.ino)));ledger.ensure(claims);
+    const names=fs.readdirSync(claims).sort();if(names.length>128)throw problem("bootstrap_lock_reclaim_budget");
+    for(let n=0;n<names.length;n++)if(names[n]!==String(n).padStart(4,"0")+".json")throw problem("bootstrap_lock_claim_corrupt");
+    if(names.length){const prior=JSON.parse(ledger.readBytes(path.join(claims,names.at(-1))));if(prior.originalRawSha256!==sha||!recoveryState.UUID.test(prior.token||""))throw problem("bootstrap_lock_claim_corrupt");if(!absent(prior.pid))throw problem("bootstrap_busy");}
+    const claimPath=path.join(claims,String(names.length).padStart(4,"0")+".json");let claim;
+    try{claim=fs.openSync(claimPath,"wx",0o600);fs.writeFileSync(claim,JSON.stringify({schema:1,pid:process.pid,token:crypto.randomUUID(),originalRawSha256:sha}));fs.fsyncSync(claim);}catch(claimError){if(claimError.code==="EEXIST")throw problem("bootstrap_busy");throw claimError;}finally{if(claim!==undefined)fs.closeSync(claim);}
+    const current=fs.lstatSync(lockPath);if(current.dev!==stat.dev||current.ino!==stat.ino||!ledger.readBytes(lockPath).equals(bytes)||!absent(pid))throw problem("bootstrap_lock_changed");
+    fs.unlinkSync(lockPath);return create();
+  }
+}
+function releaseServiceLock(fd,file){const held=fs.fstatSync(fd);fs.closeSync(fd);const current=fs.lstatSync(file);if(held.dev!==current.dev||held.ino!==current.ino)throw problem("bootstrap_lock_owner_changed");fs.unlinkSync(file);}
 function validateInput(args) {
   if (!args || typeof args!=="object" || Array.isArray(args) || Object.keys(args).some(key=>key!=="timeoutMs")) throw problem("invalid_bootstrap_arguments","Only timeoutMs is accepted.");
   const timeoutMs=args.timeoutMs===undefined ? 30000 : args.timeoutMs;
@@ -74,7 +99,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
   const c=copies[0];
   if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.3"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.3"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
   const hashes={};
-  for (const asset of ["CSXS/manifest.xml","index.html","panel-action-contract.js","panel-actions.js","panel.js","style.css","lib/CSInterface.js"]) {
+  for (const asset of ["CSXS/manifest.xml","index.html","panel-action-contract.js","panel-actions.js","native-probe-startup-guard.js","panel.js","style.css","lib/CSInterface.js"]) {
     const installed=path.join(c.root,asset), source=path.join(sourceRoot,asset);
     if (!fs.existsSync(installed) || !fs.existsSync(source) || sha(installed)!==sha(source)) throw problem("installed_panel_source_mismatch",`Installed ${asset} differs from this repository.`);
     hashes[asset]=sha(installed);
@@ -186,7 +211,8 @@ function createPanelBootstrapService(deps) {
     if(!fs.existsSync(ackPath)) return null;
     try {const a=JSON.parse(fs.readFileSync(ackPath,"utf8").replace(/^\uFEFF/,""));return a.requestId===r.requestId && Number.isInteger(a.commandId) && ["expired","unsupported_api","lookup_failed","command_unavailable","executing","execution_unknown","executed"].includes(a.state) ? a : null;}catch(_){return null;}
   }
-  function snapshot() {try {const r=load();return r ? {requestId:r.requestId,stage:r.stage,deadline:r.deadline,delivery:r.delivery,ae:r.ae || null,target:r.target || null,cli:r.cli || null,projectReadCommand:r.projectReadCommand || null,ack:ackFor(r)} : null;}catch(e){return {stage:"record_failure",code:e.code};}}
+  function snapshot() {try {const r=load();return r ? {requestId:r.requestId,stage:r.stage,deadline:r.deadline,delivery:r.delivery,ae:r.ae || null,target:r.target || null,cli:r.cli || null,projectReadCommand:r.projectReadCommand || null,ack:ackFor(r),...(r.stage==="project_read_unknown"?{recovery:recovery.status()}: {})} : null;}catch(e){return {stage:"record_failure",code:e.code};}}
+  const recovery=createBootstrapRecovery({stateDir,statePath,load,ackFor,getStatus:deps.getStatus,getOrigin:deps.getOrigin,getDeliveryFence:deps.getDeliveryFence,readProject:deps.readProject,readResult:deps.readResult,recoveryKey:deps.recoveryKey,assertIdle,now,isBusy:()=>running,setBusy:v=>{running=v;}});
   async function ensure(raw) {
     let stage="input", record=null, lock=null, ownsRun=false;
     try {
@@ -194,18 +220,11 @@ function createPanelBootstrapService(deps) {
       if(running) throw problem("bootstrap_busy");
       running=true;ownsRun=true;
       fs.mkdirSync(stateDir,{recursive:true,mode:0o700});
-      try {lock=fs.openSync(lockPath,"wx",0o600);fs.writeFileSync(lock,String(process.pid));}
-      catch(e) {
-        if(e.code!=="EEXIST") throw e;
-        const owner=Number(fs.readFileSync(lockPath,"utf8"));
-        if(!Number.isInteger(owner)||owner<1) throw problem("bootstrap_lock_unproven");
-        try {process.kill(owner,0);throw problem("bootstrap_busy");}catch(err){if(err.code!=="ESRCH") throw err;}
-        fs.unlinkSync(lockPath);lock=fs.openSync(lockPath,"wx",0o600);fs.writeFileSync(lock,String(process.pid));
-      }
+      lock=acquireServiceLock(lockPath);
       const remaining=()=>{const ms=deadline-now();if(ms<=0) throw problem("bootstrap_timeout");return ms;};
       stage="preflight";let status=deps.getStatus();assertIdle(status);
       record=load();
-      if(record && record.stage==="project_read_unknown") throw problem("project_read_unknown","Previous typed project read has no terminal result. Reconcile it; no automatic replay.");
+      if(record && record.stage==="project_read_unknown") throw problem("project_read_unknown","Previous typed project read has no terminal result. Use recover_ae_agent_panel with empty arguments; no automatic replay.");
       let pending=record && !["verified","not_executed","project_read_not_delivered"].includes(record.stage);
       if(pending && record.delivery==="native") {
         const ack=ackFor(record);
@@ -255,12 +274,14 @@ function createPanelBootstrapService(deps) {
       const budget=remaining();
       // Write before enqueue so a daemon crash cannot forget a possibly-delivered read.
       record=record || {schema:1,requestId:crypto.randomUUID(),deadline,delivery:"none",createdAt:now()};
+      if(deps.getOrigin)record.origin=deps.getOrigin();
       record.stage="project_read_unknown";save(record);
-      const read=Promise.resolve().then(()=>deps.readProject(budget, pins=>{record.projectReadCommand=pins;save(record);}));
+      let queueCallbackOpen=true;
+      const read=Promise.resolve().then(()=>deps.readProject(budget, pins=>{if(!queueCallbackOpen||load()?.requestId!==record.requestId)throw problem("bootstrap_read_owner_changed");record.projectReadCommand={...pins,tool:"get_project_info",...(record.origin?{origin:record.origin}:{})};save(record);return {kind:"bootstrap",pins:record.projectReadCommand};}));
       let timer;
       let project;
       try {project=await Promise.race([read,new Promise((_,reject)=>{timer=setTimeout(()=>reject(problem("project_read_timeout")),budget);})]);}
-      finally {clearTimeout(timer);}
+      finally {queueCallbackOpen=false;clearTimeout(timer);}
       if(!project || typeof project!=="object" || !Object.prototype.hasOwnProperty.call(project,"file") || !Number.isInteger(project.numItems) || project.numItems<0) throw problem("project_read_invalid");
       const after=deps.getStatus();
       if(!after.panelConnected || owner && (!after.lastPanelInfo || owner.id!==after.lastPanelInfo.panelConnectionId || owner.generation!==after.lastPanelInfo.panelGeneration)) throw problem("panel_connection_changed");
@@ -271,10 +292,165 @@ function createPanelBootstrapService(deps) {
         record.stage="project_read_not_delivered";record.readFailure=e.code || "before_delivery";
         try {save(record);}catch(_) { /* Preserve the older durable unknown if storage failed. */ }
       }
-      return {ok:false,status:"failure",stage,reason:e.code || "bootstrap_failed",message:e.message,evidence:e.evidence || snapshot(),panelConnected:Boolean(deps.getStatus().panelConnected)};
-    } finally {if(lock!==null){fs.closeSync(lock);fs.unlinkSync(lockPath);}if(ownsRun) running=false;}
+      return {ok:false,status:"failure",stage,reason:e.code || "bootstrap_failed",message:e.message,evidence:e.evidence || snapshot(),panelConnected:Boolean(deps.getStatus().panelConnected),...(record?.stage==="project_read_unknown"?{automaticReplayAllowed:false,replayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{}}}:{})};
+    } finally {if(lock!==null)releaseServiceLock(lock,lockPath);if(ownsRun) running=false;}
   }
-  return {ensure,snapshot,isBusy:()=>running};
+  return {ensure,snapshot,isBusy:()=>running||recovery.admissionBlocked(),recover:recovery.recover,observeTerminal:recovery.observeTerminal,captureRecoveryBinding:recovery.capture,recoveryChallenge:recovery.challenge,acceptRecoveryEpoch:recovery.activate};
+}
+
+// Shared with ensure under service.lock. Recovery selects only the private
+// active pointer; immutable original bytes, witnesses and dispositions survive
+// daemon/result-map loss. No old command is ever resubmitted.
+function createBootstrapRecovery(deps){
+  const {stateDir,statePath}=deps,R=recoveryState,ledger=require("./native-fixture-attempt-ledger"),base=path.join(stateDir,"recovery"),witnessDir=path.join(stateDir,"terminal-witnesses");
+  function key(){if(deps.recoveryKey)return deps.recoveryKey;const file=path.join(stateDir,"recovery.key");if(!fs.existsSync(file)){const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,crypto.randomBytes(32));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}const bytes=fs.readFileSync(file);if(bytes.length!==32)throw problem("bootstrap_recovery_key_invalid");return bytes;}
+  function sign(value){return crypto.createHmac("sha256",key()).update(R.canonical(value)).digest("hex");}
+  function read(file){if(!fs.existsSync(file))return null;const row=JSON.parse(ledger.readBytes(file)),{authentication,...value}=row;if(authentication!==sign(value))throw problem("bootstrap_recovery_record_invalid");return value;}
+  function write(file,value){ledger.ensure(path.dirname(file));if(fs.existsSync(file)){const prior=read(file);if(!R.same(prior,value))throw problem("bootstrap_recovery_record_conflict");return prior;}const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify({...value,authentication:sign(value)}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return read(file);}
+  function observeTerminal(binding,row){
+    if(!binding||!binding.pins||!R.UUID.test(binding.pins.id||""))return;
+    row.observedOrigin=deps.getOrigin?.();
+    const value={...row,tool:"get_project_info",origin:binding.pins.origin};
+    // A timeout is a transport outcome. Never turn it, or a late ignored ACK,
+    // into a native completion. Save accepted native/never-delivered facts only.
+    if(!R.exactTerminal(binding.pins,value))return;
+    write(path.join(witnessDir,binding.pins.id+".json"),{schema:1,binding,terminal:value});
+  }
+  async function terminal(pins){
+    if(!pins||!R.UUID.test(pins.id||""))return null;
+    const durable=read(path.join(witnessDir,pins.id+".json"));
+    if(durable){if(!R.same(durable.binding.pins,pins))throw problem("bootstrap_recovery_terminal_binding_changed");return durable.terminal;}
+    return deps.readResult?await deps.readResult(pins):null;
+  }
+  function origin(){const value=deps.getOrigin?.();if(!R.origin(value))throw problem("bootstrap_recovery_actor_or_source_unproven");return value;}
+  function uiTerminal(attempt){if(attempt.delivery==="none")return true;if(attempt.delivery==="native")return deps.ackFor(attempt)?.state==="executed";return attempt.delivery==="cdp"&&attempt.reloadAcknowledged===true;}
+  function capture(){
+    if(!fs.existsSync(statePath))return null;const raw=ledger.readBytes(statePath),attempt=deps.load();if(attempt.stage!=="project_read_unknown")return null;
+    const sha=R.hash(raw),dir=path.join(base,sha),barriers=[];
+    if(fs.existsSync(dir))for(const name of fs.readdirSync(dir).filter(n=>/^barrier-\d+$/.test(n)).sort()){const row=read(path.join(dir,name,"pins.json"));if(row)barriers.push({operationId:row.operationId,pins:row.pins});}
+    return {originalRawSha256:sha,requestId:attempt.requestId,projectReadCommand:attempt.projectReadCommand||null,barriers};
+  }
+  function epoch(){const cover=capture();if(!cover)return null;const dir=path.join(base,cover.originalRawSha256);if(!fs.existsSync(dir))return null;const names=fs.readdirSync(dir).filter(n=>/^epoch-\d+$/.test(n)).sort((a,b)=>Number(a.slice(6))-Number(b.slice(6)));if(!names.length)return null;const directory=path.join(dir,names.at(-1)),intent=read(path.join(directory,"intent.json"));if(!intent)throw problem("bootstrap_recovery_epoch_intent_missing");return {directory,intent,activation:read(path.join(directory,"activation.json")),index:Number(names.at(-1).slice(6)),cover};}
+  function epochPending(){try{const e=epoch();return !!e&&!e.activation;}catch(_){return true;}}
+  function admissionBlocked(){try{return deps.load()?.stage==="project_read_unknown";}catch(_){return true;}}
+  function challenge(actor){const e=epoch();if(!e||e.activation)return null;const exact=R.same(actor,e.intent.origin.actor)||R.same(actor,e.intent.nextActor),historical=!exact&&R.actor(actor)&&actor.panelConnectionId===e.intent.origin.actor.panelConnectionId&&/^[1-9]\d*$/.test(actor.panelGeneration)&&Number(actor.panelGeneration)>Number(e.intent.nextActor.panelGeneration);if(!exact&&!historical)throw problem("bootstrap_recovery_epoch_actor_changed");return {...e.intent,schema:"ae-agent.bootstrap-recovery-epoch.v1.challenge",historicalReceiptOnly:historical};}
+  function requestEpoch(attempt,sha,before){
+    const prior=epoch();if(prior&&!prior.activation)return {ok:false,status:"blocked",reason:"bootstrap_recovery_epoch_pending",replayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:"observe_epoch_ack"}};
+    const cover=capture(),generation=crypto.randomUUID(),nextActor={...before.actor,panelLifecycleEpoch:before.actor.panelLifecycleEpoch+1,panelGeneration:String(Math.max(deps.now(),Number(before.actor.panelGeneration)||0)+1)},directory=path.join(base,sha,"epoch-"+(prior?prior.index+1:0));
+    write(path.join(directory,"intent.json"),{schema:1,generation,challenge:crypto.randomUUID(),origin:before,nextActor,coveredBootstrap:cover,createdAt:new Date(deps.now()).toISOString()});
+    return {ok:false,status:"blocked",reason:"bootstrap_recovery_epoch_pending",replayAllowed:false,automaticReplayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:"observe_epoch_ack"}};
+  }
+  function activate(input){
+    let lock;try{
+      if(deps.isBusy())throw problem("bootstrap_busy");lock=acquireServiceLock(path.join(stateDir,"service.lock"));
+      const e=epoch();if(!e)throw problem("bootstrap_recovery_epoch_absent");
+      if(input?.kind==="request_fresh_epoch"){
+        if(Object.keys(input).sort().join(",")!==["kind","generation","challenge","actor","physicalInflight","panelControl","deliveryFenceActor"].sort().join(","))throw problem("bootstrap_recovery_epoch_input_invalid");
+        const i=e.intent,actual=origin(),c=input.panelControl;
+        if(e.activation||input.generation!==i.generation||input.challenge!==i.challenge||!R.same(actual.actor,input.actor)||!R.same(input.deliveryFenceActor,input.actor)||actual.actor.panelConnectionId!==i.origin.actor.panelConnectionId||!(/^[1-9]\d*$/.test(actual.actor.panelGeneration)&&Number(actual.actor.panelGeneration)>Number(i.nextActor.panelGeneration))||input.physicalInflight!==0||!c||c.nativeControlIdle!==true||c.activeAction!==null||c.recoveryTransport!==null||c.actionStorage!=="ready"||!Array.isArray(c.oldActionEntries)||c.oldActionEntries.length||!R.same(e.cover,i.coveredBootstrap))throw problem("bootstrap_recovery_fresh_epoch_unproven");
+        deps.assertIdle(deps.getStatus());
+        write(path.join(e.directory,"superseded-unknown.json"),{schema:1,generation:i.generation,intentSha256:R.hash(Buffer.from(R.canonical(i))),coveredBootstrap:i.coveredBootstrap,revokingActor:actual.actor,deliveryFenceActor:input.deliveryFenceActor,physicalInflight:0,oldOutcome:"unknown_preserved",replayAllowed:false});
+        const generation=crypto.randomUUID(),nextActor={...actual.actor,panelLifecycleEpoch:actual.actor.panelLifecycleEpoch+1,panelGeneration:String(Math.max(deps.now(),Number(actual.actor.panelGeneration))+1)},directory=path.join(base,e.cover.originalRawSha256,"epoch-"+(e.index+1));
+        const intent=write(path.join(directory,"intent.json"),{schema:1,generation,challenge:crypto.randomUUID(),origin:actual,nextActor,coveredBootstrap:e.cover,supersededGeneration:i.generation,createdAt:new Date(deps.now()).toISOString()});
+        return {ok:true,status:"bootstrap_recovery_fresh_epoch_pending",bootstrapRecovery:{...intent,schema:"ae-agent.bootstrap-recovery-epoch.v1.challenge",historicalReceiptOnly:false}};
+      }
+      if(!input||Object.keys(input).sort().join(",")!==["generation","challenge","previousActor","actor","physicalInflight","panelControl","project"].sort().join(","))throw problem("bootstrap_recovery_epoch_input_invalid");
+      const i=e.intent,p=input.project,c=input.panelControl;
+      if(input.generation!==i.generation||input.challenge!==i.challenge||!R.same(input.previousActor,i.origin.actor)||!R.same(input.actor,i.nextActor)||input.physicalInflight!==0||!p||p.challenge!==i.challenge||p.projectPresent!==true||typeof p.file!=="string"||typeof p.dirty!=="boolean"||!Number.isSafeInteger(p.revision)||p.revision<0||p.rendering!==false||!c||c.nativeControlIdle!==true||c.activeAction!==null||c.recoveryTransport!==null||c.actionStorage!=="ready"||!Array.isArray(c.oldActionEntries)||c.oldActionEntries.length||!R.same(e.cover,i.coveredBootstrap))throw problem("bootstrap_recovery_epoch_physical_fence_unproven");
+      deps.assertIdle(deps.getStatus());const actual=origin(),historical=!R.same(actual.actor,i.origin.actor)&&!R.same(actual.actor,i.nextActor);
+      if(e.activation){if(!R.same(e.activation.payload,input))throw problem("bootstrap_recovery_epoch_terminal_conflict");return {ok:true,status:"bootstrap_recovery_epoch_active",activation:e.activation,...(historical?{historicalReceiptOnly:true}:{})};}
+      // A resumed exact panel ACK may reach a successor backend. It is still
+      // tied to the durable challenge/coverage and the actual changed actor.
+      if(historical&&!(actual.actor.panelConnectionId===i.origin.actor.panelConnectionId&&/^[1-9]\d*$/.test(actual.actor.panelGeneration)&&Number(actual.actor.panelGeneration)>Number(i.nextActor.panelGeneration)))throw problem("bootstrap_recovery_epoch_actor_changed");
+      const activation=write(path.join(e.directory,"activation.json"),{schema:1,generation:i.generation,originalRawSha256:e.cover.originalRawSha256,kind:"bootstrap_epoch",previousActor:i.origin.actor,actor:i.nextActor,coveredBootstrap:i.coveredBootstrap,origin:{actor:i.nextActor,runtime:actual.runtime},payload:input,replayAllowed:false,oldOutcome:"unknown_preserved"});
+      return {ok:true,status:"bootstrap_recovery_epoch_active",activation,...(historical?{historicalReceiptOnly:true}:{})};
+    }finally{if(lock!==undefined)releaseServiceLock(lock,path.join(stateDir,"service.lock"));}
+  }
+  function fence(attempt,sha,before,barrier){const e=epoch();if(e?.activation){const v=e.activation;if(R.deliveryFence(v,attempt,sha,before,{barrier:barrier||null}))return v;}return deps.getDeliveryFence?.(attempt,sha,before,barrier);}
+  function status(){const pending=epochPending();return {state:pending?"epoch_pending":"reconciliation_required",currentAdmission:pending?"blocked_pending_epoch":"reconciliation_required",historicalOutcome:"unknown_preserved",replayAllowed:false,automaticReplayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:pending?"observe_epoch_ack":"reconcile"}};}
+  async function recover(raw={}){
+    if(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length)throw problem("invalid_bootstrap_recovery_arguments");
+    let lock=null,owns=false;
+    const result=(state,extra={})=>({ok:state!=="blocked",status:state,replayAllowed:false,automaticReplayAllowed:false,...extra});
+    try{
+      if(deps.isBusy())throw problem("bootstrap_busy");deps.setBusy(true);owns=true;
+      fs.mkdirSync(stateDir,{recursive:true,mode:0o700});lock=acquireServiceLock(path.join(stateDir,"service.lock"));
+      if(!fs.existsSync(statePath))return result("no_active_attempt",{newEnsureRequired:true,nextAction:{tool:TOOL_NAME,arguments:{}}});
+      const original=ledger.readBytes(statePath),sha=R.hash(original),attempt=deps.load(),dir=path.join(base,sha),originalFile=path.join(dir,"original-attempt.json");
+      if(attempt.stage!=="project_read_unknown")return result("no_unknown_project_read",{newEnsureRequired:true,nextAction:{tool:TOOL_NAME,arguments:{}}});
+      function unchanged(){if(!fs.existsSync(statePath)||R.hash(ledger.readBytes(statePath))!==sha)throw problem("bootstrap_recovery_active_pointer_changed");}
+      function archive(){ledger.ensure(dir);if(fs.existsSync(originalFile)){if(!ledger.readBytes(originalFile).equals(original))throw problem("bootstrap_recovery_archive_changed");}else{const fd=fs.openSync(originalFile,"wx",0o600);try{fs.writeFileSync(fd,original);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}}
+      function retire(classified,evidence){
+        unchanged();archive();
+        const file=path.join(dir,"disposition.json"),prior=read(file);
+        const disposition=prior||write(file,{schema:1,requestId:attempt.requestId,originalRawSha256:sha,...classified,evidence,retiredAt:new Date(deps.now()).toISOString()});
+        if(disposition.originalRawSha256!==sha||disposition.replayAllowed!==false||!["completed_observed","failed_observed","not_delivered_proven","epoch_fenced_unknown"].includes(disposition.state))throw problem("bootstrap_recovery_disposition_invalid");
+        unchanged();fs.unlinkSync(statePath);
+        return result(disposition.state,{oldOutcome:disposition.oldOutcome||disposition.state,originalRawSha256:sha,newEnsureRequired:true,nextAction:{tool:TOOL_NAME,arguments:{}}});
+      }
+      const prior=read(path.join(dir,"disposition.json"));
+      if(prior)return retire(prior,prior.evidence);
+      const oldTerminal=await terminal(attempt.projectReadCommand);unchanged();
+      let classified=R.classify({attempt,terminal:oldTerminal,originalRawSha256:sha,uiTerminal:uiTerminal(attempt)});
+      if(classified.state!=="blocked")return retire(classified,{kind:"exact_terminal",terminal:oldTerminal});
+      if(!uiTerminal(attempt))return result("blocked",{reason:classified.reason,nextAction:{kind:"observe_application_ui_receipt",automaticReplayAllowed:false}});
+      unchanged();archive();
+      let index=0,barrierDir=path.join(dir,"barrier-"+index);while(fs.existsSync(path.join(dir,"barrier-"+(index+1)))){index++;barrierDir=path.join(dir,"barrier-"+index);}
+      let intentFile=path.join(barrierDir,"intent.json"),pinsFile=path.join(barrierDir,"pins.json"),notQueuedFile=path.join(barrierDir,"not-enqueued.json");
+      let intent=read(intentFile),pinsRow=read(pinsFile),notQueued=read(notQueuedFile);
+      if(intent&&intent.originalRawSha256!==sha)throw problem("bootstrap_recovery_barrier_binding_invalid");
+      // Durable accepted terminal evidence can finish a receipt/CAS crash even
+      // after backend restart. Its before/after origins were captured in the
+      // native result handler, rather than reconstructed from newer disk bytes.
+      if(pinsRow){
+        if(!intent||pinsRow.operationId!==intent.operationId||pinsRow.originalRawSha256!==sha||!R.same(pinsRow.pins.origin,intent.origin))throw problem("bootstrap_recovery_barrier_binding_invalid");
+        const exact=await terminal(pinsRow.pins);unchanged();
+        const resumed=R.classify({attempt,originalRawSha256:sha,uiTerminal:true,barrier:{originalRawSha256:sha,before:intent.origin,after:exact?.observedOrigin,pins:pinsRow.pins,terminal:exact,deliveryFence:intent.deliveryFence}});
+        if(resumed.state!=="blocked")return retire(resumed,{kind:"physical_barrier",operationId:intent.operationId,pins:pinsRow.pins,terminal:exact,before:intent.origin,after:exact.observedOrigin});
+        deps.assertIdle(deps.getStatus());const current=origin(),epochFence=fence(attempt,sha,current,{operationId:intent.operationId,pins:pinsRow.pins});
+        if(!R.deliveryFence(epochFence,attempt,sha,current,{barrier:{operationId:intent.operationId,pins:pinsRow.pins}}))return requestEpoch(attempt,sha,current);
+        // A new signed physical reset epoch covers this exact old barrier.
+        // Preserve it UNKNOWN and allocate a NEW identity in that new epoch.
+        write(path.join(barrierDir,"epoch-fenced-unknown.json"),{schema:1,operationId:intent.operationId,pins:pinsRow.pins,deliveryFence:epochFence,replayAllowed:false,oldOutcome:"unknown_preserved"});
+        index++;barrierDir=path.join(dir,"barrier-"+index);intentFile=path.join(barrierDir,"intent.json");pinsFile=path.join(barrierDir,"pins.json");notQueuedFile=path.join(barrierDir,"not-enqueued.json");intent=null;pinsRow=null;notQueued=null;
+      }
+      deps.assertIdle(deps.getStatus());const before=origin();unchanged();
+      if(intent){
+        // The queue callback durably writes pins BEFORE actual enqueue. Missing
+        // pins therefore prove this barrier was never enqueued; retain that
+        // evidence and use a new operation identity, never replay its identity.
+        if(!notQueued)notQueued=write(notQueuedFile,{schema:1,operationId:intent.operationId,originalRawSha256:sha,reason:"pins_before_enqueue_absent"});
+        if(notQueued.operationId!==intent.operationId||notQueued.originalRawSha256!==sha)throw problem("bootstrap_recovery_not_enqueued_invalid");
+        index++;barrierDir=path.join(dir,"barrier-"+index);intentFile=path.join(barrierDir,"intent.json");pinsFile=path.join(barrierDir,"pins.json");notQueuedFile=path.join(barrierDir,"not-enqueued.json");intent=null;notQueued=null;
+      }
+      const deliveryFence=fence(attempt,sha,before);
+      if(!R.deliveryFence(deliveryFence,attempt,sha,before))return requestEpoch(attempt,sha,before);
+      if(!intent){intent=write(intentFile,{schema:1,operationId:crypto.randomUUID(),originalRawSha256:sha,origin:before,deliveryFence,createdAt:new Date(deps.now()).toISOString()});}
+      // An interrupted callback may have queued work. A bare intent is not a
+      // non-delivery proof; no second barrier is submitted on reentry.
+      if(pinsRow){
+        if(pinsRow.operationId!==intent.operationId||pinsRow.originalRawSha256!==sha||!R.same(pinsRow.pins.origin,before))throw problem("bootstrap_recovery_barrier_binding_invalid");
+      }
+      else{
+        try{
+          await deps.readProject(10000,pins=>{
+            unchanged();if(!R.same(origin(),before))throw problem("bootstrap_recovery_actor_changed");
+            pinsRow=write(pinsFile,{schema:1,operationId:intent.operationId,originalRawSha256:sha,pins:{...pins,tool:"get_project_info",origin:before}});
+            return {kind:"recovery_barrier",operationId:intent.operationId,originalRawSha256:sha,pins:pinsRow.pins};
+          });
+        }catch(error){
+          if(!fs.existsSync(pinsFile)&&(error.phase==="before_delivery"||error.lifecycleState==="expired_before_delivery"))write(notQueuedFile,{schema:1,operationId:intent.operationId,originalRawSha256:sha,reason:error.code||"before_delivery"});
+          return result("blocked",{reason:error.code||"recovery_barrier_unknown",nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:"read_back_only"}});
+        }
+      }
+      const exact=await terminal(pinsRow.pins),after=origin();unchanged();deps.assertIdle(deps.getStatus());
+      classified=R.classify({attempt,originalRawSha256:sha,uiTerminal:true,barrier:{originalRawSha256:sha,before,after,pins:pinsRow.pins,terminal:exact,deliveryFence:intent.deliveryFence}});
+      if(classified.state==="blocked")return result("blocked",{reason:classified.reason,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:"read_back_only"}});
+      return retire(classified,{kind:"physical_barrier",operationId:intent.operationId,pins:pinsRow.pins,terminal:exact,before,after});
+    }catch(error){return result("blocked",{reason:error.code||"bootstrap_recovery_unknown",nextAction:{kind:error.code==="EEXIST"?"observe_service_lock_owner":"inspect_recovery_evidence"}});}
+    finally{if(lock!==null)releaseServiceLock(lock,path.join(stateDir,"service.lock"));if(owns)deps.setBusy(false);}
+  }
+  return {recover,observeTerminal,capture,epochPending,admissionBlocked,challenge,activate,status};
 }
 // Closed operator recovery for one historical read, never an ensure fallback.
 // The raw UNKNOWN is archived byte-for-byte; absence is not an exit/completion
@@ -367,5 +543,5 @@ function createStaleBootstrapReconciler(deps={}){
   }
   return {inspect,reconcile};
 }
-module.exports={TOOL_NAME,TARGET,tool,validateInput,assertIdle,selectRunningAE,inspectInstalledTarget,generateBootstrapJsx,createPanelBootstrapService,exactCdpTarget,createStaleBootstrapReconciler,STALE_READ};
+module.exports={TOOL_NAME,RECOVERY_TOOL_NAME,TARGET,tool,recoveryTool,validateInput,assertIdle,selectRunningAE,inspectInstalledTarget,generateBootstrapJsx,createPanelBootstrapService,exactCdpTarget,createStaleBootstrapReconciler,STALE_READ};
 if(require.main===module){(async()=>{const args=process.argv.slice(2);staleCheck(args.length===1&&["stale-read-status","reconcile-stale-read"].includes(args[0]),"closed_cli_required");const s=createStaleBootstrapReconciler();process.stdout.write(JSON.stringify(args[0]==="stale-read-status"?s.inspect():await s.reconcile())+"\n");})().catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:e.code||"bootstrap_stale_recovery_unknown",replayAllowed:false})+"\n");process.exitCode=1;});}

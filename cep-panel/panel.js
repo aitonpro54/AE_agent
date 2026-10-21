@@ -112,6 +112,7 @@
   // A native callback owns this durable latch. Connection lifecycle changes
   // cannot release it; a reload with a lost callback remains fail-closed.
   var physicalEvalScriptKey = "codexAePhysicalEvalScript.v1";
+  var bootstrapDeliveryFenceKey="codexAeBootstrapDeliveryFence.v1";
   var resetPreflightInFlight = false;
   var resetPreflightAttempt = null;
   var resetPreflightRetry = null;
@@ -121,12 +122,23 @@
   }
   function physicalEvalScript(script, callback) {
     if(!physicalEvalScriptIdle()){callback("EvalScript error. physical_evalscript_pending");return;}
+    try{var fence=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null"),actual=deliveryActor();if(fence&&(!fence.actor||!sameDeliveryActor(fence.actor,actual)&&!(actual.panelConnectionId===fence.actor.panelConnectionId&&/^[1-9]\d*$/.test(actual.panelGeneration)&&Number(actual.panelGeneration)>Math.max(Number(fence.actor.panelGeneration)||0,fence.numericFloor||0)))){callback("EvalScript error. delivery_epoch_revoked");return;}}catch(_){callback("EvalScript error. delivery_epoch_fence_unreadable");return;}
     var id=String(Date.now())+"-"+String(Math.random()).slice(2),pending={};pending[id]={submittedAt:Date.now()};
     try{localStorage.setItem(physicalEvalScriptKey,JSON.stringify(pending));}catch(_){callback("EvalScript error. physical_evalscript_latch_unavailable");return;}
     cs.evalScript(script,function(result){
       try{var current=JSON.parse(localStorage.getItem(physicalEvalScriptKey)||"{}");if(current[id]){delete current[id];localStorage.setItem(physicalEvalScriptKey,JSON.stringify(current));}}catch(_){return;}
       callback(result);
     });
+  }
+  function nextPanelConnectionGeneration(){
+    var fence=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null"),floor=fence?Math.max(Number(fence.actor&&fence.actor.panelGeneration)||0,fence.numericFloor||0):0,next=Math.max(Date.now(),Number(panelConnectionGeneration)||0,floor)+1;
+    if(!Number.isSafeInteger(next)||next<=0||fence&&!fence.actor)throw new Error("delivery_epoch_fence_unreadable");return next;
+  }
+  function writeBootstrapDeliveryFence(actor){var prior=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null");if(prior&&!prior.actor)throw new Error("delivery_epoch_fence_unreadable");localStorage.setItem(bootstrapDeliveryFenceKey,JSON.stringify({actor:actor,numericFloor:Math.max(Number(actor.panelGeneration)||0,prior?Math.max(Number(prior.actor.panelGeneration)||0,prior.numericFloor||0):0)}));}
+  function rotateBootstrapDeliveryFence(){
+    // Existing valid lifecycle transitions must carry the logical revocation
+    // forward. They still never clear or replace physical native latch rows.
+    if(localStorage.getItem(bootstrapDeliveryFenceKey)!==null)writeBootstrapDeliveryFence(deliveryActor());
   }
   function deliveryActor() {
     var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
@@ -146,12 +158,13 @@
       productResetActivation=activation;return {accepted:true,transitioned:false};
     }
     if(actor.panelGeneration!=="reset-"+activation.generation || !sameDeliveryActor(actor,activation.actor) || !physicalEvalScriptIdle())return {accepted:false,transitioned:false};
-    var ordinaryGeneration=Date.now();
+    var ordinaryGeneration;try{ordinaryGeneration=nextPanelConnectionGeneration();}catch(_){return {accepted:false,transitioned:false};}
     if(!Number.isSafeInteger(ordinaryGeneration) || ordinaryGeneration<=0)return {accepted:false,transitioned:false};
     cancelResetPreflightRetry();if(pollTimer)clearTimeout(pollTimer);
     // The immutable signed reset actor remains a fence witness. Normal
     // delivery returns to the numeric reconnect contract in a fresh epoch.
     panelConnectionGeneration=ordinaryGeneration;panelLifecycleEpoch+=1;
+    try{rotateBootstrapDeliveryFence();}catch(_){return {accepted:false,transitioned:false};}
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
     currentPlanSyncInFlight=false;currentPlanSyncActiveReqId=0;currentPlanSyncActiveEpoch=0;
     autonomousSessionState=null;renderAutonomousSession();productResetActivation=activation;
@@ -198,6 +211,7 @@
     function finishKnown(message){if(resetPreflightAttempt!==attempt)return;resetPreflightInFlight=false;resetPreflightAttempt=null;if(message)setStatus(message,false);}
     if(pollTimer)clearTimeout(pollTimer);
     panelLifecycleEpoch+=1;panelConnectionGeneration="reset-"+challenge.generation;
+    try{rotateBootstrapDeliveryFence();}catch(_){finishKnown("Reset delivery fence unavailable");return;}
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
     autonomousSessionState=null;renderAutonomousSession();var actor=deliveryActor();
     // This fixed read is also a serialized host barrier. Its callback proves
@@ -213,6 +227,73 @@
         if(error || !response || response.status!=="reset_active"){setStatus("Reset preflight refused; read status",false);return;}
         if(!acceptProductSessionResetActivation(response.activation).accepted)setStatus("Reset activation actor mismatch",false);
       });
+    });
+  }
+  // Private fixed bootstrap recovery. The durable native latch is never
+  // cleared here. This rotates delivery identity only; no plan/edit/output
+  // ownership or write permission is inherited or granted.
+  var bootstrapRecoveryEpochInFlight=false;
+  function bootstrapCoveredLogicalRead(id,cover){return !id||cover.projectReadCommand&&cover.projectReadCommand.id===id||(cover.barriers||[]).some(function(v){return v.pins&&v.pins.id===id;});}
+  function beginBootstrapRecoveryEpoch(challenge){
+    if(bootstrapRecoveryEpochInFlight||!challenge||challenge.schema!=="ae-agent.bootstrap-recovery-epoch.v1.challenge"||!challenge.origin||!challenge.nextActor||!challenge.coveredBootstrap)return;
+    var key="codexAeBootstrapRecoveryEpoch.v1."+challenge.generation,state=window.AEAgentPanelActions&&window.AEAgentPanelActions.state(),entry;
+    try{entry=JSON.parse(localStorage.getItem(key)||"null");}catch(_){setStatus("Bootstrap recovery storage is unreadable",false);return;}
+    function post(payload){
+      bootstrapRecoveryEpochInFlight=true;
+      var actor=deliveryActor(),url=getBaseUrl(),token=getToken();
+      request("POST","/bridge/bootstrap-recovery-epoch",payload,function(error,response){
+        bootstrapRecoveryEpochInFlight=false;
+        if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;
+        if(!error&&response&&response.bootstrapRecovery){beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
+        if(error||!response||response.status!=="bootstrap_recovery_epoch_active"){
+          setStatus("Bootstrap recovery ACK unknown; observing exact receipt",false);
+          // Passive lookup after a lost HTTP ACK. It neither retries native
+          // work nor starts the normal project-file polling read.
+          setTimeout(function(){if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;request("GET",bridgeNextPath("",true),null,function(lookupError,observed){if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;if(!lookupError&&observed&&observed.bootstrapRecovery)beginBootstrapRecoveryEpoch(observed.bootstrapRecovery);else if(!lookupError&&observed&&observed.ok===true&&observed.command===null){running=true;pollInFlight=false;pollTimer=setTimeout(poll,50);}});},500);
+          return;
+        }
+        try{var saved=JSON.parse(localStorage.getItem(key));saved.acknowledged=true;localStorage.setItem(key,JSON.stringify(saved));}catch(_){setStatus("Bootstrap recovery ACK storage failed",false);return;}
+        running=true;pollInFlight=false;setBridgeConnected();pollTimer=setTimeout(poll,50);
+      });
+    }
+    if(entry){
+      var current=deliveryActor(),exactActor=sameDeliveryActor(current,challenge.nextActor),historical=challenge.historicalReceiptOnly===true&&current.panelConnectionId===challenge.origin.actor.panelConnectionId&&/^[1-9]\d*$/.test(current.panelGeneration)&&Number(current.panelGeneration)>Number(challenge.nextActor.panelGeneration);
+      if(entry.challenge!==challenge.challenge||entry.originalRawSha256!==challenge.coveredBootstrap.originalRawSha256||!exactActor&&!historical){setStatus("Bootstrap recovery identity mismatch",false);return;}
+      // Re-send only the exact completed HTTP receipt. Never native work.
+      if(entry.payload&&physicalEvalScriptIdle()){post(entry.payload);return;}
+      if(!historical){setStatus("Bootstrap recovery physical outcome remains unknown",false);return;}
+    }
+    if(challenge.historicalReceiptOnly===true){
+      var fresh=deliveryActor();
+      if(!physicalEvalScriptIdle()||!bootstrapCoveredLogicalRead(activeEvalScriptCommandId,challenge.coveredBootstrap)||ownedPollingSession||recoveryTransportScope||!state||state.activeAction||state.recoveryTransport||state.actionStorage!=="ready"||(state.unresolvedActions||[]).length||panelActionBusy(challenge.coveredBootstrap)){setStatus("Bootstrap recovery fresh epoch requires idle physical/panel control",false);return;}
+      // Persistently revoke old callbacks BEFORE asking for a NEW challenge.
+      // This changes logical delivery identity, never the physical latch.
+      try{writeBootstrapDeliveryFence(fresh);}catch(_){setStatus("Bootstrap recovery delivery fence unavailable",false);return;}
+      post({kind:"request_fresh_epoch",generation:challenge.generation,challenge:challenge.challenge,actor:fresh,deliveryFenceActor:fresh,physicalInflight:0,panelControl:{nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:[]}});return;
+    }
+    if(!sameDeliveryActor(deliveryActor(),challenge.origin.actor)||!physicalEvalScriptIdle()||!bootstrapCoveredLogicalRead(activeEvalScriptCommandId,challenge.coveredBootstrap)||ownedPollingSession||recoveryTransportScope||!state||state.activeAction||state.recoveryTransport||state.actionStorage!=="ready"||(state.unresolvedActions||[]).length||state.trustedGuardRefresh&&state.trustedGuardRefresh.pending||panelActionBusy(challenge.coveredBootstrap)){
+      setStatus("Bootstrap recovery waits for exact idle physical/panel control",false);return;
+    }
+    entry={challenge:challenge.challenge,originalRawSha256:challenge.coveredBootstrap.originalRawSha256,payload:null,acknowledged:false,retiredLogicalReadId:activeEvalScriptCommandId||null};
+    try{localStorage.setItem(key,JSON.stringify(entry));}catch(_){setStatus("Bootstrap recovery intent storage failed",false);return;}
+    var previous=deliveryActor(),url=getBaseUrl(),token=getToken();
+    running=false;pollInFlight=false;if(pollTimer)clearTimeout(pollTimer);
+    panelConnectionGeneration=challenge.nextActor.panelGeneration;panelLifecycleEpoch=challenge.nextActor.panelLifecycleEpoch;
+    try{writeBootstrapDeliveryFence(deliveryActor());}catch(_){setStatus("Bootstrap recovery delivery fence unavailable",false);return;}
+    // The exact covered logical read loses its callback authority in this
+    // epoch. Its old ID is archived above; physical rows remain untouched.
+    activeEvalScriptCommandId="";
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;autonomousSessionState=null;renderAutonomousSession();
+    var actor=deliveryActor();bootstrapRecoveryEpochInFlight=true;
+    var script='(function(){var p=app.project;if(!p)return JSON.stringify({projectPresent:false});return JSON.stringify({projectPresent:true,file:p.file?String(p.file.fsName):"",dirty:p.dirty,revision:p.revision,rendering:p.renderQueue.rendering,challenge:'+JSON.stringify(challenge.challenge)+'});}())';
+    physicalEvalScript(script,function(result){
+      bootstrapRecoveryEpochInFlight=false;
+      if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;
+      var project;try{project=JSON.parse(result);}catch(_){setStatus("Bootstrap recovery native result unknown",false);return;}
+      if(!physicalEvalScriptIdle()){setStatus("Bootstrap recovery physical latch remains unknown",false);return;}
+      var payload={generation:challenge.generation,challenge:challenge.challenge,previousActor:previous,actor:actor,physicalInflight:0,panelControl:{nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:[]},project:project};
+      entry.payload=payload;try{localStorage.setItem(key,JSON.stringify(entry));}catch(_){setStatus("Bootstrap recovery terminal storage failed",false);return;}
+      post(payload);
     });
   }
   var agents = [];
@@ -4620,8 +4701,11 @@
       }
       if (Date.now() - panelHeartbeatAt >= 5000) {
         panelHeartbeatAt = Date.now();
+        var heartbeatActor=deliveryActor(),heartbeatUrl=getBaseUrl(),heartbeatToken=getToken(),heartbeatReadId=activeEvalScriptCommandId;
         request("GET", bridgeNextPath().replace("/bridge/next?", "/bridge/heartbeat?"), null, function (error, response) {
+          if(!sameDeliveryActor(heartbeatActor,deliveryActor())||heartbeatUrl!==getBaseUrl()||heartbeatToken!==getToken()||heartbeatReadId!==activeEvalScriptCommandId)return;
           if (error) { log("Panel heartbeat failed: " + error.message); return; }
+          if(response&&response.bootstrapRecovery){beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
           autonomousSessionState = response && response.session;
           renderAutonomousSession();
         });
@@ -4675,6 +4759,7 @@
         return;
       }
 
+      if(response && response.bootstrapRecovery){if(onDone)onDone(null,{connected:false,bootstrapRecoveryPending:true});beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
       if(response && response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
       if(response && response.resetSessionActivation){var activationAdoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!activationAdoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(activationAdoption.transitioned)return;}
       if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
@@ -4735,8 +4820,9 @@
     if(pollTimer)clearTimeout(pollTimer);
     running = true;
     pollInFlight = false;
-    panelConnectionGeneration = Date.now();
+    try{panelConnectionGeneration = nextPanelConnectionGeneration();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     panelLifecycleEpoch += 1;
+    try{rotateBootstrapDeliveryFence();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
     currentPlanSyncInFlight = false;
@@ -4836,8 +4922,9 @@
     }
   }
 
-  function panelActionBusy() {
-    return !!(recoveryTransportConnecting || chatInFlight || activeEvalScriptCommandId || keySaveInFlight || setupActionInFlight || readinessInFlight ||
+  function panelActionBusy(coveredBootstrapRead) {
+    var activeNative=activeEvalScriptCommandId&&!(coveredBootstrapRead&&bootstrapCoveredLogicalRead(activeEvalScriptCommandId,coveredBootstrapRead));
+    return !!(recoveryTransportConnecting || chatInFlight || activeNative || keySaveInFlight || setupActionInFlight || readinessInFlight ||
       providerSelfTestInFlight || devRequestInFlight || agentsLoadInFlight || placeholderProtectionInFlight ||
       connectorStatusInFlight || usageRefreshInFlight || planReconcileInFlight || planRunInFlightMode);
   }

@@ -137,6 +137,8 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 const RUNTIME_FILES = [
+  "mcp-server/ae-agent-panel-bootstrap.js",
+  "mcp-server/session-recovery-state.js",
   "mcp-server/ame-open-comp.js",
   "mcp-server/ame-open-comp-native.js",
   "mcp-server/title-export-snapshots.js",
@@ -190,6 +192,7 @@ const RUNTIME_FILES = [
   "mcp-server/mcp-adapter.js",
   "cep-panel/panel-actions.js",
   "cep-panel/panel.js",
+  "cep-panel/native-probe-startup-guard.js",
   "mcp-server/native-fixture-prephase-recovery-proof.js",
   "mcp-server/native-fixture-prephase-recovery.js",
   "mcp-server/native-fixture-prephase-recovery-backend.js",

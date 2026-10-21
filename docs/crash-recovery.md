@@ -44,4 +44,37 @@ Production startup reservation gate не меняется: managed sentinel да
 `f3a6f48eb2ba103ba249cf6b5fba69e41ffdf1264b216a63061268bb01b87c4f`.
 Это проверка изолированного backend; live AE/CEP она не подтверждает.
 
-Основной recovery и его живая приёмка ещё выполняются.
+## Реализация recovery
+
+`recover_ae_agent_panel({})` выполняется через официальный MCP adapter.
+Exact terminal witness, causal epoch fence и подписанный disposition разделены;
+новая работа не наследует старый исход или capabilities. Lost ACK доставляется
+как тот же receipt. После reload без receipt создаётся отдельная причинная epoch,
+а прежняя остаётся UNKNOWN. При stale logical read challenge поступает также
+через heartbeat; исключение busy допускает только точный покрытый read.
+Physical tracker, чужие busy flags и ограничения спорных ресурсов сохраняются.
+
+Общий service lock использует immutable reclaim claims, проверку отсутствия
+claimant и identity при release. Два одновременных reclaimers не получают lock.
+Failed-start selector следует private signed lineage; recovery keys не зависят
+от новой версии source. Исторический fixed alias сохранён для старых записей.
+
+Runtime census содержит 105 pins, включая bootstrap, classifier и CEP startup
+guard. Проверка loaded collector сохранена; lifecycle после source update
+выполняется из fresh CLI. Снимок source сам по себе не является attestation
+всего исполняемого кода в памяти.
+
+## Проверки core
+
+- `session-recovery-smoke.js`: 51 classifier/store/component VM/race case.
+- `session-recovery-bridge-smoke.js`: 16 end-to-end cases — настоящий backend
+  и stdio MCP из temp root, полный CEP VM/реальные poll и heartbeat, synthetic AE.
+  Проверены UNKNOWN archive/CAS, fresh ensure, auth boundaries и blockers.
+- Bootstrap: 96 offline / 110 полный isolated suite; fixture24, reset65,
+  service35, supervisor91, product lifecycle12, CEP actions48/16, refresh33,
+  completed dry-run56, четыре сетевые группы — PASS; rules/syntax/diff — PASS.
+- Исходных native/UI/AME replay: 0. Рабочая authority до/после offline tests
+  имеет прежний SHA. Legacy `autonomous-mcp-smoke.js` с direct-root spawn
+  не запускался; его изоляция не является доказательством этого этапа.
+
+Live применение и проверка текущей legacy attempt фиксируются отдельно ниже.

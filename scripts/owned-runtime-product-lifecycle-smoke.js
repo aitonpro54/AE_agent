@@ -57,6 +57,9 @@ async function main(){
     // The production enqueue path already includes the title-recovery guard.
     // This unrelated read has no title authority; model that private null port.
     const nullContext={getStore:()=>null},context=vm.createContext({initialRuntime:null,ownedRuntimeService:s,crypto,pendingCommands:pending,inflightCommands:inflight,titleExportRecovery:{assertNative(context){assert.equal(context,null);}},titleRecoveryCommandContext:nullContext,
+      ameOpenCompExecutor:{assertNative(c){assert.equal(c,null);},queued(c){assert.equal(c,null);}},ameOpenCompCommandContext:nullContext,
+      ameJobSourceExecutor:{assertNative(c){assert.equal(c,null);},queued(c){assert.equal(c,null);}},ameJobSourceCommandContext:nullContext,
+      titleVerificationExecutor:{assertNative(c){assert.equal(c,null);},queued(c){assert.equal(c,null);}},titleVerificationCommandContext:nullContext,
       panelBootstrapService:{isBusy:()=>false},panelBootstrapReadContext:nullContext,lifecycleCommandContext:{getStore:()=>({capability,rawScript:"fixed read"})},generatedRecoveryReadContext:nullContext,autonomousCommandContext:nullContext,planCommandContext:nullContext,
       lifecycle:{validateCommand(actual){validations++;assert.equal(actual,capability);if(!valid)throw Object.assign(Error("private_lifecycle_refused"),{code:"private_lifecycle_refused"});},phaseFacts:()=>({readbackRole:"read"})},
       capturePlanCommand(){},setTimeout:()=>({}),clearTimeout(){},recordEvent(){},drainWaitingPanels(){},timeoutAeCommand(){},generatedRecoveryLeaseScope:()=>null,expireQueuedCommands(){},panelLeaseOwner:()=>owner,findActiveEvalScriptCommandForOwner:()=>null,rejectRevokedAutonomousCommand:()=>false,commandForPanel:v=>v,

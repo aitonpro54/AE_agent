@@ -56,7 +56,31 @@ reset допускает read-back, но не новый launch. Обычная 
 restart succession использует настоящие held-handle exit receipts внутри новой
 сессии; reset не подменяет эти доказательства.
 
-### Закрытое восстановление failed start 20.10
+### Штатное восстановление failed start
+
+`recover-failed-start` выбирает исходный сбой из private current pointer,
+consumed reset key, подписанных intent/binding и native candidate. Caller
+не передаёт selectors. Recovery-key связан с исходной операцией и её
+неизменными pins, поэтому новая версия source не разрешает повторный launch.
+
+После потери ответа читается тот же журнал. Следующий failed recovery leaf
+допускается только после отдельной проверки отсутствия обоих exact процессов,
+свободного endpoint и прежних policy/lifecycle/edit bindings под controller mutex.
+Fork, live/registered candidate, неизвестная identity и частичный запуск
+без доказанного исхода закрывают новый launch. Оригинальные UNKNOWN и once keys
+сохраняются; очередь AME к восстановлению не относится.
+
+Свежий локальный CLI после обновления source:
+
+```powershell
+node mcp-server/owned-runtime-product-session-reset.js failed-start-status
+node mcp-server/owned-runtime-product-session-reset.js recover-failed-start
+```
+
+Ниже сохранена история первоначального закрытого восстановления; его exact
+UUID используются только для совместимости с прежними recovery records.
+
+### История failed start 20.10
 
 Для reset `67226724…` / failed candidate `889f0a88…` добавлен отдельный
 `recover-failed-start`, строго без аргументов. Он не повторяет обычный reset:

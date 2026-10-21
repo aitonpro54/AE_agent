@@ -129,6 +129,14 @@ panel connection и настоящего typed read, timeout/unknown нельз�
 [контракте bootstrap](ae-agent-panel-bootstrap.md). Отсутствие связи не доказывает,
 что панель закрыта. Новый инструмент не отключает auth/confirmation gates.
 
+При `project_read_unknown` следуй `nextAction`: штатный
+`recover_ae_agent_panel({})` сверяет private attempt и сохраняет исходный UNKNOWN.
+Краткий `panelBootstrap.recovery` в status отделяет текущий admission от истории.
+Pending epoch наблюдается через штатный poll/heartbeat; повтор recovery читает
+тот же журнал и не переотправляет старую команду. Новый `ensure` допускается
+после результата `newEnsureRequired:true`. CLI с exact историческим UUID для
+нового инцидента не создаётся; reset/TTL/удаление записей recovery не заменяют.
+
 Перед reload получи свежий `get_bridge_status`: `pendingCommands=0`, `inflightCommands=[]`, нет незавершённого исполнения. Если результат ранее отправленной операции неизвестен, сначала сверь её судьбу; сам по себе `activeEditSession` не запрещает reload панели. Для daemon restart действуют отдельные ограничения.
 
 Штатный helper сам проверяет `http://127.0.0.1:8870/json/list`: должна быть ровно одна ожидаемая page с точным extension root AE Agent и пригодным WebSocket URL. При отсутствии, чужой или неоднозначной цели команда останавливается до подключения; запасного выбора первой страницы нет. Для диагностики можно отдельно прочитать этот endpoint, не выполняя reload.

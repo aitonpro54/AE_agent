@@ -5156,7 +5156,7 @@ function withPlanCommandRole(role, fn) {
 
 function retainCommandResult(id, payload, command) {
   capturePlanCommand(command, payload);
-  completedResults.set(id, {
+  const retained={
     id,
     receiptDigest: command.receiptDigest || null,
     ok: Boolean(payload.ok),
@@ -5170,8 +5170,14 @@ function retainCommandResult(id, payload, command) {
     timedOutFrom: command.timedOutFrom || null,
     createdAt: command.createdAt,
     completedAt: Date.now(),
-    command: compactAeCommand(command)
-  });
+    command: compactAeCommand(command),
+    ...(command.bootstrapBinding ? {tool:"get_project_info",origin:command.bootstrapBinding.pins.origin} : {})
+  };
+  // Persist accepted terminal evidence before resolving/rejecting the caller.
+  // A crash after native ACK must not erase the only reconciliation witness.
+  try{panelBootstrapService.observeTerminal(command.bootstrapBinding,retained);}
+  catch(error){retained.witnessStorageError=error.code||"bootstrap_terminal_witness_unavailable";recordEvent("bootstrap_terminal_witness_unavailable",{id,code:retained.witnessStorageError});}
+  completedResults.set(id, retained);
 
   while (completedResults.size > 200) {
     const oldestId = completedResults.keys().next().value;
@@ -5282,7 +5288,7 @@ function enqueueAeCommand(script, timeoutMs) {
     catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
     const bootstrapRead = panelBootstrapReadContext.getStore();
     if (bootstrapRead) {
-      try { bootstrapRead.onQueued({id,executionId:command.executionId,expiresAt:command.expiresAt}); }
+      try { command.bootstrapBinding=bootstrapRead.onQueued({id,executionId:command.executionId,expiresAt:command.expiresAt}); }
       catch(error) {reject(Object.assign(error,{code:"bootstrap_read_record_failed",phase:"before_delivery"}));return;}
     }
     command.timeout = setTimeout(() => {
@@ -10630,7 +10636,7 @@ function startHttpBridge() {
           ? (Object.prototype.hasOwnProperty.call(body, "arguments") ? body.arguments : {})
           : (body.arguments || {});
         const authority = autonomousSession.authorization();
-        if (name === panelBootstrap.TOOL_NAME && res.authRole !== "automation") {
+        if ([panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) && res.authRole !== "automation") {
           writeJson(res, 403, {ok:false, code:"bootstrap_automation_role_required"});
           return;
         }
@@ -10640,7 +10646,7 @@ function startHttpBridge() {
         }
         const result = decorateDaemonToolResult(name, await callToolLogged("mcp-adapter", name, args, {
           autonomousSession: authority,
-          panelBootstrapAuthority: name === panelBootstrap.TOOL_NAME ? PANEL_BOOTSTRAP_AUTHORITY : null,
+          panelBootstrapAuthority: [panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) ? PANEL_BOOTSTRAP_AUTHORITY : null,
           panelControlAuthority: PANEL_CONTROL_AUTHORITY
         }));
         writeJson(res, 200, { ok: true, tool: name, result });
@@ -10839,7 +10845,8 @@ function startHttpBridge() {
         writeJson(res,409,{ok:false,code:"panel_identity_mismatch"}); return;
       }
       lastPanelSeenAt = Date.now();
-      writeJson(res,200,{ok:true,session:autonomousSession.publicStatus()}); return;
+      try{const actor={panelConnectionId:owner.panelConnectionId,panelGeneration:owner.panelGeneration,panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))},bootstrapRecovery=panelBootstrapService.recoveryChallenge(actor);writeJson(res,200,{ok:true,session:autonomousSession.publicStatus(),...(bootstrapRecovery?{bootstrapRecovery}:{})});}
+      catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven"});}return;
     }
     if (url.pathname === "/bridge/product-session" && req.method === "GET") {
       if(!requireToken(req,res,url))return;
@@ -10850,6 +10857,10 @@ function startHttpBridge() {
       const panelIdentity = url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"];
       const panelGeneration = url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"];
       if (!panelIdentity || !panelGeneration) { writeJson(res, 409, {ok:false, code:"panel_identity_required", error:"Panel identity and generation are required."}); return; }
+      try{
+        const actor={panelConnectionId:panelIdentity,panelGeneration,panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))},bootstrapRecovery=panelBootstrapService.recoveryChallenge(actor);
+        if(bootstrapRecovery){lastPanelSeenAt=Date.now();if(bootstrapRecovery.historicalReceiptOnly)lastPanelInfo={...lastPanelInfo,...actor,at:lastPanelSeenAt};writeJson(res,200,{ok:true,command:null,bootstrapRecovery});return;}
+      }catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven",command:null});return;}
       let recoveryTransport;
       try{await retireGeneratedRecoveryForNormalPoll(req,url);recoveryTransport=generatedRecoveryLeaseScope(req,url);}
       catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
@@ -10896,6 +10907,12 @@ function startHttpBridge() {
       if(!requireToken(req,res,url))return;
       if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"owned_product_reset_panel_witness_required"});return;}
       try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const result=state.activate(await readJsonBody(req));autonomousSession.invalidateProjectContext();writeJson(res,200,result);}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
+    }
+    if(url.pathname==="/bridge/bootstrap-recovery-epoch"&&req.method==="POST"){
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"bootstrap_recovery_panel_role_required"});return;}
+      try{const result=panelBootstrapService.acceptRecoveryEpoch(await readJsonBody(req));autonomousSession.invalidateProjectContext();lastPanelSeenAt=Date.now();if(result.activation&&!result.historicalReceiptOnly)lastPanelInfo={...lastPanelInfo,...result.activation.actor,at:lastPanelSeenAt};writeJson(res,200,result);}
+      catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven",replayAllowed:false});}return;
     }
     if (url.pathname === "/bridge/submitted" && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
@@ -11096,6 +11113,7 @@ function startHttpBridge() {
 
 const tools = [
   panelBootstrap.tool,
+  panelBootstrap.recoveryTool,
   ...panelControl.panelControlTools,
   ...productionUsageTools,
   ...solutionDiscovery.discoveryTools,
@@ -14687,8 +14705,17 @@ async function buildPostRunMontageReadBack(record, actual) {
 const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
   stateDir: path.join(process.env.AE_BRIDGE_STATE_DIR || LOG_DIR, "ae-agent-panel-bootstrap"),
   getStatus: () => ({...getBridgeStatus(), planExecutionState: currentProposalState.current && currentProposalState.current.executionState || null}),
+  getOrigin:()=>{const p=lastPanelInfo;return {actor:{panelConnectionId:p?.panelConnectionId,panelGeneration:p?.panelGeneration,panelInstanceId:p?.panelInstanceId,panelLifecycleEpoch:p?.panelLifecycleEpoch},runtime:{pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),sourceSha256:RUNTIME_IDENTITY?.sourceSha256,currentSourceSha256:reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256}};},
+  readResult:async pins=>completedResults.get(pins.id)||null,
+  getDeliveryFence:(attempt,sha,before,barrier)=>{
+    if(barrier)return null;
+    const pins=attempt.projectReadCommand;
+    if(pins&&recoveryStateSame(attempt.origin,before)&&recoveryStateSame(pins.origin,before)&&!inflightCommands.has(pins.id)&&!pendingCommands.includes(pins.id))return {kind:"same_runtime_delivery_closed",originalRawSha256:sha,origin:before,oldCommandPins:pins,deliveryClosed:true};
+    return null;
+  },
   readProject: (timeoutMs,onQueued) => panelBootstrapReadContext.run({onQueued}, async () => firstToolPayload(await callToolLogged("panel-bootstrap-read", "get_project_info", {}, {panelBootstrapReadTimeoutMs: timeoutMs})))
 });
+function recoveryStateSame(a,b){return require("./session-recovery-state").same(a,b);}
 
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
@@ -14787,6 +14814,10 @@ async function callTool(name, args, executionContext) {
   if(name===ameOpenComp.REPORT)return toolResult(ameOpenCompExecutor.report(args));
   if(name===ameOpenComp.RECONCILE){const result=await ameOpenCompExecutor.reconcile(args);return toolResult(result,!result.ok);}
   if(ameOpenComp.MUTATIONS.includes(name)){const result=await ameOpenCompExecutor.execute(name,args,executionContext&&executionContext.ameOpenCompAuthorization);return toolResult(result,!result.ok);}
+  if (name === panelBootstrap.RECOVERY_TOOL_NAME) {
+    const result=await panelBootstrapService.recover(args || {});
+    return toolResult(result,!result.ok);
+  }
   if (name === panelBootstrap.TOOL_NAME) {
     const result = await panelBootstrapService.ensure(args || {});
     return toolResult(result, !result.ok);
@@ -24445,7 +24476,7 @@ async function callTool(name, args, executionContext) {
 
 function callToolLogged(source, name, args, executionContext) {
   if(initialRuntime)initialRuntime.assertTool();
-  if(deploymentMode==="product" && name===panelBootstrap.TOOL_NAME){
+  if(deploymentMode==="product" && [panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name)){
     if(source!=="mcp-adapter" || executionContext?.panelBootstrapAuthority!==PANEL_BOOTSTRAP_AUTHORITY)
       return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"},true);
     return ownedRuntimeService.runBootstrap(()=>callToolLoggedImpl(source,name,args,executionContext));
@@ -24461,7 +24492,7 @@ function callToolLogged(source, name, args, executionContext) {
 }
 async function callToolLoggedImpl(source, name, args, executionContext) {
   await ameOpenCompExecutor.assertProjectMutationAllowed(name,MUTATING_TOOL_NAMES.has(name) && ![ameRunning.TOOL_NAME,...ameQueueControl.MUTATIONS,ameFixtureGrant.TOOL_NAME,...ameTitleMutationNames].includes(name) || ["start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name));
-  if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
+  if ([panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
   }
   if (panelControl.isPanelControlTool(name) && (source !== "mcp-adapter" ||

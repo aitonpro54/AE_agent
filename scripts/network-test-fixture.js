@@ -35,7 +35,7 @@ const EXTRA_SOURCES = new Set([
   "scripts/owned-runtime-startup-retire-helper.ps1", "scripts/owned-runtime-maintenance-retire-helper.ps1",
   "scripts/cep-panel-cdp-smoke.js"
 ]);
-const PANEL_ASSETS = ["CSXS/manifest.xml", "index.html", "panel-action-contract.js",
+const PANEL_ASSETS = ["CSXS/manifest.xml", "index.html", "panel-action-contract.js", "native-probe-startup-guard.js",
   "panel-actions.js", "panel.js", "style.css", "lib/CSInterface.js"].map(name => `cep-panel/${name}`);
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

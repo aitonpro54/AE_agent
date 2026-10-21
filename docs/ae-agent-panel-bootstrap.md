@@ -96,14 +96,41 @@ Timeout/CLI error/незавершённый ack не разрешает native/
 показывает compact `panelBootstrap` evidence; runtime outputs локальные и ignored.
 
 Перед typed read сохраняется `project_read_unknown` и queue command ID,
-executionId/expiry. Timeout/невалидный результат/смена connection не вызывает
-ещё один read или UI replay; сохранённая запись блокирует повтор, в том числе
-после restart. Доказанный `before_delivery` rejection отмечается отдельно как
-`project_read_not_delivered` и допускает новый обычный read. Budget проверяется
-до unknown-записи, поэтому deadline без отправки не создаёт ложный unknown.
-Нужна сверка exact command по inflight/retained result и native
-read-back в отдельном ограниченном восстановлении; универсального reset tool
-нет. Удалять durable unknown запись для слепого retry нельзя.
+executionId/expiry. Timeout/невалидный результат/смена connection не разрешает
+повтор старой команды. Доказанный `before_delivery` rejection отмечается отдельно
+как `project_read_not_delivered`. Budget проверяется до unknown-записи.
+
+### Штатное восстановление
+
+`recover_ae_agent_panel({})` выбирает текущую private attempt сам, без caller
+selectors, PID, путей или script. `ensure` возвращает этот tool в `nextAction`,
+если прежний project read остаётся UNKNOWN.
+
+Сначала сверяется exact terminal witness/result: command/execution/expiry,
+владелец и native lifecycle. Missing result, истёкший deadline, Connected и пустая
+очередь сами по себе не доказывают исход. Для новых чтений HMAC witness
+сохраняется до завершения ответа вызывающему.
+
+Если результата недостаточно, отдельный challenge связывает private attempt SHA
+и её старые command pins с новой delivery epoch. CEP использует durable once
+intent, существующий physical latch и fixed native read; старый native/UI вызов
+не повторяется. Исторический ACK может быть доставлен повторно как exact
+receipt, но не получает полномочий текущего actor. Незавершённая physical работа,
+чужой control, corrupt store и конфликт identities остаются блокировкой.
+
+После подписанного fence выполняется отдельный обычный `get_project_info`.
+Его UNKNOWN сохраняется независимо: следующая сверка читает exact результат
+либо устанавливает следующую причинную epoch с новой identity. TTL и очистка
+physical tracker для восстановления не используются.
+
+Исходные bytes остаются в `recovery/<original SHA>/original-attempt.json`.
+Отдельный подписанный disposition сохраняет `unknown_preserved`/noReplay;
+активный указатель снимается через CAS под общим service lock. Только затем
+следующий обычный `ensure` выполняет новую свежую проверку с текущими gates.
+Recovery не сохраняет AEP, не отправляет jobs и не запускает рендер.
+
+Полный контракт и проверки: [crash recovery](crash-recovery.md). Закрытый CLI
+ниже сохранён как история прежнего exact инцидента, а не путь новых восстановлений.
 
 ### Закрытая сверка старого read от 19.10.2026
 
