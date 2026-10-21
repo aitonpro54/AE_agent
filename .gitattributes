@@ -1,0 +1,4 @@
+# Reviewed source-byte pins must survive Windows checkout unchanged.
+scripts/owned-runtime-control.js text eol=lf
+scripts/owned-runtime-daemon-helper.ps1 text eol=lf
+scripts/owned-runtime-win32-helper.ps1 text eol=lf

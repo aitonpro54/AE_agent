@@ -1,6 +1,7 @@
 "use strict";
 
 const {isMutatingStep} = require("./semantic-verification");
+const amePending=require("./ame-title-pending");
 const own = (value, key) => Boolean(value && Object.prototype.hasOwnProperty.call(value, key));
 function decoded(value) {
   if (typeof value !== "string") return value;
@@ -13,8 +14,9 @@ function successfulResult(value) {
 
 // Lifecycle is supplied by the runner. A failed setter may have written some
 // fields; only a pre-mutation rejection or an undelivered command proves no edit.
-function classifyMutationStep(step = {}) {
+function classifyMutationStep(step = {},run) {
   if (!isMutatingStep(step)) return {status: "not_started", reasonCode: "read_only_step"};
+  if(amePending.isPendingStep(step,run))return {status:"unknown",reasonCode:"async_acceptance_pending"};
   const commands = (Array.isArray(step.commands) ? step.commands : []).filter(command => command && command.role === "mutation");
   if (own(step, "mutationResult") && step.mutationResultIsError !== true && successfulResult(step.mutationResult)) return {status: "applied", reasonCode: "typed_mutation_result_received"};
   if (step.status === "completed" && step.mutationResultIsError !== true && (!own(step, "result") || successfulResult(step.result))) return {status: "applied", reasonCode: "typed_step_completed"};
@@ -49,7 +51,7 @@ function originalExecutionError(run) {
 function buildRunOutcome(run = {}, plan = {}) {
   const steps = Array.isArray(run.steps) ? run.steps : [], planned = Array.isArray(plan.steps) ? plan.steps : [];
   const mutationSteps = steps.filter(isMutatingStep);
-  const classified = run.dryRun ? [] : mutationSteps.map(step => ({index: step.index, tool: step.tool, ...classifyMutationStep(step)}));
+  const classified = run.dryRun ? [] : mutationSteps.map(step => ({index: step.index, tool: step.tool, ...classifyMutationStep(step,run)}));
   const counts = {applied: 0, unknown: 0, failed: 0, not_started: 0};
   classified.forEach(step => counts[step.status]++);
   const plannedMutationCount = planned.filter(isMutatingStep).length;

@@ -13,18 +13,43 @@ const {
 } = require("./production-usage-tools");
 
 const SERVER_NAME = "codex-ae-mcp-adapter";
-const SERVER_VERSION = "3.3.2";
+const SERVER_VERSION = "3.3.4";
 const PROTOCOL_VERSION = "2025-03-26";
 const DAEMON_HOST = process.env.AE_BRIDGE_HOST || "127.0.0.1";
 const DAEMON_PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
 const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
 const DAEMON_TIMEOUT_MS = Number(process.env.AE_DAEMON_HTTP_TIMEOUT_MS || 125000);
+const DAEMON_HEALTH_TIMEOUT_MS = 5000;
 const AUTO_START_DAEMON = process.env.AE_DAEMON_AUTO_START !== "0";
-const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown"});
+const trustedSourceCensus=require("./owned-runtime-initial-source-census");
+const ownedRuntimeAuthority=require("./owned-runtime-authority");
+const deploymentMode = require("./deployment-mode").deploymentMode();
+const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
+const OWNED_TOOL_METHODS=Object.freeze({get_owned_runtime_status:"status",ensure_owned_runtime_daemon:"ensure",restart_owned_runtime_daemon:"restart",shutdown_owned_runtime_daemon:"shutdown",reset_owned_runtime_product_session:"resetProductSession"});
 const ownedRuntimeTools=Object.entries(OWNED_TOOL_METHODS).map(([name,method])=>({name,description:method==="status"?"Read privately registered owned daemon status and retained lifecycle evidence.":"Perform the named owned daemon operation using fixed private authority, persistent user policy and one-shot journal. Unknown effects are read-back only.",inputSchema:{type:"object",additionalProperties:false,properties:{}},annotations:{readOnlyHint:method==="status",destructiveHint:false,idempotentHint:method==="status",openWorldHint:false}}));
+ownedRuntimeTools.find(t=>t.name==="reset_owned_runtime_product_session").description="Explicit operator-request only: abandon control of an absent privately registered product daemon and start a fresh product session with closed preflight admission. Requires separate reset policy and native absence proof. Preserves old UNKNOWN, journals, resource fences and no-replay. Never forces a process, restores jobs, changes queues, saves a project or starts rendering.";
+// One original stdio request object per exact JSON-RPC ID. A notification can
+// cancel only that retained object; primitive type is part of the Map key.
+const originalRpcRequests=new Map();
+function rpcRequestId(value){return typeof value==="string"&&value.length>0&&value.length<=256||typeof value==="number"&&Number.isSafeInteger(value);}
+function cancelOriginalRpcRequests(){for(const original of originalRpcRequests.values())original.controller.abort();}
+async function handleRpc(message){
+  if(!message||message.jsonrpc!=="2.0")return;
+  if(message.method==="notifications/cancelled"){
+    const params=message.params;if(message.id!==undefined||!params||typeof params!=="object"||Array.isArray(params)||
+      Object.keys(params).some(key=>!["requestId","reason"].includes(key))||!rpcRequestId(params.requestId)||
+      params.reason!==undefined&&typeof params.reason!=="string")return;
+    const original=originalRpcRequests.get(params.requestId);if(original)original.controller.abort();return;
+  }
+  if(message.method!=="tools/call"||!initialRuntime)return handleRpcBound(message,null);
+  if(!rpcRequestId(message.id)||originalRpcRequests.has(message.id)){err(message.id,-32600,"Invalid or duplicate original request ID");return;}
+  const original={message,controller:new AbortController()};originalRpcRequests.set(message.id,original);
+  try{return await handleRpcBound(message,original);}finally{if(originalRpcRequests.get(message.id)===original)originalRpcRequests.delete(message.id);}
+}
 async function handleOwnedRuntimeTool(name,args,controller) {
   if(!Object.hasOwn(OWNED_TOOL_METHODS,name))throw Object.assign(Error("owned_adapter_tool_invalid"),{code:"owned_adapter_tool_invalid"});
-  require("./owned-runtime-authority").exact(args,[],"owned_adapter_arguments_forbidden");
+  ownedRuntimeAuthority.exact(args,[],"owned_adapter_arguments_forbidden");
+  if(initialRuntime){const method=OWNED_TOOL_METHODS[name];if(method==="resetProductSession")return toolResult({ok:false,code:"owned_product_reset_product_only",replayAllowed:false},true);const result=method==="status"?await initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,result.ok===false);}
   const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
   try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
 }
@@ -99,7 +124,7 @@ function daemonRequest(method, requestPath, payload, timeoutMs) {
 }
 
 async function getDaemonHealth(timeoutMs) {
-  const response = await daemonRequest("GET", "/health", undefined, timeoutMs || 1200);
+  const response = await daemonRequest("GET", "/health", undefined, timeoutMs || DAEMON_HEALTH_TIMEOUT_MS);
   if (response.status !== 200 || !response.body.ok) {
     throw new Error(response.body.error || `Bridge daemon health failed with HTTP ${response.status}`);
   }
@@ -107,11 +132,12 @@ async function getDaemonHealth(timeoutMs) {
 }
 
 async function ensureDaemonRunning() {
+  if(initialRuntime)initialRuntime.assertIngress();
   if (daemonEnsurePromise) return daemonEnsurePromise;
 
   daemonEnsurePromise = (async () => {
     try {
-      return await getDaemonHealth(1200);
+      return await getDaemonHealth(DAEMON_HEALTH_TIMEOUT_MS);
     } catch (firstError) {
       if (!AUTO_START_DAEMON) {
         throw firstError;
@@ -120,7 +146,7 @@ async function ensureDaemonRunning() {
       if(DAEMON_HOST!=="127.0.0.1" || DAEMON_PORT!==3456)throw Object.assign(Error("owned_adapter_fixed_endpoint_required"),{code:"owned_adapter_fixed_endpoint_required"});
       const result=await require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor().ensure();
       if(result.ok!==true)throw Object.assign(Error("owned_adapter_ensure_readback_only"),{code:"owned_adapter_ensure_readback_only"});
-      return await getDaemonHealth(1200);
+      return await getDaemonHealth(DAEMON_HEALTH_TIMEOUT_MS);
     }
   })();
 
@@ -133,6 +159,7 @@ async function ensureDaemonRunning() {
 
 async function getTools() {
   const localTools = [...productionUsageTools,...ownedRuntimeTools];
+  if(initialRuntime)return [...initialRuntime.tools,...ownedRuntimeTools];
   try {
     await ensureDaemonRunning();
     const response = await daemonRequest("GET", "/tools", undefined, 5000);
@@ -150,7 +177,8 @@ async function getTools() {
 
 }
 
-async function callDaemonTool(name, args) {
+async function callDaemonTool(name, args, originalRequest) {
+  if(initialRuntime)return initialRuntime.callTool(name,args===undefined?{}:args,originalRequest?originalRequest.controller.signal:undefined);
   if (!isPanelControlTool(name)) await ensureDaemonRunning();
   const response = await daemonRequest("POST", "/mcp/tools/call", {
     name,
@@ -168,7 +196,7 @@ async function callDaemonTool(name, args) {
   return response.body.result;
 }
 
-async function handleRpc(message) {
+async function handleRpcBound(message, originalRequest) {
   if (!message || message.jsonrpc !== "2.0") return;
   const id = message.id;
 
@@ -199,6 +227,8 @@ async function handleRpc(message) {
     if (message.method === "tools/call") {
       const params = message.params || {};
       const toolName = params.name;
+      if(initialRuntime){ok(id,Object.hasOwn(OWNED_TOOL_METHODS,toolName)?await handleOwnedRuntimeTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{}):
+        await callDaemonTool(toolName,Object.hasOwn(params,"arguments")?params.arguments:{},originalRequest));return;}
       const toolArgs = isPanelControlTool(toolName)
         ? (Object.prototype.hasOwnProperty.call(params, "arguments") ? params.arguments : {})
         : (params.arguments || {});
@@ -239,7 +269,7 @@ async function handleRpc(message) {
 
 function startStdioMcp() {
   log(`Using bridge daemon at http://${DAEMON_HOST}:${DAEMON_PORT}`);
-  ensureDaemonRunning()
+  if(!initialRuntime)ensureDaemonRunning()
     .then((health) => {
       log(`Bridge daemon ready: ${health.server || "unknown"} ${health.version || "unknown"}`);
     })
@@ -272,14 +302,26 @@ function startStdioMcp() {
     handleRpc(message);
   });
 
-  rl.on("close", () => {
+  rl.on("close", async () => {
     log("stdin closed");
+    cancelOriginalRpcRequests();
+    if(initialRuntime)await initialRuntime.revoke();
     process.exit(0);
   });
+  if(initialRuntime){
+    // Installed before the first explicit ensure can invoke the native factory.
+    // These handlers only revoke this original controller; EOF never relaunches.
+    process.stdin.on("error",async()=>{cancelOriginalRpcRequests();await initialRuntime.revoke();process.exit(1);});
+    process.stdin.on("end",()=>{cancelOriginalRpcRequests();void initialRuntime.revoke();});
+    process.stdout.on("error",()=>{cancelOriginalRpcRequests();void initialRuntime.revoke();});
+  }
 }
 
 if (require.main === module) {
-  startStdioMcp();
+  if(trustedSourceCensus.requested()){
+    void trustedSourceCensus.collectFixed("controller").then(value=>process.stdout.write(JSON.stringify(value)+"\n"),error=>{
+      process.stderr.write(JSON.stringify({authority:false,code:error.code||"owned_initial_passive_census_unknown"})+"\n");process.exitCode=1;});
+  }else startStdioMcp();
 }
 
 module.exports = {
@@ -287,5 +329,5 @@ module.exports = {
   handleRpc,
   startStdioMcp,
   toolResult,
-  ownedRuntimeTools,handleOwnedRuntimeTool,ensureDaemonRunning
+  ownedRuntimeTools,handleOwnedRuntimeTool,ensureDaemonRunning,deploymentMode
 };

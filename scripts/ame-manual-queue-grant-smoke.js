@@ -1,17 +1,18 @@
 "use strict";
 const assert = require("node:assert/strict"), fs = require("node:fs"), os = require("node:os"), path = require("node:path"), crypto = require("node:crypto");
 const grant = require("../mcp-server/ame-manual-queue-grant"), { sha256Payload } = require("../mcp-server/m100-protocol");
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "ae-ame-manual-queue-")), copy = value => JSON.parse(JSON.stringify(value));
+const scratchRoot = path.resolve(__dirname, "../.codex-runtime/ame-single-job-gate/fixtures"); fs.mkdirSync(scratchRoot, { recursive: true });
+const root = fs.mkdtempSync(path.join(scratchRoot, "ae-ame-manual-queue-")), copy = value => JSON.parse(JSON.stringify(value));
 let groups = 0;
 const id = () => crypto.randomUUID(), sha = "a".repeat(64);
-function fixture() {
+function fixture(single = false) {
   let clock = Date.now(); const stateDir = path.join(root, id()), batchId = id(), runId = id(), dryRunId = id(), brands = new WeakSet();
   const processInfo = { pid: 77, startedAt: new Date(clock - 10000).toISOString(), path: "C:\\Program Files\\Adobe\\Adobe Media Encoder.exe" };
   const preset = { path: path.join(root, "exact.epr"), sha25664: sha, id: "amep_" + "b".repeat(40) };
-  const manifest = { schema: grant.MANIFEST_SCHEMA, targetSpecifier: "ame-26.0", batchId, process: processInfo, processBinding: sha, nativeSessionNonce: null,
-    retainedWrapperSessionNonce: id(), presetIdentity: sha, jobs: [1, 2].map(n => { const jobId = id(); return { jobId, handleKey: jobId, enqueueRequestNonce: id(), operationBinding: sha,
+  const manifest = { schema: single ? grant.SINGLE_MANIFEST_SCHEMA : grant.MANIFEST_SCHEMA, targetSpecifier: "ame-26.0", batchId, process: processInfo, processBinding: sha, nativeSessionNonce: null,
+    ...(single ? { completedOwnedPrefix: [] } : {}), retainedWrapperSessionNonce: id(), presetIdentity: sha, jobs: (single ? [1] : [1, 2]).map(n => { const jobId = id(); return { jobId, handleKey: jobId, enqueueRequestNonce: id(), operationBinding: sha,
       source: { path: path.join(root, "variant-" + n + ".aep"), sha25664: sha, guid: "GUID-" + n }, preset: { ...preset }, outputPath: path.join(root, "title-" + n + ".mov"), range: { startSeconds: 0, endSeconds: 2 } }; }) };
-  const args = { targetSpecifier: manifest.targetSpecifier, expectedProcess: { pid: processInfo.pid, startedAt: processInfo.startedAt }, batchId, manualQueueManifestSha25664: grant.manifestHash(manifest) };
+  const args = { targetSpecifier: manifest.targetSpecifier, expectedProcess: { pid: processInfo.pid, startedAt: processInfo.startedAt }, batchId, manualQueueManifestSha25664: grant.manifestHash(manifest), ...(single ? { manualQueueMode: "cep_user_declaration_v2", completedOwnedPrefix: [] } : {}) };
   const payload = { plan: { steps: [{ tool: "start_ame_title_batch", args }] } };
   const record = { actionId: "act_" + id(), revision: 2, payload, payloadHash: sha256Payload(payload), previewHash: sha, riskLevel: "mutating", executionState: "executing", executionId: runId,
     confirmationSurface: "cep-panel", confirmedBySurface: "cep-panel", confirmedBySession: "private-panel-session", confirmedAt: new Date(clock).toISOString(),
@@ -21,9 +22,9 @@ function fixture() {
   brands.add(context);
   let panelValid = true;
   const deps = { stateDir, now: () => clock, assertPanelIdentity: () => panelValid, assertManualIngress: ctx => assert(brands.has(ctx), "private ingress required"), assertServerContext: ctx => { assert.equal(ctx.record, record); assert.equal(ctx.record.executionState, "executing"); } };
-  const issuer = grant.createManualQueueGrant(deps), meta = { route: grant.ROUTE, authRole: "panel", panelIdentityValid: true, trustedGesture: true, declaration: grant.DECLARATION,
+  const issuer = grant.createManualQueueGrant(deps), meta = { route: grant.ROUTE, authRole: "panel", panelIdentityValid: true, trustedGesture: true, declaration: grant.declarationForManifest(manifest),
     manifestHash: grant.manifestHash(manifest), acceptedDryRunId: dryRunId, panelConnectionId: "panel-77", panelGeneration: "3" };
-  const start = () => ({ schema: grant.RESERVATION_SCHEMA, batchId, requestNonce: id(), operationBinding: sha, reservedAt: new Date(clock).toISOString(), transportResolved: false, state: "unknown_outcome" });
+  const start = () => ({ schema: grant.RESERVATION_SCHEMA, batchId, requestNonce: id(), operationBinding: sha, reservedAt: new Date(clock).toISOString(), transportResolved: false, state: "unknown_outcome", ...(single ? { lastDispatchGuardVerified: true } : {}) });
   return { issuer, deps, meta, manifest, context, start, stateDir, batchId, advance: ms => { clock += ms; }, disconnect: () => { panelValid = false; } };
 }
 async function check(name, fn) { await fn(); groups++; }
@@ -90,17 +91,25 @@ async function check(name, fn) { await fn(); groups++; }
     const f = fixture(), file = path.join(f.stateDir, "starts", f.batchId + ".json"); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, "{");
     assert.throws(() => f.issuer.readReservation(f.batchId), /corrupt_no_replay/); assert.throws(() => grant.writeReservation(f.stateDir, f.start()), /already_reserved/);
   });
+  await check("v2 exactly one ready job, only explicit completed prefix and distinct outputs", () => {
+    const f = fixture(true), m = copy(f.manifest), prior = copy(m.jobs[0]);
+    prior.jobId = id(); prior.handleKey = prior.jobId; prior.enqueueRequestNonce = id(); prior.batchId = id(); prior.outputPath = path.join(root, "prior.mov"); prior.startReservationSha25664 = sha;
+    prior.completion = { sourceFilePath: prior.source.path, outputFilePath: prior.outputPath, result: "True", observedAt: Date.now() };
+    m.completedOwnedPrefix.push(prior); assert(grant.manifestHash(m));
+    for (const change of [x => { x.jobs.push(copy(x.jobs[0])); }, x => { x.completedOwnedPrefix[0].completion.result = "False"; }, x => { x.completedOwnedPrefix[0].completion.outputFilePath = "foreign"; }, x => { x.completedOwnedPrefix[0].outputPath = x.jobs[0].outputPath; }, x => { x.foreignEligible = true; }]) { const changed = copy(m); change(changed); assert.throws(() => grant.manifestHash(changed)); }
+  });
   await check("independent two-wrapper START evidence proves dispatch only and rejects echoes/drift", async () => {
-    const f = fixture(); let reserved;
+    for (const single of [false, true]) {
+    const f = fixture(single); let reserved;
     await f.issuer.runAuthenticated(f.meta, () => {
       const cap = f.issuer.authorize(f.context, f.manifest), start = f.start();
       start.operationBinding = crypto.createHash("sha256").update(JSON.stringify({ operation: "start", batchId: f.batchId, jobs: f.manifest.jobs.map(j => j.jobId), manifestHash: f.meta.manifestHash })).digest("hex");
       reserved = f.issuer.consume(cap, f.context, f.manifest, start);
     });
     const nativeStart = { requestNonce: reserved.requestNonce, invoked: true, accepted: true }, time = Date.parse(reserved.reservedAt);
-    const payload = { schema: "ae-agent-ame-title-jobs.v1", ok: true, code: "batch_start_accepted", requestNonce: reserved.requestNonce, nativeQueueCompositionVerified: false, dispatchAcceptanceVerified: true, completionVerified: false, mediaVerified: false,
+    const payload = { schema: "ae-agent-ame-title-jobs.v1", ok: true, code: "batch_start_accepted", requestNonce: reserved.requestNonce, nativeQueueCompositionVerified: false, dispatchAcceptanceVerified: true, completionVerified: false, mediaVerified: false, ...(single ? { lastDispatchGuardVerified: true, unknownOutcome: false } : {}),
       native: { start: nativeStart, operationBinding: reserved.operationBinding, observedAt: time } };
-    const run = { id: f.context.runId, startedAt: new Date(time).toISOString(), finishedAt: new Date(time + 1000).toISOString(),
+    const run = { id: f.context.runId, ok: true, dryRun: false, startedAt: new Date(time).toISOString(), finishedAt: new Date(time + 1000).toISOString(),
       provenance: { actionId: f.context.record.actionId, proposalRevision: f.context.record.revision, payloadHash: f.context.record.payloadHash },
       m100Action: { previewHash: f.context.record.previewHash, confirmedBySession: f.context.record.confirmedBySession, confirmedBySurface: "cep-panel", confirmedAt: f.context.record.confirmedAt } };
     const reads = f.manifest.jobs.map((job, i) => {
@@ -108,18 +117,29 @@ async function check(name, fn) { await fn(); groups++; }
         sessionNonce: null, start: nativeStart, requestNonce: nonce, operationBinding: crypto.createHash("sha256").update(JSON.stringify({ operation: "status", jobId: job.jobId })).digest("hex"), observedAt: time + i + 1,
         job: { nativeJobId: null, handleKey: job.handleKey, nativeAssociationVerified: true, retainedWrapperSessionNonce: f.manifest.retainedWrapperSessionNonce, enqueueRequestNonce: job.enqueueRequestNonce,
           processBinding: f.manifest.processBinding, presetIdentity: f.manifest.presetIdentity, sourcePath: job.source.path, sourceGuid: job.source.guid, outputPath: job.outputPath, range: job.range, outputFiles: [job.outputPath] } };
-      return { args: { targetSpecifier: f.manifest.targetSpecifier, expectedProcess: { pid: f.manifest.process.pid, startedAt: f.manifest.process.startedAt }, batchId: f.batchId, jobId: job.jobId }, observedAt,
+      return { tool: "get_ame_title_job_status", status: "completed", source: "server_typed_readback", args: { targetSpecifier: f.manifest.targetSpecifier, expectedProcess: { pid: f.manifest.process.pid, startedAt: f.manifest.process.startedAt }, batchId: f.batchId, jobId: job.jobId }, observedAt,
         result: { schema: "ae-agent-ame-title-jobs.v1", ok: true, code: "job_observed", nativeAssociationVerified: true, nativeQueueCompositionVerified: false, batchId: f.batchId, jobId: job.jobId,
           handleKey: job.handleKey, nativeJobId: null, startReservation: copy(reserved), process: f.manifest.process, native, requestNonce: nonce, observedAt } };
     });
-    const args = { ...f.context.args, manualQueueMode: "cep_user_declaration" };
+    const args = { ...f.context.args, manualQueueMode: single ? "cep_user_declaration_v2" : "cep_user_declaration" };
     assert.equal(grant.verifyStartEvidence(args, payload, run, reads), true);
-    for (const mutate of [r => { r[0].result.startReservation = null; }, r => { r.pop(); }, r => { r[1] = copy(r[0]); },
+    for (const mutate of [r => { r[0].result.startReservation = null; }, r => { r.pop(); }, r => { r.push(copy(r[0])); },
       r => { r[0].result.native.requestNonce = payload.requestNonce; }, r => { r[0].result.native.sessionNonce = "invented"; },
       r => { r[0].result.native.job.retainedWrapperSessionNonce = id(); }, r => { r[0].result.startReservation.manualQueueReceipt.runId = id(); },
       r => { r[0].result.native.start.accepted = null; }, r => { r[0].result.native.observedAt = 1; }]) { const changed = copy(reads); mutate(changed); assert.equal(grant.verifyStartEvidence(args, payload, run, changed), false); }
     assert.equal(grant.verifyStartEvidence(args, { ...payload, code: "batch_start_unknown", ok: false }, run, reads), false);
     assert.equal(grant.verifyStartEvidence(args, { ...payload, nativeQueueCompositionVerified: true }, run, reads), false);
+    if (single) {
+      const semantic = require("../mcp-server/semantic-verification");
+      const step = { index: 1, tool: "start_ame_title_batch", args, status: "completed", result: { ...payload, authorization: { runId: run.id, proposalId: run.provenance.actionId }, verification: { ok: true, scope: "ame_authenticated_cep_declaration_dispatch_only" } }, independentReadBack: reads };
+      const verdict = value => semantic.buildSemanticVerification({ steps: [{ tool: step.tool, args }] }, { ...run, steps: [value] });
+      assert.equal(verdict(step).status, "passed", JSON.stringify(verdict(step)));
+      for (const change of [s => { delete s.independentReadBack; s.result.verification.independentReadBack = reads; }, s => { s.independentReadBack[0].source = "caller"; }, s => { s.result.unknownOutcome = true; }, s => { s.result.lastDispatchGuardVerified = false; }, s => { s.result.authorization.runId = id(); }, s => { s.independentReadBack[0].result.startReservation.lastDispatchGuardVerified = false; }]) {
+        const changed = copy(step); change(changed);
+        assert.equal(verdict(changed).status, "needs_review");
+      }
+    }
+    }
   });
   console.log(JSON.stringify({ status: "passed", groups, proof: "offline private grant/immutable marker checks; zero live AE/AME/GUI" }));
-})().catch(error => { console.error(error.stack || error); process.exitCode = 1; }).finally(() => { assert.equal(path.dirname(path.resolve(root)), path.resolve(os.tmpdir())); assert(path.basename(root).startsWith("ae-ame-manual-queue-")); fs.rmSync(root, { recursive: true, force: true }); });
+})().catch(error => { console.error(error.stack || error); process.exitCode = 1; }).finally(() => { assert.equal(path.dirname(path.resolve(root)), scratchRoot); assert(path.basename(root).startsWith("ae-ame-manual-queue-")); fs.rmSync(root, { recursive: true, force: true }); });

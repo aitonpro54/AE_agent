@@ -1,5 +1,104 @@
 # Экспорт вариантов титров через AME: состояние реализации
 
+## Ограниченная серия enqueue и восстановление collector — 21.10
+
+Поддерживаемый путь для новой серии из 1..11 композиций одного clean saved AEP —
+`mcp-server/ame-title-series.js`: `buildSeriesPlans(manifest, {pendingGroupId?})`
+и `produceSeries({directory, items, manifest, call})`. Manifest содержит свежие
+source SHA, AME process/session, exact preset, подтверждённые
+`pin.processBinding` / `pin.presetIdentity` и `entries` с GUID, output и range.
+Отсутствующие pins отклоняются до первого proposal/enqueue; `produced.json`
+передаётся collector без ручного дополнения manifest.
+Builder сам ставит одинаковые `pendingGroupId` и `pendingGroupSize=N` во все
+отдельные one-step планы. Transport `call(tool, args)` использует существующий
+аутентифицированный controller; модуль не создаёт credentials или HTTP client.
+Каждый план проходит proposal → dry-run → run с `requiresCheckpoint:true` и
+`autoEditSession:true`. Producer не ждёт native callback перед следующим enqueue.
+
+Bridge создаёт один physical checkpoint и удерживает только собственную edit session
+этой серии. Каждый следующий proposal/run/dispatch проверяет её identity, N,
+project/source SHA, AME process/session, preset, текущую автономную authority,
+panel generation, daemon instance и lifecycle epoch. Свежий saved-source admission
+и native guard сохраняют проверки revision/dirty/GUID/range перед отправкой.
+Чужой mutating plan/group, ручная правка или смена generation блокируют dispatch;
+read-only планы остаются доступны. Последний member или ошибка закрывают только
+доказанную собственную сессию, сохраняя checkpoint. После crash/смены daemon
+сохранённая session не получает заново private ownership; её состояние требует
+адресной сверки. Новый checkpoint и автоматический enqueue replay не создаются.
+Legacy groups без `pendingGroupSize` сохраняют прежнюю защиту каждого run.
+
+Producer сохраняет `producer.once.json`, intent и result каждого вызова с fsync.
+Повтор producer в том же каталоге запрещён даже после ошибки: unknown send нельзя
+повторять. Его `produced.json` служит входом read-only collector:
+
+```text
+node scripts/ame-title-collect.js produced.json collector-state read-only-adapter.cjs
+```
+
+Adapter экспортирует только используемый CLI метод `readStatus(args)` и передаёт
+его существующему `get_ame_title_job_status`; формат ответа — typed payload либо
+`{value: payload, isError}`. API `createCollector({directory,entries,items,manifest,
+call,now?})` из `mcp-server/ame-title-collector.js` предоставляет `round()`,
+`snapshot()` и `close()`. Hash-linked durable journal восстанавливает terminals,
+известные read nonces и незавершённый same-nonce intent. Exact terminal receipt
+на сервере закрывает окно между consume native result и client fsync:
+`own_status_retained_result` исторический, с `currentStatusObserved:false`.
+
+Готового standalone authenticated adapter в репозитории нет: основной entrypoint —
+programmatic API с `call`, который предоставляет текущий доверенный host/controller.
+CLI — точка интеграции для его read-only adapter, а не автономный daemon/service.
+Обычная связка без изменения артефакта:
+
+```js
+const items = buildSeriesPlans(manifest);
+const produced = await produceSeries({directory: producerDir, items, manifest, call});
+const collector = createCollector({...produced, directory: collectorDir, call});
+try {
+  for (;;) {
+    const state = await collector.round();
+    if (Date.now() >= state.deadline || state.states.every(s => s.terminal || s.blocked)) break;
+    await new Promise(resolve => setTimeout(resolve, 30000));
+  }
+} finally { collector.close(); }
+```
+
+`round()` выполняет один проход. Programmatic caller повторяет его последовательно
+до terminal/blocked/deadline; CLI уже содержит этот цикл. Concurrent `round()` и
+`close()` во время незавершённого прохода отклоняются до любых дополнительных reads.
+Отдельный atomic constructor admission защищает проверку dead owner, reclaim и
+создание нового writer lock от двух конкурирующих процессов. Crash непосредственно
+во время constructor admission оставляет claim: он автоматически не удаляется и
+требует ручной адресной сверки. Обычный crash после открытия collector допускает
+восстановление известного journal/nonce при доказанно завершившемся прежнем writer.
+
+Только типизированный `ame_title_read_census_unavailable`, доказанный до native
+dispatch для exact owned batch/job/read nonce, допускает 3 повтора того же STATUS
+с backoff 1/2/4 s. Каждый повтор заново проверяет census; valid mismatch/multiple
+останавливают collector. Missing/expired slot, malformed callback и interrupted
+первое чтение без известного nonce остаются unknown. Collector не делает retirement,
+не создаёт новый nonce и не повторяет enqueue/START. Lease группы фиксирован:
+6 600 000 ms от первой reservation, origins cap64, N≤11. Строгая проверка callback
+сохраняет out-of-order binding; callback receipt не утверждает acceptance,
+completion или media proof. Контракт проверен offline; backend применён 21.10
+штатным owned restart и native read-only проверкой. Новая live queue-only серия
+после исправлений не запускалась, START/render0; её приёмка — отдельный scope.
+
+## Актуальная приёмка заданий агента — 19.10
+
+Каждый новый own job проверяется сразу после добавления по его exact wrapper,
+source/GUID, preset, range и output; результат приёмки сохраняется один раз.
+Поздние STATUS описывают текущее состояние и не заменяют исходную приёмку.
+Автоматический пересчёт общей очереди, всех ранее добавленных own jobs или старых
+run records для повторной приёмки не выполняется. Независимые задания пользователя
+и порядок строк не влияют на сохранённую приёмку; чужие jobs не изменяются.
+Локальное чтение приёмки и допустимые адресные проверки описаны в
+[текущем product workflow](product-two-title-workflow.md). Общий START и его gates
+остаются отдельной операцией по явному поручению.
+Контракт отдельного запуска общей очереди, включая cold start и UNKNOWN guards,
+описан в [AME global start](ame-global-start.md); live-приёмка остаётся отдельной.
+
+## История реализации
+
 **Остановлено на сегодня — 11 октября. Progress:** последний manual run
 `5a4ac6eb…` получил `fixture_runner_launch_identity_changed` до phase grants.
 Остался тестовый AE40476 и broker21888; panel busy, unresolved только этот run.

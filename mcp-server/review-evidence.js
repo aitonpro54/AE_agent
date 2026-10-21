@@ -3,6 +3,9 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+// A long-lived producer must not combine its loaded census with newer bytes.
+// This is a freshness fence for this collector, not a runtime attestation.
+const LOADED_COLLECTOR_SHA256=crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex");
 
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -134,9 +137,31 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 const RUNTIME_FILES = [
+  "mcp-server/ae-agent-panel-bootstrap.js",
+  "mcp-server/session-recovery-state.js",
+  "mcp-server/ame-open-comp.js",
+  "mcp-server/ame-open-comp-native.js",
+  "mcp-server/title-export-snapshots.js",
+  "mcp-server/ame-job-source.js",
+  "mcp-server/ame-job-source-native.js",
+  "mcp-server/ame-job-source-sha256.js",
+  "scripts/ame-job-source-hash-worker.cjs",
+  "mcp-server/native-render-variant.js",
+  "mcp-server/title-export-verification.js",
   "mcp-server/ame-transport.js",
   "mcp-server/ame-presets.js",
   "mcp-server/ame-running.js",
+  "mcp-server/ame-queue-control.js",
+  "mcp-server/ame-enqueue-sequence.js",
+  "mcp-server/ame-saved-source-admission.js",
+  "mcp-server/ame-source-probe.js",
+  "mcp-server/ame-source-read.js",
+  "mcp-server/ame-title-pending.js",
+  "mcp-server/ame-title-series.js",
+  "mcp-server/ame-title-collector.js",
+  "mcp-server/m100-protocol.js",
+  "mcp-server/proposal-state.js",
+  "mcp-server/ame-product-dispatch.js",
   "mcp-server/cep-manual-plan-ingress.js",
   "mcp-server/ame-native-fixture-grant.js",
   "mcp-server/ame-native-fixture-runner.js",
@@ -148,6 +173,8 @@ const RUNTIME_FILES = [
   "mcp-server/owned-runtime-win32.js",
   "mcp-server/owned-runtime-authority.js",
   "mcp-server/owned-runtime-service.js",
+  "mcp-server/owned-runtime-product-lifecycle.js",
+  "mcp-server/owned-runtime-product-session-reset.js",
   "mcp-server/owned-runtime-supervisor.js",
   "mcp-server/owned-runtime-initial-recovery.js",
   "scripts/owned-runtime-initial-recovery.js",
@@ -167,6 +194,7 @@ const RUNTIME_FILES = [
   "mcp-server/mcp-adapter.js",
   "cep-panel/panel-actions.js",
   "cep-panel/panel.js",
+  "cep-panel/native-probe-startup-guard.js",
   "mcp-server/native-fixture-prephase-recovery-proof.js",
   "mcp-server/native-fixture-prephase-recovery.js",
   "mcp-server/native-fixture-prephase-recovery-backend.js",
@@ -175,6 +203,9 @@ const RUNTIME_FILES = [
   "mcp-server/fixed-guard-timeout-maintenance-proof.js",
   "scripts/native-fixture-prephase-maintenance.js",
   "mcp-server/ame-title-jobs.js",
+  "mcp-server/ame-title-sender-refusal-proof.js",
+  "mcp-server/ame-shared-queue-grant.js",
+  "mcp-server/owned-runtime-initial-shared-queue-context.js",
   "mcp-server/ame-fixture-ui-disposition.js",
   "mcp-server/ame-fixture-ui-backend.js",
   "mcp-server/human-guard-settlement.js","scripts/human-guard-settlement-maintenance.js",
@@ -187,6 +218,7 @@ const RUNTIME_FILES = [
 ];
 
 function runtimeNamedHashSet(root, fileList = RUNTIME_FILES) {
+  if(sha256(fs.readFileSync(__filename))!==LOADED_COLLECTOR_SHA256)throw Object.assign(Error("owned_runtime_source_collector_changed"),{code:"owned_runtime_source_collector_changed"});
   const targetRoot = root || path.resolve(__dirname, "..");
   const files = Array.isArray(fileList) ? fileList : RUNTIME_FILES;
   return files.map((name) => ({

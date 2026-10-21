@@ -6,7 +6,7 @@
   // A direct/partial asset load must also fail closed before any storage effect.
   if (!hostStartupGuard || !hostStartupGuard.isAllowed()) return;
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "3.3.2";
+  var APP_VERSION = "3.3.4";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";
@@ -106,7 +106,196 @@
   var running = false;
   var pollTimer = null;
   var pollInFlight = false;
+  var initialAutomaticStartup = null;
+  var initialAutomaticConnectDispatch = null;
   var activeEvalScriptCommandId = "";
+  // A native callback owns this durable latch. Connection lifecycle changes
+  // cannot release it; a reload with a lost callback remains fail-closed.
+  var physicalEvalScriptKey = "codexAePhysicalEvalScript.v1";
+  var bootstrapDeliveryFenceKey="codexAeBootstrapDeliveryFence.v1";
+  var resetPreflightInFlight = false;
+  var resetPreflightAttempt = null;
+  var resetPreflightRetry = null;
+  var productResetActivation = null;
+  function physicalEvalScriptIdle() {
+    try { var pending=JSON.parse(localStorage.getItem(physicalEvalScriptKey) || "{}");return pending && typeof pending==="object" && !Object.keys(pending).length; } catch (_) { return false; }
+  }
+  function physicalEvalScript(script, callback) {
+    if(!physicalEvalScriptIdle()){callback("EvalScript error. physical_evalscript_pending");return;}
+    try{var fence=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null"),actual=deliveryActor();if(fence&&(!fence.actor||!sameDeliveryActor(fence.actor,actual)&&!(actual.panelConnectionId===fence.actor.panelConnectionId&&/^[1-9]\d*$/.test(actual.panelGeneration)&&Number(actual.panelGeneration)>Math.max(Number(fence.actor.panelGeneration)||0,fence.numericFloor||0)))){callback("EvalScript error. delivery_epoch_revoked");return;}}catch(_){callback("EvalScript error. delivery_epoch_fence_unreadable");return;}
+    var id=String(Date.now())+"-"+String(Math.random()).slice(2),pending={};pending[id]={submittedAt:Date.now()};
+    try{localStorage.setItem(physicalEvalScriptKey,JSON.stringify(pending));}catch(_){callback("EvalScript error. physical_evalscript_latch_unavailable");return;}
+    cs.evalScript(script,function(result){
+      try{var current=JSON.parse(localStorage.getItem(physicalEvalScriptKey)||"{}");if(current[id]){delete current[id];localStorage.setItem(physicalEvalScriptKey,JSON.stringify(current));}}catch(_){return;}
+      callback(result);
+    });
+  }
+  function nextPanelConnectionGeneration(){
+    var fence=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null"),floor=fence?Math.max(Number(fence.actor&&fence.actor.panelGeneration)||0,fence.numericFloor||0):0,next=Math.max(Date.now(),Number(panelConnectionGeneration)||0,floor)+1;
+    if(!Number.isSafeInteger(next)||next<=0||fence&&!fence.actor)throw new Error("delivery_epoch_fence_unreadable");return next;
+  }
+  function writeBootstrapDeliveryFence(actor){var prior=JSON.parse(localStorage.getItem(bootstrapDeliveryFenceKey)||"null");if(prior&&!prior.actor)throw new Error("delivery_epoch_fence_unreadable");localStorage.setItem(bootstrapDeliveryFenceKey,JSON.stringify({actor:actor,numericFloor:Math.max(Number(actor.panelGeneration)||0,prior?Math.max(Number(prior.actor.panelGeneration)||0,prior.numericFloor||0):0)}));}
+  function rotateBootstrapDeliveryFence(){
+    // Existing valid lifecycle transitions must carry the logical revocation
+    // forward. They still never clear or replace physical native latch rows.
+    if(localStorage.getItem(bootstrapDeliveryFenceKey)!==null)writeBootstrapDeliveryFence(deliveryActor());
+  }
+  function deliveryActor() {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch};
+  }
+  function sameDeliveryActor(a,b) {return a.panelConnectionId===b.panelConnectionId && a.panelGeneration===b.panelGeneration && a.panelInstanceId===b.panelInstanceId && a.panelLifecycleEpoch===b.panelLifecycleEpoch;}
+  function acceptProductSessionResetActivation(activation) {
+    if(!activation || activation.schema!=="ae-agent.product-session-reset.v1.activation" || !/^[a-f0-9-]{36}$/.test(activation.generation) || !activation.actor || activation.actor.panelGeneration!=="reset-"+activation.generation || !activation.disposition || activation.disposition.replayAllowed!==false)return {accepted:false,transitioned:false};
+    var actor=deliveryActor(),resetActor=/^reset-/.test(actor.panelGeneration);
+    if(!resetActor) {
+      // Bootstrap 0 can adopt metadata only. The caller must run the ordinary
+      // connect path before any poll obtains a positive numeric generation.
+      if(panelConnectionGeneration===0 && actor.panelLifecycleEpoch===0 && running===false && physicalEvalScriptIdle()){productResetActivation=activation;return {accepted:true,transitioned:false,preconnect:true};}
+      if(!/^[1-9]\d*$/.test(actor.panelGeneration) || !Number.isSafeInteger(Number(actor.panelGeneration)))return {accepted:false,transitioned:false};
+      // A fresh ordinary connection may observe historical activation. It
+      // adopts the exact receipt without replaying preflight or rotating again.
+      productResetActivation=activation;return {accepted:true,transitioned:false};
+    }
+    if(actor.panelGeneration!=="reset-"+activation.generation || !sameDeliveryActor(actor,activation.actor) || !physicalEvalScriptIdle())return {accepted:false,transitioned:false};
+    var ordinaryGeneration;try{ordinaryGeneration=nextPanelConnectionGeneration();}catch(_){return {accepted:false,transitioned:false};}
+    if(!Number.isSafeInteger(ordinaryGeneration) || ordinaryGeneration<=0)return {accepted:false,transitioned:false};
+    cancelResetPreflightRetry();if(pollTimer)clearTimeout(pollTimer);
+    // The immutable signed reset actor remains a fence witness. Normal
+    // delivery returns to the numeric reconnect contract in a fresh epoch.
+    panelConnectionGeneration=ordinaryGeneration;panelLifecycleEpoch+=1;
+    try{rotateBootstrapDeliveryFence();}catch(_){return {accepted:false,transitioned:false};}
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
+    currentPlanSyncInFlight=false;currentPlanSyncActiveReqId=0;currentPlanSyncActiveEpoch=0;
+    autonomousSessionState=null;renderAutonomousSession();productResetActivation=activation;
+    pollInFlight=false;running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);
+    return {accepted:true,transitioned:true};
+  }
+  function cancelResetPreflightRetry() {
+    if(resetPreflightRetry && resetPreflightRetry.timer!==null)clearTimeout(resetPreflightRetry.timer);
+    resetPreflightRetry=null;
+  }
+  function resetPreflightRetryCurrent(retry) {return resetPreflightRetry===retry && sameDeliveryActor(retry.actor,deliveryActor()) && retry.url===getBaseUrl() && retry.token===getToken();}
+  function deferProductSessionReset(challenge,refresh) {
+    var retry=resetPreflightRetry;
+    if(!retry || !resetPreflightRetryCurrent(retry)) {cancelResetPreflightRetry();retry={actor:deliveryActor(),url:getBaseUrl(),token:getToken(),timer:null,refreshing:false};resetPreflightRetry=retry;}
+    retry.challenge=challenge;
+    if(retry.refreshing || retry.timer!==null)return;
+    if(!refresh) {
+      retry.timer=setTimeout(function(){retry.timer=null;if(!resetPreflightRetryCurrent(retry)){if(resetPreflightRetry===retry)cancelResetPreflightRetry();return;}beginProductSessionReset(retry.challenge);},500);
+      setStatus("Reset preflight waiting for panel control",false);return;
+    }
+    // The expired preflight has never submitted native work. Renew only its
+    // fixed read challenge on the unchanged actor, after the idle checks.
+    retry.refreshing=true;
+    request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+      if(!resetPreflightRetryCurrent(retry)){if(resetPreflightRetry===retry)cancelResetPreflightRetry();return;}
+      cancelResetPreflightRetry();
+      if(error || !response){setStatus("Reset preflight lookup failed; reconnect",false);return;}
+      if(response.resetSession){beginProductSessionReset(response.resetSession);return;}
+      if(response.resetSessionActivation){var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(adoption.preconnect){connect(null,null,true);return;}if(!adoption.transitioned){running=true;setBridgeConnected();pollTimer=setTimeout(poll,50);}return;}
+      setStatus("Reset preflight authority unavailable",false);
+    });
+  }
+  function beginProductSessionReset(challenge) {
+    var actionState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(resetPreflightInFlight || !challenge || challenge.schema!=="ae-agent.product-session-reset.v1.challenge" || !/^[a-f0-9-]{36}$/.test(challenge.generation) || !/^[a-f0-9-]{36}$/.test(challenge.challenge) || !sameDeliveryActor(challenge.actor,deliveryActor()) || !physicalEvalScriptIdle()){
+      cancelResetPreflightRetry();setStatus("Reset preflight refused: physical command pending",false);return;
+    }
+    if(!actionState || actionState.recoveryTransport || actionState.actionStorage!=="ready") {cancelResetPreflightRetry();setStatus("Reset preflight refused: panel control unavailable",false);return;}
+    if(actionState.activeAction || actionState.trustedGuardRefresh && actionState.trustedGuardRefresh.pending || panelActionBusy()) {deferProductSessionReset(challenge,false);return;}
+    if(!(Date.parse(challenge.expiresAt)>Date.now())){deferProductSessionReset(challenge,true);return;}
+    cancelResetPreflightRetry();
+    var panelControl={nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:(actionState.unresolvedActions||[]).map(function(r){return {requestId:r.requestId,entrySha256:r.entrySha256};})};
+    var previous=deliveryActor(),url=getBaseUrl(),token=getToken(),attempt={challenge:challenge.challenge};resetPreflightAttempt=attempt;resetPreflightInFlight=true;running=false;pollInFlight=false;
+    function finishKnown(message){if(resetPreflightAttempt!==attempt)return;resetPreflightInFlight=false;resetPreflightAttempt=null;if(message)setStatus(message,false);}
+    if(pollTimer)clearTimeout(pollTimer);
+    panelLifecycleEpoch+=1;panelConnectionGeneration="reset-"+challenge.generation;
+    try{rotateBootstrapDeliveryFence();}catch(_){finishKnown("Reset delivery fence unavailable");return;}
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;
+    autonomousSessionState=null;renderAutonomousSession();var actor=deliveryActor();
+    // This fixed read is also a serialized host barrier. Its callback proves
+    // this read completed, never that old external AE/AME effects succeeded.
+    var script='(function(){var p=app.project;if(!p)return JSON.stringify({projectPresent:false});return JSON.stringify({projectPresent:true,file:p.file?String(p.file.fsName):"",dirty:p.dirty,revision:p.revision,rendering:p.renderQueue.rendering,challenge:'+JSON.stringify(challenge.challenge)+'});}())';
+    physicalEvalScript(script,function(result){
+      if(!sameDeliveryActor(actor,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finishKnown();return;}
+      var project;try{project=JSON.parse(result);}catch(_){finishKnown("Reset preflight: read failed; reconnect for a fresh read");return;}
+      if(!physicalEvalScriptIdle()){finishKnown("Reset preflight: physical fence unknown");return;}
+      request("POST","/bridge/reset-session",{generation:challenge.generation,challenge:challenge.challenge,previousActor:previous,actor:actor,physicalInflight:0,panelControl:panelControl,project:project},function(error,response){
+        if(!sameDeliveryActor(actor,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finishKnown();return;}
+        finishKnown();
+        if(error || !response || response.status!=="reset_active"){setStatus("Reset preflight refused; read status",false);return;}
+        if(!acceptProductSessionResetActivation(response.activation).accepted)setStatus("Reset activation actor mismatch",false);
+      });
+    });
+  }
+  // Private fixed bootstrap recovery. The durable native latch is never
+  // cleared here. This rotates delivery identity only; no plan/edit/output
+  // ownership or write permission is inherited or granted.
+  var bootstrapRecoveryEpochInFlight=false;
+  function bootstrapCoveredLogicalRead(id,cover){return !id||cover.projectReadCommand&&cover.projectReadCommand.id===id||(cover.barriers||[]).some(function(v){return v.pins&&v.pins.id===id;});}
+  function beginBootstrapRecoveryEpoch(challenge){
+    if(bootstrapRecoveryEpochInFlight||!challenge||challenge.schema!=="ae-agent.bootstrap-recovery-epoch.v1.challenge"||!challenge.origin||!challenge.nextActor||!challenge.coveredBootstrap)return;
+    var key="codexAeBootstrapRecoveryEpoch.v1."+challenge.generation,state=window.AEAgentPanelActions&&window.AEAgentPanelActions.state(),entry;
+    try{entry=JSON.parse(localStorage.getItem(key)||"null");}catch(_){setStatus("Bootstrap recovery storage is unreadable",false);return;}
+    function post(payload){
+      bootstrapRecoveryEpochInFlight=true;
+      var actor=deliveryActor(),url=getBaseUrl(),token=getToken();
+      request("POST","/bridge/bootstrap-recovery-epoch",payload,function(error,response){
+        bootstrapRecoveryEpochInFlight=false;
+        if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;
+        if(!error&&response&&response.bootstrapRecovery){beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
+        if(error||!response||response.status!=="bootstrap_recovery_epoch_active"){
+          setStatus("Bootstrap recovery ACK unknown; observing exact receipt",false);
+          // Passive lookup after a lost HTTP ACK. It neither retries native
+          // work nor starts the normal project-file polling read.
+          setTimeout(function(){if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;request("GET",bridgeNextPath("",true),null,function(lookupError,observed){if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;if(!lookupError&&observed&&observed.bootstrapRecovery)beginBootstrapRecoveryEpoch(observed.bootstrapRecovery);else if(!lookupError&&observed&&observed.ok===true&&observed.command===null){running=true;pollInFlight=false;pollTimer=setTimeout(poll,50);}});},500);
+          return;
+        }
+        try{var saved=JSON.parse(localStorage.getItem(key));saved.acknowledged=true;localStorage.setItem(key,JSON.stringify(saved));}catch(_){setStatus("Bootstrap recovery ACK storage failed",false);return;}
+        running=true;pollInFlight=false;setBridgeConnected();pollTimer=setTimeout(poll,50);
+      });
+    }
+    if(entry){
+      var current=deliveryActor(),exactActor=sameDeliveryActor(current,challenge.nextActor),historical=challenge.historicalReceiptOnly===true&&current.panelConnectionId===challenge.origin.actor.panelConnectionId&&/^[1-9]\d*$/.test(current.panelGeneration)&&Number(current.panelGeneration)>Number(challenge.nextActor.panelGeneration);
+      if(entry.challenge!==challenge.challenge||entry.originalRawSha256!==challenge.coveredBootstrap.originalRawSha256||!exactActor&&!historical){setStatus("Bootstrap recovery identity mismatch",false);return;}
+      // Re-send only the exact completed HTTP receipt. Never native work.
+      if(entry.payload&&physicalEvalScriptIdle()){post(entry.payload);return;}
+      if(!historical){setStatus("Bootstrap recovery physical outcome remains unknown",false);return;}
+    }
+    if(challenge.historicalReceiptOnly===true){
+      var fresh=deliveryActor();
+      if(!physicalEvalScriptIdle()||!bootstrapCoveredLogicalRead(activeEvalScriptCommandId,challenge.coveredBootstrap)||ownedPollingSession||recoveryTransportScope||!state||state.activeAction||state.recoveryTransport||state.actionStorage!=="ready"||(state.unresolvedActions||[]).length||panelActionBusy(challenge.coveredBootstrap)){setStatus("Bootstrap recovery fresh epoch requires idle physical/panel control",false);return;}
+      // Persistently revoke old callbacks BEFORE asking for a NEW challenge.
+      // This changes logical delivery identity, never the physical latch.
+      try{writeBootstrapDeliveryFence(fresh);}catch(_){setStatus("Bootstrap recovery delivery fence unavailable",false);return;}
+      post({kind:"request_fresh_epoch",generation:challenge.generation,challenge:challenge.challenge,actor:fresh,deliveryFenceActor:fresh,physicalInflight:0,panelControl:{nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:[]}});return;
+    }
+    if(!sameDeliveryActor(deliveryActor(),challenge.origin.actor)||!physicalEvalScriptIdle()||!bootstrapCoveredLogicalRead(activeEvalScriptCommandId,challenge.coveredBootstrap)||ownedPollingSession||recoveryTransportScope||!state||state.activeAction||state.recoveryTransport||state.actionStorage!=="ready"||(state.unresolvedActions||[]).length||state.trustedGuardRefresh&&state.trustedGuardRefresh.pending||panelActionBusy(challenge.coveredBootstrap)){
+      setStatus("Bootstrap recovery waits for exact idle physical/panel control",false);return;
+    }
+    entry={challenge:challenge.challenge,originalRawSha256:challenge.coveredBootstrap.originalRawSha256,payload:null,acknowledged:false,retiredLogicalReadId:activeEvalScriptCommandId||null};
+    try{localStorage.setItem(key,JSON.stringify(entry));}catch(_){setStatus("Bootstrap recovery intent storage failed",false);return;}
+    var previous=deliveryActor(),url=getBaseUrl(),token=getToken();
+    running=false;pollInFlight=false;if(pollTimer)clearTimeout(pollTimer);
+    panelConnectionGeneration=challenge.nextActor.panelGeneration;panelLifecycleEpoch=challenge.nextActor.panelLifecycleEpoch;
+    try{writeBootstrapDeliveryFence(deliveryActor());}catch(_){setStatus("Bootstrap recovery delivery fence unavailable",false);return;}
+    // The exact covered logical read loses its callback authority in this
+    // epoch. Its old ID is archived above; physical rows remain untouched.
+    activeEvalScriptCommandId="";
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;autonomousSessionState=null;renderAutonomousSession();
+    var actor=deliveryActor();bootstrapRecoveryEpochInFlight=true;
+    var script='(function(){var p=app.project;if(!p)return JSON.stringify({projectPresent:false});return JSON.stringify({projectPresent:true,file:p.file?String(p.file.fsName):"",dirty:p.dirty,revision:p.revision,rendering:p.renderQueue.rendering,challenge:'+JSON.stringify(challenge.challenge)+'});}())';
+    physicalEvalScript(script,function(result){
+      bootstrapRecoveryEpochInFlight=false;
+      if(!sameDeliveryActor(actor,deliveryActor())||url!==getBaseUrl()||token!==getToken())return;
+      var project;try{project=JSON.parse(result);}catch(_){setStatus("Bootstrap recovery native result unknown",false);return;}
+      if(!physicalEvalScriptIdle()){setStatus("Bootstrap recovery physical latch remains unknown",false);return;}
+      var payload={generation:challenge.generation,challenge:challenge.challenge,previousActor:previous,actor:actor,physicalInflight:0,panelControl:{nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",oldActionEntries:[]},project:project};
+      entry.payload=payload;try{localStorage.setItem(key,JSON.stringify(entry));}catch(_){setStatus("Bootstrap recovery terminal storage failed",false);return;}
+      post(payload);
+    });
+  }
   var agents = [];
   var chatSessions = [];
   var activeChatSessionId = "";
@@ -144,6 +333,11 @@
   var recoveryTransportScope = null;
   var recoveryTransportConnecting = false;
   var lastAcceptedDryRun = null;
+  // Scheduling only: the backend still owns all fresh execution guards.
+  var ownedPlanPreparationMode = "";
+  var ownedCompletedDryRunCache = null;
+  var ownedPollingSession = null;
+  var ownedPollingClosed = "";
   var planRunInFlightMode = "";
   var inlinePlanActionRows = [];
   var operationUsageReports = [];
@@ -378,12 +572,13 @@
     return created;
   }
 
-  function bridgeNextPath(projectFile) {
+  function bridgeNextPath(projectFile,resetProbe) {
     var actionState = window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     return "/bridge/next?panelConnectionId=" + encodeURIComponent(panelConnectionId)
       + "&panelGeneration=" + encodeURIComponent(String(panelConnectionGeneration || 0))
       + "&panelInstanceId=" + encodeURIComponent(actionState && actionState.panelInstanceId || "")
       + "&panelLifecycleEpoch=" + encodeURIComponent(String(panelLifecycleEpoch))
+      + (resetProbe ? "&physicalInflight=" + (physicalEvalScriptIdle() ? "0" : "1") : "")
       + "&projectFile=" + encodeURIComponent(projectFile || "");
   }
 
@@ -433,6 +628,14 @@
   }
 
   function request(method, path, body, onDone) {
+    var startup = initialAutomaticStartup;
+    if (initialAutomaticStartupCurrent(startup) && /^(lookup|connecting|pending)$/.test(startup.state)) {
+      var startupDone = onDone;
+      onDone = function (error, response) {
+        if (error) closeInitialAutomaticStartup(startup);
+        startupDone(error, response);
+      };
+    }
     if (!bridgeHostAvailable(onDone)) return;
     var completed = false;
     var requestEpoch=panelLifecycleEpoch,requestGeneration=panelConnectionGeneration;
@@ -440,9 +643,14 @@
     if (!window.AEAgentPanelContract.validateLoopbackUrl(getBaseUrl())) { onDone({rejected:true,code:"invalid_loopback_url",message:"Bridge origin is not loopback."}); return; }
     xhr.open(method, getBaseUrl() + path, true);
     xhr.setRequestHeader("x-ae-bridge-token", getToken());
-    xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
+    xhr.timeout = isFixedGuardLookup(method, path, body) ? 60000 : path.indexOf("/agents/chat") === 0 || path.indexOf("/agents/plan") === 0 || path === "/agents/ame/title-start/run" || path.indexOf("/agents/hardcore") === 0 || body && body.name === "reconcile_plan_run"
       ? 120000
       : path.indexOf("/usage/refresh") === 0 ? 15000 : 10000;
+    if(method==="GET" && path.indexOf("/bridge/next?")===0 && ownedPollingSession && !ownedPollingClosed) {
+      // The one initial native remaining lifetime also has a non-renewed timer.
+      // Backend owns the actual monotonic deadline and closes this exact response.
+      xhr.timeout=ownedPollingSession.remainingSessionMs;
+    }
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("content-type", "text/plain;charset=utf-8");
     }
@@ -500,6 +708,7 @@
       finish(makeBridgeOfflineError());
     };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
+    return xhr;
   }
 
   function refreshAppTitle() {
@@ -1819,6 +2028,7 @@
   }
 
   function currentProposalBlockReason(proposal) {
+    if(ownedPollingClosed) return "Owned transport закрыт; требуется сверка исходной сессии";
     if (!proposal) return "Нет текущего proposal";
     if (Date.parse(proposal.confirmation.proposalExpiresAt) <= Date.now()) return "Срок действия плана истёк";
     if (!currentBridgePlan || currentBridgePlan.actionId !== proposal.actionId) return "План не подтверждён сервером как текущий";
@@ -1891,6 +2101,142 @@
     return true;
   }
 
+  function ownedCompletedDryRunPromised(value) {
+    return !!(value && value.ownedPlanPreparation && value.ownedPlanPreparation.mode === "completed_native_dry_run_v1");
+  }
+
+  function ownedPanelActor() {
+    var state = window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return {panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),
+      panelInstanceId:state && state.panelInstanceId || "",panelLifecycleEpoch:panelLifecycleEpoch,
+      confirmationSessionId:m100ConfirmationSessionId()};
+  }
+
+  function ownedTokenlessProposalKey(value) {
+    var proposal=normalizeM100ActionProposal(value);
+    if(!proposal) return "";
+    var publicProposal=JSON.parse(JSON.stringify(proposal));
+    delete publicProposal.confirmation.confirmationToken;
+    return planKeyFor(publicProposal);
+  }
+
+  function ownedPollingActorCurrent(session) {
+    if(!session || session!==ownedPollingSession || ownedPollingClosed) return false;
+    if(session.url!==getBaseUrl() || session.token!==getToken()) return false;
+    var actor=ownedPanelActor();
+    for(var key in session.actor) if(actor[key]!==session.actor[key]) return false;
+    return true;
+  }
+
+  function closeOwnedPolling(code) {
+    if(ownedPollingClosed) return;
+    ownedPollingClosed=code || "owned_transport_unknown";
+    var session=ownedPollingSession;
+    running=false;pollInFlight=false;ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;
+    if(pollTimer) clearTimeout(pollTimer);
+    if(session) {
+      clearTimeout(session.timer);
+      if(session.command) clearTimeout(session.command.timer);
+      // Abort only held reads; submitted POST outcomes remain unreconciled.
+      if(session.heldXhr && typeof session.heldXhr.abort==="function") session.heldXhr.abort();
+      if(session.heartbeatXhr && typeof session.heartbeatXhr.abort==="function") session.heartbeatXhr.abort();
+    }
+    setStatus("Owned transport CLOSED · требуется сверка",false);
+    setPlanRunStatus(ownedPollingClosed,"blocked");updateChatAvailability();
+  }
+
+  function beginOwnedPolling(response) {
+    if(!ownedCompletedDryRunPromised(response)) return false;
+    var remaining=response.ownedPlanPreparation.remainingSessionMs;
+    if(ownedPollingSession || typeof remaining!=="number" || Math.floor(remaining)!==remaining || remaining<=0 || remaining>28800000) {
+      closeOwnedPolling("owned_original_session_deadline_invalid");return false;
+    }
+    ownedPlanPreparationMode="completed_native_dry_run_v1";
+    var session={actor:ownedPanelActor(),url:getBaseUrl(),token:getToken(),remainingSessionMs:remaining,heldXhr:null,command:null,heartbeatXhr:null};
+    ownedPollingSession=session;
+    // Scheduling data only: this timer never renews the ORIGINAL session.
+    session.timer=setTimeout(function ownedSessionDeadline() {if(session===ownedPollingSession) closeOwnedPolling("owned_original_session_deadline");},remaining);
+    return true;
+  }
+
+  function beginOwnedCommand(command) {
+    var session=ownedPollingSession,remaining=command && command.remainingCommandMs,owner=command && command.leaseOwner;
+    if(!ownedPollingActorCurrent(session) || session.command || !command || command.contractVersion!==2 || !command.id ||
+        !command.executionId || !command.leaseId || !owner || owner.panelConnectionId!==session.actor.panelConnectionId ||
+        owner.panelGeneration!==session.actor.panelGeneration || typeof remaining!=="number" || Math.floor(remaining)!==remaining || remaining<=0 || remaining>30000) {
+      closeOwnedPolling("owned_original_command_deadline_invalid");return false;
+    }
+    var pending={id:command.id,phase:"delivered",heartbeatInFlight:false};session.command=pending;
+    pending.originalCommand=command;
+    pending.timer=setTimeout(function ownedCommandDeadline() {
+      if(session===ownedPollingSession && session.command===pending) closeOwnedPolling("owned_original_command_deadline");
+    },remaining);
+    return true;
+  }
+
+  function finishOwnedCommand(command, receiptAccepted) {
+    var session=ownedPollingSession,pending=session && session.command;
+    if(!ownedPollingActorCurrent(session) || !pending || pending.id!==command.id || !receiptAccepted) {
+      closeOwnedPolling("owned_original_command_receipt_unknown");return;
+    }
+    if(pending.heartbeatInFlight) {pending.phase="acknowledged";return;}
+    clearTimeout(pending.timer);session.command=null;clearActiveEvalScriptCommand(command.id);
+    // The next original GET is permitted only after this actual result ACK.
+    if(pollTimer) clearTimeout(pollTimer);
+    pollTimer=setTimeout(poll,50);
+  }
+
+  function ownedCompletedDryRunCacheMatches(pins) {
+    var cached=ownedCompletedDryRunCache,actor=ownedPanelActor();
+    if(!cached || !ownedCompletedDryRunPromised(currentBridgePlan) || !lastAcceptedDryRun || lastAcceptedDryRun.runId!==cached.runId ||
+        !currentBridgePlanMatchesPins(currentBridgePlan,cached.pins) ||
+        pins && !currentBridgePlanMatchesPins(currentBridgePlan,pins) ||
+        cached.planKey!==currentPlanKey() || cached.planKey!==planKeyFor(currentBridgePlan && currentBridgePlan.plan) ||
+        cached.validationKey!==planKeyFor(currentBridgePlan.validation) || cached.validationKey!==planKeyFor(lastPlanResult && lastPlanResult.planValidation) ||
+        cached.proposalKey!==ownedTokenlessProposalKey(currentBridgePlan.proposal) ||
+        cached.proposalKey!==ownedTokenlessProposalKey(m100ActionProposalForResult(lastPlanResult)) ||
+        currentBridgePlan.proposal.confirmation.confirmationToken) return false;
+    for(var key in actor) if(actor[key]!==cached.actor[key]) return false;
+    return true;
+  }
+
+  function ownedCompletedDryRunValid(response, originalPins, originalPlanKey, originalValidationKey, originalProposalKey, actor) {
+    var current=response && response.current,run=response && response.completedDryRun;
+    var proposal=normalizeM100ActionProposal(response && response.proposal),binding=run && run.binding,delivery=run && run.nativeDelivery;
+    if(!response || response.ok!==true || !ownedCompletedDryRunPromised(current) || !proposal ||
+        !proposal.confirmation.confirmationToken || !currentBridgePlanMatchesPins(current,originalPins) ||
+        current.proposal.confirmation.confirmationToken || response.revision!==originalPins.revision ||
+        proposal.actionId!==originalPins.actionId || proposal.revision!==originalPins.revision ||
+        planKeyFor(response.plan)!==originalPlanKey || planKeyFor(current.plan)!==originalPlanKey ||
+        planKeyFor(response.validation)!==originalValidationKey || planKeyFor(current.validation)!==originalValidationKey ||
+        ownedTokenlessProposalKey(current.proposal)!==originalProposalKey || ownedTokenlessProposalKey(proposal)!==originalProposalKey ||
+        current.state!=="dry_run_passed" || !run || run.schema!=="ae-agent.owned-native-dry-projection.v1" ||
+        run.ok!==true || run.dryRun!==true || run.nativeAuthority!==false ||
+        run.requestId!==originalPins.requestId || run.actionId!==originalPins.actionId ||
+        run.revision!==originalPins.revision || run.instanceId!==originalPins.instanceId ||
+        typeof run.finishedAt!=="string" || isNaN(Date.parse(run.finishedAt)) ||
+        !current.dryRunCompletedAt || isNaN(Date.parse(current.dryRunCompletedAt)) ||
+        !current.lastRun || current.lastRun.id!==run.id || current.lastRun.ok!==true || current.lastRun.dryRun!==true ||
+        !binding || planKeyFor(binding.pins)!==planKeyFor(originalPins) || !isPlainObject(delivery) || run.id!==delivery.executionRef) return false;
+    var currentActor=ownedPanelActor();
+    for(var key in actor) if(!actor[key] && actor[key]!==0 || binding[key]!==actor[key] || currentActor[key]!==actor[key]) return false;
+    if(originalPins.surface!=="cep-panel" || originalPins.sessionId!==actor.confirmationSessionId) return false;
+    var refs=["commandRef","executionRef","leaseRef"],hashes=["receiptSha25664","scriptSha25664","resultSha25664"];
+    if(Object.keys(delivery).sort().join(",")!==refs.concat(hashes).sort().join(",")) return false;
+    for(var r=0;r<refs.length;r++) if(typeof delivery[refs[r]]!=="string" || !/^[a-f0-9]{32}$/.test(delivery[refs[r]]) || /^0+$/.test(delivery[refs[r]])) return false;
+    for(var h=0;h<hashes.length;h++) if(typeof delivery[hashes[h]]!=="string" || !/^[a-f0-9]{64}$/.test(delivery[hashes[h]]) || /^0+$/.test(delivery[hashes[h]])) return false;
+    return true;
+  }
+
+  function invalidateCurrentPlanSyncAfterOwnedAdoption() {
+    // A late pre-adopt GET must never replace the completed native snapshot.
+    currentPlanSyncActiveReqId=0;currentPlanSyncActiveEpoch=0;currentPlanSyncInFlight=false;
+    var waiters=currentPlanSyncWaiters;currentPlanSyncWaiters=[];
+    for(var i=0;i<waiters.length;i++) {
+      try {waiters[i].onDone({rejected:true,code:"plan_pins_mismatch",message:"Current read preceded completed native adoption."});} catch(_waiterError) {}
+    }
+  }
+
   function dispatchCurrentBridgePlanSync() {
     if (currentPlanSyncInFlight) return;
     currentPlanSyncInFlight = true;
@@ -1922,10 +2268,12 @@
 
       var canonicalChanged = false;
       var incoming = response && response.current || null;
+      if(ownedCompletedDryRunPromised(incoming)) ownedPlanPreparationMode="completed_native_dry_run_v1";
 
       if (!hasFreshFollowupWaiters) {
         if (error) {
           currentBridgePlan = null;
+          ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;
         } else {
           if (incoming) {
             var oldProposal = m100ActionProposalForResult(lastPlanResult);
@@ -1951,16 +2299,21 @@
               var replaced = !currentBridgePlan || incoming.actionId !== currentBridgePlan.actionId;
               currentBridgePlan = incoming;
               if (incoming.proposal && incoming.proposal.confirmation) {
-                incoming.proposal.confirmation.confirmationToken = localToken;
+                if(!ownedCompletedDryRunPromised(incoming)) incoming.proposal.confirmation.confirmationToken = localToken;
+              }
+              var incomingProposal=incoming.proposal;
+              if(ownedCompletedDryRunPromised(incoming) && localToken) {
+                incomingProposal=JSON.parse(JSON.stringify(incoming.proposal));incomingProposal.confirmation.confirmationToken=localToken;
               }
               lastPlanResult = {
                 plan: incoming.plan,
                 planValidation: incoming.validation,
                 requestId: incoming.proposal ? incoming.proposal.requestId : "",
-                m100ActionProposal: incoming.proposal,
+                m100ActionProposal: incomingProposal,
                 bridgePlanPins: localToken ? localPins : null
               };
               if (replaced) {
+                ownedCompletedDryRunCache=null;
                 lastAcceptedDryRun = null;
                 appendChatMessage("assistant", "Текущий план Bridge v" + incoming.revision + ": " + (incoming.plan && incoming.plan.summary || incoming.actionId),
                   {actionProposal: incoming.proposal, planResult: lastPlanResult});
@@ -1970,8 +2323,10 @@
             currentBridgePlan = null;
             lastPlanResult = null;
             lastAcceptedDryRun = null;
+            ownedCompletedDryRunCache=null;
           }
         }
+        if(ownedCompletedDryRunCache && !ownedCompletedDryRunCacheMatches()) {ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;}
         renderCurrentBridgePlan();
         updateChatAvailability();
       }
@@ -2223,8 +2578,8 @@
     dryRunButton.addEventListener("click", function () {
       uiPlanAction(true,entry.actionProposal.actionId);
     });
-    runButton.addEventListener("click", function () {
-      uiPlanAction(false,entry.actionProposal.actionId);
+    runButton.addEventListener("click", function (event) {
+      uiPlanAction(false,entry.actionProposal.actionId,event);
     });
 
     inlinePlanActionRows.push(entry);
@@ -3482,6 +3837,7 @@
   }
 
   function rememberPlanRun(run) {
+    ownedCompletedDryRunCache = null;
     lastPlanRunResult = run || null;
     window.__aeAgentLastPlanRunResult = lastPlanRunResult;
     lastAcceptedDryRun = null;
@@ -3851,13 +4207,23 @@
     });
   }
 
+  var activeAmeQueueFrame=null;
+  var AME_QUEUE_DECLARATION="Сейчас проверил всю очередь AME: содержит только показанное 1 готовое задание и перечисленные завершённые owned-задания; других готовых, ожидающих или неизвестных заданий нет; понимаю, API полный состав не проверяет, запуск общий.";
+  function ameQueueFrameCurrent(frame) {
+    return frame && frame===activeAmeQueueFrame && frame.alive && Date.now()>=frame.issuedAt && Date.now()-frame.issuedAt<120000 &&
+      frame.epoch===panelLifecycleEpoch && frame.generation===String(panelConnectionGeneration) && frame.url===getBaseUrl() && frame.token===getToken() && currentBridgePlanMatchesPins(currentBridgePlan,frame.pins);
+  }
   function runLastPlan(dryRun, fresh, onDone, policy) {
     policy=policy || {prepare:true};
     function fail(code,message,unknown) {
+      if(planRunInFlightMode==="prepare") planRunInFlightMode="";
+      if(ownedPlanPreparationMode) {ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;}
       setPlanRunStatus(message || code,"blocked");
       if(onDone) onDone({code:code,message:message || code,rejected:!unknown,isUnknown:!!unknown});
     }
-    if (!fresh) {
+    if(ownedPollingSession && !ownedPollingActorCurrent(ownedPollingSession)) closeOwnedPolling("owned_original_poll_actor_changed");
+    if(ownedPollingClosed) {fail("owned_transport_reconciliation_required","Owned transport закрыт; требуется сверка исходной сессии.",true);return;}
+    if (!fresh && !(!dryRun && ownedCompletedDryRunCacheMatches(policy.pins))) {
       var clicked=m100ActionProposalForResult(lastPlanResult);
       if (!clicked) {fail("proposal_missing","No backend action proposal ready");return;}
       refreshCurrentBridgePlan({fresh:true,expectedActionId:clicked.actionId,expectedPlanPins:policy.pins},function(error) {
@@ -3880,11 +4246,45 @@
     if(!proposal.confirmation.confirmationToken) {
       if(!policy.prepare) {fail("proposal_adoption_required","Prepare the proposal and inspect the resulting new pins before execution.");return;}
       var adoptEpoch=panelLifecycleEpoch, adoptGeneration=panelConnectionGeneration, adoptInstanceId=currentBridgePlan.instanceId;
+      var ownedPreparation=ownedCompletedDryRunPromised(currentBridgePlan),originalPins=currentBridgePlanPins(currentBridgePlan),
+        originalPlanKey=currentPlanKey(),originalValidationKey=planKeyFor(currentBridgePlan.validation),
+        originalProposalKey=ownedTokenlessProposalKey(currentBridgePlan.proposal),originalActor=ownedPreparation && ownedPanelActor();
       if(policy.context && !policy.context.submit()) return;
-      request("POST","/agents/plan/adopt",{actionId:proposal.actionId,revision:currentBridgePlan.revision,
-        panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),confirmationSessionId:m100ConfirmationSessionId()},function(error,response) {
+      var adoptionBody={actionId:proposal.actionId,revision:currentBridgePlan.revision,
+        panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),confirmationSessionId:m100ConfirmationSessionId()};
+      if(ownedPreparation) {adoptionBody.panelInstanceId=originalActor.panelInstanceId;adoptionBody.panelLifecycleEpoch=originalActor.panelLifecycleEpoch;
+        rememberPlanRun(null);planRunInFlightMode="prepare";}
+      request("POST","/agents/plan/adopt",adoptionBody,function(error,response) {
         if(adoptEpoch !== panelLifecycleEpoch || adoptGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during adoption.",true);return;}
-        if(error) {setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
+        if(ownedPollingClosed) {fail("owned_transport_reconciliation_required","Owned transport closed during adoption.",true);return;}
+        if(error) {planRunInFlightMode="";setPlanRunStatus(error.message,"blocked");if(onDone) onDone(error,response);return;}
+        if(ownedPreparation) {
+          if(!currentBridgePlanMatchesPins(currentBridgePlan,originalPins) || currentPlanKey()!==originalPlanKey ||
+              !ownedCompletedDryRunValid(response,originalPins,originalPlanKey,originalValidationKey,originalProposalKey,originalActor)) {
+            fail("completed_native_dry_run_invalid","Завершённый native dry-run не совпадает с исходным proposal. Подготовка закрыта.");return;
+          }
+          planRunInFlightMode="";invalidateCurrentPlanSyncAfterOwnedAdoption();
+          if(adoptEpoch!==panelLifecycleEpoch || adoptGeneration!==panelConnectionGeneration ||
+              !ownedCompletedDryRunValid(response,originalPins,originalPlanKey,originalValidationKey,originalProposalKey,originalActor)) {
+            fail("lifecycle_interrupted","Connection changed while closing the earlier current read.",true);return;
+          }
+          currentBridgePlan=response.current;currentPlanSyncAt=Date.now();
+          lastPlanResult={plan:response.plan,planValidation:response.validation,requestId:response.proposal.requestId,
+            m100ActionProposal:response.proposal,bridgePlanPins:originalPins};
+          var completedRun=response.completedDryRun;
+          rememberPlanRun(completedRun);
+          ownedCompletedDryRunCache={runId:completedRun.id,pins:JSON.parse(JSON.stringify(originalPins)),
+            planKey:originalPlanKey,validationKey:originalValidationKey,proposalKey:originalProposalKey,
+            actor:JSON.parse(JSON.stringify(originalActor))};
+          renderCurrentBridgePlan();updateChatAvailability();appendChatMessage("assistant",formatPlanRun(completedRun));
+          showPlanRunFinishedStatus(true,completedRun,false);
+          if(onDone) onDone(null,{run:completedRun,runId:completedRun.id,executionRequested:false,executed:false,
+            acceptedDryRunId:completedRun.id,pins:currentBridgePlanPins(currentBridgePlan)});
+          return;
+        }
+        if(response && (ownedCompletedDryRunPromised(response.current) || response.completedDryRun)) {
+          fail("completed_native_dry_run_unexpected","Native dry-run не был обещан текущим proposal. Подготовка закрыта.");return;
+        }
         var adoptedProposal=normalizeM100ActionProposal(response && response.proposal),adoptedPlan=response && response.plan;
         var adoptedPins=currentBridgePlanPins({instanceId:adoptInstanceId,revision:adoptedProposal && adoptedProposal.revision,
           actionId:adoptedProposal && adoptedProposal.actionId,proposal:adoptedProposal,plan:adoptedPlan,validation:response && response.validation,
@@ -3911,6 +4311,31 @@
     if(!dryRun && classificationBlocksRun(validation) && !rawExtendscriptDryRunGateReady(validation)) {
       fail("raw_dry_run_required","Protected raw execution requires the matching accepted raw dry-run.");return;
     }
+    var steps=lastPlanResult.plan.steps || [],queueArgs=steps.length===1 && steps[0].tool==="start_ame_title_batch" && steps[0].args;
+    var queueRun=!dryRun && queueArgs && queueArgs.manualQueueMode==="cep_user_declaration_v2",queueFrame=policy.ameQueueFrame;
+    if(queueRun) {
+      if(!ameQueueFrameCurrent(queueFrame)) {fail("ame_manual_queue_trusted_gesture_required","Для AME требуется настоящий щелчок Run plan и проверка всей очереди в защищённом подтверждении.");return;}
+      if(!accepted || !accepted.ok || !accepted.runId || accepted.planKey!==currentPlanKey() || !currentBridgePlanMatchesPins(currentBridgePlan,accepted.pins)) {fail("matching_dry_run_required","Для AME требуется принятый dry-run текущего плана.");return;}
+      if(!queueFrame.manifestConfirmed) {
+        request("POST","/tools/call",{name:"inspect_ame_title_queue_manifest",arguments:{targetSpecifier:queueArgs.targetSpecifier,expectedProcess:queueArgs.expectedProcess,
+          expectedSessionNonce:queueArgs.expectedSessionNonce,batchId:queueArgs.batchId,manualQueueMode:queueArgs.manualQueueMode,completedOwnedPrefix:queueArgs.completedOwnedPrefix}},function(error,response) {
+          var observed=null;try {if(response && response.result && !response.result.isError) observed=JSON.parse(response.result.content[0].text);} catch(_ameParse) {}
+          if(error || !ameQueueFrameCurrent(queueFrame) || !observed || observed.ok!==true || observed.manifestHash!==queueArgs.manualQueueManifestSha25664 || observed.declaration!==AME_QUEUE_DECLARATION || !observed.manifest || observed.manifest.schema!=="ae-agent-ame-manual-queue-manifest.v2" || observed.manifest.jobs.length!==1) {
+            queueFrame.alive=false;fail("ame_manual_queue_manifest_changed","Очередь или привязки изменились. START не отправлен.");return;
+          }
+          var lines=["Проверьте всю очередь в AME перед общим запуском:","Manifest: "+observed.manifestHash];
+          if(observed.manifest.process) lines.push("AME: "+observed.manifest.process.path,"PID / started: "+observed.manifest.process.pid+" / "+observed.manifest.process.startedAt,"Native session: "+observed.manifest.nativeSessionNonce,"Wrapper session: "+observed.manifest.retainedWrapperSessionNonce);
+          function shown(job,label) {lines.push(label+" · "+job.jobId,"AEP: "+job.source.path,"AEP SHA-256: "+job.source.sha25664,"GUID: "+job.source.guid,"EPR: "+job.preset.path,"EPR SHA-256: "+job.preset.sha25664,"Output: "+job.outputPath);if(job.range) lines.push("Range: "+job.range.startSeconds+" – "+job.range.endSeconds);}
+          shown(observed.manifest.jobs[0],"Готовое задание");
+          observed.manifest.completedOwnedPrefix.forEach(function(job) {shown(job,"Завершённое owned-задание");});
+          lines.push("",AME_QUEUE_DECLARATION);
+          if(!window.confirm(lines.join("\n"))) {queueFrame.alive=false;fail("ame_manual_queue_declaration_cancelled","Подтверждение AME отменено.");return;}
+          if(!ameQueueFrameCurrent(queueFrame)) {queueFrame.alive=false;fail("ame_manual_queue_binding_changed","Контекст панели изменился. START не отправлен.");return;}
+          queueFrame.manifestConfirmed=true;queueFrame.manifestHash=observed.manifestHash;queueFrame.acceptedDryRunId=accepted.runId;
+          runLastPlan(false,true,onDone,policy);
+        });return;
+      }
+    }
     var mutatingCount=Number(validation.mutatingCount || 0), allowMutations=!dryRun && mutatingCount>0;
     var allowRawExtendscript=!dryRun && rawExtendscriptDryRunGateReady(validation);
     var body={actionId:proposal.actionId,payloadRef:proposal.action.payloadRef,payloadHash:proposal.action.payloadHash,
@@ -3919,10 +4344,12 @@
     if(!dryRun) {body.confirmationToken=proposal.confirmation.confirmationToken;body.confirmedBySurface=proposal.confirmation.surface;
       body.confirmedBySession=proposal.confirmation.sessionId || m100ConfirmationSessionId();}
     if(allowRawExtendscript) {body.allowRawExtendscript=true;body.rawExtendscriptDryRunId=accepted.runId;}
+    if(queueRun) {body.ameManualQueueWitness={manifestHash:queueFrame.manifestHash,acceptedDryRunId:queueFrame.acceptedDryRunId,declaration:AME_QUEUE_DECLARATION,
+      panelConnectionId:panelConnectionId,panelGeneration:String(panelConnectionGeneration),trustedGesture:true};queueFrame.alive=false;}
     if(policy.context && !policy.context.submit()) return;
     var runEpoch=panelLifecycleEpoch,runGeneration=panelConnectionGeneration;
     planRunInFlightMode=dryRun?"dry-run":"run";rememberPlanRun(null);setChatBusy(true,dryRun?"Dry run":"Running");
-    request("POST","/agents/plan/run",body,function(error,response) {
+    request("POST",queueRun?"/agents/ame/title-start/run":"/agents/plan/run",body,function(error,response) {
       if(runEpoch !== panelLifecycleEpoch || runGeneration !== panelConnectionGeneration) {fail("lifecycle_interrupted","Connection changed during execution.",true);return;}
       planRunInFlightMode="";setChatBusy(false);currentPlanSyncAt=0;
       var run=response && response.run || error && error.body && error.body.run || null;
@@ -4096,7 +4523,8 @@
       ok: ok,
       result: result,
       error: error
-    }, function (postError) {
+    }, function (postError,response) {
+      if(!postError && (!response || response.ok!==true)) postError={message:"Original result ACK missing"};
       if (postError) {
         log("Could not post result: " + postError.message);
       }
@@ -4121,7 +4549,8 @@
       contractVersion: 2,
       panelConnectionId: owner.panelConnectionId,
       panelGeneration: owner.panelGeneration
-    }, function (error) {
+    }, function (error,response) {
+      if(!error && (!response || response.ok!==true)) error={message:"Original submission ACK missing"};
       if (error) {
         log("Could not mark command submitted: " + error.message);
         onDone(false);
@@ -4141,26 +4570,43 @@
     if (command.contractVersion !== 2 || !command.executionId || !command.leaseId) {
       log("Bridge execution contract mismatch: update the bridge and panel together."); return;
     }
-    if (activeEvalScriptCommandId) {
+    if (activeEvalScriptCommandId || !physicalEvalScriptIdle()) {
       log("Skipping command " + command.id + " while command " + activeEvalScriptCommandId + " is still active");
       return;
     }
     activeEvalScriptCommandId = command.id;
+    var capturedActor=deliveryActor(),capturedUrl=getBaseUrl(),capturedToken=getToken();
+    var ownedSession=ownedPollingSession,ownedCommand=ownedSession && ownedSession.command;
     log("Executing command " + command.id);
     markCommandSubmitted(command, function (submitted) {
+      // Applies equally to ordinary and retained delivery. An ACK arriving
+      // after disconnect/reconnect must never submit old script to the host.
+      if(!running || !sameDeliveryActor(capturedActor,deliveryActor()) || getBaseUrl()!==capturedUrl || getToken()!==capturedToken)return;
+      if(ownedSession) {
+        if(!submitted || !ownedPollingActorCurrent(ownedSession) || !ownedCommand || ownedSession.command!==ownedCommand || ownedCommand.id!==command.id) {
+          closeOwnedPolling("owned_original_command_submission_unknown");return;
+        }
+        ownedCommand.phase="submitted";panelHeartbeatAt=Date.now();
+      }
       if (!submitted) {
         clearActiveEvalScriptCommand(command.id);
         return;
       }
-      cs.evalScript(command.script, function (result) {
+      physicalEvalScript(command.script, function (result) {
+        if(!running || !sameDeliveryActor(capturedActor,deliveryActor()) || getBaseUrl()!==capturedUrl || getToken()!==capturedToken)return;
+        if(ownedSession) {
+          if(!ownedPollingActorCurrent(ownedSession) || ownedSession.command!==ownedCommand) {closeOwnedPolling("owned_original_command_actor_changed");return;}
+          if(ownedCommand.phase!=="submitted") return;
+          ownedCommand.phase="posting";
+        }
         if (typeof result === "string" && result.indexOf("EvalScript error.") === 0) {
-          postResult(command, false, null, result, function () {
-            clearActiveEvalScriptCommand(command.id);
+          postResult(command, false, null, result, function (accepted) {
+            if(ownedSession) finishOwnedCommand(command,accepted);else clearActiveEvalScriptCommand(command.id);
           });
           return;
         }
-        postResult(command, true, result, null, function () {
-          clearActiveEvalScriptCommand(command.id);
+        postResult(command, true, result, null, function (accepted) {
+          if(ownedSession) finishOwnedCommand(command,accepted);else clearActiveEvalScriptCommand(command.id);
         });
       });
     });
@@ -4170,6 +4616,7 @@
     // Cancels every response from the failed transport, including a held P2.
     // Historical receipts keep their original binding; no context is rebased.
     panelLifecycleEpoch += 1;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     running=false;pollInFlight=false;recoveryTransportConnecting=false;
     if(recoveryTransportScope)recoveryTransportScope.state="failed";
     if(pollTimer)clearTimeout(pollTimer);
@@ -4182,6 +4629,7 @@
     if(panelLifecycleEpoch!==config.epoch || String(panelConnectionGeneration)!==config.generation || getBaseUrl()!==config.url || getToken()!==config.token || panelConnectionId!==config.panelConnectionId || value.panelConnectionId!==panelConnectionId || Date.parse(value.expiresAt)<=Date.now())return;
     recoveryTransportScope=value;recoveryTransportScope.state="connecting";recoveryTransportConnecting=true;
     running=true;panelLifecycleEpoch=value.nextBinding.panelLifecycleEpoch;panelConnectionGeneration=value.nextBinding.panelGeneration;
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     pollInFlight=false;activeEvalScriptCommandId="";
     if(pollTimer)clearTimeout(pollTimer);
     var epoch=panelLifecycleEpoch,generation=panelConnectionGeneration;
@@ -4212,17 +4660,52 @@
     });
   }
 
+  function initialAutomaticStartupCurrent(startup) {
+    return !!startup && startup === initialAutomaticStartup && startup.epoch === panelLifecycleEpoch &&
+      startup.generation === panelConnectionGeneration && startup.url === getBaseUrl() && startup.token === getToken();
+  }
+
+  function closeInitialAutomaticStartup(startup) {
+    if (!startup || /^(closed|superseded|succeeded)$/.test(startup.state)) return;
+    if (initialAutomaticStartupCurrent(startup)) {
+      running = false;
+      pollInFlight = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    }
+    startup.state = "closed";
+  }
+
   function poll(onDone) {
+    if(ownedPollingClosed) {if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;}
     if (!bridgeHostAvailable(onDone)) return;
     if(recoveryTransportScope){pollRecoveryTransport();return;}
     if (!running) {if(onDone) onDone({rejected:true,code:"bridge_disconnected"});return;}
+    if(ownedPollingSession && !ownedPollingActorCurrent(ownedPollingSession)) {closeOwnedPolling("owned_original_poll_actor_changed");return;}
     if (panelLifecycleGuard) {pollTimer=setTimeout(poll,100);return;}
     if (pollInFlight) return;
     if (activeEvalScriptCommandId) {
+      if(ownedPollingSession) {
+        var heartbeatSession=ownedPollingSession,heartbeatCommand=heartbeatSession.command;
+        if(!heartbeatCommand || heartbeatCommand.id!==activeEvalScriptCommandId) {closeOwnedPolling("owned_original_command_owner_changed");return;}
+        if(heartbeatCommand.phase==="submitted" && !heartbeatCommand.heartbeatInFlight && Date.now()-panelHeartbeatAt>=5000) {
+          heartbeatCommand.heartbeatInFlight=true;panelHeartbeatAt=Date.now();
+          heartbeatSession.heartbeatXhr=request("GET",bridgeNextPath().replace("/bridge/next?","/bridge/heartbeat?"),null,function(error,response) {
+            heartbeatCommand.heartbeatInFlight=false;heartbeatSession.heartbeatXhr=null;
+            if(!ownedPollingActorCurrent(heartbeatSession) || heartbeatSession.command!==heartbeatCommand) return;
+            if(error || !response || response.ok!==true) {closeOwnedPolling("owned_original_command_heartbeat_unknown");return;}
+            autonomousSessionState=response.session;renderAutonomousSession();
+            if(heartbeatCommand.phase==="acknowledged") finishOwnedCommand(heartbeatCommand.originalCommand,true);
+          });
+        }
+        pollTimer=setTimeout(poll,500);return;
+      }
       if (Date.now() - panelHeartbeatAt >= 5000) {
         panelHeartbeatAt = Date.now();
+        var heartbeatActor=deliveryActor(),heartbeatUrl=getBaseUrl(),heartbeatToken=getToken(),heartbeatReadId=activeEvalScriptCommandId;
         request("GET", bridgeNextPath().replace("/bridge/next?", "/bridge/heartbeat?"), null, function (error, response) {
+          if(!sameDeliveryActor(heartbeatActor,deliveryActor())||heartbeatUrl!==getBaseUrl()||heartbeatToken!==getToken()||heartbeatReadId!==activeEvalScriptCommandId)return;
           if (error) { log("Panel heartbeat failed: " + error.message); return; }
+          if(response&&response.bootstrapRecovery){beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
           autonomousSessionState = response && response.session;
           renderAutonomousSession();
         });
@@ -4230,14 +4713,42 @@
       pollTimer = setTimeout(poll, 500);
       return;
     }
+    var pollEpoch = panelLifecycleEpoch, pollGeneration = panelConnectionGeneration;
+    var startup = initialAutomaticStartupCurrent(initialAutomaticStartup) && initialAutomaticStartup.state === "pending" ? initialAutomaticStartup : null;
+    if (startup && startup.consumed) return;
+    // Consume before evalScript: an absent callback is UNKNOWN and cannot replay.
+    if (startup) startup.consumed = true;
     pollInFlight = true;
-    cs.evalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
+    try {
+    physicalEvalScript('(function(){return app.project && app.project.file ? String(app.project.file.fsName) : "";}())', function (projectFile) {
+    if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
+    if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "pending" || startup.getAttempted)) return;
     if (!running) { pollInFlight = false; return; }
-    request("GET", bridgeNextPath(projectFile), null, function (error, response) {
+    if (startup && (typeof projectFile !== "string" || projectFile.indexOf("EvalScript error.") === 0)) {
+      closeInitialAutomaticStartup(startup);
+      if(onDone) onDone({isUnknown:true,code:"initial_project_file_unknown"});
+      return;
+    }
+    if (startup) startup.getAttempted = true;
+    var ownedPollSession=ownedPollingSession;
+    var pollXhr=request("GET", bridgeNextPath(projectFile), null, function (error, response) {
+      if(ownedPollSession) ownedPollSession.heldXhr=null;
+      if(ownedPollSession && !ownedPollingActorCurrent(ownedPollSession)) {closeOwnedPolling("owned_original_poll_actor_changed");return;}
+      if (pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
+      if (startup && (!initialAutomaticStartupCurrent(startup) || !/^(pending|closed)$/.test(startup.state))) return;
       pollInFlight = false;
+      if (startup && (error || !response || typeof response !== "object" || startup.state === "closed")) {
+        closeInitialAutomaticStartup(startup);
+        var startupError = error || {isUnknown:true,code:"initial_bridge_next_unknown"};
+        var startupMessage = setBridgeOffline(startupError);
+        if (startupMessage !== lastPollErrorMessage) {log(startupMessage);lastPollErrorMessage=startupMessage;}
+        if(onDone) onDone(startupError);
+        return;
+      }
       if (!running) return;
 
       if (error) {
+        if(ownedPollSession) {closeOwnedPolling("owned_original_poll_lost");if(onDone) onDone(error);return;}
         var message = setBridgeOffline(error);
         if (message !== lastPollErrorMessage) {
           log(message);
@@ -4248,35 +4759,72 @@
         return;
       }
 
+      if(response && response.bootstrapRecovery){if(onDone)onDone(null,{connected:false,bootstrapRecoveryPending:true});beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
+      if(response && response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+      if(response && response.resetSessionActivation){var activationAdoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!activationAdoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(activationAdoption.transitioned)return;}
+      if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
+      if(!ownedPollSession && ownedCompletedDryRunPromised(response) && !beginOwnedPolling(response)) {
+        if(onDone) onDone({isUnknown:true,code:"owned_original_session_deadline_invalid"});return;
+      }
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
+      if (startup) startup.state = "succeeded";
       lastPollErrorMessage = "";
       setBridgeConnected();
+      if(ownedCompletedDryRunPromised(response)) ownedPlanPreparationMode="completed_native_dry_run_v1";
       if(onDone) onDone(null,{connected:true,generation:String(panelConnectionGeneration)});
-      if (!currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
+      if (!running || pollEpoch !== panelLifecycleEpoch || pollGeneration !== panelConnectionGeneration) return;
+      if (!ownedPlanPreparationMode && !currentPlanSyncInFlight && Date.now() - currentPlanSyncAt > 1500) { refreshCurrentBridgePlan(); refreshAutonomousSession(); }
       if (shouldRefreshAgents) {
         loadAgents({ quiet: true });
-        refreshAutonomousSession();
+        if(!ownedPlanPreparationMode) refreshAutonomousSession();
         refreshPlaceholderProtection();
       }
 
       if (response && response.command) {
+        if(ownedPollingSession && !beginOwnedCommand(response.command)) return;
         executeCommand(response.command);
       }
 
-      pollTimer = setTimeout(poll, 50);
+      if(!ownedPollingClosed) pollTimer = setTimeout(poll,ownedPollingSession && activeEvalScriptCommandId ? 500 : 50);
     });
+    if(ownedPollSession) ownedPollSession.heldXhr=pollXhr;
     });
+    } catch (error) {
+      if(ownedPollingSession) {closeOwnedPolling("owned_original_project_file_unknown");if(onDone) onDone(error);return;}
+      if (!startup) throw error;
+      closeInitialAutomaticStartup(startup);
+      if(onDone) onDone(error);
+    }
   }
 
-  function connect(onDone) {
+  function connect(onDone, startup, resetChecked) {
+    var resetState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(!startup && !resetChecked && resetState && resetState.reconciliationRequired){
+      var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
+      request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){if(onDone)onDone({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
+        if(error || !response || !response.resetSession && !response.resetSessionActivation){if(onDone)onDone(error||{code:"product_reset_session_required",message:"Historical action requires its original reconciliation or an explicit product reset."});return;}
+        if(response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+        var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){if(onDone)onDone({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){if(onDone)onDone(null,{connected:true});return;}connect(onDone,startup,true);
+      });return;
+    }
+    if(ownedPollingSession || ownedPollingClosed) {
+      closeOwnedPolling("owned_original_poll_lifecycle_changed");
+      if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;
+    }
+    if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || startup.consumed)) return;
+    if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
     if (!bridgeHostAvailable(onDone)) return;
     var restoringRecovery=!!recoveryTransportScope;
     recoveryTransportScope=null;recoveryTransportConnecting=false;
     if(pollTimer)clearTimeout(pollTimer);
     running = true;
     pollInFlight = false;
-    panelConnectionGeneration = Date.now();
+    try{panelConnectionGeneration = nextPanelConnectionGeneration();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     panelLifecycleEpoch += 1;
+    try{rotateBootstrapDeliveryFence();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
+    if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
     currentPlanSyncInFlight = false;
     currentPlanSyncActiveReqId = 0;
     currentPlanSyncActiveEpoch = 0;
@@ -4294,7 +4842,7 @@
     renderAutonomousSession();
     activeEvalScriptCommandId = "";
     lastPollErrorMessage = "";
-    if(!restoringRecovery){localStorage.setItem("codexAeBridgeUrl", urlEl.value);
+    if(!restoringRecovery && !startup){localStorage.setItem("codexAeBridgeUrl", urlEl.value);
       localStorage.setItem("codexAeBridgeToken", tokenEl.value);
       localStorage.setItem("codexAeBridgeAutoConnect", "1");}
     setStatus("Connecting...", false);
@@ -4306,6 +4854,8 @@
   }
 
   function disconnect() {
+    if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     recoveryTransportConnecting=false;recoveryTransportScope=null;
     running = false;
     pollInFlight = false;
@@ -4352,6 +4902,8 @@
   }
 
   function reloadApp() {
+    if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
+    ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     running = false;
     pollInFlight = false;
     activeEvalScriptCommandId = "";
@@ -4370,8 +4922,9 @@
     }
   }
 
-  function panelActionBusy() {
-    return !!(recoveryTransportConnecting || chatInFlight || activeEvalScriptCommandId || keySaveInFlight || setupActionInFlight || readinessInFlight ||
+  function panelActionBusy(coveredBootstrapRead) {
+    var activeNative=activeEvalScriptCommandId&&!(coveredBootstrapRead&&bootstrapCoveredLogicalRead(activeEvalScriptCommandId,coveredBootstrapRead));
+    return !!(recoveryTransportConnecting || chatInFlight || activeNative || keySaveInFlight || setupActionInFlight || readinessInFlight ||
       providerSelfTestInFlight || devRequestInFlight || agentsLoadInFlight || placeholderProtectionInFlight ||
       connectorStatusInFlight || usageRefreshInFlight || planReconcileInFlight || planRunInFlightMode);
   }
@@ -4409,6 +4962,7 @@
     var reasons=[], passive=/^(logs.get|chat.sessions.list|chat.transcript.get)$/.test(name) || name === "plan.current" && !(args && args.fresh);
     if (!passive && !hostStartupGuard.isAllowed()) reasons.push(hostStartupGuard.snapshot().code);
     if(!passive && panelActionBusy()) reasons.push("panel_busy");
+    if(ownedPollingClosed && (name==="bridge.connect" || /^plan\.(prepare|dryRun|run)$/.test(name))) reasons.push("owned_transport_reconciliation_required");
     if(name === "bridge.configure" && running) reasons.push("disconnect_required");
     if(/^(autonomy|placeholder|plan)\./.test(name) && !running && name !== "plan.current" &&
        !(name === "plan.reconcile" && knownUnresolvedPlanRun(args && args.runId))) reasons.push("bridge_disconnected");
@@ -4448,7 +5002,7 @@
     return {available:reasons.length === 0,reasonCodes:reasons};
   }
 
-  function panelLifecycleIdle(onDone) {
+  function panelLifecycleIdle(onDone, allowFreshProjectRead) {
     if(panelActionBusy()) {onDone({rejected:true,code:"panel_busy"});return;}
     // Freeze command acquisition during the status check; active commands remain protected.
     var paused=panelLifecycleGuard;
@@ -4462,8 +5016,11 @@
       }
       var lifecycle=status.projectLifecycle;
       var pending=status.pendingCommands, inflight=status.inflightCommands;
+      var freshRead=allowFreshProjectRead === true && lifecycle.enabled === true && lifecycle.blocked === true &&
+        lifecycle.problem === "lifecycle_store_missing" && lifecycle.generation === 0 && lifecycle.freshMissingStoreReadAllowed === true;
       var idle=typeof pending === "number" && pending === 0 && Array.isArray(inflight) && inflight.length === 0 &&
-        !status.activeEditSession && !lifecycle.blocked && !lifecycle.problem && !lifecycle.pendingTransition && !lifecycle.pending && !lifecycle.activeTransition;
+        !status.activeEditSession && !/^(confirmed|executing)$/.test(status.planExecutionState || "") &&
+        (freshRead || !lifecycle.blocked && !lifecycle.problem) && !lifecycle.pendingTransition && !lifecycle.pending && !lifecycle.activeTransition;
       if(!idle) {panelLifecycleGuard=paused;onDone({rejected:true,code:"bridge_busy",message:"Bridge has pending/inflight work or an active project session."});return;}
       refreshCurrentBridgePlan({fresh:true},function(syncError) {
         if(syncError || panelActionBusy() || currentBridgePlan && /^(confirmed|executing)$/.test(currentBridgePlan.state)) {
@@ -4481,8 +5038,25 @@
       done(null,{configured:true,url:getBaseUrl()});
     },
     "bridge.connect":function(args,done,context) {
-      if(running && !recoveryTransportScope) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
-      panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(context.submit()) connect(done);});
+      var startup = initialAutomaticConnectDispatch;
+      if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
+      if(running && !recoveryTransportScope && !/^reset-/.test(String(panelConnectionGeneration))) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
+      function normalConnect() { panelLifecycleIdle(function(error) {
+        if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
+        if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
+        if(context.submit()) connect(done,startup,true);else if(startup) closeInitialAutomaticStartup(startup);
+      },true); }
+      if(startup){normalConnect();return;}
+      // Reset authority precedes the ordinary idle check: the exact old edit
+      // owner is still preserved while the reset preflight is closed.
+      var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
+      request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+        if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){done({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
+        if(!error && response && response.resetSession){done(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
+        if(!error && response && response.resetSessionActivation){var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){done({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){done(null,{connected:true});return;}}
+        if(window.AEAgentPanelActions.state().reconciliationRequired){done({rejected:true,code:"product_reset_session_required"});return;}
+        normalConnect();
+      });
     },
     "bridge.disconnect":function(args,done,context) {
       panelLifecycleIdle(function(error) {if(error) {done(error);return;}if(!context.submit()) return;disconnect();done(null,{disconnected:true});});
@@ -4560,10 +5134,18 @@
     if(receipt.state === "rejected" || receipt.state === "error") log("Panel action "+action+": "+receipt.code);
     return receipt;
   }
-  function uiPlanAction(dryRun,actionId) {
+  function uiPlanAction(dryRun,actionId,event) {
     var pins=currentBridgePlanPins(currentBridgePlan),proposal=m100ActionProposalForResult(lastPlanResult);
     if(actionId && pins) pins=Object.assign({},pins,{actionId:actionId});
     var action=proposal && !proposal.confirmation.confirmationToken ? "plan.prepare" : dryRun ? "plan.dryRun" : "plan.run";
+    var steps=lastPlanResult && lastPlanResult.plan && lastPlanResult.plan.steps || [],queue=steps.length===1 && steps[0].tool==="start_ame_title_batch" && steps[0].args && steps[0].args.manualQueueMode==="cep_user_declaration_v2";
+    if(action==="plan.run" && queue) {
+      if(!event || event.isTrusted!==true || !pins || actionId && actionId!==proposal.actionId) {setPlanRunStatus("Для AME нужен настоящий щелчок Run plan.","blocked");return;}
+      if(activeAmeQueueFrame && activeAmeQueueFrame.alive) {setPlanRunStatus("Подтверждение AME уже выполняется.","blocked");return;}
+      activeAmeQueueFrame={alive:true,issuedAt:Date.now(),pins:pins,epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),url:getBaseUrl(),token:getToken()};
+      var frame=activeAmeQueueFrame;
+      runLastPlan(false,false,function(error) {frame.alive=false;if(error) log("AME protected start: "+error.code);},{prepare:false,strict:true,pins:pins,ameQueueFrame:frame});return;
+    }
     invokePanelUI(action,action === "plan.run" ? {pins:pins,confirm:true} : {pins:pins});
   }
   function providerActionArgs() {return {agentId:agentSelect.value,model:selectedModel()};}
@@ -4611,7 +5193,7 @@
   onControl(promptOptimizationEl,"change","chat.optimization.set",function() {return {enabled:promptOptimizationEl.checked};});
   onControl(recoverLastPlanButton,"click","plan.recover");
   dryRunPlanButton.addEventListener("click",function() {uiPlanAction(true);});
-  runPlanButton.addEventListener("click",function() {uiPlanAction(false);});
+  runPlanButton.addEventListener("click",function(event) {uiPlanAction(false,null,event);});
   onControl(reconcilePlanRunButton,"click","plan.reconcile",function() {return {runId:lastPlanRunResult && lastPlanRunResult.id || ""};});
   onControl(prepareDevRequestButton,"click","plan.devRequest");
   onControl(newChatButton,"click","chat.new");
@@ -4647,7 +5229,7 @@
     setTimeout(loadAgents, 250);
   }
   rememberPanelSecrets();
-  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,
+  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,productSessionReset:function(){return productResetActivation;},
     passive:{"logs.get":true,"chat.sessions.list":true,"chat.transcript.get":true,"plan.current":function(args) {return !args || !args.fresh;}},
     availability:actionAvailability,state:panelActionSnapshot,
     lookupHumanSettlements:function(done) {
@@ -4695,13 +5277,41 @@
     },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
   function lookupHumanSettlementBeforeConnect(attempt) {
-    panelActionUI.refreshTrustedGuards(function(ready) {
-      function finishLookup(allReady) {
-        if(allReady && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0")setTimeout(function(){invokePanelUI("bridge.connect",{});},250);
-        else if(!allReady && tokenEl.value && attempt<3)setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
-      }
-      finishLookup(ready);
+    if (!initialAutomaticStartup) initialAutomaticStartup = {epoch:panelLifecycleEpoch,generation:panelConnectionGeneration,
+      url:getBaseUrl(),token:getToken(),state:"lookup",rounds:0,lookupPending:false,consumed:false,getAttempted:false};
+    var startup = initialAutomaticStartup;
+    if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || startup.lookupPending || running ||
+      attempt !== startup.rounds || attempt > 3) return;
+    startup.rounds += 1;startup.lookupPending=true;
+    var receipt = panelActionUI.refreshTrustedGuards(function(ready) {
+      if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || !startup.lookupPending || running) return;
+      startup.lookupPending=false;
+      if(ready && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0") {
+        startup.state="connecting";
+        var connectWaits=0;
+        setTimeout(function dispatchInitialConnect() {
+          if (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || running) return;
+          // Initial provider/usage reads may still own the panel at 250ms.
+          // Wait before dispatch; never retry a submitted connection or AE read.
+          if (panelActionBusy()) {
+            if (++connectWaits >= 80) {closeInitialAutomaticStartup(startup);return;}
+            setTimeout(dispatchInitialConnect,250);return;
+          }
+          initialAutomaticConnectDispatch=startup;
+          try {
+            var connectReceipt=invokePanelUI("bridge.connect",{});
+            if (!connectReceipt || connectReceipt.accepted === false || !/^(accepted|running|completed)$/.test(connectReceipt.state)) closeInitialAutomaticStartup(startup);
+          } catch (error) {closeInitialAutomaticStartup(startup);}
+          finally {initialAutomaticConnectDispatch=null;}
+        },250);
+      } else if (!ready && tokenEl.value && attempt<3) {
+        setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
+      } else closeInitialAutomaticStartup(startup);
     });
+    if (receipt && receipt.accepted === false) {
+      startup.lookupPending=false;
+      closeInitialAutomaticStartup(startup);
+    }
   }
   lookupHumanSettlementBeforeConnect(0);
 })();

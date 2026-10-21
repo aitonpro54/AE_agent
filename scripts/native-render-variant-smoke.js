@@ -180,7 +180,28 @@ async function nestedMatteChecks(){
   const expected={projectFile:file,revision:1,rootCompItemId:10,variantCompItemId:20,frameDuration:0.04,duration:2,controlled:[{id:11,index:1,name:"text11",enabled:true,text:"text11"},{id:12,index:2,name:"text12",enabled:false,text:"text12"}],graph:[comp(legacy.target),comp(legacy.nested.bg),comp(legacy.nested.bg),comp(legacy.nested.splash),comp(legacy.rootComp)],queue:[10,30].map((id,i)=>({index:i+1,compItemId:id,render:i===0,status:"QUEUED",start:0,duration:2,outputs:[path.join(root,"foreign"+id+".mov")]})),templates:{renderSettings:["Best Settings"],outputModule:["Movie","AVI","Sequence","Dangerous"],gap:null}};
   assert.deepEqual(read.snapshot,expected);check(read.stateHash===native.digest(expected) && !Object.hasOwn(read.snapshot,"matteDependencies"),"legacy footage+footage matte snapshot shape/hash remain exactly unchanged");
 }
+async function immutableTextChecks(){
+  function setup(label){
+    const f=fixture({matted:true}),text=new f.layers[0].constructor(15,false),baseProperty=text.property;
+    const styles=[{font:"Fixture",fontSize:20,fillColor:[1,0,0]},{font:"Fixture",fontSize:30,fillColor:[0,1,0]}],doc={text:"AB",font:"Fixture",fontSize:20,characterRange:i=>styles[i]},p={expressionEnabled:false,numKeys:0,value:doc};
+    for(const style of [...styles,doc]){style.applyStroke=false;Object.defineProperty(style,"strokeColor",{get(){throw Error("no stroke");}});}
+    text.property=name=>name==="ADBE Text Properties"?{property:()=>p}:baseProperty(name);
+    Object.assign(text,{hasTrackMatte:true,trackMatteType:1,trackMatteLayer:f.producer});f.target._layers.push(text);
+    return {f,text,doc,styles,p,exec:executor(f,label).exec};
+  }
+  const x=setup("immutable-text"),read=await x.exec.inspect(inspection),row=read.snapshot.matteDependencies.find(v=>v.consumerLayerId===15);
+  check(row.consumerRole==="immutable_text" && row.consumer.textDefinition.characterStyles[1].fontSize===30,"immutable text preserves per-character styles");
+  check(x.f.writes.length===0 && x.f.samples.length===0 && x.f.items.length===2,"inspection performs no effects");
+  for(const [label,change] of Object.entries({text:x=>x.doc.text="AC",style:x=>x.styles[1].fontSize=31,matte:x=>x.text.trackMatteLayer=x.f.layers[0]})){
+    const q=setup("immutable-"+label),a=await renderArgs(q.exec);change(q);
+    await assert.rejects(q.exec.execute(a,grant(q.exec)));check(q.f.samples.length===0 && q.f.items.length===2 && q.f.writes.length===0,"changed "+label+" rejected before effects");
+  }
+  for(const [label,change] of Object.entries({animated:x=>x.p.numKeys=1,expression:x=>x.p.expressionEnabled=true,unavailable:x=>delete x.doc.characterRange})){
+    const q=setup("unsupported-"+label);change(q);await assert.rejects(q.exec.inspect(inspection),/immutable_text_/);check(q.f.writes.length===0,"unsupported "+label+" remains closed");
+  }
+}
 async function main(){
+  if(process.argv.includes("--immutable-text")){await immutableTextChecks();console.log(JSON.stringify({ok:true,checks,scope:"actual generated native inspection and pre-write guards, offline only"}));return;}
   const parser=spawnSync(process.execPath,["--expose-internals",__filename,"--es3"],{encoding:"utf8",windowsHide:true});check(parser.status===0,parser.stderr||parser.stdout);
   const f=fixture(),{exec,deps}=executor(f);
   const first=await exec.inspect(inspection);check(f.items.length===2 && f.samples.length===0,"inspect never stages");check(first.snapshot.controlled.length===2 && first.stateHash.length===64,"exact native facts/hash");

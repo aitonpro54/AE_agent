@@ -78,13 +78,20 @@ function ReleaseLocks{foreach($s in $script:locks){$s.Dispose()};$script:locks=@
 function Config {
  # Reuse the accepted R1 parser AST from its exact immutable source pin.
  $file=Join-Path $repo 'scripts/owned-runtime-win32-helper.ps1';$s=SafeFile $file
- try{if([OwnedDaemonKernel]::Hash($s) -cne 'eab199fb33e42debc9f1d266711bc0e610bef6bcb57f02d7ed4b92e0618c9f4e'){throw 'owned_supervisor_r1_parser_changed'}}finally{$s.Dispose()}
+ try{if([OwnedDaemonKernel]::Hash($s) -cne '945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4'){throw 'owned_supervisor_r1_parser_changed'}}finally{$s.Dispose()}
  $errors=$null;$tokens=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors);if($errors.Count){throw 'owned_supervisor_r1_parser_invalid'}
  $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'ParseCredentialConfig'},$true);Invoke-Expression $fn.Extent.Text
  $s=SafeFile (Join-Path $repo '.codex/config.toml');try{$reader=[IO.StreamReader]::new($s,[Text.UTF8Encoding]::new($false),$true,4096,$true);try{$text=$reader.ReadToEnd()}finally{$reader.Dispose()};$token=ParseCredentialConfig $text $repo;$values=@{};$selected=$false
   foreach($line in ($text -replace '^\uFEFF','') -split '\r?\n'){if($line -match '^\s*\['){$selected=$line.Trim() -ceq '[mcp_servers."after-effects".env]';continue};if($selected -and $line -cmatch '^\s*([A-Z][A-Z0-9_]*)\s*=\s*("(?:[^"\\]|\\.)*")\s*(?:#.*)?$'){$values[$Matches[1]]=($Matches[2]|ConvertFrom-Json -DateKind String)}}
   $script:locks+=@($s);$s=$null;return @{token=$token;values=$values}
  }finally{if($null -ne $s){$s.Dispose()}}
+}
+function AssertProductDeployment($environment) {
+ foreach($key in @($environment.Keys)) {
+  if($key -match '^AE_AGENT_(?:LOCAL_SESSION_|TRUSTED_READ_)' -or ($key -match '^AE_AGENT_DEPLOYMENT_MODE$' -and $key -cne 'AE_AGENT_DEPLOYMENT_MODE')) {throw 'owned_supervisor_deployment_mode_changed'}
+ }
+ $mode=$environment['AE_AGENT_DEPLOYMENT_MODE'];if($null -eq $mode){return 'product'}
+ if($mode -cne 'product'){throw 'owned_supervisor_deployment_mode_changed'};return $mode
 }
 function Policy($authorization){$p=ReadJson (Join-Path $base 'policy.json') $null $true;if($p.schema -cne 'ae-agent.owned-runtime-policy.v1' -or $p.enabled -cne $true -or $p.acceptedServerCoverage -cnotcontains 'owned_daemon_lifecycle' -or (Canon $p.authorization) -cne (Canon $authorization)){throw 'owned_supervisor_policy_disabled_or_changed'}}
 function BootstrapIdle($value) {
@@ -117,6 +124,50 @@ function OriginalRetirementProof($retirement,$expected) {
 function AssertIdentity($expected){$actual=[OwnedDaemonKernel]::Identity($script:handle);if($actual.pid -ne $expected.pid -or $actual.birthFileTime -cne $expected.birthFileTime -or $actual.birthUtc -cne $expected.birthUtc -or $actual.imagePath -ine $expected.imagePath -or [OwnedDaemonKernel]::Hash($script:image) -cne $expected.executableSha256){throw 'owned_supervisor_identity_changed'};return $actual}
 function AssertArgv($expected){if(([OwnedDaemonKernel]::Wait($script:handle,0)).signaled){return};$pidValue=([OwnedDaemonKernel]::Identity($script:handle)).pid;$cim=Get-CimInstance Win32_Process -Filter ('ProcessId='+$pidValue);if(!$cim -or $cim.ExecutablePath -ine $node -or (Canon ([OwnedDaemonKernel]::Args($cim.CommandLine))) -cne (Canon $expected)){throw 'owned_supervisor_argv_changed'}}
 function OpenExact($identity,$argv,[bool]$terminate){$script:handle=[OwnedDaemonKernel]::Open([int]$identity.pid,$terminate);$script:image=SafeFile $identity.imagePath $true;[void](AssertIdentity $identity);AssertArgv $argv;$script:expected=$identity;$script:expectedArgv=$argv}
+function EndpointFree {
+ # Enumeration failure is UNKNOWN. Never convert it to an empty listener list.
+ try { $listeners=[Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners();return @($listeners|Where-Object {$_.Port -eq 3456}).Count -eq 0 } catch {throw 'owned_supervisor_endpoint_unknown'}
+}
+function ProbeOwned([string]$generation) {
+ $chain=Reservation $generation $false;$config=Config;$candidate=Envelope (Join-Path $chain.dir 'native-candidate.json');$c=$candidate.value;$data=@{};foreach($p in $c.PSObject.Properties){if($p.Name -cne 'authentication'){$data[$p.Name]=$p.Value}}
+ if($c.authentication -cne (Hmac $data $config.token) -or $c.generation -cne $generation -or $c.reservationSha256 -cne $chain.reservation.sha256 -or $c.startupTicketSha256 -cne $chain.ticket.sha256 -or $c.bootNonce -cne $chain.reservation.value.bootNonce){throw 'owned_supervisor_candidate_authentication'}
+ $probeHandle=[IntPtr]::Zero
+ try {
+  try {$probeHandle=[OwnedDaemonKernel]::Open([int]$c.kernelIdentity.pid,$false)} catch {
+   $reason=$_.Exception;while($reason.InnerException){$reason=$reason.InnerException}
+   if($reason -is [ComponentModel.Win32Exception]) {if($reason.NativeErrorCode -eq 87){$free=EndpointFree;return @{state=$(if($free){'absent'}else{'endpoint_occupied'});win32Error=87;endpointFree=$free;generation=$generation;observedAt=[DateTimeOffset]::UtcNow.ToString('o')}};if($reason.NativeErrorCode -eq 5){return @{state='access_denied';win32Error=5;endpointFree=$false;generation=$generation}}}
+   return @{state='unknown';win32Error=$null;endpointFree=$false;generation=$generation}
+  }
+  $actual=[OwnedDaemonKernel]::Identity($probeHandle);$expected=$c.kernelIdentity
+  if($actual.pid -ne $expected.pid -or $actual.birthFileTime -cne $expected.birthFileTime -or $actual.birthUtc -cne $expected.birthUtc -or $actual.imagePath -ine $expected.imagePath){return @{state='pid_reused';win32Error=$null;endpointFree=$false;generation=$generation}}
+  $image=SafeFile $actual.imagePath $true;try{if([OwnedDaemonKernel]::Hash($image) -cne $expected.executableSha256){return @{state='pid_reused';win32Error=$null;endpointFree=$false;generation=$generation}}}finally{$image.Dispose()}
+  $process=Get-CimInstance Win32_Process -Filter ('ProcessId='+$actual.pid) -ErrorAction Stop
+  if(!$process -or (Canon ([OwnedDaemonKernel]::Args($process.CommandLine))) -cne (Canon $c.argv)){return @{state='unknown';win32Error=$null;endpointFree=$false;generation=$generation}}
+  return @{state='alive_exact';win32Error=$null;endpointFree=$false;generation=$generation}
+ }finally{if($probeHandle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($probeHandle)};ReleaseLocks}
+}
+function AssertController {
+ if(!$script:controllerOwned -or !$script:controllerMutex){throw 'owned_supervisor_controller_lease_lost'}
+ # Reentrant acquisition/release verifies kernel ownership on this same helper
+ # thread. Native effects and publication never escape this owning process.
+ if(!$script:controllerMutex.WaitOne(0)){throw 'owned_supervisor_controller_lease_lost'};$script:controllerMutex.ReleaseMutex()
+}
+function ReleaseTarget {
+ ReleaseLocks;if($script:image){$script:image.Dispose();$script:image=$null};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle);$script:handle=[IntPtr]::Zero}
+ $script:expected=$null;$script:expectedArgv=$null;$script:mode=$null;$script:stopped=$false;$script:legacyRaw=$null
+}
+function PublishCurrent([string]$generation,$expectedRawSha256) {
+ AssertController;if($null -ne $expectedRawSha256 -and $expectedRawSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'owned_supervisor_current_cas_invalid'}
+ $chain=Reservation $generation $false;$registration=Envelope (Join-Path $chain.dir 'registration.json') $true;$candidate=Envelope (Join-Path $chain.dir 'native-candidate.json') $true
+ if($registration.value.schema -cne ($schema+'.registration') -or $registration.value.generation -cne $generation -or $registration.value.reservationSha256 -cne $chain.reservation.sha256 -or $registration.value.startupTicketSha256 -cne $chain.ticket.sha256 -or $registration.value.nativeCandidateSha256 -cne $candidate.sha256){throw 'owned_supervisor_current_registration_invalid'}
+ $current=Join-Path $base 'current-daemon.json'
+ function CheckCurrent {
+  try {$s=[IO.FileStream]::new($current,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{[OwnedDaemonKernel]::FileIdentity($s);$actual=[OwnedDaemonKernel]::Hash($s)}finally{$s.Dispose()}} catch [IO.FileNotFoundException] {$actual=$null}
+  if($actual -cne $expectedRawSha256){throw 'owned_supervisor_current_cas_failed'}
+ }
+ CheckCurrent;AssertController;$temp=Join-Path $base ('.current-'+[Guid]::NewGuid().ToString()+'.json');[void](WriteOnce $temp @{schema=$schema+'.current';generation=$generation;registrationSha256=$registration.sha256})
+ try{CheckCurrent;AssertController;[IO.File]::Move($temp,$current,$true)}finally{if([IO.File]::Exists($temp)){[IO.File]::Delete($temp)};ReleaseLocks}
+}
 function Reservation([string]$generation,[bool]$fresh){if($generation -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_supervisor_generation_invalid'};$dir=Join-Path $base ('daemon-reservations/'+$generation);$r=Envelope (Join-Path $dir 'reservation.json') $true;$v=$r.value;$t=Envelope (Join-Path $dir 'startup-ticket.json') $true
  if($v.schema -cne ($schema+'.reservation') -or $v.generation -cne $generation -or $v.command.executable -ine $node -or $v.command.executableSha256 -cne $nodeSha -or $v.command.cwd -ine $repo -or (Canon $v.command.argv) -cne (Canon @($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'))) -or $v.replayAllowed -cne $false -or $t.value.schema -cne ($schema+'.startup-ticket') -or $t.value.generation -cne $generation -or $t.value.bootNonce -cne $v.bootNonce -or $t.value.reservationSha256 -cne $r.sha256 -or $t.value.replayAllowed -cne $false -or ($fresh -and ([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($t.value.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($t.value.issuedAt)))){throw 'owned_supervisor_startup_ticket_invalid'}
  return @{reservation=$r;ticket=$t;dir=$dir}
@@ -165,18 +216,32 @@ function LegacyLease([string]$operationId){
  if($operationId){$dir=Join-Path $base ('supervisor-operations/'+$operationId);$intent=Envelope (Join-Path $dir 'intent.json') $true;if($intent.value.targetGeneration -cne $p.generation -or $intent.value.command -cnotin @('restart','shutdown','ensure') -or $intent.value.desiredSourceSha256 -cne $p.sourcePair.currentSourceSha256 -or (Canon $intent.value.authorizationRef) -cne (Canon $p.authorizationRef) -or !(Test-Path -LiteralPath (Join-Path $dir 'pre-stop-inventory.json'))){throw 'owned_supervisor_legacy_intent_required'}}
  return $p
 }
-$script:handle=[IntPtr]::Zero;$script:image=$null;$script:locks=@();$script:mode=$null
+$script:handle=[IntPtr]::Zero;$script:image=$null;$script:locks=@();$script:mode=$null;$script:controllerMutex=$null;$script:controllerOwned=$false
 try{while($null -ne ($line=[Console]::ReadLine())){try{
  if($line.Length -gt 65536){throw 'owned_supervisor_rpc_budget'};$row=$line|ConvertFrom-Json -DateKind String
+ if($row.op -eq 'dispose'){Exact $row @('op');Emit @{ok=$true};break}
+ if($row.op -eq 'acquire-controller'){
+  Exact $row @('op');if($script:controllerMutex){throw 'owned_supervisor_controller_already_held'}
+  $script:controllerMutex=[Threading.Mutex]::new($false,('Local\AEAgentProductController-'+(HashText $repo.ToLowerInvariant())))
+  try{$script:controllerOwned=$script:controllerMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$script:controllerOwned=$true}
+  if(!$script:controllerOwned){throw 'owned_supervisor_competing_controller'};Emit @{ok=$true};continue
+ }
+ if($row.op -eq 'assert-controller'){Exact $row @('op');AssertController;Emit @{ok=$true};continue}
+ if($row.op -eq 'release-target'){Exact $row @('op');AssertController;ReleaseTarget;Emit @{ok=$true};continue}
+ if($row.op -eq 'publish-current'){Exact $row @('op','generation','expectedRawSha256');PublishCurrent $row.generation $row.expectedRawSha256;Emit @{ok=$true};continue}
+ if($row.op -eq 'probe-owned'){Exact $row @('op','generation');AssertController;Emit @{ok=$true;probe=(ProbeOwned $row.generation)};continue}
  if($script:handle -eq [IntPtr]::Zero){
-   if($row.op -eq 'launch' -or $row.op -eq 'launch-initial-recovery'){
+  if($row.op -eq 'launch' -or $row.op -eq 'launch-initial-recovery'){
+   AssertController
    Exact $row @('op','generation');$chain=Reservation $row.generation $true;$r=$chain.reservation.value;Policy $r.authorizationRef;SourcePins $r.sourcePins;$config=Config;if((HashText $config.token) -cne $r.credentialSha256){throw 'owned_supervisor_credential_changed'}
-   if(@(Get-NetTCPConnection -State Listen -LocalPort 3456 -ErrorAction SilentlyContinue).Count -ne 0){throw 'owned_supervisor_endpoint_occupied'}
+   if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'}
    $image=SafeFile $node $true;if([OwnedDaemonKernel]::Hash($image) -cne $nodeSha){$image.Dispose();throw 'owned_supervisor_node_pin_changed'}
    $info=[Diagnostics.ProcessStartInfo]::new($node);$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.WindowStyle=[Diagnostics.ProcessWindowStyle]::Hidden;$info.WorkingDirectory=$repo;[void]$info.ArgumentList.Add((Join-Path $repo 'mcp-server/bridge-daemon.js'))
+   $deploymentBefore=AssertProductDeployment $info.Environment
    foreach($key in @($info.Environment.Keys)){if($key -match '^AE_BRIDGE_|^AE_OWNED_RUNTIME_'){$info.Environment.Remove($key)|Out-Null}};foreach($key in $config.values.Keys){$info.Environment[$key]=$config.values[$key]};$info.Environment['AE_BRIDGE_HOST']='127.0.0.1';$info.Environment['AE_BRIDGE_PORT']='3456';$info.Environment['AE_BRIDGE_LOG_DIR']=Join-Path $repo 'logs';$info.Environment['AE_OWNED_RUNTIME_GENERATION']=$r.generation;$info.Environment['AE_OWNED_RUNTIME_BOOT_NONCE']=$r.bootNonce
     $initial=$null;if($row.op -eq 'launch-initial-recovery'){$initial=InitialRecoveryLease $row.generation;if($initial.operationId -cne $r.operationId -or $initial.sourceSha256 -cne $r.sourceSha256){throw 'owned_initial_native_successor_binding_invalid'}}
-    if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt) -or ($null -ne $initial -and [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($initial.expiresAt))){throw 'owned_supervisor_successor_expired'};$script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
+   if((AssertProductDeployment $info.Environment) -cne $deploymentBefore){throw 'owned_supervisor_deployment_mode_changed'}
+   if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt) -or ($null -ne $initial -and [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($initial.expiresAt))){throw 'owned_supervisor_successor_expired'};if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'};AssertController;$script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
    $candidate=@{schema=$schema+'.native-candidate';generation=$r.generation;bootNonce=$r.bootNonce;reservationSha256=$chain.reservation.sha256;startupTicketSha256=$chain.ticket.sha256;kernelIdentity=$identity;argv=$r.command.argv;sourceSha256=$r.sourceSha256;heldLaunchWitness=@{kind='native_launch_held_process_handle';handleOpenedAt=$opened;identityVerifiedAt=[DateTimeOffset]::UtcNow.ToString('o')}};$signature=Hmac $candidate $config.token;$candidate.authentication=$signature;[void](WriteOnce (Join-Path $chain.dir 'native-candidate.json') $candidate);$script:mode='owned';ReleaseLocks;Emit @{ok=$true;identity=$identity};continue
   }
   if($row.op -eq 'open-owned'){
@@ -193,6 +258,7 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
  if($row.op -eq 'wait'){Exact $row @('op','milliseconds');if($row.milliseconds -lt 0 -or $row.milliseconds -gt 30000){throw 'owned_supervisor_wait_budget'};Emit @{ok=$true;wait=[OwnedDaemonKernel]::Wait($script:handle,[uint32]$row.milliseconds)};continue}
  if($row.op -eq 'dispose'){Exact $row @('op');Emit @{ok=$true};break}
  if($row.op -eq 'stop-legacy'){
+  AssertController
   Exact $row @('op','operationId');if($script:mode -cne 'legacy' -or $script:stopped -or $row.operationId -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_supervisor_distinct_legacy_authority_required'};$script:stopped=$true;$dir=Join-Path $base ('supervisor-operations/'+$row.operationId)
   $p=LegacyLease $row.operationId;$attempt=Join-Path $dir 'native-legacy-attempt.json';$result=Join-Path $dir 'native-legacy-result.json';if((Test-Path -LiteralPath $attempt)-or(Test-Path -LiteralPath $result)){throw 'owned_supervisor_legacy_consumed_readback_only'}
   [void](WriteOnce $attempt @{schema=$schema+'.native-legacy-attempt';identity=$p.daemon.identity;profileRawSha256=$script:legacyRaw;operationId=$row.operationId;attemptedAt=[DateTimeOffset]::UtcNow.ToString('o');replayAllowed=$false});[OwnedDaemonKernel]::Force($script:handle,$p.expiresAt,[Action]{AssertProtected $p;[void](AssertIdentity $script:expected);AssertArgv $script:expectedArgv;if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($script:successorExpiresAt)){throw 'owned_supervisor_successor_expired'}});$wait=[OwnedDaemonKernel]::Wait($script:handle,[uint32]$p.policy.waitMs)
@@ -203,4 +269,4 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
   Exact $row @('op');if($script:mode -cne 'synthetic' -or $script:stopped){throw 'owned_supervisor_synthetic_effect_refused'};$script:stopped=$true;$v=ReadJson (Join-Path $script:syntheticDir 'target.json') $null $true;if((HashText (Canon $v)) -cne $script:syntheticRaw){throw 'owned_supervisor_synthetic_lease_changed'};[void](WriteOnce (Join-Path $script:syntheticDir 'attempt.json') @{identity=$script:expected;replayAllowed=$false});[OwnedDaemonKernel]::Force($script:handle,[DateTimeOffset]::UtcNow.AddSeconds(5).ToString('o'),[Action]{[void](AssertIdentity $script:expected);AssertArgv $script:expectedArgv});$wait=[OwnedDaemonKernel]::Wait($script:handle,3000);ReleaseLocks;Emit @{ok=$true;wait=$wait};continue
  }
  throw 'owned_supervisor_rpc_operation'
-}catch{$reason=$_.Exception;while($reason.InnerException){$reason=$reason.InnerException};$code='owned_supervisor_native_refused';if($reason.Message -cmatch '^owned_[a-z0-9_]+$'){$code=$reason.Message};Emit @{ok=$false;code=$code};break}}}finally{ReleaseLocks;if($script:image){$script:image.Dispose()};if($script:process){$script:process.Dispose();$script:handle=[IntPtr]::Zero};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle)}}
+}catch{$reason=$_.Exception;while($reason.InnerException){$reason=$reason.InnerException};$code='owned_supervisor_native_refused';if($reason.Message -cmatch '^owned_[a-z0-9_]+$'){$code=$reason.Message};Emit @{ok=$false;code=$code};break}}}finally{ReleaseLocks;if($script:controllerMutex){if($script:controllerOwned){$script:controllerMutex.ReleaseMutex()};$script:controllerMutex.Dispose()};if($script:image){$script:image.Dispose()};if($script:process){$script:process.Dispose();$script:handle=[IntPtr]::Zero};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle)}}

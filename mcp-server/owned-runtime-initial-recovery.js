@@ -57,7 +57,15 @@ function load(root,{fresh=false,checkHistory=true}={}){
   function assertUnchanged(){p.assertUnchanged();policy.assertUnchanged();if(ledger.hash(ledger.readBytes(path.join(root,".codex","config.toml")))!==v.configRawSha256 || evidence.runtimeIdentity(root).sourceSha256!==v.sourceSha256)fail("owned_initial_authority_changed");for(const item of pins)if(pin(root,item.name).sha256!==item.sha256)fail("owned_initial_original_evidence_changed");assertNoRetainedRuntime(root);}
   assertUnchanged();return {value:v,rawSha256:p.rawSha256,policy:policy.policy,assertUnchanged};
 }
-function startupMode(root,generation){if(!fs.existsSync(file(root)))return false;const cap=load(root,{fresh:true});return cap.value.generation===generation;}
+function startupMode(root,generation){
+  if(!fs.existsSync(file(root)))return false;
+  // A bounded, untrusted selector only chooses the legacy lane. It grants no
+  // authority: this generation still requires the complete fresh signed lease.
+  // Other generations retain their normal reservation/product/reset gates.
+  const selected=raw(file(root)).value;
+  if(selected?.value?.generation!==generation)return false;
+  const cap=load(root,{fresh:true});return cap.value.generation===generation;
+}
 function admissionReady(root,{generation,loadedSourceSha256,connectionReady}={}){
   try{if(connectionReady!==true)return false;const cap=load(root),v=cap.value;if(v.generation!==generation || v.sourceSha256!==loadedSourceSha256)return false;
     const supervisor=require("./owned-runtime-supervisor"),reg=supervisor.readDaemonRegistration(root),back=supervisor.readSupervisor(root,v.operationId),rows=back.rows,result=rows?.result?.value,completed=rows?.["initial-recovery-completed"]?.value,key=JSON.parse(ledger.readBytes(path.join(authority.base(root),"initial-recovery-keys",v.original.generation+".json")));

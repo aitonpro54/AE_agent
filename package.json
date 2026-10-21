@@ -1,6 +1,6 @@
 {
   "name": "ae-agent",
-  "version": "3.3.2",
+  "version": "3.3.4",
   "private": true,
   "scripts": {
     "smoke:native-title-render": "node scripts/native-render-variant-smoke.js",
@@ -54,6 +54,10 @@
     "smoke:ame-transport": "node --expose-internals scripts/ame-transport-smoke.js",
     "smoke:ame-presets": "node scripts/ame-presets-smoke.js",
     "smoke:ame-running": "node --expose-internals scripts/ame-running-smoke.js",
+    "smoke:ame-enqueue-sequence": "node scripts/ame-enqueue-sequence-smoke.js",
+    "smoke:ame-job-source": "node --expose-internals scripts/ame-job-source-sha256-smoke.js && node --expose-internals scripts/ame-job-source-smoke.js",
+    "smoke:ame-open-comp": "node --expose-internals scripts/ame-open-comp-smoke.js",
+    "smoke:ame-queue-control": "node scripts/ame-queue-control-smoke.js",
     "smoke:ame-title-jobs": "node --expose-internals scripts/ame-title-jobs-smoke.js && node scripts/ame-title-semantic-smoke.js",
     "smoke:ame-native-fixture": "node scripts/ame-native-fixture-grant-smoke.js && node scripts/ame-native-fixture-runner-smoke.js",
     "smoke:native-fixture-retained": "node scripts/native-fixture-retained-smoke.js && node scripts/native-fixture-retained-maintenance-smoke.js",

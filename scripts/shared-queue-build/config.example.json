@@ -1,0 +1,62 @@
+{
+  "repository": "",
+  "outputDirectory": "",
+  "pinsDirectory": "",
+  "artifactDirectory": "",
+  "runtimeDirectory": "",
+  "setupDirectory": "",
+  "snapshotDirectory": "",
+  "mediaOutputDirectory": "",
+  "manualQueueReservationDirectory": "",
+  "panelBootstrapDirectory": "",
+  "panelRoot": "",
+  "panelImages": [
+    ""
+  ],
+  "nodePath": "",
+  "nodeSdkDirectory": "",
+  "msbuildPath": "",
+  "aePath": "",
+  "amePath": "",
+  "presetPath": "",
+  "sourceProjectFile": "",
+  "automationCredentialFile": "",
+  "panelCredentialFile": "",
+  "transportConfigFile": "",
+  "controllerCensusFile": "",
+  "daemonCensusFile": "",
+  "cepCensusFile": "",
+  "externalBuildInputsFile": "",
+  "externalBuildInputsSha256": "",
+  "rootName": "",
+  "compName": "",
+  "ameTargetSpecifier": "",
+  "sourceStopCommit": "",
+  "authorizationAuditText": "",
+  "inventories": [
+    {
+      "path": "",
+      "absent": false
+    },
+    {
+      "path": "",
+      "absent": false
+    },
+    {
+      "path": "",
+      "absent": false
+    },
+    {
+      "path": "",
+      "absent": false
+    },
+    {
+      "path": "",
+      "absent": false
+    },
+    {
+      "path": "",
+      "absent": false
+    }
+  ]
+}

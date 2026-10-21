@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{D86DF6FA-31E8-457D-A427-8468410ED193}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion><VCToolsVersion>14.44.35207</VCToolsVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v143</PlatformToolset><UseDebugLibraries>false</UseDebugLibraries><CharacterSet>Unicode</CharacterSet></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup><TargetName>NativePhaseSyntheticBroker</TargetName><OutDir>$(LocalSessionOutputDir)\bin\</OutDir><IntDir>$(LocalSessionOutputDir)\obj\</IntDir></PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile><WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>true</ConformanceMode><MultiProcessorCompilation>false</MultiProcessorCompilation><PrecompiledHeader>NotUsing</PrecompiledHeader><PreprocessorDefinitions>AE_AGENT_LOCAL_SESSION_INSTALLED_SEAMS=1;AE_AGENT_PHASE_NATIVE_SYNTHETIC_PROFILE=1;WIN32_LEAN_AND_MEAN;NOMINMAX;UNICODE;_UNICODE;_WIN32_WINNT=0x0A00;NTDDI_VERSION=0x0A000007;%(PreprocessorDefinitions)</PreprocessorDefinitions><AdditionalIncludeDirectories>$(LocalSessionPinsDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><AdditionalOptions>/utf-8 /sourceDependencies &quot;$(IntDir)source-dependencies\%(Filename).json&quot; %(AdditionalOptions)</AdditionalOptions><RuntimeLibrary>MultiThreaded</RuntimeLibrary><ExceptionHandling>Sync</ExceptionHandling></ClCompile>
+    <Link><SubSystem>Console</SubSystem><TargetMachine>MachineX64</TargetMachine><AdditionalDependencies>bcrypt.lib;advapi32.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
+  <Target Name="RequireReviewedNativePhaseSyntheticInputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only fixed Release/x64 native synthetic phase target is supported." />
+    <Error Condition="'$(VCToolsVersion)' != '14.44.35207' Or '$(WindowsTargetPlatformVersion)' != '10.0.26100.0'" Text="Pinned compiler and SDK required; no fallback." />
+    <Error Condition="'$(LocalSessionOutputDir)' == '' Or '$(LocalSessionPinsDir)' == ''" Text="Unique explicit output and held reviewed fixed headers required." />
+    <Error Condition="'$(LocalSessionInstalledSeamsReviewed)' != 'true' Or '$(NativePhaseSyntheticInputsReviewed)' != 'true'" Text="Source-reviewed installed seams and separate native synthetic inputs GO required." />
+    <Error Condition="'$(PhaseProtocolSyntheticProofReviewed)' != '' Or '$(PhaseProtocolProofOutputDir)' != '' Or '$(AE_AGENT_PHASE_SYNTHETIC_PROOF)' != ''" Text="Pure synthetic proof cannot be combined with installed native witnesses." />
+    <Error Condition="!Exists('$(LocalSessionPinsDir)\local_session_installation_pins.h') Or !Exists('$(LocalSessionPinsDir)\local_session_native_phase_case.h')" Text="Both exact reviewed generated headers required; no default or runtime selector." />
+  </Target>
+  <Target Name="CreatePerTranslationUnitDependencyDirectory" BeforeTargets="ClCompile"><MakeDir Directories="$(IntDir)source-dependencies" /></Target>
+  <ItemGroup>
+    <ClCompile Include="enrollment_win32.cpp" /><ClCompile Include="local_session_win32.cpp" /><ClCompile Include="original_daemon_win32.cpp" /><ClCompile Include="local_session_main.cpp" /><ClCompile Include="phase_protocol.cpp" /><ClCompile Include="native_dispatch_commit.cpp" /><ClCompile Include="..\owned-runtime-initial-fence\fence_win32.cpp" /><ClCompile Include="..\owned-runtime-initial-durability\store_win32.cpp" />
+    <ClInclude Include="enrollment_win32.h" /><ClInclude Include="local_session_win32.h" /><ClInclude Include="original_daemon_win32.h" /><ClInclude Include="phase_protocol.h" /><ClInclude Include="native_dispatch_commit.h" /><ClInclude Include="..\owned-runtime-initial-fence\fence_win32.h" /><ClInclude Include="..\owned-runtime-initial-durability\store_win32.h" /><ClInclude Include="$(LocalSessionPinsDir)\local_session_installation_pins.h" /><ClInclude Include="$(LocalSessionPinsDir)\local_session_native_phase_case.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- Closed synthetic compiler search paths override imported defaults. The
+       parent also verifies the evaluated fixed installations and every include. -->
+  <PropertyGroup Label="FixedNativePhaseCompilerSearchPaths">
+    <IncludePath>$(VCToolsInstallDir)include;$(VCToolsInstallDir)atlmfc\include;$(WindowsSdkDir)Include\10.0.26100.0\ucrt;$(WindowsSdkDir)Include\10.0.26100.0\shared;$(WindowsSdkDir)Include\10.0.26100.0\um;$(WindowsSdkDir)Include\10.0.26100.0\winrt;$(WindowsSdkDir)Include\10.0.26100.0\cppwinrt</IncludePath>
+    <LibraryPath>$(VCToolsInstallDir)lib\x64;$(VCToolsInstallDir)atlmfc\lib\x64;$(WindowsSdkDir)Lib\10.0.26100.0\ucrt\x64;$(WindowsSdkDir)Lib\10.0.26100.0\um\x64</LibraryPath>
+  </PropertyGroup>
+</Project>

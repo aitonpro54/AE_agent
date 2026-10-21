@@ -9,7 +9,7 @@ const V2 = "ae-project-intent-runtime.v2";
 const MARKER = "ae-project-lifecycle-initialized.v1";
 const MAX_RECEIPTS = 12, MAX_OWNERS = 32, MAX_OWNED_ITEMS = 200;
 const PHASES = new Set(["prepared", "stage_reserved", "save_stage_submitted", "create_stage_submitted", "stage_verified", "published", "open_final_submitted", "open_target_submitted", "final_proven", "context_retired"]);
-const guards = new Map(), locks = new Map(), capabilities = new WeakMap(), leases = new WeakMap(), initializedPaths = new Set();
+const guards = new Map(), locks = new Map(), capabilities = new WeakMap(), leases = new WeakMap(), initializedPaths = new Set(), observedStorePaths = new Set();
 const memory = () => require("./project-intent-memory");
 const statePath = options => memory().projectStatePath(options || {});
 const markerPath = file => file + ".lifecycle-initialized.json";
@@ -160,16 +160,21 @@ function capacityPreflight(store, pending, target, receipt) {
 }
 function guardSnapshot(options = {}) {
   const file = statePath(options), io = options.filesystem || fs, enabled = options.enabled === undefined ? process.env.AE_PROJECT_LIFECYCLE_ENABLED === "1" : options.enabled === true;
-  let marker = null, raw = null, problem = null, markerSeen = false;
+  let marker = null, raw = null, problem = null, markerSeen = false, storeSeen = false;
   try { markerSeen = io.existsSync(markerPath(file)); if (markerSeen) { if (io.statSync(markerPath(file)).size > 4096) c.fail("lifecycle_marker_corrupt"); marker = JSON.parse(io.readFileSync(markerPath(file), "utf8")); c.exact(marker, ["schema", "storePathHash"], "lifecycle_marker_corrupt"); if (!marker || marker.schema !== MARKER || marker.storePathHash !== c.hash(path.resolve(file))) c.fail("lifecycle_marker_corrupt"); initializedPaths.add(file); } } catch (_) { problem = "lifecycle_marker_corrupt"; markerSeen = true; }
-  try { if (io.existsSync(file)) { if (io.statSync(file).size > memory().MAX_PACKED_STATE_BYTES) c.fail("lifecycle_store_corrupt"); raw = JSON.parse(io.readFileSync(file, "utf8")); } } catch (_) { problem = problem || "lifecycle_store_corrupt"; }
+  try { storeSeen = io.existsSync(file); if (storeSeen) { observedStorePaths.add(file); if (io.statSync(file).size > memory().MAX_PACKED_STATE_BYTES) c.fail("lifecycle_store_corrupt"); raw = JSON.parse(io.readFileSync(file, "utf8")); } } catch (_) { problem = problem || "lifecycle_store_corrupt"; }
   const lifecycleEvidence=raw && ["pendingLifecycle","lifecycleGeneration","lifecycleReceipts"].some(key=>Object.prototype.hasOwnProperty.call(raw,key));
   const required = enabled || markerSeen || initializedPaths.has(file) || raw && raw.schema === V2 || lifecycleEvidence;
   if (!required) problem = null; // Never-enabled legacy loader preserves its own errors/empty-state behavior.
   if (required && !raw) problem = problem || "lifecycle_store_missing";
   if ((initializedPaths.has(file) || raw && raw.schema === V2 || lifecycleEvidence) && !marker) problem = problem || "lifecycle_marker_missing";
   if (required && raw && !problem) { try { memory().validateProjectStateStore(memory().transformReviewStore(raw, false)); } catch (_) { problem = "lifecycle_store_corrupt"; } }
-  return { file, enabled, required: !!required, marker, problem, generation: raw && raw.schema === V2 ? raw.lifecycleGeneration : 0, pending: raw && raw.schema === V2 ? raw.pendingLifecycle : null };
+  // existsSync(false) alone also covers access errors and broken links. Only
+  // exact ENOENT on both paths can grant the fixed first read.
+  const absent = target => { try { io.lstatSync(target); return false; } catch (error) { return error.code === "ENOENT"; } };
+  const freshMissingStore = enabled && !storeSeen && !markerSeen && !initializedPaths.has(file) && !observedStorePaths.has(file) &&
+    problem === "lifecycle_store_missing" && absent(file) && absent(markerPath(file));
+  return { file, enabled, required: !!required, marker, problem, freshMissingStore, generation: raw && raw.schema === V2 ? raw.lifecycleGeneration : 0, pending: raw && raw.schema === V2 ? raw.pendingLifecycle : null };
 }
 function assertReadableProtectionStore(options = {}) { const registered = guards.get(statePath(options)); const facts = guardSnapshot(registered ? { ...registered.options, ...options } : options); if (facts.problem) c.fail(facts.problem); return facts; }
 function capabilityRecord(cap) { return cap && capabilities.get(cap); }
@@ -180,7 +185,9 @@ function validateCommandCapability(cap, command = {}) {
     if (typeof command.commandId !== "string" || !command.commandId || record.commandId && record.commandId !== command.commandId) c.fail("lifecycle_phase_command_replay");
     record.commandId = command.commandId;
   }
-  const facts = guardSnapshot(record.options); if (facts.problem && !record.allowBlockedRead) c.fail(facts.problem);
+  const facts = guardSnapshot(record.options);
+  if (record.freshProjectInfoRead && (!facts.freshMissingStore || locks.has(record.file) || record.assertIdle(record.commandId || null) !== true)) c.fail("lifecycle_bootstrap_read_ineligible");
+  if (facts.problem && !record.allowBlockedRead && !record.freshProjectInfoRead) c.fail(facts.problem);
   if (record.readOnly) { if (record.transitionId && (!facts.pending || facts.pending.transitionId !== record.transitionId)) c.fail("lifecycle_read_capability_stale"); return true; }
   const p = facts.pending;
   if (!p || p.transitionId !== record.transitionId || p.phase !== record.pendingPhase || p.authorization.actionId !== record.binding.actionId || p.authorization.runId !== record.binding.runId || p.authorization.payloadHash !== record.binding.payloadHash || p.inputHash !== record.binding.inputHash || p.sourcePolicyHash !== record.binding.sourcePolicyHash || p.targetPolicyHash !== record.binding.targetPolicyHash || locks.get(record.file) !== record.lease) c.fail("lifecycle_phase_capability_stale");
@@ -261,6 +268,14 @@ function createLifecycleStorage(options = {}) {
     const record = { active: true, file, options: configured, transitionId: null, phase: "readonly_state", scriptHash: c.hash(script), readOnly: true, allowBlockedRead: true };
     capabilities.set(cap, record); try { return await callback(script, cap); } finally { record.active = false; }
   }
+  async function withProjectInfoReadCapability(callback, assertIdle) {
+    // One fixed native getter, never a client script or serialized authority.
+    const facts = guardSnapshot(configured);
+    if (!facts.freshMissingStore || locks.has(file) || typeof assertIdle !== "function" || assertIdle(null) !== true) c.fail("lifecycle_bootstrap_read_ineligible");
+    const script = require("./project-lifecycle-state").nativeProjectInfoBody(), cap = Object.freeze(Object.create(null));
+    const record = { active: true, file, options: configured, transitionId: null, phase: "readonly_project_info", scriptHash: c.hash(script), readOnly: true, freshProjectInfoRead: true, assertIdle };
+    capabilities.set(cap, record); try { validateCommandCapability(cap, {rawScript:script}); return await callback(script, cap); } finally { record.active = false; }
+  }
   function begin(lease, pending) {
     const binding = requireLease(lease).binding; if (binding.actionId !== pending.authorization.actionId || binding.runId !== pending.authorization.runId) c.fail("lifecycle_authority_mismatch");
     validatePending(pending); atomicMarker(); return write(lease, candidate => { if (candidate.pendingLifecycle) c.fail("lifecycle_pending_blocks_writes"); Object.assign(candidate, asV2(candidate)); candidate.pendingLifecycle = c.clone(pending); }).pendingLifecycle;
@@ -284,9 +299,9 @@ function createLifecycleStorage(options = {}) {
       candidate.projectState[p.targetState.projectKey] = c.clone(p.targetState); candidate.lifecycleReceipts = [...candidate.lifecycleReceipts.slice(-(MAX_RECEIPTS - 1)), c.clone(receipt)]; candidate.lifecycleGeneration++; candidate.pendingLifecycle = null;
     });
   }
-  return { load, begin, update, commit, acquireAdmission, acquireFinalizeAdmission, acquireRecoveryAdmission, assertRecoveryReadable, releaseAdmission, withPhaseCapability: withCapability, withReadCapability, withStateReadCapability,
+  return { load, begin, update, commit, acquireAdmission, acquireFinalizeAdmission, acquireRecoveryAdmission, assertRecoveryReadable, releaseAdmission, withPhaseCapability: withCapability, withReadCapability, withStateReadCapability, withProjectInfoReadCapability,
     assertMutationAllowed: context => assertMutationAllowed({ ...configured, ...(context || {}) }), epoch: () => { const facts = assertReadableProtectionStore(configured); return facts.generation; },
-    pendingProjection: () => { const facts = guardSnapshot(configured); const p = facts.pending; return { enabled: facts.enabled, blocked: !!facts.problem || !!p || locks.has(file), problem: facts.problem, generation: facts.generation, pending: p ? { transitionId: p.transitionId, operation: p.operation, phase: p.phase, status: p.status, possibleDelivery: p.possibleDelivery, sourceProjectFile: p.args && p.args.expectedSourceProjectFile, targetProjectFile: p.args && p.args.targetProjectFile } : null }; } };
+    pendingProjection: () => { const facts = guardSnapshot(configured); const p = facts.pending; return { enabled: facts.enabled, blocked: !!facts.problem || !!p || locks.has(file), problem: facts.problem, freshMissingStoreReadAllowed: facts.freshMissingStore && !locks.has(file), generation: facts.generation, pending: p ? { transitionId: p.transitionId, operation: p.operation, phase: p.phase, status: p.status, possibleDelivery: p.possibleDelivery, sourceProjectFile: p.args && p.args.expectedSourceProjectFile, targetProjectFile: p.args && p.args.targetProjectFile } : null }; } };
 }
 module.exports = { V2, MARKER, MAX_RECEIPTS, validateV2Store, validatePending, validateFileRecord, assertRecoveryEligible, validateInheritedOwnership, defaultState, readState, assertOwnershipInventory, invalidateContextProofs, migrateTargetState, packedCapacity, capacityPreflight,
   createLifecycleStorage, assertReadableProtectionStore, assertMutationAllowed, assertPolicyWriteAllowed, guardSnapshot, markerPath, validateCommandCapability, isPhaseCapability: cap => !!capabilityRecord(cap)?.active,

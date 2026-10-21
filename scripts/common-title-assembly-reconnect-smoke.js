@@ -2,7 +2,7 @@
 // Isolated production HTTP + full CEP functions. Every CDP/native surface is a fixture.
 const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),vm=require("node:vm"),Module=require("node:module"),crypto=require("node:crypto"),{pathToFileURL}=require("node:url");
 const recovery=require("../mcp-server/common-title-assembly-recovery"),control=require("../mcp-server/cep-panel-control"),records=require("../mcp-server/plan-run-records"),contract=require("../cep-panel/panel-action-contract"),network=require("./network-test-fixture"),{createPanelEnvironment}=require("./cep-plan-refresh-smoke"),x=require("./common-title-assembly-recovery-smoke"),loader=require("./common-title-assembly-maintenance");
-const copy=v=>JSON.parse(JSON.stringify(v)),root=fs.mkdtempSync(path.join(os.tmpdir(),"ae-agent-network-boundary-common-title-"));
+const copy=v=>JSON.parse(JSON.stringify(v)),root=network.createRuntimeDirectory();
 async function main(){
   const absentEnv=path.join(root,"absent.env"),suppliedEnv={AE_BRIDGE_HOST:"127.0.0.1",AE_BRIDGE_PORT:"3456",AE_BRIDGE_TOKEN:"fixture-inherited-token"};
   assert.equal(fs.existsSync(absentEnv),false);

@@ -6,7 +6,7 @@ const POLICY=Object.freeze({
   executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/native/powershell/pwsh.exe",
   executableSha256:"362a356ce7f0940ec74f73a8fc2c990a2cc24a38a11c90bbd8eca947110ad139",
   helper:path.resolve(__dirname,"../scripts/owned-runtime-win32-helper.ps1"),
-  helperSha256:"eab199fb33e42debc9f1d266711bc0e610bef6bcb57f02d7ed4b92e0618c9f4e"
+  helperSha256:"945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4"
 });
 const hash=b=>crypto.createHash("sha256").update(b).digest("hex");
 function fail(code) {throw Object.assign(Error(code),{code});}

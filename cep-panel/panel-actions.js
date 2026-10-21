@@ -44,10 +44,12 @@
   function unresolvedEffects() {
     return Object.keys(records).filter(function(id) {
       var r=records[id];
+      var reset=bindings && bindings.productSessionReset && bindings.productSessionReset();
+      if(reset && reset.disposition && reset.disposition.oldOutcome==="unknown_preserved" && reset.disposition.oldCommandsReplayAllowed===false && reset.panelControl && Array.isArray(reset.panelControl.oldActionEntries) && reset.panelControl.oldActionEntries.some(function(entry){return entry.requestId===id && entry.entrySha256===sha256(JSON.stringify(r));}))return false;
       return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
-      return {requestId:id,action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
+      return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
         code:r.code || "delivery_unknown",phase:r.phase || "delivery_unknown",
         recovery:r.runId ? "same_run_read_only_reconciliation" : "exact_terminal_identity_evidence_required"};
     });
@@ -551,7 +553,9 @@
     if(fixtureLookupPending && !passiveRead(name))return {available:false,reasonCodes:["fixture_disposition_lookup_pending"]};
     if(nativeAbandonmentLookupPending && !passiveRead(name))return {available:false,reasonCodes:["native_fixture_abandonment_lookup_pending"]};
     var unresolved=unresolvedEffects();
-    if(unresolved.length && !passiveRead(name) && name !== "connector.emergencyDisable" && name !== "plan.reconcile") {
+    // With historical debt, connect's handler performs ONLY a reset-session
+    // lookup first. It cannot start ordinary delivery without reset authority.
+    if(unresolved.length && !passiveRead(name) && name !== "bridge.connect" && name !== "connector.emergencyDisable" && name !== "plan.reconcile") {
       return {available:false,reasonCodes:["reconciliation_required","unresolved_effect"]};
     }
     if(unresolved.length && name === "plan.reconcile" && args &&

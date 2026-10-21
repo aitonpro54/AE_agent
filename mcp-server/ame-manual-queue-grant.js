@@ -5,8 +5,10 @@ const { AsyncLocalStorage } = require("node:async_hooks");
 const { stableStringify, sha256Payload } = require("./m100-protocol");
 const ROUTE = "/agents/ame/title-start/run";
 const MANIFEST_SCHEMA = "ae-agent-ame-manual-queue-manifest.v1";
+const SINGLE_MANIFEST_SCHEMA = "ae-agent-ame-manual-queue-manifest.v2";
 const RESERVATION_SCHEMA = "ae-agent-ame-title-start-reservation.v1";
 const DECLARATION = "Сейчас проверил всю очередь AME: содержит только показанные 2 готовых задания; понимаю, API полный состав не проверяет, запуск общий.";
+const SINGLE_DECLARATION = "Сейчас проверил всю очередь AME: содержит только показанное 1 готовое задание и перечисленные завершённые owned-задания; других готовых, ожидающих или неизвестных заданий нет; понимаю, API полный состав не проверяет, запуск общий.";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, SHA = /^[a-f0-9]{64}$/;
 const digest = value => crypto.createHash("sha256").update(stableStringify(value)).digest("hex");
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -22,38 +24,48 @@ function assertSync(callback, ...args) {
 function exactKeys(value, keys) { return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.prototype.hasOwnProperty.call(value, key)); }
 function validText(value) { return typeof value === "string" && value.length > 0 && value.length <= 4096 && !/[\x00-\x1f\x7f]/.test(value); }
 function validateManifest(value) {
-  if (!exactKeys(value, ["schema", "targetSpecifier", "batchId", "process", "processBinding", "nativeSessionNonce", "retainedWrapperSessionNonce", "presetIdentity", "jobs"]) ||
-      value.schema !== MANIFEST_SCHEMA || !/^ame-\d{1,3}\.\d{1,3}$/.test(value.targetSpecifier) || !UUID.test(value.batchId) || !SHA.test(value.processBinding) || !SHA.test(value.presetIdentity) ||
+  const single = value && value.schema === SINGLE_MANIFEST_SCHEMA;
+  if (!exactKeys(value, ["schema", "targetSpecifier", "batchId", "process", "processBinding", "nativeSessionNonce", "retainedWrapperSessionNonce", "presetIdentity", "jobs", ...(single ? ["completedOwnedPrefix"] : [])]) ||
+      ![MANIFEST_SCHEMA, SINGLE_MANIFEST_SCHEMA].includes(value.schema) || !/^ame-\d{1,3}\.\d{1,3}$/.test(value.targetSpecifier) || !UUID.test(value.batchId) || !SHA.test(value.processBinding) || !SHA.test(value.presetIdentity) ||
       !exactKeys(value.process, ["pid", "startedAt", "path"]) || !Number.isSafeInteger(value.process.pid) || value.process.pid < 1 || !Number.isFinite(Date.parse(value.process.startedAt)) || !validText(value.process.path) ||
-      !(value.nativeSessionNonce === null || typeof value.nativeSessionNonce === "string" && /^[A-Za-z0-9._-]{1,128}$/.test(value.nativeSessionNonce)) || !UUID.test(value.retainedWrapperSessionNonce) || !Array.isArray(value.jobs) || value.jobs.length !== 2) denied("ame_manual_queue_manifest_invalid");
+      !(value.nativeSessionNonce === null || typeof value.nativeSessionNonce === "string" && /^[A-Za-z0-9._-]{1,128}$/.test(value.nativeSessionNonce)) || !UUID.test(value.retainedWrapperSessionNonce) || !Array.isArray(value.jobs) || value.jobs.length !== (single ? 1 : 2) ||
+      single && (!Array.isArray(value.completedOwnedPrefix) || value.completedOwnedPrefix.length > 63)) denied("ame_manual_queue_manifest_invalid");
   const seenIds = new Set(), seenOutputs = new Set();
-  for (const job of value.jobs) {
-    if (!exactKeys(job, ["jobId", "handleKey", "enqueueRequestNonce", "operationBinding", "source", "preset", "outputPath", "range"]) ||
+  for (const job of [...value.jobs, ...(single ? value.completedOwnedPrefix : [])]) {
+    const completed = single && value.completedOwnedPrefix.includes(job);
+    if (!exactKeys(job, ["jobId", "handleKey", "enqueueRequestNonce", "operationBinding", "source", "preset", "outputPath", "range", ...(completed ? ["batchId", "startReservationSha25664", "completion"] : [])]) ||
         !UUID.test(job.jobId) || job.handleKey !== job.jobId || !UUID.test(job.enqueueRequestNonce) || !SHA.test(job.operationBinding) ||
         !exactKeys(job.source, ["path", "sha25664", "guid"]) || !validText(job.source.path) || !path.isAbsolute(job.source.path) || !SHA.test(job.source.sha25664) || !validText(job.source.guid) ||
         !exactKeys(job.preset, ["path", "sha25664", "id"]) || !validText(job.preset.path) || !path.isAbsolute(job.preset.path) || !SHA.test(job.preset.sha25664) || !/^amep_[a-f0-9]{40}$/.test(job.preset.id) ||
         !validText(job.outputPath) || !path.isAbsolute(job.outputPath) || !exactKeys(job.range, ["startSeconds", "endSeconds"]) || !Number.isFinite(job.range.startSeconds) || job.range.startSeconds < 0 || !Number.isFinite(job.range.endSeconds) || job.range.endSeconds <= job.range.startSeconds ||
-        seenIds.has(job.jobId) || seenOutputs.has(job.outputPath.replace(/\\/g, "/").toLowerCase())) denied("ame_manual_queue_manifest_invalid");
+        seenIds.has(job.jobId) || seenOutputs.has(job.outputPath.replace(/\\/g, "/").toLowerCase()) ||
+        completed && (!UUID.test(job.batchId || "") || job.batchId === value.batchId || !SHA.test(job.startReservationSha25664 || "") || !exactKeys(job.completion, ["sourceFilePath", "outputFilePath", "result", "observedAt"]) || job.completion.sourceFilePath !== job.source.path || job.completion.outputFilePath !== job.outputPath || job.completion.result !== "True" || !Number.isFinite(job.completion.observedAt))) denied("ame_manual_queue_manifest_invalid");
     seenIds.add(job.jobId); seenOutputs.add(job.outputPath.replace(/\\/g, "/").toLowerCase());
   }
-  if (stableStringify(value.jobs[0].preset) !== stableStringify(value.jobs[1].preset)) denied("ame_manual_queue_manifest_invalid");
+  if ([...value.jobs, ...(single ? value.completedOwnedPrefix : [])].some(job => stableStringify(job.preset) !== stableStringify(value.jobs[0].preset))) denied("ame_manual_queue_manifest_invalid");
   return value;
 }
 function manifestHash(value) { return digest(validateManifest(value)); }
-function buildManifest(batch, processInfo, args, minimumObservedAt) {
-  if (!batch || batch.start || !Array.isArray(batch.jobs) || batch.jobs.length !== 2 || !Number.isFinite(minimumObservedAt)) denied("ame_manual_queue_two_fresh_queued_jobs_required");
+function declarationForManifest(manifest) { validateManifest(manifest); return manifest.schema === SINGLE_MANIFEST_SCHEMA ? SINGLE_DECLARATION : DECLARATION; }
+function buildManifest(batch, processInfo, args, minimumObservedAt, completedOwnedPrefix = []) {
+  const single = args.manualQueueMode === "cep_user_declaration_v2";
+  if (!batch || batch.start || !Array.isArray(batch.jobs) || batch.jobs.length !== (single ? 1 : 2) || !Number.isFinite(minimumObservedAt) || !Array.isArray(completedOwnedPrefix) || !single && completedOwnedPrefix.length) denied(single ? "ame_manual_queue_one_fresh_queued_job_required" : "ame_manual_queue_two_fresh_queued_jobs_required");
   let nativeSessionNonce, retainedWrapperSessionNonce;
-  const jobs = batch.jobs.map(job => {
+  function entry(job, completed) {
     const native = job.nativeObservation, wrapper = native?.job;
-    if (job.readyForStart !== true || job.nativeAssociationVerified !== true || !native || native.code !== "job_observed" || native.batchRunning !== false || !Number.isFinite(native.observedAt) || native.observedAt < minimumObservedAt || native.requestNonce === job.requestNonce || !wrapper || wrapper.status !== "queued" || wrapper.nativeAssociationVerified !== true || wrapper.handleKey !== job.jobId || wrapper.enqueueRequestNonce !== job.requestNonce || !UUID.test(wrapper.retainedWrapperSessionNonce || "")) denied("ame_manual_queue_two_fresh_queued_jobs_required");
+    if ((!completed && job.readyForStart !== true) || job.nativeAssociationVerified !== true || !native || native.code !== "job_observed" || native.batchRunning !== false || !Number.isFinite(native.observedAt) || native.observedAt < minimumObservedAt || native.requestNonce === job.requestNonce || !wrapper || wrapper.status !== (completed ? "native_finished" : "queued") || wrapper.nativeAssociationVerified !== true || wrapper.handleKey !== job.jobId || wrapper.enqueueRequestNonce !== job.requestNonce || !UUID.test(wrapper.retainedWrapperSessionNonce || "")) denied("ame_manual_queue_fresh_owned_observation_required");
+    if (single && (wrapper.nativeJobId !== null || wrapper.processBinding !== batch.processBinding || wrapper.presetIdentity !== batch.presetIdentity || wrapper.sourcePath !== job.sourcePath || wrapper.sourceGuid !== job.args.sourceGuid || wrapper.outputPath !== job.outputPath || stableStringify(wrapper.range) !== stableStringify(job.args.range) || !Array.isArray(wrapper.outputFiles) || wrapper.outputFiles.length !== 1 || wrapper.outputFiles[0] !== job.outputPath)) denied("ame_manual_queue_owned_binding_changed");
     if (nativeSessionNonce === undefined) { nativeSessionNonce = native.sessionNonce; retainedWrapperSessionNonce = wrapper.retainedWrapperSessionNonce; }
     if (nativeSessionNonce !== native.sessionNonce || retainedWrapperSessionNonce !== wrapper.retainedWrapperSessionNonce) denied("ame_manual_queue_wrapper_session_changed");
+    if (completed && (!SHA.test(job.startReservationSha25664 || "") || wrapper.nativeCompletionObserved !== true || wrapper.hostCompletion?.result !== "True" || wrapper.hostCompletion.sourceFilePath !== job.sourcePath || wrapper.hostCompletion.outputFilePath !== job.outputPath || wrapper.hostCompletion.observedAt < Date.parse(job.submittedAt) || wrapper.hostCompletion.observedAt > native.observedAt)) denied("ame_manual_queue_completed_prefix_unverified");
     return { jobId: job.jobId, handleKey: job.handleKey, enqueueRequestNonce: job.requestNonce, operationBinding: job.operationBinding,
-      source: { path: job.sourcePath, sha25664: job.sourcePin.sha256, guid: job.args.sourceGuid }, preset: { path: job.presetPath, sha25664: job.presetPin.sha256, id: job.args.presetId }, outputPath: job.outputPath, range: clone(job.args.range) };
-  });
-  return validateManifest({ schema: MANIFEST_SCHEMA, targetSpecifier: args.targetSpecifier, batchId: batch.batchId,
+      source: { path: job.sourcePath, sha25664: job.sourcePin.sha256, guid: job.args.sourceGuid }, preset: { path: job.presetPath, sha25664: job.presetPin.sha256, id: job.args.presetId }, outputPath: job.outputPath, range: clone(job.args.range),
+      ...(completed ? { batchId: job.args.batchId, startReservationSha25664: job.startReservationSha25664, completion: clone(wrapper.hostCompletion) } : {}) };
+  }
+  const jobs = batch.jobs.map(job => entry(job, false)), prefix = completedOwnedPrefix.map(job => entry(job, true));
+  return validateManifest({ schema: single ? SINGLE_MANIFEST_SCHEMA : MANIFEST_SCHEMA, targetSpecifier: args.targetSpecifier, batchId: batch.batchId,
     process: { pid: processInfo.pid, startedAt: processInfo.startedAt, path: processInfo.path }, processBinding: batch.processBinding,
-    nativeSessionNonce, retainedWrapperSessionNonce, presetIdentity: batch.presetIdentity, jobs });
+    nativeSessionNonce, retainedWrapperSessionNonce, presetIdentity: batch.presetIdentity, jobs, ...(single ? { completedOwnedPrefix: prefix } : {}) });
 }
 function reservationPath(stateDir, batchId) { if (!path.isAbsolute(stateDir || "") || !UUID.test(batchId || "")) denied("ame_start_reservation_invalid"); return path.join(stateDir, "starts", batchId + ".json"); }
 function writeReservation(stateDir, record) {
@@ -73,21 +85,23 @@ function readReservation(stateDir, batchId) {
   if (record.schema !== RESERVATION_SCHEMA || record.batchId !== batchId || !UUID.test(record.requestNonce || "") || !SHA.test(record.operationBinding || "") || !Number.isFinite(Date.parse(record.reservedAt)) || record.state !== "unknown_outcome" || record.transportResolved !== false) denied("ame_start_reservation_corrupt_no_replay");
   if (record.manualQueueReceipt) {
     const receipt = record.manualQueueReceipt;
-    if (receipt.proofSource !== "authenticated_cep_user_declaration" || receipt.nativeQueueCompositionVerified !== false || receipt.physicalHumanVerified !== false || receipt.declaration !== DECLARATION || manifestHash(receipt.manifest) !== receipt.manifestHash || receipt.batchId !== batchId || receipt.requestNonce !== record.requestNonce || receipt.operationBinding !== record.operationBinding || !SHA.test(record.receiptHash || "") || digest(receipt) !== record.receiptHash) denied("ame_start_reservation_corrupt_no_replay");
+    if (receipt.proofSource !== "authenticated_cep_user_declaration" || receipt.nativeQueueCompositionVerified !== false || receipt.physicalHumanVerified !== false || receipt.declaration !== declarationForManifest(receipt.manifest) || manifestHash(receipt.manifest) !== receipt.manifestHash || receipt.batchId !== batchId || receipt.requestNonce !== record.requestNonce || receipt.operationBinding !== record.operationBinding || !SHA.test(record.receiptHash || "") || digest(receipt) !== record.receiptHash || receipt.manifest.schema === SINGLE_MANIFEST_SCHEMA && (receipt.lastDispatchGuardVerified !== true || record.lastDispatchGuardVerified !== true)) denied("ame_start_reservation_corrupt_no_replay");
   }
   return record;
 }
 
 // Consumes only independent server-attached reads (the semantic caller checks
-// their private provenance). It proves our dispatch and two retained handles;
+// their private provenance). It proves our dispatch and exact retained handles;
 // the declaration never becomes API proof of the whole queue or media proof.
 function verifyStartEvidence(args, payload, run, reads) {
   try {
-    if (args.manualQueueMode !== "cep_user_declaration" || !SHA.test(args.manualQueueManifestSha25664 || "") || !payload || payload.schema !== "ae-agent-ame-title-jobs.v1" || payload.ok !== true || payload.code !== "batch_start_accepted" || payload.nativeQueueCompositionVerified !== false ||
-        payload.dispatchAcceptanceVerified !== true || payload.completionVerified !== false || payload.mediaVerified !== false || !run || !UUID.test(run.id || "") || !Array.isArray(reads) || reads.length !== 2 || !payload.native || payload.native.start?.accepted !== true || payload.native.start.invoked !== true || payload.native.start.requestNonce !== payload.requestNonce) return false;
+    const single = args.manualQueueMode === "cep_user_declaration_v2";
+    if (!["cep_user_declaration", "cep_user_declaration_v2"].includes(args.manualQueueMode) || !SHA.test(args.manualQueueManifestSha25664 || "") || !payload || payload.schema !== "ae-agent-ame-title-jobs.v1" || payload.ok !== true || payload.code !== "batch_start_accepted" || payload.nativeQueueCompositionVerified !== false || payload.unknownOutcome === true ||
+        payload.dispatchAcceptanceVerified !== true || payload.completionVerified !== false || payload.mediaVerified !== false || !run || !UUID.test(run.id || "") || !Array.isArray(reads) || reads.length !== (single ? 1 : 2) || !payload.native || payload.native.start?.accepted !== true || payload.native.start.invoked !== true || payload.native.start.requestNonce !== payload.requestNonce) return false;
     const first = reads[0].result?.startReservation, receipt = first?.manualQueueReceipt, manifest = receipt?.manifest;
     if (!receipt || first.schema !== RESERVATION_SCHEMA || first.batchId !== args.batchId || first.requestNonce !== payload.requestNonce || !SHA.test(first.operationBinding || "") || first.transportResolved !== false || first.state !== "unknown_outcome" ||
-        receipt.proofSource !== "authenticated_cep_user_declaration" || receipt.physicalHumanVerified !== false || receipt.nativeQueueCompositionVerified !== false || receipt.declaration !== DECLARATION || digest(receipt) !== first.receiptHash ||
+        single && (manifest?.schema !== SINGLE_MANIFEST_SCHEMA || payload.lastDispatchGuardVerified !== true || first.lastDispatchGuardVerified !== true || receipt.lastDispatchGuardVerified !== true || stableStringify(args.completedOwnedPrefix || []) !== stableStringify(manifest.completedOwnedPrefix.map(job => ({ batchId: job.batchId, jobId: job.jobId })))) ||
+        receipt.proofSource !== "authenticated_cep_user_declaration" || receipt.physicalHumanVerified !== false || receipt.nativeQueueCompositionVerified !== false || receipt.declaration !== declarationForManifest(manifest) || digest(receipt) !== first.receiptHash ||
         manifestHash(manifest) !== args.manualQueueManifestSha25664 || receipt.manifestHash !== args.manualQueueManifestSha25664 || receipt.actionId !== run.provenance?.actionId || receipt.revision !== run.provenance?.proposalRevision || receipt.payloadHash !== run.provenance?.payloadHash || receipt.runId !== run.id || receipt.requestNonce !== first.requestNonce || receipt.operationBinding !== first.operationBinding ||
         receipt.previewHash !== run.m100Action?.previewHash || receipt.confirmationSessionId !== run.m100Action?.confirmedBySession || run.m100Action?.confirmedBySurface !== "cep-panel" || receipt.confirmedAt !== run.m100Action?.confirmedAt ||
         receipt.dryRunReceipt?.payloadHash !== receipt.payloadHash || receipt.dryRunReceipt.previewHash !== receipt.previewHash || !UUID.test(receipt.dryRunReceipt.runId || "") || receipt.dryRunReceipt.stepCount !== 1 || receipt.dryRunReceipt.projectFile !== receipt.checkpoint?.sourceFile ||
@@ -123,7 +137,7 @@ function createManualQueueGrant(deps) {
     confirmedAt: context.record.confirmedAt, dryRunCompletedAt: context.record.dryRunCompletedAt, dryRunReceipt: context.record.dryRunReceipt,
     checkpoint: context.checkpoint, args: context.args });
   async function runAuthenticated(meta, callback) {
-    if (!meta || meta.route !== ROUTE || meta.authRole !== "panel" || meta.panelIdentityValid !== true || meta.trustedGesture !== true || meta.declaration !== DECLARATION || !SHA.test(meta.manifestHash || "") || !UUID.test(meta.acceptedDryRunId || "") || !validText(meta.panelConnectionId) || !validText(meta.panelGeneration)) denied();
+    if (!meta || meta.route !== ROUTE || meta.authRole !== "panel" || meta.panelIdentityValid !== true || meta.trustedGesture !== true || ![DECLARATION, SINGLE_DECLARATION].includes(meta.declaration) || !SHA.test(meta.manifestHash || "") || !UUID.test(meta.acceptedDryRunId || "") || !validText(meta.panelConnectionId) || !validText(meta.panelGeneration)) denied();
     const frame = { alive: true, issuedAt: now(), expiresAt: now() + 120000, meta: Object.freeze(clone(meta)) };
     try { return await ingress.run(frame, callback); } finally { frame.alive = false; }
   }
@@ -131,7 +145,7 @@ function createManualQueueGrant(deps) {
     const record = context && context.record;
     if (!frame || !frame.alive || now() >= frame.expiresAt || now() < frame.issuedAt || !record || !validText(record.actionId) || !Number.isSafeInteger(record.revision) || record.revision < 1 || !UUID.test(context.runId || "") || context.autonomous !== false || context.confirm !== true || context.allowWithoutCheckpoint !== false || context.stepCount !== 1 || record.executionState !== "executing" || record.executionId !== context.runId ||
         record.confirmedBySurface !== "cep-panel" || record.confirmationSurface !== "cep-panel" || !record.payload || sha256Payload(record.payload) !== record.payloadHash || !SHA.test(record.previewHash || "") || !context.checkpoint || !context.args || context.args.manualQueueManifestSha25664 !== frame.meta.manifestHash || manifestHash(manifest) !== frame.meta.manifestHash ||
-        !record.dryRunReceipt || record.dryRunReceipt.runId !== frame.meta.acceptedDryRunId || record.dryRunReceipt.payloadHash !== record.payloadHash || record.dryRunReceipt.previewHash !== record.previewHash || record.dryRunReceipt.stepCount !== 1 || record.dryRunReceipt.projectFile !== record.project?.expectedFile ||
+        (context.args.manualQueueMode === "cep_user_declaration_v2") !== (manifest.schema === SINGLE_MANIFEST_SCHEMA) || frame.meta.declaration !== declarationForManifest(manifest) || !record.dryRunReceipt || record.dryRunReceipt.runId !== frame.meta.acceptedDryRunId || record.dryRunReceipt.payloadHash !== record.payloadHash || record.dryRunReceipt.previewHash !== record.previewHash || record.dryRunReceipt.stepCount !== 1 || record.dryRunReceipt.projectFile !== record.project?.expectedFile ||
         context.args.targetSpecifier !== manifest.targetSpecifier || context.args.batchId !== manifest.batchId || context.args.expectedProcess?.pid !== manifest.process.pid || context.args.expectedProcess?.startedAt !== manifest.process.startedAt || context.args.expectedSessionNonce && context.args.expectedSessionNonce !== manifest.nativeSessionNonce ||
         !Number.isFinite(Date.parse(record.dryRunCompletedAt)) || now() - Date.parse(record.dryRunCompletedAt) > 300000 || Date.parse(record.dryRunCompletedAt) > frame.issuedAt || !Number.isFinite(Date.parse(record.confirmedAt)) || Date.parse(record.confirmedAt) < Date.parse(record.dryRunCompletedAt) || !Number.isFinite(Date.parse(record.proposalExpiresAt)) || Date.parse(record.proposalExpiresAt) <= now()) denied("ame_manual_queue_binding_changed_or_expired");
     assertSync(deps.assertManualIngress, context); assertSync(deps.assertServerContext, context); if (assertSync(deps.assertPanelIdentity, frame.meta) !== true) denied("ame_manual_queue_panel_identity_changed");
@@ -147,17 +161,24 @@ function createManualQueueGrant(deps) {
   }
   function consume(cap, context, manifest, start) {
     const saved = assertCapability(cap, context, manifest), record = context.record;
+    if (manifest.schema === SINGLE_MANIFEST_SCHEMA && start.lastDispatchGuardVerified !== true) denied("ame_manual_queue_last_guard_required");
     if (start.batchId !== manifest.batchId || !Number.isFinite(Date.parse(start.reservedAt)) || Date.parse(start.reservedAt) < saved.frame.issuedAt || now() - Date.parse(start.reservedAt) > 1000 || Date.parse(start.reservedAt) > now()) denied("ame_manual_queue_reservation_mismatch");
     const receipt = { schema: "ae-agent-ame-manual-queue-receipt.v1", proofSource: "authenticated_cep_user_declaration", physicalHumanVerified: false,
-      nativeQueueCompositionVerified: false, declaration: DECLARATION, declaredAt: new Date(saved.frame.issuedAt).toISOString(), expiresAt: new Date(saved.frame.expiresAt).toISOString(),
+      nativeQueueCompositionVerified: false, declaration: declarationForManifest(manifest), declaredAt: new Date(saved.frame.issuedAt).toISOString(), expiresAt: new Date(saved.frame.expiresAt).toISOString(),
+      ...(manifest.schema === SINGLE_MANIFEST_SCHEMA ? { lastDispatchGuardVerified: true } : {}),
       batchId: manifest.batchId, manifest: clone(manifest), manifestHash: saved.manifestHash, requestNonce: start.requestNonce, operationBinding: start.operationBinding,
       actionId: record.actionId, revision: record.revision, payloadHash: record.payloadHash, previewHash: record.previewHash, runId: context.runId,
       dryRunReceipt: clone(record.dryRunReceipt), checkpoint: clone(context.checkpoint), confirmationSessionId: record.confirmedBySession,
       panelConnectionId: saved.frame.meta.panelConnectionId, panelGeneration: saved.frame.meta.panelGeneration, confirmedAt: record.confirmedAt,
       limitation: "AME API cannot verify the entire queue or exclude an external queue change between this declaration and global runBatch." };
     const reserved = writeReservation(deps.stateDir, { ...start, schema: RESERVATION_SCHEMA, manualQueueReceipt: receipt, receiptHash: digest(receipt) });
-    saved.active = false; return reserved;
+    saved.active = false; saved.reservedHash = digest(reserved); return reserved;
   }
-  return { runAuthenticated, authorize, assertCapability, consume, readReservation: batchId => readReservation(deps.stateDir, batchId) };
+  function assertConsumedForDispatch(cap, context, manifest, reservation) {
+    const saved = cap && caps.get(cap), frame = ingress.getStore();
+    if (!saved || saved.active || saved.context !== context || saved.frame !== frame || saved.fingerprint !== fingerprint(context) || saved.manifestHash !== manifestHash(manifest) || saved.reservedHash !== digest(reservation) || digest(readReservation(deps.stateDir, manifest.batchId)) !== saved.reservedHash) denied("ame_manual_queue_consumed_binding_changed");
+    validate(context, manifest, frame); return true;
+  }
+  return { runAuthenticated, authorize, assertCapability, consume, assertConsumedForDispatch, readReservation: batchId => readReservation(deps.stateDir, batchId) };
 }
-module.exports = { ROUTE, MANIFEST_SCHEMA, RESERVATION_SCHEMA, DECLARATION, manifestHash, buildManifest, validateManifest, writeReservation, readReservation, verifyStartEvidence, createManualQueueGrant };
+module.exports = { ROUTE, MANIFEST_SCHEMA, SINGLE_MANIFEST_SCHEMA, RESERVATION_SCHEMA, DECLARATION, SINGLE_DECLARATION, declarationForManifest, manifestHash, buildManifest, validateManifest, writeReservation, readReservation, verifyStartEvidence, createManualQueueGrant };

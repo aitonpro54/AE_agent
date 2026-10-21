@@ -400,7 +400,9 @@ function createPanelEnvironment(panelSource, options) {
     if(script.onload)script.onload();
   }};
   for(const file of ["panel-action-contract.js","native-probe-startup-guard.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname,"../cep-panel",file),"utf8"),context,{filename:file});
+    const assetSource=file==="native-probe-startup-guard.js" && options.startupGuardSource!==undefined
+      ? options.startupGuardSource : fs.readFileSync(path.join(__dirname,"../cep-panel",file),"utf8");
+    vm.runInContext(assetSource,context,{filename:file});
   }
 
   const environment = {
@@ -689,7 +691,7 @@ function runAllTests(panelPath) {
     const oldReq = env.popRequest(r => r.path === "/agents/plan/current");
     const generation = env.planOps.getPanelConnectionGeneration();
     env.planOps.connect();
-    assert.strictEqual(env.planOps.getPanelConnectionGeneration(), generation, "Test must exercise a real timestamp collision");
+    assert(env.planOps.getPanelConnectionGeneration()>generation, "Repeat Connect at a frozen clock must allocate a fresh monotonic delivery generation");
     assert.strictEqual(cancelled, 1, "Repeat Connect must release old waiter once");
     const current = makeCurrentPlan("act-new-connection", 1);
     env.planOps.setCurrentBridgePlan(current);

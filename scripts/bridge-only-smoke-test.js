@@ -13,7 +13,7 @@ async function main() {
   });
   try {
     const health = await fixture.request({path: "/health"});
-    if (!health.body.ok || health.body.version !== "3.3.2") {
+    if (!health.body.ok || health.body.version !== "3.3.4") {
       throw new Error("Unexpected daemon health response");
     }
     console.log(JSON.stringify({

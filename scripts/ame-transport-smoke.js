@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const crypto=require("node:crypto"),{execFileSync}=require("node:child_process");
 const transport = require("../mcp-server/ame-transport");
 let acorn;
 try { acorn = require("internal/deps/acorn/acorn/dist/acorn"); }
@@ -52,7 +53,7 @@ function senderFixture(options = {}) {
   };
   BridgeTalk.prototype.send = function (seconds) {
     sends++; assert.equal(seconds, 1); assert.equal(this.timeout, 1); assert.equal(this.target, input.targetSpecifier);
-    assert.equal(this.body, transport.ameMessage(nonce));
+    assert.equal(this.body.replace(/\r\n/g,"\n"), transport.ameMessage(sends===1?nonce:nextNonce).replace(/\r\n/g,"\n"));
     if (options.mode === "throw") throw Error("send indeterminate");
     if (options.mode === "result" || options.mode === "false-result") this.onResult({ body: options.body || ameFixture().body });
     if (options.mode === "error") this.onError({ body: "AME evaluation error" });
@@ -61,8 +62,8 @@ function senderFixture(options = {}) {
   };
   const context = vm.createContext({ app: { project }, BridgeTalk, Date: DateFixture, $: { global, sleep(ms) { clock += ms; } }, JSON: undefined });
   vm.runInContext("Array.prototype.map=undefined;Array.prototype.includes=undefined;Array.prototype.filter=undefined;", context);
-  return { global, messages, run(a = args, request = nonce) { return JSON.parse(JSON.stringify(vm.runInContext("(function(){" + transport.inspectScript(a, request) + "})();", context))); },
-    counts() { return { sends, pumps, launchCalls, saveCalls }; } };
+  return { global, messages,advance:ms=>{clock+=ms;},runWith(producer,a=args,request=nonce){return JSON.parse(JSON.stringify(vm.runInContext("(function(){"+producer.inspectScript(a,request)+"})();",context)));}, run(a = args, request = nonce) { return JSON.parse(JSON.stringify(vm.runInContext("(function(){" + transport.inspectScript(a, request) + "})();", context))); },
+    counts() { return { sends, pumps, launchCalls, saveCalls,constructors:messages.length }; } };
 }
 function normalized(native, options = {}) { return transport.normalizeResult(native, options.nonce || nonce, options.args || args, Date.now()); }
 
@@ -100,7 +101,7 @@ check("matching response proves command and existing nonce only", () => {
   const f = senderFixture({ mode: "result" }), raw = f.run(), result = normalized(raw);
   assert.equal(result.ok, true); assert.equal(result.deliveryVerified, true); assert.equal(result.warmSessionVerified, true); assert.equal(result.adapterReady, false);
   assert.equal(raw.snapshotCapabilities.projectDirty, true); assert.equal(raw.snapshotCapabilities.projectFile, "C:\\fixture\\source.aep");
-  assert.equal(raw.snapshotCapabilities.save, true); assert.equal(raw.snapshotCapabilities.saveCopy, false); assert.deepEqual(f.counts(), { sends: 1, pumps: 0, launchCalls: 0, saveCalls: 0 });
+  assert.equal(raw.snapshotCapabilities.save, true); assert.equal(raw.snapshotCapabilities.saveCopy, false); assert.deepEqual(f.counts(), { sends: 1, pumps: 0, launchCalls: 0, saveCalls: 0,constructors:1 });
 });
 check("asynchronous pump result and send false require callback correlation", () => {
   for (const mode of ["pump-result", "false-result"]) { const f = senderFixture({ mode }); assert.equal(normalized(f.run()).warmSessionVerified, true); assert.equal(f.counts().sends, 1); }
@@ -134,6 +135,19 @@ check("late response reconciles exact retained request without resend", () => {
 check("wrong reconciliation cannot pump or send", () => {
   const f = senderFixture({ mode: "unknown" }); f.run(); const before = f.counts();
   assert.equal(f.run({ ...args, reconcileRequestNonce: nextNonce }, nextNonce).code, "reconciliation_target_mismatch"); assert.deepEqual(f.counts(), before);
+});
+check("actual old producer unknown -> archive sends zero -> separate fresh read -> old late callback remains historical",()=>{
+  const source=execFileSync("git",["show","7d5bc2e:mcp-server/ame-transport.js"],{cwd:path.join(__dirname,".."),encoding:"utf8",windowsHide:true,stdio:["ignore","pipe","pipe"]}),module={exports:{}};vm.runInNewContext(source,{require,module,exports:module.exports});const prior=module.exports;
+  assert.equal(prior.ameMessage(nonce).replace(/\r\n/g,"\n"),transport.ameMessage(nonce).replace(/\r\n/g,"\n"));const f=senderFixture({mode:"unknown"});f.runWith(prior);const old=f.global[transport.SLOT_NAME].pending;assert.equal(old.budgetMs,undefined);assert.equal(old.deadlineAt,undefined);const original={message:old.message,callback:old.callback,body:old.body,startedAt:old.startedAt};f.advance(11000);const a={...args,afterReadUnknownNonce:nonce},before=f.counts(),retired=normalized(f.run(a,nextNonce),{nonce:nextNonce,args:a});assert.equal(retired.code,"read_transport_unknown_archived");assert.equal(retired.deliveryVerified,false);assert.equal(retired.warmSessionVerified,false);assert.equal(retired.nextReadAllowed,true);assert.deepEqual(f.counts(),before);assert.equal(f.global[transport.SLOT_NAME].history[0],old);assert.equal(f.global[transport.SLOT_NAME].pending,null);assert.equal(old.message,original.message);assert.equal(old.callback,original.callback);assert.equal(old.body,original.body);assert.equal(old.startedAt,original.startedAt);
+  const nextArgs=transport.validateInput(retired.nextReadArgs),fresh=f.run(nextArgs,nextNonce),current=f.global[transport.SLOT_NAME].pending;assert.equal(fresh.requestNonce,nextNonce);assert.equal(f.counts().sends,2);assert.notEqual(current,old);f.messages[0].onResult({body:ameFixture().body});assert.equal(current.callback,null);const reconcile={...args,reconcileRequestNonce:nonce},after=f.counts(),historic=normalized(f.run(reconcile,nextNonce),{nonce:nextNonce,args:reconcile});assert.equal(historic.code,"historical_response_correlated");assert.equal(historic.historical,true);assert.equal(historic.deliveryVerified,false);assert.equal(historic.warmSessionVerified,false);assert.equal(historic.ok,false);assert.equal(historic.ame,undefined);assert.equal(historic.retainedAme.requestNonce,nonce);assert.deepEqual(f.counts(),after);assert.equal(f.global[transport.SLOT_NAME].pending,current);
+  assert.equal(normalized(f.run(a,nextNonce),{nonce:nextNonce,args:a}).nextReadAllowed,undefined);assert.deepEqual(f.counts(),after);f.messages[1].onResult({body:ameFixture({nonce:nextNonce}).body});const exact={...args,reconcileRequestNonce:nextNonce},accepted=normalized(f.run(exact,nextNonce),{nonce:nextNonce,args:exact});assert.equal(accepted.deliveryVerified,true);assert.equal(accepted.warmSessionVerified,true);assert.equal(accepted.requestNonce,nextNonce);assert.equal(f.counts().sends,2);
+});
+check("retirement rejects early/wrong binding/changed reader/budget/terminal before constructor/send/pump",()=>{
+  for(const mode of ["early","nonce","target","session","reader","message-target","budget","deadline","terminal"]){const f=senderFixture({mode:"unknown"});f.run();const state=f.global[transport.SLOT_NAME],slot=state.pending,a={...args,afterReadUnknownNonce:nonce};if(mode!=="early")f.advance(2000);if(mode==="nonce")a.afterReadUnknownNonce=nextNonce;if(mode==="target")a.targetSpecifier="ame-25.0";if(mode==="session")a.expectedSessionNonce="foreign";if(mode==="reader")slot.message.body+=";app.quit();";if(mode==="message-target")slot.message.target="ame-25.0";if(mode==="budget")slot.message.timeout=0;if(mode==="deadline")slot.deadlineAt++;if(mode==="terminal")slot.message.onResult({body:ameFixture().body});const before=f.counts(),message=slot.message,callback=slot.callback,body=slot.body,r=f.run(a,nextNonce);assert.notEqual(r.code,"read_unknown_archived",mode);assert.deepEqual(f.counts(),before,mode);assert.equal(state.pending,slot);assert.equal(slot.message,message);assert.equal(slot.callback,callback);assert.equal(slot.body,body);assert.equal(state.history,undefined);}
+  for(const value of [{...input,afterReadUnknownNonce:nonce,reconcileRequestNonce:nonce},{...input,afterReadUnknownNonce:[nonce]},{...input,afterReadUnknownNonce:"current"}])assert.throws(()=>transport.validateInput(value));
+});
+check("bounded history never evicts; exact historical lookup precedes capacity and current-slot changes",()=>{
+  const f=senderFixture({mode:"timeout"});f.run();f.advance(2000);const state=f.global[transport.SLOT_NAME],old=state.pending;state.history=Array.from({length:64},()=>({requestNonce:crypto.randomUUID(),callback:null,message:{}}));const before=f.counts(),a={...args,afterReadUnknownNonce:nonce};assert.equal(f.run(a,nextNonce).code,"read_history_bound");assert.deepEqual(f.counts(),before);assert.equal(state.pending,old);assert.equal(state.history.length,64);state.history.pop();assert.equal(f.run(a,nextNonce).code,"read_unknown_archived");assert.equal(state.history.length,64);assert.equal(state.history[63],old);assert.deepEqual(f.counts(),before);const r={...args,reconcileRequestNonce:nonce};assert.equal(f.run(r,nextNonce).historical,true);assert.deepEqual(f.counts(),before);state.history.push(old);assert.equal(f.run(r,nextNonce).code,"read_history_changed_or_bound");assert.deepEqual(f.counts(),before);
 });
 check("BridgeTalk error never claims success", () => { const f = senderFixture({ mode: "error" }); assert.equal(normalized(f.run()).code, "error"); assert.equal(f.counts().sends, 1); });
 check("registration uses exact typed name; raw and unknown gates intact", () => {

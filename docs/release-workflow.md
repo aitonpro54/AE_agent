@@ -1,5 +1,9 @@
 # Отдельные версии AE Agent и возврат к предыдущему коду
 
+## Интеграция 3.3.4 — 2026-10-21
+
+Desktop `4e7efc8` и laptop `1d246ae` объединяются ancestry merge в `codex/release-3.3.4`; оба exact HEAD сохранены checkpoints. Canonical identity — 3.3.4. Функциональная карта, решения пересечений и текущие проверки: [integration](release-3.3.4-integration.md). Исторические этапы ниже сохранены как факты соответствующих состояний.
+
 ## Подготовка 3.3.2 — 2026-10-21
 
 - Ветка `codex/release-3.3.2` создана от desktop HEAD `ce9d97778e6dc81590535a3640947b215dd7c19a`. В выпуск сохраняются 111 накопленных неопубликованных commits и все текущие pending improvements. Предыдущая опубликованная точка 3.3.1 — `662f41099944fbf57e03a0820d238b26abb642a1`; точный checkpoint desktop — `checkpoint/ae-agent-3.3.1-before-3.3.2`, аннотированный tag object `4a5c5c5feb3a1b52d79fcd6087cc768bf8f31971` указывает на exact prior HEAD `ce9d97778e6dc81590535a3640947b215dd7c19a`.
@@ -9,6 +13,43 @@
 - Validation PASS: `check:rules`, синтаксис всех 18 изменённых/pending JS, XML manifest и `git diff --check`; `ame-manual-queue-grant-smoke` (9 групп), `cep-panel-target-smoke` (16), `cep-panel-actions-smoke` (48 actions/full VM). AME title-jobs VM — 16 групп PASS; вторая часть `smoke:ame-title-jobs` — FAIL `fixture_runner_launch_identity_required`: существующий semantic fixture возвращает `{pid}`, production runner уже требует исходный process identity witness.
 - Validation BLOCKED: `bridge-only-smoke-test` и network-часть `ae-agent-panel-bootstrap-smoke` — `owned_supervisor_unreserved_startup_refused`; изолированный fixture использует production `PROJECT_ROOT`, где существующий startup gate требует reservation. Bootstrap unit/VM часть достигла network stage без ошибки. Common-title recovery/reconnect — отсутствует обязательный ignored receipt `logs/cep-panel-control/cb5c3b53-5443-474e-93df-aa8210758886.json` (ENOENT). Gate/fixture проблемы присутствуют в исходном коде до bump; authority не ослаблялась и historical evidence не подменялись.
 - Continuation contract исправлен отдельным `failedRecoveryCaptureIdle` из согласованных state/catalog/state; общий `nativeControlIdle` не ослаблен. Самодостаточный `common-title-assembly-continuation-smoke` — PASS (66 checks, deterministic synthetic evidence, production validators, без historical/live proof); независимый `ae_reviewer` одобрил исправление, blocking findings отсутствуют. Итоговые rules/syntax18/XML/diff — PASS; перечисленные выше FAIL/BLOCKED остаются ограничениями release validation. Исторические receipts, testedAeContext и frozen-intake baseline сохранены. Установка, reload, live AE/CEP/provider acceptance, PR, merge и GitHub Release не выполнялись.
+
+## Дополнение к 3.3.3 — systemic recovery, 2026-10-21
+
+Включены fast-forward в `codex/release-3.3.3` коммиты `08ee550` (изоляция
+fixture), `b97cdb7` (generic recovery) и `2b74353` (live proof и документация).
+Push и независимый remote read-back подтвердили
+`ccbd63221c32cbeed31b06eab471ab64fc2ceb1d`; последующий docs commit фиксирует этот
+результат без изменения кода. Историческая подготовка и публикация исходной ветки ниже остаются
+записью предыдущего этапа.
+
+Контракт описан в [`crash-recovery.md`](crash-recovery.md): исходные bytes и
+UNKNOWN остаются неизменными, `replayAllowed:false`; API восстановления —
+`recover_ae_agent_panel({})` без caller selectors. Причинная epoch, exact
+terminal witness и disposition отделяют новые факты от исхода старой команды;
+активный указатель обновляется CAS. Generic failed-start reducer выбирает сбой
+из signed lineage без новых привязок к UUID инцидентов. Сетевой fixture запускает
+backend из физической временной копии source без переноса рабочей authority.
+Runtime census включает 105 source pins.
+
+Offline validation: 51 component cases, E2E 16, fixture 24, bootstrap 96/110,
+reset 65, service 35, supervisor 91, product lifecycle 12, actions 48/16,
+refresh 33, dry-run 56, четыре network группы — PASS. На локально установленном
+3.3.3 проверены source `eed86411…`, PID 32524; старый `90cddf8f…` завершён как
+`UNKNOWN/noReplay`, отдельный ensure — `verified`, затем обычный project read —
+PASS (476 items, revision 12975229). AEP SHA `f84a56ff…` не изменился.
+AME enqueue/START/render/save/CU не выполнялись. Предыдущий checkpoint tag
+`c287061251253a968c44d268ef580d439e65a8ac` сохранён; force push, новый accepted
+tag, PR/merge и GitHub Release не создавались. Чужие WIP исключены из публикации.
+
+## Подготовка 3.3.3 — 2026-10-21
+
+- По явному поручению пользователя создана `codex/release-3.3.3` от `f92a75b89073bd1ba8848440a67928c22f529283`. Annotated checkpoint `checkpoint/ae-agent-3.3.1-before-3.3.3` сохраняет это точное проверенное состояние 3.3.1; исходная `codex/restore-mcp-connection` остаётся на нём.
+- Фактическая опубликованная `codex/release-3.3.1` перед подготовкой: `662f41099944fbf57e03a0820d238b26abb642a1` (fresh `ls-remote`); она предок исходного HEAD. Накоплено 259 commits/435 файлов; новый этап меняет идентичность версии и текущие expectations, не переписывая историю, testedAeContext и frozen-intake baseline. Устаревший local tracking ref не использовался как release base.
+- В 3.3.3 входят API AME series/collector, единый checkpoint, product reset и исправления подключения. Границы live/offline и переноса на другой desktop описаны в `RELEASES.md`.
+- Canonical identity обновлена до 3.3.3. `check:rules`, syntax13JS, panel-target16, offline bootstrap94, AME series14+bridgeVM6, panel-actions48 и completed-dry56 PASS; bounded version review GO, foreign hashes7/7 unchanged. AGENTS.md нормализован в LF, content diff помимо EOL — только version. Integration `bridge-only`/bootstrap network остановлены на `owned_supervisor_unreserved_startup_refused`, без обхода gate. Live AE/AME/render/installed update в release stage не выполнялись.
+- Первый atomic push и fresh remote read-back PASS: release commit `03908ef4f9835ed5cfbda311332977bf7cacb067`; checkpoint tag object `c287061251253a968c44d268ef580d439e65a8ac`, peeled target `f92a75b89073bd1ba8848440a67928c22f529283`. Последующий commit фиксирует только результат публикации; код версии находится в указанном release commit.
+- GitHub Release, accepted tag `v3.3.3`, PR/merge и обновление установленной 3.3.3 в этом этапе не выполняются. Публикуются release-ветка и предыдущий checkpoint; незакоммиченные пользовательские материалы остаются локально.
 
 ## Подготовка 3.3.1 — 2026-10-09
 

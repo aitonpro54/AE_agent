@@ -7,10 +7,56 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { AsyncLocalStorage } = require("async_hooks");
+const trustedSourceCensus=require("./owned-runtime-initial-source-census");
+const deploymentMode = require("./deployment-mode").deploymentMode();
+const initialRuntime = require("./owned-runtime-initial-runtime").createInitialRuntime();
+const trustedNative=require("./owned-runtime-initial-native-client"),trustedObservers=require("./owned-runtime-initial-observers");
+const trustedHttp=initialRuntime?require("./owned-runtime-initial-http-transport"):null;
+const ownedTitlePlan=require("./owned-runtime-initial-title-plan");
+const ownedUiBaseline=require("./owned-runtime-ui-baseline");
+if(require.main===module && initialRuntime&&!trustedSourceCensus.requested())initialRuntime.assertStartup();
+const trustedReadDaemon={role:null,target:null,cep:null,server:null,transport:null,heldPoll:null,pollWaiter:null,activeTool:null,projects:new Map(),serial:Promise.resolve(),closing:false,pump:null,
+  targetWaiters:new Set(),requests:new Set(),inspectionResults:[],bootstrapStarted:false,initialNextSeen:false,startupCallbacks:0,startupCounts:new Map(),connection:null,pumpWork:null,dispositionError:null,drainAcknowledged:false,shutdownAcknowledged:false,
+  manualPending:null,manualWaiter:null,checkpoint:null,cleanCopies:[null,null],restorationPrograms:[null,null],savedSnapshots:[null,null],ame:null,ameSources:[null,null],ameQueues:[null,null],ameJobs:[null,null]};
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const planCommandContext = new AsyncLocalStorage();
+const titleRecoveryCommandContext = new AsyncLocalStorage();
+const titleVerificationCommandContext = new AsyncLocalStorage();
+const ameJobSourceCommandContext = new AsyncLocalStorage();
+const ameOpenCompCommandContext = new AsyncLocalStorage();
 const scriptPreparationContext = new AsyncLocalStorage();
+const ownedExecutionRunContext = new AsyncLocalStorage();
+const ownedAmeContexts=new WeakMap(),ownedAmePreparations=new WeakMap(),ownedAmeAuthorizations=new WeakMap();
+const ownedSharedQueueContexts=new WeakMap();
+const ownedSharedQueueContextGuard=require("./owned-runtime-initial-shared-queue-context").createSharedQueueContextGuard({assertOriginal:context=>{
+  const own=ownedSharedQueueContexts.get(context);if(!initialRuntime||trustedReadDaemon.executionProfile!=="shared_queue_v1"||!trustedReadDaemon.role||!own||!own.handler||!own.request||own.record!==context.record||ownedExecutionRunContext.getStore()!==context)trustedFail("owned_initial_original_shared_ingress_required");
+  initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);
+}});
+function assertOwnedExecutionContext(context){if(productAmeContexts.has(context))return assertProductAmeContext(context);if(ownedSharedQueueContexts.has(context))return ownedSharedQueueContextGuard.assertContext(context);return manualPlanIngress.assertContext(context);}
+function assertSharedQueueIngress(context,binding){
+  if(productAmeContexts.has(context)){
+    assertProductAmeContext(context);
+    if(binding?.schema===ameSharedQueue.BINDING_SCHEMA){
+      ameSharedQueue.validateBinding(binding);
+      if(context.record.payload.plan.steps[0].tool!==ameTitleJobs.START || binding.batchId!==context.args.batchId || binding.targetSpecifier!==context.args.targetSpecifier ||
+        binding.process.pid!==context.args.expectedProcess.pid || binding.process.startedAt!==context.args.expectedProcess.startedAt)throw Error("ame_product_shared_binding_changed");
+      return true;
+    }
+    assertAmeTitleContext(context,binding);return true;
+  }
+  if(!ownedSharedQueueContexts.has(context))trustedFail("owned_initial_private_shared_ingress_required");assertOwnedExecutionContext(context);
+  if(binding?.schema===ameSharedQueue.BINDING_SCHEMA){const own=ownedAmeContexts.get(context),queue=trustedReadDaemon.ameQueueFacts?.[1];if(!own||own.slot!==2||own.leaf!==7||!queue||m100Protocol.stableStringify(binding)!==m100Protocol.stableStringify(queue.value.manifest))trustedFail("owned_initial_exact_shared_binding_required");const debt=trustedNative.describeRestorationDebtFixed(trustedReadDaemon.role);if(debt.count||debt.inFlight||debt.unknown)trustedFail("owned_initial_shared_restoration_debt");return true;}
+  return assertAmeTitleContext(context,binding);
+}
+
+const ownedAmeNativeDispatchPort=createOwnedAmeNativeDispatchPort();
+const ownedExecutionPreparationContext = new AsyncLocalStorage();
+const ownedFixedTitleProposals = new WeakMap();
+const ownedFixedTitleManualReceipts = new WeakMap();
+const ownedExecutionPreparationFrames = new WeakSet();
+const ownedExecutionPreparationFacts = new Map();
+const ownedReadonlyScriptPreparations = new WeakSet();
 const panelBootstrapReadContext = new AsyncLocalStorage();
 const placeholderMutationContext = new AsyncLocalStorage();
 const placeholderPlanContext = new AsyncLocalStorage();
@@ -20,6 +66,8 @@ const reviewEvidence = require("./review-evidence");
 const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
 const planRunResponse = require("./plan-run-response");
+const amePending=require("./ame-title-pending");
+const ameTitleSeries = require("./ame-title-series").createSeries();
 const toolErrorResponse = require("./tool-error-response");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
@@ -71,13 +119,24 @@ const projectStateMemory = require("./project-intent-memory");
 const projectStateController = projectStateMemory.createProjectStateController();
 const projectSave = require("./project-save");
 const nativeRenderVariant = require("./native-render-variant");
+const titleExport = require("./title-export-snapshots");
+const ameJobSource = require("./ame-job-source");
+const ameOpenComp = require("./ame-open-comp");
+const titleVerification = require("./title-export-verification");
+const compDynamicLinkRead = require("./comp-dynamic-link-read");
 const ameTransport = require("./ame-transport");
 const amePresets = require("./ame-presets");
 const ameRunning = require("./ame-running");
+const ameQueueControl = require("./ame-queue-control");
+const ameEnqueueSequence = require("./ame-enqueue-sequence");
+const ameSavedSourceAdmission = require("./ame-saved-source-admission");
+const ameSourceProbe = require("./ame-source-probe");
 const manualPlanIngress = require("./cep-manual-plan-ingress").createManualPlanIngress();
 const ameFixtureGrant = require("./ame-native-fixture-grant");
 const ameFixtureRunner = require("./ame-native-fixture-runner");
 const ameTitleJobs = require("./ame-title-jobs");
+const ameManualQueue = require("./ame-manual-queue-grant");
+const ameSharedQueue = require("./ame-shared-queue-grant");
 const ameFixtureDisposition = require("./ame-fixture-ui-disposition");
 const ameFixtureUIBackend = require("./ame-fixture-ui-backend");
 const nativeFixtureAbandonment = require("./native-fixture-abandonment");
@@ -99,13 +158,13 @@ const {
 } = require("./project-intent-memory");
 
 const SERVER_NAME = "codex-ae-mcp-bridge";
-const SERVER_VERSION = "3.3.2";
+const SERVER_VERSION = "3.3.4";
 const PROTOCOL_VERSION = "2025-03-26";
 const HOST = "127.0.0.1";
-const PORT = Number(process.env.AE_BRIDGE_PORT || 3456);
-const TOKEN = process.env.AE_BRIDGE_TOKEN || "";
+const PORT = initialRuntime ? 3456 : Number(process.env.AE_BRIDGE_PORT || 3456);
+const TOKEN = initialRuntime ? "" : process.env.AE_BRIDGE_TOKEN || "";
 const { createBoundary, readJsonObject, sanitizeAutomationResponse } = require("./http-boundary");
-const httpBoundary = createBoundary({automation: TOKEN, panel: process.env.AE_BRIDGE_PANEL_TOKEN,
+const httpBoundary = initialRuntime?createBoundary({}):createBoundary({automation: TOKEN, panel: process.env.AE_BRIDGE_PANEL_TOKEN,
   admin: process.env.AE_BRIDGE_ADMIN_TOKEN, adminEnabled: process.env.AE_BRIDGE_DEV_ADMIN === "1",
   origins: (process.env.AE_BRIDGE_ALLOWED_ORIGINS || "").split(",").filter(Boolean)});
 const commandReceipt = require("./command-receipt");
@@ -113,7 +172,10 @@ const HTTP_BODY_LIMIT = Math.min(1024 * 1024, Math.max(256, Number(process.env.A
 const COMMAND_TIMEOUT_MS = Number(process.env.AE_COMMAND_TIMEOUT_MS || 30000);
 const AE_RESULT_RAW_PREVIEW_MAX = 500;
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const RUNTIME_IDENTITY = reviewEvidence.runtimeIdentity(PROJECT_ROOT);
+// The initial branch never invokes the retained disk/Git diagnostic producer.
+// Its loaded-source authority is established later by the own inspector/native
+// gate; this ordinary identity remains a legacy diagnostic only.
+const RUNTIME_IDENTITY = initialRuntime ? null : reviewEvidence.runtimeIdentity(PROJECT_ROOT);
 const LOG_DIR = process.env.AE_BRIDGE_LOG_DIR ? path.resolve(process.env.AE_BRIDGE_LOG_DIR) : path.join(PROJECT_ROOT, "logs");
 const LOG_FILE = path.join(LOG_DIR, "bridge-events.jsonl");
 function recordAutonomyObstacle(input) {
@@ -178,6 +240,39 @@ const ameRunningExecutor = ameRunning.createExecutor({
   }
 });
 const ameFixtureCheckpoints = new Map();
+const ameQueueContexts = new WeakMap();
+function brandAmeQueueContext(context, autonomous) {
+  if (!autonomous) manualPlanIngress.brand(context);
+  const sessionHash = autonomous && autonomous.sessionHash || null;
+  ameQueueContexts.set(context, { record: context.record, sessionHash, fingerprint: productAmeFingerprint(context) });
+  assertAmeQueueContext(context); return context;
+}
+function assertAmeQueueContext(context) {
+  const row = ameQueueContexts.get(context), record = context && context.record;
+  if (!row || row.record !== record || row.fingerprint !== productAmeFingerprint(context)) throw Error("ame_queue_current_runner_required");
+  currentProposalState.assertCurrent(record);
+  ameQueueControl.assertProposalContext(context, currentProposalState.current, AUTONOMY_CONTRACT_VERSION);
+  if (context.autonomous) {
+    const authority = autonomousSession.authorization();
+    if (!productRuntimeCurrent() || !authority || authority.sessionHash !== row.sessionHash || record.confirmedBySurface !== "cep-autonomous-session" || record.confirmedBySession !== `session-${row.sessionHash}`) throw Error("ame_queue_current_autonomous_session_required");
+  } else manualPlanIngress.assertContext(context);
+}
+const ameQueueExecutor = ameQueueControl.createExecutor({
+  stateDir: path.join(LOG_DIR, "ame-global-starts"), inspectProcesses: ameRunning.inspectProcesses,
+  inspectTransport: args => withPlanCommandRole("readback", () => ameTransport.execute(args, runExtendScriptBody)),
+  runExtendScriptBody: (script, timeout, metadata) => withPlanCommandRole(metadata.mutating ? "mutation" : "readback", () => runExtendScriptBody(script, timeout)),
+  assertServerProposalContext: assertAmeQueueContext,
+  assertLegacyStartClear: binding => ameQueueControl.readLegacyStartBlockers(path.join(LOG_DIR, "ame-title-jobs"), binding),
+  readRunRecord: id => planRunRecords.readRecord(LOG_DIR, id, { throwOnError: true }),
+  inspectOwnCompletion: args => withPlanCommandRole("readback", () => ameTitleExecutor.inspectOwnCompletion(args)),
+  inspectPausedGroup: args => withPlanCommandRole("readback",()=>ameTitleExecutor.inspectPausedGroup(args)),
+  assertPausedGroup:(args,value)=>ameTitleExecutor.assertPausedGroup(args,value)
+});
+const ameEnqueueSequencer = ameEnqueueSequence.createSequence({
+  stateDir: path.join(LOG_DIR, "ame-enqueue-sequences"), inspectProcesses: ameRunning.inspectProcesses,
+  inspectTransport: args => withPlanCommandRole("readback", () => ameTransport.execute(args, runExtendScriptBody)),
+  readRunRecord: id => planRunRecords.readRecord(LOG_DIR, id, { throwOnError: true })
+});
 async function readNativeFixturePrimaryLifecycle() {
   const result=await callToolLogged("native-fixture-admission-read","get_project_lifecycle_state",{});
   if(result.isError)throw Object.assign(new Error("fixture_prephase_primary_state_required"),{code:"fixture_prephase_primary_state_required"});
@@ -211,12 +306,104 @@ const ameFixtureExecutor = ameFixtureRunner.createExecutor({
   }
 });
 const ameTitleMutationNames = new Set([ameTitleJobs.ENQUEUE, ameTitleJobs.START]);
+const productAmeContexts=new WeakMap();
+function productRuntimeCurrent(){return deploymentMode==="product" && ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport();}
+function productAmeFingerprint(context){return m100Protocol.stableStringify({payloadHash:context.record.payloadHash,runId:context.runId,args:context.args,checkpoint:context.checkpoint,ownedEditSessionId:context.ownedEditSessionId});}
+function assertProductAmeContext(context){
+  const row=productAmeContexts.get(context),record=context?.record,authority=autonomousSession.authorization();
+  if(!row || !productRuntimeCurrent() || !authority || authority.sessionHash!==row.sessionHash || row.record!==record ||
+    context.autonomous!==true || context.confirm!==true || context.allowWithoutCheckpoint!==false || context.args.queueMode!==ameSharedQueue.MODE ||
+    record.confirmedBySurface!=="cep-autonomous-session" || record.confirmedBySession!==`session-${row.sessionHash}` ||
+    row.fingerprint!==productAmeFingerprint(context) || record.payloadHash!==m100Protocol.sha256Payload(record.payload))throw Error("ame_product_current_runner_required");
+  currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+  projectSave.verifyDryRunReceipt(record,context.stepCount,AUTONOMY_CONTRACT_VERSION);
+  return true;
+}
+function brandAmeTitleContext(context,autonomous){
+  if(!autonomous || !productRuntimeCurrent() || context.args.queueMode!==ameSharedQueue.MODE)return manualPlanIngress.brand(context);
+  productAmeContexts.set(context,{record:context.record,sessionHash:autonomous.sessionHash,fingerprint:productAmeFingerprint(context)});
+  assertProductAmeContext(context);return context;
+}
+const titleExportExecutor=titleExport.createExecutor({
+  assertRunner:context=>{
+    const record=context.record,authority=autonomousSession.authorization();
+    if(!productRuntimeCurrent() || context.autonomous!==true || !authority || authority.sessionHash!==context.sessionHash || context.confirm!==true || context.allowWithoutCheckpoint!==false ||
+      record.confirmedBySurface!=="cep-autonomous-session" || record.confirmedBySession!==`session-${context.sessionHash}`)throw Error("title_export_current_runner_required");
+    currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+  },
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body))),
+  writeNative:(body,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(body,timeout)),
+  persist:value=>{const context=planCommandContext.getStore();if(!context?.item || context.item.tool!==titleExport.TOOL)throw Error("title_export_run_record_required");context.item.exportSnapshots=JSON.parse(JSON.stringify(value));context.persist();}
+});
+const ameJobSourceExecutor=ameJobSource.createExecutor({
+  stateDir:path.join(LOG_DIR,"ame-job-sources"),outputDir:path.join(GENERATED_EXPORT_DIR,"ame-job-sources"),wrap:wrapExtendScriptBody,
+  readActor:()=>panelControlService.maintenanceTarget(),loadRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),
+  assertRunner:context=>{
+    const record=context.record,authority=autonomousSession.authorization();
+    if(!productRuntimeCurrent()||context.confirm!==true||context.allowWithoutCheckpoint!==false)throw Error("ame_source_product_runner_required");
+    if(context.autonomous===true){if(!authority||authority.sessionHash!==context.sessionHash||record.confirmedBySurface!=="cep-autonomous-session"||record.confirmedBySession!==`session-${context.sessionHash}`)throw Error("ame_source_current_authority_required");}
+    else manualPlanIngress.assertContext(context);
+    currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+    lifecycle.assertMutationAllowed();
+    if(!activeEditSession||activeEditSession.id!==context.ownedEditSessionId)throw Error("ame_source_own_checkpoint_required");
+  },
+  native:(body,scope,mutation)=>ameJobSourceCommandContext.run(scope,()=>withPlanCommandRole(mutation?"mutation":"readback",()=>mutation?runExtendScriptBody(body,120000):autonomousCommandContext.run(null,()=>runExtendScriptBody(body,60000)))),
+  persist:value=>{const context=planCommandContext.getStore();if(context?.item?.tool===ameJobSource.TOOL){context.item.ameJobSource=JSON.parse(JSON.stringify(value));context.persist();}}
+});
+const ameOpenCompExecutor=ameOpenComp.createExecutor({
+  stateDir:path.join(LOG_DIR,"ame-open-comp"),outputDir:path.join(GENERATED_RENDER_OUTPUT_DIR,"ame-open-comp"),wrap:wrapExtendScriptBody,
+  readActor:()=>panelControlService.maintenanceTarget(),inspectAeProcesses:ameOpenComp.inspectAeProcesses,inspectAmeProcesses:ameRunning.inspectProcesses,
+  assertRunner:context=>{
+    const record=context.record,authority=autonomousSession.authorization();
+    if(!productRuntimeCurrent() || activeEditSession || context.protection!=="bounded_property_journal" || context.confirm!==true || context.allowWithoutCheckpoint!==false ||
+      record.executionState!=="executing" || record.executionId!==context.runId || record.riskLevel!=="mutating" || record.payloadHash!==m100Protocol.sha256Payload(record.payload))throw Error("ame_open_current_product_runner_required");
+    if(context.autonomous===true){
+      if(!authority || authority.sessionHash!==context.sessionHash || record.confirmedBySurface!=="cep-autonomous-session" || record.confirmedBySession!==`session-${context.sessionHash}`)throw Error("ame_open_current_grant_required");
+    }else{
+      manualPlanIngress.assertRequest(record);
+      if(context.source!=="ai-plan-run" || record.confirmationSurface!=="cep-panel" || record.confirmedBySurface!=="cep-panel" || !Number.isFinite(Date.parse(record.confirmedAt)) || Date.parse(record.confirmedAt)<Date.parse(record.dryRunCompletedAt))throw Error("ame_open_manual_ingress_required");
+    }
+    currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+    lifecycle.assertMutationAllowed();
+  },
+  native:(body,scope,mutation)=>ameOpenCompCommandContext.run(scope,()=>withPlanCommandRole(mutation?"mutation":"readback",()=>mutation?runExtendScriptBody(body,120000):autonomousCommandContext.run(null,()=>runExtendScriptBody(body,60000)))),
+  persist:value=>{const context=planCommandContext.getStore();if(context?.item&&ameOpenComp.MUTATIONS.includes(context.item.tool)){context.item.ameOpenComp=JSON.parse(JSON.stringify(value));context.persist();}}
+});
+// Synchronous selector validation arms the mandatory enqueue guard before HTTP
+// startup, including reconnect-triggered placeholder/protection background reads.
+const titleExportRecovery=titleExportExecutor.createRecovery({
+  root:LOG_DIR,loadRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),wrap:wrapExtendScriptBody,
+  readActor:()=>panelControlService.maintenanceTarget(),
+  readNative:(body,scope)=>titleRecoveryCommandContext.run(scope,()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000))),
+  commandSettled:id=>["completed","failed","expired_before_delivery"].includes(completedResults.get(id)?.lifecycleState)
+});
+const titleVerificationExecutor=titleExportExecutor.createVerification({
+  root:LOG_DIR,loadRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),wrap:wrapExtendScriptBody,
+  readActor:()=>panelControlService.maintenanceTarget(),
+  assertProtection:context=>{
+    lifecycle.assertMutationAllowed();
+    if(pendingCommands.length||inflightCommands.size||activeEditSession&&activeEditSession.id!==context?.ownedEditSessionId)throw Error("title_verification_protection_not_idle");
+    if(context&&(!activeEditSession||activeEditSession.id!==context.ownedEditSessionId))throw Error("title_verification_own_checkpoint_required");
+  },
+  assertRunner:context=>{
+    const record=context.record,authority=autonomousSession.authorization();
+    if(!productRuntimeCurrent()||context.autonomous!==true||!authority||authority.sessionHash!==context.sessionHash||context.confirm!==true||context.allowWithoutCheckpoint!==false||
+      record.confirmedBySurface!=="cep-autonomous-session"||record.confirmedBySession!==`session-${context.sessionHash}`)throw Error("title_verification_current_runner_required");
+    currentProposalState.assertExecution({actionId:record.actionId,executionId:context.runId,proposalExpiresAt:record.proposalExpiresAt});
+  },
+  readNative:(body,scope,mutation)=>titleVerificationCommandContext.run(scope,()=>withPlanCommandRole(mutation?"mutation":"readback",()=>mutation?runExtendScriptBody(body,120000):autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000))))
+});
 function assertAmeTitleContext(context, binding) {
   currentProposalState.assertCurrent(context && context.record);
-  manualPlanIngress.assertContext(context);
+  assertOwnedExecutionContext(context);
   const plan = context.record.payload && context.record.payload.plan;
   const steps = plan && plan.steps;
   const step = Array.isArray(steps) && steps.length === 1 && steps[0];
+  if (context.args?.pendingGroupSize !== undefined) ameTitleSeries.assertDispatch(activeEditSession, ameTitleJobs.validateInput(ameTitleJobs.ENQUEUE, context.args), ameTitleSeriesActor(), context.runId);
+  const own=ownedAmeContexts.get(context);
+  if(own){if(!binding||!step||step.tool!=="run_ai_agent_plan"||![6,7].includes(own.leaf)||binding.name!==(own.leaf===6?ameTitleJobs.ENQUEUE:ameTitleJobs.START)||context.stepCount!==1||
+      m100Protocol.stableStringify(step.args)!==m100Protocol.stableStringify(own.outerArgs)||m100Protocol.stableStringify(context.args)!==m100Protocol.stableStringify(own.args)||
+      ameTitleJobs.operationArgsHash(binding.name,own.args)!==binding.argsHash||own.record!==context.record||!context.checkpoint||context.checkpoint.sourceFile!==context.record.project.expectedFile)trustedFail("owned_initial_exact_private_ame_context_required");return;}
   if (!binding || !step || context.stepCount !== 1 || !ameTitleMutationNames.has(binding.name) ||
       step.tool !== binding.name || ameTitleJobs.operationArgsHash(binding.name, step.args || {}) !== binding.argsHash ||
       ameTitleJobs.operationArgsHash(binding.name, context.args) !== binding.argsHash ||
@@ -224,12 +411,96 @@ function assertAmeTitleContext(context, binding) {
     throw Object.assign(new Error("ame_title_exact_manual_plan_required"), { code: "ame_title_exact_manual_plan_required" });
   }
 }
+const ameManualQueueIssuer = ameManualQueue.createManualQueueGrant({
+  stateDir: path.join(LOG_DIR, "ame-title-jobs"),
+  assertManualIngress: context => manualPlanIngress.assertContext(context),
+  assertServerContext: context => assertAmeTitleContext(context, { name: ameTitleJobs.START, argsHash: ameTitleJobs.operationArgsHash(ameTitleJobs.START, context.args) }),
+  assertPanelIdentity: meta => {const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),pending=own?.pending;if(own&&own.leaf===7){if(!pending||pending!==trustedReadDaemon.manualPending||pending.error||!pending.started||pending.authRole!=="panel"||pending.route!==ameManualQueue.ROUTE)return false;const panel=ownedOriginalPreparationPanel(ownedFixedTitleManualReceipts.get(context.record)?.panel);return panel.panelConnectionId===meta.panelConnectionId&&panel.panelGeneration===meta.panelGeneration;}return Boolean(lastPanelInfo && Date.now() - lastPanelSeenAt < 10000 && lastPanelInfo.panelConnectionId === meta.panelConnectionId && lastPanelInfo.panelGeneration === meta.panelGeneration);}
+});
+const ameSharedQueueIssuer=ameSharedQueue.createSharedQueueGrant({stateDir:path.join(LOG_DIR,"ame-title-jobs"),assertSharedQueueIngress,assertServerContext:assertSharedQueueIngress});
+const savedAmeSourceAdmission=ameSavedSourceAdmission.createAdmission({
+  assertReady:context=>{
+    if(!productRuntimeCurrent()||pendingCommands.length||inflightCommands.size||activeEditSession&&activeEditSession.id!==context?.ownedEditSessionId)throw Error("ame_saved_source_product_idle_required");
+  },
+  captureActor:()=>{
+    if(!lastPanelInfo?.panelConnectionId||!lastPanelInfo.panelGeneration||Date.now()-lastPanelSeenAt>=10000)throw Error("ame_saved_source_current_panel_required");
+    return {panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration};
+  },
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))
+});
+const ameSourceProbeExecutor=ameSourceProbe.createProbe({
+  inspectProcesses:ameRunning.inspectProcesses,
+  assertReady:()=>{if(!productRuntimeCurrent()||pendingCommands.length||inflightCommands.size||activeEditSession)throw Error("ame_source_probe_product_idle_required");},
+  readNative:body=>withPlanCommandRole("readback",()=>autonomousCommandContext.run(null,()=>runExtendScriptBody(body,30000)))
+});
+const productAmeReadDispatchPort=require("./ame-product-read-dispatch").createProductReadDispatch({
+  assertProduct:productRuntimeCurrent,
+  dispatch:(script,timeout)=>withPlanCommandRole("readback",()=>runExtendScriptBody(script,timeout))
+});
+const productAmeDispatchPort=require("./ame-product-dispatch").createProductDispatch({assertProduct:productRuntimeCurrent,assertContext:assertProductAmeContext,
+  savedSourceAdmission:savedAmeSourceAdmission,
+  assertSavedSource:selector=>ameJobSourceExecutor.ownsSource(selector.sourcePath)?ameJobSourceExecutor.assertSavedSource(selector):titleExportExecutor.assertSavedSource(selector),
+  dispatch:(script,timeout)=>withPlanCommandRole("mutation",()=>runExtendScriptBody(script,timeout))});
+const ameDispatchPorts=new WeakMap();
+const amePreparationPorts=new WeakMap();
+function prepareAmeDispatch(method,selector,context){
+  const port=productRuntimeCurrent()?productAmeDispatchPort:ownedAmeNativeDispatchPort;
+  return Promise.resolve(port[method](selector,context)).then(cap=>{amePreparationPorts.set(cap,port);return cap;});
+}
+const ameNativeDispatchPort={
+  authorize(metadata,context,preparation){
+    const port=productRuntimeCurrent()?(metadata.mutating?productAmeDispatchPort:productAmeReadDispatchPort):ownedAmeNativeDispatchPort;
+    const cap=port.authorize(metadata,context,preparation);ameDispatchPorts.set(cap,port);return cap;
+  },
+  assertAuthorization(cap,metadata,context){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.assertAuthorization(cap,metadata,context);},
+  dispatch(cap,...args){const port=ameDispatchPorts.get(cap);if(!port)throw Error("ame_dispatch_capability_required");return port.dispatch(cap,...args);},
+  prepareEnqueue(...args){return prepareAmeDispatch("prepareEnqueue",...args);},
+  prepareStart(...args){return prepareAmeDispatch("prepareStart",...args);},
+  assertPreparation(cap,...args){const port=amePreparationPorts.get(cap);if(!port)throw Error("ame_dispatch_preparation_required");return port.assertPreparation(cap,...args);}
+  ,usesSavedSource(cap,context){const port=amePreparationPorts.get(cap);return port===productAmeDispatchPort && port.usesSavedSource(cap,context);}
+  ,getSavedSourceGuard(cap,context){const port=amePreparationPorts.get(cap);return port===productAmeDispatchPort?port.getSavedSourceGuard(cap,context):null;}
+};
 const ameTitleExecutor = ameTitleJobs.createExecutor({
   stateDir: path.join(LOG_DIR, "ame-title-jobs"), inspectProcesses: ameRunning.inspectProcesses,
+  preparePausedEnqueue:args=>withPlanCommandRole("readback",()=>ameQueueExecutor.preparePausedEnqueue(args)),
+  readRunRecord:id=>planRunRecords.readRecord(LOG_DIR,id,{throwOnError:true}),
+  assertNoSendRuntime:record=>{
+    const runtime=record.run?.provenance?.runtime,modules=runtime?.modules||[],pin=name=>modules.find(m=>m.name===name)?.sha256;
+    if(record.run?.steps?.[0]?.commands?.some(c=>c.result?.senderRefusal?.schema==="ae-agent-ame-title-sender-refusal.v1")){
+      return require("./ame-title-sender-refusal-proof").assertRuntime(record);
+    }
+    // The legacy receipt did not hash product-dispatch. Its unchanged reviewed
+    // blob is checked here, not retroactively claimed as a historical field.
+    if(crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname,"ame-product-dispatch.js"))).digest("hex")!=="d457511285d51376c858a76d87fea1b50cb448c92fb452f1052e73df9e110142")return false;
+    if(runtime?.gitCommit==="ece468020fe4372e208e39c429d7e7bfed3af1cf")return runtime.sourceSha256==="b1dae09117efbd12762590f4edf3d1306ab74d5f0637b3c9ae086e0af5754aa1"&&pin("mcp-server/bridge-daemon.js")==="b349f9861b338d21ec5d3f220c42e2a5d50d4f99a4dc88d645381dd17fcbbabd"&&pin("mcp-server/ame-title-jobs.js")==="61ab0c8b3322d94583e5b5d80b88cafade842b08a3f3781410900760e757371b"&&pin("mcp-server/plan-run-records.js")==="422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4";
+    if(runtime?.gitCommit==="64830927f8ceb3e8e1b94ebfc66a50e1bb95277d"&&runtime.sourceSha256==="ca8c0f7be7c15abb11db0e461926c6bc4a7e8b11604fe318954ffa1cea8e1bb9")
+      return pin("mcp-server/bridge-daemon.js")==="8e80a40aa724910050e87cdd8b4aa286b0a7afd66dcc3636f219a87306c5160b"&&pin("mcp-server/ame-title-jobs.js")==="81fda2a55fa105aea681067031f8df8ef70635d2dff07ab0232dedefb79d95a1"&&pin("mcp-server/plan-run-records.js")===RUNTIME_IDENTITY.modules.find(m=>m.name==="mcp-server/plan-run-records.js")?.sha256;
+    return runtime?.sourceSha256===RUNTIME_IDENTITY.sourceSha256&&["mcp-server/bridge-daemon.js","mcp-server/ame-title-jobs.js","mcp-server/plan-run-records.js"].every(name=>pin(name)===RUNTIME_IDENTITY.modules.find(m=>m.name===name)?.sha256);
+  },
+  assertPreSendGuardRecord:(record,command)=>{
+    if(command.result?.senderRefusal?.schema==="ae-agent-ame-title-sender-refusal.v1"){
+      if(fs.statSync(LOG_FILE).size>128*1024*1024)return false;
+      const journal=fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+      return require("./ame-title-sender-refusal-proof").assertRecord(record,command,journal);
+    }
+    // One reviewed completed sender refusal; this never admits a delivered timeout.
+    if(record.runId!=="04748598-91c9-44f8-b1c5-f6c76d2178b1"||command.id!=="8a52f4a1-a339-4be7-9c74-a9015e2bda85"||fs.statSync(LOG_FILE).size>128*1024*1024)return false;
+    const rows=fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)).filter(e=>e.type==="ae_command_queued"&&e.details?.runId===record.runId&&e.details.stepIndex===1),row=rows[0],d=row?.details;
+    return rows.length===1&&d.id===command.id&&d.commandId===command.id&&d.actionId===record.run.provenance.actionId&&d.planSha256===record.run.provenance.planSha256&&d.scriptSha25664==="24a09eafe23ef14bb51ddae68bd5379b20af105fecd97eef6882b220a578c8a3"&&row.runtime?.sourceSha256===record.run.provenance.runtime.sourceSha256;
+  },
+  hasQueuedStep:runId=>{
+    if(fs.statSync(LOG_FILE).size>128*1024*1024)throw Error("ame_not_sent_journal_budget");
+    return fs.readFileSync(LOG_FILE,"utf8").split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line)).some(e=>e.type==="ae_command_queued"&&e.details?.runId===runId&&e.details.stepIndex===1);
+  },
   resolveOutputFilePath,
-  assertManualIngress: context => manualPlanIngress.assertContext(context),
+  assertManualIngress: context => assertOwnedExecutionContext(context),
   assertServerContext: assertAmeTitleContext,
-  runExtendScriptBody: (body, timeoutMs, metadata) => withPlanCommandRole(metadata.mutating ? "mutation" : "readback", () => runExtendScriptBody(body, timeoutMs))
+  manualQueueGrant: ameManualQueueIssuer,
+  sharedQueueGrant: ameSharedQueueIssuer,assertSharedQueueIngress,
+  // Product reads and exact autonomous shared-queue steps use the ordinary
+  // runner; experimental generations retain their original native port.
+  nativeDispatchPort: ameNativeDispatchPort,
+  runExtendScriptBody: () => { throw Object.assign(new Error("ame_title_native_dispatch_port_unavailable"), { code: "ame_title_native_dispatch_port_unavailable" }); }
 });
 const ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT = process.env.AE_ALLOW_SCRIPT_FILES_OUTSIDE_PROJECT === "1";
 const STARTED_AT = Date.now();
@@ -515,12 +786,12 @@ const autonomousSession = createAutonomousSessionManager({
 const lifecycle = createLifecycleBridgeAdapter({
   proposals: currentProposalState,
   verifyDryRun: (record, count) => projectSave.verifyDryRunReceipt(record, count, AUTONOMY_CONTRACT_VERSION),
-  readNative: (body, capability) => {
+  readNative: (body, capability, timeoutMs) => {
     const facts = lifecycle.phaseFacts(capability);
     if (!facts) projectLifecycleContract.fail("lifecycle_phase_capability_required");
     return withPlanCommandRole(facts.readOnly ? "readback" : "mutation", () =>
       lifecycleCommandContext.run({capability, rawScript: body}, async () => {
-        const native = await runExtendScriptBody(body);
+        const native = await runExtendScriptBody(body, timeoutMs);
         if (!native || native.ok === false) projectLifecycleContract.fail("lifecycle_native_failed");
         return native;
       }));
@@ -535,6 +806,9 @@ const lifecycle = createLifecycleBridgeAdapter({
   },
   isIdle: ownedSessionId => inflightCommands.size === 0 && pendingCommands.length === 0 &&
     (!activeEditSession || activeEditSession.id === ownedSessionId),
+  isBootstrapReadIdle: commandId => !activeEditSession &&
+    !["confirmed", "executing"].includes(currentProposalState.current && currentProposalState.current.executionState) &&
+    pendingCommands.every(id => id === commandId) && Array.from(inflightCommands.keys()).every(id => id === commandId),
   isRecoveryIdle: (pending, saved) => {
     if (inflightCommands.size !== 0 || pendingCommands.length !== 0 || activeEditSession && ![pending.authorization.ownedEditSessionId, saved && saved.ownedSessionId].filter(Boolean).includes(activeEditSession.id)) return false;
     const current = currentProposalState.current;
@@ -766,6 +1040,7 @@ function compactEditSession(session) {
     finishedAt: session.finishedAt || null,
     outcome: session.outcome || null,
     checkpoint: compactCheckpoint(session.checkpoint),
+    ameTitleSeries: session.ameTitleSeries || null,
     operationCount: Array.isArray(session.operations) ? session.operations.length : 0,
     latestOperation: latestOperation ? {
       id: latestOperation.id,
@@ -820,7 +1095,7 @@ function editSessionDetails(session, limit) {
   };
 }
 
-async function startEditSession(args) {
+async function startEditSession(args, onCreated) {
   if (activeEditSession) {
     return toolResult({
       started: false,
@@ -862,6 +1137,7 @@ async function startEditSession(args) {
     },
     operations: []
   };
+  if (onCreated) onCreated(activeEditSession);
 
   persistActiveEditSession();
   appendEditSessionEvent("session_started", {
@@ -921,10 +1197,11 @@ function listEditSessions(args) {
   });
 }
 
-function finishEditSession(args) {
+function finishEditSession(args, expectedSessionId) {
   if (!activeEditSession) {
     return toolResult("No edit session is active.", true);
   }
+  if (expectedSessionId && activeEditSession.id !== expectedSessionId || activeEditSession.ameTitleSeries && activeEditSession.id !== expectedSessionId) return toolResult({code:"edit_session_owner_changed",error:"Текущая edit session не принадлежит завершаемому run."},true);
 
   const outcome = editSessionText(args, "outcome", "completed", 80) || "completed";
   const summary = editSessionText(args, "summary", "", 2000) || null;
@@ -960,10 +1237,12 @@ function isUnsavedProjectError(message) {
 
 async function startPlanRunEditSession(run, validation) {
   const label = planRunSessionLabel(run);
-  const result = await startEditSession({
-    label,
-    notes: `AI plan run ${run.id} with ${validation.mutatingCount} mutating step(s).`
-  });
+  let created = null, result;
+  try { result = await startEditSession({label,notes: `AI plan run ${run.id} with ${validation.mutatingCount} mutating step(s).`}, session => {created=session;}); }
+  catch (error) {
+    if (created && activeEditSession === created) finishEditSession({outcome:"needs-review",summary:"Edit-session preparation failed before dispatch."},created.id);
+    return {ok:false,rawError:error.message,error:error.message,saveProjectFirst:false,payload:null,ownedSession:null};
+  }
   const payload = firstToolPayload(result);
   if (result.isError || !payload || payload.started !== true) {
     const rawError = operationErrorFromPayload(payload) || "Could not start an edit session.";
@@ -980,6 +1259,7 @@ async function startPlanRunEditSession(run, validation) {
 
   return {
     ok: true,
+    ownedSession: created,
     payload,
     session: payload.session || null,
     checkpoint: payload.session && payload.session.checkpoint
@@ -988,12 +1268,12 @@ async function startPlanRunEditSession(run, validation) {
   };
 }
 
-function finishPlanRunEditSession(run) {
+function finishPlanRunEditSession(run, expectedSessionId = run.editSession && run.editSession.id) {
   const hasIssue = run.failedCount > 0 || run.ok === false || run.steps.some((step) => step.status === "blocked" || step.status === "failed");
   const result = finishEditSession({
     outcome: hasIssue ? "needs-review" : "completed",
     summary: `AI plan run ${run.id} ${hasIssue ? "finished with issues" : "completed"}.`
-  });
+  }, expectedSessionId);
   const payload = firstToolPayload(result);
   if (result.isError) {
     const error = operationErrorFromPayload(payload) || "Could not finish the auto edit session.";
@@ -1003,6 +1283,17 @@ function finishPlanRunEditSession(run) {
     return null;
   }
   return payload;
+}
+
+function ameTitleSeriesActor() {
+  const authority = autonomousSession.authorization();
+  if (!productRuntimeCurrent() || !authority || !lastPanelInfo?.panelConnectionId || !lastPanelInfo.panelGeneration || Date.now()-lastPanelSeenAt>=10000) throw m100ProtocolError("ame_title_series_current_actor_required", "Серия требует текущую доверенную панель и автономную сессию.");
+  return {instanceId:currentProposalState.snapshot().instanceId,panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,lifecycleEpoch:lifecycle.epoch(),sessionHash:authority.sessionHash};
+}
+
+function preflightAmeTitleSeries(plan) {
+  if (!activeEditSession?.ameTitleSeries && !require("./ame-title-series").select(plan)) return null;
+  return ameTitleSeries.preflight(activeEditSession, plan, ameTitleSeriesActor());
 }
 
 function firstToolPayload(result) {
@@ -1075,14 +1366,18 @@ function getBridgeStatus() {
     port: PORT,
     uptimeMs: now - STARTED_AT,
     startedAt: new Date(STARTED_AT).toISOString(),
-    humanGuardRuntime: {pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),sourceSha256:RUNTIME_IDENTITY.sourceSha256},
+    humanGuardRuntime: {pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),sourceSha256:initialRuntime?null:RUNTIME_IDENTITY.sourceSha256},
     panelConnected: now - lastPanelSeenAt < 15000,
     panelBootstrap: panelBootstrapService.snapshot(),
     autonomousSession: autonomousSession.publicStatus(),
+    titleExportRecovery: titleExportRecovery.status(),
+    titleExportVerification: titleVerificationExecutor.status(),
+    ameJobSource: ameJobSourceExecutor.status(),
+    ameOpenComp: ameOpenCompExecutor.status(),
     projectLifecycle: lifecycle.diagnostics(),
     lastPanelSeenAt,
     lastPanelInfo,
-    pendingCommands: countQueuedCommands(now),
+    pendingCommands: initialRuntime ? pendingCommands.length : countQueuedCommands(now),
     inflightCommands: Array.from(inflightCommands.values()).map((command) => compactAeCommand(command, now)),
     retainedResults: completedResults.size,
     recentResults: Array.from(completedResults.values()).slice(-25).map((result) => ({
@@ -1105,6 +1400,1060 @@ function getBridgeStatus() {
     aiAgents: aiAgents.agentSummary(),
     recentEvents: recentEvents.slice(-25)
   };
+}
+
+// Native captures these exact main-module functions after its complete loaded
+// Node gate. No API accepts a getter, snapshot, caller source or request object.
+function ownedTrustedReadQuiescence(){
+  if(!initialRuntime||!trustedReadDaemon.role)throw Object.assign(Error("owned_initial_private_daemon_required"),{code:"owned_initial_private_daemon_required"});
+  const primary=lifecycle.diagnostics(),fixture=ownedFixtureLifecycle.quiescence(),runner=ameFixtureExecutor.quiescence();
+  if(!Array.isArray(runner.outstandingAttempts))throw Object.assign(Error("owned_initial_native_inventory_required"),{code:"owned_initial_native_inventory_required"});
+  const liveProposals=[...new Set(m100ActionProposalStore.values())].filter(record=>!record.cancelledAt&&["pending","confirmed","executing"].includes(record.executionState)&&Date.parse(record.proposalExpiresAt)>Date.now());
+  const current=currentProposalState.current;
+  const debt=trustedNative.describeRestorationDebtFixed(trustedReadDaemon.role);
+  return {schema:"ae-agent.owned-initial-private-quiescence.v1",restorationDebt:debt,pendingCommands:pendingCommands.length+trustedReadDaemon.projects.size,inflightCommands:inflightCommands.size,
+    editSessions:activeEditSession===null?0:1,lifecyclePending:primary.pending?1:0,lifecycleBlocked:primary.blocked!==false||!!primary.problem,
+    proposals:liveProposals.length,proposalPins:current===null?null:ownedFixedTitleProposalPins(current),bootstrapPending:panelBootstrapService.isBusy()?1:0,
+    nativeExecuting:runner.executing===false?0:1,cleanupPending:fixture.pendingCleanupJobs+runner.pendingCleanupJobs+runner.pendingCount+runner.outstandingAttempts.length,
+    childrenPending:fixture.allChildrenExitProven===true?0:1};
+}
+function ownedFixedTitleProposalPins(record){
+  const own=ownedFixedTitleProposals.get(record);if(!own)return null;const manual=ownedFixedTitleManualReceipts.get(record);
+  const historical=!!manual?.completedExecution&&record===currentProposalState.current&&record.executionState==="completed"&&record.executionId===manual.completedExecution.callRef&&record.lastRun?.id===record.executionId&&record.lastRun?.ok===true&&record.lastRun?.dryRun===false;
+  if(!historical)currentProposalState.assertCurrent(record);else if(record.payloadHash!==m100Protocol.sha256Payload(record.payload)||record.previewHash!==m100Protocol.sha256Text(record.proposal.action.preview)||m100Protocol.stableStringify(record.payload.plan.steps[0].args.ownedTitleProgram)!==m100Protocol.stableStringify(JSON.parse(own.operand)))throw Object.assign(Error("owned_initial_completed_history_payload_changed"),{code:"owned_initial_completed_history_payload_changed"});
+  const state=currentProposalState.snapshot(),proposal=record.proposal;
+  return {instanceId:state.instanceId,revision:record.revision,actionId:record.actionId,requestId:record.requestId,actionKind:proposal.action.kind,
+    payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,projectFile:record.project.actualFile,expiresAt:record.proposalExpiresAt,
+    riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,surface:record.confirmationSurface,sessionId:record.confirmationSessionId||""};
+}
+function ownedTrustedReadStatus(){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedReadDaemon.cep)throw Object.assign(Error("owned_initial_private_status_required"),{code:"owned_initial_private_status_required"});
+  initialRuntime.assertIngress();trustedReadDaemon.cep.assertCurrent();const value=getBridgeStatus();value.ownedRestorationDebt=trustedNative.describeRestorationDebtFixed(trustedReadDaemon.role);initialRuntime.assertIngress();trustedReadDaemon.cep.assertCurrent();return value;
+}
+function ownedTrustedServerOnlyResult(request){
+  if(!initialRuntime||!trustedReadDaemon.role||!request||typeof request!=="object"||Array.isArray(request)||
+      Object.keys(request).sort().join(",")!=="args,name"||!["search_solutions","get_solution"].includes(request.name)||
+      !request.args||typeof request.args!=="object"||Array.isArray(request.args))
+    throw Object.assign(Error("owned_initial_server_only_producer_required"),{code:"owned_initial_server_only_producer_required"});
+  initialRuntime.assertIngress();
+  const actual=request.name==="search_solutions"?solutionDiscovery.searchSolutions(request.args,exposedTools()):solutionDiscovery.getSolution(request.args,exposedTools());
+  initialRuntime.assertIngress();return toolResult(actual);
+}
+// The only preparation inputs are descriptors captured by the original native
+// getter call. Pure Build/Propose establish private records; a dry-run still
+// needs its one original panel delivery before its result can be retained.
+function ownedCreateFixedTitleProposal(descriptor, descriptorSha25664) {
+  const args=descriptor.request.args,operations={checkpoint:14,clean_copy:15,stage:5,enqueue:6,start:7,restore:8};
+  if(!trustedExact(args,["ownedTitleOperation","variantSlot"])||operations[args.ownedTitleOperation]!==descriptor.leaf||
+      args.variantSlot!==descriptor.slot||(args.ownedTitleOperation==="checkpoint"?descriptor.slot!==0:![1,2].includes(descriptor.slot)))
+    throw Object.assign(Error("owned_initial_exact_finite_proposal_required"),{code:"owned_initial_exact_finite_proposal_required"});
+  const table=ownedTitlePlan.buildFixedTitlePlan(descriptor.facts),row=ownedTitlePlan.selectFixedTitleOperation(table,{operation:args.ownedTitleOperation,slot:descriptor.slot});
+  const immutableFacts=facts=>({schema:facts.schema,sourceProject:facts.sourceProject,baseline:facts.baseline,selectedTextLayerIDs:facts.selectedTextLayerIDs,variants:facts.variants});
+  let ownBuild=false;
+  for(const saved of ownedExecutionPreparationFacts.values()) {
+    const original=JSON.parse(saved.descriptor),proof=JSON.parse(saved.proof);
+    if(saved.record===null&&original.request.name==="build_solution_plan"&&original.manifestSha25664===descriptor.manifestSha25664&&
+        m100Protocol.stableStringify(immutableFacts(proof.result.facts))===m100Protocol.stableStringify(immutableFacts(table.facts)))ownBuild=true;
+  }
+  if(!ownBuild)throw Object.assign(Error("owned_initial_original_build_before_proposal_required"),{code:"owned_initial_original_build_before_proposal_required"});
+  const panel=ownedOriginalPreparationPanel(descriptor.originalPanel);
+  // This finite payload has a separate private consumer. It is never sent to
+  // the legacy arbitrary-plan runner or treated as a native dispatch grant.
+  const operand={schema:"ae-agent.owned-runtime-fixed-title-operation.v1",operation:args.ownedTitleOperation,slot:descriptor.slot,
+    manifestSha25664:descriptor.manifestSha25664,facts:table.facts};
+  const payload={kind:"agent_plan",requestId:descriptor.callRef,plan:{schema:"ae-agent.owned-runtime-fixed-title-plan.v1",summary:"Owned title "+row.key,
+    targetProject:{file:descriptor.projectFile},steps:[{tool:"run_ai_agent_plan",args:{ownedTitleProgram:operand}}]},userPrompt:null,planner:{agentId:null,model:null,agentMode:null}};
+  const preview=m100Protocol.stableStringify({operation:row.key,source:descriptor.projectFile,manifestSha25664:descriptor.manifestSha25664,operand});
+  const proposal=m100Protocol.createActionProposalEnvelope({requestId:descriptor.callRef,summary:payload.plan.summary,
+    details:"Finite native-owned title operation. Dispatch requires original native preparation and manual joins.",risk:{level:"mutating",requiresConfirmation:true,reasons:["owned_fixed_title_operation"]},
+    action:{kind:"ae_tool",toolName:"run_ai_agent_plan"},payload,preview,confirmationSurface:"cep-panel",confirmationSessionId:panel.confirmationSessionId});
+  if(proposal.confirmation.sessionId!==panel.confirmationSessionId)throw Object.assign(Error("owned_initial_original_panel_session_changed"),{code:"owned_initial_original_panel_session_changed"});
+  const frame={descriptor,descriptorSha25664,completed:false};ownedExecutionPreparationFrames.add(frame);
+  return ownedExecutionPreparationContext.run(frame,()=>{
+    const stored=storeM100ActionProposal(proposal,payload,{ownedPreparationFrame:frame});
+    if(!stored)throw Object.assign(Error("owned_initial_fixed_m100_envelope_refused"),{code:"owned_initial_fixed_m100_envelope_refused"});
+    const record=currentProposalState.current;currentProposalState.assertCurrent(record);currentProposalState.bindProject(record,descriptor.projectFile);
+    ownedFixedTitleProposals.set(record,Object.freeze({descriptorSha25664,manifestSha25664:descriptor.manifestSha25664,slot:descriptor.slot,leaf:descriptor.leaf,operand:JSON.stringify(operand)}));
+    // Shape classification is a cached data projection of this exact finite
+    // program. Native admission and all unsupported producers remain separate.
+    const validation=Object.freeze({ok:true,stepCount:1,mutatingCount:1,mutatingStepCount:1,readOnlyCount:0,unknownToolCount:0,requiresCheckpoint:true,
+      sourceOnly:true,nativeAuthority:false,steps:Object.freeze([Object.freeze({tool:"run_ai_agent_plan",operation:row.key,mutating:true})])});
+    ownedFixedTitleManualReceipts.set(record,{panel,token:stored.confirmation.confirmationToken,validation,proposalTerminal:null,dryTerminal:null,completedDryRun:null,adopted:false,executing:false});
+    const publicProposal=JSON.parse(JSON.stringify(stored));delete publicProposal.confirmation.confirmationToken;
+    const result={schema:"ae-agent.owned-runtime-fixed-title-proposal.v1",ok:true,sourceOnly:true,nativeAuthority:false,executionReady:false,
+      proposal:publicProposal,actionId:record.actionId,payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,
+      riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,operation:row.key,currentPlanPins:ownedFixedTitleProposalPins(record)};
+    return ownedRememberExecutionPreparation(descriptor,record,result);
+  });
+}
+function ownedNativeUuid32(value){if(typeof value!=="string"||!/^[a-f0-9]{32}$/.test(value)||/^0+$/.test(value))trustedFail("owned_initial_original_native_id_required");const result=value.slice(0,8)+"-"+value.slice(8,12)+"-"+value.slice(12,16)+"-"+value.slice(16,20)+"-"+value.slice(20);if(result.replace(/-/g,"")!==value)trustedFail("owned_initial_original_native_id_roundtrip");return result;}
+function ownedOriginalPreparationPanel(panel){
+  const keys=["panelConnectionId","panelGeneration","panelInstanceId","panelLifecycleEpoch","confirmationSessionId"];
+  if(!trustedExact(panel,keys)||["panelConnectionId","panelGeneration","panelInstanceId","confirmationSessionId"].some(key=>
+      typeof panel[key]!=="string"||!panel[key]||panel[key].length>(key==="confirmationSessionId"?160:256)||/[\x00-\x20]/.test(panel[key]))||
+      !Number.isSafeInteger(panel.panelLifecycleEpoch)||panel.panelLifecycleEpoch<0||
+      !panel.confirmationSessionId.startsWith(panel.panelConnectionId+":"))
+    throw Object.assign(Error("owned_initial_original_panel_session_required"),{code:"owned_initial_original_panel_session_required"});
+  const connection=trustedReadDaemon.connection;
+  if(!connection||["panelConnectionId","panelGeneration","panelInstanceId","panelLifecycleEpoch"].some(key=>connection[key]!==panel[key]))
+    throw Object.assign(Error("owned_initial_original_panel_generation_changed"),{code:"owned_initial_original_panel_generation_changed"});
+  return Object.freeze({...panel});
+}
+function ownedFixedCurrentPlan(record=currentProposalState.current){
+  currentProposalState.assertCurrent(record);const own=ownedFixedTitleManualReceipts.get(record);
+  if(!ownedFixedTitleProposals.has(record)||!own||!own.proposalTerminal)throw Object.assign(Error("owned_initial_original_proposal_ack_required"),{code:"owned_initial_original_proposal_ack_required"});
+  ownedOriginalPreparationPanel(own.panel);
+  const current=currentProposalState.snapshot();
+  if(current.proposal.confirmation.confirmationToken||record.confirmationSessionId!==own.panel.confirmationSessionId)
+    throw Object.assign(Error("owned_initial_private_original_token_required"),{code:"owned_initial_private_original_token_required"});
+  return {...current,validation:own.validation,ownedPlanPreparation:{mode:"completed_native_dry_run_v1"}};
+}
+function ownedPublishCompletedNativeDry(record,captured){
+  currentProposalState.assertCurrent(record);const own=ownedFixedTitleManualReceipts.get(record),delivery=record.dryRunReceipt?.nativeDelivery;
+  if(!own||!own.proposalTerminal||own.completedDryRun||!captured||!captured.terminal||!captured.readTerminal||captured.terminal===captured.readTerminal||!delivery)
+    throw Object.assign(Error("owned_initial_original_completed_dry_ack_required"),{code:"owned_initial_original_completed_dry_ack_required"});
+  ownedOriginalPreparationPanel(own.panel);trustedNative.assertCapturedCurrent(trustedReadDaemon.role,captured.terminal);
+  trustedNative.assertCapturedCurrent(trustedReadDaemon.role,captured.readTerminal);
+  const actual=trustedNative.describeExecution(trustedReadDaemon.role,captured.readTerminal),hex=value=>typeof value==="string"?value.replace(/-/g,"").toLowerCase():"";
+  if(hex(actual.id)!==delivery.commandRef||hex(actual.executionId)!==delivery.executionRef||hex(actual.leaseId)!==delivery.leaseRef||
+      crypto.createHash("sha256").update(actual.script,"utf8").digest("hex")!==delivery.scriptSha25664)
+    throw Object.assign(Error("owned_initial_original_dry_tuple_changed"),{code:"owned_initial_original_dry_tuple_changed",unknown:true});
+  const finishedAt=new Date().toISOString(),pins=ownedFixedTitleProposalPins(record);record.dryRunCompletedAt=finishedAt;
+  const projection={schema:"ae-agent.owned-native-dry-projection.v1",id:delivery.executionRef,ok:true,dryRun:true,requestId:record.requestId,
+    actionId:record.actionId,revision:record.revision,instanceId:pins.instanceId,finishedAt,nativeAuthority:false,
+    binding:{pins:{...pins},...own.panel},nativeDelivery:{...delivery}};
+  if(!currentProposalState.publishRunResult(record,projection,{id:projection.id,ok:true,dryRun:true,finishedAt}))
+    throw Object.assign(Error("owned_initial_completed_dry_publication_refused"),{code:"owned_initial_completed_dry_publication_refused",unknown:true});
+  own.dryTerminal=captured.terminal;own.completedDryRun=JSON.stringify(projection);
+  return projection;
+}
+async function ownedAdoptCompletedNativeDry(originalRequest,body){
+  const value=JSON.parse(body.toString("utf8")),record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record);
+  currentProposalState.assertCurrent(record);
+  if(!trustedExact(value,["actionId","revision","panelConnectionId","panelGeneration","confirmationSessionId","panelInstanceId","panelLifecycleEpoch"])||
+      !own||!own.proposalTerminal||!own.dryTerminal||!own.completedDryRun||own.adopted||own.executing||record.executionState!=="pending"||record.confirmedAt||
+      value.actionId!==record.actionId||value.revision!==record.revision||!own.token||m100Protocol.hashConfirmationToken(own.token)!==record.confirmationTokenHash||
+      Object.keys(own.panel).some(key=>value[key]!==own.panel[key]))
+    trustedFail("owned_initial_same_original_manual_adopt_required");
+  ownedOriginalPreparationPanel(own.panel);const current=ownedFixedCurrentPlan(record),completedDryRun=JSON.parse(own.completedDryRun);
+  if(current.state!=="dry_run_passed"||current.lastRun?.id!==completedDryRun.id||
+      m100Protocol.stableStringify(completedDryRun.binding.pins)!==m100Protocol.stableStringify(ownedFixedTitleProposalPins(record)))
+    trustedFail("owned_initial_completed_dry_current_pins_changed");
+  await trustedNative.acceptOriginalManualAdoptFixed(trustedReadDaemon.role,own.proposalTerminal,own.dryTerminal,originalRequest);trustedCurrent();
+  currentProposalState.assertCurrent(record);ownedOriginalPreparationPanel(own.panel);
+  own.adopted=true;
+  // The private original token is exposed solely in this authenticated original
+  // panel response. Public current/diagnostics retain the tokenless proposal.
+  const proposal=JSON.parse(JSON.stringify(record.proposal));proposal.confirmation.confirmationToken=own.token;
+  return {ok:true,proposal,plan:record.payload.plan,validation:own.validation,revision:record.revision,current:ownedFixedCurrentPlan(record),completedDryRun};
+}
+function ownedRememberExecutionPreparation(descriptor, record, result) {
+  const frame=ownedExecutionPreparationContext.getStore();
+  if(!frame||!ownedExecutionPreparationFrames.has(frame)||frame.descriptor!==descriptor||frame.completed||
+      (descriptor.request.name==="build_solution_plan"?record!==null:!record||record!==currentProposalState.current)||!result||typeof result!=="object"||result.ok!==true||result.isError===true)
+    throw Object.assign(Error("owned_initial_original_preparation_result_required"),{code:"owned_initial_original_preparation_result_required"});
+  if(record)currentProposalState.assertCurrent(record);
+  if(ownedExecutionPreparationFacts.size>=23||ownedExecutionPreparationFacts.has(frame.descriptorSha25664))
+    throw Object.assign(Error("owned_initial_preparation_once_or_budget"),{code:"owned_initial_preparation_once_or_budget"});
+  const proof=ownedExecutionFactProof(frame.descriptorSha25664,descriptor,record,result,"ae-agent.owned-execution-preparation-proof.v1");
+  frame.completed=true;ownedExecutionPreparationFacts.set(frame.descriptorSha25664,Object.freeze({record,descriptor:JSON.stringify(descriptor),proof:JSON.stringify(proof),slot:descriptor.slot,leaf:descriptor.leaf}));
+  return proof;
+}
+function ownedExecutionFactProof(descriptorSha25664,descriptor,record,result,schema) {
+  const digest=value=>crypto.createHash("sha256").update(m100Protocol.stableStringify(value)).digest("hex");
+  const projectSha25664=digest({file:descriptor.projectFile,revision:descriptor.projectRevision,manifest:descriptor.manifestSha25664,currentRead:descriptor.currentReadSha25664});
+  if(!/^[a-f0-9]{64}$/.test(descriptorSha25664))throw Object.assign(Error("owned_initial_original_descriptor_digest_required"),{code:"owned_initial_original_descriptor_digest_required"});
+  if(record===null){
+    if(schema!=="ae-agent.owned-execution-preparation-proof.v1"||descriptor.purpose!=="preparation"||descriptor.request.name!=="build_solution_plan"||
+        !Array.isArray(result.fixedOperations)||result.fixedOperations.length!==11)throw Object.assign(Error("owned_initial_finite_build_result_required"),{code:"owned_initial_finite_build_result_required"});
+    return {schema,descriptorSha25664,projectSha25664,leavesSha25664:digest(result.fixedOperations),observationSha25664:digest({currentRead:descriptor.currentReadSha25664,manifest:descriptor.manifestSha25664,result}),result};
+  }
+  if(!record.project||record.project.expectedFile!==descriptor.projectFile||record.project.actualFile!==descriptor.projectFile||
+      !record.proposal||!record.proposal.action||record.proposal.action.payloadHash!==record.payloadHash||record.proposal.action.previewHash!==record.previewHash||
+      record.payloadHash!==m100Protocol.sha256Payload(record.payload)||record.previewHash!==m100Protocol.sha256Text(record.proposal.action.preview))
+    throw Object.assign(Error("owned_initial_current_m100_project_or_hash_required"),{code:"owned_initial_current_m100_project_or_hash_required"});
+  return {schema,descriptorSha25664,projectSha25664,
+    leavesSha25664:digest({slot:descriptor.slot,leaf:descriptor.leaf,payloadHash:record.payloadHash,previewHash:record.previewHash}),
+    observationSha25664:digest({actionId:record.actionId,revision:record.revision,contractVersion:record.contractVersion,proposalExpiresAt:record.proposalExpiresAt,
+      dryRunCompletedAt:record.dryRunCompletedAt,dryRunReceipt:record.dryRunReceipt||null,confirmedAt:record.confirmedAt,executionId:record.executionId}),result};
+}
+function ownedFixedDryRunRecord(descriptor){
+  const args=descriptor.request.args,keys=["actionId","payloadRef","payloadHash","previewHash","riskLevel","riskPolicyVersion","ownedTitleOperation","variantSlot","dryRun"],record=currentProposalState.current;
+  if(descriptor.request.name!=="run_ai_agent_plan"||!trustedExact(args,keys)||args.dryRun!==true)throw Object.assign(Error("owned_initial_exact_fixed_dry_run_required"),{code:"owned_initial_exact_fixed_dry_run_required"});
+  currentProposalState.assertCurrent(record);const own=ownedFixedTitleProposals.get(record);
+  const manual=ownedFixedTitleManualReceipts.get(record);
+  if(!own||own.slot!==descriptor.slot||own.leaf!==descriptor.leaf||own.manifestSha25664!==descriptor.manifestSha25664||record.executionState!=="pending"||record.confirmedAt||
+      args.variantSlot!==own.slot||args.ownedTitleOperation!==JSON.parse(own.operand).operation||
+      !manual||m100Protocol.stableStringify(descriptor.originalPanel)!==m100Protocol.stableStringify(manual.panel)||
+      m100Protocol.stableStringify(descriptor.facts)!==m100Protocol.stableStringify(JSON.parse(own.operand).facts))
+    throw Object.assign(Error("owned_initial_current_fixed_dry_run_join_required"),{code:"owned_initial_current_fixed_dry_run_join_required"});
+  for(const key of ["actionId","payloadRef","payloadHash","previewHash","riskLevel","riskPolicyVersion"])if(args[key]!==record[key])throw Object.assign(Error("owned_initial_current_fixed_dry_run_join_required"),{code:"owned_initial_current_fixed_dry_run_join_required"});
+  return record;
+}
+async function ownedTrustedPreparationScript(input){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||input.descriptor?.purpose!=="preparation")
+    throw Object.assign(Error("owned_initial_fixed_dry_script_getter_required"),{code:"owned_initial_fixed_dry_script_getter_required"});
+  initialRuntime.assertIngress();const descriptor=input.descriptor,record=ownedFixedDryRunRecord(descriptor);
+  if(Object.hasOwn(descriptor,"delivery"))throw Object.assign(Error("owned_initial_dry_script_before_delivery_required"),{code:"owned_initial_dry_script_before_delivery_required"});
+  const source=await ownedTrustedReadonlyScript({name:"get_comp_details",titleSelectionMode:"first_two_observed_text_states_v1",titleRangeMode:descriptor.rangeMode,
+    args:{compItemId:descriptor.currentTarget?descriptor.currentTarget.compItemId:descriptor.facts.baseline.variantCompItemId,includeLayers:true,layerLimit:1000,includeMarkers:false,markerLimit:0,includeDynamicLinkGUID:true}});
+  initialRuntime.assertIngress();if(ownedFixedDryRunRecord(descriptor)!==record)throw Object.assign(Error("owned_initial_dry_script_owner_changed"),{code:"owned_initial_dry_script_owner_changed"});
+  let script=source.script;
+  if(descriptor.currentTarget){
+    const target=descriptor.currentTarget;if(!["ae-agent.owned-native-staged-current-target.v1","ae-agent.owned-native-restored-source-target.v1"].includes(target.schema)||target.slot!==descriptor.slot||target.projectFile!==descriptor.projectFile||(target.schema==="ae-agent.owned-native-staged-current-target.v1"?![6,7,8].includes(descriptor.leaf):![5,14,15].includes(descriptor.leaf))||!target.stageDescriptor)throw Object.assign(Error("owned_initial_private_staged_dry_target_required"),{code:"owned_initial_private_staged_dry_target_required"});
+    const graph=nativeRenderVariant.inspectScript({expectedProjectFile:target.projectFile,rootCompItemId:target.rootCompItemId,variantCompItemId:target.compItemId,controlledLayerIds:target.selectedTextLayerIds}),at=graph.lastIndexOf("return nativeSnapshot(");
+    if(at<0||!graph.endsWith(");")||script.split("return details;").length!==2)throw Object.assign(Error("owned_initial_staged_dry_generator_shape"),{code:"owned_initial_staged_dry_generator_shape"});
+    const body=graph.slice(0,at)+"var ownedFixedTitleState="+ownedFixedTitleState.toString()+";details.ownedCurrentStageState=ownedFixedTitleState("+aeLiteral(target.stageDescriptor)+","+aeLiteral(target.projectFile)+",nativeSnapshot);";
+    script=script.replace("return details;",body+"return details;");if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_staged_dry_script_bound"),{code:"owned_initial_staged_dry_script_bound"});
+  }
+  return Object.freeze({name:"run_ai_agent_plan",script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex")});
+}
+function ownedTrustedExecutionPreparation(input) {
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||
+      !input.descriptor||input.descriptor.purpose!=="preparation"||!input.descriptor.request||
+      !["build_solution_plan","propose_ai_agent_plan","run_ai_agent_plan"].includes(input.descriptor.request.name))
+    throw Object.assign(Error("owned_initial_fixed_preparation_getter_required"),{code:"owned_initial_fixed_preparation_getter_required"});
+  initialRuntime.assertIngress();const saved=ownedExecutionPreparationFacts.get(input.descriptorSha25664);
+  if(!saved&&input.descriptor.request.name==="propose_ai_agent_plan"){
+    const proof=ownedCreateFixedTitleProposal(input.descriptor,input.descriptorSha25664);initialRuntime.assertIngress();return proof;
+  }
+  if(!saved&&input.descriptor.request.name==="run_ai_agent_plan"){
+    const descriptor=input.descriptor,record=ownedFixedDryRunRecord(descriptor),delivery=descriptor.delivery;
+    if(!trustedExact(delivery,["commandRef","executionRef","leaseRef","receiptSha25664","scriptSha25664","resultSha25664"])||
+        ["commandRef","executionRef","leaseRef"].some(key=>!/^[a-f0-9]{32}$/.test(delivery[key])||/^0+$/.test(delivery[key]))||
+        ["receiptSha25664","scriptSha25664","resultSha25664"].some(key=>!/^[a-f0-9]{64}$/.test(delivery[key])||/^0+$/.test(delivery[key]))||record.dryRunCompletedAt)
+      throw Object.assign(Error("owned_initial_original_dry_delivery_required"),{code:"owned_initial_original_dry_delivery_required"});
+    // Native already checked the original panel tuple and full fresh baseline
+    // result against its own Manifest before invoking this retained getter.
+    record.dryRunCompletedAt=new Date().toISOString();record.dryRunReceipt={runId:ownedNativeUuid32(delivery.executionRef),previewHash:record.previewHash,payloadHash:record.payloadHash,contractVersion:AUTONOMY_CONTRACT_VERSION,stepCount:1,
+      projectFile:descriptor.projectFile,nativeDelivery:{...delivery},manifestSha25664:descriptor.manifestSha25664};
+    const frame={descriptor,descriptorSha25664:input.descriptorSha25664,completed:false};ownedExecutionPreparationFrames.add(frame);
+    const proof=ownedExecutionPreparationContext.run(frame,()=>ownedRememberExecutionPreparation(descriptor,record,{ok:true,dryRun:true,nativeAuthority:false,
+      actionId:record.actionId,revision:record.revision,stepCount:1,delivery:{...delivery}}));initialRuntime.assertIngress();return proof;
+  }
+  if(!saved&&input.descriptor.request.name==="build_solution_plan"){
+    const descriptor=input.descriptor;
+    if(!trustedExact(descriptor.request,["name","args"])||!trustedExact(descriptor.request.args,["solutionId"])||descriptor.request.args.solutionId!=="owned-runtime-two-title-fixed-v1"||descriptor.slot!==0||descriptor.leaf!==4)
+      throw Object.assign(Error("owned_initial_exact_finite_build_required"),{code:"owned_initial_exact_finite_build_required"});
+    const table=ownedTitlePlan.buildFixedTitlePlan(descriptor.facts);
+    const frame={descriptor,descriptorSha25664:input.descriptorSha25664,completed:false};ownedExecutionPreparationFrames.add(frame);
+    const result={schema:"ae-agent.owned-runtime-initial-title-build.v1",ok:true,sourceOnly:true,nativeAuthority:false,executionReady:false,facts:table.facts,fixedOperations:table.rows};
+    const proof=ownedExecutionPreparationContext.run(frame,()=>ownedRememberExecutionPreparation(descriptor,null,result));
+    initialRuntime.assertIngress();return proof;
+  }
+  if(!saved||saved.descriptor!==JSON.stringify(input.descriptor)||(input.descriptor.request.name==="build_solution_plan"?saved.record!==null:saved.record!==currentProposalState.current))
+    throw Object.assign(Error("owned_initial_finite_preparation_producer_unavailable"),{code:"owned_initial_finite_preparation_producer_unavailable"});
+  if(saved.record)currentProposalState.assertCurrent(saved.record);initialRuntime.assertIngress();return JSON.parse(saved.proof);
+}
+function ownedTrustedExecutionGates(input) {
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!input.descriptor||input.descriptor.purpose!=="gates")
+    throw Object.assign(Error("owned_initial_fixed_execution_gate_getter_required"),{code:"owned_initial_fixed_execution_gate_getter_required"});
+  initialRuntime.assertIngress();const descriptor=input.descriptor,context=ownedExecutionRunContext.getStore(),record=context&&context.record;
+  currentProposalState.assertCurrent(record);assertOwnedExecutionContext(context);
+  if(ownedSharedQueueContexts.has(context)){
+    const own=ownedSharedQueueContexts.get(context),fixed=ownedFixedTitleProposals.get(record),manual=ownedFixedTitleManualReceipts.get(record);
+    if(!fixed||!manual||!manual.proposalTerminal||!manual.dryTerminal||!manual.completedDryRun||descriptor.panelRoute!=="/mcp/tools/call"||
+        descriptor.request.name!=="run_ai_agent_plan"||m100Protocol.stableStringify(descriptor.request)!==m100Protocol.stableStringify(descriptor.panel)||
+        m100Protocol.stableStringify(descriptor.request.args)!==m100Protocol.stableStringify(own.controllerArgs)||descriptor.slot!==fixed.slot||descriptor.leaf!==fixed.leaf||
+        record.executionId!==context.runId||m100Protocol.stableStringify(descriptor.cleanSourcePreflight)!==m100Protocol.stableStringify(context.checkpoint))trustedFail("owned_initial_original_shared_gate_join");
+    for(const key of ["proposalProof","dryRunProof"]){const proof=descriptor[key],saved=proof&&ownedExecutionPreparationFacts.get(proof.descriptorSha25664);if(!saved||saved.record!==record||saved.slot!==fixed.slot||saved.leaf!==fixed.leaf||saved.proof!==JSON.stringify(proof))trustedFail("owned_initial_original_shared_preparation_join");}
+    if(fixed.leaf===7&&(!context.ownedSharedQueueCapability||!context.ownedSharedQueueBinding||fixed.slot!==2))trustedFail("owned_initial_original_shared_START_grant");
+    return ownedExecutionFactProof(input.descriptorSha25664,descriptor,record,{actionId:record.actionId,revision:record.revision,runId:context.runId,authoritySource:"original_owned_shared_queue_profile"},"ae-agent.owned-execution-gate-proof.v1");
+  }
+  const keys=m100PlanRunLookupKey(descriptor.request.args),panelKeys=m100PlanRunLookupKey(descriptor.panel);
+  if(record.riskPolicyVersion!==m100Protocol.M100_RISK_POLICY_VERSION||record.contractVersion!==AUTONOMY_CONTRACT_VERSION||
+      !panelKeys.confirmationToken||m100Protocol.hashConfirmationToken(panelKeys.confirmationToken)!==record.confirmationTokenHash||
+      panelKeys.confirmedBySurface!==record.confirmationSurface||(record.confirmationSessionId&&panelKeys.confirmedBySession!==record.confirmationSessionId))
+    throw Object.assign(Error("owned_initial_original_manual_confirmation_join_required"),{code:"owned_initial_original_manual_confirmation_join_required"});
+  for(const name of ["actionId","payloadHash","previewHash","riskLevel","riskPolicyVersion"])
+    if(!keys[name]||keys[name]!==record[name]||panelKeys[name]!==record[name])throw Object.assign(Error("owned_initial_original_manual_controller_join_required"),{code:"owned_initial_original_manual_controller_join_required"});
+  if(context.stepCount!==1||record.executionId!==context.runId||context.autonomous!==false||context.confirm!==true||context.allowWithoutCheckpoint!==false||
+      descriptor.panel.dryRun!==false||descriptor.panel.confirm!==true||descriptor.panel.allowWithoutCheckpoint===true||!context.checkpoint||context.checkpoint.sourceFile!==descriptor.projectFile||
+      m100Protocol.stableStringify(context.checkpoint)!==m100Protocol.stableStringify(descriptor.cleanSourcePreflight)||
+      !record.dryRunReceipt||record.dryRunReceipt.payloadHash!==record.payloadHash||record.dryRunReceipt.contractVersion!==AUTONOMY_CONTRACT_VERSION||record.dryRunReceipt.stepCount!==1||record.dryRunReceipt.projectFile!==descriptor.projectFile)
+    throw Object.assign(Error("owned_initial_current_manual_dry_run_checkpoint_required"),{code:"owned_initial_current_manual_dry_run_checkpoint_required"});
+  const steps=record.payload&&record.payload.plan&&record.payload.plan.steps,step=Array.isArray(steps)&&steps.length===1&&steps[0];
+  if(!step||step.tool!==descriptor.request.name||m100Protocol.stableStringify(step.args||{})!==m100Protocol.stableStringify(ownedAmeContexts.get(context)?.outerArgs||context.args||{}))
+    throw Object.assign(Error("owned_initial_current_exact_step_required"),{code:"owned_initial_current_exact_step_required"});
+  const operationNames={5:"stage",6:"enqueue",7:"start",8:"restore",14:"checkpoint",15:"clean_copy"};
+  const envelopeKeys=["actionId","payloadRef","payloadHash","previewHash","riskLevel","riskPolicyVersion","ownedTitleOperation","variantSlot"];
+  if(!operationNames[descriptor.leaf]||Object.keys(step.args||{}).some(key=>envelopeKeys.includes(key)))
+    throw Object.assign(Error("owned_initial_fixed_controller_envelope_required"),{code:"owned_initial_fixed_controller_envelope_required"});
+  const exactControllerArgs={...(step.args||{}),actionId:record.actionId,payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,
+    riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,ownedTitleOperation:operationNames[descriptor.leaf],variantSlot:descriptor.slot};
+  if(!record.payloadRef||m100Protocol.stableStringify(descriptor.request.args)!==m100Protocol.stableStringify(exactControllerArgs))
+    throw Object.assign(Error("owned_initial_exact_controller_step_args_required"),{code:"owned_initial_exact_controller_step_args_required"});
+  for(const name of ["proposalProof","dryRunProof"]){const proof=descriptor[name],saved=proof&&ownedExecutionPreparationFacts.get(proof.descriptorSha25664);
+    if(!saved||saved.record!==record||saved.slot!==descriptor.slot||saved.leaf!==descriptor.leaf||saved.proof!==JSON.stringify(proof))
+      throw Object.assign(Error("owned_initial_original_preparation_receipt_join_required"),{code:"owned_initial_original_preparation_receipt_join_required"});}
+  if(descriptor.leaf===7){
+    if(descriptor.panelRoute!==ameManualQueue.ROUTE||!context.ownedManualQueueCapability||!context.ownedManualQueueManifest)
+      throw Object.assign(Error("owned_initial_original_ame_manual_queue_grant_required"),{code:"owned_initial_original_ame_manual_queue_grant_required"});
+    ameManualQueueIssuer.assertCapability(context.ownedManualQueueCapability,context,context.ownedManualQueueManifest);
+  }else if(descriptor.panelRoute!=="/agents/plan/run")throw Object.assign(Error("owned_initial_exact_manual_route_required"),{code:"owned_initial_exact_manual_route_required"});
+  const proof=ownedExecutionFactProof(input.descriptorSha25664,descriptor,record,{actionId:record.actionId,revision:record.revision,runId:context.runId},"ae-agent.owned-execution-gate-proof.v1");
+  currentProposalState.assertCurrent(record);assertOwnedExecutionContext(context);initialRuntime.assertIngress();return proof;
+}
+function ownedReadonlyScriptPreparation(name){
+  const current=scriptPreparationContext.getStore();
+  return !!current&&ownedReadonlyScriptPreparations.has(current)&&(!name||current.name===name)&&
+    ["get_comp_details","get_layer_details","inspect_title_variants"].includes(current.name);
+}
+function ownedReadonlyFirstTwoPreparation(name){
+  return ownedReadonlyScriptPreparation(name)&&scriptPreparationContext.getStore().titleSelectionMode==="first_two_observed_text_states_v1";
+}
+function ownedReadonlyObservedRangePreparation(name){
+  return ownedReadonlyFirstTwoPreparation(name)&&scriptPreparationContext.getStore().titleRangeMode==="full_observed_root_range_v1";
+}
+function ownedObservedRootTiming(comp){
+  function number(v){if(typeof v!=="number"||!isFinite(v)||(v===0&&1/v===-Infinity))throw Error("owned_observed_timing_number_unavailable");return v;}
+  function integer(v,maximum){number(v);if(v<1||Math.floor(v)!==v||v>maximum)throw Error("owned_observed_timing_integer_unavailable");return v;}
+  if(!comp||!(comp instanceof CompItem)||typeof comp.name!=="string"||!comp.name)throw Error("owned_observed_timing_comp_unavailable");
+  var display=null;
+  // Feature availability is observed; absent signed-frame evidence only
+  // supports a positive-zero start time in the native frozen resolver.
+  try{var observedDisplay=comp.displayStartFrame;if(typeof observedDisplay!=="undefined")display=observedDisplay;}catch(unsupportedDisplay){}
+  if(display!==null){number(display);if(Math.floor(display)!==display||display<-2147483648||display>2147483647)throw Error("owned_observed_display_frame_unavailable");}
+  return {schema:"ae-agent.owned-observed-root-timing.v1",compItemId:integer(comp.id,9007199254740991),compName:comp.name,width:integer(comp.width,8192),height:integer(comp.height,8192),
+    frameRate:number(comp.frameRate).toPrecision(17),frameDuration:number(comp.frameDuration).toPrecision(17),duration:number(comp.duration).toPrecision(17),
+    displayStartTime:number(comp.displayStartTime).toPrecision(17),displayStartFrame:display};
+}
+// Fixed factual getter, serialized only by the original private preparation.
+// Adobe's usedFonts sample reads usedFont.font/isSubstitute and usedAt. Every
+// access below is feature checked; unsupported observations stay explicit.
+const ownedInitialUiBaseline=ownedUiBaseline.captureUiBaseline;
+function ownedFirstTwoTitleInventory(comp){
+  function bad(s){throw Error(s);}
+  function integer(v){if(typeof v!=="number"||!isFinite(v)||v<0||Math.floor(v)!==v)bad("owned_title_integer_unavailable");return v;}
+  function number(v){if(typeof v!=="number"||!isFinite(v))bad("owned_title_number_unavailable");return v;}
+  function boolean(v){if(typeof v!=="boolean")bad("owned_title_boolean_unavailable");return v;}
+  function font(v){if(!v)bad("owned_title_font_object_unavailable");var id=integer(v.fontID),name=v.postScriptName,substitute=boolean(v.isSubstitute);
+    if(!id||typeof name!=="string"||!name)bad("owned_title_font_identity_unavailable");return {id:id,postScriptName:name,isSubstitute:substitute};}
+  var project=app.project,file=project&&project.file,rows=[],allRows=[],projectRows=[],fonts=[],uses=0,characters=0,i,j,l,p,doc,row,raw,at;
+  if(!project||!file||typeof file.fsName!=="string"||typeof project.dirty!=="boolean"||typeof project.revision!=="number")bad("owned_title_project_fact_unavailable");
+  if(!comp||integer(comp.numLayers)>1000||integer(project.numItems)>1000)bad("owned_title_inventory_bound");raw=project.usedFonts;
+  for(i=1;i<=project.numItems;i++){var projectItem=project.item(i);if(!projectItem)bad("owned_title_project_item_unavailable");
+    projectRows.push({id:integer(projectItem.id),index:i,name:String(projectItem.name),comp:projectItem instanceof CompItem});}
+  if(!raw||typeof raw.length!=="number"||raw.length>1000)bad("owned_title_used_fonts_unavailable");
+  for(i=0;i<raw.length;i++){row={font:font(raw[i].font),usedAt:[]};at=raw[i].usedAt;if(!at||typeof at.length!=="number")bad("owned_title_font_usage_unavailable");
+    for(j=0;j<at.length;j++){if(++uses>12000)bad("owned_title_font_usage_bound");row.usedAt.push({layerID:integer(at[j].layerID),layerTimeD:number(at[j].layerTimeD)});}fonts.push(row);}
+  // Separate complete pass. Omitting a text row cannot silently change which
+  // two states are selected; native joins this census with ordinary layer facts.
+  for(i=1;i<=comp.numLayers;i++){l=comp.layer(i);var isText=l instanceof TextLayer,censusText=null,censusExpression=null,censusKeys=null;
+    if(isText){p=l.property("ADBE Text Properties").property("ADBE Text Document");if(!p||!p.value||typeof p.value.text!=="string")bad("owned_title_census_text_unavailable");
+      censusText=p.value.text;censusExpression=boolean(p.expressionEnabled);censusKeys=integer(p.numKeys);}
+    allRows.push({id:integer(l.id),index:integer(l.index),name:String(l.name),textLayer:isText,enabled:boolean(l.enabled),locked:boolean(l.locked),guide:boolean(l.guideLayer),solo:boolean(l.solo),
+      inPoint:number(l.inPoint),outPoint:number(l.outPoint),sourceId:l.source?integer(l.source.id):null,sourceText:censusText,sourceTextExpression:censusExpression,sourceTextKeys:censusKeys});}
+  for(i=1;i<=comp.numLayers;i++){l=comp.layer(i);if(!(l instanceof TextLayer))continue;p=l.property("ADBE Text Properties").property("ADBE Text Document");
+    if(!p)bad("owned_title_source_text_unavailable");doc=p.value;if(!doc||typeof doc.text!=="string")bad("owned_title_text_document_unavailable");characters+=doc.text.length;
+    if(doc.text.length>4096||characters>65536)bad("owned_title_character_bound");row={id:integer(l.id),index:integer(l.index),name:String(l.name),enabled:boolean(l.enabled),locked:boolean(l.locked),guide:boolean(l.guideLayer),solo:boolean(l.solo),
+      inPoint:number(l.inPoint),outPoint:number(l.outPoint),sourceText:doc.text,sourceTextExpression:boolean(p.expressionEnabled),sourceTextKeys:integer(p.numKeys),fontAtChar:[]};
+    // TextDocument.fontObject alone describes its first character. Complete
+    // per-character FontObject observations cover mixed styles without writes.
+    if(doc.text.length&&typeof doc.characterRange!=="function")bad("owned_title_character_font_unavailable");
+    for(j=0;j<doc.text.length;j++){var measuredFont=font(doc.characterRange(j,j+1).fontObject),fontMatch=0;
+      for(var fi=0;fi<fonts.length;fi++)if(fonts[fi].font.id===measuredFont.id){if(fonts[fi].font.postScriptName!==measuredFont.postScriptName||fonts[fi].font.isSubstitute!==measuredFont.isSubstitute)bad("owned_title_font_dictionary_drift");fontMatch++;}
+      if(fontMatch!==1)bad("owned_title_character_font_usage_join");row.fontAtChar.push(measuredFont.id);}rows.push(row);}
+  return {schema:"ae-agent.owned-first-two-text-inventory.v2",projectFile:file.fsName,dirty:project.dirty,revision:integer(project.revision),compItemId:integer(comp.id),compName:String(comp.name),numLayers:integer(comp.numLayers),
+    numProjectItems:integer(project.numItems),projectItemRows:projectRows,allLayerRows:allRows,layerRows:rows,usedFonts:fonts,characterCount:characters,usageCount:uses};
+}
+// Factual reconciliation used inside the one fixed stage delivery after opening
+// its native-created copy. Indices/content establish a correspondence; neither
+// project/layer IDs nor Dynamic Link GUIDs are assumed to survive app.open.
+function ownedCopiedTitleInventoryJoin(original,current,mode){
+  function bad(){throw Error("owned_title_copy_inventory_mismatch");}
+  function integer(n){if(typeof n!=="number"||!isFinite(n)||n<1||n>9007199254740991||Math.floor(n)!==n)bad();return n;}
+  function array(value,count,maximum){if(!value||!(value instanceof Array)||value.length!==count||count>maximum)bad();return value;}
+  function same(a,b){if(typeof a!==typeof b||a!==b)bad();}
+  if(!original||!current||original.schema!=="ae-agent.owned-first-two-text-inventory.v2"||current.schema!==original.schema||original.dirty!==false||current.dirty!==false||
+      typeof original.projectFile!=="string"||typeof current.projectFile!=="string"||!original.projectFile||!current.projectFile||(original.projectFile===current.projectFile&&mode!=="original_source_restore_v1"))bad();
+  if(mode!==undefined&&mode!=="original_source_restore_v1")bad();
+  integer(original.compItemId);integer(current.compItemId);integer(original.numProjectItems);integer(current.numProjectItems);integer(original.numLayers);integer(current.numLayers);
+  same(original.compName,current.compName);same(original.numProjectItems,current.numProjectItems);same(original.numLayers,current.numLayers);
+  var beforeProject=array(original.projectItemRows,original.numProjectItems,1000),afterProject=array(current.projectItemRows,current.numProjectItems,1000),projectMap={},seenProject={},i,j,row,before,after,matches=0;
+  for(i=0;i<beforeProject.length;i++){before=beforeProject[i];after=afterProject[i];integer(before.id);integer(after.id);same(before.index,i+1);same(after.index,i+1);same(before.name,after.name);same(before.comp,after.comp);
+    if(projectMap["p"+before.id]||seenProject["p"+after.id])bad();projectMap["p"+before.id]=after.id;seenProject["p"+after.id]=true;
+    if(before.comp===true&&before.name===original.compName){if(before.id!==original.compItemId||after.id!==current.compItemId)bad();matches++;}}
+  if(matches!==1||projectMap["p"+original.compItemId]!==current.compItemId)bad();
+  var beforeLayers=array(original.allLayerRows,original.numLayers,1000),afterLayers=array(current.allLayerRows,current.numLayers,1000),layerMap={},seenLayers={},textCount=0;
+  var keys=["name","textLayer","enabled","locked","guide","solo","inPoint","outPoint","sourceText","sourceTextExpression","sourceTextKeys"];
+  for(i=0;i<beforeLayers.length;i++){before=beforeLayers[i];after=afterLayers[i];integer(before.id);integer(after.id);same(before.index,i+1);same(after.index,i+1);
+    if(layerMap["l"+before.id]||seenLayers["l"+after.id])bad();layerMap["l"+before.id]=after.id;seenLayers["l"+after.id]=true;
+    for(j=0;j<keys.length;j++)same(before[keys[j]],after[keys[j]]);
+    if(before.sourceId===null){if(after.sourceId!==null)bad();}else if(projectMap["p"+integer(before.sourceId)]!==integer(after.sourceId))bad();if(before.textLayer===true)textCount++;}
+  var beforeTexts=array(original.layerRows,textCount,1000),afterTexts=array(current.layerRows,textCount,1000),fontBefore={},fontAfter={};
+  if(!original.usedFonts||!current.usedFonts)bad();array(original.usedFonts,original.usedFonts.length,1000);array(current.usedFonts,current.usedFonts.length,1000);
+  for(i=0;i<original.usedFonts.length;i++){row=original.usedFonts[i].font;if(!row||fontBefore["f"+integer(row.id)])bad();fontBefore["f"+row.id]=row;}
+  for(i=0;i<current.usedFonts.length;i++){row=current.usedFonts[i].font;if(!row||fontAfter["f"+integer(row.id)])bad();fontAfter["f"+row.id]=row;}
+  for(i=0;i<beforeTexts.length;i++){before=beforeTexts[i];after=afterTexts[i];if(layerMap["l"+integer(before.id)]!==integer(after.id)||before.index!==after.index||afterLayers[after.index-1].id!==after.id||afterLayers[after.index-1].textLayer!==true)bad();
+    for(j=0;j<9;j++){var textKeys=["name","enabled","locked","guide","solo","inPoint","outPoint","sourceText","sourceTextExpression"];same(before[textKeys[j]],after[textKeys[j]]);}same(before.sourceTextKeys,after.sourceTextKeys);
+    if(typeof before.sourceText!=="string")bad();var oldChars=array(before.fontAtChar,before.sourceText.length,4096),newChars=array(after.fontAtChar,after.sourceText.length,4096);
+    for(j=0;j<oldChars.length;j++){var oldFont=fontBefore["f"+integer(oldChars[j])],newFont=fontAfter["f"+integer(newChars[j])];if(!oldFont||!newFont)bad();
+      same(oldFont.postScriptName,newFont.postScriptName);same(oldFont.isSubstitute,newFont.isSubstitute);if(oldFont.isSubstitute!==false||typeof oldFont.postScriptName!=="string"||!oldFont.postScriptName)bad();
+      // A changed FontObject ID needs an unambiguous observed dictionary
+      // correspondence. Duplicate PostScript names cannot select a face.
+      if(oldFont.id!==newFont.id){var oldMatches=0,newMatches=0;for(var fi=0;fi<original.usedFonts.length;fi++)if(original.usedFonts[fi].font.postScriptName===oldFont.postScriptName)oldMatches++;
+        for(fi=0;fi<current.usedFonts.length;fi++)if(current.usedFonts[fi].font.postScriptName===newFont.postScriptName)newMatches++;if(oldMatches!==1||newMatches!==1)bad();}}}
+  same(original.characterCount,current.characterCount);
+  return {compItemId:current.compItemId,projectItemIdMap:projectMap,layerIdMap:layerMap};
+}
+// Complete factual graph reconciliation. The ID correspondence comes from
+// complete actual project/layer inventories, never preserved-GUID assumptions.
+// Only the two selected visibility bits may differ after the fixed Stage.
+function ownedCopiedTitleGraphJoin(original,current,selected,slot,expectedFile,mode){
+  function bad(){throw Error("owned_title_copy_graph_mismatch");}
+  function equal(a,b){var k,ac=0,bc=0;if(a===b)return true;if(a===null||b===null||typeof a!==typeof b||typeof a!=="object"||(a instanceof Array)!==(b instanceof Array))return false;
+    for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){ac++;if(!Object.prototype.hasOwnProperty.call(b,k)||!equal(a[k],b[k]))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))bc++;return ac===bc;}
+  function mapId(map,id){if(id===null)return null;var value=map["i"+id];if(typeof value!=="number"||value<1)bad();return value;}
+  if(!original||!current||!(original.graph instanceof Array)||!(current.graph instanceof Array)||original.graph.length!==current.graph.length||original.graph.length>100||
+      !(original.ownedTitleInventories instanceof Array)||!(current.ownedTitleInventories instanceof Array)||original.ownedTitleInventories.length!==original.graph.length||current.ownedTitleInventories.length!==current.graph.length||
+      !(selected instanceof Array)||selected.length!==2||selected[0]===selected[1]||(slot!==0&&slot!==1&&slot!==2)||current.projectFile!==expectedFile)bad();
+  var projects={},layers={},maps=[],i,j,k,before,after,expected,join;
+  function rows(input,output){var n,r,key;for(n=0;n<input.length;n++){r={};for(key in input[n])if(Object.prototype.hasOwnProperty.call(input[n],key))r[key]=input[n][key];
+    if(slot&&before.compItemId===original.variantCompItemId&&(r.id===selected[0]||r.id===selected[1]))r.enabled=r.id===selected[slot-1];output.push(r);}}
+  for(i=0;i<original.graph.length;i++){
+    before=original.ownedTitleInventories[i];after=current.ownedTitleInventories[i];expected={};for(k in before)if(Object.prototype.hasOwnProperty.call(before,k))expected[k]=before[k];
+    expected.allLayerRows=[];expected.layerRows=[];
+    rows(before.allLayerRows,expected.allLayerRows);rows(before.layerRows,expected.layerRows);
+    join=ownedCopiedTitleInventoryJoin(expected,after,mode);maps.push(join);
+    for(k in join.projectItemIdMap)if(Object.prototype.hasOwnProperty.call(join.projectItemIdMap,k)){var pk="i"+k.substring(1);if(projects[pk]&&projects[pk]!==join.projectItemIdMap[k])bad();projects[pk]=join.projectItemIdMap[k];}
+    for(k in join.layerIdMap)if(Object.prototype.hasOwnProperty.call(join.layerIdMap,k)){var lk="i"+k.substring(1);if(layers[lk]&&layers[lk]!==join.layerIdMap[k])bad();layers[lk]=join.layerIdMap[k];}
+    if(original.graph[i].id!==before.compItemId||current.graph[i].id!==after.compItemId)bad();
+  }
+  function convert(value,parentKey){var out,key,n,isProject;if(value===null||typeof value!=="object")return value;
+    if(value instanceof Array){out=[];for(n=0;n<value.length;n++)out.push(convert(value[n],parentKey));return out;}
+    out={};for(key in value)if(Object.prototype.hasOwnProperty.call(value,key)){
+      if(key==="ownedTitleInventories"||key==="ownedObservedTimings")continue;
+      if(key==="projectFile"){out[key]=expectedFile;continue;}if(key==="revision"){out[key]=current.revision;continue;}
+      if(key==="id"){isProject=parentKey==="graph"||parentKey==="source";out[key]=mapId(isProject?projects:layers,value[key]);continue;}
+      if(key==="rootCompItemId"||key==="variantCompItemId"||key==="compItemId"||key==="ownerCompItemId"||key==="sourceId"){out[key]=mapId(projects,value[key]);continue;}
+      if(key==="trackMatteLayerId"||key==="consumerLayerId"||key==="controlledLayerId"){out[key]=mapId(layers,value[key]);continue;}
+      if(key==="enabled"&&slot&&(value.id===selected[0]||value.id===selected[1]))out[key]=value.id===selected[slot-1];else out[key]=convert(value[key],key);
+    }return out;}
+  expected=convert(original,"");
+  // Current IDs are already in their new namespace. Strip only separately
+  // reconciled inventory/timing fields; never run them through the old map.
+  after={};for(k in current)if(Object.prototype.hasOwnProperty.call(current,k)&&k!=="ownedTitleInventories"&&k!=="ownedObservedTimings")after[k]=current[k];
+  if(expected.controlled instanceof Array)expected.controlled.sort(function(a,b){return a.id-b.id;});
+  if(expected.matteDependencies instanceof Array)expected.matteDependencies.sort(function(a,b){return a.ownerCompItemId-b.ownerCompItemId||a.consumerLayerId-b.consumerLayerId;});
+  if(!equal(expected,after)||!(original.ownedObservedTimings instanceof Array)||!(current.ownedObservedTimings instanceof Array)||original.ownedObservedTimings.length!==original.graph.length||current.ownedObservedTimings.length!==current.graph.length)bad();
+  for(i=0;i<original.ownedObservedTimings.length;i++){before=original.ownedObservedTimings[i];after=current.ownedObservedTimings[i];if(before===null){if(after!==null)bad();continue;}
+    expected={};for(k in before)if(Object.prototype.hasOwnProperty.call(before,k))expected[k]=before[k];expected.compItemId=mapId(projects,before.compItemId);if(!equal(expected,after))bad();}
+  return {projectItemIdMap:projects,layerIdMap:layers,rootCompItemId:mapId(projects,original.rootCompItemId),variantCompItemId:mapId(projects,original.variantCompItemId)};
+}
+function ownedFixedTitleState(d,path,nativeSnapshot){
+  function bad(s){throw Error(s);}
+  function comp(name){var result=null,i,item;for(i=1;i<=app.project.numItems;i++){item=app.project.item(i);if(item instanceof CompItem&&item.name===name){if(result)bad("owned_state_comp_name_ambiguous");result=item;}}if(!result)bad("owned_state_comp_absent");return result;}var root=comp(d.rootName),target=comp(d.compName),selected=[],i,j,item;
+    // The original two rows are identified by their complete copied inventory,
+    // never by a guessed new ID or a post-open GUID preservation claim.
+    var inventory=ownedFirstTwoTitleInventory(target),original=d.originalComp.ownedTitleInventory;
+    for(i=0;i<d.selectedTextLayerIds.length;i++){var originalIndex=0;for(j=0;j<original.allLayerRows.length;j++)if(original.allLayerRows[j].id===d.selectedTextLayerIds[i])originalIndex=original.allLayerRows[j].index;
+      if(!originalIndex||originalIndex>inventory.allLayerRows.length)bad("owned_stage_selected_index_missing");selected.push(inventory.allLayerRows[originalIndex-1].id);}
+    var graph=nativeSnapshot({expectedProjectFile:path,rootCompItemId:root.id,variantCompItemId:target.id,controlledLayerIds:selected});graph.ownedTitleInventories=[];graph.ownedObservedTimings=[];
+    for(i=0;i<graph.graph.length;i++){item=null;for(j=1;j<=app.project.numItems;j++)if(app.project.item(j).id===graph.graph[i].id){if(item)bad("owned_stage_graph_identity_ambiguous");item=app.project.item(j);}if(!item)bad("owned_stage_graph_item_missing");
+      graph.ownedTitleInventories.push(ownedFirstTwoTitleInventory(item));graph.ownedObservedTimings.push(item.id===root.id?ownedObservedRootTiming(item):null);}
+    var guid=target.dynamicLinkGUID;if(typeof guid!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(guid)||/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(guid))bad("owned_stage_actual_guid_unavailable");
+    return {graph:graph,sourceGuid:guid.toLowerCase(),selectedTextLayerIds:selected,compItemId:target.id,rootCompItemId:root.id,projectFile:app.project.file.fsName,revision:app.project.revision,dirty:app.project.dirty,uiBaseline:ownedInitialUiBaseline()};}
+
+function ownedFixedStageHost(d,nativeSnapshot){
+  function bad(s){throw Error(s);}
+  function norm(p){return String(p||"").replace(/\\/g,"/").toLowerCase();}
+  function comp(name){var result=null,i,item;for(i=1;i<=app.project.numItems;i++){item=app.project.item(i);if(item instanceof CompItem&&item.name===name){if(result)bad("owned_stage_comp_name_ambiguous");result=item;}}if(!result)bad("owned_stage_comp_absent");return result;}
+  if(!app.project||!app.project.file||typeof app.project.dirty!=="boolean"||app.project.dirty!==false||norm(app.project.file.fsName)!==norm(d.sourceProjectFile))bad("owned_stage_original_clean_source_required");
+  var before=ownedFixedTitleState(d,d.sourceProjectFile,nativeSnapshot),baseline=d.originalGraph,i,k;
+  // Before open, source identity has not changed, so use exact canonical deep
+  // equality including actual revision, full inventories and raw timing.
+  function equal(a,b){var key,ac=0,bc=0;if(a===b)return true;if(a===null||b===null||typeof a!==typeof b||typeof a!=="object"||(a instanceof Array)!==(b instanceof Array))return false;
+    for(key in a)if(Object.prototype.hasOwnProperty.call(a,key)){ac++;if(!Object.prototype.hasOwnProperty.call(b,key)||!equal(a[key],b[key]))return false;}for(key in b)if(Object.prototype.hasOwnProperty.call(b,key))bc++;return ac===bc;}
+  if(!equal(before.graph,baseline)||!equal(before.uiBaseline,d.originalUi)||before.sourceGuid!==String(d.originalComp.dynamicLinkGUID).toLowerCase())bad("owned_stage_original_full_baseline_changed");
+  var working=new File(d.workingProjectFile),finalFile=new File(d.snapshotProjectFile);if(!working.exists||finalFile.exists)bad("owned_stage_fixed_file_preflight");
+  app.open(working);if(!app.project||!app.project.file||norm(app.project.file.fsName)!==norm(d.workingProjectFile)||app.project.dirty!==false)bad("owned_stage_working_open_readback");
+  var opened=ownedFixedTitleState(d,d.workingProjectFile,nativeSnapshot),join=ownedCopiedTitleGraphJoin(baseline,opened.graph,d.selectedTextLayerIds,0,opened.projectFile),target=comp(d.compName);
+  if(finalFile.exists)bad("owned_stage_final_exists_before_toggle");
+  for(i=0;i<d.selectedTextLayerIds.length;i++){var wanted=join.layerIdMap["i"+d.selectedTextLayerIds[i]],found=null;for(k=1;k<=target.numLayers;k++)if(target.layer(k).id===wanted){if(found)bad("owned_stage_layer_ambiguous");found=target.layer(k);}if(!found||found.locked||found.guideLayer||found.solo)bad("owned_stage_layer_current_refused");found.enabled=i===d.slot-1;}
+  if(finalFile.exists)bad("owned_stage_final_exists_before_save");app.project.save(finalFile);
+  if(!app.project.file||norm(app.project.file.fsName)!==norm(d.snapshotProjectFile)||app.project.dirty!==false)bad("owned_stage_final_save_readback");
+  var saved=ownedFixedTitleState(d,d.snapshotProjectFile,nativeSnapshot);ownedCopiedTitleGraphJoin(baseline,saved.graph,d.selectedTextLayerIds,d.slot,saved.projectFile);
+  return {schema:"ae-agent.owned-native-stage-result.v1",operation:"stage",slot:d.slot,sourceProjectFile:d.sourceProjectFile,workingProjectFile:d.workingProjectFile,snapshotProjectFile:d.snapshotProjectFile,before:before,working:opened,postSave:saved};
+}
+async function ownedTrustedStageScript(input){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!input.descriptor||input.descriptor.schema!=="ae-agent.owned-native-stage-descriptor.v1")
+    throw Object.assign(Error("owned_initial_fixed_stage_getter_required"),{code:"owned_initial_fixed_stage_getter_required"});
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
+  const d=input.descriptor,operand=context.args&&context.args.ownedTitleProgram;
+  if(!operand||operand.operation!=="stage"||operand.slot!==d.slot||operand.manifestSha25664!==d.manifestSha25664||![1,2].includes(d.slot)||d.operation!=="stage")
+    throw Object.assign(Error("owned_initial_exact_stage_manual_operand_required"),{code:"owned_initial_exact_stage_manual_operand_required"});
+  const source=nativeRenderVariant.inspectScript({expectedProjectFile:d.sourceProjectFile,rootCompItemId:d.originalGraph.rootCompItemId,variantCompItemId:d.originalGraph.variantCompItemId,controlledLayerIds:d.selectedTextLayerIds}),suffix="return nativeSnapshot(";
+  const at=source.lastIndexOf(suffix);if(at<0||!source.endsWith(");"))throw Object.assign(Error("owned_initial_fixed_snapshot_generator_shape"),{code:"owned_initial_fixed_snapshot_generator_shape"});
+  const script=wrapExtendScriptBody(`${source.slice(0,at)}var ownedFirstTwoTitleInventory=${ownedFirstTwoTitleInventory.toString()};var ownedInitialUiBaseline=${ownedInitialUiBaseline.toString()};var ownedCopiedTitleInventoryJoin=${ownedCopiedTitleInventoryJoin.toString()};var ownedCopiedTitleGraphJoin=${ownedCopiedTitleGraphJoin.toString()};var ownedObservedRootTiming=${ownedObservedRootTiming.toString()};var ownedFixedTitleState=${ownedFixedTitleState.toString()};var ownedFixedStageHost=${ownedFixedStageHost.toString()};return ownedFixedStageHost(${aeLiteral(d)},nativeSnapshot);`);
+  if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_stage_generated_source_bound"),{code:"owned_initial_stage_generated_source_bound"});
+  initialRuntime.assertIngress();currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);
+  return Object.freeze({name:"run_ai_agent_plan",script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex")});
+}
+function ownedFixedAmeHost(d,descriptorSha25664,nativeSnapshot,send){
+  function equal(a,b){var key,ac=0,bc=0;if(a===b)return true;if(a===null||b===null||typeof a!==typeof b||typeof a!=="object"||(a instanceof Array)!==(b instanceof Array))return false;for(key in a)if(Object.prototype.hasOwnProperty.call(a,key)){ac++;if(!Object.prototype.hasOwnProperty.call(b,key)||!equal(a[key],b[key]))return false;}for(key in b)if(Object.prototype.hasOwnProperty.call(b,key))bc++;return ac===bc;}
+  if(!app.project||!app.project.file||app.project.dirty!==false||app.project.file.fsName!==d.expectedCurrent.projectFile)throw Error("owned_ame_current_clean_snapshot_required");
+  var before=ownedFixedTitleState(d.stageDescriptor,d.expectedCurrent.projectFile,nativeSnapshot);if(!equal(before,d.expectedCurrent))throw Error("owned_ame_before_full_snapshot_drift");
+  var returned=send();var after=ownedFixedTitleState(d.stageDescriptor,d.expectedCurrent.projectFile,nativeSnapshot);if(!equal(after,d.expectedCurrent))throw Error("owned_ame_after_full_snapshot_drift");
+  return {schema:"ae-agent.owned-native-ame-receipt.v1",descriptorSha25664:descriptorSha25664,before:before,after:after,send:returned};
+}
+async function ownedTrustedAmeScript(input){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||!trustedExact(input.descriptor,["schema","operation","slot","expectedCurrent","stageDescriptor","args"])||
+      input.descriptor.schema!=="ae-agent.owned-native-ame-command.v1"||!["sources","queue","enqueue","start","status","shared_status"].includes(input.descriptor.operation)||![1,2].includes(input.descriptor.slot)||
+      !/^[a-f0-9]{64}$/.test(input.descriptorSha25664)||crypto.createHash("sha256").update(m100Protocol.stableStringify(input.descriptor)).digest("hex")!==input.descriptorSha25664)
+    throw Object.assign(Error("owned_initial_fixed_ame_getter_required"),{code:"owned_initial_fixed_ame_getter_required"});
+  initialRuntime.assertIngress();const d=input.descriptor,a=d.args,effect=["enqueue","start"].includes(d.operation),context=ownedExecutionRunContext.getStore();
+  if(a.operation!==d.operation||a.ownedInitialDispatch!==true||!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(a.targetSpecifier)||(!(a.queueMode==="shared_queue_v1"&&["start","shared_status"].includes(d.operation))&&a.sourcePath!==d.expectedCurrent.projectFile)||d.expectedCurrent.dirty!==false||d.stageDescriptor.slot!==d.slot)
+    throw Object.assign(Error("owned_initial_fixed_ame_operand_join"),{code:"owned_initial_fixed_ame_operand_join"});
+  if(effect){currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);const program=(ownedAmeContexts.get(context)?.outerArgs||context.args)?.ownedTitleProgram;
+    if(!program||program.operation!==d.operation||program.slot!==d.slot)throw Object.assign(Error("owned_initial_fixed_ame_manual_program_required"),{code:"owned_initial_fixed_ame_manual_program_required"});}
+  const source=nativeRenderVariant.inspectScript({expectedProjectFile:d.expectedCurrent.projectFile,rootCompItemId:d.expectedCurrent.rootCompItemId,variantCompItemId:d.expectedCurrent.compItemId,controlledLayerIds:d.expectedCurrent.selectedTextLayerIds}),at=source.lastIndexOf("return nativeSnapshot(");
+  if(at<0||!source.endsWith(");"))throw Object.assign(Error("owned_initial_fixed_ame_snapshot_generator_shape"),{code:"owned_initial_fixed_ame_snapshot_generator_shape"});
+  const bridgeTalkBody=ameTitleJobs.messageScript(a),sender=ameTitleJobs.commandScript(a);if(!sender.startsWith("return ")||!sender.endsWith(";"))throw Object.assign(Error("owned_initial_fixed_ame_sender_shape"),{code:"owned_initial_fixed_ame_sender_shape"});
+  const body=source.slice(0,at)+"var ownedFirstTwoTitleInventory="+ownedFirstTwoTitleInventory.toString()+";var ownedInitialUiBaseline="+ownedInitialUiBaseline.toString()+";var ownedObservedRootTiming="+ownedObservedRootTiming.toString()+";var ownedFixedTitleState="+ownedFixedTitleState.toString()+";var ownedFixedAmeHost="+ownedFixedAmeHost.toString()+";return ownedFixedAmeHost("+aeLiteral(d)+","+aeLiteral(input.descriptorSha25664)+",nativeSnapshot,function(){"+sender+"});";
+  const script=wrapExtendScriptBody(body);if(Buffer.byteLength(script,"utf8")>1048576||Buffer.byteLength(bridgeTalkBody,"utf8")>524288)throw Object.assign(Error("owned_initial_fixed_ame_source_bound"),{code:"owned_initial_fixed_ame_source_bound"});
+  initialRuntime.assertIngress();if(effect){currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);}return Object.freeze({name:effect?"run_ai_agent_plan":["status","shared_status"].includes(d.operation)?ameTitleJobs.STATUS:d.operation==="sources"?ameTitleJobs.INSPECT:ameTitleJobs.QUEUE_MANIFEST,script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex"),bridgeTalkBody});
+}
+function createOwnedAmeNativeDispatchPort(){
+  async function prepare(context,leaf){const own=ownedAmeContexts.get(context);if(!own||own.leaf!==leaf||own.preparation||!own.gate||!own.snapshot)trustedFail("owned_initial_original_ame_preparation_required");currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);
+    const command=await trustedNative.bindAmeDeliveryFixed(trustedReadDaemon.role,own.gate,own.snapshot,trustedReadDaemon.ame);trustedCurrent();const facts=trustedNative.ameCommandFactsFixed(trustedReadDaemon.role,command),a=facts.descriptor.args;
+    if(facts.slot!==own.slot||facts.operation!==(leaf===6?"enqueue":"start")||facts.descriptor.slot!==own.slot)trustedFail("owned_initial_original_ame_command_slot_join",true);
+    if(leaf===6){const args={targetSpecifier:a.targetSpecifier,expectedProcess:facts.expectedProcess,timeoutMs:a.timeoutMs,sourceProjectFile:a.sourcePath,expectedSourceSha25664:facts.sourceSha25664,batchId:a.batchId,sourceGuid:a.sourceGuid,presetId:facts.presetId,presetSha25664:facts.presetSha25664,outputFileName:path.basename(a.outputPath),range:a.range,...(a.queueMode==="shared_queue_v1"?{queueMode:ameSharedQueue.MODE}:{})};if(a.boundNativeSessionNonce!==null)args.expectedSessionNonce=a.boundNativeSessionNonce;own.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.ENQUEUE,args));context.args=own.args;}
+    const preparation=Object.freeze(Object.create(null));own.preparation=preparation;ownedAmePreparations.set(preparation,{own,context,command,facts,guarded:false,authorized:false,dispatchAttempted:false,dispatched:false,state:null,poll:null});return preparation;
+  }
+  function original(preparation,context){const row=ownedAmePreparations.get(preparation);if(!row||row.context!==context||ownedAmeContexts.get(context)!==row.own||row.own.preparation!==preparation||row.own.record!==context.record)trustedFail("owned_initial_original_ame_preparation_join");currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);return row;}
+  function assertPreparation(preparation,_frozen,context){const row=original(preparation,context);trustedNative.assertAmeCommandCurrentFixed(trustedReadDaemon.role,row.command);if(!row.state||!row.poll||row.poll!==trustedReadDaemon.heldPoll||row.poll.req.aborted||row.poll.res.destroyed||row.poll.res.writableEnded||row.state.project!==row.command)trustedFail("owned_initial_original_ame_delivery_socket_changed",true);row.guarded=true;return true;}
+  function authorize(metadata,context,preparation){const row=original(preparation,context);assertPreparation(preparation,null,context);if(row.authorized||row.dispatched||!trustedExact(metadata,["operation","requestNonce","operationBinding","scriptSha25664","bodySha25664"])||metadata.operation!==row.facts.operation||metadata.requestNonce!==row.facts.descriptor.args.requestNonce||metadata.operationBinding!==row.facts.descriptor.args.operationBinding||metadata.scriptSha25664!==row.facts.scriptSha25664||metadata.bodySha25664!==row.facts.bodySha25664)trustedFail("owned_initial_original_ame_authorization_once",true);row.authorized=true;const cap=Object.freeze(Object.create(null));ownedAmeAuthorizations.set(cap,{row,metadata:JSON.stringify(metadata)});return cap;}
+  function assertAuthorization(cap,metadata,context){const saved=ownedAmeAuthorizations.get(cap);if(!saved||saved.metadata!==JSON.stringify(metadata)||saved.row.context!==context||!saved.row.guarded||!saved.row.authorized||saved.row.dispatchAttempted||saved.row.dispatched)trustedFail("owned_initial_original_ame_authorization_required");original(saved.row.own.preparation,context);trustedNative.assertAmeCommandCurrentFixed(trustedReadDaemon.role,saved.row.command);return true;}
+  async function dispatch(cap,script,metadata,context){assertAuthorization(cap,metadata,context);const row=ownedAmeAuthorizations.get(cap).row,descriptor=row.state.descriptor;if(script!==descriptor.script||crypto.createHash("sha256").update(script).digest("hex")!==row.facts.scriptSha25664)trustedFail("owned_initial_original_ame_script_changed",true);
+    row.dispatchAttempted=true; // irreversible before marker reservation or send; UNKNOWN cannot replay
+    if(row.own.leaf===7){const shared=ownedSharedQueueContexts.has(context),issuer=shared?ameSharedQueueIssuer:ameManualQueueIssuer,binding=shared?context.ownedSharedQueueBinding:context.ownedManualQueueManifest,grant=shared?context.ownedSharedQueueCapability:context.ownedManualQueueCapability;
+      issuer.assertCapability(grant,context,binding);const a=row.facts.descriptor.args;row.manualReservation=issuer.consume(grant,context,binding,{batchId:a.batchId,requestNonce:a.requestNonce,operationBinding:a.operationBinding,reservedAt:new Date().toISOString(),state:"unknown_outcome",transportResolved:false,lastDispatchGuardVerified:true});
+      await trustedNative.captureOriginalAmeManualReservationFixed(trustedReadDaemon.role,row.command);trustedCurrent();issuer.assertConsumedForDispatch(grant,context,binding,row.manualReservation);}
+    ownedAmeNativeDispatchPort.assertPreparation(row.own.preparation,null,context);row.dispatched=true;const deadline=trustedNative.originalDeadlineProjectionFixed(trustedReadDaemon.role,row.command);clearTimeout(row.poll.deadlineTimer);trustedReadDaemon.heldPoll=null;
+    writeJson(row.poll.res,200,{ok:true,command:{...descriptor,remainingCommandMs:deadline.remainingCommandMs,leaseOwner:{panelConnectionId:trustedReadDaemon.connection.panelConnectionId,panelGeneration:trustedReadDaemon.connection.panelGeneration}}});return true;
+  }
+  return Object.freeze({prepareEnqueue:context=>prepare(context,6),prepareStart:context=>prepare(context,7),assertPreparation,authorize,assertAuthorization,dispatch});
+}
+function ownedTrustedAmeManualReservation(facts){const context=ownedExecutionRunContext.getStore(),own=ownedAmeContexts.get(context),row=own&&ownedAmePreparations.get(own.preparation);if(!row||row.own!==own||own.leaf!==7||!row.guarded||row.dispatched||!row.manualReservation||m100Protocol.stableStringify(facts)!==m100Protocol.stableStringify(row.facts))trustedFail("owned_initial_original_manual_marker_receipt_required",true);
+  currentProposalState.assertCurrent(context.record);assertOwnedExecutionContext(context);const a=facts.descriptor.args,file=path.join(LOG_DIR,"ame-title-jobs","starts",a.batchId+".json");if(file!==facts.reservationFile)trustedFail("owned_initial_original_manual_marker_root_changed",true);const raw=fs.readFileSync(file,"utf8");if(raw!==JSON.stringify(row.manualReservation)+"\n")trustedFail("owned_initial_original_manual_marker_bytes_changed",true);return {schema:"ae-agent.owned-original-ame-manual-reservation.v1",raw,rawSha25664:crypto.createHash("sha256").update(raw,"utf8").digest("hex")};}
+function ownedFixedRestorationHost(original,d,nativeSnapshot){
+  function bad(code){throw Error(code);}
+  function equal(a,b){var k,ac=0,bc=0;if(a===b)return true;if(a===null||b===null||typeof a!==typeof b||typeof a!=="object"||(a instanceof Array)!==(b instanceof Array))return false;for(k in a)if(Object.prototype.hasOwnProperty.call(a,k)){ac++;if(!Object.prototype.hasOwnProperty.call(b,k)||!equal(a[k],b[k]))return false;}for(k in b)if(Object.prototype.hasOwnProperty.call(b,k))bc++;return ac===bc;}
+  if(!app.project||!app.project.file||app.project.file.fsName!==d.expectedCurrent.projectFile||app.project.dirty!==false||d.slot!==original.slot||d.schema!=="ae-agent.owned-native-restoration-delivery.v1")bad("owned_restore_original_current_required");
+  var before=ownedFixedTitleState(original,d.expectedCurrent.projectFile,nativeSnapshot);
+  if(!equal(before,d.expectedCurrent))bad("owned_restore_staged_ram_changed");
+  if(!ownedUiRestoreSupported(original.originalUi))bad("owned_restore_operand_unsupported");
+  // Physical source/ancestor/hash guards are held by the original native
+  // dispatch owner; fsName here is only the already admitted exact selector.
+  app.open(new File(original.sourceProjectFile));
+  if(!app.project||!app.project.file||app.project.file.fsName!==original.sourceProjectFile||app.project.dirty!==false)bad("owned_restore_source_open_readback");
+  var reopened=ownedFixedTitleState(original,original.sourceProjectFile,nativeSnapshot);
+  ownedCopiedTitleGraphJoin(original.originalGraph,reopened.graph,original.selectedTextLayerIds,0,original.sourceProjectFile,"original_source_restore_v1");
+  var ui=ownedUiRestore(original.originalUi,original.sourceProjectFile);
+  var after=ownedFixedTitleState(original,original.sourceProjectFile,nativeSnapshot);
+  ownedCopiedTitleGraphJoin(original.originalGraph,after.graph,original.selectedTextLayerIds,0,original.sourceProjectFile,"original_source_restore_v1");
+  if(!equal(after.uiBaseline,ui.after))bad("owned_restore_independent_ui_readback");
+  return {schema:"ae-agent.owned-native-restoration-result.v1",operation:"restore",slot:d.slot,sourceProjectFile:original.sourceProjectFile,before:before,reopened:reopened,after:after,ui:ui};
+}
+function ownedRestorationProgramSource(d){
+  const source=nativeRenderVariant.inspectScript({expectedProjectFile:d.sourceProjectFile,rootCompItemId:d.originalGraph.rootCompItemId,variantCompItemId:d.originalGraph.variantCompItemId,controlledLayerIds:d.selectedTextLayerIds}),at=source.lastIndexOf("return nativeSnapshot(");
+  if(at<0||!source.endsWith(");"))throw Object.assign(Error("owned_initial_restore_snapshot_generator_shape"),{code:"owned_initial_restore_snapshot_generator_shape"});
+  const marker="__OWNED_NATIVE_RESTORE_OPERAND_V1__";
+  const body=source.slice(0,at)+"var ownedFirstTwoTitleInventory="+ownedFirstTwoTitleInventory.toString()+";var ownedInitialUiBaseline="+ownedInitialUiBaseline.toString()+";var ownedCopiedTitleInventoryJoin="+ownedCopiedTitleInventoryJoin.toString()+";var ownedCopiedTitleGraphJoin="+ownedCopiedTitleGraphJoin.toString()+";var ownedObservedRootTiming="+ownedObservedRootTiming.toString()+";var ownedFixedTitleState="+ownedFixedTitleState.toString()+";var ownedUiRestoreSupported="+ownedUiBaseline.supportedOperand.toString()+";var ownedUiRestore="+ownedUiBaseline.restoreUiBaseline.toString()+";var ownedFixedRestorationHost="+ownedFixedRestorationHost.toString()+";return ownedFixedRestorationHost("+aeLiteral(d)+","+marker+",nativeSnapshot);";
+  const wrapped=wrapExtendScriptBody(body),offset=wrapped.indexOf(marker);if(offset<0||wrapped.indexOf(marker,offset+marker.length)>=0||Buffer.byteLength(wrapped,"utf8")>1048576)throw Object.assign(Error("owned_initial_restore_program_bound"),{code:"owned_initial_restore_program_bound"});
+  return {name:"run_ai_agent_plan",prefix:wrapped.slice(0,offset),suffix:wrapped.slice(offset+marker.length)};
+}
+function ownedTrustedRestorationProgram(input){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||input.descriptor?.schema!=="ae-agent.owned-native-stage-descriptor.v1")throw Object.assign(Error("owned_initial_restore_preissue_getter_required"),{code:"owned_initial_restore_preissue_getter_required"});
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
+  if(context.args?.ownedTitleProgram?.operation!=="stage"||context.args.ownedTitleProgram.slot!==input.descriptor.slot||!ownedUiBaseline.supportedOperand(input.descriptor.originalUi))throw Object.assign(Error("owned_initial_restore_preissue_stage_join"),{code:"owned_initial_restore_preissue_stage_join"});
+  return Object.freeze(ownedRestorationProgramSource(input.descriptor));
+}
+async function ownedTrustedRestorationScript(input){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedExact(input,["descriptor","descriptorSha25664"])||input.descriptor?.schema!=="ae-agent.owned-native-restoration-delivery.v1")throw Object.assign(Error("owned_initial_restore_delivery_getter_required"),{code:"owned_initial_restore_delivery_getter_required"});
+  initialRuntime.assertIngress();const context=ownedExecutionRunContext.getStore();currentProposalState.assertCurrent(context&&context.record);assertOwnedExecutionContext(context);
+  const d=input.descriptor;if(context.args?.ownedTitleProgram?.operation!=="restore"||context.args.ownedTitleProgram.slot!==d.slot)throw Object.assign(Error("owned_initial_exact_restore_manual_operand_required"),{code:"owned_initial_exact_restore_manual_operand_required"});
+  const parts=ownedRestorationProgramSource(d.original),script=parts.prefix+aeLiteral(d)+parts.suffix;if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_restore_delivery_bound"),{code:"owned_initial_restore_delivery_bound"});
+  return Object.freeze({name:"run_ai_agent_plan",script,scriptSha25664:crypto.createHash("sha256").update(script).digest("hex")});
+}
+async function ownedTrustedReadonlyScript(request){
+  if(!initialRuntime||!trustedReadDaemon.role||!request||typeof request!=="object"||Array.isArray(request)||
+      Object.keys(request).sort().join(",")!=="args,name,titleRangeMode,titleSelectionMode"||!["first_two_observed_text_states_v1","exact_named_variants"].includes(request.titleSelectionMode)||
+      !["frozen_literal_range","full_observed_root_range_v1"].includes(request.titleRangeMode)||(request.titleRangeMode==="full_observed_root_range_v1"&&request.titleSelectionMode!=="first_two_observed_text_states_v1")||
+      !["get_comp_details","get_layer_details","inspect_title_variants"].includes(request.name)||
+      !request.args||typeof request.args!=="object"||Array.isArray(request.args))
+    throw Object.assign(Error("owned_initial_readonly_script_producer_required"),{code:"owned_initial_readonly_script_producer_required"});
+  initialRuntime.assertIngress();const preparation={name:request.name,titleSelectionMode:request.titleSelectionMode,titleRangeMode:request.titleRangeMode,script:null,fixtureResult:null,count:0};
+  ownedReadonlyScriptPreparations.add(preparation);
+  try{
+    if(request.name==="inspect_title_variants"){
+      const args=nativeRenderVariant.validateInput(request.name,request.args),source=nativeRenderVariant.inspectScript(args);
+      // Same charged native snapshot delivery. It carries actual inventory
+      // for each visited comp and a fresh dirty/source/font read, never caller
+      // supplied readiness or a new inspection dispatch.
+      const observed=request.titleRangeMode==="full_observed_root_range_v1";
+      preparation.script=wrapExtendScriptBody(request.titleSelectionMode==="first_two_observed_text_states_v1"?`var ownedFirstTwoTitleInventory=${ownedFirstTwoTitleInventory.toString()};${observed?`var ownedObservedRootTiming=${ownedObservedRootTiming.toString()};`:""}var captured=(function(){${source}})();captured.ownedTitleInventories=[];${observed?"captured.ownedObservedTimings=[];":""}for(var gi=0;gi<captured.graph.length;gi++){var selected=null;for(var pi=1;pi<=app.project.numItems;pi++){var candidate=app.project.item(pi);if(candidate.id===captured.graph[gi].id){if(selected)throw Error("owned_title_comp_ambiguous");selected=candidate;}}if(!selected)throw Error("owned_title_comp_absent");captured.ownedTitleInventories.push(ownedFirstTwoTitleInventory(selected));${observed?"captured.ownedObservedTimings.push(selected.id===captured.rootCompItemId?ownedObservedRootTiming(selected):null);":""}}return captured;`:source);preparation.count=1;
+    }else await scriptPreparationContext.run(preparation,()=>callTool(request.name,request.args));
+    initialRuntime.assertIngress();
+    if(preparation.count!==1||typeof preparation.script!=="string"||!preparation.script||Buffer.byteLength(preparation.script,"utf8")>1048576)
+      throw Object.assign(Error("owned_initial_single_readonly_script_required"),{code:"owned_initial_single_readonly_script_required"});
+    // This is generated source only. It neither enqueues nor supplies a fake
+    // AE result; D41..44 must bind and actually deliver it before any capture.
+    return Object.freeze({name:request.name,script:preparation.script,scriptSha25664:crypto.createHash("sha256").update(preparation.script).digest("hex")});
+  }finally{ownedReadonlyScriptPreparations.delete(preparation);}
+}
+async function ownedTrustedReadObserve(challenge){
+  if(!initialRuntime||!trustedReadDaemon.role||!trustedReadDaemon.target||!trustedReadDaemon.cep||trustedReadDaemon.closing)
+    throw Object.assign(Error("owned_initial_private_observer_required"),{code:"owned_initial_private_observer_required"});
+  const native=require("./owned-runtime-initial-native-client"),role=trustedReadDaemon.role;
+  native.assertCapturedCurrent(role,trustedReadDaemon.target);trustedReadDaemon.cep.assertCurrent();
+  let poll=trustedReadDaemon.heldPoll;
+  if(!poll){if(trustedReadDaemon.pollWaiter)throw Object.assign(Error("owned_initial_poll_wait_once"),{code:"owned_initial_poll_wait_once"});
+    poll=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{trustedReadDaemon.pollWaiter=null;reject(Object.assign(Error("owned_initial_actual_poll_timeout"),{code:"owned_initial_actual_poll_timeout"}));},1000);
+      trustedReadDaemon.pollWaiter={resolve:value=>{clearTimeout(timer);trustedReadDaemon.pollWaiter=null;resolve(value);}};});}
+  native.assertCapturedCurrent(role,trustedReadDaemon.target);trustedReadDaemon.cep.assertCurrent();
+  if(poll!==trustedReadDaemon.heldPoll||poll.req.aborted||poll.res.destroyed||poll.res.writableEnded)
+    throw Object.assign(Error("owned_initial_original_poll_changed"),{code:"owned_initial_original_poll_changed"});
+  const capture=await trustedReadDaemon.cep.observe(challenge);native.assertCapturedCurrent(role,trustedReadDaemon.target);trustedReadDaemon.cep.assertCurrent();
+  if(poll!==trustedReadDaemon.heldPoll||poll.req.aborted||poll.res.destroyed||poll.res.writableEnded)
+    throw Object.assign(Error("owned_initial_original_poll_changed"),{code:"owned_initial_original_poll_changed"});
+  return {request:poll.req,capture};
+}
+
+function trustedFail(code,unknown=false){throw Object.assign(Error(code),{code,unknown});}
+function trustedExact(value,keys){return value!==null&&typeof value==="object"&&!Array.isArray(value)&&Reflect.ownKeys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));}
+function trustedCurrent(){initialRuntime.assertIngress();if(trustedReadDaemon.closing)trustedFail("owned_initial_daemon_draining");if(trustedReadDaemon.idlePollClosed)trustedFail("owned_initial_original_poll_closed");if(trustedReadDaemon.activeTool&&trustedReadDaemon.activeTool.error)throw trustedReadDaemon.activeTool.error;}
+function trustedQuery(url,keys){if(url.searchParams.size!==keys.length||keys.some(key=>url.searchParams.getAll(key).length!==1)||[...url.searchParams.keys()].some(key=>!keys.includes(key)))trustedFail("owned_initial_exact_query_required");}
+async function trustedBody(req){return new Promise((resolve,reject)=>{let bytes=0,settled=false;const chunks=[];
+  const done=(error,value)=>{if(settled)return;settled=true;error?reject(error):resolve(value);};
+  req.on("data",chunk=>{bytes+=chunk.length;if(bytes>1048576){chunks.length=0;done(Object.assign(Error("owned_initial_body_limit"),{code:"owned_initial_body_limit"}));}else if(!settled)chunks.push(Buffer.from(chunk));});
+  req.once("aborted",()=>done(Object.assign(Error("owned_initial_request_aborted"),{code:"owned_initial_request_aborted",unknown:true})));req.once("error",done);
+  req.once("end",()=>{if(req.complete!==true)return done(Object.assign(Error("owned_initial_request_incomplete"),{code:"owned_initial_request_incomplete",unknown:true}));done(null,Buffer.concat(chunks));});});}
+function trustedPollIdentity(url){trustedQuery(url,["panelConnectionId","panelGeneration","panelInstanceId","panelLifecycleEpoch","projectFile"]);
+  const connection=url.searchParams.get("panelConnectionId"),generation=url.searchParams.get("panelGeneration"),instance=url.searchParams.get("panelInstanceId"),epoch=url.searchParams.get("panelLifecycleEpoch");
+  if([connection,generation,instance].some(value=>!value||value.length>256||value.includes("\0"))||!/^\d{1,16}$/.test(epoch)||!Number.isSafeInteger(Number(epoch)))trustedFail("owned_initial_panel_identity_required");
+  return {panelConnectionId:connection,panelGeneration:generation,panelInstanceId:instance,panelLifecycleEpoch:Number(epoch)};}
+function trustedObservePanel(identity,req){const previous=trustedReadDaemon.connection;
+  if(previous&&Object.keys(identity).some(key=>identity[key]!==previous[key]))trustedFail("owned_initial_panel_generation_changed",true);
+  if(!previous)trustedReadDaemon.connection=Object.freeze(identity);lastPanelSeenAt=Date.now();lastPanelInfo={...identity,userAgent:req.headers["user-agent"]||null,at:lastPanelSeenAt};}
+async function trustedWaitTarget(req,res){if(trustedReadDaemon.target&&trustedReadDaemon.cep)return;trustedCurrent();
+  await new Promise((resolve,reject)=>{const item={resolve:()=>{clearTimeout(timer);trustedReadDaemon.targetWaiters.delete(item);resolve();},reject:error=>{clearTimeout(timer);trustedReadDaemon.targetWaiters.delete(item);reject(error);}};
+    const timer=setTimeout(()=>item.reject(Object.assign(Error("owned_initial_target_capture_timeout"),{code:"owned_initial_target_capture_timeout"})),30000);
+    trustedReadDaemon.targetWaiters.add(item);res.once("close",()=>{if(!res.writableFinished)item.reject(Object.assign(Error("owned_initial_original_startup_request_lost"),{code:"owned_initial_original_startup_request_lost",unknown:true}));});
+    if(req.aborted)item.reject(Object.assign(Error("owned_initial_original_startup_request_lost"),{code:"owned_initial_original_startup_request_lost",unknown:true}));});
+  trustedCurrent();trustedNative.assertCapturedCurrent(trustedReadDaemon.role,trustedReadDaemon.target);}
+async function trustedWaitPoll(){if(trustedReadDaemon.heldPoll)return trustedReadDaemon.heldPoll;
+  if(trustedReadDaemon.pollWaiter)trustedFail("owned_initial_poll_wait_once");
+  return new Promise((resolve,reject)=>{let timer,settled=false;const waiter={resolve:value=>{if(settled||trustedReadDaemon.pollWaiter!==waiter)return false;settled=true;clearTimeout(timer);trustedReadDaemon.pollWaiter=null;resolve(value);return true;},
+    cancel:error=>{if(settled)return false;settled=true;clearTimeout(timer);if(trustedReadDaemon.pollWaiter===waiter)trustedReadDaemon.pollWaiter=null;reject(error);return true;}};
+    trustedReadDaemon.pollWaiter=waiter;timer=setTimeout(()=>waiter.cancel(Object.assign(Error("owned_initial_actual_poll_timeout"),{code:"owned_initial_actual_poll_timeout",unknown:true})),1000);});}
+function trustedHoldPoll(poll){if(trustedReadDaemon.idlePollClosed)trustedFail("owned_initial_original_poll_closed");if(trustedReadDaemon.heldPoll)trustedFail("owned_initial_concurrent_panel_poll",true);
+  const deadline=trustedNative.originalDeadlineProjectionFixed(trustedReadDaemon.role);
+  if(!Number.isSafeInteger(deadline.remainingSessionMs)||deadline.remainingSessionMs<=0||deadline.remainingSessionMs>28800000)trustedFail("owned_initial_original_poll_deadline_required");
+  trustedReadDaemon.heldPoll=poll;
+  poll.deadlineTimer=setTimeout(()=>{if(trustedReadDaemon.heldPoll!==poll)return;trustedReadDaemon.heldPoll=null;trustedReadDaemon.idlePollClosed=true;
+    const error=Object.assign(Error("owned_initial_original_poll_deadline"),{code:"owned_initial_original_poll_deadline",unknown:!!trustedReadDaemon.activeTool});
+    trustedReadDaemon.activeTool?.reject?.(error);poll.req.socket.destroy();},deadline.remainingSessionMs);
+  poll.res.once("close",()=>{clearTimeout(poll.deadlineTimer);if(trustedReadDaemon.heldPoll===poll){trustedReadDaemon.heldPoll=null;
+    if(!poll.res.writableFinished){trustedReadDaemon.idlePollClosed=true;trustedReadDaemon.activeTool?.reject?.(Object.assign(Error("owned_initial_actual_poll_lost"),{code:"owned_initial_actual_poll_lost",unknown:true}));}}});
+  if(trustedReadDaemon.pollWaiter)trustedReadDaemon.pollWaiter.resolve(poll);}
+async function trustedObserveHandler(handler){const role=trustedReadDaemon.role;
+  const readiness=await trustedNative.takeChallenge(role,handler);trustedCurrent();const measured=await trustedNative.captureObservationFixed(role,trustedReadDaemon.target,readiness);trustedCurrent();
+  await trustedNative.submitObservation(role,readiness,measured);trustedCurrent();const same=await trustedNative.takeChallenge(role,handler);trustedCurrent();
+  const sameMeasured=await trustedNative.captureObservationFixed(role,trustedReadDaemon.target,same);trustedCurrent();
+  await trustedNative.submitObservation(role,same,sameMeasured);trustedCurrent();return sameMeasured;}
+async function trustedBootstrap(handler){if(trustedReadDaemon.bootstrapStarted)trustedFail("owned_initial_bootstrap_once_spent");trustedReadDaemon.bootstrapStarted=true;
+  if(fs.existsSync(EDIT_SESSION_ACTIVE_FILE))trustedFail("owned_initial_existing_edit_session_requires_reconciliation");
+  const role=trustedReadDaemon.role,preactor=await trustedNative.captureOriginalAeFixed(role);trustedCurrent();
+  const present=await trustedObservers.inspectPreactorTargetFixed(role,preactor);trustedCurrent();
+  const bootstrap=await trustedNative.reservePanelBootstrapFixed(role,handler,preactor);trustedCurrent();
+  if(!present){await trustedNative.launchPanelBootstrapFixed(role,bootstrap,preactor);trustedCurrent();
+    // Passive target discovery may wait; the irreversible OS target capture is
+    // attempted exactly once after the fixed page is actually present.
+    let appeared=false;for(let i=0;i<20;i++){if(await trustedObservers.inspectPreactorTargetFixed(role,preactor)){appeared=true;break;}trustedCurrent();await new Promise(resolve=>setTimeout(resolve,250));trustedCurrent();}
+    if(!appeared)trustedFail("owned_initial_bootstrap_target_not_observed",true);}
+  trustedNative.assertBootstrapSettled(role);trustedCurrent();trustedReadDaemon.target=await trustedNative.captureOriginalAeCepFixed(role);trustedCurrent();
+  trustedReadDaemon.cep=await trustedObservers.bindLoadedCepFixed(role,trustedReadDaemon.target);trustedCurrent();
+  // Loaded original CEP source precedes startup replies. This does not wait
+  // for the later held GETnext/challenge/PANEL/READ.
+  for(const waiter of [...trustedReadDaemon.targetWaiters])waiter.resolve();
+  await trustedWaitPoll();trustedCurrent();const observed=await trustedObserveHandler(handler);trustedCurrent();
+  await trustedNative.observeActor(role,handler,observed);trustedCurrent();return toolResult({ok:true,panelConnected:true,authorityMode:"local_controller_session",genuineChatIdentity:false,replayAllowed:false});}
+async function trustedOriginalCompletionPoll(originalJob,slot){const role=trustedReadDaemon.role;
+  if(![1,2].includes(slot)||trustedReadDaemon.ameJobs[slot-1]!==originalJob)trustedFail("owned_initial_original_completion_job_required");trustedCurrent();
+  const project=await trustedNative.beginOriginalCompletionPollFixed(role,originalJob);trustedCurrent();const descriptor=trustedNative.describeOriginalCompletionPollFixed(role,project);
+  if(!descriptor||typeof descriptor.id!=="string"||trustedReadDaemon.projects.has(descriptor.id))trustedFail("owned_initial_original_completion_descriptor",true);
+  let state,timer,ownedWaiter;const completion=new Promise((resolve,reject)=>{state={project,descriptor,inspection:true,preparation:false,restoration:false,ame:true,ameOperation:trustedReadDaemon.executionProfile==="shared_queue_v1"?"shared_status":"status",stage:false,stageSlot:slot,name:ameTitleJobs.STATUS,resolve,reject,delivered:false,submitted:false,deadlineError:null};trustedReadDaemon.projects.set(descriptor.id,state);
+    const remaining=trustedNative.originalDeadlineProjectionFixed(role,project).remainingCommandMs;if(!Number.isSafeInteger(remaining)||remaining<=0||remaining>10000)trustedFail("owned_initial_original_completion_deadline",true);
+    timer=setTimeout(()=>{const error=Object.assign(Error("owned_initial_original_completion_timeout"),{code:"owned_initial_original_completion_timeout",unknown:true});state.deadlineError=error;reject(error);},remaining);});
+  void completion.catch(()=>{});const current=()=>{trustedCurrent();if(state.deadlineError)throw state.deadlineError;trustedNative.assertCurrent(role,project);};
+  try{const priorWaiter=trustedReadDaemon.pollWaiter,waiting=trustedWaitPoll();if(!priorWaiter)ownedWaiter=trustedReadDaemon.pollWaiter;
+    const poll=await Promise.race([waiting,completion]);current();if(poll!==trustedReadDaemon.heldPoll||poll.req.aborted||poll.res.destroyed||poll.res.writableEnded)trustedFail("owned_initial_original_completion_poll_lost",true);
+    const request=trustedHttp.requestCapability(role,poll.req);await trustedNative.selectOriginalCompletionPollFixed(role,project,request);current();state.delivered=true;const deadline=trustedNative.originalDeadlineProjectionFixed(role,project);current();clearTimeout(poll.deadlineTimer);trustedReadDaemon.heldPoll=null;
+    writeJson(poll.res,200,{ok:true,command:{...descriptor,remainingCommandMs:deadline.remainingCommandMs,leaseOwner:{panelConnectionId:trustedReadDaemon.connection.panelConnectionId,panelGeneration:trustedReadDaemon.connection.panelGeneration}}});const result=await completion;trustedCurrent();return result;
+  }catch(error){ownedWaiter?.cancel(error);try{await trustedNative.abandonOriginalCompletionPollFixed(role,project);}catch(abandonment){error.abandonmentCode=abandonment.code||"owned_original_poll_abandonment_closed";}throw Object.assign(error,{unknown:true});}finally{clearTimeout(timer);ownedWaiter?.cancel(state.deadlineError||Object.assign(Error("owned_initial_original_completion_wait_closed"),{unknown:true}));trustedReadDaemon.projects.delete(descriptor.id);}
+}
+function trustedStartSharedQueueCompletion(originalJob){
+  if(trustedReadDaemon.sharedQueueFlight||trustedReadDaemon.ameJobs[1]!==originalJob)trustedFail("owned_initial_shared_observation_once",true);
+  const flight={originalJob,complete:false,unknown:false,promise:null};trustedReadDaemon.sharedQueueFlight=flight;
+  flight.promise=(async()=>{
+    while(trustedReadDaemon.activeTool){await new Promise(resolve=>setTimeout(resolve,25));trustedCurrent();}
+    for(let index=0;index<10;index++){const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);if(facts.complete){await trustedNative.acknowledgeSharedQueueIoFixed(trustedReadDaemon.role,originalJob);flight.complete=true;return facts;}
+      if(!Number.isSafeInteger(facts.remainingPolls)||facts.remainingPolls<1||facts.nextPollDelayMs>=facts.remainingJobMs)trustedFail("owned_initial_shared_observation_budget_unknown",true);
+      if(facts.nextPollDelayMs)await new Promise(resolve=>setTimeout(resolve,facts.nextPollDelayMs));trustedCurrent();while(trustedReadDaemon.activeTool){await new Promise(resolve=>setTimeout(resolve,25));trustedCurrent();}
+      await trustedOriginalCompletionPoll(originalJob,2);if(trustedReadDaemon.sharedQueueResponseCleanup){await trustedReadDaemon.sharedQueueResponseCleanup;trustedReadDaemon.sharedQueueResponseCleanup=null;}trustedCurrent();
+      if(trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob).complete){await trustedNative.acknowledgeSharedQueueIoFixed(trustedReadDaemon.role,originalJob);flight.complete=true;return;}
+    }
+    trustedFail("owned_initial_shared_observation_limit_unknown",true);
+  })();void flight.promise.catch(error=>{flight.unknown=true;flight.error=error;trustedReadDaemon.activeTool?.reject?.(error);});return flight;
+}
+function trustedStartOriginalCompletion(originalJob,slot){if(![1,2].includes(slot)||trustedReadDaemon.ameJobs[slot-1]!==originalJob)trustedFail("owned_initial_original_completion_start_required",true);
+  if(!trustedReadDaemon.completionFlights)trustedReadDaemon.completionFlights=[null,null];if(trustedReadDaemon.completionFlights[slot-1])trustedFail("owned_initial_original_completion_lifetime_once",true);
+  const flight={originalJob,slot,unknown:false,complete:false,promise:null};trustedReadDaemon.completionFlights[slot-1]=flight;
+  flight.promise=(async()=>{for(let index=0;index<10;index++){trustedCurrent();const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);
+      if(facts.complete){await trustedPublishOriginalCompletion(flight);flight.complete=true;return;}if(!Number.isSafeInteger(facts.remainingPolls)||facts.remainingPolls<=0||!Number.isSafeInteger(facts.nextPollDelayMs)||facts.nextPollDelayMs<0||facts.nextPollDelayMs>=facts.remainingJobMs)trustedFail("owned_initial_original_completion_budget_closed",true);
+      if(facts.nextPollDelayMs)await new Promise(resolve=>setTimeout(resolve,facts.nextPollDelayMs));trustedCurrent();await trustedOriginalCompletionPoll(originalJob,slot);
+      if(trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob).complete){await trustedPublishOriginalCompletion(flight);flight.complete=true;return;}}
+    trustedFail("owned_initial_original_completion_poll_limit",true);
+  })();void flight.promise.catch(error=>{flight.unknown=true;flight.error=error;trustedReadDaemon.activeTool?.reject?.(error);});return flight;
+}
+async function trustedPublishOriginalCompletion(flight){const index=flight.slot-1,terminal=trustedReadDaemon.completionTerminals?.[index];
+  const cleanup=trustedReadDaemon.completionResultCleanups?.[index];
+  if(trustedReadDaemon.completionFlights?.[index]!==flight||trustedReadDaemon.ameJobs[index]!==flight.originalJob||!terminal||!cleanup||cleanup.terminal!==terminal||flight.publicationPromise)trustedFail("owned_initial_original_completion_publication_join",true);
+  flight.publicationPromise=(async()=>{await cleanup.promise;
+    if(trustedReadDaemon.completionFlights?.[index]!==flight||trustedReadDaemon.ameJobs[index]!==flight.originalJob||trustedReadDaemon.completionTerminals?.[index]!==terminal||trustedReadDaemon.completionResultCleanups?.[index]!==cleanup)
+      trustedFail("owned_initial_original_completion_producer_cleanup_drift",true);
+    trustedCurrent();return trustedNative.publishOwnCompletionReadyFixed(trustedReadDaemon.role,terminal);
+  })();void flight.publicationPromise.catch(()=>{});await flight.publicationPromise;trustedCurrent();flight.published=true;
+}
+async function trustedProject(handler){return trustedCommand(handler,false);}
+async function trustedReadonlyInspection(handler,name,args){return trustedCommand(handler,true,name,[ameTitleJobs.INSPECT,ameTitleJobs.QUEUE_MANIFEST].includes(name)?{operation:"ame_inspection",slot:args.variantSlot}:null);}
+async function trustedCommand(handler,inspection,name,stageInputs=null){const role=trustedReadDaemon.role,ameInspection=stageInputs?.operation==="ame_inspection",ameEffect=stageInputs?.operation==="ame",ame=ameInspection||ameEffect,preparation=name==="run_ai_agent_plan"&&!stageInputs,restoration=stageInputs?.operation==="restore";
+  if(ameInspection){if(![1,2].includes(stageInputs.slot)||!trustedReadDaemon.savedSnapshots[stageInputs.slot-1])trustedFail("owned_initial_original_saved_snapshot_before_ame_read");if(!trustedReadDaemon.ame){trustedReadDaemon.ame=await trustedNative.captureOriginalAmeFixed(role);trustedCurrent();}}
+  const prepared=ameEffect?ownedAmePreparations.get(stageInputs.preparation):null;
+  if(ameEffect&&(!prepared||prepared.context!==stageInputs.context||prepared.own.slot!==stageInputs.slot))trustedFail("owned_initial_original_ame_prepared_command_required");
+  const project=await (ameEffect?prepared.command:ameInspection?trustedNative.bindAmeSourceInspectionFixed(role,handler,trustedReadDaemon.savedSnapshots[stageInputs.slot-1],trustedReadDaemon.ame):restoration?trustedNative.bindRestorationDeliveryFixed(role,stageInputs.gate,stageInputs.program):stageInputs?trustedNative.bindStageDeliveryFixed(role,stageInputs.gate,stageInputs.workingCopy):preparation?trustedNative.bindPreparationDeliveryFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal):inspection?trustedNative.bindExecutionFixed(role,handler):trustedNative.bindProjectFixed(role,handler));trustedCurrent();
+  const descriptor=inspection?trustedNative.describeExecution(role,project):trustedNative.describeProject(role,project);if(!descriptor||typeof descriptor.id!=="string"||trustedReadDaemon.projects.has(descriptor.id))trustedFail("owned_initial_original_project_descriptor",true);
+  let timer,state;const completion=new Promise((resolve,reject)=>{state={project,descriptor,inspection,preparation,restoration,ame,ameOperation:ameInspection?(name===ameTitleJobs.INSPECT?"sources":"queue"):ameEffect?prepared.facts.operation:null,stage:!!stageInputs&&!restoration&&!ame,stageSlot:stageInputs?.slot,name,resolve,reject,delivered:false,submitted:false,deadlineError:null};trustedReadDaemon.projects.set(descriptor.id,state);
+    timer=setTimeout(()=>{const error=Object.assign(Error("owned_initial_project_terminal_timeout"),{code:"owned_initial_project_terminal_timeout",unknown:true});state.deadlineError=error;
+      reject(error);if(trustedReadDaemon.activeTool?.reject)trustedReadDaemon.activeTool.reject(error);},30000);});
+  // Handle the deadline immediately. HTTP may settle early, but this operation
+  // retains its original pending native owner until that exact await settles.
+  void completion.catch(()=>{});const commandCurrent=()=>{trustedCurrent();if(state.deadlineError)throw state.deadlineError;};
+  try{const poll=await trustedWaitPoll();commandCurrent();if(poll!==trustedReadDaemon.heldPoll||poll.req.aborted||poll.res.destroyed||poll.res.writableEnded)trustedFail("owned_initial_actual_delivery_request_changed",true);
+    const request=trustedHttp.requestCapability(role,poll.req),selected=await (inspection?trustedNative.selectExecution(role,project,request):trustedNative.selectProject(role,project,request));commandCurrent();
+    await (inspection?trustedNative.guardExecution(role,selected,request):trustedNative.guardProject(role,selected,request));commandCurrent();state.delivered=true;
+    if(ameEffect){prepared.state=state;prepared.poll=poll;const f=prepared.facts,metadata={operation:f.operation,requestNonce:f.descriptor.args.requestNonce,operationBinding:f.descriptor.args.operationBinding,scriptSha25664:f.scriptSha25664,bodySha25664:f.bodySha25664};ownedAmeNativeDispatchPort.assertPreparation(stageInputs.preparation,null,stageInputs.context);const authorization=ownedAmeNativeDispatchPort.authorize(metadata,stageInputs.context,stageInputs.preparation);await ownedAmeNativeDispatchPort.dispatch(authorization,descriptor.script,metadata,stageInputs.context);commandCurrent();const result=await completion;commandCurrent();return toolResult(result);}
+    // Native records D44 only from this original response's real finish and the
+    // exact bytes retained by the transport. This send has no caller receipt.
+    const deadline=trustedNative.originalDeadlineProjectionFixed(role,project);commandCurrent();clearTimeout(poll.deadlineTimer);
+    trustedReadDaemon.heldPoll=null;writeJson(poll.res,200,{ok:true,command:{...descriptor,remainingCommandMs:deadline.remainingCommandMs,leaseOwner:{panelConnectionId:trustedReadDaemon.connection.panelConnectionId,panelGeneration:trustedReadDaemon.connection.panelGeneration}}});
+    const result=await completion;commandCurrent();return toolResult(result);
+  }catch(error){throw Object.assign(error,{unknown:true});}finally{clearTimeout(timer);trustedReadDaemon.projects.delete(descriptor.id);}}
+function ownedFixedManualRecord(body){
+  const keys=["actionId","payloadRef","payloadHash","previewHash","riskLevel","riskPolicyVersion","requestId","dryRun","confirm","allowMutations","autoEditSession","timeoutMs","confirmationToken","confirmedBySurface","confirmedBySession"];
+  const record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record);currentProposalState.assertCurrent(record);
+  const fixed=ownedFixedTitleProposals.get(record),start=fixed?.leaf===7;if(start)keys.push("ameManualQueueWitness");
+  if(!trustedExact(body,keys)||!own||!own.adopted||own.executing||!own.completedDryRun||!own.proposalTerminal||!own.dryTerminal||record.executionState!=="pending"||
+      record.confirmedAt||body.dryRun!==false||body.confirm!==true||body.allowMutations!==true||body.autoEditSession!==true||body.timeoutMs!==120000||
+      body.confirmationToken!==own.token||m100Protocol.hashConfirmationToken(body.confirmationToken)!==record.confirmationTokenHash||
+      body.confirmedBySurface!=="cep-panel"||body.confirmedBySession!==own.panel.confirmationSessionId||
+      ["actionId","payloadRef","payloadHash","previewHash","riskLevel","riskPolicyVersion","requestId"].some(key=>body[key]!==record[key]))
+    trustedFail("owned_initial_original_manual_run_required");
+  if(start){const witness=body.ameManualQueueWitness,queue=trustedReadDaemon.ameQueueFacts?.[fixed.slot-1];if(!trustedExact(witness,["acceptedDryRunId","declaration","manifestHash","panelConnectionId","panelGeneration","trustedGesture"])||!queue||witness.acceptedDryRunId!==JSON.parse(own.completedDryRun).id||witness.declaration!==ameManualQueue.SINGLE_DECLARATION||witness.manifestHash!==queue.value.manifestSha25664||witness.panelConnectionId!==own.panel.panelConnectionId||witness.panelGeneration!==own.panel.panelGeneration||witness.trustedGesture!==true)trustedFail("owned_initial_original_protected_START_witness_required");}
+  ownedOriginalPreparationPanel(own.panel);return record;
+}
+async function trustedManualRun(req,res,request,body){
+  const value=JSON.parse(body.toString("utf8")),record=ownedFixedManualRecord(value);
+  const fixed=ownedFixedTitleProposals.get(record),route=new URL(req.url,"http://127.0.0.1:3456").pathname;if(route!==(fixed.leaf===7?ameManualQueue.ROUTE:"/agents/plan/run"))trustedFail("owned_initial_exact_original_manual_route_required");
+  if(trustedReadDaemon.manualPending||trustedReadDaemon.activeTool&&!trustedReadDaemon.activeTool.execute)trustedFail("owned_initial_original_manual_run_once");
+  let pending,timer;const completion=new Promise((resolve,reject)=>{pending={record,value,request,authRole:res.authRole,route,resolve,reject,started:false,error:null};
+    timer=setTimeout(()=>{pending.error=Object.assign(Error("owned_initial_original_manual_join_timeout"),{code:"owned_initial_original_manual_join_timeout",unknown:pending.started});pending.reject(pending.error);trustedReadDaemon.activeTool?.reject?.(pending.error);},30000);});
+  void completion.catch(()=>{});trustedReadDaemon.manualPending=pending;
+  res.once("close",()=>{if(!res.writableFinished){pending.error=Object.assign(Error("owned_initial_original_manual_response_lost"),{code:"owned_initial_original_manual_response_lost",unknown:true});pending.reject(pending.error);trustedReadDaemon.activeTool?.reject?.(pending.error);}});
+  if(trustedReadDaemon.manualWaiter)trustedReadDaemon.manualWaiter.resolve(pending);
+  try{const run=await completion;trustedCurrent();writeJson(res,200,{ok:true,run});}
+  finally{clearTimeout(timer);if(!pending.started&&trustedReadDaemon.manualPending===pending)trustedReadDaemon.manualPending=null;}
+}
+async function trustedWaitOriginalManual(record){
+  const current=trustedReadDaemon.manualPending;if(current){if(current.record!==record||current.error||current.started)trustedFail("owned_initial_original_manual_join_changed",true);return current;}
+  if(trustedReadDaemon.manualWaiter)trustedFail("owned_initial_original_manual_wait_once");
+  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{trustedReadDaemon.manualWaiter=null;reject(Object.assign(Error("owned_initial_original_manual_join_timeout"),{code:"owned_initial_original_manual_join_timeout"}));},30000);
+    trustedReadDaemon.manualWaiter={resolve:pending=>{clearTimeout(timer);trustedReadDaemon.manualWaiter=null;if(pending.record!==record||pending.error||pending.started)reject(Object.assign(Error("owned_initial_original_manual_join_changed"),{code:"owned_initial_original_manual_join_changed",unknown:true}));else resolve(pending);}};});
+}
+async function trustedSharedQueueExecute(handler,value,originalRequest){
+  const role=trustedReadDaemon.role,record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record),fixed=ownedFixedTitleProposals.get(record);currentProposalState.assertCurrent(record);
+  if(trustedReadDaemon.executionProfile!=="shared_queue_v1"||!own||!fixed||own.executing||own.completedExecution||record.executionState!=="pending"||record.confirmedAt||!own.proposalTerminal||!own.dryTerminal||!own.completedDryRun||!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_original_shared_preparation_required");
+  const step=record.payload.plan.steps[0],operations={14:"checkpoint",15:"clean_copy",5:"stage",6:"enqueue",7:"start",8:"restore"};
+  const exact={...step.args,actionId:record.actionId,payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,ownedTitleOperation:operations[fixed.leaf],variantSlot:fixed.slot};
+  if(value.name!==step.tool||m100Protocol.stableStringify(value.args)!==m100Protocol.stableStringify(exact)||!operations[fixed.leaf]||fixed.leaf===7&&fixed.slot!==2)trustedFail("owned_initial_exact_shared_program_required");
+  const checkpoint=trustedNative.manualExecutionPreflightFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal);
+  if(!/^[a-f0-9]{32}$/.test(checkpoint.callRef)||checkpoint.executionId!==ownedNativeUuid32(checkpoint.callRef))trustedFail("owned_initial_original_shared_execution_ref");
+  own.executing=true;record.confirmedAt=new Date().toISOString();record.confirmedBySurface="owned-original-controller";record.confirmedBySession=null;record.executionId=checkpoint.executionId;record.executionState="executing";
+  const context={source:"owned-native-shared-queue",record,runId:checkpoint.executionId,args:step.args,outerArgs:step.args,autonomous:true,confirm:true,allowWithoutCheckpoint:false,stepCount:1,checkpoint};
+  ownedSharedQueueContexts.set(context,{handler,request:originalRequest,record,controllerArgs:exact});
+  const result=await ownedExecutionRunContext.run(context,()=>ownedSharedQueueContextGuard.run(context,async()=>{
+    if([6,7].includes(fixed.leaf)){
+      const snapshot=trustedReadDaemon.savedSnapshots[fixed.slot-1];if(!snapshot||!trustedReadDaemon.ame||!trustedReadDaemon.ameSources[fixed.slot-1])trustedFail("owned_initial_original_shared_source_required");
+      const nativeContext={record,slot:fixed.slot,leaf:fixed.leaf,outerArgs:step.args,args:null,snapshot,gate:null,preparation:null};ownedAmeContexts.set(context,nativeContext);
+      if(fixed.leaf===7){const queue=trustedReadDaemon.ameQueueFacts?.[1];if(!queue||queue.terminal!==trustedReadDaemon.ameQueues[1])trustedFail("owned_initial_original_shared_pair_required");const actual=trustedNative.ameQueuePreparationFactsFixed(role,queue.terminal);if(JSON.stringify(actual)!==queue.original)trustedFail("owned_initial_original_shared_binding_changed");nativeContext.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.START,actual.args));context.args=nativeContext.args;context.ownedSharedQueueBinding=ameSharedQueue.validateBinding(actual.manifest);context.ownedSharedQueueCapability=ameSharedQueueIssuer.authorize(context,context.ownedSharedQueueBinding);}
+      nativeContext.gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,originalRequest);trustedCurrent();
+      const preparation=await(fixed.leaf===6?ownedAmeNativeDispatchPort.prepareEnqueue(context):ownedAmeNativeDispatchPort.prepareStart(context));trustedCurrent();return JSON.parse((await trustedCommand(nativeContext.gate,true,"run_ai_agent_plan",{operation:"ame",preparation,context,slot:fixed.slot})).content[0].text);
+    }
+    const gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,originalRequest);trustedCurrent();assertOwnedExecutionContext(context);
+    if(fixed.leaf===14){if(trustedReadDaemon.checkpoint)trustedFail("owned_initial_checkpoint_once");trustedReadDaemon.checkpoint=await trustedNative.executeOwnedCheckpointFixed(role,gate);return trustedNative.describeOwnedCheckpointFixed(role,trustedReadDaemon.checkpoint);}
+    if(fixed.leaf===15){if(trustedReadDaemon.cleanCopies[fixed.slot-1])trustedFail("owned_initial_clean_copy_once");const copy=await trustedNative.executeOwnedCleanCopyFixed(role,gate);trustedReadDaemon.cleanCopies[fixed.slot-1]=copy;return trustedNative.describeOwnedCleanCopyFixed(role,copy);}
+    const workingCopy=trustedReadDaemon.cleanCopies[fixed.slot-1];if(!workingCopy)trustedFail("owned_initial_original_shared_working_copy_required");
+    if(fixed.leaf===8){const program=trustedReadDaemon.restorationPrograms[fixed.slot-1];if(!program)trustedFail("owned_initial_original_shared_restore_program_required");return JSON.parse((await trustedCommand(gate,true,"run_ai_agent_plan",{operation:"restore",gate,program,slot:fixed.slot})).content[0].text);}
+    if(trustedReadDaemon.restorationPrograms[fixed.slot-1])trustedFail("owned_initial_restore_preissue_once");trustedReadDaemon.restorationPrograms[fixed.slot-1]=await trustedNative.preissueRestorationFixed(role,gate,workingCopy);trustedCurrent();return JSON.parse((await trustedCommand(gate,true,"run_ai_agent_plan",{gate,workingCopy,slot:fixed.slot})).content[0].text);
+  }));
+  trustedCurrent();const run={id:checkpoint.executionId,ok:true,dryRun:false,actionId:record.actionId,revision:record.revision,requestId:record.requestId,finishedAt:new Date().toISOString(),result,nativeAuthority:false,authoritySource:"original_owned_shared_queue_profile",mediaVerified:false,nativeQueueCompositionVerified:false};
+  if(!currentProposalState.publishRunResult(record,run,{id:run.id,ok:true,dryRun:false,finishedAt:run.finishedAt}))trustedFail("owned_initial_original_shared_publication_unknown",true);own.completedExecution=Object.freeze({callRef:checkpoint.executionId,rawCallRef:checkpoint.callRef});return toolResult(run);
+}
+async function trustedFixedExecute(handler,value,originalRequest){
+  if(trustedReadDaemon.executionProfile==="shared_queue_v1")return trustedSharedQueueExecute(handler,value,originalRequest);
+  const role=trustedReadDaemon.role,record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record),fixed=ownedFixedTitleProposals.get(record);
+  currentProposalState.assertCurrent(record);
+  if(!own||!fixed||!own.adopted||own.executing||record.executionState!=="pending"||record.confirmedAt||!own.completedDryRun||!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_original_execution_preparation_required");
+  const step=record.payload.plan.steps[0],operations={14:"checkpoint",15:"clean_copy",5:"stage",6:"enqueue",7:"start",8:"restore"};
+  const exact={...step.args,actionId:record.actionId,payloadRef:record.payloadRef,payloadHash:record.payloadHash,previewHash:record.previewHash,
+    riskLevel:record.riskLevel,riskPolicyVersion:record.riskPolicyVersion,ownedTitleOperation:operations[fixed.leaf],variantSlot:fixed.slot};
+  if(value.name!==step.tool||m100Protocol.stableStringify(value.args)!==m100Protocol.stableStringify(exact)||![14,15].includes(fixed.leaf))
+    trustedFail("owned_initial_exact_execution_producer_required");
+  const checkpoint=trustedNative.manualExecutionPreflightFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal);
+  if(!/^[a-f0-9]{32}$/.test(checkpoint.callRef)||/^0+$/.test(checkpoint.callRef)||checkpoint.executionId!==ownedNativeUuid32(checkpoint.callRef))trustedFail("owned_initial_original_execution_ref_required");
+  const pending=await trustedWaitOriginalManual(record);trustedCurrent();ownedFixedManualRecord(pending.value);
+  if(pending.error||pending!==trustedReadDaemon.manualPending)trustedFail("owned_initial_original_manual_join_changed",true);
+  pending.started=true;own.executing=true;
+  record.confirmedAt=new Date().toISOString();record.confirmedBySurface="cep-panel";record.confirmedBySession=own.panel.confirmationSessionId;
+  record.executionId=checkpoint.executionId;record.executionState="executing";
+  const meta={route:"/agents/plan/run",authRole:"panel",key:m100PlanRunLookupKey(pending.value)};
+  try{const result=await manualPlanIngress.runAuthenticated(meta,async()=>{
+    const context={source:"ai-plan-run",record,runId:checkpoint.executionId,args:step.args,autonomous:false,confirm:true,allowWithoutCheckpoint:false,stepCount:1,checkpoint};
+    manualPlanIngress.brand(context);
+    return ownedExecutionRunContext.run(context,async()=>{
+      if(fixed.leaf===6||fixed.leaf===7){const snapshot=trustedReadDaemon.savedSnapshots[fixed.slot-1];if(!snapshot||!trustedReadDaemon.ame||!trustedReadDaemon.ameSources[fixed.slot-1])trustedFail("owned_initial_original_ame_source_before_effect");const nativeContext={record,pending,slot:fixed.slot,leaf:fixed.leaf,outerArgs:step.args,args:null,snapshot,gate:null,preparation:null};ownedAmeContexts.set(context,nativeContext);
+        const work=async()=>{if(fixed.leaf===7){const queue=trustedReadDaemon.ameQueueFacts?.[fixed.slot-1];if(!queue||queue.terminal!==trustedReadDaemon.ameQueues[fixed.slot-1])trustedFail("owned_initial_original_queue_before_START");const actual=trustedNative.ameQueuePreparationFactsFixed(role,queue.terminal);if(JSON.stringify(actual)!==queue.original)trustedFail("owned_initial_original_queue_manifest_drift");nativeContext.args=Object.freeze(ameTitleJobs.validateInput(ameTitleJobs.START,actual.args));context.args=nativeContext.args;context.ownedManualQueueManifest=ameManualQueue.validateManifest(actual.manifest);context.ownedManualQueueCapability=ameManualQueueIssuer.authorize(context,context.ownedManualQueueManifest);}
+          nativeContext.gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,pending.request);trustedCurrent();const preparation=await (fixed.leaf===6?ownedAmeNativeDispatchPort.prepareEnqueue(context):ownedAmeNativeDispatchPort.prepareStart(context));trustedCurrent();return JSON.parse((await trustedCommand(nativeContext.gate,true,"run_ai_agent_plan",{operation:"ame",preparation,context,slot:fixed.slot})).content[0].text);};
+        if(fixed.leaf===7){const witness=pending.value.ameManualQueueWitness;if(witness.acceptedDryRunId!==JSON.parse(own.completedDryRun).id||ownedNativeUuid32(witness.acceptedDryRunId)!==record.dryRunReceipt.runId||pending.route!==ameManualQueue.ROUTE||pending.authRole!=="panel")trustedFail("owned_initial_original_raw_dry_id_join");const panel=ownedOriginalPreparationPanel(own.panel),panelIdentityValid=panel.panelConnectionId===witness.panelConnectionId&&panel.panelGeneration===witness.panelGeneration;return ameManualQueueIssuer.runAuthenticated({...witness,acceptedDryRunId:ownedNativeUuid32(witness.acceptedDryRunId),route:pending.route,authRole:pending.authRole,panelIdentityValid},work);}return work();}
+      const gate=await trustedNative.captureServerGatesFixed(role,handler,trustedReadDaemon.titleManifest,own.proposalTerminal,own.dryTerminal,trustedReadDaemon.lastCompTerminal,pending.request);trustedCurrent();assertOwnedExecutionContext(context);
+      if(fixed.leaf===14){if(trustedReadDaemon.checkpoint)trustedFail("owned_initial_checkpoint_once");trustedReadDaemon.checkpoint=await trustedNative.executeOwnedCheckpointFixed(role,gate);trustedCurrent();return trustedNative.describeOwnedCheckpointFixed(role,trustedReadDaemon.checkpoint);}
+      if(fixed.leaf===15){if(trustedReadDaemon.cleanCopies[fixed.slot-1])trustedFail("owned_initial_clean_copy_once");const copy=await trustedNative.executeOwnedCleanCopyFixed(role,gate);trustedCurrent();trustedReadDaemon.cleanCopies[fixed.slot-1]=copy;return trustedNative.describeOwnedCleanCopyFixed(role,copy);}
+      const workingCopy=trustedReadDaemon.cleanCopies[fixed.slot-1];if(!workingCopy)trustedFail("owned_initial_original_working_copy_required");
+      if(fixed.leaf===8){const program=trustedReadDaemon.restorationPrograms[fixed.slot-1];if(!program)trustedFail("owned_initial_original_restore_program_required");return JSON.parse((await trustedCommand(gate,true,"run_ai_agent_plan",{operation:"restore",gate,program,slot:fixed.slot})).content[0].text);}
+      if(trustedReadDaemon.restorationPrograms[fixed.slot-1])trustedFail("owned_initial_restore_preissue_once");
+      trustedReadDaemon.restorationPrograms[fixed.slot-1]=await trustedNative.preissueRestorationFixed(role,gate,workingCopy);trustedCurrent();
+      const returned=await trustedCommand(gate,true,"run_ai_agent_plan",{gate,workingCopy,slot:fixed.slot});trustedCurrent();return JSON.parse(returned.content[0].text);
+    });
+  });trustedCurrent();
+    const run={id:checkpoint.executionId,ok:true,dryRun:false,actionId:record.actionId,revision:record.revision,requestId:record.requestId,finishedAt:new Date().toISOString(),result,nativeAuthority:false};
+    if(!currentProposalState.publishRunResult(record,run,{id:run.id,ok:true,dryRun:false,finishedAt:run.finishedAt}))trustedFail("owned_initial_original_execution_publication_refused",true);
+    own.completedExecution=Object.freeze({callRef:checkpoint.executionId,rawCallRef:checkpoint.callRef});pending.resolve(run);return toolResult(run);
+  }catch(error){pending.error=error;pending.reject(error);throw error;}
+  finally{if(trustedReadDaemon.manualPending===pending)trustedReadDaemon.manualPending=null;}
+}
+async function trustedTool(req,res,body){const value=JSON.parse(body.toString("utf8"));
+  const read=["ensure_ae_agent_panel","get_bridge_status","get_project_info"].includes(value?.name),library=["search_solutions","get_solution"].includes(value?.name),inspection=["get_comp_details","get_layer_details","inspect_title_variants",ameTitleJobs.INSPECT,ameTitleJobs.QUEUE_MANIFEST].includes(value?.name),build=value?.name==="build_solution_plan",proposal=value?.name==="propose_ai_agent_plan",dryRun=value?.name==="run_ai_agent_plan"&&value.args?.dryRun===true,execute=value?.name==="run_ai_agent_plan"&&value.args?.dryRun!==true,completion=value?.name==="get_ame_title_job_status";
+  if(!trustedExact(value,["args","name"])||!value.args||typeof value.args!=="object"||Array.isArray(value.args)||(!read&&!library&&!inspection&&!build&&!proposal&&!dryRun&&!execute&&!completion)||(read&&!trustedExact(value.args,[]))||
+      (completion&&(!trustedExact(value.args,["variantSlot"])||![1,2].includes(value.args.variantSlot)))||
+      (build&&(!trustedExact(value.args,["solutionId"])||value.args.solutionId!=="owned-runtime-two-title-fixed-v1")))trustedFail("owned_initial_exact_tool_required");
+  if(trustedReadDaemon.activeTool)trustedFail("owned_initial_concurrent_tool_refused",true);
+  // Hold the one ingress slot before the first await. A lost response never
+  // releases an operation that is still reconciling its original native work.
+  const slot={handler:null,error:null,completed:false,reject:null,execute},failure=new Promise((_,reject)=>{slot.reject=error=>{if(slot.completed||slot.error)return;slot.error=error;reject(error);};});
+  trustedReadDaemon.activeTool=slot;
+  res.once("close",()=>{if(!res.writableFinished)slot.reject(Object.assign(Error("owned_initial_original_tool_response_lost"),{code:"owned_initial_original_tool_response_lost",unknown:true}));});
+  const operation=(async()=>{if(trustedReadDaemon.pumpWork)await trustedReadDaemon.pumpWork;trustedCurrent();
+    if(completion){const flight=trustedReadDaemon.completionFlights?.[value.args.variantSlot-1];if(!flight||flight.unknown||!flight.publicationPromise)trustedFail("owned_initial_original_completion_publication_required",true);await flight.publicationPromise;trustedCurrent();if(!flight.published)trustedFail("owned_initial_original_completion_publication_not_settled",true);}
+    const role=trustedReadDaemon.role,request=await trustedHttp.retainAuthenticatedRequest(role,req,body);trustedCurrent();
+    const handler=await (completion?trustedNative.verifyCompletionToolFixed(role,request):library?trustedNative.verifyServerOnlyTool(role,request,value.name):inspection||build||proposal||dryRun||execute?trustedNative.verifyExecutionTool(role,request,value.name):trustedNative.verifyTool(role,request,value.name));slot.handler=handler;trustedCurrent();
+    if(completion){const text=await trustedNative.finishOriginalCompletionFixed(role,handler);trustedCurrent();trustedHttp.bindOriginalCompletionResponse(role,req,handler);return {content:[{type:"text",text}],isError:false};}
+    if(library){const captured=await trustedNative.captureServerOnlyResultFixed(role,handler);trustedCurrent();return captured.value;}
+    if(build||proposal){if(!trustedReadDaemon.titleManifest||!trustedReadDaemon.lastCompTerminal)trustedFail("owned_initial_own_manifest_before_build_required");
+      const captured=await trustedNative.captureExecutionPreparationFixed(role,handler,trustedReadDaemon.titleManifest,trustedReadDaemon.lastCompTerminal);trustedCurrent();
+      if(build)trustedReadDaemon.buildTerminal=captured.terminal;else{const record=currentProposalState.current,own=ownedFixedTitleManualReceipts.get(record);
+        if(!own||captured.value.actionId!==record.actionId||captured.value.payloadHash!==record.payloadHash||own.proposalTerminal)trustedFail("owned_initial_original_proposal_ack_changed",true);
+        own.proposalTerminal=captured.terminal;trustedReadDaemon.proposalTerminal=captured.terminal;}return toolResult(captured.value);}
+    if(value.name==="ensure_ae_agent_panel")return trustedBootstrap(handler);
+    if(execute)return trustedFixedExecute(handler,value,request);
+    if(!trustedReadDaemon.cep)trustedFail("owned_initial_actual_actor_absent");await trustedWaitPoll();trustedCurrent();await trustedObserveHandler(handler);trustedCurrent();
+    if(inspection||dryRun)return trustedReadonlyInspection(handler,value.name,value.args);
+    if(value.name==="get_bridge_status"){const captured=await trustedNative.captureLocalStatusFixed(role,handler);trustedCurrent();return toolResult(captured.value);}return trustedProject(handler);})();
+  try{const result=await Promise.race([operation,failure]);trustedCurrent();slot.completed=true;writeJson(res,200,{ok:true,result});}
+  catch(error){slot.reject(error);throw error;}
+  finally{void operation.then(()=>{if(trustedReadDaemon.activeTool===slot)trustedReadDaemon.activeTool=null;},()=>{if(trustedReadDaemon.activeTool===slot)trustedReadDaemon.activeTool=null;});}}
+
+function trustedDispositionTick(){if(!trustedReadDaemon.role||trustedReadDaemon.pumpWork||trustedReadDaemon.activeTool||trustedReadDaemon.dispositionError||trustedReadDaemon.shutdownAcknowledged)return;
+  const role=trustedReadDaemon.role;
+  const work=(async()=>{trustedNative.assertOriginalDispositionCurrent(role);const event=await trustedNative.pollOriginalEvent(role);trustedNative.assertOriginalDispositionCurrent(role);if(!event)return;
+    const kind=trustedNative.originalEventKind(role,event);
+    if(kind==="observation"){if(trustedReadDaemon.closing||!trustedReadDaemon.target||!trustedReadDaemon.cep)trustedFail("owned_initial_original_observation_target_absent",true);
+      const measured=await trustedNative.captureObservationFixed(role,trustedReadDaemon.target,event);trustedCurrent();await trustedNative.submitObservation(role,event,measured);trustedCurrent();return;}
+    if(kind==="drain"){if(trustedReadDaemon.closing||trustedReadDaemon.drainAcknowledged)trustedFail("owned_initial_original_drain_once",true);trustedReadDaemon.closing=true;
+      const stopped=Object.assign(Error("owned_initial_original_drain"),{code:"owned_initial_original_drain"});for(const waiter of [...trustedReadDaemon.targetWaiters])waiter.reject(stopped);
+      // Actual End/Close and native request terminals precede D21. Listener
+      // closure or a JavaScript close event cannot supply a missing terminal.
+      if(!trustedReadDaemon.transport||trustedReadDaemon.projects.size||trustedReadDaemon.activeTool)trustedFail("owned_initial_original_drain_work_pending",true);
+      await trustedReadDaemon.transport.close();trustedNative.assertOriginalDispositionCurrent(role);
+      if(trustedReadDaemon.requests.size)trustedFail("owned_initial_original_drain_responses_pending",true);
+      await trustedNative.acknowledgeOriginalDisposition(role,event);trustedNative.assertOriginalDispositionCurrent(role);trustedReadDaemon.drainAcknowledged=true;return;}
+    if(kind!=="shutdown"||!trustedReadDaemon.closing||!trustedReadDaemon.drainAcknowledged||trustedReadDaemon.requests.size||trustedReadDaemon.projects.size||trustedReadDaemon.activeTool)
+      trustedFail("owned_initial_original_shutdown_order",true);
+    await trustedNative.acknowledgeOriginalDisposition(role,event);trustedNative.assertOriginalDispositionCurrent(role);trustedReadDaemon.shutdownAcknowledged=true;
+    clearInterval(trustedReadDaemon.pump);trustedReadDaemon.pump=null;
+    if(trustedReadDaemon.cep)trustedReadDaemon.cep.close();
+    // D22 is an acknowledgement. The original owner separately observes this
+    // child's actual exit and stdio EOF; this line does not manufacture either.
+    process.exitCode=0;
+  })();trustedReadDaemon.pumpWork=work;
+  void work.catch(error=>{trustedReadDaemon.dispositionError=error;trustedReadDaemon.closing=true;clearInterval(trustedReadDaemon.pump);trustedReadDaemon.pump=null;
+    process.stderr.write(JSON.stringify({code:error.code||"owned_initial_original_disposition_unknown",unknown:!!error.unknown,replayAllowed:false})+"\n");
+  }).finally(()=>{if(trustedReadDaemon.pumpWork===work)trustedReadDaemon.pumpWork=null;});return work;
+}
+
+const TRUSTED_STARTUP_LOOKUPS=Object.freeze(["/human-guard-settlement/lookup","/ame/fixture-ui-disposition/lookup","/ame/native-fixture-abandonment/lookup","/ame/native-fixture-prephase-recovery/lookup","/ame/native-fixture-admission-refusal/lookup"]);
+const TRUSTED_STARTUP_GETS=Object.freeze(["/health","/status","/agents","/usage","/agents/plan/current","/autonomy/session","/placeholder/protection"]);
+function trustedChargeStartup(pathname){
+  // A local ingress bound: <=32 actual subrequests and <=4 per lookup path.
+  // Abandonment rounds may issue N selector requests: this is not a 4-round
+  // budget. First exhaustion is a concrete refusal; no reset or auto-heal.
+  // It issues no Call or Store service row.
+  // Production keeps the same lifetime service32 envelope. The finite current
+  // and adopt requests consume two of those slots per original operation.
+  if(trustedReadDaemon.startupCallbacks>=32)trustedFail("owned_initial_startup_service_budget");
+  if(["/agents/plan/current","/agents/plan/adopt"].includes(pathname)){
+    if(pathname==="/agents/plan/current"&&currentProposalState.current===null&&!trustedReadDaemon.initialNextSeen&&!trustedReadDaemon.startupCounts.has("startup:null-current")){
+      trustedReadDaemon.startupCallbacks++;trustedReadDaemon.startupCounts.set("startup:null-current",1);return;
+    }
+    const record=currentProposalState.current,own=ownedFixedTitleProposals.get(record),receipt=ownedFixedTitleManualReceipts.get(record);
+    currentProposalState.assertCurrent(record);
+    if(!own||!receipt?.proposalTerminal||!receipt.completedDryRun)trustedFail("owned_initial_original_group_lookup_required");
+    const key=own.slot+":"+own.leaf+":"+pathname;
+    if(trustedReadDaemon.startupCounts.has(key))trustedFail("owned_initial_original_group_lookup_once");
+    trustedReadDaemon.startupCallbacks++;trustedReadDaemon.startupCounts.set(key,1);return;
+  }
+  const count=trustedReadDaemon.startupCounts.get(pathname)||0,maximum=TRUSTED_STARTUP_LOOKUPS.includes(pathname)?4:pathname==="/agents"?4:2;
+  if(count>=maximum)trustedFail("owned_initial_startup_path_budget");trustedReadDaemon.startupCallbacks++;trustedReadDaemon.startupCounts.set(pathname,count+1);
+}
+async function trustedAncillary(url,body){const pathname=url.pathname;
+  if(pathname==="/tools/call"){
+    trustedQuery(url,[]);const value=JSON.parse(body.toString("utf8"));if(!trustedExact(value,["name","arguments"])||value.name!=="get_bridge_status"||!trustedExact(value.arguments,[]))trustedFail("owned_initial_panel_local_status_only");
+    return {ok:true,result:toolResult(getBridgeStatus())};
+  }
+  if(pathname==="/status"){trustedQuery(url,["checkBridge"]);if(url.searchParams.get("checkBridge")!=="0")trustedFail("owned_initial_extra_bridge_check_refused");return getBridgeStatus();}
+  if(pathname==="/agents"){
+    trustedQuery(url,["includeModels","freeOnly"]);if(url.searchParams.get("includeModels")!=="1"||!["0","1"].includes(url.searchParams.get("freeOnly")))trustedFail("owned_initial_agents_query_refused");
+    // The existing local catalog path performs no provider/network probe.
+    const catalog=await aiAgents.listAgents({includeModels:false});trustedCurrent();return {ok:true,...catalog,modelsObserved:false};
+  }
+  if(pathname==="/ame/native-fixture-abandonment/lookup"){
+    trustedQuery(url,["requestId","runId"]);const selector={requestId:url.searchParams.get("requestId"),runId:url.searchParams.get("runId")};nativeFixtureAbandonment.selector(selector);
+    const retained=nativeFixtureAbandonment.lookupAudited(selector,{repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR});if(retained!==null)trustedFail("owned_initial_retained_fixture_requires_fresh_reconciliation");return {ok:true,disposition:null};
+  }
+  trustedQuery(url,[]);
+  if(pathname==="/health"){const status=getBridgeStatus();return {ok:true,server:status.server,version:status.version,hasToken:true,port:status.port,pending:status.pendingCommands,inflight:status.inflightCommands.length,panelConnected:status.panelConnected,lastPanelSeenAt:status.lastPanelSeenAt};}
+  if(pathname==="/usage")return {ok:true,usage:usageService.snapshot()};
+  if(pathname==="/agents/plan/current")return currentProposalState.current===null?{ok:true,current:null}:{ok:true,...ownedFixedCurrentPlan()};
+  if(pathname==="/autonomy/session")return {ok:true,session:autonomousSession.publicStatus()};
+  if(pathname==="/placeholder/protection"){
+    // No hidden project dispatch is permitted before C6 index2. Once its native
+    // result exists, the existing manually revised store can be read by that
+    // exact project identity without another AE command.
+    const project=trustedReadDaemon.lastProjectValue;if(!project)return {ok:true,status:"awaiting_native_project_read",projectFile:null,protectionAvailable:false};
+    const state=projectStateMemory.readProjectState(project.file);return {ok:true,projectFile:project.file,...state,inventoryObserved:false};
+  }
+  if(pathname==="/human-guard-settlement/lookup")return {ok:true,settlement:humanGuardSettlement.lookup(LOG_DIR)};
+  if(pathname==="/ame/fixture-ui-disposition/lookup"){const retained=ameFixtureDisposition.lookupAudited(LOG_DIR);if(retained!==null)trustedFail("owned_initial_retained_fixture_requires_fresh_reconciliation");return {ok:true,disposition:null};}
+  if(pathname==="/ame/native-fixture-prephase-recovery/lookup"){const retained=nativeFixturePrephaseRecovery.lookupAudited(nativeFixturePrephaseProof.selector(),{repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR});if(retained!==null)trustedFail("owned_initial_retained_fixture_requires_fresh_reconciliation");return {ok:true,certificate:null};}
+  if(pathname==="/ame/native-fixture-admission-refusal/lookup")trustedFail("owned_initial_original_guard_requires_fresh_reconciliation");
+  trustedFail("owned_initial_route_refused");
+}
+async function trustedRoute(req,res,boundary){trustedCurrent();boundary.validate(req);res.authRole=boundary.role(req);res.allowedOrigin=req.headers.origin||null;
+  if(!res.authRole||res.authRole==="admin")trustedFail("owned_initial_exact_http_role_required");
+  const url=new URL(req.url,"http://127.0.0.1:3456"),pathname=url.pathname;if(url.hash||url.searchParams.has("token"))trustedFail("owned_initial_http_locator_refused");
+  const automation=pathname==="/mcp/tools/call"&&req.method==="POST";
+  const next=pathname==="/bridge/next"&&req.method==="GET",heartbeat=pathname==="/bridge/heartbeat"&&req.method==="GET";
+  const projectPost=["/bridge/submitted","/bridge/result"].includes(pathname)&&req.method==="POST",adopt=pathname==="/agents/plan/adopt"&&req.method==="POST",manualRun=["/agents/plan/run",ameManualQueue.ROUTE].includes(pathname)&&req.method==="POST";
+  const ancillary=req.method==="GET"&&(TRUSTED_STARTUP_GETS.includes(pathname)||TRUSTED_STARTUP_LOOKUPS.includes(pathname))||pathname==="/tools/call"&&req.method==="POST";
+  if(!automation&&!next&&!heartbeat&&!projectPost&&!ancillary&&!adopt&&!manualRun)trustedFail("owned_initial_closed_route");
+  if(res.authRole!==(automation?"automation":"panel"))trustedFail("owned_initial_route_credential_role_refused");
+  if(automation)trustedQuery(url,[]);if(next||heartbeat)trustedPollIdentity(url);if(projectPost)trustedQuery(url,[]);
+  if(ancillary||adopt)trustedChargeStartup(pathname);
+  const body=await trustedBody(req);trustedCurrent();if(req.method==="GET"&&body.length)trustedFail("owned_initial_get_body_refused");
+  if(automation)return trustedTool(req,res,body);
+  // Retain the one actual preconnect null-current request before the first
+  // GETnext can overtake it. The reply still waits for the original target and
+  // loaded CEP source witness; this branch returns no proposal or grant.
+  const startupNullCurrent=pathname==="/agents/plan/current"&&currentProposalState.current===null&&!trustedReadDaemon.initialNextSeen&&trustedReadDaemon.startupCounts.get("startup:null-current")===1;
+  let request;if(startupNullCurrent){request=await trustedHttp.retainAuthenticatedRequest(trustedReadDaemon.role,req,body);trustedCurrent();}
+  await trustedWaitTarget(req,res);trustedCurrent();if(!request){request=await trustedHttp.retainAuthenticatedRequest(trustedReadDaemon.role,req,body);trustedCurrent();}
+  if(startupNullCurrent){if(currentProposalState.current!==null||!trustedReadDaemon.cep)trustedFail("owned_initial_startup_null_current_changed");trustedReadDaemon.cep.assertCurrent();writeJson(res,200,{ok:true,current:null});return;}
+  if(adopt){const result=await ownedAdoptCompletedNativeDry(request,body);trustedCurrent();writeJson(res,200,result);return;}
+  if(manualRun)return trustedManualRun(req,res,request,body);
+  if(ancillary){const result=await trustedAncillary(url,body);trustedCurrent();writeJson(res,200,result);return;}
+  if(next||heartbeat){const identity=trustedPollIdentity(url);trustedObservePanel(identity,req);
+    if(heartbeat){writeJson(res,200,{ok:true,session:autonomousSession.publicStatus()});return;}
+    if(!trustedReadDaemon.initialNextSeen){const deadline=trustedNative.originalDeadlineProjectionFixed(trustedReadDaemon.role);trustedCurrent();trustedReadDaemon.initialNextSeen=true;
+      writeJson(res,200,{ok:true,command:null,ownedPlanPreparation:{mode:"completed_native_dry_run_v1",remainingSessionMs:deadline.remainingSessionMs}});return;}
+    trustedHoldPoll({req,res,request});return;}
+  const value=JSON.parse(body.toString("utf8")),submitted=pathname==="/bridge/submitted";
+  if(!trustedExact(value,submitted?["id","executionId","leaseId","contractVersion","panelConnectionId","panelGeneration"]:["id","executionId","leaseId","contractVersion","panelConnectionId","panelGeneration","ok","result","error"]))trustedFail("owned_initial_exact_project_receipt_required");
+  const state=trustedReadDaemon.projects.get(value.id);if(!state||!state.delivered)trustedFail("owned_initial_original_project_missing",true);
+  if(submitted){if(state.submitted)trustedFail("owned_initial_project_submission_once",true);
+    await (state.inspection?trustedNative.recordExecutionSubmission(trustedReadDaemon.role,state.project,request):trustedNative.recordProjectSubmission(trustedReadDaemon.role,state.project,request));trustedCurrent();state.submitted=true;writeJson(res,200,{ok:true});return;}
+  if(!state.submitted)trustedFail("owned_initial_actual_project_not_submitted",true);
+  const captured=await (state.ame?trustedNative.captureAmeResultFixed(trustedReadDaemon.role,state.project,request):state.restoration?trustedNative.captureRestorationResultFixed(trustedReadDaemon.role,state.project,request):state.stage?trustedNative.captureStageResultFixed(trustedReadDaemon.role,state.project,request):state.inspection?trustedNative.captureExecutionResultFixed(trustedReadDaemon.role,state.project,request):trustedNative.captureProjectResultFixed(trustedReadDaemon.role,state.project,request));trustedCurrent();
+  let returned=captured.value;
+  if(state.ame){if(![1,2].includes(state.stageSlot))trustedFail("owned_initial_original_ame_result_slot",true);const index=state.stageSlot-1;
+    if(state.ameOperation==="sources"){if(trustedReadDaemon.ameSources[index])trustedFail("owned_initial_original_ame_source_once",true);trustedReadDaemon.ameSources[index]=captured.terminal;returned={ok:true,sourceInspected:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="queue"){if(trustedReadDaemon.ameQueues[index])trustedFail("owned_initial_original_ame_queue_once",true);const value=trustedNative.ameQueuePreparationFactsFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameQueues[index]=captured.terminal;if(!trustedReadDaemon.ameQueueFacts)trustedReadDaemon.ameQueueFacts=[null,null];trustedReadDaemon.ameQueueFacts[index]={terminal:captured.terminal,value,original:JSON.stringify(value)};returned={ok:true,manifest:value.manifest,manifestHash:value.manifestSha25664,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="start"&&trustedReadDaemon.executionProfile==="shared_queue_v1"){const original=await trustedNative.bindOriginalJobFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameJobs[1]=original;res.once("finish",()=>{try{trustedStartSharedQueueCompletion(original);}catch(error){trustedReadDaemon.activeTool?.reject?.(error);}});const observed=JSON.parse(captured.value.send.responseBody);returned={ok:true,globalQueueStartAccepted:observed.code==="batch_start_accepted",ownItemsAlreadyRunning:observed.code==="shared_queue_already_running",ownItemsAccepted:2,keepOriginalLifetime:true,mediaVerified:false,nativeQueueCompositionVerified:false,replayAllowed:false};}
+    else if(state.ameOperation==="start"){if(trustedReadDaemon.ameJobs[index])trustedFail("owned_initial_original_ame_job_once",true);const originalJob=await trustedNative.bindOriginalJobFixed(trustedReadDaemon.role,captured.terminal);trustedReadDaemon.ameJobs[index]=originalJob;trustedCurrent();res.once("finish",()=>{try{trustedStartOriginalCompletion(originalJob,state.stageSlot);}catch(error){trustedReadDaemon.activeTool?.reject?.(error);}});returned={ok:true,originalJobAssociated:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="shared_status"){const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,trustedReadDaemon.ameJobs[1]);trustedReadDaemon.sharedQueueResponseCleanup=trustedHttp.waitOriginalCompletionProducerResponse(trustedReadDaemon.role,req);returned={ok:true,terminalMask:facts.terminalMask,successMask:facts.successMask,ownJobsTerminal:facts.complete,mediaVerified:false,nativeQueueCompositionVerified:false,replayAllowed:false};}
+    else if(state.ameOperation==="status"){const originalJob=trustedReadDaemon.ameJobs[index];if(!originalJob)trustedFail("owned_initial_original_completion_job_missing",true);const facts=trustedNative.originalCompletionFactsFixed(trustedReadDaemon.role,originalJob);
+      if(facts.complete){if(!trustedReadDaemon.completionTerminals)trustedReadDaemon.completionTerminals=[null,null];if(!trustedReadDaemon.completionResultCleanups)trustedReadDaemon.completionResultCleanups=[null,null];if(trustedReadDaemon.completionTerminals[index]||trustedReadDaemon.completionResultCleanups[index])trustedFail("owned_initial_original_completion_terminal_once",true);
+        const cleanup=trustedHttp.waitOriginalCompletionProducerResponse(trustedReadDaemon.role,req);trustedReadDaemon.completionTerminals[index]=captured.terminal;trustedReadDaemon.completionResultCleanups[index]={terminal:captured.terminal,promise:cleanup};}
+      returned={ok:true,terminalAccepted:facts.complete,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};}
+    else if(state.ameOperation==="enqueue")returned={ok:true,enqueued:true,slot:state.stageSlot,nativeAuthority:false,replayAllowed:false};else trustedFail("owned_initial_original_ame_operation",true);
+  }else if(state.stage){if(![1,2].includes(state.stageSlot)||trustedReadDaemon.savedSnapshots[state.stageSlot-1])trustedFail("owned_initial_original_saved_snapshot_once",true);
+    trustedReadDaemon.savedSnapshots[state.stageSlot-1]=captured.savedSnapshot;trustedReadDaemon.lastCompTerminal=captured.terminal;returned=trustedNative.describeOwnedSavedSnapshotFixed(trustedReadDaemon.role,captured.savedSnapshot);
+  }else if(state.preparation){if(!captured.readTerminal||captured.readTerminal===captured.terminal)trustedFail("owned_initial_original_distinct_dry_read_projection_required",true);
+    const record=currentProposalState.current;returned=ownedPublishCompletedNativeDry(record,captured);
+    trustedReadDaemon.lastCompTerminal=captured.readTerminal;trustedReadDaemon.dryRunTerminal=captured.terminal;
+  }else if(state.inspection){if(trustedReadDaemon.inspectionResults.length>=10)trustedFail("owned_initial_inspection_result_budget",true);trustedReadDaemon.inspectionResults.push(captured.terminal);
+    if(!["first_two_observed_text_states_v1","exact_named_variants"].includes(captured.titleSelectionMode))trustedFail("owned_initial_native_selection_mode_required");
+    if(state.name==="get_comp_details")trustedReadDaemon.lastCompTerminal=captured.terminal;
+    if(captured.titleSelectionMode==="first_two_observed_text_states_v1"&&state.name==="get_comp_details"&&!trustedReadDaemon.titleSelection){
+      if(!trustedReadDaemon.lastProjectTerminal)trustedFail("owned_initial_original_project_read_before_selection");
+      // Current finite profile fixes root==target. Native validates the exact
+      // source-approved pair from both own cap arguments; other pairs refuse.
+      const selection=await trustedNative.captureSelectionFixed(trustedReadDaemon.role,trustedReadDaemon.lastProjectTerminal,captured.terminal,captured.terminal);trustedCurrent();
+      trustedReadDaemon.titleSelection=selection;const args=trustedNative.describeSelectionFixed(trustedReadDaemon.role,selection);trustedCurrent();
+      // Read-only data for the next canonical request, never a serializable cap.
+      returned={...captured.value,ownedSelectionArguments:args};
+    }else if(captured.titleSelectionMode==="first_two_observed_text_states_v1"&&state.name==="inspect_title_variants"){
+      if(!trustedReadDaemon.titleSelection)trustedFail("owned_initial_original_selection_before_manifest");
+      const manifest=await trustedNative.captureManifestFixed(trustedReadDaemon.role,trustedReadDaemon.titleSelection,captured.terminal);trustedCurrent();trustedReadDaemon.titleManifest=manifest;
+    }
+  }else{trustedReadDaemon.lastProjectValue=captured.value;trustedReadDaemon.lastProjectTerminal=captured.terminal;if(trustedReadDaemon.titleManifest&&captured.value.ownedReadCurrent)trustedReadDaemon.lastCompTerminal=captured.terminal;}
+  writeJson(res,200,{ok:true});state.resolve(returned);
+}
+async function startTrustedReadBridge(){initialRuntime.assertStartup();if(trustedReadDaemon.role||trustedReadDaemon.server)trustedFail("owned_initial_daemon_start_once");
+  await initialRuntime.startDaemonFixed();trustedReadDaemon.role=initialRuntime.daemonRole();trustedCurrent();trustedReadDaemon.executionProfile=trustedNative.executionProfileFixed(trustedReadDaemon.role);
+  const fixed=JSON.parse(trustedNative.fixedDaemonTransport(trustedReadDaemon.role).toString("utf8"));
+  if(!trustedExact(fixed,["automationToken","panelToken","host","port"])||fixed.host!=="127.0.0.1"||fixed.port!==3456||[fixed.automationToken,fixed.panelToken].some(value=>typeof value!=="string"||!value||/[\r\n\0]/.test(value)))trustedFail("owned_initial_fixed_daemon_transport_refused");
+  const boundary=createBoundary({automation:fixed.automationToken,panel:fixed.panelToken});
+  const server=http.createServer((req,res)=>{
+    if(trustedReadDaemon.requests.size>=192){req.destroy(Object.assign(Error("owned_initial_actual_request_retention_budget"),{code:"owned_initial_actual_request_retention_budget"}));return;}
+    const original={req,res};trustedReadDaemon.requests.add(original);res.once("close",()=>trustedReadDaemon.requests.delete(original));
+    void trustedRoute(req,res,boundary).catch(error=>{if(error.unknown&&trustedReadDaemon.activeTool)trustedReadDaemon.activeTool.reject(error);
+      if(!res.writableEnded&&!res.destroyed){try{writeJson(res,error.status||409,{ok:false,code:error.code||"owned_initial_request_refused",replayAllowed:false});}catch{req.socket.destroy(error);}}});
+  });
+  server.on("error",error=>{trustedReadDaemon.closing=true;if(trustedReadDaemon.activeTool)trustedReadDaemon.activeTool.reject(Object.assign(error,{unknown:true}));});
+  trustedReadDaemon.server=server;trustedReadDaemon.transport=await trustedHttp.bindFixedServer(trustedReadDaemon.role,server);trustedCurrent();
+  trustedReadDaemon.pump=setInterval(()=>{void trustedDispositionTick();},100);
+  return {ok:true,status:"original_daemon_source_bound",replayAllowed:false};
 }
 
 function toolResult(text, isError) {
@@ -1147,7 +2496,11 @@ const MUTATION_CHECKPOINT_SCHEMA_PROPERTIES = {
 };
 
 const MUTATING_TOOL_NAMES = new Set([
-  ameTitleJobs.ENQUEUE, ameTitleJobs.START,
+  ...ameOpenComp.MUTATIONS,
+  titleVerification.TOOL,
+  titleExport.TOOL,
+  ameJobSource.TOOL,
+  ameTitleJobs.ENQUEUE, ameTitleJobs.START, ...ameQueueControl.MUTATIONS,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
   nativeRenderVariant.RENDER,
@@ -1634,9 +2987,13 @@ function m100ActionRecordState(record) {
 }
 
 function storeM100ActionProposal(proposal, payload, options = {}) {
+  const ownedFrame=options.ownedPreparationFrame;
+  const ownedPreparation=!!ownedFrame&&ownedExecutionPreparationFrames.has(ownedFrame)&&ownedExecutionPreparationContext.getStore()===ownedFrame&&
+    !ownedFrame.completed&&ownedFrame.descriptor.request.name==="propose_ai_agent_plan";
+  if(ownedFrame&&!ownedPreparation)throw Object.assign(Error("owned_initial_private_proposal_frame_required"),{code:"owned_initial_private_proposal_frame_required"});
   const validation = m100Protocol.validateActionProposalEnvelope(proposal);
   if (!validation.ok) {
-    recordEvent("m100_action_proposal_rejected", {
+    if(!ownedPreparation)recordEvent("m100_action_proposal_rejected", {
       actionId: proposal && proposal.actionId || null,
       errors: validation.errors
     });
@@ -1675,7 +3032,9 @@ function storeM100ActionProposal(proposal, payload, options = {}) {
   record.proposal.revision = record.revision;
   m100ActionProposalStore.set(record.actionId, record);
   m100ActionProposalStore.set(record.payloadRef, record);
-  recordEvent("m100_action_proposal_created", {
+  // Initial source preparation remains in the retained current record. Its
+  // diagnostics do not create uncharged output files before an effect latch.
+  if(!ownedPreparation)recordEvent("m100_action_proposal_created", {
     requestId: record.requestId,
     actionId: record.actionId,
     payloadRef: record.payloadRef,
@@ -1692,6 +3051,7 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
     return null;
   }
   if (planResult.planValidation.mutatingCount > 0) {
+    preflightAmeTitleSeries(planResult.plan);
     if (Date.now() - lastPanelSeenAt >= 15000) return null; // Offline planner drafts carry no execution authority.
     const lifecycleStep = lifecycle.planStep(planResult.plan);
     const projectInfo = lifecycleStep && projectLifecycleContract.isLifecycleCompletion(lifecycleStep.name)
@@ -2868,6 +4228,27 @@ async function verifyMutationResult(toolName, args, payload) {
     }
     return {ok:checks.every(check=>check.covered===true && check.eligible===true),scope:"fresh_rectangular_footprint_only",checks,artisticAccepted:false};
   }
+  if(toolName===titleVerification.TOOL){
+    const verified=titleVerification.verifyResult(payload,args),result=await callToolLogged("verification-readback","get_project_lifecycle_state",{}),read=firstToolPayload(result),context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:"get_project_lifecycle_state",args:{},status:result.isError?"failed":"completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {...verified,ok:verified.ok&&!result.isError&&read?.projectPresent===true&&read?.project==="named"&&read?.lifecycleReady===true&&
+      read?.supported?.file===true&&read?.supported?.dirty===true&&read?.supported?.revision===true&&Number.isSafeInteger(read?.revision)&&read.revision>=0&&projectLifecycleContract.samePath(read?.file,payload.source.path)&&read?.dirty===false};
+  }
+  if(toolName===titleExport.TOOL){
+    const verified=titleExport.verifyResult(payload,args),result=await callToolLogged("verification-readback","get_project_info",{}),read=firstToolPayload(result),context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:"get_project_info",args:{},status:result.isError?"failed":"completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {...verified,ok:verified.ok && !result.isError && projectLifecycleContract.samePath(read?.file,args.expectedProjectFile) && read?.dirty===false};
+  }
+  if(ameOpenComp.MUTATIONS.includes(toolName)){
+    const verified=ameOpenComp.verifyResult(toolName,payload,args),readArgs=payload.selector,result=await callToolLogged("verification-readback",ameOpenComp.RECONCILE,readArgs),read=firstToolPayload(result),context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:ameOpenComp.RECONCILE,args:readArgs,status:result.isError?"failed":"completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {...verified,ok:verified.ok&&!result.isError&&read?.privateProofVerified===true&&read?.intentId===payload.intentId&&read?.executionAuthority===false&&read?.mediaVerified===false};
+  }
+  if(toolName===ameJobSource.TOOL){
+    const verified=ameJobSource.verifyResult(payload,args),result=await callToolLogged("verification-readback","get_project_lifecycle_state",{}),read=firstToolPayload(result),context=planCommandContext.getStore();
+    if(context?.item){context.item.independentReadBack=[{index:2,tool:"get_project_lifecycle_state",args:{},status:result.isError?"failed":"completed",result:read,source:"server_typed_readback",observedAt:new Date().toISOString()}];context.persist();}
+    return {...verified,ok:verified.ok&&!result.isError&&read?.projectPresent===true&&read?.project==="named"&&read?.lifecycleReady===true&&read?.supported?.file===true&&read?.supported?.dirty===true&&read?.supported?.revision===true&&read?.dirty===false&&read?.revision===payload.restored.revision&&projectLifecycleContract.samePath(read.file,args.expectedProjectFile)};
+  }
   if(toolName===projectSave.TOOL_NAME){
     projectSave.verifyReceipt(payload && payload.saveReceipt,args);
     return {ok:true,scope:"disk_file_and_project_path_only",inMemoryRevisionProof:"not_observed",reopenVerification:"pending"};
@@ -2906,8 +4287,28 @@ async function verifyMutationResult(toolName, args, payload) {
       scope: "ame_native_wrapper_association_only", independentReadBack: { tool: ameTitleJobs.STATUS, args: readArgs, result: read },
       nativeJobId: null, nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
   }
-  if (toolName === ameTitleJobs.START) return { ok: false, scope: "ame_native_queue_composition",
-    reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
+  if (ameQueueControl.MUTATIONS.includes(toolName)) {
+    const readArgs = ameQueueControl.statusArgs(toolName,args);
+    const result = await callToolLogged("verification-readback", ameQueueControl.STATUS, readArgs), read = firstToolPayload(result), context = planCommandContext.getStore();
+    if (context?.item) { context.item.independentReadBack = [{ index: 2, tool: ameQueueControl.STATUS, args: readArgs, status: result.isError ? "failed" : "completed", result: read, source: "server_typed_readback", observedAt: new Date().toISOString() }]; context.persist(); }
+    return { ok: !result.isError && ameQueueControl.verifyReadBack(args, payload, read, context?.run), scope: toolName===ameQueueControl.PAUSE?"ame_global_queue_pause_observed":"ame_global_queue_start_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+  }
+  if (toolName === ameTitleJobs.START) {
+    const shared=args.queueMode===ameSharedQueue.MODE;
+    if (!shared && args.manualQueueMode !== "cep_user_declaration_v2") return { ok: false, scope: "ame_native_queue_composition", reason: "queue_composition_unavailable", nativeQueueCompositionVerified: false, mediaProof: "not_inspected" };
+    const reads = [], context = planCommandContext.getStore(), manifest = shared?payload?.startReservation?.sharedQueueReceipt?.binding:payload?.startReservation?.manualQueueReceipt?.manifest;
+    for (const job of manifest?.jobs || []) {
+      const readArgs = { targetSpecifier: args.targetSpecifier, expectedProcess: args.expectedProcess, batchId: args.batchId, jobId: job.jobId,
+        ...(args.expectedSessionNonce ? { expectedSessionNonce: args.expectedSessionNonce } : {}) };
+      const readResult = await callToolLogged("verification-readback", ameTitleJobs.STATUS, readArgs);
+      reads.push({ index: 2 + reads.length, tool: ameTitleJobs.STATUS, args: readArgs, status: readResult.isError ? "failed" : "completed", result: firstToolPayload(readResult), source: "server_typed_readback", observedAt: new Date().toISOString() });
+    }
+    if (context?.item) { context.item.independentReadBack = reads; context.persist(); }
+    const record = currentProposalState.current;
+    const proofRun = context?.run && record && { ...context.run, m100Action: { previewHash: record.previewHash, confirmedBySession: record.confirmedBySession, confirmedBySurface: record.confirmedBySurface, confirmedAt: record.confirmedAt } };
+    const valid = shared?ameSharedQueue.verifyStartEvidence(args,payload,proofRun,reads):ameManualQueue.verifyStartEvidence(args, payload, proofRun, reads);
+    return { ok: valid, scope: shared?"ame_two_own_items_global_start":"ame_authenticated_cep_declaration_dispatch_only", nativeQueueCompositionVerified: false, completionVerified: false, mediaVerified: false };
+  }
   if(toolName===nativeRenderVariant.RENDER){
     const receipt=payload && payload.renderReceipt;
     nativeRenderVariant.verifyReceipt(receipt,args);
@@ -3225,6 +4626,8 @@ async function verifyMutationResult(toolName, args, payload) {
 
 async function attachMutationVerificationToToolResult(result, toolName, args) {
   if (!MUTATING_TOOL_NAMES.has(toolName) || !result || result.isError) return result;
+  const pendingContext=planCommandContext.getStore(),pendingPayload=firstToolPayload(result);
+  if(amePending.isPendingStep({...pendingContext?.item,result:pendingPayload},pendingContext?.run))return attachPayloadMetadataToToolResult(result,"verification",{ok:false,status:"needs_review",pending:true,scope:"ame_async_dispatch_only",nativeAssociationVerified:false,ownItemAccepted:false});
   if (optionalBoolean(args || {}, "verifyAfter", true) === false) return result;
   try {
     const payload = firstToolPayload(result);
@@ -3639,7 +5042,7 @@ async function readJsonBody(req) {
 function requireToken(req, res, url) {
   const role = httpBoundary.role(req);
   const route = url.pathname.replace(/^\/dev\/agents\//, "/agents/");
-  const panelOnly = route.startsWith("/bridge/") || route === "/agents/plan/adopt" || route === "/agents/plan/run"
+  const panelOnly = route.startsWith("/bridge/") || route === "/agents/plan/adopt" || route === "/agents/plan/run" || route === ameManualQueue.ROUTE
     || route === "/agents/key" || route === "/agents/setup"
     || route === "/agents/hardcore/run" || route === "/usage/refresh" || (route === "/autonomy/session" && req.method === "POST");
   if (url.searchParams.has("token") || !role || (panelOnly && role !== "panel") || (role === "admin" && !route.startsWith("/dev/tool/"))) {
@@ -3753,7 +5156,7 @@ function withPlanCommandRole(role, fn) {
 
 function retainCommandResult(id, payload, command) {
   capturePlanCommand(command, payload);
-  completedResults.set(id, {
+  const retained={
     id,
     receiptDigest: command.receiptDigest || null,
     ok: Boolean(payload.ok),
@@ -3767,8 +5170,14 @@ function retainCommandResult(id, payload, command) {
     timedOutFrom: command.timedOutFrom || null,
     createdAt: command.createdAt,
     completedAt: Date.now(),
-    command: compactAeCommand(command)
-  });
+    command: compactAeCommand(command),
+    ...(command.bootstrapBinding ? {tool:"get_project_info",origin:command.bootstrapBinding.pins.origin} : {})
+  };
+  // Persist accepted terminal evidence before resolving/rejecting the caller.
+  // A crash after native ACK must not erase the only reconciliation witness.
+  try{panelBootstrapService.observeTerminal(command.bootstrapBinding,retained);}
+  catch(error){retained.witnessStorageError=error.code||"bootstrap_terminal_witness_unavailable";recordEvent("bootstrap_terminal_witness_unavailable",{id,code:retained.witnessStorageError});}
+  completedResults.set(id, retained);
 
   while (completedResults.size > 200) {
     const oldestId = completedResults.keys().next().value;
@@ -3799,6 +5208,7 @@ function removeWaitingPanel(waiter) {
 }
 
 function drainWaitingPanels() {
+  if(initialRuntime)initialRuntime.assertDispatch();
   expireQueuedCommands(Date.now(), "drain_waiting_panels");
   while (waitingPanels.length && pendingCommands.length) {
     const waiter = waitingPanels.shift();
@@ -3821,6 +5231,10 @@ function drainWaitingPanels() {
 }
 
 function enqueueAeCommand(script, timeoutMs) {
+  try{ameOpenCompExecutor.assertNative(ameOpenCompCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
+  try{ameJobSourceExecutor.assertNative(ameJobSourceCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
+  try{titleVerificationExecutor.assertNative(titleVerificationCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
+  try{titleExportRecovery.assertNative(titleRecoveryCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
   try{ownedRuntimeService.assertCommandTicket();}catch(error){return Promise.reject(error);}
   if (panelBootstrapService.isBusy() && !panelBootstrapReadContext.getStore()) {
     return Promise.reject(Object.assign(new Error("Panel bootstrap admission is active; retry after its reconciliation."), {code:"panel_bootstrap_busy",phase:"before_delivery"}));
@@ -3849,6 +5263,11 @@ function enqueueAeCommand(script, timeoutMs) {
       phase: null,
       settled: false
     };
+    const titleRecoveryScope=titleRecoveryCommandContext.getStore();
+    if(titleRecoveryScope)titleExportRecovery.queued(titleRecoveryScope,id);
+    titleVerificationExecutor.queued(titleVerificationCommandContext.getStore(),id);
+    ameJobSourceExecutor.queued(ameJobSourceCommandContext.getStore(),id);
+    ameOpenCompExecutor.queued(ameOpenCompCommandContext.getStore(),id);
     const lifecycleScope = lifecycleCommandContext.getStore();
     const recoveryRead=generatedRecoveryReadContext.getStore();
     if(recoveryRead){
@@ -3869,7 +5288,7 @@ function enqueueAeCommand(script, timeoutMs) {
     catch (error) { reject(Object.assign(error,{code:"run_record_unavailable",phase:"before_delivery"})); return; }
     const bootstrapRead = panelBootstrapReadContext.getStore();
     if (bootstrapRead) {
-      try { bootstrapRead.onQueued({id,executionId:command.executionId,expiresAt:command.expiresAt}); }
+      try { command.bootstrapBinding=bootstrapRead.onQueued({id,executionId:command.executionId,expiresAt:command.expiresAt}); }
       catch(error) {reject(Object.assign(error,{code:"bootstrap_read_record_failed",phase:"before_delivery"}));return;}
     }
     command.timeout = setTimeout(() => {
@@ -3883,6 +5302,7 @@ function enqueueAeCommand(script, timeoutMs) {
       lifecycleState: command.state,
       timeoutMs,
       expiresAt: new Date(command.expiresAt).toISOString(),
+      scriptSha25664: crypto.createHash("sha256").update(script,"utf8").digest("hex"),
       script
     });
     drainWaitingPanels();
@@ -4097,6 +5517,7 @@ function generatedRecoveryLeaseScope(req,url){
   return scope;
 }
 function leaseNextQueuedCommand(req, url) {
+  if(initialRuntime)initialRuntime.assertDispatch();
   const recoveryScope=generatedRecoveryLeaseScope(req,url);
   if(recoveryScope && (url.searchParams.get("recoveryHandshake")==="1" || recoveryScope.state!=="ready"))return null;
   expireQueuedCommands(Date.now(), "bridge_next");
@@ -4162,6 +5583,24 @@ async function retireGeneratedRecoveryForNormalPoll(req,url){
   if(!saved || original.remote.recovery?.sha256!==saved.sha256)throw new Error("generated_recovery_full_adoption_required");
   recovery.validateStoredBinding(saved,planRunRecords.readRecord(LOG_DIR,scope.runId,{throwOnError:true}),original.local);
   generatedRecoveryByPanel.delete(owner.panelConnectionId);generatedRecoveryScopes.delete(id);
+}
+
+const OWNED_TRUSTED_PROJECT_BODY = projectLifecycleState.nativeProjectInfoBody();
+function ownedTrustedReadProjectScript(program){
+  if(program===undefined)return wrapExtendScriptBody(OWNED_TRUSTED_PROJECT_BODY);
+  // This operand is a pre-C1 source-generation input, never an HTTP tool arg,
+  // observed identity, authority constructor or runtime policy upgrade.
+  if(!trustedExact(program,["schema","rootName","compName","sourceProjectFile","snapshotProjectFiles"])||program.schema!=="ae-agent.owned-read-fixed-program.v1"||typeof program.rootName!=="string"||!program.rootName||program.rootName!==program.compName||program.rootName.length>256||
+      typeof program.sourceProjectFile!=="string"||!Array.isArray(program.snapshotProjectFiles)||program.snapshotProjectFiles.length!==2||[program.sourceProjectFile,...program.snapshotProjectFiles].some(file=>typeof file!=="string"||!file||file.length>32760||file.includes("\0"))||new Set([program.sourceProjectFile,...program.snapshotProjectFiles].map(file=>file.toLowerCase())).size!==3)
+    throw Object.assign(Error("owned_initial_exact_frozen_read_program_required"),{code:"owned_initial_exact_frozen_read_program_required"});
+  // inspectScript supplies the already reviewed function definitions. Its
+  // generator-only operands are removed before producing or executing source;
+  // the actual IDs below come solely from the complete live AE census.
+  const template=nativeRenderVariant.inspectScript({expectedProjectFile:program.sourceProjectFile,rootCompItemId:1,variantCompItemId:1,controlledLayerIds:[1,2]}),offset=template.lastIndexOf("return nativeSnapshot(");
+  if(offset<0||!template.endsWith(");"))throw Object.assign(Error("owned_initial_fixed_read_snapshot_generator_shape"),{code:"owned_initial_fixed_read_snapshot_generator_shape"});
+  const body="var basic=(function(){"+OWNED_TRUSTED_PROJECT_BODY+"})();"+template.slice(0,offset)+"var ownedFirstTwoTitleInventory="+ownedFirstTwoTitleInventory.toString()+";var ownedInitialUiBaseline="+ownedInitialUiBaseline.toString()+";var ownedObservedRootTiming="+ownedObservedRootTiming.toString()+";var ownedFixedTitleState="+ownedFixedTitleState.toString()+";var program="+aeLiteral(program)+";"+
+    "if(!app.project||!app.project.file||app.project.dirty!==false)throw Error('owned_read_current_clean_file_required');var allowed=[program.sourceProjectFile,program.snapshotProjectFiles[0],program.snapshotProjectFiles[1]],foundFile=false;for(var pi=0;pi<allowed.length;pi++)if(app.project.file.fsName===allowed[pi])foundFile=true;if(!foundFile)throw Error('owned_read_current_fixed_file_required');var target=null;for(pi=1;pi<=app.project.numItems;pi++){var item=app.project.item(pi);if(item instanceof CompItem&&item.name===program.compName){if(target)throw Error('owned_read_current_unique_comp_required');target=item;}}if(!target)throw Error('owned_read_current_comp_absent');var inventory=ownedFirstTwoTitleInventory(target),selected=[];for(pi=0;pi<inventory.layerRows.length;pi++){var row=inventory.layerRows[pi];if(String(row.sourceText).replace(/[\\u0009-\\u000d\\u0020\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]/g,'').length)selected.push(row.id);if(selected.length===2)break;}if(selected.length!==2)throw Error('owned_read_current_pair_absent');var d={rootName:program.rootName,compName:program.compName,selectedTextLayerIds:selected,originalComp:{ownedTitleInventory:inventory}};var state=ownedFixedTitleState(d,app.project.file.fsName,nativeSnapshot);if(state.projectFile!==basic.file||state.revision!==basic.revision)throw Error('owned_read_current_basic_join');basic.ownedReadCurrent={schema:'ae-agent.owned-read-current.v1',state:state};return basic;";
+  const script=wrapExtendScriptBody(body);if(Buffer.byteLength(script,"utf8")>1048576)throw Object.assign(Error("owned_initial_fixed_read_script_bound"),{code:"owned_initial_fixed_read_script_bound"});return script;
 }
 
 function wrapExtendScriptBody(body) {
@@ -4233,6 +5672,7 @@ const EXTENDSCRIPT_BODY_LINE_OFFSET = (() => {
 })();
 
 async function runExtendScriptBody(body, timeoutMs) {
+  if(initialRuntime&&!ownedReadonlyScriptPreparation())initialRuntime.assertCommand();
   const lifecycleScope = lifecycleCommandContext.getStore();
   if (lifecycleScope) lifecycle.validateCommand(lifecycleScope.capability, body);
   const protection = placeholderMutationContext.getStore();
@@ -4247,7 +5687,12 @@ async function runExtendScriptBody(body, timeoutMs) {
   }
   const script = wrapExtendScriptBody(body);
   const preparation = scriptPreparationContext.getStore();
-  if (preparation) { preparation.script = script; return { result: preparation.fixtureResult }; }
+  if (preparation) {if(ownedReadonlyScriptPreparations.has(preparation)&&++preparation.count!==1)
+    throw Object.assign(Error("owned_initial_multiple_readonly_scripts_refused"),{code:"owned_initial_multiple_readonly_scripts_refused"});
+    preparation.script = script; return { result: preparation.fixtureResult }; }
+  titleVerificationExecutor.prepareNative(titleVerificationCommandContext.getStore(),script,body);
+  ameJobSourceExecutor.prepareNative(ameJobSourceCommandContext.getStore(),script,body);
+  ameOpenCompExecutor.prepareNative(ameOpenCompCommandContext.getStore(),script,body);
   return enqueueAeCommand(script, timeoutMs || COMMAND_TIMEOUT_MS);
 }
 
@@ -4435,6 +5880,23 @@ function validateAgentPlanObject(plan, requestId, context) {
       projectRoot: PROJECT_ROOT,
       generatedRenderOutputDir: GENERATED_RENDER_OUTPUT_DIR
     }) : [];
+    if(ameOpenComp.MUTATIONS.includes(toolName)){
+      try{ameOpenComp.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.code||error.message);}
+      if(steps.length!==1||plan.runtimeBindings||step.resultBindings||step.bindings||plan.montagePipeline)generatedSafetyIssues.push("Open-comp AME journal requires one isolated typed step without runtime bindings or montage pipeline.");
+    }
+    if(toolName===titleVerification.TOOL){
+      try{titleVerification.validateInput(safeArgs);}catch(error){generatedSafetyIssues.push(error.code||error.message);}
+      if(steps.length!==1||plan.runtimeBindings||step.resultBindings)generatedSafetyIssues.push("Snapshot verification requires one exact isolated typed step without runtime bindings.");
+    }
+    if(toolName===titleExport.TOOL){
+      try{titleExport.validateInput(safeArgs);}catch(error){generatedSafetyIssues.push(error.code || error.message);}
+      if(steps.length!==1 || plan.runtimeBindings || step.resultBindings)generatedSafetyIssues.push("Two title snapshots require one exact isolated typed step without runtime bindings.");
+    }
+    if(toolName===ameJobSource.TOOL){
+      generatedSafetyIssues.push("ame_snapshot_source_frozen: experimental per-title SaveAs/snapshot/full-AEP SHA flow is frozen pending separate user scope.");
+      try{ameJobSource.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.code||error.message);}
+      if(steps.length!==1||plan.runtimeBindings||step.resultBindings||step.bindings)generatedSafetyIssues.push("One AME source requires one exact isolated typed step without runtime bindings.");
+    }
     if(toolName===projectSave.TOOL_NAME){
       try{projectSave.validateToolInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
       if(steps.filter(value=>planStepToolName(value)===projectSave.TOOL_NAME).length!==1)generatedSafetyIssues.push("One named-project save is allowed per confirmed plan.");
@@ -4443,13 +5905,17 @@ function validateAgentPlanObject(plan, requestId, context) {
       try { ameRunning.validateInput(safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
       if (steps.length !== 1) generatedSafetyIssues.push("AME application startup requires an isolated one-step typed plan.");
     }
+    if (ameQueueControl.tools.some(tool => tool.name === toolName)) {
+      try { ameQueueControl.validateInput(toolName, safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
+      if (ameQueueControl.MUTATIONS.includes(toolName) && (steps.length !== 1 || plan.runtimeBindings || step.resultBindings || step.bindings)) generatedSafetyIssues.push("Global AME control requires one exact isolated typed step without runtime bindings.");
+    }
     if (toolName === ameFixtureGrant.TOOL_NAME) {
       try { ameFixtureGrant.validateInput(safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
       if (steps.length !== 1) generatedSafetyIssues.push("Native fixture probe requires an isolated manual one-step plan.");
     }
     if (ameTitleJobs.tools.some(tool => tool.name === toolName)) {
       try { ameTitleJobs.validateInput(toolName, safeArgs); } catch (error) { generatedSafetyIssues.push(error.code || error.message); }
-      if (ameTitleMutationNames.has(toolName) && steps.length !== 1) generatedSafetyIssues.push("AME submission/start requires an isolated manual one-step plan.");
+      if (ameTitleMutationNames.has(toolName) && steps.length !== 1) generatedSafetyIssues.push("AME submission/start requires an isolated one-step plan.");
     }
     if([nativeRenderVariant.INSPECT,nativeRenderVariant.RENDER].includes(toolName)) {
       try{nativeRenderVariant.validateInput(toolName,safeArgs);}catch(error){generatedSafetyIssues.push(error.message);}
@@ -4517,17 +5983,17 @@ function validateAgentPlanObject(plan, requestId, context) {
     if (mutating) {
       mutatingCount += 1;
       const safetyAutofixes = [];
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
+      if (!ameOpenComp.MUTATIONS.includes(toolName) && toolName !== ameJobSource.TOOL && toolName !== titleVerification.TOOL && toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && safeArgs.verifyAfter !== true) {
         safeArgs.verifyAfter = true;
         autofixes.push("verifyAfter=true");
         safetyAutofixes.push("verifyAfter=true");
       }
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
+      if (!ameOpenComp.MUTATIONS.includes(toolName) && toolName !== ameJobSource.TOOL && toolName !== titleVerification.TOOL && toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyKey) {
         safeArgs.idempotencyKey = `ae-plan-${validationId}-step-${index + 1}-${toolName}`;
         autofixes.push("idempotencyKey");
         safetyAutofixes.push("idempotencyKey");
       }
-      if (toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
+      if (!ameOpenComp.MUTATIONS.includes(toolName) && toolName !== ameJobSource.TOOL && toolName !== titleVerification.TOOL && toolName !== titleExport.TOOL && toolName !== ameFixtureGrant.TOOL_NAME && toolName !== nativeRenderVariant.RENDER && toolName !== projectSave.TOOL_NAME && !projectLifecycleContract.isLifecycleMutation(toolName) && !safeArgs.idempotencyScope) {
         safeArgs.idempotencyScope = `ae-plan:${validationId}`;
         autofixes.push("idempotencyScope");
         safetyAutofixes.push("idempotencyScope");
@@ -5425,9 +6891,14 @@ function applyPlanRuntimeBindings(step, executedSteps) {
 }
 
 const PLANNING_TOOL_NAMES = [
+  ...ameOpenComp.toolDefinitions().map(tool=>tool.name),
+  ...ameJobSource.toolDefinitions().map(tool=>tool.name),
+  ...ameQueueControl.tools.map(tool => tool.name),
+  titleVerification.TOOL,titleVerification.LOOKUP,
   ameFixtureRunner.INSPECT,
   ameFixtureRunner.INSPECT_ATTEMPT,
   ...ameTitleJobs.tools.map(tool => tool.name),
+  titleExport.TOOL,
   ameFixtureGrant.TOOL_NAME,
   ameRunning.TOOL_NAME,
   ameTransport.TOOL_NAME,
@@ -7095,6 +8566,8 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   const dryRun = optionalBoolean(options, "dryRun", true);
   const lifecycleStep = validation.ok ? lifecycle.planStep(prepared.plan) : null;
   const lifecycleCompletion = lifecycleStep && projectLifecycleContract.isLifecycleCompletion(lifecycleStep.name);
+  // Exact validated names, never a caller protection/checkpoint bypass flag.
+  const boundedPropertyJournal = validation.ok && validation.steps.length===1 && ameOpenComp.MUTATIONS.includes(validation.steps[0].tool);
   let lifecycleAuthorization = null;
   const confirm = optionalBoolean(options, "confirm", false);
   const allowMutations = optionalBoolean(options, "allowMutations", false);
@@ -7114,6 +8587,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
   const checkpointStepPresent = hasCheckpointStep(validation);
   const activeEditSessionAtStart = Boolean(activeEditSession);
+  let seriesArgs = null, seriesSession = null, createdSeriesSession = null, seriesActor = null;
   let ameFixturePrimaryBaseline = null;
 
   const actionBinding = options._m100ActionRecord;
@@ -7167,7 +8641,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
     planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
-  if (lifecycleStep && (autonomous || allowWithoutCheckpoint)) {
+  if (!dryRun && lifecycleStep && (autonomous || allowWithoutCheckpoint)) {
     run.ok=false; run.errorCode=autonomous ? "lifecycle_manual_only" : "lifecycle_checkpoint_bypass_forbidden";
     run.error="Project lifecycle requires manual CEP authority and its mandatory source checkpoint."; return finishRun();
   }
@@ -7177,6 +8651,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   if (lifecycleStep && !lifecycleCompletion && activeEditSessionAtStart) {
     run.ok=false; run.errorCode="lifecycle_foreign_edit_session"; run.error="Close the existing edit session before this lifecycle run."; return finishRun();
   }
+  if(boundedPropertyJournal && activeEditSessionAtStart){run.ok=false;run.errorCode="ame_open_foreign_edit_session";run.error="Finish the existing edit session before the isolated open-comp journal operation.";return finishRun();}
   if(validation.steps.some((step)=>step.tool===projectSave.TOOL_NAME)&&allowWithoutCheckpoint){
     run.ok=false;run.errorCode="project_save_checkpoint_bypass_forbidden";run.error="Named-project save requires its mandatory checkpoint.";return finishRun();
   }
@@ -7194,6 +8669,21 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.finishedAt = new Date().toISOString();
     if (typeof run.ok !== "boolean") {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
+    }
+    if (!dryRun && seriesSession && activeEditSession === seriesSession) {
+      const state = ameTitleSeries.finish(seriesSession, seriesArgs, run.id, amePending.isPendingRun(run));
+      run.ameTitleSeries = {...run.ameTitleSeries,...state};
+      if (state.close && state.owned) {
+        const finished = finishPlanRunEditSession(run, seriesSession.id);
+        if (finished) {run.editSessionFinished=finished.session;run.safety.editSessionFinished=true;}
+      }
+      seriesSession = null;
+      createdSeriesSession = null;
+    }
+    if (!dryRun && createdSeriesSession && activeEditSession === createdSeriesSession) {
+      const finished=finishPlanRunEditSession(run,createdSeriesSession.id);
+      if(finished){run.editSessionFinished=finished.session;run.safety.editSessionFinished=true;}
+      createdSeriesSession=null;
     }
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildServerSemanticVerification(prepared.plan, run);
@@ -7242,7 +8732,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         };
       }
     }
-    if (!run.ok && !run.recoveryHint) {
+    if (!run.ok && !amePending.isPendingRun(run) && !run.recoveryHint) {
       run.recoveryHint = planRunRecoveryHint(run);
     }
     if (options._m100ActionProposal) {
@@ -7251,6 +8741,9 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         actionRecord.dryRunCompletedAt = run.finishedAt;
         actionRecord.dryRunReceipt = {payloadHash: actionRecord.payloadHash, contractVersion: AUTONOMY_CONTRACT_VERSION,
           stepCount: validation.steps.length, projectFile: actionRecord.project.expectedFile};
+        if (validation.steps.length === 1 && validation.steps[0].tool === ameTitleJobs.START && validation.steps[0].safeArgs?.manualQueueMode === "cep_user_declaration_v2") {
+          actionRecord.dryRunReceipt.runId = run.id; actionRecord.dryRunReceipt.previewHash = actionRecord.previewHash;
+        }
       }
       run.m100Action = {
         actionId: options._m100ActionProposal.actionId,
@@ -7265,19 +8758,19 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         confirmedBySurface: actionRecord && actionRecord.confirmedBySurface || null,
         confirmedBySession: actionRecord && actionRecord.confirmedBySession || null
       };
-      run.m100Message = m100Protocol.createActionResultEnvelope({
+      run.m100Message = m100Protocol.createActionResultEnvelope(amePending.actionOptions({
         ok: run.ok,
         requestId: options.requestId || options._m100ActionProposal.requestId,
         actionId: options._m100ActionProposal.actionId,
         executionId: run.id,
-        summary: run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
+        summary: amePending.isPendingRun(run)?"AME dispatch recorded; native acceptance pending. Use exact own STATUS; do not replay.":run.ok ? "Agent plan run finished." : run.error || "Agent plan run failed.",
         error: run.error || "Agent plan run failed.",
         phase: run.ok ? "ae_execution" : m100PlanRunFailurePhase(run),
         code: run.ok ? undefined : m100PlanRunFailureCode(run),
         rawPreview: run.ok ? undefined : m100PlanRunRawPreview(run)
-      });
+      },run));
     }
-    attachM100PlanRunDiagnostic(run, options);
+    if(!amePending.isPendingRun(run))attachM100PlanRunDiagnostic(run, options);
     run.outcome = buildRunOutcome(run, prepared.plan);
     let eligibleSolutionIds = [];
     try { eligibleSolutionIds = solutionDiscovery.reviewedIds(); } catch (_registryError) {}
@@ -7285,7 +8778,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     recordEvent("solution_plan_run_finished", { requestId: options.requestId || null, ...run.solutionReuse, outcome: run.outcome,
       provenance: {...provenance, runtime: {gitCommit: RUNTIME_IDENTITY.gitCommit, sourceSha256: RUNTIME_IDENTITY.sourceSha256}} });
     const diagnostic = obstacleEvent({operation: "run_ai_agent_plan", proposalId: options._m100ActionRecord && options._m100ActionRecord.actionId,
-      runId: run.id, code: run.errorCode || (run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
+      runId: run.id, code: run.errorCode || (amePending.isPendingRun(run)?"async_acceptance_pending":run.ok ? "ok" : "plan_failed"), phase: dryRun ? "dry_run" : "execution",
       durationMs: Date.parse(run.finishedAt) - Date.parse(run.startedAt), successfulSteps: run.executedCount,
       failedSteps: run.failedCount, verification: run.solutionPlanReadBack && run.solutionPlanReadBack.status || run.semanticVerification && run.semanticVerification.status});
     try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); }
@@ -7299,12 +8792,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     const lastRunSummary = {
       id: run.id, ok: run.ok, dryRun: run.dryRun, errorCode: diagnostic.code,
       error: run.error ? m100Protocol.redactForUserDiagnostic(run.error, 600) : null, durationMs: diagnostic.durationMs, executedCount: run.executedCount,
-      failedCount: run.failedCount, verification: diagnostic.verification
+      failedCount: run.failedCount, verification: diagnostic.verification,pending:amePending.isPendingRun(run)
     };
     if (ownsRecord && run.m100Action && !run.dryRun && options._m100ActionRecord.executionState === "executing") {
       // Final run evidence may describe the result before observer publication;
       // the proposal remains executing until its current summary is ready.
-      run.m100Action.confirmationState = run.ok ? "completed" : "failed";
+      run.m100Action.confirmationState = run.ok||amePending.isPendingRun(run) ? "completed" : "failed";
     }
     try { persistRun(null, true); } catch (_error) { run.recordWarning="run_record_update_failed"; }
     if (currentProposalState.publishRunResult(options._m100ActionRecord, run, lastRunSummary) && run.m100Action) {
@@ -7321,6 +8814,8 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.error = "Plan validation failed.";
     return finishRun();
   }
+  try { if(validation.mutatingCount>0)seriesArgs = preflightAmeTitleSeries(prepared.plan);if(seriesArgs)seriesActor=ameTitleSeriesActor(); }
+  catch (error) {run.ok=false;run.errorCode=error.code||"ame_title_series_preflight_failed";run.error=error.message;return finishRun();}
   const montageRunMaterialReader = prepared.plan.montagePipeline && !dryRun
     ? montagePipelineService.boundedMaterialReader(require("./montage-contract").normalizeBudgets(prepared.plan.montagePipeline.readBudgets).budgets)
     : null;
@@ -7361,6 +8856,22 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       currentProposalState.assertCurrent(options._m100ActionRecord);
       currentProposalState.bindProject(options._m100ActionRecord, projectResult && projectResult.file);
       run.project = {...options._m100ActionRecord.project};
+      if(dryRun && validation.steps.length===1 && validation.steps[0].tool===titleExport.TOOL){
+        const preparedExport=await titleExportExecutor.preflight(validation.steps[0].safeArgs);
+        run.exportSnapshotsPreflight={ok:true,source:preparedExport.source,targets:preparedExport.targets,nativeMutations:0};
+      }
+      if(dryRun&&validation.steps.length===1&&validation.steps[0].tool===ameJobSource.TOOL){
+        const preparedSource=await ameJobSourceExecutor.preflight(validation.steps[0].safeArgs);
+        run.ameJobSourcePreflight={ok:true,source:preparedSource.source,nativeMutations:0};
+      }
+      if(dryRun&&boundedPropertyJournal){
+        run.ameOpenCompPreflight=await ameOpenCompExecutor.preflight(validation.steps[0].tool,validation.steps[0].safeArgs);
+        if(!projectLifecycleContract.samePath(run.ameOpenCompPreflight.projectFile,options._m100ActionRecord.project.expectedFile))throw Error("ame_open_proposal_project_mismatch");
+      }
+      if(dryRun&&validation.steps.length===1&&validation.steps[0].tool===titleVerification.TOOL){
+        const preparedVerification=await titleVerificationExecutor.preflight(validation.steps[0].safeArgs);
+        run.titleVerificationPreflight={ok:true,source:preparedVerification.source,consumed:preparedVerification.consumed===true,nativeOpens:0};
+      }
     } catch (error) {
       run.ok = false; run.errorCode = error.code || "project_inspection_failed";
       run.error = error.message; run.project = error.project || null;
@@ -7436,7 +8947,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   }
   if (!dryRun && options._m100ActionRecord) {
     try {
-      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
+      if (validation.steps.some(step => ameTitleMutationNames.has(step.tool) && !(autonomous && productRuntimeCurrent() && step.safeArgs?.queueMode===ameSharedQueue.MODE) || ameQueueControl.MUTATIONS.includes(step.tool) && !(autonomous && productRuntimeCurrent()) || step.tool === ameFixtureGrant.TOOL_NAME || step.tool === ameRunning.TOOL_NAME && step.safeArgs && step.safeArgs.existingInstallationTrust)) {
         manualPlanIngress.assertRequest(options._m100ActionRecord);
       }
       confirmM100ActionProposal(options._m100ActionRecord, options, run);
@@ -7455,7 +8966,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       return finishRun();
     }
   }
-  if (mutatingExecution && !lifecycleCompletion && !activeEditSessionAtStart && !checkpointStepPresent) {
+  if(!dryRun&&boundedPropertyJournal){
+    try{projectSave.verifyDryRunReceipt(options._m100ActionRecord,1,AUTONOMY_CONTRACT_VERSION);}
+    catch(error){run.ok=false;run.errorCode=error.code;run.error=error.message;return finishRun();}
+    run.safety.status="protected";run.safety.protection="bounded_property_journal";
+  }
+  if (mutatingExecution && !lifecycleCompletion && !boundedPropertyJournal && !activeEditSessionAtStart && !checkpointStepPresent) {
     if (!autoEditSession) {
       run.ok = false;
       run.error = "autoEditSession:true is required to run a mutating plan without an existing edit session or checkpoint step.";
@@ -7471,6 +8987,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     const guard = options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
       actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
     const started = await autonomousCommandContext.run(guard, () => startPlanRunEditSession(run, validation));
+    if(seriesArgs)createdSeriesSession=started.ownedSession;
     if (!started.ok) {
       run.ok = false;
       run.error = started.error;
@@ -7487,6 +9004,18 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.checkpoint = started.checkpoint;
   }
 
+  if (mutatingExecution && seriesArgs) {
+    try {
+      if(m100Protocol.stableStringify(seriesActor)!==m100Protocol.stableStringify(ameTitleSeriesActor()))throw m100ProtocolError("ame_title_series_actor_changed", "Контроллер изменился во время подготовки checkpoint.");
+      if (!activeEditSession.ameTitleSeries) {ameTitleSeries.begin(activeEditSession,seriesArgs,ameTitleSeriesActor());persistActiveEditSession();}
+      seriesSession = activeEditSession;
+      ameTitleSeries.preflight(seriesSession,prepared.plan,ameTitleSeriesActor());
+      run.editSession = compactEditSession(seriesSession);
+      run.checkpoint = compactCheckpoint(seriesSession.checkpoint);
+      run.ameTitleSeries = {groupId:seriesArgs.pendingGroupId,sessionId:seriesSession.id,size:seriesArgs.pendingGroupSize};
+    } catch (error) {run.ok=false;run.errorCode=error.code||"ame_title_series_protection_failed";run.error=error.message;return finishRun();}
+  }
+
   if (lifecycleStep && !dryRun) {
     try {
       const pending = lifecycleCompletion ? lifecycle.storage.load().pendingLifecycle : null;
@@ -7500,7 +9029,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   const executedSteps = [];
   let solutionPreflightChecked = false;
   const autoStartedEditSession = mutatingExecution && run.safety.protection === "auto_edit_session";
-  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession || Boolean(lifecycleCompletion && lifecycleAuthorization);
+  let checkpointProtectionReady = !mutatingExecution || Boolean(activeEditSession) || autoStartedEditSession || Boolean(lifecycleCompletion && lifecycleAuthorization) || Boolean(boundedPropertyJournal && run.safety.protection==="bounded_property_journal");
   const steps = validation.steps;
   for (const step of steps) {
     const item = {
@@ -7597,11 +9126,15 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         const projectNow = firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
         currentProposalState.assertCurrent(options._m100ActionRecord);
         currentProposalState.bindProject(options._m100ActionRecord, projectNow && projectNow.file);
+        if (seriesArgs) {
+          if (activeEditSession !== seriesSession) throw m100ProtocolError("ame_title_series_session_changed", "Edit session серии изменилась.");
+          run.ameTitleSeries = ameTitleSeries.reserve(seriesSession,seriesArgs,ameTitleSeriesActor(),run.id);
+        }
         if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
           require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile)) {
           throw m100ProtocolError("edit_session_project_mismatch", "Checkpoint активной edit session относится к другому проекту.");
         }
-        if (!activeEditSession && (!run.checkpoint || require("./proposal-state").normalizeProject(run.checkpoint.sourceFile) !== require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile))) {
+        if (!boundedPropertyJournal && !activeEditSession && (!run.checkpoint || require("./proposal-state").normalizeProject(run.checkpoint.sourceFile) !== require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile))) {
           throw m100ProtocolError("checkpoint_project_mismatch", "Checkpoint не подтверждает целевой проект.");
         }
       } catch (error) {
@@ -7626,6 +9159,24 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       persistRun(item);
+      const ameOpenCompAuthorization=ameOpenComp.MUTATIONS.includes(step.tool)?ameOpenCompExecutor.authorize({
+        source:"ai-plan-run",tool:step.tool,record:options._m100ActionRecord,runId:run.id,args:bound.args,autonomous:Boolean(autonomous),sessionHash:autonomous&&autonomous.sessionHash,confirm,allowWithoutCheckpoint,
+        protection:run.safety.protection,stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }):null;
+      const ameJobSourceContext=step.tool===ameJobSource.TOOL?{
+        source:"ai-plan-run",record:options._m100ActionRecord,runId:run.id,args:bound.args,autonomous:Boolean(autonomous),sessionHash:autonomous&&autonomous.sessionHash,confirm,allowWithoutCheckpoint,
+        ownedEditSessionId:activeEditSession&&activeEditSession.id,checkpoint:activeEditSession&&activeEditSession.checkpoint||run.checkpoint,stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }:null;
+      if(ameJobSourceContext&&!autonomous)manualPlanIngress.brand(ameJobSourceContext);
+      const ameJobSourceAuthorization=ameJobSourceContext?ameJobSourceExecutor.authorize(ameJobSourceContext):null;
+      const titleExportAuthorization=step.tool===titleExport.TOOL ? titleExportExecutor.authorize({
+        record:options._m100ActionRecord,runId:run.id,args:bound.args,autonomous:Boolean(autonomous),sessionHash:autonomous && autonomous.sessionHash,confirm,allowWithoutCheckpoint,
+        checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }) : null;
+      const titleVerificationAuthorization=step.tool===titleVerification.TOOL ? titleVerificationExecutor.authorize({
+        record:options._m100ActionRecord,runId:run.id,args:bound.args,autonomous:Boolean(autonomous),sessionHash:autonomous&&autonomous.sessionHash,confirm,allowWithoutCheckpoint,ownedEditSessionId:activeEditSession&&activeEditSession.id,
+        checkpoint:activeEditSession&&activeEditSession.checkpoint||run.checkpoint,stepCount:validation.steps.length,contractVersion:AUTONOMY_CONTRACT_VERSION
+      }) : null;
       const nativeRenderAuthorization=step.tool===nativeRenderVariant.RENDER ? nativeRenderExecutor.authorize({
         record:options._m100ActionRecord,runId:run.id,autonomous:Boolean(autonomous),confirm,allowWithoutCheckpoint,
         checkpoint:activeEditSession && activeEditSession.checkpoint || run.checkpoint,
@@ -7638,6 +9189,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       } : null;
       if (ameRunningContext && bound.args.existingInstallationTrust) manualPlanIngress.brand(ameRunningContext);
       const ameRunningAuthorization = ameRunningContext ? ameRunningExecutor.authorize(ameRunningContext) : null;
+      const ameQueueContext = ameQueueControl.MUTATIONS.includes(step.tool) ? brandAmeQueueContext({
+        source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
+        confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
+        checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
+      }, autonomous) : null;
+      const ameQueueAuthorization = ameQueueContext ? ameQueueExecutor.authorize(ameQueueContext) : null;
       const ameFixtureContext = step.tool === ameFixtureGrant.TOOL_NAME ? manualPlanIngress.brand({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         requestId:options.requestId || options._m100ActionRecord.requestId,instanceId:currentProposalState.snapshot().instanceId,
@@ -7650,19 +9207,20 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         try { ameFixtureAuthorization = await ameFixtureExecutor.authorize(ameFixtureContext); }
         catch (error) { ameFixtureCheckpoints.delete(run.id); throw error; }
       }
-      const ameTitleContext = ameTitleMutationNames.has(step.tool) ? manualPlanIngress.brand({
+      const ameTitleContext = ameTitleMutationNames.has(step.tool) ? brandAmeTitleContext({
         source: "ai-plan-run", record: options._m100ActionRecord, runId: run.id, args: bound.args,
         confirm, allowWithoutCheckpoint, autonomous: Boolean(autonomous), stepCount: validation.steps.length,
+        ownedEditSessionId: activeEditSession && activeEditSession.id,
         checkpoint: activeEditSession && activeEditSession.checkpoint || run.checkpoint
-      }) : null;
+      },autonomous) : null;
       const ameTitleAuthorization = ameTitleContext ? ameTitleExecutor.authorize(step.tool, bound.args, ameTitleContext) : null;
-      const result = await planCommandContext.run({item,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
+      const result = await planCommandContext.run({item,run,role:"readback",persist:()=>persistRun(item)}, () => evidenceContext.run({...evidenceContext.getStore(), stepIndex: step.index,
         sessionId: activeEditSession && activeEditSession.id || null},
       () => placeholderPlanContext.run({ plan: prepared.plan, validation, montageVerifyMaterials:montageRunMaterialReader,
         remainingSteps: steps.filter(value => value.index >= step.index), completedSteps: run.steps.filter(value => value.index < step.index) },
       () => autonomousCommandContext.run(guard, () => callToolLogged("ai-plan-run", step.tool, bound.args,
         projectLifecycleContract.isLifecycleMutation(step.tool) ? {lifecycleAuthorization} : step.tool===projectSave.TOOL_NAME ? {projectSaveAuthorization:{authorized: !autonomous && confirm && !allowWithoutCheckpoint && Boolean(options._m100ActionRecord && options._m100ActionRecord.confirmedBySurface==="cep-panel" && options._m100ActionRecord.executionState==="executing"),
-          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
+          confirmed:confirm,proposalId:options._m100ActionRecord && options._m100ActionRecord.actionId,runId:run.id}} : ameOpenCompAuthorization ? {ameOpenCompAuthorization} : ameJobSourceAuthorization ? {ameJobSourceAuthorization} : titleVerificationAuthorization ? {titleVerificationAuthorization} : titleExportAuthorization ? {titleExportAuthorization} : nativeRenderAuthorization ? {nativeRenderAuthorization} : ameQueueAuthorization ? {ameQueueAuthorization} : ameRunningAuthorization ? {ameRunningAuthorization} : ameFixtureAuthorization ? {ameFixtureAuthorization} : ameTitleAuthorization ? {ameTitleAuthorization} : undefined)))));
       const payload = firstToolPayload(result);
       const observedAt = new Date().toISOString();
       const evidenceArtifact = reviewEvidence.writeStepEvidence(LOG_DIR, {runId:run.id,stepIndex:step.index,
@@ -7676,6 +9234,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
       item.status = result.isError ? "failed" : "completed";
       item.result = payload;
       item.isError = Boolean(result.isError);
+      if(amePending.isPendingStep(item,run)){run.pending=true;run.ok=false;item.dispatchOnly=true;}
       if (result.isError) {
         item.errorCode = payload && (payload.errorCode || payload.code) || "ae_step_failed";
         item.error = typeof payload === "string" ? payload : payload && payload.error || `Шаг ${step.tool} завершился отказом.`;
@@ -7733,7 +9292,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     }
   }
 
-  if (autoStartedEditSession && !(lifecycleStep && run.safety.editSessionFinished)) {
+  if (autoStartedEditSession && !seriesArgs && !(lifecycleStep && run.safety.editSessionFinished)) {
     run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
     if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") run.ok = false;
     const finished = finishPlanRunEditSession(run);
@@ -8585,6 +10144,7 @@ async function trustedPlaceholderAction(body) {
 }
 
 function startHttpBridge() {
+  if(initialRuntime)initialRuntime.assertStartup();
   ownedRuntimeStartup=require("./owned-runtime-supervisor").assertStartupReservation(PROJECT_ROOT,{generation:process.env.AE_OWNED_RUNTIME_GENERATION,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256});
   const server = http.createServer((req, res) => {
     try{ownedRuntimeService.ingress(req,()=>Promise.resolve().then(async () => {
@@ -8949,15 +10509,31 @@ function startHttpBridge() {
       return;
     }
 
-    if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run") && req.method === "POST") {
+    if ((url.pathname === "/agents/plan/run" || url.pathname === "/dev/agents/plan/run" || url.pathname === ameManualQueue.ROUTE) && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       const requestedAt = Date.now();
       let runBody;
       try {
         const body = await readJsonBody(req);
         runBody = body;
-        const run = await manualPlanIngress.runAuthenticated({ route: url.pathname, authRole: res.authRole,
+        const queueRoute = url.pathname === ameManualQueue.ROUTE;
+        const execute = () => manualPlanIngress.runAuthenticated({ route: queueRoute ? "/agents/plan/run" : url.pathname, authRole: res.authRole,
           key: m100PlanRunLookupKey(body || {}) }, () => runValidatedAgentPlan(body || {}));
+        let run;
+        if (queueRoute) {
+          const witness = body.ameManualQueueWitness;
+          if (!witness || Object.keys(witness).sort().join(",") !== "acceptedDryRunId,declaration,manifestHash,panelConnectionId,panelGeneration,trustedGesture") throw Object.assign(new Error("ame_manual_queue_witness_required"), { code: "ame_manual_queue_witness_required" });
+          const record = currentProposalState.current, steps = record?.payload?.plan?.steps;
+          if (!Array.isArray(steps) || steps.length !== 1 || steps[0].tool !== ameTitleJobs.START || body.dryRun !== false || body.confirm !== true ||
+              ameTitleJobs.validateInput(ameTitleJobs.START, steps[0].args || {}).manualQueueMode !== "cep_user_declaration_v2" || steps[0].args.manualQueueManifestSha25664 !== witness.manifestHash) {
+            throw Object.assign(new Error("ame_manual_queue_exact_start_plan_required"), { code: "ame_manual_queue_exact_start_plan_required" });
+          }
+          run = await ameManualQueueIssuer.runAuthenticated({ ...witness, route: url.pathname, authRole: res.authRole,
+            panelIdentityValid: Boolean(lastPanelInfo && lastPanelInfo.panelConnectionId === witness.panelConnectionId && lastPanelInfo.panelGeneration === witness.panelGeneration) }, execute);
+        } else {
+          if (body.ameManualQueueWitness) throw Object.assign(new Error("ame_manual_queue_protected_route_required"), { code: "ame_manual_queue_protected_route_required" });
+          run = await execute();
+        }
         if(ameFixtureExecutor.cleanupSelector(run.id))res.once("finish",()=>{Promise.resolve().then(()=>ownedRuntimeService.run("completion",()=>ownedFixtureCleanupReconciler.resume(run.id))).catch(error=>recordEvent("owned_fixture_cleanup_pending",{runId:run.id,code:error.code || "owned_fixture_cleanup_pending",historicalOutcome:"unknown",replayAllowed:false}));});
         writeJson(res, run.ok ? 200 : 400, {
           ok: run.ok,
@@ -9060,7 +10636,7 @@ function startHttpBridge() {
           ? (Object.prototype.hasOwnProperty.call(body, "arguments") ? body.arguments : {})
           : (body.arguments || {});
         const authority = autonomousSession.authorization();
-        if (name === panelBootstrap.TOOL_NAME && res.authRole !== "automation") {
+        if ([panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) && res.authRole !== "automation") {
           writeJson(res, 403, {ok:false, code:"bootstrap_automation_role_required"});
           return;
         }
@@ -9070,6 +10646,7 @@ function startHttpBridge() {
         }
         const result = decorateDaemonToolResult(name, await callToolLogged("mcp-adapter", name, args, {
           autonomousSession: authority,
+          panelBootstrapAuthority: [panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) ? PANEL_BOOTSTRAP_AUTHORITY : null,
           panelControlAuthority: PANEL_CONTROL_AUTHORITY
         }));
         writeJson(res, 200, { ok: true, tool: name, result });
@@ -9268,13 +10845,22 @@ function startHttpBridge() {
         writeJson(res,409,{ok:false,code:"panel_identity_mismatch"}); return;
       }
       lastPanelSeenAt = Date.now();
-      writeJson(res,200,{ok:true,session:autonomousSession.publicStatus()}); return;
+      try{const actor={panelConnectionId:owner.panelConnectionId,panelGeneration:owner.panelGeneration,panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))},bootstrapRecovery=panelBootstrapService.recoveryChallenge(actor);writeJson(res,200,{ok:true,session:autonomousSession.publicStatus(),...(bootstrapRecovery?{bootstrapRecovery}:{})});}
+      catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven"});}return;
+    }
+    if (url.pathname === "/bridge/product-session" && req.method === "GET") {
+      if(!requireToken(req,res,url))return;
+      try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const actor={panelConnectionId:url.searchParams.get("panelConnectionId"),panelGeneration:url.searchParams.get("panelGeneration"),panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))};writeJson(res,200,{ok:true,resetSession:state.admissionReady()?null:state.challenge(actor,url.searchParams.get("physicalInflight")==="0"?0:1),resetSessionActivation:state.activation()});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
     }
     if (url.pathname === "/bridge/next" && req.method === "GET") {
       if (!requireToken(req, res, url)) return;
       const panelIdentity = url.searchParams.get("panelConnectionId") || req.headers["x-ae-panel-connection-id"];
       const panelGeneration = url.searchParams.get("panelGeneration") || req.headers["x-ae-panel-generation"];
       if (!panelIdentity || !panelGeneration) { writeJson(res, 409, {ok:false, code:"panel_identity_required", error:"Panel identity and generation are required."}); return; }
+      try{
+        const actor={panelConnectionId:panelIdentity,panelGeneration,panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))},bootstrapRecovery=panelBootstrapService.recoveryChallenge(actor);
+        if(bootstrapRecovery){lastPanelSeenAt=Date.now();if(bootstrapRecovery.historicalReceiptOnly)lastPanelInfo={...lastPanelInfo,...actor,at:lastPanelSeenAt};writeJson(res,200,{ok:true,command:null,bootstrapRecovery});return;}
+      }catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven",command:null});return;}
       let recoveryTransport;
       try{await retireGeneratedRecoveryForNormalPoll(req,url);recoveryTransport=generatedRecoveryLeaseScope(req,url);}
       catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
@@ -9289,6 +10875,11 @@ function startHttpBridge() {
         panelLifecycleEpoch: /^\d+$/.test(url.searchParams.get("panelLifecycleEpoch") || "") ? Number(url.searchParams.get("panelLifecycleEpoch")) : null,
         at: lastPanelSeenAt
       };
+      const resetState=productSessionResetState();
+      if(resetState && !resetState.admissionReady()){
+        try{const resetSession=resetState.challenge({panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch},0);writeJson(res,200,{ok:true,command:null,resetSession});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",command:null});}return;
+      }
+      const resetSessionActivation=resetState?resetState.activation():null;
       if(recoveryTransport && url.searchParams.get("recoveryHandshake")==="1"){
         recoveryTransport.state="ready";
         writeJson(res,200,{ok:true,command:null,recoveryTransport:{scopeId:recoveryTransport.scopeId,state:"ready",freshReconcileRequired:true,expiresAt:new Date(recoveryTransport.expiresAt).toISOString()}});return;
@@ -9304,14 +10895,25 @@ function startHttpBridge() {
       let command;
       try{command=leaseNextQueuedCommand(req,url);}catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
       if (command) {
-        writeJson(res, 200, { ok: true, command });
+        writeJson(res, 200, { ok: true, command,resetSessionActivation });
         return;
       }
 
-      writeJson(res, 200, { ok: true, command: null });
+      writeJson(res, 200, { ok: true, command: null,resetSessionActivation });
       return;
     }
 
+    if (url.pathname === "/bridge/reset-session" && req.method === "POST") {
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"owned_product_reset_panel_witness_required"});return;}
+      try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const result=state.activate(await readJsonBody(req));autonomousSession.invalidateProjectContext();writeJson(res,200,result);}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
+    }
+    if(url.pathname==="/bridge/bootstrap-recovery-epoch"&&req.method==="POST"){
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"bootstrap_recovery_panel_role_required"});return;}
+      try{const result=panelBootstrapService.acceptRecoveryEpoch(await readJsonBody(req));autonomousSession.invalidateProjectContext();lastPanelSeenAt=Date.now();if(result.activation&&!result.historicalReceiptOnly)lastPanelInfo={...lastPanelInfo,...result.activation.actor,at:lastPanelSeenAt};writeJson(res,200,result);}
+      catch(error){writeJson(res,409,{ok:false,code:error.code||"bootstrap_recovery_epoch_unproven",replayAllowed:false});}return;
+    }
     if (url.pathname === "/bridge/submitted" && req.method === "POST") {
       if (!requireToken(req, res, url)) return;
       const payload = await readJsonBody(req);
@@ -9511,6 +11113,7 @@ function startHttpBridge() {
 
 const tools = [
   panelBootstrap.tool,
+  panelBootstrap.recoveryTool,
   ...panelControl.panelControlTools,
   ...productionUsageTools,
   ...solutionDiscovery.discoveryTools,
@@ -10651,6 +12254,11 @@ const tools = [
         includeMarkers: {
           type: "boolean",
           description: "Whether to include composition marker read-back from comp.markerProperty. Defaults to false."
+        },
+        includeDynamicLinkGUID: {
+          type: "boolean",
+          default: false,
+          description: "Opt-in native Dynamic Link GUID read. Requires explicit compItemId and a saved project with native revision; returns exact GUID and same-read project evidence, or capability_unavailable. Before AME use, require fresh evidence for the saved AEP and exactly one matching getDLItemList GUID. Defaults to false."
         },
         markerLimit: {
           type: "number",
@@ -13028,9 +14636,18 @@ const tools = [
   ...slideshowTools.createToolDefinitions(MUTATION_CHECKPOINT_SCHEMA_PROPERTIES),
   ...projectSave.createToolDefinitions(),
   ...nativeRenderVariant.createToolDefinitions(),
+  titleExport.toolDefinition(),
+  ...ameJobSource.toolDefinitions(),
+  ...ameOpenComp.toolDefinitions(),
+  titleExport.recoveryToolDefinition(),
+  ...titleVerification.toolDefinitions(),
   ameTransport.tool,
   amePresets.listAmePresetsTool,
   ameRunning.tool,
+  ...ameQueueControl.tools,
+  ...ameEnqueueSequence.tools,
+  ameSavedSourceAdmission.tool,
+  ameSourceProbe.tool,
   ameFixtureRunner.tool,
   ameFixtureRunner.inspectTool,
   ameFixtureRunner.inspectAttemptTool,
@@ -13088,12 +14705,30 @@ async function buildPostRunMontageReadBack(record, actual) {
 const panelBootstrapService = panelBootstrap.createPanelBootstrapService({
   stateDir: path.join(process.env.AE_BRIDGE_STATE_DIR || LOG_DIR, "ae-agent-panel-bootstrap"),
   getStatus: () => ({...getBridgeStatus(), planExecutionState: currentProposalState.current && currentProposalState.current.executionState || null}),
+  getOrigin:()=>{const p=lastPanelInfo;return {actor:{panelConnectionId:p?.panelConnectionId,panelGeneration:p?.panelGeneration,panelInstanceId:p?.panelInstanceId,panelLifecycleEpoch:p?.panelLifecycleEpoch},runtime:{pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),sourceSha256:RUNTIME_IDENTITY?.sourceSha256,currentSourceSha256:reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256}};},
+  readResult:async pins=>completedResults.get(pins.id)||null,
+  getDeliveryFence:(attempt,sha,before,barrier)=>{
+    if(barrier)return null;
+    const pins=attempt.projectReadCommand;
+    if(pins&&recoveryStateSame(attempt.origin,before)&&recoveryStateSame(pins.origin,before)&&!inflightCommands.has(pins.id)&&!pendingCommands.includes(pins.id))return {kind:"same_runtime_delivery_closed",originalRawSha256:sha,origin:before,oldCommandPins:pins,deliveryClosed:true};
+    return null;
+  },
   readProject: (timeoutMs,onQueued) => panelBootstrapReadContext.run({onQueued}, async () => firstToolPayload(await callToolLogged("panel-bootstrap-read", "get_project_info", {}, {panelBootstrapReadTimeoutMs: timeoutMs})))
 });
+function recoveryStateSame(a,b){return require("./session-recovery-state").same(a,b);}
 
 // CLI and daemon must share this module's fixed durable controller root.
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
-const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>ownedRuntimeStartup.managed && !ownedRuntimeStartup.initialRecovery?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>ownedRuntimeStartup.managed && !ownedRuntimeStartup.initialRecovery?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
+const PANEL_BOOTSTRAP_AUTHORITY = Symbol("official-automation-panel-bootstrap");
+function panelControlUsesRetainedTransport() {
+  if (!ownedRuntimeStartup.managed || ownedRuntimeStartup.initialRecovery) return false;
+  const supervisor=require("./owned-runtime-supervisor"), current=supervisor.readDaemonRegistration(PROJECT_ROOT);
+  // The supervisor reads status/register before publishing the successor.
+  // Keep admission closed during that normal phase; malformed records still throw.
+  if (!current || current.generation!==process.env.AE_OWNED_RUNTIME_GENERATION) return true;
+  return !supervisor.readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
+}
+const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
   const status=getBridgeStatus();
   if(status.lastPanelInfo?.panelGeneration!==expected.currentActor.panelGeneration || status.lastPanelInfo?.panelInstanceId!==expected.currentActor.panelInstanceId || status.lastPanelInfo?.panelLifecycleEpoch!==expected.currentActor.panelLifecycleEpoch || status.humanGuardRuntime.pid!==expected.runtime.daemon.pid || status.humanGuardRuntime.startedAt!==expected.runtime.daemon.startedAt || RUNTIME_IDENTITY.sourceSha256!==expected.runtime.loadedRuntimeSha256 || reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256!==expected.runtime.currentRuntimeSha256)throw Object.assign(Error("retained_admission_actor_or_runtime_changed"),{code:"retained_admission_actor_or_runtime_changed"});
 }});
@@ -13101,20 +14736,48 @@ function nativeRetainedReaders(){return nativeFixtureAbandonmentBackend.createRe
 let ownedRuntimeHttpServer=null;
 let ownedRuntimeStartup={managed:!!process.env.AE_OWNED_RUNTIME_GENERATION,requiresRetainedAdoption:!!process.env.AE_OWNED_RUNTIME_GENERATION};
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
+const productSessionReset=require("./owned-runtime-product-session-reset"),productSessionResetCache=new Map();
+function productSessionResetState(){
+  if(deploymentMode!=="product"||!ownedRuntimeStartup.managed)return null;
+  const supervisor=require("./owned-runtime-supervisor"),generation=process.env.AE_OWNED_RUNTIME_GENERATION,keyReader=v=>ownedRuntimeAuthority.runtimeControlFor(PROJECT_ROOT).credential({daemon:{port:3456,credentialSha256:v.credentialSha256}});
+  let rootGeneration=generation;
+  if(!fs.existsSync(path.join(ownedRuntimeAuthority.base(PROJECT_ROOT),"daemon-reservations",generation,"product-session-reset.json"))){
+    const current=supervisor.readDaemonRegistration(PROJECT_ROOT);if(!current||current.generation!==generation)return null;
+    const anchor=productSessionReset.sessionAnchor(PROJECT_ROOT,generation,supervisor.registeredGeneration,keyReader);if(!anchor)return null;rootGeneration=anchor.value.generation;
+  }
+  if(!productSessionResetCache.has(rootGeneration))productSessionResetCache.set(rootGeneration,productSessionReset.daemonSession({root:PROJECT_ROOT,generation:rootGeneration,readGeneration:supervisor.registeredGeneration,keyReader,
+    readLifecycle:()=>productSessionReset.assertLifecycle(PROJECT_ROOT),readEditHash:()=>productSessionReset.snapshot(EDIT_SESSION_ACTIVE_FILE).sha256,
+    retireEdit:hash=>{if(hash!==null && productSessionReset.snapshot(EDIT_SESSION_ACTIVE_FILE).sha256===hash)activeEditSession=null;}}));
+  return productSessionResetCache.get(rootGeneration);
+}
 const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
+  initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
-  readAdmission:()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").admissionReady(PROJECT_ROOT,{generation:ownedRuntimeStartup.generation,loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256,connectionReady:autonomousSession.publicStatus().connectionReady}):!ownedRuntimeStartup.requiresRetainedAdoption || require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready,journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+  readAdmission:()=> (!productSessionResetState() || productSessionResetState().admissionReady()) && (ownedRuntimeStartup.initialRecovery
+    ? require("./owned-runtime-initial-recovery").admissionReady(PROJECT_ROOT,{generation:ownedRuntimeStartup.generation,loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256,connectionReady:autonomousSession.publicStatus().connectionReady})
+    : !ownedRuntimeStartup.requiresRetainedAdoption || ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport() ||
+      require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready),journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
+  readProductStopAuthority:()=>!ownedRuntimeStartup.initialRecovery && require("./owned-runtime-supervisor").readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION),
   readPolicy:()=>ownedRuntimeAuthority.loadPolicy(PROJECT_ROOT,"owned_daemon_lifecycle").policy,
   readReadiness:()=>{
     const status=getBridgeStatus();let children=false,capsule=false;
     try{const manifest=ownedRuntimeAuthority.privateFile(path.join(ownedRuntimeAuthority.base(PROJECT_ROOT),"retained-authority.json")),s=ownedRuntimeAuthority.validateManifest(manifest.value).selector,saved=require("./native-fixture-retained").lookupAudited(s,{repoRoot:PROJECT_ROOT,evidenceRoot:LOG_DIR});children=!!saved;capsule=!!require("../scripts/native-fixture-retained-maintenance").read(LOG_DIR,"capture");}catch(_){/* Missing/partial authority remains blocked. */}
-    const fixtureState=ownedFixtureLifecycle.quiescence(),runnerState=ameFixtureExecutor.quiescence();
+    const fixtureState=ownedFixtureLifecycle.quiescence(),runnerState=ameFixtureExecutor.quiescence(),transport=panelControlService.cutoverReadiness();
     const initial=ownedRuntimeStartup.initialRecovery && require("./owned-runtime-initial-recovery").admissionReady(PROJECT_ROOT,{generation:ownedRuntimeStartup.generation,loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256,connectionReady:autonomousSession.publicStatus().connectionReady});
-    return {...status,protectedTransportReadiness:panelControlService.cutoverReadiness(),bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:(initial || children) && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:initial || capsule};
+    return {...status,protectedTransportReadiness:transport,bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:(initial || children) && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:initial || capsule,
+      productStopQuiescence:{planExecutionState:currentProposalState.current ? currentProposalState.current.executionState : null,allChildrenExitProven:fixtureState.allChildrenExitProven,pendingCleanupJobs:fixtureState.pendingCleanupJobs+runnerState.pendingCleanupJobs,pendingNativeAttempts:runnerState.pendingCount,
+        outstandingAttempts:Array.isArray(runnerState.outstandingAttempts)?runnerState.outstandingAttempts.length:null,transportOutstanding:Array.isArray(transport.outstanding)?transport.outstanding.length:null}};
   },
   closeIdleWaiters:()=>{for(const waiter of waitingPanels.splice(0)){clearTimeout(waiter.timer);if(!waiter.done && !waiter.res.destroyed && !waiter.res.writableEnded){waiter.done=true;writeJson(waiter.res,200,{ok:true,command:null,draining:true});}}},
-  closeServer:()=>{if(ownedRuntimeHttpServer){ownedRuntimeHttpServer.close();if(typeof ownedRuntimeHttpServer.closeIdleConnections==="function")ownedRuntimeHttpServer.closeIdleConnections();}}
+  closeServer:closeOwnedRuntimeHttpServer
 });
+function closeOwnedRuntimeHttpServer(){
+  if(!ownedRuntimeHttpServer)return;
+  // Called only after the shutdown ACK finished and service quiescence passed.
+  // A CEP long-poll socket can remain active after the listener is closed.
+  ownedRuntimeHttpServer.close();
+  if(typeof ownedRuntimeHttpServer.closeAllConnections==="function")ownedRuntimeHttpServer.closeAllConnections();
+}
 const ownedFixtureLifecycle=require("./owned-fixture-lifecycle").createFixtureLifecycleController({
   repoRoot:PROJECT_ROOT,
   getCurrentActor:()=>{const s=getBridgeStatus().lastPanelInfo;return {panelInstanceId:s?.panelInstanceId,panelLifecycleEpoch:s?.panelLifecycleEpoch,panelGeneration:s?.panelGeneration};},
@@ -13145,6 +14808,18 @@ function nativePrephaseMaintenanceReaders() {
 }
 
 async function callTool(name, args, executionContext) {
+  if(name===ameJobSource.INSPECT||name===ameJobSource.TOOL)
+    return toolResult({ok:false,code:"ame_snapshot_source_frozen",scope:"experimental_unfinished_frozen_pending_separate_user_scope",replayAllowed:false},true);
+  if(initialRuntime&&!ownedReadonlyScriptPreparation(name))initialRuntime.assertTool();
+  if(name===ameOpenComp.INSPECT)return toolResult(await ameOpenCompExecutor.inspect(args));
+  if(name===ameOpenComp.DECLARE)return toolResult(await ameOpenCompExecutor.declare(args));
+  if(name===ameOpenComp.REPORT)return toolResult(ameOpenCompExecutor.report(args));
+  if(name===ameOpenComp.RECONCILE){const result=await ameOpenCompExecutor.reconcile(args);return toolResult(result,!result.ok);}
+  if(ameOpenComp.MUTATIONS.includes(name)){const result=await ameOpenCompExecutor.execute(name,args,executionContext&&executionContext.ameOpenCompAuthorization);return toolResult(result,!result.ok);}
+  if (name === panelBootstrap.RECOVERY_TOOL_NAME) {
+    const result=await panelBootstrapService.recover(args || {});
+    return toolResult(result,!result.ok);
+  }
   if (name === panelBootstrap.TOOL_NAME) {
     const result = await panelBootstrapService.ensure(args || {});
     return toolResult(result, !result.ok);
@@ -13373,12 +15048,56 @@ async function callTool(name, args, executionContext) {
     try{return toolResult(await ameFixtureExecutor.inspectAttempt(args));}
     catch(error){return toolResult({ok:false,code:error.code || "fixture_attempt_inspection_failed",replayAllowed:false},true);}
   }
+  if(name===titleExport.TOOL){
+    const result=await titleExportExecutor.execute(args,executionContext && executionContext.titleExportAuthorization);
+    if(result.ok)result.authorization={runId:currentProposalState.current.executionId,proposalId:currentProposalState.current.actionId};
+    return toolResult(result,!result.ok);
+  }
+  if(name===ameJobSource.INSPECT)return toolResult(await ameJobSourceExecutor.inspect(args));
+  if(name===ameSavedSourceAdmission.TOOL){
+    try{return toolResult(await savedAmeSourceAdmission.inspect(args));}
+    catch(error){return toolResult({ok:false,code:error.code||error.message||"ame_saved_source_inspection_failed",executionAuthority:false,automaticRetryAllowed:false},true);}
+  }
+  if(name===ameSourceProbe.TOOL){
+    try{const result=await ameSourceProbeExecutor.execute(args);return toolResult(result,!result.ok);}
+    catch(error){return toolResult({ok:false,code:error.code||error.message||"ame_source_probe_failed",executionAuthority:false,queueMutationPerformed:false,automaticRetryAllowed:false},true);}
+  }
+  if(name===ameJobSource.RECONCILE){
+    if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");
+    const result=await ameJobSourceExecutor.reconcile(args);return toolResult(result,!result.ok);
+  }
+  if(name===ameJobSource.TOOL){
+    const result=await ameJobSourceExecutor.execute(args,executionContext&&executionContext.ameJobSourceAuthorization);
+    if(result.ok)result.authorization={runId:currentProposalState.current.executionId,proposalId:currentProposalState.current.actionId};return toolResult(result,!result.ok);
+  }
+  if(name===titleVerification.TOOL){
+    const result=await titleVerificationExecutor.execute(args,executionContext&&executionContext.titleVerificationAuthorization);
+    if(result.ok)result.authorization={runId:currentProposalState.current.executionId,proposalId:currentProposalState.current.actionId};
+    return toolResult(result,!result.ok);
+  }
+  if(name===titleVerification.LOOKUP){
+    if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");
+    const result=await titleVerificationExecutor.reconcile(args);return toolResult(result,!result.ok);
+  }
+  if(name===titleExport.RECOVER){
+    if(executionContext?.panelControlAuthority!==PANEL_CONTROL_AUTHORITY)throw Error("official_mcp_adapter_required");
+    const result=await titleExportRecovery.recover(args);return toolResult(result,!result.ok);
+  }
   if (ameTitleJobs.tools.some(tool => tool.name === name)) {
     const result = await ameTitleExecutor.execute(name, args, executionContext && executionContext.ameTitleAuthorization);
-    if (ameTitleMutationNames.has(name) && result.ok) result.authorization = {
+    const pendingContext=planCommandContext.getStore(),dispatchPending=amePending.isPendingDispatch(result,args,pendingContext?.run?.id,pendingContext?.item?.commands);
+    if (ameTitleMutationNames.has(name) && (result.ok||dispatchPending)) result.authorization = {
       runId: currentProposalState.current.executionId, proposalId: currentProposalState.current.actionId
     };
+    return toolResult(result, !result.ok&&!dispatchPending&&!amePending.isPendingStatus(result,args));
+  }
+  if (ameQueueControl.tools.some(tool => tool.name === name)) {
+    const result = await ameQueueExecutor.execute(name, args, executionContext && executionContext.ameQueueAuthorization);
     return toolResult(result, !result.ok);
+  }
+  if (ameEnqueueSequence.tools.some(tool => tool.name === name)) {
+    try { const result = await ameEnqueueSequencer.execute(name, args); return toolResult(result, !result.ok); }
+    catch (error) { return toolResult({ ok: false, code: error.code || "ame_enqueue_sequence_failed", executionAuthority: false, automaticRetryAllowed: false }, true); }
   }
   if(name===nativeRenderVariant.INSPECT || name===nativeRenderVariant.RENDER){
     try { const result=name===nativeRenderVariant.INSPECT ? await nativeRenderExecutor.inspect(args) : await nativeRenderExecutor.execute(args,executionContext && executionContext.nativeRenderAuthorization);
@@ -14851,7 +16570,7 @@ async function callTool(name, args, executionContext) {
   if (name === "run_ai_agent_plan") {
     try {
       const run = await runValidatedAgentPlan(args || {}, executionContext || null);
-      return toolResult(run, !run.ok);
+      return toolResult(run, !run.ok&&!amePending.isPendingResponse(run));
     } catch (error) {
       const diagnostic = obstacleEvent({operation: name, proposalId: args.actionId, code: error.code || "plan_run_rejected", phase: "preflight"});
       try { fs.appendFileSync(path.join(LOG_DIR, "autonomy-obstacles.jsonl"), JSON.stringify(diagnostic) + "\n", "utf8"); } catch (_logError) {}
@@ -15090,58 +16809,10 @@ async function callTool(name, args, executionContext) {
   }
 
   if (name === "get_project_info") {
-    const result = await runExtendScriptBody(`
-      var project = app.project;
-      function __codexFramesCountTypeSnapshot(targetProject) {
-        var value = null;
-        var name = null;
-        var startFrame = null;
-        try { value = targetProject ? targetProject.framesCountType : null; } catch (__framesCountReadError) {}
-        try {
-          if (value === FramesCountType.FC_START_0) {
-            name = "FC_START_0";
-            startFrame = 0;
-          } else if (value === FramesCountType.FC_START_1) {
-            name = "FC_START_1";
-            startFrame = 1;
-          } else if (value !== null && value !== undefined) {
-            name = String(value);
-          }
-        } catch (__framesCountNameError) {
-          if (value !== null && value !== undefined) name = String(value);
-        }
-        return {
-          value: value === null || value === undefined ? null : String(value),
-          name: name,
-          startFrame: startFrame
-        };
-      }
-      var framesCount = __codexFramesCountTypeSnapshot(project);
-      function __codexRead(fn) { try { return fn(); } catch (_) { return undefined; } }
-      var revision = null;
-      var revisionSupported = false;
-      if (project) {
-        var rawRevision = __codexRead(function () { return project.revision; });
-        if (typeof rawRevision === "number" && isFinite(rawRevision) && Math.floor(rawRevision) === rawRevision && rawRevision >= 0 && rawRevision <= 9007199254740991) {
-          revision = rawRevision;
-          revisionSupported = true;
-        }
-      }
-      return {
-        file: project && project.file ? project.file.fsName : null,
-        bitsPerChannel: project ? project.bitsPerChannel : null,
-        numItems: project ? project.numItems : 0,
-        activeItemName: project && project.activeItem ? project.activeItem.name : null,
-        activeItemType: project && project.activeItem ? project.activeItem.typeName : null,
-        framesCountType: framesCount.name,
-        framesCountTypeValue: framesCount.value,
-        framesCountStartFrame: framesCount.startFrame,
-        revision: revision,
-        supported: {
-          revision: revisionSupported
-        }
-      };
-    `, executionContext && executionContext.panelBootstrapReadTimeoutMs);
+    const timeoutMs = executionContext && executionContext.panelBootstrapReadTimeoutMs;
+    const result = lifecycle.diagnostics().freshMissingStoreReadAllowed
+      ? await lifecycle.readProjectInfo(timeoutMs)
+      : await runExtendScriptBody(OWNED_TRUSTED_PROJECT_BODY, timeoutMs);
     return toolResult(result.result);
   }
 
@@ -15790,6 +17461,9 @@ async function callTool(name, args, executionContext) {
     const compItemIndex = optionalPositiveInteger(args, "compItemIndex");
     const compName = optionalString(args, "compName", "");
     const compItemId = optionalPositiveInteger(args,"compItemId");
+    if (args.includeDynamicLinkGUID !== undefined && typeof args.includeDynamicLinkGUID !== "boolean") throw new Error("includeDynamicLinkGUID must be a boolean.");
+    const includeDynamicLinkGUID = optionalBoolean(args, "includeDynamicLinkGUID", false);
+    if (includeDynamicLinkGUID && compItemId === null) throw new Error("dynamic_link_comp_item_id_required");
     const includeLayers = optionalBoolean(args, "includeLayers", true);
     const layerLimit = Math.max(1, Math.min(1000, Math.floor(optionalNumber(args, "layerLimit", 200))));
     const includeMarkers = optionalBoolean(args, "includeMarkers", false);
@@ -15798,6 +17472,12 @@ async function callTool(name, args, executionContext) {
     const result = await runExtendScriptBody(`
       ${resolveCompScript}
       var comp = __codexResolveComp(${compItemIndex === null ? "null" : compItemIndex}, ${aeLiteral(compName)}, ${compItemId === null ? "null" : compItemId});
+      ${includeDynamicLinkGUID ? `
+        if (${compItemIndex === null ? "false" : `__codexProjectIndexForItem(comp) !== ${compItemIndex}`} || ${compName ? `comp.name !== ${aeLiteral(compName)}` : "false"}) throw new Error("stable_comp_identity_mismatch");
+        ${compDynamicLinkRead.aeReadSupport}
+        var dynamicLinkEvidence = __codexCompDynamicLinkEvidence(comp);
+        if (!dynamicLinkEvidence.ok) return dynamicLinkEvidence;
+      ` : ""}
       var includeLayers = ${includeLayers ? "true" : "false"};
       var includeMarkers = ${includeMarkers ? "true" : "false"};
       var layerLimit = ${layerLimit};
@@ -15822,7 +17502,7 @@ async function callTool(name, args, executionContext) {
         }
       }
 
-      return {
+      var details = {
         itemIndex: __codexProjectIndexForItem(comp),
         itemId: comp.id,
         name: comp.name,
@@ -15849,8 +17529,12 @@ async function callTool(name, args, executionContext) {
         markers: includeMarkers ? __codexCompMarkers(comp, markerLimit) : null,
         layers: layers
       };
+      ${includeDynamicLinkGUID ? `details.dynamicLinkGUID = dynamicLinkEvidence.dynamicLinkGUID; details.project = dynamicLinkEvidence.project;` : ""}
+      ${ownedReadonlyFirstTwoPreparation(name) ? `var ownedFirstTwoTitleInventory=${ownedFirstTwoTitleInventory.toString()};var ownedInitialUiBaseline=${ownedInitialUiBaseline.toString()};details.ownedTitleInventory=ownedFirstTwoTitleInventory(comp);details.ownedUiBaseline=ownedInitialUiBaseline();` : ""}
+      ${ownedReadonlyObservedRangePreparation(name) ? `var ownedObservedRootTiming=${ownedObservedRootTiming.toString()};details.ownedObservedTiming=ownedObservedRootTiming(comp);` : ""}
+      return details;
     `);
-    return toolResult(result.result);
+    return toolResult(result.result, result.result && result.result.ok === false);
   }
 
   if (name === "get_property_value") {
@@ -22793,11 +24477,24 @@ async function callTool(name, args, executionContext) {
 }
 
 function callToolLogged(source, name, args, executionContext) {
+  if(initialRuntime)initialRuntime.assertTool();
+  if(deploymentMode==="product" && [panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name)){
+    if(source!=="mcp-adapter" || executionContext?.panelBootstrapAuthority!==PANEL_BOOTSTRAP_AUTHORITY)
+      return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"},true);
+    return ownedRuntimeService.runBootstrap(()=>callToolLoggedImpl(source,name,args,executionContext));
+  }
+  if(deploymentMode==="product" && source==="panel-bootstrap-read" && name==="get_project_info" && panelBootstrapReadContext.getStore())
+    return ownedRuntimeService.runBootstrapProjectRead(()=>callToolLoggedImpl(source,name,args,executionContext));
+  // Connecting an idle panel does not admit project writes or experimental work.
+  // The panel service still validates the official adapter, action and idle state.
+  if(deploymentMode==="product" && name==="invoke_panel_action" && args?.action==="bridge.connect")
+    return ownedRuntimeService.runBootstrap(()=>callToolLoggedImpl(source,name,args,executionContext));
   const tool=toolByName(name),read=tool?.annotations?.readOnlyHint===true || !!tool && !MUTATING_TOOL_NAMES.has(name) && /^(get_|list_|inspect_|find_|search_|ping_|wait_for_)/.test(name) || ["get_panel_state","list_panel_actions","get_panel_action_result","refresh_panel_guards","reconcile_plan_run","reconcile_project_lifecycle"].includes(name);
   return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
 }
 async function callToolLoggedImpl(source, name, args, executionContext) {
-  if (name === panelBootstrap.TOOL_NAME && source !== "mcp-adapter") {
+  await ameOpenCompExecutor.assertProjectMutationAllowed(name,MUTATING_TOOL_NAMES.has(name) && ![ameRunning.TOOL_NAME,...ameQueueControl.MUTATIONS,ameFixtureGrant.TOOL_NAME,...ameTitleMutationNames].includes(name) || ["start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name));
+  if ([panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);
   }
   if (panelControl.isPanelControlTool(name) && (source !== "mcp-adapter" ||
@@ -22812,6 +24509,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
   if(name===projectSave.TOOL_NAME)projectSave.validateToolInput(name,args||{});
   if(name===nativeRenderVariant.RENDER)nativeRenderExecutor.assertAuthorization(executionContext && executionContext.nativeRenderAuthorization,args || {});
   if (name === ameRunning.TOOL_NAME) ameRunningExecutor.assertAuthorization(executionContext && executionContext.ameRunningAuthorization, args || {});
+  if (ameQueueControl.MUTATIONS.includes(name)) ameQueueExecutor.assertAuthorization(executionContext && executionContext.ameQueueAuthorization, args || {});
   if (name === ameFixtureGrant.TOOL_NAME) ameFixtureExecutor.assertAuthorization(executionContext && executionContext.ameFixtureAuthorization, args || {});
   if (ameTitleMutationNames.has(name)) ameTitleExecutor.assertAuthorization(executionContext && executionContext.ameTitleAuthorization, name, args || {});
   if (projectLifecycleContract.isLifecycleTool(name)) projectLifecycleContract.validateInput(name, args || {});
@@ -22848,7 +24546,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     if (MUTATION_SUMMARY_TOOL_NAMES.has(name) || ["start_edit_session", "finish_edit_session"].includes(name)) {
       if (!(lifecycleMutation && projectLifecycleContract.isLifecycleCompletion(name))) lifecycle.assertMutationAllowed();
     }
-    idContext = ameTitleMutationNames.has(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
+    idContext = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || ameQueueControl.MUTATIONS.includes(name) || name === ameFixtureGrant.TOOL_NAME || name === nativeRenderVariant.RENDER || name === ameRunning.TOOL_NAME || name === projectSave.TOOL_NAME || lifecycleMutation ? null : idempotencyContext(name, args || {});
 
     if (M100_DIRECT_TOOL_SOURCES.has(source) && m100DirectEscapeHatchAllowed(source, args || {})) {
       recordEvent("m100_direct_tool_escape_hatch_used", {
@@ -22929,7 +24627,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
     // Nested typed inspection must not replace the enclosing mutation's bound
     // execution arguments with its own (often empty) read arguments.
     if(commandContext && commandContext.item && commandContext.item.tool===name) commandContext.item.args=args;
-    const checkpoint = ameTitleMutationNames.has(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
+    const checkpoint = ameOpenComp.MUTATIONS.includes(name) || name===ameJobSource.TOOL || name===titleVerification.TOOL || name===titleExport.TOOL || ameTitleMutationNames.has(name) || ameQueueControl.MUTATIONS.includes(name) || name===ameFixtureGrant.TOOL_NAME || name===nativeRenderVariant.RENDER || name===projectSave.TOOL_NAME || lifecycleMutation ? null : await withPlanCommandRole("checkpoint",()=>maybeCreateMutationCheckpoint(args || {}, name));
     const result = await withPlanCommandRole(MUTATING_TOOL_NAMES.has(name) ? "mutation" : "readback",
       () => placeholderMutationContext.run(placeholderGuard, () => callTool(name, args, executionContext || null)));
     if(commandContext && commandContext.item && MUTATING_TOOL_NAMES.has(name)) {
@@ -22937,7 +24635,8 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
       commandContext.item.mutationResultIsError=Boolean(result.isError);
       commandContext.persist();
     }
-    let resultWithCheckpoint = attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
+    const pendingMutation=amePending.isPendingStep({...commandContext?.item,result:firstToolPayload(result)},commandContext?.run);
+    let resultWithCheckpoint = pendingMutation?result:attachMutationMetadataToToolResult(result, name, args || {}, checkpoint);
     // Read-back остаётся разрешённым после отзыва lease: завершённую мутацию нужно проверить.
     if (!lifecycleMutation) resultWithCheckpoint = await withPlanCommandRole("readback",()=>autonomousCommandContext.run(null, () => attachMutationVerificationToToolResult(resultWithCheckpoint, name, args || {})));
     const idempotencyRecord = storeIdempotencyResult(idContext, eventId, resultWithCheckpoint);
@@ -22986,6 +24685,7 @@ async function callToolLoggedImpl(source, name, args, executionContext) {
 }
 
 module.exports = {
+  ownedTrustedReadStatus,ownedTrustedReadObserve,ownedTrustedReadQuiescence,ownedTrustedServerOnlyResult,ownedTrustedReadonlyScript,ownedTrustedPreparationScript,ownedTrustedExecutionPreparation,ownedTrustedExecutionGates,ownedTrustedStageScript,ownedTrustedRestorationProgram,ownedTrustedRestorationScript,ownedTrustedAmeScript,ownedTrustedAmeManualReservation,
   decorateDaemonToolResult,
   hardcoreRunNeedsReconciliation,
   async preparePlaceholderInventoryScript(options = {}) {
@@ -23014,9 +24714,16 @@ module.exports = {
 };
 
 if (require.main === module) {
-  activeEditSession = loadActiveEditSession();
-  loadAgentSecrets();
-  loadIdempotencyRecords();
-  if (activeEditSession) recordEvent("edit_session_restored", { session: compactEditSession(activeEditSession) });
-  startHttpBridge();
+  if(trustedSourceCensus.requested()){
+    void trustedSourceCensus.collectFixed("daemon").then(value=>process.stdout.write(JSON.stringify(value)+"\n"),error=>{
+      process.stderr.write(JSON.stringify({authority:false,code:error.code||"owned_initial_passive_census_unknown"})+"\n");process.exitCode=1;});
+  }else if(initialRuntime){
+    void startTrustedReadBridge().catch(error=>{process.stderr.write(JSON.stringify({code:error.code||"owned_initial_daemon_start_unknown",replayAllowed:false})+"\n");process.exitCode=1;});
+  }else{
+    activeEditSession = loadActiveEditSession();
+    loadAgentSecrets();
+    loadIdempotencyRecords();
+    if (activeEditSession) recordEvent("edit_session_restored", { session: compactEditSession(activeEditSession) });
+    startHttpBridge();
+  }
 }

@@ -42,11 +42,11 @@ function createLifecycleBridgeAdapter(deps) {
       payloadHash:c.canonicalPlanHash(saved.payloadHash),inputHash:hints.inputHash,sourcePolicyHash:pins.sourcePolicyHash,targetPolicyHash:pins.targetPolicyHash,
       ...(saved.ownedSessionId ? {ownedEditSessionId:saved.ownedSessionId} : {})});
   }
-  async function readNative(script,cap) {
+  async function readNative(script,cap,timeoutMs) {
     t.validateCommandCapability(cap,{rawScript:script});
     const facts=t.phaseCapabilityFacts(cap);
     if (!facts.readOnly) capOwners.set(cap,scope.getStore());
-    return deps.readNative(script,cap);
+    return deps.readNative(script,cap,timeoutMs);
   }
   const service=createProjectLifecycleService({storage,readNative,sourceCheckpoint:deps.sourceCheckpoint,
     verifyManualAuthorization,assertIdle:context=>{const saved=assertContext(context);return deps.isIdle(saved.ownedSessionId)===true;},
@@ -132,9 +132,11 @@ function createLifecycleBridgeAdapter(deps) {
     return planBuilder.buildProjectLifecycleRecoveryPlan(args,assessed);
   }
   function readState() { return storage.withStateReadCapability((script,cap)=>readNative(script,cap)); }
+  function readProjectInfo(timeoutMs) { return storage.withProjectInfoReadCapability((script,cap)=>readNative(script,cap,timeoutMs),commandId=>
+    typeof deps.isBootstrapReadIdle === "function" && deps.isBootstrapReadIdle(commandId) === true); }
   return {storage,service,planStep,preflight,issueContext,execute,validateCommand,build,buildRecovery,recoveryReadbacks:service.recoveryReadbacks,
     assertManualContext:assertContext,
     isPhaseCapability:t.isPhaseCapability,phaseFacts:t.phaseCapabilityFacts,
-    readState,assertMutationAllowed:()=>storage.assertMutationAllowed(),epoch:()=>storage.epoch(),diagnostics:()=>storage.pendingProjection()};
+    readState,readProjectInfo,assertMutationAllowed:()=>storage.assertMutationAllowed(),epoch:()=>storage.epoch(),diagnostics:()=>storage.pendingProjection()};
 }
 module.exports={createLifecycleBridgeAdapter};

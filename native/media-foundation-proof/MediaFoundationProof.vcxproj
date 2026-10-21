@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{DB24C38C-0313-4B28-AC4B-63631019EE75}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion><VCToolsVersion>14.44.35207</VCToolsVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v143</PlatformToolset><UseDebugLibraries>false</UseDebugLibraries><CharacterSet>Unicode</CharacterSet></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup><TargetName>MediaFoundationProof</TargetName><OutDir>$(MediaFoundationProofOutputDir)\media-foundation-proof\bin\</OutDir><IntDir>$(MediaFoundationProofOutputDir)\media-foundation-proof\obj\</IntDir></PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile><WarningLevel>Level4</WarningLevel><TreatWarningAsError>true</TreatWarningAsError><LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>true</ConformanceMode><Optimization>MaxSpeed</Optimization><PreprocessorDefinitions>AE_AGENT_MEDIA_FOUNDATION_SYNTHETIC_PROOF=1;%(PreprocessorDefinitions)</PreprocessorDefinitions><AdditionalOptions>/utf-8 /sourceDependencies &quot;$(IntDir)media-foundation-proof.dependencies.json&quot; %(AdditionalOptions)</AdditionalOptions><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><ExceptionHandling>Sync</ExceptionHandling></ClCompile>
+    <Link><SubSystem>Console</SubSystem><TargetMachine>MachineX64</TargetMachine></Link>
+  </ItemDefinitionGroup>
+  <Target Name="RequireIsolatedMediaFoundationProof" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(Configuration)|$(Platform)' != 'Release|x64'" Text="Only isolated Release/x64 synthetic proof is supported." />
+    <Error Condition="'$(VCToolsVersion)' != '14.44.35207' Or '$(WindowsTargetPlatformVersion)' != '10.0.26100.0'" Text="Pinned compiler and SDK required; no fallback." />
+    <Error Condition="'$(MediaFoundationProofOutputDir)' == '' Or '$(MediaFoundationSyntheticProofReviewed)' != 'true'" Text="Explicit unique output directory and reviewed synthetic-only opt-in required." />
+    <Error Condition="'$(MediaFoundationProofOutputDir)' != '' And !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MediaFoundationProofOutputDir)', '\A(?:[A-Za-z]:[\\/][^\x00-\x1f:*?&quot;&lt;&gt;|]*|\\\\(?!\.{1,2}\\)[^\\/:\x00-\x1f*?&quot;&lt;&gt;|]+\\(?!\.{1,2}(?:\\|\z))[^\\/:\x00-\x1f*?&quot;&lt;&gt;|]+(?:\\[^\x00-\x1f:*?&quot;&lt;&gt;|]+)?)\z'))" Text="Proof output directory must be a fully qualified drive or UNC path assigned by the controller; drive-relative, root-relative and device paths are forbidden." />
+    <Error Condition="'$(LocalSessionPinsDir)' != '' Or '$(LocalSessionInstalledSeamsReviewed)' != '' Or '$(LocalSessionRuntimeDir)' != '' Or '$(LocalSessionInstalledDir)' != '' Or '$(LocalSessionTrustedReadPinsDir)' != '' Or '$(LocalSessionTrustedReadOutputDir)' != '' Or '$(LocalSessionTrustedReadSourceReviewed)' != '' Or '$(LocalSessionNodeSdkDir)' != '' Or '$(AE_AGENT_PHASE_TRUSTED_READ_PROFILE)' != '' Or '$(AE_AGENT_PHASE_PRODUCTION_TARGET)' != '' Or '$(AE_AGENT_PHASE_TRUSTED_READ_SETUP)' != ''" Text="Installed/runtime broker properties are forbidden in this pure synthetic target." />
+  </Target>
+  <ItemGroup><ClCompile Include="media_foundation_proof_main.cpp" /><ClInclude Include="..\owned-runtime-local-session\ame_native_rgba_png.h" /><ClInclude Include="..\owned-runtime-local-session\ame_pe_mapped_span.h" /><ClInclude Include="..\owned-runtime-local-session\trusted_execution_budget.h" /></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

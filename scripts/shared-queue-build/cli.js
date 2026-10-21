@@ -1,0 +1,79 @@
+"use strict";
+const fs = require("node:fs"), path = require("node:path"), codec = require("./codec"), profile = require("./profile"), collect = require("./collect"), assembly = require("./assemble");
+const json = file => JSON.parse(fs.readFileSync(file, "utf8")), save = (file, value) => fs.writeFileSync(file, JSON.stringify(value) + "\n", { flag: "wx" });
+const STARTUP_ENV = "AE_AGENT_SHARED_QUEUE_BUILD_STARTUP_V1", STARTUP_GO = "AE_AGENT_SHARED_QUEUE_BUILD_GO_V1\n";
+function waitForStartup(environment = process.env, read = (buffer, offset, length) => fs.readSync(0, buffer, offset, length, null)) {
+  if (environment[STARTUP_ENV] === undefined) return false;
+  if (environment[STARTUP_ENV] !== "1") codec.fail("production_exact_startup_handshake_required");
+  const expected = Buffer.from(STARTUP_GO, "ascii"), observed = Buffer.alloc(expected.length); let at = 0;
+  while (at < expected.length) {
+    const count = read(observed, at, expected.length - at);
+    if (!Number.isSafeInteger(count) || count < 1 || count > expected.length - at) codec.fail("production_startup_go_missing_or_invalid");
+    at += count; if (!observed.subarray(0, at).equals(expected.subarray(0, at))) codec.fail("production_startup_go_changed");
+  }
+  if (read(Buffer.alloc(1), 0, 1) !== 0) codec.fail("production_startup_trailing_input_refused");
+  return true;
+}
+function input(file, expected) { const raw = fs.readFileSync(file); if (codec.sha(raw).toString("hex") !== expected.toLowerCase()) codec.fail("production_input_document_digest_changed"); const d = profile.validate(JSON.parse(raw)); for (const receipt of Object.values(d.census)) if (receipt && typeof receipt === "object" && receipt.path && codec.sha(fs.readFileSync(receipt.path)).toString("hex") !== receipt.sha256) codec.fail("production_census_document_changed"); return d; }
+function writeSame(file, raw) { const fd = fs.openSync(file, "r+"); try { fs.ftruncateSync(fd, 0); fs.writeFileSync(fd, raw); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
+function anchorPath(d) { return d.enrollment.repository.canonicalPath + "\\" + d.definition.anchorComponents.join("\\"); }
+function expected(d, creator) { return { ...d.definition, ...d.enrollment, creator, anchorPath: anchorPath(d) }; }
+function requests(d) {
+  const generated = new Set(d.definition.buildInputs.filter(row => row.code <= 3).map(row => row.file.pin.canonicalPath).concat(d.definition.buildInputManifest.pin.canonicalPath)), rows = new Map();
+  function visit(value, parent = null) { if (!value || typeof value !== "object") return;
+    if (value.volumeGuidHex && value.fileIdHex && value.canonicalPath) { const directory = !parent || !Object.hasOwn(parent, "sha256"); const row = { locator: value.canonicalPath, pin: value, directory, sha256: directory || generated.has(value.canonicalPath) ? null : parent.sha256, generated: generated.has(value.canonicalPath) }; const prior = rows.get(value.canonicalPath); if (prior && JSON.stringify(prior) !== JSON.stringify(row)) codec.fail("production_conflicting_expected_object"); rows.set(value.canonicalPath, row); return; }
+    for (const item of Object.values(value)) visit(item, value);
+  } visit(d);
+  // A retained read pin would prevent the native creator taking the old fence
+  // exclusively. Only this exact historical fence is observed then released;
+  // native admission reopens and verifies its physical identity itself.
+  if (d.definition.closedPredecessor) {
+    const fence = rows.get(d.definition.closedPredecessor.lock.canonicalPath);
+    if (!fence || !fence.directory || fence.sha256 !== null) codec.fail("production_closed_fence_request_required");
+    fence.directory = false; fence.sha256 = codec.sha(Buffer.alloc(0)).toString("hex"); fence.transient = true;
+  }
+  return [...rows.values()];
+}
+function generationBinding(d, original, creator, observation, raw) {
+  if (!d.definition.closedPredecessor) {
+    if (creator || observation || raw) codec.fail("production_fresh_binding_forbidden");
+    return null;
+  }
+  if (!creator || !observation || !raw) codec.fail("production_actual_successor_binding_required");
+  return codec.closedPredecessorBinding(d.definition.closedPredecessor, observation, raw, expected(d, creator), original);
+}
+async function main(args) {
+  const [operation, ...a] = args;
+  if (operation === "collection-plan") { save(a[1], assembly.plan(json(a[0]))); return; }
+  if (operation === "assemble") { save(a[3], assembly.assemble(json(a[0]), json(a[1]), a[2])); return; }
+  if (operation === "merge-census") { save(a[2], collect.mergeCensus(json(a[0]), json(a[1]))); return; }
+  if (operation === "pure-programs") { save(a[2], collect.purePrograms(a[0], json(a[1]))); return; }
+  if (operation === "cep-census") { save(a[1], await collect.cepSources(a[0])); return; }
+  const d = input(a[0], a[1]);
+  if (operation === "validate") { for (const file of d.build.sourceFiles) if (codec.sha(fs.readFileSync(file.pin.canonicalPath)).toString("hex") !== file.sha256) codec.fail("production_frozen_source_changed"); save(a[2], { schema: "ae-agent.shared-queue-build-validation.v1", inputSha256: a[1], authority: false, sourceFiles: d.build.sourceFiles.length, nodeSourceRows: d.trustedRead.nodeSources.length, buildInputs: d.definition.buildInputs.length, automaticRuntimeLaunch: false }); return; }
+  if (operation === "pin-requests") { save(a[2], requests(d)); return; }
+  if (operation === "generate-setup") { for (const [name, text] of Object.entries(profile.generate(d))) writeSame(path.join(d.build.pinsDirectory, name), Buffer.from(text)); return; }
+  if (operation === "prepare") { const raw = fs.readFileSync(a[3]), parsed = codec.prepare(raw, expected(d, json(a[2]))); if (parsed.birth !== a[4]) codec.fail("production_original_process_birth_changed"); save(a[5], parsed); return; }
+  if (operation === "generate-final") {
+    const original = json(a[2]);
+    const creator = a[4] ? json(a[4]) : null, observation = a[5] ? json(a[5]) : null;
+    const binding = generationBinding(d, original, creator, observation, observation ? fs.readFileSync(observation.pin.canonicalPath) : null);
+    const headers = profile.generate(d, original.anchor, "0".repeat(64), binding);
+    for (const [name, text] of Object.entries(headers)) writeSame(path.join(d.build.pinsDirectory, name), Buffer.from(text));
+    const rows = d.definition.buildInputs.map(row => ({ ...row, bytes: fs.readFileSync(row.file.pin.canonicalPath) })); for (const row of rows) if (row.code >= 4 && codec.sha(row.bytes).toString("hex") !== row.file.sha256) codec.fail("production_build_input_changed");
+    const manifest = codec.buildManifest(d.definition, original.anchor, rows), file = path.join(d.build.pinsDirectory, "local_session_production_artifact_pins.h"), raw = fs.readFileSync(file), field = codec.normalizeHeader(raw); Buffer.from(manifest.generatedBuildInputsHash).copy(raw, field.start); writeSame(file, raw);
+    const finalRows = d.definition.buildInputs.map(row => ({ ...row, bytes: fs.readFileSync(row.file.pin.canonicalPath) })), recomputed = codec.buildManifest(d.definition, original.anchor, finalRows); if (!manifest.bytes.equals(recomputed.bytes)) codec.fail("production_M_commitment_cycle");
+    writeSame(d.definition.buildInputManifest.pin.canonicalPath, manifest.bytes); save(a[3], { generatedBuildInputsHash: manifest.generatedBuildInputsHash, manifestSha256: codec.sha(manifest.bytes).toString("hex"), ...(binding ? { closedPredecessorBinding: binding } : {}), generatedHeaders: Object.keys(headers).map(name => ({ path: path.join(d.build.pinsDirectory, name), sha256: codec.sha(fs.readFileSync(path.join(d.build.pinsDirectory, name))).toString("hex") })) }); return;
+  }
+  if (operation === "seal-request") { const original = json(a[2]); fs.writeFileSync(a[4], codec.ack("OWNLCPS1", 3, original, fs.readFileSync(a[3])), { flag: "wx" }); return; }
+  if (operation === "verify-final") {
+    const original = json(a[2]), generated = json(a[3]), artifacts = json(a[4]), creator = artifacts.find(row => row.code === 3)?.file;
+    if (!creator) codec.fail("production_original_creator_artifact_required");
+    const result = codec.final(fs.readFileSync(a[5]), original, { ...expected(d, creator), generatedBuildInputsHash: generated.generatedBuildInputsHash, artifactSetHash: codec.artifactSet(artifacts) });
+    if (codec.sha(fs.readFileSync(anchorPath(d))).toString("hex") !== result.anchorSha256 || result.policySha256 !== d.enrollment.policyHash) codec.fail("production_actual_seal_bytes_changed");
+    save(a[6], result); fs.writeFileSync(a[7], codec.ack("OWNLCA01", 2, original, fs.readFileSync(a[5])), { flag: "wx" }); return;
+  }
+  codec.fail("production_unknown_build_operation");
+}
+if (require.main === module) Promise.resolve().then(() => { waitForStartup(); return main(process.argv.slice(2)); }).catch(error => { const value = error.code || error.message; process.stderr.write(JSON.stringify({ ok: false, code: typeof value === "string" && /^[a-zA-Z0-9_]+$/.test(value) ? value : "production_build_exception", authority: false }) + "\n"); process.exitCode = 1; });
+module.exports = { main, requests, generationBinding, waitForStartup, STARTUP_ENV, STARTUP_GO };

@@ -8,13 +8,14 @@ const SLOT_NAME = "aeAgentAMETransportDiagnosticV1";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 function fail(code) { const e = new Error(code); e.code = code; throw e; }
 function validateInput(raw) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(k => !["targetSpecifier", "expectedSessionNonce", "timeoutMs", "reconcileRequestNonce"].includes(k))) fail("ame_transport_invalid_input");
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(k => !["targetSpecifier", "expectedSessionNonce", "timeoutMs", "reconcileRequestNonce", "afterReadUnknownNonce"].includes(k))) fail("ame_transport_invalid_input");
   if (typeof raw.targetSpecifier !== "string" || !/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(raw.targetSpecifier)) fail("ame_transport_exact_target_required");
   if (raw.expectedSessionNonce !== undefined && (typeof raw.expectedSessionNonce !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(raw.expectedSessionNonce))) fail("ame_transport_invalid_session_nonce");
-  if (raw.reconcileRequestNonce !== undefined && !UUID.test(raw.reconcileRequestNonce)) fail("ame_transport_invalid_request_nonce");
+  if (raw.reconcileRequestNonce !== undefined && (typeof raw.reconcileRequestNonce!=="string"||!UUID.test(raw.reconcileRequestNonce))) fail("ame_transport_invalid_request_nonce");
+  if(raw.afterReadUnknownNonce!==undefined&&(raw.reconcileRequestNonce!==undefined||typeof raw.afterReadUnknownNonce!=="string"||!UUID.test(raw.afterReadUnknownNonce)))fail("ame_transport_invalid_read_retirement");
   const timeoutMs = raw.timeoutMs === undefined ? 5000 : raw.timeoutMs;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 10000) fail("ame_transport_invalid_timeout");
-  return { targetSpecifier: raw.targetSpecifier, expectedSessionNonce: raw.expectedSessionNonce || null, timeoutMs, reconcileRequestNonce: raw.reconcileRequestNonce || null };
+  return { targetSpecifier: raw.targetSpecifier, expectedSessionNonce: raw.expectedSessionNonce || null, timeoutMs, reconcileRequestNonce: raw.reconcileRequestNonce || null,...(raw.afterReadUnknownNonce?{afterReadUnknownNonce:raw.afterReadUnknownNonce}:{}) };
 }
 const literal = value => JSON.stringify(value).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 
@@ -90,7 +91,7 @@ function nativeAmeRead(requestNonce) {
 
 // ES3 sender. The sole sender slot retains the BridgeTalk object for callbacks.
 // Unknown requests block another send; reconciliation pumps the same request.
-function nativeInspect(a, requestNonce, messageBody) {
+function nativeInspect(a, requestNonce, messageBody, previousBody) {
   function snapshot() {
     var project = app.project, result = { projectFile: null, projectDirtyType: "undefined", projectDirty: null, save: false, saveCopy: false, saveAsCopy: false, methods: [] }, entries, i, name;
     if (!project) return result;
@@ -101,11 +102,11 @@ function nativeInspect(a, requestNonce, messageBody) {
     return result;
   }
   var snapshotCapabilities = snapshot(), startedAt = new Date().getTime(), slot, state = $.global.aeAgentAMETransportDiagnosticV1;
-  function response(code, current) {
+  function response(code, current, historical) {
     return { schema: "ae-agent-ame-transport-native.v1", code: code, requestNonce: current ? current.requestNonce : requestNonce, targetSpecifier: current ? current.targetSpecifier : a.targetSpecifier,
       expectedSessionNonce: current ? current.expectedSessionNonce : a.expectedSessionNonce, observedAt: new Date().getTime(), sent: current ? current.sent : false,
       callback: current ? current.callback : null, responseBody: current ? current.body : null, error: current ? current.error : null, lateResponse: current ? current.lateResponse : false,
-      snapshotCapabilities: snapshotCapabilities, automaticRetryAllowed: false };
+      snapshotCapabilities: snapshotCapabilities, automaticRetryAllowed: false,historical:historical===true };
   }
   function pump(current, budgetMs) {
     var deadline = new Date().getTime() + budgetMs;
@@ -116,6 +117,30 @@ function nativeInspect(a, requestNonce, messageBody) {
     if (!current.callback) current.expired = true;
   }
   if (typeof BridgeTalk !== "function" || typeof BridgeTalk.isRunning !== "function") return response("bridgetalk_unavailable", null);
+  function own(v,key){return Object.prototype.hasOwnProperty.call(v,key);}
+  var history=state&&own(state,"history")?state.history:[],i,old=null,found=0,seen={};
+  if(Object.prototype.toString.call(history)!=="[object Array]"||history.length>64)return response("read_history_changed_or_bound",null);
+  for(i=0;i<history.length;i++){if(!history[i]||typeof history[i]!=="object"||!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(history[i].requestNonce||""))return response("read_history_changed_or_bound",null);if(own(seen,history[i].requestNonce)||state.pending&&state.pending.requestNonce===history[i].requestNonce)return response("read_history_collision",null);seen[history[i].requestNonce]=true;if(history[i].requestNonce===(a.afterReadUnknownNonce||a.reconcileRequestNonce)){old=history[i];found++;}}
+  if(found>1)return response("read_history_collision",null);
+  function exactReader(s){
+    if(!s||s.targetSpecifier!==a.targetSpecifier||s.expectedSessionNonce!==a.expectedSessionNonce||!s.message||s.message.target!==a.targetSpecifier||typeof s.message.body!=="string"||typeof previousBody!=="string")return false;
+    // Line terminators may differ after a normal source checkout. No other
+    // historical reader bytes, source or operation are interchangeable.
+    return s.message.body.replace(/\r\n/g,"\n")===previousBody.replace(/\r\n/g,"\n");
+  }
+  if(a.afterReadUnknownNonce){
+    slot=state&&state.pending;
+    if(old)return response(exactReader(old)?"read_unknown_already_archived":"read_unknown_binding_mismatch",old,true);
+    if(!slot||slot.requestNonce!==a.afterReadUnknownNonce||!exactReader(slot))return response("read_unknown_binding_mismatch",slot);
+    var seconds=slot.message.timeout,budget=seconds*1000,deadline=slot.startedAt+budget;
+    if(typeof seconds!=="number"||!isFinite(seconds)||seconds<1||seconds>10||Math.floor(seconds)!==seconds||typeof slot.startedAt!=="number"||!isFinite(slot.startedAt)||slot.startedAt<=0||own(slot,"deadlineAt")&&slot.deadlineAt!==deadline||own(slot,"budgetMs")&&slot.budgetMs!==budget)return response("read_unknown_budget_changed",slot);
+    if(slot.callback!==null&&slot.callback!=="timeout"||slot.body!==null||new Date().getTime()<deadline)return response("read_unknown_not_expired_or_terminal",slot);
+    if(history.length>=64)return response("read_history_bound",slot);
+    // No pump, constructor or send. Retain the same object and callback closure.
+    if(state.pending!==slot)return response("read_unknown_slot_changed",slot);
+    history.push(slot);state.history=history;state.pending=null;return response("read_unknown_archived",slot,true);
+  }
+  if(a.reconcileRequestNonce&&old){if(!exactReader(old))return response("reconciliation_target_mismatch",old,true);return response(old.callback||"unknown",old,true);}
   if (state && state.pending) {
     slot = state.pending;
     if (a.reconcileRequestNonce) {
@@ -127,7 +152,7 @@ function nativeInspect(a, requestNonce, messageBody) {
   } else if (a.reconcileRequestNonce) return response("reconciliation_request_missing", null);
   try { if (!BridgeTalk.isRunning(a.targetSpecifier)) return response("target_not_running", null); } catch (preflightError) { return response("target_running_unknown", null); }
   var message = new BridgeTalk();
-  slot = { requestNonce: requestNonce, targetSpecifier: a.targetSpecifier, expectedSessionNonce: a.expectedSessionNonce, startedAt: startedAt, sent: null, callback: null, body: null, error: null, expired: false, lateResponse: false, message: message };
+  slot = { requestNonce: requestNonce, targetSpecifier: a.targetSpecifier, expectedSessionNonce: a.expectedSessionNonce, startedAt: startedAt,budgetMs:Math.ceil(a.timeoutMs/1000)*1000,deadlineAt:startedAt+Math.ceil(a.timeoutMs/1000)*1000, sent: null, callback: null, body: null, error: null, expired: false, lateResponse: false, message: message };
   if (!state) { state = { pending: null }; $.global.aeAgentAMETransportDiagnosticV1 = state; }
   state.pending = slot;
   message.target = a.targetSpecifier; message.body = messageBody; message.timeout = Math.ceil(a.timeoutMs / 1000);
@@ -139,7 +164,7 @@ function nativeInspect(a, requestNonce, messageBody) {
   return response(slot.callback || "unknown", slot);
 }
 function ameMessage(requestNonce) { return "(" + nativeAmeRead.toString() + ")(" + literal(requestNonce) + ");"; }
-function inspectScript(a, requestNonce) { return "return (" + nativeInspect.toString() + ")(" + literal(a) + "," + literal(requestNonce) + "," + literal(ameMessage(requestNonce)) + ");"; }
+function inspectScript(a, requestNonce) { const previous=a.afterReadUnknownNonce||a.reconcileRequestNonce;return "return (" + nativeInspect.toString() + ")(" + literal(a) + "," + literal(requestNonce) + "," + literal(ameMessage(requestNonce)) + ","+literal(previous?ameMessage(previous):null)+");"; }
 function normalizeResult(native, requestNonce, a, now = Date.now()) {
   const result = { schema: SCHEMA, ok: false, transport: "ae_bridgetalk", code: native && native.code || "native_response_invalid", requestNonce,
     targetSpecifier: a.targetSpecifier, observedAt: new Date(now).toISOString(), deliveryVerified: false, sessionMatched: null, warmSessionVerified: false,
@@ -147,6 +172,8 @@ function normalizeResult(native, requestNonce, a, now = Date.now()) {
   if (!native || native.schema !== "ae-agent-ame-transport-native.v1" || typeof native.requestNonce !== "string") return result;
   result.requestNonce = native.requestNonce;
   result.native = { callback: native.callback, sent: native.sent, observedAt: native.observedAt, lateResponse: native.lateResponse, error: native.error };
+  if(native.historical===true){result.historical=true;result.currentObservation=false;}
+  if(a.afterReadUnknownNonce){if(native.code==="read_unknown_archived"&&native.historical===true&&native.requestNonce===a.afterReadUnknownNonce&&native.targetSpecifier===a.targetSpecifier&&native.expectedSessionNonce===a.expectedSessionNonce&&[null,"timeout"].includes(native.callback)&&native.responseBody===null){result.code="read_transport_unknown_archived";result.transportUnknown=true;result.nextReadAllowed=true;result.executionAuthority=false;result.nextReadArgs={targetSpecifier:a.targetSpecifier,...(a.expectedSessionNonce?{expectedSessionNonce:a.expectedSessionNonce}:{}),timeoutMs:a.timeoutMs};}return result;}
   if (native.code !== "result") return result;
   let response;
   try { if (typeof native.responseBody !== "string" || native.responseBody.length > 65536) throw Error(); response = JSON.parse(native.responseBody); if (!response || typeof response !== "object" || Array.isArray(response)) throw Error(); } catch (_) { result.code = "ame_response_invalid_json"; return result; }
@@ -154,6 +181,7 @@ function normalizeResult(native, requestNonce, a, now = Date.now()) {
   if (native.requestNonce !== expectedRequest || response.schema !== RESPONSE_SCHEMA || response.requestNonce !== expectedRequest) { result.code = "request_nonce_mismatch"; return result; }
   if (native.targetSpecifier !== a.targetSpecifier || response.appSpecifier !== a.targetSpecifier) { result.code = "target_specifier_mismatch"; return result; }
   if (!Number.isFinite(response.observedAt) || response.observedAt <= 0 || response.observedAt > now + 60000) { result.code = "ame_observation_invalid"; return result; }
+  if(native.historical===true){result.code="historical_response_correlated";result.retainedAme=response;return result;}
   result.deliveryVerified = true;
   result.sessionMatched = a.expectedSessionNonce === null ? null : response.sessionNonce === a.expectedSessionNonce;
   result.warmSessionVerified = result.sessionMatched === true;
@@ -175,12 +203,13 @@ async function execute(raw, runExtendScriptBody) {
 }
 const tool = {
   name: TOOL_NAME,
-  description: "Read one exact already-running AME via a fixed BridgeTalk diagnostic. Correlates fresh request and optional existing session nonce; reads bounded API metadata and batch state only. Does not submit, create queue items, launch explicitly, save or claim adapter readiness. Unknown sends are never replayed; reconcile the exact request nonce.",
+  description: "Read one exact already-running AME via a fixed BridgeTalk diagnostic. Correlates fresh request and optional existing session nonce; reads bounded API metadata and batch state only. Does not submit, create queue items, launch explicitly, save or claim adapter readiness. Unknown sends are never replayed; reconcile the exact request nonce. Optional afterReadUnknownNonce archives only the exact expired unknown fixed read without send/pump and returns nextReadArgs for a separate new read. Archived responses never prove current readiness.",
   inputSchema: { type: "object", additionalProperties: false, properties: {
     targetSpecifier: { type: "string", pattern: "^ame-[0-9]{1,3}\\.[0-9]{1,3}$" },
     expectedSessionNonce: { type: "string", pattern: "^[A-Za-z0-9._-]{1,128}$" },
     timeoutMs: { type: "integer", minimum: 1000, maximum: 10000, default: 5000 },
-    reconcileRequestNonce: { type: "string", pattern: UUID.source, description: "Exact unresolved nonce; reads its retained callback without sending another message." }
+    reconcileRequestNonce: { type: "string", pattern: UUID.source, description: "Exact unresolved or archived nonce; reads its retained callback without sending another message. Archived responses never prove fresh readiness." },
+    afterReadUnknownNonce:{type:"string",pattern:UUID.source,description:"Exclusive with reconciliation. Archive only this exact still-unknown fixed read after its original budget, preserving its message/callback in bounded history. Sends nothing; returns nextReadArgs for a separate new read."}
   }, required: ["targetSpecifier"] },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false }
 };

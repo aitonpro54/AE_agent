@@ -2,7 +2,7 @@
 
 `ensure_ae_agent_panel` — typed MCP-инструмент для фиксированной установленной
 CEP-панели `com.codex.aemcpbridge.panel`, bundle `com.codex.aemcpbridge`, menu
-`AE Agent 3.3.2`. Единственный аргумент — `timeoutMs` (целое 1–30000, default
+`AE Agent 3.3.4`. Единственный аргумент — `timeoutMs` (целое 1–30000, default
 30000). Например:
 
 ```json
@@ -96,16 +96,88 @@ Timeout/CLI error/незавершённый ack не разрешает native/
 показывает compact `panelBootstrap` evidence; runtime outputs локальные и ignored.
 
 Перед typed read сохраняется `project_read_unknown` и queue command ID,
-executionId/expiry. Timeout/невалидный результат/смена connection не вызывает
-ещё один read или UI replay; сохранённая запись блокирует повтор, в том числе
-после restart. Доказанный `before_delivery` rejection отмечается отдельно как
-`project_read_not_delivered` и допускает новый обычный read. Budget проверяется
-до unknown-записи, поэтому deadline без отправки не создаёт ложный unknown.
-Нужна сверка exact command по inflight/retained result и native
-read-back в отдельном ограниченном восстановлении; универсального reset tool
-нет. Удалять durable unknown запись для слепого retry нельзя.
+executionId/expiry. Timeout/невалидный результат/смена connection не разрешает
+повтор старой команды. Доказанный `before_delivery` rejection отмечается отдельно
+как `project_read_not_delivered`. Budget проверяется до unknown-записи.
+
+### Штатное восстановление
+
+`recover_ae_agent_panel({})` выбирает текущую private attempt сам, без caller
+selectors, PID, путей или script. `ensure` возвращает этот tool в `nextAction`,
+если прежний project read остаётся UNKNOWN.
+
+Сначала сверяется exact terminal witness/result: command/execution/expiry,
+владелец и native lifecycle. Missing result, истёкший deadline, Connected и пустая
+очередь сами по себе не доказывают исход. Для новых чтений HMAC witness
+сохраняется до завершения ответа вызывающему.
+
+Если результата недостаточно, отдельный challenge связывает private attempt SHA
+и её старые command pins с новой delivery epoch. CEP использует durable once
+intent, существующий physical latch и fixed native read; старый native/UI вызов
+не повторяется. Исторический ACK может быть доставлен повторно как exact
+receipt, но не получает полномочий текущего actor. Незавершённая physical работа,
+чужой control, corrupt store и конфликт identities остаются блокировкой.
+
+После подписанного fence выполняется отдельный обычный `get_project_info`.
+Его UNKNOWN сохраняется независимо: следующая сверка читает exact результат
+либо устанавливает следующую причинную epoch с новой identity. TTL и очистка
+physical tracker для восстановления не используются.
+
+Исходные bytes остаются в `recovery/<original SHA>/original-attempt.json`.
+Отдельный подписанный disposition сохраняет `unknown_preserved`/noReplay;
+активный указатель снимается через CAS под общим service lock. Только затем
+следующий обычный `ensure` выполняет новую свежую проверку с текущими gates.
+Recovery не сохраняет AEP, не отправляет jobs и не запускает рендер.
+
+Полный контракт и проверки: [crash recovery](crash-recovery.md). Закрытый CLI
+ниже сохранён как история прежнего exact инцидента, а не путь новых восстановлений.
+
+### Закрытая сверка старого read от 19.10.2026
+
+Для exact bootstrap `fa30d4da-acb9-4f0b-85b8-54d5a0455092` добавлен
+операторский CLI в существующем модуле:
+
+```powershell
+node mcp-server/ae-agent-panel-bootstrap.js stale-read-status
+node mcp-server/ae-agent-panel-bootstrap.js reconcile-stale-read
+```
+
+CLI не принимает PID, paths, scripts, IDs или overrides. Сверка разрешена только
+для исходных bytes/SHA и exact typed read `684d9327…` / execution `aa39999f…`,
+при signed reset `6da63cd2…`, generation `efd27532…`, до его activation.
+Она требует свежего idle daemon status, native `OpenProcess` ERROR87 для старого
+AE PID28492 либо exact replacement: `C:\WINDOWS\system32\conhost.exe`,
+PID28492, birth `2026-10-21T04:42:19.6388487Z`, прочитанные через удерживаемый
+native handle. Другой reused PID не принимается. Также требуется единственный
+текущий AE PID10068 с native birth `2026-10-21T04:43:27.0820424Z`; CIM округляет последнюю цифру.
+Alive/denied/unknown старого процесса,
+смена текущего host, registration, anchor, policy или command — отказ.
+Используется read-only kernel существующего pinned absence helper;
+его прежний reset protocol не вызывается и не расширяется.
+
+Под общим `service.lock` два native чтения и повторные status-проверки
+предшествуют retirement. Исходные UNKNOWN bytes сохраняются без изменения в
+`logs/ae-agent-panel-bootstrap/retired/fa30d4da-acb9-4f0b-85b8-54d5a0455092/original-attempt.json`.
+HMAC disposition связывает архив, exact reset anchor, policy и наблюдения.
+Только после durable записи и read-back снимается прежний active pointer.
+`unknown_preserved`, `oldExitProven:false`, `replayAllowed:false` сохраняются;
+старые read/UI-команды не переотправляются и не становятся successful/not_sent.
+Partial archive допускает только read-back. Повтор после завершения читает
+архив и signed receipt, сохраняя возможную новую active-запись.
+
+Сверку применяет единственный контроллер отдельно от `ensure`. После review
+сначала выполняется этот exact CLI, затем при необходимости один штатный
+restart для применения изменённого runtime source. Следующий обычный
+`ensure_ae_agent_panel` создаёт новую попытку с текущими gates и отдельным
+native project read. CLI сам не вызывает ensure, UI/reload, launch/restart,
+save, enqueue или START и не присваивает `reset_active`.
 
 ## Проверки
+
+Адресная сверка reducer без native процессов/HTTP:
+`node scripts/ae-agent-panel-bootstrap-smoke.js --stale-read-only`.
+Существующие unit/VM и новый reducer вместе, без network child:
+`node scripts/ae-agent-panel-bootstrap-smoke.js --offline-only`.
 
 `node scripts/ae-agent-panel-bootstrap-smoke.js` — bounded offline/VM и настоящий
 stdio MCP adapter с изолированным daemon/fake CEP. Он не запускает live AE/CDP,

@@ -3,7 +3,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),vm=require("node:vm"),Module=require("node:module"),crypto=require("node:crypto");
 const network=require("./network-test-fixture"),control=require("../mcp-server/cep-panel-control"),contract=require("../cep-panel/panel-action-contract"),records=require("../mcp-server/plan-run-records");
 const {makeFixture}=require("./generated-export-recovery-smoke"),{createPanelEnvironment}=require("./cep-plan-refresh-smoke"),{createVisualProject}=require("./placeholder-visual-fixture");
-const copy=x=>JSON.parse(JSON.stringify(x)),root=fs.mkdtempSync(path.join(os.tmpdir(),"ae-agent-network-boundary-reconnect-"));
+const copy=x=>JSON.parse(JSON.stringify(x)),root=network.createRuntimeDirectory();
 async function main(){
   const port=await network.reserveLoopbackPort(),settings={port,automationToken:"reconnect-auto",panelToken:"reconnect-panel",adminToken:"reconnect-admin",devAdmin:true,commandTimeoutMs:1500};
   const envVars=network.isolatedEnvironment(root,settings);for(const key of Object.keys(process.env))if(/^(AE_|CODEBURN|OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE|OPENROUTER)/i.test(key))delete process.env[key];Object.assign(process.env,envVars);

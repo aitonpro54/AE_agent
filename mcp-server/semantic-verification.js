@@ -2,12 +2,14 @@
 
 const path = require("path");
 const crypto = require("node:crypto");
+const amePending=require("./ame-title-pending");
 const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
 const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
 const projectSave = require("./project-save");
 const projectLifecycle = require("./project-lifecycle-contract");
 const lifecycleVerification = require("./project-lifecycle-verification");
 const sourceRecovery = require("./placeholder-source-recovery");
+const ameManualQueue = require("./ame-manual-queue-grant");
 
 function getAuthoritativeExportRoot(options = {}) {
   if (options && typeof options.generatedExportDir === "string" && options.generatedExportDir.trim()) {
@@ -44,9 +46,16 @@ const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
 const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
 
 const MUTATING_TOOLS = new Set([
+  "dispatch_ame_open_comp",
+  "restore_ame_open_comp",
+  "create_ame_job_source",
+  "verify_title_export_snapshots",
+  "export_two_title_snapshots",
   "ensure_ame_running",
   "enqueue_ame_title_variant",
   "start_ame_title_batch",
+  "start_ame_queue",
+  "pause_ame_queue",
   "ame_native_fixture_probe",
   ...projectLifecycle.MUTATIONS,
   "reload_montage_material_source",
@@ -133,9 +142,13 @@ const MUTATING_TOOLS = new Set([
 ]);
 
 const READ_BACK_TOOLS = new Set([
+  "reconcile_ame_open_comp",
+  "inspect_ame_open_comp",
+  "get_project_lifecycle_state",
   "inspect_ame_transport",
   "inspect_ame_title_sources",
   "get_ame_title_job_status",
+  "get_ame_queue_start_status",
   "inspect_ame_native_fixture_result",
   "inspect_title_variants",
   "get_montage_source_load_evidence",
@@ -819,7 +832,7 @@ function withServerIndependentReads(steps) {
   let readCount = 0;
   for (const [position, step] of steps.entries()) {
     expanded.push(step);
-    if (!isMutatingStep(step) || !["set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (!isMutatingStep(step) || !["dispatch_ame_open_comp", "restore_ame_open_comp", "create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "pause_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
     if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
       const order = stepOrder(step, position + 1);
       const syntheticRead = {
@@ -4147,8 +4160,40 @@ function verifyAmeTitleAssociation(step, evidence) {
   const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, sha = /^[a-f0-9]{64}$/;
   const exactPath = (left, right) => typeof left === "string" && left.length > 0 && typeof right === "string" && right.length > 0 &&
     normalizeSlashes(left).toLowerCase() === normalizeSlashes(right).toLowerCase();
+  // Shared enqueue returns its immediate own STATUS observation. The outer
+  // nonce still identifies ENQUEUE; neither STATUS binding contains its args.
+  // Retain the original server command proof to bind source/preset/range args.
+  const sharedObserved = args.queueMode === "shared_queue_v1" && payload.code === "job_observed";
+  const immutableReceipt = payload.acceptanceReceipt?.schema === "ae-agent-ame-own-item-acceptance.v2";
+  const enqueueBinding = digest({ operation: "enqueue", jobId: payload.jobId, args });
+  const statusBinding = digest({ operation: "status", jobId: payload.jobId });
+  if (sharedObserved) {
+    const commands = Array.isArray(step.commands) ? step.commands.filter(command => command.role === "mutation") : [];
+    const command = commands.length === 1 ? commands[0] : null, sender = command && command.result;
+    if (!command || command.executionId !== run.id || command.state !== "completed" || command.ok !== true ||
+        sender?.schema !== "ae-agent-ame-title-send.v1" || sender.code !== "result" || sender.callback !== "result" ||
+        sender.requestNonce !== payload.requestNonce || typeof sender.responseBody !== "string" || sender.responseBody.length > 524288) return false;
+    const original = JSON.parse(sender.responseBody), job = original.job, process = observed.process;
+    if (original.schema !== jobs.NATIVE_SCHEMA || original.code !== "job_enqueued" || original.requestNonce !== payload.requestNonce ||
+        original.operationBinding !== enqueueBinding || original.appSpecifier !== args.targetSpecifier ||
+        original.sessionNonce !== first?.sessionNonce || original.nativeJobId !== null || original.nativeAssociationVerified !== true ||
+        original.batchRunning !== false || !job || job.handleKey !== payload.jobId || job.enqueueRequestNonce !== payload.requestNonce ||
+        job.retainedWrapperSessionNonce !== first?.job?.retainedWrapperSessionNonce || job.sourceGuid !== args.sourceGuid ||
+        !exactPath(job.sourcePath, args.sourceProjectFile) || !exactPath(job.outputPath, payload.outputPath) ||
+        job.presetIdentity !== first?.job?.presetIdentity || job.processBinding !== first?.job?.processBinding ||
+        digest(job.range) !== digest(args.range) || !Number.isFinite(original.observedAt) ||
+        original.observedAt < Date.parse(run.startedAt) || original.observedAt > first.observedAt ||
+        !process || process.pid !== args.expectedProcess.pid || process.startedAt !== args.expectedProcess.startedAt ||
+        !path.isAbsolute(process.path || "") || first.job.processBinding !== digest({ target: args.targetSpecifier,
+          session: args.expectedSessionNonce || null, pid: process.pid, startedAt: process.startedAt,
+          path: process.path.replace(/\\/g, "/").toLowerCase() }) ||
+        !uuid.test(first.requestNonce || "") || first.requestNonce === payload.requestNonce || first.requestNonce === observed.requestNonce ||
+        observed.queueOnly !== true || observed.startAcceptanceVerified !== false || observed.startReservation !== null ||
+        observed.nativeCompletionObserved !== false || observed.nativeResult !== null || observed.file?.exists !== false ||
+        !Number.isFinite(Date.parse(run.startedAt)) || !Number.isFinite(Date.parse(run.finishedAt))) return false;
+  }
   if (!first || !second || payload.schema !== jobs.SCHEMA || observed.schema !== jobs.SCHEMA ||
-      payload.ok !== true || observed.ok !== true || payload.code !== "job_enqueued" || observed.code !== "job_observed" ||
+      payload.ok !== true || observed.ok !== true || (!sharedObserved && payload.code !== "job_enqueued") || observed.code !== "job_observed" ||
       payload.batchId !== args.batchId || observed.batchId !== args.batchId || observed.jobId !== payload.jobId ||
       payload.handleKey !== payload.jobId || observed.handleKey !== payload.jobId ||
       payload.nativeJobId !== null || observed.nativeJobId !== null ||
@@ -4156,19 +4201,50 @@ function verifyAmeTitleAssociation(step, evidence) {
       payload.nativeQueueCompositionVerified !== false || observed.nativeQueueCompositionVerified !== false ||
       !path.isAbsolute(payload.outputPath || "") || !exactPath(path.basename(payload.outputPath), args.outputFileName) ||
       !uuid.test(payload.requestNonce || "") || !uuid.test(observed.requestNonce || "") || payload.requestNonce === observed.requestNonce ||
-      first.operationBinding !== digest({ operation: "enqueue", jobId: payload.jobId, args }) ||
-      second.operationBinding !== digest({ operation: "status", jobId: payload.jobId })) return false;
-  for (const [native, result, code] of [[first, payload, "job_enqueued"], [second, observed, "job_observed"]]) {
+      first.operationBinding !== (sharedObserved ? statusBinding : enqueueBinding) ||
+      second.operationBinding !== statusBinding) return false;
+  for (const [native, result, code] of [[first, payload, sharedObserved ? "job_observed" : "job_enqueued"], [second, observed, "job_observed"]]) {
     const job = native.job;
-    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || native.requestNonce !== result.requestNonce ||
+    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || (!sharedObserved || result === observed) && native.requestNonce !== result.requestNonce ||
         native.appSpecifier !== args.targetSpecifier || args.expectedSessionNonce && native.sessionNonce !== args.expectedSessionNonce ||
         native.nativeJobId !== null || native.nativeAssociationVerified !== true || !job ||
         job.nativeJobId !== null || job.handleKey !== payload.jobId || job.nativeAssociationVerified !== true ||
         job.sourceGuid !== args.sourceGuid || !exactPath(job.sourcePath, args.sourceProjectFile) ||
         !exactPath(job.outputPath, payload.outputPath) || !sha.test(job.presetIdentity || "") || !sha.test(job.processBinding || "") ||
         !isPlainObject(job.range) || Object.keys(job.range).length !== 2 ||
-        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds ||
-        !Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
+        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds) return false;
+    if (sharedObserved) {
+      const dispatch = job.dispatchDiagnostic, ack = dispatch?.workAreaCallAck, receipt = result.acceptanceReceipt;
+      const receiptNative = immutableReceipt ? first : native;
+      // Both necessary initial observations prove the same own job. Only the
+      // first selfcheck creates acceptance; the attached read cannot replace it.
+      if (immutableReceipt && (digest(receipt) !== digest(payload.acceptanceReceipt) ||
+          receipt.batchId !== args.batchId || receipt.enqueueOperationBinding !== enqueueBinding ||
+          receipt.nativeSessionNonce !== first.sessionNonce || receipt.nativeObservationSha25664 !== digest(first) ||
+          !sha.test(receipt.jobBindingSha25664 || "") || receipt.authorizedRunId !== run.id ||
+          !exactPath(receipt.sourcePath, args.sourceProjectFile) || receipt.sourceGuid !== args.sourceGuid ||
+          receipt.sourceSha25664 !== args.expectedSourceSha25664 || receipt.presetSha25664 !== args.presetSha25664 ||
+          receipt.presetIdentity !== first.job.presetIdentity || receipt.processBinding !== first.job.processBinding ||
+          digest(receipt.range) !== digest(args.range))) return false;
+      if (result.ownItemAccepted !== true || result.state !== "queued" || result.completionVerified !== false || result.mediaVerified !== false ||
+          result === payload && result.unknownOutcome !== false || native.batchRunning !== false || native.start !== null ||
+          !uuid.test(job.retainedWrapperSessionNonce || "") || job.retainedWrapperSessionNonce !== first.job.retainedWrapperSessionNonce ||
+          job.enqueueRequestNonce !== payload.requestNonce || job.workAreaApplied !== true || job.status !== "queued" ||
+          job.nativeCompletionObserved !== false || job.nativeResult !== null || job.completionOrigin !== null || job.eventObservedAt !== null ||
+          job.hostCompletion !== null || job.wrapperCompletion !== null || job.getEncodeProgress !== 0 || job.getEncodeTime !== 0 ||
+          !Array.isArray(job.readErrors) || job.readErrors.length !== 0 || !Array.isArray(job.outputFiles) || job.outputFiles.length !== 0 ||
+          job.outputBindingEvidence !== "exact_addDL_call_argument_ack" || job.independentOutputGetterVerified !== false || job.generatedOutputVerified !== false ||
+          dispatch?.phase !== "association_readback" || dispatch.addDLInvoked !== true || dispatch.addDLReturned !== true || dispatch.error !== null ||
+          !Array.isArray(dispatch.creationFailures) || dispatch.creationFailures.length !== 0 || ack?.type !== 3 || ack.result !== true ||
+          ack.startSeconds !== args.range.startSeconds || ack.endSeconds !== args.range.endSeconds || !Number.isFinite(ack.observedAt) ||
+          ack.observedAt < Date.parse(run.startedAt) || ack.observedAt > native.observedAt ||
+          receipt?.schema !== (immutableReceipt ? "ae-agent-ame-own-item-acceptance.v2" : "ae-agent-ame-own-item-acceptance.v1") || receipt.jobId !== payload.jobId ||
+          receipt.enqueueRequestNonce !== payload.requestNonce || receipt.readRequestNonce !== receiptNative.requestNonce || receipt.observedAt !== receiptNative.observedAt ||
+          receipt.retainedWrapperSessionNonce !== job.retainedWrapperSessionNonce || !exactPath(receipt.outputPath, payload.outputPath) ||
+          receipt.workAreaApplied !== true || receipt.proofSource !== "retained_encoder_wrapper" || receipt.appliedPresetVerified !== false ||
+          receipt.outputBindingEvidence !== job.outputBindingEvidence || receipt.independentOutputGetterVerified !== false || receipt.generatedOutputVerified !== false ||
+          receipt.rangeProof !== "setWorkArea_call_ack" || receipt.mediaVerified !== false) return false;
+    } else if (!Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
   }
   if (!exactPath(first.job.sourcePath, second.job.sourcePath) || !exactPath(first.job.outputPath, second.job.outputPath) ||
       first.job.presetIdentity !== second.job.presetIdentity || first.job.processBinding !== second.job.processBinding ||
@@ -4179,7 +4255,9 @@ function verifyAmeTitleAssociation(step, evidence) {
   // enqueue JSON is insufficient; native observations must also be ordered.
   return Number.isFinite(firstTime) && Number.isFinite(secondTime) && Number.isFinite(attachedTime) &&
     Number.isFinite(first.observedAt) && first.observedAt > 0 && Number.isFinite(second.observedAt) &&
-    second.observedAt >= first.observedAt && first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
+    second.observedAt >= first.observedAt && (!sharedObserved || second.observedAt > first.observedAt) &&
+    (!sharedObserved || first.observedAt <= firstTime && second.observedAt <= secondTime) &&
+    first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
     secondTime >= firstTime && attachedTime >= secondTime &&
     (!Number.isFinite(runStart) || firstTime >= runStart && first.observedAt >= runStart) &&
     (!Number.isFinite(runFinish) || attachedTime <= runFinish);
@@ -4248,6 +4326,36 @@ function verifyAmeNativeFixture(step, evidence) {
 }
 
 function verifyStep(checks, step, evidence) {
+  if(["dispatch_ame_open_comp","restore_ame_open_comp"].includes(step.tool)){
+    const payload=payloadForStep(step),verifier=require("./ame-open-comp"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(step.tool,payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const observed=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool===verifier.RECONCILE&&read.status==="completed"&&observed?.privateProofVerified===true&&observed?.intentId===payload.intentId&&observed?.selector?.runId===payload.selector.runId&&observed?.selector?.commandId===payload.selector.commandId&&observed?.mediaVerified===false&&observed?.executionAuthority===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":"+step.tool+":journal",title:step.tool==="dispatch_ame_open_comp"?"Одно native Add to AME; UI-приёмка очереди ожидается":"Точное восстановление принадлежащего intent имени",expected:"server proposal, private bounded property journal and fresh exact keyed readback",observed:valid?"native effect verified; media not checked":"native outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="create_ame_job_source"){
+    const payload=payloadForStep(step),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&require("./ame-job-source").verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&state?.revision===payload.restored.revision&&state?.dirty===false&&projectLifecycle.samePath(state?.file,step.args.expectedProjectFile);
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":create_ame_job_source:source",title:"Один сохранённый AME источник и восстановленный исходник",expected:"one native snapshot, exact patch/range, private proof and independent clean source read",observed:valid?"source verified; media not checked":"source outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="verify_title_export_snapshots"){
+    const payload=payloadForStep(step),verifier=require("./title-export-verification"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&
+        state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&Number.isSafeInteger(state?.revision)&&state.revision>=0&&projectLifecycle.samePath(state?.file,payload.source.path)&&state?.dirty===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":verify_title_export_snapshots:existing-files",title:"Verified existing snapshots and restored clean source",expected:"actual graph/flags/GUID/workArea + private proof + independent source read",observed:valid?"verified; original UNKNOWN/noReplay preserved":"verification unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="export_two_title_snapshots"){
+    const payload=payloadForStep(step);let valid=false;
+    const reads=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+    try{const checked=require("./title-export-snapshots").verifyResult(payload,step.args);valid=step.status==="completed" && checked.ok && payload.verification?.ok===true &&
+      payload.authorization?.runId===evidence.run?.id && payload.authorization?.proposalId===evidence.run?.provenance?.actionId && reads.length===1 && reads.every(read=>
+      SERVER_ATTACHED_READS.get(read)?.valid===true && read.tool==="get_project_info" && read.status==="completed" && projectLifecycle.samePath(payloadForStep(read)?.file,step.args.expectedProjectFile) && payloadForStep(read)?.dirty===false);}catch(_){}
+    pushCheck(checks,{id:`${step.index}:${step.tool}:snapshots`,title:"Два новых снимка и восстановленный исходник",expected:"native SaveAs read-back, pinned files and source restoration",observed:valid?"two snapshots verified; media not checked":"snapshot outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
   if (step.tool === "import_footage") {
     const payload = payloadForStep(step);
     if (!payload || step.status !== "completed") return;
@@ -4266,7 +4374,39 @@ function verifyStep(checks, step, evidence) {
       passed: valid, evidence: stepLabel(step) });
     return;
   }
+  if (step.tool === "start_ame_queue" || step.tool === "pause_ame_queue") {
+    const control = require("./ame-queue-control"), attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+    let valid = false;
+    try { valid = payload.verification?.ok === true && payload.verification.scope === (step.tool==="pause_ame_queue"?"ame_global_queue_pause_observed":"ame_global_queue_start_dispatch_only") && attached.length === 1 && attached.every(read =>
+      SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === control.STATUS && read.status === "completed" &&
+      JSON.stringify(control.validateInput(control.STATUS, read.args)) === JSON.stringify(control.statusArgs(step.tool,args)) &&
+      control.verifyReadBack(args, payload, payloadForStep(read), evidence.run)); } catch (_) {}
+    const pause=step.tool===control.PAUSE;
+    pushCheck(checks, { id: `${step.index}:${step.tool}:${pause?"global-pause":"global-start"}`, title: pause?"Общая AME PAUSE":"Общий AME START", expected: pause?"one exact authorized pause intent and independent paused marker read":"one exact authorized runBatch intent and independent native marker read", observed: valid ? pause?"same explicit pause and paused host verified":"global START accepted; queue items, completion and media not inspected" : pause?"global PAUSE unresolved":"global START unresolved", passed: valid, evidence: stepLabel(step) });
+    return;
+  }
   if (step.tool === "start_ame_title_batch") {
+    if(args.queueMode==="shared_queue_v1"){
+      const attached=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+      const valid=payload.verification?.ok===true && payload.verification.scope==="ame_two_own_items_global_start" && attached.every(read=>SERVER_ATTACHED_READS.get(read)?.valid===true) &&
+        require("./ame-shared-queue-grant").verifyStartEvidence(args,payload,evidence.run,attached.map(read=>({...read,result:payloadForStep(read)})));
+      pushCheck(checks,{id:`${step.index}:${step.tool}:own-items-start`,title:"Два собственных item и общий START",expected:"exact retained own wrappers and one accepted global start",observed:valid?"own items and global START verified; mixed queue and media not scanned":"shared START unresolved",passed:valid,evidence:stepLabel(step)});return;
+    }
+    if (args.manualQueueMode === "cep_user_declaration_v2") {
+      const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+      let valid = false;
+      try {
+        valid = payload.authorization?.runId === evidence.run?.id && payload.authorization?.proposalId === evidence.run?.provenance?.actionId &&
+          payload.verification?.ok === true && payload.verification.scope === "ame_authenticated_cep_declaration_dispatch_only" &&
+          attached.every(read => SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === "get_ame_title_job_status" && read.status === "completed") &&
+          ameManualQueue.verifyStartEvidence(args, payload, evidence.run, attached);
+      } catch (_) {}
+      pushCheck(checks, { id: `${step.index}:${step.tool}:manual-queue-dispatch`, title: "Authenticated CEP single-job declaration and durable START dispatch",
+        expected: "private server-attached wrapper read matching consumed manifest, current run and final guard",
+        observed: valid ? "START accepted under authenticated CEP declaration; native whole queue, completion and media proof remain separate" : "authenticated CEP START evidence unavailable",
+        passed: valid, status: valid ? "passed" : "needs_review", evidence: stepLabel(step) });
+      return;
+    }
     pushCheck(checks, { id: `${step.index}:${step.tool}:native-queue-composition`, title: "Entire native AME queue ownership before start",
       expected: "independent server proof of the entire native queue composition", observed: "queue_composition_unavailable",
       passed: false, status: "needs_review", evidence: "Retained wrappers, job status and an injected gate assertion do not prove the entire native queue." });
@@ -5260,6 +5400,7 @@ function buildSemanticVerification(plan, run, options = {}) {
 
   for (let index = 0; index < mutatingSteps.length; index += 1) {
     const step = mutatingSteps[index];
+    if(amePending.isPendingStep(step,run)){pushCheck(checks,{id:`${step.index}:enqueue_ame_title_variant:pending`,title:"AME dispatch recorded; native acceptance pending",expected:"fresh independent own STATUS",observed:"dispatch receipt only; no queue acceptance",passed:false,status:"needs_review",evidence:stepLabel(step)});continue;}
     if (step.status !== "completed") {
       pushCheck(checks, {
         id: `${step.index || "step"}:${step.tool || "unknown"}:completed`,
