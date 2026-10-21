@@ -120,3 +120,41 @@ Old baseline уже был мёртвым legacy runtime: source rollback не �
 сессии или пересоздать историческую authority. Обратная runtime migration —
 отдельный reviewed scope; старый код может оставить новую lineage admission
 закрытой, и этот отказ сохраняется.
+
+
+## Bootstrap и обслуживание activated session
+
+Обычный bootstrap новой verified activated session хранится в
+`ae-agent-panel-bootstrap/product-sessions/<session-root-generation>/`. Namespace
+подписан fixed credential и связан с verified root anchor и active physical
+preflight; каждый successor использует тот же namespace. Он не меняется от
+обновления source или нового PID. Старые global attempt/ACK/recovery/JSX остаются
+точными bytes и не импортируются. UNKNOWN внутри новой lineage также сохраняется
+и не разрешает повторную native open/reload. Неполная current publication или
+непроверенная lineage дают structured pending/unavailable health, bootstrap и
+execution admission закрыты; старый global namespace не используется как fallback.
+
+Отдельный product maintenance stop использует новый explicit force consent на
+конкретный review digest. Его exact-run bootstrap draft и captured code pins
+сохраняются как local historical evidence; новая product source проверяет только
+подписанные data records, не импортирует ignored helper. Положительный
+same-held-HANDLE exit и post-exit resource cutoff образуют predecessor kind
+`prior_verified_product_maintenance_retirement` с `graceful:false`. Supervisor
+может потребить его для обычного ensure и signed succession. Неизвестный или
+partial result остаётся readback-only, старый initial activation не повторяется.
+
+Для дальнейшего штатного control shutdown narrow census допускает ровно три
+неизменных outstanding records, закреплённых signed initial activation manifest
+и completed maintenance grant. Они обозначаются historicalFenced только для
+daemon control stop. Global native ledger, cleanup authority и resource fences
+сохраняются. Дополнительный unresolved record, изменение старого pin, недоверенная
+lineage или подмена retirement proof снова блокируют shutdown. Новые terminal
+records допускаются лишь после существующей ledger validCompletion/retirement
+проверки; общий namespace не замораживается навсегда. Branded witness нельзя
+передать через JSON или подделать plain object. Обычные idle/pending/children/
+physical bootstrap guards остаются обязательными.
+
+При rollback сначала требуется поддержанный graceful exit новой версии или
+отдельный reviewed maintenance exit с factual read-back. Force receipt не
+превращается в graceful claim и не завершает старые UNKNOWN. Возврат source/
+panel bytes не восстанавливает историческую control authority.

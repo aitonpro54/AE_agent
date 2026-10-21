@@ -148,8 +148,9 @@ function generateBootstrapJsx({requestId,deadline,ackPath,probeOnly=false}) {
   } catch (__bootstrapServiceError) { /* No unhandled AE script dialog; durable caller state remains unknown. */ }
   }());\n`;
 }
-function dispatchNative(ae,scriptPath) {
+function dispatchNative(ae,scriptPath,assertScope=()=>{}) {
   return new Promise((resolve,reject)=>{
+    assertScope();
     const child=spawn(ae.executable,["-r",scriptPath],{windowsHide:true,stdio:"ignore",shell:false});
     child.once("error",error=>reject(problem("native_submission_failed",error.message)));
     child.once("spawn",()=>{child.unref();resolve({cliPid:child.pid});});
@@ -182,10 +183,11 @@ function exactCdpTarget(pages,installed) {
   if(ws.protocol!=="ws:" || ws.hostname!=="127.0.0.1" || ws.port!=="8870" || ws.search || !/^\/devtools\/page\/[^/]+$/.test(ws.pathname)) throw problem("cdp_endpoint_untrusted");
   return {url:selected.url,webSocketDebuggerUrl:selected.webSocketDebuggerUrl};
 }
-async function reconnectCdp(target,timeoutMs,beforeSend) {
+async function reconnectCdp(target,timeoutMs,beforeSend,assertScope=()=>{}) {
   if(typeof WebSocket!=="function") throw problem("cdp_runtime_unsupported");
   const deadline=Date.now()+timeoutMs;
   const remaining=()=>{const ms=deadline-Date.now();if(ms<=0) throw problem("cdp_reload_unknown");return ms;};
+  assertScope();
   const ws=new WebSocket(target.webSocketDebuggerUrl);
   try {
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(problem("cdp_connect_timeout")),remaining());ws.onopen=()=>{clearTimeout(timer);resolve();};ws.onerror=()=>{clearTimeout(timer);reject(problem("cdp_connect_failed"));};});
@@ -194,28 +196,72 @@ async function reconnectCdp(target,timeoutMs,beforeSend) {
       const timer=setTimeout(()=>reject(problem("cdp_reload_unknown")),remaining());
       ws.onmessage=e=>{try {const m=JSON.parse(e.data);if(m.id===1){clearTimeout(timer);m.error ? reject(problem("cdp_reload_rejected")) : resolve();}}catch(_){}};
       ws.onerror=()=>{clearTimeout(timer);reject(problem("cdp_reload_unknown"));};
-      ws.send(JSON.stringify({id:1,method:"Page.reload",params:{ignoreCache:true}}));
+      try{assertScope();ws.send(JSON.stringify({id:1,method:"Page.reload",params:{ignoreCache:true}}));}catch(error){clearTimeout(timer);reject(error);}
     });
   } finally {ws.close();}
 }
 
 function createPanelBootstrapService(deps) {
+  const baseStateDir=path.resolve(deps.stateDir),services=new Map(),ledger=require("./native-fixture-attempt-ledger");
+  function resolve(){
+    const scope=deps.resolveSessionScope?deps.resolveSessionScope():null;
+    if(scope===null)return {directory:baseStateDir,key:"legacy",scope:null};
+    if(!scope||typeof scope.directory!=="string"||!path.isAbsolute(scope.directory)||path.resolve(scope.directory)!==scope.directory||!scope.binding||typeof scope.binding!=="object"||Array.isArray(scope.binding)||typeof scope.assertUnchanged!=="function")throw problem("bootstrap_session_namespace_invalid");
+    scope.assertUnchanged();const binding=JSON.parse(JSON.stringify(scope.binding));
+    return {directory:scope.directory,key:scope.directory+"\0"+recoveryState.canonical(binding),binding,scope};
+  }
+  function checkMarker(selected,create){
+    if(!selected.scope)return;
+    selected.scope.assertUnchanged();const directory=selected.directory,file=path.join(directory,"scope.json");
+    if(fs.existsSync(directory))ledger.safeDirectory(directory);
+    if(!fs.existsSync(file)){
+      if(fs.existsSync(directory)&&fs.readdirSync(directory).length)throw problem("bootstrap_session_scope_marker_missing");
+      if(!create)return;
+      ledger.ensure(directory);selected.scope.assertUnchanged();let fd;
+      try{fd=fs.openSync(file,"wx",0o600);fs.writeFileSync(fd,JSON.stringify(selected.binding));fs.fsyncSync(fd);}catch(error){if(error.code!=="EEXIST")throw error;}finally{if(fd!==undefined)fs.closeSync(fd);}
+    }
+    let binding;try{binding=JSON.parse(ledger.readBytes(file));}catch(error){throw problem("bootstrap_session_scope_marker_invalid");}
+    if(recoveryState.canonical(binding)!==recoveryState.canonical(selected.binding))throw problem("bootstrap_session_scope_binding_changed");
+    selected.scope.assertUnchanged();
+  }
+  function selectedService(create){
+    const selected=resolve();checkMarker(selected,create);
+    function assertScope(){const current=resolve();if(current.key!==selected.key)throw problem("bootstrap_session_namespace_changed");checkMarker(current,false);}
+    if(!services.has(selected.key)){
+      const guarded={...deps,stateDir:selected.directory,assertScope};
+      for(const name of ["getStatus","getOrigin","getDeliveryFence","readProject","readResult","discoverAE","inspectInstalled","assertNoCollision","discoverCdp","reconnectCdp","dispatchNative","pause"]){
+        if(typeof deps[name]==="function")guarded[name]=(...args)=>{assertScope();return deps[name](...args);};
+      }
+      services.set(selected.key,createScopedPanelBootstrapService(guarded));
+    }
+    return services.get(selected.key);
+  }
+  function unavailable(error){const code=typeof error.code==="string"&&/^[a-z0-9_]+$/.test(error.code)?error.code:"bootstrap_session_namespace_unavailable";return {stage:["bootstrap_session_namespace_pending_current","bootstrap_session_namespace_pending_activation"].includes(code)?"namespace_pending":"namespace_unavailable",code,busy:true,admissionBlocked:true,replayAllowed:false,automaticReplayAllowed:false};}
+  function snapshot(){try{const value=selectedService(false).snapshot();return value?.stage==="record_failure"&&value.code?.startsWith("bootstrap_session_")?unavailable({code:value.code}):value;}catch(error){return unavailable(error);}}
+  function isBusy(){try{return selectedService(false).isBusy();}catch(_){return true;}}
+  return {snapshot,isBusy,ensure:raw=>{validateInput(raw||{});return selectedService(true).ensure(raw);},recover:raw=>{if(raw!==undefined&&(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length))throw problem("invalid_bootstrap_recovery_arguments");return selectedService(true).recover(raw);},
+    observeTerminal:(...args)=>selectedService(true).observeTerminal(...args),captureRecoveryBinding:(...args)=>selectedService(false).captureRecoveryBinding(...args),
+    recoveryChallenge:(...args)=>selectedService(false).recoveryChallenge(...args),acceptRecoveryEpoch:(...args)=>selectedService(true).acceptRecoveryEpoch(...args)};
+}
+function createScopedPanelBootstrapService(deps) {
   const stateDir=path.resolve(deps.stateDir), statePath=path.join(stateDir,"attempt.json"), lockPath=path.join(stateDir,"service.lock");
   const now=deps.now || Date.now, pause=deps.pause || (ms=>new Promise(r=>setTimeout(r,ms)));
   const discover=deps.discoverAE || discoverRunningAE, installed=deps.inspectInstalled || inspectInstalledTarget;
   let running=false;
-  function load() {if(!fs.existsSync(statePath)) return null;try {const r=JSON.parse(fs.readFileSync(statePath,"utf8"));if(r.schema!==1 || !/^[a-f0-9-]{36}$/.test(r.requestId)) throw Error();return r;}catch(_){throw problem("bootstrap_record_corrupt");}}
-  function save(r) {const temp=statePath+"."+process.pid+".tmp";fs.writeFileSync(temp,JSON.stringify(r,null,2),{mode:0o600});fs.renameSync(temp,statePath);}
+  function load() {deps.assertScope?.();if(!fs.existsSync(statePath)) return null;try {const r=JSON.parse(fs.readFileSync(statePath,"utf8"));if(r.schema!==1 || !/^[a-f0-9-]{36}$/.test(r.requestId)) throw Error();return r;}catch(_){throw problem("bootstrap_record_corrupt");}}
+  function save(r) {deps.assertScope?.();const temp=statePath+"."+process.pid+".tmp";fs.writeFileSync(temp,JSON.stringify(r,null,2),{mode:0o600});fs.renameSync(temp,statePath);}
   function ackFor(r) {
+    deps.assertScope?.();
     const ackPath=path.join(stateDir,r.requestId+".ack.json");
     if(!fs.existsSync(ackPath)) return null;
     try {const a=JSON.parse(fs.readFileSync(ackPath,"utf8").replace(/^\uFEFF/,""));return a.requestId===r.requestId && Number.isInteger(a.commandId) && ["expired","unsupported_api","lookup_failed","command_unavailable","executing","execution_unknown","executed"].includes(a.state) ? a : null;}catch(_){return null;}
   }
   function snapshot() {try {const r=load();return r ? {requestId:r.requestId,stage:r.stage,deadline:r.deadline,delivery:r.delivery,ae:r.ae || null,target:r.target || null,cli:r.cli || null,projectReadCommand:r.projectReadCommand || null,ack:ackFor(r),...(r.stage==="project_read_unknown"?{recovery:recovery.status()}: {})} : null;}catch(e){return {stage:"record_failure",code:e.code};}}
-  const recovery=createBootstrapRecovery({stateDir,statePath,load,ackFor,getStatus:deps.getStatus,getOrigin:deps.getOrigin,getDeliveryFence:deps.getDeliveryFence,readProject:deps.readProject,readResult:deps.readResult,recoveryKey:deps.recoveryKey,assertIdle,now,isBusy:()=>running,setBusy:v=>{running=v;}});
+  const recovery=createBootstrapRecovery({stateDir,statePath,assertScope:deps.assertScope,load,ackFor,getStatus:deps.getStatus,getOrigin:deps.getOrigin,getDeliveryFence:deps.getDeliveryFence,readProject:deps.readProject,readResult:deps.readResult,recoveryKey:deps.recoveryKey,assertIdle,now,isBusy:()=>running,setBusy:v=>{running=v;}});
   async function ensure(raw) {
     let stage="input", record=null, lock=null, ownsRun=false;
     try {
+      deps.assertScope?.();
       const {timeoutMs}=validateInput(raw || {}), deadline=now()+timeoutMs;
       if(running) throw problem("bootstrap_busy");
       running=true;ownsRun=true;
@@ -241,6 +287,7 @@ function createPanelBootstrapService(deps) {
         try {const pages=await (deps.discoverCdp || discoverCdp)(remaining());cdp=exactCdpTarget(pages,target);}catch(e){if(!["cdp_unavailable","ECONNREFUSED","ECONNRESET"].includes(e.code)) throw e;}
         record={schema:1,requestId:crypto.randomUUID(),deadline,stage:"prepared",delivery:cdp ? "cdp" : "native",ae,target,createdAt:now()};
         const scriptPath=path.join(stateDir,record.requestId+".jsx"), ackPath=path.join(stateDir,record.requestId+".ack.json");
+        deps.assertScope?.();
         if(!cdp) fs.writeFileSync(scriptPath,generateBootstrapJsx({requestId:record.requestId,deadline,ackPath}),{mode:0o600});
         save(record);
         const recheck=async()=>{
@@ -254,8 +301,8 @@ function createPanelBootstrapService(deps) {
         };
         stage=cdp ? "cdp_reconnect" : "native_dispatch";
         try {
-          if(cdp) {await (deps.reconnectCdp || reconnectCdp)(cdp,remaining(),recheck);record.reloadAcknowledged=true;}
-          else {await recheck();record.cli=await (deps.dispatchNative || dispatchNative)(ae,scriptPath);}
+          if(cdp) {await (deps.reconnectCdp || reconnectCdp)(cdp,remaining(),recheck,deps.assertScope);record.reloadAcknowledged=true;}
+          else {await recheck();deps.assertScope?.();record.cli=await (deps.dispatchNative || dispatchNative)(ae,scriptPath,deps.assertScope);}
           save(record);
         } catch(e) {if(record.stage==="prepared") {record.stage="not_executed";save(record);}throw e;}
         stage="wait_connection";
@@ -303,11 +350,12 @@ function createPanelBootstrapService(deps) {
 // daemon/result-map loss. No old command is ever resubmitted.
 function createBootstrapRecovery(deps){
   const {stateDir,statePath}=deps,R=recoveryState,ledger=require("./native-fixture-attempt-ledger"),base=path.join(stateDir,"recovery"),witnessDir=path.join(stateDir,"terminal-witnesses");
-  function key(){if(deps.recoveryKey)return deps.recoveryKey;const file=path.join(stateDir,"recovery.key");if(!fs.existsSync(file)){const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,crypto.randomBytes(32));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}const bytes=fs.readFileSync(file);if(bytes.length!==32)throw problem("bootstrap_recovery_key_invalid");return bytes;}
-  function sign(value){return crypto.createHmac("sha256",key()).update(R.canonical(value)).digest("hex");}
-  function read(file){if(!fs.existsSync(file))return null;const row=JSON.parse(ledger.readBytes(file)),{authentication,...value}=row;if(authentication!==sign(value))throw problem("bootstrap_recovery_record_invalid");return value;}
-  function write(file,value){ledger.ensure(path.dirname(file));if(fs.existsSync(file)){const prior=read(file);if(!R.same(prior,value))throw problem("bootstrap_recovery_record_conflict");return prior;}const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify({...value,authentication:sign(value)}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return read(file);}
+  function key(create=false){deps.assertScope?.();if(deps.recoveryKey)return deps.recoveryKey;const file=path.join(stateDir,"recovery.key");if(!fs.existsSync(file)){if(!create)throw problem("bootstrap_recovery_key_missing");const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,crypto.randomBytes(32));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}const bytes=fs.readFileSync(file);if(bytes.length!==32)throw problem("bootstrap_recovery_key_invalid");return bytes;}
+  function sign(value,create=false){return crypto.createHmac("sha256",key(create)).update(R.canonical(value)).digest("hex");}
+  function read(file){deps.assertScope?.();if(!fs.existsSync(file))return null;const row=JSON.parse(ledger.readBytes(file)),{authentication,...value}=row;if(authentication!==sign(value))throw problem("bootstrap_recovery_record_invalid");return value;}
+  function write(file,value){deps.assertScope?.();ledger.ensure(path.dirname(file));if(fs.existsSync(file)){const prior=read(file);if(!R.same(prior,value))throw problem("bootstrap_recovery_record_conflict");return prior;}const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify({...value,authentication:sign(value,true)}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return read(file);}
   function observeTerminal(binding,row){
+    deps.assertScope?.();
     if(!binding||!binding.pins||!R.UUID.test(binding.pins.id||""))return;
     row.observedOrigin=deps.getOrigin?.();
     const value={...row,tool:"get_project_info",origin:binding.pins.origin};
@@ -325,6 +373,7 @@ function createBootstrapRecovery(deps){
   function origin(){const value=deps.getOrigin?.();if(!R.origin(value))throw problem("bootstrap_recovery_actor_or_source_unproven");return value;}
   function uiTerminal(attempt){if(attempt.delivery==="none")return true;if(attempt.delivery==="native")return deps.ackFor(attempt)?.state==="executed";return attempt.delivery==="cdp"&&attempt.reloadAcknowledged===true;}
   function capture(){
+    deps.assertScope?.();
     if(!fs.existsSync(statePath))return null;const raw=ledger.readBytes(statePath),attempt=deps.load();if(attempt.stage!=="project_read_unknown")return null;
     const sha=R.hash(raw),dir=path.join(base,sha),barriers=[];
     if(fs.existsSync(dir))for(const name of fs.readdirSync(dir).filter(n=>/^barrier-\d+$/.test(n)).sort()){const row=read(path.join(dir,name,"pins.json"));if(row)barriers.push({operationId:row.operationId,pins:row.pins});}
@@ -341,6 +390,7 @@ function createBootstrapRecovery(deps){
     return {ok:false,status:"blocked",reason:"bootstrap_recovery_epoch_pending",replayAllowed:false,automaticReplayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:"observe_epoch_ack"}};
   }
   function activate(input){
+    deps.assertScope?.();
     let lock;try{
       if(deps.isBusy())throw problem("bootstrap_busy");lock=acquireServiceLock(path.join(stateDir,"service.lock"));
       const e=epoch();if(!e)throw problem("bootstrap_recovery_epoch_absent");
@@ -369,6 +419,7 @@ function createBootstrapRecovery(deps){
   function fence(attempt,sha,before,barrier){const e=epoch();if(e?.activation){const v=e.activation;if(R.deliveryFence(v,attempt,sha,before,{barrier:barrier||null}))return v;}return deps.getDeliveryFence?.(attempt,sha,before,barrier);}
   function status(){const pending=epochPending();return {state:pending?"epoch_pending":"reconciliation_required",currentAdmission:pending?"blocked_pending_epoch":"reconciliation_required",historicalOutcome:"unknown_preserved",replayAllowed:false,automaticReplayAllowed:false,nextAction:{tool:RECOVERY_TOOL_NAME,arguments:{},mode:pending?"observe_epoch_ack":"reconcile"}};}
   async function recover(raw={}){
+    deps.assertScope?.();
     if(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length)throw problem("invalid_bootstrap_recovery_arguments");
     let lock=null,owns=false;
     const result=(state,extra={})=>({ok:state!=="blocked",status:state,replayAllowed:false,automaticReplayAllowed:false,...extra});
@@ -378,7 +429,7 @@ function createBootstrapRecovery(deps){
       if(!fs.existsSync(statePath))return result("no_active_attempt",{newEnsureRequired:true,nextAction:{tool:TOOL_NAME,arguments:{}}});
       const original=ledger.readBytes(statePath),sha=R.hash(original),attempt=deps.load(),dir=path.join(base,sha),originalFile=path.join(dir,"original-attempt.json");
       if(attempt.stage!=="project_read_unknown")return result("no_unknown_project_read",{newEnsureRequired:true,nextAction:{tool:TOOL_NAME,arguments:{}}});
-      function unchanged(){if(!fs.existsSync(statePath)||R.hash(ledger.readBytes(statePath))!==sha)throw problem("bootstrap_recovery_active_pointer_changed");}
+      function unchanged(){deps.assertScope?.();if(!fs.existsSync(statePath)||R.hash(ledger.readBytes(statePath))!==sha)throw problem("bootstrap_recovery_active_pointer_changed");}
       function archive(){ledger.ensure(dir);if(fs.existsSync(originalFile)){if(!ledger.readBytes(originalFile).equals(original))throw problem("bootstrap_recovery_archive_changed");}else{const fd=fs.openSync(originalFile,"wx",0o600);try{fs.writeFileSync(fd,original);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}}
       function retire(classified,evidence){
         unchanged();archive();

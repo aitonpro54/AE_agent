@@ -2,7 +2,7 @@
 
 ## Интеграция 3.3.4 — 2026-10-21
 
-Desktop `4e7efc8` и laptop `1d246ae` объединяются ancestry merge в `codex/release-3.3.4`; оба exact HEAD сохранены checkpoints. Canonical identity — 3.3.4. Функциональная карта, решения пересечений и текущие проверки: [integration](release-3.3.4-integration.md). Исторические этапы ниже сохранены как факты соответствующих состояний.
+Интеграция завершена: merge `8b2f79f3c88ed1a0e3cd9c6116433901a3c313bb`, test-only fix `c7586cb7b5dd1df576e096cd91b01ae1e1a3bac0` и activation source `27d7063c2cb1f9ea501383af65bd68b7c9bfb4c2` опубликованы с remote read-back PASS; ready checkpoint `checkpoint/ae-agent-3.3.4-desktop-activation-ready` указывает на `27d7063`. Main и предыдущие refs не менялись. Функциональная карта, решения пересечений и проверки: [integration](release-3.3.4-integration.md). Исторические этапы ниже сохранены как факты соответствующих состояний. Возврат к source checkpoint или прежней установленной панели меняет код/панель, но не отменяет новую runtime lineage и не восстанавливает прежнюю control authority; runtime возврат требует отдельного scope и действующих gates.
 
 ## Подготовка 3.3.2 — 2026-10-21
 

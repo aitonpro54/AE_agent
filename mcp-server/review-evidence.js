@@ -176,6 +176,8 @@ const RUNTIME_FILES = [
   "mcp-server/owned-runtime-product-lifecycle.js",
   "mcp-server/owned-runtime-product-session-reset.js",
   "mcp-server/owned-runtime-product-activation.js",
+  "mcp-server/owned-runtime-product-maintenance.js",
+  "scripts/cep-panel-target.js",
   "scripts/owned-runtime-product-activation.js",
   "mcp-server/owned-runtime-supervisor.js",
   "mcp-server/owned-runtime-initial-recovery.js",
