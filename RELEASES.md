@@ -23,6 +23,29 @@ fixture-copy на 11 runs и replay 11 сохранённых native callbacks. 
 в Git не переносятся. Незакоммиченные материалы вне release scope не включены.
 Проверки и remote read-back фиксируются в `docs/release-workflow.md`.
 
+### Дополнение для включения исправлений восстановления
+
+21.10 подготовлено дополнение к ветке `codex/release-3.3.3` из исправлений
+изоляции сетевых fixtures, generic recovery и документации live proof. Новый
+контракт сохраняет исходные UNKNOWN без replay, выполняет recovery через
+`recover_ae_agent_panel({})`, связывает результат с причинной epoch и terminal
+witness, а смену активного указателя защищает CAS. Failed-start recovery выбирает
+сбой из signed lineage без новых привязок к UUID инцидентов. Сетевые fixtures используют
+временную изолированную копию исходников; runtime source покрыт 105 pins.
+
+Offline проверки: recovery component 51, E2E 16, fixture isolation 24;
+bootstrap 96 offline / 110 полный isolated suite, reset 65, service 35,
+supervisor 91, product lifecycle 12, CEP actions 48/16, refresh 33,
+completed dry-run 56 и четыре network группы — PASS. Live 3.3.3 source
+`eed86411…` (PID 32524): прежняя запись `90cddf8f…` сохранена как
+`UNKNOWN/noReplay`, отдельный ensure подтвердил `verified`, затем обычный
+project read вернул 476 items / revision 12975229; AEP SHA `f84a56ff…`
+остался прежним. AME enqueue/START/render/save и Computer Use не выполнялись.
+Это дополнение подготовлено к включению в release; push коммитов и их remote
+read-back ещё ожидаются. Подробности и ограничения — в
+[`crash-recovery.md`](docs/crash-recovery.md) и
+[`release-workflow.md`](docs/release-workflow.md).
+
 ## v3.2.0 — подготовка, 2026-10-01
 
 Рабочая ветка `codex/release-3.2.0` содержит проверяемое восстановление missing

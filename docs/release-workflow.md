@@ -1,5 +1,31 @@
 # Отдельные версии AE Agent и возврат к предыдущему коду
 
+## Дополнение к 3.3.3 — systemic recovery, 2026-10-21
+
+Подготовлены к включению в `codex/release-3.3.3` коммиты `08ee550` (изоляция
+fixture), `b97cdb7` (generic recovery) и `2b74353` (live proof и документация).
+Push и remote read-back этих коммитов ещё не подтверждены; их выполняет владелец
+Git/push. Историческая подготовка и публикация исходной ветки ниже остаются
+записью предыдущего этапа.
+
+Контракт описан в [`crash-recovery.md`](crash-recovery.md): исходные bytes и
+UNKNOWN остаются неизменными, `replayAllowed:false`; API восстановления —
+`recover_ae_agent_panel({})` без caller selectors. Причинная epoch, exact
+terminal witness и disposition отделяют новые факты от исхода старой команды;
+активный указатель обновляется CAS. Generic failed-start reducer выбирает сбой
+из signed lineage без новых привязок к UUID инцидентов. Сетевой fixture запускает
+backend из физической временной копии source без переноса рабочей authority.
+Runtime census включает 105 source pins.
+
+Offline validation: 51 component cases, E2E 16, fixture 24, bootstrap 96/110,
+reset 65, service 35, supervisor 91, product lifecycle 12, actions 48/16,
+refresh 33, dry-run 56, четыре network группы — PASS. На локально установленном
+3.3.3 проверены source `eed86411…`, PID 32524; старый `90cddf8f…` завершён как
+`UNKNOWN/noReplay`, отдельный ensure — `verified`, затем обычный project read —
+PASS (476 items, revision 12975229). AEP SHA `f84a56ff…` не изменился.
+AME enqueue/START/render/save/CU не выполнялись. Финальный remote read-back
+планируется после push; это не подтверждение GitHub публикации.
+
 ## Подготовка 3.3.3 — 2026-10-21
 
 - По явному поручению пользователя создана `codex/release-3.3.3` от `f92a75b89073bd1ba8848440a67928c22f529283`. Annotated checkpoint `checkpoint/ae-agent-3.3.1-before-3.3.3` сохраняет это точное проверенное состояние 3.3.1; исходная `codex/restore-mcp-connection` остаётся на нём.
