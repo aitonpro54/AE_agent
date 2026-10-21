@@ -2,10 +2,11 @@
 
 ## Дополнение к 3.3.3 — systemic recovery, 2026-10-21
 
-Подготовлены к включению в `codex/release-3.3.3` коммиты `08ee550` (изоляция
+Включены fast-forward в `codex/release-3.3.3` коммиты `08ee550` (изоляция
 fixture), `b97cdb7` (generic recovery) и `2b74353` (live proof и документация).
-Push и remote read-back этих коммитов ещё не подтверждены; их выполняет владелец
-Git/push. Историческая подготовка и публикация исходной ветки ниже остаются
+Push и независимый remote read-back подтвердили
+`ccbd63221c32cbeed31b06eab471ab64fc2ceb1d`; последующий docs commit фиксирует этот
+результат без изменения кода. Историческая подготовка и публикация исходной ветки ниже остаются
 записью предыдущего этапа.
 
 Контракт описан в [`crash-recovery.md`](crash-recovery.md): исходные bytes и
@@ -23,8 +24,9 @@ refresh 33, dry-run 56, четыре network группы — PASS. На лок�
 3.3.3 проверены source `eed86411…`, PID 32524; старый `90cddf8f…` завершён как
 `UNKNOWN/noReplay`, отдельный ensure — `verified`, затем обычный project read —
 PASS (476 items, revision 12975229). AEP SHA `f84a56ff…` не изменился.
-AME enqueue/START/render/save/CU не выполнялись. Финальный remote read-back
-планируется после push; это не подтверждение GitHub публикации.
+AME enqueue/START/render/save/CU не выполнялись. Предыдущий checkpoint tag
+`c287061251253a968c44d268ef580d439e65a8ac` сохранён; force push, новый accepted
+tag, PR/merge и GitHub Release не создавались. Чужие WIP исключены из публикации.
 
 ## Подготовка 3.3.3 — 2026-10-21
 

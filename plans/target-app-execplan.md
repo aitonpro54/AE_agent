@@ -6,14 +6,14 @@
 ## Текущая цель пользователя
 
 21.10: включить исправления generic recovery и изоляции fixtures в release 3.3.3; проверить push и remote read-back. UNKNOWN/noReplay, authority и спорные ресурсы сохраняются.
-Кодовые коммиты `08ee550`, `b97cdb7`, `2b74353` готовы к fast-forward владельцем Git/push. Документирует их оператор в трёх назначенных файлах; live AE scope завершён, AME enqueue/START/render не выполнялись.
+Коммиты `08ee550`, `b97cdb7`, `2b74353` включены в codex/release-3.3.3; push/read-back ccbd632… PASS. Последующий docs commit фиксирует публикацию; live AE scope завершён, AME enqueue/START/render не выполнялись.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
 - 21.10 systemic recovery завершён: fixture08ee550/coreb97cdb7, final review GO;51/E2E16/fixture24/bootstrap96+110/reset65/service35/supervisor91/lifecycle12/actions48+16/refresh33/dry56/4network PASS. Live source eed86411…; generic90cdd… UNKNOWN/noReplay→fresh ensure verified→ordinary read PASS. AEP476/rev12975229/SHAf84a… unchanged; AME enqueue/START/render/save/CU0; [live proof](../docs/crash-recovery.md).
-- 21.10 release3.3.3 исходный этап опубликован: atomic push/readback03908ef…, checkpoint c287061…→f92a75b…. Дополнение recovery (`08ee550`, `b97cdb7`, `2b74353`) подготовлено к fast-forward; push/read-back ожидаются. Исходные version/fixtures/docs, foreign hashes и installed3.3.3 сохранены.
+- 21.10 release3.3.3 recovery опубликован: fast-forward20f8db0→ccbd632…/remote read-back PASS; коммиты08ee550/b97cdb7/2b74353 входят в release. Checkpoint c287061…→f92a75b… сохранён; foreign hashes7/7 unchanged. Код/версия/локальная установка не менялись при push.
 - 21.10 queue-only11 PASS: reset6da63cd2…/efd27532… ACTIVE; bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay (3dc2681); новый bootstrap read90cdd… UNKNOWN сохранён, отдельный native read PASS. Runtime9936/a14084b9…, clean AEP476/rev12975229/SHAf84a56ff…, AME2432. Все11 отправлены однократно к05:12:05Z, ДО первого native workArea ACK05:13:23Z; group7d497df9…. К05:44:25Z callback11/11, exact addDL/workArea/output argument ACK и queued fields11/11 PASS. Producer STATUS0/START0/CU0; final native batchRunning=false, AEP unchanged/clean, MOV0. Выявлены 11 generic checkpoint-копий AEP (434823070 bytes) и необходимость explicit collector resume после guard019; это стало основанием исправлений выше.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…`/generation `9f2d63af…` после ручного выхода AE; UNKNOWN сохранён, recovery8s без replay. Connected/idle/autonomy active, native project empty/revision1; AME jobs не менялись.
@@ -114,7 +114,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Validation
 
-- 21.10 recovery addition: existing offline/core checks PASS как указано в [release workflow](../docs/release-workflow.md); live recovery/read proof в [crash recovery](../docs/crash-recovery.md). Docs-only diff проходит scoped `check:rules` и `git diff --check`; push/read-back pending.
+- 21.10 recovery addition: existing offline/core checks PASS как указано в [release workflow](../docs/release-workflow.md); live proof в [crash recovery](../docs/crash-recovery.md). Docs-only rules/diff PASS; push/read-back ccbd632… PASS, без force/tag changes/чужих WIP.
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
 - 20.10 recovery56/status21/origin36 + actual offline-copy/independent19/syntax/rules/diff/High review PASS. Live async ENQUEUE01/own STATUS PASS; GLOBAL START1 UNKNOWN сохранён, actual01 media HQalpha/full decode и PNG comparison PASS. Source unchanged/clean. Новый orphan-read/global settlement пока не live-проверены; старый integration startup gate не обходился.
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
@@ -169,7 +169,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Следующий шаг: root выполняет fast-forward коммитов recovery в `codex/release-3.3.3`, push без force и проверяет remote read-back. После подтверждения обновить только фактическую запись статуса; accepted tag/GitHub Release/PR/merge не входят в scope.
+Публикация исправлений в codex/release-3.3.3 завершена; дальнейшая работа — по новому поручению. Исходники доступны для обновления другого desktop; локальные credentials/runtime/AEP не переносятся Git push. Accepted tag/GitHub Release/PR/merge не входят в этот этап.
 
 ## Отложенные scope
 
