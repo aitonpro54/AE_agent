@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 21.10 release3.3.3: branch от f92a75b… + checkpoint/ae-agent-3.3.1-before-3.3.3 созданы; old branch сохранён. Version/fixtures/docs3.3.3, mechanical review GO и offline checks PASS; foreign hashes7/7 unchanged. Series fixes792a7e0/applied backend sourcefc6d9637… входят в baseline. Version3.3.3 пока только в исходниках; commit/push/readback далее, существующие11jobs не меняли.
+- 21.10 release3.3.3 опубликована: первый atomic push/readback03908ef… в codex/release-3.3.3, checkpoint tag c287061…→f92a75b…; old branch сохранён. Version/fixtures/docs3.3.3, review/offline PASS; foreign hashes7/7 unchanged. Series fixes792a7e0/applied backend sourcefc6d9637… входят в baseline. Последующий docs commit фиксирует публикацию; installed3.3.3/live render/новая очередь не выполнялись.
 - 21.10 queue-only11 PASS: reset6da63cd2…/efd27532… ACTIVE; bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay (3dc2681); новый bootstrap read90cdd… UNKNOWN сохранён, отдельный native read PASS. Runtime9936/a14084b9…, clean AEP476/rev12975229/SHAf84a56ff…, AME2432. Все11 отправлены однократно к05:12:05Z, ДО первого native workArea ACK05:13:23Z; group7d497df9…. К05:44:25Z callback11/11, exact addDL/workArea/output argument ACK и queued fields11/11 PASS. Producer STATUS0/START0/CU0; final native batchRunning=false, AEP unchanged/clean, MOV0. Выявлены 11 generic checkpoint-копий AEP (434823070 bytes) и необходимость explicit collector resume после guard019; это стало основанием исправлений выше.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…`/generation `9f2d63af…` после ручного выхода AE; UNKNOWN сохранён, recovery8s без replay. Connected/idle/autonomy active, native project empty/revision1; AME jobs не менялись.
@@ -167,7 +167,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Завершить scoped release checks/review → commit3.3.3 → push только release-ветки/checkpoint → remote SHA read-back → краткий результат. Desktop installation/новая AME серия/render отдельно. Bootstrap read90cdd… UNKNOWN и unknown/no-replay границы сохраняются.
+Публикация исходников3.3.3 завершена. Desktop installation backend+CEP и native read-back — следующий отдельный scope; новая AME серия/render не запускались. Bootstrap read90cdd… UNKNOWN и unknown/no-replay границы сохраняются; локальные credentials/policies не переносятся Git push.
 
 ## Отложенные scope
 
