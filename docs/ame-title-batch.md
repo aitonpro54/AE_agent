@@ -79,8 +79,9 @@ dispatch для exact owned batch/job/read nonce, допускает 3 повт�
 не создаёт новый nonce и не повторяет enqueue/START. Lease группы фиксирован:
 6 600 000 ms от первой reservation, origins cap64, N≤11. Строгая проверка callback
 сохраняет out-of-order binding; callback receipt не утверждает acceptance,
-completion или media proof. Эти изменения проверены offline; live rollout и
-новая queue-only приёмка выполняются отдельно единственным controller.
+completion или media proof. Контракт проверен offline; backend применён 21.10
+штатным owned restart и native read-only проверкой. Новая live queue-only серия
+после исправлений не запускалась, START/render0; её приёмка — отдельный scope.
 
 ## Актуальная приёмка заданий агента — 19.10
 
